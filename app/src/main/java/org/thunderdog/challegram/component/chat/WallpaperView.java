@@ -63,6 +63,12 @@ public class WallpaperView extends View implements ThemeChangeListener, ChatStyl
     tdlib.cache().addMyUserListener(this);
   }
 
+  public void initWithCustomWallpaper (TGBackground wallpaper) {
+    this.inSetupMode = true;
+    preview = new DoubleImageReceiver(this, 0);
+    setWallpaper(wallpaper, false);
+  }
+
   @Override
   public void onMyUserUpdated (final TdApi.User myUser) {
     UI.post(() -> {

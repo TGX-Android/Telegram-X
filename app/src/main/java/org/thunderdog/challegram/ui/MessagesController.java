@@ -144,6 +144,7 @@ import org.thunderdog.challegram.mediaview.data.MediaStack;
 import org.thunderdog.challegram.navigation.ActivityResultHandler;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.ComplexHeaderView;
+import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.navigation.HeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
@@ -277,6 +278,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private @Nullable TdApi.ChatList openedFromChatList;
 
   private ChatHeaderView headerCell;
+  private DoubleHeaderView headerDoubleCell;
+
   private MessagesLayout contentView;
   private LinearLayout bottomWrap;
   private MessagesRecyclerView messagesView;
@@ -510,6 +513,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         break;
       }
+      case PREVIEW_MODE_WALLPAPER_OBJECT: {
+        headerDoubleCell = new DoubleHeaderView(context);
+        headerDoubleCell.setThemedTextColor(this);
+        headerDoubleCell.initWithMargin(Screen.dp(12f), true);
+        headerDoubleCell.setTitle(getName());
+        headerDoubleCell.setSubtitle(Strings.buildSize(getArguments().wallpaperObject.document.document.size));
+      }
       default: {
         if (areScheduled) {
           headerCell.setForcedSubtitle(Lang.lowercase(Lang.getString(isSelfChat() ? R.string.Reminders : R.string.ScheduledMessages)));
@@ -522,7 +532,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     headerCell.initWithController(this, true);
 
     wallpaperView = new WallpaperView(context, manager, tdlib);
-    wallpaperView.initWithSetupMode(previewMode == PREVIEW_MODE_WALLPAPER);
+    if (previewMode == PREVIEW_MODE_WALLPAPER_OBJECT) {
+      wallpaperView.initWithCustomWallpaper(new TGBackground(tdlib, getArguments().wallpaperObject));
+    } else {
+      wallpaperView.initWithSetupMode(previewMode == PREVIEW_MODE_WALLPAPER);
+    }
     wallpaperView.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     addThemeInvalidateListener(wallpaperView);
 
@@ -985,6 +999,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
           bottomWrap.addView(wallpapersList);
           break;
         }
+        case PREVIEW_MODE_WALLPAPER_OBJECT: {
+          ViewSupport.setThemedBackground(wallpapersList, R.id.theme_color_filling, this);
+          break;
+        }
         case PREVIEW_MODE_FONT_SIZE: {
           FrameLayoutFix textWrap = new FrameLayoutFix(context);
           textWrap.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(49f)));
@@ -1072,6 +1090,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     bottomBar.setLayoutParams(params);
     addThemeInvalidateListener(bottomBar);
     updateBottomBarStyle();
+
+    if (previewMode == PREVIEW_MODE_WALLPAPER_OBJECT) {
+      showBottomButton(BOTTOM_ACTION_APPLY_WALLPAPER, 0, true);
+      bottomShadowView.setVisibility(View.GONE);
+    }
 
     // Setup
 
@@ -1172,8 +1195,24 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private SliderView fontSliderView;
+  private SliderView blurSliderView;
 
   private static void updateFontSliderValue (SliderView sliderView) {
+    boolean found = false;
+    int index = 0;
+    for (float dp : Settings.CHAT_FONT_SIZES) {
+      if (dp == Settings.instance().getChatFontSize()) {
+        found = true;
+        break;
+      }
+      index++;
+    }
+    if (found) {
+      sliderView.setValue((float) index / (float) (Settings.CHAT_FONT_SIZES.length - 1));
+    }
+  }
+
+  private static void updateWpBlurSliderValue (SliderView sliderView) {
     boolean found = false;
     int index = 0;
     for (float dp : Settings.CHAT_FONT_SIZES) {
@@ -1591,6 +1630,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
         dismissPinnedMessage();
         break;
       }
+      case R.id.btn_applyWallpaper: {
+        tdlib().settings().setWallpaper(new TGBackground(tdlib(), getArguments().wallpaperObject), true, Theme.getWallpaperIdentifier());
+        navigateBack();
+        break;
+      }
       case R.id.btn_silent: {
         if (tdlib.isChannel(chat.id)) {
           boolean silent = silentButton.toggle();
@@ -1901,6 +1945,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public static final int PREVIEW_MODE_FONT_SIZE = 2;
   public static final int PREVIEW_MODE_EVENT_LOG = 3;
   public static final int PREVIEW_MODE_SEARCH = 4;
+  public static final int PREVIEW_MODE_WALLPAPER_OBJECT = 5;
 
   @Override
   public boolean saveInstanceState (Bundle outState, String keyPrefix) {
@@ -2005,6 +2050,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     public Referrer referrer;
 
+    public @Nullable TdApi.Background wallpaperObject;
+
     public Arguments (Tdlib tdlib, TdApi.ChatList chatList, TdApi.Chat chat, @Nullable ThreadInfo messageThread, TdApi.SearchMessagesFilter filter) {
       this.constructor = 0;
       this.chatList = chatList;
@@ -2084,6 +2131,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
       this.openKeyboard = openKeyboard;
       return this;
     }
+
+    public Arguments setWallpaperObject (TdApi.Background wallpaperObject) {
+      this.wallpaperObject = wallpaperObject;
+      return this;
+    }
   }
 
   public static class Referrer {
@@ -2109,7 +2161,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private boolean openKeyboard;
 
   public boolean inWallpaperMode () {
-    return inPreviewMode && previewMode == PREVIEW_MODE_WALLPAPER;
+    return inPreviewMode && (previewMode == PREVIEW_MODE_WALLPAPER || previewMode == PREVIEW_MODE_WALLPAPER_OBJECT);
+  }
+
+  public boolean inWallpaperPreviewMode () {
+    return inPreviewMode && previewMode == PREVIEW_MODE_WALLPAPER_OBJECT;
   }
 
   public boolean inPreviewMode () {
@@ -2783,6 +2839,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
           return R.id.controller_fontSize;
         case PREVIEW_MODE_WALLPAPER:
           return R.id.controller_wallpaper;
+        case PREVIEW_MODE_WALLPAPER_OBJECT:
+          return R.id.controller_wallpaper_preview;
         case PREVIEW_MODE_EVENT_LOG:
           return R.id.controller_eventLog;
         case PREVIEW_MODE_SEARCH:
@@ -2876,6 +2934,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
         return R.id.menu_more;
       case PREVIEW_MODE_WALLPAPER:
         return R.id.menu_gallery;
+      case PREVIEW_MODE_WALLPAPER_OBJECT:
+        return R.id.menu_share;
     }
     return getChatId() != 0 ? (isSelfChat() || getMessageThreadId() != 0 ? R.id.menu_search : isSecretChat() ? R.id.menu_secretChat : R.id.menu_more) : 0;
   }
@@ -2890,6 +2950,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     switch (previewMode) {
       case PREVIEW_MODE_WALLPAPER:
         return Lang.getString(R.string.Wallpaper);
+      case PREVIEW_MODE_WALLPAPER_OBJECT:
+        return Lang.getString(R.string.WallpaperPreview);
       case PREVIEW_MODE_FONT_SIZE:
         return Lang.getString(R.string.TextSize);
       default:
@@ -2899,7 +2961,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public View getCustomHeaderCell () {
-    return needTabs() ? pagerHeaderView : getChatId() != 0 ? headerCell : null;
+    return inWallpaperPreviewMode() ? headerDoubleCell : needTabs() ? pagerHeaderView : getChatId() != 0 ? headerCell : null;
   }
 
   @Override
@@ -2940,6 +3002,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.menu_gallery: {
         header.addButton(menu, R.id.menu_btn_gallery, R.drawable.baseline_image_24, getHeaderIconColorId(), this, Screen.dp(52f));
+        break;
+      }
+      case R.id.menu_share: {
+        header.addButton(menu, R.id.menu_btn_share, R.drawable.baseline_share_arrow_24, getHeaderIconColorId(), this, Screen.dp(52f));
         break;
       }
       case R.id.menu_clear: {
@@ -3070,6 +3136,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.menu_btn_gallery: {
         Intents.openGallery(false);
+        break;
+      }
+      case R.id.menu_btn_share: {
+        ShareController c = new ShareController(context(), tdlib());
+        c.setArguments(new ShareController.Args("https://" + tdlib().tMeHost() + "bg/" + getArguments().wallpaperObject.name));
+        c.show();
         break;
       }
       case R.id.menu_btn_clear: {
@@ -4791,6 +4863,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private static final int BOTTOM_ACTION_TOGGLE_MUTE = 2;
   private static final int BOTTOM_ACTION_UNPIN_ALL = 3;
   private static final int BOTTOM_ACTION_TEST = 4;
+  private static final int BOTTOM_ACTION_APPLY_WALLPAPER = 5;
 
   private int bottomButtonAction;
   private boolean needBigPadding;
@@ -4804,7 +4877,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean needExtraBigPadding () {
-    return needBigPadding;
+    return needBigPadding && !inWallpaperPreviewMode();
   }
 
   private void showBottomButton (int bottomButtonAction, long bottomButtonData, boolean animated) {
@@ -4828,6 +4901,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case BOTTOM_ACTION_TEST: {
         bottomBar.setAction(R.id.btn_test, "test", R.drawable.baseline_warning_24, animateButtonContent);
+        bottomBar.clearPreviewChat();
+        break;
+      }
+      case BOTTOM_ACTION_APPLY_WALLPAPER: {
+        bottomBar.setAction(R.id.btn_applyWallpaper, Lang.getString(R.string.WallpaperApply), R.drawable.baseline_warning_24, animateButtonContent);
         bottomBar.clearPreviewChat();
         break;
       }

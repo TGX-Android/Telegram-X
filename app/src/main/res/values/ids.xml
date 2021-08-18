@@ -37,6 +37,7 @@
   <item type="id" name="menu_editLangPack" />
   <item type="id" name="menu_editLangPackString" />
   <item type="id" name="menu_proxy" />
+  <item type="id" name="menu_share" />
 
   <item type="id" name="btn_menu_customize" />
   <item type="id" name="menu_btn_manage" />
@@ -64,6 +65,7 @@
   <item type="id" name="menu_btn_clear" />
   <item type="id" name="menu_btn_stopwatch" />
   <item type="id" name="menu_btn_call" />
+  <item type="id" name="menu_btn_share" />
 
   <item type="id" name="menu_btn_masks" />
   <item type="id" name="menu_btn_pictureInPicture" />
@@ -152,6 +154,7 @@
   <item type="id" name="controller_storageSettings" />
   <item type="id" name="controller_messages" />
   <item type="id" name="controller_wallpaper" />
+  <item type="id" name="controller_wallpaper_preview" />
   <item type="id" name="controller_eventLog" />
   <item type="id" name="controller_searchPreview" />
   <item type="id" name="controller_hashtagPreview" />
@@ -1038,6 +1041,8 @@
   <item type="id" name="btn_makePrivate" />
   <item type="id" name="btn_makePublic" />
   <item type="id" name="btn_restrictMember" />
+
+  <item type="id" name="btn_applyWallpaper" />
 
   <item type="id" name="right_readMessages" />
   <item type="id" name="right_sendMessages" />
