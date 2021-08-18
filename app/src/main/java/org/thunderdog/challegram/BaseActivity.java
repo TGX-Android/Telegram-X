@@ -304,6 +304,10 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
     Screen.checkDensity();
 
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      Screen.hasDisplayCutout = getWindowManager().getDefaultDisplay().getCutout() != null;
+    }
+
     mHasSoftwareKeys = hasSoftwareKeys();
 
     currentOrientation = UI.getOrientation();

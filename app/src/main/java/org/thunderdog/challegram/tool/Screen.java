@@ -235,6 +235,8 @@ public class Screen {
     }
   }
 
+  public static boolean hasDisplayCutout;
+
   public interface StatusBarHeightChangeListener {
     void onStatusBarHeightChanged (int newHeight);
   }

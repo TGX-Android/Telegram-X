@@ -4614,7 +4614,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         headerView.setElevation(Screen.dp(3f));
       }
       attachHeaderViewWithoutNavigation(headerView);
-      headerView.initWithSingleController(this, (SET_FULLSCREEN_ON_OPEN || canRunFullscreen()) && !Config.CUTOUT_ENABLED);
+      headerView.initWithSingleController(this, (SET_FULLSCREEN_ON_OPEN || canRunFullscreen()) && Screen.hasDisplayCutout);
       headerView.getFilling().setShadowAlpha(0f);
       int leftMargin = Screen.dp(68f);
       int rightMargin = measureButtonsPadding();
