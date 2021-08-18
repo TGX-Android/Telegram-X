@@ -79,17 +79,6 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
     if (sessions == null || currentSession == null) {
       return;
     }
-    if (sessions.isEmpty()) {
-      adapter.setItems(new ListItem[] {
-        new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL),
-        new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.ThisDevice),
-        new ListItem(ListItem.TYPE_SHADOW_TOP),
-        new ListItem(ListItem.TYPE_SESSION, R.id.btn_currentSession, 0, 0),
-        new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
-        new ListItem(ListItem.TYPE_SESSIONS_EMPTY)
-      }, false);
-      return;
-    }
 
     ArrayList<ListItem> items = new ArrayList<>();
     items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
@@ -270,23 +259,21 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
     if (sessions != null) {
       buildCells();
     }
-    /*RemoveHelper.attach(recyclerView, new RemoveHelper.Callback() {
-      @Override
-      public boolean canRemove (RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int position) {
-        if (viewHolder.getItemViewType() == SettingItem.TYPE_SESSION) {
-          SettingItem item = adapter.getItems().get(position);
-          if (item.getId() != R.id.btn_currentSession && !terminatingAll && (terminatingSessions == null || terminatingSessions.get(item.getLongId()) == null)) {
-            return true;
-          }
-        }
-        return false;
-      }
 
-      @Override
-      public void onRemove (RecyclerView.ViewHolder viewHolder) {
-        killSession((TdApi.Session) viewHolder.itemView.getTag(), false);
-      }
-    });*/
+    if (getArguments() == null) {
+      RemoveHelper.attach(recyclerView, new RemoveHelper.Callback() {
+        @Override
+        public boolean canRemove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int position) {
+          ListItem item = adapter.getItems().get(position);
+          return item.getId() == R.id.btn_session && !terminatingAll && (terminatingSessions == null || terminatingSessions.get(item.getLongId()) == null);
+        }
+
+        @Override
+        public void onRemove(RecyclerView.ViewHolder viewHolder) {
+          killSession((TdApi.Session) viewHolder.itemView.getTag(), false);
+        }
+      });
+    }
 
     if (getArguments() == null) {
       tdlib.client().send(new TdApi.GetActiveSessions(), object -> tdlib.ui().post(() -> {
