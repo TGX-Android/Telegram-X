@@ -3125,6 +3125,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     public int mode;
     public boolean ignoreAnchor;
     public CameraController.ReadyListener readyListener;
+    public CameraController.QrCodeListener qrCodeListener;
 
     public CameraOpenOptions anchor (View anchorView) {
       this.anchorView = anchorView;
@@ -3133,6 +3134,11 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
     public CameraOpenOptions readyListener (CameraController.ReadyListener readyListener) {
       this.readyListener = readyListener;
+      return this;
+    }
+
+    public CameraOpenOptions qrCodeListener (CameraController.QrCodeListener qrCodeListener) {
+      this.qrCodeListener = qrCodeListener;
       return this;
     }
 

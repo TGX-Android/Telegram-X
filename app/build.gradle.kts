@@ -187,6 +187,7 @@ dependencies {
     implementation("com.google.android.gms:play-services-basement:17.6.0")
     implementation("com.google.android.gms:play-services-maps:17.0.1")
     implementation("com.google.android.gms:play-services-location:18.0.0")
+    implementation("com.google.android.gms:play-services-mlkit-barcode-scanning:16.2.1")
     // Firebase: https://firebase.google.com/support/release-notes/android
     implementation("com.google.firebase:firebase-messaging:22.0.0") {
         exclude(group = "com.google.firebase", module = "firebase-core")

@@ -84,9 +84,19 @@ public interface CameraDelegate {
   boolean usePrivateFolder ();
 
   /**
+   * Return true if camera should scan QR codes
+   * */
+  boolean useQrScanner ();
+
+  /**
    * Called when video capture has been started
    * */
   void onVideoCaptureStarted (long startTimeMs);
+
+  /**
+   * Called when a QR code is found and successfully scanned
+   * */
+  void onQrCodeFound (String qrCodeData);
 
   /**
    * Called when video capture has been finished

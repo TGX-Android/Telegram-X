@@ -4,16 +4,20 @@ import android.content.Context;
 import android.view.View;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.collection.LongSparseArray;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
+import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.camera.CameraController;
@@ -34,7 +38,7 @@ import me.vkryl.td.Td;
  * Author: default
  */
 
-public class SettingsSessionsController extends RecyclerViewController<SettingsPrivacyController> implements SettingsPrivacyController.AuthorizationsLoadListener, View.OnClickListener, OptionDelegate {
+public class SettingsSessionsController extends RecyclerViewController<SettingsPrivacyController> implements SettingsPrivacyController.AuthorizationsLoadListener, View.OnClickListener, OptionDelegate, CameraController.QrCodeListener {
   public SettingsSessionsController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
@@ -515,7 +519,7 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
         break;
       }
       case R.id.btn_qrLogin: {
-        openInAppCamera(new CameraOpenOptions().anchor(v).noTrace(true).mode(CameraController.MODE_QR));
+        openInAppCamera(new CameraOpenOptions().anchor(v).noTrace(true).mode(CameraController.MODE_QR).qrCodeListener(this));
         break;
       }
       case R.id.btn_session: {
@@ -540,5 +544,35 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
   @Override
   public CharSequence getName () {
     return Lang.getString(R.string.Devices);
+  }
+
+  @Override
+  public void onQrCodeScanned(String qrCode) {
+    tdlib().client().send(new TdApi.GetInternalLinkType(qrCode), result -> {
+      if (result instanceof TdApi.InternalLinkType) {
+        TdApi.InternalLinkType linkType = (TdApi.InternalLinkType) result;
+
+        if (linkType.getConstructor() == TdApi.InternalLinkTypeProxy.CONSTRUCTOR) {
+          UI.post(() -> {
+            TdApi.InternalLinkTypeProxy proxy = (TdApi.InternalLinkTypeProxy) result;
+            tdlib().ui().openProxyAlert(this, proxy.server, proxy.port, proxy.type, TdlibUi.newProxyDescription(proxy.server, Integer.toString(proxy.port)).toString());
+          });
+        } else if (linkType.getConstructor() == TdApi.InternalLinkTypeQrCodeAuthentication.CONSTRUCTOR) {
+          tdlib().client().send(new TdApi.ConfirmQrCodeAuthentication(qrCode), result2 -> {
+            if (result2 instanceof TdApi.Session) {
+              TdApi.Session newSession = (TdApi.Session) result2;
+              UI.post(() -> {
+                sessions.add(0, newSession);
+                if (getArguments() != null) { getArguments().updateAuthorizations(sessions, currentSession); }
+                // TODO: smart list rebinding
+                adapter.removeRange(0, adapter.getItemCount());
+                buildCells();
+                UI.showToast(Lang.getString(R.string.ScanQRAuthorizedToast, newSession.applicationName), Toast.LENGTH_LONG);
+              });
+            }
+          });
+        }
+      }
+    });
   }
 }
