@@ -9,7 +9,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
-import android.view.WindowInsets;
 
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.config.Config;
@@ -169,7 +168,7 @@ public class RootFrameLayout extends FrameLayoutFix {
 
   public void processWindowInsets (Object insetsRaw) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && Config.USE_FULLSCREEN_NAVIGATION) {
-      WindowInsets insets = (WindowInsets) insetsRaw;
+      android.view.WindowInsets insets = (android.view.WindowInsets) insetsRaw;
 
       if (this instanceof BaseRootLayout) {
         Screen.setStatusBarHeight(insets.getSystemWindowInsetTop());
@@ -180,7 +179,7 @@ public class RootFrameLayout extends FrameLayoutFix {
         int topDiff, bottomDiff;
 
         int bottom = insets.getSystemWindowInsetBottom();
-        topDiff = Math.abs(((WindowInsets) lastInsets).getSystemWindowInsetTop() - insets.getSystemWindowInsetTop());
+        topDiff = Math.abs(((android.view.WindowInsets) lastInsets).getSystemWindowInsetTop() - insets.getSystemWindowInsetTop());
         bottomDiff = ignoreBottom ? 0 : getBottomInset(lastInsets) - bottom;
 
         int rightDiff = getRightInset(lastInsets) - getRightInset(insets);
