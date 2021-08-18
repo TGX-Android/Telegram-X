@@ -1,0 +1,526 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<xml>
+    <settings>
+        <source-theme>1</source-theme>
+        <default-theme>
+            <light>11</light>
+            <dark>10</dark>
+        </default-theme>
+    </settings>
+    <sections>
+        <item name="main" />
+        <item name="settings" />
+        <item name="content" />
+        <item name="navigation" />
+        <item name="controls" />
+        <item name="chat" />
+        <item name="bubbles" />
+        <item name="colors" />
+        <item name="iv" />
+        <item name="other" />
+        <item name="internal" />
+    </sections>
+    <properties>
+        <item name="parentTheme" />
+        <item name="wallpaperId" />
+        <item name="dark" />
+        <item name="imageCorner" />
+        <item name="replaceShadowsWithSeparators" />
+        <item name="bubbleCornerMerged" />
+        <item name="bubbleCorner" />
+        <item name="bubbleCornerLegacy" />
+        <item name="bubbleOuterMargin" />
+        <item name="bubbleOutline" />
+        <item name="bubbleOutlineSize" />
+        <item name="bubbleUnreadShadow" />
+        <item name="bubbleDateCorner" />
+        <item name="dateCorner" />
+        <item name="wallpaperUsageId" />
+        <item name="shadowDepth" />
+        <item name="subtitleAlpha" />
+        <item name="lightStatusBar" />
+
+        <item name="wallpaperOverrideDate" />
+        <item name="wallpaperOverrideUnread" />
+        <item name="wallpaperOverrideMediaReply" />
+        <item name="wallpaperOverrideTime" />
+        <item name="wallpaperOverrideButton" />
+        <item name="wallpaperOverrideOverlay" />
+    </properties>
+    <colors>
+        <!-- MAIN -->
+
+        <item name="filling" /> <!-- solid color on top of the background -->
+        <item name="background" /> <!-- solid color below filling -->
+        <item name="separator" /> <!-- separator color between items -->
+        <item name="fillingPressed" />  <!-- same as filling, but pressed. Not transparent -->
+        <item name="placeholder" />  <!-- solid color for space where image will be loaded, usually very transparent #fff or #000 -->
+        <item name="previewBackground" />
+        <item name="overlayFilling" />
+
+        <item name="snackbarUpdate" tinted="true" />
+        <item name="snackbarUpdateText" />
+        <item name="snackbarUpdateAction" />
+
+        <item name="fillingNegative" />
+        <item name="fillingPositive" />
+        <item name="fillingPositiveContent" />
+
+        <!-- TOOLTIP -->
+
+        <item name="tooltip" />
+        <item name="tooltip_text" />
+        <item name="tooltip_textLink" />
+        <item name="tooltip_textLinkPressHighlight" />
+        <item name="tooltip_outline" />
+
+        <!-- TEXT -->
+
+        <item name="text" /> <!-- Text on top of filling -->
+        <item name="textSelectionHighlight" tinted="true" />
+        <item name="textLight" porterDuff="true" />
+        <item name="textSecure" porterDuff="true" />
+        <item name="textNeutral" tinted="true" />
+        <item name="textNegative" />
+        <item name="textLink" tinted="true" />  <!-- links text color -->
+        <item name="textLinkPressHighlight" tinted="true" /> <!-- color below textLink when user presses it -->
+        <item name="textSearchQueryHighlight" tinted="true" />
+
+        <!-- BACKGROUND -->
+
+        <item name="background_text" /> <!-- Text on top of background -->
+        <item name="background_textLight" />
+        <item name="background_icon" porterDuff="true" />
+
+        <!-- ICONS -->
+
+        <item name="icon" porterDuff="true" /> <!-- icons color on top of filling -->
+        <item name="iconActive" tinted="true" porterDuff="true" />
+        <item name="iconLight" porterDuff="true" />
+        <item name="iconPositive" porterDuff="true" />
+        <item name="iconNegative" porterDuff="true" />
+
+        <!-- CONTROLS -->
+
+        <item name="progress" tinted="true" /> <!-- progress color -->
+
+        <item name="controlInactive" />
+        <item name="controlActive" tinted="true" />
+        <item name="controlContent" />
+
+        <item name="checkActive" tinted="true" />
+        <item name="checkContent" />
+
+        <item name="sliderInactive" />
+        <item name="sliderActive" tinted="true" />
+
+        <item name="togglerActive" tinted="true" />
+        <item name="togglerActiveBackground" tinted="true" />
+
+        <item name="togglerInactive" />
+        <item name="togglerInactiveBackground" />
+
+        <item name="togglerPositive" />
+        <item name="togglerPositiveBackground" />
+        <item name="togglerPositiveContent" />
+
+        <item name="togglerNegative" />
+        <item name="togglerNegativeBackground" />
+        <item name="togglerNegativeContent" />
+
+        <item name="textPlaceholder" />
+        <item name="inputInactive" />
+        <item name="inputActive" tinted="true" />
+        <item name="inputPositive" />
+        <item name="inputNegative" />
+
+        <item name="inlineOutline" tinted="true" />
+        <item name="inlineText" tinted="true" />
+        <item name="inlineIcon" tinted="true" porterDuff="true" />
+        <item name="inlineContentActive" />
+
+        <item name="circleButtonRegular" tinted="true" />
+        <item name="circleButtonRegularIcon" />
+        <item name="circleButtonActive" tinted="true" />
+        <item name="circleButtonActiveIcon" />
+        <item name="circleButtonOverlay" />
+        <item name="circleButtonOverlayIcon" />
+        <item name="circleButtonChat" />
+        <item name="circleButtonChatIcon" />
+
+        <item name="circleButtonNewSecret" />
+        <item name="circleButtonNewSecretIcon" />
+        <item name="circleButtonNewChat" />
+        <item name="circleButtonNewChatIcon" />
+        <item name="circleButtonNewGroup" />
+        <item name="circleButtonNewGroupIcon" />
+        <item name="circleButtonNewChannel" />
+        <item name="circleButtonNewChannelIcon" />
+        <item name="circleButtonPositive" />
+        <item name="circleButtonPositiveIcon" />
+        <item name="circleButtonNegative" />
+        <item name="circleButtonNegativeIcon" />
+        <item name="circleButtonTheme" tinted="true" />
+        <item name="circleButtonThemeIcon" />
+
+        <item name="seekEmpty" />
+        <item name="seekReady" tinted="true" />
+        <item name="seekDone" tinted="true" />
+        <item name="playerButtonActive" tinted="true" />
+        <item name="playerButton" />
+        <item name="playerCoverPlaceholder" />
+        <item name="playerCoverIcon" porterDuff="true" />
+
+        <item name="online" tinted="true" />
+
+        <item name="promo" tinted="true" />
+        <item name="promoContent" />
+
+        <item name="introSectionActive" />
+        <item name="introSection" />
+
+        <item name="headerTabActive" />
+        <item name="headerTabActiveText" />
+        <item name="headerTabInactiveText" />
+
+        <item name="profileSectionActive" tinted="true" />
+        <item name="profileSectionActiveContent" tinted="true" />
+
+        <!-- USERS -->
+
+        <item name="avatarArchive" />
+        <item name="avatarArchivePinned" />
+        <item name="avatarSavedMessages" />
+        <item name="avatarSavedMessages_big" />
+        <item name="avatarReplies" />
+        <item name="avatarReplies_big" />
+        <item name="avatarInactive" />
+        <item name="avatarInactive_big" />
+        <item name="avatarRed" />
+        <item name="avatarRed_big" />
+        <item name="avatarOrange" />
+        <item name="avatarOrange_big" />
+        <item name="avatarYellow" />
+        <item name="avatarYellow_big" />
+        <item name="avatarGreen" />
+        <item name="avatarGreen_big" />
+        <item name="avatarCyan" />
+        <item name="avatarCyan_big" />
+        <item name="avatarBlue" />
+        <item name="avatarBlue_big" />
+        <item name="avatarViolet" />
+        <item name="avatarViolet_big" />
+        <item name="avatarPink" />
+        <item name="avatarPink_big" />
+        <item name="avatar_content" porterDuff="true" />
+
+        <item name="nameInactive" />
+        <item name="nameRed" />
+        <item name="nameOrange" />
+        <item name="nameYellow" />
+        <item name="nameGreen" />
+        <item name="nameCyan" />
+        <item name="nameBlue" />
+        <item name="nameViolet" />
+        <item name="namePink" />
+
+        <!-- NAVIGATION -->
+
+        <item name="headerBackground" tinted="true" />
+        <item name="headerText" porterDuff="true" />
+        <item name="headerIcon" porterDuff="true" />
+
+        <item name="drawer" />
+        <item name="drawerText" />
+
+        <item name="headerPlaceholder" /> <!-- same as placeholder, but on top of the header -->
+
+        <item name="headerLightBackground" />
+        <item name="headerLightText" />
+        <item name="headerLightIcon" />
+
+        <item name="headerButton" />
+        <item name="headerButtonIcon" porterDuff="true" />
+
+        <item name="headerRemoveBackground" />
+        <item name="headerRemoveBackgroundHighlight" />
+
+        <item name="headerBarCallIncoming" />
+        <item name="headerBarCallActive" tinted="true" />
+        <item name="headerBarCallMuted" />
+
+        <item name="headerPickerBackground" />
+        <item name="headerPickerText" />
+
+        <item name="passcode" tinted="true" />
+        <item name="passcodeIcon" porterDuff="true" />
+        <item name="passcodeText" />
+
+        <item name="notification" tinted="true" />
+        <item name="notificationLink" tinted="true" />
+        <item name="notificationSecure" />
+        <item name="notificationPlayer" tinted="true" />
+
+        <!-- CHATS LIST -->
+
+        <item name="ticks" tinted="true" porterDuff="true" />
+        <item name="ticksRead" tinted="true" porterDuff="true" />
+
+        <item name="chatListMute" porterDuff="true" />
+        <item name="chatListIcon" porterDuff="true" />
+        <item name="chatListAction" tinted="true" />
+        <item name="chatListVerify" tinted="true" porterDuff="true" />
+
+        <item name="badge" tinted="true" />
+        <item name="badgeText" porterDuff="true" />
+        <item name="badgeFailed" />
+        <item name="badgeFailedText" porterDuff="true" />
+        <item name="badgeMuted" porterDuff="true" />
+        <item name="badgeMutedText" porterDuff="true" />
+
+        <!-- CHAT -->
+
+        <item name="chatSendButton" tinted="true" porterDuff="true" />
+        <item name="chatKeyboard" />
+        <item name="chatKeyboardButton" />
+
+        <!-- PLAIN MODE -->
+
+        <item name="chatBackground" />
+        <item name="unread" tinted="true" />
+        <item name="unreadText" tinted="true" />
+
+        <item name="messageVerticalLine" tinted="true" />
+        <item name="messageNeutralFillingContent" />
+        <item name="messageCorrectFilling" />
+        <item name="messageCorrectFillingContent" />
+        <item name="messageCorrectChosenFilling" />
+        <item name="messageCorrectChosenFillingContent" />
+        <item name="messageNegativeLine" />
+        <item name="messageNegativeLineContent" />
+        <item name="messageSelection" tinted="true" />
+        <item name="messageSwipeBackground" tinted="true" />
+        <item name="messageSwipeContent" />
+        <item name="messageAuthor" tinted="true" porterDuff="true" />
+        <item name="messageAuthorPsa" />
+
+        <!-- CONFETTI -->
+
+        <item name="confettiGreen" />
+        <item name="confettiBlue" />
+        <item name="confettiYellow" />
+        <item name="confettiRed" />
+        <item name="confettiCyan" />
+        <item name="confettiPurple" />
+
+        <!-- BUBBLE MODE -->
+
+        <!--<item name="bubble_date" />-->
+        <item name="bubble_dateText" />
+        <item name="bubble_dateText_noWallpaper" />
+        <item name="bubble_date" />
+        <item name="bubble_date_noWallpaper" />
+        <item name="bubble_chatBackground" />
+        <item name="bubble_unread" />
+        <item name="bubble_unreadText" />
+        <item name="bubble_unread_noWallpaper" />
+        <item name="bubble_unreadText_noWallpaper" />
+        <item name="bubble_mediaReply" />
+        <item name="bubble_mediaReplyText" />
+        <item name="bubble_mediaReply_noWallpaper" />
+        <item name="bubble_mediaReplyText_noWallpaper" />
+
+        <item name="bubble_mediaTime" />
+        <item name="bubble_mediaTimeText" porterDuff="true" />
+        <item name="bubble_mediaTime_noWallpaper" />
+        <item name="bubble_mediaTimeText_noWallpaper" porterDuff="true" />
+
+        <item name="bubble_mediaOverlay" />
+        <item name="bubble_mediaOverlayText" porterDuff="true" />
+
+        <item name="bubble_messageSelection" />
+        <item name="bubble_messageSelectionNoWallpaper" />
+        <item name="bubble_messageCheckOutline" />
+        <item name="bubble_messageCheckOutlineNoWallpaper" />
+        <item name="bubble_overlay" />
+        <item name="bubble_overlayText" />
+        <item name="bubble_overlay_noWallpaper" />
+        <item name="bubble_overlayText_noWallpaper" />
+        <item name="bubble_button" />
+        <item name="bubble_button_noWallpaper" />
+        <item name="bubble_buttonText" />
+        <item name="bubble_buttonText_noWallpaper" />
+        <item name="bubble_buttonRipple" />
+        <item name="bubble_buttonRipple_noWallpaper" />
+
+        <item name="chatSeparator" />
+        <item name="bubble_chatSeparator" />
+        <item name="shareSeparator" />
+
+        <item name="wp_cats" />
+        <item name="wp_catsPink" />
+        <item name="wp_catsGreen" />
+        <item name="wp_catsOrange" />
+        <item name="wp_catsBeige" />
+        <item name="wp_circlesBlue" />
+
+        <!-- BUBBLE INCOMING -->
+
+        <item name="bubbleIn_background" />
+        <item name="bubbleIn_time" porterDuff="true" />
+        <item name="bubbleIn_progress" tinted="true" />
+        <item name="bubbleIn_text" />
+        <item name="bubbleIn_textLink" tinted="true" />
+        <item name="bubbleIn_textLinkPressHighlight" tinted="true" />
+        <item name="bubbleIn_outline" />
+        <item name="bubbleIn_separator" />
+        <item name="bubbleIn_pressed" />
+
+        <!-- BUBBLE OUTGOING -->
+
+        <item name="bubbleOut_background" tinted="true" />
+        <item name="bubbleOut_time" tinted="true" porterDuff="true" />
+        <item name="bubbleOut_progress" tinted="true" />
+        <item name="bubbleOut_text" />
+        <item name="bubbleOut_textLink" tinted="true" />
+        <item name="bubbleOut_textLinkPressHighlight" tinted="true" />
+        <item name="bubbleOut_outline" />
+        <item name="bubbleOut_separator" tinted="true" />
+        <item name="bubbleOut_pressed" />
+
+        <item name="bubbleOut_chatVerticalLine" tinted="true" />
+        <item name="bubbleOut_chatNeutralFillingContent" />
+        <item name="bubbleOut_chatCorrectFilling" tinted="true" />
+        <item name="bubbleOut_chatCorrectFillingContent" />
+        <item name="bubbleOut_chatCorrectChosenFilling" tinted="true" />
+        <item name="bubbleOut_chatCorrectChosenFillingContent" />
+        <item name="bubbleOut_chatNegativeFilling" />
+        <item name="bubbleOut_chatNegativeFillingContent" />
+        <item name="bubbleOut_inlineText" tinted="true" />
+        <item name="bubbleOut_inlineOutline" tinted="true" />
+        <item name="bubbleOut_inlineIcon" tinted="true" porterDuff="true" />
+        <item name="bubbleOut_waveformActive" tinted="true" porterDuff="true" />
+        <item name="bubbleOut_waveformInactive" tinted="true" />
+        <item name="bubbleOut_file" tinted="true" porterDuff="true" />
+
+        <item name="bubbleOut_ticks" tinted="true" porterDuff="true" />
+        <item name="bubbleOut_ticksRead" tinted="true" porterDuff="true" />
+        <item name="bubbleOut_messageAuthor" tinted="true" porterDuff="true" />
+        <item name="bubbleOut_messageAuthorPsa" />
+
+        <!-- ATTACH MENU -->
+
+        <item name="attachText" />
+        <item name="attachPhoto" />
+        <item name="attachFile" />
+        <item name="attachLocation" />
+        <item name="attachContact" />
+        <item name="attachInlineBot" />
+        <item name="fileAttach" />
+
+        <!-- MEDIA & FILES -->
+
+        <item name="file" tinted="true" porterDuff="true" />
+        <item name="fileYellow" />
+        <item name="fileGreen" />
+        <item name="fileRed" />
+
+        <item name="waveformActive" tinted="true" porterDuff="true" />
+        <item name="waveformInactive" tinted="true" porterDuff="true" />
+
+        <!-- INSTANT VIEW -->
+
+        <item name="iv_pageTitle" />
+        <item name="iv_pageSubtitle" />
+        <item name="iv_pageAuthor" />
+        <item name="iv_pageFooter" />
+        <item name="iv_text" />
+        <item name="iv_textCode" />
+        <item name="iv_textMarked" />
+        <item name="iv_textMarkedLink" tinted="true" />
+        <item name="iv_textMarkedLinkPressHighlight" tinted="true" />
+        <item name="iv_textMarkedBackground" />
+        <item name="iv_textReference" />
+        <item name="iv_textReferenceBackground" />
+        <item name="iv_textReferenceOutline" />
+        <item name="iv_textReferenceBackgroundPressed" />
+        <item name="iv_textReferenceOutlinePressed" />
+        <item name="iv_textLink" tinted="true" />
+        <item name="iv_textLinkPressHighlight" tinted="true" />
+        <item name="iv_header" />
+        <item name="iv_separator" />
+        <item name="iv_icon" />
+        <item name="iv_preBlockBackground" />
+        <item name="iv_chatLinkBackground" />
+        <item name="iv_chatLinkOverlayBackground" />
+        <item name="iv_textCodeBackground" />
+        <item name="iv_textCodeBackgroundPressed" />
+        <item name="iv_blockQuote" />
+        <item name="iv_blockQuoteLine" />
+        <item name="iv_pullQuote" />
+        <item name="iv_caption" />
+
+        <item name="ivHeaderIcon" /> <!-- See InstantViewController.java -->
+        <item name="ivHeader" />
+
+        <!-- THEME RADIOS -->
+
+        <item name="themeClassic" />
+        <item name="themeBlue" />
+        <item name="themeRed" />
+        <item name="themeOrange" />
+        <item name="themeGreen" />
+        <item name="themePink" />
+        <item name="themeCyan" />
+        <item name="themeNightBlue" />
+        <item name="themeNightBlack" />
+
+        <item name="themeBlackWhite" />
+        <item name="themeWhiteBlack" />
+
+        <!-- CONSTANT -->
+
+        <item name="caption_textLink" />
+        <item name="caption_textLinkPressHighlight" />
+
+        <item name="transparentEditor" />
+        <item name="sectionedScrollBar" />
+        <item name="sectionedScrollBarActive" />
+        <item name="sectionedScrollBarActiveContent" />
+        <item name="statusBar" />
+        <item name="statusBarContent" />
+        <item name="statusBarLegacy" />
+        <item name="statusBarLegacyContent" />
+
+        <item name="white" porterDuff="true" /> <!-- Just white -->
+        <item name="black" />
+
+        <item name="photoShadowTint1" />
+        <item name="photoShadowTint2" />
+        <item name="photoShadowTint3" />
+        <item name="photoShadowTint4" />
+        <item name="photoShadowTint5" />
+        <item name="photoShadowTint6" />
+        <item name="photoShadowTint7" />
+        <item name="photoHighlightTint1" />
+        <item name="photoHighlightTint2" />
+        <item name="photoHighlightTint3" />
+        <item name="photoHighlightTint4" />
+        <item name="photoHighlightTint5" />
+        <item name="photoHighlightTint6" />
+        <item name="photoHighlightTint7" />
+
+        <item name="ledBlue" />
+        <item name="ledOrange" />
+        <item name="ledYellow" />
+        <item name="ledGreen" />
+        <item name="ledCyan" />
+        <item name="ledRed" />
+        <item name="ledPurple" />
+        <item name="ledPink" />
+        <item name="ledWhite" />
+
+        <item name="videoSliderActive" />
+        <item name="videoSliderInactive" />
+    </colors>
+</xml>

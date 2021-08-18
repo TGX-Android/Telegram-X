@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="splash">#ff1C2733</color>
+    <color name="navigation_bar">#ff151D26</color>
+    <color name="status_bar">#ff19222C</color>
+    <color name="apps_list">#ff222E3C</color>
+</resources>

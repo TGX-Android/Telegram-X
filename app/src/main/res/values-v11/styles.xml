@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <style name="AppTheme" parent="android:Theme.Holo.NoActionBar">
+    <item name="android:windowContentOverlay">@null</item>
+    <item name="android:windowActionBarOverlay">true</item>
+  </style>
+
+  <style name="DialogTheme" parent="android:Theme.Holo.Dialog">
+    <item name="android:textColorLink">#ff039be5</item>
+    <item name="android:windowBackground">@drawable/transparent</item>
+  </style>
+  <style name="DialogThemeDark" parent="android:Theme.Holo.Dialog">
+    <item name="android:textColorLink">#ff039be5</item>
+    <item name="android:windowBackground">@drawable/transparent</item>
+  </style>
+
+  <style name="TransparentTheme" parent="@style/AppTheme">
+    <item name="android:windowIsTranslucent">true</item>
+    <item name="android:windowBackground">@android:color/transparent</item>
+    <item name="android:windowContentOverlay">@null</item>
+    <item name="android:windowCloseOnTouchOutside">false</item>
+    <item name="android:colorBackgroundCacheHint">@null</item>
+    <item name="android:windowNoTitle">true</item>
+    <item name="android:windowIsFloating">true</item>
+    <item name="android:backgroundDimEnabled">false</item>
+    <item name="android:windowAnimationStyle">@null</item>
+    <item name="android:windowActionBar">false</item>
+  </style>
+</resources>

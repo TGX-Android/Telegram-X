@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <color name="header_light_pressed">#88ffffff</color>
+  <color name="swirl_ridgeColor">#ff000000</color>
+  <color name="swirl_errorColor">#ff000000</color>
+
+  <color name="splash">#FFFFFFFF</color>
+  <color name="navigation_bar">#ff000000</color>
+  <color name="status_bar">#ff346C92</color>
+  <color name="apps_list">#ff222E3C</color>
+
+  <!-- differ in colors/values-v21 -->
+</resources>

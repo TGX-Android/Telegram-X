@@ -1,0 +1,22 @@
+!
+id: 7
+name: "Green"
+time: 1601377364
+tinted: true
+@
+parentTheme: 1
+#
+badge, bubbleIn_textLink, bubbleOut_inlineOutline, bubbleOut_textLink, bubbleOut_ticks, bubbleOut_ticksRead, bubbleOut_waveformActive, chatListAction, checkActive, iconActive, inlineOutline, iv_textLink, iv_textMarkedLink, messageSwipeBackground, online, profileSectionActiveContent, textLink, ticks, ticksRead, togglerActive, unreadText, waveformActive: #4CAF50
+bubbleIn_progress, bubbleOut_chatCorrectChosenFilling, bubbleOut_chatCorrectFilling, bubbleOut_chatVerticalLine, chatListVerify, circleButtonActive, circleButtonRegular, circleButtonTheme, controlActive, headerBarCallActive, inputActive, messageCorrectChosenFilling, messageCorrectFilling, messageVerticalLine, progress, seekDone, sliderActive, snackbarUpdate, textNeutral: #66BB6A
+bubbleIn_textLinkPressHighlight, bubbleOut_textLinkPressHighlight, iv_textLinkPressHighlight, iv_textMarkedLinkPressHighlight, textLinkPressHighlight: #4CAF5040
+bubbleOut_background: #EFFDDE
+bubbleOut_file, file, playerButtonActive: #78C67F
+bubbleOut_inlineIcon, bubbleOut_inlineText, bubbleOut_messageAuthor, chatSendButton, headerBackground, inlineIcon, inlineText, messageAuthor, notification, notificationLink, notificationPlayer, passcode, profileSectionActive: #43A047
+bubbleOut_outline: #B6CBDD
+bubbleOut_progress, bubbleOut_separator, bubbleOut_time: #6CC264
+bubbleOut_waveformInactive, textSelectionHighlight, waveformInactive: #C8E6C9
+messageSelection: #66BB6A10
+promo, textSearchQueryHighlight: #81C784
+seekReady: #D9EEDA
+togglerActiveBackground: #A5D6A7
+unread: #E8F5E9

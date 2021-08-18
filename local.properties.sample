@@ -1,0 +1,28 @@
+## This file must *NOT* be checked into Version Control Systems,
+# as it contains information specific to your local configuration.
+#
+# Location of the SDK. This is only used by Gradle.
+# For customization when using a Version Control System, please read the
+# header note.
+# Path to Android SDK
+sdk.dir=
+
+## Path to the keystore file
+keystore.file=
+
+## Package name
+app.id=com.example.app
+
+## Project name
+app.name=Example App
+
+## Link to the app's website. If unavailable, link to the market page could be used.
+app.download_url=https://example.com/android
+
+## Obtain credentials to access Telegram API:
+# https://core.telegram.org/api/obtaining_api_id
+telegram.api_id=
+telegram.api_hash=
+
+# YouTube API key
+youtube.api_key=

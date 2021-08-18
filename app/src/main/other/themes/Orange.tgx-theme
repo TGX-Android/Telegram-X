@@ -1,0 +1,22 @@
+!
+id: 6
+name: "Orange"
+time: 1601377361
+tinted: true
+@
+parentTheme: 1
+#
+badge, bubbleIn_textLink, bubbleOut_file, bubbleOut_messageAuthor, bubbleOut_textLink, bubbleOut_ticks, bubbleOut_ticksRead, chatListAction, chatSendButton, circleButtonActive, circleButtonRegular, circleButtonTheme, file, headerBarCallActive, iconActive, iv_textLink, iv_textMarkedLink, messageAuthor, online, playerButtonActive, snackbarUpdate, textLink, ticks, ticksRead, togglerActive: #F4511E
+bubbleIn_progress, bubbleOut_inlineOutline, bubbleOut_waveformActive, checkActive, inlineOutline, inputActive, profileSectionActiveContent, progress, textNeutral, unreadText, waveformActive: #FF5722
+bubbleIn_textLinkPressHighlight, bubbleOut_textLinkPressHighlight, iv_textLinkPressHighlight, iv_textMarkedLinkPressHighlight, textLinkPressHighlight: #F4511E40
+bubbleOut_background: #FBE2E0
+bubbleOut_chatCorrectFilling, bubbleOut_chatCorrectChosenFilling, bubbleOut_chatVerticalLine, chatListVerify, controlActive, messageSwipeBackground, messageVerticalLine, promo, seekDone, sliderActive, textSearchQueryHighlight: #FF7043
+bubbleOut_inlineIcon, bubbleOut_inlineText, inlineIcon, inlineText, profileSectionActive: #E64A19
+bubbleOut_progress, bubbleOut_separator, bubbleOut_time: #BF9081
+bubbleOut_waveformInactive, textSelectionHighlight, waveformInactive: #FFCCBC
+headerBackground, notification, notificationLink, notificationPlayer, passcode: #D84315
+messageSelection: #FF572210
+seekReady: #FFDBD0
+textNegative: #E53935
+togglerActiveBackground: #FFAB91
+unread: #FBE9E7

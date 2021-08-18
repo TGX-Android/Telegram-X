@@ -1,0 +1,191 @@
+!
+id: 1
+name: "Blue"
+time: 1601377327
+@
+bubbleCorner: 18
+bubbleCornerLegacy, bubbleCornerMerged: 6
+bubbleDateCorner, dateCorner: 13
+bubbleOuterMargin: 8
+bubbleOutline, bubbleUnreadShadow, dark, lightStatusBar, parentTheme, replaceShadowsWithSeparators, wallpaperUsageId: 0
+bubbleOutlineSize, wallpaperOverrideButton, wallpaperOverrideDate, wallpaperOverrideMediaReply, wallpaperOverrideOverlay, wallpaperOverrideTime, wallpaperOverrideUnread: 1
+imageCorner: 3
+shadowDepth: 0.5
+subtitleAlpha: 0.8
+#
+attachContact: #E37475
+attachFile, fileYellow: #F1AE53
+attachInlineBot: #7A87C9
+attachLocation, fileGreen: #69BA6D
+attachPhoto: #68B6F3
+attachText, avatar_content, badgeFailedText, badgeMutedText, badgeText, bubble_buttonText, bubble_buttonText_noWallpaper, bubble_dateText, bubble_dateText_noWallpaper, bubble_mediaOverlayText, bubble_mediaReplyText, bubble_mediaReplyText_noWallpaper, bubble_mediaTimeText, bubble_mediaTimeText_noWallpaper, bubble_messageCheckOutline, bubble_overlayText, bubble_overlayText_noWallpaper, bubble_unreadText, bubble_unreadText_noWallpaper, bubbleIn_background, bubbleOut_chatCorrectChosenFillingContent, bubbleOut_chatCorrectFillingContent, bubbleOut_chatNegativeFillingContent, bubbleOut_chatNeutralFillingContent, chatBackground, checkContent, circleButtonChat, circleButtonNegativeIcon, circleButtonNewChannelIcon, circleButtonNewChatIcon, circleButtonNewGroupIcon, circleButtonNewSecretIcon, circleButtonOverlay, circleButtonPositiveIcon, circleButtonRegularIcon, circleButtonThemeIcon, controlContent, filling, fillingPositiveContent, headerButton, headerIcon, headerLightBackground, headerTabActive, headerTabActiveText, headerText, inlineContentActive, messageCorrectChosenFillingContent, messageCorrectFillingContent, messageNegativeLineContent, messageNeutralFillingContent, messageSwipeContent, overlayFilling, passcodeIcon, passcodeText, promoContent, snackbarUpdateAction, snackbarUpdateText, statusBarContent, statusBarLegacyContent, togglerNegativeContent, togglerPositiveContent, tooltip_text, videoSliderActive, white: #FFF
+avatarArchive, avatarReplies, avatarReplies_big, avatarSavedMessages, avatarSavedMessages_big, tooltip_textLink: #61A9E1
+avatarArchivePinned, avatarInactive, avatarInactive_big: #ADB1B6
+avatarBlue, avatarBlue_big, nameBlue: #5E9CD4
+avatarCyan, avatarCyan_big, nameCyan: #64BACE
+avatarGreen, avatarGreen_big, bubbleOut_messageAuthorPsa, messageAuthorPsa, nameGreen: #7ABB58
+avatarOrange, avatarOrange_big, nameOrange: #F29154
+avatarPink, avatarPink_big, namePink: #D979A3
+avatarRed, avatarRed_big, nameRed: #EF615C
+avatarViolet, avatarViolet_big: #9388E1
+avatarYellow, avatarYellow_big, nameYellow: #F5AD3D
+background, iv_chatLinkBackground, iv_textReferenceBackground: #F2F2F2
+background_icon: #9DA1A5
+background_text: #71787E
+background_textLight: #7C8288
+badge: #29B6F6
+badgeFailed: #D32F2F
+badgeMuted: #BEC2C7
+black, bubbleIn_text, bubbleOut_text, iv_blockQuoteLine, iv_header, iv_pageTitle, iv_text, iv_textMarked, iv_textReference, ivHeader, playerButton, text, themeBlackWhite: #000
+bubble_button, bubble_button_noWallpaper, bubble_buttonRipple, bubble_buttonRipple_noWallpaper, bubble_date, bubble_date_noWallpaper, bubble_mediaOverlay, bubble_mediaReply, bubble_mediaReply_noWallpaper, bubble_mediaTime, bubble_mediaTime_noWallpaper, bubble_overlay, bubble_overlay_noWallpaper, bubble_unread, bubble_unread_noWallpaper: #00000040
+bubble_chatBackground, drawer, drawerText, headerPickerBackground, headerPickerText, sectionedScrollBarActive, sectionedScrollBarActiveContent, tooltip_outline: #0000
+bubble_chatSeparator, shareSeparator: #DEE3EAAA
+bubble_messageCheckOutlineNoWallpaper: #66737C
+bubble_messageSelection, bubble_messageSelectionNoWallpaper: #41A9EE33
+bubbleIn_outline, bubbleOut_outline: #BECFE0
+bubbleIn_pressed, bubbleOut_pressed: #00000010
+bubbleIn_progress, chatSendButton, progress: #1EAAF1
+bubbleIn_separator, chatSeparator, inputInactive, iv_separator, separator: #DEE3EA
+bubbleIn_textLink, bubbleOut_textLink, iv_textLink, iv_textMarkedLink, textLink: #569ACE
+bubbleIn_textLinkPressHighlight, bubbleOut_textLinkPressHighlight, iv_textLinkPressHighlight, textLinkPressHighlight: #569ACE30
+bubbleIn_time, textPlaceholder: #A1AAB3
+bubbleOut_background: #E4F4FE
+bubbleOut_chatCorrectChosenFilling, bubbleOut_chatCorrectFilling, bubbleOut_chatVerticalLine, bubbleOut_inlineIcon, inlineIcon, messageCorrectChosenFilling, messageCorrectFilling, messageVerticalLine: #50AADF
+bubbleOut_chatNegativeFilling, fillingNegative, messageNegativeLine: #EC5454
+bubbleOut_file, file: #54A6E6
+bubbleOut_inlineOutline, inlineOutline: #24A2DC
+bubbleOut_inlineText, bubbleOut_messageAuthor, inlineText, messageAuthor: #2894D7
+bubbleOut_progress, bubbleOut_separator, bubbleOut_time: #81A4BE
+bubbleOut_ticks, bubbleOut_ticksRead: #4292D3
+bubbleOut_waveformActive, waveformActive: #68ADE1
+bubbleOut_waveformInactive, waveformInactive: #D5E5EF
+caption_textLink: #DADADA
+caption_textLinkPressHighlight: #FFFFFF1A
+chatKeyboard: #F5F7F8
+chatKeyboardButton: #E4E7E9
+chatListAction: #039BE5
+chatListIcon, chatListMute: #B1B6BC
+chatListVerify, sliderActive: #51B5F0
+checkActive: #41A9EE
+circleButtonChatIcon, circleButtonOverlayIcon, controlInactive, headerLightIcon, icon, iv_icon, themeNightBlack: #7D858F
+circleButtonNegative: #D93644
+circleButtonNewChannel: #FDB22B
+circleButtonNewChat, inputNegative: #ED5454
+circleButtonNewGroup: #FD8E25
+circleButtonNewSecret: #50AE55
+circleButtonPositive: #64BA57
+circleButtonActive, circleButtonRegular, circleButtonTheme, snackbarUpdate: #4FA9E6
+circleButtonActiveIcon: #FFF
+confettiBlue: #468CF7
+confettiCyan: #5DBAE4
+confettiGreen: #72B574
+confettiPurple: #9025C9
+confettiRed: #E93E5B
+confettiYellow: #F6CB46
+controlActive, themeBlue, themeClassic: #35B7F3
+fileAttach: #D1DCEA
+fileRed: #E67172
+fillingPositive: #61A7E0
+fillingPressed: #F3F3F3
+headerBackground, notification, notificationLink, notificationPlayer, passcode: #3F83B1
+headerBarCallActive: #79C1FA
+headerBarCallIncoming: #0BC35B
+headerBarCallMuted: #8E969E
+headerButtonIcon: #7D858E
+headerLightText: #7E858E
+headerPlaceholder: #00000020
+headerRemoveBackground: #AF6464
+headerRemoveBackgroundHighlight: #DB7D7E
+headerTabInactiveText: #FFFC
+iconActive, ticks, ticksRead: #31A5E9
+iconLight: #A4ABB3
+iconNegative: #E23D37
+iconPositive: #4FB358
+inputActive: #63BAF7
+inputPositive, notificationSecure, textSecure: #18A81F
+introSection: #DEDEDE
+introSectionActive: #8A8A8F
+iv_blockQuote: #333
+iv_caption, iv_pageAuthor, iv_pageFooter: #79828B
+iv_chatLinkOverlayBackground: #000A
+iv_pageSubtitle: #767F88
+iv_preBlockBackground: #F5F8FC
+iv_pullQuote: #666
+iv_textCode: #C61717
+iv_textCodeBackground: #FEEAE4
+iv_textCodeBackgroundPressed: #FAE6E0
+iv_textMarkedBackground, iv_textMarkedLinkPressHighlight: #FF07
+iv_textReferenceBackgroundPressed: #E0E0E0
+iv_textReferenceOutline: #0007
+iv_textReferenceOutlinePressed: #0009
+ivHeaderIcon: #808080
+ledBlue: #46BEFF
+ledCyan: #40EDF6
+ledGreen: #79D660
+ledOrange: #FF8E01
+ledPink: #FF4F96
+ledPurple: #D274F9
+ledRed: #F04444
+ledWhite: #BBB
+ledYellow: #FFCE1F
+messageSelection: #24A2DC10
+messageSwipeBackground: #6BADE0
+nameInactive: #787878
+nameViolet: #9388E2
+online: #54CA63
+photoHighlightTint1: #EF9286
+photoHighlightTint2: #EACEA2
+photoHighlightTint3: #F2E17C
+photoHighlightTint4: #A4EDAE
+photoHighlightTint5: #89DCE5
+photoHighlightTint6: #2E8BC8
+photoHighlightTint7: #CD98E5
+photoShadowTint1: #FF4D4D
+photoShadowTint2: #F48022
+photoShadowTint3: #FFCD00
+photoShadowTint4: #81D281
+photoShadowTint5: #71C5D6
+photoShadowTint6: #0072BC
+photoShadowTint7: #662D91
+placeholder: #0000000C
+playerButtonActive: #59A8E2
+playerCoverIcon: #949AA2
+playerCoverPlaceholder: #EBECEE
+previewBackground: #FFFFFFC0
+profileSectionActive: #4FB8EA
+profileSectionActiveContent: #1B9CE2
+promo, togglerActive, togglerPositive: #49A9E5
+sectionedScrollBar: #0004
+seekDone: #5FA5D9
+seekEmpty: #ECEDEE
+seekReady: #D4DDE2
+sliderInactive: #B1B5BA
+statusBar, statusBarLegacy: #0000002C
+textLight: #838C96
+textNegative: #E45356
+textNeutral: #3E93D4
+textSearchQueryHighlight: #3A99DC
+textSelectionHighlight: #ACE0F4
+themeCyan: #00ACC1
+themeGreen: #43A047
+themeNightBlue: #456A93
+themeOrange: #FB8C00
+themePink: #F06292
+themeRed: #E52929
+themeWhiteBlack: #B0BEC5
+togglerActiveBackground, togglerPositiveBackground: #A1D5F7
+togglerInactive: #E8E8E8
+togglerInactiveBackground: #C7C7C7
+togglerNegative: #E53935
+togglerNegativeBackground: #EF9A9A
+tooltip: #000D
+tooltip_textLinkPressHighlight: #61A9E144
+transparentEditor: #00000070
+unread: #EBF2F7
+unreadText: #579BCF
+videoSliderInactive: #FFF4
+wp_cats, wp_circlesBlue: #7393AC66
+wp_catsBeige: #71675066
+wp_catsGreen: #59843D66
+wp_catsOrange: #94673F66
+wp_catsPink: #B5779566

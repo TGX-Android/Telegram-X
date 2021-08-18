@@ -1,0 +1,25 @@
+!
+id: 5
+name: "Red"
+time: 1601377358
+tinted: true
+@
+parentTheme: 1
+#
+badge, bubbleIn_progress, bubbleOut_file, bubbleOut_waveformActive, chatListAction, chatSendButton, circleButtonActive, circleButtonRegular, circleButtonTheme, controlActive, file, fileRed, headerBarCallActive, playerButtonActive, profileSectionActive, progress, promo, snackbarUpdate, textSearchQueryHighlight, waveformActive: #F44336
+bubbleIn_textLink, bubbleOut_chatCorrectChosenFilling, bubbleOut_chatCorrectFilling, bubbleOut_chatVerticalLine, bubbleOut_textLink, chatListVerify, inputActive, iv_textLink, iv_textMarkedLink, messageCorrectChosenFilling, messageCorrectFilling, messageVerticalLine, seekDone, sliderActive, textLink, textNeutral: #EF5350
+bubbleIn_textLinkPressHighlight, bubbleOut_textLinkPressHighlight, iv_textLinkPressHighlight, iv_textMarkedLinkPressHighlight, textLinkPressHighlight: #EF535040
+bubbleOut_background: #FEE3E3
+bubbleOut_inlineIcon, inlineIcon, messageSwipeBackground: #D32F2F
+bubbleOut_inlineOutline, bubbleOut_inlineText, bubbleOut_messageAuthor, checkActive, inlineOutline, inlineText, messageAuthor, online, profileSectionActiveContent, togglerActive, unreadText: #E53935
+bubbleOut_progress, bubbleOut_separator, bubbleOut_time: #BE8081
+bubbleOut_ticks, bubbleOut_ticksRead, iconActive, ticks, ticksRead: #EA3935
+bubbleOut_waveformInactive: #FABDC2
+headerBackground, notification, notificationLink, notificationPlayer, passcode: #C62828
+messageSelection: #B71C1C10
+seekReady: #FBD4D3
+textNegative: #B71C1C
+textSelectionHighlight: #F4ACAC
+togglerActiveBackground: #EF9A9A
+unread: #FFEBEE
+waveformInactive: #FFCDD2

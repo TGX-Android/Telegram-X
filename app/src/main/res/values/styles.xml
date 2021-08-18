@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <style name="AppTheme" parent="@android:style/Theme.Light.NoTitleBar" />
+  <style name="DialogTheme" parent="@android:style/Theme.Dialog" />
+  <style name="DialogThemeDark" parent="@android:style/Theme.Dialog" />
+
+  <style name="WhiteRecyclerTheme" parent="@style/AppTheme" />
+
+  <style name="TransparentTheme" parent="@style/AppTheme">
+    <item name="android:windowIsTranslucent">true</item>
+    <item name="android:windowBackground">@android:color/transparent</item>
+    <item name="android:windowContentOverlay">@null</item>
+    <item name="android:windowCloseOnTouchOutside">false</item>
+    <item name="android:colorBackgroundCacheHint">@null</item>
+    <item name="android:windowNoTitle">true</item>
+    <item name="android:windowIsFloating">true</item>
+    <item name="android:backgroundDimEnabled">false</item>
+    <item name="android:windowAnimationStyle">@null</item>
+    <item name="android:windowActionBar">false</item>
+  </style>
+</resources>

@@ -1,0 +1,23 @@
+!
+id: 3
+name: "Black White"
+time: 1601809487
+@
+bubbleOutline, replaceShadowsWithSeparators: 1
+parentTheme: 2
+#
+badgeFailed: #7070A0
+badgeMuted, togglerInactiveBackground: #707070
+bubble_chatSeparator, bubbleIn_outline, bubbleIn_separator, bubbleOut_outline, chatSeparator, inputInactive, separator, shareSeparator: #272727
+bubbleIn_textLink, bubbleOut_textLink, iv_textLink, iv_textMarkedLink, textLink: #A0A0A0
+bubbleIn_textLinkPressHighlight, iv_textLinkPressHighlight, textLinkPressHighlight: #A0A0A077
+bubbleOut_waveformActive, messageAuthor, notification, notificationPlayer, waveformActive: #FFF
+chatListIcon, chatListMute: #777
+circleButtonNewChannel, circleButtonNewChat, circleButtonNewGroup, circleButtonNewSecret: #1E1E1E
+file, fileGreen, fileRed, fileYellow: #2A2A2A
+filling, headerLightBackground: #000
+headerBackground, passcode: #101010
+iconLight: #5B5B5B
+messageSelection: #FFFFFF1A
+togglerActiveBackground: #BABABA
+togglerInactive: #909090

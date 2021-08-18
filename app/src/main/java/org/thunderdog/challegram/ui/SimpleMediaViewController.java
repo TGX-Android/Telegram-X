@@ -1,0 +1,134 @@
+package org.thunderdog.challegram.ui;
+
+import android.content.Context;
+import android.view.View;
+
+import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.loader.ImageFile;
+import org.thunderdog.challegram.mediaview.MediaCellView;
+import org.thunderdog.challegram.mediaview.data.MediaItem;
+import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.widget.ForceTouchView;
+
+/**
+ * Date: 3/10/18
+ * Author: default
+ */
+
+public class SimpleMediaViewController extends ViewController<SimpleMediaViewController.Args> implements ForceTouchView.PreviewDelegate {
+  private static final int MODE_PHOTO = 0;
+  private static final int MODE_GIF = 1;
+  private static final int MODE_PROFILE_PHOTO = 2;
+  private static final int MODE_CHAT_PHOTO = 3;
+
+  public static class Args {
+    protected final int mode;
+
+    public TdApi.Photo photo;
+    public TdApi.Animation animation;
+    public ImageFile previewFile;
+    public ImageFile targetFile;
+
+    public TdApi.ProfilePhoto profilePhoto;
+    public TdApi.ChatPhotoInfo chatPhoto;
+
+    public Args (TdApi.Photo photo, ImageFile previewFile, ImageFile targetFile) {
+      this.mode = MODE_PHOTO;
+      this.photo = photo;
+      this.previewFile = previewFile;
+      this.targetFile = targetFile;
+    }
+
+    public Args (TdApi.Animation animation, ImageFile previewFile) {
+      this.mode = MODE_GIF;
+      this.animation = animation;
+      this.previewFile = previewFile;
+    }
+
+    public Args (TdApi.ProfilePhoto profilePhoto) {
+      this.mode = MODE_PROFILE_PHOTO;
+      this.profilePhoto = profilePhoto;
+    }
+
+    public Args (TdApi.ChatPhotoInfo chatPhoto) {
+      this.mode = MODE_CHAT_PHOTO;
+      this.chatPhoto = chatPhoto;
+    }
+  }
+
+  public SimpleMediaViewController (Context context, Tdlib tdlib) {
+    super(context, tdlib);
+  }
+
+  @Override
+  public int getId () {
+    return R.id.controller_media_simple;
+  }
+
+  private MediaCellView cellView;
+
+  @Override
+  protected View onCreateView (Context context) {
+    cellView = new MediaCellView(context());
+    cellView.setBoundForceTouchContext(null);
+
+    MediaItem mediaItem = null;
+
+    Args args = getArgumentsStrict();
+    switch (args.mode) {
+      case MODE_PHOTO: {
+        mediaItem = MediaItem.valueOf(context(), tdlib, args.photo, null);
+        if (mediaItem.isLoaded()) {
+          mediaItem.setPreviewImageFile(args.targetFile);
+        } else {
+          mediaItem.setPreviewImageFile(args.previewFile);
+        }
+        break;
+      }
+      case MODE_GIF: {
+        if (TD.isFileLoaded(args.animation.animation)) {
+          cellView.setEnableEarlyLoad();
+        }
+        mediaItem = MediaItem.valueOf(context(), tdlib, args.animation, null);
+        break;
+      }
+      case MODE_PROFILE_PHOTO: {
+        mediaItem = new MediaItem(context(), tdlib, 0, args.profilePhoto);
+        break;
+      }
+      case MODE_CHAT_PHOTO: {
+        mediaItem = new MediaItem(context(), tdlib, 0, args.chatPhoto);
+        break;
+      }
+    }
+    if (mediaItem == null) {
+      throw new IllegalArgumentException();
+    }
+    mediaItem.download(true);
+    cellView.setMedia(mediaItem);
+    executeScheduledAnimation();
+    return cellView;
+  }
+
+  @Override
+  public void onPrepareForceTouchContext (ForceTouchView.ForceTouchContext context) {
+    cellView.setBoundForceTouchContext(context);
+    context.setAllowFullscreen(true);
+    context.setStateListener(cellView);
+    context.setBackgroundColor(0x70000000);
+  }
+
+  @Override
+  public boolean wouldHideKeyboardInForceTouchMode () {
+    return false;
+  }
+
+  @Override
+  public void destroy () {
+    super.destroy();
+    cellView.destroy();
+  }
+}
