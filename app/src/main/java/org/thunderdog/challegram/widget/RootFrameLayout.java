@@ -30,6 +30,7 @@ import me.vkryl.core.lambda.CancellableRunnable;
 public class RootFrameLayout extends FrameLayoutFix {
   private Object lastInsets;
 
+  public int partialBottomInset = 0;
   private boolean ignoreBottom, ignoreSystemNavigationBar, ignoreAll;
   private final ViewTreeObserver.OnPreDrawListener onPreDrawListener = () -> false;
 
@@ -73,10 +74,15 @@ public class RootFrameLayout extends FrameLayoutFix {
 
     if (Config.USE_FULLSCREEN_NAVIGATION && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       UI.setFullscreenIfNeeded(this);
+
       setOnApplyWindowInsetsListener((v, insets) -> {
         processWindowInsets(insets);
         return insets.consumeSystemWindowInsets();
       });
+
+      if (Config.USE_IME_ANIMATED_INSETS) {
+        setWindowInsetsAnimationCallback(new org.thunderdog.challegram.unsorted.WindowInsetsAnimationCallback(this));
+      }
     }
   }
 
@@ -253,7 +259,7 @@ public class RootFrameLayout extends FrameLayoutFix {
     lp.topMargin = topOnly ? 0 : wi.getSystemWindowInsetTop();
     lp.rightMargin = ignoreHorizontal ? 0 : wi.getSystemWindowInsetRight();
     int bottom = wi.getSystemWindowInsetBottom();
-    lp.bottomMargin = ignoreBottom || shouldIgnoreBottomMargin(child, bottom) ? 0 : bottom;
+    lp.bottomMargin = ignoreBottom || shouldIgnoreBottomMargin(child, bottom) ? 0 : (Config.USE_IME_ANIMATED_INSETS ? partialBottomInset : bottom);
     if (UI.getContext(getContext()).dispatchCameraMargins(child, lp.leftMargin, lp.topMargin, lp.rightMargin, bottom)) {
       lp.leftMargin = lp.topMargin = lp.rightMargin = lp.bottomMargin = 0;
     } else {

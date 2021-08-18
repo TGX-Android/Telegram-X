@@ -81,6 +81,7 @@ public class Config {
   public static final boolean WORKAROUND_NEED_MODIFY = true; // FIXME TDLib
 
   public static final boolean USE_FULLSCREEN_NAVIGATION = true;
+  public static final boolean USE_IME_ANIMATED_INSETS = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
   public static final boolean USE_FULLSCREEN_NAVIGATION_CONTENT = false; // BuildConfig.DEBUG;
   public static final boolean USE_TRANSLUCENT_NAVIGATION = false; // Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
 
