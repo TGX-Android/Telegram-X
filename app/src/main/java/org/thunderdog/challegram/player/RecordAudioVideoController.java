@@ -898,7 +898,9 @@ public class RecordAudioVideoController implements
     }
 
     final boolean needVideo = !inRaiseMode && preferVideoMode;
+
     if (needPermissions(needVideo, !inRaiseMode)) {
+      BaseActivity.showCameraPermissionTooltip(context, view, needVideo, false);
       return false;
     }
 

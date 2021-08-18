@@ -2387,12 +2387,37 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         U.requestPermissions(options.optionalMicrophone ? CameraController.VIDEO_ONLY_PERMISSIONS : CameraController.VIDEO_PERMISSIONS, result -> {
           if (result) {
             openCameraByTap(options);
+          } else {
+            showCameraPermissionTooltip(this, options.anchorView, false, options.optionalMicrophone);
           }
         });
         return true;
       }
     }
     return false;
+  }
+
+  public static void showCameraPermissionTooltip(BaseActivity context, View anchorView, boolean optionalCamera, boolean optionalMicrophone) {
+    int permissionMessageId = -1;
+
+    boolean rationaleCamera = U.needsPermissionRequest(Manifest.permission.CAMERA) && !optionalCamera;
+    boolean rationaleRecorder = U.needsPermissionRequest(Manifest.permission.RECORD_AUDIO) && !optionalMicrophone;
+
+    if (rationaleCamera && rationaleRecorder) {
+      permissionMessageId = R.string.SystemPermissionsMissingCameraMicrophone;
+    } else if (rationaleCamera) {
+      permissionMessageId = R.string.SystemPermissionsMissingCamera;
+    } else if (rationaleRecorder) {
+      permissionMessageId = R.string.SystemPermissionsMissingMicrophone;
+    }
+
+    if (permissionMessageId != -1) {
+      if (anchorView != null) {
+        context.tooltipManager().builder(anchorView).show(context.navigation.getCurrentStackItem(), context.tdlib, R.drawable.baseline_warning_24, Lang.getString(permissionMessageId));
+      } else {
+        UI.showToast(Lang.getString(permissionMessageId), Toast.LENGTH_SHORT);
+      }
+    }
   }
 
   public static int getAndroidOrientationPortrait () {
