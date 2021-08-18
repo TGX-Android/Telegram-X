@@ -17,6 +17,7 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
@@ -535,30 +536,31 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
 
   @Override
   public void onQrCodeScanned(String qrCode) {
+    if (!qrCode.startsWith("tg://")) return;
     tdlib().client().send(new TdApi.GetInternalLinkType(qrCode), result -> {
-      if (result instanceof TdApi.InternalLinkType) {
-        TdApi.InternalLinkType linkType = (TdApi.InternalLinkType) result;
-
-        if (linkType.getConstructor() == TdApi.InternalLinkTypeProxy.CONSTRUCTOR) {
+      switch (result.getConstructor()) {
+        case TdApi.InternalLinkTypeProxy.CONSTRUCTOR:
           runOnUiThreadOptional(() -> {
             TdApi.InternalLinkTypeProxy proxy = (TdApi.InternalLinkTypeProxy) result;
             tdlib().ui().openProxyAlert(this, proxy.server, proxy.port, proxy.type, TdlibUi.newProxyDescription(proxy.server, Integer.toString(proxy.port)).toString());
           });
-        } else if (linkType.getConstructor() == TdApi.InternalLinkTypeQrCodeAuthentication.CONSTRUCTOR) {
+          break;
+        case TdApi.InternalLinkTypeQrCodeAuthentication.CONSTRUCTOR:
           tdlib().client().send(new TdApi.ConfirmQrCodeAuthentication(qrCode), result2 -> {
             if (result2 instanceof TdApi.Session) {
               runOnUiThreadOptional(() -> {
                 TdApi.Session newSession = (TdApi.Session) result2;
                 sessions.add(0, newSession);
-                if (getArguments() != null) { getArguments().updateAuthorizations(sessions, currentSession); }
-                // TODO: smart list rebinding
-                adapter.removeRange(0, adapter.getItemCount());
+                if (getArguments() != null) getArguments().updateAuthorizations(sessions, currentSession);
                 buildCells();
                 UI.showCustomToast(Lang.getString(R.string.ScanQRAuthorizedToast, newSession.applicationName), Toast.LENGTH_LONG, 0);
               });
             }
           });
-        }
+          break;
+        default:
+          tdlib().ui().openTelegramUrl(new TdlibContext(context, tdlib), qrCode, null, null);
+          break;
       }
     });
   }
