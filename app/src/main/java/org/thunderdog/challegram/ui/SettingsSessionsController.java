@@ -540,15 +540,15 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
         TdApi.InternalLinkType linkType = (TdApi.InternalLinkType) result;
 
         if (linkType.getConstructor() == TdApi.InternalLinkTypeProxy.CONSTRUCTOR) {
-          UI.post(() -> {
+          runOnUiThreadOptional(() -> {
             TdApi.InternalLinkTypeProxy proxy = (TdApi.InternalLinkTypeProxy) result;
             tdlib().ui().openProxyAlert(this, proxy.server, proxy.port, proxy.type, TdlibUi.newProxyDescription(proxy.server, Integer.toString(proxy.port)).toString());
           });
         } else if (linkType.getConstructor() == TdApi.InternalLinkTypeQrCodeAuthentication.CONSTRUCTOR) {
           tdlib().client().send(new TdApi.ConfirmQrCodeAuthentication(qrCode), result2 -> {
             if (result2 instanceof TdApi.Session) {
-              TdApi.Session newSession = (TdApi.Session) result2;
-              UI.post(() -> {
+              runOnUiThreadOptional(() -> {
+                TdApi.Session newSession = (TdApi.Session) result2;
                 sessions.add(0, newSession);
                 if (getArguments() != null) { getArguments().updateAuthorizations(sessions, currentSession); }
                 // TODO: smart list rebinding
