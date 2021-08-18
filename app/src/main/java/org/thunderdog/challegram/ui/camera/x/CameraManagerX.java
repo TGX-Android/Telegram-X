@@ -290,7 +290,7 @@ public class CameraManagerX extends CameraManager<PreviewView> {
         // We probably don't want to take photos or videos while scanning QR codes. (Also, there are 3 use case limit in CameraX)
         this.camera = cameraProvider.bindToLifecycle((LifecycleOwner) context, cameraSelector, preview, imageAnalyzer);
       } else {
-        this.camera = cameraProvider.bindToLifecycle((LifecycleOwner) context, cameraSelector, preview, imageCapture, videoCapture, imageAnalyzer);
+        this.camera = cameraProvider.bindToLifecycle((LifecycleOwner) context, cameraSelector, preview, imageCapture, videoCapture);
       }
     } catch (Exception e) {
       Log.e(Log.TAG_CAMERA, "Use case binding failed", e);
