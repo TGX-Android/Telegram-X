@@ -1,9 +1,15 @@
 package org.thunderdog.challegram.ui.camera;
 
+import static android.content.Context.CAMERA_SERVICE;
+
 import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.graphics.ImageFormat;
+import android.hardware.Camera;
 import android.media.Image;
 import android.os.Build;
 
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.camera.core.ImageProxy;
 import androidx.core.content.ContextCompat;
@@ -31,7 +37,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-@RequiresApi(Build.VERSION_CODES.LOLLIPOP) // TODO: remove if legacy camera will be supported
 public class CameraQrBridge {
     public final ExecutorService backgroundExecutor = Executors.newSingleThreadExecutor();
 
@@ -58,6 +63,7 @@ public class CameraQrBridge {
         backgroundExecutor.shutdown();
     }
 
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     public void processImage(ImageProxy proxy) {
         @SuppressLint("UnsafeOptInUsageError") Image mediaImage = proxy.getImage();
 
@@ -67,14 +73,17 @@ public class CameraQrBridge {
         }
 
         if (isGmsImplementationSupported()) {
-            gmsImplementation(proxy, mediaImage);
+            gmsImplementation(InputImage.fromMediaImage(mediaImage, proxy.getImageInfo().getRotationDegrees()), proxy::close);
         } else {
-            try {
-                String match = zxingImplementation(proxy);
-                if (match != null && !match.isEmpty()) delegate.onQrCodeFound(match);
-            } catch (Exception ignored) {} finally {
-                proxy.close();
-            }
+            zxingImplementation(bufferAsBytes(proxy.getPlanes()[0].getBuffer()), proxy.getWidth(), proxy.getHeight());
+        }
+    }
+
+    public void processImage(byte[] data, int previewWidth, int previewHeight) {
+        if (isGmsImplementationSupported()) {
+            gmsImplementation(InputImage.fromByteArray(data, previewWidth, previewHeight, 0, ImageFormat.NV21), null);
+        } else {
+            zxingImplementation(data, previewWidth, previewHeight);
         }
     }
 
@@ -82,23 +91,33 @@ public class CameraQrBridge {
         return barcodeScanner != null;
     }
 
-    private void gmsImplementation(ImageProxy proxy, Image mediaImage) {
-        InputImage image = InputImage.fromMediaImage(mediaImage, proxy.getImageInfo().getRotationDegrees());
+    private void gmsImplementation(InputImage image, @Nullable Runnable onCompleteListener) {
         barcodeScanner.process(image).addOnSuccessListener(mainExecutor, barcodes -> {
             if (barcodes.isEmpty()) return;
             delegate.onQrCodeFound(barcodes.get(0).getRawValue());
-        }).addOnCompleteListener(result -> proxy.close());
+        }).addOnFailureListener(Throwable::printStackTrace).addOnCompleteListener(result -> {
+            if (onCompleteListener != null) onCompleteListener.run();
+        });
     }
 
-    private String zxingImplementation(ImageProxy proxy) throws FormatException, ChecksumException, NotFoundException {
+    private void zxingImplementation(byte[] data, int width, int height) {
+        backgroundExecutor.submit(() -> {
+            try {
+                String match = zxingImplementationImpl(data, width, height);
+                if (match != null && !match.isEmpty()) delegate.onQrCodeFound(match);
+            } catch (Exception ex) { ex.printStackTrace(); }
+        });
+    }
+
+    private String zxingImplementationImpl(byte[] data, int width, int height) throws FormatException, ChecksumException, NotFoundException {
         PlanarYUVLuminanceSource source = new PlanarYUVLuminanceSource(
-                bufferAsBytes(proxy.getPlanes()[0].getBuffer()),
-                proxy.getWidth(),
-                proxy.getHeight(),
+                data,
+                width,
+                height,
                 0,
                 0,
-                proxy.getWidth(),
-                proxy.getHeight(),
+                width,
+                height,
                 false
         );
 

@@ -248,7 +248,6 @@ public class CameraController extends ViewController implements CameraDelegate, 
   private boolean needLegacy () {
     if (forceLegacy || !Config.CAMERA_X_AVAILABLE)
       return true;
-    if (isInQrScanMode()) return false; // TODO: Implement QR scanning for legacy camera
     int type = Settings.instance().getCameraType();
     return type == Settings.CAMERA_TYPE_SYSTEM ? Settings.CAMERA_TYPE_DEFAULT == Settings.CAMERA_TYPE_LEGACY : type == Settings.CAMERA_TYPE_LEGACY;
   }
