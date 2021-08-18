@@ -208,6 +208,8 @@ dependencies {
     implementation("nl.dionsegijn:konfetti:1.2.6")
     // Transcoder: https://github.com/natario1/Transcoder/blob/master/docs/_about/changelog.md
     implementation("com.otaliastudios:transcoder:0.10.3")
+    // ZXing: https://github.com/zxing/zxing/
+    implementation("com.google.zxing:core:3.4.1")
 
     // YouTube: https://developers.google.com/youtube/android/player/
     implementation(files("thirdparty/YouTubeAndroidPlayerApi.jar"))

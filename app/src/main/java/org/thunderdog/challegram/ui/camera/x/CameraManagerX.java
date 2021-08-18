@@ -44,6 +44,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.camera.CameraDelegate;
 import org.thunderdog.challegram.ui.camera.CameraFeatures;
 import org.thunderdog.challegram.ui.camera.CameraManager;
+import org.thunderdog.challegram.ui.camera.CameraQrBridge;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.io.File;
@@ -83,8 +84,7 @@ public class CameraManagerX extends CameraManager<PreviewView> {
   private boolean originalFacing;
   private int lastAspectRatio;
   private Rational lastAspectRatioCustom;
-  private BarcodeScanner barcodeScanner;
-  private ExecutorService backgroundExecutor;
+  private CameraQrBridge cameraQrBridge;
 
   @Override
   public void openCamera () {
@@ -284,46 +284,12 @@ public class CameraManagerX extends CameraManager<PreviewView> {
             .build();
 
     if (delegate.useQrScanner()) {
-      if (barcodeScanner == null) {
-        barcodeScanner = BarcodeScanning.getClient(new BarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).build());
+      if (cameraQrBridge == null) {
+        cameraQrBridge = new CameraQrBridge(this);
       }
 
-      if (backgroundExecutor == null) {
-        backgroundExecutor = Executors.newSingleThreadExecutor();
-      }
-
-      imageAnalyzer.setAnalyzer(backgroundExecutor, proxy -> {
-        @SuppressLint("UnsafeOptInUsageError") Image mediaImage = proxy.getImage();
-
-        if (mediaImage == null) {
-          proxy.close();
-          return;
-        }
-
-        InputImage image = InputImage.fromMediaImage(mediaImage, proxy.getImageInfo().getRotationDegrees());
-        barcodeScanner.process(image).addOnSuccessListener(ContextCompat.getMainExecutor(context), barcodes -> {
-          if (barcodes.isEmpty()) return;
-          delegate.onQrCodeFound(barcodes.get(0).getRawValue());
-        }).addOnCompleteListener(result -> proxy.close());
-      });
+      imageAnalyzer.setAnalyzer(cameraQrBridge.backgroundExecutor, proxy -> cameraQrBridge.processImage(proxy));
     }
-
-
-    /*ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
-            .setTargetRotation(getSurfaceRotation())
-            .setTargetAspectRatio(aspectRatio)
-            .build();
-    AtomicBoolean reportedFirstFrame = new AtomicBoolean();
-    imageAnalysis.setAnalyzer(backgroundExecutor, proxy -> {
-      proxy.close();
-      if (!reportedFirstFrame.getAndSet(true)) {
-        UI.post(() -> {
-          if (this.contextId == contextId && isOpen && !isPaused) {
-            delegate.onRenderedFirstFrame();
-          }
-        });
-      }
-    });*/
 
     lastAspectRatio = aspectRatio;
     lastAspectRatioCustom = aspectRatioCustom;
@@ -612,18 +578,9 @@ public class CameraManagerX extends CameraManager<PreviewView> {
 
   @Override
   public void destroy () {
-    if (backgroundExecutor != null) {
-      backgroundExecutor.shutdown();
-      backgroundExecutor = null;
-    }
-
-    if (barcodeScanner != null) {
-      barcodeScanner.close();
-      barcodeScanner = null;
-    }
-
-    if (cameraProvider != null) {
-      cameraProvider.unbindAll();
+    if (cameraQrBridge != null) {
+      cameraQrBridge.destroy();
+      cameraQrBridge = null;
     }
   }
 

@@ -506,7 +506,7 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
         break;
       }
       case R.id.btn_qrLogin: {
-        openInAppCamera(new CameraOpenOptions().anchor(v).noTrace(true).mode(CameraController.MODE_QR).qrCodeListener(this));
+        openInAppCamera(new CameraOpenOptions().anchor(v).noTrace(true).allowSystem(false).optionalMicrophone(true).mode(CameraController.MODE_QR).qrCodeListener(this));
         break;
       }
       case R.id.btn_session: {
