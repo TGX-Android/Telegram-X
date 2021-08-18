@@ -10,6 +10,7 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
@@ -466,7 +467,20 @@ public abstract class PageBlock implements MultipleViewProvider.InvalidateConten
       context.setClosed(true, parent, out, true);
       boolean needReportButton = !parent.tdlib().isKnownHost(url, true);
       if (instantView.viewCount > 0 || needReportButton) {
-        // TODO view counter + "Wrong layout?"
+        TdApi.RichTexts texts = new TdApi.RichTexts();
+
+        TdApi.RichText wrongLayout = new TdApi.RichTextUrl(new TdApi.RichTextPlain(Lang.getString(R.string.WrongLayout)), parent.tdlib().tMeUrl() + "previews?start=", false);
+        TdApi.RichText viewCount = new TdApi.RichTextPlain(Lang.plural(R.string.xViews, instantView.viewCount));
+
+        if (instantView.viewCount > 0 && needReportButton) {
+          texts.texts = new TdApi.RichText[] {
+                  viewCount, new TdApi.RichTextPlain(Lang.getString(R.string.format_ivAuthorDateSeparator)), wrongLayout
+          };
+        } else {
+          texts.texts = new TdApi.RichText[] { needReportButton ? wrongLayout : viewCount };
+        }
+
+        context.process(new PageBlockRichText(parent, new TdApi.PageBlockFooter(texts), false, null), out);
       }
     }
     return out;
