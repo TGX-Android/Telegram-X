@@ -3066,7 +3066,7 @@ public class TdlibUi extends Handler {
     });
   }
 
-  private static StringBuilder newProxyDescription (String server, String port) {
+  public static StringBuilder newProxyDescription (String server, String port) {
     StringBuilder desc = new StringBuilder("<b>");
     desc.append(Lang.getString(R.string.UseProxyServer));
     desc.append(":</b> ");
@@ -3085,7 +3085,7 @@ public class TdlibUi extends Handler {
     desc.append(value);
   }
 
-  private void openProxyAlert (TdlibDelegate context, String server, int port, TdApi.ProxyType type, String proxyDescription) {
+  public void openProxyAlert (TdlibDelegate context, String server, int port, TdApi.ProxyType type, String proxyDescription) {
     ViewController c = context.context().navigation().getCurrentStackItem();
     if (c == null)
       return;

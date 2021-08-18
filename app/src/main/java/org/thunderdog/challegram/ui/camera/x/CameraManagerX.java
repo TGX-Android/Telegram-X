@@ -1,8 +1,10 @@
 package org.thunderdog.challegram.ui.camera.x;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.media.Image;
 import android.os.Build;
 import android.os.SystemClock;
 import android.util.Rational;
@@ -16,6 +18,7 @@ import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraInfoUnavailableException;
 import androidx.camera.core.CameraSelector;
+import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageCapture;
 import androidx.camera.core.ImageCaptureException;
 import androidx.camera.core.Preview;
@@ -29,6 +32,11 @@ import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.mlkit.vision.barcode.Barcode;
+import com.google.mlkit.vision.barcode.BarcodeScanner;
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
+import com.google.mlkit.vision.barcode.BarcodeScanning;
+import com.google.mlkit.vision.common.InputImage;
 
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
@@ -41,6 +49,8 @@ import org.thunderdog.challegram.unsorted.Settings;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @TargetApi(Build.VERSION_CODES.LOLLIPOP)
 public class CameraManagerX extends CameraManager<PreviewView> {
@@ -73,6 +83,8 @@ public class CameraManagerX extends CameraManager<PreviewView> {
   private boolean originalFacing;
   private int lastAspectRatio;
   private Rational lastAspectRatioCustom;
+  private BarcodeScanner barcodeScanner;
+  private ExecutorService backgroundExecutor;
 
   @Override
   public void openCamera () {
@@ -265,6 +277,38 @@ public class CameraManagerX extends CameraManager<PreviewView> {
     } else {
       videoCapture.setTargetRotation(getSurfaceRotation());
     }
+
+    ImageAnalysis imageAnalyzer = new ImageAnalysis.Builder()
+            .setTargetRotation(getSurfaceRotation())
+            .setTargetAspectRatio(aspectRatio)
+            .build();
+
+    if (delegate.useQrScanner()) {
+      if (barcodeScanner == null) {
+        barcodeScanner = BarcodeScanning.getClient(new BarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).build());
+      }
+
+      if (backgroundExecutor == null) {
+        backgroundExecutor = Executors.newSingleThreadExecutor();
+      }
+
+      imageAnalyzer.setAnalyzer(backgroundExecutor, proxy -> {
+        @SuppressLint("UnsafeOptInUsageError") Image mediaImage = proxy.getImage();
+
+        if (mediaImage == null) {
+          proxy.close();
+          return;
+        }
+
+        InputImage image = InputImage.fromMediaImage(mediaImage, proxy.getImageInfo().getRotationDegrees());
+        barcodeScanner.process(image).addOnSuccessListener(ContextCompat.getMainExecutor(context), barcodes -> {
+          if (barcodes.isEmpty()) return;
+          delegate.onQrCodeFound(barcodes.get(0).getRawValue());
+        }).addOnCompleteListener(result -> proxy.close());
+      });
+    }
+
+
     /*ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
             .setTargetRotation(getSurfaceRotation())
             .setTargetAspectRatio(aspectRatio)
@@ -287,7 +331,12 @@ public class CameraManagerX extends CameraManager<PreviewView> {
     try {
       // A variable number of use-cases can be passed here -
       // camera provides access to CameraControl & CameraInfo
-      this.camera = cameraProvider.bindToLifecycle((LifecycleOwner) context, cameraSelector, preview, imageCapture, videoCapture);
+      if (delegate.useQrScanner()) {
+        // We probably don't want to take photos or videos while scanning QR codes. (Also, there are 3 use case limit in CameraX)
+        this.camera = cameraProvider.bindToLifecycle((LifecycleOwner) context, cameraSelector, preview, imageAnalyzer);
+      } else {
+        this.camera = cameraProvider.bindToLifecycle((LifecycleOwner) context, cameraSelector, preview, imageCapture, videoCapture, imageAnalyzer);
+      }
     } catch (Exception e) {
       Log.e(Log.TAG_CAMERA, "Use case binding failed", e);
       return;
@@ -563,6 +612,16 @@ public class CameraManagerX extends CameraManager<PreviewView> {
 
   @Override
   public void destroy () {
+    if (backgroundExecutor != null) {
+      backgroundExecutor.shutdown();
+      backgroundExecutor = null;
+    }
+
+    if (barcodeScanner != null) {
+      barcodeScanner.close();
+      barcodeScanner = null;
+    }
+
     if (cameraProvider != null) {
       cameraProvider.unbindAll();
     }

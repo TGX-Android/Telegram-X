@@ -89,13 +89,23 @@ public class CameraController extends ViewController implements CameraDelegate, 
     void onCameraSwitched (boolean isForward, boolean toFrontFace);
   }
 
+  public interface QrCodeListener {
+    void onQrCodeScanned (String qrCode);
+  }
+
   public static final int MODE_MAIN = 0;
   public static final int MODE_ROUND_VIDEO = 1;
   public static final int MODE_QR = 2;
 
   private boolean forceLegacy;
+  private boolean qrCodeFound;
   private int cameraMode;
   private @Nullable ReadyListener readyListener;
+  private @Nullable QrCodeListener qrCodeListener;
+
+  public void setQrListener (@Nullable QrCodeListener qrCodeListener) {
+    this.qrCodeListener = qrCodeListener;
+  }
 
   public void setMode (int mode, @Nullable ReadyListener readyListener) {
     this.readyListener = readyListener;
@@ -202,9 +212,15 @@ public class CameraController extends ViewController implements CameraDelegate, 
     } else {
       manager = new CameraManagerX(context, this);
     }
+
     contentView.addView(manager.getView());
     switchCameraButton.setCameraIconRes(manager.preferFrontFacingCamera());
     contentView.addView(cameraOverlayView);
+
+    if (isInQrScanMode()) {
+      switchCameraButton.setVisibility(View.GONE);
+      flashButton.setVisibility(View.GONE);
+    }
 
     updateControlMargins();
     updateControlsFactor();
@@ -226,6 +242,7 @@ public class CameraController extends ViewController implements CameraDelegate, 
   private boolean needLegacy () {
     if (forceLegacy || !Config.CAMERA_X_AVAILABLE)
       return true;
+    if (isInQrScanMode()) return false; // TODO: Implement QR scanning for legacy camera
     int type = Settings.instance().getCameraType();
     return type == Settings.CAMERA_TYPE_SYSTEM ? Settings.CAMERA_TYPE_DEFAULT == Settings.CAMERA_TYPE_LEGACY : type == Settings.CAMERA_TYPE_LEGACY;
   }
@@ -263,6 +280,10 @@ public class CameraController extends ViewController implements CameraDelegate, 
     get();
     Views.moveView(contentView, rootLayout, 0);
     manager.getView().requestLayout();
+  }
+
+  public boolean isInQrScanMode () {
+    return cameraMode == MODE_QR;
   }
 
   public CameraLayout getCameraLayout () {
@@ -513,7 +534,7 @@ public class CameraController extends ViewController implements CameraDelegate, 
     }
 
     boolean visible = availableCameraCount > 1;
-    switchCameraButton.setVisibility(visible ? View.VISIBLE : View.GONE);
+    if (!isInQrScanMode()) switchCameraButton.setVisibility(visible ? View.VISIBLE : View.GONE);
   }
 
   private boolean hasRenderedFrame;
@@ -793,6 +814,15 @@ public class CameraController extends ViewController implements CameraDelegate, 
       Settings.instance().markTutorialAsShown(Settings.TUTORIAL_HOLD_VIDEO);
       context().tooltipManager().builder(button).controller(this).show(tdlib, R.string.CameraButtonHint).hideDelayed();
     }
+
+    if (cameraMode == MODE_QR) {
+      qrCodeFound = false;
+      if (Settings.instance().needTutorial(Settings.TUTORIAL_QR_SCAN)) {
+        Settings.instance().markTutorialAsShown(Settings.TUTORIAL_QR_SCAN);
+        context().tooltipManager().builder(button).controller(this).show(tdlib, R.string.ScanQRCameraHint).hideDelayed();
+      }
+    }
+
     if (inEarlyInitialization) {
       inEarlyInitialization = false;
     } else {
@@ -1308,6 +1338,11 @@ public class CameraController extends ViewController implements CameraDelegate, 
     return isSecretChat();
   }
 
+  @Override
+  public boolean useQrScanner() {
+    return isInQrScanMode();
+  }
+
   // Shooting & Recording
 
   private boolean canTakeSnapshot () {
@@ -1472,6 +1507,16 @@ public class CameraController extends ViewController implements CameraDelegate, 
   }
 
   @Override
+  public void onQrCodeFound(String qrCodeData) {
+    Log.d("qrcode found %s [found already: %s]", qrCodeData, qrCodeFound);
+    if (qrCodeListener != null && !qrCodeData.isEmpty() && !qrCodeFound) {
+      qrCodeFound = true;
+      qrCodeListener.onQrCodeScanned(qrCodeData);
+      context.onBackPressed();
+    }
+  }
+
+  @Override
   public void onVideoCaptureEnded () {
     button.setInRecordMode(false);
   }
@@ -1543,7 +1588,9 @@ public class CameraController extends ViewController implements CameraDelegate, 
       return;
     }
 
-    if (canTakeSnapshot()) {
+    if (isInQrScanMode()) {
+      context.onBackPressed();
+    } else if (canTakeSnapshot()) {
       manager.setTakingPhoto(true);
       if (flashMode == CameraFeatures.FEATURE_FLASH_OFF) {
         takeSnapshotImpl(false);
@@ -1560,12 +1607,14 @@ public class CameraController extends ViewController implements CameraDelegate, 
 
   @Override
   public boolean onStartVideoCapture (CameraButton v) {
+    if (isInQrScanMode()) return false;
     Settings.instance().markTutorialAsComplete(Settings.TUTORIAL_HOLD_VIDEO);
     return manager.startVideoCapture(getOutputRotation());
   }
 
   @Override
   public void onFinishVideoCapture (CameraButton v) {
+    if (isInQrScanMode()) return;
     manager.finishOrCancelVideoCapture();
   }
 
@@ -1635,7 +1684,7 @@ public class CameraController extends ViewController implements CameraDelegate, 
 
   @Override
   public boolean onKeyUp (int keyCode, KeyEvent event) {
-    if (!isCameraOpen || viewController != null) {
+    if (!isCameraOpen || viewController != null || isInQrScanMode()) {
       return super.onKeyDown(keyCode, event);
     }
     switch (keyCode) {

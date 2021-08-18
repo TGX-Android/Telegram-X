@@ -413,6 +413,7 @@ public class Settings {
   public static final long TUTORIAL_HOLD_VIDEO = 1 << 15;
   public static final long TUTORIAL_PROXY_SPONSOR = 1 << 16;
   public static final long TUTORIAL_BRUSH_COLOR_TONE = 1 << 17;
+  public static final long TUTORIAL_QR_SCAN = 1 << 18;
 
   @Nullable
   private Long _tutorialFlags;
