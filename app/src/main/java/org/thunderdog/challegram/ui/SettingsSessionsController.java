@@ -554,7 +554,7 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
                 // TODO: smart list rebinding
                 adapter.removeRange(0, adapter.getItemCount());
                 buildCells();
-                UI.showToast(Lang.getString(R.string.ScanQRAuthorizedToast, newSession.applicationName), Toast.LENGTH_LONG);
+                UI.showCustomToast(Lang.getString(R.string.ScanQRAuthorizedToast, newSession.applicationName), Toast.LENGTH_LONG, 0);
               });
             }
           });

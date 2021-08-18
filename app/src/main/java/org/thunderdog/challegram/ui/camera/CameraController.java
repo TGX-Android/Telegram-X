@@ -826,6 +826,7 @@ public class CameraController extends ViewController implements CameraDelegate, 
       if (Settings.instance().needTutorial(Settings.TUTORIAL_QR_SCAN)) {
         Settings.instance().markTutorialAsShown(Settings.TUTORIAL_QR_SCAN);
         context().tooltipManager().builder(button).controller(this).show(tdlib, R.string.ScanQRCameraHint).hideDelayed();
+        Settings.instance().markTutorialAsComplete(Settings.TUTORIAL_QR_SCAN);
       }
     }
 
