@@ -4402,7 +4402,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private void openInviteLink () {
-    TdApi.ChatInviteLink inviteLink;
+    /*TdApi.ChatInviteLink inviteLink;
     switch (mode) {
       case MODE_CHANNEL:
       case MODE_SUPERGROUP:
@@ -4420,9 +4420,14 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         return;
       }
     }
-    InviteLinkController c = new InviteLinkController(context, tdlib);
-    c.setArguments(new InviteLinkController.Arguments(chat.id, inviteLink));
-    c.setCallback(this);
+
+    //InviteLinkController c = new InviteLinkController(context, tdlib);
+    //c.setArguments(new InviteLinkController.Arguments(chat.id, inviteLink));
+    //c.setCallback(this);
+    //navigateTo(c);*/
+
+    ChatLinksController c = new ChatLinksController(context, tdlib);
+    c.setArguments(new ChatLinksController.Args(chat.id, this));
     navigateTo(c);
   }
 
