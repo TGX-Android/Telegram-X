@@ -1,11 +1,7 @@
 package org.thunderdog.challegram.ui.camera;
 
-import static android.content.Context.CAMERA_SERVICE;
-
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.graphics.ImageFormat;
-import android.hardware.Camera;
 import android.media.Image;
 import android.os.Build;
 
@@ -95,7 +91,7 @@ public class CameraQrBridge {
         barcodeScanner.process(image).addOnSuccessListener(mainExecutor, barcodes -> {
             if (barcodes.isEmpty()) return;
             delegate.onQrCodeFound(barcodes.get(0).getRawValue());
-        }).addOnFailureListener(Throwable::printStackTrace).addOnCompleteListener(result -> {
+        }).addOnFailureListener(Log::e).addOnCompleteListener(result -> {
             if (onCompleteListener != null) onCompleteListener.run();
         });
     }
