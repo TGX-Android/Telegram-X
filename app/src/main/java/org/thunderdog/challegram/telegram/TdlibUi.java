@@ -1265,7 +1265,7 @@ public class TdlibUi extends Handler {
     String username = user.username;
     if (StringUtils.isEmpty(username))
       return;
-    String link = tdlib.getLink(username);
+    String link = tdlib.tMeUrl(username);
     String text, export;
     if (tdlib.isSelfUserId(user.id)) {
       text = Lang.getString(R.string.ShareTextMyLink2, link);
@@ -1283,7 +1283,7 @@ public class TdlibUi extends Handler {
   private void shareUser (ViewController context, TdApi.User user) {
     String username = tdlib.cache().userUsername(user.id);
     String name = tdlib.cache().userName(user.id);
-    String url = StringUtils.isEmpty(username) ? null : tdlib.getLink(username);
+    String url = StringUtils.isEmpty(username) ? null : tdlib.tMeUrl(username);
     if (TD.isBot(user)) {
       String text = Lang.getString(R.string.ShareTextLink, name, url);
       ShareController c = new ShareController(context.context(), context.tdlib());
@@ -1306,7 +1306,7 @@ public class TdlibUi extends Handler {
   }
 
   public void shareLanguageUrl (TdlibDelegate context, TdApi.LanguagePackInfo languagePackInfo) {
-    String url = context.tdlib().getLink("setlanguage/" + languagePackInfo.id);
+    String url = context.tdlib().tMeUrl("setlanguage/" + languagePackInfo.id);
     String text = Lang.getString(R.string.ShareTextLanguageLink, languagePackInfo.name, url);
     ShareController c = new ShareController(context.context(), context.tdlib());
     c.setArguments(new ShareController.Args(text).setShare(text, Lang.getString(R.string.ShareBtnLanguage)));
@@ -1314,7 +1314,7 @@ public class TdlibUi extends Handler {
   }
 
   public void shareStickerSetUrl (TdlibDelegate context, TdApi.StickerSetInfo stickerSet) {
-    String link = tdlib.getLink("addstickers/" + stickerSet.name);
+    String link = tdlib.tMeUrl("addstickers/" + stickerSet.name);
     String title = stickerSet.title;
     ShareController c = new ShareController(context.context(), context.tdlib());
     c.setArguments(new ShareController.Args(Lang.getString(R.string.ShareTextStickerLink2, title, link)).setShare(Lang.getString(R.string.ShareTextStickerLink, title, link), Lang.getString(R.string.ShareBtnStickerSet)));

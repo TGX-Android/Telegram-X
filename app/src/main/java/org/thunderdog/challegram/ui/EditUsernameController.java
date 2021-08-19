@@ -444,7 +444,7 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
       b.append("\n\n");
       b.append(Lang.getString(currentUsername.equals(sourceUsername) ? R.string.ThisLinkOpens : R.string.ThisLinkWillOpen));
       b.append(" ");
-      String tMeUrl = tdlib.getLink(currentUsername);
+      String tMeUrl = tdlib.tMeUrl(currentUsername);
       b.append(tMeUrl);
       b.setSpan(new CustomTypefaceSpan(Fonts.getRobotoRegular(), R.id.theme_color_textLink), b.length() - tMeUrl.length(), b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
       return b;

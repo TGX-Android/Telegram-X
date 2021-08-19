@@ -3954,7 +3954,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private boolean share (boolean needCopy) {
     String username = getProfileUsername();
     if (!StringUtils.isEmpty(username)) {
-      String link = tdlib.getLink(username);
+      String link = tdlib.tMeUrl(username);
       String name = tdlib.chatTitle(chat, false);
       String exportText;
       int textRes = R.string.ShareTextLink;

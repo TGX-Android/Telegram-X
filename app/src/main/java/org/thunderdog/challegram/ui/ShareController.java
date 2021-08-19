@@ -587,7 +587,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       .append("FN:").append(Strings.vcardEscape(TD.getUserName(firstName, lastName))).append("\r\n")
       .append("TEL;TYPE=cell:").append(Strings.vcardEscape(Strings.formatPhone(phoneNumber, true, true))).append("\r\n");
     if (!StringUtils.isEmpty(username)) {
-      b.append("URL:").append(Strings.vcardEscape(tdlib.getLink(username))).append("\r\n");
+      b.append("URL:").append(Strings.vcardEscape(tdlib.tMeUrl(username))).append("\r\n");
     }
     b.append("END:VCARD\r\n");
     String vcard = b.toString();
@@ -751,7 +751,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
             author = tdlib.messageAuthor(args.messages[0], false, false);
             username = tdlib.messageAuthorUsername(args.messages[0]);
           }
-          authorSignature = !StringUtils.isEmpty(username) ? Lang.getString(R.string.format_ShareAuthorLink, author, tdlib.getLink(username)) : author;
+          authorSignature = !StringUtils.isEmpty(username) ? Lang.getString(R.string.format_ShareAuthorLink, author, tdlib.tMeUrl(username)) : author;
 
           if (!Td.isEmpty(messageCaption)) {
             CharSequence caption = TD.toCharSequence(messageCaption);
