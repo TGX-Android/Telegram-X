@@ -112,7 +112,7 @@ open class ModulePlugin : Plugin<Project> {
               git = it.readText().trim().split(' ', limit = 5)
             }
             process.waitFor()
-            if (git.size != 4) {
+            if (git.size != 5) {
               error("Source code must be fetched from git repository.")
             }
             val commitHashShort = git[0]
