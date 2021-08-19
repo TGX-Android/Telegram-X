@@ -23,6 +23,7 @@ import java.util.Map;
 
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.leveldb.LevelDB;
 
 /**
  * Date: 01/04/2017
@@ -442,6 +443,7 @@ public class TGBackground {
 
   private static final int FILL_TYPE_SOLID = 1;
   private static final int FILL_TYPE_GRADIENT = 2;
+  private static final int FILL_TYPE_FREEFORM_GRADIENT = 3;
 
   private static void putFill (SharedPreferences.Editor editor, String key, TdApi.BackgroundFill fill) {
     switch (fill.getConstructor()) {
@@ -450,6 +452,12 @@ public class TGBackground {
 
         TdApi.BackgroundFillSolid solid = (TdApi.BackgroundFillSolid) fill;
         editor.putInt(key + "_color", solid.color);
+
+        editor
+          .remove(key + "_color_top")
+          .remove(key + "_color_bottom")
+          .remove(key + "_colors")
+          .remove(key + "_rotation_angle");
         break;
       }
       case TdApi.BackgroundFillGradient.CONSTRUCTOR: {
@@ -459,8 +467,27 @@ public class TGBackground {
         editor.putInt(key + "_color_top", gradient.topColor);
         editor.putInt(key + "_color_bottom", gradient.bottomColor);
         editor.putInt(key + "_rotation_angle", gradient.rotationAngle);
+
+        editor
+          .remove(key + "_color")
+          .remove(key + "_colors");
         break;
       }
+      case TdApi.BackgroundFillFreeformGradient.CONSTRUCTOR: {
+        editor.putInt(key + "_fill", FILL_TYPE_FREEFORM_GRADIENT);
+
+        TdApi.BackgroundFillFreeformGradient gradient = (TdApi.BackgroundFillFreeformGradient) fill;
+        ((LevelDB) editor).putIntArray(key + "_colors", gradient.colors);
+
+        editor
+          .remove(key + "_color")
+          .remove(key + "_color_top")
+          .remove(key + "_color_bottom")
+          .remove(key + "_rotation_angle");
+        break;
+      }
+      default:
+        throw new UnsupportedOperationException(fill.toString());
     }
   }
 
@@ -535,6 +562,7 @@ public class TGBackground {
         .remove(key + "_fill")
         .remove(key + "_color_top")
         .remove(key + "_color_bottom")
+        .remove(key + "_colors")
         .remove(key + "_rotation_angle");
     }
     editor.apply();
@@ -548,6 +576,10 @@ public class TGBackground {
         int bottomColor = prefs.getInt(key + "_color_bottom", 0);
         int rotationAngle = prefs.getInt(key + "_rotation_angle", 0);
         return new TdApi.BackgroundFillGradient(topColor, bottomColor, rotationAngle);
+      }
+      case FILL_TYPE_FREEFORM_GRADIENT: {
+        int[] colors = ((LevelDB) prefs).getIntArray(key + "_colors");
+        return new TdApi.BackgroundFillFreeformGradient(colors);
       }
       case FILL_TYPE_SOLID:
       default: {
