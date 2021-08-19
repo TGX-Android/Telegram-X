@@ -91,7 +91,7 @@ public class CameraQrBridge {
         barcodeScanner.process(image).addOnSuccessListener(mainExecutor, barcodes -> {
             if (barcodes.isEmpty()) return;
             delegate.onQrCodeFound(barcodes.get(0).getRawValue());
-        }).addOnFailureListener(Log::e).addOnCompleteListener(result -> {
+        }).addOnFailureListener(ex -> Log.e(Log.TAG_CAMERA, ex)).addOnCompleteListener(result -> {
             if (onCompleteListener != null) onCompleteListener.run();
         });
     }
