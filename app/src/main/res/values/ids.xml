@@ -503,6 +503,7 @@
   <item type="id" name="btn_proxySocks5" />
   <item type="id" name="btn_proxyTelegram" />
   <item type="id" name="btn_proxyHttp" />
+  <item type="id" name="btn_proxyQr" />
   <item type="id" name="btn_showAdvanced" />
   <item type="id" name="btn_autoplayGIFs" />
   <item type="id" name="btn_stickerSuggestions" />

@@ -264,9 +264,12 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
           buildGif(webPage, maxWidth);
           break;
         }
-        case TYPE_TELEGRAM_BACKGROUND:
+        case TYPE_TELEGRAM_BACKGROUND: {
+          if (!isTgWallpaper() || !isTgWallpaperWithPreview()) break;
+          buildPhoto(webPage, maxWidth);
+          break;
+        }
         case TYPE_PHOTO: {
-          if (type == TYPE_TELEGRAM_BACKGROUND && !isTgWallpaper()) break;
           buildPhoto(webPage, maxWidth);
           break;
         }
@@ -583,7 +586,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         }
       } : null;
 
-      String actualSiteName = isTgWallpaper() ? Lang.getString(R.string.Wallpaper) : webPage.siteName;
+      String actualSiteName = isTgWallpaper() ? Lang.getString(R.string.ChatBackground) : webPage.siteName;
 
       siteName = new Text.Builder(actualSiteName, maxWidth, TGMessage.getTextStyleProvider(), parent.getChatAuthorColorSet())
         .maxLineCount(2)
@@ -752,8 +755,10 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         mediaWrapper = new MediaWrapper(parent.context(), parent.tdlib(), webPage.video, chatId, messageId, parent, false);
       } else if (webPage.photo != null) {
         mediaWrapper = new MediaWrapper(parent.context(), parent.tdlib(), webPage.photo, chatId, messageId, parent, false, false, EmbeddedService.parse(webPage));
-      } else if (isTgWallpaper()) {
-        mediaWrapper = new MediaWrapper(parent.context(), parent.tdlib(), new TdApi.Photo(false, webPage.document.minithumbnail, new TdApi.PhotoSize[]{ new TdApi.PhotoSize("x", webPage.document.document, Screen.dp(500f), Screen.dp(400f), new int[] {}) }), chatId, messageId, parent, false, false, EmbeddedService.parse(webPage));
+      } else if (isTgWallpaper() && isTgWallpaperWithPreview()) {
+        mediaWrapper = new MediaWrapper(parent.context(), parent.tdlib(), new TdApi.Photo(false, webPage.document.minithumbnail,
+                new TdApi.PhotoSize[]{ new TdApi.PhotoSize("x", webPage.document.document, Screen.dp(500f), Screen.dp(400f), new int[] {}) }
+        ), chatId, messageId, parent, false, false, EmbeddedService.parse(webPage));
       } else {
         throw new NullPointerException();
       }
@@ -878,7 +883,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
           message = R.string.OpenChat;
           break;
         case TYPE_TELEGRAM_BACKGROUND:
-          message = R.string.WallpaperView;
+          message = R.string.ChatBackgroundView;
           break;
       }
     }
@@ -975,6 +980,10 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
 
   protected boolean isTgWallpaper() {
     return type == TYPE_TELEGRAM_BACKGROUND && webPage.document != null && webPage.document.thumbnail != null;
+  }
+
+  protected boolean isTgWallpaperWithPreview() {
+    return webPage.document != null && !"application/x-tgwallpattern".equals(webPage.document.mimeType);
   }
 
   public boolean performLongPress (View view, TGMessageText msg) {

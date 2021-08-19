@@ -3173,7 +3173,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     openInAppCamera(new CameraOpenOptions());
   }
 
-  protected final void openInAppCamera (@NonNull CameraOpenOptions options) {
+  public final void openInAppCamera (@NonNull CameraOpenOptions options) {
     if (options.allowSystem && Settings.instance().getCameraType() == Settings.CAMERA_TYPE_SYSTEM) {
       showOptions(null, new int[] {R.id.btn_takePhoto, R.id.btn_takeVideo}, new String[] {Lang.getString(R.string.TakePhoto), Lang.getString(R.string.TakeVideo)}, null, new int[] {R.drawable.baseline_camera_alt_24, R.drawable.baseline_videocam_24}, (itemView, id) -> {
         switch (id) {

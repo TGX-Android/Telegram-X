@@ -1122,7 +1122,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     // Nothing to do anymore?
   }
 
-  private static final boolean SET_FULLSCREEN_ON_OPEN = true;
+  private static final boolean SET_FULLSCREEN_ON_OPEN = !Screen.hasDisplayCutout; //true;
+
+  @Override
+  public void onFocus() {
+    super.onFocus();
+    if (Screen.hasDisplayCutout) setLowProfile(true);
+  }
 
   @Override
   public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
@@ -1139,7 +1145,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         } else if (finalFactor == 1f) {
           popupView.onCustomShowComplete();
           mediaView.setDisableAnimations(false);
-          if (!SET_FULLSCREEN_ON_OPEN) {
+          if (!SET_FULLSCREEN_ON_OPEN && !Screen.hasDisplayCutout) {
             setFullScreen(true);
           }
           mediaView.autoplayIfNeeded(false);
@@ -4614,7 +4620,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         headerView.setElevation(Screen.dp(3f));
       }
       attachHeaderViewWithoutNavigation(headerView);
-      headerView.initWithSingleController(this, (SET_FULLSCREEN_ON_OPEN || canRunFullscreen()) && Screen.hasDisplayCutout);
+      headerView.initWithSingleController(this, (SET_FULLSCREEN_ON_OPEN || canRunFullscreen()) || Screen.hasDisplayCutout);
       headerView.getFilling().setShadowAlpha(0f);
       int leftMargin = Screen.dp(68f);
       int rightMargin = measureButtonsPadding();

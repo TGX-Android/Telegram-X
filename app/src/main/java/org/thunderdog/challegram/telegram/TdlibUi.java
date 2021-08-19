@@ -100,6 +100,7 @@ import org.thunderdog.challegram.ui.SettingsThemeController;
 import org.thunderdog.challegram.ui.SettingsWebsitesController;
 import org.thunderdog.challegram.ui.ShareController;
 import org.thunderdog.challegram.ui.SimpleViewPagerController;
+import org.thunderdog.challegram.ui.camera.CameraController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.HapticMenuHelper;
@@ -2981,7 +2982,7 @@ public class TdlibUi extends Handler {
 
                     post(() -> {
                       if (wallpaper.type.getConstructor() != TdApi.BackgroundTypeWallpaper.CONSTRUCTOR || wallpaper.document == null) {
-                        showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.WallpaperNotSupported), openParameters);
+                        showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.ChatBackgroundNotSupported), openParameters);
                         if (after != null) {
                           after.runWithBool(true);
                         }
@@ -3231,6 +3232,7 @@ public class TdlibUi extends Handler {
     ids.append(R.id.btn_proxyTelegram);
     ids.append(R.id.btn_proxySocks5);
     ids.append(R.id.btn_proxyHttp);
+    ids.append(R.id.btn_proxyQr);
     if (needProxyHint) {
       strings.append(R.string.AddMtprotoProxy);
       strings.append(R.string.AddSocks5Proxy);
@@ -3240,6 +3242,7 @@ public class TdlibUi extends Handler {
       strings.append(R.string.Socks5Proxy);
       strings.append(R.string.HttpProxy);
     }
+    strings.append(R.string.ScanQR);
 
     OptionDelegate callback = (itemView, id) -> {
       switch (id) {
@@ -3259,6 +3262,19 @@ public class TdlibUi extends Handler {
           EditProxyController e = new EditProxyController(context.context(), context.tdlib());
           e.setArguments(new EditProxyController.Args(EditProxyController.MODE_HTTP));
           c.navigateTo(e);
+          break;
+        }
+        case R.id.btn_proxyQr: {
+          postDelayed(() -> c.openInAppCamera(new ViewController.CameraOpenOptions().ignoreAnchor(true).noTrace(true).allowSystem(false).optionalMicrophone(true).mode(CameraController.MODE_QR).qrCodeListener((qrCode) -> {
+            context.tdlib().client().send(new TdApi.GetInternalLinkType(qrCode), result -> {
+              if (result.getConstructor() == TdApi.InternalLinkTypeProxy.CONSTRUCTOR) {
+                post(() -> {
+                  TdApi.InternalLinkTypeProxy proxy = (TdApi.InternalLinkTypeProxy) result;
+                  openProxyAlert(context, proxy.server, proxy.port, proxy.type, TdlibUi.newProxyDescription(proxy.server, Integer.toString(proxy.port)).toString());
+                });
+              }
+            });
+          })), 250L);
           break;
         }
         /*case R.id.btn_proxyTor: {

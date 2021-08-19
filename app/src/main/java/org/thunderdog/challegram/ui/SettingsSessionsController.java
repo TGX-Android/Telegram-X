@@ -538,29 +538,21 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
   public void onQrCodeScanned(String qrCode) {
     if (!qrCode.startsWith("tg://")) return;
     tdlib().client().send(new TdApi.GetInternalLinkType(qrCode), result -> {
-      switch (result.getConstructor()) {
-        case TdApi.InternalLinkTypeProxy.CONSTRUCTOR:
-          runOnUiThreadOptional(() -> {
-            TdApi.InternalLinkTypeProxy proxy = (TdApi.InternalLinkTypeProxy) result;
-            tdlib().ui().openProxyAlert(this, proxy.server, proxy.port, proxy.type, TdlibUi.newProxyDescription(proxy.server, Integer.toString(proxy.port)).toString());
-          });
-          break;
-        case TdApi.InternalLinkTypeQrCodeAuthentication.CONSTRUCTOR:
-          tdlib().client().send(new TdApi.ConfirmQrCodeAuthentication(qrCode), result2 -> {
-            if (result2 instanceof TdApi.Session) {
-              runOnUiThreadOptional(() -> {
-                TdApi.Session newSession = (TdApi.Session) result2;
-                sessions.add(0, newSession);
-                if (getArguments() != null) getArguments().updateAuthorizations(sessions, currentSession);
-                buildCells();
-                UI.showCustomToast(Lang.getString(R.string.ScanQRAuthorizedToast, newSession.applicationName), Toast.LENGTH_LONG, 0);
-              });
-            }
-          });
-          break;
-        default:
-          tdlib().ui().openTelegramUrl(new TdlibContext(context, tdlib), qrCode, null, null);
-          break;
+      if (result.getConstructor() == TdApi.InternalLinkTypeQrCodeAuthentication.CONSTRUCTOR) {
+        tdlib().client().send(new TdApi.ConfirmQrCodeAuthentication(qrCode), result2 -> {
+          if (result2 instanceof TdApi.Session) {
+            runOnUiThreadOptional(() -> {
+              TdApi.Session newSession = (TdApi.Session) result2;
+              sessions.add(0, newSession);
+              if (getArguments() != null)
+                getArguments().updateAuthorizations(sessions, currentSession);
+              buildCells();
+              UI.showCustomToast(Lang.getString(R.string.ScanQRAuthorizedToast, newSession.applicationName), Toast.LENGTH_LONG, 0);
+            });
+          }
+        });
+      } else {
+        tdlib().ui().openTelegramUrl(new TdlibContext(context, tdlib), qrCode, null, null);
       }
     });
   }

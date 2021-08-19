@@ -122,6 +122,7 @@ public class CameraController extends ViewController implements CameraDelegate, 
     this.cameraMode = mode;
     if (contentView != null) {
       updateContentScale();
+      updateQrButtonHide();
       if (cameraOverlayView != null) {
         cameraOverlayView.setGridVisible(cameraMode == MODE_MAIN && Settings.instance().getNewSetting(Settings.SETTING_FLAG_CAMERA_SHOW_GRID), isFocused());
       }
@@ -164,7 +165,7 @@ public class CameraController extends ViewController implements CameraDelegate, 
 
     cameraOverlayView = new CameraOverlayView(context);
     cameraOverlayView.setFlashListener(this);
-    cameraOverlayView.setGridVisible(Settings.instance().getNewSetting(Settings.SETTING_FLAG_CAMERA_SHOW_GRID), false);
+    cameraOverlayView.setGridVisible(cameraMode == MODE_MAIN && Settings.instance().getNewSetting(Settings.SETTING_FLAG_CAMERA_SHOW_GRID), false);
     cameraOverlayView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
     fadeView = new CameraFadeView(context);
@@ -222,12 +223,8 @@ public class CameraController extends ViewController implements CameraDelegate, 
     contentView.addView(manager.getView());
     switchCameraButton.setCameraIconRes(manager.preferFrontFacingCamera());
     contentView.addView(cameraOverlayView);
-
-    if (isInQrScanMode()) {
-      switchCameraButton.setVisibility(View.GONE);
-      flashButton.setVisibility(View.GONE);
-    }
-
+    
+    updateQrButtonHide();
     updateControlMargins();
     updateControlsFactor();
 
@@ -691,6 +688,18 @@ public class CameraController extends ViewController implements CameraDelegate, 
     contentView.setScaleY(scale);
   }
 
+  private void updateQrButtonHide () {
+    if (isInQrScanMode()) {
+      switchCameraButton.setVisibility(View.GONE);
+      flashButton.setVisibility(View.GONE);
+      blurView.setVisibility(View.GONE);
+    } else {
+      switchCameraButton.setVisibility(View.VISIBLE);
+      flashButton.setVisibility(View.VISIBLE);
+      blurView.setVisibility(View.VISIBLE);
+    }
+  }
+
   /**
    * Called during layout animation,
    * where 0 - camera is fully hidden, 1 - camera is fully visible.
@@ -822,11 +831,6 @@ public class CameraController extends ViewController implements CameraDelegate, 
 
     if (cameraMode == MODE_QR) {
       qrCodeFound = false;
-      if (Settings.instance().needTutorial(Settings.TUTORIAL_QR_SCAN)) {
-        Settings.instance().markTutorialAsShown(Settings.TUTORIAL_QR_SCAN);
-        context().tooltipManager().builder(button).controller(this).show(tdlib, R.string.ScanQRCameraHint).hideDelayed();
-        Settings.instance().markTutorialAsComplete(Settings.TUTORIAL_QR_SCAN);
-      }
     }
 
     if (inEarlyInitialization) {
@@ -1514,7 +1518,6 @@ public class CameraController extends ViewController implements CameraDelegate, 
 
   @Override
   public void onQrCodeFound(String qrCodeData) {
-    Log.d("qrcode found %s [found already: %s]", qrCodeData, qrCodeFound);
     if (qrCodeListener != null && !qrCodeData.isEmpty() && !qrCodeFound) {
       qrCodeFound = true;
       qrCodeListener.onQrCodeScanned(qrCodeData);

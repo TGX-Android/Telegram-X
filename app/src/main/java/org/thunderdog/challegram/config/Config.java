@@ -81,7 +81,7 @@ public class Config {
   public static final boolean WORKAROUND_NEED_MODIFY = true; // FIXME TDLib
 
   public static final boolean USE_FULLSCREEN_NAVIGATION = true;
-  public static final boolean USE_IME_ANIMATED_INSETS = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
+  public static final boolean USE_IME_ANIMATED_INSETS = false; // Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
   public static final boolean USE_FULLSCREEN_NAVIGATION_CONTENT = false; // BuildConfig.DEBUG;
   public static final boolean USE_TRANSLUCENT_NAVIGATION = false; // Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
 
@@ -175,7 +175,10 @@ public class Config {
 
   public static final boolean USE_CLOUD_PLAYER = USE_NEW_PLAYER && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN;
   public static final float DEFAULT_ICON_SWITCH_SCALE = .4f;
+
   public static final boolean CUTOUT_ENABLED = true; // Build.VERSION.SDK_INT < Build.VERSION_CODES.O;
+  public static final boolean PRECISE_CUTOUT_ENABLED = false; // Build.VERSION.SDK_INT < Build.VERSION_CODES.O;
+
   public static final boolean EXPLICIT_DICE_AVAILABLE = false;
 
   public static boolean useCloudPlayback (TdApi.Message playPauseFile) {
