@@ -107,9 +107,9 @@ open class ModulePlugin : Plugin<Project> {
 
           is AppExtension -> {
             var git: List<String>
-            val process = ProcessBuilder("bash", "-c", "echo \"$(git rev-parse --short HEAD) $(git rev-parse HEAD) $(git show -s --format=%ct) $(git config --get remote.origin.url)\"").start()
+            val process = ProcessBuilder("bash", "-c", "echo \"$(git rev-parse --short HEAD) $(git rev-parse HEAD) $(git show -s --format=%ct) $(git config --get remote.origin.url) $(git rev-parse --abbrev-ref HEAD)\"").start()
             process.inputStream.reader(Charsets.UTF_8).use {
-              git = it.readText().trim().split(' ', limit = 4)
+              git = it.readText().trim().split(' ', limit = 5)
             }
             process.waitFor()
             if (git.size != 4) {
@@ -137,6 +137,7 @@ open class ModulePlugin : Plugin<Project> {
             }
 
             val commitUrl = String.format(Locale.ENGLISH, "%1\$s/commit/%3\$s", remoteUrl, commitHashShort, commitHashLong)
+            val commitBranch = git[4]
 
             project.extra.set("properties", properties)
             project.extra.set("versions", versions)
@@ -146,6 +147,7 @@ open class ModulePlugin : Plugin<Project> {
             project.extra.set("commit_date", commitDate)
             project.extra.set("remote_url", remoteUrl)
             project.extra.set("commit_url", commitUrl)
+            project.extra.set("commit_branch", commitBranch)
 
             signingConfigs {
               arrayOf(getByName("debug"), maybeCreate("release")).forEach { config ->

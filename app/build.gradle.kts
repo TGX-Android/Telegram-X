@@ -68,10 +68,12 @@ android {
         val remoteUrl = extra["remote_url"] as String
         val commitUrl = extra["commit_url"] as String
         val commitDate = extra["commit_date"] as Long
+        val commitBranch = extra["commit_branch"] as String
 
         buildConfigString("SOURCES_URL", properties.getProperty("app.sources_url", remoteUrl))
         buildConfigString("REMOTE_URL", remoteUrl)
         buildConfigString("COMMIT_URL", commitUrl)
+        buildConfigString("COMMIT_BRANCH", commitBranch)
         buildConfigString("COMMIT_SHORT", commitShort)
         buildConfigString("COMMIT_LONG", commitLong)
         buildConfigLong("COMMIT_DATE", commitDate)
@@ -110,7 +112,7 @@ android {
         val versionCode = defaultConfig.versionCode ?: error("null")
 
         val versionCodeOverride = versionCode * 1000 + abi * 10
-        val versionNameOverride = "${variant.versionName}.${defaultConfig.versionCode}-${abiVariant.displayName}${if (variant.buildType.isDebuggable) "-debug" else ""}"
+        val versionNameOverride = "${variant.versionName}.${defaultConfig.versionCode}-${abiVariant.displayName}${if (extra["commit_branch"] != "main") "-" + extra["commit_branch"] else ""}${if (variant.buildType.isDebuggable) "-debug" else ""}"
         val fileName = "Telegram-X-${versionNameOverride.replace("-universal(?=-|\$)", "")}"
 
         variant.buildConfigInt("ORIGINAL_VERSION_CODE", versionCode)

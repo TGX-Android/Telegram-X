@@ -51,7 +51,7 @@ configurations.all {
 
 dependencies {
   compileOnly(gradleApi())
-  implementation("com.android.tools.build:gradle:7.0.0")
+  implementation("com.android.tools.build:gradle:7.0.1")
   implementation("com.google.gms:google-services:4.3.10")
   implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}")
   // implementation("com.google.android.gms:oss-licenses-plugin:0.10.4")
