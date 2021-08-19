@@ -4,11 +4,11 @@ plugins {
 
 val kotlinVersion = "1.5.21"
 
-/*tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
   kotlinOptions {
-    allWarningsAsErrors = true
+    freeCompilerArgs = freeCompilerArgs + "-XXLanguage:-DisableCompatibilityModeForNewInference"
   }
-}*/
+}
 
 gradlePlugin {
   plugins {
