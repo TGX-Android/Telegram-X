@@ -3135,10 +3135,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
-  public String getLink (String username) {
-    return "https://" + tMeHost() + username;
-  }
-
   public static class MessageLink {
     public final String url;
     public final boolean isPublic;
@@ -3169,14 +3165,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             String username = chatUsername(message.chatId);
             if (!StringUtils.isEmpty(username)) {
               fallbackPrivate = false;
-              fallbackUrl = getLink(username) + "/" + MessageId.toServerMessageId(message.id);
+              fallbackUrl = tMeUrl(username) + "/" + MessageId.toServerMessageId(message.id);
               if (!forAlbum && message.mediaAlbumId != 0)
                 fallbackUrl += "?single";
             } else {
               fallbackPrivate = true;
               int supergroupId = ChatId.toSupergroupId(message.chatId);
               if (supergroupId != 0)
-                fallbackUrl = getLink("c") + "/" + supergroupId + "/" + MessageId.toServerMessageId(message.id);
+                fallbackUrl = tMeUrl("c") + "/" + supergroupId + "/" + MessageId.toServerMessageId(message.id);
               else
                 fallbackUrl = null;
             }
@@ -5096,6 +5092,25 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public String tMeUrl () {
     return StringUtils.isEmpty(tMeUrl) ? "https://" + TD.getTelegramHost() + "/" : tMeUrl;
+  }
+
+  public String tMeUrl (String path) {
+    return new Uri.Builder()
+      .scheme("https")
+      .authority(tMeAuthority())
+      .path(path)
+      .build()
+      .toString();
+  }
+
+  public String tMeStartUrl (String botUsername, String parameter, boolean inGroup) {
+    return new Uri.Builder()
+      .scheme("https")
+      .authority(tMeAuthority())
+      .path(botUsername)
+      .appendQueryParameter(inGroup ? "startgroup" : "start", parameter)
+      .build()
+      .toString();
   }
 
   public @Nullable String tdlibVersionSignature () {

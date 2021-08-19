@@ -1611,7 +1611,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
               }
               String username = tdlib.cache().userUsername(userId);
               if (!StringUtils.isEmpty(username)) {
-                exportCaption = Lang.getString(R.string.format_ShareTextSignature, exportCaption, tdlib.getLink(username));
+                exportCaption = Lang.getString(R.string.format_ShareTextSignature, exportCaption, tdlib.tMeUrl(username));
               }
               break;
             }
@@ -1626,7 +1626,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
                 }
                 String username = tdlib.chatUsername(chatId);
                 if (!StringUtils.isEmpty(username)) {
-                  exportCaption = Lang.getString(R.string.format_ShareTextSignature, exportCaption, tdlib.getLink(username));
+                  exportCaption = Lang.getString(R.string.format_ShareTextSignature, exportCaption, tdlib.tMeUrl(username));
                 }
               }
               break;
