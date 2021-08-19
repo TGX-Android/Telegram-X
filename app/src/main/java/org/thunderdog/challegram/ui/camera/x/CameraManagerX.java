@@ -22,7 +22,6 @@ import androidx.camera.core.ImageCaptureException;
 import androidx.camera.core.Preview;
 import androidx.camera.core.VideoCapture;
 import androidx.camera.core.ZoomState;
-import androidx.camera.extensions.ExtensionsManager;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
@@ -63,7 +62,6 @@ public class CameraManagerX extends CameraManager<PreviewView> {
 
   private boolean isOpen;
   private ProcessCameraProvider cameraProvider;
-  private ExtensionsManager extensionsManager;
   private ImageCapture imageCapture;
   private VideoCapture videoCapture;
   private Preview preview;
@@ -85,13 +83,7 @@ public class CameraManagerX extends CameraManager<PreviewView> {
         ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
         if (isOpen) {
           this.cameraProvider = cameraProvider;
-          final ListenableFuture<ExtensionsManager> extensionManager = ExtensionsManager.getInstance(context);
-          extensionManager.addListener(() -> {
-            try {
-              this.extensionsManager = extensionManager.get();
-            } catch (ExecutionException | InterruptedException ignored) { }
-            this.bindPreview(this.extensionsManager);
-          }, ContextCompat.getMainExecutor(context));
+          this.bindPreview();
         } else {
           cameraProvider.unbindAll();
         }
@@ -136,10 +128,6 @@ public class CameraManagerX extends CameraManager<PreviewView> {
   }
 
   private void bindPreview () {
-    bindPreview(this.extensionsManager);
-  }
-
-  private void bindPreview (@Nullable ExtensionsManager extensionsManager) {
     if (!isOpen || isPaused || cameraProvider == null)
       return;
 
@@ -193,40 +181,6 @@ public class CameraManagerX extends CameraManager<PreviewView> {
     } catch (CameraInfoUnavailableException e) {
       Log.e(Log.TAG_CAMERA, "Unable to camera %d", lensFacing);
     }
-
-    /*if (extensionsManager != null) {
-      Log.i(Log.TAG_CAMERA, "bokeh:%b, hdr:%b, night:%b, beauty:%b, auto:%b",
-        extensionsManager.isExtensionAvailable(cameraProvider, cameraSelector, ExtensionMode.BOKEH),
-        extensionsManager.isExtensionAvailable(cameraProvider, cameraSelector, ExtensionMode.HDR),
-        extensionsManager.isExtensionAvailable(cameraProvider, cameraSelector, ExtensionMode.NIGHT),
-        extensionsManager.isExtensionAvailable(cameraProvider, cameraSelector, ExtensionMode.BEAUTY),
-        extensionsManager.isExtensionAvailable(cameraProvider, cameraSelector, ExtensionMode.AUTO)
-      );
-    }
-    int extension = EXTENSION_NONE;
-    if (extensionsManager != null) {
-      if (extensionsManager.isExtensionAvailable(cameraProvider, cameraSelector, ExtensionMode.HDR)) {
-        extension = EXTENSION_HDR;
-      } else if (extensionsManager.isExtensionAvailable(cameraProvider, cameraSelector, ExtensionMode.AUTO)) {
-        extension = EXTENSION_AUTO;
-      }
-    }
-    CameraSelector newCameraSelector = null;
-    try {
-      switch (extension) {
-        case EXTENSION_HDR:
-          newCameraSelector = extensionsManager.getExtensionEnabledCameraSelector(cameraProvider, cameraSelector, ExtensionMode.HDR);
-          break;
-        case EXTENSION_AUTO:
-          newCameraSelector = extensionsManager.getExtensionEnabledCameraSelector(cameraProvider, cameraSelector, ExtensionMode.AUTO);
-          break;
-      }
-      if (newCameraSelector != null) {
-        cameraSelector = newCameraSelector;
-      }
-    } catch (Throwable t) {
-      Log.e("Unable to apply cameraX extension", t);
-    }*/
 
     if (REUSE_PREVIEW_DISABLED || preview == null || previewRotation != getSurfaceRotation()) {
       Preview.Builder previewBuilder = new Preview.Builder()
