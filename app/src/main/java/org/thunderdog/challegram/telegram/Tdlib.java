@@ -4372,6 +4372,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     client.send(new TdApi.SetOption("is_emulator", new TdApi.OptionValueBoolean(isEmulator = Settings.instance().isEmulator())), okHandler);
     client.send(new TdApi.SetOption("storage_max_files_size", new TdApi.OptionValueInteger(Integer.MAX_VALUE)), okHandler);
     client.send(new TdApi.SetOption("ignore_default_disable_notification", new TdApi.OptionValueBoolean(true)), okHandler);
+    client.send(new TdApi.SetOption("ignore_platform_restrictions", new TdApi.OptionValueBoolean(U.isAppSideLoaded())), okHandler);
     checkConnectionParams(client, true);
 
     if (needDropNotificationIdentifiers) {
