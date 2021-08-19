@@ -126,6 +126,7 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
     }
 
     adapter.setItems(items, false);
+    executeScheduledAnimation();
   }
 
   private void clearSessionList () {
@@ -360,7 +361,7 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
 
   @Override
   protected long getAsynchronousAnimationTimeout (boolean fastAnimation) {
-    return 400l;
+    return 400L;
   }
 
   private LongSparseArray<TdApi.Session> terminatingSessions;
