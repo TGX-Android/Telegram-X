@@ -178,10 +178,9 @@ dependencies {
     implementation("androidx.interpolator:interpolator:1.0.0")
     implementation("androidx.gridlayout:gridlayout:1.0.0")
     // CameraX: https://developer.android.com/jetpack/androidx/releases/camera
-    implementation("androidx.camera:camera-camera2:1.1.0-alpha07")
-    implementation("androidx.camera:camera-lifecycle:1.1.0-alpha07")
-    implementation("androidx.camera:camera-view:1.0.0-alpha27")
-    implementation("androidx.camera:camera-extensions:1.0.0-alpha27")
+    implementation("androidx.camera:camera-camera2:1.1.0-alpha08")
+    implementation("androidx.camera:camera-lifecycle:1.1.0-alpha08")
+    implementation("androidx.camera:camera-view:1.0.0-alpha28")
     // Google Play Services: https://developers.google.com/android/guides/releases
     implementation("com.google.android.gms:play-services-base:17.6.0")
     implementation("com.google.android.gms:play-services-basement:17.6.0")
