@@ -80,7 +80,7 @@ open class ModulePlugin : Plugin<Project> {
           kotlinOptions {
             jvmTarget = javaVersion.toString()
             allWarningsAsErrors = true
-            freeCompilerArgs = listOf("-XXLanguage:-DisableCompatibilityModeForNewInference")
+            freeCompilerArgs = freeCompilerArgs + "-XXLanguage:-DisableCompatibilityModeForNewInference"
           }
         }
 
