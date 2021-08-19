@@ -3681,6 +3681,32 @@
   <string name="SystemPermissionsMissingMicrophone">Please allow Telegram X to use microphone in System Settings &gt; Apps &gt; Telegram X &gt; Permissions.</string>
   <string name="SystemPermissionsMissingCamera">Please allow Telegram X to use camera in System Settings &gt; Apps &gt; Telegram X &gt; Permissions.</string>
 
+  <string name="InviteLinks">Invite Links</string>
+  <string name="PrimaryInviteLink">Permanent Link</string>
+  <string name="AdditionalInviteLinks">Additional Links</string>
+  <string name="RevokedInviteLinks">Revoked Links</string>
+  <string name="InviteLinkNoJoins">no one joined</string>
+  <string name="InviteLinkJoins">%s joined</string>
+  <string name="InviteLinkRemains">%s remaining</string>
+  <string name="InviteLinkCanJoin">%s can join</string>
+  <string name="InviteLinkExpired">expired</string>
+  <string name="InviteLinkRevoked">revoked</string>
+  <string name="InviteLinkExpires">expires in %s</string>
+  <string name="DeleteAllRevokedLinks">Delete All Revoked Links</string>
+  <string name="AreYouSureDeleteAllInviteLinks">Are you sure you want to delete all revoked links?</string>
+  <string name="AreYouSureRevokeInviteLinkGroup">Are you sure you want to revoke this link? Once this is done, nobody will be able to use it to join the group.</string>
+  <string name="AreYouSureRevokeInviteLinkChannel">Are you sure you want to revoke this link? Once this is done, nobody will be able to use it to join the channel.</string>
+  <string name="AreYouSureDeleteInviteLink">Are you sure you want to delete this link?</string>
+  <string name="InviteLinkEdit">Edit Link</string>
+  <string name="InviteLinkLimitedByPeriod">Limited by period</string>
+  <string name="InviteLinkLimitedByUsers">Limited by number of users</string>
+  <string name="InviteLinkLimitedByPeriodHint">You can make the link expire after a certain time.</string>
+  <string name="InviteLinkLimitedByUsersHint">You can make the link expire after it has been used for a certain number of times.</string>
+  <string name="InviteLinkLimitedByPeriodItem">Expiry Date</string>
+  <string name="InviteLinkLimitedByUsersItem">Number of Users</string>
+  <string name="InviteLinkLimitedByUsersAlertHint">0 - no limit</string>
+  <string name="InviteLinkNoLimitSet">no limit</string>
+
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
   <string name="suggested_language_code_plural" />
