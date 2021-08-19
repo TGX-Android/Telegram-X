@@ -1890,7 +1890,6 @@ import org.thunderdog.challegram.R
     "SavedMessages",
     "ScanQR",
     "ScanQRAuthorizedToast",
-    "ScanQRCameraHint",
     "ScanQRLinkHint",
     "ScanQRLogInInfo",
     "ScheduledDate",
