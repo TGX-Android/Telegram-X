@@ -111,10 +111,10 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
     items.add((description = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.description, 0, genDescription(), false)
       .setTextColorId(R.id.theme_color_textLight)));
 
-    if (chatId != 0) {
-      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM, R.id.shadowBottom));
-      recyclerView.addItemDecoration(new FillingDecoration(recyclerView, this).addBottom(R.id.shadowBottom, items.size()));
-    }
+    //if (chatId != 0) {
+    //  items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM, R.id.shadowBottom));
+    //  recyclerView.addItemDecoration(new FillingDecoration(recyclerView, this).addBottom(R.id.shadowBottom, items.size()));
+    //}
 
     adapter.setItems(items, false);
     recyclerView.setAdapter(adapter);
