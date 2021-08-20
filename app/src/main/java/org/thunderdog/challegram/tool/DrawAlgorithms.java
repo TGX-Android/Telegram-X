@@ -1153,7 +1153,7 @@ public class DrawAlgorithms {
     } else {
       throw new IllegalArgumentException("rotation: " + rotationAngle);
     }
-    cache.set(fromX, fromY, toX, toY, ColorUtils.alphaColor(alpha, topColor), ColorUtils.alphaColor(alpha, bottomColor));
+    cache.set(fromX, fromY, toX, toY, androidx.core.graphics.ColorUtils.setAlphaComponent(topColor, (int) (255 * alpha)), androidx.core.graphics.ColorUtils.setAlphaComponent(bottomColor, (int) (255 * alpha)));
     c.drawRect(left, top, right, bottom, cache.paint);
   }
 

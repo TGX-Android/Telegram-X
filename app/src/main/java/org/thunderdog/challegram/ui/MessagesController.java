@@ -520,6 +520,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
         headerDoubleCell.setTitle(getName());
         if (getArguments().wallpaperObject.document != null) {
           headerDoubleCell.setSubtitle(Strings.buildSize(getArguments().wallpaperObject.document.document.size));
+        } else if (getArguments().wallpaperObject.type.getConstructor() == TdApi.BackgroundTypePattern.CONSTRUCTOR) {
+          headerDoubleCell.setSubtitle(Lang.getString(R.string.ChatBackgroundTypePattern));
+        } else if (getArguments().wallpaperObject.type.getConstructor() == TdApi.BackgroundTypeFill.CONSTRUCTOR) {
+          TdApi.BackgroundTypeFill filledWp = (TdApi.BackgroundTypeFill) getArguments().wallpaperObject.type;
+          if (filledWp.fill.getConstructor() == TdApi.BackgroundFillGradient.CONSTRUCTOR) {
+            headerDoubleCell.setSubtitle(Lang.getString(R.string.ChatBackgroundTypeGradient));
+          } else {
+            headerDoubleCell.setSubtitle(Lang.getString(R.string.ChatBackgroundTypeSolid));
+          }
         }
       }
       default: {
