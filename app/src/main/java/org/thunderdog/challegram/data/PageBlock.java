@@ -468,7 +468,7 @@ public abstract class PageBlock implements MultipleViewProvider.InvalidateConten
     if (detailsBlock == null) {
       context.setClosed(true, parent, out, true);
       boolean needReportButton = !parent.tdlib().isKnownHost(url, true) && Config.INSTANT_VIEW_WRONG_LAYOUT;
-      if (instantView.viewCount > 0 || needReportButton) {
+      if ((instantView.viewCount > 0 || needReportButton) && Config.INSTANT_VIEW_SHOW_PAGE_FOOTER) {
         TdApi.RichTexts texts = new TdApi.RichTexts();
 
         TdApi.RichText wrongLayout = new TdApi.RichTextUrl(new TdApi.RichTextPlain(Lang.getString(R.string.WrongLayout)), parent.tdlib().tMeStartUrl("previews", "parameter", false), false);
