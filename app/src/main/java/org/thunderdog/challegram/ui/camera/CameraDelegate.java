@@ -1,5 +1,10 @@
 package org.thunderdog.challegram.ui.camera;
 
+import android.graphics.Point;
+import android.graphics.Rect;
+
+import androidx.annotation.Nullable;
+
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 
 public interface CameraDelegate {
@@ -96,7 +101,12 @@ public interface CameraDelegate {
   /**
    * Called when a QR code is found and successfully scanned
    * */
-  void onQrCodeFound (String qrCodeData);
+  void onQrCodeFound (String qrCodeData, @Nullable Rect boundingBox, int height, int width);
+
+  /**
+   * Called when a QR code is not found at the moment - use this to reset the animation.
+   * */
+  void onQrCodeNotFound ();
 
   /**
    * Called when video capture has been finished

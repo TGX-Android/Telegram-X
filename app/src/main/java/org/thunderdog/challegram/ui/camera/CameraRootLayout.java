@@ -1,6 +1,7 @@
 package org.thunderdog.challegram.ui.camera;
 
 import android.content.Context;
+import android.graphics.Rect;
 import android.view.MotionEvent;
 
 import androidx.annotation.NonNull;
@@ -16,7 +17,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
  */
 
 class CameraRootLayout extends FrameLayoutFix {
-  private ViewController controller;
+  protected ViewController controller;
 
   public CameraRootLayout (@NonNull Context context) {
     super(context);
@@ -46,4 +47,8 @@ class CameraRootLayout extends FrameLayoutFix {
     }
     return true;
   }
+
+  public void setQrCorner (Rect boundingBox, int height, int width) {}
+  public void resetQrCorner () {}
+  public void setQrMode (boolean enable) {}
 }

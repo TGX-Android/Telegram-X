@@ -5,6 +5,8 @@ import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.Point;
+import android.graphics.Rect;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -56,6 +58,7 @@ import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.ShadowView;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
@@ -104,18 +107,24 @@ public class CameraController extends ViewController implements CameraDelegate, 
   public static final int MODE_QR = 2;
 
   private boolean forceLegacy;
-  private boolean qrCodeFound;
   private int cameraMode;
   private @Nullable ReadyListener readyListener;
   private @Nullable QrCodeListener qrCodeListener;
+  private String savedQrCodeData;
+  private boolean qrCodeConfirmed;
 
   public void setQrListener (@Nullable QrCodeListener qrCodeListener) {
     this.qrCodeListener = qrCodeListener;
   }
 
   public void setMode (int mode, @Nullable ReadyListener readyListener) {
+    this.qrCodeConfirmed = false;
     this.readyListener = readyListener;
     if (this.cameraMode == mode) {
+      if (this.cameraMode == MODE_QR) {
+        rootLayout.setQrMode(true);
+      }
+
       return;
     }
     setForceLegacy(mode == MODE_ROUND_VIDEO);
@@ -197,7 +206,7 @@ public class CameraController extends ViewController implements CameraDelegate, 
     Views.setSimpleShadow(durationView);
     resetDuration();
 
-    rootLayout = new CameraRootLayout(context);
+    rootLayout = new CameraQrCodeRootLayout(context);
     rootLayout.setController(this);
     rootLayout.setBackgroundColor(0xff000000);
     rootLayout.addView(contentView);
@@ -693,10 +702,12 @@ public class CameraController extends ViewController implements CameraDelegate, 
       switchCameraButton.setVisibility(View.GONE);
       flashButton.setVisibility(View.GONE);
       blurView.setVisibility(View.GONE);
+      rootLayout.setQrMode(true);
     } else {
       switchCameraButton.setVisibility(View.VISIBLE);
       flashButton.setVisibility(View.VISIBLE);
       blurView.setVisibility(View.VISIBLE);
+      rootLayout.setQrMode(false);
     }
   }
 
@@ -827,10 +838,6 @@ public class CameraController extends ViewController implements CameraDelegate, 
     if (cameraMode == MODE_MAIN && Settings.instance().needTutorial(Settings.TUTORIAL_HOLD_VIDEO)) {
       Settings.instance().markTutorialAsShown(Settings.TUTORIAL_HOLD_VIDEO);
       context().tooltipManager().builder(button).controller(this).show(tdlib, R.string.CameraButtonHint).hideDelayed();
-    }
-
-    if (cameraMode == MODE_QR) {
-      qrCodeFound = false;
     }
 
     if (inEarlyInitialization) {
@@ -1517,12 +1524,25 @@ public class CameraController extends ViewController implements CameraDelegate, 
   }
 
   @Override
-  public void onQrCodeFound(String qrCodeData) {
-    if (qrCodeListener != null && !qrCodeData.isEmpty() && !qrCodeFound) {
-      qrCodeFound = true;
-      qrCodeListener.onQrCodeScanned(qrCodeData);
+  public void onQrCodeFound (String qrCodeData, @Nullable Rect boundingBox, int height, int width) {
+    if (qrCodeListener != null && !qrCodeData.isEmpty() && (qrCodeData.startsWith("tg://") || qrCodeData.startsWith(context.currentTdlib().tMeUrl())) && !qrCodeConfirmed) {
+      savedQrCodeData = qrCodeData;
+      rootLayout.setQrCorner(boundingBox, height, width);
+    }
+  }
+
+  public void onQrCodeFoundAndWaited () {
+    if (qrCodeListener != null && savedQrCodeData != null) {
+      qrCodeListener.onQrCodeScanned(savedQrCodeData);
+      savedQrCodeData = null;
+      qrCodeConfirmed = true;
       context.onBackPressed();
     }
+  }
+
+  @Override
+  public void onQrCodeNotFound () {
+    rootLayout.resetQrCorner();
   }
 
   @Override

@@ -2,6 +2,7 @@ package org.thunderdog.challegram.ui.camera;
 
 import android.annotation.SuppressLint;
 import android.graphics.ImageFormat;
+import android.graphics.Rect;
 import android.media.Image;
 import android.os.Build;
 
@@ -26,6 +27,7 @@ import com.google.zxing.qrcode.QRCodeReader;
 
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.tool.UI;
 
 import java.nio.ByteBuffer;
@@ -45,7 +47,7 @@ public class CameraQrBridge {
         this.delegate = manager.delegate;
         this.mainExecutor = ContextCompat.getMainExecutor(manager.context);
 
-        if (U.isGooglePlayServicesAvailable(UI.getAppContext())) {
+        if (U.isGooglePlayServicesAvailable(UI.getAppContext()) && !Config.QR_FORCE_ZXING) {
             try {
                 barcodeScanner = BarcodeScanning.getClient(new BarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).build());
             } catch (Exception e) {
@@ -55,7 +57,7 @@ public class CameraQrBridge {
     }
 
     public void destroy() {
-        barcodeScanner.close();
+        if (barcodeScanner != null) barcodeScanner.close();
         backgroundExecutor.shutdown();
     }
 
@@ -69,17 +71,17 @@ public class CameraQrBridge {
         }
 
         if (isGmsImplementationSupported()) {
-            gmsImplementation(InputImage.fromMediaImage(mediaImage, proxy.getImageInfo().getRotationDegrees()), proxy::close);
+            gmsImplementation(InputImage.fromMediaImage(mediaImage, proxy.getImageInfo().getRotationDegrees()), true, proxy.getImageInfo().getRotationDegrees() != 0, proxy::close);
         } else {
-            zxingImplementation(bufferAsBytes(proxy.getPlanes()[0].getBuffer()), proxy.getWidth(), proxy.getHeight());
+            zxingImplementation(bufferAsBytes(proxy.getPlanes()[0].getBuffer()), proxy.getWidth(), proxy.getHeight(), proxy::close);
         }
     }
 
     public void processImage(byte[] data, int previewWidth, int previewHeight) {
         if (isGmsImplementationSupported()) {
-            gmsImplementation(InputImage.fromByteArray(data, previewWidth, previewHeight, 0, ImageFormat.NV21), null);
+            gmsImplementation(InputImage.fromByteArray(data, previewWidth, previewHeight, 0, ImageFormat.NV21), false, false,null);
         } else {
-            zxingImplementation(data, previewWidth, previewHeight);
+            zxingImplementation(data, previewWidth, previewHeight, null);
         }
     }
 
@@ -87,25 +89,52 @@ public class CameraQrBridge {
         return barcodeScanner != null;
     }
 
-    private void gmsImplementation(InputImage image, @Nullable Runnable onCompleteListener) {
+    private void gmsImplementation(InputImage image, boolean shouldProvideBox, boolean shouldAutoRotate, @Nullable Runnable onCompleteListener) {
         barcodeScanner.process(image).addOnSuccessListener(mainExecutor, barcodes -> {
-            if (barcodes.isEmpty()) return;
-            delegate.onQrCodeFound(barcodes.get(0).getRawValue());
+            if (barcodes.isEmpty()) {
+                delegate.onQrCodeNotFound();
+            } else {
+                Barcode first = barcodes.get(0);
+                Rect boundBox = null;
+
+                if (shouldProvideBox) {
+                    boundBox = first.getBoundingBox();
+                }
+
+                if (shouldAutoRotate) {
+                    delegate.onQrCodeFound(first.getRawValue(), boundBox, image.getWidth(), image.getHeight());
+                } else {
+                    delegate.onQrCodeFound(first.getRawValue(), boundBox, image.getHeight(), image.getWidth());
+                }
+            }
         }).addOnFailureListener(ex -> Log.e(Log.TAG_CAMERA, ex)).addOnCompleteListener(result -> {
             if (onCompleteListener != null) onCompleteListener.run();
         });
     }
 
-    private void zxingImplementation(byte[] data, int width, int height) {
+    @SuppressWarnings("SuspiciousNameCombination")
+    private void zxingImplementation (byte[] data, int width, int height, @Nullable Runnable onFinish) {
         backgroundExecutor.submit(() -> {
             try {
-                String match = zxingImplementationImpl(data, width, height);
-                if (match != null && !match.isEmpty()) delegate.onQrCodeFound(match);
-            } catch (Exception ex) { ex.printStackTrace(); }
+                Result match = zxingImplementationImpl(data, width, height);
+                if (match != null && match.getText() != null && !match.getText().isEmpty()) {
+                    mainExecutor.execute(() -> delegate.onQrCodeFound(match.getText(), null, width, height));
+                } else {
+                    mainExecutor.execute(delegate::onQrCodeNotFound);
+                }
+            } catch (Exception ex) {
+                if (ex instanceof NotFoundException) {
+                    mainExecutor.execute(delegate::onQrCodeNotFound);
+                } else {
+                    Log.e(Log.TAG_CAMERA, ex);
+                }
+            } finally {
+                if (onFinish != null) onFinish.run();
+            }
         });
     }
 
-    private String zxingImplementationImpl(byte[] data, int width, int height) throws FormatException, ChecksumException, NotFoundException {
+    private Result zxingImplementationImpl (byte[] data, int width, int height) throws FormatException, ChecksumException, NotFoundException {
         PlanarYUVLuminanceSource source = new PlanarYUVLuminanceSource(
                 data,
                 width,
@@ -117,13 +146,10 @@ public class CameraQrBridge {
                 false
         );
 
-        BinaryBitmap bb = new BinaryBitmap(new HybridBinarizer(source));
-        Result result = zxingReader.decode(bb);
-        if (result == null) return null;
-        return result.getText();
+        return zxingReader.decode(new BinaryBitmap(new HybridBinarizer(source)));
     }
 
-    private byte[] bufferAsBytes(ByteBuffer buffer) {
+    private byte[] bufferAsBytes (ByteBuffer buffer) {
         buffer.rewind();
         byte[] bytes = new byte[buffer.remaining()];
         buffer.get(bytes);
