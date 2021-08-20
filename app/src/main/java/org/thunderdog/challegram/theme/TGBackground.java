@@ -287,12 +287,20 @@ public class TGBackground {
     return isFill() && ((TdApi.BackgroundTypeFill) type).fill.getConstructor() == TdApi.BackgroundFillGradient.CONSTRUCTOR;
   }
 
+  public boolean isFillFreeformGradient () {
+    return isFill() && ((TdApi.BackgroundTypeFill) type).fill.getConstructor() == TdApi.BackgroundFillFreeformGradient.CONSTRUCTOR;
+  }
+
   public boolean isPattern () {
     return type != null && type.getConstructor() == TdApi.BackgroundTypePattern.CONSTRUCTOR;
   }
 
   public boolean isPatternBackgroundGradient () {
     return isPattern() && ((TdApi.BackgroundTypePattern) type).fill.getConstructor() == TdApi.BackgroundFillGradient.CONSTRUCTOR;
+  }
+
+  public boolean isPatternBackgroundFreeformGradient () {
+    return isPattern() && ((TdApi.BackgroundTypePattern) type).fill.getConstructor() == TdApi.BackgroundFillFreeformGradient.CONSTRUCTOR;
   }
 
   public void setLegacyWallpaperId (int wallpaperId) {

@@ -57,6 +57,7 @@ import org.thunderdog.challegram.navigation.SettingsWrap;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.theme.TGBackground;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeColors;
 import org.thunderdog.challegram.theme.ThemeCustom;
@@ -2981,7 +2982,9 @@ public class TdlibUi extends Handler {
                     TdApi.Background wallpaper = (TdApi.Background) backgroundObj;
 
                     post(() -> {
-                      if (wallpaper.type.getConstructor() != TdApi.BackgroundTypeWallpaper.CONSTRUCTOR || wallpaper.document == null) {
+                      TGBackground bg = new TGBackground(tdlib, wallpaper);
+
+                      if (bg.isFillFreeformGradient() || bg.isPattern()) {
                         showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.ChatBackgroundNotSupported), openParameters);
                         if (after != null) {
                           after.runWithBool(true);
