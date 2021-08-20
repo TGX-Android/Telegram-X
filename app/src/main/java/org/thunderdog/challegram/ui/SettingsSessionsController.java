@@ -16,6 +16,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -33,13 +34,14 @@ import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.DateUtils;
 import me.vkryl.td.Td;
+import me.vkryl.td.TdConstants;
 
 /**
  * Date: 17/11/2016
  * Author: default
  */
 
-public class SettingsSessionsController extends RecyclerViewController<SettingsPrivacyController> implements SettingsPrivacyController.AuthorizationsLoadListener, View.OnClickListener, OptionDelegate, CameraController.QrCodeListener {
+public class SettingsSessionsController extends RecyclerViewController<SettingsPrivacyController> implements SettingsPrivacyController.AuthorizationsLoadListener, View.OnClickListener, OptionDelegate, CameraController.QrCodeListener, MessageListener {
   public SettingsSessionsController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
@@ -278,30 +280,41 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
     }
 
     if (getArguments() == null) {
-      tdlib.client().send(new TdApi.GetActiveSessions(), object -> tdlib.ui().post(() -> {
-        if (!isDestroyed()) {
-          switch (object.getConstructor()) {
-            case TdApi.Sessions.CONSTRUCTOR: {
-              TdApi.Session[] sessions = ((TdApi.Sessions) object).sessions;
-              Td.sort(sessions);
-              setSessions(sessions);
-              buildCells();
-              break;
-            }
-            case TdApi.Error.CONSTRUCTOR: {
-              UI.showError(object);
-              break;
-            }
-            default: {
-              Log.unexpectedTdlibResponse(object, TdApi.GetActiveSessions.class, TdApi.Sessions.class);
-              break;
-            }
-          }
-        }
-      }));
+      requestActiveSessions();
     }
 
     recyclerView.setAdapter(adapter);
+    tdlib.listeners().subscribeToMessageUpdates(TdConstants.TELEGRAM_ACCOUNT_ID, this);
+  }
+
+  private void requestActiveSessions () {
+    tdlib.client().send(new TdApi.GetActiveSessions(), object -> tdlib.ui().post(() -> {
+      if (!isDestroyed()) {
+        switch (object.getConstructor()) {
+          case TdApi.Sessions.CONSTRUCTOR: {
+            TdApi.Session[] sessions = ((TdApi.Sessions) object).sessions;
+            Td.sort(sessions);
+            setSessions(sessions);
+            buildCells();
+            break;
+          }
+          case TdApi.Error.CONSTRUCTOR: {
+            UI.showError(object);
+            break;
+          }
+          default: {
+            Log.unexpectedTdlibResponse(object, TdApi.GetActiveSessions.class, TdApi.Sessions.class);
+            break;
+          }
+        }
+      }
+    }));
+  }
+
+  @Override
+  public void onNewMessage(TdApi.Message message) {
+    if (message.chatId != TdConstants.TELEGRAM_ACCOUNT_ID) return;
+    requestActiveSessions();
   }
 
   @Override
@@ -524,6 +537,7 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
   @Override
   public void destroy () {
     super.destroy();
+    tdlib.listeners().unsubscribeFromMessageUpdates(TdConstants.TELEGRAM_ACCOUNT_ID, this);
     SettingsPrivacyController controller = getArguments();
     if (controller != null) {
       controller.setAuthorizationsLoadListener(null);
