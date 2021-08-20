@@ -22,6 +22,7 @@ import com.google.zxing.FormatException;
 import com.google.zxing.NotFoundException;
 import com.google.zxing.PlanarYUVLuminanceSource;
 import com.google.zxing.Result;
+import com.google.zxing.ResultPoint;
 import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.qrcode.QRCodeReader;
 
@@ -44,7 +45,7 @@ public class CameraQrBridge {
     private final QRCodeReader zxingReader = new QRCodeReader();
     private BarcodeScanner barcodeScanner;
 
-    public CameraQrBridge(CameraManager<?> manager) {
+    public CameraQrBridge (CameraManager<?> manager) {
         this.delegate = manager.delegate;
         this.mainExecutor = ContextCompat.getMainExecutor(manager.context);
 
@@ -57,13 +58,13 @@ public class CameraQrBridge {
         }
     }
 
-    public void destroy() {
+    public void destroy () {
         if (barcodeScanner != null) barcodeScanner.close();
         backgroundExecutor.shutdown();
     }
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    public void processImage(ImageProxy proxy) {
+    public void processImage (ImageProxy proxy) {
         @SuppressLint("UnsafeOptInUsageError") Image mediaImage = proxy.getImage();
 
         if (mediaImage == null) {
@@ -72,26 +73,27 @@ public class CameraQrBridge {
         }
 
         if (isGmsImplementationSupported()) {
-            gmsImplementation(InputImage.fromMediaImage(mediaImage, proxy.getImageInfo().getRotationDegrees()), proxy.getImageInfo().getRotationDegrees() != 0, proxy::close);
+            gmsImplementation(InputImage.fromMediaImage(mediaImage, proxy.getImageInfo().getRotationDegrees()), U.isRotated(proxy.getImageInfo().getRotationDegrees()), proxy::close);
         } else {
-            zxingImplementation(bufferAsBytes(proxy.getPlanes()[0].getBuffer()), proxy.getWidth(), proxy.getHeight(), proxy::close);
+            zxingImplementation(bufferAsBytes(proxy.getPlanes()[0].getBuffer()), proxy.getWidth(), proxy.getHeight(), proxy.getImageInfo().getRotationDegrees(), proxy::close);
         }
     }
 
-    public void processImage(byte[] data, int previewWidth, int previewHeight, CameraApiLegacy legacyApi) {
+    public void processImage (byte[] data, int previewWidth, int previewHeight, CameraApiLegacy legacyApi) {
+        int rotation = delegate.getCurrentCameraOrientation();
+
         if (isGmsImplementationSupported()) {
-            int rotation = delegate.getCurrentCameraOrientation();
             gmsImplementation(InputImage.fromByteArray(data, previewWidth, previewHeight, rotation, ImageFormat.NV21), U.isRotated(rotation), legacyApi::notifyCanReadNextFrame);
         } else {
-            zxingImplementation(data, previewWidth, previewHeight, legacyApi::notifyCanReadNextFrame);
+            zxingImplementation(data, previewWidth, previewHeight, rotation, legacyApi::notifyCanReadNextFrame);
         }
     }
 
-    private boolean isGmsImplementationSupported() {
+    private boolean isGmsImplementationSupported () {
         return barcodeScanner != null;
     }
 
-    private void gmsImplementation(InputImage image, boolean swapSizes, @Nullable Runnable onCompleteListener) {
+    private void gmsImplementation (InputImage image, boolean swapSizes, @Nullable Runnable onCompleteListener) {
         barcodeScanner.process(image).addOnSuccessListener(mainExecutor, barcodes -> {
             if (barcodes.isEmpty()) {
                 delegate.onQrCodeNotFound();
@@ -110,12 +112,12 @@ public class CameraQrBridge {
     }
 
     @SuppressWarnings("SuspiciousNameCombination")
-    private void zxingImplementation (byte[] data, int width, int height, @Nullable Runnable onFinish) {
+    private void zxingImplementation (byte[] data, int width, int height, int rotation, @Nullable Runnable onFinish) {
         backgroundExecutor.submit(() -> {
             try {
-                Result match = zxingImplementationImpl(data, width, height);
+                Result match = zxingImplementationImpl(data, width, height, rotation);
                 if (match != null && match.getText() != null && !match.getText().isEmpty()) {
-                    mainExecutor.execute(() -> delegate.onQrCodeFound(match.getText(), null, width, height));
+                    mainExecutor.execute(() -> delegate.onQrCodeFound(match.getText(), zxingBoundingBox(match), width, height));
                 } else {
                     mainExecutor.execute(delegate::onQrCodeNotFound);
                 }
@@ -131,7 +133,31 @@ public class CameraQrBridge {
         });
     }
 
-    private Result zxingImplementationImpl (byte[] data, int width, int height) throws FormatException, ChecksumException, NotFoundException {
+    private Rect zxingBoundingBox (Result result) {
+        // ordered in: bottom-left, top-left, top-right
+        if (result.getResultPoints().length < 3) return null;
+
+        ResultPoint[] points = result.getResultPoints();
+        return new Rect(
+                (int) points[0].getX(), // left
+                (int) points[1].getY(), // top
+                (int) points[2].getX(), // right
+                (int) points[0].getY() // bottom
+        );
+    }
+
+    @SuppressWarnings("SuspiciousNameCombination")
+    private Result zxingImplementationImpl (byte[] data, int width, int height, int rotation) throws FormatException, ChecksumException, NotFoundException {
+        if (rotation != 0) {
+            data = rotateYuvImage(data, width, height, rotation);
+        }
+
+        if (U.isRotated(rotation)) {
+            int prevWidth = width;
+            width = height;
+            height = prevWidth;
+        }
+
         PlanarYUVLuminanceSource source = new PlanarYUVLuminanceSource(
                 data,
                 width,
@@ -140,7 +166,7 @@ public class CameraQrBridge {
                 0,
                 width,
                 height,
-                false
+                rotation == 180
         );
 
         return zxingReader.decode(new BinaryBitmap(new HybridBinarizer(source)));
@@ -151,5 +177,34 @@ public class CameraQrBridge {
         byte[] bytes = new byte[buffer.remaining()];
         buffer.get(bytes);
         return bytes;
+    }
+
+    private byte[] rotateYuvImage (byte[] data, int width, int height, int degrees) {
+        if (degrees == 0 || degrees % 90 != 0) return data;
+
+        byte[] rotatedData = new byte[data.length];
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                switch (degrees) {
+                    case 90: {
+                        rotatedData[x * height + height - y - 1] = data[x + y * width];
+                        break;
+                    }
+
+                    case 180: {
+                        rotatedData[width * (height - y - 1) + width - x - 1] = data[x + y * width];
+                        break;
+                    }
+
+                    case 270: {
+                        rotatedData[y + x * height] = data[y * width + width - x - 1];
+                        break;
+                    }
+                }
+            }
+        }
+
+        return rotatedData;
     }
 }
