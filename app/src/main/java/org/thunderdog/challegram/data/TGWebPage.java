@@ -480,6 +480,11 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   }
 
   public boolean open (View view, boolean allowRipple) {
+    if (getType() == TYPE_TELEGRAM_BACKGROUND) {
+      parent.tdlib().ui().openUrl(parent.controller(), url, rippleButton.firstButton().openParameters(view).disableInstantView());
+      return true;
+    }
+    
     if (mediaWrapper != null && allowRipple && isTelegramType(type)) {
       MediaViewController.openFromMessage(parent);
       return true;
@@ -494,8 +499,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       case TYPE_TELEGRAM_USER:
       case TYPE_TELEGRAM_CHAT:
       case TYPE_TELEGRAM_MESSAGE:
-      case TYPE_TELEGRAM_ALBUM:
-      case TYPE_TELEGRAM_BACKGROUND: {
+      case TYPE_TELEGRAM_ALBUM: {
         parent.tdlib().ui().openUrl(parent.controller(), url, rippleButton.firstButton().openParameters(view).disableInstantView());
         break;
       }
