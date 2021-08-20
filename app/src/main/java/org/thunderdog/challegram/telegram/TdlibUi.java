@@ -2981,7 +2981,7 @@ public class TdlibUi extends Handler {
 
                     post(() -> {
                       if (wallpaper.type.getConstructor() != TdApi.BackgroundTypeWallpaper.CONSTRUCTOR || wallpaper.document == null) {
-                        showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.WallpaperNotSupported), openParameters);
+                        showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.ChatBackgroundNotSupported), openParameters);
                         if (after != null) {
                           after.runWithBool(true);
                         }

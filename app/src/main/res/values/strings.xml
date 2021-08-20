@@ -3669,10 +3669,11 @@
   <string name="SlowModeHours_other">Members will be able to send only one message every %1$s hours.</string>
   <string name="SlowModeOff">Off</string>
 
-  <string name="WallpaperPreview">Wallpaper Preview</string>
-  <string name="WallpaperNotSupported">Sorry, this type of wallpaper is not yet supported.</string>
-  <string name="WallpaperApply">Apply wallpaper</string>
-  <string name="WallpaperView">View wallpaper</string>
+  <string name="ChatBackgroundPreview">Chat Background Preview</string>
+  <string name="ChatBackgroundNotSupported">Sorry, this type of chat background is not yet supported.</string>
+  <string name="ChatBackgroundApply">Apply Chat Background</string>
+  <string name="ChatBackgroundView">View Chat Background</string>
+  <string name="ChatBackground">Chat Background</string>
 
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />

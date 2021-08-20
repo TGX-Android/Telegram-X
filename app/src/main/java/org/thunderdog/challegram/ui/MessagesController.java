@@ -1092,7 +1092,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     updateBottomBarStyle();
 
     if (previewMode == PREVIEW_MODE_WALLPAPER_OBJECT) {
-      showBottomButton(BOTTOM_ACTION_APPLY_WALLPAPER, 0, true);
+      showBottomButton(BOTTOM_ACTION_APPLY_WALLPAPER, 0, false);
       bottomShadowView.setVisibility(View.GONE);
     }
 
@@ -2951,7 +2951,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case PREVIEW_MODE_WALLPAPER:
         return Lang.getString(R.string.Wallpaper);
       case PREVIEW_MODE_WALLPAPER_OBJECT:
-        return Lang.getString(R.string.WallpaperPreview);
+        return Lang.getString(R.string.ChatBackgroundPreview);
       case PREVIEW_MODE_FONT_SIZE:
         return Lang.getString(R.string.TextSize);
       default:
@@ -4905,7 +4905,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         break;
       }
       case BOTTOM_ACTION_APPLY_WALLPAPER: {
-        bottomBar.setAction(R.id.btn_applyWallpaper, Lang.getString(R.string.WallpaperApply), R.drawable.baseline_warning_24, animateButtonContent);
+        bottomBar.setAction(R.id.btn_applyWallpaper, Lang.getString(R.string.ChatBackgroundApply), R.drawable.baseline_warning_24, animateButtonContent);
         bottomBar.clearPreviewChat();
         break;
       }
