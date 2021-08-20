@@ -29,6 +29,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.ui.camera.legacy.CameraApiLegacy;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
@@ -71,17 +72,18 @@ public class CameraQrBridge {
         }
 
         if (isGmsImplementationSupported()) {
-            gmsImplementation(InputImage.fromMediaImage(mediaImage, proxy.getImageInfo().getRotationDegrees()), true, proxy.getImageInfo().getRotationDegrees() != 0, proxy::close);
+            gmsImplementation(InputImage.fromMediaImage(mediaImage, proxy.getImageInfo().getRotationDegrees()), proxy.getImageInfo().getRotationDegrees() != 0, proxy::close);
         } else {
             zxingImplementation(bufferAsBytes(proxy.getPlanes()[0].getBuffer()), proxy.getWidth(), proxy.getHeight(), proxy::close);
         }
     }
 
-    public void processImage(byte[] data, int previewWidth, int previewHeight) {
+    public void processImage(byte[] data, int previewWidth, int previewHeight, CameraApiLegacy legacyApi) {
         if (isGmsImplementationSupported()) {
-            gmsImplementation(InputImage.fromByteArray(data, previewWidth, previewHeight, 0, ImageFormat.NV21), false, false,null);
+            int rotation = delegate.getCurrentCameraOrientation();
+            gmsImplementation(InputImage.fromByteArray(data, previewWidth, previewHeight, rotation, ImageFormat.NV21), U.isRotated(rotation), legacyApi::notifyCanReadNextFrame);
         } else {
-            zxingImplementation(data, previewWidth, previewHeight, null);
+            zxingImplementation(data, previewWidth, previewHeight, legacyApi::notifyCanReadNextFrame);
         }
     }
 
@@ -89,22 +91,17 @@ public class CameraQrBridge {
         return barcodeScanner != null;
     }
 
-    private void gmsImplementation(InputImage image, boolean shouldProvideBox, boolean shouldAutoRotate, @Nullable Runnable onCompleteListener) {
+    private void gmsImplementation(InputImage image, boolean swapSizes, @Nullable Runnable onCompleteListener) {
         barcodeScanner.process(image).addOnSuccessListener(mainExecutor, barcodes -> {
             if (barcodes.isEmpty()) {
                 delegate.onQrCodeNotFound();
             } else {
                 Barcode first = barcodes.get(0);
-                Rect boundBox = null;
 
-                if (shouldProvideBox) {
-                    boundBox = first.getBoundingBox();
-                }
-
-                if (shouldAutoRotate) {
-                    delegate.onQrCodeFound(first.getRawValue(), boundBox, image.getWidth(), image.getHeight());
+                if (swapSizes) {
+                    delegate.onQrCodeFound(first.getRawValue(), first.getBoundingBox(), image.getWidth(), image.getHeight());
                 } else {
-                    delegate.onQrCodeFound(first.getRawValue(), boundBox, image.getHeight(), image.getWidth());
+                    delegate.onQrCodeFound(first.getRawValue(), first.getBoundingBox(), image.getHeight(), image.getWidth());
                 }
             }
         }).addOnFailureListener(ex -> Log.e(Log.TAG_CAMERA, ex)).addOnCompleteListener(result -> {

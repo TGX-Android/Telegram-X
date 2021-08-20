@@ -1531,6 +1531,15 @@ public class CameraController extends ViewController implements CameraDelegate, 
     }
   }
 
+  @Override
+  public int getCurrentCameraOrientation () {
+    if (manager instanceof CameraManagerLegacy) {
+      return ((CameraManagerLegacy) manager).getCurrentCameraRotation();
+    } else {
+      return 0; // CameraX impl won't call this anyway
+    }
+  }
+
   public void onQrCodeFoundAndWaited () {
     if (qrCodeListener != null && savedQrCodeData != null) {
       qrCodeListener.onQrCodeScanned(savedQrCodeData);

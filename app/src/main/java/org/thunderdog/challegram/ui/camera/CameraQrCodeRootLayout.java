@@ -134,7 +134,6 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   @Override
   public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
     if (id == ANIMATOR_STATUS && finalFactor == 1f) {
-      Log.d("onFactorChangeFinished %s", finalFactor);
       ((CameraController) controller).onQrCodeFoundAndWaited();
       qrFoundAnimator.setValue(false, false);
     }

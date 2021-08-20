@@ -104,6 +104,11 @@ public interface CameraDelegate {
   void onQrCodeFound (String qrCodeData, @Nullable Rect boundingBox, int height, int width);
 
   /**
+   * Called when a QR code reader wants to know how it should compensate preview image (only for Camera1 API)
+   * */
+  int getCurrentCameraOrientation ();
+
+  /**
    * Called when a QR code is not found at the moment - use this to reset the animation.
    * */
   void onQrCodeNotFound ();

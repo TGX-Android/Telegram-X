@@ -52,7 +52,7 @@ public class CameraManagerLegacy extends CameraManagerTexture {
     if (cameraQrBridge != null && api.isCameraActive) {
       try {
         Camera.Size previewSize = camera.getParameters().getPreviewSize();
-        cameraQrBridge.processImage(data, previewSize.width, previewSize.height);
+        cameraQrBridge.processImage(data, previewSize.width, previewSize.height, (CameraApiLegacy) api);
       } catch (Exception ignored) {}
     }
   }
@@ -275,6 +275,10 @@ public class CameraManagerLegacy extends CameraManagerTexture {
   }
 
   // Semi-internal API
+
+  public int getCurrentCameraRotation () {
+    return api.calculateDisplayOrientation();
+  }
 
   public void showFatalError (String error) {
     delegate.displayFatalErrorMessage(error);
