@@ -518,7 +518,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         headerDoubleCell.setThemedTextColor(this);
         headerDoubleCell.initWithMargin(Screen.dp(12f), true);
         headerDoubleCell.setTitle(getName());
-        headerDoubleCell.setSubtitle(Strings.buildSize(getArguments().wallpaperObject.document.document.size));
+        if (getArguments().wallpaperObject.document != null) {
+          headerDoubleCell.setSubtitle(Strings.buildSize(getArguments().wallpaperObject.document.document.size));
+        }
       }
       default: {
         if (areScheduled) {
@@ -1731,6 +1733,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
     switch (id) {
+      case R.id.btn_share: {
+        ShareController c = new ShareController(context(), tdlib());
+        c.setArguments(new ShareController.Args(tdlib().tMeUrl() + "bg/" + getArguments().wallpaperObject.name));
+        c.show();
+        break;
+      }
+      case R.id.btn_copyLink: {
+        UI.copyText(tdlib().tMeUrl() + "bg/" + getArguments().wallpaperObject.name, R.string.CopiedLink);
+        break;
+      }
       case R.id.btn_openLinkedChat: {
         openLinkedChat();
         break;
@@ -2930,12 +2942,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
         return R.id.menu_search;
       case PREVIEW_MODE_SEARCH:
         return 0;
+      case PREVIEW_MODE_WALLPAPER_OBJECT:
       case PREVIEW_MODE_FONT_SIZE:
         return R.id.menu_more;
       case PREVIEW_MODE_WALLPAPER:
         return R.id.menu_gallery;
-      case PREVIEW_MODE_WALLPAPER_OBJECT:
-        return R.id.menu_share;
     }
     return getChatId() != 0 ? (isSelfChat() || getMessageThreadId() != 0 ? R.id.menu_search : isSecretChat() ? R.id.menu_secretChat : R.id.menu_more) : 0;
   }
@@ -3095,6 +3106,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
               strings.append(R.string.TextSizeReset);
             }
             showMore(ids.get(), strings.get(), 0);
+          } else if (previewMode == PREVIEW_MODE_WALLPAPER_OBJECT) {
+            IntList ids = new IntList(2);
+            StringList strings = new StringList(2);
+            ids.append(R.id.btn_share);
+            strings.append(R.string.Share);
+            ids.append(R.id.btn_copyLink);
+            strings.append(R.string.CopyLink);
+            showMore(ids.get(), strings.get(), 0);
           }
         } else {
           if (inputView != null && inputView.canFormatText()) {
@@ -3136,12 +3155,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.menu_btn_gallery: {
         Intents.openGallery(false);
-        break;
-      }
-      case R.id.menu_btn_share: {
-        ShareController c = new ShareController(context(), tdlib());
-        c.setArguments(new ShareController.Args("https://" + tdlib().tMeHost() + "bg/" + getArguments().wallpaperObject.name));
-        c.show();
         break;
       }
       case R.id.menu_btn_clear: {
