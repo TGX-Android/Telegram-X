@@ -89,7 +89,7 @@ public class CameraQrBridge {
         }
     }
 
-    private boolean isGmsImplementationSupported () {
+    public boolean isGmsImplementationSupported () {
         return barcodeScanner != null;
     }
 

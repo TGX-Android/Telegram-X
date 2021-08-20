@@ -118,7 +118,7 @@ public class CameraManagerX extends CameraManager<PreviewView> {
   }
 
   private int getCameraAspectRatioMode () {
-    if (delegate.useQrScanner()) {
+    if (delegate.useQrScanner() && cameraQrBridge != null && !cameraQrBridge.isGmsImplementationSupported()) {
       return Settings.CAMERA_RATIO_FULL_SCREEN;
     } else {
       return Settings.instance().getCameraAspectRatioMode();
