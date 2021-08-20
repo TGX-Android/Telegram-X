@@ -9,7 +9,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
@@ -465,11 +467,11 @@ public abstract class PageBlock implements MultipleViewProvider.InvalidateConten
     }
     if (detailsBlock == null) {
       context.setClosed(true, parent, out, true);
-      boolean needReportButton = !parent.tdlib().isKnownHost(url, true);
+      boolean needReportButton = !parent.tdlib().isKnownHost(url, true) && Config.INSTANT_VIEW_WRONG_LAYOUT;
       if (instantView.viewCount > 0 || needReportButton) {
         TdApi.RichTexts texts = new TdApi.RichTexts();
 
-        TdApi.RichText wrongLayout = new TdApi.RichTextUrl(new TdApi.RichTextPlain(Lang.getString(R.string.WrongLayout)), parent.tdlib().tMeUrl() + "previews?start=", false);
+        TdApi.RichText wrongLayout = new TdApi.RichTextUrl(new TdApi.RichTextPlain(Lang.getString(R.string.WrongLayout)), parent.tdlib().tMeStartUrl("previews", "parameter", false), false);
         TdApi.RichText viewCount = new TdApi.RichTextPlain(Lang.plural(R.string.xViews, instantView.viewCount));
 
         if (instantView.viewCount > 0 && needReportButton) {
