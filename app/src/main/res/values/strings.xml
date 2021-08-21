@@ -3673,6 +3673,7 @@
   <string name="PrimaryInviteLink">Permanent Link</string>
   <string name="AdditionalInviteLinks">Additional Links</string>
   <string name="RevokedInviteLinks">Revoked Links</string>
+  <string name="OtherAdminsInviteLinks">Links created by other admins</string>
   <string name="InviteLinkNoJoins">no one joined</string>
   <string name="InviteLinkJoins">%s joined</string>
   <string name="InviteLinkRemains">%s remaining</string>
@@ -3694,6 +3695,12 @@
   <string name="InviteLinkLimitedByUsersItem">Number of Users</string>
   <string name="InviteLinkLimitedByUsersAlertHint">0 - no limit</string>
   <string name="InviteLinkNoLimitSet">no limit</string>
+  <string name="InviteLinkExpireHeader">Expire after</string>
+  <string name="InviteLinkExpireConfirm">Set Expiration Date</string>
+  <string name="InviteLinkExpireIn">Expire in %s</string>
+  <string name="InviteLinkExpireInCustomDate">Expire at specific date…</string>
+  <string name="InviteLinkExpireNone">Do not expire</string>
+  <string name="InviteLinkOtherAdminHint">**%s** can see this link and use it to invite new members to **%s**.</string>
 
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />

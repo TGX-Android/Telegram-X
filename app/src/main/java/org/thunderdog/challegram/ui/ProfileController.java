@@ -4402,32 +4402,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private void openInviteLink () {
-    /*TdApi.ChatInviteLink inviteLink;
-    switch (mode) {
-      case MODE_CHANNEL:
-      case MODE_SUPERGROUP:
-      case MODE_EDIT_CHANNEL:
-      case MODE_EDIT_SUPERGROUP: {
-        inviteLink = supergroupFull != null ? supergroupFull.inviteLink : null;
-        break;
-      }
-      case MODE_GROUP:
-      case MODE_EDIT_GROUP: {
-        inviteLink = groupFull != null ? groupFull.inviteLink : null;
-        break;
-      }
-      default: {
-        return;
-      }
-    }
-
-    //InviteLinkController c = new InviteLinkController(context, tdlib);
-    //c.setArguments(new InviteLinkController.Arguments(chat.id, inviteLink));
-    //c.setCallback(this);
-    //navigateTo(c);*/
-
     ChatLinksController c = new ChatLinksController(context, tdlib);
-    c.setArguments(new ChatLinksController.Args(chat.id, this));
+    c.setArguments(new ChatLinksController.Args(chat.id, tdlib.myUserId(), this, supergroup.status.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR));
     navigateTo(c);
   }
 

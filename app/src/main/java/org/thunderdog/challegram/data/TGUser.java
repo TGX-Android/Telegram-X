@@ -31,6 +31,7 @@ public class TGUser implements UserProvider {
   private static final int FLAG_USERNAME = 0x10;
   private static final int FLAG_NO_BOT_STATE = 0x20;
   private static final int FLAG_SHOW_PHONE_NUMBER = 0x40;
+  private static final int FLAG_CUSTOM_STATUS_TEXT = 0x80;
 
   private final Tdlib tdlib;
   private final int userId;
@@ -144,6 +145,19 @@ public class TGUser implements UserProvider {
     }
   }
 
+  public void setCustomStatus (String statusText) {
+    if (!this.statusText.equals(statusText)) {
+      if (statusText == null || statusText.isEmpty()) {
+        this.flags &= ~FLAG_CUSTOM_STATUS_TEXT;
+        updateStatus();
+      } else {
+        this.statusText = statusText;
+        this.flags |= FLAG_CUSTOM_STATUS_TEXT;
+        this.flags &= ~FLAG_ONLINE;
+      }
+    }
+  }
+
   private long chatId;
 
   public long getChatId () {
@@ -202,7 +216,9 @@ public class TGUser implements UserProvider {
   public boolean updateStatus () {
     int oldFlags = this.flags;
     String statusText;
-    if (((flags & FLAG_CONTACT) != 0 || (flags & FLAG_SHOW_PHONE_NUMBER) != 0) && user != null) {
+    if ((flags & FLAG_CUSTOM_STATUS_TEXT) != 0) {
+      return true;
+    } else if (((flags & FLAG_CONTACT) != 0 || (flags & FLAG_SHOW_PHONE_NUMBER) != 0) && user != null) {
       statusText = Strings.formatPhone(user.phoneNumber);
     } else if ((flags & FLAG_USERNAME) != 0 && user != null) {
       statusText = "@" + user.username;

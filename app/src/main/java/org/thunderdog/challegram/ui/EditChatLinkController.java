@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 import me.vkryl.android.widget.FrameLayoutFix;
 
 public class EditChatLinkController extends EditBaseController<EditChatLinkController.Args> implements View.OnClickListener {
-    private static final int[] PRESETS = new int[]{0, 3600, 3600 * 24, 3600 * 24 * 7};
+    private static final int[] PRESETS = new int[]{0, 3600, 3600 * 24, 3600 * 24 * 7, 1};
 
     private SettingsAdapter adapter;
     private int expireDate;
@@ -47,15 +47,43 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
     public void onClick(View v) {
         if (v.getId() == R.id.btn_inviteLinkDateLimit) {
             int[] ids = new int[PRESETS.length];
+            int[] icons = new int[PRESETS.length];
             String[] strings = new String[PRESETS.length];
 
             for (int i = 0; i < PRESETS.length; i++) {
                 ids[i] = i;
-                strings[i] = i == 0 ? Lang.getString(R.string.InviteLinkNoLimitSet) : Lang.getDuration(PRESETS[i]);
+                switch (PRESETS[i]) {
+                    case 0:
+                        icons[i] = R.drawable.baseline_cancel_24;
+                        strings[i] = Lang.getString(R.string.InviteLinkExpireNone);
+                        break;
+                    case 1:
+                        icons[i] = R.drawable.baseline_date_range_24;
+                        strings[i] = Lang.getString(R.string.InviteLinkExpireInCustomDate);
+                        break;
+                    default:
+                        icons[i] = R.drawable.baseline_schedule_24;
+                        strings[i] = Lang.getString(R.string.InviteLinkExpireIn, Lang.getDuration(PRESETS[i]));
+                        break;
+                }
             }
 
-            showOptions(null, ids, strings, null, null, (itemView, id) -> {
-                expireDate = id == 0 ? 0 : (int) ((System.currentTimeMillis() / 1000L) + PRESETS[id]);
+            showOptions(null, ids, strings, null, icons, (itemView, id) -> {
+                switch (id) {
+                    case 0:
+                        expireDate = 0;
+                        break;
+                    case 4:
+                        showDateTimePicker(Lang.getString(R.string.InviteLinkExpireHeader), R.string.InviteLinkExpireConfirm, R.string.InviteLinkExpireConfirm, R.string.InviteLinkExpireConfirm, millis -> {
+                            expireDate = (int) (millis / 1000L);
+                            adapter.updateValuedSettingById(R.id.btn_inviteLinkDateLimit);
+                        }, null);
+                        break;
+                    default:
+                        expireDate = (int) ((System.currentTimeMillis() / 1000L) + PRESETS[id]);
+                        break;
+                }
+
                 adapter.updateValuedSettingById(R.id.btn_inviteLinkDateLimit);
                 return true;
             });
