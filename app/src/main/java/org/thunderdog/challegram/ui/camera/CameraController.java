@@ -1681,7 +1681,7 @@ public class CameraController extends ViewController implements CameraDelegate, 
 
   @Override
   public boolean onKeyDown (int keyCode, KeyEvent event) {
-    if (!isCameraOpen || viewController != null) {
+    if (!isCameraOpen || viewController != null || isInQrScanMode()) {
       return super.onKeyDown(keyCode, event);
     }
     switch (keyCode) {
