@@ -1075,8 +1075,8 @@ public class RecordAudioVideoController implements
       ownedCamera.onCleanAfterHide();
       ownedCamera.releaseCameraLayout();
 
-      context.releaseCameraOwnership();
       setupCamera(false);
+      context.releaseCameraOwnership();
       ownedCamera = null;
 
       resetRoundState();
