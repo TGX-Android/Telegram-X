@@ -209,6 +209,7 @@
 
   <item type="id" name="controller_backgroundGrid" />
   <item type="id" name="controller_chatLinks" />
+  <item type="id" name="controller_chatLinkMembers" />
 
   <item type="id" name="msg_input" />
   <item type="id" name="msg_tooltip" />
@@ -700,6 +701,7 @@
   <item type="id" name="btn_deleteLink" />
   <item type="id" name="btn_deleteAllRevokedLinks" />
   <item type="id" name="btn_createInviteLink" />
+  <item type="id" name="btn_viewInviteLinkMembers" />
   <item type="id" name="btn_openAdminInviteLinks" />
   <item type="id" name="btn_inviteLinkUserLimit" />
   <item type="id" name="btn_inviteLinkDateLimit" />
