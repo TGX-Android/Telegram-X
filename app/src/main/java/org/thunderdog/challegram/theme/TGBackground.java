@@ -799,6 +799,10 @@ public class TGBackground {
         TdApi.BackgroundFillGradient gradient = (TdApi.BackgroundFillGradient) fill;
         return getPatternColor(ColorUtils.fromToArgb(ColorUtils.color(255, gradient.topColor), ColorUtils.color(255, gradient.bottomColor), .5f));
       }
+      case TdApi.BackgroundFillFreeformGradient.CONSTRUCTOR: {
+        TdApi.BackgroundFillFreeformGradient gradient = (TdApi.BackgroundFillFreeformGradient) fill;
+        return getPatternColor(ColorUtils.fromToArgb(ColorUtils.color(255, gradient.colors[0]), ColorUtils.color(255, gradient.colors[gradient.colors.length - 1]), .5f));
+      }
     }
     throw new IllegalArgumentException("fill: " + fill);
   }
@@ -919,6 +923,17 @@ public class TGBackground {
     return colorName(topColor) + "-" + colorName(bottomColor) + (rotationAngle != 0 ? "?rotation=" + rotationAngle : "");
   }
 
+  public static String getNameForColor (int[] colors) {
+    StringBuilder builder = new StringBuilder();
+
+    for (int i = 0; i < colors.length; i++) {
+      builder.append(colorName(colors[i]));
+      if (i != colors.length - 1) builder.append("-");
+    }
+
+    return builder.toString();
+  }
+
   public static String getNameForFill (TdApi.BackgroundFill fill) {
     switch (fill.getConstructor()) {
       case TdApi.BackgroundFillSolid.CONSTRUCTOR:
@@ -926,6 +941,10 @@ public class TGBackground {
       case TdApi.BackgroundFillGradient.CONSTRUCTOR: {
         TdApi.BackgroundFillGradient gradient = (TdApi.BackgroundFillGradient) fill;
         return getNameForColor(gradient.topColor, gradient.bottomColor, gradient.rotationAngle);
+      }
+      case TdApi.BackgroundFillFreeformGradient.CONSTRUCTOR: {
+        TdApi.BackgroundFillFreeformGradient gradient = (TdApi.BackgroundFillFreeformGradient) fill;
+        return getNameForColor(gradient.colors);
       }
     }
     throw new IllegalArgumentException("fill: " + fill);
