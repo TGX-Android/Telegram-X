@@ -134,10 +134,8 @@ public class TdlibWallpaperManager {
           TdApi.Background[] rawBackgrounds = ((TdApi.Backgrounds) result).backgrounds;
           List<TGBackground> backgrounds = new ArrayList<>(rawBackgrounds.length);
           for (TdApi.Background rawBackground : rawBackgrounds) {
-            if (rawBackground.document != null && "application/x-tgwallpattern".equals(rawBackground.document.mimeType)) {
-              continue;
-            }
             TGBackground background = new TGBackground(tdlib, rawBackground);
+            if (background.isFillFreeformGradient() || background.isPattern()) continue;
             backgrounds.add(background);
           }
           List<Callback> callbacks;
