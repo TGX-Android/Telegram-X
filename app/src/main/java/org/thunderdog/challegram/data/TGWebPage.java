@@ -265,7 +265,8 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
           break;
         }
         case TYPE_TELEGRAM_BACKGROUND: {
-          if (!isTgWallpaper() || !isTgWallpaperWithPreview()) break;
+          if (!isTgWallpaper() || !isTgWallpaperWithPreview())
+            break;
           buildPhoto(webPage, maxWidth);
           break;
         }

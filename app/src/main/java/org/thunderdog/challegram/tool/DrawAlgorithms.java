@@ -1137,12 +1137,12 @@ public class DrawAlgorithms {
 
         for (int i = 0; i < freeformColors.length; i++) {
           this.freeformGradients[i] = new RadialGradient(
-                  MCG_CENTERS_X[i] * width,
-                  MCG_CENTERS_Y[i] * height,
-                  radius,
-                  ColorUtils.alphaColor(alpha, ColorUtils.setAlphaIfNotPresent(freeformColors[i])),
-                  Color.TRANSPARENT,
-                  Shader.TileMode.CLAMP
+            MCG_CENTERS_X[i] * width,
+            MCG_CENTERS_Y[i] * height,
+            radius,
+            ColorUtils.alphaColor(alpha, ColorUtils.setAlphaIfNotPresent(freeformColors[i])),
+            Color.TRANSPARENT,
+            Shader.TileMode.CLAMP
           );
         }
 
