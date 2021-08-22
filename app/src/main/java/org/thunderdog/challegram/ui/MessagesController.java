@@ -7123,6 +7123,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       // boolean commandsShown = this.commandsShown;
       if (visible && !getKeyboardState()) {
         if (emojiShown) {
+          Keyboard.shouldSkipKeyboardAnimation = true;
           closeEmojiKeyboard(true);
         }
         if (commandsShown) {

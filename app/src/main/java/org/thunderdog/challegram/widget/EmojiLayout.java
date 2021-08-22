@@ -1868,11 +1868,13 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
   public void showKeyboard (android.widget.EditText input) {
     keyboardState = STATE_AWAITING_SHOW;
+    Keyboard.shouldSkipKeyboardAnimation = true;
     Keyboard.show(input);
   }
 
   public void hideKeyboard (android.widget.EditText input) {
     keyboardState = STATE_AWAITING_HIDE;
+    Keyboard.shouldSkipKeyboardAnimation = true;
     Keyboard.hide(input);
   }
 

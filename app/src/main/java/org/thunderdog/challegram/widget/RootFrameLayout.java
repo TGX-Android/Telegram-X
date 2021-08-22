@@ -258,8 +258,8 @@ public class RootFrameLayout extends FrameLayoutFix {
     lp.leftMargin = ignoreHorizontal ? 0 : wi.getSystemWindowInsetLeft();
     lp.topMargin = topOnly ? 0 : wi.getSystemWindowInsetTop();
     lp.rightMargin = ignoreHorizontal ? 0 : wi.getSystemWindowInsetRight();
-    int bottom = wi.getSystemWindowInsetBottom();
-    lp.bottomMargin = ignoreBottom || shouldIgnoreBottomMargin(child, bottom) ? 0 : (Config.USE_IME_ANIMATED_INSETS ? partialBottomInset : bottom);
+    int bottom = Config.USE_IME_ANIMATED_INSETS ? partialBottomInset : wi.getSystemWindowInsetBottom();
+    lp.bottomMargin = ignoreBottom || shouldIgnoreBottomMargin(child, bottom) ? 0 : bottom;
     if (UI.getContext(getContext()).dispatchCameraMargins(child, lp.leftMargin, lp.topMargin, lp.rightMargin, bottom)) {
       lp.leftMargin = lp.topMargin = lp.rightMargin = lp.bottomMargin = 0;
     } else {

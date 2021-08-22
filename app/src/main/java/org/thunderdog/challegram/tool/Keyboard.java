@@ -13,6 +13,8 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.unsorted.Settings;
 
 public class Keyboard {
+  public static boolean shouldSkipKeyboardAnimation = false;
+
   public static void show (View view) {
     if (view != null) {
       try {
