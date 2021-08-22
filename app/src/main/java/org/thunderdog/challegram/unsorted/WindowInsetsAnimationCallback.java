@@ -19,14 +19,14 @@ public class WindowInsetsAnimationCallback extends WindowInsetsAnimation.Callbac
     private final RootFrameLayout rootFrameLayout;
     private int bottomInset;
 
-    public WindowInsetsAnimationCallback(RootFrameLayout rootFrameLayout) {
+    public WindowInsetsAnimationCallback (RootFrameLayout rootFrameLayout) {
         super(WindowInsetsAnimation.Callback.DISPATCH_MODE_STOP);
         this.rootFrameLayout = rootFrameLayout;
     }
 
     @NonNull
     @Override
-    public WindowInsetsAnimation.Bounds onStart(@NonNull WindowInsetsAnimation animation, @NonNull WindowInsetsAnimation.Bounds bounds) {
+    public WindowInsetsAnimation.Bounds onStart (@NonNull WindowInsetsAnimation animation, @NonNull WindowInsetsAnimation.Bounds bounds) {
         if (Keyboard.shouldSkipKeyboardAnimation) {
             // manually set insets because we skipped the animation
             if (bottomInset > 0) {
@@ -46,7 +46,7 @@ public class WindowInsetsAnimationCallback extends WindowInsetsAnimation.Callbac
 
     @NonNull
     @Override
-    public WindowInsets onProgress(@NonNull WindowInsets insets, @NonNull List<WindowInsetsAnimation> runningAnimations) {
+    public WindowInsets onProgress (@NonNull WindowInsets insets, @NonNull List<WindowInsetsAnimation> runningAnimations) {
         Insets navInset = insets.getInsets(WindowInsets.Type.navigationBars());
         Insets imeInset = insets.getInsets(WindowInsets.Type.ime());
         bottomInset = Math.max(0, imeInset.bottom - navInset.bottom);
@@ -61,7 +61,7 @@ public class WindowInsetsAnimationCallback extends WindowInsetsAnimation.Callbac
     }
 
     @Override
-    public void onEnd(@NonNull WindowInsetsAnimation animation) {
+    public void onEnd (@NonNull WindowInsetsAnimation animation) {
         Keyboard.shouldSkipKeyboardAnimation = false;
     }
 }
