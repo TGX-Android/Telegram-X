@@ -185,7 +185,7 @@ public class EditNameController extends EditBaseController<EditNameController.Ar
   public void onFocus () {
     super.onFocus();
     if (mode == MODE_SIGNUP) {
-      ViewController c = previousStackItem();
+      ViewController<?> c = previousStackItem();
       destroyStackItemById(R.id.controller_code);
       if (UI.inTestMode()) {
         updateDoneState();

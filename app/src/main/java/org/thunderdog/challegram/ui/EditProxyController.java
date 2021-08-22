@@ -328,7 +328,7 @@ public class EditProxyController extends EditBaseController<EditProxyController.
           int proxyId = getArgumentsStrict().existingProxy != null ? getArgumentsStrict().existingProxy.id : Settings.PROXY_ID_NONE;
           Settings.instance().addOrUpdateProxy(server, port, type, null, true, proxyId);
           if (navigationController != null) {
-            ViewController c = navigationController.getPreviousStackItem();
+            ViewController<?> c = navigationController.getPreviousStackItem();
             if (c != null && c.getId() != R.id.controller_proxyList) {
               navigationController.getStack().insertBack(new SettingsProxyController(context, tdlib));
             }

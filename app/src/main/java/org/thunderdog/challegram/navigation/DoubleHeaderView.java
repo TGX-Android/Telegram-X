@@ -93,11 +93,11 @@ public class DoubleHeaderView extends FrameLayoutFix implements RtlCheckListener
     }
   }
 
-  public void setThemedTextColor (ViewController themeProvider) {
+  public void setThemedTextColor (ViewController<?> themeProvider) {
     setThemedTextColor(themeProvider.getHeaderTextColorId(), themeProvider);
   }
 
-  public void setThemedTextColor (int colorId, ViewController themeProvider) {
+  public void setThemedTextColor (int colorId, ViewController<?> themeProvider) {
     setTextColor(Theme.getColor(colorId));
     themeProvider.addThemeTextColorListener(this, colorId);
   }
@@ -119,7 +119,7 @@ public class DoubleHeaderView extends FrameLayoutFix implements RtlCheckListener
     }
   }
 
-  public void setThemedTextColor (@ThemeColorId int titleColorId, @ThemeColorId int subtitleColorId, @Nullable ViewController themeProvider) {
+  public void setThemedTextColor (@ThemeColorId int titleColorId, @ThemeColorId int subtitleColorId, @Nullable ViewController<?> themeProvider) {
     titleView.setTextColor(Theme.getColor(titleColorId));
     subtitleView.setTextColor(Theme.getColor(subtitleColorId));
     customColors = true;

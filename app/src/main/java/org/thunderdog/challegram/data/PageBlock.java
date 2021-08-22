@@ -44,20 +44,20 @@ import me.vkryl.td.Td;
  */
 
 public abstract class PageBlock implements MultipleViewProvider.InvalidateContentProvider {
-  protected final ViewController context;
+  protected final ViewController<?> context;
   protected final TdApi.PageBlock block;
   protected MultipleViewProvider currentViews;
 
   protected boolean mergeBottom, mergeTop;
 
-  public PageBlock (ViewController context, TdApi.PageBlock block) {
+  public PageBlock (ViewController<?> context, TdApi.PageBlock block) {
     this.context = context;
     this.block = block;
     this.currentViews = new MultipleViewProvider();
     this.currentViews.setContentProvider(this);
   }
 
-  public ViewController parent () {
+  public ViewController<?> parent () {
     return context;
   }
 
@@ -365,7 +365,7 @@ public abstract class PageBlock implements MultipleViewProvider.InvalidateConten
       this.playListBuilder = playListBuilder;
     }
 
-    private void processCaption (ViewController parent, @NonNull TdApi.PageBlock mediaBlock, TdApi.PageBlockCaption caption, @Nullable TdlibUi.UrlOpenParameters openParameters, ArrayList<PageBlock> out) {
+    private void processCaption (ViewController<?> parent, @NonNull TdApi.PageBlock mediaBlock, TdApi.PageBlockCaption caption, @Nullable TdlibUi.UrlOpenParameters openParameters, ArrayList<PageBlock> out) {
       PageBlockRichText captionBlock = null;
       boolean needMerge = (lastBlock != null && lastBlock.block == mediaBlock) || mediaBlock.getConstructor() == TdApi.PageBlockEmbeddedPost.CONSTRUCTOR;
       if (!Td.isEmpty(caption.text)) {
@@ -386,7 +386,7 @@ public abstract class PageBlock implements MultipleViewProvider.InvalidateConten
 
     private boolean hasKicker;
 
-    private void setClosed (boolean isClosed, ViewController context, ArrayList<PageBlock> out, boolean needOffset) {
+    private void setClosed (boolean isClosed, ViewController<?> context, ArrayList<PageBlock> out, boolean needOffset) {
       if (this.isClosed != isClosed) {
         this.isClosed = isClosed;
         if (needOffset && isClosed && !((lastBlock != null && lastBlock.block != null) && (lastBlock.block.getConstructor() == TdApi.PageBlockDetails.CONSTRUCTOR || lastBlock.block.getConstructor() == TdApi.PageBlockChatLink.CONSTRUCTOR))) {
@@ -447,7 +447,7 @@ public abstract class PageBlock implements MultipleViewProvider.InvalidateConten
     }
   }
 
-  public static ArrayList<PageBlock> parse (ViewController parent, String url, @NonNull TdApi.WebPageInstantView instantView, @Nullable PageBlock detailsBlock, TGPlayerController.PlayListBuilder playListBuilder, @Nullable TdlibUi.UrlOpenParameters urlOpenParameters) {
+  public static ArrayList<PageBlock> parse (ViewController<?> parent, String url, @NonNull TdApi.WebPageInstantView instantView, @Nullable PageBlock detailsBlock, TGPlayerController.PlayListBuilder playListBuilder, @Nullable TdlibUi.UrlOpenParameters urlOpenParameters) {
     PageBlock.ParseContext context = new PageBlock.ParseContext(url, instantView, playListBuilder);
     context.detailsBlock = context.lastBlock = detailsBlock;
     TdApi.PageBlock[] pageBlocks = detailsBlock != null ? ((TdApi.PageBlockDetails) detailsBlock.getOriginalBlock()).pageBlocks : instantView.pageBlocks;
@@ -472,7 +472,7 @@ public abstract class PageBlock implements MultipleViewProvider.InvalidateConten
     return out;
   }
 
-  private static void parse (ViewController parent, ArrayList<PageBlock> out, ParseContext context, TdApi.PageBlock block, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  private static void parse (ViewController<?> parent, ArrayList<PageBlock> out, ParseContext context, TdApi.PageBlock block, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     switch (block.getConstructor()) {
       // Page cover
       case TdApi.PageBlockCover.CONSTRUCTOR: {

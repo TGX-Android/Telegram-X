@@ -475,7 +475,7 @@ public class TextController extends ViewController<TextController.Arguments> imp
     private final int horizontalPadding, verticalPadding;
     private final MultipleViewProvider holder = new MultipleViewProvider();
 
-    public LineCell (ViewController context, int id, String line) {
+    public LineCell (ViewController<?> context, int id, String line) {
       this.horizontalPadding = Screen.dp(6f);
       this.verticalPadding = Screen.dp(3f);
 

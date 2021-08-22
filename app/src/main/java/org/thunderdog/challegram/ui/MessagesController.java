@@ -1471,10 +1471,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
       }
       if (inPreviewSearchMode()) {
-        ViewController parent = getParentOrSelf();
-        if (parent instanceof ViewPagerController) {
-          int index = ((ViewPagerController) parent).getCurrentPagerItemPosition() == 1 ? 0 : 1;
-          ((ViewPagerController) parent).onPagerItemClick(index);
+        ViewController<?> parent = getParentOrSelf();
+        if (parent instanceof ViewPagerController<?>) {
+          int index = ((ViewPagerController<?>) parent).getCurrentPagerItemPosition() == 1 ? 0 : 1;
+          ((ViewPagerController<?>) parent).onPagerItemClick(index);
         }
       } else {
         ProfileController controller = new ProfileController(context, tdlib);
@@ -3486,7 +3486,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         tdlib.client().send(new TdApi.SetChatDraftMessage(messageThread != null ? messageThread.getChatId() : chat.id, messageThread != null ? messageThread.getMessageThreadId() : 0, draftMessage), tdlib.okHandler());
 
         for (int i = 0; i < stackSize() - 1; i++) {
-          ViewController c = stackItemAt(i);
+          ViewController<?> c = stackItemAt(i);
           if (c instanceof MessagesController) {
             MessagesController m = (MessagesController) c;
             if (m.compareChat(getChatId(), messageThread, areScheduledOnly()) && m.canSaveDraft() && m.inputView != null && !m.isEditingMessage()) {
@@ -4073,7 +4073,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private boolean canCopySelectedMessages () {
     if (pagerScrollPosition != 0 && pagerContentAdapter != null) {
-      SharedBaseController c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
+      SharedBaseController<?> c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
       return c != null && c.canCopyMessages();
     }
     if (selectedMessageIds == null || selectedMessageIds.size() == 0) {
@@ -4087,7 +4087,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private boolean canDeleteSelectedMessages () {
     if (pagerScrollPosition != 0 && pagerContentAdapter != null) {
-      SharedBaseController c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
+      SharedBaseController<?> c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
       return c != null && c.canDeleteMessages();
     }
     if (selectedMessageIds != null) {
@@ -4136,7 +4136,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private boolean canViewSelectedMessages () {
     if (pagerScrollPosition != 0 && pagerContentAdapter != null) {
-      SharedBaseController c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
+      SharedBaseController<?> c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
       return c != null && c.getSelectedMediaCount() == 1;
     }
     return false;
@@ -4157,7 +4157,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private boolean canClearCacheSelectedMessages () {
     if (pagerScrollPosition != 0 && pagerContentAdapter != null) {
-      SharedBaseController c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
+      SharedBaseController<?> c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
       return c != null && c.canClearMessages();
     }
     if (selectedMessageIds != null) {
@@ -4187,7 +4187,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private boolean canShareSelectedMessages () {
     if (pagerScrollPosition != 0 && pagerContentAdapter != null) {
-      SharedBaseController c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
+      SharedBaseController<?> c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
       return c != null && c.canShareMessages();
     }
     if (selectedMessageIds != null) {
@@ -4310,7 +4310,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (pagerContentAdapter != null) {
         final int size = pagerContentAdapter.cachedItems.size();
         for (int i = 0; i < size; i++) {
-          SharedBaseController c = pagerContentAdapter.cachedItems.valueAt(i);
+          SharedBaseController<?> c = pagerContentAdapter.cachedItems.valueAt(i);
           if (c != null) {
             c.setInMediaSelectMode(false);
           }
@@ -5625,7 +5625,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public void openPreviewMessage (TGMessage msg) {
     if (arePinnedMessages()) {
-      ViewController c = previousStackItem();
+      ViewController<?> c = previousStackItem();
       if (c instanceof MessagesController && c.getChatId() == getChatId()) {
         ((MessagesController) c).highlightMessage(msg.toMessageId());
         navigateBack();
@@ -8608,7 +8608,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case MediaTabsAdapter.POSITION_MESSAGES:
         return manager.collectMedias(fromMessageId, filter);
       case MediaTabsAdapter.POSITION_MEDIA:
-        SharedBaseController c = pagerContentAdapter != null ? pagerContentAdapter.cachedItems.get(MediaTabsAdapter.POSITION_MEDIA) : null;
+        SharedBaseController<?> c = pagerContentAdapter != null ? pagerContentAdapter.cachedItems.get(MediaTabsAdapter.POSITION_MEDIA) : null;
         if (c != null && c instanceof SharedMediaController) {
           return ((SharedMediaController) c).collectMedias(fromMessageId, filter);
         }
@@ -8624,7 +8624,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         args.delegate = this;
         break;
       case MediaTabsAdapter.POSITION_MEDIA:
-        SharedBaseController c = pagerContentAdapter != null ? pagerContentAdapter.cachedItems.get(MediaTabsAdapter.POSITION_MEDIA) : null;
+        SharedBaseController<?> c = pagerContentAdapter != null ? pagerContentAdapter.cachedItems.get(MediaTabsAdapter.POSITION_MEDIA) : null;
         if (c != null && c instanceof SharedMediaController) {
           ((SharedMediaController) c).modifyMediaArguments(cause, args);
         }
@@ -8651,7 +8651,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
     }
     if (hasTabs && pagerScrollPosition == MediaTabsAdapter.POSITION_MEDIA && pagerContentAdapter != null) {
-      SharedBaseController c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
+      SharedBaseController<?> c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
       if (c != null && c instanceof SharedMediaController) {
         ((SharedMediaController) c).getTargetLocation(index, item);
       }
@@ -9665,7 +9665,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       lastMediaSearchQuery = query;
       final int size = pagerContentAdapter.cachedItems.size();
       for (int i = 0; i < size; i++) {
-        SharedBaseController c = pagerContentAdapter.cachedItems.valueAt(i);
+        SharedBaseController<?> c = pagerContentAdapter.cachedItems.valueAt(i);
         if (c != null) {
           c.search(query);
         }

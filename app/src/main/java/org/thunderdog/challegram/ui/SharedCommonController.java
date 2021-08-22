@@ -26,7 +26,7 @@ import me.vkryl.td.MessageId;
  * Author: default
  */
 
-public class SharedCommonController extends SharedBaseController<InlineResult> implements View.OnClickListener, TGPlayerController.TrackChangeListener, TGPlayerController.PlayListBuilder {
+public class SharedCommonController extends SharedBaseController<InlineResult<?>> implements View.OnClickListener, TGPlayerController.TrackChangeListener, TGPlayerController.PlayListBuilder {
   public SharedCommonController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
@@ -116,7 +116,7 @@ public class SharedCommonController extends SharedBaseController<InlineResult> i
         return;
       }
       
-      InlineResult result = (InlineResult) item.getData();
+      InlineResult<?> result = (InlineResult<?>) item.getData();
       switch (result.getType()) {
         case InlineResult.TYPE_AUDIO:
         case InlineResult.TYPE_VOICE: {
@@ -143,9 +143,9 @@ public class SharedCommonController extends SharedBaseController<InlineResult> i
   }
 
   @Override
-  protected InlineResult parseObject (TdApi.Object object) {
+  protected InlineResult<?> parseObject (TdApi.Object object) {
     TdApi.Message message = (TdApi.Message) object;
-    InlineResult result;
+    InlineResult<?> result;
 
     if (filter != null && filter.getConstructor() == TdApi.SearchMessagesFilterUrl.CONSTRUCTOR) {
       result = new InlineResultMultiline(context, tdlib, message);
@@ -163,7 +163,7 @@ public class SharedCommonController extends SharedBaseController<InlineResult> i
   }
 
   @Override
-  protected CharSequence buildTotalCount (ArrayList<InlineResult> data) {
+  protected CharSequence buildTotalCount (ArrayList<InlineResult<?>> data) {
     switch (filter.getConstructor()) {
       case TdApi.SearchMessagesFilterAudio.CONSTRUCTOR: {
         return Lang.pluralBold(R.string.xAudios, data.size());
@@ -196,18 +196,18 @@ public class SharedCommonController extends SharedBaseController<InlineResult> i
     }
   }
 
-  private static void setCurrentTrack (ArrayList<InlineResult> results, TdApi.Message newTrack) {
+  private static void setCurrentTrack (ArrayList<InlineResult<?>> results, TdApi.Message newTrack) {
     if (results == null || results.isEmpty()) {
       return;
     }
     if (newTrack == null) {
-      for (InlineResult result : results) {
+      for (InlineResult<?> result : results) {
         if (result instanceof InlineResultCommon) {
           ((InlineResultCommon) result).setIsTrackCurrent(false);
         }
       }
     } else {
-      for (InlineResult result : results) {
+      for (InlineResult<?> result : results) {
         if (result instanceof InlineResultCommon) {
           ((InlineResultCommon) result).setIsTrackCurrent(TGPlayerController.compareTracks(result.getMessage(), newTrack));
         }
@@ -219,7 +219,7 @@ public class SharedCommonController extends SharedBaseController<InlineResult> i
   @Override
   public TGPlayerController.PlayList buildPlayList (TdApi.Message fromMessage) {
     String query;
-    ArrayList<InlineResult> data;
+    ArrayList<InlineResult<?>> data;
     if (isSearching()) {
       query = getCurrentQuery();
       data = this.searchData;
@@ -247,7 +247,7 @@ public class SharedCommonController extends SharedBaseController<InlineResult> i
     }
     final int count = data.size();
     for (int i = count - 1; i >= 0; i--) {
-      InlineResult result = data.get(i);
+      InlineResult<?> result = data.get(i);
       if (result.getType() != desiredType) {
         continue;
       }
@@ -282,7 +282,7 @@ public class SharedCommonController extends SharedBaseController<InlineResult> i
 
   @Override
   protected boolean onLongClick (View v, ListItem item) {
-    final InlineResult c = (InlineResult) item.getData();
+    final InlineResult<?> c = (InlineResult<?>) item.getData();
 
     alternateParent.showOptions(null, new int[]{R.id.btn_showInChat, R.id.btn_share, R.id.btn_delete}, new String[]{Lang.getString(R.string.ShowInChat), Lang.getString(R.string.Share), Lang.getString(R.string.Delete)}, new int[]{OPTION_COLOR_NORMAL, OPTION_COLOR_NORMAL, OPTION_COLOR_RED}, new int[] {R.drawable.baseline_visibility_24, R.drawable.baseline_forward_24, R.drawable.baseline_delete_24}, (itemView, id) -> {
       switch (id) {

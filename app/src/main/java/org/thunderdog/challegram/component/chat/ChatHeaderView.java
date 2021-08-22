@@ -31,7 +31,7 @@ public class ChatHeaderView extends ComplexHeaderView {
 
   private Callback callback;
 
-  public ChatHeaderView (Context context, Tdlib tdlib, @Nullable ViewController parent) {
+  public ChatHeaderView (Context context, Tdlib tdlib, @Nullable ViewController<?> parent) {
     super(context, tdlib, parent);
     setPhotoOpenDisabled(true);
     setOnClickListener(v -> {

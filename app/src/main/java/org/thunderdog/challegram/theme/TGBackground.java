@@ -791,11 +791,12 @@ public class TGBackground {
         TdApi.BackgroundFillGradient gradient = (TdApi.BackgroundFillGradient) fill;
         return getPatternColor(ColorUtils.fromToArgb(ColorUtils.color(255, gradient.topColor), ColorUtils.color(255, gradient.bottomColor), .5f));
       }
+      
     }
     throw new IllegalArgumentException("fill: " + fill);
   }
 
-  private static int getPatternColor(int color) {
+  private static int getPatternColor (int color) {
     float[] hsb = RGBtoHSB(Color.red(color), Color.green(color), Color.blue(color));
     if (hsb[1] > 0.0f || (hsb[2] < 1.0f && hsb[2] > 0.0f)) {
       hsb[1] = Math.min(1.0f, hsb[1] + 0.05f + 0.1f * (1.0f - hsb[1]));
@@ -808,7 +809,7 @@ public class TGBackground {
     return HSBtoRGB(hsb[0], hsb[1], hsb[2]) & 0x66ffffff;
   }
 
-  private static int getPatternSideColor(int color) {
+  private static int getPatternSideColor (int color) {
     float[] hsb = RGBtoHSB(Color.red(color), Color.green(color), Color.blue(color));
     hsb[1] = Math.min(1.0f, hsb[1] + 0.05f);
     if (hsb[2] > 0.5f) {

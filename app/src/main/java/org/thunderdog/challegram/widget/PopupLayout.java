@@ -199,17 +199,17 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
     return false;
   }
 
-  private ViewController boundController;
+  private ViewController<?> boundController;
 
   public boolean onBackPressed () {
     return (backListener != null && backListener.onBackPressed()) || (boundController != null && boundController.onBackPressed(false)) || (boundView != null && boundView instanceof BackListener && ((BackListener) boundView).onBackPressed());
   }
 
-  public void setBoundController (ViewController boundController) {
+  public void setBoundController (ViewController<?> boundController) {
     this.boundController = boundController;
   }
 
-  public ViewController getBoundController () {
+  public ViewController<?> getBoundController () {
     return boundController;
   }
 
@@ -289,7 +289,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
 
   public void showBoundWindow (View anchorView) {
     if (hideKeyboard || Device.HIDE_POPUP_KEYBOARD) {
-      ViewController c = UI.getContext(getContext()).navigation().getCurrentStackItem();
+      ViewController<?> c = UI.getContext(getContext()).navigation().getCurrentStackItem();
       if (c != null) {
         c.hideSoftwareKeyboard();
       }
@@ -396,7 +396,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
 
   private View boundView;
 
-  public void addThemeListeners (@Nullable ViewController themeProvider) {
+  public void addThemeListeners (@Nullable ViewController<?> themeProvider) {
     if (themeProvider != null) {
       themeProvider.addThemeInvalidateListener(this);
     }

@@ -96,7 +96,7 @@ import me.vkryl.td.TdConstants;
  * Author: default
  */
 
-public class MainController extends ViewPagerController implements Menu, MoreDelegate, OverlayButtonWrap.Callback, TdlibOptionListener, AppUpdater.Listener, CounterChangeListener {
+public class MainController extends ViewPagerController<Void> implements Menu, MoreDelegate, OverlayButtonWrap.Callback, TdlibOptionListener, AppUpdater.Listener, CounterChangeListener {
   public MainController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
@@ -493,7 +493,7 @@ public class MainController extends ViewPagerController implements Menu, MoreDel
 
   @Override
   public boolean needAsynchronousAnimation () {
-    ViewController c = getCachedControllerForPosition(0);
+    ViewController<?> c = getCachedControllerForPosition(0);
     return c == null || c.needAsynchronousAnimation();
   }
 
@@ -930,7 +930,7 @@ public class MainController extends ViewPagerController implements Menu, MoreDel
     return width;
   }
 
-  public boolean showComposeWrap (ViewController controller) {
+  public boolean showComposeWrap (ViewController<?> controller) {
     if (!inSearchMode() && (controller == null || getCurrentPagerItem() == controller)) {
       composeWrap.show();
       return true;
@@ -1035,7 +1035,7 @@ public class MainController extends ViewPagerController implements Menu, MoreDel
     }
   }
 
-  private void modifyNewPagerItemController (final ViewController c, final int position) {
+  private void modifyNewPagerItemController (final ViewController<?> c, final int position) {
     if (c instanceof RecyclerViewProvider) {
       c.get();
       ((RecyclerViewProvider) c).provideRecyclerView().addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -1062,8 +1062,8 @@ public class MainController extends ViewPagerController implements Menu, MoreDel
   }
 
   @Override
-  protected ViewController onCreatePagerItemForPosition (Context context, final int position) {
-    ViewController c;
+  protected ViewController<?> onCreatePagerItemForPosition (Context context, final int position) {
+    ViewController<?> c;
     switch (position) {
       case POSITION_CHATS: {
         c = newChatsController(this.menuSection, this.menuNeedArchive);

@@ -3413,13 +3413,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   // Chat open/close
 
-  private final LongSparseArray<ArrayList<ViewController>> openedChats = new LongSparseArray<>(8);
+  private final LongSparseArray<ArrayList<ViewController<?>>> openedChats = new LongSparseArray<>(8);
   private final LongSparseIntArray openedChatsTimes = new LongSparseIntArray();
   private final Object chatOpenMutex = new Object();
 
-  public void openChat (long chatId, @Nullable ViewController controller) {
+  public void openChat (long chatId, @Nullable ViewController<?> controller) {
     synchronized (chatOpenMutex) {
-      ArrayList<ViewController> controllers = openedChats.get(chatId);
+      ArrayList<ViewController<?>> controllers = openedChats.get(chatId);
       if (controllers == null) {
         controllers = new ArrayList<>();
         controllers.add(controller);
@@ -3444,7 +3444,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
-  public void closeChat (final long chatId, final ViewController controller, boolean needDelay) {
+  public void closeChat (final long chatId, final ViewController<?> controller, boolean needDelay) {
     if (needDelay) {
       ui().postDelayed(() -> closeChatImpl(chatId, controller), 1000);
     } else {
@@ -3452,9 +3452,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
-  private void closeChatImpl (long chatId, ViewController controller) {
+  private void closeChatImpl (long chatId, ViewController<?> controller) {
     synchronized (chatOpenMutex) {
-      ArrayList<ViewController> controllers = openedChats.get(chatId);
+      ArrayList<ViewController<?>> controllers = openedChats.get(chatId);
       if (controllers != null && controllers.remove(controller) && controllers.isEmpty()) {
         openedChatsTimes.delete(chatId);
         openedChats.remove(chatId);
@@ -6304,7 +6304,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (msg == null)
       return;
     ui().post(() -> {
-      ViewController c = UI.getCurrentStackItem();
+      ViewController<?> c = UI.getCurrentStackItem();
       if (c != null) {
         if (!StringUtils.isEmpty(update.type) && (update.type.startsWith("AUTH_KEY_DROP") || update.type.startsWith("AUTHKEYDROP"))) {
           c.openAlert(R.string.AppName, msg, Lang.getString(R.string.LogOut), (dialog, which) -> destroy(), ViewController.ALERT_NO_CANCELABLE);

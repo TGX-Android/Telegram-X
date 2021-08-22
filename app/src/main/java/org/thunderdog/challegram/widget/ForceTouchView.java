@@ -839,9 +839,9 @@ public class ForceTouchView extends FrameLayoutFix implements
       return sourceView;
     }
 
-    private ViewController boundController;
+    private ViewController<?> boundController;
 
-    public ForceTouchContext (Tdlib tdlib, View sourceView, View contentView, @Nullable ViewController controller) {
+    public ForceTouchContext (Tdlib tdlib, View sourceView, View contentView, @Nullable ViewController<?> controller) {
       this.tdlib = tdlib;
       this.sourceView = sourceView;
       this.contentView = contentView;

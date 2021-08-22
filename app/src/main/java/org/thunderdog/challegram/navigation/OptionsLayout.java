@@ -47,7 +47,7 @@ import me.vkryl.core.StringUtils;
 public class OptionsLayout extends LinearLayout implements Animated {
   private final CustomTextView textView;
 
-  public OptionsLayout (Context context, ViewController parent, @Nullable ThemeDelegate forcedTheme) {
+  public OptionsLayout (Context context, ViewController<?> parent, @Nullable ThemeDelegate forcedTheme) {
     super(context);
 
     setOrientation(LinearLayout.VERTICAL);
@@ -168,7 +168,7 @@ public class OptionsLayout extends LinearLayout implements Animated {
     return text;
   }
 
-  public void setInfo (ViewController context, Tdlib tdlib, CharSequence info, boolean isTitle) {
+  public void setInfo (ViewController<?> context, Tdlib tdlib, CharSequence info, boolean isTitle) {
     if (!StringUtils.isEmpty(info)) {
       String str = info.toString();
       TextEntity[] parsed = TD.collectAllEntities(context, tdlib, info, false, null);

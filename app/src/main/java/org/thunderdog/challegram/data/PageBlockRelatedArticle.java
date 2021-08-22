@@ -34,7 +34,7 @@ public class PageBlockRelatedArticle extends PageBlock {
   @Nullable
   private final TdlibUi.UrlOpenParameters openParameters;
 
-  public PageBlockRelatedArticle (ViewController context, TdApi.PageBlockRelatedArticles articles, TdApi.PageBlockRelatedArticle article, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public PageBlockRelatedArticle (ViewController<?> context, TdApi.PageBlockRelatedArticles articles, TdApi.PageBlockRelatedArticle article, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, articles);
     this.article = article;
     this.openParameters = openParameters;

@@ -165,7 +165,7 @@ public class RecordAudioVideoController implements
 
   public void onBackPressed () {
     if (recordMode == RECORD_MODE_VIDEO_EDIT) {
-      ViewController c = UI.getCurrentStackItem(context);
+      ViewController<?> c = UI.getCurrentStackItem(context);
       if (c != null) {
         c.openAlert(R.string.DiscardVideoMessageTitle, R.string.DiscardVideoMessageDescription, Lang.getString(R.string.Discard), (dialog, which) -> closeVideoEditMode(null));
       }
@@ -628,7 +628,7 @@ public class RecordAudioVideoController implements
   }
 
   public void updatePositions () {
-    ViewController c = UI.getCurrentStackItem(context);
+    ViewController<?> c = UI.getCurrentStackItem(context);
     if (c instanceof MessagesController) {
       View view = ((MessagesController) c).getBottomWrap();
       setOverallTranslation((Views.getLocationInWindow(view)[1] - Views.getLocationInWindow(rootLayout)[1]) - voiceVideoButtonView.getTop());
@@ -1275,8 +1275,8 @@ public class RecordAudioVideoController implements
   }
 
   private MessagesController findMessagesController () {
-    ViewController c = UI.getCurrentStackItem(context);
-    return c != null && c instanceof MessagesController ? (MessagesController) c : null;
+    ViewController<?> c = UI.getCurrentStackItem(context);
+    return c instanceof MessagesController ? (MessagesController) c : null;
   }
 
   private void stopRecordingImpl (int closeMode) {

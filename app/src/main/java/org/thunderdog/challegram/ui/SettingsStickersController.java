@@ -80,7 +80,7 @@ public class SettingsStickersController extends ViewPagerController<SettingsCont
       getArguments().setStickerSetListener(null);
     }
     setStickers(stickerSets);
-    ViewController c = getCachedControllerForId(R.id.controller_stickers);
+    ViewController<?> c = getCachedControllerForId(R.id.controller_stickers);
     if (c != null) {
       ((StickersController) c).setStickerSets(this.stickerSets, null);
     }
@@ -101,7 +101,7 @@ public class SettingsStickersController extends ViewPagerController<SettingsCont
   public void onFocus () {
     super.onFocus();
 
-    ViewController c;
+    ViewController<?> c;
 
     c = getCachedControllerForId(R.id.controller_stickers);
     if (c != null) {
@@ -128,7 +128,7 @@ public class SettingsStickersController extends ViewPagerController<SettingsCont
 
   @Override
   public boolean needAsynchronousAnimation () {
-    ViewController c = getCachedControllerForId(R.id.controller_stickersTrending);
+    ViewController<?> c = getCachedControllerForId(R.id.controller_stickersTrending);
     return c == null || !((StickersTrendingController) c).isTrendingLoaded();
   }
 
@@ -138,7 +138,7 @@ public class SettingsStickersController extends ViewPagerController<SettingsCont
   }
 
   @Override
-  protected ViewController onCreatePagerItemForPosition (Context context, int position) {
+  protected ViewController<?> onCreatePagerItemForPosition (Context context, int position) {
     switch (position) {
       case STICKERS_POSITION: {
         StickersController c = new StickersController(this.context, this.tdlib);

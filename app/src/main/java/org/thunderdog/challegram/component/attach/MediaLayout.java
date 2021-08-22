@@ -104,16 +104,16 @@ public class MediaLayout extends FrameLayoutFix implements
   private @Nullable MessagesController target;
 
   // Children
-  private MediaBottomBaseController[] controllers;
+  private MediaBottomBaseController<?>[] controllers;
   private @Nullable MediaBottomBar bottomBar;
   private @Nullable ShadowView shadowView;
-  private MediaBottomBaseController currentController;
+  private MediaBottomBaseController<?> currentController;
 
   private final ThemeListenerList themeListeners = new ThemeListenerList();
 
-  private final ViewController parent;
+  private final ViewController<?> parent;
 
-  public MediaLayout (ViewController context) {
+  public MediaLayout (ViewController<?> context) {
     super(context.context());
     this.parent = context;
   }
@@ -245,7 +245,7 @@ public class MediaLayout extends FrameLayoutFix implements
   public void onThemeColorsChanged (boolean areTemp, ColorState state) {
     themeListeners.onThemeColorsChanged(areTemp);
     if (headerView != null) {
-      MediaBottomBaseController c = getCurrentController();
+      MediaBottomBaseController<?> c = getCurrentController();
       if (c != null) {
         headerView.resetColors(c, null);
       }
@@ -270,7 +270,7 @@ public class MediaLayout extends FrameLayoutFix implements
 
   @Override
   public boolean onBackPressed () {
-    MediaBottomBaseController c = getCurrentController();
+    MediaBottomBaseController<?> c = getCurrentController();
     if (c.isAnimating()) {
       return true;
     }
@@ -317,8 +317,8 @@ public class MediaLayout extends FrameLayoutFix implements
     return headerView;
   }
 
-  private MediaBottomBaseController getControllerForIndex (int index) {
-    MediaBottomBaseController c = controllers[index];
+  private MediaBottomBaseController<?> getControllerForIndex (int index) {
+    MediaBottomBaseController<?> c = controllers[index];
     if (c == null) {
       c = createControllerForIndex(index);
       c.attachToThemeListeners(themeListeners);
@@ -327,7 +327,7 @@ public class MediaLayout extends FrameLayoutFix implements
     return c;
   }
 
-  private MediaBottomBaseController createControllerForIndex (int index) {
+  private MediaBottomBaseController<?> createControllerForIndex (int index) {
     switch (mode) {
       case MODE_LOCATION: {
         return new MediaBottomLocationController(this);
@@ -349,7 +349,7 @@ public class MediaLayout extends FrameLayoutFix implements
     }
   }
 
-  private MediaBottomBaseController getCurrentController () {
+  private MediaBottomBaseController<?> getCurrentController () {
     return bottomBar != null ? controllers[bottomBar.getCurrentIndex()] : controllers[0];
   }
 
@@ -380,7 +380,7 @@ public class MediaLayout extends FrameLayoutFix implements
 
   @Override
   public boolean onBackgroundTouchDown (PopupLayout popupLayout, MotionEvent e) {
-    MediaBottomBaseController c = getCurrentController();
+    MediaBottomBaseController<?> c = getCurrentController();
     return c != null && c.showExitWarning(false);
   }
 
@@ -447,7 +447,7 @@ public class MediaLayout extends FrameLayoutFix implements
 
   @Override
   public void onActivityResult (int requestCode, int resultCode, Intent data) {
-    ViewController c = getCurrentController();
+    ViewController<?> c = getCurrentController();
     if (c instanceof ActivityResultHandler) {
       ((ActivityResultHandler) c).onActivityResult(requestCode, resultCode, data);
     }
@@ -465,7 +465,7 @@ public class MediaLayout extends FrameLayoutFix implements
 
   @Override
   public void onActivityDestroy () {
-    for (MediaBottomBaseController controller : controllers) {
+    for (MediaBottomBaseController<?> controller : controllers) {
       if (controller != null) {
         controller.onActivityDestroy();
       }
@@ -482,7 +482,7 @@ public class MediaLayout extends FrameLayoutFix implements
           MediaBottomLocationController c = (MediaBottomLocationController) getControllerForIndex(inSpecificMode() ? 0 : 3);
           c.onLocationPermissionOk();
         } else {
-          ViewController c = UI.getCurrentStackItem(getContext());
+          ViewController<?> c = UI.getCurrentStackItem(getContext());
           if (c != null) {
             c.openMissingLocationPermissionAlert(false);
           }
@@ -493,7 +493,7 @@ public class MediaLayout extends FrameLayoutFix implements
         if (granted) {
           openCamera();
         } else {
-          ViewController c = UI.getCurrentStackItem(getContext());
+          ViewController<?> c = UI.getCurrentStackItem(getContext());
           if (c != null) {
             c.openMissingCameraPermissionAlert();
           }
@@ -507,7 +507,7 @@ public class MediaLayout extends FrameLayoutFix implements
               bottomBar.setSelectedIndex(1);
             }
           } else {
-            ViewController c = UI.getCurrentStackItem(getContext());
+            ViewController<?> c = UI.getCurrentStackItem(getContext());
             if (c != null) {
               c.openMissingStoragePermissionAlert();
             }
@@ -519,7 +519,7 @@ public class MediaLayout extends FrameLayoutFix implements
     requestedPermissionIndex = -1;
   }
 
-  private MediaBottomBaseController from;
+  private MediaBottomBaseController<?> from;
   private View fromView, toView;
   private int fromHeight, toHeight;
   private float fromY;
@@ -542,7 +542,7 @@ public class MediaLayout extends FrameLayoutFix implements
           googleMapsInstalled = false;
         }
         if (!googleMapsInstalled) {
-          ViewController c = UI.getCurrentStackItem(getContext());
+          ViewController<?> c = UI.getCurrentStackItem(getContext());
           if (c != null) {
             c.openMissingGoogleMapsAlert();
           } else {
@@ -581,7 +581,7 @@ public class MediaLayout extends FrameLayoutFix implements
       }
     }
 
-    MediaBottomBaseController to;
+    MediaBottomBaseController<?> to;
 
     from = controllers[fromIndex];
     fromHeight = from.getCurrentHeight();
@@ -886,7 +886,7 @@ public class MediaLayout extends FrameLayoutFix implements
     setContentVisible(true);
     isDestroyed = true;
     onCurrentColorChanged();
-    for (ViewController controller : controllers) {
+    for (ViewController<?> controller : controllers) {
       if (controller != null) {
         removeView(controller.get());
         if (!controller.isDestroyed())
@@ -1297,7 +1297,7 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   private void checkSuffix (boolean animate) {
-    MediaBottomBaseController c = getCurrentController();
+    MediaBottomBaseController<?> c = getCurrentController();
     if (c instanceof MediaBottomGalleryController) {
       MediaBottomGalleryController gallery = (MediaBottomGalleryController) c;
       int photosCount = 0, videosCount = 0, otherCount = 0;
@@ -1502,7 +1502,7 @@ public class MediaLayout extends FrameLayoutFix implements
 
   public void prepareHeader () {
     int index = bottomBar != null ? bottomBar.getCurrentIndex() : 0;
-    MediaBottomBaseController c = getCurrentController();
+    MediaBottomBaseController<?> c = getCurrentController();
 
     if (headerView == null) {
       headerView = new HeaderView(getContext()) {

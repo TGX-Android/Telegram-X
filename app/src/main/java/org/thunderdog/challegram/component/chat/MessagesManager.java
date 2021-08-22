@@ -424,7 +424,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     return pinnedMessages != null && pinnedMessages.isAvailable() && !pinnedMessagesAvailable;
   }
 
-  public void destroy (ViewController context) {
+  public void destroy (ViewController<?> context) {
     resetScroll();
     cancelRefresh();
     returnToMessageIds = null;

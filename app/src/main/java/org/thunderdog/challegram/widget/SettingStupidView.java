@@ -97,7 +97,7 @@ public class SettingStupidView extends RelativeLayout implements RtlCheckListene
     titleView.setTextColor(Theme.getColor(titleColorId = R.id.theme_color_textNegative));
   }
 
-  public void addThemeListeners (@Nullable ViewController themeProvider) {
+  public void addThemeListeners (@Nullable ViewController<?> themeProvider) {
     if (themeProvider != null) {
       themeProvider.addThemeTextColorListener(titleView, titleColorId);
       themeProvider.addThemeTextColorListener(subtitleView, subtitleColorId);

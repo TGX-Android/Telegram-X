@@ -370,11 +370,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return manager.controller();
   }
 
-  public final ViewController controller () {
+  public final ViewController<?> controller () {
     return messagesController().getParentOrSelf();
   }
 
-  public final void navigateTo (ViewController c) {
+  public final void navigateTo (ViewController<?> c) {
     if (!controller().navigateTo(c))
       c.destroy();
   }

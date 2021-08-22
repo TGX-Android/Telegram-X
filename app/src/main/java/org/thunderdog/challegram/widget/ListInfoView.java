@@ -56,7 +56,7 @@ public class ListInfoView extends FrameLayoutFix {
     addView(textView, new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
   }
 
-  public void addThemeListeners (@Nullable ViewController themeProvider) {
+  public void addThemeListeners (@Nullable ViewController<?> themeProvider) {
     if (themeProvider != null) {
       themeProvider.addThemeTextColorListener(textView, R.id.theme_color_background_textLight);
     }

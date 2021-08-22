@@ -118,11 +118,11 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
     });
 
     flowManager = new NewFlowLayoutManager(context, 100) {
-      private Size size = new Size();
+      private final Size size = new Size();
 
       @Override
       protected Size getSizeForItem (int i) {
-        InlineResult result = layoutMode == LAYOUT_MODE_FLOW && i != 0 && currentItems != null ? currentItems.get(i - 1) : null;
+        InlineResult<?> result = layoutMode == LAYOUT_MODE_FLOW && i != 0 && currentItems != null ? currentItems.get(i - 1) : null;
         if (result != null && InlineResult.isFlowType(result.getType())) {
           size.width = result.getCellWidth();
           size.height = result.getCellHeight();
@@ -262,8 +262,8 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
 
   @Override
   public boolean onLongClick (View v) {
-    final InlineResult result = (InlineResult) v.getTag();
-    final ViewController c = UI.getContext(getContext()).navigation().getCurrentStackItem();
+    final InlineResult<?> result = (InlineResult<?>) v.getTag();
+    final ViewController<?> c = UI.getContext(getContext()).navigation().getCurrentStackItem();
     if (result != null && c != null) {
       if (result instanceof InlineResultCommand) {
         return c instanceof MessagesController && ((MessagesController) c).canWriteMessages() && ((MessagesController) c).onCommandLongPressed((InlineResultCommand) result);
@@ -311,17 +311,17 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   private PickListener findListener () {
     if (this.listener != null)
       return this.listener;
-    ViewController c = UI.getCurrentStackItem(getContext());
+    ViewController<?> c = UI.getCurrentStackItem(getContext());
     return c instanceof MessagesController ? ((MessagesController) c).getInlineResultListener() : null;
   }
 
   @Override
   public boolean needsForceTouch (BaseView v, float x, float y) {
     Object tag = v.getTag();
-    if (tag == null || !(tag instanceof InlineResult)) {
+    if (!(tag instanceof InlineResult)) {
       return false;
     }
-    InlineResult result = (InlineResult) tag;
+    InlineResult<?> result = (InlineResult<?>) tag;
     switch (result.getType()) {
       case InlineResult.TYPE_PHOTO:
       case InlineResult.TYPE_GIF:
@@ -331,17 +331,17 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   }
 
   @Override
-  public boolean onSlideOff (BaseView v, float x, float y, @Nullable ViewController openPreview) {
+  public boolean onSlideOff (BaseView v, float x, float y, @Nullable ViewController<?> openPreview) {
     return false;
   }
 
   @Override
-  public ViewController createForceTouchPreview (BaseView v, float x, float y) {
+  public ViewController<?> createForceTouchPreview (BaseView v, float x, float y) {
     Object tag = v.getTag();
-    if (tag == null || !(tag instanceof InlineResult)) {
+    if (!(tag instanceof InlineResult<?>)) {
       return null;
     }
-    InlineResult result = (InlineResult) tag;
+    InlineResult<?> result = (InlineResult<?>) tag;
     SimpleMediaViewController.Args args = null;
     switch (result.getType()) {
       case InlineResult.TYPE_PHOTO: {
@@ -802,7 +802,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
     if (offsetProvider != null) {
       setBottomMargin(offsetProvider.provideOffset(this));
     } else {
-      ViewController c = UI.getCurrentStackItem(getContext());
+      ViewController<?> c = UI.getCurrentStackItem(getContext());
       float tx = 0;
       if (c instanceof MessagesController) {
         setBottomMargin(((MessagesController) c).getInputOffset(false));
@@ -838,9 +838,9 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
       switchPmHandler = null;
     }
 
-    final ViewController c = UI.getCurrentStackItem();
+    final ViewController<?> c = UI.getCurrentStackItem();
     long sourceChatId = 0;
-    if (c != null && c instanceof MessagesController) {
+    if (c instanceof MessagesController) {
       if (((MessagesController) c).comparePrivateUserId(button.getUserId())) {
         ((MessagesController) c).onSwitchPm(button);
         return;
@@ -881,7 +881,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
     void onMentionPick (InlineResultMention result, @Nullable String usernamelessText);
     void onCommandPick (InlineResultCommand result, boolean isLongPress);
     void onEmojiSuggestionPick (InlineResultEmojiSuggestion result);
-    void onInlineQueryResultPick (InlineResult result);
+    void onInlineQueryResultPick (InlineResult<?> result);
   }
 
   private PickListener listener;
@@ -900,7 +900,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
       case R.id.result: {
         Object tag = v.getTag();
         if (tag != null && tag instanceof InlineResult) {
-          InlineResult result = (InlineResult) tag;
+          InlineResult<?> result = (InlineResult<?>) tag;
           PickListener listener = findListener();
           if (listener == null) {
             return;
@@ -937,7 +937,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   }
 
   private MessagesController findMessagesController () {
-    ViewController c = UI.getCurrentStackItem(getContext());
+    ViewController<?> c = UI.getCurrentStackItem(getContext());
     return c instanceof MessagesController ? (MessagesController) c : null;
   }
 
@@ -945,7 +945,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, boolean forceDisableNotification, @Nullable TdApi.MessageSchedulingState schedulingState) {
     Object tag = view.getTag();
     if (tag instanceof InlineResult) {
-      InlineResult result = (InlineResult) tag;
+      InlineResult<?> result = (InlineResult<?>) tag;
       MessagesController c = findMessagesController();
       if (c != null) {
         c.sendInlineQueryResult(result.getQueryId(), result.getId(), true, true, forceDisableNotification, schedulingState);
@@ -969,10 +969,10 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   public void setStickerPressed (StickerSmallView view, TGStickerObj sticker, boolean isPressed) {
     if (currentItems != null) {
       int i = 0;
-      for (InlineResult item : currentItems) {
+      for (InlineResult<?> item : currentItems) {
         if (item.getType() == InlineResult.TYPE_STICKER && ((InlineResultSticker) item).getSticker().equals(sticker)) {
           final View childView = gridManager.findViewByPosition(i + 1);
-          if (childView != null && childView instanceof StickerSmallView) {
+          if (childView instanceof StickerSmallView) {
             ((StickerSmallView) childView).setStickerPressed(isPressed);
           } else {
             adapter.notifyItemChanged(i);

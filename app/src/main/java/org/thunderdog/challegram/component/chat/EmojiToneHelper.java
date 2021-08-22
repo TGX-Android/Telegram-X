@@ -72,9 +72,9 @@ public class EmojiToneHelper implements FactorAnimator.Target {
 
   private final Context context;
   private final Delegate delegate;
-  private final @Nullable ViewController themeProvider;
+  private final @Nullable ViewController<?> themeProvider;
 
-  public EmojiToneHelper (Context context, Delegate delegate, @Nullable ViewController themeProvider) {
+  public EmojiToneHelper (Context context, Delegate delegate, @Nullable ViewController<?> themeProvider) {
     this.context = context;
     this.delegate = delegate;
     this.themeProvider = themeProvider;
@@ -478,7 +478,7 @@ public class EmojiToneHelper implements FactorAnimator.Target {
       super(context);
     }
 
-    private void init (ViewController themeProvider, boolean is2d) {
+    private void init (ViewController<?> themeProvider, boolean is2d) {
       this.tones = new EmojiInfo[EmojiData.emojiColors.length - (is2d ? 1 : 0)];
       this.backgroundDrawable = Theme.filteredDrawable(R.drawable.stickers_back_all, R.id.theme_color_overlayFilling, themeProvider);
       this.cornerDrawable = Theme.filteredDrawable(R.drawable.stickers_back_arrow, R.id.theme_color_overlayFilling, themeProvider);

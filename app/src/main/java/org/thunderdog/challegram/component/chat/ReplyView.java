@@ -94,7 +94,7 @@ public class ReplyView extends FrameLayoutFix implements View.OnClickListener, D
     invalidate();
   }
 
-  public void initWithCallback (Callback callbacK, ViewController themeProvider) {
+  public void initWithCallback (Callback callbacK, ViewController<?> themeProvider) {
     this.callback = callbacK;
 
     FrameLayoutFix.LayoutParams params;

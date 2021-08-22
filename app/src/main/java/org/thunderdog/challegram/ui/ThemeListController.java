@@ -340,7 +340,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
 
   @Nullable
   private ThemeController findThemeController () {
-    ViewController c = getParentOrSelf();
+    ViewController<?> c = getParentOrSelf();
     return c instanceof ThemeController ? (ThemeController) c : null;
   }
 
@@ -1184,7 +1184,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
   }
 
   @Override
-  public void setParentWrapper (@Nullable ViewController parentWrapper) {
+  public void setParentWrapper (@Nullable ViewController<?> parentWrapper) {
     super.setParentWrapper(parentWrapper);
     if (adapter != null)
       adapter.setLockFocusOn(getParentOrSelf(), false);

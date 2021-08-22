@@ -526,13 +526,13 @@ public class UI {
   }
 
   @Deprecated
-  public static @Nullable ViewController getCurrentStackItem () {
+  public static @Nullable ViewController<?> getCurrentStackItem () {
     NavigationController navigation = getNavigation();
     return navigation != null ? navigation.getStack().getCurrent() : null;
   }
 
   @Deprecated
-  public static ViewController getCurrentStackItem (Context context) {
+  public static ViewController<?> getCurrentStackItem (Context context) {
     return UI.getContext(context).navigation().getCurrentStackItem();
   }
 
@@ -639,7 +639,7 @@ public class UI {
     getAppHandler().setPlayChanged(audio, playing);
   }
 
-  public static void setController (ViewController controller) {
+  public static void setController (ViewController<?> controller) {
     getAppHandler().setController(controller);
   }
 
@@ -647,11 +647,11 @@ public class UI {
     getAppHandler().navigateBack();
   }
 
-  public static void navigateTo (ViewController controller) {
+  public static void navigateTo (ViewController<?> controller) {
     getAppHandler().navigateTo(controller);
   }
 
-  public static void navigateDelayed (ViewController controller, long delay) {
+  public static void navigateDelayed (ViewController<?> controller, long delay) {
     getAppHandler().navigateDelayed(controller, delay);
   }
 

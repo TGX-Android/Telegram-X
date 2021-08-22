@@ -8,6 +8,7 @@ import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -84,7 +85,7 @@ public class WallpaperAdapter extends RecyclerView.Adapter<WallpaperAdapter.View
   public static final int TYPE_WALLPAPER = 0;
   public static final int TYPE_PROGRESS = 1;
 
-  private final ViewController context;
+  private final ViewController<?> context;
 
   private @Nullable ArrayList<TGBackground> wallpapers;
   private TGBackground selectedWallpaper;
@@ -92,7 +93,7 @@ public class WallpaperAdapter extends RecyclerView.Adapter<WallpaperAdapter.View
   private final ArrayList<RecyclerView> attachedRecyclers;
   private final int themeId;
 
-  public WallpaperAdapter (ViewController context, int themeId) {
+  public WallpaperAdapter (ViewController<?> context, int themeId) {
     this.context = context;
     this.themeId = themeId;
     this.selectedWallpaper = context.tdlib().settings().getWallpaper(Theme.getWallpaperIdentifier());
@@ -106,7 +107,7 @@ public class WallpaperAdapter extends RecyclerView.Adapter<WallpaperAdapter.View
   }
 
   @Override
-  public void onAttachedToRecyclerView (RecyclerView recyclerView) {
+  public void onAttachedToRecyclerView (@NonNull RecyclerView recyclerView) {
     attachedRecyclers.add(recyclerView);
     int i = indexOfWallpaper(selectedWallpaper);
     if (i != -1) {

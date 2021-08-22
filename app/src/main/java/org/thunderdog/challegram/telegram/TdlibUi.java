@@ -239,7 +239,7 @@ public class TdlibUi extends Handler {
 
   // Unsorted UI-related common stuff
 
-  private static boolean deleteSuperGroupMessages (final ViewController context, final TdApi.Message[] deletingMessages, final @Nullable Runnable after) {
+  private static boolean deleteSuperGroupMessages (final ViewController<?> context, final TdApi.Message[] deletingMessages, final @Nullable Runnable after) {
     final Tdlib tdlib = context.tdlib();
     if (deletingMessages == null || deletingMessages.length == 0) {
       return false;
@@ -353,7 +353,7 @@ public class TdlibUi extends Handler {
     return true;
   }
 
-  private static boolean deleteWithRevoke (final ViewController context, final TdApi.Message[] deletingMessages, final @Nullable Runnable after) {
+  private static boolean deleteWithRevoke (final ViewController<?> context, final TdApi.Message[] deletingMessages, final @Nullable Runnable after) {
     if (deletingMessages == null || deletingMessages.length == 0)
       return false;
 
@@ -444,11 +444,11 @@ public class TdlibUi extends Handler {
     return true;
   }
 
-  public static void showDeleteOptions (ViewController context, TdApi.Message message) {
+  public static void showDeleteOptions (ViewController<?> context, TdApi.Message message) {
     showDeleteOptions(context, new TdApi.Message[] {message}, null);
   }
 
-  public static void showDeleteOptions (final ViewController context, final TdApi.Message[] messages, final @Nullable Runnable after) {
+  public static void showDeleteOptions (final ViewController<?> context, final TdApi.Message[] messages, final @Nullable Runnable after) {
     if (context != null && messages != null && messages.length > 0) {
       if (deleteSuperGroupMessages(context, messages, after)) {
         return;
@@ -577,7 +577,7 @@ public class TdlibUi extends Handler {
     return ttl > 0 ? getDuration(ttl, TimeUnit.SECONDS, false) : null;
   }
 
-  public CancellableRunnable openSupport (final ViewController context) {
+  public CancellableRunnable openSupport (final ViewController<?> context) {
     final TdApi.Chat[] chat = new TdApi.Chat[1];
     final TdApi.Error[] error = new TdApi.Error[1];
 
@@ -749,7 +749,7 @@ public class TdlibUi extends Handler {
   public static final int MUTE_FOREVER = Integer.MAX_VALUE;
   private static final int MUTE_MAX = 60 * 60 * 24 * 4; // 4 days
 
-  /*public static void showMuteMore (ViewController c, int buttonIndex) {
+  /*public static void showMuteMore (ViewController<?> c, int buttonIndex) {
     String[] strings = {
       Lang.getString(R.string.Enable),
       Lang.plural(R.string.MuteForXHours, 1),
@@ -760,7 +760,7 @@ public class TdlibUi extends Handler {
     c.showMore(new int[] {R.id.btn_menu_enable, R.id.btn_menu_1hour, R.id.btn_menu_8hours, R.id.btn_menu_2days, R.id.btn_menu_disable}, strings, buttonIndex);
   }*/
 
-  public void toggleMute (final ViewController context, final long chatId, boolean allowCustomize, @Nullable Runnable after) {
+  public void toggleMute (final ViewController<?> context, final long chatId, boolean allowCustomize, @Nullable Runnable after) {
     TdApi.Chat chat = tdlib.chat(chatId);
     TdApi.ScopeNotificationSettings scopeSettings = tdlib.scopeNotificationSettings(chatId);
     if (chat == null || scopeSettings == null)
@@ -833,15 +833,15 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public void showMuteOptions (final ViewController context, final long chatId, final boolean allowCustomize, @Nullable Runnable after) {
+  public void showMuteOptions (final ViewController<?> context, final long chatId, final boolean allowCustomize, @Nullable Runnable after) {
     showMuteOptions(context, null, chatId, allowCustomize, after);
   }
 
-  public void showMuteOptions (final ViewController context, final TdApi.NotificationSettingsScope scope, final boolean allowCustomize) {
+  public void showMuteOptions (final ViewController<?> context, final TdApi.NotificationSettingsScope scope, final boolean allowCustomize) {
     showMuteOptions(context, scope, 0, allowCustomize, null);
   }
 
-  private void showMuteOptions (final ViewController context, final TdApi.NotificationSettingsScope scope, final long chatId, final boolean allowCustomize, @Nullable Runnable after) {
+  private void showMuteOptions (final ViewController<?> context, final TdApi.NotificationSettingsScope scope, final long chatId, final boolean allowCustomize, @Nullable Runnable after) {
     if ((scope == null && chatId == 0) || (scope != null && chatId != 0))
       throw new IllegalArgumentException();
 
@@ -1016,7 +1016,7 @@ public class TdlibUi extends Handler {
 
   // Profile helper
 
-  public boolean handleProfileClick (ViewController context, @Nullable View view, int id, TdApi.User user, boolean allowChangeNumber) {
+  public boolean handleProfileClick (ViewController<?> context, @Nullable View view, int id, TdApi.User user, boolean allowChangeNumber) {
     if (user == null) {
       return false;
     }
@@ -1131,7 +1131,7 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public boolean handleProfileOption (ViewController context, int id, TdApi.User user) {
+  public boolean handleProfileOption (ViewController<?> context, int id, TdApi.User user) {
     if (user == null) {
       return false;
     }
@@ -1172,7 +1172,7 @@ public class TdlibUi extends Handler {
     return false;
   }
 
-  public boolean handleProfileMore (ViewController context, int id, TdApi.User user, TdApi.UserFullInfo userFull) {
+  public boolean handleProfileMore (ViewController<?> context, int id, TdApi.User user, TdApi.UserFullInfo userFull) {
     switch (id) {
       case R.id.more_btn_edit: {
         if (user != null) {
@@ -1209,7 +1209,7 @@ public class TdlibUi extends Handler {
     return false;
   }
 
-  public void addContact (ViewController context, TdApi.Contact contact) {
+  public void addContact (ViewController<?> context, TdApi.Contact contact) {
     if (contact == null) {
       return;
     }
@@ -1224,13 +1224,13 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public void addContact (ViewController context, TdApi.User user ) {
+  public void addContact (ViewController<?> context, TdApi.User user ) {
     if (user != null) {
       addContact(context, user, StringUtils.isEmpty(user.phoneNumber) ? null : user.phoneNumber);
     }
   }
 
-  public void addContact (ViewController context, TdApi.User user, @Nullable String knownPhoneNumber) {
+  public void addContact (ViewController<?> context, TdApi.User user, @Nullable String knownPhoneNumber) {
     if (user == null) {
       return;
     }
@@ -1260,7 +1260,7 @@ public class TdlibUi extends Handler {
     context.navigation().navigateTo(c);
   }
 
-  private void shareUsername (ViewController context, TdApi.User user) {
+  private void shareUsername (ViewController<?> context, TdApi.User user) {
     String username = user.username;
     if (StringUtils.isEmpty(username))
       return;
@@ -1279,7 +1279,7 @@ public class TdlibUi extends Handler {
     c.show();
   }
 
-  private void shareUser (ViewController context, TdApi.User user) {
+  private void shareUser (ViewController<?> context, TdApi.User user) {
     String username = tdlib.cache().userUsername(user.id);
     String name = tdlib.cache().userName(user.id);
     String url = StringUtils.isEmpty(username) ? null : tdlib.tMeUrl(username);
@@ -1403,7 +1403,7 @@ public class TdlibUi extends Handler {
 
   // Change photo
 
-  public void showChangePhotoOptions (ViewController context, boolean canDelete) {
+  public void showChangePhotoOptions (ViewController<?> context, boolean canDelete) {
     if (canDelete) {
       context.showOptions(null, new int[] {R.id.btn_changePhotoCamera, R.id.btn_changePhotoGallery, R.id.btn_changePhotoDelete}, new String[] {Lang.getString(R.string.takePhoto), Lang.getString(R.string.pickFromGallery), Lang.getString(R.string.DeletePhoto)}, new int[] {ViewController.OPTION_COLOR_NORMAL, ViewController.OPTION_COLOR_NORMAL, ViewController.OPTION_COLOR_RED}, new int[] {R.drawable.baseline_camera_alt_24, R.drawable.baseline_image_24, R.drawable.baseline_remove_circle_24});
     } else {
@@ -1497,7 +1497,7 @@ public class TdlibUi extends Handler {
     tdlib.client().send(new TdApi.DeleteProfilePhoto(photoId), tdlib.profilePhotoHandler());
   }
 
-  public static void sendLogs (final ViewController context, final boolean old, final boolean export) {
+  public static void sendLogs (final ViewController<?> context, final boolean old, final boolean export) {
     String path = TdlibManager.getLogFilePath(old);
     File file = new File(path);
     if (!file.exists()) {
@@ -1546,7 +1546,7 @@ public class TdlibUi extends Handler {
   // Stickers
 
   private Client.ResultHandler newStickerSetHandler (final TdlibDelegate context, @Nullable UrlOpenParameters openParameters) {
-    final ViewController currentController = context.context().navigation().getCurrentStackItem();
+    final ViewController<?> currentController = context.context().navigation().getCurrentStackItem();
     return object -> context.tdlib().ui().post(() -> {
       if (currentController == null || currentController.isDestroyed()) {
         return;
@@ -1984,7 +1984,7 @@ public class TdlibUi extends Handler {
       doneOpen = true;
     }
     if (!doneOpen && highlightMode == MessagesManager.HIGHLIGHT_MODE_NORMAL && highlightMessageId != null) {
-      ViewController c = context.context().navigation().getCurrentStackItem();
+      ViewController<?> c = context.context().navigation().getCurrentStackItem();
       if (c != null && c != context && c.tdlib() == context.tdlib() && c instanceof MessagesController && !((MessagesController) c).inPreviewMode() && ((MessagesController) c).compareChat(chat.id, messageThread, onlyScheduled)) {
         ((MessagesController) c).highlightMessage(highlightMessageId, urlOpenParameters);
         doneOpen = true;
@@ -2003,7 +2003,7 @@ public class TdlibUi extends Handler {
     final MessagesController controller;
     // boolean reused = false;
 
-    ViewController current = context.context().navigation().getCurrentStackItem();
+    ViewController<?> current = context.context().navigation().getCurrentStackItem();
 
     if (!(context.context() instanceof MainActivity) || context instanceof MessagesController || isSelfChat || current == ((MainActivity) context.context()).getMessagesController(tdlib, false)) {
       controller = new MessagesController(context.context(), context.tdlib());
@@ -2013,7 +2013,7 @@ public class TdlibUi extends Handler {
       int i = 0;
       if (navigation != null) {
         final NavigationStack stack = navigation.getStack();
-        for (ViewController c : stack.getAll()) {
+        for (ViewController<?> c : stack.getAll()) {
           if (c instanceof MessagesController && c == m) {
             if ((options & CHAT_OPTION_KEEP_STACK) != 0) {
               m = new MessagesController(context.context(), context.tdlib());
@@ -2032,7 +2032,7 @@ public class TdlibUi extends Handler {
     controller.setShareItem(shareItem);
     if (params != null && (params.options & CHAT_OPTION_PASSCODE_UNLOCKED) != 0) {
       controller.addOneShotFocusListener(() -> {
-        ViewController prevStackItem = controller.stackItemAt(controller.stackSize() - 2);
+        ViewController<?> prevStackItem = controller.stackItemAt(controller.stackSize() - 2);
         if (prevStackItem instanceof PasscodeController && prevStackItem.getChatId() == controller.getChatId()) {
           controller.destroyStackItemAt(controller.stackSize() - 2);
         }
@@ -2117,7 +2117,7 @@ public class TdlibUi extends Handler {
       c.get();
       navigation.getStack().insert(c, 0);
     } else {
-      ViewController c = navigation.getCurrentStackItem();
+      ViewController<?> c = navigation.getCurrentStackItem();
       if (c instanceof MessagesController && c.getChatId() == chat.id && !((MessagesController) c).inPreviewMode()) {
         profileController.setShareCustomHeaderView(true);
       }
@@ -2297,7 +2297,7 @@ public class TdlibUi extends Handler {
       return;
     }
     final String msg = Lang.getString(TD.isChannel(inviteLinkInfo.type) ? R.string.FollowChannelX : R.string.JoinGroupX, inviteLinkInfo.title);
-    ViewController c = context.context().navigation().getCurrentStackItem();
+    ViewController<?> c = context.context().navigation().getCurrentStackItem();
     if (c != null) {
       c.showOptions(msg, new int[]{R.id.btn_join, R.id.btn_cancel}, new String[]{Lang.getOK(), Lang.getString(R.string.Cancel)}, null, null, (itemView, id) -> {
         if (id == R.id.btn_join) {
@@ -2375,7 +2375,7 @@ public class TdlibUi extends Handler {
     public String refererUrl, instantViewFallbackUrl;
     public TooltipOverlayView.TooltipBuilder tooltip;
 
-    private ViewController parentController;
+    private ViewController<?> parentController;
     private TGMessage sourceMessage;
 
     public UrlOpenParameters () { }
@@ -2402,7 +2402,7 @@ public class TdlibUi extends Handler {
       return this;
     }
 
-    public UrlOpenParameters controller (@Nullable ViewController controller) {
+    public UrlOpenParameters controller (@Nullable ViewController<?> controller) {
       this.parentController = controller;
       return this;
     }
@@ -2461,7 +2461,7 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public void openUrlOptions (final ViewController context, final String url, @Nullable UrlOpenParameters options) {
+  public void openUrlOptions (final ViewController<?> context, final String url, @Nullable UrlOpenParameters options) {
     context.showOptions(url, new int[] {R.id.btn_open, R.id.btn_copyLink}, new String[] {Lang.getString(R.string.Open), Lang.getString(R.string.CopyLink)}, null, new int[] {R.drawable.baseline_open_in_browser_24, R.drawable.baseline_content_copy_24}, (v, optionId) -> {
       switch (optionId) {
         case R.id.btn_open: {
@@ -2743,7 +2743,7 @@ public class TdlibUi extends Handler {
           case TdApi.DeepLinkInfo.CONSTRUCTOR: {
             TdApi.DeepLinkInfo info = (TdApi.DeepLinkInfo) result;
             tdlib.ui().post(() -> {
-              ViewController c = context.context().navigation().getCurrentStackItem();
+              ViewController<?> c = context.context().navigation().getCurrentStackItem();
               if (c != null) {
                 c.processDeepLinkInfo(info);
               }
@@ -2891,7 +2891,7 @@ public class TdlibUi extends Handler {
             case TdApi.InternalLinkTypePhoneNumberConfirmation.CONSTRUCTOR: {
               TdApi.InternalLinkTypePhoneNumberConfirmation confirmPhone = (TdApi.InternalLinkTypePhoneNumberConfirmation) linkType;
               // TODO progress?
-              ViewController currentController = context.context().navigation().getCurrentStackItem();
+              ViewController<?> currentController = context.context().navigation().getCurrentStackItem();
               tdlib.client().send(new TdApi.SendPhoneNumberConfirmationCode(confirmPhone.hash, confirmPhone.phoneNumber, TD.defaultPhoneNumberAuthenticationSettings()), confirmationResult -> {
                 switch (confirmationResult.getConstructor()) {
                   case TdApi.AuthenticationCodeInfo.CONSTRUCTOR: {
@@ -3022,7 +3022,7 @@ public class TdlibUi extends Handler {
                   case TdApi.DeepLinkInfo.CONSTRUCTOR: {
                     TdApi.DeepLinkInfo deepLink = (TdApi.DeepLinkInfo) deepLinkResult;
                     post(() -> {
-                      ViewController c = context.context().navigation().getCurrentStackItem();
+                      ViewController<?> c = context.context().navigation().getCurrentStackItem();
                       if (c != null) {
                         c.processDeepLinkInfo(deepLink);
                       }
@@ -3077,7 +3077,7 @@ public class TdlibUi extends Handler {
   }
 
   private void openProxyAlert (TdlibDelegate context, String server, int port, TdApi.ProxyType type, String proxyDescription) {
-    ViewController c = context.context().navigation().getCurrentStackItem();
+    ViewController<?> c = context.context().navigation().getCurrentStackItem();
     if (c == null)
       return;
 
@@ -3127,7 +3127,7 @@ public class TdlibUi extends Handler {
 
   // Log out
 
-  public void logOut (ViewController context, boolean showAlternatives) {
+  public void logOut (ViewController<?> context, boolean showAlternatives) {
     if (tdlib.myUserId() == 0) {
       return;
     }
@@ -3203,7 +3203,7 @@ public class TdlibUi extends Handler {
    * then opens appropriate screen
    */
   public void addNewProxy (TdlibDelegate context, boolean needProxyHint) {
-    ViewController c = context.context().navigation().getCurrentStackItem();
+    ViewController<?> c = context.context().navigation().getCurrentStackItem();
     if (c == null) {
       return;
     }
@@ -3280,7 +3280,7 @@ public class TdlibUi extends Handler {
 
   // Leave/join chat
 
-  public boolean processLeaveButton (ViewController context, TdApi.ChatList chatList, long chatId, int actionId, @Nullable Runnable after) {
+  public boolean processLeaveButton (ViewController<?> context, TdApi.ChatList chatList, long chatId, int actionId, @Nullable Runnable after) {
     switch (actionId) {
       case R.id.btn_returnToChat:
         leaveJoinChat(context, chatId, true, after);
@@ -3373,7 +3373,7 @@ public class TdlibUi extends Handler {
     }
   }
 
-  private void leaveJoinChat (ViewController context, long chatId, boolean join, @Nullable Runnable after) {
+  private void leaveJoinChat (ViewController<?> context, long chatId, boolean join, @Nullable Runnable after) {
     TdApi.ChatMemberStatus status = tdlib.chatStatus(chatId);
     if (status == null) {
       return;
@@ -3517,9 +3517,9 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public void exitToChatScreen (ViewController context, long chatId) {
+  public void exitToChatScreen (ViewController<?> context, long chatId) {
     NavigationStack stack = context.context().navigation().getStack();
-    ViewController current = stack.getCurrent();
+    ViewController<?> current = stack.getCurrent();
     if (stack.size() > 1 && context.getChatId() == chatId && (current == context || (current != null && current.getChatId() == chatId))) {
       for (int i = stack.size() - 2; i >= 1; i--) {
         stack.destroy(i);
@@ -3564,7 +3564,7 @@ public class TdlibUi extends Handler {
     return R.string.DeleteChat;
   }
 
-  private void showClearHistoryConfirm (ViewController context, final long chatId, @Nullable Runnable after) {
+  private void showClearHistoryConfirm (ViewController<?> context, final long chatId, @Nullable Runnable after) {
     if (tdlib.canRevokeChat(chatId)) {
       context.showSettings(new SettingsWrapBuilder(R.id.btn_removeChatFromList)
         .setAllowResize(false)
@@ -3596,11 +3596,11 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public void showDeleteChatConfirm (final ViewController context, final long chatId) {
+  public void showDeleteChatConfirm (final ViewController<?> context, final long chatId) {
     showDeleteChatConfirm(context, chatId, false, tdlib.suggestStopBot(chatId), null);
   }
 
-  private void showDeleteOrClearHistory (final ViewController context, final long chatId, final CharSequence chatName, final Runnable onDelete, final boolean allowClearHistory, Runnable after) {
+  private void showDeleteOrClearHistory (final ViewController<?> context, final long chatId, final CharSequence chatName, final Runnable onDelete, final boolean allowClearHistory, Runnable after) {
     if (!allowClearHistory || !tdlib.canClearHistory(chatId)) {
       onDelete.run();
       return;
@@ -3618,7 +3618,7 @@ public class TdlibUi extends Handler {
     });
   }
 
-  private void showHidePsaConfirm (final ViewController context, final TdApi.ChatList chatList, final long chatId, @Nullable Runnable after) {
+  private void showHidePsaConfirm (final ViewController<?> context, final TdApi.ChatList chatList, final long chatId, @Nullable Runnable after) {
     Runnable deleter = () -> {
       tdlib.deleteChat(chatId, false, null);
       exitToChatScreen(context, chatId);
@@ -3640,7 +3640,7 @@ public class TdlibUi extends Handler {
     });
   }
 
-  private void showDeleteChatConfirm (final ViewController context, final long chatId, boolean allowClearHistory, boolean blockUser, @Nullable Runnable after) {
+  private void showDeleteChatConfirm (final ViewController<?> context, final long chatId, boolean allowClearHistory, boolean blockUser, @Nullable Runnable after) {
     RunnableBool deleter = revoke -> {
       tdlib.deleteChat(chatId, revoke, null);
       exitToChatScreen(context, chatId);
@@ -3774,7 +3774,7 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public void showArchiveOptions (ViewController context, ChatListManager archive) {
+  public void showArchiveOptions (ViewController<?> context, ChatListManager archive) {
     boolean needMarkAsRead = tdlib.hasUnreadChats(ChatPosition.CHAT_LIST_ARCHIVE);
     final int size = needMarkAsRead ? 2 : 1;
 
@@ -3814,7 +3814,7 @@ public class TdlibUi extends Handler {
     });
   }
 
-  public void showChatOptions (ViewController context, final TdApi.ChatList chatList, final long chatId, final ThreadInfo messageThread, boolean canSelect, boolean isSelected, @Nullable Runnable onSelect) {
+  public void showChatOptions (ViewController<?> context, final TdApi.ChatList chatList, final long chatId, final ThreadInfo messageThread, boolean canSelect, boolean isSelected, @Nullable Runnable onSelect) {
     TdApi.Chat chat = tdlib.chat(chatId);
     if (chat == null)
       return;
@@ -3935,7 +3935,7 @@ public class TdlibUi extends Handler {
     });
   }
 
-  private void showPinUnpinConfirm (ViewController context, final TdApi.ChatList chatList, final long chatId, @Nullable Runnable after) {
+  private void showPinUnpinConfirm (ViewController<?> context, final TdApi.ChatList chatList, final long chatId, @Nullable Runnable after) {
     boolean isPinned = tdlib.chatPinned(chatList, chatId);
     context.showOptions(tdlib.chatTitle(chatId), new int[] {isPinned ? R.id.btn_unpinChat : R.id.btn_pinChat, R.id.btn_cancel}, new String[] {Lang.getString(isPinned ? R.string.UnpinFromTop : R.string.PinToTop), Lang.getString(R.string.Cancel)}, null, new int[] {isPinned ? R.drawable.deproko_baseline_pin_undo_24 : R.drawable.deproko_baseline_pin_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_unpinChat || id == R.id.btn_pinChat) {
@@ -3945,7 +3945,7 @@ public class TdlibUi extends Handler {
     });
   }
 
-  private void showArchiveUnarchiveChat (ViewController context, final TdApi.ChatList chatList, final long chatId, @Nullable Runnable after) {
+  private void showArchiveUnarchiveChat (ViewController<?> context, final TdApi.ChatList chatList, final long chatId, @Nullable Runnable after) {
     boolean isArchived = tdlib.chatArchived(chatId);
     context.showOptions(tdlib.chatTitle(chatId), new int[] {isArchived ? R.id.btn_unarchiveChat : R.id.btn_archiveChat, R.id.btn_cancel}, new String[] {Lang.getString(isArchived ? R.string.UnarchiveChat : R.string.ArchiveChat), Lang.getString(R.string.Cancel)}, null, new int[] {isArchived ? R.drawable.baseline_unarchive_24 : R.drawable.baseline_archive_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_unarchiveChat || id == R.id.btn_archiveChat) {
@@ -3955,7 +3955,7 @@ public class TdlibUi extends Handler {
     });
   }
 
-  public boolean processChatAction (ViewController context, final TdApi.ChatList chatList, final long chatId, final @Nullable ThreadInfo messageThread, final int actionId, @Nullable Runnable after) {
+  public boolean processChatAction (ViewController<?> context, final TdApi.ChatList chatList, final long chatId, final @Nullable ThreadInfo messageThread, final int actionId, @Nullable Runnable after) {
     TdApi.Chat chat = tdlib.chat(chatId);
     if (chat == null)
       return false;
@@ -3999,7 +3999,7 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public final ForceTouchView.ActionListener createSimpleChatActions (final ViewController context, final TdApi.ChatList chatList, final long chatId, final @Nullable ThreadInfo messageThread, IntList ids, IntList icons, StringList strings, final boolean allowInteractions, final boolean canSelect, final boolean isSelected, @Nullable Runnable onSelect) {
+  public final ForceTouchView.ActionListener createSimpleChatActions (final ViewController<?> context, final TdApi.ChatList chatList, final long chatId, final @Nullable ThreadInfo messageThread, IntList ids, IntList icons, StringList strings, final boolean allowInteractions, final boolean canSelect, final boolean isSelected, @Nullable Runnable onSelect) {
     final TdApi.Chat chat = tdlib.chat(chatId);
     if (chat == null) {
       return null;
@@ -4077,7 +4077,7 @@ public class TdlibUi extends Handler {
 
   // Passcode
 
-  private void showPasscodeOptions (ViewController controller, long chatId) {
+  private void showPasscodeOptions (ViewController<?> controller, long chatId) {
     TdApi.Chat chat = tdlib.chat(chatId);
     if (chat == null || !tdlib.canSetPasscode(chat)) {
       return;
@@ -4096,11 +4096,11 @@ public class TdlibUi extends Handler {
   public static final int MAP_PROVIDER_MODE_SECRET = 1;
   public static final int MAP_PROVIDER_MODE_CLOUD = 2;
 
-  public void showMapProviderSettings (ViewController c, int mode, Runnable after) {
+  public void showMapProviderSettings (ViewController<?> c, int mode, Runnable after) {
     if (!c.isFocused()) {
       c.addFocusListener(new ViewController.FocusStateListener() {
         @Override
-        public void onFocusStateChanged (ViewController c, boolean isFocused) {
+        public void onFocusStateChanged (ViewController<?> c, boolean isFocused) {
           if (isFocused) {
             c.removeFocusListener(this);
             showMapProviderSettings(c, mode, after);
@@ -4307,7 +4307,7 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public void readCustomLanguage (ViewController c, TdApi.Document document, @NonNull RunnableData<CustomLangPackResult> onDone, @Nullable Runnable onError) {
+  public void readCustomLanguage (ViewController<?> c, TdApi.Document document, @NonNull RunnableData<CustomLangPackResult> onDone, @Nullable Runnable onError) {
     if (!canInstallLanguage(document)) {
       if (onError != null) {
         onError.run();
@@ -4457,7 +4457,7 @@ public class TdlibUi extends Handler {
   }
 
   public void showLanguageInstallPrompt (TdlibDelegate c, TdApi.LanguagePackInfo info) {
-    ViewController context = c.context().navigation().getCurrentStackItem();
+    ViewController<?> context = c.context().navigation().getCurrentStackItem();
     if (context == null || context.isDestroyed())
       return;
     if (Lang.packId().equals(info.id)) {
@@ -4501,7 +4501,7 @@ public class TdlibUi extends Handler {
     });
   }
 
-  public void showLanguageInstallPrompt (ViewController c, CustomLangPackResult out, TdApi.Message sourceMessage) {
+  public void showLanguageInstallPrompt (ViewController<?> c, CustomLangPackResult out, TdApi.Message sourceMessage) {
     if (sourceMessage != null) {
       TdApi.Chat sourceChat;
       if (sourceMessage.forwardInfo != null && sourceMessage.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginChannel.CONSTRUCTOR) {
@@ -4535,7 +4535,7 @@ public class TdlibUi extends Handler {
       });
   }
 
-  private void applyLocalisation (ViewController c, CustomLangPackResult out) {
+  private void applyLocalisation (ViewController<?> c, CustomLangPackResult out) {
     TdApi.LanguagePackString[] strings = out.getStrings();
     String code = out.getLanguageCode();
     TdApi.LanguagePackInfo info = new TdApi.LanguagePackInfo(code, Lang.getBuiltinLanguagePackId(), out.getLanguageNameInEnglish(), out.getStringValue(R.string.language_name), Lang.cleanLanguageCode(code), false, "1".equals(out.getStringValue(R.string.language_rtl)), false, true, strings.length, strings.length, strings.length, null);
@@ -4556,11 +4556,11 @@ public class TdlibUi extends Handler {
     });
   }
 
-  public static void removeAccount (ViewController context, final TdlibAccount account) {
+  public static void removeAccount (ViewController<?> context, final TdlibAccount account) {
     removeAccount(context, account, false);
   }
 
-  private static void removeAccount (ViewController context, final TdlibAccount account, boolean isSignOut) {
+  private static void removeAccount (ViewController<?> context, final TdlibAccount account, boolean isSignOut) {
     context.showOptions(Lang.getStringBold(isSignOut ? R.string.SignOutHint2 : R.string.RemoveAccountHint2, account.getName()), new int[]{R.id.btn_removeAccount, R.id.btn_cancel}, new String[]{Lang.getString(R.string.LogOut), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_removeAccount) {
         account.tdlib().signOut();
@@ -4569,7 +4569,7 @@ public class TdlibUi extends Handler {
     });
   }
 
-  public void switchInline (ViewController context, String username, String query, boolean keepStack) {
+  public void switchInline (ViewController<?> context, String username, String query, boolean keepStack) {
     ChatsController c = new ChatsController(context.context(), context.tdlib());
     c.setArguments(new ChatsController.Arguments(new ChatsController.PickerDelegate() {
       @Override
@@ -4598,7 +4598,7 @@ public class TdlibUi extends Handler {
 
   // Custom themes
 
-  public void showDeleteThemeConfirm (ViewController context, ThemeInfo theme, Runnable onDelete) {
+  public void showDeleteThemeConfirm (ViewController<?> context, ThemeInfo theme, Runnable onDelete) {
     if (!ThemeManager.isCustomTheme(theme.getId()))
       return;
     context.showOptions(Lang.getString(R.string.ThemeRemoveInfo), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ThemeRemoveConfirm), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
@@ -4609,7 +4609,7 @@ public class TdlibUi extends Handler {
     });
   }
 
-  public void exportTheme (ViewController context, ThemeInfo theme, boolean includeDefault, boolean asJava) {
+  public void exportTheme (ViewController<?> context, ThemeInfo theme, boolean includeDefault, boolean asJava) {
     final String themeName = theme.getName();
     final int _customThemeId = ThemeManager.resolveCustomThemeId(theme.getId());
     final String originalAuthor = Settings.instance().getThemeAuthor(_customThemeId);
@@ -4846,7 +4846,7 @@ public class TdlibUi extends Handler {
     return document != null && !StringUtils.isEmpty(document.fileName) && document.fileName.endsWith(BuildConfig.THEME_FILE_EXTENSION) && TD.isFileLoadedAndExists(document.document);
   }
 
-  public void readCustomTheme (ViewController context, TdApi.Document doc, @Nullable RunnableData<ImportedTheme> onDone, @Nullable Runnable onError) {
+  public void readCustomTheme (ViewController<?> context, TdApi.Document doc, @Nullable RunnableData<ImportedTheme> onDone, @Nullable Runnable onError) {
     if (canInstallTheme(doc)) {
       readCustomTheme(context, doc.document, onDone, onError);
     } else {
@@ -4854,7 +4854,7 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public void readCustomTheme (ViewController context, TdApi.File doc, @Nullable RunnableData<ImportedTheme> onDone, @Nullable Runnable onError) {
+  public void readCustomTheme (ViewController<?> context, TdApi.File doc, @Nullable RunnableData<ImportedTheme> onDone, @Nullable Runnable onError) {
     Background.instance().post(() -> {
       int parse_context = THEME_CONTEXT_NONE;
       Map<String, Integer> propertyMap = ThemeProperties.getMap();
@@ -5031,7 +5031,7 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public static void reportChats (ViewController context, long[] chatIds, Runnable after) {
+  public static void reportChats (ViewController<?> context, long[] chatIds, Runnable after) {
     Tdlib tdlib = context.tdlib();
 
     IntList ids = new IntList(REPORT_REASON_COUNT);
@@ -5092,7 +5092,7 @@ public class TdlibUi extends Handler {
     strings.append(R.string.Other);
   }
 
-  private static void toReportReasons (ViewController context, int reportReasonId, CharSequence title, long chatId, long[] messageIds, boolean forceText, RunnableData<TdApi.ReportChat> reportCallback) {
+  private static void toReportReasons (ViewController<?> context, int reportReasonId, CharSequence title, long chatId, long[] messageIds, boolean forceText, RunnableData<TdApi.ReportChat> reportCallback) {
     final TdApi.ChatReportReason reason;
     switch (reportReasonId) {
       case R.id.btn_reportChatSpam:
@@ -5149,7 +5149,7 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public static void reportChat (ViewController context, long chatId, @Nullable TdApi.Message[] messages, boolean allowOther, Runnable after, ThemeDelegate forcedTheme) {
+  public static void reportChat (ViewController<?> context, long chatId, @Nullable TdApi.Message[] messages, boolean allowOther, Runnable after, ThemeDelegate forcedTheme) {
     Tdlib tdlib = context.tdlib();
     final long[] messageIds;
     final CharSequence title;
@@ -5210,7 +5210,7 @@ public class TdlibUi extends Handler {
     void onEraseDataCompleted ();
   }
 
-  public void eraseLocalData (ViewController context, boolean tdlibAvailable, EraseCallback callback) {
+  public void eraseLocalData (ViewController<?> context, boolean tdlibAvailable, EraseCallback callback) {
     CharSequence info = Lang.getMarkdownString(context, R.string.EraseDatabaseWarn);
     CharSequence hint = context.tdlib().context().isMultiUser() ? Lang.getMarkdownString(context, R.string.EraseDatabaseMultiUser) : null;
     context.showWarning(hint != null ? TextUtils.concat(info, "\n\n", hint) : info, success -> {
@@ -5255,7 +5255,7 @@ public class TdlibUi extends Handler {
         case TdApi.BankCardInfo.CONSTRUCTOR:
           TdApi.BankCardInfo bankCardInfo = (TdApi.BankCardInfo) result;
           tdlib.ui().post(() -> {
-            ViewController c = context instanceof ViewController ? (ViewController) context : UI.getCurrentStackItem();
+            ViewController<?> c = context instanceof ViewController<?> ? (ViewController<?>) context : UI.getCurrentStackItem();
             if (c != null && !c.isDestroyed() && bankCardInfo.actions.length > 0) {
               IntList ids = new IntList(bankCardInfo.actions.length);
               StringList strings = new StringList(bankCardInfo.actions.length);
@@ -5315,7 +5315,7 @@ public class TdlibUi extends Handler {
     void onSendRequested (boolean forceDisableNotification, TdApi.MessageSchedulingState schedulingState, boolean disableMarkdown);
   }
 
-  public HapticMenuHelper createSimpleHapticMenu (ViewController context, long chatId, @Nullable FutureBool availabilityCallback, @Nullable FutureBool canDisableMarkdownCallback, RunnableData<List<HapticMenuHelper.MenuItem>> customItemProvider, SimpleSendCallback sendCallback, @Nullable ThemeDelegate forcedTheme) {
+  public HapticMenuHelper createSimpleHapticMenu (ViewController<?> context, long chatId, @Nullable FutureBool availabilityCallback, @Nullable FutureBool canDisableMarkdownCallback, RunnableData<List<HapticMenuHelper.MenuItem>> customItemProvider, SimpleSendCallback sendCallback, @Nullable ThemeDelegate forcedTheme) {
     return new HapticMenuHelper(list -> {
       if (availabilityCallback == null || availabilityCallback.get()) {
         List<HapticMenuHelper.MenuItem> items = fillDefaultHapticMenu(chatId, false, canDisableMarkdownCallback != null && canDisableMarkdownCallback.get(), true);
@@ -5346,7 +5346,7 @@ public class TdlibUi extends Handler {
     }, context != null ? context.getThemeListeners() : null, forcedTheme);
   }
 
-  public boolean showScheduleOptions (ViewController context, long chatId, boolean needSendWithoutSound, SimpleSendCallback callback, @Nullable ThemeDelegate forcedTheme) {
+  public boolean showScheduleOptions (ViewController<?> context, long chatId, boolean needSendWithoutSound, SimpleSendCallback callback, @Nullable ThemeDelegate forcedTheme) {
     return pickSchedulingState(context, schedulingState -> {
       if (schedulingState == null)
         callback.onSendRequested(true, null, false);
@@ -5355,7 +5355,7 @@ public class TdlibUi extends Handler {
     }, chatId, tdlib.cache().userLastSeenAvailable(tdlib.chatUserId(chatId)), needSendWithoutSound, forcedTheme);
   }
 
-  public boolean pickSchedulingState (ViewController context, RunnableData<TdApi.MessageSchedulingState> callback, long chatId, boolean needOnline, boolean needSendWithoutSound, @Nullable ThemeDelegate forcedTheme) {
+  public boolean pickSchedulingState (ViewController<?> context, RunnableData<TdApi.MessageSchedulingState> callback, long chatId, boolean needOnline, boolean needSendWithoutSound, @Nullable ThemeDelegate forcedTheme) {
     if (ChatId.isSecret(chatId)) {
       return false;
     }
@@ -5444,7 +5444,7 @@ public class TdlibUi extends Handler {
     return true;
   }
 
-  public void deleteContact (ViewController context, int userId) {
+  public void deleteContact (ViewController<?> context, int userId) {
     if (tdlib.cache().userContact(userId)) {
       context.showOptions(Lang.getStringBold(R.string.DeleteContactConfirm, tdlib.cache().userName(userId)), new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getString(R.string.Delete), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
         if (!context.isDestroyed() && id1 == R.id.btn_delete) {

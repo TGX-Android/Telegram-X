@@ -35,7 +35,7 @@ import java.util.concurrent.Semaphore;
 
 public final class ReferenceList<T> implements Iterable<T>, ReferenceCreator<T> {
   public interface FullnessListener {
-    void onFullnessStateChanged (ReferenceList list, boolean isFull);
+    void onFullnessStateChanged (ReferenceList<?> list, boolean isFull);
   }
 
   private final boolean cacheIterator;
