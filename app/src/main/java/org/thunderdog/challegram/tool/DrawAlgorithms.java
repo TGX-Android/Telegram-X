@@ -1140,7 +1140,7 @@ public class DrawAlgorithms {
             MCG_CENTERS_X[i] * width,
             MCG_CENTERS_Y[i] * height,
             radius,
-            ColorUtils.alphaColor(alpha, ColorUtils.setAlphaIfNotPresent(freeformColors[i])),
+            ColorUtils.alphaColor(alpha, ColorUtils.color(255, freeformColors[i])),
             Color.TRANSPARENT,
             Shader.TileMode.CLAMP
           );
@@ -1201,7 +1201,7 @@ public class DrawAlgorithms {
     } else {
       throw new IllegalArgumentException("rotation: " + rotationAngle);
     }
-    cache.set(fromX, fromY, toX, toY, ColorUtils.alphaColor(alpha, ColorUtils.setAlphaIfNotPresent(topColor)), ColorUtils.alphaColor(alpha, ColorUtils.setAlphaIfNotPresent(bottomColor)));
+    cache.set(fromX, fromY, toX, toY, ColorUtils.alphaColor(alpha, ColorUtils.color(255, topColor)), ColorUtils.color(255, bottomColor));
     c.drawRect(left, top, right, bottom, cache.paint);
   }
 

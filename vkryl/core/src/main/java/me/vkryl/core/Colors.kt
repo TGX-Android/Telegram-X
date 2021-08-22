@@ -109,10 +109,6 @@ fun color (alpha: Int, rgb: Int): Int {
   return (alpha shl 24) or (rgb and 0xffffff)
 }
 
-fun setAlphaIfNotPresent (rgba: Int): Int {
-  return if (Color.alpha(rgba) == 0) color(0xff, rgba) else rgba
-}
-
 fun alphaColor (alpha: Float, rgba: Int): Int {
   return if (alpha == 1f) rgba else color(fromTo(0, Color.alpha(rgba), alpha), rgba)
 }

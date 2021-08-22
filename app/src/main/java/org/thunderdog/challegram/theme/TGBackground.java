@@ -337,6 +337,8 @@ public class TGBackground {
         TdApi.BackgroundFillGradient gradient = (TdApi.BackgroundFillGradient) fill;
         return ColorUtils.fromToArgb(ColorUtils.color(255, gradient.topColor), ColorUtils.color(255, gradient.bottomColor), .5f);
       }
+      case TdApi.BackgroundFillFreeformGradient.CONSTRUCTOR:
+        return 0; // TODO: return center color
       case TdApi.BackgroundFillSolid.CONSTRUCTOR:
         return ColorUtils.color(255, ((TdApi.BackgroundFillSolid) fill).color);
     }
