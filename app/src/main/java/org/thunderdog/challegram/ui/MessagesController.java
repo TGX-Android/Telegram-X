@@ -1765,12 +1765,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
     switch (id) {
       case R.id.btn_share: {
         ShareController c = new ShareController(context(), tdlib());
-        c.setArguments(new ShareController.Args(tdlib().tMeUrl("bg/" + getArgumentsStrict().wallpaperObject.name)));
+        c.setArguments(new ShareController.Args(tdlib().tMeBackgroundUrl(getArgumentsStrict().wallpaperObject.name)));
         c.show();
         break;
       }
       case R.id.btn_copyLink: {
-        UI.copyText(tdlib().tMeUrl("bg/" + getArgumentsStrict().wallpaperObject.name), R.string.CopiedLink);
+        UI.copyText(tdlib().tMeBackgroundUrl(getArgumentsStrict().wallpaperObject.name), R.string.CopiedLink);
         break;
       }
       case R.id.btn_openLinkedChat: {

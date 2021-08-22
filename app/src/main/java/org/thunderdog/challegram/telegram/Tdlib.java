@@ -3165,14 +3165,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             String username = chatUsername(message.chatId);
             if (!StringUtils.isEmpty(username)) {
               fallbackPrivate = false;
-              fallbackUrl = tMeUrl(username) + "/" + MessageId.toServerMessageId(message.id);
+              fallbackUrl = tMeMessageUrl(username, MessageId.toServerMessageId(message.id));
               if (!forAlbum && message.mediaAlbumId != 0)
                 fallbackUrl += "?single";
             } else {
               fallbackPrivate = true;
               int supergroupId = ChatId.toSupergroupId(message.chatId);
               if (supergroupId != 0)
-                fallbackUrl = tMeUrl("c") + "/" + supergroupId + "/" + MessageId.toServerMessageId(message.id);
+                fallbackUrl = tMePrivateMessageUrl(supergroupId, MessageId.toServerMessageId(message.id));
               else
                 fallbackUrl = null;
             }
@@ -5095,23 +5095,45 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return StringUtils.isEmpty(tMeUrl) ? "https://" + TD.getTelegramHost() + "/" : tMeUrl;
   }
 
-  public String tMeUrl (String path) {
+  public String tMeMessageUrl (String username, long messageId) {
+    return tMeUrl(username + "/" + messageId);
+  }
+
+  public String tMePrivateMessageUrl (int supergroupId, long messageId) {
+    return tMeUrl("c/" + supergroupId + "/" + messageId);
+  }
+
+  public Uri.Builder tMeUrlBuilder () {
     return new Uri.Builder()
       .scheme("https")
-      .authority(tMeAuthority())
+      .authority(tMeAuthority());
+  }
+
+  public String tMeUrl (String path) {
+    return tMeUrlBuilder()
       .path(path)
       .build()
       .toString();
   }
 
   public String tMeStartUrl (String botUsername, String parameter, boolean inGroup) {
-    return new Uri.Builder()
-      .scheme("https")
-      .authority(tMeAuthority())
+    return tMeUrlBuilder()
       .path(botUsername)
       .appendQueryParameter(inGroup ? "startgroup" : "start", parameter)
       .build()
       .toString();
+  }
+
+  public String tMeBackgroundUrl (String backgroundId) {
+    return tMeUrl("bg/" + backgroundId);
+  }
+
+  public String tMeStickerSetUrl (String stickerSetName) {
+    return tMeUrl("addstickers/" + stickerSetName);
+  }
+
+  public String tMeLanguageUrl (String languagePackId) {
+    return tMeUrl("setlanguage/" + languagePackId);
   }
 
   public @Nullable String tdlibVersionSignature () {

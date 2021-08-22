@@ -1306,7 +1306,7 @@ public class TdlibUi extends Handler {
   }
 
   public void shareLanguageUrl (TdlibDelegate context, TdApi.LanguagePackInfo languagePackInfo) {
-    String url = context.tdlib().tMeUrl("setlanguage/" + languagePackInfo.id);
+    String url = context.tdlib().tMeLanguageUrl(languagePackInfo.id);
     String text = Lang.getString(R.string.ShareTextLanguageLink, languagePackInfo.name, url);
     ShareController c = new ShareController(context.context(), context.tdlib());
     c.setArguments(new ShareController.Args(text).setShare(text, Lang.getString(R.string.ShareBtnLanguage)));
@@ -1314,7 +1314,7 @@ public class TdlibUi extends Handler {
   }
 
   public void shareStickerSetUrl (TdlibDelegate context, TdApi.StickerSetInfo stickerSet) {
-    String link = tdlib.tMeUrl("addstickers/" + stickerSet.name);
+    String link = tdlib.tMeStickerSetUrl(stickerSet.name);
     String title = stickerSet.title;
     ShareController c = new ShareController(context.context(), context.tdlib());
     c.setArguments(new ShareController.Args(Lang.getString(R.string.ShareTextStickerLink2, title, link)).setShare(Lang.getString(R.string.ShareTextStickerLink, title, link), Lang.getString(R.string.ShareBtnStickerSet)));
