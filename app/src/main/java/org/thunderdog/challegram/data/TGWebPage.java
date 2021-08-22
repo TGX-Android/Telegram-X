@@ -46,6 +46,7 @@ import me.vkryl.android.util.ClickHelper;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
+import me.vkryl.td.TdConstants;
 
 public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWrapper.OnClickListener, TGInlineKeyboard.ClickListener, Client.ResultHandler {
   private static final int MAX_TITLE_LINES = 4;
@@ -988,7 +989,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   }
 
   protected boolean isTgWallpaperWithPreview() {
-    return webPage.document != null && !"application/x-tgwallpattern".equals(webPage.document.mimeType);
+    return webPage.document != null && !TdConstants.BACKGROUND_PATTERN_MIME_TYPE.equals(webPage.document.mimeType);
   }
 
   public boolean performLongPress (View view, TGMessageText msg) {
