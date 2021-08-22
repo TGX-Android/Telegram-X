@@ -5,3 +5,4 @@
 /x86_64
 /universal
 /src/main/java/org/thunderdog/challegram/core/LangUtils.kt
+/src/main/res/values/generated.xml

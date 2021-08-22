@@ -1938,7 +1938,7 @@
   <string name="AreSendingContact">%1$s are choosing contacts…</string>
   <string name="RecordingRound">recording a video message</string>
   <string name="IsRecordingRound">%1$s is recording video message</string>
-  <string name="AreRecordingRound">%1$s are recording videos messages</string>
+  <string name="AreRecordingRound">%1$s are recording video messages</string>
   <string name="SendingRound">sending a video message</string>
   <string name="IsSendingRound">%1$s is sending a video message</string>
   <string name="AreSendingRound">%1$s are sending video messages</string>
