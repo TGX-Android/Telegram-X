@@ -3456,6 +3456,21 @@
   <string name="StatsChartInteractions">Interactions</string>
   <string name="StatsChartIv">IV Interactions</string>
 
+  <string name="StatsTopMembers">Top members</string>
+  <string name="StatsTopAdmins">Top admins</string>
+  <string name="StatsTopInviters">Top inviters</string>
+  <string name="StatsXCharacters_one">%1$s character per message</string>
+  <string name="StatsXCharacters_other">%1$s characters per message</string>
+  <string name="StatsXDeletions_one">%1$s deletion</string>
+  <string name="StatsXDeletions_other">%1$s deletions</string>
+  <string name="StatsXBans_one">%1$s ban</string>
+  <string name="StatsXBans_other">%1$s bans</string>
+  <string name="StatsXRestrictions_one">%1$s restriction</string>
+  <string name="StatsXRestrictions_other">%1$s restrictions</string>
+  <string name="StatsXInvitations_one">%1$s invitation</string>
+  <string name="StatsXInvitations_other">%1$s invitations</string>
+  <string name="StatsShowMore">Show %s More</string>
+
   <string name="SendDiceAsEmoji">Send as emoji</string>
   <string name="SendDiceHint">Send a %1$s emoji to any chat to get a random number from Telegram.</string>
   <string name="SendDice">Send a dice</string>

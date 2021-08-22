@@ -121,6 +121,7 @@ public class ListItem {
   public static final int TYPE_CHART_DOUBLE_LINEAR = 103;
   public static final int TYPE_CHART_STACK_BAR = 104;
   public static final int TYPE_CHART_STACK_PIE = 105;
+  public static final int TYPE_CHART_HEADER_DETACHED = 106;
 
   public static final int TYPE_HEADER_MULTILINE = 110;
 

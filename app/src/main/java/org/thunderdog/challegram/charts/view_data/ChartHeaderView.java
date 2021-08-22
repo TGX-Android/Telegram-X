@@ -16,6 +16,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.charts.BaseChartView;
 import org.thunderdog.challegram.charts.Chart;
 import org.thunderdog.challegram.charts.LayoutHelper;
+import org.thunderdog.challegram.charts.MiniChart;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeInvalidateListener;
@@ -202,6 +203,12 @@ public class ChartHeaderView extends FrameLayout implements Chart.DateListener, 
     // MODIFIED PART
 
     private Chart chart;
+
+    public void setChart (MiniChart chart) {
+        Views.setMediumText(title, Lang.getString(chart.titleRes));
+        showDate(true);
+        dates.setText(Lang.getDateRange(chart.dateRange.startDate, chart.dateRange.endDate, TimeUnit.SECONDS, false));
+    }
 
     public void setChart (Chart chart) {
         if (this.chart != chart) {

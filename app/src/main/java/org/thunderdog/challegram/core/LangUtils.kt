@@ -2120,6 +2120,10 @@ import org.thunderdog.challegram.R
     "StatsNotifications",
     "StatsRange",
     "StatsShares",
+    "StatsShowMore",
+    "StatsTopAdmins",
+    "StatsTopInviters",
+    "StatsTopMembers",
     "StatsValueFall",
     "StatsValueGrowth",
     "StatsViews",
@@ -2949,6 +2953,11 @@ import org.thunderdog.challegram.R
     "SlowModeHours",
     "SlowModeMinutes",
     "SlowModeSeconds",
+    "StatsXBans",
+    "StatsXCharacters",
+    "StatsXDeletions",
+    "StatsXInvitations",
+    "StatsXRestrictions",
     "SuggestInvitingUserCommon",
     "TranslationsMissing",
     "TryAgainHours",
@@ -3743,6 +3752,15 @@ import org.thunderdog.challegram.R
     Lang.PluralForm.ZERO -> R.string.xStrings_zero
     else -> throw IllegalArgumentException(form.toString())
   }
+  R.string.StatsXDeletions -> when (form) {
+    Lang.PluralForm.FEW -> R.string.StatsXDeletions_few
+    Lang.PluralForm.MANY -> R.string.StatsXDeletions_many
+    Lang.PluralForm.ONE -> R.string.StatsXDeletions_one
+    Lang.PluralForm.OTHER -> R.string.StatsXDeletions_other
+    Lang.PluralForm.TWO -> R.string.StatsXDeletions_two
+    Lang.PluralForm.ZERO -> R.string.StatsXDeletions_zero
+    else -> throw IllegalArgumentException(form.toString())
+  }
   R.string.RemoveXMasks -> when (form) {
     Lang.PluralForm.FEW -> R.string.RemoveXMasks_few
     Lang.PluralForm.MANY -> R.string.RemoveXMasks_many
@@ -3750,6 +3768,15 @@ import org.thunderdog.challegram.R
     Lang.PluralForm.OTHER -> R.string.RemoveXMasks_other
     Lang.PluralForm.TWO -> R.string.RemoveXMasks_two
     Lang.PluralForm.ZERO -> R.string.RemoveXMasks_zero
+    else -> throw IllegalArgumentException(form.toString())
+  }
+  R.string.StatsXRestrictions -> when (form) {
+    Lang.PluralForm.FEW -> R.string.StatsXRestrictions_few
+    Lang.PluralForm.MANY -> R.string.StatsXRestrictions_many
+    Lang.PluralForm.ONE -> R.string.StatsXRestrictions_one
+    Lang.PluralForm.OTHER -> R.string.StatsXRestrictions_other
+    Lang.PluralForm.TWO -> R.string.StatsXRestrictions_two
+    Lang.PluralForm.ZERO -> R.string.StatsXRestrictions_zero
     else -> throw IllegalArgumentException(form.toString())
   }
   R.string.xVoiceMessages -> when (form) {
@@ -4661,6 +4688,15 @@ import org.thunderdog.challegram.R
     Lang.PluralForm.ZERO -> R.string.ProximityAlertOtherM_zero
     else -> throw IllegalArgumentException(form.toString())
   }
+  R.string.StatsXBans -> when (form) {
+    Lang.PluralForm.FEW -> R.string.StatsXBans_few
+    Lang.PluralForm.MANY -> R.string.StatsXBans_many
+    Lang.PluralForm.ONE -> R.string.StatsXBans_one
+    Lang.PluralForm.OTHER -> R.string.StatsXBans_other
+    Lang.PluralForm.TWO -> R.string.StatsXBans_two
+    Lang.PluralForm.ZERO -> R.string.StatsXBans_zero
+    else -> throw IllegalArgumentException(form.toString())
+  }
   R.string.XSetAutoDeleteDays -> when (form) {
     Lang.PluralForm.FEW -> R.string.XSetAutoDeleteDays_few
     Lang.PluralForm.MANY -> R.string.XSetAutoDeleteDays_many
@@ -4812,6 +4848,15 @@ import org.thunderdog.challegram.R
     Lang.PluralForm.OTHER -> R.string.QDeleteXMessages_other
     Lang.PluralForm.TWO -> R.string.QDeleteXMessages_two
     Lang.PluralForm.ZERO -> R.string.QDeleteXMessages_zero
+    else -> throw IllegalArgumentException(form.toString())
+  }
+  R.string.StatsXInvitations -> when (form) {
+    Lang.PluralForm.FEW -> R.string.StatsXInvitations_few
+    Lang.PluralForm.MANY -> R.string.StatsXInvitations_many
+    Lang.PluralForm.ONE -> R.string.StatsXInvitations_one
+    Lang.PluralForm.OTHER -> R.string.StatsXInvitations_other
+    Lang.PluralForm.TWO -> R.string.StatsXInvitations_two
+    Lang.PluralForm.ZERO -> R.string.StatsXInvitations_zero
     else -> throw IllegalArgumentException(form.toString())
   }
   R.string.AsXMessages -> when (form) {
@@ -5091,6 +5136,15 @@ import org.thunderdog.challegram.R
     Lang.PluralForm.OTHER -> R.string.SendNoSoundX_other
     Lang.PluralForm.TWO -> R.string.SendNoSoundX_two
     Lang.PluralForm.ZERO -> R.string.SendNoSoundX_zero
+    else -> throw IllegalArgumentException(form.toString())
+  }
+  R.string.StatsXCharacters -> when (form) {
+    Lang.PluralForm.FEW -> R.string.StatsXCharacters_few
+    Lang.PluralForm.MANY -> R.string.StatsXCharacters_many
+    Lang.PluralForm.ONE -> R.string.StatsXCharacters_one
+    Lang.PluralForm.OTHER -> R.string.StatsXCharacters_other
+    Lang.PluralForm.TWO -> R.string.StatsXCharacters_two
+    Lang.PluralForm.ZERO -> R.string.StatsXCharacters_zero
     else -> throw IllegalArgumentException(form.toString())
   }
   R.string.XSetTimerWeeks -> when (form) {

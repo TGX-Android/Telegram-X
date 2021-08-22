@@ -2160,6 +2160,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
 
         return new SettingHolder(contentView);
       }
+      case ListItem.TYPE_CHART_HEADER_DETACHED:
       case ListItem.TYPE_CHART_HEADER: {
         ChartHeaderView headerView = new ChartHeaderView(context);
         headerView.setPadding(0, Screen.dp(12f), 0, Screen.dp(12f));

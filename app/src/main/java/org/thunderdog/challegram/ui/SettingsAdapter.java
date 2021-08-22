@@ -25,6 +25,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.charts.BaseChartView;
 import org.thunderdog.challegram.charts.Chart;
+import org.thunderdog.challegram.charts.MiniChart;
 import org.thunderdog.challegram.charts.view_data.ChartHeaderView;
 import org.thunderdog.challegram.component.attach.MeasuredAdapterDelegate;
 import org.thunderdog.challegram.component.attach.MediaLocationPlaceView;
@@ -39,6 +40,7 @@ import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.data.InlineResult;
 import org.thunderdog.challegram.data.PageBlock;
 import org.thunderdog.challegram.data.PageBlockFile;
+import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.mediaview.paint.ColorPaletteView;
 import org.thunderdog.challegram.mediaview.paint.widget.ColorToneView;
@@ -1592,6 +1594,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       }
       case ListItem.TYPE_CHART_HEADER: {
         ((ChartHeaderView) holder.itemView).setChart((Chart) item.getData());
+        break;
+      }
+      case ListItem.TYPE_CHART_HEADER_DETACHED: {
+        ((ChartHeaderView) holder.itemView).setChart((MiniChart) item.getData());
         break;
       }
       case ListItem.TYPE_CHART_LINEAR:

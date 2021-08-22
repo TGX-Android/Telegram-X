@@ -3,15 +3,21 @@ package org.thunderdog.challegram.ui;
 import android.content.Context;
 import android.view.View;
 
+import androidx.annotation.StringRes;
+
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.charts.Chart;
+import org.thunderdog.challegram.charts.MiniChart;
 import org.thunderdog.challegram.charts.data.ChartDataUtil;
 import org.thunderdog.challegram.component.base.SettingView;
+import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -24,13 +30,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import me.vkryl.core.ArrayUtils;
 import me.vkryl.td.Td;
 
 /**
  * Date: 2019-04-21
  * Author: default
  */
-public class ChatStatisticsController extends RecyclerViewController<ChatStatisticsController.Args> {
+public class ChatStatisticsController extends RecyclerViewController<ChatStatisticsController.Args> implements View.OnClickListener {
   public static class Args {
     public final long chatId;
 
@@ -47,9 +54,26 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
 
   private DoubleHeaderView headerCell;
 
+  private TdApi.ChatStatisticsMessageSenderInfo[] messageSenderInfos;
+
   @Override
   public View getCustomHeaderCell () {
     return headerCell;
+  }
+
+  @Override
+  public void onClick (View v) {
+    switch (v.getId()) {
+      case R.id.user:
+        TGUser user = ((UserView) v).getUser();
+        if (user != null) {
+          tdlib.ui().openPrivateChat(this, user.getId(), new TdlibUi.ChatOpenParameters().keepStack());
+        }
+        break;
+      case R.id.btn_showAdvanced:
+        showAllUsers();
+        break;
+    }
   }
 
   @Override
@@ -77,6 +101,45 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
             break;
           }
         }
+      }
+
+      @Override
+      protected void setUser (ListItem item, int position, UserView userView, boolean isUpdate) {
+        TGUser user;
+
+        if (item.getData() instanceof TdApi.ChatStatisticsMessageSenderInfo) {
+          TdApi.ChatStatisticsMessageSenderInfo sender = (TdApi.ChatStatisticsMessageSenderInfo) item.getData();
+          user = new TGUser(tdlib, tdlib.cache().user(sender.userId));
+          user.setCustomStatus(Lang.plural(R.string.xMessages, sender.sentMessageCount) + ", " + Lang.plural(R.string.StatsXCharacters, sender.averageCharacterCount));
+        } else if (item.getData() instanceof TdApi.ChatStatisticsInviterInfo) {
+          TdApi.ChatStatisticsInviterInfo sender = (TdApi.ChatStatisticsInviterInfo) item.getData();
+          user = new TGUser(tdlib, tdlib.cache().user(sender.userId));
+          user.setCustomStatus(Lang.plural(R.string.StatsXInvitations, sender.addedMemberCount));
+        } else if (item.getData() instanceof TdApi.ChatStatisticsAdministratorActionsInfo) {
+          TdApi.ChatStatisticsAdministratorActionsInfo sender = (TdApi.ChatStatisticsAdministratorActionsInfo) item.getData();
+          user = new TGUser(tdlib, tdlib.cache().user(sender.userId));
+          StringBuilder customStatus = new StringBuilder();
+
+          if (sender.deletedMessageCount > 0) {
+            customStatus.append(Lang.plural(R.string.StatsXDeletions, sender.deletedMessageCount));
+            if (sender.bannedUserCount > 0 || sender.restrictedUserCount > 0) customStatus.append(", ");
+          }
+
+          if (sender.bannedUserCount > 0) {
+            customStatus.append(Lang.plural(R.string.StatsXBans, sender.bannedUserCount));
+            if (sender.restrictedUserCount > 0) customStatus.append(", ");
+          }
+
+          if (sender.restrictedUserCount > 0) {
+            customStatus.append(Lang.plural(R.string.StatsXRestrictions, sender.restrictedUserCount));
+          }
+
+          user.setCustomStatus(customStatus.toString());
+        } else {
+          throw new IllegalArgumentException("data = "+item.getData());
+        }
+
+        userView.setUser(user);
       }
 
       @Override
@@ -172,6 +235,71 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     );
 
     setCharts(items, charts);
+
+    if (statistics.topSenders.length > 0) {
+      messageSenderInfos = statistics.topSenders;
+      setTopUsers(statistics.period, statistics.topSenders, R.string.StatsTopMembers);
+    }
+
+    if (statistics.topInviters.length > 0) {
+      setTopUsers(statistics.period, statistics.topInviters, R.string.StatsTopInviters);
+    }
+
+    if (statistics.topAdministrators.length > 0) {
+      setTopUsers(statistics.period, statistics.topAdministrators, R.string.StatsTopAdmins);
+    }
+  }
+
+  private void setTopUsers (TdApi.DateRange range, TdApi.Object[] users, @StringRes int header) {
+    int currentSize = adapter.getItems().size();
+    adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+    adapter.getItems().add(new ListItem(ListItem.TYPE_CHART_HEADER_DETACHED).setData(new MiniChart(header, range)));
+
+    int maxLength;
+    if (users[0] instanceof TdApi.ChatStatisticsMessageSenderInfo) {
+      maxLength = Math.min(10, users.length);
+    } else {
+      maxLength = users.length;
+    }
+
+    for (int i = 0; i < maxLength; i++) {
+      adapter.getItems().add(new ListItem(ListItem.TYPE_USER, R.id.user).setData(users[i]));
+      if (i != maxLength - 1) adapter.getItems().add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    }
+
+    if (maxLength < users.length) {
+      adapter.getItems().add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      adapter.getItems().add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, 0, Lang.getString(R.string.StatsShowMore, users.length - 10), false));
+    }
+
+    adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    adapter.notifyItemRangeInserted(currentSize, adapter.getItems().size());
+  }
+
+  private void showAllUsers () {
+    final int index = adapter.indexOfViewById(R.id.btn_showAdvanced);
+
+    if (index != -1 && messageSenderInfos != null) {
+      List<ListItem> items = adapter.getItems();
+
+      items.remove(index);
+
+      ArrayList<ListItem> advancedItems = new ArrayList<>();
+
+      for (int i = 10; i < messageSenderInfos.length; i++) {
+        advancedItems.add(new ListItem(ListItem.TYPE_USER, R.id.user).setData(messageSenderInfos[i]));
+        if (i != messageSenderInfos.length - 1) advancedItems.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      }
+
+      ArrayUtils.ensureCapacity(items, items.size() + advancedItems.size());
+      int i = index;
+      for (ListItem item : advancedItems) {
+        items.add(i++, item);
+      }
+
+      adapter.notifyItemRangeRemoved(index, 1);
+      adapter.notifyItemRangeInserted(index, advancedItems.size());
+    }
   }
 
   private void setStatistics (TdApi.ChatStatisticsChannel statistics) {
