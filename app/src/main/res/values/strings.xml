@@ -3677,6 +3677,7 @@
   <string name="ChatBackgroundTypePattern">pattern</string>
   <string name="ChatBackgroundTypeSolid">solid color</string>
   <string name="ChatBackgroundTypeGradient">gradient</string>
+  <string name="ChatBackgroundTypeMulticolor">multicolor gradient</string>
 
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />

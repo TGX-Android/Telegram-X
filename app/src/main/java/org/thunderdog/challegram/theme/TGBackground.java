@@ -362,8 +362,21 @@ public class TGBackground {
       return ((TdApi.BackgroundFillGradient) ((TdApi.BackgroundTypeFill) type).fill).topColor;
     } else if (isPatternBackgroundGradient()) {
       return ((TdApi.BackgroundFillGradient) ((TdApi.BackgroundTypePattern) type).fill).topColor;
+    } else if (isFillFreeformGradient()) {
+      return ((TdApi.BackgroundFillFreeformGradient) ((TdApi.BackgroundTypeFill) type).fill).colors[0];
+    } else if (isPatternBackgroundFreeformGradient()) {
+      return ((TdApi.BackgroundFillFreeformGradient) ((TdApi.BackgroundTypePattern) type).fill).colors[0];
     }
     return 0;
+  }
+
+  public int[] getFreeformColors() {
+    if (isFillFreeformGradient()) {
+      return ((TdApi.BackgroundFillFreeformGradient) ((TdApi.BackgroundTypeFill) type).fill).colors;
+    } else if (isPatternBackgroundFreeformGradient()) {
+      return ((TdApi.BackgroundFillFreeformGradient) ((TdApi.BackgroundTypePattern) type).fill).colors;
+    }
+    return new int[0];
   }
 
   public int getBottomColor () {
@@ -371,6 +384,12 @@ public class TGBackground {
       return ((TdApi.BackgroundFillGradient) ((TdApi.BackgroundTypeFill) type).fill).bottomColor;
     } else if (isPatternBackgroundGradient()) {
       return ((TdApi.BackgroundFillGradient) ((TdApi.BackgroundTypePattern) type).fill).bottomColor;
+    } else if (isFillFreeformGradient()) {
+      int[] colors = ((TdApi.BackgroundFillFreeformGradient) ((TdApi.BackgroundTypeFill) type).fill).colors;
+      return colors[colors.length - 1];
+    } else if (isPatternBackgroundFreeformGradient()) {
+      int[] colors = ((TdApi.BackgroundFillFreeformGradient) ((TdApi.BackgroundTypePattern) type).fill).colors;
+      return colors[colors.length - 1];
     }
     return 0;
   }
@@ -928,7 +947,7 @@ public class TGBackground {
 
     for (int i = 0; i < colors.length; i++) {
       builder.append(colorName(colors[i]));
-      if (i != colors.length - 1) builder.append("-");
+      if (i != colors.length - 1) builder.append("~");
     }
 
     return builder.toString();

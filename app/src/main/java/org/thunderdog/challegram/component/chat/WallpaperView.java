@@ -269,9 +269,15 @@ public class WallpaperView extends View implements ThemeChangeListener, ChatStyl
       c.drawColor(ColorUtils.color((int) (255f * alpha), wallpaper.getBackgroundColor()));
     } else if (wallpaper.isFillGradient()) {
       DrawAlgorithms.drawGradient(c, gradientCache, receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), wallpaper.getTopColor(), wallpaper.getBottomColor(), wallpaper.getRotationAngle(), alpha);
+    } else if (wallpaper.isFillFreeformGradient()) {
+      c.drawColor(Theme.getColor(R.id.theme_color_chatBackground));
+      DrawAlgorithms.drawMulticolorGradient(c, gradientCache, receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), wallpaper.getFreeformColors(), alpha);
     } else if (wallpaper.isPattern()) {
       if (wallpaper.isPatternBackgroundGradient()) {
         DrawAlgorithms.drawGradient(c, gradientCache, receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), wallpaper.getTopColor(), wallpaper.getBottomColor(), wallpaper.getRotationAngle(), alpha);
+      } else if (wallpaper.isPatternBackgroundFreeformGradient()) {
+        c.drawColor(Theme.getColor(R.id.theme_color_chatBackground));
+        DrawAlgorithms.drawMulticolorGradient(c, gradientCache, receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), wallpaper.getFreeformColors(), alpha);
       } else {
         c.drawColor(ColorUtils.color((int) (255f * alpha), wallpaper.getBackgroundColor()));
       }

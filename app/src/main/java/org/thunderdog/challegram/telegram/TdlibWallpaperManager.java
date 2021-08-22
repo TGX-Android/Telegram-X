@@ -135,7 +135,7 @@ public class TdlibWallpaperManager {
           List<TGBackground> backgrounds = new ArrayList<>(rawBackgrounds.length);
           for (TdApi.Background rawBackground : rawBackgrounds) {
             TGBackground background = new TGBackground(tdlib, rawBackground);
-            if (background.isFillFreeformGradient() || background.isPattern()) continue;
+            if (background.isPattern()) continue;
             backgrounds.add(background);
           }
           List<Callback> callbacks;

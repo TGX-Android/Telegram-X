@@ -524,10 +524,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
           headerDoubleCell.setSubtitle(Lang.getString(R.string.ChatBackgroundTypePattern));
         } else if (getArguments().wallpaperObject.type.getConstructor() == TdApi.BackgroundTypeFill.CONSTRUCTOR) {
           TdApi.BackgroundTypeFill filledWp = (TdApi.BackgroundTypeFill) getArguments().wallpaperObject.type;
-          if (filledWp.fill.getConstructor() == TdApi.BackgroundFillGradient.CONSTRUCTOR) {
-            headerDoubleCell.setSubtitle(Lang.getString(R.string.ChatBackgroundTypeGradient));
-          } else {
-            headerDoubleCell.setSubtitle(Lang.getString(R.string.ChatBackgroundTypeSolid));
+
+          switch (filledWp.fill.getConstructor()) {
+            case TdApi.BackgroundFillGradient.CONSTRUCTOR:
+              headerDoubleCell.setSubtitle(Lang.getString(R.string.ChatBackgroundTypeGradient));
+              break;
+            case TdApi.BackgroundFillFreeformGradient.CONSTRUCTOR:
+              headerDoubleCell.setSubtitle(Lang.getString(R.string.ChatBackgroundTypeMulticolor));
+              break;
+            case TdApi.BackgroundFillSolid.CONSTRUCTOR:
+              headerDoubleCell.setSubtitle(Lang.getString(R.string.ChatBackgroundTypeSolid));
+              break;
           }
         }
       }

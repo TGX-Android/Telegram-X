@@ -2983,7 +2983,7 @@ public class TdlibUi extends Handler {
                     post(() -> {
                       TGBackground bg = new TGBackground(tdlib, wallpaper);
 
-                      if (bg.isFillFreeformGradient() || bg.isPattern()) {
+                      if (bg.isPattern()) {
                         showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.ChatBackgroundNotSupported), openParameters);
                         if (after != null) {
                           after.runWithBool(true);

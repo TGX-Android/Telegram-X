@@ -314,6 +314,7 @@ import org.thunderdog.challegram.R
     "ChatBackgroundNotSupported",
     "ChatBackgroundPreview",
     "ChatBackgroundTypeGradient",
+    "ChatBackgroundTypeMulticolor",
     "ChatBackgroundTypePattern",
     "ChatBackgroundTypeSolid",
     "ChatBackgroundView",
