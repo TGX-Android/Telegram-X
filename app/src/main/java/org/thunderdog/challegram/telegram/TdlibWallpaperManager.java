@@ -158,6 +158,13 @@ public class TdlibWallpaperManager {
     });
   }
 
+  public void addBackground (TGBackground background, boolean forDarkTheme) {
+    List<TGBackground> list = this.backgrounds.get(forDarkTheme ? 1 : 0);
+    if (list != null) {
+      list.add(0, background);
+    }
+  }
+
   public void getBackgrounds (@Nullable Callback callback, boolean forDarkTheme) {
     List<TGBackground> result;
     synchronized (this.backgrounds) {

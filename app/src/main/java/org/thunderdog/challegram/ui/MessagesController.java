@@ -1651,8 +1651,20 @@ public class MessagesController extends ViewController<MessagesController.Argume
         break;
       }
       case R.id.btn_applyWallpaper: {
-        tdlib().settings().setWallpaper(new TGBackground(tdlib(), getArguments().wallpaperObject), true, Theme.getWallpaperIdentifier());
-        navigateBack();
+        tdlib().client().send(new TdApi.SetBackground(
+                new TdApi.InputBackgroundRemote(getArgumentsStrict().wallpaperObject.id),
+                getArgumentsStrict().wallpaperObject.type,
+                Theme.isDark()
+        ), result -> {
+          if (result.getConstructor() == TdApi.Background.CONSTRUCTOR) {
+            runOnUiThread(() -> {
+              TGBackground bg = new TGBackground(tdlib(), (TdApi.Background) result);
+              tdlib.wallpaper().addBackground(bg, Theme.isDark());
+              tdlib.settings().setWallpaper(bg, true, Theme.getWallpaperIdentifier());
+              navigateBack();
+            });
+          }
+        });
         break;
       }
       case R.id.btn_silent: {
