@@ -174,6 +174,10 @@ fun TextEntityType?.equalsTo(b: TextEntityType?): Boolean {
         require(this is TextEntityTypePreCode && b is TextEntityTypePreCode)
         this.language.equalsOrBothEmpty(b.language)
       }
+      TextEntityTypeMediaTimestamp.CONSTRUCTOR -> {
+        require(this is TextEntityTypeMediaTimestamp && b is TextEntityTypeMediaTimestamp)
+        this.mediaTimestamp == b.mediaTimestamp
+      }
       TextEntityTypeBankCardNumber.CONSTRUCTOR,
       TextEntityTypeBold.CONSTRUCTOR,
       TextEntityTypeBotCommand.CONSTRUCTOR,

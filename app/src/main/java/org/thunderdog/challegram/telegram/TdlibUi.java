@@ -1629,6 +1629,7 @@ public class TdlibUi extends Handler {
     public String inviteLink;
     public ThreadInfo threadInfo;
     public TdApi.SearchMessagesFilter filter;
+    public TdApi.InternalLinkTypeVoiceChat voiceChatInvitation;
 
     private void onDone () {
       if (onDone != null) {
@@ -1703,6 +1704,11 @@ public class TdlibUi extends Handler {
 
     public ChatOpenParameters passcodeUnlocked () {
       this.options |= CHAT_OPTION_PASSCODE_UNLOCKED;
+      return this;
+    }
+
+    public ChatOpenParameters voiceChatInvitation (TdApi.InternalLinkTypeVoiceChat voiceChatInvitation) {
+      this.voiceChatInvitation = voiceChatInvitation;
       return this;
     }
 
@@ -1925,6 +1931,7 @@ public class TdlibUi extends Handler {
     final TdApi.ChatList chatList = params != null ? params.chatList : null;
     final int options = params != null ? params.options : 0;
     final boolean onlyScheduled = (options & CHAT_OPTION_SCHEDULED_MESSAGES) != 0;
+    final TdApi.InternalLinkTypeVoiceChat voiceChatInvitation = params != null ? params.voiceChatInvitation : null;
     final ThreadInfo messageThread = params != null ? params.threadInfo : null;
     final TdApi.SearchMessagesFilter filter = params != null ? params.filter : null;
     final MessagesController.Referrer referrer = params != null && !StringUtils.isEmpty(params.inviteLink) ? new MessagesController.Referrer(params.inviteLink) : null;
@@ -1964,6 +1971,10 @@ public class TdlibUi extends Handler {
       }
       if (shareItem != null) {
         ((MessagesController) context).shareItem(shareItem);
+        doneSomething = true;
+      }
+      if (voiceChatInvitation != null) {
+        ((MessagesController) context).openVoiceChatInvitation(voiceChatInvitation);
         doneSomething = true;
       }
       if (!doneSomething) {
@@ -2040,11 +2051,17 @@ public class TdlibUi extends Handler {
     };
     controller.postOnAnimationReady(actor);
 
+    final MessagesController.Arguments arguments;
     if (highlightMessageId != null) {
-      controller.setArguments(new MessagesController.Arguments(chatList, chat, messageThread, highlightMessageId, highlightMode, filter).setScheduled(onlyScheduled).referrer(referrer));
+      arguments = new MessagesController.Arguments(chatList, chat, messageThread, highlightMessageId, highlightMode, filter);
     } else {
-      controller.setArguments(new MessagesController.Arguments(tdlib, chatList, chat, messageThread, filter).setScheduled(onlyScheduled).referrer(referrer));
+      arguments = new MessagesController.Arguments(tdlib, chatList, chat, messageThread, filter);
     }
+    controller.setArguments(arguments
+      .setScheduled(onlyScheduled)
+      .referrer(referrer)
+      .voiceChatInvitation(voiceChatInvitation)
+    );
 
     View view = controller.get();
     if (controller.context().isNavigationBusy()) {
@@ -2137,6 +2154,10 @@ public class TdlibUi extends Handler {
 
   public void openPublicChat (final TdlibDelegate context, final @NonNull String username, final @Nullable UrlOpenParameters openParameters) {
     openChat(context, 0, new TdApi.SearchPublicChat(username), new ChatOpenParameters().urlOpenParameters(openParameters).keepStack().openProfileInCaseOfPrivateChat());
+  }
+
+  public void openVoiceChat (final TdlibDelegate context, final @NonNull TdApi.InternalLinkTypeVoiceChat voiceChatInvitation, final @Nullable UrlOpenParameters openParameters) {
+    openChat(context, 0, new TdApi.SearchPublicChat(voiceChatInvitation.chatUsername), new ChatOpenParameters().urlOpenParameters(openParameters).voiceChatInvitation(voiceChatInvitation).keepStack().openProfileInCaseOfPrivateChat());
   }
 
   private static final int BOT_MODE_START = 0;
@@ -2856,7 +2877,8 @@ public class TdlibUi extends Handler {
               break;
             }
             case TdApi.InternalLinkTypeChatInvite.CONSTRUCTOR: {
-              checkInviteLink(context, url, openParameters);
+              TdApi.InternalLinkTypeChatInvite chatInvite = (TdApi.InternalLinkTypeChatInvite) linkType;
+              checkInviteLink(context, chatInvite.inviteLink, openParameters);
               break;
             }
             case TdApi.InternalLinkTypeMessageDraft.CONSTRUCTOR: {
@@ -2899,14 +2921,20 @@ public class TdlibUi extends Handler {
               openPublicChat(context, publicChat.chatUsername, openParameters);
               break;
             }
+            case TdApi.InternalLinkTypeVoiceChat.CONSTRUCTOR: {
+              TdApi.InternalLinkTypeVoiceChat voiceChatInvitation = (TdApi.InternalLinkTypeVoiceChat) linkType;
+              openVoiceChat(context, voiceChatInvitation, openParameters);
+              break;
+            }
             case TdApi.InternalLinkTypeMessage.CONSTRUCTOR: {
+              TdApi.InternalLinkTypeMessage messageLink = (TdApi.InternalLinkTypeMessage) linkType;
               // TODO show progress?
-              tdlib.client().send(new TdApi.GetMessageLinkInfo(url), messageLinkResult -> {
+              tdlib.client().send(new TdApi.GetMessageLinkInfo(messageLink.url), messageLinkResult -> {
                 switch (messageLinkResult.getConstructor()) {
                   case TdApi.MessageLinkInfo.CONSTRUCTOR: {
-                    TdApi.MessageLinkInfo messageLink = (TdApi.MessageLinkInfo) messageLinkResult;
+                    TdApi.MessageLinkInfo messageLinkInfo = (TdApi.MessageLinkInfo) messageLinkResult;
                     post(() -> {
-                      openMessage(context, messageLink, openParameters);
+                      openMessage(context, messageLinkInfo, openParameters);
                       if (after != null) {
                         after.runWithBool(true);
                       }
@@ -2967,8 +2995,8 @@ public class TdlibUi extends Handler {
             }
             case TdApi.InternalLinkTypeTheme.CONSTRUCTOR: {
               TdApi.InternalLinkTypeTheme theme = (TdApi.InternalLinkTypeTheme) linkType;
-              // TODO show install theme screen
-              ok = false;
+              // TODO tdlib
+              showLinkTooltip(tdlib, R.drawable.baseline_info_24, Lang.getMarkdownString(context, R.string.NoCloudThemeSupport), openParameters);
               break;
             }
             case TdApi.InternalLinkTypeBackground.CONSTRUCTOR: {
@@ -2979,12 +3007,6 @@ public class TdlibUi extends Handler {
             }
             case TdApi.InternalLinkTypeFilterSettings.CONSTRUCTOR: {
               // TODO show chat folders screen
-              ok = false;
-              break;
-            }
-            case TdApi.InternalLinkTypeVoiceChat.CONSTRUCTOR: {
-              TdApi.InternalLinkTypeVoiceChat voiceChat = (TdApi.InternalLinkTypeVoiceChat) linkType;
-              // TODO show join voice chat pop-up
               ok = false;
               break;
             }

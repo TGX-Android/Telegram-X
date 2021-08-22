@@ -2004,6 +2004,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     public ThreadInfo messageThread;
 
     public Referrer referrer;
+    public TdApi.InternalLinkTypeVoiceChat voiceChatInvitation;
 
     public Arguments (Tdlib tdlib, TdApi.ChatList chatList, TdApi.Chat chat, @Nullable ThreadInfo messageThread, TdApi.SearchMessagesFilter filter) {
       this.constructor = 0;
@@ -2084,6 +2085,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
       this.openKeyboard = openKeyboard;
       return this;
     }
+
+    public Arguments voiceChatInvitation (TdApi.InternalLinkTypeVoiceChat voiceChatInvitation) {
+      this.voiceChatInvitation = voiceChatInvitation;
+      return this;
+    }
   }
 
   public static class Referrer {
@@ -2106,6 +2112,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private ThreadInfo messageThread;
   private boolean areScheduled;
   private Referrer referrer;
+  private TdApi.InternalLinkTypeVoiceChat voiceChatInvitation;
   private boolean openKeyboard;
 
   public boolean inWallpaperMode () {
@@ -2131,6 +2138,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     this.linkedChatId = 0;
     this.areScheduled = args.areScheduled;
     this.referrer = args.referrer;
+    this.voiceChatInvitation = args.voiceChatInvitation;
     this.previewSearchQuery = args.searchQuery;
     this.previewSearchSender = args.searchSender;
     this.previewSearchFilter = args.searchFilter;
@@ -3336,6 +3344,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  public void openVoiceChatInvitation (TdApi.InternalLinkTypeVoiceChat invitation) {
+    // TODO some confirmation screen & join voice chat if agreed
+  }
+
   @Override
   public void onFocus () {
     super.onFocus();
@@ -3357,6 +3369,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
             }
           })
           .hideDelayed(10, TimeUnit.SECONDS);
+      }
+      if (voiceChatInvitation != null) {
+        openVoiceChatInvitation(voiceChatInvitation);
+        voiceChatInvitation = null;
       }
     }
     showMessageMenuTutorial();

@@ -3185,7 +3185,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     } else {
       fallback = null;
     }
-    client().send(new TdApi.GetMessageLink(message.chatId, message.id, forAlbum, forComment), object -> {
+    client().send(new TdApi.GetMessageLink(message.chatId, message.id, 0, forAlbum, forComment), object -> {
       switch (object.getConstructor()) {
         case TdApi.MessageLink.CONSTRUCTOR: {
           TdApi.MessageLink link = (TdApi.MessageLink) object;

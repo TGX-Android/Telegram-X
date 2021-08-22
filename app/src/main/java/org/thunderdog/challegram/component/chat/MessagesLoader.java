@@ -1038,6 +1038,7 @@ public class MessagesLoader implements Client.ResultHandler {
       false, false,
       false, false,
       false,
+      false, false,
       isChannel,
       false,
       event.date, 0,

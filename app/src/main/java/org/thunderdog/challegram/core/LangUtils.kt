@@ -1290,6 +1290,7 @@ import org.thunderdog.challegram.R
     "NoChannels",
     "NoChats",
     "NoChatsText",
+    "NoCloudThemeSupport",
     "NoCommentChats",
     "NoComments",
     "NoContacts",
