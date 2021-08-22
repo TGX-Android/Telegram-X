@@ -3669,6 +3669,16 @@
   <string name="SlowModeHours_other">Members will be able to send only one message every %1$s hours.</string>
   <string name="SlowModeOff">Off</string>
 
+  <string name="ChatBackgroundPreview">Chat Background Preview</string>
+  <string name="ChatBackgroundNotSupported">Sorry, this type of chat background is not yet supported.</string>
+  <string name="ChatBackgroundApply">Apply Chat Background</string>
+  <string name="ChatBackgroundView">View Chat Background</string>
+  <string name="ChatBackground">Chat Background</string>
+  <string name="ChatBackgroundTypePattern">pattern</string>
+  <string name="ChatBackgroundTypeSolid">solid color</string>
+  <string name="ChatBackgroundTypeGradient">gradient</string>
+  <string name="ChatBackgroundTypeMulticolor">multicolor gradient</string>
+
   <string name="NoCloudThemeSupport">This theme is not designed for **Telegram X**.\n\nHowever, you may check for user-made themes in @tgx_perfection.</string>
 
   <string name="suggested_language_code" />

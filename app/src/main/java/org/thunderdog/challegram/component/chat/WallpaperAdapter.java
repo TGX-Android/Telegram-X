@@ -592,9 +592,13 @@ public class WallpaperAdapter extends RecyclerView.Adapter<WallpaperAdapter.View
         c.drawColor(wallpaper.getBackgroundColor());
       } else if (wallpaper.isFillGradient()) {
         DrawAlgorithms.drawGradient(c, cache, 0, 0, getMeasuredWidth(), getMeasuredHeight(), wallpaper.getTopColor(), wallpaper.getBottomColor(), wallpaper.getRotationAngle(), 1f);
+      } else if (wallpaper.isFillFreeformGradient()) {
+        DrawAlgorithms.drawMulticolorGradient(c, cache, 0, 0, getMeasuredWidth(), getMeasuredHeight(), wallpaper.getFreeformColors(), 1f);
       } else if (wallpaper.isPattern()) {
         if (wallpaper.isPatternBackgroundGradient()) {
           DrawAlgorithms.drawGradient(c, cache, 0, 0, getMeasuredWidth(), getMeasuredHeight(), wallpaper.getTopColor(), wallpaper.getBottomColor(), wallpaper.getRotationAngle(), 1f);
+        } else if (wallpaper.isPatternBackgroundFreeformGradient()) {
+          DrawAlgorithms.drawMulticolorGradient(c, cache, 0, 0, getMeasuredWidth(), getMeasuredHeight(), wallpaper.getFreeformColors(), 1f);
         } else {
           c.drawColor(wallpaper.getBackgroundColor());
         }

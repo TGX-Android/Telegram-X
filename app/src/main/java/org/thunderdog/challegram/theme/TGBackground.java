@@ -104,7 +104,7 @@ public class TGBackground {
           needImages = false;
           break;
         default:
-          throw new AssertionError();
+          throw new UnsupportedOperationException(type.toString());
       }
     } else {
       needImages = true;
@@ -287,12 +287,20 @@ public class TGBackground {
     return isFill() && ((TdApi.BackgroundTypeFill) type).fill.getConstructor() == TdApi.BackgroundFillGradient.CONSTRUCTOR;
   }
 
+  public boolean isFillFreeformGradient () {
+    return isFill() && ((TdApi.BackgroundTypeFill) type).fill.getConstructor() == TdApi.BackgroundFillFreeformGradient.CONSTRUCTOR;
+  }
+
   public boolean isPattern () {
     return type != null && type.getConstructor() == TdApi.BackgroundTypePattern.CONSTRUCTOR;
   }
 
   public boolean isPatternBackgroundGradient () {
     return isPattern() && ((TdApi.BackgroundTypePattern) type).fill.getConstructor() == TdApi.BackgroundFillGradient.CONSTRUCTOR;
+  }
+
+  public boolean isPatternBackgroundFreeformGradient () {
+    return isPattern() && ((TdApi.BackgroundTypePattern) type).fill.getConstructor() == TdApi.BackgroundFillFreeformGradient.CONSTRUCTOR;
   }
 
   public void setLegacyWallpaperId (int wallpaperId) {
@@ -329,6 +337,8 @@ public class TGBackground {
         TdApi.BackgroundFillGradient gradient = (TdApi.BackgroundFillGradient) fill;
         return ColorUtils.fromToArgb(ColorUtils.color(255, gradient.topColor), ColorUtils.color(255, gradient.bottomColor), .5f);
       }
+      case TdApi.BackgroundFillFreeformGradient.CONSTRUCTOR:
+        return 0; // TODO: return center color
       case TdApi.BackgroundFillSolid.CONSTRUCTOR:
         return ColorUtils.color(255, ((TdApi.BackgroundFillSolid) fill).color);
     }
@@ -354,8 +364,21 @@ public class TGBackground {
       return ((TdApi.BackgroundFillGradient) ((TdApi.BackgroundTypeFill) type).fill).topColor;
     } else if (isPatternBackgroundGradient()) {
       return ((TdApi.BackgroundFillGradient) ((TdApi.BackgroundTypePattern) type).fill).topColor;
+    } else if (isFillFreeformGradient()) {
+      return ((TdApi.BackgroundFillFreeformGradient) ((TdApi.BackgroundTypeFill) type).fill).colors[0];
+    } else if (isPatternBackgroundFreeformGradient()) {
+      return ((TdApi.BackgroundFillFreeformGradient) ((TdApi.BackgroundTypePattern) type).fill).colors[0];
     }
     return 0;
+  }
+
+  public int[] getFreeformColors() {
+    if (isFillFreeformGradient()) {
+      return ((TdApi.BackgroundFillFreeformGradient) ((TdApi.BackgroundTypeFill) type).fill).colors;
+    } else if (isPatternBackgroundFreeformGradient()) {
+      return ((TdApi.BackgroundFillFreeformGradient) ((TdApi.BackgroundTypePattern) type).fill).colors;
+    }
+    return new int[0];
   }
 
   public int getBottomColor () {
@@ -363,6 +386,12 @@ public class TGBackground {
       return ((TdApi.BackgroundFillGradient) ((TdApi.BackgroundTypeFill) type).fill).bottomColor;
     } else if (isPatternBackgroundGradient()) {
       return ((TdApi.BackgroundFillGradient) ((TdApi.BackgroundTypePattern) type).fill).bottomColor;
+    } else if (isFillFreeformGradient()) {
+      int[] colors = ((TdApi.BackgroundFillFreeformGradient) ((TdApi.BackgroundTypeFill) type).fill).colors;
+      return colors[colors.length - 1];
+    } else if (isPatternBackgroundFreeformGradient()) {
+      int[] colors = ((TdApi.BackgroundFillFreeformGradient) ((TdApi.BackgroundTypePattern) type).fill).colors;
+      return colors[colors.length - 1];
     }
     return 0;
   }
@@ -550,7 +579,7 @@ public class TGBackground {
           break;
         }
         default:
-          throw new AssertionError(type);
+          throw new UnsupportedOperationException(type.toString());
       }
     } else {
       editor
@@ -791,9 +820,12 @@ public class TGBackground {
         TdApi.BackgroundFillGradient gradient = (TdApi.BackgroundFillGradient) fill;
         return getPatternColor(ColorUtils.fromToArgb(ColorUtils.color(255, gradient.topColor), ColorUtils.color(255, gradient.bottomColor), .5f));
       }
-      
+      case TdApi.BackgroundFillFreeformGradient.CONSTRUCTOR: {
+        TdApi.BackgroundFillFreeformGradient gradient = (TdApi.BackgroundFillFreeformGradient) fill;
+        return getPatternColor(ColorUtils.fromToArgb(ColorUtils.color(255, gradient.colors[0]), ColorUtils.color(255, gradient.colors[gradient.colors.length - 1]), .5f));
+      }
     }
-    throw new IllegalArgumentException("fill: " + fill);
+    throw new UnsupportedOperationException(fill.toString());
   }
 
   private static int getPatternColor (int color) {
@@ -912,6 +944,17 @@ public class TGBackground {
     return colorName(topColor) + "-" + colorName(bottomColor) + (rotationAngle != 0 ? "?rotation=" + rotationAngle : "");
   }
 
+  public static String getNameForColor (int[] colors) {
+    StringBuilder builder = new StringBuilder();
+
+    for (int i = 0; i < colors.length; i++) {
+      builder.append(colorName(colors[i]));
+      if (i != colors.length - 1) builder.append("~");
+    }
+
+    return builder.toString();
+  }
+
   public static String getNameForFill (TdApi.BackgroundFill fill) {
     switch (fill.getConstructor()) {
       case TdApi.BackgroundFillSolid.CONSTRUCTOR:
@@ -920,8 +963,12 @@ public class TGBackground {
         TdApi.BackgroundFillGradient gradient = (TdApi.BackgroundFillGradient) fill;
         return getNameForColor(gradient.topColor, gradient.bottomColor, gradient.rotationAngle);
       }
+      case TdApi.BackgroundFillFreeformGradient.CONSTRUCTOR: {
+        TdApi.BackgroundFillFreeformGradient gradient = (TdApi.BackgroundFillFreeformGradient) fill;
+        return getNameForColor(gradient.colors);
+      }
     }
-    throw new IllegalArgumentException("fill: " + fill);
+    throw new UnsupportedOperationException(fill.toString());
   }
 
   public static String getBackgroundForLegacyWallpaperId (int wallpaperId) {
