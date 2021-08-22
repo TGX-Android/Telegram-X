@@ -84,18 +84,18 @@ public class ThemeController extends ViewPagerController<ThemeController.Args> i
   }
 
   public void highlightColor (@ThemeColorId int colorId) {
-    SparseArrayCompat<ViewController> controllers = getAllCachedControllers();
+    SparseArrayCompat<ViewController<?>> controllers = getAllCachedControllers();
     if (controllers == null)
       return;
     int position = getCurrentPagerItemPosition();
     if (position > 0) {
-      ViewController c = controllers.get(position);
+      ViewController<?> c = controllers.get(position);
       if (c instanceof ThemeListController && ((ThemeListController) c).highlightColor(colorId)) {
         return;
       }
     }
     for (int i = controllers.size() - 1; i >= 0; i--) {
-      ViewController c = controllers.valueAt(i);
+      ViewController<?> c = controllers.valueAt(i);
       if (c instanceof ThemeListController && ((ThemeListController) c).highlightColor(colorId)) {
         setCurrentPagerPosition(controllers.keyAt(i), false);
         return;
@@ -115,13 +115,13 @@ public class ThemeController extends ViewPagerController<ThemeController.Args> i
       return;
     if (query == null || !query.equals(currentQuery)) {
       currentQuery = query;
-      SparseArrayCompat<ViewController> controllers = getAllCachedControllers();
+      SparseArrayCompat<ViewController<?>> controllers = getAllCachedControllers();
       if (controllers != null) {
         int searchCount = controllers.size();
         SparseIntArray result = new SparseIntArray(searchCount);
         for (int i = 0; i < searchCount; i++) {
           int index = controllers.keyAt(i);
-          ViewController c = controllers.valueAt(i);
+          ViewController<?> c = controllers.valueAt(i);
           if (c instanceof ThemeListController) {
             ((ThemeListController) c).searchColors(query, count -> {
               result.put(index, count);
@@ -214,7 +214,7 @@ public class ThemeController extends ViewPagerController<ThemeController.Args> i
   @Override
   public void setLockFocusView (View view, boolean showAlways) {
     super.setLockFocusView(view, showAlways);
-    ViewController c = getCachedControllerForPosition(getCurrentPagerItemPosition());
+    ViewController<?> c = getCachedControllerForPosition(getCurrentPagerItemPosition());
     if (c instanceof ThemeListController) {
       ((ThemeListController) c).setDisableSettling(view != null);
     }
@@ -225,11 +225,11 @@ public class ThemeController extends ViewPagerController<ThemeController.Args> i
     super.onThemeColorsChanged(areTemp, state);
     if (!areTemp && state != null && ThemeListController.isMainColor(state.getColorId())) {
       int currentItem = getCurrentPagerItemPosition();
-      SparseArrayCompat<ViewController> controllers = getAllCachedControllers();
+      SparseArrayCompat<ViewController<?>> controllers = getAllCachedControllers();
       if (controllers != null) {
         for (int i = 0; i < controllers.size(); i++) {
           if (currentItem != controllers.keyAt(i)) {
-            ViewController c = controllers.valueAt(i);
+            ViewController<?> c = controllers.valueAt(i);
             if (c instanceof ThemeListController) {
               ((ThemeListController) c).updateColorValue(state.getColorId(), true);
             }
@@ -240,10 +240,10 @@ public class ThemeController extends ViewPagerController<ThemeController.Args> i
   }
 
   public void closeOtherEditors (ThemeListController callee, @ThemeColorId int colorId) {
-    SparseArrayCompat<ViewController> controllers = getAllCachedControllers();
+    SparseArrayCompat<ViewController<?>> controllers = getAllCachedControllers();
     if (controllers != null) {
       for (int i = 0; i < controllers.size(); i++) {
-        ViewController c = controllers.valueAt(i);
+        ViewController<?> c = controllers.valueAt(i);
         if (c != callee && c instanceof ThemeListController) {
           ((ThemeListController) c).forceClosePicker(colorId);
         }
@@ -319,12 +319,12 @@ public class ThemeController extends ViewPagerController<ThemeController.Args> i
               return false;
           }
           if (Settings.instance().setColorFormat(value)) {
-            SparseArrayCompat<ViewController> array = getAllCachedControllers();
+            SparseArrayCompat<ViewController<?>> array = getAllCachedControllers();
             if (array != null && array.size() > 0) {
               for (int i = 0; i < array.size(); i++) {
-                ViewController c = array.valueAt(i);
+                ViewController<?> c = array.valueAt(i);
                 if (c instanceof RecyclerViewController) {
-                  ((RecyclerViewController) c).getRecyclerView().getAdapter().notifyDataSetChanged();
+                  ((RecyclerViewController<?>) c).getRecyclerView().getAdapter().notifyDataSetChanged();
                 }
               }
             }
@@ -448,10 +448,10 @@ public class ThemeController extends ViewPagerController<ThemeController.Args> i
 
   @Override
   public void onPrimaryClipChanged () {
-    SparseArrayCompat<ViewController> array = getAllCachedControllers();
+    SparseArrayCompat<ViewController<?>> array = getAllCachedControllers();
     if (array != null) {
       for (int i = array.size() - 1; i >= 0; i--) {
-        ViewController c = array.valueAt(i);
+        ViewController<?> c = array.valueAt(i);
         if (c instanceof ClipboardManager.OnPrimaryClipChangedListener) {
           ((ClipboardManager.OnPrimaryClipChangedListener) c).onPrimaryClipChanged();
         }
@@ -465,7 +465,7 @@ public class ThemeController extends ViewPagerController<ThemeController.Args> i
   }
 
   @Override
-  protected ViewController onCreatePagerItemForPosition (Context context, int position) {
+  protected ViewController<?> onCreatePagerItemForPosition (Context context, int position) {
     ThemeListController c = new ThemeListController(context, tdlib);
     c.setArguments(new ThemeListController.Args(getArgumentsStrict().theme, themeSections[position]));
     if (currentQuery != null)

@@ -444,7 +444,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
         SettingsWebsitesController websites = new SettingsWebsitesController(context, tdlib);
         websites.setArguments(this);
 
-        ViewController c = new SimpleViewPagerController(context, tdlib, new ViewController[] {sessions, websites}, new String[] {Lang.getString(R.string.Devices).toUpperCase(), Lang.getString(R.string.Websites).toUpperCase()}, false);
+        SimpleViewPagerController c = new SimpleViewPagerController(context, tdlib, new ViewController[] {sessions, websites}, new String[] {Lang.getString(R.string.Devices).toUpperCase(), Lang.getString(R.string.Websites).toUpperCase()}, false);
         navigateTo(c);
         break;
       }

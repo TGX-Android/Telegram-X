@@ -12,7 +12,7 @@ import java.util.List;
 
 public class NavigationStack {
   private int currentIndex;
-  private final ArrayList<ViewController> stack;
+  private final ArrayList<ViewController<?>> stack;
   private boolean isLocked;
 
   public interface ChangeListener {
@@ -26,7 +26,7 @@ public class NavigationStack {
     this.currentIndex = -1;
   }
 
-  public NavigationStack (ViewController initial) {
+  public NavigationStack (ViewController<?> initial) {
     if (initial == null) {
       throw new IllegalArgumentException();
     }
@@ -52,7 +52,7 @@ public class NavigationStack {
     }
   }
 
-  public void set (ViewController[] items) {
+  public void set (ViewController<?>[] items) {
     this.stack.clear();
     this.currentIndex = items.length - 1;
     Collections.addAll(this.stack, items);
@@ -63,7 +63,7 @@ public class NavigationStack {
     return stack.isEmpty();
   }
 
-  public void insert (ViewController item, int index) {
+  public void insert (ViewController<?> item, int index) {
     if (index <= currentIndex) {
       stack.add(index, item);
       currentIndex++;
@@ -71,7 +71,7 @@ public class NavigationStack {
     }
   }
 
-  public void insertBack (ViewController item) {
+  public void insertBack (ViewController<?> item) {
     insert(item, currentIndex);
   }
 
@@ -95,9 +95,9 @@ public class NavigationStack {
     }
   }
 
-  public int indexOf (ViewController item) {
+  public int indexOf (ViewController<?> item) {
     int index = 0;
-    for (ViewController stackItem : stack) {
+    for (ViewController<?> stackItem : stack) {
       if (item == stackItem)
         return index;
       index++;
@@ -105,29 +105,29 @@ public class NavigationStack {
     return -1;
   }
 
-  public ArrayList<ViewController> getAll () {
+  public ArrayList<ViewController<?>> getAll () {
     return stack;
   }
 
-  public @Nullable ViewController getCurrent () {
+  public @Nullable ViewController<?> getCurrent () {
     if (currentIndex == -1 || currentIndex >= stack.size())
       return null;
     else
       return stack.get(currentIndex);
   }
 
-  public @Nullable ViewController getPrevious () {
+  public @Nullable ViewController<?> getPrevious () {
     return get(currentIndex - 1);
   }
 
-  public @Nullable ViewController get (int index) {
+  public @Nullable ViewController<?> get (int index) {
     return index >= 0 && index < stack.size() ? stack.get(index) : null;
   }
 
-  public ViewController remove (int index) {
+  public ViewController<?> remove (int index) {
     if (index < 0 || index >= stack.size() || index == currentIndex)
       return null;
-    ViewController result;
+    ViewController<?> result;
     if (index < currentIndex) {
       currentIndex--;
       result = stack.remove(index);
@@ -138,8 +138,8 @@ public class NavigationStack {
     return result;
   }
 
-  public ViewController destroy (int index) {
-    ViewController c = remove(index);
+  public ViewController<?> destroy (int index) {
+    ViewController<?> c = remove(index);
     if (c != null) {
       c.destroy();
     }
@@ -151,7 +151,7 @@ public class NavigationStack {
       destroy(0);
   }
 
-  public void replace (int index, ViewController c) {
+  public void replace (int index, ViewController<?> c) {
     if (c == null) {
       throw new IllegalArgumentException();
     }
@@ -162,9 +162,9 @@ public class NavigationStack {
     stack.set(index, c);
   }
 
-  public ViewController removeById (int id) {
+  public ViewController<?> removeById (int id) {
     int i = 0;
-    for (ViewController c : stack) {
+    for (ViewController<?> c : stack) {
       if (c.getId() == id) {
         return remove(i);
       }
@@ -176,16 +176,16 @@ public class NavigationStack {
   public void destroyAllById (int id) {
     final int size = stack.size();
     for (int i = size - 2; i >= 0; i--) {
-      ViewController c = stack.get(i);
+      ViewController<?> c = stack.get(i);
       if (c != null && c.getId() == id) {
         destroy(i);
       }
     }
   }
 
-  public ViewController destroyById (int id) {
+  public ViewController<?> destroyById (int id) {
     int i = 0;
-    for (ViewController c : stack) {
+    for (ViewController<?> c : stack) {
       if (c.getId() == id) {
         return destroy(i);
       }
@@ -194,9 +194,9 @@ public class NavigationStack {
     return null;
   }
 
-  public ViewController destroyByIdExcludingLast (int id) {
+  public ViewController<?> destroyByIdExcludingLast (int id) {
     int i = 0;
-    for (ViewController c : stack) {
+    for (ViewController<?> c : stack) {
       if (c.getId() == id && currentIndex != i) {
         return destroy(i);
       }
@@ -209,10 +209,10 @@ public class NavigationStack {
     destroyAllButSaveLast(1);
   }
 
-  public ViewController findLastById (int id) {
+  public ViewController<?> findLastById (int id) {
     final int size = stack.size();
     for (int i = size - 1; i >= 0; i--) {
-      ViewController c = stack.get(i);
+      ViewController<?> c = stack.get(i);
       if (c.getId() == id) {
         return c;
       }
@@ -220,7 +220,7 @@ public class NavigationStack {
     return null;
   }
 
-  public void push (ViewController controller, boolean setAsCurrent) {
+  public void push (ViewController<?> controller, boolean setAsCurrent) {
     if (controller == null) {
       throw new IllegalArgumentException();
     }
@@ -233,11 +233,11 @@ public class NavigationStack {
     notifyStackChanged();
   }
 
-  public ViewController removeLast () {
+  public ViewController<?> removeLast () {
     if (stack.isEmpty()) {
       return null;
     }
-    ViewController controller = stack.remove(currentIndex);
+    ViewController<?> controller = stack.remove(currentIndex);
     currentIndex--;
     notifyStackChanged();
     return controller;
@@ -245,7 +245,7 @@ public class NavigationStack {
 
   public void clear (NavigationController navigation) {
     if (!stack.isEmpty()) {
-      for (ViewController c : stack) {
+      for (ViewController<?> c : stack) {
         if (!c.isDestroyed()) {
           c.attachNavigationController(navigation);
           c.destroy();
@@ -259,12 +259,12 @@ public class NavigationStack {
   }
 
   public void reset (NavigationController navigation, boolean saveFirst) {
-    ViewController last = removeLast();
+    ViewController<?> last = removeLast();
     if (saveFirst) {
       if (stack.size() > 1) {
-        ViewController first = stack.get(0);
+        ViewController<?> first = stack.get(0);
         int i = 0;
-        for (ViewController c : stack) {
+        for (ViewController<?> c : stack) {
           if (i != 0 && !c.isDestroyed()) {
             c.attachNavigationController(navigation);
             c.destroy();
@@ -282,7 +282,7 @@ public class NavigationStack {
     push(last, true);
   }
 
-  public void resetSilently (ViewController initial) {
+  public void resetSilently (ViewController<?> initial) {
     if (initial == null) {
       throw new IllegalArgumentException();
     }

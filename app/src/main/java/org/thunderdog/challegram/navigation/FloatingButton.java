@@ -299,7 +299,7 @@ public class FloatingButton extends View implements Destroyable, Screen.StatusBa
     setTranslationY((1f - heightFactor) * heightDiff);
   }
 
-  public void show (ViewController c) {
+  public void show (ViewController<?> c) {
     int icon = c.getFloatingButtonId();
     int height = c.getHeaderHeight();
     float heightFactor = (float) (height - Size.getHeaderPortraitSize()) / (float) Size.getMaximumHeaderSizeDifference();

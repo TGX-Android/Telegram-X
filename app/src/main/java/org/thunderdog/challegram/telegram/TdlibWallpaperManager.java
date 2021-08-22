@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.td.TdConstants;
 
 /**
  * Date: 1/3/18
@@ -135,7 +136,8 @@ public class TdlibWallpaperManager {
           List<TGBackground> backgrounds = new ArrayList<>(rawBackgrounds.length);
           for (TdApi.Background rawBackground : rawBackgrounds) {
             TGBackground background = new TGBackground(tdlib, rawBackground);
-            if (background.isPattern()) continue;
+            if (background.isPattern())
+              continue;
             backgrounds.add(background);
           }
           List<Callback> callbacks;

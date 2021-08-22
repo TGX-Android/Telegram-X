@@ -601,7 +601,7 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
   }
 
   @Override
-  public InlineResult setMessage (TdApi.Message message) {
+  public InlineResult<TdApi.InlineQueryResult> setMessage (TdApi.Message message) {
     super.setMessage(message);
     updateDescription();
     return this;

@@ -533,7 +533,7 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
     if (navigationController == null || navigationController.isEmpty()) {
       return;
     }
-    ViewController c = navigationController.getCurrentStackItem();
+    ViewController<?> c = navigationController.getCurrentStackItem();
     if (c == null) {
       return;
     }
@@ -580,7 +580,7 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
     if (navigationController == null) {
       return this;
     }
-    ViewController c = context.navigation().getCurrentStackItem();
+    ViewController<?> c = context.navigation().getCurrentStackItem();
     if (c == null) {
       return this;
     }
@@ -663,7 +663,7 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
   }
 
   @Override
-  public ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ViewController target) {
+  public ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ViewController<?> target) {
     context.setAllowFullscreen(true);
     final ForceTouchView.MaximizeListener maximizeListener = context.getMaximizeListener();
     context.setMaximizeListener((target1, animateToWhenReady, arg) -> {

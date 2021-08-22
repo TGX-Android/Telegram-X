@@ -1049,7 +1049,7 @@ public class RoundVideoController extends BasePlaybackController implements
 
   private void findOrAwaitTargetView (boolean byUserRequest, boolean hadObject, float currentProgress) {
     MessageViewGroup newTarget = null;
-    ViewController c = context.navigation().getCurrentStackItem();
+    ViewController<?> c = context.navigation().getCurrentStackItem();
     if (object != null && c != null && c instanceof MessagesController) {
       View foundTarget = ((MessagesController) c).getManager().findMessageView(object.chatId, object.id);
       if (foundTarget == null || foundTarget instanceof MessageViewGroup) {
@@ -1153,7 +1153,7 @@ public class RoundVideoController extends BasePlaybackController implements
   }
 
   private void checkCurrentViewVisible (boolean callListeners, boolean firstTime) {
-    ViewController c = targetController != null ? targetController : context.navigation() != null ? context.navigation().getCurrentStackItem() : null;
+    ViewController<?> c = targetController != null ? targetController : context.navigation() != null ? context.navigation().getCurrentStackItem() : null;
     boolean isVisible = targetView != null && (c != null && c instanceof MessagesController && c.getChatId() == object.chatId) && layoutPlayer();
     if (this.currentViewVisible != isVisible || firstTime) {
       this.currentViewVisible = isVisible;
@@ -1206,14 +1206,14 @@ public class RoundVideoController extends BasePlaybackController implements
 
     NavigationController navigation = context.navigation();
     final boolean isAnimatingBackward = navigation.isAnimatingBackward();
-    ViewController current = navigation.getCurrentStackItem();
-    ViewController previous = navigation.getPreviousStackItem();
+    ViewController<?> current = navigation.getCurrentStackItem();
+    ViewController<?> previous = navigation.getPreviousStackItem();
     final MessagesController m;
     if (targetController != null) {
       m = targetController;
-    } else if (current != null && current instanceof MessagesController && current.getChatId() == object.chatId) {
+    } else if (current instanceof MessagesController && current.getChatId() == object.chatId) {
       m = (MessagesController) current;
-    } else if (previous != null && previous instanceof MessagesController && previous.getChatId() == object.chatId) {
+    } else if (previous instanceof MessagesController && previous.getChatId() == object.chatId) {
       m = (MessagesController) previous;
     } else {
       m = null;

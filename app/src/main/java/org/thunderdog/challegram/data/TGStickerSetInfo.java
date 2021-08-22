@@ -143,7 +143,7 @@ public class TGStickerSetInfo {
     return stickerSet;
   }
 
-  public void show (ViewController context) {
+  public void show (ViewController<?> context) {
     StickerSetWrap wrap;
     if (stickerSet != null) {
       stickerSet.isInstalled = info.isInstalled;

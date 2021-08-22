@@ -50,7 +50,7 @@ public class ChatsViewHolder extends RecyclerView.ViewHolder {
     ((ListInfoView) itemView).showEmpty(Lang.getString(empty));
   }
 
-  public static ChatsViewHolder create (Context context, Tdlib tdlib, int viewType, @Nullable ChatsController parentController, @Nullable ViewController themeProvider, BaseView.ActionListProvider actionListProvider) {
+  public static ChatsViewHolder create (Context context, Tdlib tdlib, int viewType, @Nullable ChatsController parentController, @Nullable ViewController<?> themeProvider, BaseView.ActionListProvider actionListProvider) {
     switch (viewType) {
       case ChatsAdapter.VIEW_TYPE_CHAT: {
         ChatView view = new ChatView(context, tdlib);

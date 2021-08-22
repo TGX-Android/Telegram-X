@@ -51,7 +51,7 @@ public class SimpleHeaderView extends FrameLayoutFix implements ColorSwitchPrepa
     return title;
   }
 
-  public void initWithController (ViewController c) {
+  public void initWithController (ViewController<?> c) {
     this.title.setText(c.getName());
   }
 

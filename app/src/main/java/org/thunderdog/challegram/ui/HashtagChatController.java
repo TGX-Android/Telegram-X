@@ -70,7 +70,7 @@ public class HashtagChatController extends ViewPagerController<HashtagChatContro
 
   @Override
   public View getViewForApplyingOffsets () {
-    ViewController c = getCachedControllerForPosition(0);
+    ViewController<?> c = getCachedControllerForPosition(0);
     return c != null ? c.getViewForApplyingOffsets() : null;
   }
 
@@ -149,7 +149,7 @@ public class HashtagChatController extends ViewPagerController<HashtagChatContro
   }
 
   @Override
-  protected ViewController onCreatePagerItemForPosition (Context context, int position) {
+  protected ViewController<?> onCreatePagerItemForPosition (Context context, int position) {
     Arguments args = getArgumentsStrict();
     switch (position) {
       case 0: {

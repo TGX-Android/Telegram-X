@@ -26,7 +26,7 @@ public class FillingDecoration extends RecyclerView.ItemDecoration {
 
   private @ThemeColorId int fillingColorId = R.id.theme_color_filling;
 
-  public FillingDecoration (RecyclerView view, @Nullable ViewController themeProvider) {
+  public FillingDecoration (RecyclerView view, @Nullable ViewController<?> themeProvider) {
     if (themeProvider != null) {
       themeProvider.addThemeInvalidateListener(view);
     }

@@ -105,7 +105,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
     switch (viewType) {
       case ListItem.TYPE_CUSTOM_INLINE: {
         Object data = item.getData();
-        return data != null && data instanceof InlineResult ? ((InlineResult) data).getHeight() : 0;
+        return data != null && data instanceof InlineResult ? ((InlineResult<?>) data).getHeight() : 0;
       }
       case ListItem.TYPE_PADDING: {
         return item.getHeight();
@@ -479,7 +479,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
                                       final SettingsAdapter adapter,
                                       final View.OnClickListener onClickListener,
                                       final View.OnLongClickListener onLongClickListener,
-                                      final @Nullable ViewController themeProvider,
+                                      final @Nullable ViewController<?> themeProvider,
                                       final RecyclerView.OnScrollListener innerOnScrollListener,
                                       final ClickHelper.Delegate clickDelegate) {
     switch (viewType) {
@@ -2201,7 +2201,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
 
   public static final boolean COLOR_PICKER_PALETTE_BOTTOM = true;
 
-  public static TextView createDescription (Context context, int viewType, @ThemeColorId int textColorId, View.OnClickListener onClickListener, @Nullable ViewController themeProvider) {
+  public static TextView createDescription (Context context, int viewType, @ThemeColorId int textColorId, View.OnClickListener onClickListener, @Nullable ViewController<?> themeProvider) {
     TextView textView = new NoScrollTextView(context);
     if (viewType == ListItem.TYPE_DESCRIPTION_CENTERED) {
       textView.setGravity(Gravity.CENTER);

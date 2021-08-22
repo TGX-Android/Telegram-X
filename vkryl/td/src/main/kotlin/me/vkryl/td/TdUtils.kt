@@ -175,7 +175,8 @@ fun TextEntityType?.isEssential (): Boolean {
     TextEntityTypeHashtag.CONSTRUCTOR,
     TextEntityTypeCashtag.CONSTRUCTOR,
     TextEntityTypeMention.CONSTRUCTOR,
-    TextEntityTypeUrl.CONSTRUCTOR -> false
+    TextEntityTypeUrl.CONSTRUCTOR,
+    TextEntityTypeMediaTimestamp.CONSTRUCTOR -> false
     null -> false
     else -> true
   }

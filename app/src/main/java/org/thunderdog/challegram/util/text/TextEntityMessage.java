@@ -245,7 +245,7 @@ public class TextEntityMessage extends TextEntity {
 
   @Override
   public void performClick (View view, Text text, TextPart part, @Nullable Text.ClickCallback callback) {
-    final ViewController context = findRoot(view);
+    final ViewController<?> context = findRoot(view);
     if (context == null) {
       Log.v("performClick ignored, because ancestor not found");
       return;
@@ -325,7 +325,7 @@ public class TextEntityMessage extends TextEntity {
         String hashtag = Td.substring(text.getText(), clickableEntity);
         if (callback == null || !callback.onHashtagClick(hashtag)) {
           final long chatId = context.getChatId();
-          ViewController check = context.getParentOrSelf();
+          ViewController<?> check = context.getParentOrSelf();
           boolean isViewingSameHashtag;
           if (check instanceof HashtagChatController) {
             HashtagChatController.Arguments args = ((HashtagChatController) check).getArgumentsStrict();
@@ -356,7 +356,7 @@ public class TextEntityMessage extends TextEntity {
 
   @Override
   public boolean performLongPress (final View view, final Text text, final TextPart part, boolean allowShare, final Text.ClickCallback clickCallback) {
-    final ViewController context = findRoot(view);
+    final ViewController<?> context = findRoot(view);
     if (context == null) {
       Log.v("performLongPress ignored, because ancestor not found");
       return false;

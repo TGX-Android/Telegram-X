@@ -49,7 +49,7 @@ import me.vkryl.core.lambda.RunnableData;
  * Author: default
  */
 
-public class MediaBottomFilesController extends MediaBottomBaseController implements View.OnClickListener, View.OnLongClickListener, Comparator<File>, TGPlayerController.PlayListBuilder {
+public class MediaBottomFilesController extends MediaBottomBaseController<Void> implements View.OnClickListener, View.OnLongClickListener, Comparator<File>, TGPlayerController.PlayListBuilder {
   public MediaBottomFilesController (MediaLayout context) {
     super(context, R.string.File);
   }
@@ -375,7 +375,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController implem
         }
 
         ArrayList<ListItem> items = new ArrayList<>(gallery.getBucketCount() - 1 + gallery.getAllMediaBucket().size());
-        InlineResult home = createItem(context, tdlib, KEY_UPPER, R.drawable.baseline_image_24, "..", Lang.getString(R.string.AttachFolderHome));
+        InlineResult<?> home = createItem(context, tdlib, KEY_UPPER, R.drawable.baseline_image_24, "..", Lang.getString(R.string.AttachFolderHome));
         items.add(createItem(home, R.id.btn_folder_upper));
 
         ArrayList<Media.GalleryBucket> buckets = gallery.getBuckets();
@@ -395,7 +395,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController implem
                 items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.Recent));
                 first = false;
               }
-              InlineResult result = createItem(context, tdlib, (ImageGalleryFile) file);
+              InlineResult<?> result = createItem(context, tdlib, (ImageGalleryFile) file);
               ListItem item = new ListItem(ListItem.TYPE_CUSTOM_INLINE, R.id.btn_file).setLongId(((ImageGalleryFile) file).getGalleryId()).setData(result);
               items.add(item);
               hasRecentImages = true;
@@ -413,7 +413,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController implem
 
         for (Media.GalleryBucket bucket : buckets) {
           if (bucket != allBucket) {
-            InlineResult result = createItem(context, tdlib, bucket);
+            InlineResult<?> result = createItem(context, tdlib, bucket);
             ListItem item = new ListItem(ListItem.TYPE_CUSTOM_INLINE, R.id.btn_bucket).setLongId(bucket.getId()).setData(result);
             items.add(item);
           }
@@ -439,12 +439,12 @@ public class MediaBottomFilesController extends MediaBottomBaseController implem
 
         int size = bucket.size();
         ArrayList<ListItem> items = new ArrayList<>( size + 1);
-        InlineResult home = createItem(context, tdlib, KEY_UPPER, R.drawable.baseline_image_24, "..", Lang.getString(R.string.Gallery));
+        InlineResult<?> home = createItem(context, tdlib, KEY_UPPER, R.drawable.baseline_image_24, "..", Lang.getString(R.string.Gallery));
         items.add(createItem(home, R.id.btn_folder_upper));
 
         for (ImageFile file : bucket.getMedia()) {
           if (file instanceof ImageGalleryFile) {
-            InlineResult result = createItem(context, tdlib, (ImageGalleryFile) file);
+            InlineResult<?> result = createItem(context, tdlib, (ImageGalleryFile) file);
             ListItem item = new ListItem(ListItem.TYPE_CUSTOM_INLINE, R.id.btn_file).setLongId(((ImageGalleryFile) file).getGalleryId()).setData(result);
             items.add(item);
           }
@@ -503,7 +503,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController implem
           });
 
           ArrayList<ListItem> items = new ArrayList<>(entries.size() + 1);
-          InlineResult result = createItem(context, tdlib, KEY_UPPER, R.drawable.baseline_folder_24, "..", Lang.getString(R.string.AttachFolderHome));
+          InlineResult<?> result = createItem(context, tdlib, KEY_UPPER, R.drawable.baseline_folder_24, "..", Lang.getString(R.string.AttachFolderHome));
           items.add(createItem(result, R.id.btn_folder_upper));
 
           for (MusicEntry entry : entries) {
@@ -725,7 +725,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController implem
     return new InlineResultCommon(context, tdlib, path, R.id.theme_color_fileAttach, iconRes, title, subtitle);
   }
 
-  public static ListItem createItem (InlineResult result, int id) {
+  public static ListItem createItem (InlineResult<?> result, int id) {
     return new ListItem(ListItem.TYPE_CUSTOM_INLINE, id).setData(result);
   }
 
@@ -821,7 +821,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController implem
     if (tag != null && tag instanceof ListItem) {
       ListItem item = (ListItem) tag;
       if (item.getViewType() == ListItem.TYPE_CUSTOM_INLINE && (item.getId() == R.id.btn_file || item.getId() == R.id.btn_music)) {
-        InlineResult result = (InlineResult) item.getData();
+        InlineResult<?> result = (InlineResult<?>) item.getData();
         if (result != null) {
           selectItem(item, result);
           return true;
@@ -831,7 +831,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController implem
     return false;
   }
 
-  private ArrayList<InlineResult> selectedItems;
+  private ArrayList<InlineResult<?>> selectedItems;
 
   private boolean inFileSelectMode;
 
@@ -846,7 +846,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController implem
     }
   }
 
-  private void selectItem (ListItem item, InlineResult inlineResult) {
+  private void selectItem (ListItem item, InlineResult<?> inlineResult) {
     int existingIndex;
     if (selectedItems == null) {
       existingIndex = -1;
@@ -866,7 +866,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController implem
 
       int remainingCount = selectedItems.size();
       for (int i = existingIndex; i < remainingCount; i++) {
-        InlineResult nextData = selectedItems.get(i);
+        InlineResult<?> nextData = selectedItems.get(i);
         int foundIndex = adapter.indexOfViewByData(nextData);
         if (foundIndex == -1) {
           throw new IllegalStateException();
@@ -904,7 +904,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController implem
     ArrayList<MusicEntry> musicEntries = new ArrayList<>();
     ArrayList<String> files = new ArrayList<>();
 
-    for (InlineResult result : selectedItems) {
+    for (InlineResult<?> result : selectedItems) {
       switch (result.getType()) {
         case InlineResult.TYPE_AUDIO: {
           musicEntries.add((MusicEntry) ((InlineResultCommon) result).getTag());

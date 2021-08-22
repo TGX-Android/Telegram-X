@@ -115,7 +115,7 @@ public class SnackBar extends RelativeLayout {
     return this;
   }
 
-  public SnackBar addThemeListeners (@Nullable ViewController themeProvider) {
+  public SnackBar addThemeListeners (@Nullable ViewController<?> themeProvider) {
     if (themeProvider != null) {
       themeProvider.addThemeTextColorListener(actionView, R.id.theme_color_snackbarUpdateAction);
       themeProvider.addThemeTextColorListener(textView, R.id.theme_color_snackbarUpdateText);
@@ -124,7 +124,7 @@ public class SnackBar extends RelativeLayout {
     return this;
   }
 
-  public SnackBar removeThemeListeners (@Nullable ViewController themeProvider) {
+  public SnackBar removeThemeListeners (@Nullable ViewController<?> themeProvider) {
     if (themeProvider != null) {
       themeProvider.removeThemeListenerByTarget(textView);
       themeProvider.removeThemeListenerByTarget(actionView);

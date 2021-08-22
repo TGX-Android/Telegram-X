@@ -43,7 +43,7 @@ import me.vkryl.td.Td;
  * Date: 8/1/18
  * Author: default
  */
-public class SettingsLanguageController extends RecyclerViewController implements View.OnClickListener, LanguageController.Delegate, View.OnLongClickListener {
+public class SettingsLanguageController extends RecyclerViewController<Void> implements View.OnClickListener, LanguageController.Delegate, View.OnLongClickListener {
   public SettingsLanguageController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }

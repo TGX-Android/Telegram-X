@@ -18,7 +18,7 @@ import java.util.List;
  * Date: 19/02/2019
  * Author: default
  */
-public class SettingsLogOutController extends RecyclerViewController implements View.OnClickListener {
+public class SettingsLogOutController extends RecyclerViewController<Void> implements View.OnClickListener {
   public SettingsLogOutController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }

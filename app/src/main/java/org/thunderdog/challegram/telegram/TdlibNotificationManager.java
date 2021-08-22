@@ -32,7 +32,6 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.helper.Recorder;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.sync.SyncAdapter;
-import me.vkryl.leveldb.LevelDB;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.MainController;
 import org.thunderdog.challegram.ui.MessagesController;
@@ -48,6 +47,7 @@ import java.util.List;
 
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.leveldb.LevelDB;
 import me.vkryl.td.ChatId;
 
 /**
@@ -1895,7 +1895,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   void onUpdateNewMessage (TdApi.UpdateNewMessage update) {
     if (update.message.isOutgoing || update.message.sendingState != null)
       return;
-    ViewController c = UI.getCurrentStackItem();
+    ViewController<?> c = UI.getCurrentStackItem();
     if (c instanceof MessagesController && c.isSameTdlib(tdlib)) {
       long activeChatId = ((MessagesController) c).getActiveChatId();
       if (activeChatId != 0 && update.message.chatId == activeChatId && tdlib.chatNotificationsEnabled(activeChatId)) {
@@ -1910,7 +1910,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   @TdlibThread
   void onUpdateMessageSendSucceeded (TdApi.UpdateMessageSendSucceeded update) {
     TdApi.Message sentMessage = update.message;
-    ViewController c = UI.getCurrentStackItem();
+    ViewController<?> c = UI.getCurrentStackItem();
     if (c != null && !c.isPaused() && (c instanceof MessagesController && ((MessagesController) c).compareChat(sentMessage.chatId)) || (c instanceof MainController)) {
       switch (sentMessage.content.getConstructor()) {
         case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
