@@ -37,6 +37,7 @@ public class WindowInsetsAnimationCallback extends WindowInsetsAnimation.Callbac
                 rootFrameLayout.partialBottomInset = Keyboard.getSize();
             }
 
+            Keyboard.notifyHeightChanged(rootFrameLayout.partialBottomInset);
             rootFrameLayout.requestLayout();
         }
 
@@ -51,6 +52,7 @@ public class WindowInsetsAnimationCallback extends WindowInsetsAnimation.Callbac
         bottomInset = Math.max(0, imeInset.bottom - navInset.bottom);
 
         if (!Keyboard.shouldSkipKeyboardAnimation) {
+            Keyboard.notifyHeightChanged(rootFrameLayout.partialBottomInset);
             rootFrameLayout.partialBottomInset = bottomInset;
             rootFrameLayout.requestLayout();
         }

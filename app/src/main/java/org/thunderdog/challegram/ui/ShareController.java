@@ -112,7 +112,7 @@ import me.vkryl.td.Td;
  * Author: default
  */
 
-public class ShareController extends TelegramViewController<ShareController.Args> implements FactorAnimator.Target, Runnable, PopupLayout.PopupHeightProvider, Client.ResultHandler, View.OnClickListener, Menu, PopupLayout.TouchSectionProvider, EmojiLayout.Listener, BaseView.ActionListProvider, EmojiToneHelper.Delegate {
+public class ShareController extends TelegramViewController<ShareController.Args> implements FactorAnimator.Target, Runnable, PopupLayout.PopupHeightProvider, Client.ResultHandler, View.OnClickListener, Menu, PopupLayout.TouchSectionProvider, EmojiLayout.Listener, BaseView.ActionListProvider, EmojiToneHelper.Delegate, Keyboard.OnHeightChangeListener {
   private static final int MODE_MESSAGES = 0;
   private static final int MODE_TEXT = 1;
   private static final int MODE_GAME = 2;
@@ -1310,6 +1310,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     }
 
     checkCommentPosition();
+    Keyboard.addHeightChangeListener(this);
 
     // Load chats
 
@@ -2370,6 +2371,11 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   @Override
+  public void onKeyboardHeightChanged (int newSize) {
+    Views.setBottomMargin(bottomWrap, newSize);
+  }
+
+  @Override
   public boolean onKeyboardStateChanged (boolean visible) {
     if (inSearchMode() || isSent) {
       return super.onKeyboardStateChanged(visible);
@@ -3077,6 +3083,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   @Override
   public void destroy () {
     super.destroy();
+    Keyboard.removeHeightChangeListener(this);
     Views.destroyRecyclerView(recyclerView);
     TGLegacyManager.instance().removeEmojiListener(adapter);
     cancelDownloadingFiles();

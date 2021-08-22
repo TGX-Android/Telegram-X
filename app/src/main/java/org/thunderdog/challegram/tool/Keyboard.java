@@ -12,7 +12,10 @@ import android.view.inputmethod.InputMethodManager;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.unsorted.Settings;
 
+import java.util.ArrayList;
+
 public class Keyboard {
+  private static ArrayList<OnHeightChangeListener> heightChangeListeners = new ArrayList<>();
   public static boolean shouldSkipKeyboardAnimation = false;
 
   public static void show (View view) {
@@ -100,5 +103,25 @@ public class Keyboard {
   public interface OnStateChangeListener {
     void onKeyboardStateChanged (boolean isVisible);
     void closeAdditionalKeyboards ();
+  }
+
+  public static void notifyHeightChanged (int newHeight) {
+    for (OnHeightChangeListener listener : heightChangeListeners) {
+      listener.onKeyboardHeightChanged(newHeight);
+    }
+  }
+
+  public static void addHeightChangeListener (OnHeightChangeListener listener) {
+    if (!heightChangeListeners.contains(listener)) {
+      heightChangeListeners.add(listener);
+    }
+  }
+
+  public static void removeHeightChangeListener (OnHeightChangeListener listener) {
+    heightChangeListeners.remove(listener);
+  }
+
+  public interface OnHeightChangeListener {
+    void onKeyboardHeightChanged (int newSize);
   }
 }
