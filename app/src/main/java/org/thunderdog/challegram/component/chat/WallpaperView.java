@@ -135,7 +135,7 @@ public class WallpaperView extends View implements ThemeChangeListener, ChatStyl
   }
 
   @Override
-  public void onThemePropertyChanged (int themeId, int propertyId, float value, boolean isDefault) {
+  public void onThemePropertyChanged (int themeId, @ThemeProperty int propertyId, float value, boolean isDefault) {
     switch (propertyId) {
       case ThemeProperty.WALLPAPER_USAGE_ID:
         setWallpaper(tdlib.settings().getWallpaper(Theme.getWallpaperIdentifier(themeId)), true);
@@ -263,23 +263,24 @@ public class WallpaperView extends View implements ThemeChangeListener, ChatStyl
   private final DrawAlgorithms.GradientCache gradientCache = new DrawAlgorithms.GradientCache();
 
   private static void drawWallpaper (TGBackground wallpaper, Canvas c, DrawAlgorithms.GradientCache gradientCache, ThemeDelegate theme, DoubleImageReceiver receiver, float alpha) {
+    final int defaultColor = getWallpaperBackground(theme);
     if (wallpaper == null || wallpaper.isEmpty()) {
-      c.drawColor(ColorUtils.alphaColor(alpha, getWallpaperBackground(theme)));
+      c.drawColor(ColorUtils.alphaColor(alpha, defaultColor));
     } else if (wallpaper.isFillSolid()) {
-      c.drawColor(ColorUtils.color((int) (255f * alpha), wallpaper.getBackgroundColor()));
+      c.drawColor(ColorUtils.alphaColor(alpha, wallpaper.getBackgroundColor(defaultColor)));
     } else if (wallpaper.isFillGradient()) {
       DrawAlgorithms.drawGradient(c, gradientCache, receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), wallpaper.getTopColor(), wallpaper.getBottomColor(), wallpaper.getRotationAngle(), alpha);
     } else if (wallpaper.isFillFreeformGradient()) {
-      c.drawColor(ColorUtils.alphaColor(alpha, wallpaper.getBackgroundColor()));
+      c.drawColor(ColorUtils.alphaColor(alpha, wallpaper.getBackgroundColor(defaultColor)));
       DrawAlgorithms.drawMulticolorGradient(c, gradientCache, receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), wallpaper.getFreeformColors(), alpha);
     } else if (wallpaper.isPattern()) {
       if (wallpaper.isPatternBackgroundGradient()) {
         DrawAlgorithms.drawGradient(c, gradientCache, receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), wallpaper.getTopColor(), wallpaper.getBottomColor(), wallpaper.getRotationAngle(), alpha);
       } else if (wallpaper.isPatternBackgroundFreeformGradient()) {
-        c.drawColor(ColorUtils.alphaColor(alpha, wallpaper.getBackgroundColor()));
+        c.drawColor(ColorUtils.alphaColor(alpha, wallpaper.getBackgroundColor(defaultColor)));
         DrawAlgorithms.drawMulticolorGradient(c, gradientCache, receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), wallpaper.getFreeformColors(), alpha);
       } else {
-        c.drawColor(ColorUtils.color((int) (255f * alpha), wallpaper.getBackgroundColor()));
+        c.drawColor(ColorUtils.alphaColor(alpha, wallpaper.getBackgroundColor(defaultColor)));
       }
       receiver.getReceiver().setColorFilter(wallpaper.getPatternColor());
       alpha *= wallpaper.getPatternIntensity();
@@ -290,7 +291,7 @@ public class WallpaperView extends View implements ThemeChangeListener, ChatStyl
         receiver.restorePaintAlpha();
     } else {
       if (receiver.needPlaceholder()) {
-        c.drawColor(ColorUtils.alphaColor(alpha, getWallpaperBackground(theme)));
+        c.drawColor(ColorUtils.alphaColor(alpha, defaultColor));
       }
       receiver.disableColorFilter();
       if (alpha != 1f) {
