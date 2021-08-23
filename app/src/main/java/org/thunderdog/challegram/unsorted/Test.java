@@ -71,7 +71,7 @@ public class Test {
   public static TdApi.ChatAction testAction;
 
   public static void onClick (final BaseActivity context) {
-    ViewController c = context.navigation().getCurrentStackItem();
+    ViewController<?> c = context.navigation().getCurrentStackItem();
     if (c == null) {
       return;
     }

@@ -73,7 +73,7 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
     super(context, tdlib);
   }
 
-  public static boolean isMediaController (SharedBaseController c) {
+  public static boolean isMediaController (SharedBaseController<?> c) {
     return c instanceof SharedCommonController || c instanceof SharedMediaController;
   }
 
@@ -82,7 +82,7 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
     return chatId;
   }
 
-  public static SharedBaseController valueOf (Context context, Tdlib tdlib, TdApi.SearchMessagesFilter filter) {
+  public static SharedBaseController<?> valueOf (Context context, Tdlib tdlib, TdApi.SearchMessagesFilter filter) {
     switch (filter.getConstructor()) {
       case TdApi.SearchMessagesFilterPhotoAndVideo.CONSTRUCTOR:
       case TdApi.SearchMessagesFilterPhoto.CONSTRUCTOR:
@@ -290,7 +290,7 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
     for (ListItem item : adapter.getItems()) {
       switch (item.getViewType()) {
         case ListItem.TYPE_CUSTOM_INLINE: {
-          final InlineResult result = (InlineResult) item.getData();
+          final InlineResult<?> result = (InlineResult<?>) item.getData();
           final int width = recyclerView.getMeasuredWidth();
           if (width != 0) {
             result.prepare(width);
@@ -348,7 +348,7 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
   protected static final int FLAG_NEED_SPLITTING = 1;
   protected static final int FLAG_USE_FIRST_HEADER_SPACING = 1 << 1;
 
-  protected static <T extends MessageSourceProvider> boolean addItems (List<ListItem> reuse, int viewType, ArrayList<T> dateItems, int offset, List<ListItem> out, @Nullable SettingsAdapter adapter, SharedBaseController controller, int flags) {
+  protected static <T extends MessageSourceProvider> boolean addItems (List<ListItem> reuse, int viewType, ArrayList<T> dateItems, int offset, List<ListItem> out, @Nullable SettingsAdapter adapter, SharedBaseController<?> controller, int flags) {
     if (dateItems.isEmpty()) {
       return false;
     }
@@ -389,7 +389,7 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
           forceSeparator = false;
         }
         if (inlineResults) {
-          ((InlineResult) item).setForceSeparator(forceSeparator);
+          ((InlineResult<?>) item).setForceSeparator(forceSeparator);
         }
       } else {
         if (offset == 0 && i == 0) {

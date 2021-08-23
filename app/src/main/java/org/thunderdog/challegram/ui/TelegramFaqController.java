@@ -14,7 +14,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
  * Author: default
  */
 
-public class TelegramFaqController extends WebkitController {
+public class TelegramFaqController extends WebkitController<Void> {
   public TelegramFaqController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }

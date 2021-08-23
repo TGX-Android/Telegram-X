@@ -131,6 +131,7 @@ public class CameraManagerX extends CameraManager<PreviewView> {
     return new Size((int) maxSize, (int) minSize - ((int) minSize) % 2);
   }
 
+  @SuppressWarnings("RestrictedApi")
   private void bindPreview () {
     if (!isOpen || isPaused || cameraProvider == null)
       return;
@@ -474,6 +475,7 @@ public class CameraManagerX extends CameraManager<PreviewView> {
     }
   }
 
+  @SuppressWarnings("RestrictedApi")
   @Override
   protected boolean onStartVideoCapture (int outRotation) {
     if (videoCapture != null) {
@@ -512,6 +514,7 @@ public class CameraManagerX extends CameraManager<PreviewView> {
     return false;
   }
 
+  @SuppressWarnings("RestrictedApi")
   @Override
   protected void onFinishOrCancelVideoCapture () {
     if (videoCapture != null) {

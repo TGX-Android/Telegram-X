@@ -94,11 +94,11 @@ public class RootDrawable extends Drawable {
       }
       final NavigationController navigation = context.navigation();
       int colorId = R.id.theme_color_filling;
-      final ViewController popup = context.getCurrentlyOpenWindowedViewController();
+      final ViewController<?> popup = context.getCurrentlyOpenWindowedViewController();
       if (popup != null) {
         colorId = popup.getRootColorId();
       } else if (navigation != null) {
-        final ViewController v = navigation.getCurrentStackItem();
+        final ViewController<?> v = navigation.getCurrentStackItem();
         if (v != null && !v.usePopupMode()) {
           colorId = v.getRootColorId();
         }

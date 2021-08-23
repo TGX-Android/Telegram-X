@@ -74,7 +74,7 @@ public class MediaLocationPlaceView extends FrameLayoutFix implements AttachDele
   }
 
   private int flags;
-  private @Nullable ViewController themeProvider;
+  private @Nullable ViewController<?> themeProvider;
 
   private void setIsRed (boolean isRed) {
     int flags = BitwiseUtils.setFlag(this.flags, FLAG_RED, isRed);
@@ -109,7 +109,7 @@ public class MediaLocationPlaceView extends FrameLayoutFix implements AttachDele
     Views.setRightMargin(addressView, rightMargin);
   }
 
-  public void init (@Nullable ViewController themeProvider, boolean big) {
+  public void init (@Nullable ViewController<?> themeProvider, boolean big) {
     Context context = getContext();
 
     this.themeProvider = themeProvider;

@@ -699,7 +699,7 @@ public class Theme {
 
   // Transparent drawable
 
-  public static Drawable filteredDrawable (@DrawableRes int res, @ThemeColorId int colorId, @Nullable ViewController themeProvider) {
+  public static Drawable filteredDrawable (@DrawableRes int res, @ThemeColorId int colorId, @Nullable ViewController<?> themeProvider) {
     Drawable drawable = ViewSupport.getDrawableFilter(UI.getAppContext(), res, new PorterDuffColorFilter(Theme.getColor(colorId), PorterDuff.Mode.MULTIPLY));
     if (themeProvider != null) {
       themeProvider.addThemeSpecialFilterListener(drawable, colorId);

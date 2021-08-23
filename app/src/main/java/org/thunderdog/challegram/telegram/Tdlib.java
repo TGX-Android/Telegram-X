@@ -3165,14 +3165,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             String username = chatUsername(message.chatId);
             if (!StringUtils.isEmpty(username)) {
               fallbackPrivate = false;
-              fallbackUrl = tMeUrl(username) + "/" + MessageId.toServerMessageId(message.id);
+              fallbackUrl = tMeMessageUrl(username, MessageId.toServerMessageId(message.id));
               if (!forAlbum && message.mediaAlbumId != 0)
                 fallbackUrl += "?single";
             } else {
               fallbackPrivate = true;
               int supergroupId = ChatId.toSupergroupId(message.chatId);
               if (supergroupId != 0)
-                fallbackUrl = tMeUrl("c") + "/" + supergroupId + "/" + MessageId.toServerMessageId(message.id);
+                fallbackUrl = tMePrivateMessageUrl(supergroupId, MessageId.toServerMessageId(message.id));
               else
                 fallbackUrl = null;
             }
@@ -3185,7 +3185,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     } else {
       fallback = null;
     }
-    client().send(new TdApi.GetMessageLink(message.chatId, message.id, forAlbum, forComment), object -> {
+    client().send(new TdApi.GetMessageLink(message.chatId, message.id, 0, forAlbum, forComment), object -> {
       switch (object.getConstructor()) {
         case TdApi.MessageLink.CONSTRUCTOR: {
           TdApi.MessageLink link = (TdApi.MessageLink) object;
@@ -3413,13 +3413,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   // Chat open/close
 
-  private final LongSparseArray<ArrayList<ViewController>> openedChats = new LongSparseArray<>(8);
+  private final LongSparseArray<ArrayList<ViewController<?>>> openedChats = new LongSparseArray<>(8);
   private final LongSparseIntArray openedChatsTimes = new LongSparseIntArray();
   private final Object chatOpenMutex = new Object();
 
-  public void openChat (long chatId, @Nullable ViewController controller) {
+  public void openChat (long chatId, @Nullable ViewController<?> controller) {
     synchronized (chatOpenMutex) {
-      ArrayList<ViewController> controllers = openedChats.get(chatId);
+      ArrayList<ViewController<?>> controllers = openedChats.get(chatId);
       if (controllers == null) {
         controllers = new ArrayList<>();
         controllers.add(controller);
@@ -3444,7 +3444,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
-  public void closeChat (final long chatId, final ViewController controller, boolean needDelay) {
+  public void closeChat (final long chatId, final ViewController<?> controller, boolean needDelay) {
     if (needDelay) {
       ui().postDelayed(() -> closeChatImpl(chatId, controller), 1000);
     } else {
@@ -3452,9 +3452,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
-  private void closeChatImpl (long chatId, ViewController controller) {
+  private void closeChatImpl (long chatId, ViewController<?> controller) {
     synchronized (chatOpenMutex) {
-      ArrayList<ViewController> controllers = openedChats.get(chatId);
+      ArrayList<ViewController<?>> controllers = openedChats.get(chatId);
       if (controllers != null && controllers.remove(controller) && controllers.isEmpty()) {
         openedChatsTimes.delete(chatId);
         openedChats.remove(chatId);
@@ -5095,23 +5095,45 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return StringUtils.isEmpty(tMeUrl) ? "https://" + TD.getTelegramHost() + "/" : tMeUrl;
   }
 
-  public String tMeUrl (String path) {
+  public String tMeMessageUrl (String username, long messageId) {
+    return tMeUrl(username + "/" + messageId);
+  }
+
+  public String tMePrivateMessageUrl (int supergroupId, long messageId) {
+    return tMeUrl("c/" + supergroupId + "/" + messageId);
+  }
+
+  public Uri.Builder tMeUrlBuilder () {
     return new Uri.Builder()
       .scheme("https")
-      .authority(tMeAuthority())
+      .authority(tMeAuthority());
+  }
+
+  public String tMeUrl (String path) {
+    return tMeUrlBuilder()
       .path(path)
       .build()
       .toString();
   }
 
   public String tMeStartUrl (String botUsername, String parameter, boolean inGroup) {
-    return new Uri.Builder()
-      .scheme("https")
-      .authority(tMeAuthority())
+    return tMeUrlBuilder()
       .path(botUsername)
       .appendQueryParameter(inGroup ? "startgroup" : "start", parameter)
       .build()
       .toString();
+  }
+
+  public String tMeBackgroundUrl (String backgroundId) {
+    return tMeUrl("bg/" + backgroundId);
+  }
+
+  public String tMeStickerSetUrl (String stickerSetName) {
+    return tMeUrl("addstickers/" + stickerSetName);
+  }
+
+  public String tMeLanguageUrl (String languagePackId) {
+    return tMeUrl("setlanguage/" + languagePackId);
   }
 
   public @Nullable String tdlibVersionSignature () {
@@ -6304,7 +6326,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (msg == null)
       return;
     ui().post(() -> {
-      ViewController c = UI.getCurrentStackItem();
+      ViewController<?> c = UI.getCurrentStackItem();
       if (c != null) {
         if (!StringUtils.isEmpty(update.type) && (update.type.startsWith("AUTH_KEY_DROP") || update.type.startsWith("AUTHKEYDROP"))) {
           c.openAlert(R.string.AppName, msg, Lang.getString(R.string.LogOut), (dialog, which) -> destroy(), ViewController.ALERT_NO_CANCELABLE);

@@ -153,7 +153,7 @@ public class PageBlockWrapView extends FrameLayoutFix implements ViewPager.OnPag
     }
   }
 
-  public void initWithMode (int mode, @Nullable ViewController themeProvider) {
+  public void initWithMode (int mode, @Nullable ViewController<?> themeProvider) {
     this.mode = mode;
     switch (mode) {
       case MODE_EMBEDDED: {
@@ -435,9 +435,9 @@ public class PageBlockWrapView extends FrameLayoutFix implements ViewPager.OnPag
     private final ArrayList<SimpleMediaWrapperView> recycledPool;
     private final ArrayList<SimpleMediaWrapperView> usedPool;
 
-    private final @Nullable ViewController themeProvider;
+    private final @Nullable ViewController<?> themeProvider;
 
-    public PageBlockWrapAdapter (Context context, @Nullable ViewController themeProvider) {
+    public PageBlockWrapAdapter (Context context, @Nullable ViewController<?> themeProvider) {
       this.context = context;
       this.recycledPool = new ArrayList<>(4);
       this.usedPool = new ArrayList<>(4);

@@ -76,7 +76,7 @@ public class ThemeInfo {
 
   public String getWallpaperLink (Tdlib tdlib) {
     String data = getWallpaper();
-    return StringUtils.isEmpty(data) ? null : tdlib.tMeUrl("bg/" + data);
+    return StringUtils.isEmpty(data) ? null : tdlib.tMeBackgroundUrl(data);
   }
 
   public String getWallpaper () {

@@ -249,12 +249,12 @@ public class FirebaseListenerService extends FirebaseMessagingService {
       }
       try {
         if (o instanceof Collection) {
-          return new JSONArray((Collection) o);
+          return new JSONArray((Collection<?>) o);
         } else if (o.getClass().isArray()) {
           return new JSONArray(Arrays.asList((Object[]) o));
         }
         if (o instanceof Map) {
-          return new JSONObject((Map) o);
+          return new JSONObject((Map<?, ?>) o);
         }
         if (o instanceof Boolean ||
           o instanceof Byte ||

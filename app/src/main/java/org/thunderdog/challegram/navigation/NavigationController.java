@@ -68,7 +68,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
   private boolean isAnimating;
 
-  private ArrayList<ViewController> childWrappers;
+  private ArrayList<ViewController<?>> childWrappers;
   private final Context context;
 
   public NavigationController (Context context) {
@@ -117,21 +117,21 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
   }*/
 
   public void onFocus () {
-    ViewController c = getStack().getCurrent();
+    ViewController<?> c = getStack().getCurrent();
     if (c != null) {
       c.onFocus();
     }
   }
 
   public void onBlur () {
-    ViewController c = getStack().getCurrent();
+    ViewController<?> c = getStack().getCurrent();
     if (c != null) {
       c.onBlur();
     }
   }
 
   public void onPrepareToShow () {
-    ViewController c = getStack().getCurrent();
+    ViewController<?> c = getStack().getCurrent();
     if (c != null) {
       c.onPrepareToShow();
     }
@@ -145,11 +145,11 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     return processor.getStackSize();
   }
 
-  public @Nullable ViewController getCurrentStackItem () {
+  public @Nullable ViewController<?> getCurrentStackItem () {
     return getStack().getCurrent();
   }
 
-  public @Nullable ViewController getPreviousStackItem () {
+  public @Nullable ViewController<?> getPreviousStackItem () {
     return getStack().getPrevious();
   }
 
@@ -204,7 +204,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     }
   }
 
-  public void addChildWrapper (ViewController controller) {
+  public void addChildWrapper (ViewController<?> controller) {
     if (childWrappers == null) {
       childWrappers = new ArrayList<>();
     }
@@ -226,7 +226,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     checkDisallowScreenshots();
   }
 
-  public void addChildWrapper (ViewController controller, int index) {
+  public void addChildWrapper (ViewController<?> controller, int index) {
     if (childWrappers == null) {
       childWrappers = new ArrayList<>();
     }
@@ -243,7 +243,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     checkDisallowScreenshots();
   }
 
-  public void removeChildWrapper (ViewController controller) {
+  public void removeChildWrapper (ViewController<?> controller) {
     if (childWrappers != null) {
       childWrappers.remove(controller);
     }
@@ -272,7 +272,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
   public void onKeyboardStateChanged (boolean visible) {
     if (childWrappers != null) {
-      for (ViewController c : childWrappers) {
+      for (ViewController<?> c : childWrappers) {
         c.onKeyboardStateChanged(visible);
       }
     }
@@ -313,7 +313,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
   public boolean shouldDisallowScreenshots () {
     if (childWrappers != null) {
-      for (ViewController controller : childWrappers) {
+      for (ViewController<?> controller : childWrappers) {
         if (controller.shouldDisallowScreenshots()) {
           return true;
         }
@@ -377,7 +377,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
     floatingButton = new FloatingButton(context);
     floatingButton.setOnClickListener(v -> {
-      ViewController c = processor.getStack().getCurrent();
+      ViewController<?> c = processor.getStack().getCurrent();
       if (c != null) {
         c.onFloatingButtonPressed();
       }
@@ -409,7 +409,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
   @Override
   public void onThemeColorsChanged (boolean areTemp, ColorState state) {
-    ViewController c;
+    ViewController<?> c;
     if (isAnimating && ((translatingForward && translationFactor == 1f) || (!translatingForward && translationFactor == 0f))) {
       c = getPreviousStackItem();
     } else {
@@ -450,13 +450,13 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
   // Single
 
-  public void insertController (ViewController controller, int index) {
+  public void insertController (ViewController<?> controller, int index) {
     if (!isAnimating && controller != null) {
       processor.insertController(controller, index);
     }
   }
 
-  public void initController (ViewController with) {
+  public void initController (ViewController<?> with) {
     if (!isAnimating && with != null) {
       NavigationStack stack = getStack();
 
@@ -476,7 +476,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     }
   }
 
-  public final void setController (ViewController controller) {
+  public final void setController (ViewController<?> controller) {
     if (!isAnimating && controller != null) {
       if (getStack().isEmpty()) {
         initController(controller);
@@ -486,11 +486,11 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     }
   }
 
-  public ViewController getPendingController () {
+  public ViewController<?> getPendingController () {
     return processor.getFutureRebaseController();
   }
 
-  public void setControllerAnimated (ViewController controller, boolean asForward, boolean saveFirst) {
+  public void setControllerAnimated (ViewController<?> controller, boolean asForward, boolean saveFirst) {
     if (controller != null) {
       if (getStack().isEmpty()) {
         initController(controller);
@@ -500,7 +500,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     }
   }
 
-  void rebaseStack (final ViewController item, boolean asForward, final boolean saveFirst) {
+  void rebaseStack (final ViewController<?> item, boolean asForward, final boolean saveFirst) {
     if (asForward) {
       navigate(item, saveFirst ? MODE_REBASE | MODE_ARG_SAVE_FIRST : MODE_REBASE);
     } else {
@@ -511,7 +511,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
   // Pairs
 
   public boolean passBackPressToActivity (boolean fromTop) {
-    ViewController c = getStack().getCurrent();
+    ViewController<?> c = getStack().getCurrent();
     return c != null && c.passBackPressToActivity(fromTop);
   }
 
@@ -520,7 +520,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       headerView.closeSelectMode(true, true);
       return true;
     }
-    ViewController c = getStack().getCurrent();
+    ViewController<?> c = getStack().getCurrent();
     if (headerView.inSearchMode()) {
       if (c != null && c.closeSearchModeByBackPress(fromTop)) {
         return true;
@@ -545,7 +545,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
   }
 
   private boolean isCurrentControllerAnimating () {
-    ViewController c = getStack().getCurrent();
+    ViewController<?> c = getStack().getCurrent();
     return c != null && c.isTransforming();
   }
 

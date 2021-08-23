@@ -252,7 +252,7 @@ public class TooltipOverlayView extends ViewGroup {
     @Nullable
     private final OffsetProvider offsetProvider;
     @Nullable
-    private final ViewController controller;
+    private final ViewController<?> controller;
     private final float textSize;
     private final boolean allowSp;
     @Nullable
@@ -311,7 +311,7 @@ public class TooltipOverlayView extends ViewGroup {
     private TooltipInfo (TooltipOverlayView parent,
                          View originalView, ViewProvider viewProvider,
                          @Nullable LocationProvider locationProvider, @Nullable ColorProvider colorProvider, @Nullable OffsetProvider offsetProvider,
-                         @Nullable ViewController controller,
+                         @Nullable ViewController<?> controller,
                          @Nullable Text.ClickCallback clickCallback, final float textSize, final boolean allowSp,
                          @DrawableRes int iconRes, @Nullable ImageFile previewFile, @Nullable ImageFile imageFile, @Nullable GifFile gifFile,
                          final float maxWidthDp, final int flags,
@@ -984,7 +984,7 @@ public class TooltipOverlayView extends ViewGroup {
     private ColorProvider colorProvider;
     private OffsetProvider offsetProvider;
     private Text.ClickCallback clickCallback;
-    private ViewController controller;
+    private ViewController<?> controller;
     private float textSize = 13f;
     private boolean allowSp = true;
     private int flags;
@@ -1072,7 +1072,7 @@ public class TooltipOverlayView extends ViewGroup {
       return this;
     }
 
-    public TooltipBuilder controller (ViewController controller) {
+    public TooltipBuilder controller (ViewController<?> controller) {
       this.controller = controller;
       return this;
     }
@@ -1168,7 +1168,7 @@ public class TooltipOverlayView extends ViewGroup {
       return this;
     }
 
-    public void show (ViewController controller, Tdlib tdlib, int iconRes, CharSequence text) {
+    public void show (ViewController<?> controller, Tdlib tdlib, int iconRes, CharSequence text) {
       if (originalView == null && viewProvider == null && locationProvider == null) {
         UI.showToast(text, Toast.LENGTH_SHORT);
       } else {

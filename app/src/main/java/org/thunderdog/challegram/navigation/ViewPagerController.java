@@ -248,13 +248,13 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
   @Override
   protected int getSelectMenuId () {
-    ViewController c = getCurrentPagerItem();
+    ViewController<?> c = getCurrentPagerItem();
     return c != null ? c.getSelectMenuId() : super.getSelectMenuId();
   }
 
   @Override
   public void finishSelectMode (int position) {
-    ViewController c = getCurrentPagerItem();
+    ViewController<?> c = getCurrentPagerItem();
     if (c instanceof SelectDelegate) {
       ((SelectDelegate) c).finishSelectMode(position);
     }
@@ -262,7 +262,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
-    ViewController c = getCurrentPagerItem();
+    ViewController<?> c = getCurrentPagerItem();
     if (c instanceof Menu) {
       ((Menu) c).fillMenuItems(id, header, menu);
     }
@@ -270,7 +270,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
   @Override
   public void onMoreItemPressed (int id) {
-    ViewController c = getCurrentPagerItem();
+    ViewController<?> c = getCurrentPagerItem();
     if (c instanceof MoreDelegate) {
       ((MoreDelegate) c).onMoreItemPressed(id);
     }
@@ -278,7 +278,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
   @Override
   public void onMenuItemPressed (int id, View view) {
-    ViewController c = getCurrentPagerItem();
+    ViewController<?> c = getCurrentPagerItem();
     if (c instanceof Menu) {
       ((Menu) c).onMenuItemPressed(id, view);
     }
@@ -360,8 +360,8 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     return adapter.reversePosition(pager.getCurrentItem()) == 0;
   }
 
-  protected final void replaceController (int position, ViewController newController) {
-    ViewController currentController = adapter.getCachedItemByPosition(position);
+  protected final void replaceController (int position, ViewController<?> newController) {
+    ViewController<?> currentController = adapter.getCachedItemByPosition(position);
     if (currentController != null) {
       adapter.cachedItems.remove(position);
       currentController.destroy();
@@ -384,7 +384,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     return adapter.reversePosition(pager.getCurrentItem());
   }
 
-  public final ViewController getCurrentPagerItem () {
+  public final ViewController<?> getCurrentPagerItem () {
     return getCachedControllerForPosition(getCurrentPagerItemPosition());
   }
 
@@ -397,33 +397,33 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
   @Override
   public boolean onOptionItemPressed (View optionItemView, int id) {
-    ViewController c = adapter.getCachedItemByPosition(pager.getCurrentItem());
+    ViewController<?> c = adapter.getCachedItemByPosition(pager.getCurrentItem());
     return c instanceof OptionDelegate && ((OptionDelegate) c).onOptionItemPressed(optionItemView, id);
   }
 
-  public final @Nullable ViewController getCachedControllerForId (int id) {
+  public final @Nullable ViewController<?> getCachedControllerForId (int id) {
     return adapter != null ? adapter.getCachedItemById(id) : null;
   }
 
-  public final @Nullable ViewController getCachedControllerForPosition (int position) {
+  public final @Nullable ViewController<?> getCachedControllerForPosition (int position) {
     return adapter != null ? adapter.getCachedItemByPosition(position) : null;
   }
 
-  public final @Nullable SparseArrayCompat<ViewController> getAllCachedControllers () {
+  public final @Nullable SparseArrayCompat<ViewController<?>> getAllCachedControllers () {
     return adapter != null ? adapter.cachedItems : null;
   }
 
-  public final @NonNull ViewController getPreparedControllerForPosition (int position) {
+  public final @NonNull ViewController<?> getPreparedControllerForPosition (int position) {
     if (adapter == null)
       get();
-    ViewController c = adapter.prepareViewController(position);
+    ViewController<?> c = adapter.prepareViewController(position);
     c.get();
     return c;
   }
 
   public final void prepareControllerForPosition (int position, @Nullable Runnable after) {
     if (adapter != null && adapter.cachedItems.get(position = adapter.reversePosition(position)) == null) {
-      ViewController c = adapter.prepareViewController(position);
+      ViewController<?> c = adapter.prepareViewController(position);
       if (c != null) {
         if (after != null) {
           c.postOnAnimationExecute(after);
@@ -439,13 +439,13 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
   protected abstract int getPagerItemCount ();
   protected abstract void onCreateView (Context context, FrameLayoutFix contentView, ViewPager pager);
-  protected abstract ViewController onCreatePagerItemForPosition (Context context, int position);
+  protected abstract ViewController<?> onCreatePagerItemForPosition (Context context, int position);
   protected abstract String[] getPagerSections ();
 
   @Override
   public void onPagerItemClick (int index) {
     if (getCurrentPagerItemPosition() == index) {
-      ViewController c = adapter.getCachedItemByPosition(pager.getCurrentItem());
+      ViewController<?> c = adapter.getCachedItemByPosition(pager.getCurrentItem());
       if (c instanceof ScrollToTopDelegate) {
         ((ScrollToTopDelegate) c).onScrollToTopRequested();
       }
@@ -469,23 +469,23 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
   public static class ViewPagerAdapter extends PagerAdapter {
     private final Context context;
-    private final ViewPagerController parent;
-    private final SparseArrayCompat<ViewController> cachedItems;
+    private final ViewPagerController<?> parent;
+    private final SparseArrayCompat<ViewController<?>> cachedItems;
 
-    public ViewPagerAdapter (Context context, ViewPagerController parent) {
+    public ViewPagerAdapter (Context context, ViewPagerController<?> parent) {
       this.context = context;
       this.parent = parent;
       this.cachedItems = new SparseArrayCompat<>(parent.getPagerItemCount());
     }
 
-    public @Nullable ViewController getCachedItemByPosition (int position) {
+    public @Nullable ViewController<?> getCachedItemByPosition (int position) {
       return cachedItems.get(position);
     }
 
-    public @Nullable ViewController getCachedItemById (int id) {
+    public @Nullable ViewController<?> getCachedItemById (int id) {
       int size = cachedItems.size();
       for (int i = 0; i < size; i++) {
-        ViewController c = cachedItems.valueAt(i);
+        ViewController<?> c = cachedItems.valueAt(i);
         if (c.getId() == id) {
           return c;
         }
@@ -499,14 +499,14 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     }
 
     @Override
-    public void destroyItem (ViewGroup container, int position, Object object) {
-      container.removeView(((ViewController) object).get());
+    public void destroyItem (ViewGroup container, int position, @NonNull Object object) {
+      container.removeView(((ViewController<?>) object).get());
     }
 
     public void destroyCachedItems () {
       final int count = cachedItems.size();
       for (int i = 0; i < count; i++) {
-        ViewController c = cachedItems.valueAt(i);
+        ViewController<?> c = cachedItems.valueAt(i);
         if (!c.isDestroyed()) {
           c.destroy();
         }
@@ -529,8 +529,8 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
       return POSITION_NONE;
     }
 
-    public ViewController prepareViewController (int position) {
-      ViewController c = cachedItems.get(position);
+    public ViewController<?> prepareViewController (int position) {
+      ViewController<?> c = cachedItems.get(position);
       if (c == null) {
         c = parent.onCreatePagerItemForPosition(context, position);
         c.setParentWrapper(parent);
@@ -543,14 +543,14 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     @Override
     @NonNull
     public Object instantiateItem (@NonNull ViewGroup container, int position) {
-      ViewController c = prepareViewController(reversePosition(position));
+      ViewController<?> c = prepareViewController(reversePosition(position));
       container.addView(c.get());
       return c;
     }
 
     @Override
-    public boolean isViewFromObject (View view, Object object) {
-      return object instanceof ViewController && ((ViewController) object).getWrapUnchecked() == view;
+    public boolean isViewFromObject (@NonNull View view, @NonNull Object object) {
+      return object instanceof ViewController && ((ViewController<?>) object).getWrapUnchecked() == view;
     }
   }
 }

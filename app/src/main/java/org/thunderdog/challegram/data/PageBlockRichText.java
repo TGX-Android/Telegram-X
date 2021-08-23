@@ -93,7 +93,7 @@ public class PageBlockRichText extends PageBlock {
   // <p>: margin: 0 21px 12px;
 
   // Title of the page.
-  public PageBlockRichText (ViewController context, TdApi.PageBlockTitle title, boolean isFirst, boolean hasKicker, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockTitle title, boolean isFirst, boolean hasKicker, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, title);
     setText(new TdApi.RichTextBold(title.title), getTitleProvider(), TextColorSets.InstantView.TITLE, openParameters);
     this.paddingTop = hasKicker ? 10f : isFirst ? 20f : 16f;
@@ -102,7 +102,7 @@ public class PageBlockRichText extends PageBlock {
   }
 
   // Subtitle of the page
-  public PageBlockRichText (ViewController context, TdApi.PageBlockSubtitle subtitle, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockSubtitle subtitle, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, subtitle);
     this.paddingTop = 0;
     setText(subtitle.subtitle, getSubtitleProvider(), TextColorSets.InstantView.SUBTITLE, openParameters);
@@ -110,7 +110,7 @@ public class PageBlockRichText extends PageBlock {
   }
 
   // <h1> in the text
-  public PageBlockRichText (ViewController context, TdApi.PageBlockHeader header, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockHeader header, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, header);
     setText(new TdApi.RichTextBold(header.header), getHeaderProvider(), TextColorSets.InstantView.HEADER, Text.FLAG_ARTICLE, openParameters);
     this.paddingTop = 14f;
@@ -118,14 +118,14 @@ public class PageBlockRichText extends PageBlock {
     // setPadding(14f);
   }
 
-  public PageBlockRichText (ViewController context, TdApi.PageBlockSubheader header, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockSubheader header, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, header);
     setText(new TdApi.RichTextBold(header.subheader), getSubheaderProvider(), TextColorSets.InstantView.SUBHEADER, Text.FLAG_ARTICLE, openParameters);
     this.paddingTop = 8f;
     // setPadding(14f);
   }
 
-  public PageBlockRichText (ViewController context, TdApi.PageBlockKicker kicker, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockKicker kicker, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, kicker);
     this.paddingTop = 16f;
     this.paddingBottom = 3f;
@@ -135,7 +135,7 @@ public class PageBlockRichText extends PageBlock {
 
   // Author & publication date of the page
 
-  public PageBlockRichText (ViewController context, TdApi.PageBlockAuthorDate authorDate, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockAuthorDate authorDate, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, authorDate);
     String author = TD.getText(authorDate.author).trim();
     this.paddingTop = this.paddingBottom = 8f;
@@ -189,24 +189,24 @@ public class PageBlockRichText extends PageBlock {
     }
   }
 
-  public PageBlockRichText (ViewController context, TdApi.PageBlockParagraph paragraph, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockParagraph paragraph, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, paragraph);
     setText(paragraph.text, getParagraphProvider(), TextColorSets.InstantView.NORMAL, Text.FLAG_ARTICLE, openParameters);
   }
 
-  public PageBlockRichText (ViewController context, TdApi.PageBlockPreformatted preformatted, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockPreformatted preformatted, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, preformatted);
     setText(preformatted.text, getPreformattedProvider(), TextColorSets.InstantView.NORMAL, Text.FLAG_ARTICLE, openParameters);
     this.backgroundColorId = R.id.theme_color_iv_preBlockBackground;
     this.textHorizontalOffset = TEXT_HORIZONTAL_OFFSET_PRE_BLOCK;
   }
 
-  public PageBlockRichText (ViewController context, TdApi.PageBlockRelatedArticles articles, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockRelatedArticles articles, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, articles);
     setText(new TdApi.RichTextBold(articles.header), getParagraphProvider(), TextColorSets.InstantView.CAPTION, openParameters);
   }
 
-  public PageBlockRichText (ViewController context, TdApi.PageBlockTable table, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockTable table, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, table);
     this.paddingTop = 15f;
     this.paddingBottom = 2f;
@@ -215,7 +215,7 @@ public class PageBlockRichText extends PageBlock {
 
   private BoolAnimator detailsOpened;
 
-  public PageBlockRichText (ViewController context, TdApi.PageBlockDetails details, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockDetails details, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, details);
     this.detailsOpened = new BoolAnimator(0, (id, factor, fraction, callee) -> currentViews.invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180l, details.isOpen);
     this.paddingTop = 15f;
@@ -232,7 +232,7 @@ public class PageBlockRichText extends PageBlock {
     return detailsOpened != null;
   }
 
-  public PageBlockRichText (ViewController context, TdApi.PageBlockList list, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockList list, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, list);
     setText(new TdApi.RichTextPlain(""), getParagraphProvider(), TextColorSets.InstantView.NORMAL, openParameters);
   }
@@ -242,7 +242,7 @@ public class PageBlockRichText extends PageBlock {
   private ImageFile avatarFile;
   private AvatarPlaceholder avatarPlaceholder;
 
-  public PageBlockRichText (ViewController context, TdApi.PageBlockChatLink chatLink, boolean isOverlay, int viewCount, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockChatLink chatLink, boolean isOverlay, int viewCount, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, chatLink);
     this.paddingTop = this.paddingBottom = 16f;
     setText(new TdApi.RichTextBold(new TdApi.RichTextPlain(chatLink.title)), getParagraphProvider(), isOverlay ? TextColorSets.InstantView.CHAT_LINK_OVERLAY : TextColorSets.InstantView.NORMAL, openParameters);
@@ -311,7 +311,7 @@ public class PageBlockRichText extends PageBlock {
     });
   }
 
-  public PageBlockRichText (ViewController context, TdApi.PageBlockFooter footer, boolean isPost, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockFooter footer, boolean isPost, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, footer);
     setText(footer.footer, getFooterProvider(), TextColorSets.InstantView.FOOTER, openParameters);
     if (!isPost) {
@@ -321,7 +321,7 @@ public class PageBlockRichText extends PageBlock {
     }
   }
 
-  public PageBlockRichText (ViewController context, TdApi.PageBlockBlockQuote blockQuote, boolean isCredit, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockBlockQuote blockQuote, boolean isCredit, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, blockQuote);
     if (isCredit) {
       setText(blockQuote.credit, getCaptionProvider(), TextColorSets.InstantView.CAPTION, Text.FLAG_ARTICLE, openParameters);
@@ -343,7 +343,7 @@ public class PageBlockRichText extends PageBlock {
     this.needQuote = true;
   }
 
-  public PageBlockRichText (ViewController context, TdApi.PageBlockPullQuote pullQuote, boolean isCredit, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockPullQuote pullQuote, boolean isCredit, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, pullQuote);
     if (isCredit) {
       setText(pullQuote.credit, getCaptionProvider(), TextColorSets.InstantView.CAPTION, Text.FLAG_ALIGN_CENTER | Text.FLAG_ARTICLE, openParameters);
@@ -357,7 +357,7 @@ public class PageBlockRichText extends PageBlock {
     this.textHorizontalOffset = TEXT_HORIZONTAL_OFFSET_PULL_QUOTE;
   }
 
-  public PageBlockRichText (ViewController context, TdApi.PageBlock mediaBlock, TdApi.PageBlockCaption caption, boolean isCredit, boolean isCover, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlock mediaBlock, TdApi.PageBlockCaption caption, boolean isCredit, boolean isCover, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, mediaBlock);
     if (isCredit) {
       if (!Td.isEmpty(caption.text)) {
@@ -383,7 +383,7 @@ public class PageBlockRichText extends PageBlock {
   private @ThemeColorId
   int avatarPlaceholderColorId;
 
-  public PageBlockRichText (ViewController context, TdApi.PageBlockEmbeddedPost embeddedPost, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockEmbeddedPost embeddedPost, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, embeddedPost);
     setText(new TdApi.RichTexts(new TdApi.RichText[]{
       new TdApi.RichTextPlain(embeddedPost.author),

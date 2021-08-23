@@ -16,7 +16,7 @@ import java.util.ArrayList;
  * Date: 2019-09-19
  * Author: default
  */
-public class SharedRestrictionController extends SharedBaseController<InlineResult> {
+public class SharedRestrictionController extends SharedBaseController<InlineResult<?>> {
   public SharedRestrictionController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
@@ -49,7 +49,7 @@ public class SharedRestrictionController extends SharedBaseController<InlineResu
   }
 
   @Override
-  protected CharSequence buildTotalCount (ArrayList<InlineResult> data) {
+  protected CharSequence buildTotalCount (ArrayList<InlineResult<?>> data) {
     return null;
   }
 
@@ -59,7 +59,7 @@ public class SharedRestrictionController extends SharedBaseController<InlineResu
   }
 
   @Override
-  protected InlineResult parseObject (TdApi.Object object) {
+  protected InlineResult<?> parseObject (TdApi.Object object) {
     return null;
   }
 

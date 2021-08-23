@@ -101,7 +101,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   private Drawable arrowDrawable;
   private Drawable topShadow, bottomShadow;
 
-  public ComplexHeaderView (Context context, @NonNull Tdlib tdlib, @Nullable ViewController parent) {
+  public ComplexHeaderView (Context context, @NonNull Tdlib tdlib, @Nullable ViewController<?> parent) {
     super(context, tdlib);
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     // this.parent = parent;
@@ -207,7 +207,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
     invalidate();
   }
 
-  public void initWithController (ViewController themeProvider, boolean addListener) {
+  public void initWithController (ViewController<?> themeProvider, boolean addListener) {
     int colorId = themeProvider.getHeaderTextColorId();
     setTextColor(Theme.getColor(colorId));
     if (addListener)
@@ -1045,12 +1045,12 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   }
 
   @Override
-  public boolean onSlideOff (BaseView v, float x, float y, @Nullable ViewController openPreview) {
+  public boolean onSlideOff (BaseView v, float x, float y, @Nullable ViewController<?> openPreview) {
     return false;
   }
 
   @Override
-  public ViewController createForceTouchPreview (BaseView v, float x, float y) {
+  public ViewController<?> createForceTouchPreview (BaseView v, float x, float y) {
     SimpleMediaViewController.Args args = null;
 
     if (previewChatPhoto != null) {

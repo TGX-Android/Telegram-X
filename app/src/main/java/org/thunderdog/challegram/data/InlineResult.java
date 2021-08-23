@@ -138,7 +138,7 @@ public abstract class InlineResult <T> implements MessageSourceProvider, Multipl
 
   private TdApi.Message message;
 
-  public InlineResult setMessage (TdApi.Message message) {
+  public InlineResult<T> setMessage (TdApi.Message message) {
     this.message = message;
     return this;
   }
@@ -400,7 +400,7 @@ public abstract class InlineResult <T> implements MessageSourceProvider, Multipl
 
   // Static stuff
 
-  public static InlineResult valueOf (BaseActivity context, Tdlib tdlib, TdApi.Message message) {
+  public static InlineResult<?> valueOf (BaseActivity context, Tdlib tdlib, TdApi.Message message) {
     switch (message.content.getConstructor()) {
       case TdApi.MessageAudio.CONSTRUCTOR: {
         return new InlineResultCommon(context, tdlib, message, (TdApi.MessageAudio) message.content, null).setMessage(message);
@@ -415,7 +415,7 @@ public abstract class InlineResult <T> implements MessageSourceProvider, Multipl
     return null;
   }
 
-  public static InlineResult valueOf (BaseActivity context, Tdlib tdlib, TdApi.PageBlock pageBlock, TGPlayerController.PlayListBuilder builder) {
+  public static InlineResult<?> valueOf (BaseActivity context, Tdlib tdlib, TdApi.PageBlock pageBlock, TGPlayerController.PlayListBuilder builder) {
     switch (pageBlock.getConstructor()) {
       case TdApi.PageBlockAudio.CONSTRUCTOR: {
         return new InlineResultCommon(context, tdlib, (TdApi.PageBlockAudio) pageBlock, builder);
@@ -427,7 +427,7 @@ public abstract class InlineResult <T> implements MessageSourceProvider, Multipl
     return null;
   }
 
-  public static InlineResult valueOf (BaseActivity context, Tdlib tdlib, String query, TdApi.InlineQueryResult result, TGPlayerController.PlayListBuilder builder) {
+  public static InlineResult<?> valueOf (BaseActivity context, Tdlib tdlib, String query, TdApi.InlineQueryResult result, TGPlayerController.PlayListBuilder builder) {
     switch (result.getConstructor()) {
       case TdApi.InlineQueryResultPhoto.CONSTRUCTOR: {
         return new InlineResultPhoto(context, tdlib, (TdApi.InlineQueryResultPhoto) result);

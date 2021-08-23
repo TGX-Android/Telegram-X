@@ -42,6 +42,8 @@ import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.widget.BaseView;
 
+import java.util.List;
+
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.BounceAnimator;
@@ -345,12 +347,12 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
           }
 
           @Override
-          public boolean onSlideOff (BaseView v, float x, float y, @Nullable ViewController openPreview) {
+          public boolean onSlideOff (BaseView v, float x, float y, @Nullable ViewController<?> openPreview) {
             return false;
           }
 
           @Override
-          public ViewController createForceTouchPreview (BaseView v, float x, float y) {
+          public ViewController<?> createForceTouchPreview (BaseView v, float x, float y) {
             ChatsController c = new ChatsController(getContext(), tdlib);
             c.setArguments(new ChatsController.Arguments(ChatPosition.CHAT_LIST_ARCHIVE).setNeedMessagesSearch(true));
             return c;
@@ -364,7 +366,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   }
 
   public boolean needAnimateChanges () {
-    ViewController c = ViewController.findAncestor(ChatView.this);
+    ViewController<?> c = ViewController.findAncestor(ChatView.this);
     return c == null || c.isAttachedToNavigationController();
   }
 

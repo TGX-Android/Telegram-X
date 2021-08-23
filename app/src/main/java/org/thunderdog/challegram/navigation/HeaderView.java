@@ -92,7 +92,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
 
   private View title;
   private View preview;
-  private ViewController previewItem, baseItem;
+  private ViewController<?> previewItem, baseItem;
 
   private TextView textTitle;
   private TextView textPreview;
@@ -154,7 +154,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     return needOffsets;
   }
 
-  public void initWithSingleController (@NonNull ViewController controller, boolean needOffsets) {
+  public void initWithSingleController (@NonNull ViewController<?> controller, boolean needOffsets) {
     this.navigation = null;
     this.stack = new NavigationStack(controller);
     this.isOwningStack = true;
@@ -241,7 +241,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     invalidate(0, 0, getMeasuredWidth(), filling.getBottom() + filling.getExtraHeight());
   }
 
-  public void resetColors (ViewController c, ViewController preview) {
+  public void resetColors (ViewController<?> c, ViewController<?> preview) {
     boolean animating = (navigation != null && navigation.isAnimating());
     if (animating) {
       if (previewOpened) {
@@ -366,7 +366,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   @Override
   public void onClick (View v) {
     if (navigation == null || (!navigation.isDestroyed() && !navigation.isAnimating())) {
-      ViewController item = stack.getCurrent();
+      ViewController<?> item = stack.getCurrent();
       if (item != null && ((!item.inSelectMode() && item.getMenuId() != 0) || (item.inSelectMode() && item.getSelectMenuId() != 0))) {
         ((Menu) item).onMenuItemPressed(v.getId(), v);
       }
@@ -425,7 +425,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     return -1;
   }
 
-  public void updateButtonsTransform (int menuId, ViewController c, float factor) {
+  public void updateButtonsTransform (int menuId, ViewController<?> c, float factor) {
     if (menu.getId() == menuId) {
       c.applyHeaderMenuTransform(menu, factor);
     }
@@ -434,7 +434,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     }
   }
 
-  public void updateBackButtonColor (ViewController c, int colorFilter) {
+  public void updateBackButtonColor (ViewController<?> c, int colorFilter) {
     if (c.isFocused()) {
       backButton.setColor(colorFilter);
     }
@@ -452,7 +452,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     }
   }
 
-  public void updateButtonColors (ViewController c, int menuId, int colorFilter) {
+  public void updateButtonColors (ViewController<?> c, int menuId, int colorFilter) {
     if (menu != null && menu.getId() == menuId) {
       updateButtonColors(menu, colorFilter);
     }
@@ -461,7 +461,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     }
   }
 
-  public void updateButtonColorFactor (ViewController c, int menuId, float colorFactor) {
+  public void updateButtonColorFactor (ViewController<?> c, int menuId, float colorFactor) {
     if (menu.getId() == menuId) {
       final int childCount = menu.getChildCount();
       for (int i = 0; i < childCount; i++) {
@@ -543,7 +543,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     }
   }
 
-  public void updateCustomButtons (ViewController c, int menuId) {
+  public void updateCustomButtons (ViewController<?> c, int menuId) {
     if (menu.getId() == menuId) {
       c.updateCustomMenu(menuId, menu);
     }
@@ -637,11 +637,11 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     }
   }
 
-  public HeaderButton genButton (@IdRes int id, @DrawableRes int drawableRes, @ThemeColorId int themeColorId, @Nullable ViewController themeProvider, int width, OnClickListener listener) {
+  public HeaderButton genButton (@IdRes int id, @DrawableRes int drawableRes, @ThemeColorId int themeColorId, @Nullable ViewController<?> themeProvider, int width, OnClickListener listener) {
     return genButton(id, drawableRes, themeColorId, themeProvider, width, ThemeDeprecated.headerSelector(), listener);
   }
 
-  public HeaderButton genButton (@IdRes int id, @DrawableRes int image, @ThemeColorId int themeColorId, @Nullable ViewController themeProvider, int width, int resource, OnClickListener listener) {
+  public HeaderButton genButton (@IdRes int id, @DrawableRes int image, @ThemeColorId int themeColorId, @Nullable ViewController<?> themeProvider, int width, int resource, OnClickListener listener) {
     HeaderButton btn = new HeaderButton(getContext());
     btn.setButtonBackground(resource);
     btn.setId(id);
@@ -710,77 +710,77 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
 
   // Buttons
 
-  public HeaderButton addDoneButton (LinearLayout menu, @NonNull ViewController themeProvider) {
+  public HeaderButton addDoneButton (LinearLayout menu, @NonNull ViewController<?> themeProvider) {
     return addDoneButton(menu, themeProvider, themeProvider.getHeaderIconColorId());
   }
 
-  public HeaderButton addDoneButton (LinearLayout menu, @Nullable ViewController themeProvider, @ThemeColorId int colorId) {
+  public HeaderButton addDoneButton (LinearLayout menu, @Nullable ViewController<?> themeProvider, @ThemeColorId int colorId) {
     HeaderButton button;
     menu.addView(button = genButton(R.id.menu_btn_done, R.drawable.baseline_check_24, colorId, themeProvider, Screen.dp(56f), this), Lang.rtl() ? 0 : -1);
     return button;
   }
 
-  public HeaderButton addReplyButton (LinearLayout menu, @Nullable ViewController themeProvider, @ThemeColorId int colorId) {
+  public HeaderButton addReplyButton (LinearLayout menu, @Nullable ViewController<?> themeProvider, @ThemeColorId int colorId) {
     HeaderButton button;
     menu.addView(button = genButton(R.id.menu_btn_reply, R.drawable.baseline_reply_24, colorId, themeProvider, Screen.dp(52f), ThemeDeprecated.headerSelector(), this).setThemeColorId(colorId), Lang.rtl() ? 0 : -1);
     return button;
   }
 
-  public HeaderButton addEditButton (LinearLayout menu, @Nullable ViewController themeProvider, @ThemeColorId int colorId) {
+  public HeaderButton addEditButton (LinearLayout menu, @Nullable ViewController<?> themeProvider, @ThemeColorId int colorId) {
     HeaderButton button;
     menu.addView(button = genButton(R.id.menu_btn_edit, R.drawable.baseline_edit_24, colorId, themeProvider, Screen.dp(52f), ThemeDeprecated.headerSelector(), this), Lang.rtl() ? 0 : -1);
     return button;
   }
 
-  public HeaderButton addCopyButton (LinearLayout menu, @Nullable ViewController themeProvider, @ThemeColorId int colorId) {
+  public HeaderButton addCopyButton (LinearLayout menu, @Nullable ViewController<?> themeProvider, @ThemeColorId int colorId) {
     HeaderButton button;
     menu.addView(button = genButton(R.id.menu_btn_copy, R.drawable.baseline_content_copy_24, colorId, themeProvider, Screen.dp(50f), ThemeDeprecated.headerSelector(), this), Lang.rtl() ? 0 : -1);
     return button;
   }
 
-  public HeaderButton addViewButton (LinearLayout menu, @Nullable ViewController themeProvider, @ThemeColorId int colorId) {
+  public HeaderButton addViewButton (LinearLayout menu, @Nullable ViewController<?> themeProvider, @ThemeColorId int colorId) {
     HeaderButton button;
     menu.addView(button = genButton(R.id.menu_btn_view, R.drawable.baseline_visibility_24, colorId, themeProvider, Screen.dp(52f), ThemeDeprecated.headerLightSelector(), this), Lang.rtl() ? 0 : -1);
     return button;
   }
 
-  public HeaderButton addRetryButton (LinearLayout menu, @Nullable ViewController themeProvider, @ThemeColorId int colorId) {
+  public HeaderButton addRetryButton (LinearLayout menu, @Nullable ViewController<?> themeProvider, @ThemeColorId int colorId) {
     HeaderButton button;
     menu.addView(button = genButton(R.id.menu_btn_retry, R.drawable.baseline_repeat_24, colorId, themeProvider, Screen.dp(52f), ThemeDeprecated.headerSelector(), this), Lang.rtl() ? 0 : -1);
     return button;
   }
 
-  public HeaderButton addDeleteButton (LinearLayout menu, @Nullable ViewController themeProvider, @ThemeColorId int colorId) {
+  public HeaderButton addDeleteButton (LinearLayout menu, @Nullable ViewController<?> themeProvider, @ThemeColorId int colorId) {
     HeaderButton button;
     menu.addView(button = genButton(R.id.menu_btn_delete, R.drawable.baseline_delete_24, colorId, themeProvider, Screen.dp(52f), ThemeDeprecated.headerSelector(), this), Lang.rtl() ? 0 : -1);
     return button;
   }
 
-  public HeaderButton addForwardButton (LinearLayout menu, @NonNull ViewController themeProvider) {
+  public HeaderButton addForwardButton (LinearLayout menu, @NonNull ViewController<?> themeProvider) {
     return addForwardButton(menu, themeProvider, themeProvider.getHeaderIconColorId());
   }
 
-  public HeaderButton addForwardButton (LinearLayout menu, @Nullable ViewController themeProvider, @ThemeColorId int colorId) {
+  public HeaderButton addForwardButton (LinearLayout menu, @Nullable ViewController<?> themeProvider, @ThemeColorId int colorId) {
     HeaderButton button;
     menu.addView(button = genButton(R.id.menu_btn_forward, R.drawable.baseline_forward_24, colorId, themeProvider, Screen.dp(52f), ThemeDeprecated.headerSelector(), this), Lang.rtl() ? 0 : -1);
     return button;
   }
 
-  public HeaderButton addMoreButton (LinearLayout menu, @NonNull ViewController themeProvider) {
+  public HeaderButton addMoreButton (LinearLayout menu, @NonNull ViewController<?> themeProvider) {
     return addMoreButton(menu, themeProvider, themeProvider.getHeaderIconColorId());
   }
 
-  public HeaderButton addMoreButton (LinearLayout menu, @Nullable ViewController themeProvider, @ThemeColorId int colorId) {
+  public HeaderButton addMoreButton (LinearLayout menu, @Nullable ViewController<?> themeProvider, @ThemeColorId int colorId) {
     HeaderButton button;
     menu.addView(button = genButton(R.id.menu_btn_more, R.drawable.baseline_more_vert_24, colorId, themeProvider, Screen.dp(49f), this), Lang.rtl() ? 0 : -1);
     return button;
   }
 
-  public HeaderButton addSearchButton (LinearLayout menu, @NonNull ViewController themeProvider) {
+  public HeaderButton addSearchButton (LinearLayout menu, @NonNull ViewController<?> themeProvider) {
     return addSearchButton(menu, themeProvider, themeProvider.getHeaderIconColorId());
   }
 
-  public HeaderButton addSearchButton (LinearLayout menu, @Nullable ViewController themeProvider, @ThemeColorId int colorId) {
+  public HeaderButton addSearchButton (LinearLayout menu, @Nullable ViewController<?> themeProvider, @ThemeColorId int colorId) {
     HeaderButton button;
     menu.addView(button = genButton(R.id.menu_btn_search, R.drawable.baseline_search_24, colorId, themeProvider, Screen.dp(49f), this), Lang.rtl() ? 0 : -1);
     return button;
@@ -793,7 +793,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     return button;
   }
 
-  public StopwatchHeaderButton addStopwatchButton (LinearLayout menu, @Nullable ViewController themeProvider) {
+  public StopwatchHeaderButton addStopwatchButton (LinearLayout menu, @Nullable ViewController<?> themeProvider) {
     StopwatchHeaderButton button;
     button = new StopwatchHeaderButton(getContext());
     button.setOnClickListener(this);
@@ -807,13 +807,13 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
 
   // Buttons core
 
-  public HeaderButton addButton (LinearLayout menu, @IdRes int id, @DrawableRes int drawableRes, @ThemeColorId int themeColorId, @Nullable ViewController themeProvider, int width) {
+  public HeaderButton addButton (LinearLayout menu, @IdRes int id, @DrawableRes int drawableRes, @ThemeColorId int themeColorId, @Nullable ViewController<?> themeProvider, int width) {
     HeaderButton button;
     menu.addView(button = genButton(id, drawableRes, themeColorId, themeProvider, width, this), Lang.rtl() ? 0 : -1);
     return button;
   }
 
-  public HeaderButton addButton (LinearLayout menu, @IdRes int id, @ThemeColorId int themeColorId, @Nullable ViewController themeProvider, @DrawableRes int drawableRes, int width, int resource) {
+  public HeaderButton addButton (LinearLayout menu, @IdRes int id, @ThemeColorId int themeColorId, @Nullable ViewController<?> themeProvider, @DrawableRes int drawableRes, int width, int resource) {
     HeaderButton button;
     menu.addView(button = genButton(id, drawableRes, themeColorId, themeProvider, width, resource, this), Lang.rtl() ? 0 : -1);
     return button;
@@ -823,7 +823,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     menu.addView(button, Lang.rtl() ? 0 : -1);
   }
 
-  public ClearButton addClearButton (LinearLayout menu, ViewController c) {
+  public ClearButton addClearButton (LinearLayout menu, ViewController<?> c) {
     return addClearButton(menu, c.getHeaderIconColorId(), c.getBackButtonResource());
   }
 
@@ -876,10 +876,10 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
 
   private View.OnClickListener onToggleClick;
 
-  public ToggleHeaderView genToggleTitle (Context context, ViewController controller) {
+  public ToggleHeaderView genToggleTitle (Context context, ViewController<?> controller) {
     if (onToggleClick == null) {
       onToggleClick = v -> {
-        ViewController c = stack.getCurrent();
+        ViewController<?> c = stack.getCurrent();
         if (c instanceof ToggleDelegate) {
           showToggleOptions(((ToggleDelegate) c).getToggleSections());
         }
@@ -888,7 +888,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     return genToggleTitle(context, controller, onToggleClick);
   }
 
-  public ToggleHeaderView genToggleTitle (Context context, ViewController controller, View.OnClickListener onClickListener) {
+  public ToggleHeaderView genToggleTitle (Context context, ViewController<?> controller, View.OnClickListener onClickListener) {
     FrameLayoutFix.LayoutParams params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(38f), Gravity.TOP | (Lang.rtl() ? Gravity.RIGHT : Gravity.LEFT));
     params.topMargin = Screen.dp(15f) + getCurrentHeaderOffset();
     if (Lang.rtl()) {
@@ -918,7 +918,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     if (onToggleItemClick == null) {
       onToggleItemClick = v -> {
         ((PopupLayout) v.getParent().getParent()).hideWindow(true);
-        ViewController c = stack.getCurrent();
+        ViewController<?> c = stack.getCurrent();
         if (c instanceof ToggleDelegate) {
           ((ToggleDelegate) c).onToggle(v.getId());
         }
@@ -951,11 +951,11 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     return view;
   }
 
-  public HeaderEditText genSearchHeader (boolean isLight, ViewController themeProvider) {
+  public HeaderEditText genSearchHeader (boolean isLight, ViewController<?> themeProvider) {
     return genSearchHeader(this, isLight, themeProvider);
   }
 
-  public static HeaderEditText genSearchHeader (ViewGroup parent, boolean isLight, @Nullable ViewController themeProvider) {
+  public static HeaderEditText genSearchHeader (ViewGroup parent, boolean isLight, @Nullable ViewController<?> themeProvider) {
     FrameLayoutFix.LayoutParams params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(53f),  Gravity.TOP | (Lang.rtl() ? Gravity.RIGHT : Gravity.LEFT));
     if (Lang.rtl()) {
       params.rightMargin = Screen.dp(68f);
@@ -976,11 +976,11 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     return view;
   }
 
-  public HeaderEditText genGreySearchHeader (ViewController themeProvider) {
+  public HeaderEditText genGreySearchHeader (ViewController<?> themeProvider) {
     return genGreySearchHeader(this, themeProvider);
   }
 
-  public static HeaderEditText genGreySearchHeader (ViewGroup parent, ViewController themeProvider) {
+  public static HeaderEditText genGreySearchHeader (ViewGroup parent, ViewController<?> themeProvider) {
     FrameLayoutFix.LayoutParams params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(53f), Gravity.TOP | (Lang.rtl() ? Gravity.RIGHT : Gravity.LEFT));
     if (Lang.rtl()) {
       params.rightMargin = Screen.dp(68f);
@@ -1003,7 +1003,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   private MenuMoreWrap moreWrap;
   private View.OnClickListener onMoreItemClick;
 
-  public void showMore (int[] ids, String[] titles, int[] icons, int buttonIndex, boolean isLayered, @Nullable ViewController themeProvider) {
+  public void showMore (int[] ids, String[] titles, int[] icons, int buttonIndex, boolean isLayered, @Nullable ViewController<?> themeProvider) {
     if (ids.length == 0) {
       return;
     }
@@ -1015,7 +1015,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     if (onMoreItemClick == null) {
       onMoreItemClick = v -> {
         ((PopupLayout) v.getParent().getParent()).hideWindow(true);
-        ViewController c = stack.getCurrent();
+        ViewController<?> c = stack.getCurrent();
         if (c instanceof MoreDelegate) {
           ((MoreDelegate) c).onMoreItemPressed(v.getId());
         }
@@ -1098,7 +1098,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
         return false;
       }
       if (e.getAction() == MotionEvent.ACTION_DOWN && e.getY() < filling.getBottom()) {
-        ViewController c = UI.getCurrentStackItem();
+        ViewController<?> c = UI.getCurrentStackItem();
         if (c != null) {
           c.dismissIntercept();
         }
@@ -1136,7 +1136,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
 
   // Internal stuff
 
-  private static void updateTextMargins (View textTitle, ViewController item, int menuWidth, int currentHeaderOffset) {
+  private static void updateTextMargins (View textTitle, ViewController<?> item, int menuWidth, int currentHeaderOffset) {
     if (textTitle == null || item == null)
       return;
     boolean updated;
@@ -1169,7 +1169,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     }
   }
 
-  private void genTitle (ViewController item) {
+  private void genTitle (ViewController<?> item) {
     View newTitle = item.getCustomHeaderCell();
 
     if (newTitle == null) {
@@ -1194,7 +1194,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   private boolean menuPreviewUsed;
 
   @SuppressWarnings ("ResourceType")
-  private void genPreview (ViewController left, ViewController right, boolean forward) {
+  private void genPreview (ViewController<?> left, ViewController<?> right, boolean forward) {
     if (forward) {
       previewItem = right;
       baseItem = left;
@@ -1589,7 +1589,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     }
   }
 
-  void applyPreview (ViewController current) {
+  void applyPreview (ViewController<?> current) {
     this.previewOpened = false;
 
     if (shareHeader) {
@@ -1654,7 +1654,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   }
 
   public final void onBackTouchDown (MotionEvent e) {
-    ViewController c = null;
+    ViewController<?> c = null;
     if (navigation != null) {
       c = navigation.getCurrentStackItem();
     } else if (isOwningStack && stack != null && !stack.isEmpty()) {
@@ -1667,7 +1667,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
 
   private int transformMode;
 
-  private void transform (final ViewController controller, final int mode, int arg, final boolean open, boolean animated, final Runnable after) {
+  private void transform (final ViewController<?> controller, final int mode, int arg, final boolean open, boolean animated, final Runnable after) {
     this.transformMode = mode;
 
     openPreview(controller, null, open, MODE_FADE, translationFactor);
@@ -1803,14 +1803,14 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   }
 
   public int getCurrentTransformMode () {
-    ViewController c = stack.getCurrent();
+    ViewController<?> c = stack.getCurrent();
     return c == null ? TRANSFORM_MODE_NONE : c.inSearchMode() ? TRANSFORM_MODE_SEARCH : c.inSelectMode() ? TRANSFORM_MODE_SELECT : TRANSFORM_MODE_NONE;
   }
 
   // Select mode
 
   public void openSelectMode (int startCount, boolean animated) {
-    final ViewController controller = stack.getCurrent();
+    final ViewController<?> controller = stack.getCurrent();
 
     if (isAnimating || controller == null || controller.inSelectMode() || controller.inSearchMode()) {
       return;
@@ -1832,7 +1832,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   }
 
   void closeSelectMode (boolean performCallback, boolean animated) {
-    final ViewController controller = stack.getCurrent();
+    final ViewController<?> controller = stack.getCurrent();
 
     if (isAnimating || controller == null || !controller.inSelectMode()) {
       return;
@@ -1849,14 +1849,14 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   }
 
   public boolean inSelectMode () {
-    ViewController c = stack.getCurrent();
+    ViewController<?> c = stack.getCurrent();
     return c != null && c.inSelectMode();
   }
 
   // Custom mode
 
   public void openCustomMode () {
-    final ViewController c = stack.getCurrent();
+    final ViewController<?> c = stack.getCurrent();
 
     if (isAnimating || c == null || c.inTransformMode()) {
       return;
@@ -1870,7 +1870,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   }
 
   public void closeCustomMode () {
-    final ViewController controller = stack.getCurrent();
+    final ViewController<?> controller = stack.getCurrent();
 
     if (isAnimating || controller == null || !controller.inCustomMode()) {
       return;
@@ -1885,7 +1885,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   // Search mode
 
   public void openSearchMode () {
-    final ViewController controller = stack.getCurrent();
+    final ViewController<?> controller = stack.getCurrent();
 
     if (isAnimating || controller == null || controller.inTransformMode() || Color.alpha(overlayColor) > 0) {
       return;
@@ -1899,7 +1899,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   }
 
   public void closeSearchMode (boolean animated, Runnable after) {
-    final ViewController controller = stack.getCurrent();
+    final ViewController<?> controller = stack.getCurrent();
 
     if (isAnimating || controller == null || !controller.inSearchMode()) {
       return;
@@ -1912,12 +1912,12 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   }
 
   public boolean inSearchMode () {
-    ViewController c = stack.getCurrent();
+    ViewController<?> c = stack.getCurrent();
     return c != null && c.inSearchMode();
   }
 
   public boolean inCustomMode () {
-    ViewController c = stack.getCurrent();
+    ViewController<?> c = stack.getCurrent();
     return c != null && c.inCustomMode();
   }
 
@@ -1926,7 +1926,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   private float switchFactor;
   private ValueAnimator switchAnimator;
 
-  public void switchBackColor (ViewController current) {
+  public void switchBackColor (ViewController<?> current) {
     if (current == null) {
       return;
     }
@@ -1995,7 +1995,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     // TODO force exit search/etc modes
   }
 
-  public void setTitle (ViewController item) {
+  public void setTitle (ViewController<?> item) {
     if (isOwningStack) {
       stack.resetSilently(item);
     }
@@ -2094,7 +2094,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   }
 
   private void resetAnimationColors () {
-    ViewController left, right;
+    ViewController<?> left, right;
     boolean forward = translateForward;
     if (translateForward) {
       right = previewItem;
@@ -2165,7 +2165,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
 
   private boolean previewOpened = false;
 
-  void openPreview (ViewController left, ViewController right, boolean forward, int direction, float factor) {
+  void openPreview (ViewController<?> left, ViewController<?> right, boolean forward, int direction, float factor) {
     this.previewOpened = true;
     this.currentX = (float) getMeasuredWidth() * TRANSLATION_FACTOR;
     this.translationMode = direction;
@@ -2561,7 +2561,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     title.setTranslationX(0f);
     removeView(preview);
     removeView(menuPreview);
-    ViewController current = stack.getCurrent();
+    ViewController<?> current = stack.getCurrent();
     if (current != null) {
       if (current.getBackButton() == BackHeaderButton.TYPE_NONE) {
         backButton.setVisibility(View.GONE);
@@ -2618,11 +2618,11 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     return super.onTouchEvent(e) || res;
   }
 
-  public static int getTransformMode (ViewController c) {
+  public static int getTransformMode (ViewController<?> c) {
     return c.inCustomMode() ? TRANSFORM_MODE_CUSTOM : c.inSelectMode() ? TRANSFORM_MODE_SELECT : c.inSearchMode() ? TRANSFORM_MODE_SEARCH : TRANSFORM_MODE_NONE;
   }
 
-  public static int getMenuId (ViewController c, boolean allowTransform) {
+  public static int getMenuId (ViewController<?> c, boolean allowTransform) {
     if (c == null) {
       return 0;
     }
@@ -2640,11 +2640,11 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     return c.getMenuId();
   }
 
-  public static int getTransformMenuId (ViewController c) {
+  public static int getTransformMenuId (ViewController<?> c) {
     return c == null || c.inCustomMode() ? 0 : c.inSelectMode() ? c.getSelectMenuId() : c.inSearchMode() ? c.getSearchMenuId() : 0;
   }
 
-  public static int getBackButton (ViewController c, boolean allowTransform) {
+  public static int getBackButton (ViewController<?> c, boolean allowTransform) {
     if (c == null) {
       return BackHeaderButton.TYPE_NONE;
     }
@@ -2662,15 +2662,15 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     return c.getBackButton();
   }
 
-  public static int getHeaderHeight (ViewController c) {
+  public static int getHeaderHeight (ViewController<?> c) {
     return c == null ? Size.getHeaderPortraitSize() : c.getHeaderHeight();
   }
 
-  public static int getFloatingButtonId (ViewController c) {
+  public static int getFloatingButtonId (ViewController<?> c) {
     return c == null ? 0 : c.getFloatingButtonId();
   }
 
-  public static int getHeaderColor (ViewController c, boolean allowTransform) {
+  public static int getHeaderColor (ViewController<?> c, boolean allowTransform) {
     if (c == null) {
       return Theme.headerColor();
     }
@@ -2685,7 +2685,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     return c.getHeaderColor();
   }
 
-  public static int getHeaderTextColor (ViewController c, boolean allowTransform) {
+  public static int getHeaderTextColor (ViewController<?> c, boolean allowTransform) {
     if (c == null) {
       return Theme.headerTextColor();
     }
@@ -2700,7 +2700,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     return c.getHeaderTextColor();
   }
 
-  public static int getBackButtonColor (ViewController c, boolean allowTransform) {
+  public static int getBackButtonColor (ViewController<?> c, boolean allowTransform) {
     if (c == null) {
       return Theme.headerBackColor();
     }
@@ -2715,7 +2715,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     return c.getHeaderIconColor();
   }
 
-  public static int getBackButtonResource (ViewController c, boolean allowTransform) {
+  public static int getBackButtonResource (ViewController<?> c, boolean allowTransform) {
     if (c == null) {
       return ThemeDeprecated.headerSelector();
     }
@@ -2730,11 +2730,11 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     return c.getBackButtonResource();
   }
 
-  public static boolean useDropShadow (ViewController c) {
+  public static boolean useDropShadow (ViewController<?> c) {
     return c == null || c.useDropShadow();
   }
 
-  public static boolean useDropPlayer (ViewController c) {
+  public static boolean useDropPlayer (ViewController<?> c) {
     return c == null || c.useDropPlayer();
   }
 
@@ -2744,7 +2744,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     return ColorUtils.compositeColor(color, STATUS_OVERLAY_COLOR);
   }
 
-  public static int computeStatusBarColor (ViewController c, int alpha) {
+  public static int computeStatusBarColor (ViewController<?> c, int alpha) {
     return ColorUtils.compositeColor(c.getStatusBarColor(), Color.argb((int) ((float) alpha / 255f * (float) Color.alpha(STATUS_OVERLAY_COLOR)), Color.red(STATUS_OVERLAY_COLOR), Color.green(STATUS_OVERLAY_COLOR), Color.blue(STATUS_OVERLAY_COLOR)));
   }
 
@@ -2758,7 +2758,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     return computeStatusBarColor(0xffffffff);
   }
 
-  public static @ColorInt int getStatusBarColor (ViewController c, boolean allowTransform) {
+  public static @ColorInt int getStatusBarColor (ViewController<?> c, boolean allowTransform) {
     return c == null ? DEFAULT_STATUS_COLOR : c.getNewStatusBarColor();
     /*if (Config.USE_FULLSCREEN_NAVIGATION) {
       return c == null ? DEFAULT_STATUS_COLOR : c.getNewStatusBarColor();

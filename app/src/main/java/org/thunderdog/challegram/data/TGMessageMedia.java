@@ -625,7 +625,7 @@ public class TGMessageMedia extends TGMessage {
         hotOpened = true;
         hotOpenTime = SystemClock.uptimeMillis();
         currentParent.requestDisallowInterceptTouchEvent(true);
-        ViewController c = context().navigation().getCurrentStackItem();
+        ViewController<?> c = context().navigation().getCurrentStackItem();
         if (c != null) {
           c.hideSoftwareKeyboard();
         }

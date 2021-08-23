@@ -17,13 +17,13 @@ import me.vkryl.android.widget.FrameLayoutFix;
  */
 
 class CameraRootLayout extends FrameLayoutFix {
-  protected ViewController controller;
+  protected ViewController<?> controller;
 
   public CameraRootLayout (@NonNull Context context) {
     super(context);
   }
 
-  public void setController (ViewController controller) {
+  public void setController (ViewController<?> controller) {
     this.controller = controller;
   }
 

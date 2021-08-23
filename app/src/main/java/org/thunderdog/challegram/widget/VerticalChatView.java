@@ -81,9 +81,9 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     updateTextColor();
   }
 
-  private @Nullable ViewController themeProvider;
+  private @Nullable ViewController<?> themeProvider;
 
-  public void setThemeProvider (@Nullable ViewController themeProvider) {
+  public void setThemeProvider (@Nullable ViewController<?> themeProvider) {
     this.themeProvider = themeProvider;
     if (themeProvider != null) {
       themeProvider.addThemeInvalidateListener(this);

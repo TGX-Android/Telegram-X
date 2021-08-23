@@ -36,13 +36,13 @@ import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.TdConstants;
 
 public class EditHeaderView extends FrameLayoutFix implements RtlCheckListener, Destroyable, StretchyHeaderView, TextWatcher, HeaderView.OffsetChangeListener {
-  private final ViewController parent;
+  private final ViewController<?> parent;
   private HeaderEditText input;
   private final ImageReceiver receiver;
 
   private final Drawable icon;
 
-  public EditHeaderView (Context context, ViewController parent) {
+  public EditHeaderView (Context context, ViewController<?> parent) {
     super(context);
     this.icon = Drawables.get(getResources(), R.drawable.baseline_camera_alt_24);
     this.parent = parent;

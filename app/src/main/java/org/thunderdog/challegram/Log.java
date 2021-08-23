@@ -938,7 +938,7 @@ public class Log {
     }
     b.append(". Expected: ");
     boolean first = true;
-    for (Class object : objects) {
+    for (Class<?> object : objects) {
       if (first) {
         first = false;
       } else {

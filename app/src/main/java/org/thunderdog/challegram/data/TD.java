@@ -578,7 +578,7 @@ public class TD {
     return false;
   }
 
-  public static TextEntity[] collectAllEntities (ViewController context, Tdlib tdlib, CharSequence cs, boolean onlyLinks, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public static TextEntity[] collectAllEntities (ViewController<?> context, Tdlib tdlib, CharSequence cs, boolean onlyLinks, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     if (StringUtils.isEmpty(cs))
       return null;
     String str = cs.toString();
@@ -4326,11 +4326,11 @@ public class TD {
     return isFileLoaded(file);
   }
 
-  public static void deleteFile (final ViewController context, TdApi.File file) {
+  public static void deleteFile (final ViewController<?> context, TdApi.File file) {
     deleteFiles(context, new TdApi.File[] {file}, null);
   }
 
-  public static void deleteFiles (final ViewController context, final TdApi.File[] files, final @Nullable Runnable after) {
+  public static void deleteFiles (final ViewController<?> context, final TdApi.File[] files, final @Nullable Runnable after) {
     if (files == null || files.length == 0) {
       return;
     }
