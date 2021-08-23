@@ -95,7 +95,7 @@ public class ShadowView extends View {
     }
   }
 
-  public void setSimpleTopShadow (boolean withDefaultSize, ViewController themeProvider) {
+  public void setSimpleTopShadow (boolean withDefaultSize, ViewController<?> themeProvider) {
     setSimpleTopShadow(withDefaultSize);
     ViewSupport.setThemedBackground(this, R.id.theme_color_background, themeProvider);
   }

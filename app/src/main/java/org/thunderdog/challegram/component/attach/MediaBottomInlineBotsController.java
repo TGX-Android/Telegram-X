@@ -21,7 +21,7 @@ import java.util.List;
  * Author: default
  */
 
-public class MediaBottomInlineBotsController extends MediaBottomBaseController implements Client.ResultHandler, SimpleUsersAdapter.Callback {
+public class MediaBottomInlineBotsController extends MediaBottomBaseController<Void> implements Client.ResultHandler, SimpleUsersAdapter.Callback {
   public MediaBottomInlineBotsController (MediaLayout context) {
     super(context, R.string.InlineBot);
   }

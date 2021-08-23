@@ -2371,7 +2371,7 @@ public class U {
     return null;
   }
 
-  public static void replaceItems (final RecyclerView.Adapter adapter, final int oldItemCount) {
+  public static void replaceItems (final RecyclerView.Adapter<?> adapter, final int oldItemCount) {
     int newItemCount = adapter.getItemCount();
     if (oldItemCount == newItemCount) {
       if (oldItemCount != 0) {
@@ -2390,7 +2390,7 @@ public class U {
     }
   }
 
-  public static void notifyItemsReplaced (final RecyclerView.Adapter adapter, final int oldItemCount) {
+  public static void notifyItemsReplaced (final RecyclerView.Adapter<?> adapter, final int oldItemCount) {
     int newItemCount = adapter.getItemCount();
     if (oldItemCount == newItemCount) {
       if (oldItemCount != 0) {
@@ -2413,7 +2413,7 @@ public class U {
     }*/
   }
 
-  public static void notifyItemsReplaced (final RecyclerView.Adapter adapter, final int oldItemCount, final int headerItemCount) {
+  public static void notifyItemsReplaced (final RecyclerView.Adapter<?> adapter, final int oldItemCount, final int headerItemCount) {
     int newItemCount = adapter.getItemCount();
     int changedItemCount = Math.max(0, newItemCount - headerItemCount);
     if (oldItemCount == newItemCount) {

@@ -136,7 +136,7 @@ public abstract class RecyclerViewController<T> extends TelegramViewController<T
   protected final void restorePersistentScrollPosition () {
     if (savedScrollPosition >= 0 && recyclerView != null) {
       LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
-      RecyclerView.Adapter adapter = recyclerView.getAdapter();
+      RecyclerView.Adapter<?> adapter = recyclerView.getAdapter();
       if (manager != null && adapter != null && savedScrollPosition>= 0 && savedScrollPosition < adapter.getItemCount()) {
         manager.scrollToPositionWithOffset(savedScrollPosition, savedScrollOffset);
         savedScrollPosition = -1;

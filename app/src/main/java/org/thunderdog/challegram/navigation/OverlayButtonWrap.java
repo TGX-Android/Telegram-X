@@ -61,7 +61,7 @@ public class OverlayButtonWrap extends FrameLayoutFix implements View.OnClickLis
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
   }
 
-  public void initWithList (final @NonNull ViewController parent, int overlayColorId, int overlayIconColorId, int[] ids, int[] resources, int[] backgrounds, int[] colors, int[] items, boolean reverse) {
+  public void initWithList (final @NonNull ViewController<?> parent, int overlayColorId, int overlayIconColorId, int[] ids, int[] resources, int[] backgrounds, int[] colors, int[] items, boolean reverse) {
     if (reverse) {
       for (int i = ids.length - 1, j = 0; i >= 1; i--, j++) {
         addButton(parent, j, ids[i], resources[i], backgrounds[i], colors[i], items[i - 1]);
@@ -81,7 +81,7 @@ public class OverlayButtonWrap extends FrameLayoutFix implements View.OnClickLis
 
   // Views
 
-  private void addMainButton (@NonNull ViewController parent, int id, int resource, @ThemeColorId int circleColorId, @ThemeColorId int iconColorId, @ThemeColorId int overlayColorId, @ThemeColorId int overlayIconColorId) {
+  private void addMainButton (@NonNull ViewController<?> parent, int id, int resource, @ThemeColorId int circleColorId, @ThemeColorId int iconColorId, @ThemeColorId int overlayColorId, @ThemeColorId int overlayIconColorId) {
     FrameLayoutFix.LayoutParams params;
 
     int padding = Screen.dp(4f);
@@ -135,7 +135,7 @@ public class OverlayButtonWrap extends FrameLayoutFix implements View.OnClickLis
     }
   }
 
-  private TextView newTextView (ViewController parent) {
+  private TextView newTextView (ViewController<?> parent) {
     int padding = Screen.dp(4f);
     TextView text = new NoScrollTextView(getContext()) {
       @Override
@@ -156,7 +156,7 @@ public class OverlayButtonWrap extends FrameLayoutFix implements View.OnClickLis
     return text;
   }
 
-  private void addButton (@NonNull ViewController parent, int index, int id, int resource, int background, int colorId, int stringRes) {
+  private void addButton (@NonNull ViewController<?> parent, int index, int id, int resource, int background, int colorId, int stringRes) {
     FrameLayoutFix.LayoutParams params;
 
     final int padding = Screen.dp(4f);

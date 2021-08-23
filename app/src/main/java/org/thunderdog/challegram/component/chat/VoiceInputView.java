@@ -100,7 +100,7 @@ public class VoiceInputView extends FrameLayoutFix implements View.OnClickListen
     setLayoutParams(params);
   }
 
-  public void addThemeListeners (ViewController c) {
+  public void addThemeListeners (ViewController<?> c) {
     c.addThemeFilterListener(iconView, R.id.theme_color_icon);
     c.addThemeInvalidateListener(this);
     ViewSupport.setThemedBackground(this, R.id.theme_color_filling);

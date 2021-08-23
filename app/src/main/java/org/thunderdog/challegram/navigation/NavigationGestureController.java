@@ -99,7 +99,7 @@ public class NavigationGestureController implements GestureDetector.OnGestureLis
     if (startY <= 0f) //HeaderView.getSize()
       return false;
 
-    ViewController c = navigation.getCurrentStackItem();
+    ViewController<?> c = navigation.getCurrentStackItem();
 
     if (c == null || c.isIntercepted())
       return false;
@@ -112,11 +112,11 @@ public class NavigationGestureController implements GestureDetector.OnGestureLis
 
   private boolean canSlideBack () {
     int stackSize = navigation.getStackSize();
-    ViewController c = navigation.getCurrentStackItem();
+    ViewController<?> c = navigation.getCurrentStackItem();
     return stackSize > 0 && c != null && c.swipeNavigationEnabled() && !c.forceFadeMode() && !c.inSelectMode() && !c.inCustomMode() && !(stackSize == 1 && c.inSearchMode());
   }
 
-  private boolean canSlideBack (ViewController c, float x, float y) {
+  private boolean canSlideBack (ViewController<?> c, float x, float y) {
     int stackSize = navigation.getStackSize();
     return stackSize > 0 && c != null && c.swipeNavigationEnabled() && !c.forceFadeMode() && !c.inSelectMode() && !c.inCustomMode() && !(stackSize == 1 && c.inSearchMode()) && c.canSlideBackFrom(navigation, x, y);
   }

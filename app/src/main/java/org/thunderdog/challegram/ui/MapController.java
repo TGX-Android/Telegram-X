@@ -657,7 +657,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
       tdlib.listeners().unsubscribeFromMessageUpdates(args.chatId, this);
       tdlib.context().liveLocation().removeLocationListener(this);
     }
-    for (LocationPoint point : pointsOfInterest) {
+    for (LocationPoint<?> point : pointsOfInterest) {
       if (point.data instanceof Destroyable) {
         ((Destroyable) point.data).performDestroy();
       }

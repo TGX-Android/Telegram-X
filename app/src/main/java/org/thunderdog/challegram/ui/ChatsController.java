@@ -1942,7 +1942,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   @Override
-  public ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ViewController target) {
+  public ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ViewController<?> target) {
     TGChat chat = v instanceof ChatView ? ((ChatView) v).getChat() : null;
 
     if (chat != null && chat.isArchive()) {

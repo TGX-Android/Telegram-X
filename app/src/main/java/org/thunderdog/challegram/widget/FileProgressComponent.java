@@ -415,14 +415,14 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   private boolean openFile () {
     if (mimeType == null)
       return false;
-    ViewController c = UI.getCurrentStackItem(context);
+    ViewController<?> c = UI.getCurrentStackItem(context);
     if (c == null)
       return false;
     Runnable after = () -> U.openFile(c, U.getFileName(file.local.path), new File(file.local.path), mimeType, 0);
     return openFile(c, after);
   }
 
-  public boolean openFile (ViewController c, Runnable defaultOpen) {
+  public boolean openFile (ViewController<?> c, Runnable defaultOpen) {
     if (file != null && fileType == TdlibFilesManager.DOWNLOAD_FLAG_FILE) {
       if (c != null && c.tdlib() == tdlib) {
         if ((flags & FLAG_THEME) != 0) {

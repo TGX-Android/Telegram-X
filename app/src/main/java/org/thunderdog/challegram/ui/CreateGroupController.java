@@ -48,7 +48,7 @@ import java.util.ArrayList;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
 
-public class CreateGroupController extends ViewController implements EditHeaderView.ReadyCallback, OptionDelegate, Client.ResultHandler, Unlockable, ActivityResultHandler,
+public class CreateGroupController extends ViewController<Void> implements EditHeaderView.ReadyCallback, OptionDelegate, Client.ResultHandler, Unlockable, ActivityResultHandler,
   TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener {
   private ArrayList<TGUser> members;
 

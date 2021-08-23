@@ -144,6 +144,7 @@ import org.thunderdog.challegram.mediaview.data.MediaStack;
 import org.thunderdog.challegram.navigation.ActivityResultHandler;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.ComplexHeaderView;
+import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.navigation.HeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
@@ -277,6 +278,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private @Nullable TdApi.ChatList openedFromChatList;
 
   private ChatHeaderView headerCell;
+  private DoubleHeaderView headerDoubleCell;
+
   private MessagesLayout contentView;
   private LinearLayout bottomWrap;
   private MessagesRecyclerView messagesView;
@@ -510,6 +513,33 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         break;
       }
+      case PREVIEW_MODE_WALLPAPER_OBJECT: {
+        headerDoubleCell = new DoubleHeaderView(context);
+        headerDoubleCell.setThemedTextColor(this);
+        headerDoubleCell.initWithMargin(Screen.dp(12f), true);
+        headerDoubleCell.setTitle(getName());
+        if (getArguments().wallpaperObject.document != null) {
+          headerDoubleCell.setSubtitle(Strings.buildSize(getArguments().wallpaperObject.document.document.size));
+        } else if (getArguments().wallpaperObject.type.getConstructor() == TdApi.BackgroundTypePattern.CONSTRUCTOR) {
+          headerDoubleCell.setSubtitle(Lang.getString(R.string.ChatBackgroundTypePattern));
+        } else if (getArguments().wallpaperObject.type.getConstructor() == TdApi.BackgroundTypeFill.CONSTRUCTOR) {
+          TdApi.BackgroundTypeFill filledWp = (TdApi.BackgroundTypeFill) getArguments().wallpaperObject.type;
+
+          switch (filledWp.fill.getConstructor()) {
+            case TdApi.BackgroundFillGradient.CONSTRUCTOR:
+              headerDoubleCell.setSubtitle(Lang.getString(R.string.ChatBackgroundTypeGradient));
+              break;
+            case TdApi.BackgroundFillFreeformGradient.CONSTRUCTOR:
+              headerDoubleCell.setSubtitle(Lang.getString(R.string.ChatBackgroundTypeMulticolor));
+              break;
+            case TdApi.BackgroundFillSolid.CONSTRUCTOR:
+              headerDoubleCell.setSubtitle(Lang.getString(R.string.ChatBackgroundTypeSolid));
+              break;
+            default:
+              throw new UnsupportedOperationException(filledWp.fill.toString());
+          }
+        }
+      }
       default: {
         if (areScheduled) {
           headerCell.setForcedSubtitle(Lang.lowercase(Lang.getString(isSelfChat() ? R.string.Reminders : R.string.ScheduledMessages)));
@@ -522,7 +552,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     headerCell.initWithController(this, true);
 
     wallpaperView = new WallpaperView(context, manager, tdlib);
-    wallpaperView.initWithSetupMode(previewMode == PREVIEW_MODE_WALLPAPER);
+    if (previewMode == PREVIEW_MODE_WALLPAPER_OBJECT) {
+      wallpaperView.initWithCustomWallpaper(new TGBackground(tdlib, getArguments().wallpaperObject));
+    } else {
+      wallpaperView.initWithSetupMode(previewMode == PREVIEW_MODE_WALLPAPER);
+    }
     wallpaperView.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     addThemeInvalidateListener(wallpaperView);
 
@@ -985,6 +1019,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
           bottomWrap.addView(wallpapersList);
           break;
         }
+        case PREVIEW_MODE_WALLPAPER_OBJECT: {
+          ViewSupport.setThemedBackground(wallpapersList, R.id.theme_color_filling, this);
+          break;
+        }
         case PREVIEW_MODE_FONT_SIZE: {
           FrameLayoutFix textWrap = new FrameLayoutFix(context);
           textWrap.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(49f)));
@@ -1072,6 +1110,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     bottomBar.setLayoutParams(params);
     addThemeInvalidateListener(bottomBar);
     updateBottomBarStyle();
+
+    if (previewMode == PREVIEW_MODE_WALLPAPER_OBJECT) {
+      showBottomButton(BOTTOM_ACTION_APPLY_WALLPAPER, 0, false);
+      bottomShadowView.setVisibility(View.GONE);
+    }
 
     // Setup
 
@@ -1172,8 +1215,24 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private SliderView fontSliderView;
+  private SliderView blurSliderView;
 
   private static void updateFontSliderValue (SliderView sliderView) {
+    boolean found = false;
+    int index = 0;
+    for (float dp : Settings.CHAT_FONT_SIZES) {
+      if (dp == Settings.instance().getChatFontSize()) {
+        found = true;
+        break;
+      }
+      index++;
+    }
+    if (found) {
+      sliderView.setValue((float) index / (float) (Settings.CHAT_FONT_SIZES.length - 1));
+    }
+  }
+
+  private static void updateWpBlurSliderValue (SliderView sliderView) {
     boolean found = false;
     int index = 0;
     for (float dp : Settings.CHAT_FONT_SIZES) {
@@ -1471,10 +1530,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
       }
       if (inPreviewSearchMode()) {
-        ViewController parent = getParentOrSelf();
-        if (parent instanceof ViewPagerController) {
-          int index = ((ViewPagerController) parent).getCurrentPagerItemPosition() == 1 ? 0 : 1;
-          ((ViewPagerController) parent).onPagerItemClick(index);
+        ViewController<?> parent = getParentOrSelf();
+        if (parent instanceof ViewPagerController<?>) {
+          int index = ((ViewPagerController<?>) parent).getCurrentPagerItemPosition() == 1 ? 0 : 1;
+          ((ViewPagerController<?>) parent).onPagerItemClick(index);
         }
       } else {
         ProfileController controller = new ProfileController(context, tdlib);
@@ -1591,6 +1650,23 @@ public class MessagesController extends ViewController<MessagesController.Argume
         dismissPinnedMessage();
         break;
       }
+      case R.id.btn_applyWallpaper: {
+        tdlib().client().send(new TdApi.SetBackground(
+                new TdApi.InputBackgroundRemote(getArgumentsStrict().wallpaperObject.id),
+                getArgumentsStrict().wallpaperObject.type,
+                Theme.isDark()
+        ), result -> {
+          if (result.getConstructor() == TdApi.Background.CONSTRUCTOR) {
+            runOnUiThread(() -> {
+              TGBackground bg = new TGBackground(tdlib(), (TdApi.Background) result);
+              tdlib.wallpaper().addBackground(bg, Theme.isDark());
+              tdlib.settings().setWallpaper(bg, true, Theme.getWallpaperIdentifier());
+              navigateBack();
+            });
+          }
+        });
+        break;
+      }
       case R.id.btn_silent: {
         if (tdlib.isChannel(chat.id)) {
           boolean silent = silentButton.toggle();
@@ -1687,6 +1763,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
     switch (id) {
+      case R.id.btn_share: {
+        ShareController c = new ShareController(context(), tdlib());
+        c.setArguments(new ShareController.Args(tdlib().tMeBackgroundUrl(getArgumentsStrict().wallpaperObject.name)));
+        c.show();
+        break;
+      }
+      case R.id.btn_copyLink: {
+        UI.copyText(tdlib().tMeBackgroundUrl(getArgumentsStrict().wallpaperObject.name), R.string.CopiedLink);
+        break;
+      }
       case R.id.btn_openLinkedChat: {
         openLinkedChat();
         break;
@@ -1901,6 +1987,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public static final int PREVIEW_MODE_FONT_SIZE = 2;
   public static final int PREVIEW_MODE_EVENT_LOG = 3;
   public static final int PREVIEW_MODE_SEARCH = 4;
+  public static final int PREVIEW_MODE_WALLPAPER_OBJECT = 5;
 
   @Override
   public boolean saveInstanceState (Bundle outState, String keyPrefix) {
@@ -2004,6 +2091,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     public ThreadInfo messageThread;
 
     public Referrer referrer;
+    public TdApi.InternalLinkTypeVoiceChat voiceChatInvitation;
+
+    public @Nullable TdApi.Background wallpaperObject;
 
     public Arguments (Tdlib tdlib, TdApi.ChatList chatList, TdApi.Chat chat, @Nullable ThreadInfo messageThread, TdApi.SearchMessagesFilter filter) {
       this.constructor = 0;
@@ -2084,6 +2174,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
       this.openKeyboard = openKeyboard;
       return this;
     }
+
+    public Arguments setWallpaperObject (TdApi.Background wallpaperObject) {
+      this.wallpaperObject = wallpaperObject;
+      return this;
+    }
+
+    public Arguments voiceChatInvitation (TdApi.InternalLinkTypeVoiceChat voiceChatInvitation) {
+      this.voiceChatInvitation = voiceChatInvitation;
+      return this;
+    }
   }
 
   public static class Referrer {
@@ -2106,10 +2206,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private ThreadInfo messageThread;
   private boolean areScheduled;
   private Referrer referrer;
+  private TdApi.InternalLinkTypeVoiceChat voiceChatInvitation;
   private boolean openKeyboard;
 
   public boolean inWallpaperMode () {
-    return inPreviewMode && previewMode == PREVIEW_MODE_WALLPAPER;
+    return inPreviewMode && (previewMode == PREVIEW_MODE_WALLPAPER || previewMode == PREVIEW_MODE_WALLPAPER_OBJECT);
+  }
+
+  public boolean inWallpaperPreviewMode () {
+    return inPreviewMode && previewMode == PREVIEW_MODE_WALLPAPER_OBJECT;
   }
 
   public boolean inPreviewMode () {
@@ -2131,6 +2236,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     this.linkedChatId = 0;
     this.areScheduled = args.areScheduled;
     this.referrer = args.referrer;
+    this.voiceChatInvitation = args.voiceChatInvitation;
     this.previewSearchQuery = args.searchQuery;
     this.previewSearchSender = args.searchSender;
     this.previewSearchFilter = args.searchFilter;
@@ -2783,6 +2889,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
           return R.id.controller_fontSize;
         case PREVIEW_MODE_WALLPAPER:
           return R.id.controller_wallpaper;
+        case PREVIEW_MODE_WALLPAPER_OBJECT:
+          return R.id.controller_wallpaper_preview;
         case PREVIEW_MODE_EVENT_LOG:
           return R.id.controller_eventLog;
         case PREVIEW_MODE_SEARCH:
@@ -2872,6 +2980,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         return R.id.menu_search;
       case PREVIEW_MODE_SEARCH:
         return 0;
+      case PREVIEW_MODE_WALLPAPER_OBJECT:
       case PREVIEW_MODE_FONT_SIZE:
         return R.id.menu_more;
       case PREVIEW_MODE_WALLPAPER:
@@ -2890,6 +2999,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     switch (previewMode) {
       case PREVIEW_MODE_WALLPAPER:
         return Lang.getString(R.string.Wallpaper);
+      case PREVIEW_MODE_WALLPAPER_OBJECT:
+        return Lang.getString(R.string.ChatBackgroundPreview);
       case PREVIEW_MODE_FONT_SIZE:
         return Lang.getString(R.string.TextSize);
       default:
@@ -2899,7 +3010,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public View getCustomHeaderCell () {
-    return needTabs() ? pagerHeaderView : getChatId() != 0 ? headerCell : null;
+    return inWallpaperPreviewMode() ? headerDoubleCell : needTabs() ? pagerHeaderView : getChatId() != 0 ? headerCell : null;
   }
 
   @Override
@@ -2940,6 +3051,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.menu_gallery: {
         header.addButton(menu, R.id.menu_btn_gallery, R.drawable.baseline_image_24, getHeaderIconColorId(), this, Screen.dp(52f));
+        break;
+      }
+      case R.id.menu_share: {
+        header.addButton(menu, R.id.menu_btn_share, R.drawable.baseline_share_arrow_24, getHeaderIconColorId(), this, Screen.dp(52f));
         break;
       }
       case R.id.menu_clear: {
@@ -3028,6 +3143,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
               ids.append(R.id.btn_chatFontSizeReset);
               strings.append(R.string.TextSizeReset);
             }
+            showMore(ids.get(), strings.get(), 0);
+          } else if (previewMode == PREVIEW_MODE_WALLPAPER_OBJECT) {
+            IntList ids = new IntList(2);
+            StringList strings = new StringList(2);
+            ids.append(R.id.btn_share);
+            strings.append(R.string.Share);
+            ids.append(R.id.btn_copyLink);
+            strings.append(R.string.CopyLink);
             showMore(ids.get(), strings.get(), 0);
           }
         } else {
@@ -3336,6 +3459,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  public void openVoiceChatInvitation (TdApi.InternalLinkTypeVoiceChat invitation) {
+    // TODO some confirmation screen & join voice chat if agreed
+  }
+
   @Override
   public void onFocus () {
     super.onFocus();
@@ -3357,6 +3484,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
             }
           })
           .hideDelayed(10, TimeUnit.SECONDS);
+      }
+      if (voiceChatInvitation != null) {
+        openVoiceChatInvitation(voiceChatInvitation);
+        voiceChatInvitation = null;
       }
     }
     showMessageMenuTutorial();
@@ -3470,7 +3601,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         tdlib.client().send(new TdApi.SetChatDraftMessage(messageThread != null ? messageThread.getChatId() : chat.id, messageThread != null ? messageThread.getMessageThreadId() : 0, draftMessage), tdlib.okHandler());
 
         for (int i = 0; i < stackSize() - 1; i++) {
-          ViewController c = stackItemAt(i);
+          ViewController<?> c = stackItemAt(i);
           if (c instanceof MessagesController) {
             MessagesController m = (MessagesController) c;
             if (m.compareChat(getChatId(), messageThread, areScheduledOnly()) && m.canSaveDraft() && m.inputView != null && !m.isEditingMessage()) {
@@ -4057,7 +4188,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private boolean canCopySelectedMessages () {
     if (pagerScrollPosition != 0 && pagerContentAdapter != null) {
-      SharedBaseController c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
+      SharedBaseController<?> c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
       return c != null && c.canCopyMessages();
     }
     if (selectedMessageIds == null || selectedMessageIds.size() == 0) {
@@ -4071,7 +4202,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private boolean canDeleteSelectedMessages () {
     if (pagerScrollPosition != 0 && pagerContentAdapter != null) {
-      SharedBaseController c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
+      SharedBaseController<?> c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
       return c != null && c.canDeleteMessages();
     }
     if (selectedMessageIds != null) {
@@ -4120,7 +4251,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private boolean canViewSelectedMessages () {
     if (pagerScrollPosition != 0 && pagerContentAdapter != null) {
-      SharedBaseController c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
+      SharedBaseController<?> c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
       return c != null && c.getSelectedMediaCount() == 1;
     }
     return false;
@@ -4141,7 +4272,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private boolean canClearCacheSelectedMessages () {
     if (pagerScrollPosition != 0 && pagerContentAdapter != null) {
-      SharedBaseController c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
+      SharedBaseController<?> c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
       return c != null && c.canClearMessages();
     }
     if (selectedMessageIds != null) {
@@ -4171,7 +4302,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private boolean canShareSelectedMessages () {
     if (pagerScrollPosition != 0 && pagerContentAdapter != null) {
-      SharedBaseController c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
+      SharedBaseController<?> c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
       return c != null && c.canShareMessages();
     }
     if (selectedMessageIds != null) {
@@ -4294,7 +4425,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (pagerContentAdapter != null) {
         final int size = pagerContentAdapter.cachedItems.size();
         for (int i = 0; i < size; i++) {
-          SharedBaseController c = pagerContentAdapter.cachedItems.valueAt(i);
+          SharedBaseController<?> c = pagerContentAdapter.cachedItems.valueAt(i);
           if (c != null) {
             c.setInMediaSelectMode(false);
           }
@@ -4801,6 +4932,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private static final int BOTTOM_ACTION_TOGGLE_MUTE = 2;
   private static final int BOTTOM_ACTION_UNPIN_ALL = 3;
   private static final int BOTTOM_ACTION_TEST = 4;
+  private static final int BOTTOM_ACTION_APPLY_WALLPAPER = 5;
 
   private int bottomButtonAction;
   private boolean needBigPadding;
@@ -4814,7 +4946,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean needExtraBigPadding () {
-    return needBigPadding;
+    return needBigPadding && !inWallpaperPreviewMode();
   }
 
   private void showBottomButton (int bottomButtonAction, long bottomButtonData, boolean animated) {
@@ -4838,6 +4970,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case BOTTOM_ACTION_TEST: {
         bottomBar.setAction(R.id.btn_test, "test", R.drawable.baseline_warning_24, animateButtonContent);
+        bottomBar.clearPreviewChat();
+        break;
+      }
+      case BOTTOM_ACTION_APPLY_WALLPAPER: {
+        bottomBar.setAction(R.id.btn_applyWallpaper, Lang.getString(R.string.ChatBackgroundApply), R.drawable.baseline_warning_24, animateButtonContent);
         bottomBar.clearPreviewChat();
         break;
       }
@@ -5619,7 +5756,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public void openPreviewMessage (TGMessage msg) {
     if (arePinnedMessages()) {
-      ViewController c = previousStackItem();
+      ViewController<?> c = previousStackItem();
       if (c instanceof MessagesController && c.getChatId() == getChatId()) {
         ((MessagesController) c).highlightMessage(msg.toMessageId());
         navigateBack();
@@ -8602,7 +8739,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case MediaTabsAdapter.POSITION_MESSAGES:
         return manager.collectMedias(fromMessageId, filter);
       case MediaTabsAdapter.POSITION_MEDIA:
-        SharedBaseController c = pagerContentAdapter != null ? pagerContentAdapter.cachedItems.get(MediaTabsAdapter.POSITION_MEDIA) : null;
+        SharedBaseController<?> c = pagerContentAdapter != null ? pagerContentAdapter.cachedItems.get(MediaTabsAdapter.POSITION_MEDIA) : null;
         if (c != null && c instanceof SharedMediaController) {
           return ((SharedMediaController) c).collectMedias(fromMessageId, filter);
         }
@@ -8618,7 +8755,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         args.delegate = this;
         break;
       case MediaTabsAdapter.POSITION_MEDIA:
-        SharedBaseController c = pagerContentAdapter != null ? pagerContentAdapter.cachedItems.get(MediaTabsAdapter.POSITION_MEDIA) : null;
+        SharedBaseController<?> c = pagerContentAdapter != null ? pagerContentAdapter.cachedItems.get(MediaTabsAdapter.POSITION_MEDIA) : null;
         if (c != null && c instanceof SharedMediaController) {
           ((SharedMediaController) c).modifyMediaArguments(cause, args);
         }
@@ -8645,7 +8782,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
     }
     if (hasTabs && pagerScrollPosition == MediaTabsAdapter.POSITION_MEDIA && pagerContentAdapter != null) {
-      SharedBaseController c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
+      SharedBaseController<?> c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
       if (c != null && c instanceof SharedMediaController) {
         ((SharedMediaController) c).getTargetLocation(index, item);
       }
@@ -9659,7 +9796,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       lastMediaSearchQuery = query;
       final int size = pagerContentAdapter.cachedItems.size();
       for (int i = 0; i < size; i++) {
-        SharedBaseController c = pagerContentAdapter.cachedItems.valueAt(i);
+        SharedBaseController<?> c = pagerContentAdapter.cachedItems.valueAt(i);
         if (c != null) {
           c.search(query);
         }

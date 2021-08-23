@@ -204,8 +204,8 @@ public class CallManager implements GlobalCallListener {
     if (activity != null && activity.getActivityState() == UI.STATE_RESUMED) {
       NavigationController navigation = UI.getNavigation();
       if (navigation != null) {
-        ViewController c = !navigation.isAnimating() ? navigation.getCurrentStackItem() : null;
-        if (c != null && c instanceof CallController && c.tdlib() == tdlib && ((CallController) c).compareUserId(call.userId)) {
+        ViewController<?> c = !navigation.isAnimating() ? navigation.getCurrentStackItem() : null;
+        if (c instanceof CallController && c.tdlib() == tdlib && ((CallController) c).compareUserId(call.userId)) {
           ((CallController) c).replaceCall(call);
           return true;
         }
@@ -268,7 +268,7 @@ debugCall id:long debug:string = Ok;
     discardCall(tdlib, callId, isVideo);
   }
 
-  public boolean checkRecordPermissions (final Context context, final Tdlib tdlib, final @Nullable TdApi.Call call, final int userId, final @Nullable ViewController makeCallContext) {
+  public boolean checkRecordPermissions (final Context context, final Tdlib tdlib, final @Nullable TdApi.Call call, final int userId, final @Nullable ViewController<?> makeCallContext) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       if (UI.getAppContext().checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
         BaseActivity activity = UI.getUiContext();
@@ -298,7 +298,7 @@ debugCall id:long debug:string = Ok;
     return true;
   }
 
-  public void makeCallDelayed (final ViewController context, final int userId, @Nullable final TdApi.UserFullInfo userFull, final boolean needPrompt) {
+  public void makeCallDelayed (final ViewController<?> context, final int userId, @Nullable final TdApi.UserFullInfo userFull, final boolean needPrompt) {
     UI.post(() -> makeCall(context, userId, userFull, needPrompt), 180l);
   }
 
@@ -321,11 +321,11 @@ debugCall id:long debug:string = Ok;
     return false;
   }
 
-  public void makeCall (final ViewController context,final int userId, @Nullable TdApi.UserFullInfo userFull) {
+  public void makeCall (final ViewController<?> context,final int userId, @Nullable TdApi.UserFullInfo userFull) {
     makeCall(context, userId, userFull, Settings.instance().needOutboundCallsPrompt());
   }
 
-  public void makeCall (final ViewController context, final int userId, @Nullable TdApi.UserFullInfo userFull, final boolean needPrompt) {
+  public void makeCall (final ViewController<?> context, final int userId, @Nullable TdApi.UserFullInfo userFull, final boolean needPrompt) {
     if (userId == 0) {
       return;
     }

@@ -108,7 +108,7 @@ public class PageBlockTable extends PageBlock {
   private final Cell[][] cells;
   // private final int totalRowCount, totalColumnCount;
 
-  public PageBlockTable (ViewController context, TdApi.PageBlockTable block, boolean isRtl, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public PageBlockTable (ViewController<?> context, TdApi.PageBlockTable block, boolean isRtl, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, block);
     this.isRtl = isRtl;
     this.openParameters = openParameters;

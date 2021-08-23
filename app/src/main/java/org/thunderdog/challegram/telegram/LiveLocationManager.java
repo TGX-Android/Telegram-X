@@ -252,7 +252,7 @@ public class LiveLocationManager implements LocationHelper.LocationChangeListene
   }
 
   @Override
-  public void onFullnessStateChanged (ReferenceList list, boolean isFull) {
+  public void onFullnessStateChanged (ReferenceList<?> list, boolean isFull) {
     synchronized (this) {
       if (this.isActive != isFull) {
         this.isActive = isFull;

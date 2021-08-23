@@ -73,7 +73,7 @@ import me.vkryl.core.lambda.CancellableRunnable;
  * Author: default
  */
 
-public class SettingsController extends ViewController implements
+public class SettingsController extends ViewController<Void> implements
   View.OnClickListener, ComplexHeaderView.Callback,
   Menu, MoreDelegate, OptionDelegate,
   TdlibCache.MyUserDataChangeListener, ConnectionListener, StickersListener, MediaLayout.MediaGalleryCallback,

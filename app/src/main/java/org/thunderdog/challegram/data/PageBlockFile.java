@@ -18,7 +18,7 @@ public class PageBlockFile extends PageBlock {
   private final InlineResultCommon result;
   private final TGPlayerController.PlayListBuilder playListBuilder;
 
-  public PageBlockFile (ViewController context, TdApi.PageBlock pageBlock, String url, TGPlayerController.PlayListBuilder builder) {
+  public PageBlockFile (ViewController<?> context, TdApi.PageBlock pageBlock, String url, TGPlayerController.PlayListBuilder builder) {
     super(context, pageBlock);
     this.result = (InlineResultCommon) InlineResult.valueOf(context.context(), context.tdlib(), pageBlock, builder);
     this.playListBuilder = builder;

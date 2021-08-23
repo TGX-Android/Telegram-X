@@ -1,5 +1,8 @@
 package org.thunderdog.challegram.widget;
 
+import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.widget.FrameLayout;
@@ -18,6 +21,8 @@ import org.thunderdog.challegram.charts.LinearChartView;
 import org.thunderdog.challegram.charts.StackBarChartView;
 import org.thunderdog.challegram.charts.data.ChartData;
 import org.thunderdog.challegram.charts.data.ChartDataUtil;
+import org.thunderdog.challegram.charts.data.DoubleLinearChartData;
+import org.thunderdog.challegram.charts.data.StackBarChartData;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
@@ -29,9 +34,6 @@ import org.thunderdog.challegram.tool.Screen;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
-
-import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
-import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 
 public class ChartLayout extends FrameLayout implements FactorAnimator.Target, AttachDelegate, Chart.Listener {
   public interface Delegate {
@@ -72,7 +74,26 @@ public class ChartLayout extends FrameLayout implements FactorAnimator.Target, A
   private void updateChart (boolean isUpdate) {
     if (chart != null) {
       chartView.setListener(chart);
-      chartView.setData(chart.getBaseData());
+      ChartData baseData = chart.getBaseData();
+      switch (chartType) {
+        case ChartDataUtil.TYPE_DOUBLE_LINEAR: {
+          ((DoubleLinearChartView) chartView).setData((DoubleLinearChartData) baseData);
+          break;
+        }
+        case ChartDataUtil.TYPE_STACK_BAR: {
+          ((StackBarChartView) chartView).setData((StackBarChartData) baseData);
+          break;
+        }
+        case ChartDataUtil.TYPE_STACK_PIE: {
+          ((BarChartView) chartView).setData(baseData);
+          break;
+        }
+        case ChartDataUtil.TYPE_LINEAR:
+        default: {
+          ((LinearChartView) chartView).setData(baseData);
+          break;
+        }
+      }
       chartView.legendSignatureView.showProgress(!chart.hasData(), !isUpdate);
       // isVisible.setValue(chart.hasData(), isUpdate);
     } else {
@@ -151,12 +172,14 @@ public class ChartLayout extends FrameLayout implements FactorAnimator.Target, A
   // Impl
 
 
-  private BaseChartView chartView; // zoomedChartView
+  private int chartType;
+  private BaseChartView<?, ?> chartView;
   private TdApi.Sticker placeholderSticker;
 
-  public void initWithType (Tdlib tdlib, int type, Delegate delegate, @Nullable ViewController themeProvider) {
+  public void initWithType (Tdlib tdlib, int type, Delegate delegate, @Nullable ViewController<?> themeProvider) {
     this.tdlib = tdlib;
     this.delegate = delegate;
+    this.chartType = type;
     ViewSupport.setThemedBackground(this, R.id.theme_color_filling, themeProvider);
 
     placeholderSticker = tdlib.findAnimatedEmoji(TD.EMOJI_ABACUS.textRepresentation);

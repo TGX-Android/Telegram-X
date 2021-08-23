@@ -18,11 +18,11 @@ import me.vkryl.android.widget.FrameLayoutFix;
  * Author: default
  */
 public class SimpleViewPagerController extends ViewPagerController<Object> {
-  private final ViewController[] controllers;
+  private final ViewController<?>[] controllers;
   private final @Nullable String[] sections;
   private final boolean isWhite;
 
-  public SimpleViewPagerController (Context context, Tdlib tdlib, ViewController[] controllers, @Nullable String[] sections, boolean isWhite) {
+  public SimpleViewPagerController (Context context, Tdlib tdlib, ViewController<?>[] controllers, @Nullable String[] sections, boolean isWhite) {
     super(context, tdlib);
     this.controllers = controllers;
     if (sections != null && sections.length != controllers.length) {
@@ -60,7 +60,7 @@ public class SimpleViewPagerController extends ViewPagerController<Object> {
   }
 
   @Override
-  protected ViewController onCreatePagerItemForPosition (Context context, int position) {
+  protected ViewController<?> onCreatePagerItemForPosition (Context context, int position) {
     return controllers[position];
   }
 

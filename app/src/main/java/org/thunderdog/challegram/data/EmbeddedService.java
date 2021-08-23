@@ -93,7 +93,7 @@ public class EmbeddedService {
   }
 
   public void open (BaseActivity context) {
-    ViewController c = context.navigation().getCurrentStackItem();
+    ViewController<?> c = context.navigation().getCurrentStackItem();
     if (c == null || !PreviewLayout.show(c, this)) {
       UI.openUrl(viewUrl);
     }

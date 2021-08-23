@@ -38,14 +38,14 @@ public class SimpleUsersAdapter extends RecyclerView.Adapter<SimpleUsersAdapter.
   public static final int OPTION_SELECTABLE = 0x02;
   public static final int OPTION_COUNTER = 0x04;
 
-  private final ViewController context;
+  private final ViewController<?> context;
   private final Callback callback;
   private final boolean isClickable;
   private final boolean isSelectable;
   private final boolean needCounter;
-  private final @Nullable ViewController themeProvider;
+  private final @Nullable ViewController<?> themeProvider;
 
-  public SimpleUsersAdapter (ViewController context, Callback callback, int options, @Nullable  ViewController themeProvider) {
+  public SimpleUsersAdapter (ViewController<?> context, Callback callback, int options, @Nullable  ViewController<?> themeProvider) {
     this.context = context;
     this.callback = callback;
     this.isClickable = (options & OPTION_CLICKABLE) != 0;
@@ -213,7 +213,7 @@ public class SimpleUsersAdapter extends RecyclerView.Adapter<SimpleUsersAdapter.
       ((UserView) itemView).setUser(user);
     }
 
-    public static SimpleUserHolder create (Context context, Tdlib tdlib, int viewType, View.OnClickListener onClickListener, View.OnLongClickListener onLongClickListener, @Nullable ViewController themeProvider) {
+    public static SimpleUserHolder create (Context context, Tdlib tdlib, int viewType, View.OnClickListener onClickListener, View.OnLongClickListener onLongClickListener, @Nullable ViewController<?> themeProvider) {
       switch (viewType) {
         case VIEW_TYPE_USER: {
 

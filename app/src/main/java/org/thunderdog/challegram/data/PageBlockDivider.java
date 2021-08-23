@@ -22,7 +22,7 @@ import org.thunderdog.challegram.ui.ListItem;
  */
 
 public class PageBlockDivider extends PageBlock {
-  public PageBlockDivider (ViewController context, @NonNull TdApi.PageBlock block) {
+  public PageBlockDivider (ViewController<?> context, @NonNull TdApi.PageBlock block) {
     super(context, block);
   }
 

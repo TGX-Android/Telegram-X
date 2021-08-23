@@ -33,11 +33,11 @@ import me.vkryl.android.widget.FrameLayoutFix;
 public abstract class PreviewLayout extends FrameLayoutFix implements View.OnClickListener, PopupLayout.ShowListener, PopupLayout.DismissListener {
   protected EmbeddedService nativeEmbed;
   protected int footerHeight;
-  protected final ViewController parent;
+  protected final ViewController<?> parent;
 
   private final ThemeListenerList themeListeners = new ThemeListenerList();
 
-  public PreviewLayout (Context context, final ViewController parent) {
+  public PreviewLayout (Context context, final ViewController<?> parent) {
     super(context);
     this.parent = parent;
 
@@ -124,12 +124,12 @@ public abstract class PreviewLayout extends FrameLayoutFix implements View.OnCli
     UI.getContext(getContext()).removeGlobalThemeListeners(themeListeners);
   }
 
-  public static boolean show (ViewController parent, TdApi.WebPage webPage) {
+  public static boolean show (ViewController<?> parent, TdApi.WebPage webPage) {
     EmbeddedService service = EmbeddedService.parse(webPage);
     return show(parent, service);
   }
 
-  public static boolean show (ViewController parent, EmbeddedService service) {
+  public static boolean show (ViewController<?> parent, EmbeddedService service) {
     if (service != null) {
       BaseActivity context = parent.context();
 

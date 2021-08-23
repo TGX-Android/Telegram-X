@@ -146,7 +146,7 @@ public class Views {
     }
   }
 
-  public static ImageView newImageButton (Context context, @DrawableRes int icon, @ThemeColorId int colorId, @Nullable ViewController themeProvider) {
+  public static ImageView newImageButton (Context context, @DrawableRes int icon, @ThemeColorId int colorId, @Nullable ViewController<?> themeProvider) {
     ImageView imageView = new ImageView(context);
     imageView.setScaleType(ImageView.ScaleType.CENTER);
     imageView.setImageResource(icon);

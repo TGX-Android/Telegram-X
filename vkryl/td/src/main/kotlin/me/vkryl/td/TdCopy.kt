@@ -69,6 +69,8 @@ fun Message.copyTo (dst: Message) {
   dst.canBeDeletedForAllUsers = this.canBeDeletedForAllUsers
   dst.canGetStatistics = this.canGetStatistics
   dst.canGetMessageThread = this.canGetMessageThread
+  dst.canGetMediaTimestampLinks = this.canGetMediaTimestampLinks
+  dst.hasTimestampedMedia = this.hasTimestampedMedia
   dst.isChannelPost = this.isChannelPost
   dst.containsUnreadMention = this.containsUnreadMention
   dst.date = this.date
@@ -142,6 +144,8 @@ fun Message?.copyOf (): Message? {
       this.canBeDeletedForAllUsers,
       this.canGetStatistics,
       this.canGetMessageThread,
+      this.canGetMediaTimestampLinks,
+      this.hasTimestampedMedia,
       this.isChannelPost,
       this.containsUnreadMention,
       this.date,

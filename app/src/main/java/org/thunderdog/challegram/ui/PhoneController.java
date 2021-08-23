@@ -62,7 +62,7 @@ import me.vkryl.core.StringUtils;
  * Author: default
  */
 
-public class PhoneController extends EditBaseController implements SettingsAdapter.TextChangeListener, MaterialEditTextGroup.FocusListener, MaterialEditTextGroup.TextChangeListener, View.OnClickListener, Menu {
+public class PhoneController extends EditBaseController<Void> implements SettingsAdapter.TextChangeListener, MaterialEditTextGroup.FocusListener, MaterialEditTextGroup.TextChangeListener, View.OnClickListener, Menu {
 
   public static final int MODE_LOGIN = 0;
   public static final int MODE_CHANGE_NUMBER = 1;

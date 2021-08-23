@@ -163,7 +163,7 @@ public class Lang {
     return string != null ? string.value : null;
   }
 
-  public static CharSequence getTutorial (ViewController context, @NonNull TdApi.ChatSource source) {
+  public static CharSequence getTutorial (ViewController<?> context, @NonNull TdApi.ChatSource source) {
     switch (source.getConstructor()) {
       case TdApi.ChatSourcePublicServiceAnnouncement.CONSTRUCTOR: {
         TdApi.ChatSourcePublicServiceAnnouncement psa = (TdApi.ChatSourcePublicServiceAnnouncement) source;

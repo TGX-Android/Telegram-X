@@ -115,7 +115,7 @@ public class ChartHeaderView extends FrameLayout implements Chart.DateListener, 
         title.setText(s);
     }
 
-    public void zoomTo(BaseChartView chartView, long d, boolean animate) {
+    public void zoomTo(BaseChartView<?, ?> chartView, long d, boolean animate) {
         setDates(d, d);
         back.setVisibility(View.VISIBLE);
 
@@ -152,7 +152,7 @@ public class ChartHeaderView extends FrameLayout implements Chart.DateListener, 
         }
     }
 
-    public void zoomOut(BaseChartView chartView, boolean animated) {
+    public void zoomOut(BaseChartView<?, ?> chartView, boolean animated) {
         setDates(chartView.getStartDate(), chartView.getEndDate());
         if (animated) {
             title.setAlpha(0);
