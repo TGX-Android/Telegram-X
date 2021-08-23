@@ -1,6 +1,5 @@
 package org.thunderdog.challegram.ui.camera;
 
-import android.annotation.SuppressLint;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.media.Image;
@@ -65,7 +64,7 @@ public class CameraQrBridge {
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     public void processImage (ImageProxy proxy) {
-        @SuppressLint("UnsafeOptInUsageError") Image mediaImage = proxy.getImage();
+        @SuppressWarnings("UnsafeOptInUsageError") Image mediaImage = proxy.getImage();
 
         if (mediaImage == null) {
             proxy.close();
