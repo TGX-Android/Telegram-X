@@ -840,6 +840,10 @@
   <item type="id" name="btn_tdlib_androidLogs" />
   <item type="id" name="btn_tdlib_debugDatacenter" />
 
+  <item type="id" name="btn_viewMemberMessages" />
+  <item type="id" name="btn_viewAdminActions" />
+  <item type="id" name="btn_openInviterProfile" />
+
   <item type="id" name="maximize" />
 
   <item type="id" name="theme_chat" />
