@@ -1,5 +1,6 @@
 package org.thunderdog.challegram.data;
 
+import android.content.DialogInterface;
 import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -8,6 +9,7 @@ import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.text.InputType;
 import android.text.TextPaint;
 import android.view.MotionEvent;
 import android.view.View;
@@ -38,11 +40,14 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.MessagesController;
+import org.thunderdog.challegram.ui.SettingsPrivacyController;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.EmojiString;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.widget.CheckBox;
+import org.thunderdog.challegram.widget.MaterialEditText;
+import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import org.thunderdog.challegram.widget.ProgressComponent;
 
 import java.util.ArrayList;
@@ -1034,7 +1039,41 @@ public class TGInlineKeyboard {
 
         case TdApi.InlineKeyboardButtonTypeCallbackWithPassword.CONSTRUCTOR: {
           final byte[] data = ((TdApi.InlineKeyboardButtonTypeCallbackWithPassword) type).data;
-          // TODO ask for password and
+
+          context.context.tdlib.client().send(new TdApi.CanTransferOwnership(), result -> {
+            context.context.messagesController().runOnUiThreadOptional(() -> {
+              switch (result.getConstructor()) {
+                case TdApi.CanTransferOwnershipResultOk.CONSTRUCTOR:
+                  MaterialEditText et = context.context.messagesController().openInputAlert(
+                          Lang.getString(R.string.TransferOwnershipPasswordAlert),
+                          Lang.getString(R.string.TransferOwnershipPasswordAlertHint),
+                          R.string.Continue,
+                          R.string.Cancel,
+                          "",
+                          (inputView, result1) -> {
+                            context.context.tdlib().client().send(new TdApi.GetCallbackQueryAnswer(parent.getChatId(), context.messageId, new TdApi.CallbackQueryPayloadDataWithPassword(result1, data)), getAnswerCallback(currentContextId, view,false));
+                            return true;
+                          },
+                          false
+                  ).getEditText();
+                  et.setIsPassword(true);
+                  et.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                  break;
+                case TdApi.CanTransferOwnershipResultPasswordNeeded.CONSTRUCTOR:
+                  context.context.messagesController().openAlert(R.string.TransferOwnershipSecurityAlert, Lang.getMarkdownString(context.context, R.string.TransferOwnershipSecurityPasswordNeeded), Lang.getString(R.string.TransferOwnershipSecurityActionSetPassword), (dialog, which) -> {
+                    context.context.messagesController().navigateTo(new SettingsPrivacyController(context.context.context(), context.context.tdlib));
+                  }, 0);
+                  break;
+                case TdApi.CanTransferOwnershipResultPasswordTooFresh.CONSTRUCTOR:
+                  context.context.messagesController().openAlert(R.string.TransferOwnershipSecurityAlert, Lang.getMarkdownString(context.context, R.string.TransferOwnershipSecurityNeedWait, Lang.getDuration(((TdApi.CanTransferOwnershipResultPasswordTooFresh) result).retryAfter)));
+                  break;
+                case TdApi.CanTransferOwnershipResultSessionTooFresh.CONSTRUCTOR:
+                  context.context.messagesController().openAlert(R.string.TransferOwnershipSecurityAlert, Lang.getMarkdownString(context.context, R.string.TransferOwnershipSecurityNeedWait, Lang.getDuration(((TdApi.CanTransferOwnershipResultSessionTooFresh) result).retryAfter)));
+                  break;
+              }
+            });
+          });
+
           break;
         }
         case TdApi.InlineKeyboardButtonTypeCallback.CONSTRUCTOR: {
