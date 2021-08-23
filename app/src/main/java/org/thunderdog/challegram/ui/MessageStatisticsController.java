@@ -149,10 +149,12 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
     final int initialListSize = adapter.getItemCount();
 
     adapter.getItems().add(new ListItem(ListItem.TYPE_CHART_HEADER_DETACHED).setData(new MiniChart(R.string.StatsMessageSharesPublic, null)));
+    adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     for (int i = 0; i < publicShares.messages.length; i++) {
       adapter.getItems().add(new ListItem(ListItem.TYPE_USER, R.id.chat).setData(publicShares.messages[i]));
       if (i != publicShares.messages.length - 1) adapter.getItems().add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     }
+    adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     adapter.notifyItemRangeInserted(initialListSize, adapter.getItems().size());
   }
@@ -187,8 +189,8 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
               }
               startIndex = startIndex != -1 ? startIndex : adapter.getItemCount();
               adapter.addItems(startIndex,
-                new ListItem(ListItem.TYPE_SHADOW_TOP),
                 new ListItem(ListItem.TYPE_CHART_HEADER).setData(chart),
+                new ListItem(ListItem.TYPE_SHADOW_TOP),
                 new ListItem(chart.getViewType(), chart.getId()).setData(chart),
                 new ListItem(ListItem.TYPE_SHADOW_BOTTOM)
               );
@@ -198,8 +200,8 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
             }
           });
         } else if (!chart.isError()) {
-          items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
           items.add(new ListItem(ListItem.TYPE_CHART_HEADER).setData(chart));
+          items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
           items.add(new ListItem(chart.getViewType(), chart.getId()).setData(chart));
           items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         }

@@ -2163,9 +2163,9 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_CHART_HEADER_DETACHED:
       case ListItem.TYPE_CHART_HEADER: {
         ChartHeaderView headerView = new ChartHeaderView(context);
-        headerView.setPadding(0, Screen.dp(12f), 0, Screen.dp(12f));
+        headerView.setPadding(0, Screen.dp(8f), 0, Screen.dp(4f));
         headerView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        ViewSupport.setThemedBackground(headerView, R.id.theme_color_filling, themeProvider);
+        //ViewSupport.setThemedBackground(headerView, R.id.theme_color_filling, themeProvider);
         if (themeProvider != null) {
           themeProvider.addThemeInvalidateListener(headerView);
         }
@@ -2193,6 +2193,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
             throw new AssertionError();
         }
         ChartLayout chartLayout = new ChartLayout(context);
+        chartLayout.setPadding(chartLayout.getPaddingLeft(), Screen.dp(16f), chartLayout.getPaddingRight(), chartLayout.getPaddingBottom());
         chartLayout.initWithType(tdlib, type, adapter, themeProvider);
         return new SettingHolder(chartLayout);
       }

@@ -267,6 +267,10 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     );
 
     setCharts(items, charts, () -> {
+      if (statistics.topAdministrators.length > 0) {
+        setTopUsers(statistics.period, statistics.topAdministrators, R.string.StatsTopAdmins);
+      }
+
       if (statistics.topSenders.length > 0) {
         messageSenderInfos = statistics.topSenders;
         setTopUsers(statistics.period, statistics.topSenders, R.string.StatsTopMembers);
@@ -275,17 +279,13 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
       if (statistics.topInviters.length > 0) {
         setTopUsers(statistics.period, statistics.topInviters, R.string.StatsTopInviters);
       }
-
-      if (statistics.topAdministrators.length > 0) {
-        setTopUsers(statistics.period, statistics.topAdministrators, R.string.StatsTopAdmins);
-      }
     });
   }
 
   private void setTopUsers (TdApi.DateRange range, TdApi.Object[] users, @StringRes int header) {
     int currentSize = adapter.getItems().size();
-    adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     adapter.getItems().add(new ListItem(ListItem.TYPE_CHART_HEADER_DETACHED).setData(new MiniChart(header, range)));
+    adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_TOP));
 
     int maxLength;
     if (users[0] instanceof TdApi.ChatStatisticsMessageSenderInfo) {
@@ -382,8 +382,8 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     interactionMessages = new TdApi.Message[maxLength];
     loadInteractionMessages(interactions, 0, maxLength, () -> {
       int currentSize = adapter.getItems().size();
-      adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_TOP));
       adapter.getItems().add(new ListItem(ListItem.TYPE_CHART_HEADER_DETACHED).setData(new MiniChart(header, range)));
+      adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_TOP));
 
       for (int i = 0; i < maxLength; i++) {
         adapter.getItems().add(new ListItem(ListItem.TYPE_MESSAGE_PREVIEW, R.id.btn_messageMore).setData(interactionMessages[i]).setIntValue(i));
@@ -438,8 +438,8 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
               }
               startIndex = startIndex != -1 ? startIndex : adapter.getItemCount();
               adapter.addItems(startIndex,
-                new ListItem(ListItem.TYPE_SHADOW_TOP),
                 new ListItem(ListItem.TYPE_CHART_HEADER).setData(chart),
+                new ListItem(ListItem.TYPE_SHADOW_TOP),
                 new ListItem(chart.getViewType(), chart.getId()).setData(chart),
                 new ListItem(ListItem.TYPE_SHADOW_BOTTOM)
               );
@@ -449,8 +449,8 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
             }
           });
         } else if (!chart.isError()) {
-          items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
           items.add(new ListItem(ListItem.TYPE_CHART_HEADER).setData(chart));
+          items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
           items.add(new ListItem(chart.getViewType(), chart.getId()).setData(chart));
           items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         }

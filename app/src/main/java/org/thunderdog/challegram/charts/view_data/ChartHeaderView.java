@@ -38,7 +38,7 @@ public class ChartHeaderView extends FrameLayout implements Chart.DateListener, 
 
     int textMargin;
 
-    public ChartHeaderView(Context context) {
+    public ChartHeaderView (Context context) {
         super(context);
         TextPaint textPaint = new TextPaint();
         textPaint.setTextSize(14);
@@ -47,12 +47,12 @@ public class ChartHeaderView extends FrameLayout implements Chart.DateListener, 
 
         title = new TextView(context);
         title.setTextSize(15);
-        title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setTypeface(Fonts.getRobotoMedium());
         addView(title, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 16, 0, textMargin, 0));
 
         back = new TextView(context);
         back.setTextSize(15);
-        back.setTypeface(Typeface.DEFAULT_BOLD);
+        back.setTypeface(Fonts.getRobotoMedium());
         back.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
         addView(back, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 8, 0, 8, 0));
 
@@ -86,15 +86,15 @@ public class ChartHeaderView extends FrameLayout implements Chart.DateListener, 
     }
 
 
-    public void recolor() {
-        title.setTextColor(Theme.textAccentColor()); // key_dialogTextBlack
-        dates.setTextColor(Theme.textAccentColor()); // key_dialogTextBlack
-        datesTmp.setTextColor(Theme.textAccentColor()); // key_dialogTextBlack
+    public void recolor () {
+        title.setTextColor(Theme.textAccent2Color()); // key_dialogTextBlack
+        dates.setTextColor(Theme.textAccent2Color()); // key_dialogTextBlack
+        datesTmp.setTextColor(Theme.textAccent2Color()); // key_dialogTextBlack
         back.setTextColor(Theme.getColor(R.id.theme_color_textNeutral)); // key_statisticChartBackZoomColor
         zoomIcon.setColorFilter(Theme.getColor(R.id.theme_color_textNeutral), PorterDuff.Mode.SRC_IN); // key_statisticChartBackZoomColor
     }
 
-    public void setDates(long start, long end) {
+    public void setDates (long start, long end) {
         if (!showDate) {
             dates.setVisibility(GONE);
             datesTmp.setVisibility(GONE);
@@ -111,11 +111,11 @@ public class ChartHeaderView extends FrameLayout implements Chart.DateListener, 
         dates.setVisibility(View.VISIBLE);
     }
 
-    public void setTitle(String s) {
+    public void setTitle (String s) {
         title.setText(s);
     }
 
-    public void zoomTo(BaseChartView<?, ?> chartView, long d, boolean animate) {
+    public void zoomTo (BaseChartView<?, ?> chartView, long d, boolean animate) {
         setDates(d, d);
         back.setVisibility(View.VISIBLE);
 
@@ -152,7 +152,7 @@ public class ChartHeaderView extends FrameLayout implements Chart.DateListener, 
         }
     }
 
-    public void zoomOut(BaseChartView<?, ?> chartView, boolean animated) {
+    public void zoomOut (BaseChartView<?, ?> chartView, boolean animated) {
         setDates(chartView.getStartDate(), chartView.getEndDate());
         if (animated) {
             title.setAlpha(0);
@@ -186,7 +186,7 @@ public class ChartHeaderView extends FrameLayout implements Chart.DateListener, 
         }
     }
 
-    public void showDate(boolean b) {
+    public void showDate (boolean b) {
         if (this.showDate == b)
             return;
         showDate = b;
