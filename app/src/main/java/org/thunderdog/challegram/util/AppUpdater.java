@@ -186,7 +186,11 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
           }
           case UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS:
           case UpdateAvailability.UPDATE_NOT_AVAILABLE: {
-            onUpdateUnavailable();
+            if (U.isAppSideLoaded()) {
+              onGooglePlayFlowError();
+            } else {
+              onUpdateUnavailable();
+            }
             break;
           }
         }
@@ -291,7 +295,8 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
       case Settings.AUTO_UPDATE_MODE_PROMPT: {
         ViewController<?> c = context.navigation().getCurrentStackItem();
         if (c != null && c.isFocused()) {
-          c.showOptions(new ViewController.Options.Builder().info(Lang.getMarkdownString(c, R.string.AppUpdateAvailablePrompt, Lang.boldCreator(), Strings.buildSize(telegramChannelFile.document.expectedSize))).item(new ViewController.OptionItem(R.id.btn_update, Lang.getString(R.string.AutoUpdatePrompt), ViewController.OPTION_COLOR_BLUE, R.drawable.baseline_system_update_24)).cancelItem().build(), (optionItemView, id) -> {
+          final long bytesToDownload = totalBytesToDownload() - bytesDownloaded();
+          c.showOptions(new ViewController.Options.Builder().info(Lang.getMarkdownString(c, R.string.AppUpdateAvailablePrompt, Lang.boldCreator(), Strings.buildSize(bytesToDownload))).item(new ViewController.OptionItem(R.id.btn_update, Lang.getString(R.string.DownloadUpdate), ViewController.OPTION_COLOR_BLUE, R.drawable.baseline_system_update_24)).cancelItem().build(), (optionItemView, id) -> {
             if (id == R.id.btn_update) {
               downloadUpdate();
             }
@@ -380,6 +385,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
         break;
       }
       case FlowType.TELEGRAM_CHANNEL: {
+        // TODO add tdlib reference & show progress
         telegramChannelTdlib.files().downloadFile(telegramChannelFile.document);
         break;
       }
