@@ -96,11 +96,13 @@ public class SnackBar extends RelativeLayout {
     return this;
   }
 
-  public SnackBar setAction (String action, Runnable callback) {
+  public SnackBar setAction (String action, Runnable callback, boolean dismissAutomatically) {
     Views.setMediumText(actionView, action.toUpperCase());
     actionView.setOnClickListener(v -> {
       callback.run();
-      dismissSnackBar(true);
+      if (dismissAutomatically) {
+        dismissSnackBar(true);
+      }
     });
     return this;
   }

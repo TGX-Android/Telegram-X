@@ -2975,6 +2975,7 @@
   <string name="UpgradeChatPrompt">To perform this action, this chat will be converted to supergroup.\n\n**Note**: new members will not see messages sent before the conversion.</string>
   <string name="AppUpdateReady">Telegram X is ready to be updated.</string>
   <string name="AppUpdateRestart">Restart</string>
+  <string name="AppUpdateInstall">Update</string>
 
   <string name="GroupLinkSet">Tap to set public group link</string>
   <string name="ChannelLinkSet">Tap to set public channel link</string>

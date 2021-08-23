@@ -46,7 +46,7 @@ import me.vkryl.td.Td;
 
 public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListener, ConnectionListener {
   public interface Listener {
-    void onAppUpdateStateChanged (@State int state, @State int oldState);
+    void onAppUpdateStateChanged (@State int state, @State int oldState, boolean isApk);
     default void onAppUpdateDownloadProgress (long bytesDownloaded, long totalBytesToDownload) { }
   }
 
@@ -117,6 +117,11 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
     return state;
   }
 
+  @FlowType
+  public int flowType () {
+    return flowType;
+  }
+
   public long totalBytesToDownload () {
     return totalBytesToDownload;
   }
@@ -158,7 +163,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
       final int oldState = this.state;
       this.state = state;
       for (Listener listener : listeners) {
-        listener.onAppUpdateStateChanged(state, oldState);
+        listener.onAppUpdateStateChanged(state, oldState, flowType == FlowType.TELEGRAM_CHANNEL);
       }
     }
   }
@@ -170,14 +175,14 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
       this.googlePlayUpdateInfo = updateInfo;
       int installStatus = updateInfo.installStatus();
       if (installStatus == InstallStatus.DOWNLOADED) {
-        onUpdateReadyToInstall();
+        onUpdateAvailable(FlowType.GOOGLE_PLAY, updateInfo.bytesDownloaded(), updateInfo.totalBytesToDownload(), true);
       } else if (installStatus == InstallStatus.FAILED) {
         onGooglePlayFlowError();
       } else {
         int updateAvailability = updateInfo.updateAvailability();
         switch (updateAvailability) {
           case UpdateAvailability.UPDATE_AVAILABLE: {
-            onUpdateAvailable(FlowType.GOOGLE_PLAY, updateInfo.bytesDownloaded(), updateInfo.totalBytesToDownload());
+            onUpdateAvailable(FlowType.GOOGLE_PLAY, updateInfo.bytesDownloaded(), updateInfo.totalBytesToDownload(), false);
             break;
           }
           case UpdateAvailability.UNKNOWN: {
@@ -261,10 +266,11 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
       }
       onGooglePlayFlowError();
     } else if (installStatus == InstallStatus.DOWNLOADING) {
+      onUpdateDownloading();
       onUpdateDownloadProgress(state.bytesDownloaded(), state.totalBytesToDownload());
     } else if (installStatus == InstallStatus.DOWNLOADED) {
       googlePlayUpdateManager.unregisterListener(this);
-      onUpdateReadyToInstall();
+      onUpdateAvailable(FlowType.GOOGLE_PLAY, state.bytesDownloaded(), state.totalBytesToDownload(), true);
     }
   }
 
@@ -279,11 +285,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
         this.telegramChannelTdlib = tdlib;
         this.telegramChannelFile = updateFile;
         tdlib.listeners().addFileListener(updateFile.document.id, this);
-        if (TD.isFileLoaded(updateFile.document)) {
-          onUpdateReadyToInstall();
-        } else {
-          onUpdateAvailable(FlowType.TELEGRAM_CHANNEL, updateFile.document.local.downloadedSize, updateFile.document.expectedSize);
-        }
+        onUpdateAvailable(FlowType.TELEGRAM_CHANNEL, updateFile.document.local.downloadedSize, updateFile.document.expectedSize, TD.isFileLoadedAndExists(updateFile.document));
       } else {
         onUpdateUnavailable();
       }
@@ -339,9 +341,10 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
     telegramChannelTdlib.ui().post(() -> {
       if (updateFile.file.id == telegramChannelFile.document.id) {
         Td.copyTo(updateFile.file, telegramChannelFile.document);
-        if (TD.isFileLoaded(updateFile.file)) {
-          onUpdateReadyToInstall();
+        if (TD.isFileLoadedAndExists(updateFile.file)) {
+          onUpdateAvailable(FlowType.TELEGRAM_CHANNEL, updateFile.file.local.downloadedSize, updateFile.file.expectedSize, true);
         } else if (TD.isFileLoading(updateFile.file)) {
+          onUpdateDownloading();
           onUpdateDownloadProgress(updateFile.file.local.downloadedSize, updateFile.file.expectedSize);
         } else {
           onUpdateDownloadCanceled();
@@ -352,12 +355,16 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
     });
   }
 
-  private void onUpdateAvailable (@FlowType int flowType, long bytesDownloaded, long totalBytesToDownload) {
+  private void onUpdateAvailable (@FlowType int flowType, long bytesDownloaded, long totalBytesToDownload, boolean readyToInstall) {
     this.flowType = flowType;
     this.bytesDownloaded = bytesDownloaded;
     this.totalBytesToDownload = totalBytesToDownload;
-    setState(State.AVAILABLE);
-    offerUpdate();
+    if (readyToInstall) {
+      setState(State.READY_TO_INSTALL);
+    } else {
+      setState(State.AVAILABLE);
+      offerUpdate();
+    }
   }
 
   public void offerUpdate () {
@@ -400,10 +407,6 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
     }
   }
 
-  private void onUpdateReadyToInstall () {
-    setState(State.READY_TO_INSTALL);
-  }
-
   public void installUpdate () {
     if (state != State.READY_TO_INSTALL) {
       return;
@@ -422,8 +425,14 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
     }
   }
 
+  private void onUpdateDownloading () {
+    if (state != State.AVAILABLE)
+      return;
+    setState(State.DOWNLOADING);
+  }
+
   private void onUpdateDownloadCanceled () {
-    if (state != State.DOWNLOADING)
+    if (state != State.DOWNLOADING && state != State.READY_TO_INSTALL)
       return;
     setState(State.AVAILABLE);
   }
