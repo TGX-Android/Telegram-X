@@ -422,8 +422,8 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
     BaseActivity context = UI.getContext(view.getContext());
     RoundVideoController c = context.getRoundVideoController();
     if (c.comparePlayingObject(tdlib, msg)) {
-      ViewController m = ViewController.findRoot(view);
-      if (m != null && m instanceof MessagesController) {
+      ViewController<?> m = ViewController.findRoot(view);
+      if (m instanceof MessagesController) {
         ((MessagesController) m).checkRoundVideo();
       } else {
         // Log.w("attach/detach, but MessageController not found");

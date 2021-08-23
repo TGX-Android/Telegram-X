@@ -51,7 +51,7 @@ public class TextEntityCustom extends TextEntity {
   public static final int LINK_TYPE_ANCHOR = 4;
   public static final int LINK_TYPE_REFERENCE = 5;
 
-  private final ViewController context; // TODO move to TextEntity
+  private final ViewController<?> context; // TODO move to TextEntity
 
   private final int flags;
 
@@ -69,7 +69,7 @@ public class TextEntityCustom extends TextEntity {
   private TextIcon icon;
   private String copyLink;
 
-  public TextEntityCustom (@Nullable ViewController context, @Nullable Tdlib tdlib, String in, int offset, int end, int flags, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public TextEntityCustom (@Nullable ViewController<?> context, @Nullable Tdlib tdlib, String in, int offset, int end, int flags, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(tdlib, offset, end, (flags & FLAG_BOLD) != 0 && Text.needFakeBold(in), openParameters);
     this.context = context;
     this.flags = flags;
@@ -313,7 +313,7 @@ public class TextEntityCustom extends TextEntity {
 
   @Override
   public boolean performLongPress (final View view, final Text text, final TextPart part, boolean allowShare, Text.ClickCallback clickCallback) {
-    final ViewController context = findRoot(view);
+    final ViewController<?> context = findRoot(view);
     if (context == null) {
       Log.v("performLongPress ignored, because ancestor not found");
       return false;

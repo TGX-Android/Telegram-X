@@ -96,10 +96,9 @@ public class MediaLocationMapView extends FrameLayoutFix implements OnMapReadyCa
     super(context);
   }
 
-  private ViewController themeProvider;
   private MediaLocationPointView locationPointView;
 
-  public void init (ViewController themeProvider, MediaLocationPointView pointView, boolean big) {
+  public void init (ViewController<?> themeProvider, MediaLocationPointView pointView, boolean big) {
     locationPointView = pointView;
 
     int mapHeight = getMapHeight(big);

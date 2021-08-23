@@ -52,7 +52,7 @@ public class OverlayView extends View {
     barFactor = mode == OVERLAY_MODE_DEFAULT ? (Theme.getPopupOverlayAlpha()) : .6f;
     color = backgroundColor;
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-      ViewController c = UI.getCurrentStackItem();
+      ViewController<?> c = UI.getCurrentStackItem();
       changeBarColor = (c != null && !c.usePopupMode()) && color != 0x00000000 && color != 0x00ffffffff;
       if (changeBarColor) {
         window = UI.getWindow();

@@ -15,7 +15,7 @@ import org.thunderdog.challegram.v.CustomRecyclerView;
  * Author: default
  */
 
-public class SettingsPhoneController extends RecyclerViewController implements View.OnClickListener {
+public class SettingsPhoneController extends RecyclerViewController<Void> implements View.OnClickListener {
   public SettingsPhoneController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }

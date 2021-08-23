@@ -91,7 +91,7 @@ import me.vkryl.core.lambda.RunnableBool;
  */
 
 @SuppressWarnings("JniMissingFunction")
-public class IntroController extends ViewController implements GLSurfaceView.EGLConfigChooser, GLSurfaceView.Renderer, ViewPager.OnPageChangeListener, Runnable, View.OnClickListener, View.OnLongClickListener, TdlibOptionListener, ConnectionListener, GlobalAccountListener {
+public class IntroController extends ViewController<Void> implements GLSurfaceView.EGLConfigChooser, GLSurfaceView.Renderer, ViewPager.OnPageChangeListener, Runnable, View.OnClickListener, View.OnLongClickListener, TdlibOptionListener, ConnectionListener, GlobalAccountListener {
   public IntroController (Context context) {
     super(context, null);
   }

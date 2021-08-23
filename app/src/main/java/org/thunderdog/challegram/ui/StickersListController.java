@@ -547,13 +547,13 @@ public class StickersListController extends ViewController<StickersListControlle
   }
 
   private static class StickersAdapter extends RecyclerView.Adapter<StickerHolder> {
-    private final ViewController context;
+    private final ViewController<?> context;
     private final StickerSmallView.StickerMovementCallback callback;
     private final ArrayList<TGStickerObj> stickers;
     private final OffsetProvider provider;
     private final RecyclerView parent;
 
-    public StickersAdapter (ViewController context, RecyclerView parent, StickerSmallView.StickerMovementCallback callback, OffsetProvider provider) {
+    public StickersAdapter (ViewController<?> context, RecyclerView parent, StickerSmallView.StickerMovementCallback callback, OffsetProvider provider) {
       this.context = context;
       this.parent = parent;
       this.callback = callback;

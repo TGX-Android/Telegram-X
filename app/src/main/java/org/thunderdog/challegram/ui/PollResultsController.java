@@ -99,7 +99,7 @@ public class PollResultsController extends RecyclerViewController<PollResultsCon
     private final UserListManager voters;
     private final SettingsAdapter adapter;
 
-    public ListCache (ViewController context, long chatId, long messageId, int optionId) {
+    public ListCache (ViewController<?> context, long chatId, long messageId, int optionId) {
       this.tdlib = context.tdlib();
       this.adapter = new SettingsAdapter(context) {
         @Override

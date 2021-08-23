@@ -223,7 +223,7 @@ public class RootFrameLayout extends FrameLayoutFix {
       if (ignoreBottom || (shouldIgnoreBottomMargin(child, bottom))) {
         wi.replaceSystemWindowInsets(left, top, right, 0);
       }
-      ViewController c = ViewController.findAncestor(child);
+      ViewController<?> c = ViewController.findAncestor(child);
       if (c != null) {
         c.dispatchInnerMargins(left, top, right, bottom);
       }
@@ -257,7 +257,7 @@ public class RootFrameLayout extends FrameLayoutFix {
     if (UI.getContext(getContext()).dispatchCameraMargins(child, lp.leftMargin, lp.topMargin, lp.rightMargin, bottom)) {
       lp.leftMargin = lp.topMargin = lp.rightMargin = lp.bottomMargin = 0;
     } else {
-      ViewController c = ViewController.findAncestor(child);
+      ViewController<?> c = ViewController.findAncestor(child);
       if (c != null) {
         c.dispatchInnerMargins(lp.leftMargin, lp.topMargin, lp.rightMargin, bottom);
       }

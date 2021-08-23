@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.RadialGradient;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
@@ -35,6 +36,8 @@ import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.widget.SimplestCheckBox;
+
+import java.util.Arrays;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.CounterAnimator;
@@ -1086,6 +1089,9 @@ public class DrawAlgorithms {
   }
 
   public static class GradientCache {
+    private static final float[] MCG_CENTERS_X = new float[] { 0.9f, 0.3f, 0.7f, 0.2f };
+    private static final float[] MCG_CENTERS_Y = new float[] { 0.1f, 0.3f, 0.7f, 0.9f };
+
     private final Paint paint;
 
     public GradientCache () {
@@ -1095,18 +1101,60 @@ public class DrawAlgorithms {
 
     private int lastStartX = -1, lastEndX = -1, lastStartY = -1, lastEndY = -1, topColor, bottomColor;
 
+    private int[] freeformColors;
+    private RadialGradient[] freeformGradients;
+    private float freeformAlpha;
+
     public boolean set (int fromX, int fromY, int toX, int toY, int topColor, int bottomColor) {
       if (this.lastStartX != fromX || this.lastStartY != fromY || this.lastEndX != toX || this.lastEndY != toY || this.topColor != topColor || this.bottomColor != bottomColor) {
+        this.freeformColors = null;
+        this.freeformGradients = null;
         this.lastStartX = fromX;
         this.lastStartY = fromY;
         this.lastEndX = toX;
         this.lastEndY = toY;
         this.topColor = topColor;
         this.bottomColor = bottomColor;
+        paint.setDither(false);
         paint.setShader(new LinearGradient(fromX, fromY, toX, toY, topColor, bottomColor, Shader.TileMode.CLAMP));
         return true;
       }
       return false;
+    }
+
+    public boolean set (int width, int height, int[] freeformColors, float alpha) {
+      if (!Arrays.equals(freeformColors, this.freeformColors) || this.freeformAlpha != alpha) {
+        this.freeformColors = freeformColors;
+        this.freeformAlpha = alpha;
+
+        float radius = (float) Math.min(Screen.currentHeight(), Screen.currentWidth());
+
+        if (freeformColors.length != 4) {
+          radius = radius * 2;
+        }
+
+        this.freeformGradients = new RadialGradient[freeformColors.length];
+
+        for (int i = 0; i < freeformColors.length; i++) {
+          this.freeformGradients[i] = new RadialGradient(
+            MCG_CENTERS_X[i] * width,
+            MCG_CENTERS_Y[i] * height,
+            radius,
+            ColorUtils.alphaColor(alpha, ColorUtils.color(255, freeformColors[i])),
+            Color.TRANSPARENT,
+            Shader.TileMode.CLAMP
+          );
+        }
+
+        paint.setDither(true);
+        return true;
+      }
+
+      return false;
+    }
+
+    public void setFreeformIndex (int index) {
+      paint.setShader(this.freeformGradients[index]);
     }
   }
 
@@ -1153,8 +1201,16 @@ public class DrawAlgorithms {
     } else {
       throw new IllegalArgumentException("rotation: " + rotationAngle);
     }
-    cache.set(fromX, fromY, toX, toY, ColorUtils.alphaColor(alpha, topColor), ColorUtils.alphaColor(alpha, bottomColor));
+    cache.set(fromX, fromY, toX, toY, ColorUtils.alphaColor(alpha, ColorUtils.color(255, topColor)), ColorUtils.color(255, bottomColor));
     c.drawRect(left, top, right, bottom, cache.paint);
+  }
+
+  public static void drawMulticolorGradient (Canvas c, GradientCache cache, final int left, final int top, final int right, final int bottom, final int[] colors, float alpha) {
+    cache.set(right, bottom, colors, alpha);
+    for (int i = 0; i < colors.length; i++) {
+      cache.setFreeformIndex(i);
+      c.drawRect(left, top, right, bottom, cache.paint);
+    }
   }
 
   // cx and cy specify location of the bottom corner

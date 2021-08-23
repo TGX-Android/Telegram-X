@@ -81,7 +81,7 @@ public class LockHeaderButton extends HeaderButton implements View.OnClickListen
   @Override
   public boolean onLongClick (View v) {
     NavigationController navigation = UI.getContext(getContext()).navigation();
-    ViewController current = navigation != null ? navigation.getCurrentStackItem() : null;
+    ViewController<?> current = navigation != null ? navigation.getCurrentStackItem() : null;
     if (current != null) {
       PasscodeController passcode = new PasscodeController(UI.getContext(getContext()), current.tdlib());
       passcode.setPasscodeMode(PasscodeController.MODE_UNLOCK_SETUP);

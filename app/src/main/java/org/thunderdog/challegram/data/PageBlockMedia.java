@@ -76,7 +76,7 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
   private boolean useGif;
   private boolean isCover;
 
-  public PageBlockMedia (ViewController context, TdApi.PageBlockPhoto photo, @Nullable EmbeddedService nativeEmbed, @Nullable TdlibUi.UrlOpenParameters urlOpenParameters) {
+  public PageBlockMedia (ViewController<?> context, TdApi.PageBlockPhoto photo, @Nullable EmbeddedService nativeEmbed, @Nullable TdlibUi.UrlOpenParameters urlOpenParameters) {
     super(context, photo);
     this.urlOpenParameters = urlOpenParameters;
     if (photo.photo != null) {
@@ -87,7 +87,7 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
     }
   }
 
-  public PageBlockMedia (ViewController context, TdApi.PageBlockMap map) {
+  public PageBlockMedia (ViewController<?> context, TdApi.PageBlockMap map) {
     super(context, map);
     this.map = map;
     setCaption(map.caption);
@@ -123,7 +123,7 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
     this.mapFile.setScaleType(ImageFile.CENTER_CROP);
   }
 
-  public PageBlockMedia (ViewController context, TdApi.PageBlockAnimation animation) {
+  public PageBlockMedia (ViewController<?> context, TdApi.PageBlockAnimation animation) {
     super(context, animation);
     this.useGif = true;
     if (animation.animation != null) {
@@ -133,7 +133,7 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
     }
   }
 
-  public PageBlockMedia (ViewController context, TdApi.PageBlockVideo video) {
+  public PageBlockMedia (ViewController<?> context, TdApi.PageBlockVideo video) {
     super(context, video);
     if (video.video != null) {
       wrapper = new MediaWrapper(context.context(), context.tdlib(), video.video, 0, 0, null, false);
@@ -146,7 +146,7 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
 
   private CollageContext collageContext;
 
-  public PageBlockMedia (ViewController context, TdApi.PageBlockCollage collage) {
+  public PageBlockMedia (ViewController<?> context, TdApi.PageBlockCollage collage) {
     super(context, collage);
     setCaption(collage.caption);
     parseWrappers(collage.pageBlocks);
@@ -157,7 +157,7 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
 
   // Slideshow
 
-  public PageBlockMedia (ViewController context, TdApi.PageBlockSlideshow slideshow) {
+  public PageBlockMedia (ViewController<?> context, TdApi.PageBlockSlideshow slideshow) {
     super(context, slideshow);
     this.isList = true;
     setCaption(slideshow.caption);
@@ -220,7 +220,7 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
   private TdApi.PageBlockEmbedded embedded;
   private ImageFile embeddedMiniThumbnail, embeddedPreview, embeddedPoster;
 
-  public PageBlockMedia (ViewController context, TdApi.PageBlockEmbedded embedded) {
+  public PageBlockMedia (ViewController<?> context, TdApi.PageBlockEmbedded embedded) {
     super(context, embedded);
     this.embedded = embedded;
     if (embedded.posterPhoto != null) {

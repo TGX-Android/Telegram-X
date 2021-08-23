@@ -188,7 +188,7 @@ public class Strings {
     return elems[(int) (Math.random() * (double) (elems.length - 1))];
   }*/
 
-  public static String join (CharSequence delimiter, Iterable tokens) {
+  public static String join (CharSequence delimiter, Iterable<?> tokens) {
     StringBuilder sb = new StringBuilder();
     boolean firstTime = true;
     for (Object token : tokens) {

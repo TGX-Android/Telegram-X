@@ -885,8 +885,8 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         }
 
         if (success) {
-          ViewController prev = navigationController != null ? navigationController.getPreviousStackItem() : null;
-          if (prev != null && prev instanceof SettingsPrivacyController) {
+          ViewController<?> prev = navigationController != null ? navigationController.getPreviousStackItem() : null;
+          if (prev instanceof SettingsPrivacyController) {
             Settings2FAController c = new Settings2FAController(context, tdlib);
             c.setArguments(new Settings2FAController.Args((SettingsPrivacyController) prev, password, recoveryEmail));
             navigateTo(c);
@@ -1342,25 +1342,25 @@ public class PasswordController extends ViewController<PasswordController.Args> 
 
   private void processNewPasswordState (TdApi.PasswordState state, @Nullable String password) {
     this.state = state;
-    ViewController c;
+    ViewController<?> c;
 
     if (mode == MODE_NEW) {
       c = removeStackItemById(R.id.controller_2faSettings);
-      if (c != null && c instanceof Settings2FAController) {
+      if (c instanceof Settings2FAController) {
         ((Settings2FAController) c).updatePasswordState(state, password);
         navigateTo(c);
         return;
       }
     } else if (mode == MODE_EDIT || mode == MODE_EMAIL_CHANGE) {
       c = findLastStackItemById(R.id.controller_2faSettings);
-      if (c != null && c instanceof Settings2FAController) {
+      if (c instanceof Settings2FAController) {
         ((Settings2FAController) c).updatePasswordState(state, password);
         navigateBack();
         return;
       }
     }
     c = findLastStackItemById(R.id.controller_privacySettings);
-    if (c != null && c instanceof SettingsPrivacyController) {
+    if (c instanceof SettingsPrivacyController) {
       ((SettingsPrivacyController) c).updatePasswordState(state);
       Settings2FAController settings = new Settings2FAController(context, tdlib);
       settings.setArguments(new Settings2FAController.Args((SettingsPrivacyController) c, null, null));

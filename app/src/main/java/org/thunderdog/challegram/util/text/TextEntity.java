@@ -133,10 +133,10 @@ public abstract class TextEntity {
   public abstract TextColorSet getSpecialColorSet (TextColorSet defaultColorSet);
 
   @Nullable
-  protected final ViewController findRoot (View view) {
+  protected final ViewController<?> findRoot (View view) {
     if (view == null)
       return null;
-    ViewController c = ViewController.findRoot(view);
+    ViewController<?> c = ViewController.findRoot(view);
     if (c != null)
       return c;
     return UI.getContext(view.getContext()).navigation().getCurrentStackItem();
@@ -150,7 +150,7 @@ public abstract class TextEntity {
     return valueOf(tdlib, text.text, text.entities, openParameters);
   }
 
-  public static TextEntity[] valueOf (ViewController context, Tdlib tdlib, CharSequence text, TdlibUi.UrlOpenParameters openParameters) {
+  public static TextEntity[] valueOf (ViewController<?> context, Tdlib tdlib, CharSequence text, TdlibUi.UrlOpenParameters openParameters) {
     if (StringUtils.isEmpty(text)) {
       return null;
     }

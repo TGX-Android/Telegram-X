@@ -748,9 +748,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (start < 0 || end < 0 || start > getText().length() || end > getText().length()) {
       return;
     }
-    ViewController c = controller;
-    if (c == null && inputListener instanceof ViewController) {
-      c = (ViewController) inputListener;
+    ViewController<?> c = controller;
+    if (c == null && inputListener instanceof ViewController<?>) {
+      c = (ViewController<?>) inputListener;
     }
     if (c != null) {
       String existingUrl = existingSpan != null ? existingSpan.getURL() : null;
@@ -1516,7 +1516,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   @Override
-  public void onInlineQueryResultPick (InlineResult result) {
+  public void onInlineQueryResultPick (InlineResult<?> result) {
     if (controller != null) {
       controller.sendInlineQueryResult(result.getQueryId(), result.getId(), true, true, false, null);
     }

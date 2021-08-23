@@ -20,7 +20,7 @@ import me.vkryl.core.reference.ReferenceList;
 
 public class Invalidator implements Handler.Callback, ReferenceList.FullnessListener, ViewController.AttachListener, BaseActivity.ActivityListener {
   public interface Target {
-    ViewController getTargetParent (Invalidator context);
+    ViewController<?> getTargetParent (Invalidator context);
     long onInvalidateTarget (Invalidator context);
     // void onTargetAttached (Invalidator context, boolean isAttached);
   }
@@ -41,7 +41,7 @@ public class Invalidator implements Handler.Callback, ReferenceList.FullnessList
   }
 
   public void addTarget (@NonNull Target target) {
-    ViewController controller = target.getTargetParent(this);
+    ViewController<?> controller = target.getTargetParent(this);
     if (controller != null) {
       boolean added;
       if (controller.getAttachState()) {
@@ -63,7 +63,7 @@ public class Invalidator implements Handler.Callback, ReferenceList.FullnessList
   }
 
   public void removeTarget (@NonNull Target target) {
-    ViewController controller = target.getTargetParent(this);
+    ViewController<?> controller = target.getTargetParent(this);
     if (controller != null && !controller.getAttachState()) {
       pendingTargets.remove(target);
     } else {
@@ -74,7 +74,7 @@ public class Invalidator implements Handler.Callback, ReferenceList.FullnessList
   }
 
   @Override
-  public void onAttachStateChanged (ViewController context, NavigationController navigation, boolean isAttached) {
+  public void onAttachStateChanged (ViewController<?> context, NavigationController navigation, boolean isAttached) {
     ReferenceList<Target> fromList, toList;
     if (isAttached) {
       fromList = pendingTargets;
@@ -112,7 +112,7 @@ public class Invalidator implements Handler.Callback, ReferenceList.FullnessList
   private boolean isFull;
 
   @Override
-  public void onFullnessStateChanged (ReferenceList list, boolean isFull) {
+  public void onFullnessStateChanged (ReferenceList<?> list, boolean isFull) {
     if (this.isFull != isFull) {
       this.isFull = isFull;
       checkLooping();

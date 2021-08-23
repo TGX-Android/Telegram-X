@@ -59,7 +59,7 @@ import me.vkryl.td.ChatId;
  * Author: default
  */
 
-public class MediaBottomLocationController extends MediaBottomBaseController implements View.OnClickListener, MediaLocationMapView.Callback, MediaLocationFinder.Callback, ActivityResultHandler, Menu, FactorAnimator.Target {
+public class MediaBottomLocationController extends MediaBottomBaseController<Void> implements View.OnClickListener, MediaLocationMapView.Callback, MediaLocationFinder.Callback, ActivityResultHandler, Menu, FactorAnimator.Target {
   public MediaBottomLocationController (MediaLayout context) {
     super(context, R.string.Location);
   }
@@ -371,7 +371,7 @@ public class MediaBottomLocationController extends MediaBottomBaseController imp
             switch (errorCode) {
               case LocationHelper.ERROR_CODE_PERMISSION:
               case LocationHelper.ERROR_CODE_RESOLUTION: {
-                ViewController c = context.navigation().getCurrentStackItem();
+                ViewController<?> c = context.navigation().getCurrentStackItem();
                 if (c != null) {
                   c.openMissingLocationPermissionAlert(true);
                 }

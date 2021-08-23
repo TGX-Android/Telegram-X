@@ -1323,7 +1323,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   @Override
-  public ForceTouchView.ActionListener onCreateActions (final View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ViewController target) {
+  public ForceTouchView.ActionListener onCreateActions (final View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ViewController<?> target) {
     final ListItem item = (ListItem) v.getTag();
     final TGFoundChat chat = (TGFoundChat) item.getData();
 
@@ -2936,8 +2936,8 @@ public class ShareController extends TelegramViewController<ShareController.Args
     if (isSingleTap) {
       UI.showToast(R.string.DoneSave, Toast.LENGTH_SHORT);
     } else if ((args.needOpenChat || forceGoToChat) && selectedChats.size() == 1) {
-      ViewController c = context().navigation().getCurrentStackItem();
-      if (!(c != null && c instanceof MessagesController && ((MessagesController) c).compareChat(selectedChats.valueAt(0).getAnyId(), 0))) {
+      ViewController<?> c = context().navigation().getCurrentStackItem();
+      if (!(c instanceof MessagesController && ((MessagesController) c).compareChat(selectedChats.valueAt(0).getAnyId(), 0))) {
         UI.post(() -> tdlib.ui().openChat(ShareController.this, selectedChats.valueAt(0).getAnyId(), null), 250);
       }
     } else {

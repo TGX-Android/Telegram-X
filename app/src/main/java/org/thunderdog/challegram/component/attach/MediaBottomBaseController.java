@@ -280,11 +280,11 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
       return 0;
     }
     RecyclerView.LayoutManager manager = getLayoutManager();
-    if (manager == null || !(manager instanceof LinearLayoutManager)) {
+    if (!(manager instanceof LinearLayoutManager)) {
       return 0;
     }
-    RecyclerView.Adapter adapter = recyclerView.getAdapter();
-    if (adapter == null || !(adapter instanceof MeasuredAdapterDelegate)) {
+    RecyclerView.Adapter<?> adapter = recyclerView.getAdapter();
+    if (!(adapter instanceof MeasuredAdapterDelegate)) {
       return 0;
     }
     int firstPosition = ((LinearLayoutManager) manager).findFirstVisibleItemPosition();
@@ -311,7 +311,7 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
     recyclerView.addItemDecoration(decoration);
   }
 
-  protected final void setAdapter (RecyclerView.Adapter adapter) {
+  protected final void setAdapter (RecyclerView.Adapter<?> adapter) {
     recyclerView.setAdapter(adapter);
   }
 

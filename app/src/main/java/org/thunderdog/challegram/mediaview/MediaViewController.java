@@ -184,7 +184,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   public static class Args {
-    public final ViewController parentController;
+    public final ViewController<?> parentController;
     public final int mode;
     public MediaViewDelegate delegate;
     public final MediaSelectDelegate selectDelegate;
@@ -204,7 +204,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     private boolean areOnlyScheduled, deleteOnExit;
 
-    public Args (ViewController parentController, int mode, MediaViewDelegate delegate, MediaSelectDelegate selectDelegate, MediaSendDelegate sendDelegate, MediaStack stack) {
+    public Args (ViewController<?> parentController, int mode, MediaViewDelegate delegate, MediaSelectDelegate selectDelegate, MediaSendDelegate sendDelegate, MediaStack stack) {
       this.parentController = parentController;
       this.mode = mode;
       this.delegate = delegate;
@@ -213,7 +213,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       this.stack = stack;
     }
 
-    public Args (ViewController parentController, int mode, MediaStack stack) {
+    public Args (ViewController<?> parentController, int mode, MediaStack stack) {
       this(parentController, mode, null, null, null, stack);
     }
 
@@ -248,7 +248,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       this.filter = filter;
     }
 
-    public static Args fromGallery (ViewController context, MediaViewDelegate delegate, MediaSelectDelegate selectDelegate, MediaSendDelegate sendDelegate, MediaStack galleryStack, boolean areOnlyScheduled) {
+    public static Args fromGallery (ViewController<?> context, MediaViewDelegate delegate, MediaSelectDelegate selectDelegate, MediaSendDelegate sendDelegate, MediaStack galleryStack, boolean areOnlyScheduled) {
       return new Args(context, MODE_GALLERY, delegate, selectDelegate, sendDelegate, galleryStack).setOnlyScheduled(areOnlyScheduled);
     }
   }
@@ -464,7 +464,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
 
     if (results != null && !results.isEmpty()) {
-      for (InlineResult result : results) {
+      for (InlineResult<?> result : results) {
         result.setForceDarkMode(true);
       }
       if (inlineResultsView.getParent() == null) {
@@ -816,7 +816,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       if (mode != MODE_GALLERY && Config.CUTOUT_ENABLED) {
         if (isFullscreen && (mode == MODE_MESSAGES || mode == MODE_SIMPLE)) {
-          ViewController c = context.navigation().getCurrentStackItem();
+          ViewController<?> c = context.navigation().getCurrentStackItem();
           if (c != null) {
             c.hideSoftwareKeyboard();
           }
@@ -1650,7 +1650,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       case R.id.btn_showInChat: {
         forceAnimationType = ANIMATION_TYPE_FADE;
 
-        ViewController c = context.navigation().getCurrentStackItem();
+        ViewController<?> c = context.navigation().getCurrentStackItem();
         if (c instanceof MessagesController && c.getChatId() == item.getSourceChatId()) {
           ((MessagesController) c).highlightMessage(new MessageId(item.getSourceChatId(), item.getSourceMessageId()));
         } else {
@@ -2106,7 +2106,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void backFromPictureInPicture () {
-    ViewController c = context.navigation().getCurrentStackItem();
+    ViewController<?> c = context.navigation().getCurrentStackItem();
     if (c != null) {
       c.hideSoftwareKeyboard();
     }
@@ -7852,7 +7852,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   // Opening and collecting photos
 
-  public static void openFromMedia (ViewController context, MediaItem item) {
+  public static void openFromMedia (ViewController<?> context, MediaItem item) {
     MediaStack stack = null;
 
     if (context.isStackLocked()) {
@@ -7880,14 +7880,14 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     openWithArgs(context, args);
   }
 
-  private static MediaViewController openWithArgs (ViewController context, Args args) {
+  private static MediaViewController openWithArgs (ViewController<?> context, Args args) {
     MediaViewController controller = new MediaViewController(context.context(), context.tdlib());
     controller.setArguments(args);
     controller.open();
     return controller;
   }
 
-  public static void openFromProfile (ViewController context, TdApi.User user, MediaCollectorDelegate delegate) {
+  public static void openFromProfile (ViewController<?> context, TdApi.User user, MediaCollectorDelegate delegate) {
     if (context.isStackLocked()) {
       return;
     }
@@ -7909,7 +7909,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     openWithArgs(context, args);
   }
 
-  public static void openFromChat (ViewController context, TdApi.Chat chat, MediaCollectorDelegate delegate) {
+  public static void openFromChat (ViewController<?> context, TdApi.Chat chat, MediaCollectorDelegate delegate) {
     if (ChatId.isUserChat(chat.id)) {
       openFromProfile(context, context.tdlib().chatUser(chat.id), delegate);
       return;
@@ -7932,7 +7932,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     openWithArgs(context, args);
   }
 
-  public static void openWithStack (ViewController context, MediaStack stack, String caption, MediaCollectorDelegate delegate, boolean forceThumbs) {
+  public static void openWithStack (ViewController<?> context, MediaStack stack, String caption, MediaCollectorDelegate delegate, boolean forceThumbs) {
     if (context.isStackLocked()) {
       return;
     }
@@ -7948,7 +7948,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   public static void openFromMessage (TGMessageChat groupPhoto) {
-    ViewController context = groupPhoto.controller();
+    ViewController<?> context = groupPhoto.controller();
     if (context.isStackLocked()) {
       return;
     }
@@ -7974,7 +7974,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   public static void openFromMessage (TGMessageText msg) {
-    ViewController context = msg.controller();
+    ViewController<?> context = msg.controller();
     if (context.isStackLocked()) {
       return;
     }
@@ -8022,7 +8022,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   public static MediaViewController openSecret (TGMessageMedia photo) {
-    ViewController context = photo.controller();
+    ViewController<?> context = photo.controller();
     MediaItem item = MediaItem.valueOf(context.context(), context.tdlib(), photo.getMessage());
     if (item == null) {
       return null;
@@ -8035,7 +8035,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   public static void openFromMessage (TGMessageMedia messageContainer, long messageId) {
-    ViewController context = messageContainer.controller();
+    ViewController<?> context = messageContainer.controller();
     TdApi.Message msg = messageContainer.getMessage(messageId);
     MediaItem item = MediaItem.valueOf(context.context(), context.tdlib(), msg);
     if (item == null) {

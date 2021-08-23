@@ -51,7 +51,7 @@ public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver
     setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, size));
   }
 
-  public void setThemeProvider (@Nullable ViewController themeProvider) {
+  public void setThemeProvider (@Nullable ViewController<?> themeProvider) {
     this.themeProvider = themeProvider;
   }
 
@@ -123,7 +123,7 @@ public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver
     setSize(size, customSize ? size : Keyboard.getSize());
   }
 
-  private @Nullable ViewController themeProvider;
+  private @Nullable ViewController<?> themeProvider;
 
   private TextView genButton () {
     TextView text = new NoScrollTextView(getContext());

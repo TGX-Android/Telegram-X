@@ -46,7 +46,7 @@ public class ViewSupport {
     // view.setBackgroundColor(0);
   }
 
-  public static FillingDrawable setThemedBackground (View view, @ThemeColorId int colorId, @Nullable ViewController themeProvider) {
+  public static FillingDrawable setThemedBackground (View view, @ThemeColorId int colorId, @Nullable ViewController<?> themeProvider) {
     FillingDrawable result = null;
     if (view != null) {
       Drawable existingBackground = view.getBackground();

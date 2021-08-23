@@ -43,12 +43,12 @@ import me.vkryl.android.widget.FrameLayoutFix;
 
 public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdapter.StickerHolder> implements View.OnClickListener {
 
-  private final ViewController context;
+  private final ViewController<?> context;
   private final ArrayList<StickerItem> items;
   private final StickerSmallView.StickerMovementCallback callback;
   private final boolean isTrending;
   private @Nullable RecyclerView.LayoutManager manager;
-  private @Nullable ViewController themeProvider;
+  private @Nullable ViewController<?> themeProvider;
 
   private boolean isBig;
 
@@ -56,7 +56,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
     isBig = true;
   }
 
-  public MediaStickersAdapter (ViewController context, StickerSmallView.StickerMovementCallback callback, boolean isTrending, @Nullable ViewController themeProvider) {
+  public MediaStickersAdapter (ViewController<?> context, StickerSmallView.StickerMovementCallback callback, boolean isTrending, @Nullable ViewController<?> themeProvider) {
     this.context = context;
     this.callback = callback;
     this.isTrending = isTrending;
@@ -69,7 +69,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
   }
 
   @Override
-  public StickerHolder onCreateViewHolder (ViewGroup parent, int viewType) {
+  public StickerHolder onCreateViewHolder (@NonNull ViewGroup parent, int viewType) {
     return StickerHolder.create(context.context(), context.tdlib(), viewType, isTrending, this, callback, isBig, themeProvider);
   }
 
@@ -497,7 +497,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
       super(itemView);
     }
 
-    public static @NonNull StickerHolder create (Context context, Tdlib tdlib, int viewType, boolean isTrending, View.OnClickListener onClickListener, StickerSmallView.StickerMovementCallback callback, boolean isBig, @Nullable ViewController themeProvider) {
+    public static @NonNull StickerHolder create (Context context, Tdlib tdlib, int viewType, boolean isTrending, View.OnClickListener onClickListener, StickerSmallView.StickerMovementCallback callback, boolean isBig, @Nullable ViewController<?> themeProvider) {
       switch (viewType) {
         case TYPE_STICKER: {
           StickerSmallView view;

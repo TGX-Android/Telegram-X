@@ -44,7 +44,7 @@ public class CustomResultView extends SparseDrawableView implements Destroyable,
     RippleSupport.setTransparentSelector(this);
   }
 
-  private @Nullable InlineResult result;
+  private @Nullable InlineResult<?> result;
 
   @Override
   public void performDestroy () {
@@ -55,7 +55,7 @@ public class CustomResultView extends SparseDrawableView implements Destroyable,
     }
   }
 
-  public void setInlineResult (@Nullable InlineResult result) {
+  public void setInlineResult (@Nullable InlineResult<?> result) {
     final boolean isAttached = (flags & FLAG_DETACHED) == 0;
     if (isAttached && this.result != null) {
       this.result.detachFromView(this);
@@ -72,7 +72,7 @@ public class CustomResultView extends SparseDrawableView implements Destroyable,
     }
   }
 
-  public void invalidateContent (InlineResult result) {
+  public void invalidateContent (InlineResult<?> result) {
     if (this.result == result && result != null) {
       this.result.requestContent(receiver, true);
     }

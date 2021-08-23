@@ -237,7 +237,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     }
   }
 
-  public void addThemeListeners (@Nullable ViewController themeProvider) {
+  public void addThemeListeners (@Nullable ViewController<?> themeProvider) {
     if (themeProvider != null) {
       if (togglerView != null) {
         themeProvider.addThemeInvalidateListener(togglerView);

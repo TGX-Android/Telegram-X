@@ -135,7 +135,7 @@ public class Chart implements BaseChartView.DateChangeListener {
   }
 
   @Override
-  public void onDateChanged (BaseChartView chartView, long startTimeMs, long endTimeMs) {
+  public void onDateChanged (BaseChartView<?, ?> chartView, long startTimeMs, long endTimeMs) {
     this.startTime = startTimeMs;
     this.endTime = endTimeMs;
     for (DateListener listener : dateListeners) {

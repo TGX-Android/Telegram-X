@@ -65,7 +65,7 @@ public class CallSettings {
     return speakerMode != SPEAKER_MODE_NONE;
   }
 
-  public void toggleSpeakerMode (ViewController controller) {
+  public void toggleSpeakerMode (ViewController<?> controller) {
     TGCallService voip = TGCallService.currentInstance();
     if (voip == null) {
       return;

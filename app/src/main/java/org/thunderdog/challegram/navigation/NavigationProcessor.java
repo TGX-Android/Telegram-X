@@ -68,7 +68,7 @@ public class NavigationProcessor extends Handler {
     }
   }
 
-  public void setController (ViewController controller) {
+  public void setController (ViewController<?> controller) {
     if (checkUiThread()) {
       controller.get();
 
@@ -85,7 +85,7 @@ public class NavigationProcessor extends Handler {
     }
   }
 
-  public void insertController (ViewController controller, int index) {
+  public void insertController (ViewController<?> controller, int index) {
     if (checkUiThread()) {
       stack.insert(controller, index);
     } else {
@@ -93,11 +93,11 @@ public class NavigationProcessor extends Handler {
     }
   }
 
-  public ViewController getFutureRebaseController () {
-    return rebaseOnAnimationEnd ? (ViewController) rebaseObject : null;
+  public ViewController<?> getFutureRebaseController () {
+    return rebaseOnAnimationEnd ? (ViewController<?>) rebaseObject : null;
   }
 
-  public void setControllerAnimated (ViewController controller, boolean asForward, boolean saveFirst) {
+  public void setControllerAnimated (ViewController<?> controller, boolean asForward, boolean saveFirst) {
     int arg = 0;
     if (asForward) arg += 1;
     if (saveFirst) arg += 2;
@@ -122,7 +122,7 @@ public class NavigationProcessor extends Handler {
     }
   }
 
-  public void rebaseStack (ViewController controller, boolean saveFirst) {
+  public void rebaseStack (ViewController<?> controller, boolean saveFirst) {
     if (checkUiThread()) {
       if (navigation.isAnimating()) {
         navigation.removeChildWrapper(stack.getPrevious());
@@ -135,7 +135,7 @@ public class NavigationProcessor extends Handler {
     }
   }
 
-  public void navigateTo (ViewController controller) {
+  public void navigateTo (ViewController<?> controller) {
     if (checkUiThread()) {
       if (!navigation.isAnimating()){
         return;
@@ -157,7 +157,7 @@ public class NavigationProcessor extends Handler {
     }
   }
 
-  public void removePrevious (ViewController controller) {
+  public void removePrevious (ViewController<?> controller) {
     if (checkUiThread()) {
       if (navigation.isAnimating()) {
         navigation.removeChildWrapper(controller);
@@ -171,7 +171,7 @@ public class NavigationProcessor extends Handler {
   public void setNextAsCurrent () {
     if (checkUiThread()) {
       if (navigation.isAnimating()) {
-        ViewController previous = stack.getPrevious();
+        ViewController<?> previous = stack.getPrevious();
         if (previous != null) {
           navigation.removeChildWrapper(previous);
           previous.get().setAlpha(1f);
@@ -183,7 +183,7 @@ public class NavigationProcessor extends Handler {
 
         clearAnimationDelayed();
 
-        ViewController current = stack.getCurrent();
+        ViewController<?> current = stack.getCurrent();
         if (current != null) {
           current.onFocus();
         }
@@ -200,7 +200,7 @@ public class NavigationProcessor extends Handler {
       }
       navigation.hideContextualPopups();
       navigation.setIsAnimating(true);
-      ViewController previous = stack.getPrevious();
+      ViewController<?> previous = stack.getPrevious();
       if (previous != null) {
         previous.get();
         navigation.navigate(previous, NavigationController.MODE_BACKWARD);
@@ -213,7 +213,7 @@ public class NavigationProcessor extends Handler {
   public void setPrevAsCurrent () {
     if (checkUiThread()) {
       if (navigation.isAnimating()) {
-        ViewController next = stack.removeLast();
+        ViewController<?> next = stack.removeLast();
         if (next != null) {
           navigation.removeChildWrapper(next);
         }
@@ -230,7 +230,7 @@ public class NavigationProcessor extends Handler {
 
         clearAnimationDelayed();
 
-        ViewController current = stack.getCurrent();
+        ViewController<?> current = stack.getCurrent();
         if (current != null) {
           current.onFocus();
         }
@@ -240,7 +240,7 @@ public class NavigationProcessor extends Handler {
     }
   }
 
-  public void callFocusDelayed (ViewController controller) {
+  public void callFocusDelayed (ViewController<?> controller) {
     sendMessageDelayed(Message.obtain(this, CALL_FOCUS, controller), 18l);
   }
 
@@ -253,23 +253,23 @@ public class NavigationProcessor extends Handler {
         break;
       }
       case SET_CONTROLLER: {
-        setController((ViewController) msg.obj);
+        setController((ViewController<?>) msg.obj);
         break;
       }
       case SET_CONTROLLER_ANIMATED: {
-        setControllerAnimated((ViewController) msg.obj, (msg.arg2 & 1) != 0, (msg.arg2 & 2) != 0);
+        setControllerAnimated((ViewController<?>) msg.obj, (msg.arg2 & 1) != 0, (msg.arg2 & 2) != 0);
         break;
       }
       case REMOVE_PREVIOUS: {
-        removePrevious((ViewController) msg.obj);
+        removePrevious((ViewController<?>) msg.obj);
         break;
       }
       case REBASE_STACK: {
-        rebaseStack((ViewController) msg.obj, msg.arg1 == 1);
+        rebaseStack((ViewController<?>) msg.obj, msg.arg1 == 1);
         break;
       }
       case NAVIGATE: {
-        navigateTo((ViewController) msg.obj);
+        navigateTo((ViewController<?>) msg.obj);
         break;
       }
       /*case DESTROY_LAST: {
@@ -294,12 +294,12 @@ public class NavigationProcessor extends Handler {
         break;
       }
       case INSERT_CONTROLLER: {
-        insertController((ViewController) msg.obj, msg.arg2);
+        insertController((ViewController<?>) msg.obj, msg.arg2);
         break;
       }
       case CALL_FOCUS: {
-        if (!((ViewController) msg.obj).isDestroyed()) {
-          ((ViewController) msg.obj).onFocus();
+        if (!((ViewController<?>) msg.obj).isDestroyed()) {
+          ((ViewController<?>) msg.obj).onFocus();
         }
         break;
       }

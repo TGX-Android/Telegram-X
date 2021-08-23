@@ -111,11 +111,11 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
 
   private @Nullable View.OnLongClickListener onLongClickListener;
 
-  private @Nullable ViewController lockFocusOn;
+  private @Nullable ViewController<?> lockFocusOn;
   private boolean showKeyboardAlways = true;
   private @Nullable TextChangeListener textChangeListener;
   private @Nullable FileProgressComponent.SimpleListener simpleListener;
-  private @Nullable ViewController themeProvider;
+  private @Nullable ViewController<?> themeProvider;
   private @Nullable RecyclerView.OnScrollListener innerOnScrollListener;
   private @Nullable ClickHelper.Delegate clickHelperDelegate;
   private boolean noEmptyProgress;
@@ -128,14 +128,14 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     void onTextChanged (int id, ListItem item, MaterialEditTextGroup v, String text);
   }
 
-  public SettingsAdapter (ViewController context) {
+  public SettingsAdapter (ViewController<?> context) {
     this(context, context instanceof View.OnClickListener ? (View.OnClickListener) context : null, context);
     if (context instanceof View.OnLongClickListener) {
       setOnLongClickListener((View.OnLongClickListener) context);
     }
   }
 
-  public SettingsAdapter (TdlibDelegate context, View.OnClickListener onClickListener, @Nullable ViewController themeProvider) {
+  public SettingsAdapter (TdlibDelegate context, View.OnClickListener onClickListener, @Nullable ViewController<?> themeProvider) {
     this.context = context.context();
     this.tdlib = context.tdlib();
     this.onClickListener = onClickListener;
@@ -238,7 +238,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     this.simpleListener = listener;
   }
 
-  public void setLockFocusOn (@Nullable ViewController c, boolean showAlways) {
+  public void setLockFocusOn (@Nullable ViewController<?> c, boolean showAlways) {
     this.lockFocusOn = c;
     this.showKeyboardAlways = showAlways;
   }
@@ -1312,7 +1312,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       }
       case ListItem.TYPE_CUSTOM_INLINE: {
         Object data = item.getData();
-        ((CustomResultView) holder.itemView).setInlineResult(data instanceof InlineResult ? (InlineResult) data : data instanceof PageBlockFile ? ((PageBlockFile) data).getFile() : null);
+        ((CustomResultView) holder.itemView).setInlineResult(data instanceof InlineResult ? (InlineResult<?>) data : data instanceof PageBlockFile ? ((PageBlockFile) data).getFile() : null);
         ((CustomResultView) holder.itemView).forceSelected(item.isSelected(), item.getSelectionIndex());
         break;
       }

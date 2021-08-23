@@ -66,7 +66,7 @@ public class SortedUsersAdapter extends RecyclerView.Adapter<SortedUsersAdapter.
   public static final int MODE_HORIZONTAL = 0;
   public static final int MODE_VERTICAL = 0;
 
-  private final ViewController context;
+  private final ViewController<?> context;
   private final int mode;
   private final @Nullable View.OnClickListener onClickListener;
   private final @Nullable View.OnLongClickListener onLongClickListener;
@@ -75,7 +75,7 @@ public class SortedUsersAdapter extends RecyclerView.Adapter<SortedUsersAdapter.
   private @Nullable String searchQuery;
   private ArrayList<UserItem> searchItems;
 
-  public SortedUsersAdapter (ViewController context, int mode, @Nullable View.OnClickListener onClickListener, @Nullable View.OnLongClickListener onLongClickListener) {
+  public SortedUsersAdapter (ViewController<?> context, int mode, @Nullable View.OnClickListener onClickListener, @Nullable View.OnLongClickListener onLongClickListener) {
     this.context = context;
     this.mode = mode;
     this.onClickListener = onClickListener;

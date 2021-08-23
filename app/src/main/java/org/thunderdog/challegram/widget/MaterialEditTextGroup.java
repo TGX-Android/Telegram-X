@@ -262,9 +262,9 @@ public class MaterialEditTextGroup extends FrameLayoutFix implements View.OnFocu
     }
   }
 
-  private @Nullable ViewController themeProvider;
+  private @Nullable ViewController<?> themeProvider;
 
-  public void addThemeListeners (@Nullable ViewController themeProvider) {
+  public void addThemeListeners (@Nullable ViewController<?> themeProvider) {
     this.themeProvider = themeProvider;
     if (themeProvider != null) {
       themeProvider.addThemeTextColorListener(editText, textColorId);
@@ -295,7 +295,7 @@ public class MaterialEditTextGroup extends FrameLayoutFix implements View.OnFocu
 
   private TooltipOverlayView.TooltipInfo radioTooltip;
 
-  public void showRadioHint (ViewController controller, Tdlib tdlib, int stringRes) {
+  public void showRadioHint (ViewController<?> controller, Tdlib tdlib, int stringRes) {
     if (radioView == null) {
       addRadio();
     }

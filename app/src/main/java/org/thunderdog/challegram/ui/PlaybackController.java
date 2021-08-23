@@ -89,7 +89,7 @@ import me.vkryl.core.collection.IntList;
  * Author: default
  */
 
-public class PlaybackController extends ViewController implements Menu, MoreDelegate, View.OnClickListener, TGPlayerController.TrackListChangeListener, TGPlayerController.TrackListener, TdlibFilesManager.FileListener, TGPlayerController.PlayListBuilder, TGLegacyManager.EmojiLoadListener {
+public class PlaybackController extends ViewController<Void> implements Menu, MoreDelegate, View.OnClickListener, TGPlayerController.TrackListChangeListener, TGPlayerController.TrackListener, TdlibFilesManager.FileListener, TGPlayerController.PlayListBuilder, TGLegacyManager.EmojiLoadListener {
   public PlaybackController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
@@ -113,8 +113,8 @@ public class PlaybackController extends ViewController implements Menu, MoreDele
     int trackIndex = -1;
     while (--remaining >= 0) {
       TdApi.Message track = trackList.get(reverseOrder ? remaining : trackList.size() - 1 - remaining);
-      InlineResult result = InlineResult.valueOf(context, tdlib, track);
-      if (result == null || !(result instanceof InlineResultCommon) || result.getType() != InlineResult.TYPE_AUDIO) {
+      InlineResult<?> result = InlineResult.valueOf(context, tdlib, track);
+      if (!(result instanceof InlineResultCommon) || result.getType() != InlineResult.TYPE_AUDIO) {
         out.clear();
         return -1;
       }
@@ -501,7 +501,7 @@ public class PlaybackController extends ViewController implements Menu, MoreDele
     TdApi.Message currentMessage = currentItem.getMessage();
     for (int i = 1; i < size - 1; i++) {
       ListItem item = tracks.get(i);
-      if (item.getData() == currentItem || TGPlayerController.compareTracks(currentMessage, ((InlineResult) item.getData()).getMessage())) {
+      if (item.getData() == currentItem || TGPlayerController.compareTracks(currentMessage, ((InlineResult<?>) item.getData()).getMessage())) {
         return i - 1;
       }
     }
@@ -651,7 +651,7 @@ public class PlaybackController extends ViewController implements Menu, MoreDele
     int desiredScrollY = Math.max(0, Math.min(maxScrollY, overlayHeight + position * itemHeight - minimumOverlayHeight - (parentHeight - minimumOverlayHeight) / 2 + itemHeight / 2));
 
     if (highlight) {
-      ((InlineResult) tracks.get(position + 1).getData()).highlight();
+      ((InlineResult<?>) tracks.get(position + 1).getData()).highlight();
     }
 
     recyclerView.smoothScrollBy(0, desiredScrollY - currentScrollY);
@@ -966,8 +966,8 @@ public class PlaybackController extends ViewController implements Menu, MoreDele
 
   @Override
   public void onTrackListItemAdded (Tdlib tdlib, TdApi.Message newTrack, int position) {
-    InlineResult result = InlineResult.valueOf(context, tdlib, newTrack);
-    if (result == null || !(result instanceof InlineResultCommon) || result.getType() != InlineResult.TYPE_AUDIO) {
+    InlineResult<?> result = InlineResult.valueOf(context, tdlib, newTrack);
+    if (!(result instanceof InlineResultCommon) || result.getType() != InlineResult.TYPE_AUDIO) {
       return;
     }
     InlineResultCommon common = (InlineResultCommon) result;
@@ -988,8 +988,8 @@ public class PlaybackController extends ViewController implements Menu, MoreDele
     boolean reverseOrder = (playFlags & TGPlayerController.PLAYLIST_FLAG_REVERSE) != 0;
     while (--remaining >= 0) {
       TdApi.Message addedTrack = addedItems.get(reverseOrder ? remaining : addedItems.size() - 1 - remaining);
-      InlineResult result = InlineResult.valueOf(context, tdlib, addedTrack);
-      if (result == null || !(result instanceof InlineResultCommon) || result.getType() != InlineResult.TYPE_AUDIO) {
+      InlineResult<?> result = InlineResult.valueOf(context, tdlib, addedTrack);
+      if (!(result instanceof InlineResultCommon) || result.getType() != InlineResult.TYPE_AUDIO) {
         return;
       }
       InlineResultCommon common = (InlineResultCommon) result;

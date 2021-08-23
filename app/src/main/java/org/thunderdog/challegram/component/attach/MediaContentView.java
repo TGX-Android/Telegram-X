@@ -20,7 +20,7 @@ public class MediaContentView extends FrameLayoutFix implements GestureDetector.
   private static final boolean TRACE_INTERCEPT = false;
   private static final boolean TRACE_TOUCHES = false;
 
-  private MediaBottomBaseController base;
+  private MediaBottomBaseController<?> base;
 
   private final float touchSlop;
   private final GestureDetector flingDetector;
@@ -31,7 +31,7 @@ public class MediaContentView extends FrameLayoutFix implements GestureDetector.
     this.touchSlop = Screen.getTouchSlop();
   }
 
-  public void setBoundController (MediaBottomBaseController controller) {
+  public void setBoundController (MediaBottomBaseController<?> controller) {
     this.base = controller;
   }
 

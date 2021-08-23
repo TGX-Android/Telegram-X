@@ -28,14 +28,14 @@ public class RippleSupport {
     setSimpleWhiteBackground(view, null);
   }
 
-  public static void setSimpleWhiteBackground (@NonNull View view, @Nullable ViewController themeProvider) {
+  public static void setSimpleWhiteBackground (@NonNull View view, @Nullable ViewController<?> themeProvider) {
     ViewUtils.setBackground(view, Theme.fillingSelector());
     if (themeProvider != null) {
       themeProvider.addThemeInvalidateListener(view);
     }
   }
 
-  public static void setSimpleWhiteBackground (@NonNull View view, @ThemeColorId int backgroundColorId, @Nullable ViewController themeProvider) {
+  public static void setSimpleWhiteBackground (@NonNull View view, @ThemeColorId int backgroundColorId, @Nullable ViewController<?> themeProvider) {
     ViewUtils.setBackground(view, Theme.fillingSelector(backgroundColorId));
     if (themeProvider != null) {
       themeProvider.addThemeInvalidateListener(view);
@@ -123,7 +123,7 @@ public class RippleSupport {
     return 0;
   }
 
-  public static void setCircleBackground (View view, float size, float padding, @ThemeColorId int colorId, @Nullable ViewController themeProvider) {
+  public static void setCircleBackground (View view, float size, float padding, @ThemeColorId int colorId, @Nullable ViewController<?> themeProvider) {
     ViewUtils.setBackground(view, Theme.circleSelector(size, colorId));
     if (SimpleShapeDrawable.USE_SOFTWARE_SHADOW) {
       view.setLayerType(View.LAYER_TYPE_SOFTWARE, Views.getLayerPaint());
@@ -138,7 +138,7 @@ public class RippleSupport {
     setRectBackground(view, size, padding, colorId, null);
   }
 
-  public static void setRectBackground (View view, float size, float padding, @ThemeColorId int colorId, @Nullable ViewController themeProvider) {
+  public static void setRectBackground (View view, float size, float padding, @ThemeColorId int colorId, @Nullable ViewController<?> themeProvider) {
     ViewUtils.setBackground(view, Theme.rectSelector(size, padding, colorId));
     if (SimpleShapeDrawable.USE_SOFTWARE_SHADOW) {
       view.setLayerType(View.LAYER_TYPE_SOFTWARE, Views.getLayerPaint());

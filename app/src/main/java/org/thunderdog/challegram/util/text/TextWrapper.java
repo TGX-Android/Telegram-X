@@ -319,7 +319,7 @@ public class TextWrapper implements ListAnimator.Measurable {
     return text != null && text.performLongPress(view);
   }
 
-  public static TextWrapper parseRichText (ViewController context, @Nullable Text.ClickCallback callback, TdApi.RichText richText, TextStyleProvider textStyleProvider, @NonNull TextColorSet colorTheme, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public static TextWrapper parseRichText (ViewController<?> context, @Nullable Text.ClickCallback callback, TdApi.RichText richText, TextStyleProvider textStyleProvider, @NonNull TextColorSet colorTheme, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     FormattedText formattedText = FormattedText.parseRichText(context, richText, openParameters);
     return new TextWrapper(formattedText.text, textStyleProvider, colorTheme, formattedText.entities)
       .addTextFlags(Text.FLAG_CUSTOM_LONG_PRESS)

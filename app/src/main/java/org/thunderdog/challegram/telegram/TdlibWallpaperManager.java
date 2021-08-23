@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.td.TdConstants;
 
 /**
  * Date: 1/3/18
@@ -134,10 +135,9 @@ public class TdlibWallpaperManager {
           TdApi.Background[] rawBackgrounds = ((TdApi.Backgrounds) result).backgrounds;
           List<TGBackground> backgrounds = new ArrayList<>(rawBackgrounds.length);
           for (TdApi.Background rawBackground : rawBackgrounds) {
-            if (rawBackground.document != null && "application/x-tgwallpattern".equals(rawBackground.document.mimeType)) {
-              continue;
-            }
             TGBackground background = new TGBackground(tdlib, rawBackground);
+            if (background.isPattern())
+              continue;
             backgrounds.add(background);
           }
           List<Callback> callbacks;
@@ -158,6 +158,13 @@ public class TdlibWallpaperManager {
           break;
       }
     });
+  }
+
+  public void addBackground (TGBackground background, boolean forDarkTheme) {
+    List<TGBackground> list = this.backgrounds.get(forDarkTheme ? 1 : 0);
+    if (list != null) {
+      list.add(0, background);
+    }
   }
 
   public void getBackgrounds (@Nullable Callback callback, boolean forDarkTheme) {

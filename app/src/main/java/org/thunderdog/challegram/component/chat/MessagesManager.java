@@ -338,6 +338,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private boolean lastScrollToBottomVisible;
 
   private void checkScrollButton (int first, int last) {
+    if (controller().inWallpaperPreviewMode())
+      return;
     boolean hasMessages = getActiveMessageCount() > 0;
     boolean isVisible = hasMessages && first != -1 && last != -1 && adapter.getMessageCount() >= last;
     if (isVisible) {
@@ -424,7 +426,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     return pinnedMessages != null && pinnedMessages.isAvailable() && !pinnedMessagesAvailable;
   }
 
-  public void destroy (ViewController context) {
+  public void destroy (ViewController<?> context) {
     resetScroll();
     cancelRefresh();
     returnToMessageIds = null;

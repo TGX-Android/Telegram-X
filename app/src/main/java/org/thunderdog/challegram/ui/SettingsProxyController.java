@@ -43,7 +43,7 @@ import me.vkryl.core.lambda.CancellableRunnable;
  * Date: 5/6/18
  * Author: default
  */
-public class SettingsProxyController extends RecyclerViewController implements View.OnLongClickListener, View.OnClickListener, Settings.ProxyChangeListener, ConnectionListener, MoreDelegate {
+public class SettingsProxyController extends RecyclerViewController<Void> implements View.OnLongClickListener, View.OnClickListener, Settings.ProxyChangeListener, ConnectionListener, MoreDelegate {
   public SettingsProxyController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }

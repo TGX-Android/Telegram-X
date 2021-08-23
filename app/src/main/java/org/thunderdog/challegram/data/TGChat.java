@@ -62,7 +62,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
   private int flags, listMode;
 
-  private final ViewController context;
+  private final ViewController<?> context;
   private final Tdlib tdlib;
   @Nullable
   private final TdApi.Chat chat;
@@ -106,7 +106,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
   private final BounceAnimator scheduleAnimator;
   private final Counter counter, mentionCounter, viewCounter;
 
-  public TGChat (ViewController context, TdApi.ChatList chatList, TdApi.Chat chat, boolean makeMeasures) {
+  public TGChat (ViewController<?> context, TdApi.ChatList chatList, TdApi.Chat chat, boolean makeMeasures) {
     this.context = context;
     this.statusHelper = new TdlibStatusManager.Helper(context.context(), context.tdlib(), this, context);
     this.tdlib = context.tdlib();
@@ -159,7 +159,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     }
   }
 
-  public TGChat (ViewController context, ChatListManager list, boolean makeMeasures) {
+  public TGChat (ViewController<?> context, ChatListManager list, boolean makeMeasures) {
     this.context = context;
     this.statusHelper = null;
     this.tdlib = context.tdlib();
@@ -741,7 +741,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
   public boolean needAnimateChanges () {
     View view = currentViews.findAnyTarget();
-    ViewController c = ViewController.findRoot(view);
+    ViewController<?> c = ViewController.findRoot(view);
     return view != null && (c == null || c.isAttachedToNavigationController());
   }
 
