@@ -85,6 +85,14 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
           tdlib.ui().openPrivateChat(this, user2.getId(), new TdlibUi.ChatOpenParameters().keepStack());
         }
         break;
+      case R.id.btn_viewAdminActions:
+        TGUser user3 = ((UserView) v).getUser();
+        if (user3 != null) {
+          //MessagesController c = new MessagesController(context, tdlib);
+          //c.setArguments(new MessagesController.Arguments(MessagesController.PREVIEW_MODE_EVENT_LOG, null, getArgumentsStrict().chatId));
+          //navigateTo(c);
+        }
+        break;
       case R.id.btn_showAdvanced:
         showAllUsers();
         break;
