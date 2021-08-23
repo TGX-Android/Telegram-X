@@ -1427,9 +1427,9 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     };
     try {
       FirebaseApp.initializeApp(UI.getAppContext());
-      FirebaseInstallations.getInstance().getId().addOnSuccessListener(token -> {
-        Log.i(Log.TAG_FCM, "Retrieved firebase token: %s", token);
-        setDeviceToken(token);
+      FirebaseInstallations.getInstance().getToken(false).addOnSuccessListener(token -> {
+        Log.i(Log.TAG_FCM, "Retrieved firebase token: %s, created: %d, expires: %d", token.getToken(), token.getTokenCreationTimestamp(), token.getTokenExpirationTimestamp());
+        setDeviceToken(token.getToken());
       }).addOnFailureListener(onFailureListener);
     } catch (Exception e) {
       onFailureListener.onFailure(e);
