@@ -340,7 +340,7 @@ public class TGBackground {
       case TdApi.BackgroundFillFreeformGradient.CONSTRUCTOR:
         // There can't be less then 2 colors in freeform gradient
         TdApi.BackgroundFillFreeformGradient gradient = (TdApi.BackgroundFillFreeformGradient) fill;
-        return gradient.colors.length >= 3 ? gradient.colors[2] : gradient.colors[1];
+        return ColorUtils.color(255, gradient.colors.length >= 3 ? gradient.colors[2] : gradient.colors[1]);
       case TdApi.BackgroundFillSolid.CONSTRUCTOR:
         return ColorUtils.color(255, ((TdApi.BackgroundFillSolid) fill).color);
     }
