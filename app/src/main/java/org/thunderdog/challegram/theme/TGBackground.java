@@ -331,32 +331,38 @@ public class TGBackground {
     return customPath;
   }
 
-  private static int getBackgroundColor (TdApi.BackgroundFill fill) {
+  private static int getBackgroundColor (TdApi.BackgroundFill fill, int defaultColor) {
     switch (fill.getConstructor()) {
       case TdApi.BackgroundFillGradient.CONSTRUCTOR: {
         TdApi.BackgroundFillGradient gradient = (TdApi.BackgroundFillGradient) fill;
         return ColorUtils.fromToArgb(ColorUtils.color(255, gradient.topColor), ColorUtils.color(255, gradient.bottomColor), .5f);
       }
       case TdApi.BackgroundFillFreeformGradient.CONSTRUCTOR:
-        return 0; // TODO: return center color
+        // There can't be less then 2 colors in freeform gradient
+        TdApi.BackgroundFillFreeformGradient gradient = (TdApi.BackgroundFillFreeformGradient) fill;
+        return ColorUtils.color(255, gradient.colors.length >= 3 ? gradient.colors[2] : gradient.colors[1]);
       case TdApi.BackgroundFillSolid.CONSTRUCTOR:
         return ColorUtils.color(255, ((TdApi.BackgroundFillSolid) fill).color);
     }
-    return 0;
+    return defaultColor;
   }
 
   public int getBackgroundColor () {
+    return getBackgroundColor(Color.TRANSPARENT);
+  }
+
+  public int getBackgroundColor (int defaultColor) {
     if (type != null) {
       switch (type.getConstructor()) {
         case TdApi.BackgroundTypeFill.CONSTRUCTOR:
-          return getBackgroundColor(((TdApi.BackgroundTypeFill) type).fill);
+          return getBackgroundColor(((TdApi.BackgroundTypeFill) type).fill, defaultColor);
         case TdApi.BackgroundTypePattern.CONSTRUCTOR:
-          return getBackgroundColor(((TdApi.BackgroundTypePattern) type).fill);
+          return getBackgroundColor(((TdApi.BackgroundTypePattern) type).fill, defaultColor);
         case TdApi.BackgroundTypeWallpaper.CONSTRUCTOR:
           break;
       }
     }
-    return 0;
+    return defaultColor;
   }
 
   public int getTopColor () {

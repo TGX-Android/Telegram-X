@@ -283,9 +283,7 @@ public class WallpaperAdapter extends RecyclerView.Adapter<WallpaperAdapter.View
       TGBackground check;
       while (checkIndex >= 0) {
         check = newList.get(checkIndex--);
-        if (!check.isFillSolid())
-          break;
-        if (check.getBackgroundColor() == color) {
+        if (check.isFillSolid() && check.getBackgroundColor() == color) {
           found = true;
           break;
         }
