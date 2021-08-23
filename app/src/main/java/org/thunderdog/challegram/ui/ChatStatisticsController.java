@@ -162,7 +162,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
 
         statString.append(Lang.plural(R.string.xViews, info.viewCount));
         if (info.forwardCount > 0) {
-          statString.append(", ").append(Lang.getString(R.string.StatsShared, info.forwardCount));
+          statString.append(", ").append(Lang.plural(R.string.StatsXShared, info.forwardCount));
         }
 
         RippleSupport.setSimpleWhiteBackground(previewView);
@@ -301,7 +301,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
 
     if (maxLength < users.length) {
       adapter.getItems().add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      adapter.getItems().add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, 0, Lang.getString(R.string.StatsShowMore, users.length - 10), false));
+      adapter.getItems().add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, 0, Lang.plural(R.string.StatsXShowMore, users.length - 10), false));
     }
 
     adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
