@@ -599,7 +599,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         .lineWidthProvider(provider)
         .textFlags(Text.FLAG_ALL_BOLD | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0))
         .clipTextArea()
-        .entities(new TextEntity[]{TextEntity.valueOf(parent.tdlib, webPage.siteName, new TdApi.TextEntity(0, webPage.siteName.length(), new TdApi.TextEntityTypeTextUrl(url)), parent.openParameters())})
+        .entities(new TextEntity[]{TextEntity.valueOf(parent.tdlib, actualSiteName, new TdApi.TextEntity(0, actualSiteName.length(), new TdApi.TextEntityTypeTextUrl(url)), parent.openParameters())})
         .build();
       textHeight += siteName.getHeight();
     } else {
