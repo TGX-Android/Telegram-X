@@ -7501,8 +7501,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           int i = document.fileName.indexOf('-', prefix.length());
           String version = document.fileName.substring(prefix.length(), i == -1 ? document.fileName.length() : i);
           if (version.matches("^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$")) {
-            int buildNo = StringUtils.parseInt(version.substring(version.lastIndexOf('.')));
-            if (buildNo > BuildConfig.ORIGINAL_VERSION_CODE) {
+            int buildNo = StringUtils.parseInt(version.substring(version.lastIndexOf('.') + 1));
+            if (buildNo > BuildConfig.ORIGINAL_VERSION_CODE || BuildConfig.DEBUG) {
               ok = true;
             }
           }
