@@ -86,12 +86,12 @@ class Theme (file: File) {
                       "name" -> this.name = stringValue.unwrapDoubleQuotes()
                       "time" -> this.creationTime = stringValue.toLong()
                       "tinted" -> this.isTinted = stringValue.toBoolean()
-                      else -> throw AssertionError("Unknown theme setting: $name")
+                      else -> error("Unknown theme setting: $name")
                     }
                     Section.PROPERTIES -> {
                       val property = stringValue.toFloat()
                       if (propertyByName.containsKey(name)) {
-                        throw AssertionError("Duplicate definition of $name in ${file.name}")
+                        error("Duplicate definition of $name in ${file.name}")
                       }
                       var skip = false
                       when (name) {
@@ -113,7 +113,7 @@ class Theme (file: File) {
                     Section.COLORS -> {
                       val color = stringValue.normalizeArgbHex()
                       if (colorByName.containsKey(name)) {
-                        throw AssertionError("Duplicate definition of $name in ${file.name}")
+                        error("Duplicate definition of $name in ${file.name}")
                       }
                       colorByName[name] = color
                       if (namesByColor.containsKey(color)) {
@@ -170,8 +170,23 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
     val foundColorDescriptions = HashMap<String,String>()
     val foundPropertyDescriptions = HashMap<String,String>()
 
+    val invalidArgsRegex = Regex("(?<!%)%(?:[^0-9%]|\$)")
+
     for (string in strings["string"] as NodeList) {
       val name = (string as Node)["@name"].toString()
+      val value = string.text()
+
+      invalidArgsRegex.find(value)?.let { matchResult ->
+        matchResult.groups.forEach {
+          val arg = it?.value
+          if (arg != "%") {
+            error("Invalid string argument in \"$name\" ($arg):\n$value")
+          } else {
+            project.logger.lifecycle("\"$name\" contains '%' without argument")
+          }
+        }
+      }
+
       if (name.startsWith("c_")) {
         foundColorDescriptions[name.substring("c_".length)] = name
         ordinaryKeys.add(name)
@@ -270,7 +285,7 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
         }
       }
       if (!found) {
-        throw IllegalArgumentException("Invalid relative date: ${entry.key}. Defined: ${entry.value}, expected: $requiredRelativeDateForms")
+        error("Invalid relative date: ${entry.key}. Defined: ${entry.value}, expected: $requiredRelativeDateForms")
       }
       generatedStrings.add(entry.key)
     }
@@ -280,7 +295,7 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
     val requiredPluralForms = sortedSetOf("one", "other")
     for (entry in foundPlurals) {
       if (entry.value != requiredPluralForms) {
-        throw IllegalArgumentException("Invalid plural: ${entry.key}. Defined: ${entry.value}, expected: $requiredPluralForms")
+        error("Invalid plural: ${entry.key}. Defined: ${entry.value}, expected: $requiredPluralForms")
       }
       generatedStrings.add(entry.key)
       for (form in pluralForms) {
@@ -397,15 +412,15 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
     var prevTheme: Theme? = null
     for (theme in themesList) {
       if (prevTheme != null && prevTheme.id + 1 != theme.id) {
-        throw AssertionError("Missing gap in themes identifiers: ${prevTheme.id} .. ${theme.id}")
+        error("Missing gap in themes identifiers: ${prevTheme.id} .. ${theme.id}")
       }
       prevTheme = theme
     }
 
     if (!themesMap.containsKey(defaultLightTheme))
-      throw AssertionError("Default light theme #${defaultLightTheme} is missing")
+      error("Default light theme #${defaultLightTheme} is missing")
     if (!themesMap.containsKey(defaultDarkTheme))
-      throw AssertionError("Default dark theme #${defaultDarkTheme} is missing")
+      error("Default dark theme #${defaultDarkTheme} is missing")
 
     if (missingMap.isNotEmpty()) {
       val warn = StringBuilder()
@@ -421,7 +436,7 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
       if (warn.isNotEmpty())
         logger.info(warn.toString())
       if (fatal.isNotEmpty()) {
-        throw AssertionError(fatal.toString())
+        error(fatal.toString())
       }
     }
 
