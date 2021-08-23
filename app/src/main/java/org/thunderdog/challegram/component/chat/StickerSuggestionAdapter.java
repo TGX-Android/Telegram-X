@@ -39,12 +39,12 @@ public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSugges
   }
 
   private final RecyclerView.LayoutManager manager;
-  private final ViewController context;
+  private final ViewController<?> context;
   private final Callback callback;
   private @Nullable ArrayList<TGStickerObj> stickers;
-  private @Nullable ViewController themeProvider;
+  private @Nullable ViewController<?> themeProvider;
 
-  public StickerSuggestionAdapter (ViewController context, Callback callback, RecyclerView.LayoutManager manager, @Nullable ViewController themeProvider) {
+  public StickerSuggestionAdapter (ViewController<?> context, Callback callback, RecyclerView.LayoutManager manager, @Nullable ViewController<?> themeProvider) {
     this.context = context;
     this.callback = callback;
     this.manager = manager;
@@ -216,7 +216,7 @@ public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSugges
       super(itemView);
     }
 
-    public static StickerSuggestionHolder create (Context context, Tdlib tdlib, int viewType, StickerSmallView.StickerMovementCallback callback, @Nullable ViewController themeProvider) {
+    public static StickerSuggestionHolder create (Context context, Tdlib tdlib, int viewType, StickerSmallView.StickerMovementCallback callback, @Nullable ViewController<?> themeProvider) {
       switch (viewType) {
         case TYPE_START: {
           FrameLayoutFix contentView = new FrameLayoutFix(context);

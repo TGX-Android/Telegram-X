@@ -352,7 +352,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           setStackLocked(false);
           setDoneInProgress(false);
           if (success) {
-            ViewController c = previousStackItem();
+            ViewController<?> c = previousStackItem();
             if (c instanceof ContactsController) {
               destroyStackItemAt(stackSize() - 2);
             }

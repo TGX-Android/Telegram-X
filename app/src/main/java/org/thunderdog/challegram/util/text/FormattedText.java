@@ -54,7 +54,7 @@ public class FormattedText {
     }
     return iconIndex;
   }
-  public static FormattedText parseRichText (ViewController context, @Nullable TdApi.RichText richText, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public static FormattedText parseRichText (ViewController<?> context, @Nullable TdApi.RichText richText, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     if (richText == null)
       return null;
     StringBuilder out = new StringBuilder();
@@ -84,7 +84,7 @@ public class FormattedText {
 
     return new FormattedText(out.toString(), parsed);
   }
-  private static void parseRichText (ViewController context, TdApi.RichText in, StringBuilder out, ArrayList<TextEntityCustom> entities, int[] offset, int flags, int linkOffset, int[] linkLength, int linkType, String link, boolean linkCached, @Nullable String referenceAnchorName, String copyLink, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  private static void parseRichText (ViewController<?> context, TdApi.RichText in, StringBuilder out, ArrayList<TextEntityCustom> entities, int[] offset, int flags, int linkOffset, int[] linkLength, int linkType, String link, boolean linkCached, @Nullable String referenceAnchorName, String copyLink, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     switch (in.getConstructor()) {
       case TdApi.RichTextPlain.CONSTRUCTOR: {
         final String text = ((TdApi.RichTextPlain) in).text;

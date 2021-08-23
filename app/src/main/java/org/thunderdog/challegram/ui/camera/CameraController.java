@@ -70,7 +70,7 @@ import me.vkryl.core.unit.BitwiseUtils;
  * Author: default
  */
 
-public class CameraController extends ViewController implements CameraDelegate, SensorEventListener, FactorAnimator.Target, View.OnClickListener, CameraButton.RecordListener, CameraOverlayView.FlashListener, Settings.SettingsChangeListener {
+public class CameraController extends ViewController<Void> implements CameraDelegate, SensorEventListener, FactorAnimator.Target, View.OnClickListener, CameraButton.RecordListener, CameraOverlayView.FlashListener, Settings.SettingsChangeListener {
   public static final String[] VIDEO_PERMISSIONS = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN ? new String[] {
     Manifest.permission.CAMERA,
     Manifest.permission.RECORD_AUDIO,
@@ -134,7 +134,7 @@ public class CameraController extends ViewController implements CameraDelegate, 
   private FrameLayoutFix switchCameraButtonParent;
   private TextView durationView;
 
-  private CameraManager manager;
+  private CameraManager<?> manager;
 
   public CameraController (Context context) {
     super(context, null);
@@ -278,7 +278,7 @@ public class CameraController extends ViewController implements CameraDelegate, 
     }
   }
 
-  public CameraManager getManager () {
+  public CameraManager<?> getManager () {
     return manager;
   }
 
@@ -712,9 +712,9 @@ public class CameraController extends ViewController implements CameraDelegate, 
   }
 
   private boolean isPrepared;
-  private ViewController outputController;
+  private ViewController<?> outputController;
 
-  public void setOutputController (ViewController c) {
+  public void setOutputController (ViewController<?> c) {
     this.outputController = c;
   }
 
@@ -1346,8 +1346,8 @@ public class CameraController extends ViewController implements CameraDelegate, 
   }
 
   private MessagesController findOutputController () {
-    ViewController c = context.navigation().getCurrentStackItem();
-    if (c != null && c instanceof MessagesController) {
+    ViewController<?> c = context.navigation().getCurrentStackItem();
+    if (c instanceof MessagesController) {
       return (MessagesController) c;
     }
     return null;

@@ -911,7 +911,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     if (msg instanceof TGMessageBotInfo || msg.isNotSent()) {
       return false;
     }
-    ViewController c = ViewController.findRoot(this);
+    ViewController<?> c = ViewController.findRoot(this);
     if (c == null || !(c instanceof MessagesController)) {
       return false;
     }

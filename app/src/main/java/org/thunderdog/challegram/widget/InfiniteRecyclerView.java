@@ -83,9 +83,9 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
     }
   }
 
-  private @Nullable ViewController themeProvider;
+  private @Nullable ViewController<?> themeProvider;
 
-  public void addThemeListeners (@Nullable ViewController themeProvider) {
+  public void addThemeListeners (@Nullable ViewController<?> themeProvider) {
     this.themeProvider = themeProvider;
     if (forcedTheme == null && themeProvider != null) {
       themeProvider.addThemePaintColorListener(textPaint, R.id.theme_color_text);
@@ -115,7 +115,7 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
       visibleItemCount--;
     }
     if (visibleItemCount > 0) {
-      InfiniteAdapter adapter = new InfiniteAdapter<>(getContext(), this, repeatItems, trimItems, visibleItemCount, items, textPaint, forcedTheme == null ? themeProvider : null);
+      InfiniteAdapter<?> adapter = new InfiniteAdapter<>(getContext(), this, repeatItems, trimItems, visibleItemCount, items, textPaint, forcedTheme == null ? themeProvider : null);
       setAdapter(adapter);
       if (repeatItems) {
         int centerPosition = adapter.getItemCount() / 2;
@@ -247,7 +247,7 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
         smoothScrollBy(0, byHeights);
       }
     } else if (v instanceof ItemView) {
-      Item item = ((ItemView) v).getItem();
+      Item<?> item = ((ItemView) v).getItem();
       if (item != null) {
         setCurrentIndex(minMaxProvider != null ? minMaxProvider.getMinMax(this, item.index) : item.index, true);
       }
@@ -431,7 +431,7 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
   // View
 
   private static class ItemView extends View {
-    private @Nullable Item item;
+    private @Nullable Item<?> item;
 
     public ItemView (Context context) {
       super(context);
@@ -439,11 +439,11 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
       setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     }
 
-    public void setItem (@NonNull Item item) {
+    public void setItem (@NonNull Item<?> item) {
       this.item = item;
     }
 
-    public @Nullable Item getItem () {
+    public @Nullable Item<?> getItem () {
       return item;
     }
 
@@ -478,11 +478,11 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
       super(itemView);
     }
 
-    public void setItem (@NonNull Item item) {
+    public void setItem (@NonNull Item<?> item) {
       ((ItemView) itemView).setItem(item);
     }
 
-    public static ItemViewHolder create (Context context, View.OnClickListener onClickListener, @Nullable ViewController themeProvider) {
+    public static ItemViewHolder create (Context context, View.OnClickListener onClickListener, @Nullable ViewController<?> themeProvider) {
       final ItemView itemView;
       itemView = new ItemView(context);
       itemView.setOnClickListener(onClickListener);
@@ -497,11 +497,11 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
   private static class InfiniteAdapter<T> extends RecyclerView.Adapter<ItemViewHolder> {
     private final Context context;
     private final View.OnClickListener onClickListener;
-    private final @Nullable ViewController themeProvider;
+    private final @Nullable ViewController<?> themeProvider;
     private final ArrayList<Item<T>> items;
     private final boolean repeatItems;
 
-    public InfiniteAdapter (Context context, View.OnClickListener onClickListener, boolean repeatItems, boolean trimItems, int visibleItemCount, ArrayList<T> data, TextPaint textPaint, @Nullable ViewController themeProvider) {
+    public InfiniteAdapter (Context context, View.OnClickListener onClickListener, boolean repeatItems, boolean trimItems, int visibleItemCount, ArrayList<T> data, TextPaint textPaint, @Nullable ViewController<?> themeProvider) {
       this.context = context;
       this.onClickListener = onClickListener;
       this.repeatItems = repeatItems;

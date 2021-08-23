@@ -30,7 +30,7 @@ import me.vkryl.android.AnimatorUtils;
  * Author: default
  */
 
-public class MediaBottomContactsController extends MediaBottomBaseController implements Client.ResultHandler, SimpleUsersAdapter.Callback, Menu {
+public class MediaBottomContactsController extends MediaBottomBaseController<Void> implements Client.ResultHandler, SimpleUsersAdapter.Callback, Menu {
   public MediaBottomContactsController (MediaLayout context) {
     super(context, R.string.AttachContact);
   }

@@ -84,7 +84,7 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
     return R.id.controller_passcodeSetup;
   }
 
-  private static TextView newDescription (ViewController context) {
+  private static TextView newDescription (ViewController<?> context) {
     TextView textView = new NoScrollTextView(context.context());
     textView.setGravity(Lang.gravity() | Gravity.CENTER_VERTICAL);
     textView.setPadding(Screen.dp(16f), Screen.dp(6f), Screen.dp(16f), Screen.dp(12f));
@@ -378,8 +378,8 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
       removedPasscodeItem = true;
       if (isPasscodeEnabled()) {
         int index = stackSize() - 2;
-        ViewController c = stackItemAt(index);
-        if (c != null && c instanceof PasscodeController) {
+        ViewController<?> c = stackItemAt(index);
+        if (c instanceof PasscodeController) {
           destroyStackItemAt(index);
         }
       }
@@ -412,7 +412,7 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
     });
   }
 
-  public static void showPasscodeOptions (ViewController context, CharSequence info, RunnableInt callback) {
+  public static void showPasscodeOptions (ViewController<?> context, CharSequence info, RunnableInt callback) {
     boolean fingerprintAvailable = FingerprintPassword.isAvailable();
     int size = fingerprintAvailable ? 5 : 4;
     IntList ids = new IntList(size);

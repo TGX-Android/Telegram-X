@@ -80,7 +80,7 @@ public class MessageViewGroup extends ViewGroup implements Destroyable, AttachDe
     return overlayView;
   }
 
-  public void initWithView (MessageView messageView, MessagesManager manager, @Nullable ViewController themeProvider) {
+  public void initWithView (MessageView messageView, MessagesManager manager, @Nullable ViewController<?> themeProvider) {
     this.messageView = messageView;
     messageView.setCustomMeasureDisabled(true);
     messageView.setParentMessageViewGroup(this);

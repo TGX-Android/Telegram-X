@@ -772,7 +772,7 @@ public class TGInlineKeyboard {
           if (type != null) {
             switch (type.getConstructor()) {
               case TdApi.InlineKeyboardButtonTypeUrl.CONSTRUCTOR: {
-                ViewController c = parent.context().navigation().getCurrentStackItem();
+                ViewController<?> c = parent.context().navigation().getCurrentStackItem();
                 if (c != null) {
                   c.showCopyUrlOptions(((TdApi.InlineKeyboardButtonTypeUrl) type).url, openParameters(contextId, view), null);
                   return true;
@@ -780,7 +780,7 @@ public class TGInlineKeyboard {
                 break;
               }
               case TdApi.InlineKeyboardButtonTypeLoginUrl.CONSTRUCTOR:
-                ViewController c = parent.context().navigation().getCurrentStackItem();
+                ViewController<?> c = parent.context().navigation().getCurrentStackItem();
                 if (c != null) {
                   c.showCopyUrlOptions(((TdApi.InlineKeyboardButtonTypeLoginUrl) type).url, openParameters(contextId, view), () -> {
                     performAction(view, false);
@@ -981,7 +981,7 @@ public class TGInlineKeyboard {
     }
 
     private void openUrl (int contextId, View view, String url, boolean needVerify) {
-      ViewController c = parent.context().navigation().getCurrentStackItem();
+      ViewController<?> c = parent.context().navigation().getCurrentStackItem();
       if (c != null) {
         if (needVerify) {
           c.openLinkAlert(url, openParameters(contextId, view));
@@ -1064,7 +1064,7 @@ public class TGInlineKeyboard {
           flags |= FLAG_BLOCKED;
           UI.post(() -> {
             flags &= ~FLAG_BLOCKED;
-            ViewController c = parent.context().navigation().getCurrentStackItem();
+            ViewController<?> c = parent.context().navigation().getCurrentStackItem();
             if (c instanceof MessagesController) {
               TdApi.Message msg = parent.getMessage();
               ((MessagesController) c).switchInline(msg.viaBotUserId != 0 ? msg.viaBotUserId : Td.getSenderUserId(msg), switchInline);
@@ -1102,7 +1102,7 @@ public class TGInlineKeyboard {
           return;
         }
 
-        ViewController c = parent.context().navigation().getCurrentStackItem();
+        ViewController<?> c = parent.context().navigation().getCurrentStackItem();
         if (!(c instanceof MessagesController) || c.getChatId() != parent.getChatId()) {
           return;
         }
@@ -1208,7 +1208,7 @@ public class TGInlineKeyboard {
           return;
         }
 
-        ViewController c = parent.context().navigation().getCurrentStackItem();
+        ViewController<?> c = parent.context().navigation().getCurrentStackItem();
         if (!(c instanceof MessagesController) || c.getChatId() != parent.getChatId()) {
           return;
         }
@@ -1253,7 +1253,7 @@ public class TGInlineKeyboard {
                 return;
               }
 
-              ViewController c = parent.context().navigation().getCurrentStackItem();
+              ViewController<?> c = parent.context().navigation().getCurrentStackItem();
               if (!(c instanceof MessagesController) || c.getChatId() != parent.getChatId()) {
                 return;
               }

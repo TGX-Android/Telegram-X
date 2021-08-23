@@ -54,7 +54,7 @@ public class YouTubePreviewLayout extends PreviewLayout implements YouTubePlayer
 
   public static boolean ALLOW_FULLSCREEN = false;
 
-  public YouTubePreviewLayout (Context context, ViewController parent) {
+  public YouTubePreviewLayout (Context context, ViewController<?> parent) {
     super(context, parent);
 
     if (ALLOW_FULLSCREEN) {

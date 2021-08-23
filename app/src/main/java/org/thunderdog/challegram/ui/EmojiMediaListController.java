@@ -336,7 +336,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   }
 
   private void removeGif (final TdApi.Animation animation) {
-    ViewController c = context().navigation().getCurrentStackItem();
+    ViewController<?> c = context().navigation().getCurrentStackItem();
     if (c != null) {
       c.showOptions(Lang.getString(R.string.RemoveGifConfirm), new int[]{R.id.btn_deleteGif, R.id.btn_cancel}, new String[]{Lang.getString(R.string.Delete), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
         switch (id) {

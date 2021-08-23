@@ -75,7 +75,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     default long getOutputChatId () { return 0; }
   }
 
-  private ViewController parentController;
+  private ViewController<?> parentController;
   private @Nullable Listener listener;
 
   private RtlViewPager pager;
@@ -126,7 +126,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       themeProvider.showOptions(null, new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearRecentStickers), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
         if (id == R.id.btn_done) {
           setShowRecents(false);
-          ViewController c = adapter.getCachedItem(1);
+          ViewController<?> c = adapter.getCachedItem(1);
           if (c != null) {
             ((EmojiMediaListController) c).removeRecentStickers();
           }
@@ -142,7 +142,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       themeProvider.showOptions(null, new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearRecentEmojiAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
         if (id == R.id.btn_delete) {
           Emoji.instance().clearRecents();
-          ViewController c = adapter.getCachedItem(0);
+          ViewController<?> c = adapter.getCachedItem(0);
           if (c != null) {
             ((EmojiListController) c).resetRecentEmoji();
           }
@@ -529,7 +529,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       super(itemView);
     }
 
-    public static MediaHolder create (Context context, int viewType, View.OnClickListener onClickListener, View.OnLongClickListener onLongClickListener, int emojiSectionCount, @Nullable ViewController themeProvider) {
+    public static MediaHolder create (Context context, int viewType, View.OnClickListener onClickListener, View.OnLongClickListener onLongClickListener, int emojiSectionCount, @Nullable ViewController<?> themeProvider) {
       switch (viewType) {
         case TYPE_EMOJI_SECTION: {
           EmojiSectionView sectionView = new EmojiSectionView(context);
@@ -703,12 +703,12 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     private final int sectionItemCount;
     private final EmojiLayout parent;
 
-    private final @Nullable ViewController themeProvider;
+    private final @Nullable ViewController<?> themeProvider;
 
     private Object selectedObject;
     private boolean hasRecents, hasFavorite;
 
-    public MediaAdapter (Context context, EmojiLayout parent, OnClickListener onClickListener, int sectionItemCount, boolean selectedIsGifs, @Nullable ViewController themeProvider) {
+    public MediaAdapter (Context context, EmojiLayout parent, OnClickListener onClickListener, int sectionItemCount, boolean selectedIsGifs, @Nullable ViewController<?> themeProvider) {
       this.context = context;
       this.parent = parent;
       this.onClickListener = onClickListener;
@@ -1001,7 +1001,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     }
   }
 
-  private @Nullable ViewController themeProvider;
+  private @Nullable ViewController<?> themeProvider;
   private boolean allowMedia;
   private boolean useDarkMode;
 
@@ -1017,7 +1017,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     super(context);
   }
 
-  public void initWithMediasEnabled (ViewController context, boolean allowMedia, @NonNull Listener listener, @Nullable ViewController themeProvider, boolean useDarkMode) {
+  public void initWithMediasEnabled (ViewController<?> context, boolean allowMedia, @NonNull Listener listener, @Nullable ViewController<?> themeProvider, boolean useDarkMode) {
     this.parentController = context;
     this.listener = listener;
     this.themeProvider = themeProvider;
@@ -1261,14 +1261,14 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   }
 
   private void scrollToStickerSet (@NonNull TGStickerSetInfo stickerSet) {
-    ViewController c = adapter.getCachedItem(1);
+    ViewController<?> c = adapter.getCachedItem(1);
     if (c != null) {
       ((EmojiMediaListController) c).showStickerSet(stickerSet);
     }
   }
 
   private void scrollToEmojiSection (int sectionIndex) {
-    ViewController c = adapter.getCachedItem(0);
+    ViewController<?> c = adapter.getCachedItem(0);
     if (c != null) {
       ((EmojiListController) c).showEmojiSection(sectionIndex);
     }
@@ -1293,14 +1293,14 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   public void resetScrollState (boolean silent) {
     switch (pager.getCurrentItem()) {
       case 0: {
-        ViewController c = adapter.getCachedItem(0);
+        ViewController<?> c = adapter.getCachedItem(0);
         if (c != null) {
           resetScrollingCache(((EmojiListController) c).getCurrentScrollY(), silent);
         }
         break;
       }
       case 1: {
-        ViewController c = adapter.getCachedItem(1);
+        ViewController<?> c = adapter.getCachedItem(1);
         if (c != null) {
           resetScrollingCache(((EmojiMediaListController) c).getCurrentScrollY(), silent);
         }
@@ -1375,7 +1375,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
               break;
             }
             case 1: {
-              ViewController c = adapter.getCachedItem(1);
+              ViewController<?> c = adapter.getCachedItem(1);
               if (c != null) {
                 if (!((EmojiMediaListController) c).showGIFs() && listener != null) {
                   listener.onSearchRequested(this, false);
@@ -1384,14 +1384,14 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
               break;
             }
             case 2: {
-              ViewController c = adapter.getCachedItem(1);
+              ViewController<?> c = adapter.getCachedItem(1);
               if (c != null) {
                 ((EmojiMediaListController) c).showHot();
               }
               break;
             }
             case 3: {
-              ViewController c = adapter.getCachedItem(1);
+              ViewController<?> c = adapter.getCachedItem(1);
               if (c != null) {
                 ((EmojiMediaListController) c).showSystemStickers();
               }
@@ -1600,13 +1600,13 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   }*/
 
   private static class Adapter extends PagerAdapter {
-    private final ViewController context;
+    private final ViewController<?> context;
     private final EmojiLayout parent;
-    private final SparseArrayCompat<ViewController> cachedItems;
+    private final SparseArrayCompat<ViewController<?>> cachedItems;
     private final boolean allowMedia;
-    private final ViewController themeProvider;
+    private final ViewController<?> themeProvider;
 
-    public Adapter (ViewController context, EmojiLayout parent, boolean allowMedia, @Nullable ViewController themeProvider) {
+    public Adapter (ViewController<?> context, EmojiLayout parent, boolean allowMedia, @Nullable ViewController<?> themeProvider) {
       this.context = context;
       this.parent = parent;
       this.cachedItems = new SparseArrayCompat<>(2);
@@ -1614,13 +1614,13 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       this.allowMedia = allowMedia;
     }
 
-    public @Nullable ViewController getCachedItem (int position) {
+    public @Nullable ViewController<?> getCachedItem (int position) {
       return cachedItems.get(position);
     }
 
     public void updateCachedItemsSpanCounts () {
       for (int i = 0; i < cachedItems.size(); i++) {
-        ViewController c = cachedItems.valueAt(i);
+        ViewController<?> c = cachedItems.valueAt(i);
         switch (c.getId()) {
           case R.id.controller_emoji: {
             ((EmojiListController) c).checkSpanCount();
@@ -1637,7 +1637,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
     public void invalidateCachedItems () {
       for (int i = 0; i < cachedItems.size(); i++) {
-        ViewController c = cachedItems.valueAt(i);
+        ViewController<?> c = cachedItems.valueAt(i);
         if (c.getId() == R.id.controller_emoji) {
           ((EmojiListController) c).invalidateItems();
         }
@@ -1658,20 +1658,22 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     }
 
     @Override
-    public void destroyItem (ViewGroup container, int position, Object object) {
-      container.removeView(((ViewController) object).get());
+    public void destroyItem (ViewGroup container, int position, @NonNull Object object) {
+      container.removeView(((ViewController<?>) object).get());
     }
 
     @Override
-    public Object instantiateItem (ViewGroup container, int position) {
-      ViewController c = cachedItems.get(position);
+    public Object instantiateItem (@NonNull ViewGroup container, int position) {
+      ViewController<?> c = cachedItems.get(position);
       if (c == null) {
         if (position == 0) {
-          c = new EmojiListController(context.context(), context.tdlib());
-          c.setArguments(parent);
+          EmojiListController emojiListController = new EmojiListController(context.context(), context.tdlib());
+          emojiListController.setArguments(parent);
+          c = emojiListController;
         } else if (position == 1) {
-          c = new EmojiMediaListController(context.context(), context.tdlib());
-          c.setArguments(parent);
+          EmojiMediaListController mediaListController = new EmojiMediaListController(context.context(), context.tdlib());
+          mediaListController.setArguments(parent);
+          c = mediaListController;
         } else {
           throw new RuntimeException("position == " + position);
         }
@@ -1685,8 +1687,8 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     }
 
     @Override
-    public boolean isViewFromObject (View view, Object object) {
-      return object instanceof ViewController && ((ViewController) object).get() == view;
+    public boolean isViewFromObject (@NonNull View view, @NonNull Object object) {
+      return object instanceof ViewController && ((ViewController<?>) object).get() == view;
     }
   }
 
@@ -1711,7 +1713,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   }
 
   private boolean hasRightButton () {
-    ViewController c = adapter.getCachedItem(1);
+    ViewController<?> c = adapter.getCachedItem(1);
     return c != null && !noInlineSearch && ((EmojiMediaListController) c).needSearchButton();
   }
 
@@ -1754,7 +1756,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
   private float getDesiredPageFactor (int pageIndex) {
     if (pageIndex == 1) {
-      ViewController c = adapter.getCachedItem(1);
+      ViewController<?> c = adapter.getCachedItem(1);
       if (c != null) {
         return ((EmojiMediaListController) c).getDesiredHeaderHideFactor();
       }
@@ -1836,7 +1838,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   // Legacy
 
   public void reset () {
-    ViewController c = adapter.getCachedItem(1);
+    ViewController<?> c = adapter.getCachedItem(1);
     if (c != null) {
       ((EmojiMediaListController) c).applyScheduledChanges();
     }

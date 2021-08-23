@@ -180,7 +180,7 @@ public class SliderWrapView extends LinearLayout implements SliderView.Listener,
     addView(fullBrightness);
   }
 
-  public void addThemeListeners (@Nullable ViewController themeProvider) {
+  public void addThemeListeners (@Nullable ViewController<?> themeProvider) {
     if (themeProvider != null) {
       if (nameView != null) {
         nameView.addThemeListeners(themeProvider);

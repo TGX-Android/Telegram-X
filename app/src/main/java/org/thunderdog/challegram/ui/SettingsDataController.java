@@ -382,7 +382,7 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
       adapter.updateValuedSettingById(R.id.btn_dataUsageRoaming);
       adapter.updateValuedSettingById(R.id.btn_resetNetworkStats);
 
-      ViewController c = previousStackItem();
+      ViewController<?> c = previousStackItem();
       if (c != null) {
         ((SettingsDataController) c).setNetworkStats(stats);
       }

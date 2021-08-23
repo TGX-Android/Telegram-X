@@ -340,9 +340,9 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
     private final Tdlib tdlib;
     private final BaseActivity context;
     private final HelperTarget target;
-    private final ViewController parent;
+    private final ViewController<?> parent;
 
-    public Helper (@NonNull BaseActivity context, @NonNull Tdlib tdlib, HelperTarget target, @Nullable ViewController parent) {
+    public Helper (@NonNull BaseActivity context, @NonNull Tdlib tdlib, HelperTarget target, @Nullable ViewController<?> parent) {
       if (tdlib == null)
         throw new IllegalArgumentException();
       if (context == null)
@@ -440,7 +440,7 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
     }
 
     @Override
-    public ViewController getTargetParent (Invalidator context) {
+    public ViewController<?> getTargetParent (Invalidator context) {
       return this.parent;
     }
 

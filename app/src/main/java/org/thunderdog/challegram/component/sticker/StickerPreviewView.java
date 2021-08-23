@@ -346,7 +346,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
         }
         case R.id.btn_view: {
           if (controllerView != null) {
-            ViewController context = findRoot();
+            ViewController<?> context = findRoot();
             if (context != null) {
               tdlib.ui().showStickerSet(context, sticker.getStickerSetId());
               closePreviewIfNeeded();
@@ -406,7 +406,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
       menu.addView(sendView);
     if (controllerView != null && controllerView.getStickerOutputChatId() != 0) {
       sendView.setOnLongClickListener(v -> {
-        ViewController c = findRoot();
+        ViewController<?> c = findRoot();
         return c != null && tdlib.ui().showScheduleOptions(c, controllerView.getStickerOutputChatId(), true, (forceDisableNotification, schedulingState, disableMarkdown) -> {
           if (controllerView.onSendSticker(v, sticker, forceDisableNotification, schedulingState)) {
             closePreviewIfNeeded();
@@ -440,8 +440,8 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     setMenuVisible(true, true);
   }
 
-  private ViewController findRoot () {
-    ViewController context = ViewController.findRoot(controllerView);
+  private ViewController<?> findRoot () {
+    ViewController<?> context = ViewController.findRoot(controllerView);
     if (context == null) {
       context = UI.getCurrentStackItem(getContext());
     }

@@ -208,7 +208,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
   @Override
   public void onAccountProfileChanged (TdlibAccount account, TdApi.User profile, boolean isCurrent, boolean isLoaded) { }
 
-  private void cleanupStack (ViewController c, int accountId) {
+  private void cleanupStack (ViewController<?> c, int accountId) {
     if (this.account.id != accountId) {
       return;
     }
@@ -245,7 +245,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
 
     destroyMessageControllers(newAccount.id);
 
-    final ViewController current = navigation.getCurrentStackItem();
+    final ViewController<?> current = navigation.getCurrentStackItem();
     if (current != null && current.tdlib() != null && current.tdlib().id() == newAccount.id) {
       /*if (current.isFocused()) {
         cleanupStack(current, newAccount.id);
@@ -282,14 +282,14 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
       return;
     }
 
-    ViewController current = navigation.getStack().getCurrent();
+    ViewController<?> current = navigation.getStack().getCurrent();
 
     if (status == Tdlib.STATUS_READY) {
-      ViewController first = navigation.getStack().get(0);
+      ViewController<?> first = navigation.getStack().get(0);
       boolean needThemeSwitch = this.account.id != account.id && isUnauthorizedController(current) && !isUnauthorizedController(first) && first.tdlibId() != account.id && current.tdlibId() == account.id;
 
       if (isUnauthorizedController(first) || !first.isSameAccount(account)) {
-        ViewController c = new MainController(this, account.tdlib());
+        ViewController<?> c = new MainController(this, account.tdlib());
         if (needThemeSwitch) {
           account.tdlib().settings().replaceGlobalTheme(this.account.tdlib().settings());
         }
@@ -306,7 +306,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
       }
     }
 
-    ViewController unauthorizedController = generateUnauthorizedController(account.tdlib());
+    ViewController<?> unauthorizedController = generateUnauthorizedController(account.tdlib());
     if (unauthorizedController != null) {
       if (current == null || current.getId() != unauthorizedController.getId()) {
         navigation.navigateTo(unauthorizedController);
@@ -318,10 +318,10 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
       ((PhoneController) current).onAuthorizationReady();
     }
 
-    ViewController first = navigation.getStack().get(0);
+    ViewController<?> first = navigation.getStack().get(0);
     if (!isUnauthorizedController(first) && first.isSameAccount(account)) {
       if (navigation.isAnimating()) {
-        ViewController c = navigation.getPendingController();
+        ViewController<?> c = navigation.getPendingController();
         if (c != null && c.isSameAccount(account) && c.isUnauthorized())
           return;
         c = navigation.getStack().getCurrent();
@@ -448,7 +448,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
     }
   }
 
-  public final ViewController generateUnauthorizedController (Tdlib tdlib) {
+  public final ViewController<?> generateUnauthorizedController (Tdlib tdlib) {
     TdApi.AuthorizationState authState = tdlib.authorizationState();
     switch (authState.getConstructor()) {
       case TdApi.AuthorizationStateWaitCode.CONSTRUCTOR: {
@@ -475,12 +475,12 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
 
   // Stack initialization (unauthorized)
 
-  private static <T extends ViewController> boolean isUnauthorizedController (T controller) {
+  private static <T extends ViewController<?>> boolean isUnauthorizedController (T controller) {
     return controller.isUnauthorized();
   }
 
   private void initUnauthorizedController () {
-    ViewController c = generateUnauthorizedController(account.tdlib());
+    ViewController<?> c = generateUnauthorizedController(account.tdlib());
     if (c != null) {
       navigation.initController(c);
       c = new PhoneController(this, account.tdlib());
@@ -534,7 +534,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
       return;
     }
     c.get();
-    ViewController child = c.getPreparedControllerForPosition(0);
+    ViewController<?> child = c.getPreparedControllerForPosition(0);
     if (child != null && child.needAsynchronousAnimation()) {
       setBlankViewVisible(true, false);
       child.postOnAnimationExecute(() -> {
@@ -717,7 +717,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
           initMainController(null, null, null);
         }
         consumer = account -> {
-          ViewController context = navigation.getCurrentStackItem();
+          ViewController<?> context = navigation.getCurrentStackItem();
           if (context != null) {
             account.tdlib().awaitInitialization(() -> account.tdlib().ui().openTelegramUrl(new TdlibContext(MainActivity.this, tdlib), url, null, null));
           }
@@ -876,7 +876,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
           needListener.set(false);
         }
       });
-    ViewController c = navigation.getCurrentStackItem();
+    ViewController<?> c = navigation.getCurrentStackItem();
     if (c != null) {
       SettingsWrap wrap = c.showSettings(b);
       if (wrap != null && wrap.adapter != null) {
@@ -938,8 +938,8 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
     if (navigation.isEmpty()) {
       initMainController(account.tdlib(), action, intent);
     } else {
-      ViewController c = navigation.getStack().get(0);
-      if (c != null && c instanceof MainController) {
+      ViewController<?> c = navigation.getStack().get(0);
+      if (c instanceof MainController) {
         ((MainController) c).shareIntent(account.tdlib(), action, intent);
       }
     }
@@ -969,13 +969,13 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
 
     int stackSize = navigation != null ? navigation.getStackSize() : 0;
     if (stackSize > 1) {
-      ViewController c;
+      ViewController<?> c;
       while ((c = navigation.getStack().get(stackSize - 1)) != null && c.tdlib() != account.tdlib()) {
         stackSize--;
       }
     }
 
-    ViewController current = stackSize > 1 ? navigation.getStack().get(stackSize - 1) : null;
+    ViewController<?> current = stackSize > 1 ? navigation.getStack().get(stackSize - 1) : null;
     if (stackSize <= 1 || current == null) {
       outState.putInt(BUNDLE_RESTORE_TYPE, BUNDLE_RESTORE_TYPE_NONE);
       super.onSaveInstanceState(outState);
@@ -994,7 +994,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
 
     int savedCount = 0;
     for (int i = stackSize - 1; i >= 0; i--) {
-      ViewController c = navigation.getStack().get(i);
+      ViewController<?> c = navigation.getStack().get(i);
       if (c == null) {
         continue;
       }
@@ -1061,7 +1061,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
       for (int i = 0; i < stackSize; i++) {
         String keyPrefix = makeBundleItemPrefix(i);
         int controllerId = in.getInt(keyPrefix);
-        ViewController c = restoreController(this, account.tdlib(), controllerId, in, keyPrefix + "_");
+        ViewController<?> c = restoreController(this, account.tdlib(), controllerId, in, keyPrefix + "_");
         if (c == null) {
           continue;
         }
@@ -1081,7 +1081,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
     return INSTANCE_NOT_RESTORED;
   }
 
-  private static boolean canSaveController (int id, ViewController c) {
+  private static boolean canSaveController (int id, ViewController<?> c) {
     switch (id) {
       case R.id.controller_settings:
       case R.id.controller_wallpaper:
@@ -1092,8 +1092,8 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
     return false;
   }
 
-  private static ViewController restoreController (BaseActivity context, Tdlib tdlib, int id, Bundle in, String keyPrefix) {
-    ViewController restore;
+  private static ViewController<?> restoreController (BaseActivity context, Tdlib tdlib, int id, Bundle in, String keyPrefix) {
+    ViewController<?> restore;
     switch (id) {
       case R.id.controller_settings:
         return new SettingsController(context, tdlib);
@@ -1230,8 +1230,8 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
       for (int i = stackSize - 2; i >= 1; i--) {
         navigation.getStack().destroy(i);
       }
-      ViewController first = navigation.getStack().get(0);
-      ViewController replaced = null;
+      ViewController<?> first = navigation.getStack().get(0);
+      ViewController<?> replaced = null;
       if (first.getId() != R.id.controller_main || first.tdlibId() != accountId) {
         replaced = new MainController(this, TdlibManager.getTdlib(accountId));
       }
@@ -1272,7 +1272,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
       }
       return;
     }
-    ViewController current = navigation.getCurrentStackItem();
+    ViewController<?> current = navigation.getCurrentStackItem();
     if (!(current instanceof PlaybackController)) {
       navigateToSafely(c);
     }
@@ -1290,7 +1290,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
       return;
     }
 
-    ViewController c = navigation.getCurrentStackItem();
+    ViewController<?> c = navigation.getCurrentStackItem();
     if (c != null && c.tdlibId() == tdlib.id() && c instanceof CallController && ((CallController) c).compareUserId(call.userId)) {
       ((CallController) c).replaceCall(call);
       return;
@@ -1302,7 +1302,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
     navigateToSafely(controller);
   }
 
-  public void navigateToSafely (@NonNull ViewController c) {
+  public void navigateToSafely (@NonNull ViewController<?> c) {
     if (isActivityBusyWithSomething()) {
       c.get();
       c.destroy();

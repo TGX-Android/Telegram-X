@@ -35,7 +35,7 @@ import me.vkryl.core.lambda.CancellableRunnable;
  * Author: default
  */
 
-public class StickersTrendingController extends ViewController implements StickerSmallView.StickerMovementCallback, Client.ResultHandler, TGStickerObj.DataProvider, StickersListener, TGStickerSetInfo.ViewCallback {
+public class StickersTrendingController extends ViewController<Void> implements StickerSmallView.StickerMovementCallback, Client.ResultHandler, TGStickerObj.DataProvider, StickersListener, TGStickerSetInfo.ViewCallback {
   public StickersTrendingController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }

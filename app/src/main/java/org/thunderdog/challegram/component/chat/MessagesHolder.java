@@ -107,7 +107,7 @@ public class MessagesHolder extends RecyclerView.ViewHolder {
     }
   }
 
-  private static MessageView createMessageView (Context context, int type, MessagesManager manager, @Nullable ViewController themeProvider) {
+  private static MessageView createMessageView (Context context, int type, MessagesManager manager, @Nullable ViewController<?> themeProvider) {
     switch (type) {
       case TYPE_MESSAGE: {
         MessageView view = new MessageView(context);
@@ -139,7 +139,7 @@ public class MessagesHolder extends RecyclerView.ViewHolder {
     throw new IllegalArgumentException("");
   }
 
-  public static MessagesHolder create (Context context, final MessagesManager manager, int type, @Nullable ViewController themeProvider) {
+  public static MessagesHolder create (Context context, final MessagesManager manager, int type, @Nullable ViewController<?> themeProvider) {
     switch (type) {
       case TYPE_EMPTY: {
         final EmptyTextView view = new EmptyTextView(context) {

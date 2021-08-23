@@ -159,7 +159,7 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
     }
   }
 
-  public void addThemeListeners (@Nullable ViewController themeProvider) {
+  public void addThemeListeners (@Nullable ViewController<?> themeProvider) {
     if (themeProvider != null) {
       themeProvider.addThemeTextAccentColorListener(titleView);
       themeProvider.addThemeTextDecentColorListener(subtitleView);

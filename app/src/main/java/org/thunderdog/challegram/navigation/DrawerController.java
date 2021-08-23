@@ -77,7 +77,7 @@ import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.td.ChatId;
 
-public class DrawerController extends ViewController implements View.OnClickListener, Settings.ProxyChangeListener, GlobalAccountListener, GlobalCountersListener, BaseView.CustomControllerProvider, BaseView.ActionListProvider, View.OnLongClickListener, TdlibSettingsManager.NotificationProblemListener {
+public class DrawerController extends ViewController<Void> implements View.OnClickListener, Settings.ProxyChangeListener, GlobalAccountListener, GlobalCountersListener, BaseView.CustomControllerProvider, BaseView.ActionListProvider, View.OnLongClickListener, TdlibSettingsManager.NotificationProblemListener {
   private int currentWidth, shadowWidth;
 
   private boolean isVisible;
@@ -517,7 +517,7 @@ public class DrawerController extends ViewController implements View.OnClickList
   }
 
   @Override
-  public ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ViewController target) {
+  public ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ViewController<?> target) {
     TdlibAccount account = (TdlibAccount) ((ListItem) v.getTag()).getData();
 
     ids.append(R.id.btn_removeAccount);
@@ -556,7 +556,7 @@ public class DrawerController extends ViewController implements View.OnClickList
   }
 
   @Override
-  public boolean onSlideOff (BaseView v, float x, float y, @Nullable ViewController openPreview) {
+  public boolean onSlideOff (BaseView v, float x, float y, @Nullable ViewController<?> openPreview) {
     if (y < 0 && (openPreview == null || !openPreview.hasInteractedWithContent())) {
       RecyclerView.ViewHolder holder = recyclerView.getChildViewHolder(v);
       if (holder != null) {
@@ -569,7 +569,7 @@ public class DrawerController extends ViewController implements View.OnClickList
   }
 
   @Override
-  public ViewController createForceTouchPreview (BaseView v, float x, float y) {
+  public ViewController<?> createForceTouchPreview (BaseView v, float x, float y) {
     TdlibAccount account = (TdlibAccount) ((ListItem) v.getTag()).getData();
     return new ChatsController(context, account.tdlib());
   }
@@ -932,7 +932,7 @@ public class DrawerController extends ViewController implements View.OnClickList
 
   private boolean ignoreClose;
 
-  private void openController (ViewController c) {
+  private void openController (ViewController<?> c) {
     if (c.needAsynchronousAnimation()) {
       ignoreClose = true;
       c.postOnAnimationReady(() -> {
@@ -990,7 +990,7 @@ public class DrawerController extends ViewController implements View.OnClickList
   }
 
   public void open () {
-    ViewController c = UI.getCurrentStackItem(context());
+    ViewController<?> c = UI.getCurrentStackItem(context());
     if (c != null && c.useDrawer() && !c.isIntercepted()) {
       prepare();
       open(0f);
@@ -1017,7 +1017,7 @@ public class DrawerController extends ViewController implements View.OnClickList
       }
     });
 
-    ViewController c = UI.getCurrentStackItem(context());
+    ViewController<?> c = UI.getCurrentStackItem(context());
     View view = c != null ? c.get() : null;
     if (view != null && view instanceof ContentFrameLayout) {
       currentView = (ContentFrameLayout) view;
@@ -1117,7 +1117,7 @@ public class DrawerController extends ViewController implements View.OnClickList
   // private int currentScreenWidth;
 
   public boolean isNeeded () {
-    ViewController c = context.navigation().getCurrentStackItem();
+    ViewController<?> c = context.navigation().getCurrentStackItem();
     return c != null && c.useDrawer();
   }
 

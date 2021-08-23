@@ -38,9 +38,9 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
   private @Nullable TdApi.ChatType chatType;
   private @Nullable ArrayList<TGMessage> items;
 
-  private final @Nullable ViewController themeProvider;
+  private final @Nullable ViewController<?> themeProvider;
 
-  public MessagesAdapter (Context context, MessagesManager manager, @Nullable ViewController themeProvider) {
+  public MessagesAdapter (Context context, MessagesManager manager, @Nullable ViewController<?> themeProvider) {
     this.context = context;
     this.manager = manager;
     this.themeProvider = themeProvider;

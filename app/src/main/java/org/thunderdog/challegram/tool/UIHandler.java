@@ -102,7 +102,7 @@ public class UIHandler extends Handler {
     sendMessage(Message.obtain(this, SET_PLAY_CHANGED, playing ? 1 : 0, 0, audio));
   }
 
-  public void setController (ViewController controller) {
+  public void setController (ViewController<?> controller) {
     sendMessage(Message.obtain(this, SET_CONTROLLER, 0, 0, controller));
   }
 
@@ -114,15 +114,15 @@ public class UIHandler extends Handler {
     sendMessage(Message.obtain(this, NAVIGATE_BACK));
   }
 
-  public void navigateTo (ViewController controller) {
+  public void navigateTo (ViewController<?> controller) {
     sendMessage(Message.obtain(this, NAVIGATE, 0, 0, controller));
   }
 
-  public void navigateDelayed (ViewController controller, long delay) {
+  public void navigateDelayed (ViewController<?> controller, long delay) {
     sendMessageDelayed(Message.obtain(this, NAVIGATE, 0, 0, controller), delay);
   }
 
-  public void setControllerDelayed (ViewController controller, boolean asForward, boolean saveFirst, long delay) {
+  public void setControllerDelayed (ViewController<?> controller, boolean asForward, boolean saveFirst, long delay) {
     int arg = 0;
     if (asForward) arg += 1;
     if (saveFirst) arg += 2;
@@ -274,7 +274,7 @@ public class UIHandler extends Handler {
         break;
       }
       case NAVIGATE: {
-        ViewController c = (ViewController) msg.obj;
+        ViewController<?> c = (ViewController<?>) msg.obj;
         ((MainActivity) c.context()).navigateToSafely(c);
         break;
       }
@@ -328,7 +328,7 @@ public class UIHandler extends Handler {
       }
       case SET_CONTROLLER: {
         try {
-          final  ViewController controller = (ViewController) msg.obj;
+          final  ViewController<?> controller = (ViewController<?>) msg.obj;
           final NavigationController navigation = UI.getNavigation();
           if (navigation != null) {
             navigation.setControllerAnimated(controller, (msg.arg2 & 1) == 1, (msg.arg2 & 2) == 2);

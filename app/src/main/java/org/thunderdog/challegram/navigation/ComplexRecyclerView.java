@@ -14,14 +14,14 @@ import org.thunderdog.challegram.v.CustomRecyclerView;
 
 public class ComplexRecyclerView extends CustomRecyclerView implements Runnable {
   private ComplexHeaderView headerView;
-  private ViewController target;
+  private ViewController<?> target;
   private FloatingButton floatingButton;
 
   private float scrollFactor;
   private boolean factorLocked;
   private int totalY;
 
-  public ComplexRecyclerView (Context context, ViewController target) {
+  public ComplexRecyclerView (Context context, ViewController<?> target) {
     super(context);
     this.target = target;
 
@@ -49,7 +49,7 @@ public class ComplexRecyclerView extends CustomRecyclerView implements Runnable 
     this.factorLocked = locked;
   }
 
-  public void setHeaderView (ComplexHeaderView headerView, ViewController target) {
+  public void setHeaderView (ComplexHeaderView headerView, ViewController<?> target) {
     this.headerView = headerView;
     this.target = target;
   }

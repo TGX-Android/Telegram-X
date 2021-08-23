@@ -721,7 +721,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     if (chatId != 0 && StringUtils.isEmpty(inlineQuery) && Settings.instance().needTutorial(Settings.TUTORIAL_INLINE_SEARCH_SECRECY)) {
       // TdApi.Chat chat = callback.provideInlineSearchChat();
       if (ChatId.isSecret(callback.provideInlineSearchChatId())) {
-        ViewController c = UI.getCurrentStackItem();
+        ViewController<?> c = UI.getCurrentStackItem();
         if (c != null) {
           c.openAlert(R.string.AppName, Lang.getString(R.string.SecretChatContextBotAlert), Lang.getString(R.string.Confirm), (dialog, which) -> Settings.instance().markTutorialAsComplete(Settings.TUTORIAL_INLINE_SEARCH_SECRECY), ViewController.ALERT_NO_CANCEL | ViewController.ALERT_NO_CANCELABLE);
         }
@@ -983,7 +983,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
         return;
       }
 
-      for (InlineResult inlineBot : inlineBots) {
+      for (InlineResult<?> inlineBot : inlineBots) {
         if (prefix.isEmpty() || ((InlineResultMention) inlineBot).matchesPrefix(prefix, false)) {
           inlineBot.setTarget(startIndex, endIndex);
           results.add(inlineBot);

@@ -78,7 +78,7 @@ public class HeaderEditText extends EditTextBase implements ActionMode.Callback,
     }
   }
 
-  public static HeaderEditText create (@NonNull ViewGroup parent, boolean light, @Nullable ViewController themeProvider) {
+  public static HeaderEditText create (@NonNull ViewGroup parent, boolean light, @Nullable ViewController<?> themeProvider) {
     HeaderEditText editText = (HeaderEditText) Views.inflate(parent.getContext(), light ? R.layout.input_header_light : R.layout.input_header, parent);
     editText.setTextColor(Theme.getColor(R.id.theme_color_headerText));
     editText.setHintTextColor(ColorUtils.alphaColor(Theme.HEADER_TEXT_DECENT_ALPHA, Theme.getColor(R.id.theme_color_headerText)));

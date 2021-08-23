@@ -372,7 +372,7 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
       }
     }
     if (navigationController != null) {
-      ViewController current = navigationController.getCurrentStackItem();
+      ViewController<?> current = navigationController.getCurrentStackItem();
       if (current != null) {
         current.drawTransform(c, width, (int) fillingBottom);
       }
@@ -1074,7 +1074,7 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
         return;
       }
 
-      ViewController c = navigationController != null ? navigationController.getCurrentStackItem() : null;
+      ViewController<?> c = navigationController != null ? navigationController.getCurrentStackItem() : null;
       boolean allowAnimation = c != null && !c.usePopupMode();
       final float toFactor = show ? 1f : 0f;
       if (allowAnimation) {
