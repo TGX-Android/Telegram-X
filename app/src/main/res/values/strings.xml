@@ -3470,6 +3470,12 @@
   <string name="StatsXInvitations_one">%1$s invitation</string>
   <string name="StatsXInvitations_other">%1$s invitations</string>
   <string name="StatsShowMore">Show %s More</string>
+  <string name="StatsRecentPosts">Recent Posts</string>
+  <string name="StatsShared">%s shared</string>
+  <string name="StatsMessageInfo">Message Statistics</string>
+  <string name="StatsMessageViewCount">View Count</string>
+  <string name="StatsMessageSharesPrivate">Private Shares</string>
+  <string name="StatsMessageSharesPublic">Public Shares</string>
 
   <string name="SendDiceAsEmoji">Send as emoji</string>
   <string name="SendDiceHint">Send a %1$s emoji to any chat to get a random number from Telegram.</string>

@@ -147,6 +147,19 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   private static final float TEXT_SIZE = 14f;
   private static final float IMAGE_HEIGHT = 40f;
 
+  private float customLinePadding = -1;
+
+  private float getLinePadding () {
+    return customLinePadding != -1 ? customLinePadding : LINE_PADDING;
+  }
+
+  public void setLinePadding (float customLinePadding) {
+    this.customLinePadding = customLinePadding;
+    buildText(true);
+    buildMediaPreview(false);
+    invalidate();
+  }
+
   private void buildPreview () {
     this.contentPreview = TD.getChatListPreview(tdlib, message.chatId, message);
     if (contentPreview.hasRefresher()) {
@@ -168,7 +181,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   private int lastTextWidth;
 
   private int getTextHorizontalOffset () {
-    return (int) (mediaPreview.getMetadata().getTotalWidth() + mediaPreview.getMetadata().getVisibility() * Screen.dp(PADDING_SIZE)) + Screen.dp(LINE_PADDING);
+    return (int) (mediaPreview.getMetadata().getTotalWidth() + mediaPreview.getMetadata().getVisibility() * Screen.dp(PADDING_SIZE)) + Screen.dp(getLinePadding());
   }
 
   private int contentInset;
@@ -181,7 +194,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   }
 
   private int calculateTextWidth () {
-    return Math.max(0, getMeasuredWidth() - Screen.dp(PADDING_SIZE) * 2 - getTextHorizontalOffset() - Screen.dp(LINE_PADDING) - contentInset);
+    return Math.max(0, getMeasuredWidth() - Screen.dp(PADDING_SIZE) * 2 - getTextHorizontalOffset() - Screen.dp(getLinePadding()) - contentInset);
   }
 
   private void buildText (boolean isLayout) {
@@ -307,7 +320,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   protected void onDraw (Canvas c) {
     if (this.message == null)
       return;
-    int textX = Screen.dp(LINE_PADDING) + Screen.dp(PADDING_SIZE) + getTextHorizontalOffset();
+    int textX = Screen.dp(getLinePadding()) + Screen.dp(PADDING_SIZE) + getTextHorizontalOffset();
     for (ListAnimator.Entry<MediaEntry> entry : mediaPreview) {
       entry.item.content.draw(this, c, entry.item.receiver, textX - entry.item.content.getWidth() - Screen.dp(PADDING_SIZE), (SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW) - Screen.dp(IMAGE_HEIGHT)) / 2f, entry.getVisibility());
     }

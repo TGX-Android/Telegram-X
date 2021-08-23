@@ -133,6 +133,7 @@
   <item type="id" name="controller_themeColors" />
   <item type="id" name="controller_networkStats" />
   <item type="id" name="controller_stats" />
+  <item type="id" name="controller_stats_message" />
   <item type="id" name="controller_navigation" />
   <item type="id" name="controller_text" />
   <item type="id" name="controller_language" />
@@ -524,6 +525,9 @@
   <item type="id" name="btn_autoNightModeScheduled_timeOff" />
   <item type="id" name="btn_autoNightModeScheduled_location" />
   <item type="id" name="btn_filter" />
+  <item type="id" name="btn_statsViewCount" />
+  <item type="id" name="btn_statsPrivateShares" />
+  <item type="id" name="btn_statsPublicShares" />
 
   <item type="id" name="stats_memberCount" />
   <item type="id" name="stats_join" />

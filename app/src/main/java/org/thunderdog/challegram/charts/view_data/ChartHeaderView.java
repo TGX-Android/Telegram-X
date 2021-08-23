@@ -206,8 +206,12 @@ public class ChartHeaderView extends FrameLayout implements Chart.DateListener, 
 
     public void setChart (MiniChart chart) {
         Views.setMediumText(title, Lang.getString(chart.titleRes));
-        showDate(true);
-        dates.setText(Lang.getDateRange(chart.dateRange.startDate, chart.dateRange.endDate, TimeUnit.SECONDS, false));
+        if (chart.dateRange != null) {
+            showDate(true);
+            dates.setText(Lang.getDateRange(chart.dateRange.startDate, chart.dateRange.endDate, TimeUnit.SECONDS, false));
+        } else {
+            showDate(false);
+        }
     }
 
     public void setChart (Chart chart) {
