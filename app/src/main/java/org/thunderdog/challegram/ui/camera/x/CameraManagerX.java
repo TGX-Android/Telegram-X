@@ -96,7 +96,7 @@ public class CameraManagerX extends CameraManager<PreviewView> {
 
   @Override
   protected void onParentSizeChanged (int width, int height) {
-    if (getCameraAspectRatioMode() == Settings.CAMERA_RATIO_FULL_SCREEN) {
+    if (Settings.instance().getCameraAspectRatioMode() == Settings.CAMERA_RATIO_FULL_SCREEN) {
       if (width == 0 || height == 0)
         return;
       Rational aspectRatioCustom = null;
@@ -117,14 +117,6 @@ public class CameraManagerX extends CameraManager<PreviewView> {
     }
   }
 
-  private int getCameraAspectRatioMode () {
-    if (delegate.useQrScanner() && cameraQrBridge != null && !cameraQrBridge.isGmsImplementationSupported()) {
-      return Settings.CAMERA_RATIO_FULL_SCREEN;
-    } else {
-      return Settings.instance().getCameraAspectRatioMode();
-    }
-  }
-
   private static Size toSize (Rational rational, int surfaceRotation) {
     double maxSize = 1920;
     double minSize = maxSize * rational.doubleValue();
@@ -136,7 +128,7 @@ public class CameraManagerX extends CameraManager<PreviewView> {
     if (!isOpen || isPaused || cameraProvider == null)
       return;
 
-    int aspectRatioMode = getCameraAspectRatioMode();
+    int aspectRatioMode = Settings.instance().getCameraAspectRatioMode();
     Rational aspectRatioCustom = null;
     int aspectRatio = AspectRatio.RATIO_16_9;
     switch (aspectRatioMode) {

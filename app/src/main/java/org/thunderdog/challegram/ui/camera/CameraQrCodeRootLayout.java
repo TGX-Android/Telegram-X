@@ -10,10 +10,10 @@ import android.view.animation.Interpolator;
 
 import androidx.annotation.NonNull;
 
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.unsorted.Settings;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
@@ -22,12 +22,14 @@ import me.vkryl.android.animator.FactorAnimator;
 class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.Target {
   private final static Interpolator ANIMATION_INTERPOLATOR = AnimatorUtils.OVERSHOOT_INTERPOLATOR;
   private final static long ANIMATION_DURATION = 250L;
+  private final static long RESET_DURATION = 150L;
   private final static long CONFIRMATION_DURATION = 750L;
 
   private final static int ANIMATOR_LOCATION_X = 0;
   private final static int ANIMATOR_LOCATION_Y = 1;
   private final static int ANIMATOR_SIZE = 2;
   private final static int ANIMATOR_STATUS = 3;
+  private final static int ANIMATOR_RESET = 4;
 
   private final int cornerSize = Screen.dp(20);
   private final Paint dimmerPaint = new Paint();
@@ -41,6 +43,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   private int cameraViewHeight;
 
   private final BoolAnimator qrFoundAnimator = new BoolAnimator(ANIMATOR_STATUS, this, ANIMATION_INTERPOLATOR, CONFIRMATION_DURATION, false);
+  private final BoolAnimator resetAnimator = new BoolAnimator(ANIMATOR_RESET, this, ANIMATION_INTERPOLATOR, RESET_DURATION, false);
   private FactorAnimator sizeChangeAnimator;
   private FactorAnimator locationChangeAnimatorX;
   private FactorAnimator locationChangeAnimatorY;
@@ -63,8 +66,8 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
       return;
     }
 
-    float scaleX = (float) cameraViewWidth / width;
-    float scaleY = (float) cameraViewHeight / height;
+    float scaleX = (float) getWidth() / width;
+    float scaleY = (float) getHeight() / height;
 
     Rect qrBounds = new Rect(
             (int) (boundingBox.left * scaleX),
@@ -73,8 +76,15 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
             (int) (boundingBox.bottom * scaleY)
     );
 
+    if (Settings.instance().getCameraAspectRatioMode() == Settings.CAMERA_RATIO_4_3) {
+      int topPadding = (getHeight() - cameraViewHeight) / 2;
+      scaleY = (float) cameraViewHeight / height;
+      qrBounds.top = (int) (topPadding + (boundingBox.top * scaleY));
+    }
+
     //Log.d("box: %s | scaleX: %s | scaleY: %s | preview: (%s x %s) | view: (%s x %s) | camera: (%s x %s)", qrBounds.toString(), scaleX, scaleY, width, height, getWidth(), getHeight(), cameraViewWidth, cameraViewHeight);
 
+    resetAnimator.setValue(false, false);
     qrFoundAnimator.setValue(true, true);
     animateQrLocation(qrBounds.left, qrBounds.top, (qrBounds.right - qrBounds.left) + cornerSize);
   }
@@ -88,8 +98,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
 
   @Override
   public void resetQrCorner () {
-    qrFoundAnimator.setValue(false, false);
-    animateQrLocation(initialLocation.x, initialLocation.y, initialLocation.size);
+    resetAnimator.setValue(true, true);
   }
 
   private void animateQrLocation (float x, float y, float size) {
@@ -136,6 +145,9 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
     if (id == ANIMATOR_STATUS && finalFactor == 1f) {
       ((CameraController) controller).onQrCodeFoundAndWaited();
       qrFoundAnimator.setValue(false, false);
+    } else if (id == ANIMATOR_RESET && finalFactor == 1f) {
+      qrFoundAnimator.setValue(false, false);
+      animateQrLocation(initialLocation.x, initialLocation.y, initialLocation.size);
     }
   }
 
