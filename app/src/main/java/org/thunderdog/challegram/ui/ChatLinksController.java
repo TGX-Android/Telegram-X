@@ -36,6 +36,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     @Nullable private InviteLinkController.Callback callback;
 
     private TdApi.ChatInviteLink currentInviteLink;
+    private TdApi.ChatInviteLink revokingInviteLink;
 
     private List<TdApi.ChatInviteLink> inviteLinks;
     private List<TdApi.ChatInviteLink> inviteLinksRevoked;
@@ -132,6 +133,10 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
             case R.id.btn_inviteLink:
                 TdApi.ChatInviteLink link = (TdApi.ChatInviteLink) v.getTag();
 
+                if (revokingInviteLink != null && link.inviteLink.equals(revokingInviteLink.inviteLink)) {
+                    return;
+                }
+
                 if (link.isRevoked && link.memberCount == 0) {
                     deleteLink(link);
                     return;
@@ -218,16 +223,12 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
             case R.id.btn_deleteAllRevokedLinks:
                 showOptions(Lang.getString(R.string.AreYouSureDeleteAllInviteLinks), new int[] {R.id.btn_deleteAllRevokedLinks, R.id.btn_cancel}, new String[] {Lang.getString(R.string.DeleteAllRevokedLinks), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
                     if (id == R.id.btn_deleteAllRevokedLinks) {
-                        tdlib.client().send(new TdApi.DeleteAllRevokedChatInviteLinks(chatId, adminId), result -> {
-                            if (result.getConstructor() != TdApi.Ok.CONSTRUCTOR) return;
-                            runOnUiThreadOptional(() -> {
-                                TdApi.ChatInviteLink firstLink = inviteLinksRevoked.get(0);
-                                TdApi.ChatInviteLink lastLink = inviteLinksRevoked.get(inviteLinksRevoked.size() - 1);
-                                inviteLinksRevoked.clear();
-                                smOnRevokedLinksCleared(firstLink, lastLink);
-                                notifyParentIfPossible();
-                            });
-                        });
+                        TdApi.ChatInviteLink firstLink = inviteLinksRevoked.get(0);
+                        TdApi.ChatInviteLink lastLink = inviteLinksRevoked.get(inviteLinksRevoked.size() - 1);
+                        inviteLinksRevoked.clear();
+                        smOnRevokedLinksCleared(firstLink, lastLink);
+                        notifyParentIfPossible();
+                        tdlib.client().send(new TdApi.DeleteAllRevokedChatInviteLinks(chatId, adminId), null);
                     }
 
                     return true;
@@ -245,14 +246,10 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     private void deleteLink (TdApi.ChatInviteLink link) {
         showOptions(Lang.getString(R.string.AreYouSureDeleteInviteLink), new int[]{R.id.btn_deleteLink, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkDelete), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
             if (id2 == R.id.btn_deleteLink) {
-                tdlib.client().send(new TdApi.DeleteRevokedChatInviteLink(chatId, link.inviteLink), result -> {
-                    if (result.getConstructor() != TdApi.Ok.CONSTRUCTOR) return;
-                    runOnUiThreadOptional(() -> {
-                        inviteLinksRevoked.remove(link);
-                        smOnRevokedLinkDeleted(link);
-                        notifyParentIfPossible();
-                    });
-                });
+                inviteLinksRevoked.remove(link);
+                smOnRevokedLinkDeleted(link);
+                notifyParentIfPossible();
+                tdlib.client().send(new TdApi.DeleteRevokedChatInviteLink(chatId, link.inviteLink), null);
             }
 
             return true;
@@ -265,6 +262,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     }
 
     private void revokeLink (TdApi.ChatInviteLink link) {
+        revokingInviteLink = link;
         tdlib.client().send(new TdApi.RevokeChatInviteLink(chatId, link.inviteLink), result -> {
             if (result.getConstructor() == TdApi.ChatInviteLinks.CONSTRUCTOR) {
                 runOnUiThreadOptional(() -> {
@@ -288,9 +286,12 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
                             smOnLinkRevoked(link, inviteLinksRevoked.get(0));
                         }
                     }
+
+                    revokingInviteLink = null;
                 });
             } else if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
                 UI.showError(result);
+                revokingInviteLink = null;
             }
         });
     }
