@@ -4402,8 +4402,18 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private void openInviteLink () {
+    TdApi.ChatMemberStatus status;
+
+    if (supergroup != null) {
+      status = supergroup.status;
+    } else if (group != null) {
+      status = group.status;
+    } else {
+      status = new TdApi.ChatMemberStatusMember();
+    }
+
     ChatLinksController c = new ChatLinksController(context, tdlib);
-    c.setArguments(new ChatLinksController.Args(chat.id, tdlib.myUserId(), this, supergroup.status.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR));
+    c.setArguments(new ChatLinksController.Args(chat.id, tdlib.myUserId(), this, status.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR));
     navigateTo(c);
   }
 

@@ -445,14 +445,10 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
                 items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, hintText, false));
 
-                if (isOwner || lastIvIndex != 0) {
-                    items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.AdditionalInviteLinks));
-                    items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-                    if (isOwner) {
-                        items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_createInviteLink, 0, R.string.CreateLink));
-                        if (lastIvIndex != 0) items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-                    }
-                }
+                items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.AdditionalInviteLinks));
+                items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+                items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_createInviteLink, 0, R.string.CreateLink));
+                if (inviteLinks.size() > 1) items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
 
                 continue;
             }
@@ -477,7 +473,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
             items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         }
 
-        if (inviteLinkCounts != null && inviteLinkCounts.length > 0) {
+        if (inviteLinkCounts != null && inviteLinkCounts.length > 1) {
             items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.OtherAdminsInviteLinks));
             items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
 

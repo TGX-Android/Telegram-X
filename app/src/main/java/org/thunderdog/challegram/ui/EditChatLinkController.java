@@ -143,8 +143,8 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
 
     @Override
     protected void onCreateView(Context context, FrameLayoutFix contentView, RecyclerView recyclerView) {
-        setDoneVisible(true);
         setDoneIcon(R.drawable.baseline_check_24);
+        setInstantDoneVisible(true);
 
         adapter = new SettingsAdapter(this) {
             @Override
