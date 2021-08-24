@@ -2277,7 +2277,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }*/
 
   private ListItem newInviteLinkItem () {
-    return new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, R.drawable.baseline_person_add_24, R.string.InviteLink);
+    return new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, R.drawable.baseline_person_add_24, R.string.PrimaryInviteLinkMenu);
   }
 
   private ListItem newNotificationItem () {

@@ -3670,6 +3670,7 @@
   <string name="SlowModeOff">Off</string>
 
   <string name="InviteLinks">Invite Links</string>
+  <string name="PrimaryInviteLinkMenu">Primary Invite Link</string>
   <string name="PrimaryInviteLink">Permanent Link</string>
   <string name="AdditionalInviteLinks">Additional Links</string>
   <string name="RevokedInviteLinks">Revoked Links</string>
@@ -3705,6 +3706,7 @@
   <string name="InviteLinkOtherAdminHint">**%s** can see this link and use it to invite new members to **%s**.</string>
   <string name="InviteLinkViewMembers">View joined members</string>
   <string name="InviteLinkViewMembersTitle">Joined members</string>
+  <string name="CreatedByXOnDate">Created by %1$s %2$s</string>
 
   <string name="ChatBackgroundPreview">Chat Background Preview</string>
   <string name="ChatBackgroundNotSupported">Sorry, this type of chat background is not yet supported.</string>
