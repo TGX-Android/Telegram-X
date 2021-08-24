@@ -50,7 +50,14 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
             inviteLinks.add(1, newLink);
         }
 
-        runOnUiThread(this::buildCells, 250L);
+        runOnUiThread(() -> {
+            if (existingLink != null) {
+                smOnLinkEdited(existingLink, newLink);
+            } else {
+                smOnLinkCreated(newLink);
+                notifyParentIfPossible();
+            }
+        }, 250L);
     }
 
     public static class Args {
@@ -58,11 +65,13 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         private final int adminId;
         private final boolean isOwner;
         @Nullable private final InviteLinkController.Callback callback;
+        @Nullable private final ChatLinksController parent;
 
-        public Args (long chatId, int adminId, @Nullable InviteLinkController.Callback callback, boolean isOwner) {
+        public Args (long chatId, int adminId, @Nullable InviteLinkController.Callback callback, @Nullable ChatLinksController parent, boolean isOwner) {
             this.chatId = chatId;
             this.adminId = adminId;
             this.callback = callback;
+            this.parent = parent;
             this.isOwner = isOwner;
         }
     }
@@ -117,7 +126,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         switch (v.getId()) {
             case R.id.btn_openAdminInviteLinks:
                 ChatLinksController cc = new ChatLinksController(context, tdlib);
-                cc.setArguments(new ChatLinksController.Args(chatId, (Integer) v.getTag(), null, false));
+                cc.setArguments(new ChatLinksController.Args(chatId, (Integer) v.getTag(), null, this, false));
                 navigateTo(cc);
                 break;
             case R.id.btn_inviteLink:
@@ -194,25 +203,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
                                 case R.id.btn_revokeLink:
                                     showOptions(Lang.getString(isChannel ? R.string.AreYouSureRevokeInviteLinkChannel : R.string.AreYouSureRevokeInviteLinkGroup), new int[]{R.id.btn_revokeLink, R.id.btn_cancel}, new String[]{Lang.getString(R.string.RevokeLink), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
                                         if (id2 == R.id.btn_revokeLink) {
-                                            if (adminId != tdlib().myUserId() || !link.isPrimary) {
-                                                revokeLink(link);
-                                            } else {
-                                                tdlib.client().send(new TdApi.ReplacePrimaryChatInviteLink(chatId), result -> {
-                                                    if (result.getConstructor() != TdApi.ChatInviteLink.CONSTRUCTOR) return;
-                                                    runOnUiThreadOptional(() -> {
-                                                        final TdApi.ChatInviteLink newInviteLink = (TdApi.ChatInviteLink) result;
-
-                                                        if (callback != null) {
-                                                            callback.onInviteLinkChanged(newInviteLink);
-                                                        }
-
-                                                        currentInviteLink = newInviteLink;
-                                                        inviteLinks.remove(0);
-                                                        inviteLinks.add(0, newInviteLink);
-                                                        buildCells();
-                                                    });
-                                                });
-                                            }
+                                            revokeLink(link);
                                         }
 
                                         return true;
@@ -230,8 +221,11 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
                         tdlib.client().send(new TdApi.DeleteAllRevokedChatInviteLinks(chatId, adminId), result -> {
                             if (result.getConstructor() != TdApi.Ok.CONSTRUCTOR) return;
                             runOnUiThreadOptional(() -> {
+                                TdApi.ChatInviteLink firstLink = inviteLinksRevoked.get(0);
+                                TdApi.ChatInviteLink lastLink = inviteLinksRevoked.get(inviteLinksRevoked.size() - 1);
                                 inviteLinksRevoked.clear();
-                                buildCells();
+                                smOnRevokedLinksCleared(firstLink, lastLink);
+                                notifyParentIfPossible();
                             });
                         });
                     }
@@ -255,7 +249,8 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
                     if (result.getConstructor() != TdApi.Ok.CONSTRUCTOR) return;
                     runOnUiThreadOptional(() -> {
                         inviteLinksRevoked.remove(link);
-                        buildCells();
+                        smOnRevokedLinkDeleted(link);
+                        notifyParentIfPossible();
                     });
                 });
             }
@@ -264,36 +259,38 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         });
     }
 
+    private void notifyParentIfPossible () {
+        if (getArgumentsStrict().parent == null) return;
+        getArgumentsStrict().parent.smOnUserLinkCountChanged(adminId, inviteLinks.size() + inviteLinksRevoked.size());
+    }
+
     private void revokeLink (TdApi.ChatInviteLink link) {
         tdlib.client().send(new TdApi.RevokeChatInviteLink(chatId, link.inviteLink), result -> {
-            switch (result.getConstructor()) {
-                case TdApi.ChatInviteLinks.CONSTRUCTOR: {
-                    runOnUiThreadOptional(() -> {
-                        final TdApi.ChatInviteLinks newInviteLink = (TdApi.ChatInviteLinks) result;
+            if (result.getConstructor() == TdApi.ChatInviteLinks.CONSTRUCTOR) {
+                runOnUiThreadOptional(() -> {
+                    final TdApi.ChatInviteLinks newInviteLink = (TdApi.ChatInviteLinks) result;
 
-                        if (newInviteLink.inviteLinks.length > 0) {
-                            inviteLinks.remove(link);
-                            inviteLinksRevoked.add(0, newInviteLink.inviteLinks[0]);
+                    if (newInviteLink.inviteLinks.length > 0) {
+                        inviteLinks.remove(link);
+                        inviteLinksRevoked.add(0, newInviteLink.inviteLinks[0]);
 
-                            if (link.isPrimary && newInviteLink.inviteLinks.length > 1) {
-                                currentInviteLink = newInviteLink.inviteLinks[1];
-                                inviteLinks.add(0, currentInviteLink);
+                        if (link.isPrimary && newInviteLink.inviteLinks.length > 1) {
+                            currentInviteLink = newInviteLink.inviteLinks[1];
+                            inviteLinks.add(0, currentInviteLink);
+
+                            smOnLinkEdited(link, currentInviteLink);
+                            smOnLinkRevoked(null, inviteLinksRevoked.get(0));
+
+                            if (callback != null && isOwner && adminId == tdlib().myUserId()) {
+                                callback.onInviteLinkChanged(currentInviteLink);
                             }
+                        } else {
+                            smOnLinkRevoked(link, inviteLinksRevoked.get(0));
                         }
-
-                        buildCells();
-                    });
-
-                    break;
-                }
-                case TdApi.Error.CONSTRUCTOR: {
-                    UI.showError(result);
-                    break;
-                }
-                default: {
-                    Log.unexpectedTdlibResponse(result, TdApi.RevokeChatInviteLink.class, TdApi.ChatInviteLinks.class);
-                    break;
-                }
+                    }
+                });
+            } else if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+                UI.showError(result);
             }
         });
     }
@@ -341,7 +338,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
             // add nothing
         } else if (exIn > 0) {
             subtitle.append(Lang.getString(R.string.InviteLinkExpires, Lang.getDuration(exIn)));
-        } else if (exIn < 0) {
+        } else {
             subtitle.append(Lang.getString(R.string.InviteLinkExpired));
         }
 
@@ -381,41 +378,117 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
     private void requestLinks (boolean revoked, Consumer<TdApi.ChatInviteLinks> linksConsumer) {
         tdlib.client().send(new TdApi.GetChatInviteLinks(chatId, adminId, revoked, 0, "", 20), object -> {
-            switch (object.getConstructor()) {
-                case TdApi.ChatInviteLinks.CONSTRUCTOR: {
-                    linksConsumer.accept(((TdApi.ChatInviteLinks) object));
-                    break;
-                }
-                case TdApi.Error.CONSTRUCTOR: {
-                    UI.showError(object);
-                    break;
-                }
-                default: {
-                    Log.unexpectedTdlibResponse(object, TdApi.GetChatInviteLinks.class, TdApi.ChatInviteLinks.class);
-                    break;
-                }
+            if (object.getConstructor() == TdApi.ChatInviteLinks.CONSTRUCTOR) {
+                linksConsumer.accept(((TdApi.ChatInviteLinks) object));
+            } else if (object.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+                UI.showError(object);
             }
         });
     }
 
     private void requestAdminsWithLinks (Consumer<TdApi.ChatInviteLinkCounts> linksConsumer) {
         tdlib.client().send(new TdApi.GetChatInviteLinkCounts(chatId), object -> {
-            switch (object.getConstructor()) {
-                case TdApi.ChatInviteLinkCounts.CONSTRUCTOR: {
-                    linksConsumer.accept(((TdApi.ChatInviteLinkCounts) object));
-                    break;
-                }
-                case TdApi.Error.CONSTRUCTOR: {
-                    UI.showError(object);
-                    break;
-                }
-                default: {
-                    Log.unexpectedTdlibResponse(object, TdApi.GetChatInviteLinkCounts.class, TdApi.ChatInviteLinkCounts.class);
-                    break;
-                }
+            if (object.getConstructor() == TdApi.ChatInviteLinkCounts.CONSTRUCTOR) {
+                linksConsumer.accept(((TdApi.ChatInviteLinkCounts) object));
+            } else if (object.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+                UI.showError(object);
             }
         });
     }
+
+    // Helpers for Smart Animation
+    // This is called after the actual list is changed
+
+    // Remove everything from "Revoked Links", including the header
+    public void smOnRevokedLinksCleared (TdApi.ChatInviteLink firstRevoked, TdApi.ChatInviteLink lastRevoked) {
+        int firstLink = adapter.indexOfViewByData(firstRevoked);
+        int lastLink = adapter.indexOfViewByData(lastRevoked);
+
+        int startPos = firstLink - 4; // also remove header
+        int itemCount = (lastLink - firstLink) + 6; // include the bottom shadow
+
+        adapter.removeRange(startPos, itemCount);
+    }
+
+    // Remove from "Additional Links" and add to "Revoked Links". If there was no revoked links, add header.
+    public void smOnLinkRevoked (TdApi.ChatInviteLink wasActiveInviteLink, TdApi.ChatInviteLink revokedInviteLink) {
+        boolean shouldAddHeader = inviteLinksRevoked.size() == 1;
+
+        ListItem linkItem = new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, 0, revokedInviteLink.inviteLink, false).setData(revokedInviteLink);
+        ListItem linkItemSeparator = new ListItem(ListItem.TYPE_SEPARATOR_FULL);
+
+        if (wasActiveInviteLink != null) adapter.removeRange(adapter.indexOfViewByData(wasActiveInviteLink) - 1, 2);
+
+        if (shouldAddHeader) {
+            int lastActiveLinkIdx;
+
+            if (inviteLinks.size() > 1) {
+                lastActiveLinkIdx = adapter.indexOfViewByData(inviteLinks.get(inviteLinks.size() - 1)) + 1;
+            } else {
+                // find the "Create Link" instead
+                lastActiveLinkIdx = adapter.indexOfViewById(R.id.btn_createInviteLink) + 1;
+            }
+
+            lastActiveLinkIdx += 1; // include the shadow
+
+            ListItem[] arr = new ListItem[] {
+                    new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.RevokedInviteLinks),
+                    new ListItem(ListItem.TYPE_SHADOW_TOP),
+                    new ListItem(ListItem.TYPE_SETTING, R.id.btn_deleteAllRevokedLinks, 0, R.string.DeleteAllRevokedLinks).setTextColorId(R.id.theme_color_textNegative),
+                    new ListItem(ListItem.TYPE_SEPARATOR_FULL),
+                    linkItem,
+                    new ListItem(ListItem.TYPE_SHADOW_BOTTOM)
+            };
+
+            adapter.addItems(lastActiveLinkIdx, arr);
+        } else {
+            int firstRevokedLinkIdx = adapter.indexOfViewByData(inviteLinksRevoked.get(1)) - 1; // 0 is our new link
+            adapter.addItem(firstRevokedLinkIdx, linkItem);
+            adapter.addItem(firstRevokedLinkIdx, linkItemSeparator);
+        }
+    }
+
+    // Remove from "Revoked Links". If there is no revoked links left, remove header.
+    public void smOnRevokedLinkDeleted (TdApi.ChatInviteLink revokedLink) {
+        int revokedLinkIdx = adapter.indexOfViewByData(revokedLink);
+        boolean shouldRemoveHeader = inviteLinksRevoked.isEmpty();
+
+        if (shouldRemoveHeader) {
+            adapter.removeRange(revokedLinkIdx - 4, 6);
+        } else {
+            adapter.removeRange(revokedLinkIdx - 1, 2);
+        }
+    }
+
+    // Rebind link cell
+    public void smOnLinkEdited (TdApi.ChatInviteLink oldLink, TdApi.ChatInviteLink newLink) {
+        int oldLinkIndex = adapter.indexOfViewByData(oldLink);
+        ListItem oldLinkItem = adapter.getItem(oldLinkIndex);
+
+        if (oldLinkItem != null) {
+            oldLinkItem.setString(newLink.inviteLink);
+            oldLinkItem.setData(newLink);
+            adapter.notifyItemChanged(oldLinkIndex);
+        }
+    }
+
+    public void smOnLinkCreated (TdApi.ChatInviteLink newLink) {
+        int newIndex = adapter.indexOfViewById(R.id.btn_createInviteLink) + 1;
+        adapter.addItem(newIndex, new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, 0, newLink.inviteLink, false).setData(newLink));
+        adapter.addItem(newIndex, new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    }
+
+    public void smOnUserLinkCountChanged (int userId, int newCount) {
+        int oldLinkIndex = adapter.indexOfViewByLongId(userId);
+        ListItem oldLinkItem = adapter.getItem(oldLinkIndex);
+
+        if (oldLinkItem != null) {
+            oldLinkItem.setIntValue(newCount);
+            adapter.notifyItemChanged(oldLinkIndex);
+        }
+    }
+
+    //
 
     private void buildCells () {
         ArrayList<ListItem> items = new ArrayList<>();

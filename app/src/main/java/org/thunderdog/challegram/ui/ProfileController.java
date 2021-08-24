@@ -4413,7 +4413,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     ChatLinksController c = new ChatLinksController(context, tdlib);
-    c.setArguments(new ChatLinksController.Args(chat.id, tdlib.myUserId(), this, status.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR));
+    c.setArguments(new ChatLinksController.Args(chat.id, tdlib.myUserId(), this, null, status.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR));
     navigateTo(c);
   }
 

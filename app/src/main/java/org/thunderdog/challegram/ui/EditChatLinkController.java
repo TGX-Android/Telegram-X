@@ -105,32 +105,16 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
     protected boolean onDoneClick() {
         setDoneInProgress(true);
         tdlib.client().send(
-                isCreation ? new TdApi.CreateChatInviteLink(getArgumentsStrict().chatId, expireDate, memberLimit) : new TdApi.EditChatInviteLink(getArgumentsStrict().chatId, getArgumentsStrict().existingInviteLink.inviteLink, expireDate, memberLimit)
-                , result -> {
-                    switch (result.getConstructor()) {
-                        case TdApi.ChatInviteLink.CONSTRUCTOR: {
-                            runOnUiThreadOptional(() -> {
-                                getArgumentsStrict().controller.onLinkCreated((TdApi.ChatInviteLink) result, getArgumentsStrict().existingInviteLink);
-                                navigateBack();
-                            });
-
-                            break;
+                isCreation ? new TdApi.CreateChatInviteLink(getArgumentsStrict().chatId, expireDate, memberLimit) : new TdApi.EditChatInviteLink(getArgumentsStrict().chatId, getArgumentsStrict().existingInviteLink.inviteLink, expireDate, memberLimit), result -> {
+                    runOnUiThreadOptional(() -> {
+                        if (result.getConstructor() == TdApi.ChatInviteLink.CONSTRUCTOR) {
+                            getArgumentsStrict().controller.onLinkCreated((TdApi.ChatInviteLink) result, getArgumentsStrict().existingInviteLink);
+                            navigateBack();
+                        } else if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+                            UI.showError(result);
+                            setDoneInProgress(false);
                         }
-                        case TdApi.Error.CONSTRUCTOR: {
-                            runOnUiThreadOptional(() -> {
-                                UI.showError(result);
-                                setDoneInProgress(false);
-                            });
-                            break;
-                        }
-                        default: {
-                            runOnUiThreadOptional(() -> {
-                                Log.unexpectedTdlibResponse(result, isCreation ? TdApi.CreateChatInviteLink.class : TdApi.EditChatInviteLink.class, TdApi.ChatInviteLink.class);
-                                setDoneInProgress(false);
-                            });
-                            break;
-                        }
-                    }
+                    });
                 });
 
         return true;
