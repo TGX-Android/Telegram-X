@@ -23,6 +23,7 @@ import org.thunderdog.challegram.v.CustomRecyclerView;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.collection.IntList;
 
@@ -184,7 +185,9 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
                 icons.append(R.drawable.baseline_delete_forever_24);
                 colors.append(OPTION_COLOR_RED);
 
-                showOptions(null, ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
+                CharSequence info = TD.makeClickable(Lang.getString(R.string.CreatedByXOnDate, ((target, argStart, argEnd, spanIndex, needFakeBold) -> spanIndex == 0 ? Lang.newUserSpan(new TdlibContext(context, tdlib), link.creatorUserId) : null), tdlib.cache().userName(link.creatorUserId), Lang.getRelativeTimestamp(link.date, TimeUnit.SECONDS)));
+                Lang.SpanCreator firstBoldCreator = (target, argStart, argEnd, spanIndex, needFakeBold) -> spanIndex == 0 ? Lang.newBoldSpan(needFakeBold) : null;
+                showOptions(Lang.getString(R.string.format_nameAndStatus, firstBoldCreator, link.inviteLink, info), ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
                             switch (id) {
                                 case R.id.btn_viewInviteLinkMembers:
                                     ChatLinkMembersController c2 = new ChatLinkMembersController(context, tdlib);
