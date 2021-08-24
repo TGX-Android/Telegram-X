@@ -18,6 +18,7 @@ import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Passcode;
+import org.thunderdog.challegram.unsorted.Settings;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.CancellableRunnable;
@@ -258,7 +259,7 @@ public class RootFrameLayout extends FrameLayoutFix {
     lp.leftMargin = ignoreHorizontal ? 0 : wi.getSystemWindowInsetLeft();
     lp.topMargin = topOnly ? 0 : wi.getSystemWindowInsetTop();
     lp.rightMargin = ignoreHorizontal ? 0 : wi.getSystemWindowInsetRight();
-    int bottom = Config.USE_IME_ANIMATED_INSETS ? partialBottomInset : wi.getSystemWindowInsetBottom();
+    int bottom = Config.USE_IME_ANIMATED_INSETS && Settings.instance().needKeyboardAnimation() ? partialBottomInset : wi.getSystemWindowInsetBottom();
     lp.bottomMargin = ignoreBottom || shouldIgnoreBottomMargin(child, bottom) ? 0 : bottom;
     if (UI.getContext(getContext()).dispatchCameraMargins(child, lp.leftMargin, lp.topMargin, lp.rightMargin, bottom)) {
       lp.leftMargin = lp.topMargin = lp.rightMargin = lp.bottomMargin = 0;

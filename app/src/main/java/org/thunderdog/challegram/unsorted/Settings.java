@@ -325,6 +325,7 @@ public class Settings {
   private static final int FLAG_OTHER_START_ROUND_REAR = 1 << 28;
   private static final int FLAG_OTHER_DISABLE_BIG_EMOJI = 1 << 29;
   private static final int FLAG_OTHER_DISABLE_SECRET_LINK_PREVIEWS = 1 << 30;
+  private static final int FLAG_OTHER_KEYBOARD_ANIMATION = 1 << 31;
 
   public static final long SETTING_FLAG_BATMAN_POLL_TRANSITIONS = 1 << 1;
   public static final long SETTING_FLAG_EDIT_MARKDOWN = 1 << 2;
@@ -2458,8 +2459,16 @@ public class Settings {
     return checkSetting(FLAG_OTHER_HIDE_CHAT_KEYBOARD);
   }
 
+  public boolean needKeyboardAnimation () {
+    return checkSetting(FLAG_OTHER_KEYBOARD_ANIMATION);
+  }
+
   public void setNeedHideChatKeyboardOnScroll (boolean needHideChatKeyboardOnScroll) {
     setSetting(FLAG_OTHER_HIDE_CHAT_KEYBOARD, needHideChatKeyboardOnScroll);
+  }
+
+  public void setNeedKeyboardAnimation (boolean needKeyboardAnimation) {
+    setSetting(FLAG_OTHER_KEYBOARD_ANIMATION, needKeyboardAnimation);
   }
 
   public boolean needPreviewChatOnHold () {

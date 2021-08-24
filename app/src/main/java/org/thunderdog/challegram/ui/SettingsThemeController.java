@@ -383,6 +383,10 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
             v.getToggler().setRadioEnabled(Settings.instance().needHideChatKeyboardOnScroll(), isUpdate);
             break;
           }
+          case R.id.btn_animateKeyboard: {
+            v.getToggler().setRadioEnabled(Settings.instance().needKeyboardAnimation(), isUpdate);
+            break;
+          }
           case R.id.btn_useInAppBrowser: {
             v.getToggler().setRadioEnabled(Settings.instance().useInAppBrowser(), isUpdate);
             break;
@@ -670,6 +674,10 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_hideChatKeyboard, 0, R.string.HideChatKeyboard));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      if (Config.USE_IME_ANIMATED_INSETS) {
+        items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_animateKeyboard, 0, R.string.KeyboardAnimation));
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      }
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_saveToGallery, 0, R.string.SaveOutgoingPhotos));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_instantViewMode, 0, R.string.AutoInstantView));
@@ -1414,6 +1422,10 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       }
       case R.id.btn_hideChatKeyboard: {
         Settings.instance().setNeedHideChatKeyboardOnScroll(adapter.toggleView(v));
+        break;
+      }
+      case R.id.btn_animateKeyboard: {
+        Settings.instance().setNeedKeyboardAnimation(adapter.toggleView(v));
         break;
       }
       case R.id.btn_sendByEnter: {

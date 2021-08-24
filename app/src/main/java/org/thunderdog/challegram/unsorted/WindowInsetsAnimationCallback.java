@@ -27,6 +27,12 @@ public class WindowInsetsAnimationCallback extends WindowInsetsAnimation.Callbac
     @NonNull
     @Override
     public WindowInsetsAnimation.Bounds onStart (@NonNull WindowInsetsAnimation animation, @NonNull WindowInsetsAnimation.Bounds bounds) {
+        if (!Settings.instance().needKeyboardAnimation()) {
+            rootFrameLayout.partialBottomInset = 0;
+            rootFrameLayout.requestLayout();
+            return super.onStart(animation, bounds);
+        }
+
         if (Keyboard.shouldSkipKeyboardAnimation) {
             // manually set insets because we skipped the animation
             if (bottomInset > 0) {
@@ -51,7 +57,7 @@ public class WindowInsetsAnimationCallback extends WindowInsetsAnimation.Callbac
         Insets imeInset = insets.getInsets(WindowInsets.Type.ime());
         bottomInset = Math.max(0, imeInset.bottom - navInset.bottom);
 
-        if (!Keyboard.shouldSkipKeyboardAnimation) {
+        if (!Keyboard.shouldSkipKeyboardAnimation && Settings.instance().needKeyboardAnimation()) {
             Keyboard.notifyHeightChanged(rootFrameLayout.partialBottomInset);
             rootFrameLayout.partialBottomInset = bottomInset;
             rootFrameLayout.requestLayout();

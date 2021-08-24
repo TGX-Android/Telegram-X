@@ -703,6 +703,7 @@
   <item type="id" name="btn_secretLinkPreviews" />
   <item type="id" name="btn_favorite" />
   <item type="id" name="btn_hideChatKeyboard" />
+  <item type="id" name="btn_animateKeyboard" />
   <item type="id" name="btn_hideAuthor" />
   <item type="id" name="btn_removeCaptions" />
   <item type="id" name="btn_gifs" />
