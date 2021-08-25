@@ -3673,6 +3673,7 @@
   <string name="PrimaryInviteLinkMenu">Primary Invite Link</string>
   <string name="PrimaryInviteLink">Permanent Link</string>
   <string name="AdditionalInviteLinks">Additional Links</string>
+  <string name="AdditionalInviteLinksHint">You can create additional invite links with an optional expiration date and joined members limit.</string>
   <string name="RevokedInviteLinks">Revoked Links</string>
   <string name="OtherAdminsInviteLinks">Links created by other admins</string>
   <string name="InviteLinkNoJoins">no one joined</string>
