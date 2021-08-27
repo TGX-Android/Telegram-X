@@ -3702,6 +3702,19 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         }
         return false;
       }
+    } else if (currentPickMode == MODE_MEMBER_ADMIN) {
+      if (isAlreadyMember(user.id) && !tdlib.isSelfUserId(user.id) && membersAdapter != null && membersAdapter.getChatMember(user.id) != null) {
+        tdlib.client().send(new TdApi.GetChatMember(chat.id, new TdApi.MessageSenderUser(user.id)), r -> {
+          if (r.getConstructor() == TdApi.ChatMember.CONSTRUCTOR) {
+            TdApi.ChatMember chatMember = ((TdApi.ChatMember) r);
+            EditRightsController c = new EditRightsController(this.context, this.tdlib);
+            c.setArguments(new EditRightsController.Args(chat.id, user.id, false, supergroup != null ? supergroup.status : group.status, chatMember));
+            context.preventLeavingSearchMode();
+            context.navigateTo(c);
+          }
+        });
+        return true;
+      }
     }
     switch (mode) {
       case MODE_GROUP: {
