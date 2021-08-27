@@ -10,6 +10,8 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
+import org.thunderdog.challegram.component.sticker.StickerSmallView;
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
@@ -19,6 +21,7 @@ import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
+import org.thunderdog.challegram.widget.EmbeddableStickerView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,6 +32,7 @@ import me.vkryl.core.collection.IntList;
 
 public class ChatLinksController extends RecyclerViewController<ChatLinksController.Args> implements View.OnClickListener {
     private SettingsAdapter adapter;
+    private static final String UTYAN_EMOJI = "\uD83E\uDD73";
 
     private boolean isChannel;
     private boolean isOwner;
@@ -114,6 +118,12 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
                     userView.setUser(tgUser);
                     userView.setTag((int) item.getLongId());
                 }
+            }
+
+            @Override
+            protected void setEmbedSticker(ListItem item, int position, EmbeddableStickerView userView, boolean isUpdate) {
+                userView.setSticker(new TGStickerObj(tdlib, (TdApi.Sticker) item.getData(), UTYAN_EMOJI, false));
+                userView.setCaptionText(Lang.getString(isChannel ? R.string.ChannelLinkInfo : R.string.LinkInfo));
             }
         };
 
@@ -500,6 +510,11 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
         int lastIvIndex = inviteLinks.size() - 1;
         int lastRvIndex = inviteLinksRevoked.size() - 1;
+        boolean viewingOtherAdmin = adminId != tdlib.myUserId();
+
+        if (!viewingOtherAdmin) {
+            items.add(new ListItem(ListItem.TYPE_EMBED_STICKER).setData(tdlib.findUtyanEmoji(UTYAN_EMOJI)));
+        }
 
         for (TdApi.ChatInviteLink inviteLink : inviteLinks) {
             if (inviteLink.isPrimary) {
@@ -509,18 +524,11 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
                 items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, 0, inviteLink.inviteLink, false).setData(inviteLink));
                 items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
-                CharSequence hintText;
-
-                if (adminId != tdlib.myUserId()) {
+                if (viewingOtherAdmin) {
                     TdApi.User adminUser = tdlib.cache().user(adminId);
-                    hintText = Lang.getMarkdownString(new TdlibContext(context, tdlib), R.string.InviteLinkOtherAdminHint, TD.getUserName(adminUser), tdlib.chatTitle(chatId));
-                } else if (isChannel) {
-                    hintText = Lang.getString(R.string.ChannelLinkInfo);
-                } else {
-                    hintText = Lang.getString(R.string.LinkInfo);
+                    CharSequence hintText = Lang.getMarkdownString(new TdlibContext(context, tdlib), R.string.InviteLinkOtherAdminHint, TD.getUserName(adminUser), tdlib.chatTitle(chatId));
+                    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, hintText, false));
                 }
-
-                items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, hintText, false));
 
                 items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.AdditionalInviteLinks));
                 items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
