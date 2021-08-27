@@ -707,6 +707,7 @@
   <item type="id" name="btn_viewInviteLinkMembers" />
   <item type="id" name="btn_openAdminInviteLinks" />
   <item type="id" name="btn_inviteLinkUserLimit" />
+  <item type="id" name="btn_inviteLinkUserSlider" />
   <item type="id" name="btn_inviteLinkDateLimit" />
   <item type="id" name="btn_saveGif" />
   <item type="id" name="btn_stickers" />

@@ -3698,6 +3698,7 @@
   <string name="InviteLinkLimitedByPeriodItem">Expiry Date</string>
   <string name="InviteLinkLimitedByUsersItem">Number of Users</string>
   <string name="InviteLinkLimitedByUsersAlertHint">0 - no limit</string>
+  <string name="InviteLinkLimitedByUsersCustom">Enter custom limit</string>
   <string name="InviteLinkNoLimitSet">no limit</string>
   <string name="InviteLinkExpireHeader">Expire after</string>
   <string name="InviteLinkExpireConfirm">Set Expiration Date</string>
@@ -3708,6 +3709,7 @@
   <string name="InviteLinkViewMembers">View joined members</string>
   <string name="InviteLinkViewMembersTitle">Joined members</string>
   <string name="CreatedByXOnDate">Created by %1$s %2$s</string>
+  <string name="Infinity">∞</string>
 
   <string name="ChatBackgroundPreview">Chat Background Preview</string>
   <string name="ChatBackgroundNotSupported">Sorry, this type of chat background is not yet supported.</string>

@@ -22,6 +22,10 @@ public class StringList {
     this.list = new ArrayList<>(initialCapacity);
   }
 
+  public int indexOf (String string) {
+    return list.indexOf(string);
+  }
+
   public StringList (String[] copy) {
     this.list = Arrays.asList(copy);
   }
