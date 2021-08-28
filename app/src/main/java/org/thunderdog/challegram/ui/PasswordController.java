@@ -13,6 +13,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.core.util.Consumer;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
@@ -60,6 +61,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
   public static final int MODE_CODE = 7;
   public static final int MODE_CODE_CHANGE = 8;
   public static final int MODE_CODE_PHONE_CONFIRM = 9;
+  public static final int MODE_TRANSFER_OWNERSHIP_CONFIRM = 10;
 
   public static class Args {
     public final int mode;
@@ -120,6 +122,13 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       this.hash = hash;
       return this;
     }
+
+    public @Nullable Consumer<String> onSuccessListener;
+
+    public Args setSuccessListener (@Nullable Consumer<String> onSuccessListener) {
+      this.onSuccessListener = onSuccessListener;
+      return this;
+    }
   }
 
   private int mode;
@@ -163,6 +172,9 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       }
       case MODE_UNLOCK_EDIT: {
         return Lang.getString(R.string.EnterPassword);
+      }
+      case MODE_TRANSFER_OWNERSHIP_CONFIRM: {
+        return Lang.getString(R.string.TransferOwnershipPasswordAlert);
       }
       case MODE_LOGIN: {
         return Lang.getString(R.string.TwoStepVerification);
@@ -277,6 +289,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         editText.setHint(R.string.EnterAPassword);
         break;
       }
+      case MODE_TRANSFER_OWNERSHIP_CONFIRM:
       case MODE_UNLOCK_EDIT: {
         if (state != null && state.passwordHint != null && !state.passwordHint.isEmpty()) {
           editText.setHint(Lang.getString(R.string.Hint, state.passwordHint));
@@ -325,13 +338,14 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     Views.setClickable(forgotView);
 
     switch (mode) {
+      case MODE_TRANSFER_OWNERSHIP_CONFIRM:
       case MODE_UNLOCK_EDIT:
       case MODE_EMAIL_RECOVERY:
       case MODE_LOGIN_EMAIL_RECOVERY:
       case MODE_LOGIN: {
-        if (mode == MODE_UNLOCK_EDIT || mode == MODE_LOGIN) {
+        if (mode == MODE_UNLOCK_EDIT || mode == MODE_LOGIN || mode == MODE_TRANSFER_OWNERSHIP_CONFIRM) {
           forgotView.setText(Lang.getString(R.string.ForgotPassword));
-          hint = Lang.getString(R.string.LoginPasswordText);
+          hint = Lang.getString(mode == MODE_TRANSFER_OWNERSHIP_CONFIRM ? R.string.TransferOwnershipPasswordAlertHint : R.string.LoginPasswordText);
         } else if ((mode == MODE_EMAIL_RECOVERY || mode == MODE_LOGIN_EMAIL_RECOVERY)) {
           final String email = getArguments() != null ? getArguments().email : null;
           if (!StringUtils.isEmpty(email)) {
@@ -359,7 +373,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       }
     }
 
-    if (mode == MODE_UNLOCK_EDIT || mode == MODE_LOGIN || mode == MODE_CODE || mode == MODE_CODE_CHANGE || mode == MODE_CODE_PHONE_CONFIRM) {
+    if (mode == MODE_TRANSFER_OWNERSHIP_CONFIRM || mode == MODE_UNLOCK_EDIT || mode == MODE_LOGIN || mode == MODE_CODE || mode == MODE_CODE_CHANGE || mode == MODE_CODE_PHONE_CONFIRM) {
       RelativeLayout forgotWrap = new RelativeLayout(context);
       forgotWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM));
 
@@ -890,6 +904,9 @@ public class PasswordController extends ViewController<PasswordController.Args> 
             Settings2FAController c = new Settings2FAController(context, tdlib);
             c.setArguments(new Settings2FAController.Args((SettingsPrivacyController) prev, password, recoveryEmail));
             navigateTo(c);
+          } else if (mode == MODE_TRANSFER_OWNERSHIP_CONFIRM && getArguments() != null && getArguments().onSuccessListener != null) {
+            navigateBack();
+            getArgumentsStrict().onSuccessListener.accept(password);
           }
         }
       }
@@ -1205,6 +1222,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
   private void proceed () {
     String input = editText.getText().toString();
     switch (mode) {
+      case MODE_TRANSFER_OWNERSHIP_CONFIRM:
       case MODE_UNLOCK_EDIT: {
         if (!input.isEmpty()) {
           unlockEdit(input);
@@ -1267,6 +1285,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         requestNextCodeType();
         break;
       }
+      case MODE_TRANSFER_OWNERSHIP_CONFIRM:
       case MODE_UNLOCK_EDIT:
       case MODE_LOGIN: {
         requestRecovery();

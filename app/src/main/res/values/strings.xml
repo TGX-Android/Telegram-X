@@ -3687,7 +3687,11 @@
   <string name="TransferOwnershipSecurityNeedWait">Sorry, but you need to wait **%1$s** before you can transfer ownership.</string>
   <string name="TransferOwnershipSecurityActionSetPassword">Set password</string>
   <string name="TransferOwnershipPasswordAlert">Transfer Ownership</string>
-  <string name="TransferOwnershipPasswordAlertHint">2FA password</string>
+  <string name="TransferOwnershipPasswordAlertHint">Please enter your 2-Step verification password to complete the transfer.</string>
+  <string name="TransferOwnershipFinalAlert">Wait a bit…</string>
+  <string name="TransferOwnershipFinalAlertBot">Are you really sure you want to transfer ownership of the bot?\n\nThis operation is **irreversible**, so check again if the user you want to transfer the bot is the right person.</string>
+  <string name="TransferOwnershipFinalAlertChannel">Are you really sure you want to transfer ownership of the channel to **%1$s**?\n\nThis operation is **irreversible**, so check again if the user you want to transfer the channel is the right person.</string>
+  <string name="TransferOwnershipFinalAlertGroup">Are you really sure you want to transfer ownership of the group to **%1$s**?\n\nYou will no longer be considered the creator of the group. The new owner will be free to remove any of your admin privileges or even ban you.</string>
 
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />

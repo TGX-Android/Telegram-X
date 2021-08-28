@@ -22,6 +22,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.collection.LongSparseArray;
+import androidx.core.util.Consumer;
 
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -95,6 +96,7 @@ import org.thunderdog.challegram.ui.SettingsLanguageController;
 import org.thunderdog.challegram.ui.SettingsLogOutController;
 import org.thunderdog.challegram.ui.SettingsNotificationController;
 import org.thunderdog.challegram.ui.SettingsPhoneController;
+import org.thunderdog.challegram.ui.SettingsPrivacyController;
 import org.thunderdog.challegram.ui.SettingsProxyController;
 import org.thunderdog.challegram.ui.SettingsSessionsController;
 import org.thunderdog.challegram.ui.SettingsThemeController;
@@ -5487,5 +5489,38 @@ public class TdlibUi extends Handler {
         return true;
       });
     }
+  }
+
+  public void requestTransferOwnership (ViewController<?> context, CharSequence finalAlertMessageText, Consumer<String> onSuccessListener) {
+    tdlib.client().send(new TdApi.CanTransferOwnership(), result -> {
+      tdlib.ui().post(() -> {
+        switch (result.getConstructor()) {
+          case TdApi.CanTransferOwnershipResultOk.CONSTRUCTOR:
+            tdlib.client().send(new TdApi.GetPasswordState(), state -> {
+              if (state.getConstructor() != TdApi.PasswordState.CONSTRUCTOR) return;
+              PasswordController controller = new PasswordController(context.context(), context.tdlib());
+              controller.setArguments(new PasswordController.Args(PasswordController.MODE_TRANSFER_OWNERSHIP_CONFIRM, (TdApi.PasswordState) state).setSuccessListener(password -> {
+                // Ask if the user REALLY wants to transfer ownership, because this operation is serious
+                context.openAlert(R.string.TransferOwnershipSecurityAlert, finalAlertMessageText, Lang.getString(R.string.Proceed), (dialog, which) -> {
+                  onSuccessListener.accept(password);
+                }, 0);
+              }));
+              context.navigateTo(controller);
+            });
+            break;
+          case TdApi.CanTransferOwnershipResultPasswordNeeded.CONSTRUCTOR:
+            context.openAlert(R.string.TransferOwnershipSecurityAlert, Lang.getMarkdownString(context, R.string.TransferOwnershipSecurityPasswordNeeded), Lang.getString(R.string.TransferOwnershipSecurityActionSetPassword), (dialog, which) -> {
+              context.navigateTo(new SettingsPrivacyController(context.context(), context.tdlib()));
+            }, 0);
+            break;
+          case TdApi.CanTransferOwnershipResultPasswordTooFresh.CONSTRUCTOR:
+            context.openAlert(R.string.TransferOwnershipSecurityAlert, Lang.getMarkdownString(context, R.string.TransferOwnershipSecurityNeedWait, Lang.getDuration(((TdApi.CanTransferOwnershipResultPasswordTooFresh) result).retryAfter)));
+            break;
+          case TdApi.CanTransferOwnershipResultSessionTooFresh.CONSTRUCTOR:
+            context.openAlert(R.string.TransferOwnershipSecurityAlert, Lang.getMarkdownString(context, R.string.TransferOwnershipSecurityNeedWait, Lang.getDuration(((TdApi.CanTransferOwnershipResultSessionTooFresh) result).retryAfter)));
+            break;
+        }
+      });
+    });
   }
 }

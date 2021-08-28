@@ -1040,38 +1040,8 @@ public class TGInlineKeyboard {
         case TdApi.InlineKeyboardButtonTypeCallbackWithPassword.CONSTRUCTOR: {
           final byte[] data = ((TdApi.InlineKeyboardButtonTypeCallbackWithPassword) type).data;
 
-          context.context.tdlib.client().send(new TdApi.CanTransferOwnership(), result -> {
-            context.context.messagesController().runOnUiThreadOptional(() -> {
-              switch (result.getConstructor()) {
-                case TdApi.CanTransferOwnershipResultOk.CONSTRUCTOR:
-                  MaterialEditText et = context.context.messagesController().openInputAlert(
-                          Lang.getString(R.string.TransferOwnershipPasswordAlert),
-                          Lang.getString(R.string.TransferOwnershipPasswordAlertHint),
-                          R.string.Continue,
-                          R.string.Cancel,
-                          "",
-                          (inputView, result1) -> {
-                            context.context.tdlib().client().send(new TdApi.GetCallbackQueryAnswer(parent.getChatId(), context.messageId, new TdApi.CallbackQueryPayloadDataWithPassword(result1, data)), getAnswerCallback(currentContextId, view,false));
-                            return true;
-                          },
-                          false
-                  ).getEditText();
-                  et.setIsPassword(true);
-                  et.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-                  break;
-                case TdApi.CanTransferOwnershipResultPasswordNeeded.CONSTRUCTOR:
-                  context.context.messagesController().openAlert(R.string.TransferOwnershipSecurityAlert, Lang.getMarkdownString(context.context, R.string.TransferOwnershipSecurityPasswordNeeded), Lang.getString(R.string.TransferOwnershipSecurityActionSetPassword), (dialog, which) -> {
-                    context.context.messagesController().navigateTo(new SettingsPrivacyController(context.context.context(), context.context.tdlib));
-                  }, 0);
-                  break;
-                case TdApi.CanTransferOwnershipResultPasswordTooFresh.CONSTRUCTOR:
-                  context.context.messagesController().openAlert(R.string.TransferOwnershipSecurityAlert, Lang.getMarkdownString(context.context, R.string.TransferOwnershipSecurityNeedWait, Lang.getDuration(((TdApi.CanTransferOwnershipResultPasswordTooFresh) result).retryAfter)));
-                  break;
-                case TdApi.CanTransferOwnershipResultSessionTooFresh.CONSTRUCTOR:
-                  context.context.messagesController().openAlert(R.string.TransferOwnershipSecurityAlert, Lang.getMarkdownString(context.context, R.string.TransferOwnershipSecurityNeedWait, Lang.getDuration(((TdApi.CanTransferOwnershipResultSessionTooFresh) result).retryAfter)));
-                  break;
-              }
-            });
+          context.context.tdlib.ui().requestTransferOwnership(context.context.messagesController(), Lang.getMarkdownString(context.context.messagesController(), R.string.TransferOwnershipFinalAlertBot), password -> {
+            context.context.tdlib.client().send(new TdApi.GetCallbackQueryAnswer(parent.getChatId(), context.messageId, new TdApi.CallbackQueryPayloadDataWithPassword(password, data)), getAnswerCallback(currentContextId, view,false));
           });
 
           break;
