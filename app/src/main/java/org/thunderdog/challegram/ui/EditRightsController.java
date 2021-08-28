@@ -57,6 +57,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     public final TdApi.ChatMemberStatus myStatus;
     public final TdApi.ChatMember member;
     public final int mode;
+    public int forwardLimit;
 
     public Args (long chatId, int userId, boolean isRestrict, @NonNull TdApi.ChatMemberStatus myStatus, @Nullable TdApi.ChatMember member) {
       this.chatId = chatId;
@@ -72,6 +73,11 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       this.mode = MODE_CHAT_PERMISSIONS;
       this.myStatus = null;
       this.member = null;
+    }
+
+    public Args forwardLimit (int forwardLimit) {
+      this.forwardLimit = forwardLimit;
+      return this;
     }
   }
 
@@ -161,6 +167,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
   private ListItem customTitle;
 
   @Override
+  @SuppressWarnings("WrongConstant")
   public void onClick (View view) {
     ListItem item = (ListItem) view.getTag();
 
@@ -171,7 +178,18 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     switch (item.getViewType()) {
       case ListItem.TYPE_RADIO_SETTING_WITH_NEGATIVE_STATE:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER: {
-        toggleValueForId(item.getId());
+        @RightId final int rightId = item.getId();
+        boolean canEdit = hasAccessToEditRight(rightId);
+        if (canEdit) {
+          toggleValueForId(rightId);
+        } else {
+          CharSequence text = getHintForToggleUnavailability(rightId, item.getBoolValue());
+          if (text != null) {
+            context().tooltipManager()
+              .builder(((SettingView) view).getToggler())
+              .show(this, tdlib, R.drawable.baseline_info_24, text);
+          }
+        }
         break;
       }
       case ListItem.TYPE_CHAT_BETTER: {
@@ -347,7 +365,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     Runnable act = () -> {
       setDoneInProgress(true);
       setStackLocked(true);
-      tdlib.setChatMemberStatus(args.chatId, new TdApi.MessageSenderUser(args.userId), newStatus, args.member != null ? args.member.status : null, (success, error) -> tdlib.ui().post(() -> {
+      tdlib.setChatMemberStatus(args.chatId, new TdApi.MessageSenderUser(args.userId), newStatus, args.forwardLimit, args.member != null ? args.member.status : null, (success, error) -> tdlib.ui().post(() -> {
         if (!isDestroyed()) {
           setStackLocked(false);
           setDoneInProgress(false);
@@ -403,11 +421,14 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       }
 
       @Override
+      @SuppressWarnings("WrongConstant")
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         switch (item.getViewType()) {
           case ListItem.TYPE_RADIO_SETTING_WITH_NEGATIVE_STATE: {
             boolean canEdit = hasAccessToEditRight(item.getId());
-            view.setEnabled(canEdit);
+            view.setIgnoreEnabled(true);
+            view.setEnabled(canEdit || getHintForToggleUnavailability(item.getId(), item.getBoolValue()) != null);
+            view.setVisuallyEnabled(canEdit, isUpdate);
             view.getToggler().setRadioEnabled(item.getBoolValue(), isUpdate);
             view.getToggler().setShowLock(!canEdit);
             break;
@@ -415,7 +436,9 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER: {
             int id = item.getId();
             boolean canEdit = hasAccessToEditRight(item.getId());
-            view.setEnabled(canEdit);
+            view.setIgnoreEnabled(true);
+            view.setEnabled(canEdit || getHintForToggleUnavailability(item.getId(), item.getBoolValue()) != null);
+            view.setVisuallyEnabled(canEdit, isUpdate);
             view.getToggler().setUseNegativeState(true);
             view.getToggler().setRadioEnabled(item.getBoolValue(), isUpdate);
             view.getToggler().setShowLock(!canEdit);
@@ -425,6 +448,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           default: {
             switch (item.getId()) {
               case R.id.btn_date: {
+                view.setIgnoreEnabled(false);
                 view.setEnabled(hasAccessToEditRight(item.getId()));
                 boolean isDate;
                 if (targetRestrict.restrictedUntilDate == 0) {
@@ -463,7 +487,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     recyclerView.setAdapter(adapter);
     recyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
       @Override
-      public void getItemOffsets (Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
+      public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
         outRect.bottom = isDoneVisible() && parent.getChildAdapterPosition(view) == adapter.getItemCount() - 1 ? Screen.dp(56f) + Screen.dp(16f) * 2 : 0;
       }
     });
@@ -522,6 +546,54 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       }
     }
     return true;
+  }
+
+  private CharSequence getHintForToggleUnavailability (@RightId int id, boolean currentValue) {
+    Args args = getArgumentsStrict();
+    if (args.mode == MODE_CHAT_PERMISSIONS) {
+      if (!tdlib.canRestrictMembers(args.chatId)) {
+        return null; // No need to explain
+      }
+      if (currentValue)
+        return null;
+      TdApi.Chat chat = tdlib.chatStrict(args.chatId);
+      switch (id) {
+        case R.id.right_changeChatInfo: {
+          if (!tdlib.canChangeInfo(chat)) {
+            return Lang.getMarkdownString(this, R.string.NoRightAllowChangeInfo);
+          }
+          if (tdlib.chatPublic(args.chatId)) {
+            return Lang.getMarkdownString(this, R.string.NoRightAllowChangeInfoPublic);
+          }
+          break;
+        }
+        case R.id.right_pinMessages: {
+          if (!tdlib.canPinMessages(chat)) {
+            return Lang.getMarkdownString(this, R.string.NoRightAllowPin);
+          }
+          if (tdlib.chatPublic(args.chatId)) {
+            return Lang.getMarkdownString(this, R.string.NoRightAllowPinPublic);
+          }
+          break;
+        }
+      }
+      return null;
+    }
+    if (args.mode == MODE_ADMIN_PROMOTION && !tdlib.cache().userBot(args.userId) && (
+        id == R.id.right_inviteUsers ||
+        id == R.id.right_changeChatInfo ||
+        id == R.id.right_pinMessages
+      ) && TD.checkRight(tdlib.chatPermissions(args.chatId), id) && currentValue) {
+      switch (id) {
+        case R.id.right_inviteUsers:
+          return Lang.getMarkdownString(this, R.string.NoRightDisallowInvite);
+        case R.id.right_changeChatInfo:
+          return Lang.getMarkdownString(this, R.string.NoRightDisallowChangeInfo);
+        case R.id.right_pinMessages:
+          return Lang.getMarkdownString(this, R.string.NoRightDisallowPin);
+      }
+    }
+    return null;
   }
 
   private boolean hasAccessToEditRight (@RightId int id) {
@@ -620,16 +692,14 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     return false;
   }
 
-  private int getDescriptionString () {
+  @StringRes
+  private int getDescriptionStringRes () {
     Args args = getArgumentsStrict();
     if (args.mode == MODE_RESTRICTION) {
-      /*if (args.member != null && args.member.status.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR && !((TdApi.ChatMemberStatusRestricted) args.member.status).isMember) {
-        return args.isChannel ? R.string.MemberNotRestrictChannel : R.string.MemberNotRestrictGroup;
-      }*/
       if (tdlib.isChannel(args.chatId)) {
-        return canViewMessages ? R.string.MemberRestrictChannel : R.string.MemberBanChannel;
+        return canViewMessages ? R.string.RestrictXChannel : R.string.BanXChannel;
       } else {
-        return canViewMessages ? R.string.MemberRestrictGroup : R.string.MemberBanGroup;
+        return canViewMessages ? R.string.RestrictXGroup : R.string.BanXGroup;
       }
     } else {
       boolean value;
@@ -639,14 +709,14 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         int i = adapter.indexOfViewById(R.id.right_addNewAdmins);
         value = i != -1 && adapter.getItems().get(i).getBoolValue();
       }
-      return value ? R.string.AdminCanAssignAdmins : R.string.AdminCannotAssignAdmins;
+      return value ? R.string.XCanAssignAdmins : R.string.XCannotAssignAdmins;
     }
   }
 
   private void updateDescriptionHint () {
     int i = adapter.indexOfViewById(R.id.description);
     if (i != -1) {
-      adapter.getItems().get(i).setString(getDescriptionString());
+      adapter.getItems().get(i).setString(Lang.getStringBold(getDescriptionStringRes(), tdlib.cache().userName(getArgumentsStrict().userId)));
       adapter.updateValuedSettingByPosition(i);
     }
   }
@@ -745,13 +815,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           }
         }
       } else {
-      /*boolean needHint;
-      if (args.isRestrict) {
-        needHint = args.member == null || TD.canRestrictMember(args.myStatus, args.member.status) != TD.RESTRICT_MODE_VIEW;
-      } else {
-        needHint = args.member == null || TD.canPromoteAdmin(args.myStatus, args.member.status) != TD.PROMOTE_MODE_VIEW;
-      }*/
-        items.add(new ListItem(ListItem.TYPE_DESCRIPTION, R.id.description, 0, getDescriptionString(), false));
+        items.add(new ListItem(ListItem.TYPE_DESCRIPTION, R.id.description, 0, Lang.getStringBold(getDescriptionStringRes(), tdlib.cache().userName(args.userId)), false));
       }
     }
 
@@ -984,6 +1048,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     }
   }
 
+  @SuppressWarnings("WrongConstant")
   private void updateValues () {
     int i = 0;
     for (ListItem item : adapter.getItems()) {

@@ -612,7 +612,8 @@
   <string name="Confirm">Confirm</string>
   <string name="TooManyPublicChannels">Sorry, you have created too many public channels. You can either create a private channel or delete one of your existing channels first.</string>
   <string name="TooManyPublicLinks">Sorry, you have created too many public links. Try deleting or making some of your groups or channels private.</string>
-  <string name="UserIsAlreadyInChat">User is already in chat</string>
+  <string name="XIsAlreadyInChat">%1$s is already a member of this chat</string>
+  <string name="XIsAlreadyAdmin">%1$s already has admin rights</string>
   <string name="ProfilePhoto">Profile photo</string>
   <string name="GroupPhoto">Group photo</string>
   <string name="ChannelPhoto">Channel photo</string>
@@ -1219,6 +1220,7 @@
   <string name="xPeopleJoinedChannel_one">%1$s member joined the channel</string>
   <string name="xPeopleJoinedChannel_other">%1$s members joined the channel</string>
   <string name="AddToTheGroup">Add %1$s to the group?</string>
+  <string name="AddAdminToTheGroup">Add %1$s to the group and assign as an admin?</string>
   <string name="QAddXToChannel">Add %1$s to the channel?</string>
   <string name="VoiceCalls">Voice Calls</string>
   <string name="VoiceCallPrivacyDesc">You can restrict who can call you with granular precision</string>
@@ -1559,16 +1561,15 @@
   <string name="InviteBackToGroup">Invite back to group</string>
   <string name="InviteBackToChannel">Invite back to channel</string>
   <string name="MemberCannotJoinRegularGroup">%1$s will not be able to return to the group unless added by another member or given an invite link.</string>
-  <string name="AdminCanAssignAdmins">This admin will be able to add new admins with the same (or more limited) permissions.</string>
-  <string name="AdminCannotAssignAdmins">This admin will not be able to add new admins.</string>
+  <string name="XCanAssignAdmins">%1$s will be able to add new admins with the same (or more limited) permissions.</string>
+  <string name="XCannotAssignAdmins">%1$s will not be able to add new admins.</string>
   <string name="ShareMyContactInfo">Share my contact</string>
-  <string name="MemberBanChannel">This user will be banned and removed from the channel.</string>
-  <string name="MemberBanGroup">This user will be banned and removed from the group.</string>
-  <string name="MemberRestrictChannel">This user will not be removed from the channel.</string>
-  <string name="MemberRestrictGroup">This user will not be removed from the group.</string>
-  <string name="UserIsAlreadyAdmin">User is already admin</string>
-  <string name="YouCantBanThis">You cannot ban this user</string>
-  <string name="YouCantPromoteThis">You cannot promote this user</string>
+  <string name="BanXChannel">%1$s will be banned and removed from the channel.</string>
+  <string name="BanXGroup">%1$s will be banned and removed from the group.</string>
+  <string name="RestrictXChannel">%1$s will not be removed from the channel.</string>
+  <string name="RestrictXGroup">%1$s will not be removed from the group.</string>
+  <string name="YouCantBanX">You do not have enough admin rights to ban %1$s in this chat.</string>
+  <string name="YouCantPromoteX">You do not have enough admin rights to promote %1$s in this chat.</string>
   <string name="EventLog">Recent Actions</string>
   <string name="EventLogAllEvents">All actions</string>
   <string name="EventLogSelectedEvents">Selected actions</string>
@@ -3648,6 +3649,7 @@
   <string name="DownloadUpdateSize">Download an update (%1$s)</string>
   <string name="DownloadUpdate">Download an update</string>
   <string name="AppUpdateAvailablePrompt">A new **Telegram X** update is available. Would you like to download? (%1$s)</string>
+  <string name="AppUpdateAvailableVersionPrompt">A new **Telegram X** `%2$s` update is available. Would you like to download? (%1$s)</string>
   <string name="AppUpdateAvailablePromptConfirm">Download and install</string>
 
   <string name="CommitSignature">**Commit**: [%1$s](%2$s)</string>
@@ -3681,6 +3683,14 @@
   <string name="ChatBackgroundTypeMulticolor">multicolor gradient</string>
 
   <string name="NoCloudThemeSupport">This theme is not designed for **Telegram X**.\n\nHowever, you may check for user-made themes in @tgx_perfection.</string>
+
+  <string name="NoRightAllowChangeInfo">You cannot allow everyone to change group info, because you don\'t have corresponding admin right.</string>
+  <string name="NoRightAllowChangeInfoPublic">You cannot allow everyone to change group info, because this group is public</string>
+  <string name="NoRightAllowPin">You cannot allow everyone to pin messages, because you don\'t have corresponding admin right.</string>
+  <string name="NoRightAllowPinPublic">You cannot allow everyone to pin messages, because this group is public.</string>
+  <string name="NoRightDisallowInvite">All members can invite new members in this chat.</string>
+  <string name="NoRightDisallowChangeInfo">All members can change info of this chat.</string>
+  <string name="NoRightDisallowPin">All members can pin messages in this chat.</string>
 
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />

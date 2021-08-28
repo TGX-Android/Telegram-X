@@ -116,6 +116,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
@@ -152,6 +153,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   TdlibCache.SecretChatDataChangeListener,
   TdlibCache.BasicGroupDataChangeListener,
   TdlibCache.SupergroupDataChangeListener,
+  TdlibCache.ChatMemberStatusChangeListener,
   ComplexHeaderView.Callback,
   InviteLinkController.Callback,
   UserPickerDelegate,
@@ -3620,6 +3622,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     return (mode == MODE_SUPERGROUP || mode == MODE_EDIT_SUPERGROUP);
   }
 
+  public boolean isBasicGroup () {
+    return (mode == MODE_GROUP || mode == MODE_EDIT_GROUP);
+  }
+
   public boolean isChannel () {
     return (mode == MODE_CHANNEL || mode == MODE_EDIT_CHANNEL);
   }
@@ -3682,66 +3688,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     return tdlib.canInviteUsers(chat) || canBanMembers() || canPromoteMembers(); // FIXME or not?
   }
 
-  private boolean isAlreadyMember (int userId) {
-    if (membersAdapter != null && membersAdapter.getChatMember(userId) != null) {
-      return true;
-    }
-
-    return tdlib.isSelfUserId(userId) && TD.isMember(tdlib.chatStatus(chat.id));
-
-    // TODO maybe
-
-  }
-
   @Override
   public boolean onUserPick (final ContactsController context, final View view, final TdApi.User user) {
-    if (currentPickMode == MODE_MEMBER_REGULAR) {
-      if (isAlreadyMember(user.id)) {
-        if (!tdlib.isSelfUserId(user.id)) {
-          context.context().tooltipManager().builder(view).show(context, tdlib, R.drawable.baseline_info_24, Lang.getString(R.string.UserIsAlreadyInChat));
-        }
-        return false;
-      }
+    if (tdlib.isSelfUserId(user.id)) {
+      // Ignoring current user, as it shouldn't be offered by UI.
+      return false;
     }
-    switch (mode) {
-      case MODE_GROUP: {
-        showSettings(new SettingsWrapBuilder(R.id.btn_addMember).setRawItems(new ListItem[]{
-          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_forwardLast100, 0, Lang.plural(R.string.ForwardLastXMessages, 100), R.id.btn_addMember, false),
-          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_forwardLast50, 0, Lang.plural(R.string.ForwardLastXMessages, 50), R.id.btn_addMember, true),
-          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_forwardLast15, 0, Lang.plural(R.string.ForwardLastXMessages, 15), R.id.btn_addMember, false),
-          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_addToGroup, 0, R.string.justAdd, R.id.btn_addMember, false)
-        }).setIntDelegate((id, result) -> {
-          if (id != R.id.btn_addMember) {
-            return;
-          }
-          int forwardCount = 0;
-          if (result.size() > 0) {
-            switch (result.get(R.id.btn_addMember)) {
-              case R.id.btn_forwardLast100: {
-                forwardCount = 100;
-                break;
-              }
-              case R.id.btn_forwardLast50: {
-                forwardCount = 50;
-                break;
-              }
-              case R.id.btn_forwardLast15: {
-                forwardCount = 15;
-                break;
-              }
-            }
-          }
-          tdlib.client().send(new TdApi.AddChatMember(chat.id, user.id, forwardCount), tdlib.okHandler());
-          context.navigateBack();
-        }).setSaveStr(R.string.AddMemberBtn));
-        break;
-      }
-      case MODE_CHANNEL:
-      case MODE_SUPERGROUP: {
-        addChannelMember(context, view, user);
-        break;
-      }
-    }
+    addMember(context, view, user);
     return false;
   }
 
@@ -3848,101 +3801,191 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     navigateTo(c);
   }
 
-  private void addChannelMember (final ContactsController context, final View view, final TdApi.User user) {
+  private void addMember (final ContactsController context, final View view, final TdApi.User user) {
     final int mode = currentPickMode;
-    final TdApi.Object[] result = new TdApi.Object[1];
+    final AtomicReference<TdApi.Object> result = new AtomicReference<>();
     final CancellableRunnable act = new CancellableRunnable() {
       @Override
       public void act () {
         context().hideProgress(false);
         if (!context.isDestroyed()) {
-          switch (result[0].getConstructor()) {
+          TdApi.Object object = result.get();
+          switch (object.getConstructor()) {
             case TdApi.ChatMember.CONSTRUCTOR: {
-              addChannelMember(mode, context, view, user, (TdApi.ChatMember) result[0], true);
+              addMember(mode, context, view, user, (TdApi.ChatMember) object, -1, true);
               break;
             }
             case TdApi.Error.CONSTRUCTOR: {
-              UI.showError(result[0]);
+              context.context()
+                .tooltipManager()
+                .builder(view)
+                .show(context, tdlib, R.drawable.baseline_error_24, TD.toErrorString(object));
               break;
             }
           }
         }
       }
     };
+    if (membersAdapter != null) {
+      TdApi.ChatMember member = membersAdapter.getChatMember(user.id);
+      if (member != null) {
+        result.set(member);
+        act.run();
+        return;
+      }
+    }
     context().showProgressDelayed(Lang.getString(R.string.LoadingInformation), act::cancel, 1000l);
     hideSoftwareKeyboard();
     tdlib.client().send(new TdApi.GetChatMember(chat.id, new TdApi.MessageSenderUser(user.id)), object -> {
-      result[0] = object;
+      result.set(object);
       tdlib.ui().post(act);
     });
   }
 
-  private void addChannelMember (final int mode, final ContactsController context, final View view, final TdApi.User user, final TdApi.ChatMember member, boolean needConfirm) {
-
+  private void addMember (final int mode, final ContactsController context, final View view,
+                          final TdApi.User user, final TdApi.ChatMember member, final int forwardLimit,
+                          final boolean needConfirm) {
     final Tdlib.ChatMemberStatusChangeCallback callback = (success, error) -> tdlib.ui().post(() -> {
       if (success) {
         context.navigateBack();
       } else {
-        context.context().tooltipManager().builder(view).show(context, tdlib, R.drawable.baseline_error_24, error != null && TD.ERROR_USER_PRIVACY.equals(error.message) ? Lang.getString(R.string.errorPrivacyAddMember) : TD.toErrorString(error));
+        context.context()
+          .tooltipManager()
+          .builder(view)
+          .show(context, tdlib, R.drawable.baseline_error_24,
+            error != null && TD.ERROR_USER_PRIVACY.equals(error.message) ?
+              Lang.getString(R.string.errorPrivacyAddMember) :
+              TD.toErrorString(error)
+          );
       }
     });
+    final String memberName = tdlib.senderName(member.memberId);
+    TdApi.ChatMemberStatus myStatus = tdlib.chatStatus(chat.id);
+    if (myStatus == null) {
+      myStatus = isBasicGroup() ? group.status : supergroup.status;
+    }
+    if (forwardLimit == -1 && (mode == MODE_MEMBER_REGULAR || mode == MODE_MEMBER_ADMIN) && !TD.isMember(member.status, false) && isBasicGroup()) {
+      showSettings(new SettingsWrapBuilder(R.id.btn_addMember)
+        .addHeaderItem(Lang.getStringBold(mode == MODE_MEMBER_ADMIN ? R.string.AddAdminToTheGroup : R.string.AddToTheGroup, memberName))
+        .setRawItems(new ListItem[] {
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_forwardLast100, 0, Lang.plural(R.string.ForwardLastXMessages, 100), R.id.btn_addMember, false),
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_forwardLast50, 0, Lang.plural(R.string.ForwardLastXMessages, 50), R.id.btn_addMember, true),
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_forwardLast15, 0, Lang.plural(R.string.ForwardLastXMessages, 15), R.id.btn_addMember, false),
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_addToGroup, 0, R.string.justAdd, R.id.btn_addMember, false)
+      }).setIntDelegate((id, result) -> {
+        if (id != R.id.btn_addMember) {
+          return;
+        }
+        int chosenForwardCount = 0;
+        if (result.size() > 0) {
+          switch (result.get(R.id.btn_addMember)) {
+            case R.id.btn_forwardLast100: {
+              chosenForwardCount = 100;
+              break;
+            }
+            case R.id.btn_forwardLast50: {
+              chosenForwardCount = 50;
+              break;
+            }
+            case R.id.btn_forwardLast15: {
+              chosenForwardCount = 15;
+              break;
+            }
+          }
+        }
+        addMember(mode, context, view, user, member, chosenForwardCount, false);
+      }).setSaveStr(R.string.AddMemberBtn));
+      return;
+    }
     switch (mode) {
       case MODE_MEMBER_REGULAR: {
         if (TD.isMember(member.status)) {
-          context.context().tooltipManager().builder(view).show(context, tdlib, R.drawable.baseline_info_24, Lang.getString(R.string.UserIsAlreadyInChat));
+          context.context()
+            .tooltipManager()
+            .builder(view)
+            .show(context, tdlib, R.drawable.baseline_info_24,
+              Lang.getString(R.string.XIsAlreadyInChat, memberName)
+            );
           return;
         }
 
         if (needConfirm) {
-          showOptions(Lang.getStringBold(isChannel() ? R.string.QAddXToChannel : R.string.AddToTheGroup, tdlib.cache().userName(user.id)), new int[]{R.id.btn_addMember, R.id.btn_cancel}, new String[]{Lang.getString(R.string.AddMember), Lang.getString(R.string.Cancel)}, null, new int[]{R.drawable.baseline_person_add_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-            if (id == R.id.btn_addMember) {
-              addChannelMember(mode, context, view, user, member, false);
+          showOptions(new Options.Builder()
+            .info(Lang.getStringBold(isChannel() ? R.string.QAddXToChannel : R.string.AddToTheGroup, memberName))
+            .item(new OptionItem(R.id.btn_addMember, Lang.getString(R.string.AddMember), OPTION_COLOR_NORMAL, R.drawable.baseline_person_add_24))
+            .cancelItem()
+            .build(),
+            (itemView, id) -> {
+              if (id == R.id.btn_addMember) {
+                addMember(mode, context, view, user, member, forwardLimit, false);
+              }
+              return true;
             }
-            return true;
-          });
+          );
           return;
         }
 
-        tdlib.setChatMemberStatus(chat.id, new TdApi.MessageSenderUser(user.id), new TdApi.ChatMemberStatusMember(), member.status, callback);
+        tdlib.setChatMemberStatus(chat.id, new TdApi.MessageSenderUser(user.id), new TdApi.ChatMemberStatusMember(), forwardLimit, member.status, callback);
         break;
       }
       case MODE_MEMBER_ADMIN: {
         if (TD.isCreator(member.status) || (TD.isAdmin(member.status) && !((TdApi.ChatMemberStatusAdministrator) member.status).canBeEdited)) {
-          context.context().tooltipManager().builder(view).show(context, tdlib, R.drawable.baseline_info_24, Lang.getString(R.string.UserIsAlreadyAdmin));
+          context.context()
+            .tooltipManager()
+            .builder(view)
+            .show(context, tdlib, R.drawable.baseline_info_24,
+              Lang.getString(R.string.XIsAlreadyAdmin, tdlib.cache().userName(user.id))
+            );
           return;
         }
 
-        if (!canBanMembers() && (member.status.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR || member.status.getConstructor() == TdApi.ChatMemberStatusBanned.CONSTRUCTOR)) {
-          context.context().tooltipManager().builder(view).show(context, tdlib, R.drawable.baseline_error_24, Lang.getString(R.string.YouCantPromoteThis));
+        if (!canBanMembers() && (
+          member.status.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR ||
+          member.status.getConstructor() == TdApi.ChatMemberStatusBanned.CONSTRUCTOR
+        )) {
+          context.context()
+            .tooltipManager()
+            .builder(view)
+            .show(context, tdlib, R.drawable.baseline_error_24,
+              Lang.getStringBold(R.string.YouCantPromoteX, memberName)
+            );
           return;
         }
 
         EditRightsController c = new EditRightsController(this.context, this.tdlib);
-        c.setArguments(new EditRightsController.Args(chat.id, user.id, false, supergroup.status, member));
+        c.setArguments(new EditRightsController.Args(chat.id, user.id, false, myStatus, member)
+          .forwardLimit(forwardLimit)
+        );
         context.preventLeavingSearchMode();
         context.navigateTo(c);
         break;
       }
       case MODE_MEMBER_BAN: {
         if (TD.isCreator(member.status) || (TD.isAdmin(member.status) && !((TdApi.ChatMemberStatusAdministrator) member.status).canBeEdited)) {
-          context.context().tooltipManager().builder(view).show(context, tdlib, R.drawable.baseline_error_24, Lang.getString(R.string.YouCantBanThis));
+          context.context()
+            .tooltipManager()
+            .builder(view)
+            .show(context, tdlib, R.drawable.baseline_error_24, Lang.getStringBold(R.string.YouCantBanX, memberName));
           return;
         }
-        if (isChannel()) {
-          showOptions(Lang.getStringBold(R.string.MemberCannotJoinChannel, tdlib.senderName(member.memberId)), new int[]{R.id.btn_blockUser, R.id.btn_cancel}, new String[]{Lang.getString(R.string.BlockUser), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        if (isBasicGroup() || isChannel()) {
+          showOptions(Lang.getStringBold(isBasicGroup() ? R.string.MemberCannotJoinGroup : R.string.MemberCannotJoinChannel, memberName), new int[]{R.id.btn_blockUser, R.id.btn_cancel}, new String[]{Lang.getString(R.string.BlockUser), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
             if (id == R.id.btn_blockUser) {
               tdlib.setChatMemberStatus(chat.id, member.memberId, new TdApi.ChatMemberStatusBanned(), member.status, (success, error) -> {
                 if (success) {
                   context.navigateBack();
                 } else
-                  context.context().tooltipManager().builder(view).show(context, tdlib, R.drawable.baseline_error_24, TD.toErrorString(error));
+                  context.context()
+                    .tooltipManager()
+                    .builder(view)
+                    .show(context, tdlib, R.drawable.baseline_error_24, TD.toErrorString(error));
               });
             }
             return true;
           });
         } else {
           EditRightsController c = new EditRightsController(this.context, this.tdlib);
-          c.setArguments(new EditRightsController.Args(chat.id, user.id, true, supergroup.status, member));
+          c.setArguments(new EditRightsController.Args(chat.id, user.id, true, myStatus, member));
           context.preventLeavingSearchMode();
           context.navigateTo(c);
         }
@@ -5368,6 +5411,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       case MODE_GROUP:
       case MODE_EDIT_GROUP: {
         tdlib.cache().subscribeToGroupUpdates(group.id, this);
+        tdlib.cache().addChatMemberStatusListener(chat.id, this);
         break;
       }
       case MODE_SUPERGROUP:
@@ -5375,6 +5419,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       case MODE_EDIT_CHANNEL:
       case MODE_EDIT_SUPERGROUP: {
         tdlib.cache().subscribeToSupergroupUpdates(supergroup.id, this);
+        tdlib.cache().addChatMemberStatusListener(chat.id, this);
         break;
       }
     }
@@ -5399,6 +5444,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       case MODE_GROUP:
       case MODE_EDIT_GROUP: {
         tdlib.cache().unsubscribeFromGroupUpdates(group.id, this);
+        tdlib.cache().removeChatMemberStatusListener(chat.id, this);
         break;
       }
       case MODE_CHANNEL:
@@ -5406,6 +5452,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       case MODE_EDIT_CHANNEL:
       case MODE_EDIT_SUPERGROUP: {
         tdlib.cache().unsubscribeFromSupergroupUpdates(supergroup.id, this);
+        tdlib.cache().removeChatMemberStatusListener(chat.id, this);
         break;
       }
     }
@@ -5626,6 +5673,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   // Channels
+
+  @Override
+  public void onChatMemberStatusChange (long chatId, TdApi.ChatMember member) {
+    runOnUiThreadOptional(() -> {
+      if (chat.id == chatId && membersAdapter != null) {
+        membersAdapter.updateChatMember(member);
+      }
+    });
+  }
 
   @Override
   public void onSupergroupUpdated (final TdApi.Supergroup supergroup) {
