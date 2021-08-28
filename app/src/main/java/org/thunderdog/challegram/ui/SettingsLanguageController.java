@@ -494,7 +494,7 @@ public class SettingsLanguageController extends RecyclerViewController<Void> imp
       ids.append(R.id.btn_new);
       strings.append(R.string.LocalizationCreateTitle);
       icons.append(R.drawable.baseline_create_24);
-    } else if (Td.isBeta(languageInfo) || Td.isLocal(languageInfo) || hasAccessToRawLanguages()) {
+    } else if (Td.isBeta(languageInfo) || Td.isLocal(languageInfo) || Td.isInstalled(languageInfo) || hasAccessToRawLanguages()) {
       int size = Td.isLocal(languageInfo) ? 3 : 2;
 
       info = languageInfo.nativeName + " / " + languageInfo.name;
