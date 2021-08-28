@@ -3470,11 +3470,11 @@
   <string name="StatsXRestrictions_other">%1$s restrictions</string>
   <string name="StatsXInvitations_one">%1$s invitation</string>
   <string name="StatsXInvitations_other">%1$s invitations</string>
-  <string name="StatsXShowMore_one">Show %s More</string>
-  <string name="StatsXShowMore_other">Show %s More</string>
+  <string name="StatsXShowMore_one">Show %1$s More</string>
+  <string name="StatsXShowMore_other">Show %1$s More</string>
   <string name="StatsRecentPosts">Recent Posts</string>
-  <string name="StatsXShared_one">%s share</string>
-  <string name="StatsXShared_other">%s shares</string>
+  <string name="StatsXShared_one">%1$s share</string>
+  <string name="StatsXShared_other">%1$s shares</string>
   <string name="StatsMessageInfo">Message Statistics</string>
   <string name="StatsMessageViewCount">View Count</string>
   <string name="StatsMessageSharesPrivate">Private Shares</string>
