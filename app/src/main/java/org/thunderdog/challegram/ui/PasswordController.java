@@ -13,7 +13,6 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
-import androidx.core.util.Consumer;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
@@ -44,6 +43,7 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.RunnableData;
 
 /**
  * Date: 18/11/2016
@@ -123,9 +123,9 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       return this;
     }
 
-    public @Nullable Consumer<String> onSuccessListener;
+    public @Nullable RunnableData<String> onSuccessListener;
 
-    public Args setSuccessListener (@Nullable Consumer<String> onSuccessListener) {
+    public Args setSuccessListener (@Nullable RunnableData<String> onSuccessListener) {
       this.onSuccessListener = onSuccessListener;
       return this;
     }
@@ -906,7 +906,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
             navigateTo(c);
           } else if (mode == MODE_TRANSFER_OWNERSHIP_CONFIRM && getArguments() != null && getArguments().onSuccessListener != null) {
             navigateBack();
-            getArgumentsStrict().onSuccessListener.accept(password);
+            getArgumentsStrict().onSuccessListener.runWithData(password);
           }
         }
       }
