@@ -369,8 +369,6 @@ public class TextEntityCustom extends TextEntity {
     final String copyText = !StringUtils.isEmpty(copyLink) ? copyLink : link;
     final int[] shareState = {0};
 
-    if (tdlib != null && copyText.startsWith(tdlib.tMeUrl() + "previews?start=")) return false;
-
     context.showOptions(copyText, ids.get(), strings.get(), null, icons.get(), (itemView, id) -> {
       switch (id) {
         case R.id.btn_copyLink: {
