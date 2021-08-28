@@ -180,6 +180,10 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       }
       default: {
         switch (item.getId()) {
+          case R.id.btn_transferOwnership: {
+            onTransferOwnershipClick();
+            break;
+          }
           case R.id.btn_unblockUser: {
 
             final Runnable unblockRunnable = () -> {
@@ -651,6 +655,53 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     }
   }
 
+  private void onTransferOwnershipClick () {
+    long chatId = getArgumentsStrict().chatId;
+    int userId = getArgumentsStrict().userId;
+
+    boolean isChannel = tdlib.isChannel(chatId);
+    CharSequence text;
+
+    if (isChannel) {
+      text = Lang.getMarkdownString(this, R.string.TransferOwnershipFinalAlertChannel, tdlib.chatTitle(chatId), tdlib.cache().userName(userId));
+    } else {
+      text = Lang.getMarkdownString(this, R.string.TransferOwnershipFinalAlertGroup, tdlib.chatTitle(chatId), tdlib.cache().userName(userId));
+    }
+    
+    tdlib.ui().requestTransferOwnership(this, text, password -> {
+      tdlib.client().send(new TdApi.TransferChatOwnership(chatId, userId, password), tdlib.okHandler());
+      tdlib.ui().exitToChatScreen(this, getChatId());
+    });
+  }
+
+  private void checkTransferOwnership () {
+    if (targetAdmin == null || !targetAdmin.canBeEdited || getArgumentsStrict().mode != MODE_ADMIN_PROMOTION || ChatId.isBasicGroup(getArgumentsStrict().chatId) || getArgumentsStrict().myStatus.getConstructor() != TdApi.ChatMemberStatusCreator.CONSTRUCTOR) return;
+
+    boolean isChannel = tdlib.isChannel(getArgumentsStrict().chatId);
+    boolean canTransfer;
+
+    if (isChannel) {
+      canTransfer = targetAdmin.canChangeInfo && targetAdmin.canPostMessages && targetAdmin.canEditMessages && targetAdmin.canDeleteMessages && targetAdmin.canInviteUsers && targetAdmin.canManageVoiceChats && targetAdmin.canPromoteMembers;
+    } else {
+      canTransfer = targetAdmin.canChangeInfo && targetAdmin.canDeleteMessages && targetAdmin.canRestrictMembers && targetAdmin.canInviteUsers && targetAdmin.canPinMessages && targetAdmin.canManageVoiceChats && targetAdmin.canPromoteMembers;
+    }
+
+    smToggleTransferOwnership(isChannel, canTransfer);
+  }
+
+  private void smToggleTransferOwnership (boolean isChannel, boolean show) {
+    if (show) {
+      int i = adapter.indexOfViewById(R.id.btn_dismissAdmin);
+      if (i == -1) return;
+      adapter.addItem(i, new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      adapter.addItem(i, new ListItem(ListItem.TYPE_SETTING, R.id.btn_transferOwnership, 0, isChannel ? R.string.TransferChannelOwnership : R.string.TransferGroupOwnership).setTextColorId(R.id.theme_color_textNegative));
+    } else {
+      int i = adapter.indexOfViewById(R.id.btn_transferOwnership);
+      if (i == -1) return;
+      adapter.removeRange(i, 2);
+    }
+  }
+
   private void buildCells () {
     Args args = getArgumentsStrict();
 
@@ -772,6 +823,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     }
 
     adapter.setItems(items, false);
+    checkTransferOwnership();
   }
 
   private void addEditTitleCells (List<ListItem> items) {
@@ -972,6 +1024,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     }
     updateValues();
     checkDoneButton();
+    checkTransferOwnership();
   }
 
   private void checkDoneButton () {

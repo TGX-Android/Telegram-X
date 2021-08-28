@@ -5501,7 +5501,7 @@ public class TdlibUi extends Handler {
               PasswordController controller = new PasswordController(context.context(), context.tdlib());
               controller.setArguments(new PasswordController.Args(PasswordController.MODE_TRANSFER_OWNERSHIP_CONFIRM, (TdApi.PasswordState) state).setSuccessListener(password -> {
                 // Ask if the user REALLY wants to transfer ownership, because this operation is serious
-                context.openAlert(R.string.TransferOwnershipSecurityAlert, finalAlertMessageText, Lang.getString(R.string.Proceed), (dialog, which) -> {
+                context.openAlert(R.string.TransferOwnershipFinalAlert, finalAlertMessageText, Lang.getString(R.string.Proceed), (dialog, which) -> {
                   onSuccessListener.accept(password);
                 }, 0);
               }));
