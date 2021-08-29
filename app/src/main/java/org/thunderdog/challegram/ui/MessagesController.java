@@ -2217,6 +2217,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return inPreviewMode && previewMode == PREVIEW_MODE_WALLPAPER_OBJECT;
   }
 
+  public void updateFreeform () {
+    if (wallpaperView != null) {
+      wallpaperView.animateFreeform();
+    }
+  }
+
   public boolean inPreviewMode () {
     return inPreviewMode;
   }
@@ -8101,8 +8107,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       content = new TdApi.InputMessageText(msg, !allowLinkPreview, clearInput);
     }
 
-    List<TdApi.SendMessage> functions = TD.sendTextMessage(chatId, messageThreadId, replyToMessageId, new TdApi.MessageSendOptions(disableNotification, false, schedule), content, tdlib.maxMessageTextLength());
+    updateFreeform();
 
+    List<TdApi.SendMessage> functions = TD.sendTextMessage(chatId, messageThreadId, replyToMessageId, new TdApi.MessageSendOptions(disableNotification, false, schedule), content, tdlib.maxMessageTextLength());
     if (clearInput) {
       final int expectedCount = functions.size();
       final List<TdApi.Message> sentMessages = new ArrayList<>(expectedCount);
