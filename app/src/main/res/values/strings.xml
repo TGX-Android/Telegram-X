@@ -1694,6 +1694,8 @@
   <string name="EventLogChangedYourVolume">%1$s changed your volume to %2$s</string>
   <string name="EventLogLocationChanged">%1$s changed group location to %2$s</string>
   <string name="EventLogLocationRemoved">%1$s removed group location</string>
+  <string name="EventLogTransferredOwnership">transferred ownership to %1$s</string>
+  <string name="EventLogNoLongerCreator">is no longer a creator</string>
   <string name="UntilX">Until %1$s</string>
   <string name="NetworkUsage">Network Usage</string>
   <string name="RecentStickers">Recently Used</string>
