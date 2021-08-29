@@ -1041,6 +1041,9 @@ public class TGInlineKeyboard {
           final byte[] data = ((TdApi.InlineKeyboardButtonTypeCallbackWithPassword) type).data;
 
           context.context.tdlib.ui().requestTransferOwnership(context.context.messagesController(), Lang.getMarkdownString(context.context.messagesController(), R.string.TransferOwnershipFinalAlertBot), password -> {
+            makeActive();
+            cancelDelayedProgress();
+            animateProgressFactor(1f);
             context.context.tdlib.client().send(new TdApi.GetCallbackQueryAnswer(parent.getChatId(), context.messageId, new TdApi.CallbackQueryPayloadDataWithPassword(password, data)), getAnswerCallback(currentContextId, view,false));
           });
 
