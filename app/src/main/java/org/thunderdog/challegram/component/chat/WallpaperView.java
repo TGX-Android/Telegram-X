@@ -9,6 +9,7 @@ import androidx.palette.graphics.Palette;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -182,7 +183,23 @@ public class WallpaperView extends View implements ThemeChangeListener, ChatStyl
   }
 
   private float factor;
-  private FactorAnimator animator;
+  private FactorAnimator animator, freeformLocationChangeAnimator;
+
+  public void animateFreeform () {
+    if (wallpaper == null || !(wallpaper.isFillFreeformGradient() || wallpaper.isPatternBackgroundFreeformGradient())) {
+      return;
+    }
+
+    if (freeformLocationChangeAnimator == null) {
+      freeformLocationChangeAnimator = new FactorAnimator(1, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 1000L);
+    } else if (freeformLocationChangeAnimator.getFactor() == 1f) {
+      freeformLocationChangeAnimator.forceFactor(0f);
+    } else if (freeformLocationChangeAnimator.isAnimating()) {
+      return;
+    }
+
+    freeformLocationChangeAnimator.animateTo(1f);
+  }
 
   private void animateChange () {
     if (animator == null) {
@@ -199,6 +216,12 @@ public class WallpaperView extends View implements ThemeChangeListener, ChatStyl
 
   @Override
   public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
+    if (id == 1) {
+      gradientCache.interpolateNextFreeform(factor);
+      invalidate();
+      return;
+    }
+
     if (this.factor != factor) {
       this.factor = factor;
       if (manager.controller().inWallpaperMode() && manager.useBubbles() && manager.getAdapter() != null) {
@@ -225,6 +248,11 @@ public class WallpaperView extends View implements ThemeChangeListener, ChatStyl
 
   @Override
   public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
+    if (id == 1) {
+      gradientCache.resetFreeformIndexMap();
+      return;
+    }
+
     if (finalFactor == 1f) {
       wallpaper = previewWallpaper;
       previewWallpaper = null;
@@ -247,6 +275,11 @@ public class WallpaperView extends View implements ThemeChangeListener, ChatStyl
 
   @Override
   public void performDestroy () {
+    if (wallpaper != null && (wallpaper.isFillFreeformGradient() || wallpaper.isPatternBackgroundFreeformGradient())) {
+      gradientCache.resetFreeformIndexMap();
+      gradientCache.resetFreeformCenters();
+    }
+    
     receiver.destroy();
     if (preview != null) {
       preview.destroy();

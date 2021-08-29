@@ -39,6 +39,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.DrawableProvider;
@@ -3613,6 +3614,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public void sendMessage (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions options, TdApi.InputMessageContent inputMessageContent, @Nullable RunnableData<TdApi.Message> after) {
+    ViewController<?> c = UI.getCurrentStackItem();
+    if (c instanceof MessagesController) {
+      ((MessagesController) c).updateFreeform();
+    }
+
     client().send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, options, null, inputMessageContent), after != null ? result -> {
       messageHandler.onResult(result);
       after.runWithData(result instanceof TdApi.Message ? (TdApi.Message) result : null);
