@@ -24,12 +24,15 @@ public class WindowInsetsAnimationCallback extends WindowInsetsAnimation.Callbac
         this.rootFrameLayout = rootFrameLayout;
     }
 
+    private void setRootPadding (int padding) {
+        rootFrameLayout.setPadding(rootFrameLayout.getPaddingLeft(), rootFrameLayout.getPaddingTop(), rootFrameLayout.getPaddingRight(), padding);
+    }
+
     @NonNull
     @Override
     public WindowInsetsAnimation.Bounds onStart (@NonNull WindowInsetsAnimation animation, @NonNull WindowInsetsAnimation.Bounds bounds) {
         if (!Settings.instance().needKeyboardAnimation()) {
-            rootFrameLayout.partialBottomInset = 0;
-            rootFrameLayout.requestLayout();
+            setRootPadding(0);
             return super.onStart(animation, bounds);
         }
 
@@ -37,14 +40,13 @@ public class WindowInsetsAnimationCallback extends WindowInsetsAnimation.Callbac
             // manually set insets because we skipped the animation
             if (bottomInset > 0) {
                 // probably hiding keyboard
-                rootFrameLayout.partialBottomInset = 0;
+                setRootPadding(0);
+                Keyboard.notifyHeightChanged(0);
             } else {
                 // probably showing keyboard
-                rootFrameLayout.partialBottomInset = Keyboard.getSize();
+                setRootPadding(Keyboard.getSize());
+                Keyboard.notifyHeightChanged(Keyboard.getSize());
             }
-
-            Keyboard.notifyHeightChanged(rootFrameLayout.partialBottomInset);
-            rootFrameLayout.requestLayout();
         }
 
         return super.onStart(animation, bounds);
@@ -59,8 +61,7 @@ public class WindowInsetsAnimationCallback extends WindowInsetsAnimation.Callbac
 
         if (!Keyboard.shouldSkipKeyboardAnimation && Settings.instance().needKeyboardAnimation()) {
             Keyboard.notifyHeightChanged(rootFrameLayout.partialBottomInset);
-            rootFrameLayout.partialBottomInset = bottomInset;
-            rootFrameLayout.requestLayout();
+            setRootPadding(bottomInset);
         }
 
         return insets;
