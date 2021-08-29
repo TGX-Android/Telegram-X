@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PointF;
 import android.graphics.RadialGradient;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -1092,6 +1093,11 @@ public class DrawAlgorithms {
     private static final float[] MCG_CENTERS_X = new float[] { 0.9f, 0.3f, 0.7f, 0.2f };
     private static final float[] MCG_CENTERS_Y = new float[] { 0.1f, 0.3f, 0.7f, 0.9f };
 
+    private float[] MCG_CENTERS_X_CURRENT = MCG_CENTERS_X;
+    private float[] MCG_CENTERS_Y_CURRENT = MCG_CENTERS_Y;
+    private float[] MCG_CENTERS_X_END = MCG_CENTERS_X;
+    private float[] MCG_CENTERS_Y_END = MCG_CENTERS_Y;
+
     private final Paint paint;
 
     public GradientCache () {
@@ -1103,7 +1109,68 @@ public class DrawAlgorithms {
 
     private int[] freeformColors;
     private RadialGradient[] freeformGradients;
-    private float freeformAlpha;
+    private float freeformAlpha, freeformRadius;
+    private int freeformWidth, freeformHeight;
+    private boolean freeformAnimationInProgress;
+
+    public void interpolateNextFreeform (float value) {
+      if (!freeformAnimationInProgress) {
+        freeformAnimationInProgress = true;
+        rotateEndCenters();
+      }
+
+      for (int i = 0; i < freeformColors.length; i++) {
+        this.freeformGradients[i] = createGradient(
+                freeformWidth * U.interpolateValues(MCG_CENTERS_X_CURRENT[i], MCG_CENTERS_X_END[i], value),
+                freeformHeight * U.interpolateValues(MCG_CENTERS_Y_CURRENT[i], MCG_CENTERS_Y_END[i], value),
+                this.freeformRadius,
+                1f,
+                freeformColors[i]
+        );
+      }
+    }
+
+    public void resetFreeformIndexMap () {
+      freeformAnimationInProgress = false;
+      rotateCurrentCenters();
+    }
+
+    public void resetFreeformCenters () {
+      MCG_CENTERS_X_CURRENT = MCG_CENTERS_X;
+      MCG_CENTERS_Y_CURRENT = MCG_CENTERS_Y;
+      MCG_CENTERS_X_END = MCG_CENTERS_X;
+      MCG_CENTERS_Y_END = MCG_CENTERS_Y;
+
+      for (int i = 0; i < freeformColors.length; i++) {
+        this.freeformGradients[i] = createGradient(
+                freeformWidth * MCG_CENTERS_X_CURRENT[i],
+                freeformHeight * MCG_CENTERS_Y_CURRENT[i],
+                this.freeformRadius,
+                1f,
+                freeformColors[i]
+        );
+      }
+    }
+
+    private void rotateCurrentCenters () {
+      MCG_CENTERS_X_CURRENT = rotate(MCG_CENTERS_X_CURRENT);
+      MCG_CENTERS_Y_CURRENT = rotate(MCG_CENTERS_Y_CURRENT);
+    }
+
+    private void rotateEndCenters () {
+      MCG_CENTERS_X_END = rotate(MCG_CENTERS_X_END);
+      MCG_CENTERS_Y_END = rotate(MCG_CENTERS_Y_END);
+    }
+
+    private float[] rotate (float[] source) {
+      float[] reordered = new float[source.length];
+
+      for (int i = 0; i < source.length; i++) {
+        reordered[i] = source[(i + 1) % source.length];
+      }
+
+      return reordered;
+    }
 
     public boolean set (int fromX, int fromY, int toX, int toY, int topColor, int bottomColor) {
       if (this.lastStartX != fromX || this.lastStartY != fromY || this.lastEndX != toX || this.lastEndY != toY || this.topColor != topColor || this.bottomColor != bottomColor) {
@@ -1122,27 +1189,28 @@ public class DrawAlgorithms {
       return false;
     }
 
-    public boolean set (int width, int height, int[] freeformColors, float alpha) {
-      if (!Arrays.equals(freeformColors, this.freeformColors) || this.freeformAlpha != alpha) {
+    private boolean set (int width, int height, int[] freeformColors, float alpha) {
+      if (!freeformAnimationInProgress && (this.freeformAlpha != alpha || this.freeformWidth != width || this.freeformHeight != height || !Arrays.equals(freeformColors, this.freeformColors))) {
         this.freeformColors = freeformColors;
         this.freeformAlpha = alpha;
+        this.freeformWidth = width;
+        this.freeformHeight = height;
 
-        float radius = (float) Math.min(Screen.currentHeight(), Screen.currentWidth());
+        this.freeformRadius = (float) Math.min(Screen.currentHeight(), Screen.currentWidth());
 
         if (freeformColors.length != 4) {
-          radius = radius * 2;
+          this.freeformRadius = this.freeformRadius * 2;
         }
 
         this.freeformGradients = new RadialGradient[freeformColors.length];
 
         for (int i = 0; i < freeformColors.length; i++) {
-          this.freeformGradients[i] = new RadialGradient(
-            MCG_CENTERS_X[i] * width,
-            MCG_CENTERS_Y[i] * height,
-            radius,
-            ColorUtils.alphaColor(alpha, ColorUtils.color(255, freeformColors[i])),
-            Color.TRANSPARENT,
-            Shader.TileMode.CLAMP
+          this.freeformGradients[i] = createGradient(
+            MCG_CENTERS_X_CURRENT[i] * width,
+            MCG_CENTERS_Y_CURRENT[i] * height,
+            this.freeformRadius,
+            alpha,
+            freeformColors[i]
           );
         }
 
@@ -1151,6 +1219,17 @@ public class DrawAlgorithms {
       }
 
       return false;
+    }
+
+    private RadialGradient createGradient (float x, float y, float radius, float alpha, int color) {
+      return new RadialGradient(
+              x,
+              y,
+              radius,
+              ColorUtils.alphaColor(alpha, ColorUtils.color(255, color)),
+              Color.TRANSPARENT,
+              Shader.TileMode.CLAMP
+      );
     }
 
     public void setFreeformIndex (int index) {

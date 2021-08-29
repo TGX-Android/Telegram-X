@@ -162,6 +162,10 @@ public class U {
     return (isAppSideLoaded != null ? isAppSideLoaded : (isAppSideLoaded = isAppSideLoadedImpl()));
   }
 
+  public static float interpolateValues (float f1, float f2, float v) {
+    return (f2 - f1) * v + f1;
+  }
+
   public static int getHeading (Location location) {
     if (location.hasBearing()) {
       int heading = MathUtils.modulo(Math.round(location.getBearing()), 360);
