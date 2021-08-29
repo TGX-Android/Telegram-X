@@ -1311,6 +1311,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
     checkCommentPosition();
     Keyboard.addHeightChangeListener(this);
+    Keyboard.shouldIgnoreKeyboardPadding = true;
 
     // Load chats
 
@@ -3084,6 +3085,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   public void destroy () {
     super.destroy();
     Keyboard.removeHeightChangeListener(this);
+    Keyboard.shouldIgnoreKeyboardPadding = false;
     Views.destroyRecyclerView(recyclerView);
     TGLegacyManager.instance().removeEmojiListener(adapter);
     cancelDownloadingFiles();

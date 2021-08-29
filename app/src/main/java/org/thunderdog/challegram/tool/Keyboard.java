@@ -17,6 +17,7 @@ import java.util.ArrayList;
 public class Keyboard {
   private static ArrayList<OnHeightChangeListener> heightChangeListeners = new ArrayList<>();
   public static boolean shouldSkipKeyboardAnimation = false;
+  public static boolean shouldIgnoreKeyboardPadding = false;
 
   public static void show (View view) {
     if (view != null) {

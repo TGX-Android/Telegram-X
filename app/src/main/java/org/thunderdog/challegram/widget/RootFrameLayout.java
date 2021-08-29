@@ -31,7 +31,6 @@ import me.vkryl.core.lambda.CancellableRunnable;
 public class RootFrameLayout extends FrameLayoutFix {
   private Object lastInsets;
 
-  public int partialBottomInset = 0;
   private boolean ignoreBottom, ignoreSystemNavigationBar, ignoreAll;
   private final ViewTreeObserver.OnPreDrawListener onPreDrawListener = () -> false;
 
@@ -259,7 +258,7 @@ public class RootFrameLayout extends FrameLayoutFix {
     lp.leftMargin = ignoreHorizontal ? 0 : wi.getSystemWindowInsetLeft();
     lp.topMargin = topOnly ? 0 : wi.getSystemWindowInsetTop();
     lp.rightMargin = ignoreHorizontal ? 0 : wi.getSystemWindowInsetRight();
-    int bottom = Config.USE_IME_ANIMATED_INSETS && Settings.instance().needKeyboardAnimation() ? partialBottomInset : wi.getSystemWindowInsetBottom();
+    int bottom = Config.USE_IME_ANIMATED_INSETS && Settings.instance().needKeyboardAnimation() ? 0 : wi.getSystemWindowInsetBottom();
     lp.bottomMargin = ignoreBottom || shouldIgnoreBottomMargin(child, bottom) ? 0 : bottom;
     if (UI.getContext(getContext()).dispatchCameraMargins(child, lp.leftMargin, lp.topMargin, lp.rightMargin, bottom)) {
       lp.leftMargin = lp.topMargin = lp.rightMargin = lp.bottomMargin = 0;

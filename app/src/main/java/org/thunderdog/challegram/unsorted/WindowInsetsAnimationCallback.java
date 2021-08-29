@@ -60,8 +60,10 @@ public class WindowInsetsAnimationCallback extends WindowInsetsAnimation.Callbac
         bottomInset = Math.max(0, imeInset.bottom - navInset.bottom);
 
         if (!Keyboard.shouldSkipKeyboardAnimation && Settings.instance().needKeyboardAnimation()) {
-            Keyboard.notifyHeightChanged(rootFrameLayout.partialBottomInset);
-            setRootPadding(bottomInset);
+            Keyboard.notifyHeightChanged(bottomInset);
+            if (!Keyboard.shouldIgnoreKeyboardPadding) {
+                setRootPadding(bottomInset);
+            }
         }
 
         return insets;
