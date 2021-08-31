@@ -8,7 +8,6 @@ import android.widget.TextView;
 import androidx.collection.LongSparseArray;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
@@ -367,7 +366,7 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
   }
 
   @Override
-  protected long getAsynchronousAnimationTimeout (boolean fastAnimation) {
+  public long getAsynchronousAnimationTimeout (boolean fastAnimation) {
     return 400l;
   }
 

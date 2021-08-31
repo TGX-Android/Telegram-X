@@ -67,7 +67,7 @@ public class SettingsLanguageController extends RecyclerViewController<Void> imp
   }
 
   @Override
-  protected long getAsynchronousAnimationTimeout (boolean fastAnimation) {
+  public long getAsynchronousAnimationTimeout (boolean fastAnimation) {
     return 300l;
   }
 
