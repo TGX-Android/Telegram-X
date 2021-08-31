@@ -32,11 +32,13 @@ import org.thunderdog.challegram.data.InlineResultMention;
 import org.thunderdog.challegram.data.InlineResultPhoto;
 import org.thunderdog.challegram.data.InlineResultSticker;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.data.TGBotStart;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeId;
 import org.thunderdog.challegram.theme.ThemeListenerList;
@@ -858,7 +860,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
           UI.post(() -> {
             if (!isCancelled()) {
               setItems(null);
-              delegate.tdlib().ui().openChat(c, chatId, null);
+              delegate.tdlib().ui().openChat(c, chatId, new TdlibUi.ChatOpenParameters().keepStack().shareItem(new TGBotStart(delegate.tdlib().chatUserId(chatId), button.data(), false)));
             }
           });
         } else {
