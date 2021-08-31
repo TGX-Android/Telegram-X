@@ -3480,6 +3480,7 @@
   <string name="StatsMessageViewCount">View Count</string>
   <string name="StatsMessageSharesPrivate">Private Shares</string>
   <string name="StatsMessageSharesPublic">Public Shares</string>
+  <string name="StatsMessagePublishDate">Publication Date</string>
 
   <string name="SendDiceAsEmoji">Send as emoji</string>
   <string name="SendDiceHint">Send a %1$s emoji to any chat to get a random number from Telegram.</string>

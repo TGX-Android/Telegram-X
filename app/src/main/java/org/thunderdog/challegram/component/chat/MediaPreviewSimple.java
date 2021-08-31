@@ -36,6 +36,23 @@ public class MediaPreviewSimple extends MediaPreview {
     // TODO avatar preview
   }
 
+  public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.ChatPhotoInfo chatPhotoInfo) {
+    super(size, cornerRadius);
+    if (chatPhotoInfo.minithumbnail != null) {
+      this.previewImage = new ImageFileLocal(chatPhotoInfo.minithumbnail);
+      this.previewImage.setSize(size);
+      this.previewImage.setScaleType(ImageFile.CENTER_CROP);
+      this.previewImage.setDecodeSquare(true);
+    }
+    if (chatPhotoInfo.big != null) {
+      this.targetImage = new ImageFile(tdlib, chatPhotoInfo.big, null);
+      this.targetImage.setSize(size);
+      this.targetImage.setScaleType(ImageFile.CENTER_CROP);
+      this.targetImage.setDecodeSquare(true);
+      this.targetImage.setNoBlur();
+    }
+  }
+
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.Venue venue, TdApi.Thumbnail thumbnail) {
     this(tdlib, size, cornerRadius, venue.location, thumbnail);
   }

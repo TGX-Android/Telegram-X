@@ -2,14 +2,18 @@ package org.thunderdog.challegram.ui;
 
 import android.content.Context;
 import android.view.View;
+import android.widget.Toast;
 
 import androidx.annotation.IdRes;
 import androidx.annotation.StringRes;
+import androidx.collection.SparseArrayCompat;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.charts.Chart;
 import org.thunderdog.challegram.charts.MiniChart;
+import org.thunderdog.challegram.charts.StatsMessagePreviewView;
 import org.thunderdog.challegram.charts.data.ChartDataUtil;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.chat.MessagePreviewView;
@@ -30,6 +34,7 @@ import org.thunderdog.challegram.widget.CustomTextView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -58,8 +63,9 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
   private DoubleHeaderView headerCell;
 
   private TdApi.ChatStatisticsMessageSenderInfo[] messageSenderInfos;
-  private TdApi.ChatStatisticsMessageInteractionInfo[] messageInteractionInfos;
-  private TdApi.Message[] interactionMessages;
+  private long currentMediaAlbumId;
+  private final ArrayList<MessageInteractionInfoContainer> interactionMessages = new ArrayList<>();
+  private final HashMap<Long, List<TdApi.Message>> interactionMessageAlbums = new HashMap<>();
 
   @Override
   public View getCustomHeaderCell () {
@@ -79,29 +85,37 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
           tdlib.ui().openPrivateChat(this, user.getId(), new TdlibUi.ChatOpenParameters().keepStack());
         }
         break;
+      case R.id.btn_viewAdminActions:
       case R.id.btn_openInviterProfile:
         TGUser user2 = ((UserView) v).getUser();
         if (user2 != null) {
           tdlib.ui().openPrivateChat(this, user2.getId(), new TdlibUi.ChatOpenParameters().keepStack());
         }
         break;
-      case R.id.btn_viewAdminActions:
+      /*case R.id.btn_viewAdminActions:
         TGUser user3 = ((UserView) v).getUser();
         if (user3 != null) {
           //MessagesController c = new MessagesController(context, tdlib);
           //c.setArguments(new MessagesController.Arguments(MessagesController.PREVIEW_MODE_EVENT_LOG, null, getArgumentsStrict().chatId));
           //navigateTo(c);
         }
-        break;
+        break;*/
       case R.id.btn_showAdvanced:
         showAllUsers();
         break;
       case R.id.btn_messageMore:
-        int position = (int) v.getTag();
+        MessageInteractionInfoContainer container = (MessageInteractionInfoContainer) v.getTag();
         MessageStatisticsController msc = new MessageStatisticsController(context, tdlib);
-        msc.setArguments(new MessageStatisticsController.Args(getArgumentsStrict().chatId, interactionMessages[position].id, new TdApi.MessageInteractionInfo(
-                messageInteractionInfos[position].viewCount, messageInteractionInfos[position].forwardCount, null
-        )));
+        List<TdApi.Message> album = interactionMessageAlbums.get(container.message.mediaAlbumId);
+
+        if (album != null) {
+          msc.setArguments(new MessageStatisticsController.Args(getArgumentsStrict().chatId, album));
+        } else {
+          msc.setArguments(new MessageStatisticsController.Args(getArgumentsStrict().chatId, container.message.id, container.message.date, new TdApi.MessageInteractionInfo(
+                  container.messageInteractionInfo.viewCount, container.messageInteractionInfo.forwardCount, null
+          )));
+        }
+
         navigateTo(msc);
         break;
     }
@@ -174,23 +188,20 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
       }
 
       @Override
-      protected void setMessagePreview (ListItem item, int position, MessagePreviewView previewView) {
+      protected void setMessagePreview (ListItem item, int position, StatsMessagePreviewView previewView) {
         StringBuilder statString = new StringBuilder();
-        TdApi.ChatStatisticsMessageInteractionInfo info = messageInteractionInfos[item.getIntValue()];
-        TdApi.Message msg = (TdApi.Message) item.getData();
+        MessageInteractionInfoContainer container = (MessageInteractionInfoContainer) item.getData();
 
-        statString.append(Lang.plural(R.string.xViews, info.viewCount));
-        if (info.forwardCount > 0) {
-          statString.append(", ").append(Lang.plural(R.string.StatsXShared, info.forwardCount));
+        statString.append(Lang.plural(R.string.xViews, container.messageInteractionInfo.viewCount));
+        if (container.messageInteractionInfo.forwardCount > 0) {
+          statString.append(", ").append(Lang.plural(R.string.StatsXShared, container.messageInteractionInfo.forwardCount));
         }
 
         RippleSupport.setSimpleWhiteBackground(previewView);
-        previewView.setMessage(msg, null, statString.toString());
+        previewView.setMessage(container.message, null, statString.toString(), false);
         previewView.setLinePadding(4f);
         previewView.setContentInset(Screen.dp(8));
-        previewView.clearPreviewChat();
-        previewView.setEnabled(msg.canGetStatistics);
-        previewView.setTag(item.getIntValue());
+        previewView.setTag(container);
       }
 
       @Override
@@ -396,17 +407,14 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
   }
 
   private void setRecentMessageInteractions (TdApi.DateRange range, TdApi.ChatStatisticsMessageInteractionInfo[] interactions, @StringRes int header) {
-    int maxLength = Math.min(5, interactions.length);
-    messageInteractionInfos = new TdApi.ChatStatisticsMessageInteractionInfo[maxLength];
-    interactionMessages = new TdApi.Message[maxLength];
+    int maxLength = Math.min(10, interactions.length);
     loadInteractionMessages(interactions, 0, maxLength, () -> {
       int currentSize = adapter.getItems().size();
       adapter.getItems().add(new ListItem(ListItem.TYPE_CHART_HEADER_DETACHED).setData(new MiniChart(header, range)));
       adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_TOP));
 
-      for (int i = 0; i < maxLength; i++) {
-        adapter.getItems().add(new ListItem(ListItem.TYPE_MESSAGE_PREVIEW, R.id.btn_messageMore).setData(interactionMessages[i]).setIntValue(i));
-        if (i != maxLength - 1) adapter.getItems().add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      for (int i = 0; i < interactionMessages.size(); i++) {
+        adapter.getItems().add(new ListItem(ListItem.TYPE_STATS_MESSAGE_PREVIEW, R.id.btn_messageMore).setData(interactionMessages.get(i)));
       }
 
       adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
@@ -415,16 +423,30 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
   }
 
   private void loadInteractionMessages (TdApi.ChatStatisticsMessageInteractionInfo[] interactions, int index, int maxSize, Runnable onMessagesLoaded) {
-    if (index >= maxSize) {
+    if (interactionMessages.size() > maxSize) {
       runOnUiThread(onMessagesLoaded);
       return;
     }
 
-    tdlib.getMessage(getArgumentsStrict().chatId, interactions[index].messageId, msg -> {
-      messageInteractionInfos[index] = interactions[index];
-      interactionMessages[index] = msg;
-      loadInteractionMessages(interactions, index + 1, maxSize, onMessagesLoaded);
-    });
+    TdApi.Message message = tdlib.getMessageLocally(getArgumentsStrict().chatId, interactions[index].messageId);
+
+    if (message != null && message.mediaAlbumId != 0) {
+      if (!interactionMessageAlbums.containsKey(message.mediaAlbumId)) {
+        interactionMessageAlbums.put(message.mediaAlbumId, new ArrayList<>());
+      }
+
+      interactionMessageAlbums.get(message.mediaAlbumId).add(message);
+    }
+
+    if (message != null && message.canGetStatistics && (message.mediaAlbumId == 0 || currentMediaAlbumId != message.mediaAlbumId)) {
+      currentMediaAlbumId = message.mediaAlbumId;
+      interactionMessages.add(new MessageInteractionInfoContainer(
+              message,
+              interactions[index]
+      ));
+    }
+
+    loadInteractionMessages(interactions, index + 1, maxSize, onMessagesLoaded);
   }
 
   private void setCharts (List<ListItem> items, List<Chart> charts, Runnable onChartsLoaded) {
@@ -487,5 +509,15 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
   @Override
   public boolean needAsynchronousAnimation () {
     return statistics == null || pendingRequests > 0;
+  }
+
+  public static class MessageInteractionInfoContainer {
+    public final TdApi.Message message;
+    public final TdApi.ChatStatisticsMessageInteractionInfo messageInteractionInfo;
+
+    public MessageInteractionInfoContainer (TdApi.Message message, TdApi.ChatStatisticsMessageInteractionInfo messageInteractionInfo) {
+      this.message = message;
+      this.messageInteractionInfo = messageInteractionInfo;
+    }
   }
 }

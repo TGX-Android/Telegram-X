@@ -26,6 +26,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.thunderdog.challegram.FillingDrawable;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.charts.StatsMessagePreviewView;
 import org.thunderdog.challegram.charts.data.ChartDataUtil;
 import org.thunderdog.challegram.charts.view_data.ChartHeaderView;
 import org.thunderdog.challegram.component.RelativeSessionLayout;
@@ -571,6 +572,14 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       }
       case ListItem.TYPE_MESSAGE_PREVIEW: {
         MessagePreviewView view = new MessagePreviewView(context, tdlib);
+        view.setOnClickListener(onClickListener);
+        if (themeProvider != null) {
+          themeProvider.addThemeInvalidateListener(view);
+        }
+        return new SettingHolder(view);
+      }
+      case ListItem.TYPE_STATS_MESSAGE_PREVIEW: {
+        StatsMessagePreviewView view = new StatsMessagePreviewView(context, tdlib);
         view.setOnClickListener(onClickListener);
         if (themeProvider != null) {
           themeProvider.addThemeInvalidateListener(view);

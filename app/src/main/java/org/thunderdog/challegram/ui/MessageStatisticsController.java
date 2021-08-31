@@ -3,18 +3,24 @@ package org.thunderdog.challegram.ui;
 import android.content.Context;
 import android.view.View;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.charts.Chart;
 import org.thunderdog.challegram.charts.MiniChart;
+import org.thunderdog.challegram.charts.StatsMessagePreviewView;
 import org.thunderdog.challegram.charts.data.ChartDataUtil;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGUser;
+import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.v.CustomRecyclerView;
@@ -22,19 +28,28 @@ import org.thunderdog.challegram.v.CustomRecyclerView;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import me.vkryl.td.MessageId;
 
 public class MessageStatisticsController extends RecyclerViewController<MessageStatisticsController.Args> implements View.OnClickListener {
   public static class Args {
     public final long chatId;
-    public final long messageId;
-    public final TdApi.MessageInteractionInfo interactionInfo;
+    public long messageId;
+    public int date;
+    @Nullable public TdApi.MessageInteractionInfo interactionInfo;
+    @Nullable public List<TdApi.Message> album;
 
-    public Args (long chatId, long messageId, TdApi.MessageInteractionInfo interactionInfo) {
+    public Args (long chatId, long messageId, int date, @NonNull TdApi.MessageInteractionInfo interactionInfo) {
       this.chatId = chatId;
       this.messageId = messageId;
+      this.date = date;
       this.interactionInfo = interactionInfo;
+    }
+
+    public Args (long chatId, @NonNull List<TdApi.Message> album) {
+      this.chatId = chatId;
+      this.album = album;
     }
   }
 
@@ -57,6 +72,13 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
       if (user != null) {
         tdlib.ui().openChat(this, user.getChatId(), new TdlibUi.ChatOpenParameters().highlightMessage(new MessageId(user.getChatId(), (long) v.getTag())).keepStack());
       }
+    } else if (v.getId() == R.id.btn_messageMore) {
+      TdApi.Message message = (TdApi.Message) v.getTag();
+      MessageStatisticsController msc = new MessageStatisticsController(context, tdlib);
+      msc.setArguments(new MessageStatisticsController.Args(getArgumentsStrict().chatId, message.id, message.date, new TdApi.MessageInteractionInfo(
+              message.interactionInfo.viewCount, message.interactionInfo.forwardCount, null
+      )));
+      navigateTo(msc);
     }
   }
 
@@ -68,12 +90,16 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
         switch (item.getId()) {
           case R.id.btn_statsViewCount:
           case R.id.btn_statsPrivateShares:
+          case R.id.btn_statsPublishDate:
           case R.id.btn_statsPublicShares: {
-            int value = (int) item.getData();
             view.setIgnoreEnabled(true);
             view.setEnabled(false);
             view.setTextColorId(0);
-            view.setName(Strings.buildCounter((long) value));
+            if (item.getData() instanceof String) {
+              view.setName(item.getData().toString());
+            } else {
+              view.setName(Strings.buildCounter((int) item.getData()));
+            }
             view.setData(item.getString());
             break;
           }
@@ -94,26 +120,49 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
         userView.setTag(msg.id);
         userView.setPreviewChatId(null, msg.chatId, null, new MessageId(msg.chatId, msg.id), null);
       }
+
+
+      @Override
+      protected void setMessagePreview (ListItem item, int position, StatsMessagePreviewView previewView) {
+        StringBuilder statString = new StringBuilder();
+        TdApi.Message message = (TdApi.Message) item.getData();
+
+        statString.append(Lang.plural(R.string.xViews, message.interactionInfo.viewCount));
+        if (message.interactionInfo.forwardCount > 0) {
+          statString.append(", ").append(Lang.plural(R.string.StatsXShared, message.interactionInfo.forwardCount));
+        }
+
+        RippleSupport.setSimpleWhiteBackground(previewView);
+        previewView.setMessage(message, null, statString.toString(), true);
+        previewView.setLinePadding(4f);
+        previewView.setContentInset(Screen.dp(8));
+        previewView.setTag(message);
+      }
     };
     recyclerView.setAdapter(adapter);
-    tdlib.client().send(new TdApi.GetMessageStatistics(getArgumentsStrict().chatId, getArgumentsStrict().messageId, Theme.isDark()), result -> {
-      switch (result.getConstructor()) {
-        case TdApi.MessageStatistics.CONSTRUCTOR:
-          tdlib.client().send(new TdApi.GetMessagePublicForwards(getArgumentsStrict().chatId, getArgumentsStrict().messageId, "", 20), result2 -> {
-            if (result2.getConstructor() == TdApi.FoundMessages.CONSTRUCTOR) {
-              publicShares = (TdApi.FoundMessages) result2;
-            }
 
-            runOnUiThreadOptional(() -> {
-              setStatistics((TdApi.MessageStatistics) result);
+    if (getArgumentsStrict().album != null) {
+      setAlbum(getArgumentsStrict().album);
+    } else {
+      tdlib.client().send(new TdApi.GetMessageStatistics(getArgumentsStrict().chatId, getArgumentsStrict().messageId, Theme.isDark()), result -> {
+        switch (result.getConstructor()) {
+          case TdApi.MessageStatistics.CONSTRUCTOR:
+            tdlib.client().send(new TdApi.GetMessagePublicForwards(getArgumentsStrict().chatId, getArgumentsStrict().messageId, "", 20), result2 -> {
+              if (result2.getConstructor() == TdApi.FoundMessages.CONSTRUCTOR) {
+                publicShares = (TdApi.FoundMessages) result2;
+              }
+
+              runOnUiThreadOptional(() -> {
+                setStatistics((TdApi.MessageStatistics) result);
+              });
             });
-          });
-          break;
-        case TdApi.Error.CONSTRUCTOR:
-          UI.showError(result);
-          break;
-      }
-    });
+            break;
+          case TdApi.Error.CONSTRUCTOR:
+            UI.showError(result);
+            break;
+        }
+      });
+    }
   }
 
   @Override
@@ -124,6 +173,21 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
   private TdApi.MessageStatistics statistics;
   private int pendingRequests;
 
+  private void setAlbum (List<TdApi.Message> album) {
+    List<ListItem> items = new ArrayList<>();
+
+    items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.general_Messages));
+    items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+
+    for (TdApi.Message albumMessage : album) {
+      items.add(new ListItem(ListItem.TYPE_STATS_MESSAGE_PREVIEW, R.id.btn_messageMore).setData(albumMessage));
+    }
+
+    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    adapter.setItems(items, false);
+    executeScheduledAnimation();
+  }
+
   private void setStatistics (TdApi.MessageStatistics statistics) {
     this.statistics = statistics;
 
@@ -131,6 +195,8 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsViewCount, 0, R.string.StatsMessageViewCount, false).setData(getArgumentsStrict().interactionInfo.viewCount));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsPrivateShares, 0, R.string.StatsMessageSharesPrivate, false).setData(getArgumentsStrict().interactionInfo.forwardCount));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsPublishDate, 0, R.string.StatsMessagePublishDate, false).setData(Lang.getTimestamp(getArgumentsStrict().date, TimeUnit.SECONDS)));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     List<Chart> charts = Collections.singletonList(
@@ -142,7 +208,7 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
 
   private void setPublicShares () {
     if (publicShares == null || publicShares.messages.length == 0) return;
-    final int index = adapter.indexOfViewById(R.id.btn_statsPrivateShares) + 1;
+    final int index = adapter.indexOfViewById(R.id.btn_statsPublishDate) + 1;
     adapter.getItems().add(index, new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsPublicShares, 0, R.string.StatsMessageSharesPublic, false).setData(publicShares.totalCount));
     adapter.getItems().add(index, new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     adapter.notifyItemRangeInserted(index, 2);

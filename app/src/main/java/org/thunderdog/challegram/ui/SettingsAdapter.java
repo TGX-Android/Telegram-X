@@ -26,6 +26,7 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.charts.BaseChartView;
 import org.thunderdog.challegram.charts.Chart;
 import org.thunderdog.challegram.charts.MiniChart;
+import org.thunderdog.challegram.charts.StatsMessagePreviewView;
 import org.thunderdog.challegram.charts.view_data.ChartHeaderView;
 import org.thunderdog.challegram.component.attach.MeasuredAdapterDelegate;
 import org.thunderdog.challegram.component.attach.MediaLocationPlaceView;
@@ -386,6 +387,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
   }
 
   protected void setMessagePreview (ListItem item, int position, MessagePreviewView previewView) {
+    // Override
+  }
+
+  protected void setMessagePreview (ListItem item, int position, StatsMessagePreviewView previewView) {
     // Override
   }
 
@@ -1350,6 +1355,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       }
       case ListItem.TYPE_MESSAGE_PREVIEW: {
         setMessagePreview(item, position, (MessagePreviewView) holder.itemView);
+        break;
+      }
+      case ListItem.TYPE_STATS_MESSAGE_PREVIEW: {
+        setMessagePreview(item, position, (StatsMessagePreviewView) holder.itemView);
         break;
       }
       case ListItem.TYPE_FAKE_PAGER_TOPVIEW: {

@@ -81,6 +81,13 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
     return null;
   }
 
+  public static MediaPreview valueOf (Tdlib tdlib, TdApi.ChatPhotoInfo photoInfo, int size, int cornerRadius) {
+    if (photoInfo != null) {
+      return new MediaPreviewSimple(tdlib, size, cornerRadius, photoInfo);
+    }
+    return null;
+  }
+
   public static MediaPreview valueOf (Tdlib tdlib, TdApi.Location location, TdApi.Thumbnail thumbnail, int size, int cornerRadius) {
     if (location != null || thumbnail != null) {
       return new MediaPreviewSimple(tdlib, size, cornerRadius, location, thumbnail);
