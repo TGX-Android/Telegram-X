@@ -5493,7 +5493,7 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public void requestTransferOwnership (ViewController<?> context, CharSequence finalAlertMessageText, Consumer<String> onSuccessListener) {
+  public void requestTransferOwnership (ViewController<?> context, CharSequence finalAlertMessageText, RunnableData<String> onSuccessListener) {
     tdlib.client().send(new TdApi.CanTransferOwnership(), result -> {
       tdlib.ui().post(() -> {
         switch (result.getConstructor()) {
@@ -5503,9 +5503,9 @@ public class TdlibUi extends Handler {
               PasswordController controller = new PasswordController(context.context(), context.tdlib());
               controller.setArguments(new PasswordController.Args(PasswordController.MODE_TRANSFER_OWNERSHIP_CONFIRM, (TdApi.PasswordState) state).setSuccessListener(password -> {
                 // Ask if the user REALLY wants to transfer ownership, because this operation is serious
-                context.openAlert(R.string.TransferOwnershipFinalAlert, finalAlertMessageText, Lang.getString(R.string.Proceed), (dialog, which) -> {
-                  onSuccessListener.accept(password);
-                }, 0);
+                context.addOneShotFocusListener(() -> context.openAlert(R.string.TransferOwnershipFinalAlert, finalAlertMessageText, Lang.getString(R.string.Proceed), (dialog, which) ->
+                  onSuccessListener.runWithData(password), 0
+                ));
               }));
               context.navigateTo(controller);
             });
