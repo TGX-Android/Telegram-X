@@ -21,11 +21,11 @@ import org.thunderdog.challegram.theme.ThemeProperty
       -14235942 // 0xff26c6da
     R.id.theme_color_bubbleIn_progress, R.id.theme_color_bubbleIn_textLink, R.id.theme_color_bubbleOut_chatCorrectChosenFilling, R.id.theme_color_bubbleOut_chatCorrectFilling, R.id.theme_color_bubbleOut_chatVerticalLine, R.id.theme_color_bubbleOut_inlineIcon, R.id.theme_color_bubbleOut_inlineText, R.id.theme_color_bubbleOut_messageAuthor, R.id.theme_color_bubbleOut_textLink, R.id.theme_color_bubbleOut_ticks, R.id.theme_color_bubbleOut_ticksRead, R.id.theme_color_bubbleOut_waveformActive, R.id.theme_color_checkActive, R.id.theme_color_iconActive, R.id.theme_color_inlineIcon, R.id.theme_color_inlineText, R.id.theme_color_iv_textLink, R.id.theme_color_iv_textMarkedLink, R.id.theme_color_messageAuthor, R.id.theme_color_messageCorrectChosenFilling, R.id.theme_color_messageCorrectFilling, R.id.theme_color_messageSwipeBackground, R.id.theme_color_messageVerticalLine, R.id.theme_color_progress, R.id.theme_color_textLink, R.id.theme_color_textNeutral, R.id.theme_color_ticks, R.id.theme_color_ticksRead, R.id.theme_color_togglerActive, R.id.theme_color_unreadText, R.id.theme_color_waveformActive ->
       -16728876 // 0xff00bcd4
-    R.id.theme_color_bubbleIn_textLinkPressHighlight, R.id.theme_color_bubbleOut_textLinkPressHighlight, R.id.theme_color_iv_textLinkPressHighlight, R.id.theme_color_iv_textMarkedLinkPressHighlight, R.id.theme_color_textLinkPressHighlight ->
+    R.id.theme_color_bubbleIn_textLinkPressHighlight, R.id.theme_color_bubbleOut_textLinkPressHighlight, R.id.theme_color_iv_textLinkPressHighlight, R.id.theme_color_iv_textMarkedLinkPressHighlight, R.id.theme_color_textLinkPressHighlight, R.id.theme_color_tooltip_textLinkPressHighlight ->
       1073790164 // 0x4000bcd4
     R.id.theme_color_bubbleOut_background, R.id.theme_color_textSelectionHighlight, R.id.theme_color_unread ->
       -2033670 // 0xffe0f7fa
-    R.id.theme_color_bubbleOut_file, R.id.theme_color_controlActive, R.id.theme_color_file, R.id.theme_color_playerButtonActive, R.id.theme_color_profileSectionActive, R.id.theme_color_promo, R.id.theme_color_textSearchQueryHighlight ->
+    R.id.theme_color_bubbleOut_file, R.id.theme_color_controlActive, R.id.theme_color_file, R.id.theme_color_playerButtonActive, R.id.theme_color_profileSectionActive, R.id.theme_color_promo, R.id.theme_color_textSearchQueryHighlight, R.id.theme_color_tooltip_textLink ->
       -11677471 // 0xff4dd0e1
     R.id.theme_color_bubbleOut_waveformInactive, R.id.theme_color_togglerActiveBackground, R.id.theme_color_waveformInactive ->
       -5051406 // 0xffb2ebf2

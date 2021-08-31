@@ -21,11 +21,11 @@ import org.thunderdog.challegram.theme.ThemeProperty
       -765666 // 0xfff4511e
     R.id.theme_color_bubbleIn_progress, R.id.theme_color_bubbleOut_inlineOutline, R.id.theme_color_bubbleOut_waveformActive, R.id.theme_color_checkActive, R.id.theme_color_inlineOutline, R.id.theme_color_inputActive, R.id.theme_color_profileSectionActiveContent, R.id.theme_color_progress, R.id.theme_color_textNeutral, R.id.theme_color_unreadText, R.id.theme_color_waveformActive ->
       -43230 // 0xffff5722
-    R.id.theme_color_bubbleIn_textLinkPressHighlight, R.id.theme_color_bubbleOut_textLinkPressHighlight, R.id.theme_color_iv_textLinkPressHighlight, R.id.theme_color_iv_textMarkedLinkPressHighlight, R.id.theme_color_textLinkPressHighlight ->
+    R.id.theme_color_bubbleIn_textLinkPressHighlight, R.id.theme_color_bubbleOut_textLinkPressHighlight, R.id.theme_color_iv_textLinkPressHighlight, R.id.theme_color_iv_textMarkedLinkPressHighlight, R.id.theme_color_textLinkPressHighlight, R.id.theme_color_tooltip_textLinkPressHighlight ->
       1089753374 // 0x40f4511e
     R.id.theme_color_bubbleOut_background ->
       -269600 // 0xfffbe2e0
-    R.id.theme_color_bubbleOut_chatCorrectFilling, R.id.theme_color_bubbleOut_chatCorrectChosenFilling, R.id.theme_color_bubbleOut_chatVerticalLine, R.id.theme_color_chatListVerify, R.id.theme_color_controlActive, R.id.theme_color_messageSwipeBackground, R.id.theme_color_messageVerticalLine, R.id.theme_color_promo, R.id.theme_color_seekDone, R.id.theme_color_sliderActive, R.id.theme_color_textSearchQueryHighlight ->
+    R.id.theme_color_bubbleOut_chatCorrectFilling, R.id.theme_color_bubbleOut_chatCorrectChosenFilling, R.id.theme_color_bubbleOut_chatVerticalLine, R.id.theme_color_chatListVerify, R.id.theme_color_controlActive, R.id.theme_color_messageSwipeBackground, R.id.theme_color_messageVerticalLine, R.id.theme_color_promo, R.id.theme_color_seekDone, R.id.theme_color_sliderActive, R.id.theme_color_textSearchQueryHighlight, R.id.theme_color_tooltip_textLink ->
       -36797 // 0xffff7043
     R.id.theme_color_bubbleOut_inlineIcon, R.id.theme_color_bubbleOut_inlineText, R.id.theme_color_inlineIcon, R.id.theme_color_inlineText, R.id.theme_color_profileSectionActive ->
       -1684967 // 0xffe64a19
