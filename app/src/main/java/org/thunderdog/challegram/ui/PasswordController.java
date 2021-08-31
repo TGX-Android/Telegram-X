@@ -218,6 +218,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       case MODE_EMAIL_CHANGE:
       case MODE_CODE_CHANGE:
       case MODE_CODE_PHONE_CONFIRM:
+      case MODE_TRANSFER_OWNERSHIP_CONFIRM:
         return R.drawable.baseline_check_24;
     }
     return R.drawable.baseline_arrow_forward_24;
