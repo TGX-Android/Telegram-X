@@ -601,6 +601,9 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         id == R.id.right_changeChatInfo ||
         id == R.id.right_pinMessages
       ) && TD.checkRight(tdlib.chatPermissions(args.chatId), id) && currentValue) {
+      int promoteMode = args.member == null ? TD.PROMOTE_MODE_NEW : TD.canPromoteAdmin(args.myStatus, args.member.status);
+      if (promoteMode != TD.PROMOTE_MODE_NEW && promoteMode != TD.PROMOTE_MODE_EDIT)
+        return null;
       switch (id) {
         case R.id.right_inviteUsers:
           return Lang.getMarkdownString(this, R.string.NoRightDisallowInvite);
