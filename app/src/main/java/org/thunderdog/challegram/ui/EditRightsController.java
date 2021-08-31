@@ -739,24 +739,38 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     }
     
     tdlib.ui().requestTransferOwnership(this, text, password -> {
-      tdlib.client().send(new TdApi.TransferChatOwnership(chatId, userId, password), result -> {
-        if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
-          TdApi.Error error = (TdApi.Error) result;
+      if (isDoneInProgress())
+        return;
+      setDoneInProgress(true);
+      tdlib.transferOwnership(chatId, userId, password, (success, error) -> runOnUiThreadOptional(() -> {
+        if (success) {
+          setDoneInProgress(false);
+          navigateBack();
+        } else if (error != null) {
+          CharSequence errorMessage;
           switch (error.message) {
-            case "CHANNELS_ADMIN_PUBLIC_TOO_MUCH":
-              UI.showToast(R.string.TransferChannelOwnershipTooMuchChannels, Toast.LENGTH_SHORT);
+            case TD.ERROR_USER_CHANNELS_TOO_MUCH:
+              errorMessage = Lang.getString(R.string.TransferOwnershipTooMuch);
               break;
-            case "USER_CHANNELS_TOO_MUCH":
-              UI.showToast(R.string.TransferChannelOwnershipTooMuchChats, Toast.LENGTH_SHORT);
+            case TD.ERROR_CHANNELS_ADMIN_PUBLIC_TOO_MUCH:
+              errorMessage = Lang.getString(R.string.TransferOwnershipTooMuchPublic);
+              break;
+            case TD.ERROR_CHANNELS_ADMIN_LOCATED_TOO_MUCH:
+              errorMessage = Lang.getString(R.string.TransferOwnershipTooMuchLocated);
               break;
             default:
-              UI.showError(error);
+              errorMessage = TD.toErrorString(error);
               break;
           }
+          context.tooltipManager()
+            .builder(getDoneButton())
+            .show(this,
+              tdlib,
+              R.drawable.baseline_error_24,
+              errorMessage
+            );
         }
-      });
-
-      tdlib.ui().exitToChatScreen(this, getChatId());
+      }));
     });
   }
 
@@ -780,7 +794,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       int i = adapter.indexOfViewById(R.id.btn_dismissAdmin);
       if (i == -1) return;
       adapter.addItem(i, new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      adapter.addItem(i, new ListItem(ListItem.TYPE_SETTING, R.id.btn_transferOwnership, 0, isChannel ? R.string.TransferChannelOwnership : R.string.TransferGroupOwnership).setTextColorId(R.id.theme_color_textNegative));
+      adapter.addItem(i, new ListItem(ListItem.TYPE_SETTING, R.id.btn_transferOwnership, 0, isChannel ? R.string.TransferOwnershipChannel : R.string.TransferOwnershipGroup).setTextColorId(R.id.theme_color_textNegative));
     } else {
       int i = adapter.indexOfViewById(R.id.btn_transferOwnership);
       if (i == -1) return;
