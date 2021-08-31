@@ -1,6 +1,5 @@
 package org.thunderdog.challegram.data;
 
-import android.content.DialogInterface;
 import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -9,7 +8,6 @@ import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
-import android.text.InputType;
 import android.text.TextPaint;
 import android.view.MotionEvent;
 import android.view.View;
@@ -40,14 +38,11 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.MessagesController;
-import org.thunderdog.challegram.ui.SettingsPrivacyController;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.EmojiString;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.widget.CheckBox;
-import org.thunderdog.challegram.widget.MaterialEditText;
-import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import org.thunderdog.challegram.widget.ProgressComponent;
 
 import java.util.ArrayList;
@@ -1041,9 +1036,11 @@ public class TGInlineKeyboard {
           final byte[] data = ((TdApi.InlineKeyboardButtonTypeCallbackWithPassword) type).data;
 
           context.context.tdlib.ui().requestTransferOwnership(context.context.messagesController(), Lang.getMarkdownString(context.context.messagesController(), R.string.TransferOwnershipFinalAlertBot), password -> {
-            makeActive();
-            cancelDelayedProgress();
-            animateProgressFactor(1f);
+            if (currentContextId == contextId) {
+              makeActive();
+              cancelDelayedProgress();
+              animateProgressFactor(1f);
+            }
             context.context.tdlib.client().send(new TdApi.GetCallbackQueryAnswer(parent.getChatId(), context.messageId, new TdApi.CallbackQueryPayloadDataWithPassword(password, data)), getAnswerCallback(currentContextId, view,false));
           });
 
