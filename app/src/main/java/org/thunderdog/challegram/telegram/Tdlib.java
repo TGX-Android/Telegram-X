@@ -3300,6 +3300,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return telegramServiceNotificationsChatId != 0 ? telegramServiceNotificationsChatId : ChatId.fromUserId(TdConstants.TELEGRAM_ACCOUNT_ID);
   }
 
+  public boolean isBotFatherChat (long chatId) {
+    return chatId == ChatId.fromUserId(TdConstants.TELEGRAM_BOT_FATHER_ACCOUNT_ID) || TdConstants.TELEGRAM_BOT_FATHER_USERNAME.equals(chatUsername(chatId));
+  }
+
   public boolean suggestStopBot (long chatId) {
     return suggestStopBot(chat(chatId));
   }
