@@ -1033,9 +1033,14 @@ public class TGInlineKeyboard {
         }
 
         case TdApi.InlineKeyboardButtonTypeCallbackWithPassword.CONSTRUCTOR: {
-          final byte[] data = ((TdApi.InlineKeyboardButtonTypeCallbackWithPassword) type).data;
-
-          context.context.tdlib.ui().requestTransferOwnership(context.context.messagesController(), Lang.getMarkdownString(context.context.messagesController(), R.string.TransferOwnershipFinalAlertBot), password -> {
+          final TdApi.InlineKeyboardButtonTypeCallbackWithPassword callbackWithPassword = (TdApi.InlineKeyboardButtonTypeCallbackWithPassword) type;
+          final byte[] data = callbackWithPassword.data;
+          final boolean isBotTransfer = Td.isBotOwnershipTransfer(callbackWithPassword) && context.context.tdlib().isBotFatherChat(parent.getChatId());
+          CharSequence alertText = Lang.getMarkdownString(context.context.messagesController(), isBotTransfer ?
+            R.string.TransferOwnershipFinalAlertBot :
+            R.string.TransferOwnershipFinalAlertUnknown
+          );
+          context.context.tdlib.ui().requestTransferOwnership(context.context.messagesController(), alertText, password -> {
             if (currentContextId == contextId) {
               makeActive();
               cancelDelayedProgress();
