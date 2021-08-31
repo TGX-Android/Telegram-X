@@ -1707,7 +1707,7 @@ public class TD {
         return !StringUtils.isEmpty(creator.customTitle) || creator.isAnonymous;
       case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
         TdApi.ChatMemberStatusAdministrator admin = (TdApi.ChatMemberStatusAdministrator) status;
-        return !(admin.canChangeInfo && admin.canDeleteMessages && admin.canInviteUsers && admin.canRestrictMembers && admin.canPinMessages && !admin.canPromoteMembers && StringUtils.isEmpty(admin.customTitle) && !admin.isAnonymous);
+        return !(admin.canChangeInfo && admin.canDeleteMessages && admin.canInviteUsers && admin.canRestrictMembers && admin.canPinMessages && admin.canManageVoiceChats && !admin.canPromoteMembers && StringUtils.isEmpty(admin.customTitle) && !admin.isAnonymous);
       case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR:
       case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
         return true;
