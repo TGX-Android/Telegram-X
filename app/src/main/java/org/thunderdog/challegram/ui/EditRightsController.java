@@ -59,6 +59,15 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     public final int mode;
     public int forwardLimit;
 
+    public Args (long chatId, int userId, TdApi.ChatMemberStatus myStatus, TdApi.ChatMember member, int mode, int forwardLimit) {
+      this.chatId = chatId;
+      this.userId = userId;
+      this.myStatus = myStatus;
+      this.member = member;
+      this.mode = mode;
+      this.forwardLimit = forwardLimit;
+    }
+
     public Args (long chatId, int userId, boolean isRestrict, @NonNull TdApi.ChatMemberStatus myStatus, @Nullable TdApi.ChatMember member) {
       this.chatId = chatId;
       this.userId = userId;
@@ -199,7 +208,11 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       default: {
         switch (item.getId()) {
           case R.id.btn_transferOwnership: {
-            onTransferOwnershipClick();
+            if (ChatId.isBasicGroup(getArgumentsStrict().chatId)) {
+              showConfirm(Lang.getMarkdownString(this, R.string.UpgradeChatPrompt), Lang.getString(R.string.Proceed), this::onTransferOwnershipClick);
+            } else {
+              onTransferOwnershipClick();
+            }
             break;
           }
           case R.id.btn_unblockUser: {
@@ -742,7 +755,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       if (isDoneInProgress())
         return;
       setDoneInProgress(true);
-      tdlib.transferOwnership(chatId, userId, password, (success, error) -> runOnUiThreadOptional(() -> {
+      Runnable act = () -> tdlib.transferOwnership(getArgumentsStrict().chatId, userId, password, (success, error) -> runOnUiThreadOptional(() -> {
         if (success) {
           setDoneInProgress(false);
           navigateBack();
@@ -771,11 +784,34 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
             );
         }
       }));
+      if (ChatId.isBasicGroup(getArgumentsStrict().chatId)) {
+        tdlib.upgradeToSupergroup(getArgumentsStrict().chatId, (fromChatId, toChatId, error) -> {
+          if (toChatId != 0) {
+            getArgumentsStrict().chatId = toChatId;
+            act.run();
+          } else {
+            runOnUiThreadOptional(() -> {
+              setDoneInProgress(false);
+              if (error != null) {
+                context.tooltipManager()
+                  .builder(getDoneButton())
+                  .show(this,
+                    tdlib,
+                    R.drawable.baseline_error_24,
+                    TD.toErrorString(error)
+                  );
+              }
+            });
+          }
+        });
+      } else {
+        act.run();
+      }
     });
   }
 
   private void checkTransferOwnership () {
-    if (targetAdmin == null || !targetAdmin.canBeEdited || getArgumentsStrict().mode != MODE_ADMIN_PROMOTION || ChatId.isBasicGroup(getArgumentsStrict().chatId) || getArgumentsStrict().myStatus.getConstructor() != TdApi.ChatMemberStatusCreator.CONSTRUCTOR) return;
+    if (targetAdmin == null || !targetAdmin.canBeEdited || getArgumentsStrict().mode != MODE_ADMIN_PROMOTION || getArgumentsStrict().myStatus.getConstructor() != TdApi.ChatMemberStatusCreator.CONSTRUCTOR) return;
 
     boolean isChannel = tdlib.isChannel(getArgumentsStrict().chatId);
     boolean canTransfer;
