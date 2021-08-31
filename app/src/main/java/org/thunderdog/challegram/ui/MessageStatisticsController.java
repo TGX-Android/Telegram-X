@@ -92,6 +92,7 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
 
         userView.setUser(user);
         userView.setTag(msg.id);
+        userView.setPreviewChatId(null, msg.chatId, null, new MessageId(msg.chatId, msg.id), null);
       }
     };
     recyclerView.setAdapter(adapter);
