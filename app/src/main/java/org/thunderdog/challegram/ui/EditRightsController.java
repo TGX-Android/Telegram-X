@@ -739,7 +739,23 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     }
     
     tdlib.ui().requestTransferOwnership(this, text, password -> {
-      tdlib.client().send(new TdApi.TransferChatOwnership(chatId, userId, password), tdlib.okHandler());
+      tdlib.client().send(new TdApi.TransferChatOwnership(chatId, userId, password), result -> {
+        if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+          TdApi.Error error = (TdApi.Error) result;
+          switch (error.message) {
+            case "CHANNELS_ADMIN_PUBLIC_TOO_MUCH":
+              UI.showToast(R.string.TransferChannelOwnershipTooMuchChannels, Toast.LENGTH_SHORT);
+              break;
+            case "USER_CHANNELS_TOO_MUCH":
+              UI.showToast(R.string.TransferChannelOwnershipTooMuchChats, Toast.LENGTH_SHORT);
+              break;
+            default:
+              UI.showError(error);
+              break;
+          }
+        }
+      });
+
       tdlib.ui().exitToChatScreen(this, getChatId());
     });
   }
