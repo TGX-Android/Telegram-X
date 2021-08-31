@@ -57,6 +57,19 @@ public class SimpleViewPagerController extends ViewPagerController<Object> {
     if (isWhite && headerCell != null) {
       headerCell.getTopView().setTextFromToColorId(0, R.id.theme_color_text);
     }
+    prepareControllerForPosition(0, this::executeScheduledAnimation);
+  }
+
+  @Override
+  public boolean needAsynchronousAnimation () {
+    ViewController<?> first = getCachedControllerForPosition(0);
+    return first != null ? first.needAsynchronousAnimation() : super.needAsynchronousAnimation();
+  }
+
+  @Override
+  public long getAsynchronousAnimationTimeout (boolean fastAnimation) {
+    ViewController<?> first = getCachedControllerForPosition(0);
+    return first != null ? first.getAsynchronousAnimationTimeout(fastAnimation) : super.getAsynchronousAnimationTimeout(fastAnimation);
   }
 
   @Override

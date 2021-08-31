@@ -7,6 +7,7 @@ import android.os.Build;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.google.android.play.core.appupdate.AppUpdateInfo;
 import com.google.android.play.core.appupdate.AppUpdateManager;
@@ -41,6 +42,7 @@ import java.io.File;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
+import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.Td;
 
@@ -88,12 +90,14 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
   private boolean updateOffered;
 
   private long bytesDownloaded, totalBytesToDownload;
+  @Nullable
+  private String displayVersion;
   @FlowType
   private int flowType;
 
   private boolean forceTelegramChannelFlow;
   private Tdlib telegramChannelTdlib;
-  private TdApi.Document telegramChannelFile;
+  private Tdlib.UpdateFileInfo telegramChannelFile;
 
   @State
   private int state = State.NONE;
@@ -124,6 +128,11 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
 
   public long totalBytesToDownload () {
     return totalBytesToDownload;
+  }
+
+  @Nullable
+  public String displayVersion () {
+    return displayVersion;
   }
 
   public long bytesDownloaded () {
@@ -175,14 +184,14 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
       this.googlePlayUpdateInfo = updateInfo;
       int installStatus = updateInfo.installStatus();
       if (installStatus == InstallStatus.DOWNLOADED) {
-        onUpdateAvailable(FlowType.GOOGLE_PLAY, updateInfo.bytesDownloaded(), updateInfo.totalBytesToDownload(), true);
+        onUpdateAvailable(FlowType.GOOGLE_PLAY, updateInfo.bytesDownloaded(), updateInfo.totalBytesToDownload(), "#" + (int) (updateInfo.availableVersionCode() / 1000), true);
       } else if (installStatus == InstallStatus.FAILED) {
         onGooglePlayFlowError();
       } else {
         int updateAvailability = updateInfo.updateAvailability();
         switch (updateAvailability) {
           case UpdateAvailability.UPDATE_AVAILABLE: {
-            onUpdateAvailable(FlowType.GOOGLE_PLAY, updateInfo.bytesDownloaded(), updateInfo.totalBytesToDownload(), false);
+            onUpdateAvailable(FlowType.GOOGLE_PLAY, updateInfo.bytesDownloaded(), updateInfo.totalBytesToDownload(), "#" + (int) (updateInfo.availableVersionCode() / 1000), false);
             break;
           }
           case UpdateAvailability.UNKNOWN: {
@@ -270,7 +279,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
       onUpdateDownloadProgress(state.bytesDownloaded(), state.totalBytesToDownload());
     } else if (installStatus == InstallStatus.DOWNLOADED) {
       googlePlayUpdateManager.unregisterListener(this);
-      onUpdateAvailable(FlowType.GOOGLE_PLAY, state.bytesDownloaded(), state.totalBytesToDownload(), true);
+      onUpdateAvailable(FlowType.GOOGLE_PLAY, state.bytesDownloaded(), state.totalBytesToDownload(), displayVersion, true);
     }
   }
 
@@ -284,8 +293,14 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
       if (updateFile != null) {
         this.telegramChannelTdlib = tdlib;
         this.telegramChannelFile = updateFile;
-        tdlib.listeners().addFileListener(updateFile.document.id, this);
-        onUpdateAvailable(FlowType.TELEGRAM_CHANNEL, updateFile.document.local.downloadedSize, updateFile.document.expectedSize, TD.isFileLoadedAndExists(updateFile.document));
+        TdApi.File file = updateFile.document.document;
+        tdlib.listeners().addFileListener(file.id, this);
+        onUpdateAvailable(FlowType.TELEGRAM_CHANNEL,
+          file.local.downloadedSize,
+          file.expectedSize,
+          displayVersion,
+          TD.isFileLoadedAndExists(file)
+        );
       } else {
         onUpdateUnavailable();
       }
@@ -298,7 +313,17 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
         ViewController<?> c = context.navigation().getCurrentStackItem();
         if (c != null && c.isFocused()) {
           final long bytesToDownload = totalBytesToDownload() - bytesDownloaded();
-          c.showOptions(new ViewController.Options.Builder().info(Lang.getMarkdownString(c, R.string.AppUpdateAvailablePrompt, Lang.boldCreator(), Strings.buildSize(bytesToDownload))).item(new ViewController.OptionItem(R.id.btn_update, Lang.getString(R.string.DownloadUpdate), ViewController.OPTION_COLOR_BLUE, R.drawable.baseline_system_update_24)).cancelItem().build(), (optionItemView, id) -> {
+          final String displayVersion = displayVersion();
+          c.showOptions(new ViewController.Options.Builder()
+            .info(Lang.getMarkdownString(c,
+              !StringUtils.isEmpty(displayVersion) ? R.string.AppUpdateAvailableVersionPrompt : R.string.AppUpdateAvailablePrompt,
+              Lang.boldCreator(),
+              Strings.buildSize(bytesToDownload), displayVersion
+             )
+            )
+            .item(new ViewController.OptionItem(R.id.btn_update, Lang.getString(R.string.DownloadUpdate), ViewController.OPTION_COLOR_BLUE, R.drawable.baseline_system_update_24))
+            .cancelItem()
+            .build(), (optionItemView, id) -> {
             if (id == R.id.btn_update) {
               downloadUpdate();
             }
@@ -339,10 +364,11 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
   @Override
   public void onUpdateFile (TdApi.UpdateFile updateFile) {
     telegramChannelTdlib.ui().post(() -> {
-      if (updateFile.file.id == telegramChannelFile.document.id) {
-        Td.copyTo(updateFile.file, telegramChannelFile.document);
+      TdApi.File currentFile = telegramChannelFile.document.document;
+      if (updateFile.file.id == currentFile.id) {
+        Td.copyTo(updateFile.file, currentFile);
         if (TD.isFileLoadedAndExists(updateFile.file)) {
-          onUpdateAvailable(FlowType.TELEGRAM_CHANNEL, updateFile.file.local.downloadedSize, updateFile.file.expectedSize, true);
+          onUpdateAvailable(FlowType.TELEGRAM_CHANNEL, updateFile.file.local.downloadedSize, updateFile.file.expectedSize, telegramChannelFile.version, true);
         } else if (TD.isFileLoading(updateFile.file)) {
           onUpdateDownloading();
           onUpdateDownloadProgress(updateFile.file.local.downloadedSize, updateFile.file.expectedSize);
@@ -355,10 +381,11 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
     });
   }
 
-  private void onUpdateAvailable (@FlowType int flowType, long bytesDownloaded, long totalBytesToDownload, boolean readyToInstall) {
+  private void onUpdateAvailable (@FlowType int flowType, long bytesDownloaded, long totalBytesToDownload, @Nullable String displayVersion, boolean readyToInstall) {
     this.flowType = flowType;
     this.bytesDownloaded = bytesDownloaded;
     this.totalBytesToDownload = totalBytesToDownload;
+    this.displayVersion = displayVersion;
     if (readyToInstall) {
       setState(State.READY_TO_INSTALL);
     } else {
@@ -393,7 +420,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
       }
       case FlowType.TELEGRAM_CHANNEL: {
         // TODO add tdlib reference & show progress
-        telegramChannelTdlib.files().downloadFile(telegramChannelFile.document);
+        telegramChannelTdlib.files().downloadFile(telegramChannelFile.document.document);
         break;
       }
     }
@@ -414,7 +441,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
     switch (flowType) {
       case FlowType.TELEGRAM_CHANNEL: {
         // TODO guide on how to allow installing APKs
-        UI.openFile(new TdlibContext(context, telegramChannelTdlib), telegramChannelFile.fileName, new File(telegramChannelFile.document.local.path), telegramChannelFile.mimeType, 0);
+        UI.openFile(new TdlibContext(context, telegramChannelTdlib), telegramChannelFile.document.fileName, new File(telegramChannelFile.document.document.local.path), telegramChannelFile.document.mimeType, 0);
         break;
       }
       case FlowType.GOOGLE_PLAY: {

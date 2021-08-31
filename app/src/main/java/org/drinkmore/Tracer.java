@@ -28,25 +28,25 @@ public class Tracer {
     return String.format(Locale.US, PREFIX, Client.getClientCount(), System.currentTimeMillis(), message);
   }
 
-  private static class ClientException_1427 extends RuntimeException {
-    private ClientException_1427 (String message) {
+  private static class ClientException_1428 extends RuntimeException {
+    private ClientException_1428 (String message) {
       super(format(message));
     }
   }
 
-  private static class DatabaseError extends ClientException_1427 {
+  private static class DatabaseError extends ClientException_1428 {
     private DatabaseError (String message) {
       super(message + ", versionCode: " + BuildConfig.VERSION_CODE);
     }
   }
 
-  private static class TdlibLaunchError extends ClientException_1427 {
+  private static class TdlibLaunchError extends ClientException_1428 {
     private TdlibLaunchError (String message) {
       super(message);
     }
   }
 
-  private static class TdlibLostPromiseError extends ClientException_1427 {
+  private static class TdlibLostPromiseError extends ClientException_1428 {
     private TdlibLostPromiseError (String message) {
       super(message);
     }
@@ -60,8 +60,8 @@ public class Tracer {
       newElements[0] = new StackTraceElement("org.drinkmore.Tracer", "throwError", "Tracer.java", 49);
       throwable.setStackTrace(newElements);
     }
-    if (throwable instanceof ClientException_1427)
-      throw (ClientException_1427) throwable;
+    if (throwable instanceof ClientException_1428)
+      throw (ClientException_1428) throwable;
     RuntimeException exception = new RuntimeException(format(throwable.getClass().getSimpleName() + ": " + throwable.getMessage()), throwable.getCause());
     exception.setStackTrace(throwable.getStackTrace());
     throw exception;
@@ -146,11 +146,11 @@ public class Tracer {
       // message only
 
       private void throwTestError (Throwable error) {
-        throw new ClientException_1427(error.getMessage());
+        throw new ClientException_1428(error.getMessage());
       }
 
       private void throwAssertionError (Throwable error) {
-        throw new ClientException_1427(error.getMessage());
+        throw new ClientException_1428(error.getMessage());
       }
 
       // Full trace

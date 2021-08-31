@@ -4027,13 +4027,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
-  private void setChatMemberStatusImpl (final long chatId, final TdApi.MessageSender sender, final TdApi.ChatMemberStatus newStatus, final @Nullable TdApi.ChatMemberStatus currentStatus, @Nullable final ChatMemberStatusChangeCallback callback) {
-    final boolean needBanAtFirst = !ChatId.isBasicGroup(chatId) && currentStatus != null && TD.isMember(currentStatus) && !TD.isMember(newStatus) && newStatus.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR;
-    final AtomicBoolean hasBanned = needBanAtFirst ? new AtomicBoolean(false)  : null;
+  private void setChatMemberStatusImpl (final long chatId, final TdApi.MessageSender sender, final TdApi.ChatMemberStatus newStatus, final int forwardLimit, final @Nullable TdApi.ChatMemberStatus currentStatus, @Nullable final ChatMemberStatusChangeCallback callback) {
+    final boolean needBanAtFirst = !ChatId.isBasicGroup(chatId) && TD.isMember(currentStatus) && !TD.isMember(newStatus) && newStatus.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR;
+    final boolean needForward = ChatId.isBasicGroup(chatId) && forwardLimit > 0 && !TD.isMember(currentStatus, false) && TD.isMember(newStatus, false) && sender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR;
+    final AtomicBoolean oneShot = needBanAtFirst || (needForward && TD.isAdmin(newStatus)) ? new AtomicBoolean(false) : null;
 
     TdApi.Function function;
     if (needBanAtFirst) {
       function = new TdApi.SetChatMemberStatus(chatId, sender, new TdApi.ChatMemberStatusBanned());
+    } else if (needForward) {
+      function = new TdApi.AddChatMember(chatId, ((TdApi.MessageSenderUser) sender).userId, forwardLimit);
     } else {
       function = new TdApi.SetChatMemberStatus(chatId, sender, newStatus);
     }
@@ -4045,7 +4048,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       public void onResult (TdApi.Object object) {
         switch (object.getConstructor()) {
           case TdApi.Ok.CONSTRUCTOR:
-            if (needBanAtFirst && !hasBanned.getAndSet(true)) {
+            if (oneShot != null && !oneShot.getAndSet(true)) {
               client().send(new TdApi.SetChatMemberStatus(chatId, sender, newStatus), this);
             } else {
               client().send(new TdApi.GetChatMember(chatId, sender), this);
@@ -4108,15 +4111,33 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public void setChatMemberStatus (final long chatId, final TdApi.MessageSender sender, final TdApi.ChatMemberStatus newStatus, final @Nullable TdApi.ChatMemberStatus currentStatus, @Nullable final ChatMemberStatusChangeCallback callback) {
+    setChatMemberStatus(chatId, sender, newStatus, 0, currentStatus, callback);
+  }
+
+  public void setChatMemberStatus (final long chatId, final TdApi.MessageSender sender, final TdApi.ChatMemberStatus newStatus, final int forwardLimit, final @Nullable TdApi.ChatMemberStatus currentStatus, @Nullable final ChatMemberStatusChangeCallback callback) {
     if (ChatId.isBasicGroup(chatId) && TD.needUpgradeToSupergroup(newStatus)) {
-     upgradeToSupergroup(chatId, (oldChatId, newChatId, error) -> {
-       if (newChatId != 0)
-          setChatMemberStatusImpl(newChatId, sender, newStatus, currentStatus, callback);
-       else if (callback != null)
-         callback.onMemberStatusUpdated(false, error);
-     });
+      Runnable act = () -> upgradeToSupergroup(chatId, (oldChatId, newChatId, error) -> {
+        if (newChatId != 0)
+          setChatMemberStatusImpl(newChatId, sender, newStatus, 0, currentStatus, callback);
+        else if (callback != null)
+          callback.onMemberStatusUpdated(false, error);
+      });
+      if (forwardLimit > 0 && sender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR &&
+        TD.isMember(newStatus, false) && !TD.isMember(currentStatus, false)) {
+        client().send(new TdApi.AddChatMember(chatId, ((TdApi.MessageSenderUser) sender).userId, forwardLimit), object -> {
+          if (TD.isOk(object)) {
+            act.run();
+          } else if (callback != null) {
+            ui().post(() ->
+              callback.onMemberStatusUpdated(false, (TdApi.Error) object)
+            );
+          }
+        });
+      } else {
+        act.run();
+      }
     } else {
-      setChatMemberStatusImpl(chatId, sender, newStatus, currentStatus, callback);
+      setChatMemberStatusImpl(chatId, sender, newStatus, forwardLimit, currentStatus, callback);
     }
   }
 
@@ -7474,7 +7495,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     });
   }
 
-  public void findUpdateFile (@NonNull RunnableData<TdApi.Document> onDone) {
+  public static final class UpdateFileInfo {
+    public final TdApi.Document document;
+    public final int buildNo;
+    public final String version;
+
+    public UpdateFileInfo (TdApi.Document document, int buildNo, String version) {
+      this.document = document;
+      this.buildNo = buildNo;
+      this.version = version;
+    }
+  }
+
+  public void findUpdateFile (@NonNull RunnableData<UpdateFileInfo> onDone) {
     final String abi;
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       abi = Build.SUPPORTED_ABIS[0];
@@ -7496,20 +7529,24 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       if (message != null && message.content.getConstructor() == TdApi.MessageDocument.CONSTRUCTOR) {
         TdApi.Document document = ((TdApi.MessageDocument) message.content).document;
         boolean ok = false;
+        int buildNo = 0;
+        String version = null;
         final String prefix = "Telegram-X-";
         if (!StringUtils.isEmpty(document.fileName) && document.fileName.startsWith(prefix)) {
           int i = document.fileName.indexOf('-', prefix.length());
-          String version = document.fileName.substring(prefix.length(), i == -1 ? document.fileName.length() : i);
+          version = document.fileName.substring(prefix.length(), i == -1 ? document.fileName.length() : i);
           if (version.matches("^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$")) {
-            int buildNo = StringUtils.parseInt(version.substring(version.lastIndexOf('.') + 1));
-            if (buildNo > BuildConfig.ORIGINAL_VERSION_CODE || BuildConfig.DEBUG) {
+            buildNo = StringUtils.parseInt(version.substring(version.lastIndexOf('.') + 1));
+            if (buildNo > BuildConfig.ORIGINAL_VERSION_CODE) {
               ok = true;
             }
           }
         }
-        onDone.runWithData(ok ? document : null);
+        onDone.runWithData(ok ? new UpdateFileInfo(document, buildNo, version) : null);
       }
-    }, "#apk " + (Settings.instance().getNewSetting(Settings.SETTING_FLAG_DOWNLOAD_BETAS) ? "" : "#stable ") + "#" + hashtag, BuildConfig.COMMIT_DATE);
+    }, "#apk " + (
+      Settings.instance().getNewSetting(Settings.SETTING_FLAG_DOWNLOAD_BETAS) ? "" : "#stable "
+    ) + "#" + hashtag, BuildConfig.COMMIT_DATE);
   }
 
   public <T extends Settings.CloudSetting> void fetchCloudSettings (@NonNull RunnableData<List<T>> callback, String requiredHashtag, @NonNull Future<T> currentSettingProvider, @NonNull Future<T> builtinItemProvider, @NonNull WrapperProvider<T, TdApi.Message> instanceProvider) {

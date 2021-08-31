@@ -3556,6 +3556,8 @@ public class TdlibUi extends Handler {
     ViewController<?> current = stack.getCurrent();
     if (stack.size() > 1 && context.getChatId() == chatId && (current == context || (current != null && current.getChatId() == chatId))) {
       for (int i = stack.size() - 2; i >= 1; i--) {
+        if (stack.get(i) instanceof ChatsController)
+          break;
         stack.destroy(i);
       }
       current.setShareCustomHeaderView(false);
