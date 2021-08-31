@@ -2036,8 +2036,12 @@ public class TD {
   }
 
   public static String getChatMemberSubtitle (Tdlib tdlib, int userId, @Nullable TdApi.User user, boolean allowBotState) {
-    if (userId == TdConstants.TELEGRAM_ACCOUNT_ID) {
+    final long chatId = ChatId.fromUserId(userId);
+    if (tdlib.isServiceNotificationsChat(chatId)) {
       return Lang.getString(R.string.ServiceNotifications);
+    }
+    if (tdlib.isRepliesChat(chatId)) {
+      return Lang.getString(R.string.ReplyNotifications);
     }
     if (tdlib.isSelfUserId(userId)) {
       return Lang.getString(R.string.status_Online);
@@ -4120,7 +4124,7 @@ public class TD {
     int start = messageText.text.text.length() + 1;
     newText.text = messageText.text.text + "\n[" + Lang.getString(R.string.LinkPreview) + "]";
     if (messageText.text.entities != null) {
-      messageText.text.entities = ArrayUtils.resize(messageText.text.entities, messageText.text.entities.length + 1, null);
+      newText.entities = ArrayUtils.resize(messageText.text.entities, messageText.text.entities.length + 1, null);
     } else {
       newText.entities = new TdApi.TextEntity[1];
     }

@@ -2438,7 +2438,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public final boolean isRepliesChat () {
-    return msg.chatId == ChatId.fromUserId(TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID);
+    return tdlib.isRepliesChat(msg.chatId);
   }
 
   private void layoutAvatar () {
