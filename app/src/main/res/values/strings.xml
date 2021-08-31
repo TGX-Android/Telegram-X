@@ -438,6 +438,7 @@
   <string name="DescriptionInfo">You can provide an optional description for your channel.</string>
   <string name="ChannelName">Channel Name</string>
   <string name="ServiceNotifications">service notifications</string>
+  <string name="ReplyNotifications">comment notifications</string>
   <string name="Bot">bot</string>
   <string name="Support">support</string>
   <string name="SupportOnline">support (online)</string>

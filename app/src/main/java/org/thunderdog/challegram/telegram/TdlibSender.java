@@ -11,7 +11,7 @@ import org.thunderdog.challegram.util.text.Letters;
 
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.unit.BitwiseUtils;
-import me.vkryl.td.TdConstants;
+import me.vkryl.td.ChatId;
 
 public class TdlibSender {
   private static final int FLAG_BOT = 1;
@@ -50,7 +50,7 @@ public class TdlibSender {
         this.placeholderMetadata = tdlib.chatPlaceholderMetadata(chatId, chat, false);
 
         flags = BitwiseUtils.setFlag(flags, FLAG_BOT, tdlib.isBotChat(chat));
-        flags = BitwiseUtils.setFlag(flags, FLAG_SERVICE_ACCOUNT, tdlib.chatUserId(chat) == TdConstants.TELEGRAM_ACCOUNT_ID);
+        flags = BitwiseUtils.setFlag(flags, FLAG_SERVICE_ACCOUNT, tdlib.isServiceNotificationsChat(chatId));
 
         break;
       }
@@ -67,7 +67,7 @@ public class TdlibSender {
         this.placeholderMetadata = tdlib.cache().userPlaceholderMetadata(userId, user, false);
 
         flags = BitwiseUtils.setFlag(flags, FLAG_BOT, TD.isBot(user));
-        flags = BitwiseUtils.setFlag(flags, FLAG_SERVICE_ACCOUNT, userId == TdConstants.TELEGRAM_ACCOUNT_ID);
+        flags = BitwiseUtils.setFlag(flags, FLAG_SERVICE_ACCOUNT, tdlib.isServiceNotificationsChat(ChatId.fromUserId(userId)));
 
         break;
       }

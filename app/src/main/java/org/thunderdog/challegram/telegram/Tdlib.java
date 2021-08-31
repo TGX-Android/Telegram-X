@@ -490,6 +490,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private long callConnectTimeoutMs = 30000;
   private long callPacketTimeoutMs = 10000;
 
+  private long repliesBotChatId = TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID;
+  private long telegramServiceNotificationsChatId = TdConstants.TELEGRAM_ACCOUNT_ID;
+
   private final Map<String, TdlibCounter> counters = new HashMap<>();
   private final TdlibBadgeCounter tempCounter = new TdlibBadgeCounter();
   private final TdlibBadgeCounter unreadCounter = new TdlibBadgeCounter();
@@ -1345,6 +1348,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       if (!updates.isEmpty()) {
         incrementReferenceCount(REFERENCE_TYPE_JOB); // starting task
         functions.add(new TdApi.CreatePrivateChat(TdConstants.TELEGRAM_ACCOUNT_ID, false));
+        if (telegramServiceNotificationsChatId != 0 && telegramServiceNotificationsChatId != TdConstants.TELEGRAM_ACCOUNT_ID) {
+          functions.add(new TdApi.GetChat(telegramServiceNotificationsChatId));
+        }
         AtomicInteger remainingFunctions = new AtomicInteger(functions.size());
         Client.ResultHandler handler = object -> {
           if (object.getConstructor() == TdApi.Error.CONSTRUCTOR) {
@@ -1352,7 +1358,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           }
           if (remainingFunctions.decrementAndGet() == 0) {
             AtomicInteger remainingUpdates = new AtomicInteger(updates.size());
-            long chatId = ChatId.fromUserId(TdConstants.TELEGRAM_ACCOUNT_ID);
+            long chatId = serviceNotificationsChatId();
             Client.ResultHandler localMessageHandler = message -> {
               if (message.getConstructor() == TdApi.Error.CONSTRUCTOR) {
                 Log.e("Received error while sending change log: %s", TD.toErrorString(object));
@@ -2670,12 +2676,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public boolean canReportChatSpam (TdApi.Chat chat) {
-    if (chat != null && chat.canBeReported) {
-      // FIXME TDLib
-      TdApi.User user = chatUser(chat);
-      return user == null || (!user.isSupport && user.id != TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID);
-    }
-    return false;
+    return chat != null && chat.canBeReported;
   }
 
   public String chatTitle (TdApi.Chat chat) {
@@ -2927,7 +2928,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       for (TdApi.ChatPosition position : positions) {
         switch (position.list.getConstructor()) {
           case TdApi.ChatListMain.CONSTRUCTOR:
-            return !isSelfChat(chat.id) && ChatId.toUserId(chat.id) != TdConstants.TELEGRAM_ACCOUNT_ID;
+            return !isSelfChat(chat.id) && !isServiceNotificationsChat(chat.id);
           case TdApi.ChatListArchive.CONSTRUCTOR:
             return true; // Already archived
           case TdApi.ChatListFilter.CONSTRUCTOR:
@@ -3285,6 +3286,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public boolean isUserChat (long chatId) {
     return ChatId.isUserChat(chatId);
+  }
+
+  public boolean isRepliesChat (long chatId) {
+    return (repliesBotChatId != 0 && repliesBotChatId == chatId) || (chatId == ChatId.fromUserId(TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID));
+  }
+
+  public boolean isServiceNotificationsChat (long chatId) {
+    return (telegramServiceNotificationsChatId != 0 && telegramServiceNotificationsChatId == chatId) || (chatId == ChatId.fromUserId(TdConstants.TELEGRAM_ACCOUNT_ID));
+  }
+
+  public long serviceNotificationsChatId () {
+    return telegramServiceNotificationsChatId != 0 ? telegramServiceNotificationsChatId : ChatId.fromUserId(TdConstants.TELEGRAM_ACCOUNT_ID);
   }
 
   public boolean suggestStopBot (long chatId) {
@@ -5437,6 +5450,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     pendingMessageCaptions.clear();
     animatedEmoji.clear();
     animatedDiceExplicit.clear();
+    telegramServiceNotificationsChatId = TdConstants.TELEGRAM_ACCOUNT_ID;
+    repliesBotChatId = TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID;
     // animatedTgxEmoji.clear();
   }
 
@@ -6635,6 +6650,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             break;
           case "message_caption_length_max":
             this.maxMessageCaptionLength = (int) longValue;
+            break;
+          case "replies_bot_chat_id":
+            this.repliesBotChatId = longValue;
+            break;
+          case "telegram_service_notifications_chat_id":
+            this.telegramServiceNotificationsChatId = longValue;
             break;
         }
 

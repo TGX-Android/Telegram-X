@@ -2728,7 +2728,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       } else {
         showBottomButton(BOTTOM_ACTION_TOGGLE_MUTE, 0, isUpdate);
       }
-    } else if (tdlib.chatUserId(chat) == TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID) {
+    } else if (tdlib.isRepliesChat(chat.id)) {
       setInputVisible(false, false);
       showBottomButton(BOTTOM_ACTION_TOGGLE_MUTE, 0, isUpdate);
     } else {
@@ -5057,7 +5057,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public void showActionUnblockButton () {
     int userId = tdlib.chatUserId(chat);
-    if (userId != TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID && tdlib.cache().userBot(userId)) {
+    if (!tdlib.isRepliesChat(chat.id) && tdlib.isBotChat(chat)) {
       showActionButton(R.string.RestartBot, ACTION_BOT_START);
     } else {
       showActionButton(R.string.Unblock, ACTION_UNBAN_USER);

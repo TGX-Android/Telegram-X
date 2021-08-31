@@ -3689,19 +3689,19 @@ public class TdlibUi extends Handler {
         boolean deleteAndStop = blockUser && tdlib.isBotChat(chatId);
         showDeleteOrClearHistory(context, chatId,
           tdlib.isSelfUserId(userId) ? Lang.getString(R.string.SavedMessages) :
-          userId == TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID ? Lang.getString(R.string.RepliesBot) :
+          tdlib.isRepliesChat(ChatId.fromUserId(userId)) ? Lang.getString(R.string.RepliesBot) :
           Lang.getString(R.string.ChatWithUser, userName), () -> {
           final CharSequence info;
           if (tdlib.isSelfUserId(userId)) {
             info = Lang.getMarkdownString(context, R.string.DeleteSavedMessagesConfirm);
           } else if (deleteAndStop) {
-            if (userId == TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID) {
+            if (tdlib.isRepliesChat(ChatId.fromUserId(userId))) {
               info = Lang.getMarkdownString(context, R.string.DeleteAndStopRepliesConfirm);
             } else {
               info = Lang.getStringBold(R.string.DeleteAndStopBotConfirm, userName);
             }
           } else {
-            if (userId == TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID) {
+            if (tdlib.isRepliesChat(ChatId.fromUserId(userId))) {
               info = Lang.getMarkdownString(context, R.string.DeleteRepliesConfirm);
             } else {
               info = Lang.getStringBold(R.string.DeleteUserChatConfirm, userName);

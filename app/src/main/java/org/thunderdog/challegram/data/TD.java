@@ -2036,8 +2036,12 @@ public class TD {
   }
 
   public static String getChatMemberSubtitle (Tdlib tdlib, int userId, @Nullable TdApi.User user, boolean allowBotState) {
-    if (userId == TdConstants.TELEGRAM_ACCOUNT_ID) {
+    final long chatId = ChatId.fromUserId(userId);
+    if (tdlib.isServiceNotificationsChat(chatId)) {
       return Lang.getString(R.string.ServiceNotifications);
+    }
+    if (tdlib.isRepliesChat(chatId)) {
+      return Lang.getString(R.string.ReplyNotifications);
     }
     if (tdlib.isSelfUserId(userId)) {
       return Lang.getString(R.string.status_Online);
