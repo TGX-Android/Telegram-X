@@ -4120,7 +4120,7 @@ public class TD {
     int start = messageText.text.text.length() + 1;
     newText.text = messageText.text.text + "\n[" + Lang.getString(R.string.LinkPreview) + "]";
     if (messageText.text.entities != null) {
-      messageText.text.entities = ArrayUtils.resize(messageText.text.entities, messageText.text.entities.length + 1, null);
+      newText.entities = ArrayUtils.resize(messageText.text.entities, messageText.text.entities.length + 1, null);
     } else {
       newText.entities = new TdApi.TextEntity[1];
     }
