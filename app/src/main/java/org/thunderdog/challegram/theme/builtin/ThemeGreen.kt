@@ -21,7 +21,7 @@ import org.thunderdog.challegram.theme.ThemeProperty
       -11751600 // 0xff4caf50
     R.id.theme_color_bubbleIn_progress, R.id.theme_color_bubbleOut_chatCorrectChosenFilling, R.id.theme_color_bubbleOut_chatCorrectFilling, R.id.theme_color_bubbleOut_chatVerticalLine, R.id.theme_color_chatListVerify, R.id.theme_color_circleButtonActive, R.id.theme_color_circleButtonRegular, R.id.theme_color_circleButtonTheme, R.id.theme_color_controlActive, R.id.theme_color_headerBarCallActive, R.id.theme_color_inputActive, R.id.theme_color_messageCorrectChosenFilling, R.id.theme_color_messageCorrectFilling, R.id.theme_color_messageVerticalLine, R.id.theme_color_progress, R.id.theme_color_seekDone, R.id.theme_color_sliderActive, R.id.theme_color_snackbarUpdate, R.id.theme_color_textNeutral ->
       -10044566 // 0xff66bb6a
-    R.id.theme_color_bubbleIn_textLinkPressHighlight, R.id.theme_color_bubbleOut_textLinkPressHighlight, R.id.theme_color_iv_textLinkPressHighlight, R.id.theme_color_iv_textMarkedLinkPressHighlight, R.id.theme_color_textLinkPressHighlight ->
+    R.id.theme_color_bubbleIn_textLinkPressHighlight, R.id.theme_color_bubbleOut_textLinkPressHighlight, R.id.theme_color_iv_textLinkPressHighlight, R.id.theme_color_iv_textMarkedLinkPressHighlight, R.id.theme_color_textLinkPressHighlight, R.id.theme_color_tooltip_textLinkPressHighlight ->
       1078767440 // 0x404caf50
     R.id.theme_color_bubbleOut_background ->
       -1049122 // 0xffeffdde
@@ -37,7 +37,7 @@ import org.thunderdog.challegram.theme.ThemeProperty
       -3610935 // 0xffc8e6c9
     R.id.theme_color_messageSelection ->
       275168106 // 0x1066bb6a
-    R.id.theme_color_promo, R.id.theme_color_textSearchQueryHighlight ->
+    R.id.theme_color_promo, R.id.theme_color_textSearchQueryHighlight, R.id.theme_color_tooltip_textLink ->
       -8271996 // 0xff81c784
     R.id.theme_color_seekReady ->
       -2494758 // 0xffd9eeda
