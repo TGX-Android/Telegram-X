@@ -207,7 +207,7 @@ dependencies {
     // Konfetti: https://github.com/DanielMartinus/Konfetti/blob/master/README.md
     implementation("nl.dionsegijn:konfetti:1.2.6")
     // Transcoder: https://github.com/natario1/Transcoder/blob/master/docs/_about/changelog.md
-    implementation("com.otaliastudios:transcoder:0.10.3")
+    implementation(project(":thirdparty:transcoder:lib"))
 
     // YouTube: https://developers.google.com/youtube/android/player/
     implementation(files("thirdparty/YouTubeAndroidPlayerApi.jar"))

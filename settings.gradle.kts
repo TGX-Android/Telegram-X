@@ -7,5 +7,7 @@ include(
   ":vkryl:leveldb",
   ":vkryl:core",
 
+  ":thirdparty:transcoder:lib",
+
   ":app"
 )
