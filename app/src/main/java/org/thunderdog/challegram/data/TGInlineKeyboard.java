@@ -627,7 +627,7 @@ public class TGInlineKeyboard {
           }
         }
       } else {
-        // TOD
+        // TODO
       }
     }
 
