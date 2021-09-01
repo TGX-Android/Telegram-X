@@ -63,7 +63,7 @@
         <item name="snackbarUpdateAction" />
 
         <item name="fillingNegative" />
-        <item name="fillingPositive" />
+        <item name="fillingPositive" tinted="true" />
         <item name="fillingPositiveContent" />
 
         <!-- TOOLTIP -->

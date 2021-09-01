@@ -10,7 +10,7 @@ badge, bubbleIn_progress, bubbleIn_textLink, bubbleOut_chatCorrectChosenFilling,
 bubbleIn_textLinkPressHighlight, bubbleOut_textLinkPressHighlight, iv_textLinkPressHighlight, iv_textMarkedLinkPressHighlight, textLinkPressHighlight, tooltip_textLinkPressHighlight: #EC407A40
 bubbleOut_background, unread: #FCE4EC
 bubbleOut_file, controlActive, file, playerButtonActive, profileSectionActive, profileSectionActiveContent, promo, textSearchQueryHighlight, tooltip_textLink: #F06292
-bubbleOut_inlineIcon, bubbleOut_inlineText, bubbleOut_progress, bubbleOut_separator, bubbleOut_time, chatSendButton, checkActive, headerBackground, iconActive, inlineIcon, inlineText, notification, notificationLink, notificationPlayer, passcode: #E91E63
+bubbleOut_inlineIcon, bubbleOut_inlineText, bubbleOut_progress, bubbleOut_separator, bubbleOut_time, chatSendButton, checkActive, headerBackground, iconActive, inlineIcon, inlineText, notification, notificationLink, notificationPlayer, passcode, fillingPositive: #E91E63
 bubbleOut_messageAuthor, chatListAction, messageAuthor, online: #D81B60
 bubbleOut_waveformInactive, textSelectionHighlight, togglerActiveBackground, waveformInactive: #F8BBD0
 messageSelection: #EC407A10
