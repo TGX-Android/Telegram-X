@@ -32,6 +32,7 @@ import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -58,6 +59,15 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     public final TdApi.ChatMember member;
     public final int mode;
     public int forwardLimit;
+
+    public Args (long chatId, int userId, TdApi.ChatMemberStatus myStatus, TdApi.ChatMember member, int mode, int forwardLimit) {
+      this.chatId = chatId;
+      this.userId = userId;
+      this.myStatus = myStatus;
+      this.member = member;
+      this.mode = mode;
+      this.forwardLimit = forwardLimit;
+    }
 
     public Args (long chatId, int userId, boolean isRestrict, @NonNull TdApi.ChatMemberStatus myStatus, @Nullable TdApi.ChatMember member) {
       this.chatId = chatId;
@@ -198,6 +208,14 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       }
       default: {
         switch (item.getId()) {
+          case R.id.btn_transferOwnership: {
+            if (ChatId.isBasicGroup(getArgumentsStrict().chatId)) {
+              showConfirm(Lang.getMarkdownString(this, R.string.UpgradeChatPrompt), Lang.getString(R.string.Proceed), this::onTransferOwnershipClick);
+            } else {
+              onTransferOwnershipClick();
+            }
+            break;
+          }
           case R.id.btn_unblockUser: {
 
             final Runnable unblockRunnable = () -> {
@@ -376,7 +394,10 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
             }
             onSaveCompleted();
           } else {
-            context.tooltipManager().builder(getDoneButton()).show(this, tdlib, R.drawable.baseline_error_24, error != null && TD.ERROR_USER_PRIVACY.equals(error.message) ? Lang.getString(R.string.errorPrivacyAddMember) : TD.toErrorString(error));
+            showError(error != null && TD.ERROR_USER_PRIVACY.equals(error.message) ?
+              Lang.getString(R.string.errorPrivacyAddMember) :
+              TD.toErrorString(error)
+            );
           }
         }
       }));
@@ -488,7 +509,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     recyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
       @Override
       public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
-        outRect.bottom = isDoneVisible() && parent.getChildAdapterPosition(view) == adapter.getItemCount() - 1 ? Screen.dp(56f) + Screen.dp(16f) * 2 : 0;
+        outRect.bottom = ((ListItem) view.getTag()).getViewType() == ListItem.TYPE_ZERO_VIEW ? Screen.dp(56f) + Screen.dp(16f) * 2 : 0;
       }
     });
 
@@ -499,6 +520,15 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
 
     if (ChatId.isBasicGroup(getArgumentsStrict().chatId)) {
       tdlib.cache().subscribeToGroupUpdates(ChatId.toBasicGroupId(getArgumentsStrict().chatId), this);
+    }
+  }
+
+  @Override
+  protected void setDoneVisible (boolean isVisible) {
+    if (isVisible != isDoneVisible()) {
+      super.setDoneVisible(isVisible);
+      recyclerView.invalidateItemDecorations();
+      adapter.notifyItemChanged(adapter.getItemCount() - 1);
     }
   }
 
@@ -584,6 +614,9 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         id == R.id.right_changeChatInfo ||
         id == R.id.right_pinMessages
       ) && TD.checkRight(tdlib.chatPermissions(args.chatId), id) && currentValue) {
+      int promoteMode = args.member == null ? TD.PROMOTE_MODE_NEW : TD.canPromoteAdmin(args.myStatus, args.member.status);
+      if (promoteMode != TD.PROMOTE_MODE_NEW && promoteMode != TD.PROMOTE_MODE_EDIT)
+        return null;
       switch (id) {
         case R.id.right_inviteUsers:
           return Lang.getMarkdownString(this, R.string.NoRightDisallowInvite);
@@ -717,7 +750,135 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     int i = adapter.indexOfViewById(R.id.description);
     if (i != -1) {
       adapter.getItems().get(i).setString(Lang.getStringBold(getDescriptionStringRes(), tdlib.cache().userName(getArgumentsStrict().userId)));
-      adapter.updateValuedSettingByPosition(i);
+      adapter.notifyItemChanged(i);
+    }
+  }
+
+  private void showError (CharSequence text) {
+    context.tooltipManager()
+      .builder(getDoneButton())
+      .show(EditRightsController.this,
+        tdlib,
+        R.drawable.baseline_error_24,
+        text
+      );
+  }
+
+  private void onTransferOwnershipClick () {
+    if (isDoneInProgress())
+      return;
+
+    long chatId = getArgumentsStrict().chatId;
+    int userId = getArgumentsStrict().userId;
+
+    boolean isChannel = tdlib.isChannel(chatId);
+    CharSequence text;
+
+    if (isChannel) {
+      text = Lang.getMarkdownString(this, R.string.TransferOwnershipAlertChannel, tdlib.chatTitle(chatId), tdlib.cache().userName(userId));
+    } else {
+      text = Lang.getMarkdownString(this, R.string.TransferOwnershipAlertGroup, tdlib.chatTitle(chatId), tdlib.cache().userName(userId));
+    }
+
+    setDoneInProgress(true);
+    
+    tdlib.ui().requestTransferOwnership(this, text, new TdlibUi.OwnershipTransferListener() {
+      @Override
+      public void onOwnershipTransferAbilityChecked (TdApi.Object result) {
+        setDoneInProgress(false);
+        if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+          showError(TD.toErrorString(result));
+        }
+      }
+
+      @Override
+      public void onOwnershipTransferConfirmed (String password) {
+        if (isDoneInProgress())
+          return;
+        setDoneInProgress(true);
+        Runnable act = () -> tdlib.transferOwnership(getArgumentsStrict().chatId, userId, password, (success, error) -> runOnUiThreadOptional(() -> {
+          if (success) {
+            setDoneInProgress(false);
+            navigateBack();
+          } else if (error != null) {
+            CharSequence errorMessage;
+            switch (error.message) {
+              case TD.ERROR_USER_CHANNELS_TOO_MUCH:
+                errorMessage = Lang.getString(R.string.TransferOwnershipTooMuch);
+                break;
+              case TD.ERROR_CHANNELS_ADMIN_PUBLIC_TOO_MUCH:
+                errorMessage = Lang.getString(R.string.TransferOwnershipTooMuchPublic);
+                break;
+              case TD.ERROR_CHANNELS_ADMIN_LOCATED_TOO_MUCH:
+                errorMessage = Lang.getString(R.string.TransferOwnershipTooMuchLocated);
+                break;
+              default:
+                errorMessage = TD.toErrorString(error);
+                break;
+            }
+            showError(errorMessage);
+          }
+        }));
+        if (ChatId.isBasicGroup(getArgumentsStrict().chatId)) {
+          tdlib.upgradeToSupergroup(getArgumentsStrict().chatId, (fromChatId, toChatId, error) -> {
+            if (toChatId != 0) {
+              getArgumentsStrict().chatId = toChatId;
+              act.run();
+            } else {
+              runOnUiThreadOptional(() -> {
+                setDoneInProgress(false);
+                if (error != null) {
+                  showError(TD.toErrorString(error));
+                }
+              });
+            }
+          });
+        } else {
+          act.run();
+        }
+      }
+    });
+  }
+
+  private boolean canTransferOwnership () {
+    if (targetAdmin == null || !targetAdmin.canBeEdited || getArgumentsStrict().mode != MODE_ADMIN_PROMOTION || getArgumentsStrict().myStatus.getConstructor() != TdApi.ChatMemberStatusCreator.CONSTRUCTOR)
+      return false;
+    boolean isChannel = tdlib.isChannel(getArgumentsStrict().chatId);
+    if (isChannel) {
+      return targetAdmin.canChangeInfo && targetAdmin.canPostMessages && targetAdmin.canEditMessages && targetAdmin.canDeleteMessages && targetAdmin.canInviteUsers && targetAdmin.canManageVoiceChats && targetAdmin.canPromoteMembers;
+    } else {
+      return targetAdmin.canChangeInfo && targetAdmin.canDeleteMessages && targetAdmin.canRestrictMembers && targetAdmin.canInviteUsers && targetAdmin.canPinMessages && targetAdmin.canManageVoiceChats && targetAdmin.canPromoteMembers;
+    }
+  }
+
+  private void checkTransferOwnership () {
+    boolean isChannel = tdlib.isChannel(getArgumentsStrict().chatId);
+    boolean canTransfer = canTransferOwnership();
+    if (canTransfer) {
+      int i = adapter.indexOfViewById(R.id.btn_dismissAdmin);
+      if (i != -1) {
+        adapter.getItems().add(i, new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        adapter.getItems().add(i, newTransferOwnershipItem(isChannel));
+        adapter.notifyItemRangeInserted(i, 2);
+      } else {
+        int startIndex = adapter.getItemCount() - 1;
+        adapter.getItems().addAll(startIndex, Arrays.asList(
+          new ListItem(ListItem.TYPE_SHADOW_TOP),
+          newTransferOwnershipItem(isChannel),
+          new ListItem(ListItem.TYPE_SHADOW_BOTTOM)
+        ));
+        adapter.notifyItemRangeInserted(startIndex, 3);
+      }
+    } else {
+      int i = adapter.indexOfViewById(R.id.btn_transferOwnership);
+      if (i != -1) {
+        ListItem nextItem = adapter.getItem(i + 2);
+        if (nextItem != null && nextItem.getId() == R.id.btn_dismissAdmin) {
+          adapter.removeRange(i, 2);
+        } else {
+          adapter.removeRange(i - 1, 3);
+        }
+      }
     }
   }
 
@@ -823,7 +984,20 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       addEditTitleCells(items);
     }
 
-    if (canDismissAdmin()) {
+    boolean canTransferOwnership = canTransferOwnership();
+    boolean canDismissAdmin = canDismissAdmin();
+
+    if (canTransferOwnership && canDismissAdmin) {
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      items.add(newTransferOwnershipItem(isChannel));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_dismissAdmin, 0, R.string.DismissAdmin).setTextColorId(R.id.theme_color_textNegative));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    } else if (canTransferOwnership) {
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      items.add(newTransferOwnershipItem(isChannel));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    } else if (canDismissAdmin) {
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_dismissAdmin, 0, R.string.DismissAdmin).setTextColorId(R.id.theme_color_textNegative));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
@@ -835,7 +1009,13 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     }
 
+    items.add(new ListItem(ListItem.TYPE_ZERO_VIEW));
+
     adapter.setItems(items, false);
+  }
+
+  private static ListItem newTransferOwnershipItem (boolean isChannel) {
+    return new ListItem(ListItem.TYPE_SETTING, R.id.btn_transferOwnership, 0, isChannel ? R.string.TransferOwnershipChannel : R.string.TransferOwnershipGroup).setTextColorId(R.id.theme_color_textNegative);
   }
 
   private void addEditTitleCells (List<ListItem> items) {
@@ -1036,15 +1216,12 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     }
     updateValues();
     checkDoneButton();
+    checkTransferOwnership();
   }
 
   private void checkDoneButton () {
     if (!isNewRuleSet()) {
-      boolean visible = hasAnyChanges();
-      if (isDoneVisible() != visible) {
-        setDoneVisible(visible);
-        recyclerView.invalidateItemDecorations();
-      }
+      setDoneVisible(hasAnyChanges());
     }
   }
 

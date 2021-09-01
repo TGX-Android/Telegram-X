@@ -6632,7 +6632,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                 StringBuilder b = new StringBuilder();
                 ArrayList<TdApi.TextEntity> entities = new ArrayList<>();
                 final TdApi.ChatMemberStatus oldStatus, newStatus;
-                final boolean isPromote;
+                final boolean isPromote, isTransferOwnership;
 
                 final int stringRes;
                 int restrictedUntil = 0;
@@ -6643,27 +6643,41 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
                   isPromote = true;
 
-                  // TYPE_EDIT = 0, TYPE_ASSIGN = 1, TYPE_REMOVE = 2
+                  // TYPE_EDIT = 0, TYPE_ASSIGN = 1, TYPE_REMOVE = 2, TYPE_TRANSFER = 3
                   int type = 0;
 
-                  switch (e.oldStatus.getConstructor()) {
-                    case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-                      oldStatus = e.oldStatus;
-                      break;
-                    default:
-                      type = 1;
-                      oldStatus = new TdApi.ChatMemberStatusAdministrator();
-                      break;
-                  }
+                  if (e.oldStatus.getConstructor() != TdApi.ChatMemberStatusCreator.CONSTRUCTOR && e.newStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
+                    isTransferOwnership = true;
+                    oldStatus = e.oldStatus;
+                    newStatus = new TdApi.ChatMemberStatusCreator();
+                    type = 3;
+                  } else if (e.oldStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR && e.newStatus.getConstructor() != TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
+                    isTransferOwnership = true;
+                    oldStatus = e.oldStatus;
+                    newStatus = new TdApi.ChatMemberStatusCreator();
+                    type = 4;
+                  } else {
+                    isTransferOwnership = false;
 
-                  switch (e.newStatus.getConstructor()) {
-                    case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-                      newStatus = e.newStatus;
-                      break;
-                    default:
-                      type = 2;
-                      newStatus = new TdApi.ChatMemberStatusAdministrator();
-                      break;
+                    switch (e.oldStatus.getConstructor()) {
+                      case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
+                        oldStatus = e.oldStatus;
+                        break;
+                      default:
+                        type = 1;
+                        oldStatus = new TdApi.ChatMemberStatusAdministrator();
+                        break;
+                    }
+
+                    switch (e.newStatus.getConstructor()) {
+                      case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
+                        newStatus = e.newStatus;
+                        break;
+                      default:
+                        type = 2;
+                        newStatus = new TdApi.ChatMemberStatusAdministrator();
+                        break;
+                    }
                   }
 
                   switch (type) {
@@ -6672,6 +6686,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                       break;
                     case 2:
                       stringRes = R.string.EventLogUnpromoted;
+                      break;
+                    case 3:
+                      stringRes = R.string.EventLogTransferredOwnership;
+                      break;
+                    case 4:
+                      stringRes = R.string.EventLogNoLongerCreator;
                       break;
                     default:
                       stringRes = R.string.EventLogPromoted;
@@ -6683,6 +6703,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
                   memberId = e.memberId;
                   isPromote = false;
+                  isTransferOwnership = false;
 
                   if (msg.isChannelPost) {
                     oldStatus = null;
@@ -6737,22 +6758,23 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                 b.append(Lang.getString(stringRes));
 
                 int start = b.indexOf("%1$s");
+                if (start != -1) {
+                  entities.add(new TdApi.TextEntity(0, start - 1, new TdApi.TextEntityTypeItalic()));
 
-                entities.add(new TdApi.TextEntity(0, start - 1, new TdApi.TextEntityTypeItalic()));
-
-                b.replace(start, start + 4, "");
-                b.insert(start, userName);
-                if (memberId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
-                  // TODO support for MessageSenderChat
-                  entities.add(new TdApi.TextEntity(start, userName.length(), new TdApi.TextEntityTypeMentionName(((TdApi.MessageSenderUser) memberId).userId)));
-                }
-                start += userName.length();
-                if (!StringUtils.isEmpty(username)) {
-                  b.insert(start, " / @");
-                  start += 3;
-                  b.insert(start + 1, username);
-                  entities.add(new TdApi.TextEntity(start, username.length() + 1, new TdApi.TextEntityTypeMention()));
-                  start += username.length() + 1;
+                  b.replace(start, start + 4, "");
+                  b.insert(start, userName);
+                  if (memberId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
+                    // TODO support for MessageSenderChat
+                    entities.add(new TdApi.TextEntity(start, userName.length(), new TdApi.TextEntityTypeMentionName(((TdApi.MessageSenderUser) memberId).userId)));
+                  }
+                  start += userName.length();
+                  if (!StringUtils.isEmpty(username)) {
+                    b.insert(start, " / @");
+                    start += 3;
+                    b.insert(start + 1, username);
+                    entities.add(new TdApi.TextEntity(start, username.length() + 1, new TdApi.TextEntityTypeMention()));
+                    start += username.length() + 1;
+                  }
                 }
 
                 int i = b.indexOf("%2$s");
@@ -6777,7 +6799,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
                 b.append('\n');
 
-                if (isPromote) {
+                if (isTransferOwnership) {
+                  // no need to show anything
+                } else if (isPromote) {
                   final TdApi.ChatMemberStatusAdministrator oldAdmin = (TdApi.ChatMemberStatusAdministrator) oldStatus;
                   final TdApi.ChatMemberStatusAdministrator newAdmin = (TdApi.ChatMemberStatusAdministrator) newStatus;
                   appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedManageChannel : R.string.EventLogPromotedManageGroup, oldAdmin.canManageChat, newAdmin.canManageChat, false);

@@ -4085,10 +4085,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             break;
           }
           case TdApi.Error.CONSTRUCTOR:
-            if (callback == null)
-              UI.showError(object);
-            error.set((TdApi.Error) object);
-            client().send(new TdApi.GetChatMember(chatId, sender), this);
+            final TdApi.Error originalError = error.getAndSet((TdApi.Error) object);
+            if (originalError == null) {
+              client().send(new TdApi.GetChatMember(chatId, sender), this);
+            } else if (callback != null) {
+              callback.onMemberStatusUpdated(false, originalError);
+            } else {
+              UI.showError(originalError);
+            }
             break;
         }
       }
@@ -4125,6 +4129,88 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public interface ChatMemberStatusChangeCallback {
     void onMemberStatusUpdated (boolean success, @Nullable TdApi.Error error);
+  }
+
+  private void refreshChatMemberStatus (final long chatId, final TdApi.MessageSender sender, final @TdApi.ChatMemberStatus.Constructors int expectedType, ChatMemberStatusChangeCallback callback) {
+    final AtomicInteger retryCount = new AtomicInteger();
+    final AtomicReference<TdApi.Error> error = new AtomicReference<>();
+    client().send(new TdApi.GetChatMember(chatId, sender), new Client.ResultHandler() {
+      @Override
+      public void onResult (TdApi.Object object) {
+        switch (object.getConstructor()) {
+          case TdApi.Ok.CONSTRUCTOR: {
+            client().send(new TdApi.GetChatMember(chatId, sender), this);
+            break;
+          }
+          case TdApi.ChatMember.CONSTRUCTOR: {
+            TdApi.ChatMember member = (TdApi.ChatMember) object;
+            if (member.status.getConstructor() != expectedType && retryCount.incrementAndGet() <= 3) {
+              client().send(new TdApi.SetAlarm(.5 + .5 * retryCount.get()), this);
+            } else {
+              cache().onChatMemberStatusChanged(chatId, member);
+              if (callback != null) {
+                callback.onMemberStatusUpdated(member.status.getConstructor() == expectedType, error.get());
+              }
+            }
+            break;
+          }
+          case TdApi.Error.CONSTRUCTOR: {
+            final TdApi.Error originalError = error.getAndSet((TdApi.Error) object);
+            if (originalError == null) {
+              client().send(new TdApi.GetChatMember(chatId, sender), this);
+            } else if (callback != null) {
+              callback.onMemberStatusUpdated(false, originalError);
+            } else {
+              UI.showError(originalError);
+            }
+            break;
+          }
+        }
+      }
+    });
+  }
+
+  public void transferOwnership (final long chatId, final int toUserId, final String password, ChatMemberStatusChangeCallback callback) {
+    client().send(new TdApi.TransferChatOwnership(chatId, toUserId, password), result -> {
+      switch (result.getConstructor()) {
+        case TdApi.Ok.CONSTRUCTOR: {
+          ChatMemberStatusChangeCallback statusChangeCallback;
+          if (callback != null) {
+            final AtomicInteger remaining = new AtomicInteger(2);
+            final AtomicBoolean hasFailures = new AtomicBoolean(false);
+            final AtomicReference<TdApi.Error> anyError = new AtomicReference<>();
+            statusChangeCallback = (success, error) -> {
+              if (error != null) {
+                anyError.set(error);
+              }
+              if (!success) {
+                hasFailures.set(true);
+              }
+              if (remaining.decrementAndGet() == 0) {
+                if (hasFailures.get()) {
+                  callback.onMemberStatusUpdated(false, anyError.get());
+                } else {
+                  callback.onMemberStatusUpdated(true, null);
+                }
+              }
+            };
+          } else {
+            statusChangeCallback = null;
+          }
+          refreshChatMemberStatus(chatId, new TdApi.MessageSenderUser(toUserId), TdApi.ChatMemberStatusCreator.CONSTRUCTOR, statusChangeCallback);
+          refreshChatMemberStatus(chatId, new TdApi.MessageSenderUser(myUserId()), TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR, statusChangeCallback);
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          if (callback != null) {
+            callback.onMemberStatusUpdated(false, (TdApi.Error) result);
+          } else {
+            UI.showError(result);
+          }
+          break;
+        }
+      }
+    });
   }
 
   public void setChatMemberStatus (final long chatId, final TdApi.MessageSender sender, final TdApi.ChatMemberStatus newStatus, final @Nullable TdApi.ChatMemberStatus currentStatus, @Nullable final ChatMemberStatusChangeCallback callback) {
