@@ -58,6 +58,3 @@
 	path = app/jni/thirdparty/rlottie
 	url = https://github.com/TGX-Android/rlottie
 	shallow = true
-[submodule "thirdparty/Transcoder"]
-	path = thirdparty/Transcoder
-	url = https://github.com/natario1/Transcoder.git
