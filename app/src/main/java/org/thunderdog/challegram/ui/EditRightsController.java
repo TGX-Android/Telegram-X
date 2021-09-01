@@ -774,10 +774,17 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     boolean isChannel = tdlib.isChannel(chatId);
     CharSequence text;
 
+    Lang.SpanCreator spanCreator = (target, argStart, argEnd, argIndex, needFakeBold) -> {
+      if (argIndex == 1) {
+        return Lang.newUserSpan(this, userId);
+      }
+      return null;
+    };
+
     if (isChannel) {
-      text = Lang.getMarkdownString(this, R.string.TransferOwnershipAlertChannel, tdlib.chatTitle(chatId), tdlib.cache().userName(userId));
+      text = Lang.getMarkdownString(this, R.string.TransferOwnershipAlertChannel, spanCreator, tdlib.chatTitle(chatId), tdlib.cache().userName(userId));
     } else {
-      text = Lang.getMarkdownString(this, R.string.TransferOwnershipAlertGroup, tdlib.chatTitle(chatId), tdlib.cache().userName(userId));
+      text = Lang.getMarkdownString(this, R.string.TransferOwnershipAlertGroup, spanCreator, tdlib.chatTitle(chatId), tdlib.cache().userName(userId));
     }
 
     setDoneInProgress(true);

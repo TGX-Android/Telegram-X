@@ -1086,6 +1086,7 @@ public class TGInlineKeyboard {
                       if (botUser != null && targetUser != null) {
                         alertText = Lang.getMarkdownString(context.context.messagesController(),
                           R.string.TransferOwnershipAlertBotName,
+                          (target, argStart, argEnd, argIndex, needFakeBold) -> Lang.newUserSpan(context.context.controller(), argIndex == 0 ? transferInfo.botUserId : transferInfo.targetOwnerUserId),
                           context.context.tdlib.cache().userName(transferInfo.botUserId),
                           context.context.tdlib.cache().userName(transferInfo.targetOwnerUserId)
                         );

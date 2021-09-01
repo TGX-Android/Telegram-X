@@ -3695,6 +3695,7 @@
   <string name="TransferOwnershipPasswordAlert">Transfer Ownership</string>
   <string name="TransferOwnershipPasswordAlertHint">Please enter your 2-Step verification password to complete the transfer.</string>
   <string name="TransferOwnershipAlert">Wait a bit…</string>
+  <string name="TransferOwnershipConfirm">Transfer ownership</string>
   <string name="TransferOwnershipAlertBot">Are you really sure you want to transfer ownership of the bot?\n\nThis operation is **irreversible**, so check again if the user you want to transfer the bot is the right person.</string>
   <string name="TransferOwnershipAlertBotName">Are you really sure you want to transfer ownership of **%1$s** to **%2$s**?\n\nThis operation is **irreversible**, so check again if the user you want to transfer the bot is the right person.</string>
   <string name="TransferOwnershipAlertUnknown">Are you really sure you want to proceed?\n\nThis operation is **irreversible**, so check again if all details are correct.</string>
