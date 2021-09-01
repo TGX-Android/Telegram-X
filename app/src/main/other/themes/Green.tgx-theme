@@ -20,3 +20,4 @@ promo, textSearchQueryHighlight, tooltip_textLink, avatarArchive, avatarSavedMes
 seekReady: #D9EEDA
 togglerActiveBackground: #A5D6A7
 unread: #E8F5E9
+bubble_messageSelection, bubble_messageSelectionNoWallpaper: #4CAF5033

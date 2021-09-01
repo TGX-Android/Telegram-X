@@ -20,3 +20,4 @@ seekReady: #FFDBD0
 textNegative: #E53935
 togglerActiveBackground: #FFAB91
 unread: #FBE9E7
+bubble_messageSelection, bubble_messageSelectionNoWallpaper: #FF572233

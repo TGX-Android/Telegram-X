@@ -338,8 +338,8 @@
         <item name="bubble_mediaOverlay" />
         <item name="bubble_mediaOverlayText" porterDuff="true" />
 
-        <item name="bubble_messageSelection" />
-        <item name="bubble_messageSelectionNoWallpaper" />
+        <item name="bubble_messageSelection" tinted="true" />
+        <item name="bubble_messageSelectionNoWallpaper" tinted="true" />
         <item name="bubble_messageCheckOutline" />
         <item name="bubble_messageCheckOutlineNoWallpaper" />
         <item name="bubble_overlay" />

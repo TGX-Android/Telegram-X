@@ -17,3 +17,4 @@ chatSendButton, online: #00ACC1
 headerBackground, notification, notificationLink, notificationPlayer, passcode, fillingPositive: #0097A7
 messageSelection: #4DD0E110
 seekReady: #C9F0F5
+bubble_messageSelection, bubble_messageSelectionNoWallpaper: #00BCD433
