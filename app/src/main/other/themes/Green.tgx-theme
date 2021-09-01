@@ -16,7 +16,7 @@ bubbleOut_outline: #B6CBDD
 bubbleOut_progress, bubbleOut_separator, bubbleOut_time: #6CC264
 bubbleOut_waveformInactive, textSelectionHighlight, waveformInactive: #C8E6C9
 messageSelection: #66BB6A10
-promo, textSearchQueryHighlight, tooltip_textLink: #81C784
+promo, textSearchQueryHighlight, tooltip_textLink, avatarArchive, avatarSavedMessages, avatarSavedMessages_big, avatarReplies, avatarReplies_big: #81C784
 seekReady: #D9EEDA
 togglerActiveBackground: #A5D6A7
 unread: #E8F5E9

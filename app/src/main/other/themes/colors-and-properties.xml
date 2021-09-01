@@ -188,12 +188,12 @@
 
         <!-- USERS -->
 
-        <item name="avatarArchive" />
+        <item name="avatarArchive" tinted="true" />
         <item name="avatarArchivePinned" />
-        <item name="avatarSavedMessages" />
-        <item name="avatarSavedMessages_big" />
-        <item name="avatarReplies" />
-        <item name="avatarReplies_big" />
+        <item name="avatarSavedMessages" tinted="true" />
+        <item name="avatarSavedMessages_big" tinted="true" />
+        <item name="avatarReplies" tinted="true" />
+        <item name="avatarReplies_big" tinted="true" />
         <item name="avatarInactive" />
         <item name="avatarInactive_big" />
         <item name="avatarRed" />
