@@ -447,6 +447,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private final TdlibWallpaperManager wallpaperManager;
   private final TdlibNotificationManager notificationManager;
   private final TdlibFileGenerationManager fileGenerationManager;
+  private final TdlibAppShortcutManager appShortcutManager;
 
   private final HashSet<Integer> channels = new HashSet<>();
   private final LongSparseLongArray accessibleChatTimers = new LongSparseLongArray();
@@ -594,6 +595,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     this.fileGenerationManager = new TdlibFileGenerationManager(this);
     if (needMeasure) {
       Log.v("INITIALIZATION: Tdlib.fileGenerationManager -> %dms", SystemClock.uptimeMillis() - ms);
+      ms = SystemClock.uptimeMillis();
+    }
+    this.appShortcutManager = new TdlibAppShortcutManager(this);
+    if (needMeasure) {
+      Log.v("INITIALIZATION: Tdlib.appShortcutManager -> %dms", SystemClock.uptimeMillis() - ms);
       ms = SystemClock.uptimeMillis();
     }
     this.applicationConfigJson = settings().getApplicationConfig();
@@ -2017,6 +2023,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public TdlibFileGenerationManager filegen () {
     return fileGenerationManager;
+  }
+
+  public TdlibAppShortcutManager shortcuts () {
+    return appShortcutManager;
   }
 
   public TdlibQuickAckManager qack () {

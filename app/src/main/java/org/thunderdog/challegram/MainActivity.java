@@ -36,6 +36,7 @@ import org.thunderdog.challegram.telegram.GlobalAccountListener;
 import org.thunderdog.challegram.telegram.LiveLocationManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
+import org.thunderdog.challegram.telegram.TdlibAppShortcutManager;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -263,6 +264,9 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
 
       return;
     }
+
+    tdlib.shortcuts().requestAndPublish();
+
     MainController c = new MainController(this, newAccount.tdlib());
     if (navigation.isEmpty()) {
       navigation.setController(c);
@@ -443,6 +447,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
         }
         break;
       case Tdlib.STATUS_READY:
+        tdlib.shortcuts().requestAndPublish();
         initAuthorizedController();
         break;
     }
@@ -634,6 +639,12 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
       int accountId = intent.getIntExtra("account_id", TdlibAccount.NO_ID);
       long chatId = intent.getLongExtra("chat_id", 0);
       long messageId = intent.getLongExtra("message_id", 0);
+      boolean isSecure = intent.getBooleanExtra("secure", false);
+
+      if (accountId != TdlibAccount.NO_ID && isSecure) {
+        chatId = TdlibAppShortcutManager.toTelegramId(accountId, chatId);
+      }
+
       if (accountId != TdlibAccount.NO_ID && chatId != 0) {
         openMessagesController(accountId, chatId, messageId);
         return true;
