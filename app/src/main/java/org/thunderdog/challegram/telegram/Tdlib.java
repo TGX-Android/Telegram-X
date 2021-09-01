@@ -3435,6 +3435,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private final Object chatOpenMutex = new Object();
 
   public void openChat (long chatId, @Nullable ViewController<?> controller) {
+    openChat(chatId, controller, null);
+  }
+
+  public void openChat (long chatId, @Nullable ViewController<?> controller, @Nullable Runnable after) {
     synchronized (chatOpenMutex) {
       ArrayList<ViewController<?>> controllers = openedChats.get(chatId);
       if (controllers == null) {
@@ -3449,7 +3453,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
           Log.v(Log.TAG_MESSAGES_LOADER, "openChat, chatId=%d", chatId);
         }
-        client().send(new TdApi.OpenChat(chatId), okHandler);
+        client().send(new TdApi.OpenChat(chatId), after != null ? result -> {
+          okHandler.onResult(result);
+          after.run();
+        } : okHandler);
+      } else if (after != null) {
+        client().send(new TdApi.SetAlarm(0), result ->
+          after.run()
+        );
       }
     }
     notifications().onChatOpened(chatId);
