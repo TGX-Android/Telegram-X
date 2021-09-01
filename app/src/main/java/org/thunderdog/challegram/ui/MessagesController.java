@@ -823,7 +823,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     scrollToBottomButton.setId(R.id.btn_scroll);
     scrollToBottomButton.setOnClickListener(this);
     scrollToBottomButton.setOnLongClickListener(v -> {
-      manager.scrollToStart();
+      manager.scrollToStart(true);
       return true;
     });
     addThemeInvalidateListener(scrollToBottomButton);
@@ -2618,7 +2618,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
       }
     }
-    manager.scrollToStart();
+    manager.scrollToStart(false);
   }
 
   public boolean centerMessage (long chatId, long messageId, boolean delayed, boolean centered) {
