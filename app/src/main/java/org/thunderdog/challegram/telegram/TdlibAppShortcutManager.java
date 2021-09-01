@@ -139,7 +139,7 @@ public class TdlibAppShortcutManager {
             intent.putExtra("chat_id", (long) i);
             intent.putExtra("secure", true);
 
-            String username = tdlib.cache().userUsername(user.id);
+            String username = tdlib.cache().userName(user.id);
             shortcutInfo.setShortLabel(username);
             shortcutInfo.setLongLabel(username);
             shortcutInfo.setIntent(intent);
