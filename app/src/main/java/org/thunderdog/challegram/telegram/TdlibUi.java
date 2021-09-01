@@ -2188,7 +2188,7 @@ public class TdlibUi extends Handler {
           }*/
           switch (botMode) {
             case BOT_MODE_START: {
-              openChat(context, chat, new ChatOpenParameters().urlOpenParameters(openParameters).shareItem(new TGBotStart(user.id, startArgument, false)));
+              openChat(context, chat, new ChatOpenParameters().urlOpenParameters(openParameters).shareItem(new TGBotStart(user.id, startArgument, false)).keepStack());
               break;
             }
             case BOT_MODE_START_IN_GROUP:
