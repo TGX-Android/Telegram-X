@@ -70,8 +70,8 @@
 
         <item name="tooltip" />
         <item name="tooltip_text" />
-        <item name="tooltip_textLink" />
-        <item name="tooltip_textLinkPressHighlight" />
+        <item name="tooltip_textLink" tinted="true" />
+        <item name="tooltip_textLinkPressHighlight" tinted="true" />
         <item name="tooltip_outline" />
 
         <!-- TEXT -->

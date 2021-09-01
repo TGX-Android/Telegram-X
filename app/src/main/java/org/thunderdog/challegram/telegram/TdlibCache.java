@@ -45,8 +45,8 @@ import me.vkryl.core.reference.ReferenceIntMap;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceLongMap;
 import me.vkryl.core.reference.ReferenceMap;
+import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
-import me.vkryl.td.TdConstants;
 
 /**
  * Date: 30/10/2016
@@ -952,7 +952,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
       avatarColorId = R.id.theme_color_avatarSavedMessages;
       desiredDrawableRes = R.drawable.baseline_bookmark_24;
     } else {
-      if (user.id == TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID) {
+      if (tdlib.isRepliesChat(ChatId.fromUserId(user.id))) {
         desiredDrawableRes = R.drawable.baseline_reply_24;
         avatarColorId = R.id.theme_color_avatarReplies;
       } else {
@@ -960,7 +960,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
         avatarColorId = userAvatarColorId(user);
       }
       extraDrawableRes = tdlib.isSelfUserId(user.id) ? R.drawable.ic_add_a_photo_black_56 :
-        user.id == TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID ? R.drawable.baseline_reply_56 :
+        tdlib.isRepliesChat(ChatId.fromUserId(user.id)) ? R.drawable.baseline_reply_56 :
         TD.isBot(user) ? R.drawable.deproko_baseline_bots_56 :
           R.drawable.baseline_person_56;
     }
@@ -1007,7 +1007,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     if (TD.isUserDeleted(user)) {
       return Lang.getString(R.string.HiddenName);
     }
-    if (userId == TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID) {
+    if (tdlib.isRepliesChat(ChatId.fromUserId(userId))) {
       return Lang.getString(R.string.RepliesBot);
     }
     if (shorten) {

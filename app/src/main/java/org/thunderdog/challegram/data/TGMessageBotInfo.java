@@ -23,7 +23,7 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
-import me.vkryl.td.TdConstants;
+import me.vkryl.td.ChatId;
 
 public class TGMessageBotInfo extends TGMessage {
   private TextWrapper titleWrapper;
@@ -34,7 +34,7 @@ public class TGMessageBotInfo extends TGMessage {
   public TGMessageBotInfo (MessagesManager context, long chatId, TdApi.FormattedText description) {
     super(context, TD.newFakeMessage(chatId, context.controller().tdlib().sender(chatId), new TdApi.MessageText(description, null)));
 
-    if (getSender().getUserId() != TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID) {
+    if (!tdlib().isRepliesChat(ChatId.fromUserId(getSender().getUserId()))) {
       String text = Lang.getString(R.string.WhatThisBotCanDo);
       this.titleWrapper = new TextWrapper(text, getTextStyleProvider(), getTextColorSet(), null).addTextFlags(Text.FLAG_ALL_BOLD);
       this.titleWrapper.setViewProvider(currentViews);
