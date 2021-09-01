@@ -867,7 +867,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         adapter.getItems().add(i, new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         adapter.getItems().add(i, newTransferOwnershipItem(isChannel));
         adapter.notifyItemRangeInserted(i, 2);
-      } else {
+      } else if (adapter.indexOfViewById(R.id.btn_transferOwnership) == -1) {
         int startIndex = adapter.getItemCount() - 1;
         adapter.getItems().addAll(startIndex, Arrays.asList(
           new ListItem(ListItem.TYPE_SHADOW_TOP),
