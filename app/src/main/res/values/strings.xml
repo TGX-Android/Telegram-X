@@ -1695,6 +1695,8 @@
   <string name="EventLogChangedYourVolume">%1$s changed your volume to %2$s</string>
   <string name="EventLogLocationChanged">%1$s changed group location to %2$s</string>
   <string name="EventLogLocationRemoved">%1$s removed group location</string>
+  <string name="EventLogTransferredOwnership">transferred ownership to %1$s</string>
+  <string name="EventLogNoLongerCreator">is no longer an owner</string>
   <string name="UntilX">Until %1$s</string>
   <string name="NetworkUsage">Network Usage</string>
   <string name="RecentStickers">Recently Used</string>
@@ -2686,6 +2688,7 @@
   <string name="error_STICKERSET_INVALID">Sticker set not found or no longer exists.</string>
   <string name="error_CHANNELS_TOO_MUCH">Sorry, you are a member of too many groups or channels. Please leave some before joining a new one.</string>
   <string name="error_PHONE_NUMBER_BANNED">Sorry, this phone number is banned. Contact us at login@stel.com if you need help.</string>
+  <string name="error_CHANNELS_ADMIN_LOCATED_TOO_MUCH">Sorry, you have too many location-based groups already. Please delete one of your existing ones first.</string>
   <string name="errorPrivacyAddMember">Sorry, the user restricted who can add them to chats in their privacy settings.</string>
   <string name="UserPrivacyRestricted">Sorry, the user restricted this action in their privacy settings.</string>
   <string name="NobodyLikesSpam2">Sorry, you can interact only with mutual contacts at the moment.</string> <!--PEER_FLOOD-->
@@ -3684,6 +3687,24 @@
   <string name="ChatBackgroundTypeMulticolor">multicolor gradient</string>
 
   <string name="NoCloudThemeSupport">This theme is not designed for **Telegram X**.\n\nHowever, you may check for user-made themes in @tgx_perfection.</string>
+
+  <string name="TransferOwnershipSecurityAlert">Security Check</string>
+  <string name="TransferOwnershipSecurityPasswordNeeded">Sorry, but you can only transfer ownership if you have set up **Two-Step Verification** on your Telegram account.</string>
+  <string name="TransferOwnershipSecurityNeedWait">Sorry, but you need to wait **%1$s** before you can transfer ownership.</string>
+  <string name="TransferOwnershipSecurityActionSetPassword">Set password</string>
+  <string name="TransferOwnershipPasswordAlert">Transfer Ownership</string>
+  <string name="TransferOwnershipPasswordAlertHint">Please enter your 2-Step verification password to complete the transfer.</string>
+  <string name="TransferOwnershipAlert">Wait a bit…</string>
+  <string name="TransferOwnershipAlertBot">Are you really sure you want to transfer ownership of the bot?\n\nThis operation is **irreversible**, so check again if the user you want to transfer the bot is the right person.</string>
+  <string name="TransferOwnershipAlertBotName">Are you really sure you want to transfer ownership of **%1$s** to **%2$s**?\n\nThis operation is **irreversible**, so check again if the user you want to transfer the bot is the right person.</string>
+  <string name="TransferOwnershipAlertUnknown">Are you really sure you want to proceed?\n\nThis operation is **irreversible**, so check again if all details are correct.</string>
+  <string name="TransferOwnershipAlertChannel">Are you really sure you want to transfer ownership of **%1$s** to **%2$s**?\n\nThis operation is **irreversible**, so check again if the user you want to transfer the channel is the right person.</string>
+  <string name="TransferOwnershipAlertGroup">Are you really sure you want to transfer ownership of **%1$s** to **%2$s**?\n\nYou will no longer be considered the creator of the group. The new owner will be free to remove any of your admin privileges or even ban you.</string>
+  <string name="TransferOwnershipChannel">Transfer Channel Ownership</string>
+  <string name="TransferOwnershipGroup">Transfer Group Ownership</string>
+  <string name="TransferOwnershipTooMuch">Sorry, the target user is a member of too many groups and channels. Please ask them to leave some first.</string>
+  <string name="TransferOwnershipTooMuchPublic">Sorry, the target user has too many public groups or channels already. Please ask them to make one of their existing groups or channels private first.</string>
+  <string name="TransferOwnershipTooMuchLocated">Sorry, the target user owns too many location-based groups. Please ask them to delete or transfer an existing one first.</string>
 
   <string name="NoRightAllowChangeInfo">You cannot allow everyone to change group info, because you don\'t have corresponding admin right.</string>
   <string name="NoRightAllowChangeInfoPublic">You cannot allow everyone to change group info, because this group is public</string>

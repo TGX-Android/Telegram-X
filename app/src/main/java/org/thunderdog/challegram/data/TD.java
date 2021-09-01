@@ -1707,7 +1707,7 @@ public class TD {
         return !StringUtils.isEmpty(creator.customTitle) || creator.isAnonymous;
       case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
         TdApi.ChatMemberStatusAdministrator admin = (TdApi.ChatMemberStatusAdministrator) status;
-        return !(admin.canChangeInfo && admin.canDeleteMessages && admin.canInviteUsers && admin.canRestrictMembers && admin.canPinMessages && !admin.canPromoteMembers && StringUtils.isEmpty(admin.customTitle) && !admin.isAnonymous);
+        return !(admin.canChangeInfo && admin.canDeleteMessages && admin.canInviteUsers && admin.canRestrictMembers && admin.canPinMessages && admin.canManageVoiceChats && !admin.canPromoteMembers && StringUtils.isEmpty(admin.customTitle) && !admin.isAnonymous);
       case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR:
       case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
         return true;
@@ -2133,8 +2133,6 @@ public class TD {
     return "";
   }
 
-  public static final String ERROR_USER_PRIVACY = "USER_PRIVACY_RESTRICTED";
-
   public static String toErrorString (@Nullable TdApi.Object object) {
     if (object == null)
       return "Unknown error (null)";
@@ -2153,11 +2151,16 @@ public class TD {
     return "not an error";
   }*/
 
+  public static final String ERROR_USER_PRIVACY = "USER_PRIVACY_RESTRICTED";
+  public static final String ERROR_USER_CHANNELS_TOO_MUCH = "USER_CHANNELS_TOO_MUCH";
+  public static final String ERROR_CHANNELS_ADMIN_PUBLIC_TOO_MUCH = "CHANNELS_ADMIN_PUBLIC_TOO_MUCH";
+  public static final String ERROR_CHANNELS_ADMIN_LOCATED_TOO_MUCH = "CHANNELS_ADMIN_LOCATED_TOO_MUCH";
+
   public static @Nullable String translateError (int code, String message) {
     if (StringUtils.isEmpty(message)) {
       return null;
     }
-    if (message.toLowerCase().equals("request aborted")) {
+    if (message.equalsIgnoreCase("request aborted")) {
       return null;
     }
     int res;
@@ -2167,7 +2170,9 @@ public class TD {
       case "USERNAME_OCCUPIED": res = R.string.UsernameInUse; break;
       case "USERNAME_NOT_OCCUPIED": res = R.string.UsernameNotOccupiedUnknown; break;
       case "USERNAMES_UNAVAILABLE": res = R.string.FeatureUnavailable; break;
-      case "CHANNELS_ADMIN_PUBLIC_TOO_MUCH": res = R.string.TooManyPublicChannels; break;
+      case ERROR_USER_CHANNELS_TOO_MUCH: res = R.string.error_CHANNELS_TOO_MUCH; break;
+      case ERROR_CHANNELS_ADMIN_PUBLIC_TOO_MUCH: res = R.string.TooManyPublicChannels; break;
+      case ERROR_CHANNELS_ADMIN_LOCATED_TOO_MUCH: res = R.string.error_CHANNELS_ADMIN_LOCATED_TOO_MUCH; break;
       case "PASSWORD_HASH_INVALID": res = R.string.PasswordIsInvalid; break;
       case "INVITE_HASH_INVALID": case "INVITE_HASH_EXPIRED": res = R.string.InviteLinkInvalid; break;
       case "USERS_TOO_MUCH": res = R.string.GroupIsFull; break;
@@ -2176,7 +2181,7 @@ public class TD {
       case "FRESH_RESET_AUTHORISATION_FORBIDDEN": res = R.string.TerminateSessionFreshError; break;
       case "PHONE_NUMBER_OCCUPIED": res = R.string.PhoneNumberInUse; break;
       case "PHONE_NUMBER_BANNED": res = R.string.login_PHONE_NUMBER_BANNED; break;
-      case "USER_PRIVACY_RESTRICTED": res = R.string.UserPrivacyRestricted; break;
+      case ERROR_USER_PRIVACY: res = R.string.UserPrivacyRestricted; break;
       case "USER_NOT_MUTUAL_CONTACT": res = R.string.error_USER_NOT_MUTUAL_CONTACT; break;
       case "CHAT_SEND_POLL_FORBIDDEN": res = R.string.error_CHAT_SEND_POLL_FORBIDDEN; break;
       case "LANG_CODE_NOT_SUPPORTED": res = R.string.error_LANG_CODE_NOT_SUPPORTED; break;
@@ -2507,6 +2512,25 @@ public class TD {
         return R.raw.voip_busy;
     }
     throw new IllegalArgumentException("call.state == " + call.state);
+  }
+
+  public static class BotTransferInfo {
+    public final int botUserId;
+    public final int targetOwnerUserId;
+
+    public BotTransferInfo (int botUserId, int targetOwnerUserId) {
+      this.botUserId = botUserId;
+      this.targetOwnerUserId = targetOwnerUserId;
+    }
+  }
+
+  public static BotTransferInfo parseBotTransferInfo (TdApi.InlineKeyboardButtonTypeCallbackWithPassword callbackWithPassword) {
+    String info = new String(callbackWithPassword.data, StringUtils.UTF_8);
+    if (info.matches("^bots/[0-9]+/trsf/[0-9]+/c$")) {
+      String[] args = info.split("/");
+      return new BotTransferInfo(StringUtils.parseInt(args[1]), StringUtils.parseInt(args[3]));
+    }
+    return null;
   }
 
   public static final int PROMOTE_MODE_NONE = 0;
@@ -4124,7 +4148,7 @@ public class TD {
     int start = messageText.text.text.length() + 1;
     newText.text = messageText.text.text + "\n[" + Lang.getString(R.string.LinkPreview) + "]";
     if (messageText.text.entities != null) {
-      messageText.text.entities = ArrayUtils.resize(messageText.text.entities, messageText.text.entities.length + 1, null);
+      newText.entities = ArrayUtils.resize(messageText.text.entities, messageText.text.entities.length + 1, null);
     } else {
       newText.entities = new TdApi.TextEntity[1];
     }

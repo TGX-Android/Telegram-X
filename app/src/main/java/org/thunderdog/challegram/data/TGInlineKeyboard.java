@@ -47,6 +47,7 @@ import org.thunderdog.challegram.widget.ProgressComponent;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
@@ -56,6 +57,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.CurrencyUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
+import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.Td;
 
 /**
@@ -594,10 +596,19 @@ public class TGInlineKeyboard {
       if (type != null) {
         int iconColor = Theme.inlineIconColor(isOutBubble);
         switch (type.getConstructor()) {
-          case TdApi.InlineKeyboardButtonTypeSwitchInline.CONSTRUCTOR: {
-            Drawable icon = getSparseDrawable(R.drawable.baseline_alternate_email_12, ThemeColorId.NONE);
-            int padding = Screen.dp(4f);
-            Drawables.draw(c, icon, dirtyRect.right - icon.getMinimumWidth() - padding, dirtyRect.top + padding, useBubbleMode ? Paints.getInlineBubbleIconPaint(textColor) : textColorFactor == 0f ? Paints.getInlineIconPorterDuffPaint(isOutBubble) : Paints.getPorterDuffPaint(ColorUtils.fromToArgb(iconColor, Theme.inlineTextActiveColor(), textColorFactor)));
+          case TdApi.InlineKeyboardButtonTypeSwitchInline.CONSTRUCTOR:
+          case TdApi.InlineKeyboardButtonTypeCallbackWithPassword.CONSTRUCTOR: {
+            boolean isSwitchInline = type.getConstructor() == TdApi.InlineKeyboardButtonTypeSwitchInline.CONSTRUCTOR;
+            Drawable icon = getSparseDrawable(isSwitchInline ?
+              R.drawable.baseline_alternate_email_12 :
+              R.drawable.deproko_baseline_lock_16,
+              ThemeColorId.NONE
+            );
+            int padding = Screen.dp(isSwitchInline ? 4f : 1f);
+            Drawables.draw(c, icon, dirtyRect.right - icon.getMinimumWidth() - padding, dirtyRect.top + padding, useBubbleMode ?
+              (progressFactor == 0f ? Paints.getInlineBubbleIconPaint(textColor) : Paints.getPorterDuffPaint(ColorUtils.alphaColor(1f - progressFactor, textColor))) :
+              textColorFactor == 0f && progressFactor == 0f ? Paints.getInlineIconPorterDuffPaint(isOutBubble) : Paints.getPorterDuffPaint(ColorUtils.alphaColor(1f - progressFactor, ColorUtils.fromToArgb(iconColor, Theme.inlineTextActiveColor(), textColorFactor))));
+            drawProgress(c, useBubbleMode, textColorFactor);
             break;
           }
           case TdApi.InlineKeyboardButtonTypeUrl.CONSTRUCTOR: {
@@ -620,7 +631,6 @@ public class TGInlineKeyboard {
             break;
           }
           case TdApi.InlineKeyboardButtonTypeCallback.CONSTRUCTOR:
-          case TdApi.InlineKeyboardButtonTypeCallbackWithPassword.CONSTRUCTOR:
           case TdApi.InlineKeyboardButtonTypeCallbackGame.CONSTRUCTOR: {
             drawProgress(c, useBubbleMode, textColorFactor);
             break;
@@ -1033,8 +1043,75 @@ public class TGInlineKeyboard {
         }
 
         case TdApi.InlineKeyboardButtonTypeCallbackWithPassword.CONSTRUCTOR: {
-          final byte[] data = ((TdApi.InlineKeyboardButtonTypeCallbackWithPassword) type).data;
-          // TODO ask for password and
+          final TdApi.InlineKeyboardButtonTypeCallbackWithPassword callbackWithPassword = (TdApi.InlineKeyboardButtonTypeCallbackWithPassword) type;
+          final byte[] data = callbackWithPassword.data;
+          final boolean isBotTransfer = Td.isBotOwnershipTransfer(callbackWithPassword) && context.context.tdlib().isBotFatherChat(parent.getChatId());
+
+          makeActive();
+          showProgressDelayed();
+
+          RunnableData<CharSequence> act = alertText -> {
+            context.context.tdlib.ui().requestTransferOwnership(context.context.messagesController(), alertText, new TdlibUi.OwnershipTransferListener() {
+              @Override
+              public void onOwnershipTransferAbilityChecked (TdApi.Object result) {
+                if (currentContextId == contextId) {
+                  makeInactive();
+                }
+              }
+
+              @Override
+              public void onOwnershipTransferConfirmed (String password) {
+                if (currentContextId == contextId) {
+                  makeActive();
+                  cancelDelayedProgress();
+                  animateProgressFactor(1f);
+                }
+                context.context.tdlib.client().send(new TdApi.GetCallbackQueryAnswer(parent.getChatId(), context.messageId, new TdApi.CallbackQueryPayloadDataWithPassword(password, data)), getAnswerCallback(currentContextId, view,false));
+              }
+            });
+          };
+
+          if (isBotTransfer) {
+            TD.BotTransferInfo transferInfo = TD.parseBotTransferInfo(callbackWithPassword);
+            if (transferInfo != null) {
+              AtomicInteger remaining = new AtomicInteger(2);
+              Client.ResultHandler handler = ignored -> {
+                if (remaining.decrementAndGet() == 0) {
+                  TdApi.User botUser = context.context.tdlib.cache().user(transferInfo.botUserId);
+                  TdApi.User targetUser = context.context.tdlib.cache().user(transferInfo.targetOwnerUserId);
+
+                  context.context.tdlib.ui().post(() -> {
+                    if (currentContextId == contextId) {
+                      CharSequence alertText;
+                      if (botUser != null && targetUser != null) {
+                        alertText = Lang.getMarkdownString(context.context.messagesController(),
+                          R.string.TransferOwnershipAlertBotName,
+                          context.context.tdlib.cache().userName(transferInfo.botUserId),
+                          context.context.tdlib.cache().userName(transferInfo.targetOwnerUserId)
+                        );
+                      } else {
+                        alertText = Lang.getMarkdownString(context.context.messagesController(),
+                          R.string.TransferOwnershipAlertBot
+                        );
+                      }
+                      act.runWithData(alertText);
+                    }
+                  });
+                }
+              };
+              context.context.tdlib.client().send(new TdApi.GetUser(transferInfo.botUserId), handler);
+              context.context.tdlib.client().send(new TdApi.GetUser(transferInfo.targetOwnerUserId), handler);
+            } else {
+              act.runWithData(Lang.getMarkdownString(context.context.messagesController(),
+                R.string.TransferOwnershipAlertBot
+              ));
+            }
+          } else {
+            act.runWithData(Lang.getMarkdownString(context.context.messagesController(),
+              R.string.TransferOwnershipAlertUnknown
+            ));
+          }
+
           break;
         }
         case TdApi.InlineKeyboardButtonTypeCallback.CONSTRUCTOR: {
