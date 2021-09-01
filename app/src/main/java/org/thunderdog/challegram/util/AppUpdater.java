@@ -298,7 +298,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
         onUpdateAvailable(FlowType.TELEGRAM_CHANNEL,
           file.local.downloadedSize,
           file.expectedSize,
-          displayVersion,
+          updateFile.version,
           TD.isFileLoadedAndExists(file)
         );
       } else {
@@ -317,10 +317,9 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
           c.showOptions(new ViewController.Options.Builder()
             .info(Lang.getMarkdownString(c,
               !StringUtils.isEmpty(displayVersion) ? R.string.AppUpdateAvailableVersionPrompt : R.string.AppUpdateAvailablePrompt,
-              Lang.boldCreator(),
+              (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex != 1 ? Lang.boldCreator().onCreateSpan(target, argStart, argEnd, argIndex, needFakeBold) : null,
               Strings.buildSize(bytesToDownload), displayVersion
-             )
-            )
+            ))
             .item(new ViewController.OptionItem(R.id.btn_update, Lang.getString(R.string.DownloadUpdate), ViewController.OPTION_COLOR_BLUE, R.drawable.baseline_system_update_24))
             .cancelItem()
             .build(), (optionItemView, id) -> {
