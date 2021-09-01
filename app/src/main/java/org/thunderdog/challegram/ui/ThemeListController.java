@@ -1798,7 +1798,23 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
             case R.id.theme_color_avatarReplies_big:
             case R.id.theme_color_avatarSavedMessages:
             case R.id.theme_color_avatarSavedMessages_big: {
-              modifier.setCircle(id, id == R.id.theme_color_avatarArchive || id == R.id.theme_color_avatarArchivePinned ? R.drawable.baseline_archive_24 : R.drawable.baseline_bookmark_24);
+              int circleIcon;
+
+              switch (id) {
+                case R.id.theme_color_avatarArchive:
+                case R.id.theme_color_avatarArchivePinned:
+                  circleIcon = R.drawable.baseline_archive_24;
+                  break;
+                case R.id.theme_color_avatarReplies:
+                case R.id.theme_color_avatarReplies_big:
+                  circleIcon = R.drawable.baseline_reply_24;
+                  break;
+                default:
+                  circleIcon = R.drawable.baseline_bookmark_24;
+                  break;
+              }
+
+              modifier.setCircle(id, circleIcon);
               modifier.circleIconColorId = R.id.theme_color_avatar_content;
               break;
             }

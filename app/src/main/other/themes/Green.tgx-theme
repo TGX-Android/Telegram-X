@@ -11,12 +11,13 @@ bubbleIn_progress, bubbleOut_chatCorrectChosenFilling, bubbleOut_chatCorrectFill
 bubbleIn_textLinkPressHighlight, bubbleOut_textLinkPressHighlight, iv_textLinkPressHighlight, iv_textMarkedLinkPressHighlight, textLinkPressHighlight, tooltip_textLinkPressHighlight: #4CAF5040
 bubbleOut_background: #EFFDDE
 bubbleOut_file, file, playerButtonActive: #78C67F
-bubbleOut_inlineIcon, bubbleOut_inlineText, bubbleOut_messageAuthor, chatSendButton, headerBackground, inlineIcon, inlineText, messageAuthor, notification, notificationLink, notificationPlayer, passcode, profileSectionActive: #43A047
+bubbleOut_inlineIcon, bubbleOut_inlineText, bubbleOut_messageAuthor, chatSendButton, headerBackground, inlineIcon, inlineText, messageAuthor, notification, notificationLink, notificationPlayer, passcode, profileSectionActive, fillingPositive: #43A047
 bubbleOut_outline: #B6CBDD
 bubbleOut_progress, bubbleOut_separator, bubbleOut_time: #6CC264
 bubbleOut_waveformInactive, textSelectionHighlight, waveformInactive: #C8E6C9
 messageSelection: #66BB6A10
-promo, textSearchQueryHighlight, tooltip_textLink: #81C784
+promo, textSearchQueryHighlight, tooltip_textLink, avatarArchive, avatarSavedMessages, avatarSavedMessages_big, avatarReplies, avatarReplies_big: #81C784
 seekReady: #D9EEDA
 togglerActiveBackground: #A5D6A7
 unread: #E8F5E9
+bubble_messageSelection, bubble_messageSelectionNoWallpaper: #4CAF5033

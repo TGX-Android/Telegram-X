@@ -63,7 +63,7 @@
         <item name="snackbarUpdateAction" />
 
         <item name="fillingNegative" />
-        <item name="fillingPositive" />
+        <item name="fillingPositive" tinted="true" />
         <item name="fillingPositiveContent" />
 
         <!-- TOOLTIP -->
@@ -188,12 +188,12 @@
 
         <!-- USERS -->
 
-        <item name="avatarArchive" />
+        <item name="avatarArchive" tinted="true" />
         <item name="avatarArchivePinned" />
-        <item name="avatarSavedMessages" />
-        <item name="avatarSavedMessages_big" />
-        <item name="avatarReplies" />
-        <item name="avatarReplies_big" />
+        <item name="avatarSavedMessages" tinted="true" />
+        <item name="avatarSavedMessages_big" tinted="true" />
+        <item name="avatarReplies" tinted="true" />
+        <item name="avatarReplies_big" tinted="true" />
         <item name="avatarInactive" />
         <item name="avatarInactive_big" />
         <item name="avatarRed" />
@@ -338,8 +338,8 @@
         <item name="bubble_mediaOverlay" />
         <item name="bubble_mediaOverlayText" porterDuff="true" />
 
-        <item name="bubble_messageSelection" />
-        <item name="bubble_messageSelectionNoWallpaper" />
+        <item name="bubble_messageSelection" tinted="true" />
+        <item name="bubble_messageSelectionNoWallpaper" tinted="true" />
         <item name="bubble_messageCheckOutline" />
         <item name="bubble_messageCheckOutlineNoWallpaper" />
         <item name="bubble_overlay" />
