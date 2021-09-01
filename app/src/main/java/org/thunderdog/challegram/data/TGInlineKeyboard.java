@@ -596,10 +596,19 @@ public class TGInlineKeyboard {
       if (type != null) {
         int iconColor = Theme.inlineIconColor(isOutBubble);
         switch (type.getConstructor()) {
-          case TdApi.InlineKeyboardButtonTypeSwitchInline.CONSTRUCTOR: {
-            Drawable icon = getSparseDrawable(R.drawable.baseline_alternate_email_12, ThemeColorId.NONE);
-            int padding = Screen.dp(4f);
-            Drawables.draw(c, icon, dirtyRect.right - icon.getMinimumWidth() - padding, dirtyRect.top + padding, useBubbleMode ? Paints.getInlineBubbleIconPaint(textColor) : textColorFactor == 0f ? Paints.getInlineIconPorterDuffPaint(isOutBubble) : Paints.getPorterDuffPaint(ColorUtils.fromToArgb(iconColor, Theme.inlineTextActiveColor(), textColorFactor)));
+          case TdApi.InlineKeyboardButtonTypeSwitchInline.CONSTRUCTOR:
+          case TdApi.InlineKeyboardButtonTypeCallbackWithPassword.CONSTRUCTOR: {
+            boolean isSwitchInline = type.getConstructor() == TdApi.InlineKeyboardButtonTypeSwitchInline.CONSTRUCTOR;
+            Drawable icon = getSparseDrawable(isSwitchInline ?
+              R.drawable.baseline_alternate_email_12 :
+              R.drawable.deproko_baseline_lock_16,
+              ThemeColorId.NONE
+            );
+            int padding = Screen.dp(isSwitchInline ? 4f : 1f);
+            Drawables.draw(c, icon, dirtyRect.right - icon.getMinimumWidth() - padding, dirtyRect.top + padding, useBubbleMode ?
+              (progressFactor == 0f ? Paints.getInlineBubbleIconPaint(textColor) : Paints.getPorterDuffPaint(ColorUtils.alphaColor(1f - progressFactor, textColor))) :
+              textColorFactor == 0f && progressFactor == 0f ? Paints.getInlineIconPorterDuffPaint(isOutBubble) : Paints.getPorterDuffPaint(ColorUtils.alphaColor(1f - progressFactor, ColorUtils.fromToArgb(iconColor, Theme.inlineTextActiveColor(), textColorFactor))));
+            drawProgress(c, useBubbleMode, textColorFactor);
             break;
           }
           case TdApi.InlineKeyboardButtonTypeUrl.CONSTRUCTOR: {
@@ -622,7 +631,6 @@ public class TGInlineKeyboard {
             break;
           }
           case TdApi.InlineKeyboardButtonTypeCallback.CONSTRUCTOR:
-          case TdApi.InlineKeyboardButtonTypeCallbackWithPassword.CONSTRUCTOR:
           case TdApi.InlineKeyboardButtonTypeCallbackGame.CONSTRUCTOR: {
             drawProgress(c, useBubbleMode, textColorFactor);
             break;
@@ -1048,7 +1056,6 @@ public class TGInlineKeyboard {
               public void onOwnershipTransferAbilityChecked (TdApi.Object result) {
                 if (currentContextId == contextId) {
                   makeInactive();
-                  hideProgress();
                 }
               }
 
