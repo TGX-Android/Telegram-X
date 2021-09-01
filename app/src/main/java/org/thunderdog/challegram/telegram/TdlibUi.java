@@ -5538,7 +5538,7 @@ public class TdlibUi extends Handler {
             break;
           case TdApi.CanTransferOwnershipResultPasswordTooFresh.CONSTRUCTOR:
             context.showOptions(new ViewController.Options.Builder()
-              .info(Strings.getTitleAndText(Lang.getString(R.string.TransferOwnershipSecurityAlert), Lang.getMarkdownString(context, R.string.TransferOwnershipSecurityNeedWaitPassword, Lang.getDuration(((TdApi.CanTransferOwnershipResultPasswordTooFresh) result).retryAfter))))
+              .info(Strings.getTitleAndText(Lang.getString(R.string.TransferOwnershipSecurityAlert), Lang.getMarkdownString(context, R.string.TransferOwnershipSecurityWaitPassword, Lang.getDuration(((TdApi.CanTransferOwnershipResultPasswordTooFresh) result).retryAfter))))
               .item(new ViewController.OptionItem(R.id.btn_next, Lang.getString(R.string.OK), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_check_circle_24))
               .cancelItem()
               .build(), (optionView, id) -> true
@@ -5546,7 +5546,7 @@ public class TdlibUi extends Handler {
             break;
           case TdApi.CanTransferOwnershipResultSessionTooFresh.CONSTRUCTOR:
             context.showOptions(new ViewController.Options.Builder()
-              .info(Strings.getTitleAndText(Lang.getString(R.string.TransferOwnershipSecurityAlert), Lang.getMarkdownString(context, R.string.TransferOwnershipSecurityNeedWaitSession, Lang.getDuration(((TdApi.CanTransferOwnershipResultSessionTooFresh) result).retryAfter))))
+              .info(Strings.getTitleAndText(Lang.getString(R.string.TransferOwnershipSecurityAlert), Lang.getMarkdownString(context, R.string.TransferOwnershipSecurityWaitSession, Lang.getDuration(((TdApi.CanTransferOwnershipResultSessionTooFresh) result).retryAfter))))
               .item(new ViewController.OptionItem(R.id.btn_next, Lang.getString(R.string.OK), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_check_circle_24))
               .cancelItem()
               .build(), (optionView, id) -> true

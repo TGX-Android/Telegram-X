@@ -139,6 +139,11 @@ public class Settings2FAController extends RecyclerViewController<Settings2FACon
   }
 
   @Override
+  public boolean needAsynchronousAnimation () {
+    return state == null;
+  }
+
+  @Override
   public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v, String text) {
     switch (id) {
       case R.id.login_code: {

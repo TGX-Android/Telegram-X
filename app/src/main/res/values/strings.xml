@@ -3690,8 +3690,8 @@
 
   <string name="TransferOwnershipSecurityAlert">Security Check</string>
   <string name="TransferOwnershipSecurityPasswordNeeded">Sorry, but you can only transfer ownership if you have set up **Two-Step Verification** on your Telegram account.</string>
-  <string name="TransferOwnershipSecurityNeedWaitPassword">Sorry, but you need to wait **%1$s** after setting a password before you can transfer ownership.</string>
-  <string name="TransferOwnershipSecurityNeedWaitSession">Sorry, but you need to wait **%1$s** after signing in before you can transfer ownership.</string>
+  <string name="TransferOwnershipSecurityWaitPassword">Sorry, but you need to wait **%1$s** before you can transfer ownership, because you\'ve set a password just recently.</string>
+  <string name="TransferOwnershipSecurityWaitSession">Sorry, but you need to wait **%1$s** before you can transfer ownership, because you\'ve signed in on the current device just recently.</string>
   <string name="TransferOwnershipSecurityActionSetPassword">Set password</string>
   <string name="TransferOwnershipPasswordAlert">Transfer Ownership</string>
   <string name="TransferOwnershipPasswordAlertHint">Please enter your 2-Step verification password to complete the transfer.</string>
