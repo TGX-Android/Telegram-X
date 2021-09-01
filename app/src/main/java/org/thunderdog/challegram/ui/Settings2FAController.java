@@ -10,7 +10,6 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.Client;
@@ -44,11 +43,18 @@ public class Settings2FAController extends RecyclerViewController<Settings2FACon
     public final @Nullable String recoveryEmail;
     public final @Nullable String currentPassword;
 
-    public Args (@NonNull SettingsPrivacyController controller, @Nullable String currentAcceptedPassword, @Nullable String recoveryEmail) {
+    public Args (@Nullable SettingsPrivacyController controller, @Nullable String currentAcceptedPassword, @Nullable String recoveryEmail) {
       this.controller = controller;
       this.currentPassword = currentAcceptedPassword;
-      this.state = controller.getCurrentPasswordState();
+      this.state = controller != null ? controller.getCurrentPasswordState() : null;
       this.recoveryEmail = recoveryEmail;
+    }
+
+    public Args (TdApi.PasswordState passwordState) {
+      this.controller = null;
+      this.currentPassword = null;
+      this.recoveryEmail = null;
+      this.state = passwordState;
     }
   }
 
@@ -118,6 +124,16 @@ public class Settings2FAController extends RecyclerViewController<Settings2FACon
     this.adapter.setLockFocusOn(this, true);
     if (state != null) {
       buildCells();
+    } else if (getArgumentsStrict().controller == null) {
+      tdlib.client().send(new TdApi.GetPasswordState(), result -> {
+        if (result.getConstructor() == TdApi.PasswordState.CONSTRUCTOR) {
+          runOnUiThreadOptional(() ->
+            onPasswordStateLoaded((TdApi.PasswordState) result)
+          );
+        } else {
+          UI.showError(result);
+        }
+      });
     }
     recyclerView.setAdapter(adapter);
   }

@@ -90,12 +90,12 @@ import org.thunderdog.challegram.ui.PhoneController;
 import org.thunderdog.challegram.ui.ProfileController;
 import org.thunderdog.challegram.ui.RequestController;
 import org.thunderdog.challegram.ui.SettingHolder;
+import org.thunderdog.challegram.ui.Settings2FAController;
 import org.thunderdog.challegram.ui.SettingsController;
 import org.thunderdog.challegram.ui.SettingsLanguageController;
 import org.thunderdog.challegram.ui.SettingsLogOutController;
 import org.thunderdog.challegram.ui.SettingsNotificationController;
 import org.thunderdog.challegram.ui.SettingsPhoneController;
-import org.thunderdog.challegram.ui.SettingsPrivacyController;
 import org.thunderdog.challegram.ui.SettingsProxyController;
 import org.thunderdog.challegram.ui.SettingsSessionsController;
 import org.thunderdog.challegram.ui.SettingsThemeController;
@@ -5528,7 +5528,9 @@ public class TdlibUi extends Handler {
               .cancelItem()
               .build(), (optionView, id) -> {
                 if (id == R.id.btn_next) {
-                  context.navigateTo(new SettingsPrivacyController(context.context(), context.tdlib()));
+                  Settings2FAController controller = new Settings2FAController(context.context(), context.tdlib());
+                  controller.setArguments(new Settings2FAController.Args(null));
+                  context.navigateTo(controller);
                 }
                 return true;
               }
@@ -5536,7 +5538,7 @@ public class TdlibUi extends Handler {
             break;
           case TdApi.CanTransferOwnershipResultPasswordTooFresh.CONSTRUCTOR:
             context.showOptions(new ViewController.Options.Builder()
-              .info(Strings.getTitleAndText(Lang.getString(R.string.TransferOwnershipSecurityAlert), Lang.getMarkdownString(context, R.string.TransferOwnershipSecurityNeedWait, Lang.getDuration(((TdApi.CanTransferOwnershipResultPasswordTooFresh) result).retryAfter))))
+              .info(Strings.getTitleAndText(Lang.getString(R.string.TransferOwnershipSecurityAlert), Lang.getMarkdownString(context, R.string.TransferOwnershipSecurityNeedWaitPassword, Lang.getDuration(((TdApi.CanTransferOwnershipResultPasswordTooFresh) result).retryAfter))))
               .item(new ViewController.OptionItem(R.id.btn_next, Lang.getString(R.string.OK), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_check_circle_24))
               .cancelItem()
               .build(), (optionView, id) -> true
@@ -5544,7 +5546,7 @@ public class TdlibUi extends Handler {
             break;
           case TdApi.CanTransferOwnershipResultSessionTooFresh.CONSTRUCTOR:
             context.showOptions(new ViewController.Options.Builder()
-              .info(Strings.getTitleAndText(Lang.getString(R.string.TransferOwnershipSecurityAlert), Lang.getMarkdownString(context, R.string.TransferOwnershipSecurityNeedWait, Lang.getDuration(((TdApi.CanTransferOwnershipResultSessionTooFresh) result).retryAfter))))
+              .info(Strings.getTitleAndText(Lang.getString(R.string.TransferOwnershipSecurityAlert), Lang.getMarkdownString(context, R.string.TransferOwnershipSecurityNeedWaitSession, Lang.getDuration(((TdApi.CanTransferOwnershipResultSessionTooFresh) result).retryAfter))))
               .item(new ViewController.OptionItem(R.id.btn_next, Lang.getString(R.string.OK), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_check_circle_24))
               .cancelItem()
               .build(), (optionView, id) -> true
