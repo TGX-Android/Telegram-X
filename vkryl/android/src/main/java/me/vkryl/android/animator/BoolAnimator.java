@@ -18,14 +18,15 @@ public class BoolAnimator implements FactorAnimator.Target {
   private long startDelay;
 
   public BoolAnimator (View view, Interpolator interpolator, long duration) {
-    this(0, (id, factor, fraction, callee) -> view.invalidate(), interpolator, duration);
+    this(0, (id, factor, fraction, callee) -> view.invalidate(), interpolator, duration, false);
+  }
+
+  public BoolAnimator (View view, Interpolator interpolator, long duration, boolean startValue) {
+    this(0, (id, factor, fraction, callee) -> view.invalidate(), interpolator, duration, startValue);
   }
 
   public BoolAnimator (int id, FactorAnimator.Target target, Interpolator interpolator, long duration) {
-    this.id = id;
-    this.target = target;
-    this.interpolator = interpolator;
-    this.duration = duration;
+    this(id, target, interpolator, duration, false);
   }
 
   public BoolAnimator (int id, FactorAnimator.Target target, Interpolator interpolator, long duration, boolean startValue) {

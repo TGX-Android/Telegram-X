@@ -606,7 +606,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       siteName = null;
     }
 
-    if (!StringUtils.isEmpty(webPage.title)) {
+    if (!StringUtils.isEmpty(webPage.title) && !isTgWallpaper()) {
       if (textHeight > 0)
         textHeight += Screen.dp(TEXT_PADDING);
 
@@ -985,7 +985,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   }
 
   protected boolean isTgWallpaper() {
-    return type == TYPE_TELEGRAM_BACKGROUND && webPage.document != null && webPage.document.thumbnail != null;
+    return type == TYPE_TELEGRAM_BACKGROUND;
   }
 
   protected boolean isTgWallpaperWithPreview() {

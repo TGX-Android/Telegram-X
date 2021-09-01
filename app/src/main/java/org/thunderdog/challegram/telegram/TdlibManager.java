@@ -14,7 +14,7 @@ import androidx.annotation.UiThread;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.firebase.FirebaseApp;
-import com.google.firebase.installations.FirebaseInstallations;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -1427,8 +1427,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     };
     try {
       FirebaseApp.initializeApp(UI.getAppContext());
-      FirebaseInstallations.getInstance().getId().addOnSuccessListener(token -> {
-        Log.i(Log.TAG_FCM, "Retrieved firebase token: %s", token);
+      FirebaseMessaging.getInstance().getToken().addOnSuccessListener(token -> {
+        TDLib.Tag.notifications("FirebaseMessaging.getInstance().getToken(): \"%s\"", token);
         setDeviceToken(token);
       }).addOnFailureListener(onFailureListener);
     } catch (Exception e) {

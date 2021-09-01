@@ -144,7 +144,7 @@ open class FetchLanguagesTask : BaseTask() {
     languageCodes.sortWith { a, b -> (b == defaultLanguageCode).compareTo(a == defaultLanguageCode) }
 
     if (languageCodes[0] != defaultLanguageCode) {
-      throw AssertionError("Default language not found: $languageCodes")
+      error("Default language not found: $languageCodes")
     }
 
     logger.lifecycle("Fetched languages list")
@@ -164,7 +164,7 @@ open class FetchLanguagesTask : BaseTask() {
       val isDefault = languageCode == defaultLanguageCode
 
       if (languageCode.isEmpty() || languageCode.startsWith("night") || languageCode.matches(Regex("^(?:v|sw)\\d+.*$"))) {
-        throw AssertionError("Bad language code: $languageCode")
+        error("Bad language code: $languageCode")
       }
 
       var rtlValue = "0"
@@ -208,7 +208,7 @@ open class FetchLanguagesTask : BaseTask() {
 
             if (!isDefault) {
               val outputFolders = knownOutputFolders[languageCode] ?: when {
-                languageCode.contains('-') -> throw UnsupportedOperationException("Unsupported language code: $languageCode")
+                languageCode.contains('-') -> error("Unsupported language code: $languageCode")
                 else -> arrayOf(languageCode)
               }
 

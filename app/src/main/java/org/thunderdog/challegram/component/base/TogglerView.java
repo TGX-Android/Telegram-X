@@ -10,6 +10,7 @@ import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -22,6 +23,7 @@ import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -34,7 +36,7 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ColorUtils;
 
-public class TogglerView extends View implements FactorAnimator.Target {
+public class TogglerView extends View implements FactorAnimator.Target, TooltipOverlayView.LocationProvider {
   private Paint circlePaint;
 
   private boolean isEnabled;
@@ -267,6 +269,12 @@ public class TogglerView extends View implements FactorAnimator.Target {
     } else {
       origX = factor == 0f ? minX : factor == 1f ? maxX : minX + factor * diffX;
     }
+  }
+
+  @Override
+  public void getTargetBounds (View targetView, Rect outRect) {
+    final int bound = Screen.dp(2f);
+    outRect.set((int) (origX - origRadius - bound), (int) (origY - origRadius - bound), (int) (origX + origRadius + bound), (int) (origY + origRadius + bound));
   }
 
   @Override

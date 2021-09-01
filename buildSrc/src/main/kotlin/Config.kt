@@ -16,10 +16,10 @@ object LibraryVersions {
 class AbiVariant (val flavor: String, vararg val filters: String = Config.SUPPORTED_ABI, val displayName: String = filters[0], val sideLoadOnly: Boolean = false) {
   init {
     if (filters.isEmpty())
-      throw AssertionError("Empty filters passed")
+      error("Empty filters passed")
     for (filter in filters) {
       if (!Config.SUPPORTED_ABI.contains(filter))
-        throw AssertionError("Unsupported abi filter: $filter")
+        error("Unsupported abi filter: $filter")
     }
   }
 
