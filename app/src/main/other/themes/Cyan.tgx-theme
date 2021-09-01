@@ -10,10 +10,11 @@ badge, bubbleOut_inlineOutline, chatListAction, chatListVerify, circleButtonActi
 bubbleIn_progress, bubbleIn_textLink, bubbleOut_chatCorrectChosenFilling, bubbleOut_chatCorrectFilling, bubbleOut_chatVerticalLine, bubbleOut_inlineIcon, bubbleOut_inlineText, bubbleOut_messageAuthor, bubbleOut_textLink, bubbleOut_ticks, bubbleOut_ticksRead, bubbleOut_waveformActive, checkActive, iconActive, inlineIcon, inlineText, iv_textLink, iv_textMarkedLink, messageAuthor, messageCorrectChosenFilling, messageCorrectFilling, messageSwipeBackground, messageVerticalLine, progress, textLink, textNeutral, ticks, ticksRead, togglerActive, unreadText, waveformActive: #00BCD4
 bubbleIn_textLinkPressHighlight, bubbleOut_textLinkPressHighlight, iv_textLinkPressHighlight, iv_textMarkedLinkPressHighlight, textLinkPressHighlight, tooltip_textLinkPressHighlight: #00BCD440
 bubbleOut_background, textSelectionHighlight, unread: #E0F7FA
-bubbleOut_file, controlActive, file, playerButtonActive, profileSectionActive, promo, textSearchQueryHighlight, tooltip_textLink: #4DD0E1
+bubbleOut_file, controlActive, file, playerButtonActive, profileSectionActive, promo, textSearchQueryHighlight, tooltip_textLink, avatarArchive, avatarSavedMessages, avatarSavedMessages_big, avatarReplies, avatarReplies_big: #4DD0E1
 bubbleOut_progress, bubbleOut_separator, bubbleOut_time: #81A4BE
 bubbleOut_waveformInactive, togglerActiveBackground, waveformInactive: #B2EBF2
 chatSendButton, online: #00ACC1
-headerBackground, notification, notificationLink, notificationPlayer, passcode: #0097A7
+headerBackground, notification, notificationLink, notificationPlayer, passcode, fillingPositive: #0097A7
 messageSelection: #4DD0E110
 seekReady: #C9F0F5
+bubble_messageSelection, bubble_messageSelectionNoWallpaper: #00BCD433
