@@ -749,9 +749,9 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     CharSequence text;
 
     if (isChannel) {
-      text = Lang.getMarkdownString(this, R.string.TransferOwnershipFinalAlertChannel, tdlib.chatTitle(chatId), tdlib.cache().userName(userId));
+      text = Lang.getMarkdownString(this, R.string.TransferOwnershipAlertChannel, tdlib.chatTitle(chatId), tdlib.cache().userName(userId));
     } else {
-      text = Lang.getMarkdownString(this, R.string.TransferOwnershipFinalAlertGroup, tdlib.chatTitle(chatId), tdlib.cache().userName(userId));
+      text = Lang.getMarkdownString(this, R.string.TransferOwnershipAlertGroup, tdlib.chatTitle(chatId), tdlib.cache().userName(userId));
     }
     
     tdlib.ui().requestTransferOwnership(this, text, password -> {

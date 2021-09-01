@@ -22,7 +22,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.collection.LongSparseArray;
-import androidx.core.util.Consumer;
 
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -5493,9 +5492,15 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public void requestTransferOwnership (ViewController<?> context, CharSequence finalAlertMessageText, RunnableData<String> onSuccessListener) {
+  public interface OwnershipTransferListener {
+    default void onOwnershipTransferAbilityChecked (TdApi.Object result) { }
+    void onOwnershipTransferConfirmed (String password);
+  }
+
+  public void requestTransferOwnership (ViewController<?> context, CharSequence finalAlertMessageText, OwnershipTransferListener listener) {
     tdlib.client().send(new TdApi.CanTransferOwnership(), result -> {
       tdlib.ui().post(() -> {
+        listener.onOwnershipTransferAbilityChecked(result);
         switch (result.getConstructor()) {
           case TdApi.CanTransferOwnershipResultOk.CONSTRUCTOR:
             tdlib.client().send(new TdApi.GetPasswordState(), state -> {
@@ -5503,8 +5508,8 @@ public class TdlibUi extends Handler {
               PasswordController controller = new PasswordController(context.context(), context.tdlib());
               controller.setArguments(new PasswordController.Args(PasswordController.MODE_TRANSFER_OWNERSHIP_CONFIRM, (TdApi.PasswordState) state).setSuccessListener(password -> {
                 // Ask if the user REALLY wants to transfer ownership, because this operation is serious
-                context.addOneShotFocusListener(() -> context.openAlert(R.string.TransferOwnershipFinalAlert, finalAlertMessageText, Lang.getString(R.string.Proceed), (dialog, which) ->
-                  onSuccessListener.runWithData(password), 0
+                context.addOneShotFocusListener(() -> context.openAlert(R.string.TransferOwnershipAlert, finalAlertMessageText, Lang.getString(R.string.Proceed), (dialog, which) ->
+                  listener.onOwnershipTransferConfirmed(password), 0
                 ));
               }));
               context.navigateTo(controller);

@@ -2514,6 +2514,25 @@ public class TD {
     throw new IllegalArgumentException("call.state == " + call.state);
   }
 
+  public static class BotTransferInfo {
+    public final int botUserId;
+    public final int targetOwnerUserId;
+
+    public BotTransferInfo (int botUserId, int targetOwnerUserId) {
+      this.botUserId = botUserId;
+      this.targetOwnerUserId = targetOwnerUserId;
+    }
+  }
+
+  public static BotTransferInfo parseBotTransferInfo (TdApi.InlineKeyboardButtonTypeCallbackWithPassword callbackWithPassword) {
+    String info = new String(callbackWithPassword.data, StringUtils.UTF_8);
+    if (info.matches("^bots/[0-9]+/trsf/[0-9]+/c$")) {
+      String[] args = info.split("/");
+      return new BotTransferInfo(StringUtils.parseInt(args[1]), StringUtils.parseInt(args[3]));
+    }
+    return null;
+  }
+
   public static final int PROMOTE_MODE_NONE = 0;
   public static final int PROMOTE_MODE_NEW = 1;
   public static final int PROMOTE_MODE_EDIT = 2;

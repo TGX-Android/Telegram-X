@@ -1036,17 +1036,48 @@ public class TGInlineKeyboard {
           final TdApi.InlineKeyboardButtonTypeCallbackWithPassword callbackWithPassword = (TdApi.InlineKeyboardButtonTypeCallbackWithPassword) type;
           final byte[] data = callbackWithPassword.data;
           final boolean isBotTransfer = Td.isBotOwnershipTransfer(callbackWithPassword) && context.context.tdlib().isBotFatherChat(parent.getChatId());
-          CharSequence alertText = Lang.getMarkdownString(context.context.messagesController(), isBotTransfer ?
-            R.string.TransferOwnershipFinalAlertBot :
-            R.string.TransferOwnershipFinalAlertUnknown
-          );
-          context.context.tdlib.ui().requestTransferOwnership(context.context.messagesController(), alertText, password -> {
-            if (currentContextId == contextId) {
-              makeActive();
-              cancelDelayedProgress();
-              animateProgressFactor(1f);
+
+          CharSequence alertText;
+          if (isBotTransfer) {
+            TD.BotTransferInfo transferInfo = TD.parseBotTransferInfo(callbackWithPassword);
+            if (transferInfo != null) {
+              alertText = Lang.getMarkdownString(context.context.messagesController(),
+                R.string.TransferOwnershipAlertBotName,
+                context.context.tdlib.cache().userName(transferInfo.botUserId),
+                context.context.tdlib.cache().userName(transferInfo.targetOwnerUserId)
+              );
+            } else {
+              alertText = Lang.getMarkdownString(context.context.messagesController(),
+                R.string.TransferOwnershipAlertBot
+              );
             }
-            context.context.tdlib.client().send(new TdApi.GetCallbackQueryAnswer(parent.getChatId(), context.messageId, new TdApi.CallbackQueryPayloadDataWithPassword(password, data)), getAnswerCallback(currentContextId, view,false));
+          } else {
+            alertText = Lang.getMarkdownString(context.context.messagesController(),
+              R.string.TransferOwnershipAlertUnknown
+            );
+          }
+
+          makeActive();
+          showProgressDelayed();
+
+          context.context.tdlib.ui().requestTransferOwnership(context.context.messagesController(), alertText, new TdlibUi.OwnershipTransferListener() {
+            @Override
+            public void onOwnershipTransferAbilityChecked (TdApi.Object result) {
+              if (currentContextId == contextId) {
+                makeInactive();
+                hideProgress();
+              }
+            }
+
+            @Override
+            public void onOwnershipTransferConfirmed (String password) {
+              if (currentContextId == contextId) {
+                makeActive();
+                cancelDelayedProgress();
+                animateProgressFactor(1f);
+              }
+              context.context.tdlib.client().send(new TdApi.GetCallbackQueryAnswer(parent.getChatId(), context.messageId, new TdApi.CallbackQueryPayloadDataWithPassword(password, data)), getAnswerCallback(currentContextId, view,false));
+            }
           });
 
           break;
