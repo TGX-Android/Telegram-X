@@ -2499,7 +2499,7 @@ public class TdlibUi extends Handler {
           if (!StringUtils.isEmpty(host) && path != null && path.length() > 1) {
             switch (Settings.instance().getInstantViewMode()) {
               case Settings.INSTANT_VIEW_MODE_INTERNAL:
-                ok = tdlib.isKnownHost(host, false);
+                ok = tdlib.isKnownHost(host, true);
                 break;
               case Settings.INSTANT_VIEW_MODE_ALL:
                 ok = true;
