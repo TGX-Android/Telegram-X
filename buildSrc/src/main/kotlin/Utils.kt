@@ -1,3 +1,4 @@
+
 import com.android.build.api.dsl.BaseFlavor
 import com.android.build.api.dsl.VariantDimension
 import com.android.build.gradle.api.BaseVariant
@@ -31,9 +32,9 @@ fun VariantDimension.buildConfigString (name: String, value: String) =
 fun loadProperties (path: String = "local.properties"): Properties {
   val file = File(path)
   if (!file.canRead())
-    throw AssertionError("Cannot read ${file.absolutePath}")
+    error("Cannot read ${file.absolutePath}")
   if (file.isDirectory)
-    throw AssertionError("Is a directory: ${file.absolutePath}")
+    error("Is a directory: ${file.absolutePath}")
   val properties = Properties()
   file.bufferedReader().use {
     properties.load(it)

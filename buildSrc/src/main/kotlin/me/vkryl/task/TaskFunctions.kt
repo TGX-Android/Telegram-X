@@ -19,14 +19,14 @@ fun writeToFile(path: String, mkdirs: Boolean = true, block: (Writer) -> Unit) {
   if (!file.parentFile.exists()) {
     if (mkdirs) {
       if (!file.parentFile.mkdirs())
-        throw AssertionError("Could not create folder: ${file.parentFile.absolutePath}")
+        error("Could not create folder: ${file.parentFile.absolutePath}")
     } else {
-      throw AssertionError("Folder does not exist: ${file.parentFile.absolutePath}")
+      error("Folder does not exist: ${file.parentFile.absolutePath}")
     }
   }
 
   if (file.exists() && !file.isFile) {
-    throw AssertionError("Not a file: ${file.absolutePath}")
+    error("Not a file: ${file.absolutePath}")
   }
   val outFile = File(file.parentFile, "${file.name}.temp")
   FileOutputStream(outFile).use { stream ->
@@ -65,10 +65,10 @@ fun copyOrReplace(fromFile: File, toFile: File) {
 fun editFile(path: String, block: (String) -> String) {
   val file = File(path)
   if (!file.exists()) {
-    throw IllegalStateException("File does not exist: ${file.absolutePath}")
+    error("File does not exist: ${file.absolutePath}")
   }
   if (!file.isFile) {
-    throw AssertionError("Not a file: ${file.absolutePath}")
+    error("Not a file: ${file.absolutePath}")
   }
 
   val tempFile = File(file.parentFile, "${file.name}.temp")
@@ -143,7 +143,7 @@ fun String.stripUnderscoresWithCamelCase (): String {
 
 fun String.normalizeArgbHex(): String {
   if (!this.startsWith("#"))
-    throw AssertionError("Invalid color: $this")
+    error("Invalid color: $this")
   val hex = this.substring(1)
   when (hex.length) {
     3 -> {
@@ -171,7 +171,7 @@ fun String.normalizeArgbHex(): String {
     8 -> {
       return hex.substring(6, 8).toLowerCase(Locale.US) + hex.substring(0, 6).toLowerCase(Locale.US)
     }
-    else -> throw AssertionError("Invalid color: $this")
+    else -> error("Invalid color: $this")
   }
 }
 
@@ -199,6 +199,6 @@ fun argb(alpha: Int, red: Int, green: Int, blue: Int): Int {
 
 fun String.unwrapDoubleQuotes(): String {
   if (!this.startsWith("\"") || !this.endsWith("\""))
-    throw AssertionError("Not wrapped: \"${this}\"")
+    error("Not wrapped: \"${this}\"")
   return this.substring(1, this.length - 1).replace("\\\"", "\"")
 }

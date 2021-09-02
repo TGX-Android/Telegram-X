@@ -158,9 +158,9 @@ public final class ChatListManager extends ListManager<ChatListManager.ChatEntry
 
   private void notifyChatChanged (long chatId, int cause) {
     runOnUiThreadIfReady(() -> {
-      int i = indexOfChat(chatId);
-      if (i != -1) {
-        notifyItemChanged(i, cause);
+      int index = indexOfChat(chatId);
+      if (index != -1) {
+        notifyItemChanged(index, cause);
       }
     });
   }

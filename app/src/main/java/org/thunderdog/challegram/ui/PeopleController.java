@@ -600,7 +600,7 @@ public class PeopleController extends RecyclerViewController<PeopleController.Ar
   }
 
   @Override
-  protected long getAsynchronousAnimationTimeout (boolean fastAnimation) {
+  public long getAsynchronousAnimationTimeout (boolean fastAnimation) {
     return 200l;
   }
 

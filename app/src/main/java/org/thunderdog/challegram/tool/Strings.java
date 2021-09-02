@@ -952,6 +952,12 @@ public class Strings {
     }
   }
 
+  public static CharSequence getTitleAndText (CharSequence title, CharSequence text) {
+    SpannableStringBuilder b = new SpannableStringBuilder(title).append("\n\n").append(text);
+    b.setSpan(Lang.boldCreator().onCreateSpan(b, 0, title.length(), 0, Text.needFakeBold(title)), 0, title.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    return b;
+  }
+
   public static SpannableStringBuilder buildHtml (String html) {
     final CharSequence sequence = Html.fromHtml(html);
     final SpannableStringBuilder b = new SpannableStringBuilder(sequence);

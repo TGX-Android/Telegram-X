@@ -32,6 +32,7 @@ import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -57,6 +58,16 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     public final TdApi.ChatMemberStatus myStatus;
     public final TdApi.ChatMember member;
     public final int mode;
+    public int forwardLimit;
+
+    public Args (long chatId, int userId, TdApi.ChatMemberStatus myStatus, TdApi.ChatMember member, int mode, int forwardLimit) {
+      this.chatId = chatId;
+      this.userId = userId;
+      this.myStatus = myStatus;
+      this.member = member;
+      this.mode = mode;
+      this.forwardLimit = forwardLimit;
+    }
 
     public Args (long chatId, int userId, boolean isRestrict, @NonNull TdApi.ChatMemberStatus myStatus, @Nullable TdApi.ChatMember member) {
       this.chatId = chatId;
@@ -72,6 +83,11 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       this.mode = MODE_CHAT_PERMISSIONS;
       this.myStatus = null;
       this.member = null;
+    }
+
+    public Args forwardLimit (int forwardLimit) {
+      this.forwardLimit = forwardLimit;
+      return this;
     }
   }
 
@@ -161,6 +177,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
   private ListItem customTitle;
 
   @Override
+  @SuppressWarnings("WrongConstant")
   public void onClick (View view) {
     ListItem item = (ListItem) view.getTag();
 
@@ -171,7 +188,18 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     switch (item.getViewType()) {
       case ListItem.TYPE_RADIO_SETTING_WITH_NEGATIVE_STATE:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER: {
-        toggleValueForId(item.getId());
+        @RightId final int rightId = item.getId();
+        boolean canEdit = hasAccessToEditRight(rightId);
+        if (canEdit) {
+          toggleValueForId(rightId);
+        } else {
+          CharSequence text = getHintForToggleUnavailability(rightId, item.getBoolValue());
+          if (text != null) {
+            context().tooltipManager()
+              .builder(((SettingView) view).getToggler())
+              .show(this, tdlib, R.drawable.baseline_info_24, text);
+          }
+        }
         break;
       }
       case ListItem.TYPE_CHAT_BETTER: {
@@ -180,6 +208,14 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       }
       default: {
         switch (item.getId()) {
+          case R.id.btn_transferOwnership: {
+            if (ChatId.isBasicGroup(getArgumentsStrict().chatId)) {
+              showConfirm(Lang.getMarkdownString(this, R.string.UpgradeChatPrompt), Lang.getString(R.string.Proceed), this::onTransferOwnershipClick);
+            } else {
+              onTransferOwnershipClick();
+            }
+            break;
+          }
           case R.id.btn_unblockUser: {
 
             final Runnable unblockRunnable = () -> {
@@ -347,7 +383,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     Runnable act = () -> {
       setDoneInProgress(true);
       setStackLocked(true);
-      tdlib.setChatMemberStatus(args.chatId, new TdApi.MessageSenderUser(args.userId), newStatus, args.member != null ? args.member.status : null, (success, error) -> tdlib.ui().post(() -> {
+      tdlib.setChatMemberStatus(args.chatId, new TdApi.MessageSenderUser(args.userId), newStatus, args.forwardLimit, args.member != null ? args.member.status : null, (success, error) -> tdlib.ui().post(() -> {
         if (!isDestroyed()) {
           setStackLocked(false);
           setDoneInProgress(false);
@@ -358,7 +394,10 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
             }
             onSaveCompleted();
           } else {
-            context.tooltipManager().builder(getDoneButton()).show(this, tdlib, R.drawable.baseline_error_24, error != null && TD.ERROR_USER_PRIVACY.equals(error.message) ? Lang.getString(R.string.errorPrivacyAddMember) : TD.toErrorString(error));
+            showError(error != null && TD.ERROR_USER_PRIVACY.equals(error.message) ?
+              Lang.getString(R.string.errorPrivacyAddMember) :
+              TD.toErrorString(error)
+            );
           }
         }
       }));
@@ -403,11 +442,14 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       }
 
       @Override
+      @SuppressWarnings("WrongConstant")
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         switch (item.getViewType()) {
           case ListItem.TYPE_RADIO_SETTING_WITH_NEGATIVE_STATE: {
             boolean canEdit = hasAccessToEditRight(item.getId());
-            view.setEnabled(canEdit);
+            view.setIgnoreEnabled(true);
+            view.setEnabled(canEdit || getHintForToggleUnavailability(item.getId(), item.getBoolValue()) != null);
+            view.setVisuallyEnabled(canEdit, isUpdate);
             view.getToggler().setRadioEnabled(item.getBoolValue(), isUpdate);
             view.getToggler().setShowLock(!canEdit);
             break;
@@ -415,7 +457,9 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER: {
             int id = item.getId();
             boolean canEdit = hasAccessToEditRight(item.getId());
-            view.setEnabled(canEdit);
+            view.setIgnoreEnabled(true);
+            view.setEnabled(canEdit || getHintForToggleUnavailability(item.getId(), item.getBoolValue()) != null);
+            view.setVisuallyEnabled(canEdit, isUpdate);
             view.getToggler().setUseNegativeState(true);
             view.getToggler().setRadioEnabled(item.getBoolValue(), isUpdate);
             view.getToggler().setShowLock(!canEdit);
@@ -425,6 +469,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           default: {
             switch (item.getId()) {
               case R.id.btn_date: {
+                view.setIgnoreEnabled(false);
                 view.setEnabled(hasAccessToEditRight(item.getId()));
                 boolean isDate;
                 if (targetRestrict.restrictedUntilDate == 0) {
@@ -463,8 +508,8 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     recyclerView.setAdapter(adapter);
     recyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
       @Override
-      public void getItemOffsets (Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
-        outRect.bottom = isDoneVisible() && parent.getChildAdapterPosition(view) == adapter.getItemCount() - 1 ? Screen.dp(56f) + Screen.dp(16f) * 2 : 0;
+      public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+        outRect.bottom = ((ListItem) view.getTag()).getViewType() == ListItem.TYPE_ZERO_VIEW ? Screen.dp(56f) + Screen.dp(16f) * 2 : 0;
       }
     });
 
@@ -475,6 +520,15 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
 
     if (ChatId.isBasicGroup(getArgumentsStrict().chatId)) {
       tdlib.cache().subscribeToGroupUpdates(ChatId.toBasicGroupId(getArgumentsStrict().chatId), this);
+    }
+  }
+
+  @Override
+  protected void setDoneVisible (boolean isVisible) {
+    if (isVisible != isDoneVisible()) {
+      super.setDoneVisible(isVisible);
+      recyclerView.invalidateItemDecorations();
+      adapter.notifyItemChanged(adapter.getItemCount() - 1);
     }
   }
 
@@ -522,6 +576,57 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       }
     }
     return true;
+  }
+
+  private CharSequence getHintForToggleUnavailability (@RightId int id, boolean currentValue) {
+    Args args = getArgumentsStrict();
+    if (args.mode == MODE_CHAT_PERMISSIONS) {
+      if (!tdlib.canRestrictMembers(args.chatId)) {
+        return null; // No need to explain
+      }
+      if (currentValue)
+        return null;
+      TdApi.Chat chat = tdlib.chatStrict(args.chatId);
+      switch (id) {
+        case R.id.right_changeChatInfo: {
+          if (!tdlib.canChangeInfo(chat)) {
+            return Lang.getMarkdownString(this, R.string.NoRightAllowChangeInfo);
+          }
+          if (tdlib.chatPublic(args.chatId)) {
+            return Lang.getMarkdownString(this, R.string.NoRightAllowChangeInfoPublic);
+          }
+          break;
+        }
+        case R.id.right_pinMessages: {
+          if (!tdlib.canPinMessages(chat)) {
+            return Lang.getMarkdownString(this, R.string.NoRightAllowPin);
+          }
+          if (tdlib.chatPublic(args.chatId)) {
+            return Lang.getMarkdownString(this, R.string.NoRightAllowPinPublic);
+          }
+          break;
+        }
+      }
+      return null;
+    }
+    if (args.mode == MODE_ADMIN_PROMOTION && !tdlib.cache().userBot(args.userId) && (
+        id == R.id.right_inviteUsers ||
+        id == R.id.right_changeChatInfo ||
+        id == R.id.right_pinMessages
+      ) && TD.checkRight(tdlib.chatPermissions(args.chatId), id) && currentValue) {
+      int promoteMode = args.member == null ? TD.PROMOTE_MODE_NEW : TD.canPromoteAdmin(args.myStatus, args.member.status);
+      if (promoteMode != TD.PROMOTE_MODE_NEW && promoteMode != TD.PROMOTE_MODE_EDIT)
+        return null;
+      switch (id) {
+        case R.id.right_inviteUsers:
+          return Lang.getMarkdownString(this, R.string.NoRightDisallowInvite);
+        case R.id.right_changeChatInfo:
+          return Lang.getMarkdownString(this, R.string.NoRightDisallowChangeInfo);
+        case R.id.right_pinMessages:
+          return Lang.getMarkdownString(this, R.string.NoRightDisallowPin);
+      }
+    }
+    return null;
   }
 
   private boolean hasAccessToEditRight (@RightId int id) {
@@ -620,16 +725,14 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     return false;
   }
 
-  private int getDescriptionString () {
+  @StringRes
+  private int getDescriptionStringRes () {
     Args args = getArgumentsStrict();
     if (args.mode == MODE_RESTRICTION) {
-      /*if (args.member != null && args.member.status.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR && !((TdApi.ChatMemberStatusRestricted) args.member.status).isMember) {
-        return args.isChannel ? R.string.MemberNotRestrictChannel : R.string.MemberNotRestrictGroup;
-      }*/
       if (tdlib.isChannel(args.chatId)) {
-        return canViewMessages ? R.string.MemberRestrictChannel : R.string.MemberBanChannel;
+        return canViewMessages ? R.string.RestrictXChannel : R.string.BanXChannel;
       } else {
-        return canViewMessages ? R.string.MemberRestrictGroup : R.string.MemberBanGroup;
+        return canViewMessages ? R.string.RestrictXGroup : R.string.BanXGroup;
       }
     } else {
       boolean value;
@@ -639,15 +742,150 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         int i = adapter.indexOfViewById(R.id.right_addNewAdmins);
         value = i != -1 && adapter.getItems().get(i).getBoolValue();
       }
-      return value ? R.string.AdminCanAssignAdmins : R.string.AdminCannotAssignAdmins;
+      return value ? R.string.XCanAssignAdmins : R.string.XCannotAssignAdmins;
     }
   }
 
   private void updateDescriptionHint () {
     int i = adapter.indexOfViewById(R.id.description);
     if (i != -1) {
-      adapter.getItems().get(i).setString(getDescriptionString());
-      adapter.updateValuedSettingByPosition(i);
+      adapter.getItems().get(i).setString(Lang.getStringBold(getDescriptionStringRes(), tdlib.cache().userName(getArgumentsStrict().userId)));
+      adapter.notifyItemChanged(i);
+    }
+  }
+
+  private void showError (CharSequence text) {
+    context.tooltipManager()
+      .builder(getDoneButton())
+      .show(EditRightsController.this,
+        tdlib,
+        R.drawable.baseline_error_24,
+        text
+      );
+  }
+
+  private void onTransferOwnershipClick () {
+    if (isDoneInProgress())
+      return;
+
+    long chatId = getArgumentsStrict().chatId;
+    int userId = getArgumentsStrict().userId;
+
+    boolean isChannel = tdlib.isChannel(chatId);
+    CharSequence text;
+
+    Lang.SpanCreator spanCreator = (target, argStart, argEnd, argIndex, needFakeBold) -> {
+      if (argIndex == 1) {
+        return Lang.newUserSpan(this, userId);
+      }
+      return null;
+    };
+
+    if (isChannel) {
+      text = Lang.getMarkdownString(this, R.string.TransferOwnershipAlertChannel, spanCreator, tdlib.chatTitle(chatId), tdlib.cache().userName(userId));
+    } else {
+      text = Lang.getMarkdownString(this, R.string.TransferOwnershipAlertGroup, spanCreator, tdlib.chatTitle(chatId), tdlib.cache().userName(userId));
+    }
+
+    setDoneInProgress(true);
+    
+    tdlib.ui().requestTransferOwnership(this, text, new TdlibUi.OwnershipTransferListener() {
+      @Override
+      public void onOwnershipTransferAbilityChecked (TdApi.Object result) {
+        setDoneInProgress(false);
+        if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+          showError(TD.toErrorString(result));
+        }
+      }
+
+      @Override
+      public void onOwnershipTransferConfirmed (String password) {
+        if (isDoneInProgress())
+          return;
+        setDoneInProgress(true);
+        Runnable act = () -> tdlib.transferOwnership(getArgumentsStrict().chatId, userId, password, (success, error) -> runOnUiThreadOptional(() -> {
+          if (success) {
+            setDoneInProgress(false);
+            navigateBack();
+          } else if (error != null) {
+            CharSequence errorMessage;
+            switch (error.message) {
+              case TD.ERROR_USER_CHANNELS_TOO_MUCH:
+                errorMessage = Lang.getString(R.string.TransferOwnershipTooMuch);
+                break;
+              case TD.ERROR_CHANNELS_ADMIN_PUBLIC_TOO_MUCH:
+                errorMessage = Lang.getString(R.string.TransferOwnershipTooMuchPublic);
+                break;
+              case TD.ERROR_CHANNELS_ADMIN_LOCATED_TOO_MUCH:
+                errorMessage = Lang.getString(R.string.TransferOwnershipTooMuchLocated);
+                break;
+              default:
+                errorMessage = TD.toErrorString(error);
+                break;
+            }
+            showError(errorMessage);
+          }
+        }));
+        if (ChatId.isBasicGroup(getArgumentsStrict().chatId)) {
+          tdlib.upgradeToSupergroup(getArgumentsStrict().chatId, (fromChatId, toChatId, error) -> {
+            if (toChatId != 0) {
+              getArgumentsStrict().chatId = toChatId;
+              act.run();
+            } else {
+              runOnUiThreadOptional(() -> {
+                setDoneInProgress(false);
+                if (error != null) {
+                  showError(TD.toErrorString(error));
+                }
+              });
+            }
+          });
+        } else {
+          act.run();
+        }
+      }
+    });
+  }
+
+  private boolean canTransferOwnership () {
+    if (targetAdmin == null || !targetAdmin.canBeEdited || getArgumentsStrict().mode != MODE_ADMIN_PROMOTION || getArgumentsStrict().myStatus.getConstructor() != TdApi.ChatMemberStatusCreator.CONSTRUCTOR)
+      return false;
+    boolean isChannel = tdlib.isChannel(getArgumentsStrict().chatId);
+    if (isChannel) {
+      return targetAdmin.canChangeInfo && targetAdmin.canPostMessages && targetAdmin.canEditMessages && targetAdmin.canDeleteMessages && targetAdmin.canInviteUsers && targetAdmin.canManageVoiceChats && targetAdmin.canPromoteMembers;
+    } else {
+      return targetAdmin.canChangeInfo && targetAdmin.canDeleteMessages && targetAdmin.canRestrictMembers && targetAdmin.canInviteUsers && targetAdmin.canPinMessages && targetAdmin.canManageVoiceChats && targetAdmin.canPromoteMembers;
+    }
+  }
+
+  private void checkTransferOwnership () {
+    boolean isChannel = tdlib.isChannel(getArgumentsStrict().chatId);
+    boolean canTransfer = canTransferOwnership();
+    if (canTransfer) {
+      int i = adapter.indexOfViewById(R.id.btn_dismissAdmin);
+      if (i != -1) {
+        adapter.getItems().add(i, new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        adapter.getItems().add(i, newTransferOwnershipItem(isChannel));
+        adapter.notifyItemRangeInserted(i, 2);
+      } else if (adapter.indexOfViewById(R.id.btn_transferOwnership) == -1) {
+        int startIndex = adapter.getItemCount() - 1;
+        adapter.getItems().addAll(startIndex, Arrays.asList(
+          new ListItem(ListItem.TYPE_SHADOW_TOP),
+          newTransferOwnershipItem(isChannel),
+          new ListItem(ListItem.TYPE_SHADOW_BOTTOM)
+        ));
+        adapter.notifyItemRangeInserted(startIndex, 3);
+      }
+    } else {
+      int i = adapter.indexOfViewById(R.id.btn_transferOwnership);
+      if (i != -1) {
+        ListItem nextItem = adapter.getItem(i + 2);
+        if (nextItem != null && nextItem.getId() == R.id.btn_dismissAdmin) {
+          adapter.removeRange(i, 2);
+        } else {
+          adapter.removeRange(i - 1, 3);
+        }
+      }
     }
   }
 
@@ -745,13 +983,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           }
         }
       } else {
-      /*boolean needHint;
-      if (args.isRestrict) {
-        needHint = args.member == null || TD.canRestrictMember(args.myStatus, args.member.status) != TD.RESTRICT_MODE_VIEW;
-      } else {
-        needHint = args.member == null || TD.canPromoteAdmin(args.myStatus, args.member.status) != TD.PROMOTE_MODE_VIEW;
-      }*/
-        items.add(new ListItem(ListItem.TYPE_DESCRIPTION, R.id.description, 0, getDescriptionString(), false));
+        items.add(new ListItem(ListItem.TYPE_DESCRIPTION, R.id.description, 0, Lang.getStringBold(getDescriptionStringRes(), tdlib.cache().userName(args.userId)), false));
       }
     }
 
@@ -759,7 +991,20 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       addEditTitleCells(items);
     }
 
-    if (canDismissAdmin()) {
+    boolean canTransferOwnership = canTransferOwnership();
+    boolean canDismissAdmin = canDismissAdmin();
+
+    if (canTransferOwnership && canDismissAdmin) {
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      items.add(newTransferOwnershipItem(isChannel));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_dismissAdmin, 0, R.string.DismissAdmin).setTextColorId(R.id.theme_color_textNegative));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    } else if (canTransferOwnership) {
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      items.add(newTransferOwnershipItem(isChannel));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    } else if (canDismissAdmin) {
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_dismissAdmin, 0, R.string.DismissAdmin).setTextColorId(R.id.theme_color_textNegative));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
@@ -771,7 +1016,13 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     }
 
+    items.add(new ListItem(ListItem.TYPE_ZERO_VIEW));
+
     adapter.setItems(items, false);
+  }
+
+  private static ListItem newTransferOwnershipItem (boolean isChannel) {
+    return new ListItem(ListItem.TYPE_SETTING, R.id.btn_transferOwnership, 0, isChannel ? R.string.TransferOwnershipChannel : R.string.TransferOwnershipGroup).setTextColorId(R.id.theme_color_textNegative);
   }
 
   private void addEditTitleCells (List<ListItem> items) {
@@ -972,18 +1223,16 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     }
     updateValues();
     checkDoneButton();
+    checkTransferOwnership();
   }
 
   private void checkDoneButton () {
     if (!isNewRuleSet()) {
-      boolean visible = hasAnyChanges();
-      if (isDoneVisible() != visible) {
-        setDoneVisible(visible);
-        recyclerView.invalidateItemDecorations();
-      }
+      setDoneVisible(hasAnyChanges());
     }
   }
 
+  @SuppressWarnings("WrongConstant")
   private void updateValues () {
     int i = 0;
     for (ListItem item : adapter.getItems()) {
