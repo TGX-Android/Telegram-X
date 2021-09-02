@@ -7,6 +7,7 @@ import android.os.Build;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.google.android.play.core.appupdate.AppUpdateInfo;
 import com.google.android.play.core.appupdate.AppUpdateManager;
@@ -41,12 +42,13 @@ import java.io.File;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
+import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.Td;
 
 public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListener, ConnectionListener {
   public interface Listener {
-    void onAppUpdateStateChanged (@State int state, @State int oldState);
+    void onAppUpdateStateChanged (@State int state, @State int oldState, boolean isApk);
     default void onAppUpdateDownloadProgress (long bytesDownloaded, long totalBytesToDownload) { }
   }
 
@@ -88,12 +90,14 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
   private boolean updateOffered;
 
   private long bytesDownloaded, totalBytesToDownload;
+  @Nullable
+  private String displayVersion;
   @FlowType
   private int flowType;
 
   private boolean forceTelegramChannelFlow;
   private Tdlib telegramChannelTdlib;
-  private TdApi.Document telegramChannelFile;
+  private Tdlib.UpdateFileInfo telegramChannelFile;
 
   @State
   private int state = State.NONE;
@@ -117,8 +121,18 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
     return state;
   }
 
+  @FlowType
+  public int flowType () {
+    return flowType;
+  }
+
   public long totalBytesToDownload () {
     return totalBytesToDownload;
+  }
+
+  @Nullable
+  public String displayVersion () {
+    return displayVersion;
   }
 
   public long bytesDownloaded () {
@@ -158,7 +172,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
       final int oldState = this.state;
       this.state = state;
       for (Listener listener : listeners) {
-        listener.onAppUpdateStateChanged(state, oldState);
+        listener.onAppUpdateStateChanged(state, oldState, flowType == FlowType.TELEGRAM_CHANNEL);
       }
     }
   }
@@ -170,14 +184,14 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
       this.googlePlayUpdateInfo = updateInfo;
       int installStatus = updateInfo.installStatus();
       if (installStatus == InstallStatus.DOWNLOADED) {
-        onUpdateReadyToInstall();
+        onUpdateAvailable(FlowType.GOOGLE_PLAY, updateInfo.bytesDownloaded(), updateInfo.totalBytesToDownload(), "#" + (int) (updateInfo.availableVersionCode() / 1000), true);
       } else if (installStatus == InstallStatus.FAILED) {
         onGooglePlayFlowError();
       } else {
         int updateAvailability = updateInfo.updateAvailability();
         switch (updateAvailability) {
           case UpdateAvailability.UPDATE_AVAILABLE: {
-            onUpdateAvailable(FlowType.GOOGLE_PLAY, updateInfo.bytesDownloaded(), updateInfo.totalBytesToDownload());
+            onUpdateAvailable(FlowType.GOOGLE_PLAY, updateInfo.bytesDownloaded(), updateInfo.totalBytesToDownload(), "#" + (int) (updateInfo.availableVersionCode() / 1000), false);
             break;
           }
           case UpdateAvailability.UNKNOWN: {
@@ -186,7 +200,11 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
           }
           case UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS:
           case UpdateAvailability.UPDATE_NOT_AVAILABLE: {
-            onUpdateUnavailable();
+            if (U.isAppSideLoaded()) {
+              onGooglePlayFlowError();
+            } else {
+              onUpdateUnavailable();
+            }
             break;
           }
         }
@@ -257,10 +275,11 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
       }
       onGooglePlayFlowError();
     } else if (installStatus == InstallStatus.DOWNLOADING) {
+      onUpdateDownloading();
       onUpdateDownloadProgress(state.bytesDownloaded(), state.totalBytesToDownload());
     } else if (installStatus == InstallStatus.DOWNLOADED) {
       googlePlayUpdateManager.unregisterListener(this);
-      onUpdateReadyToInstall();
+      onUpdateAvailable(FlowType.GOOGLE_PLAY, state.bytesDownloaded(), state.totalBytesToDownload(), displayVersion, true);
     }
   }
 
@@ -274,12 +293,14 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
       if (updateFile != null) {
         this.telegramChannelTdlib = tdlib;
         this.telegramChannelFile = updateFile;
-        tdlib.listeners().addFileListener(updateFile.document.id, this);
-        if (TD.isFileLoaded(updateFile.document)) {
-          onUpdateReadyToInstall();
-        } else {
-          onUpdateAvailable(FlowType.TELEGRAM_CHANNEL, updateFile.document.local.downloadedSize, updateFile.document.expectedSize);
-        }
+        TdApi.File file = updateFile.document.document;
+        tdlib.listeners().addFileListener(file.id, this);
+        onUpdateAvailable(FlowType.TELEGRAM_CHANNEL,
+          file.local.downloadedSize,
+          file.expectedSize,
+          updateFile.version,
+          TD.isFileLoadedAndExists(file)
+        );
       } else {
         onUpdateUnavailable();
       }
@@ -291,7 +312,17 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
       case Settings.AUTO_UPDATE_MODE_PROMPT: {
         ViewController<?> c = context.navigation().getCurrentStackItem();
         if (c != null && c.isFocused()) {
-          c.showOptions(new ViewController.Options.Builder().info(Lang.getMarkdownString(c, R.string.AppUpdateAvailablePrompt, Lang.boldCreator(), Strings.buildSize(telegramChannelFile.document.expectedSize))).item(new ViewController.OptionItem(R.id.btn_update, Lang.getString(R.string.AutoUpdatePrompt), ViewController.OPTION_COLOR_BLUE, R.drawable.baseline_system_update_24)).cancelItem().build(), (optionItemView, id) -> {
+          final long bytesToDownload = totalBytesToDownload() - bytesDownloaded();
+          final String displayVersion = displayVersion();
+          c.showOptions(new ViewController.Options.Builder()
+            .info(Lang.getMarkdownString(c,
+              !StringUtils.isEmpty(displayVersion) ? R.string.AppUpdateAvailableVersionPrompt : R.string.AppUpdateAvailablePrompt,
+              (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex != 1 ? Lang.boldCreator().onCreateSpan(target, argStart, argEnd, argIndex, needFakeBold) : null,
+              Strings.buildSize(bytesToDownload), displayVersion
+            ))
+            .item(new ViewController.OptionItem(R.id.btn_update, Lang.getString(R.string.DownloadUpdate), ViewController.OPTION_COLOR_BLUE, R.drawable.baseline_system_update_24))
+            .cancelItem()
+            .build(), (optionItemView, id) -> {
             if (id == R.id.btn_update) {
               downloadUpdate();
             }
@@ -332,11 +363,13 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
   @Override
   public void onUpdateFile (TdApi.UpdateFile updateFile) {
     telegramChannelTdlib.ui().post(() -> {
-      if (updateFile.file.id == telegramChannelFile.document.id) {
-        Td.copyTo(updateFile.file, telegramChannelFile.document);
-        if (TD.isFileLoaded(updateFile.file)) {
-          onUpdateReadyToInstall();
+      TdApi.File currentFile = telegramChannelFile.document.document;
+      if (updateFile.file.id == currentFile.id) {
+        Td.copyTo(updateFile.file, currentFile);
+        if (TD.isFileLoadedAndExists(updateFile.file)) {
+          onUpdateAvailable(FlowType.TELEGRAM_CHANNEL, updateFile.file.local.downloadedSize, updateFile.file.expectedSize, telegramChannelFile.version, true);
         } else if (TD.isFileLoading(updateFile.file)) {
+          onUpdateDownloading();
           onUpdateDownloadProgress(updateFile.file.local.downloadedSize, updateFile.file.expectedSize);
         } else {
           onUpdateDownloadCanceled();
@@ -347,12 +380,17 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
     });
   }
 
-  private void onUpdateAvailable (@FlowType int flowType, long bytesDownloaded, long totalBytesToDownload) {
+  private void onUpdateAvailable (@FlowType int flowType, long bytesDownloaded, long totalBytesToDownload, @Nullable String displayVersion, boolean readyToInstall) {
     this.flowType = flowType;
     this.bytesDownloaded = bytesDownloaded;
     this.totalBytesToDownload = totalBytesToDownload;
-    setState(State.AVAILABLE);
-    offerUpdate();
+    this.displayVersion = displayVersion;
+    if (readyToInstall) {
+      setState(State.READY_TO_INSTALL);
+    } else {
+      setState(State.AVAILABLE);
+      offerUpdate();
+    }
   }
 
   public void offerUpdate () {
@@ -380,7 +418,8 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
         break;
       }
       case FlowType.TELEGRAM_CHANNEL: {
-        telegramChannelTdlib.files().downloadFile(telegramChannelFile.document);
+        // TODO add tdlib reference & show progress
+        telegramChannelTdlib.files().downloadFile(telegramChannelFile.document.document);
         break;
       }
     }
@@ -394,10 +433,6 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
     }
   }
 
-  private void onUpdateReadyToInstall () {
-    setState(State.READY_TO_INSTALL);
-  }
-
   public void installUpdate () {
     if (state != State.READY_TO_INSTALL) {
       return;
@@ -405,7 +440,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
     switch (flowType) {
       case FlowType.TELEGRAM_CHANNEL: {
         // TODO guide on how to allow installing APKs
-        UI.openFile(new TdlibContext(context, telegramChannelTdlib), telegramChannelFile.fileName, new File(telegramChannelFile.document.local.path), telegramChannelFile.mimeType, 0);
+        UI.openFile(new TdlibContext(context, telegramChannelTdlib), telegramChannelFile.document.fileName, new File(telegramChannelFile.document.document.local.path), telegramChannelFile.document.mimeType, 0);
         break;
       }
       case FlowType.GOOGLE_PLAY: {
@@ -416,8 +451,14 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
     }
   }
 
+  private void onUpdateDownloading () {
+    if (state != State.AVAILABLE)
+      return;
+    setState(State.DOWNLOADING);
+  }
+
   private void onUpdateDownloadCanceled () {
-    if (state != State.DOWNLOADING)
+    if (state != State.DOWNLOADING && state != State.READY_TO_INSTALL)
       return;
     setState(State.AVAILABLE);
   }

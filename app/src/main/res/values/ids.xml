@@ -474,6 +474,7 @@
   <item type="id" name="btn_resetContacts" />
   <item type="id" name="btn_suggestContacts" />
   <item type="id" name="btn_dismissAdmin" />
+  <item type="id" name="btn_transferOwnership" />
   <item type="id" name="btn_everybody" />
   <item type="id" name="btn_blockUser" />
   <item type="id" name="btn_unblockUser" />

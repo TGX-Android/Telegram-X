@@ -29,7 +29,6 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceMap;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
-import me.vkryl.td.TdConstants;
 
 /**
  * Date: 05/11/2016
@@ -621,7 +620,7 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
   }
 
   public boolean isOnline (int userId) {
-    if (tdlib.isSelfUserId(userId) || userId == TdConstants.TELEGRAM_ACCOUNT_ID)
+    if (tdlib.isSelfUserId(userId) || tdlib.isServiceNotificationsChat(ChatId.fromUserId(userId)))
       return false;
     TdApi.User user = tdlib.cache().user(userId);
     return user != null && user.type.getConstructor() == TdApi.UserTypeRegular.CONSTRUCTOR && user.status.getConstructor() == TdApi.UserStatusOnline.CONSTRUCTOR;
@@ -631,8 +630,12 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
     if (allowMyself && tdlib.isSelfUserId(userId)) {
       return Lang.lowercase(Lang.getString(R.string.ChatWithYourself));
     }
-    if (userId == TdConstants.TELEGRAM_ACCOUNT_ID) {
+    final long chatId = ChatId.fromUserId(userId);
+    if (tdlib.isServiceNotificationsChat(chatId)) {
       return Lang.getString(R.string.ServiceNotifications);
+    }
+    if (tdlib.isRepliesChat(chatId)) {
+      return Lang.getString(R.string.ReplyNotifications);
     }
     if (user == null) {
       return Lang.getString(R.string.UserUnavailable);

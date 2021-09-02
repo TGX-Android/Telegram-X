@@ -733,7 +733,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     return false;
   }
 
-  protected long getAsynchronousAnimationTimeout (boolean fastAnimation) {
+  public long getAsynchronousAnimationTimeout (boolean fastAnimation) {
     return fastAnimation ? 2000l : 500l;
   }
 

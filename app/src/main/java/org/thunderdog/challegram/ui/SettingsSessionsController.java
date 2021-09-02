@@ -10,7 +10,6 @@ import androidx.collection.LongSparseArray;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
@@ -373,8 +372,8 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
   }
 
   @Override
-  protected long getAsynchronousAnimationTimeout (boolean fastAnimation) {
-    return 400L;
+  public long getAsynchronousAnimationTimeout (boolean fastAnimation) {
+    return 400l;
   }
 
   private LongSparseArray<TdApi.Session> terminatingSessions;

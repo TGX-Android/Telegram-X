@@ -679,13 +679,13 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     return scrollBy < 0;
   }
 
-  public void scrollToStart () {
+  public void scrollToStart (boolean force) {
     if (inSpecialMode()) {
       stopScroll();
       scrollToBottom(false);
       return;
     }
-    if (hasReturnMessage()) {
+    if (hasReturnMessage() && !force) {
       highlightMessage(new MessageId(highlightMessageId.getChatId(), returnToMessageIds[returnToMessageIds.length - 1]),
         HIGHLIGHT_MODE_NORMAL,
         returnToMessageIds.length == 1 ? null : ArrayUtils.removeElement(returnToMessageIds, returnToMessageIds.length - 1),

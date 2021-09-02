@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 import androidx.collection.SparseArrayCompat;
@@ -296,20 +297,30 @@ public class SortedUsersAdapter extends RecyclerView.Adapter<SortedUsersAdapter.
     return -1;
   }
 
+  public void updateChatMember (TdApi.ChatMember member) {
+    if (member.memberId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
+      int i = indexOfUser(((TdApi.MessageSenderUser) member.memberId).userId);
+      if (i != -1) {
+        users.set(i, new UserItem(context.tdlib(), member));
+        notifyItemChanged(i);
+      }
+    }
+  }
+
   public @Nullable TdApi.ChatMember getChatMember (int userId) {
     int i = indexOfUser(userId);
     return i != -1 ? users.get(i).member : null;
   }
 
-  private ArrayList<RecyclerView> recyclerViews = new ArrayList<>();
+  private final ArrayList<RecyclerView> recyclerViews = new ArrayList<>();
 
   @Override
-  public void onAttachedToRecyclerView (RecyclerView recyclerView) {
+  public void onAttachedToRecyclerView (@NonNull RecyclerView recyclerView) {
     recyclerViews.add(recyclerView);
   }
 
   @Override
-  public void onDetachedFromRecyclerView (RecyclerView recyclerView) {
+  public void onDetachedFromRecyclerView (@NonNull RecyclerView recyclerView) {
     recyclerViews.remove(recyclerView);
   }
 
