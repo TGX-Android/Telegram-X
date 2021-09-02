@@ -98,24 +98,27 @@ public class TdlibAppShortcutManager {
     }
 
     private static String getSettingKey (long accountId) {
-        return "sysint_" + accountId;
+        return "integration_" + accountId;
     }
 
     // Account ID is not needed to be hidden because it is just an index
     // However, user IDs should be hidden inside the DB
     private static void saveIdMap (TdApi.User[] users, long accountId) {
-        JSONArray idMap = new JSONArray();
-        for (TdApi.User user : users) {
-            idMap.put((long) user.id);
+        long[] usersMap = new long[users.length];
+        for (int i = 0; i < users.length; i++) {
+            usersMap[i] = users[i].id;
         }
-        Settings.instance().putString(getSettingKey(accountId), idMap.toString());
+        Settings.instance().pmc().putLongArray(getSettingKey(accountId), usersMap);
     }
 
     public static long toTelegramId (long accountId, long id) {
         try {
-            JSONArray idMap = new JSONArray(Settings.instance().getString(getSettingKey(accountId), "[]"));
-            Log.d("%s | %s", idMap.toString(), id);
-            return idMap.getLong((int) id);
+            long[] idMap = Settings.instance().pmc().getLongArray(getSettingKey(accountId));
+            if (idMap != null) {
+                return idMap[(int) id];
+            } else {
+                return 0;
+            }
         } catch (Exception e) {
             Log.e(e);
             return 0;
