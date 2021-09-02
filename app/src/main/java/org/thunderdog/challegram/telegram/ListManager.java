@@ -310,6 +310,7 @@ public abstract class ListManager<T> implements Destroyable, Iterable<T> {
   }
 
   protected final void notifyItemChanged (int index, int cause) {
+    if (index == -1) return;
     T item = items.get(index);
     for (int i = changeListeners.size() - 1; i >= 0; i--) {
       changeListeners.get(i).onItemChanged(this, item, index, cause);
