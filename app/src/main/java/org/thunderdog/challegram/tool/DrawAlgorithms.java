@@ -1141,14 +1141,16 @@ public class DrawAlgorithms {
       MCG_CENTERS_X_END = MCG_CENTERS_X;
       MCG_CENTERS_Y_END = MCG_CENTERS_Y;
 
-      for (int i = 0; i < freeformColors.length; i++) {
-        this.freeformGradients[i] = createGradient(
-                freeformWidth * MCG_CENTERS_X_CURRENT[i],
-                freeformHeight * MCG_CENTERS_Y_CURRENT[i],
-                this.freeformRadius,
-                1f,
-                freeformColors[i]
-        );
+      if (freeformColors != null) {
+        for (int i = 0; i < freeformColors.length; i++) {
+          this.freeformGradients[i] = createGradient(
+                  freeformWidth * MCG_CENTERS_X_CURRENT[i],
+                  freeformHeight * MCG_CENTERS_Y_CURRENT[i],
+                  this.freeformRadius,
+                  1f,
+                  freeformColors[i]
+          );
+        }
       }
     }
 
