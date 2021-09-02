@@ -6,6 +6,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
@@ -128,6 +129,29 @@ public class SettingsWebsitesController extends RecyclerViewController<SettingsP
 
     if (websites != null) {
       buildCells();
+    }
+
+    if (getArguments() == null) {
+      tdlib.client().send(new TdApi.GetConnectedWebsites(), object -> tdlib.ui().post(() -> {
+        if (!isDestroyed()) {
+          switch (object.getConstructor()) {
+            case TdApi.ConnectedWebsites.CONSTRUCTOR: {
+              TdApi.ConnectedWebsite[] websites = ((TdApi.ConnectedWebsites) object).websites;
+              setWebsites(websites);
+              buildCells();
+              break;
+            }
+            case TdApi.Error.CONSTRUCTOR: {
+              UI.showError(object);
+              break;
+            }
+            default: {
+              Log.unexpectedTdlibResponse(object, TdApi.GetConnectedWebsites.class, TdApi.ConnectedWebsites.class);
+              break;
+            }
+          }
+        }
+      }));
     }
 
     recyclerView.setAdapter(adapter);

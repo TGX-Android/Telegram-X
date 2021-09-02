@@ -381,18 +381,29 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
             break;
           case R.id.btn_makePrivate:
           case R.id.btn_makePublic: {
-            TdApi.ChatMemberStatus newStatus = Td.copyOf(content.getMember().status);
-            switch (newStatus.getConstructor()) {
-              case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
-                ((TdApi.ChatMemberStatusCreator) newStatus).isAnonymous = id == R.id.btn_makePrivate;
-                break;
-              case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-                ((TdApi.ChatMemberStatusAdministrator) newStatus).isAnonymous = id == R.id.btn_makePrivate;
-                break;
-              default:
-                return true;
+            Runnable act = () -> {
+              TdApi.ChatMemberStatus newStatus = Td.copyOf(content.getMember().status);
+
+              switch (newStatus.getConstructor()) {
+                case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
+                  ((TdApi.ChatMemberStatusCreator) newStatus).isAnonymous = id == R.id.btn_makePrivate;
+                  break;
+                case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
+                  ((TdApi.ChatMemberStatusAdministrator) newStatus).isAnonymous = id == R.id.btn_makePrivate;
+                  break;
+                default:
+                  return;
+              }
+
+              tdlib.setChatMemberStatus(chatId, content.getSender(), newStatus, content.getMember().status, null);
+            };
+
+            if (ChatId.isBasicGroup(chatId)) {
+              showConfirm(Lang.getMarkdownString(this, R.string.UpgradeChatPrompt), Lang.getString(R.string.Proceed), act);
+            } else {
+              act.run();
             }
-            tdlib.setChatMemberStatus(chatId, content.getSender(), newStatus, content.getMember().status, null);
+
             break;
           }
           case R.id.btn_editRights:

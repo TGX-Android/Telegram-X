@@ -73,7 +73,6 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   public static final int TYPE_INFO_MULTILINE_NAME = 0x06;
   public static final int TYPE_INFO_COMPACT = 0x07;
 
-  private static final int FLAG_ANIMATING_COLOR = 1 << 2;
   private static final int FLAG_CENTER_ICON = 1 << 3;
   private static final int FLAG_DATA_SUBTITLE = 1 << 5;
   private static final int FLAG_ATTACHED = 1 << 6;
@@ -565,9 +564,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     pIconLeft = Screen.dp(18f);
   }
 
-  private float colorFactor;
-  private FactorAnimator colorAnimator;
-  private static final int ANIMATOR_ID_COLOR = 0;
+  private final BoolAnimator isEnabled = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 168l, true);
 
   public void setEnabledAnimated (boolean enabled) {
     setEnabledAnimated(enabled, false, true);
@@ -575,49 +572,20 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
 
   public void setEnabledAnimated (boolean enabled, boolean ignoreRadio, boolean animate) {
     if (isEnabled() != enabled) {
-      if (animate) {
-        flags |= FLAG_ANIMATING_COLOR;
-      }
-
       super.setEnabled(enabled);
       if (type == TYPE_RADIO && !ignoreRadio) {
         togglerView.setDisabled(!enabled, animate);
       }
-      if (colorAnimator == null) {
-        colorAnimator = new FactorAnimator(ANIMATOR_ID_COLOR, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 168l, colorFactor);
-      }
-      float toFactor = enabled ? 1f : 0f;
-      if (animate) {
-        colorAnimator.animateTo(toFactor);
-      } else {
-        colorAnimator.forceFactor(toFactor);
-        setColorFactor(toFactor);
-      }
     }
+    isEnabled.setValue(enabled, animate);
   }
 
   @Override
   public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
     switch (id) {
-      case ANIMATOR_ID_COLOR: {
-        setColorFactor(factor);
-        break;
-      }
       case ANIMATOR_ID_PROGRESS: {
         progressComponent.setAlpha(factor);
         invalidate();
-        break;
-      }
-    }
-  }
-
-  @Override
-  public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
-    switch (id) {
-      case ANIMATOR_ID_COLOR: {
-        if (finalFactor == 0f || finalFactor == 1f) {
-          flags &= ~FLAG_ANIMATING_COLOR;
-        }
         break;
       }
     }
@@ -628,13 +596,8 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   public void setIgnoreEnabled (boolean ignoreEnabled) {
     if (this.ignoreEnabled != ignoreEnabled) {
       this.ignoreEnabled = ignoreEnabled;
-
       if (!isEnabled()) {
-        if (colorAnimator != null) {
-          colorAnimator.forceFactor(ignoreEnabled ? 1f : 0f, true);
-        }
-        this.colorFactor = ignoreEnabled ? 1f : 0f;
-        invalidate();
+        isEnabled.setValue(ignoreEnabled, false);
       }
     }
   }
@@ -653,20 +616,17 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     if (ignoreEnabled) {
       return;
     }
-    if (colorAnimator != null) {
-      colorAnimator.forceFactor(enabled ? 1f : 0f, true);
-    }
-    this.colorFactor = enabled ? 1f : 0f;
+    isEnabled.setValue(enabled, true);
     if (type == TYPE_RADIO) {
       togglerView.setDisabled(!enabled, false);
     }
   }
 
-  public void setColorFactor (float factor) {
-    if (this.colorFactor != factor) {
-      this.colorFactor = factor;
-      invalidate();
+  public void setVisuallyEnabled (boolean enabled, boolean animated) {
+    if (!ignoreEnabled) {
+      throw new IllegalStateException();
     }
+    isEnabled.setValue(enabled, animated);
   }
 
   private static void drawText (Canvas c, CharSequence text, Layout layout, float x, float y, Paint paint, boolean rtl, int viewWidth, float textWidth) {
@@ -731,11 +691,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
 
   @Override
   public int defaultTextColor () {
-    if ((flags & FLAG_ANIMATING_COLOR) != 0) {
-      return ColorUtils.fromToArgb(Theme.textDecentColor(), Theme.getColor(textColorId), colorFactor);
-    } else {
-      return isEnabled() || ignoreEnabled ? Theme.getColor(textColorId) : Theme.textDecentColor();
-    }
+    return ColorUtils.fromToArgb(Theme.textDecentColor(), Theme.getColor(textColorId), isEnabled.getFloatValue());
   }
 
   @Override
@@ -782,12 +738,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
       c.drawCircle(rtl ? width - pDataLeft - radius : pDataLeft + radius, pDataTop + Screen.dp(11f) + radius, radius, Paints.fillingPaint(Theme.getColor(colorDataId)));
     }
 
-    final int dataColor;
-    if ((flags & FLAG_ANIMATING_COLOR) != 0) {
-      dataColor = ColorUtils.fromToArgb(Theme.textDecentColor(), Theme.getColor(textColorId), colorFactor);
-    } else {
-      dataColor = isEnabled() || ignoreEnabled ? Theme.getColor(textColorId) : Theme.textDecentColor();
-    }
+    final int dataColor = defaultTextColor();
 
     if (type == TYPE_INFO || type == TYPE_INFO_COMPACT || (type == TYPE_INFO_MULTILINE && text == null) || (type == TYPE_INFO_MULTILINE_NAME && wrapper == null)) {
       if (displayItemName != null) {
