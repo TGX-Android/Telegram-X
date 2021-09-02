@@ -1245,6 +1245,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
     if (!message.isOutgoing()) {
       controller.checkSwitchPm(message.getMessage());
+    } else {
+      controller.updateFreeform();
     }
     if (!loader.canLoadBottom()) {
       boolean atBottom = manager.findFirstVisibleItemPosition() == 0;
