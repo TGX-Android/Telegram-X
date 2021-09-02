@@ -58,23 +58,32 @@ public abstract class UserListManager extends ListManager<Integer> implements Td
 
   @Override
   public void onUserUpdated (TdApi.User user) {
-    runWithUser(user.id, () ->
-      notifyItemChanged(indexOfItem(user.id), REASON_USER_CHANGED)
-    );
+    runWithUser(user.id, () -> {
+      int index = indexOfItem(user.id);
+      if (index != -1) {
+        notifyItemChanged(index, REASON_USER_CHANGED);
+      }
+    });
   }
 
   @Override
   public void onUserFullUpdated (int userId, TdApi.UserFullInfo userFull) {
-    runWithUser(userId, () ->
-      notifyItemChanged(indexOfItem(userId), REASON_USER_FULL_CHANGED)
-    );
+    runWithUser(userId, () -> {
+      int index = indexOfItem(userId);
+      if (index != -1) {
+        notifyItemChanged(index, REASON_USER_FULL_CHANGED);
+      }
+    });
   }
 
   @Override
   public void onUserStatusChanged(int userId, TdApi.UserStatus status, boolean uiOnly) {
-    runWithUser(userId, () ->
-      notifyItemChanged(indexOfItem(userId), REASON_STATUS_CHANGED)
-    );
+    runWithUser(userId, () -> {
+      int index = indexOfItem(userId);
+      if (index != -1) {
+        notifyItemChanged(index, REASON_STATUS_CHANGED);
+      }
+    });
   }
 
   @Override
