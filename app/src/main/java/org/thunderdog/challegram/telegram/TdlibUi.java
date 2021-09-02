@@ -5290,23 +5290,36 @@ public class TdlibUi extends Handler {
           TdApi.BankCardInfo bankCardInfo = (TdApi.BankCardInfo) result;
           tdlib.ui().post(() -> {
             ViewController<?> c = context instanceof ViewController<?> ? (ViewController<?>) context : UI.getCurrentStackItem();
-            if (c != null && !c.isDestroyed() && bankCardInfo.actions.length > 0) {
-              IntList ids = new IntList(bankCardInfo.actions.length);
-              StringList strings = new StringList(bankCardInfo.actions.length);
-              for (TdApi.BankCardActionOpenUrl openUrl : bankCardInfo.actions) {
-                ids.append(R.id.btn_openLink);
-                strings.append(openUrl.text);
+            boolean hasAnyActions = bankCardInfo.actions.length > 0;
+            if (c != null && !c.isDestroyed()) {
+              IntList ids = new IntList(hasAnyActions ? 1 : bankCardInfo.actions.length);
+              StringList strings = new StringList(hasAnyActions ? 1 : bankCardInfo.actions.length);
+              int[] icons = null;
+
+              if (hasAnyActions) {
+                for (TdApi.BankCardActionOpenUrl openUrl : bankCardInfo.actions) {
+                  ids.append(R.id.btn_openLink);
+                  strings.append(openUrl.text);
+                }
+              } else {
+                ids.append(R.id.btn_cancel);
+                strings.append(R.string.Cancel);
+                icons = new int[] { R.drawable.baseline_cancel_24 };
               }
-              c.showOptions(bankCardInfo.title, ids.get(), strings.get(), null, null, new OptionDelegate() {
+
+              c.showOptions(bankCardInfo.title, ids.get(), strings.get(), null, icons, new OptionDelegate() {
                 @Override
                 public boolean onOptionItemPressed (View optionItemView, int id) {
-                  Intents.openUri((String) optionItemView.getTag());
+                  if (id == R.id.btn_openLink) {
+                    Intents.openUri((String) optionItemView.getTag());
+                  }
+
                   return true;
                 }
 
                 @Override
                 public Object getTagForItem (int position) {
-                  return bankCardInfo.actions[position].url;
+                  return hasAnyActions ? bankCardInfo.actions[position].url : null;
                 }
               });
             }
