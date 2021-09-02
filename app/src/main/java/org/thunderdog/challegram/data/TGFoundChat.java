@@ -1,5 +1,7 @@
 package org.thunderdog.challegram.data;
 
+import android.text.SpannableStringBuilder;
+
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -170,7 +172,11 @@ public class TGFoundChat {
     if (!isGlobal)
       return;
     String username = tdlib.chatUsername(chat.id);
+
+    SpannableStringBuilder fullUsername = new SpannableStringBuilder();
     StringBuilder rawUsername = new StringBuilder();
+    StringBuilder additionalInfo = new StringBuilder();
+
     if (!StringUtils.isEmpty(username)) {
       if ((flags & FLAG_USE_TME) != 0) {
         rawUsername.append('/');
@@ -190,12 +196,13 @@ public class TGFoundChat {
         }
       }
       if (memberCount != 0) {
-        if (rawUsername.length() > 0)
-          rawUsername.append(", ");
-        rawUsername.append(Lang.plural(TD.isChannel(chat.type) ? Config.CHANNEL_MEMBER_STRING : R.string.xMembers, memberCount));
+        additionalInfo.append(", ").append(Lang.plural(TD.isChannel(chat.type) ? Config.CHANNEL_MEMBER_STRING : R.string.xMembers, memberCount));
       }
     }
-    this.username = Strings.highlightWords(rawUsername.toString(), highlight, 1, null);
+
+    fullUsername.append(Strings.highlightWords(rawUsername.toString(), highlight, 1, null));
+    fullUsername.append(additionalInfo.toString());
+    this.username = fullUsername;
   }
 
   private void setUser (TdApi.User user, String highlight) {

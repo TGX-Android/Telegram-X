@@ -490,6 +490,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private long callConnectTimeoutMs = 30000;
   private long callPacketTimeoutMs = 10000;
 
+  private long repliesBotChatId = TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID;
+  private long telegramServiceNotificationsChatId = TdConstants.TELEGRAM_ACCOUNT_ID;
+
   private final Map<String, TdlibCounter> counters = new HashMap<>();
   private final TdlibBadgeCounter tempCounter = new TdlibBadgeCounter();
   private final TdlibBadgeCounter unreadCounter = new TdlibBadgeCounter();
@@ -1345,6 +1348,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       if (!updates.isEmpty()) {
         incrementReferenceCount(REFERENCE_TYPE_JOB); // starting task
         functions.add(new TdApi.CreatePrivateChat(TdConstants.TELEGRAM_ACCOUNT_ID, false));
+        if (telegramServiceNotificationsChatId != 0 && telegramServiceNotificationsChatId != TdConstants.TELEGRAM_ACCOUNT_ID) {
+          functions.add(new TdApi.GetChat(telegramServiceNotificationsChatId));
+        }
         AtomicInteger remainingFunctions = new AtomicInteger(functions.size());
         Client.ResultHandler handler = object -> {
           if (object.getConstructor() == TdApi.Error.CONSTRUCTOR) {
@@ -1352,7 +1358,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           }
           if (remainingFunctions.decrementAndGet() == 0) {
             AtomicInteger remainingUpdates = new AtomicInteger(updates.size());
-            long chatId = ChatId.fromUserId(TdConstants.TELEGRAM_ACCOUNT_ID);
+            long chatId = serviceNotificationsChatId();
             Client.ResultHandler localMessageHandler = message -> {
               if (message.getConstructor() == TdApi.Error.CONSTRUCTOR) {
                 Log.e("Received error while sending change log: %s", TD.toErrorString(object));
@@ -2670,12 +2676,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public boolean canReportChatSpam (TdApi.Chat chat) {
-    if (chat != null && chat.canBeReported) {
-      // FIXME TDLib
-      TdApi.User user = chatUser(chat);
-      return user == null || (!user.isSupport && user.id != TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID);
-    }
-    return false;
+    return chat != null && chat.canBeReported;
   }
 
   public String chatTitle (TdApi.Chat chat) {
@@ -2927,7 +2928,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       for (TdApi.ChatPosition position : positions) {
         switch (position.list.getConstructor()) {
           case TdApi.ChatListMain.CONSTRUCTOR:
-            return !isSelfChat(chat.id) && ChatId.toUserId(chat.id) != TdConstants.TELEGRAM_ACCOUNT_ID;
+            return !isSelfChat(chat.id) && !isServiceNotificationsChat(chat.id);
           case TdApi.ChatListArchive.CONSTRUCTOR:
             return true; // Already archived
           case TdApi.ChatListFilter.CONSTRUCTOR:
@@ -3287,6 +3288,22 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return ChatId.isUserChat(chatId);
   }
 
+  public boolean isRepliesChat (long chatId) {
+    return (repliesBotChatId != 0 && repliesBotChatId == chatId) || (chatId == ChatId.fromUserId(TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID));
+  }
+
+  public boolean isServiceNotificationsChat (long chatId) {
+    return (telegramServiceNotificationsChatId != 0 && telegramServiceNotificationsChatId == chatId) || (chatId == ChatId.fromUserId(TdConstants.TELEGRAM_ACCOUNT_ID));
+  }
+
+  public long serviceNotificationsChatId () {
+    return telegramServiceNotificationsChatId != 0 ? telegramServiceNotificationsChatId : ChatId.fromUserId(TdConstants.TELEGRAM_ACCOUNT_ID);
+  }
+
+  public boolean isBotFatherChat (long chatId) {
+    return chatId == ChatId.fromUserId(TdConstants.TELEGRAM_BOT_FATHER_ACCOUNT_ID) || TdConstants.TELEGRAM_BOT_FATHER_USERNAME.equals(chatUsername(chatId));
+  }
+
   public boolean suggestStopBot (long chatId) {
     return suggestStopBot(chat(chatId));
   }
@@ -3418,6 +3435,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private final Object chatOpenMutex = new Object();
 
   public void openChat (long chatId, @Nullable ViewController<?> controller) {
+    openChat(chatId, controller, null);
+  }
+
+  public void openChat (long chatId, @Nullable ViewController<?> controller, @Nullable Runnable after) {
     synchronized (chatOpenMutex) {
       ArrayList<ViewController<?>> controllers = openedChats.get(chatId);
       if (controllers == null) {
@@ -3432,7 +3453,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
           Log.v(Log.TAG_MESSAGES_LOADER, "openChat, chatId=%d", chatId);
         }
-        client().send(new TdApi.OpenChat(chatId), okHandler);
+        client().send(new TdApi.OpenChat(chatId), after != null ? result -> {
+          okHandler.onResult(result);
+          after.run();
+        } : okHandler);
+      } else if (after != null) {
+        client().send(new TdApi.SetAlarm(0), result ->
+          after.run()
+        );
       }
     }
     notifications().onChatOpened(chatId);
@@ -4068,10 +4096,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             break;
           }
           case TdApi.Error.CONSTRUCTOR:
-            if (callback == null)
-              UI.showError(object);
-            error.set((TdApi.Error) object);
-            client().send(new TdApi.GetChatMember(chatId, sender), this);
+            final TdApi.Error originalError = error.getAndSet((TdApi.Error) object);
+            if (originalError == null) {
+              client().send(new TdApi.GetChatMember(chatId, sender), this);
+            } else if (callback != null) {
+              callback.onMemberStatusUpdated(false, originalError);
+            } else {
+              UI.showError(originalError);
+            }
             break;
         }
       }
@@ -4108,6 +4140,88 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public interface ChatMemberStatusChangeCallback {
     void onMemberStatusUpdated (boolean success, @Nullable TdApi.Error error);
+  }
+
+  private void refreshChatMemberStatus (final long chatId, final TdApi.MessageSender sender, final @TdApi.ChatMemberStatus.Constructors int expectedType, ChatMemberStatusChangeCallback callback) {
+    final AtomicInteger retryCount = new AtomicInteger();
+    final AtomicReference<TdApi.Error> error = new AtomicReference<>();
+    client().send(new TdApi.GetChatMember(chatId, sender), new Client.ResultHandler() {
+      @Override
+      public void onResult (TdApi.Object object) {
+        switch (object.getConstructor()) {
+          case TdApi.Ok.CONSTRUCTOR: {
+            client().send(new TdApi.GetChatMember(chatId, sender), this);
+            break;
+          }
+          case TdApi.ChatMember.CONSTRUCTOR: {
+            TdApi.ChatMember member = (TdApi.ChatMember) object;
+            if (member.status.getConstructor() != expectedType && retryCount.incrementAndGet() <= 3) {
+              client().send(new TdApi.SetAlarm(.5 + .5 * retryCount.get()), this);
+            } else {
+              cache().onChatMemberStatusChanged(chatId, member);
+              if (callback != null) {
+                callback.onMemberStatusUpdated(member.status.getConstructor() == expectedType, error.get());
+              }
+            }
+            break;
+          }
+          case TdApi.Error.CONSTRUCTOR: {
+            final TdApi.Error originalError = error.getAndSet((TdApi.Error) object);
+            if (originalError == null) {
+              client().send(new TdApi.GetChatMember(chatId, sender), this);
+            } else if (callback != null) {
+              callback.onMemberStatusUpdated(false, originalError);
+            } else {
+              UI.showError(originalError);
+            }
+            break;
+          }
+        }
+      }
+    });
+  }
+
+  public void transferOwnership (final long chatId, final int toUserId, final String password, ChatMemberStatusChangeCallback callback) {
+    client().send(new TdApi.TransferChatOwnership(chatId, toUserId, password), result -> {
+      switch (result.getConstructor()) {
+        case TdApi.Ok.CONSTRUCTOR: {
+          ChatMemberStatusChangeCallback statusChangeCallback;
+          if (callback != null) {
+            final AtomicInteger remaining = new AtomicInteger(2);
+            final AtomicBoolean hasFailures = new AtomicBoolean(false);
+            final AtomicReference<TdApi.Error> anyError = new AtomicReference<>();
+            statusChangeCallback = (success, error) -> {
+              if (error != null) {
+                anyError.set(error);
+              }
+              if (!success) {
+                hasFailures.set(true);
+              }
+              if (remaining.decrementAndGet() == 0) {
+                if (hasFailures.get()) {
+                  callback.onMemberStatusUpdated(false, anyError.get());
+                } else {
+                  callback.onMemberStatusUpdated(true, null);
+                }
+              }
+            };
+          } else {
+            statusChangeCallback = null;
+          }
+          refreshChatMemberStatus(chatId, new TdApi.MessageSenderUser(toUserId), TdApi.ChatMemberStatusCreator.CONSTRUCTOR, statusChangeCallback);
+          refreshChatMemberStatus(chatId, new TdApi.MessageSenderUser(myUserId()), TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR, statusChangeCallback);
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          if (callback != null) {
+            callback.onMemberStatusUpdated(false, (TdApi.Error) result);
+          } else {
+            UI.showError(result);
+          }
+          break;
+        }
+      }
+    });
   }
 
   public void setChatMemberStatus (final long chatId, final TdApi.MessageSender sender, final TdApi.ChatMemberStatus newStatus, final @Nullable TdApi.ChatMemberStatus currentStatus, @Nullable final ChatMemberStatusChangeCallback callback) {
@@ -5437,6 +5551,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     pendingMessageCaptions.clear();
     animatedEmoji.clear();
     animatedDiceExplicit.clear();
+    telegramServiceNotificationsChatId = TdConstants.TELEGRAM_ACCOUNT_ID;
+    repliesBotChatId = TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID;
     // animatedTgxEmoji.clear();
   }
 
@@ -6636,6 +6752,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           case "message_caption_length_max":
             this.maxMessageCaptionLength = (int) longValue;
             break;
+          case "replies_bot_chat_id":
+            this.repliesBotChatId = longValue;
+            break;
+          case "telegram_service_notifications_chat_id":
+            this.telegramServiceNotificationsChatId = longValue;
+            break;
         }
 
         break;
@@ -7537,7 +7659,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           version = document.fileName.substring(prefix.length(), i == -1 ? document.fileName.length() : i);
           if (version.matches("^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$")) {
             buildNo = StringUtils.parseInt(version.substring(version.lastIndexOf('.') + 1));
-            if (buildNo > BuildConfig.ORIGINAL_VERSION_CODE) {
+            if (buildNo > BuildConfig.ORIGINAL_VERSION_CODE || BuildConfig.DEBUG) {
               ok = true;
             }
           }

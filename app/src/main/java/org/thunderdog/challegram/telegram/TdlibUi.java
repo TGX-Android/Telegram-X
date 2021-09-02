@@ -90,6 +90,7 @@ import org.thunderdog.challegram.ui.PhoneController;
 import org.thunderdog.challegram.ui.ProfileController;
 import org.thunderdog.challegram.ui.RequestController;
 import org.thunderdog.challegram.ui.SettingHolder;
+import org.thunderdog.challegram.ui.Settings2FAController;
 import org.thunderdog.challegram.ui.SettingsController;
 import org.thunderdog.challegram.ui.SettingsLanguageController;
 import org.thunderdog.challegram.ui.SettingsLogOutController;
@@ -2187,7 +2188,7 @@ public class TdlibUi extends Handler {
           }*/
           switch (botMode) {
             case BOT_MODE_START: {
-              openChat(context, chat, new ChatOpenParameters().urlOpenParameters(openParameters).shareItem(new TGBotStart(user.id, startArgument, false)));
+              openChat(context, chat, new ChatOpenParameters().urlOpenParameters(openParameters).shareItem(new TGBotStart(user.id, startArgument, false)).keepStack());
               break;
             }
             case BOT_MODE_START_IN_GROUP:
@@ -3689,19 +3690,19 @@ public class TdlibUi extends Handler {
         boolean deleteAndStop = blockUser && tdlib.isBotChat(chatId);
         showDeleteOrClearHistory(context, chatId,
           tdlib.isSelfUserId(userId) ? Lang.getString(R.string.SavedMessages) :
-          userId == TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID ? Lang.getString(R.string.RepliesBot) :
+          tdlib.isRepliesChat(ChatId.fromUserId(userId)) ? Lang.getString(R.string.RepliesBot) :
           Lang.getString(R.string.ChatWithUser, userName), () -> {
           final CharSequence info;
           if (tdlib.isSelfUserId(userId)) {
             info = Lang.getMarkdownString(context, R.string.DeleteSavedMessagesConfirm);
           } else if (deleteAndStop) {
-            if (userId == TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID) {
+            if (tdlib.isRepliesChat(ChatId.fromUserId(userId))) {
               info = Lang.getMarkdownString(context, R.string.DeleteAndStopRepliesConfirm);
             } else {
               info = Lang.getStringBold(R.string.DeleteAndStopBotConfirm, userName);
             }
           } else {
-            if (userId == TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID) {
+            if (tdlib.isRepliesChat(ChatId.fromUserId(userId))) {
               info = Lang.getMarkdownString(context, R.string.DeleteRepliesConfirm);
             } else {
               info = Lang.getStringBold(R.string.DeleteUserChatConfirm, userName);
@@ -4678,14 +4679,11 @@ public class TdlibUi extends Handler {
       String result = resultAuthor;
       tdlib.ui().postDelayed(() -> after.runWithData(result), 100);
       return true;
-    }, true, new RunnableData<ViewGroup>() {
-      @Override
-      public void runWithData (ViewGroup arg) {
-        TextView textView = SettingHolder.createDescription(context.context(), ListItem.TYPE_DESCRIPTION, R.id.theme_color_textLight, null, context);
-        textView.setText(Lang.getString(R.string.ThemeExportInfo));
-        textView.setPadding(0, Screen.dp(12f), 0, 0);
-        arg.addView(textView);
-      }
+    }, true, arg -> {
+      TextView textView = SettingHolder.createDescription(context.context(), ListItem.TYPE_DESCRIPTION, R.id.theme_color_textLight, null, context);
+      textView.setText(Lang.getString(R.string.ThemeExportInfo));
+      textView.setPadding(0, Screen.dp(12f), 0, 0);
+      arg.addView(textView);
     }, null);
 
 
@@ -5489,5 +5487,73 @@ public class TdlibUi extends Handler {
         return true;
       });
     }
+  }
+
+  public interface OwnershipTransferListener {
+    default void onOwnershipTransferAbilityChecked (TdApi.Object result) { }
+    void onOwnershipTransferConfirmed (String password);
+  }
+
+  public void requestTransferOwnership (ViewController<?> context, CharSequence finalAlertMessageText, OwnershipTransferListener listener) {
+    tdlib.client().send(new TdApi.CanTransferOwnership(), result -> {
+      tdlib.ui().post(() -> {
+        listener.onOwnershipTransferAbilityChecked(result);
+        switch (result.getConstructor()) {
+          case TdApi.CanTransferOwnershipResultOk.CONSTRUCTOR:
+            tdlib.client().send(new TdApi.GetPasswordState(), state -> {
+              if (state.getConstructor() != TdApi.PasswordState.CONSTRUCTOR) return;
+              PasswordController controller = new PasswordController(context.context(), context.tdlib());
+              controller.setArguments(new PasswordController.Args(PasswordController.MODE_TRANSFER_OWNERSHIP_CONFIRM, (TdApi.PasswordState) state).setSuccessListener(password -> {
+                // Ask if the user REALLY wants to transfer ownership, because this operation is serious
+                context.addOneShotFocusListener(() ->
+                  context.showOptions(new ViewController.Options.Builder()
+                    .info(Strings.getTitleAndText(Lang.getString(R.string.TransferOwnershipAlert), finalAlertMessageText))
+                    .item(new ViewController.OptionItem(R.id.btn_next, Lang.getString(R.string.TransferOwnershipConfirm), ViewController.OPTION_COLOR_RED, R.drawable.templarian_baseline_account_switch_24))
+                    .cancelItem()
+                    .build(), (optionView, id) -> {
+                    if (id == R.id.btn_next) {
+                      listener.onOwnershipTransferConfirmed(password);
+                    }
+                    return true;
+                  })
+                );
+              }));
+              context.navigateTo(controller);
+            });
+            break;
+          case TdApi.CanTransferOwnershipResultPasswordNeeded.CONSTRUCTOR:
+            context.showOptions(new ViewController.Options.Builder()
+              .info(Strings.getTitleAndText(Lang.getString(R.string.TransferOwnershipSecurityAlert), Lang.getMarkdownString(context, R.string.TransferOwnershipSecurityPasswordNeeded)))
+              .item(new ViewController.OptionItem(R.id.btn_next, Lang.getString(R.string.TransferOwnershipSecurityActionSetPassword), ViewController.OPTION_COLOR_BLUE, R.drawable.mrgrigri_baseline_textbox_password_24))
+              .cancelItem()
+              .build(), (optionView, id) -> {
+                if (id == R.id.btn_next) {
+                  Settings2FAController controller = new Settings2FAController(context.context(), context.tdlib());
+                  controller.setArguments(new Settings2FAController.Args(null));
+                  context.navigateTo(controller);
+                }
+                return true;
+              }
+            );
+            break;
+          case TdApi.CanTransferOwnershipResultPasswordTooFresh.CONSTRUCTOR:
+            context.showOptions(new ViewController.Options.Builder()
+              .info(Strings.getTitleAndText(Lang.getString(R.string.TransferOwnershipSecurityAlert), Lang.getMarkdownString(context, R.string.TransferOwnershipSecurityWaitPassword, Lang.getDuration(((TdApi.CanTransferOwnershipResultPasswordTooFresh) result).retryAfter))))
+              .item(new ViewController.OptionItem(R.id.btn_next, Lang.getString(R.string.OK), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_check_circle_24))
+              .cancelItem()
+              .build(), (optionView, id) -> true
+            );
+            break;
+          case TdApi.CanTransferOwnershipResultSessionTooFresh.CONSTRUCTOR:
+            context.showOptions(new ViewController.Options.Builder()
+              .info(Strings.getTitleAndText(Lang.getString(R.string.TransferOwnershipSecurityAlert), Lang.getMarkdownString(context, R.string.TransferOwnershipSecurityWaitSession, Lang.getDuration(((TdApi.CanTransferOwnershipResultSessionTooFresh) result).retryAfter))))
+              .item(new ViewController.OptionItem(R.id.btn_next, Lang.getString(R.string.OK), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_check_circle_24))
+              .cancelItem()
+              .build(), (optionView, id) -> true
+            );
+            break;
+        }
+      });
+    });
   }
 }

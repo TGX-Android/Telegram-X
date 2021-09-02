@@ -287,6 +287,7 @@ public class VideoGen {
       dataSource = new UriDataSource(UI.getAppContext(), Uri.parse(sourcePath));
     } else {
       dataSource = new FilePathDataSource(sourcePath);
+      dataSource.initialize();
     }
 
     if (info.needTrim()) {

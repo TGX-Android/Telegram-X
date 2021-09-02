@@ -4,6 +4,7 @@
 package me.vkryl.td
 
 import android.graphics.Path
+import me.vkryl.core.UTF_8
 import me.vkryl.core.wrapHttps
 import org.drinkless.td.libcore.telegram.Client
 import org.drinkless.td.libcore.telegram.TdApi.*
@@ -672,3 +673,9 @@ fun ChatPermissions.count (): Int {
 }
 
 fun ChatInviteLink.isTemporary (): Boolean = this.expireDate != 0 || this.memberCount != 0 || this.memberLimit != 0
+
+fun InlineKeyboardButtonTypeCallbackWithPassword.isBotOwnershipTransfer (): Boolean = try {
+  String(this.data, UTF_8).matches(Regex("^bots/[0-9]+/trsf/.+$"))
+} catch (e: IllegalArgumentException) {
+  false
+}

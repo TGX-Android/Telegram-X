@@ -823,7 +823,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     scrollToBottomButton.setId(R.id.btn_scroll);
     scrollToBottomButton.setOnClickListener(this);
     scrollToBottomButton.setOnLongClickListener(v -> {
-      manager.scrollToStart();
+      manager.scrollToStart(true);
       return true;
     });
     addThemeInvalidateListener(scrollToBottomButton);
@@ -2618,7 +2618,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
       }
     }
-    manager.scrollToStart();
+    manager.scrollToStart(false);
   }
 
   public boolean centerMessage (long chatId, long messageId, boolean delayed, boolean centered) {
@@ -2728,7 +2728,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       } else {
         showBottomButton(BOTTOM_ACTION_TOGGLE_MUTE, 0, isUpdate);
       }
-    } else if (tdlib.chatUserId(chat) == TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID) {
+    } else if (tdlib.isRepliesChat(chat.id)) {
       setInputVisible(false, false);
       showBottomButton(BOTTOM_ACTION_TOGGLE_MUTE, 0, isUpdate);
     } else {
@@ -5067,7 +5067,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public void showActionUnblockButton () {
     int userId = tdlib.chatUserId(chat);
-    if (userId != TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID && tdlib.cache().userBot(userId)) {
+    if (!tdlib.isRepliesChat(chat.id) && tdlib.isBotChat(chat)) {
       showActionButton(R.string.RestartBot, ACTION_BOT_START);
     } else {
       showActionButton(R.string.Unblock, ACTION_UNBAN_USER);
