@@ -460,7 +460,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
 
       if (user != null) {
         if (user.type.getConstructor() == TdApi.UserTypeBot.CONSTRUCTOR && ((TdApi.UserTypeBot) user.type).isInline) {
-          if (tdlib.showRestriction(callback.provideInlineSearchChat(), R.id.right_sendStickersAndGifs, R.string.ChatDisabledBots, R.string.ChatRestrictedBots, R.string.ChatRestrictedBotsUntil)) {
+          if (tdlib.showSplitRestriction(callback.provideInlineSearchChat(), R.id.right_sendStickersAndGifs, R.string.ChatDisabledBots, R.string.ChatRestrictedBots, R.string.ChatRestrictedBotsUntil)) {
             searchOther(cursorPosition);
           } else {
             applyInlineBot(user);
