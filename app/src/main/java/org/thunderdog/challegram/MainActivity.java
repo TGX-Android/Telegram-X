@@ -245,6 +245,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
     }
 
     destroyMessageControllers(newAccount.id);
+    tdlib.shortcuts().requestAndPublish();
 
     final ViewController<?> current = navigation.getCurrentStackItem();
     if (current != null && current.tdlib() != null && current.tdlib().id() == newAccount.id) {
@@ -264,8 +265,6 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
 
       return;
     }
-
-    tdlib.shortcuts().requestAndPublish();
 
     MainController c = new MainController(this, newAccount.tdlib());
     if (navigation.isEmpty()) {

@@ -4,16 +4,13 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.BitmapShader;
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Shader;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.os.Build;
 
 import androidx.annotation.RequiresApi;
-import androidx.core.graphics.drawable.IconCompat;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
@@ -160,13 +157,12 @@ public class TdlibAppShortcutManager {
             intent.putExtra("chat_id", (long) i);
             intent.putExtra("secure", true);
 
-            String username = tdlib.cache().userName(user.id);
-            shortcutInfo.setShortLabel(username);
-            shortcutInfo.setLongLabel(username);
+            shortcutInfo.setShortLabel(user.firstName);
+            shortcutInfo.setLongLabel(tdlib.cache().userName(user.id));
             shortcutInfo.setIntent(intent);
             shortcutInfo.setActivity(new ComponentName(UI.getAppContext(), MainActivity.class));
 
-            Bitmap bitmap = userAvatars[i] != null ? createLegacyIconFromAdaptiveIcon(userAvatars[i]) : renderLetterBitmap(user);
+            Bitmap bitmap = userAvatars[i] != null ? circleCropBitmap(userAvatars[i]) : renderLetterBitmap(user);
             shortcutInfo.setIcon(android.graphics.drawable.Icon.createWithBitmap(bitmap));
 
             shortcuts.add(shortcutInfo.build());
@@ -195,31 +191,20 @@ public class TdlibAppShortcutManager {
         return bitmap;
     }
 
-    // The following part is wisely taken from AndroidX
+    // The following part is wisely taken from Coil-KT
 
-    private static final float ADAPTIVE_ICON_INSET_FACTOR = 1 / 4f;
-    private static final float DEFAULT_VIEW_PORT_SCALE = 1 / (1 + 2 * ADAPTIVE_ICON_INSET_FACTOR);
-    private static final float ICON_DIAMETER_FACTOR = 176f / 192;
-
-    private Bitmap createLegacyIconFromAdaptiveIcon (Bitmap adaptiveIconBitmap) {
-        int size = (int) (DEFAULT_VIEW_PORT_SCALE * Math.min(adaptiveIconBitmap.getWidth(), adaptiveIconBitmap.getHeight()));
-
-        Bitmap icon = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(icon);
+    private Bitmap circleCropBitmap (Bitmap adaptiveIconBitmap) {
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
 
-        float center = size * 0.5f;
-        float radius = center * ICON_DIAMETER_FACTOR;
+        int minSize = Math.min(adaptiveIconBitmap.getWidth(), adaptiveIconBitmap.getHeight());
+        float radius = minSize / 2f;
 
-        paint.setColor(Color.BLACK);
-        BitmapShader shader = new BitmapShader(adaptiveIconBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-        Matrix shift = new Matrix();
-        shift.setTranslate(-(adaptiveIconBitmap.getWidth() - size) / 2f, -(adaptiveIconBitmap.getHeight() - size) / 2f);
-        shader.setLocalMatrix(shift);
-        paint.setShader(shader);
-        canvas.drawCircle(center, center, radius, paint);
+        Bitmap newBitmap = Bitmap.createBitmap(adaptiveIconBitmap.getWidth(), adaptiveIconBitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(newBitmap);
+        canvas.drawCircle(radius, radius, radius, paint);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(adaptiveIconBitmap, radius - adaptiveIconBitmap.getWidth() / 2f, radius - adaptiveIconBitmap.getHeight() / 2f, paint);
 
-        canvas.setBitmap(null);
-        return icon;
+        return newBitmap;
     }
 }
