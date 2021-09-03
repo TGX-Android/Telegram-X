@@ -5302,9 +5302,9 @@ public class TdlibUi extends Handler {
                   strings.append(openUrl.text);
                 }
               } else {
-                ids.append(R.id.btn_cancel);
-                strings.append(R.string.Cancel);
-                icons = new int[] { R.drawable.baseline_cancel_24 };
+                ids.append(R.id.btn_copyLink);
+                strings.append(R.string.CopyBankCard);
+                icons = new int[] { R.drawable.baseline_content_copy_24 };
               }
 
               c.showOptions(bankCardInfo.title, ids.get(), strings.get(), null, icons, new OptionDelegate() {
@@ -5312,6 +5312,8 @@ public class TdlibUi extends Handler {
                 public boolean onOptionItemPressed (View optionItemView, int id) {
                   if (id == R.id.btn_openLink) {
                     Intents.openUri((String) optionItemView.getTag());
+                  } else if (id == R.id.btn_copyLink) {
+                    UI.copyText(cardNumber, R.string.CopiedBankCard);
                   }
 
                   return true;
