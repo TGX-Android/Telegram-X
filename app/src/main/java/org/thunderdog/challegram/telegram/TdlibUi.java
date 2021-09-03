@@ -5290,23 +5290,38 @@ public class TdlibUi extends Handler {
           TdApi.BankCardInfo bankCardInfo = (TdApi.BankCardInfo) result;
           tdlib.ui().post(() -> {
             ViewController<?> c = context instanceof ViewController<?> ? (ViewController<?>) context : UI.getCurrentStackItem();
-            if (c != null && !c.isDestroyed() && bankCardInfo.actions.length > 0) {
-              IntList ids = new IntList(bankCardInfo.actions.length);
-              StringList strings = new StringList(bankCardInfo.actions.length);
-              for (TdApi.BankCardActionOpenUrl openUrl : bankCardInfo.actions) {
-                ids.append(R.id.btn_openLink);
-                strings.append(openUrl.text);
+            boolean hasAnyActions = bankCardInfo.actions.length > 0;
+            if (c != null && !c.isDestroyed()) {
+              IntList ids = new IntList(hasAnyActions ? 1 : bankCardInfo.actions.length);
+              StringList strings = new StringList(hasAnyActions ? 1 : bankCardInfo.actions.length);
+              int[] icons = null;
+
+              if (hasAnyActions) {
+                for (TdApi.BankCardActionOpenUrl openUrl : bankCardInfo.actions) {
+                  ids.append(R.id.btn_openLink);
+                  strings.append(openUrl.text);
+                }
+              } else {
+                ids.append(R.id.btn_copyLink);
+                strings.append(R.string.CopyBankCard);
+                icons = new int[] { R.drawable.baseline_content_copy_24 };
               }
-              c.showOptions(bankCardInfo.title, ids.get(), strings.get(), null, null, new OptionDelegate() {
+
+              c.showOptions(bankCardInfo.title, ids.get(), strings.get(), null, icons, new OptionDelegate() {
                 @Override
                 public boolean onOptionItemPressed (View optionItemView, int id) {
-                  Intents.openUri((String) optionItemView.getTag());
+                  if (id == R.id.btn_openLink) {
+                    Intents.openUri((String) optionItemView.getTag());
+                  } else if (id == R.id.btn_copyLink) {
+                    UI.copyText(cardNumber, R.string.CopiedBankCard);
+                  }
+
                   return true;
                 }
 
                 @Override
                 public Object getTagForItem (int position) {
-                  return bankCardInfo.actions[position].url;
+                  return hasAnyActions ? bankCardInfo.actions[position].url : null;
                 }
               });
             }
