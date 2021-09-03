@@ -10,17 +10,17 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Shader;
-import android.media.ThumbnailUtils;
 import android.os.Build;
 
 import androidx.annotation.RequiresApi;
 import androidx.core.graphics.drawable.IconCompat;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.json.JSONArray;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.MainActivity;
+import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageLoader;
@@ -101,6 +101,10 @@ public class TdlibAppShortcutManager {
         return "integration_" + accountId;
     }
 
+    private static String getShortcutId (long accountId, int index) {
+        return accountId + "-" + index;
+    }
+
     // Account ID is not needed to be hidden because it is just an index
     // However, user IDs should be hidden inside the DB
     private static void saveIdMap (TdApi.User[] users, long accountId) {
@@ -125,6 +129,20 @@ public class TdlibAppShortcutManager {
         }
     }
 
+    public void onUserLogout (int tdlibAccountId) {
+        long[] idMap = Settings.instance().pmc().getLongArray(getSettingKey(tdlibAccountId));
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1 || idMap == null) return;
+
+        android.content.pm.ShortcutManager sm = (android.content.pm.ShortcutManager) UI.getAppContext().getSystemService(Context.SHORTCUT_SERVICE);
+        ArrayList<String> shortcutList = new ArrayList<>();
+
+        for (int i = 0; i < idMap.length; i++) {
+            shortcutList.add(getShortcutId(tdlibAccountId, i));
+        }
+
+        sm.disableShortcuts(shortcutList, Lang.getString(R.string.ShortcutDisabledByLogout));
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.N_MR1)
     private void onLoadFinished () {
         saveIdMap(users, tdlib.accountId());
@@ -133,7 +151,7 @@ public class TdlibAppShortcutManager {
         for (int i = 0; i < users.length; i++) {
             TdApi.User user = users[i];
 
-            android.content.pm.ShortcutInfo.Builder shortcutInfo = new android.content.pm.ShortcutInfo.Builder(UI.getAppContext(), tdlib.accountId() + "-" + i);
+            android.content.pm.ShortcutInfo.Builder shortcutInfo = new android.content.pm.ShortcutInfo.Builder(UI.getAppContext(), getShortcutId(tdlib.accountId(), i));
 
             Intent intent = new Intent(UI.getAppContext(), MainActivity.class);
             intent.setAction(Intents.ACTION_OPEN_CHAT + "." + tdlib.accountId() + "." + i + "." + Math.random());

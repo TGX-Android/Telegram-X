@@ -1089,6 +1089,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
     boolean isMulti = context().isMultiUser();
     String name = isMulti ? TD.getUserName(account().getFirstName(), account().getLastName()) : null;
+    shortcuts().onUserLogout(accountId());
     incrementReferenceCount(REFERENCE_TYPE_JOB);
     /*deleteAllFiles(ignored -> */client().send(new TdApi.LogOut(), result -> {
       if (isMulti) {
