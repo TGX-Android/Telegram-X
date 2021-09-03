@@ -3789,6 +3789,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     // TODO chat = null;
 
+    // always perform "soft" wallpaper reset for freeform bg positions reset
+    if (wallpaperView != null)
+      wallpaperView.performSoftDestroy();
+
     if (destroyInstance || !reuseEnabled) {
       super.destroy();
       if (liveLocation != null) {

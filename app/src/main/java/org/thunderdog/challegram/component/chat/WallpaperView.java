@@ -191,7 +191,7 @@ public class WallpaperView extends View implements ThemeChangeListener, ChatStyl
     }
 
     if (freeformLocationChangeAnimator == null) {
-      freeformLocationChangeAnimator = new FactorAnimator(1, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 500L);
+      freeformLocationChangeAnimator = new FactorAnimator(1, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 750L);
     } else if (freeformLocationChangeAnimator.getFactor() == 1f) {
       freeformLocationChangeAnimator.forceFactor(0f);
     } else if (freeformLocationChangeAnimator.isAnimating()) {
@@ -249,7 +249,7 @@ public class WallpaperView extends View implements ThemeChangeListener, ChatStyl
   @Override
   public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
     if (id == 1) {
-      gradientCache.resetFreeformIndexMap();
+      gradientCache.onFreeformAnimationEnd();
       return;
     }
 
@@ -273,13 +273,14 @@ public class WallpaperView extends View implements ThemeChangeListener, ChatStyl
     }
   }
 
+  public void performSoftDestroy() {
+    if (wallpaper != null && (wallpaper.isFillFreeformGradient() || wallpaper.isPatternBackgroundFreeformGradient())) {
+      gradientCache.resetFreeformGradients();
+    }
+  }
+
   @Override
   public void performDestroy () {
-    if (wallpaper != null && (wallpaper.isFillFreeformGradient() || wallpaper.isPatternBackgroundFreeformGradient())) {
-      gradientCache.resetFreeformIndexMap();
-      gradientCache.resetFreeformCenters();
-    }
-
     receiver.destroy();
     if (preview != null) {
       preview.destroy();
