@@ -7944,7 +7944,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       return null;
     TdApi.ChatMemberStatus status = chatStatus(chat.id);
     if (status != null) {
-      Log.d(status.toString());
       switch (status.getConstructor()) {
         case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
         case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
@@ -8071,19 +8070,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   public CharSequence getRestrictionText (TdApi.Chat chat, @RightId int rightId, @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes) {
     RestrictionStatus status = getRestrictionStatus(chat, rightId);
     if (status != null) {
-      Log.d("Restriction: %s [%s]", status.status, status.isGlobal());
-      if (status.status == RESTRICTION_STATUS_BANNED) {
-        return status.untilDate != 0 ? Lang.getString(R.string.ChatBannedUntil, Lang.getUntilDate(status.untilDate, TimeUnit.SECONDS)) : Lang.getString(R.string.ChatBanned);
-      } else if (status.isGlobal()) {
-        return Lang.getString(status.isUserChat() ? R.string.UserDisabledMessages : defaultRes);
-      } else {
-        switch (status.status) {
-          case RESTRICTION_STATUS_RESTRICTED:
-            return status.untilDate != 0 ? Lang.getString(specificUntilRes, Lang.getUntilDate(status.untilDate, TimeUnit.SECONDS)) : Lang.getString(specificRes);
-          case RESTRICTION_STATUS_UNAVAILABLE:
-          case RESTRICTION_STATUS_EVERYONE:
-            return Lang.getString(status.isUserChat() ? R.string.UserDisabledMessages : defaultRes);
-        }
+      switch (status.status) {
+        case RESTRICTION_STATUS_BANNED:
+          return status.untilDate != 0 ? Lang.getString(R.string.ChatBannedUntil, Lang.getUntilDate(status.untilDate, TimeUnit.SECONDS)) : Lang.getString(R.string.ChatBanned);
+        case RESTRICTION_STATUS_RESTRICTED:
+          return status.untilDate != 0 ? Lang.getString(specificUntilRes, Lang.getUntilDate(status.untilDate, TimeUnit.SECONDS)) : Lang.getString(specificRes);
+        case RESTRICTION_STATUS_UNAVAILABLE:
+        case RESTRICTION_STATUS_EVERYONE:
+          return Lang.getString(status.isUserChat() ? R.string.UserDisabledMessages : defaultRes);
       }
 
       throw new UnsupportedOperationException();
