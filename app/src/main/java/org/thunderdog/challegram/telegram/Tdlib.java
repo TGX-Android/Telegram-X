@@ -7944,6 +7944,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       return null;
     TdApi.ChatMemberStatus status = chatStatus(chat.id);
     if (status != null) {
+      Log.d(status.toString());
       switch (status.getConstructor()) {
         case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
         case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
@@ -7960,8 +7961,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         case TdApi.ChatMemberStatusMember.CONSTRUCTOR:
           if (isChannelChat(chat)) {
             return new RestrictionStatus(chat.id, RESTRICTION_STATUS_UNAVAILABLE, 0);
+          } else if (!TD.checkRight(chat.permissions, rightId)) {
+            return new RestrictionStatus(chat.id, RESTRICTION_STATUS_EVERYONE, 0);
           }
-          break;
       }
     }
     switch (chat.type.getConstructor()) {
@@ -8051,15 +8053,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public CharSequence getGifRestrictionText (TdApi.Chat chat) {
-    return getSplitRestrictionText(chat, R.id.right_sendStickersAndGifs, R.string.ChatDisabledGifs, R.string.ChatRestrictedGifs, R.string.ChatRestrictedGifsUntil);
+    return getRestrictionText(chat, R.id.right_sendStickersAndGifs, R.string.ChatDisabledGifs, R.string.ChatRestrictedGifs, R.string.ChatRestrictedGifsUntil);
   }
 
   public CharSequence getStickerRestrictionText (TdApi.Chat chat) {
-    return getSplitRestrictionText(chat, R.id.right_sendStickersAndGifs, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil);
+    return getRestrictionText(chat, R.id.right_sendStickersAndGifs, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil);
   }
 
   public CharSequence getInlineRestrictionText (TdApi.Chat chat) {
-    return getSplitRestrictionText(chat, R.id.right_sendStickersAndGifs, R.string.ChatDisabledBots, R.string.ChatRestrictedBots, R.string.ChatRestrictedBotsUntil);
+    return getRestrictionText(chat, R.id.right_sendStickersAndGifs, R.string.ChatDisabledBots, R.string.ChatRestrictedBots, R.string.ChatRestrictedBotsUntil);
   }
 
   public CharSequence getPollRestrictionText (TdApi.Chat chat) {
@@ -8069,59 +8071,28 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   public CharSequence getRestrictionText (TdApi.Chat chat, @RightId int rightId, @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes) {
     RestrictionStatus status = getRestrictionStatus(chat, rightId);
     if (status != null) {
-      switch (rightId) {
-        case R.id.right_sendStickersAndGifs: {
-          CharSequence restriction = getMediaRestrictionText(chat);
-          if (restriction != null)
-            return restriction;
-          break;
-        }
-        case R.id.right_sendMedia:
-        case R.id.right_sendPolls: {
-          CharSequence restriction = getMessageRestrictionText(chat);
-          if (restriction != null)
-            return restriction;
-          break;
+      Log.d("Restriction: %s [%s]", status.status, status.isGlobal());
+      if (status.status == RESTRICTION_STATUS_BANNED) {
+        return status.untilDate != 0 ? Lang.getString(R.string.ChatBannedUntil, Lang.getUntilDate(status.untilDate, TimeUnit.SECONDS)) : Lang.getString(R.string.ChatBanned);
+      } else if (status.isGlobal()) {
+        return Lang.getString(status.isUserChat() ? R.string.UserDisabledMessages : defaultRes);
+      } else {
+        switch (status.status) {
+          case RESTRICTION_STATUS_RESTRICTED:
+            return status.untilDate != 0 ? Lang.getString(specificUntilRes, Lang.getUntilDate(status.untilDate, TimeUnit.SECONDS)) : Lang.getString(specificRes);
+          case RESTRICTION_STATUS_UNAVAILABLE:
+          case RESTRICTION_STATUS_EVERYONE:
+            return Lang.getString(status.isUserChat() ? R.string.UserDisabledMessages : defaultRes);
         }
       }
-      return getRestrictionText(chat, status, defaultRes, specificRes, specificUntilRes);
+
+      throw new UnsupportedOperationException();
     }
     return null;
   }
 
-  public CharSequence getSplitRestrictionText (TdApi.Chat chat, @RightId int rightId, @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes) {
-    RestrictionStatus status = getRestrictionStatus(chat, rightId);
-    if (status != null) {
-      return getRestrictionText(chat, status, defaultRes, specificRes, specificUntilRes);
-    } else {
-      return null;
-    }
-  }
-
-  private CharSequence getRestrictionText (TdApi.Chat chat, RestrictionStatus status, @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes) {
-    switch (status.status) {
-      case RESTRICTION_STATUS_BANNED:
-        return status.untilDate != 0 ? Lang.getString(R.string.ChatBannedUntil, Lang.getUntilDate(status.untilDate, TimeUnit.SECONDS)) : Lang.getString(R.string.ChatBanned);
-      case RESTRICTION_STATUS_RESTRICTED:
-        return status.untilDate != 0 ? Lang.getString(specificUntilRes, Lang.getUntilDate(status.untilDate, TimeUnit.SECONDS)) : Lang.getString(specificRes);
-      case RESTRICTION_STATUS_UNAVAILABLE:
-      case RESTRICTION_STATUS_EVERYONE:
-        return Lang.getString(status.isUserChat() ? R.string.UserDisabledMessages : defaultRes);
-    }
-    throw new UnsupportedOperationException();
-  }
-
   public boolean showRestriction (TdApi.Chat chat, @RightId int rightId, @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes) {
     CharSequence res = getRestrictionText(chat, rightId, defaultRes, specificRes, specificUntilRes);
-    if (res != null) {
-      UI.showToast(res, Toast.LENGTH_SHORT);
-      return true;
-    }
-    return false;
-  }
-
-  public boolean showSplitRestriction (TdApi.Chat chat, @RightId int rightId, @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes) {
-    CharSequence res = getSplitRestrictionText(chat, rightId, defaultRes, specificRes, specificUntilRes);
     if (res != null) {
       UI.showToast(res, Toast.LENGTH_SHORT);
       return true;
