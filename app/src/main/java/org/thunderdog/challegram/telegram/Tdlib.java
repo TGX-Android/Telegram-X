@@ -2299,6 +2299,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return result;
   }
 
+  public @NonNull List<TdApi.User> chatUsers (long[] chatIds) {
+    final ArrayList<TdApi.User> result = new ArrayList<>(chatIds.length);
+    synchronized (dataLock) {
+      for (long chatId : chatIds) {
+        TdApi.User user = chatUser(chatId);
+        if (user != null)
+          result.add(user);
+      }
+    }
+    return result;
+  }
+
   public void stickerSet (String name, RunnableData<TdApi.StickerSet> callback) {
     if (StringUtils.isEmpty(name)) {
       callback.runWithData(null);
