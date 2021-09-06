@@ -73,6 +73,7 @@ public class NavigationProcessor extends Handler {
       View wrap = controller.get();
       wrap.setAlpha(1f);
       wrap.setTranslationX(0f);
+      wrap.setTranslationY(0f);
 
       navigation.preventLayout();
 

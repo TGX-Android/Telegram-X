@@ -2022,7 +2022,12 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     }
 
     View v = item.getCustomHeaderCell();
-    if (v != null && v instanceof StretchyHeaderView) {
+    if (v != null) {
+      v.setAlpha(1f);
+      v.setTranslationX(0f);
+      v.setTranslationY(0f);
+    }
+    if (v instanceof StretchyHeaderView) {
       int height = item.getHeaderHeight();
       float factor = getHeightFactor(height);
       if (factor > 0f) {

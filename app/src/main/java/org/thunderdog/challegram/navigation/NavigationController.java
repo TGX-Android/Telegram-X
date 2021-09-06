@@ -463,6 +463,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       View wrap = with.get();
       wrap.setAlpha(1f);
       wrap.setTranslationX(0f);
+      wrap.setTranslationY(0f);
 
       stack.clear(this);
       stack.push(with, true);
