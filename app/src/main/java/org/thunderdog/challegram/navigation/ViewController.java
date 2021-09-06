@@ -501,9 +501,9 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     return navigationController != null && navigationController.navigateBack();
   }
 
-  protected void setController (ViewController<?> controller) {
+  protected void setController (ViewController<?> controller, int stackMode) {
     if (navigationController != null) {
-      navigationController.setController(controller);
+      navigationController.setController(controller, stackMode);
     }
   }
 

@@ -137,6 +137,7 @@ import me.vkryl.core.lambda.FutureBool;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableLong;
+import me.vkryl.core.unit.BitwiseUtils;
 import me.vkryl.core.unit.ByteUnit;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
@@ -1614,6 +1615,7 @@ public class TdlibUi extends Handler {
   private static final int CHAT_OPTION_PASSCODE_UNLOCKED = 1 << 4;
   private static final int CHAT_OPTION_REMOVE_DUPLICATES = 1 << 5;
   private static final int CHAT_OPTION_SCHEDULED_MESSAGES = 1 << 6;
+  private static final int CHAT_OPTION_DISABLE_NAVIGATION_ANIMATION = 1 << 7;
 
   public static class ChatOpenParameters {
     public int options;
@@ -1676,6 +1678,11 @@ public class TdlibUi extends Handler {
 
     public ChatOpenParameters noOpen () {
       this.options |= CHAT_OPTION_NO_OPEN;
+      return this;
+    }
+
+    public ChatOpenParameters disableAnimation (boolean disableAnimation) {
+      this.options = BitwiseUtils.setFlag(this.options, CHAT_OPTION_DISABLE_NAVIGATION_ANIMATION, disableAnimation);
       return this;
     }
 
@@ -2082,7 +2089,13 @@ public class TdlibUi extends Handler {
       c.get();
       navigation.getStack().insert(c, 0);
     } else if (navigation.getStackSize() > 1 && (options & CHAT_OPTION_KEEP_STACK) == 0) {
-      navigation.setControllerAnimated(controller, true, true);
+      if ((options & CHAT_OPTION_DISABLE_NAVIGATION_ANIMATION) == 0) {
+        navigation.setControllerAnimated(controller, true, true);
+      } else {
+        navigation.setController(controller, NavigationController.STACK_MODE_KEEP_FIRST);
+      }
+    } else if ((options & CHAT_OPTION_DISABLE_NAVIGATION_ANIMATION) != 0) {
+      navigation.setController(controller, NavigationController.STACK_MODE_KEEP_ALL);
     } else {
       navigation.navigateTo(controller);
     }

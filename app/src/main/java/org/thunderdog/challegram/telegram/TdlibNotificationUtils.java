@@ -201,6 +201,6 @@ public class TdlibNotificationUtils {
   }
 
   static PendingIntent newIntent (int accountId, long forLocalChatId, long specificMessageId) {
-    return PendingIntent.getActivity(UI.getContext(), 0, forLocalChatId != 0 ? Intents.valueOfLocalChatId(accountId, forLocalChatId, specificMessageId) : Intents.valueOfMain(accountId), PendingIntent.FLAG_ONE_SHOT);
+    return PendingIntent.getActivity(UI.getContext(), 0, forLocalChatId != 0 ? Intents.valueOfLocalChatId(accountId, forLocalChatId, specificMessageId, false) : Intents.valueOfMain(accountId), PendingIntent.FLAG_ONE_SHOT);
   }
 }

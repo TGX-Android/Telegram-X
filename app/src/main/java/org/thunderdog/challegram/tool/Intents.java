@@ -647,13 +647,14 @@ public class Intents {
     return intent;
   }
 
-  public static Intent valueOfLocalChatId (int accountId, long localChatId, long specificMessageId) {
+  public static Intent valueOfLocalChatId (int accountId, long localChatId, long specificMessageId, boolean disableAnimation) {
     Intent intent = new Intent(UI.getContext(), MainActivity.class);
     secureIntent(intent, true);
     intent.setAction(Intents.ACTION_OPEN_CHAT + "." + accountId + "." + localChatId + "." + Math.random());
     intent.putExtra("account_id", accountId);
     intent.putExtra("local_id", localChatId);
     intent.putExtra("message_id", specificMessageId);
+    intent.putExtra("disable_animation", disableAnimation);
     // intent.setFlags(32768);
     return intent;
   }

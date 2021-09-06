@@ -13,28 +13,21 @@ import android.os.Build;
 import androidx.annotation.RequiresApi;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.BuildConfig;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.MainActivity;
-import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageLoader;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Intents;
-import org.thunderdog.challegram.tool.Paints;
-import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
-import org.thunderdog.challegram.unsorted.Settings;
-import org.thunderdog.challegram.util.text.Letters;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 public class TdlibAppShortcutManager {
     private final Tdlib tdlib;
 
-    private TdApi.User[] users;
+    private long[] chatIds;
     private Bitmap[] userAvatars;
     private int avatarLoadIndex;
 
@@ -47,44 +40,53 @@ public class TdlibAppShortcutManager {
             return;
         }
 
-        if (users != null && userAvatars != null) {
-            avatarLoadIndex = 0;
-            loadAvatar(users[avatarLoadIndex]);
+        if (chatIds != null && userAvatars != null) {
+            tdlib.runOnTdlibThread(() -> {
+                avatarLoadIndex = 0;
+                loadAvatar(chatIds[avatarLoadIndex]);
+            });
         } else {
-            tdlib.client().send(new TdApi.GetTopChats(new TdApi.TopChatCategoryUsers(), 5), r -> {
-                if (r.getConstructor() != TdApi.Chats.CONSTRUCTOR) {
+            tdlib.client().send(new TdApi.GetTopChats(new TdApi.TopChatCategoryUsers(), 5), result -> {
+                if (result.getConstructor() != TdApi.Chats.CONSTRUCTOR) {
                     return;
                 }
 
-                TdApi.Chats chats = (TdApi.Chats) r;
+                TdApi.Chats chats = (TdApi.Chats) result;
 
-                users = new TdApi.User[chats.chatIds.length];
-                userAvatars = new Bitmap[chats.chatIds.length];
-                avatarLoadIndex = 0;
+                this.chatIds = ((TdApi.Chats) result).chatIds;
+                this.userAvatars = new Bitmap[chats.chatIds.length];
+                this.avatarLoadIndex = 0;
 
-                for (int i = 0; i < chats.chatIds.length; i++) {
-                    users[i] = tdlib.chatUser(chats.chatIds[i]);
-                }
-
-                loadAvatar(users[avatarLoadIndex]);
+                loadAvatar(this.chatIds[avatarLoadIndex]);
             });
         }
     }
 
+    public void clear () {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1) {
+            return;
+        }
+        android.content.pm.ShortcutManager sm = (android.content.pm.ShortcutManager) UI.getAppContext().getSystemService(Context.SHORTCUT_SERVICE);
+        sm.removeAllDynamicShortcuts();
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.N_MR1)
-    private void loadAvatar (TdApi.User currentUser) {
+    private void loadAvatar (long currentChatId) {
         Runnable onEnd = () -> {
-            if (++avatarLoadIndex == users.length) {
+            if (++avatarLoadIndex == chatIds.length) {
                 onLoadFinished();
             } else {
-                loadAvatar(users[avatarLoadIndex]);
+                loadAvatar(chatIds[avatarLoadIndex]);
             }
         };
 
-        if (currentUser.profilePhoto != null) {
-            ImageLoader.instance().loadFile(new ImageFile(tdlib, currentUser.profilePhoto.small, null), (success, bitmap) -> {
+        TdApi.ChatPhotoInfo photo = tdlib.chatPhoto(currentChatId);
+        if (photo != null) {
+            ImageFile file = new ImageFile(tdlib, photo.small, null);
+            file.setSize(150);
+            ImageLoader.instance().loadFile(file, (success, bitmap) -> {
                 if (success) {
-                    userAvatars[avatarLoadIndex] = bitmap;
+                    userAvatars[avatarLoadIndex] = circleCropBitmap(bitmap);
                 }
 
                 onEnd.run();
@@ -94,106 +96,58 @@ public class TdlibAppShortcutManager {
         }
     }
 
-    private static String getSettingKey (long accountId) {
-        return "integration_" + accountId;
-    }
-
-    private static String getShortcutId (long accountId, int index) {
-        return accountId + "-" + index;
-    }
-
-    // Account ID is not needed to be hidden because it is just an index
-    // However, user IDs should be hidden inside the DB
-    private static void saveIdMap (TdApi.User[] users, long accountId) {
-        long[] usersMap = new long[users.length];
-        for (int i = 0; i < users.length; i++) {
-            usersMap[i] = users[i].id;
-        }
-        Settings.instance().pmc().putLongArray(getSettingKey(accountId), usersMap);
-    }
-
-    public static long toTelegramId (long accountId, long id) {
-        try {
-            long[] idMap = Settings.instance().pmc().getLongArray(getSettingKey(accountId));
-            if (idMap != null) {
-                return idMap[(int) id];
-            } else {
-                return 0;
-            }
-        } catch (Exception e) {
-            Log.e(e);
-            return 0;
-        }
-    }
-
-    public void onUserLogout (int tdlibAccountId) {
-        long[] idMap = Settings.instance().pmc().getLongArray(getSettingKey(tdlibAccountId));
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1 || idMap == null) return;
-
-        android.content.pm.ShortcutManager sm = (android.content.pm.ShortcutManager) UI.getAppContext().getSystemService(Context.SHORTCUT_SERVICE);
-        ArrayList<String> shortcutList = new ArrayList<>();
-
-        for (int i = 0; i < idMap.length; i++) {
-            shortcutList.add(getShortcutId(tdlibAccountId, i));
-        }
-
-        sm.disableShortcuts(shortcutList, Lang.getString(R.string.ShortcutDisabledByLogout));
+    private static String getShortcutId (long accountId, long localChatId) {
+        return accountId + "_chat" + localChatId;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N_MR1)
     private void onLoadFinished () {
-        saveIdMap(users, tdlib.accountId());
         ArrayList<android.content.pm.ShortcutInfo> shortcuts = new ArrayList<>();
 
-        for (int i = 0; i < users.length; i++) {
-            TdApi.User user = users[i];
+        int index = 0;
+        for (long chatId : chatIds) {
+            long localChatId = tdlib.settings().getLocalChatId(chatId);
 
-            android.content.pm.ShortcutInfo.Builder shortcutInfo = new android.content.pm.ShortcutInfo.Builder(UI.getAppContext(), getShortcutId(tdlib.accountId(), i));
+            android.content.pm.ShortcutInfo.Builder shortcutInfo = new android.content.pm.ShortcutInfo.Builder(UI.getAppContext(), getShortcutId(tdlib.accountId(), localChatId));
 
-            Intent intent = new Intent(UI.getAppContext(), MainActivity.class);
-            intent.setAction(Intents.ACTION_OPEN_CHAT + "." + tdlib.accountId() + "." + i + "." + Math.random());
-            intent.setPackage(BuildConfig.APPLICATION_ID);
-            intent.putExtra("account_id", tdlib.accountId());
-            intent.putExtra("chat_id", (long) i);
-            intent.putExtra("secure", true);
-
-            shortcutInfo.setShortLabel(user.firstName);
-            shortcutInfo.setLongLabel(tdlib.cache().userName(user.id));
+            Intent intent = Intents.valueOfLocalChatId(tdlib.id(), localChatId, 0, true);
+            shortcutInfo.setShortLabel(tdlib.chatTitleShort(chatId));
+            shortcutInfo.setLongLabel(tdlib.chatTitle(chatId));
             shortcutInfo.setIntent(intent);
             shortcutInfo.setActivity(new ComponentName(UI.getAppContext(), MainActivity.class));
 
-            Bitmap bitmap = userAvatars[i] != null ? circleCropBitmap(userAvatars[i]) : renderLetterBitmap(user);
-            shortcutInfo.setIcon(android.graphics.drawable.Icon.createWithBitmap(bitmap));
+            Set<String> categories = new HashSet<>();
+            categories.add(android.content.pm.ShortcutInfo.SHORTCUT_CATEGORY_CONVERSATION);
 
+            Bitmap bitmap;
+            if (userAvatars[index] != null) {
+                bitmap = userAvatars[index];
+            } else {
+                final int size = 150;
+                AvatarPlaceholder placeholder = tdlib.chatPlaceholder(chatId, tdlib.chat(chatId), true, size / 2f, null);
+                bitmap = renderLetterBitmap(placeholder, size);
+            }
+            shortcutInfo.setIcon(android.graphics.drawable.Icon.createWithBitmap(bitmap));
+            shortcutInfo.setCategories(categories);
             shortcuts.add(shortcutInfo.build());
+            index++;
         }
 
         android.content.pm.ShortcutManager sm = (android.content.pm.ShortcutManager) UI.getAppContext().getSystemService(Context.SHORTCUT_SERVICE);
         sm.setDynamicShortcuts(shortcuts);
     }
 
-    private Bitmap renderLetterBitmap (TdApi.User user) {
-        int size = 150;
-
+    private static Bitmap renderLetterBitmap (AvatarPlaceholder placeholder, int size) {
         Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
-
         float radius = size / 2f;
-
-        Letters letters = TD.getLetters(user);
-        int avatarColorId = TD.getAvatarColorId(user.id, tdlib.myUserId());
-        float lettersSize = 25f;
-        float lettersWidth = Paints.measureLetters(letters, lettersSize);
-
-        canvas.drawCircle(radius, radius, radius, Paints.fillingPaint(Theme.getColor(avatarColorId)));
-        Paints.drawLetters(canvas, letters, radius - lettersWidth / 2, radius + Screen.dp(8f), lettersSize);
-
+        placeholder.draw(canvas, radius, radius);
         return bitmap;
     }
 
     // The following part is wisely taken from Coil-KT
 
-    private Bitmap circleCropBitmap (Bitmap adaptiveIconBitmap) {
+    private static Bitmap circleCropBitmap (Bitmap adaptiveIconBitmap) {
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
 
         int minSize = Math.min(adaptiveIconBitmap.getWidth(), adaptiveIconBitmap.getHeight());

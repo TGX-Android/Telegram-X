@@ -3716,8 +3716,6 @@
   <string name="NoRightDisallowChangeInfo">All members can change info of this chat.</string>
   <string name="NoRightDisallowPin">All members can pin messages in this chat.</string>
 
-  <string name="ShortcutDisabledByLogout">Telegram account attached to this shortcut is not available.</string>
-
   <string name="CopyBankCard">Copy card number</string>
   <string name="CopiedBankCard">Card number has been copied to the clipboard</string>
 

@@ -1687,6 +1687,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
         checkPauseTimeouts(null);
       }
       if (isUnauthorized && accountId == preferredAccountId) {
+        tdlib.shortcuts().clear();
         int newAccountId = findNextAccountId(accountId);
         if (newAccountId != TdlibAccount.NO_ID) {
           changePreferredAccountId(newAccountId, SWITCH_REASON_UNAUTHORIZED);

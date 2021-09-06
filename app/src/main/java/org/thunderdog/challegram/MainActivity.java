@@ -36,7 +36,6 @@ import org.thunderdog.challegram.telegram.GlobalAccountListener;
 import org.thunderdog.challegram.telegram.LiveLocationManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
-import org.thunderdog.challegram.telegram.TdlibAppShortcutManager;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
@@ -645,14 +644,10 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
         }
       }
       long messageId = intent.getLongExtra("message_id", 0);
-      boolean isSecure = intent.getBooleanExtra("secure", false);
-
-      if (accountId != TdlibAccount.NO_ID && isSecure) {
-        chatId = TdlibAppShortcutManager.toTelegramId(accountId, chatId);
-      }
+      boolean disableAnimation = intent.getBooleanExtra("disable_animation", false);
 
       if (accountId != TdlibAccount.NO_ID && chatId != 0) {
-        openMessagesController(accountId, chatId, messageId);
+        openMessagesController(accountId, chatId, messageId, disableAnimation);
         return true;
       } else {
         Log.e("Cannot open chat, no information found: %s", intent);
@@ -1263,13 +1258,15 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
     }
   }
 
-  private void openMessagesController (int accountId, long chatId, long specificMessageId) {
+  private void openMessagesController (int accountId, long chatId, long specificMessageId, boolean disableAnimation) {
     final Tdlib tdlib = TdlibManager.instanceForAccountId(accountId).account(accountId).tdlib();
     tdlib.awaitInitialization(() -> {
       tdlib.incrementUiReferenceCount();
       handler.post(() -> {
         final TdlibContext context = new TdlibContext(this, tdlib);
-        final TdlibUi.ChatOpenParameters params = new TdlibUi.ChatOpenParameters().onDone(tdlib::decrementUiReferenceCount);
+        final TdlibUi.ChatOpenParameters params = new TdlibUi.ChatOpenParameters()
+          .onDone(tdlib::decrementUiReferenceCount)
+          .disableAnimation(disableAnimation);
         if (specificMessageId != 0)
           params.highlightMessage(new MessageId(chatId, specificMessageId));
         tdlib.ui().openChat(context, chatId, params);

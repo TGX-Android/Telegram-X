@@ -1089,7 +1089,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
     boolean isMulti = context().isMultiUser();
     String name = isMulti ? TD.getUserName(account().getFirstName(), account().getLastName()) : null;
-    shortcuts().onUserLogout(accountId());
     incrementReferenceCount(REFERENCE_TYPE_JOB);
     /*deleteAllFiles(ignored -> */client().send(new TdApi.LogOut(), result -> {
       if (isMulti) {
@@ -2688,6 +2687,25 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
     final int userId = chatUserId(chatId);
     return userId != 0 ? cache().userDisplayName(userId, allowSavedMessages, shorten) : null;
+  }
+
+  public TdApi.ChatPhotoInfo chatPhoto (long chatId) {
+    TdApi.Chat chat = chat(chatId);
+    if (chat != null) {
+      return chat.photo;
+    }
+    final int userId = chatUserId(chatId);
+    if (userId != 0) {
+      TdApi.ProfilePhoto profilePhoto = cache().userPhoto(userId);
+      if (profilePhoto != null) {
+        return new TdApi.ChatPhotoInfo(profilePhoto.small,
+          profilePhoto.big,
+          profilePhoto.minithumbnail,
+          profilePhoto.hasAnimation
+        );
+      }
+    }
+    return null;
   }
 
   public boolean canReportMessage (TdApi.Message message) {

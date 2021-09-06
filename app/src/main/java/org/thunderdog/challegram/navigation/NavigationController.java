@@ -460,7 +460,9 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     if (!isAnimating && with != null) {
       NavigationStack stack = getStack();
 
-      with.get();
+      View wrap = with.get();
+      wrap.setAlpha(1f);
+      wrap.setTranslationX(0f);
 
       stack.clear(this);
       stack.push(with, true);
@@ -476,12 +478,20 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     }
   }
 
+  public static final int STACK_MODE_RESET = 0;
+  public static final int STACK_MODE_KEEP_FIRST = 1;
+  public static final int STACK_MODE_KEEP_ALL = 2;
+
   public final void setController (ViewController<?> controller) {
+    setController(controller, STACK_MODE_RESET);
+  }
+
+  public final void setController (ViewController<?> controller, int stackMode) {
     if (!isAnimating && controller != null) {
       if (getStack().isEmpty()) {
         initController(controller);
       } else {
-        processor.setController(controller);
+        processor.setController(controller, stackMode);
       }
     }
   }

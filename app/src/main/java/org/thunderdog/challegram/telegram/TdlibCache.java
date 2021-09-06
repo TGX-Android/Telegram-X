@@ -1040,6 +1040,11 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     return userId != 0 ? TD.getUserSingleName(userId, user(userId)) : "VOID";
   }
 
+  public TdApi.ProfilePhoto userPhoto (int userId) {
+    TdApi.User user = user(userId);
+    return user != null ? user.profilePhoto : null;
+  }
+
   public @Nullable String userUsername (int userId) {
     if (userId != 0) {
       TdApi.User user = user(userId);

@@ -392,7 +392,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
         textBuilder.append("\n\n");
       }
 
-      final Person person = buildPerson(this.context, chat, mergedList.get(0), onlyScheduled, onlySilent, !isRebuild);
+      final Person person = buildPerson(this.context.tdlib(), chat, mergedList.get(0), onlyScheduled, onlySilent, !isRebuild);
 
       if (mergedList.size() == 1) {
         TdlibNotification notification = mergedList.get(0);
@@ -727,18 +727,17 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     }
   }
 
-  static Person buildPerson (TdlibNotificationManager context, boolean isSelfChat, boolean isGroupChat, boolean isChannel, TdApi.User user, @Nullable String id, boolean isScheduled, boolean isSilent, boolean allowDownload) {
+  static Person buildPerson (Tdlib tdlib, boolean isSelfChat, boolean isGroupChat, boolean isChannel, TdApi.User user, @Nullable String id, boolean isScheduled, boolean isSilent, boolean allowDownload) {
     if (user == null)
       return new Person.Builder().setName("").build();
-    if (context.isSelfUserId(user.id))
+    if (tdlib.isSelfUserId(user.id))
       id = "0";
     else if (id == null)
       id = Integer.toString(user.id);
-    return buildPerson(context, isSelfChat, isGroupChat, isChannel, id, TD.isBot(user), TD.getUserName(user), TD.getLetters(user), TD.getAvatarColorId(user.id, context.myUserId()), user.profilePhoto != null ? user.profilePhoto.small : null, isScheduled, isSilent, allowDownload);
+    return buildPerson(tdlib, isSelfChat, isGroupChat, isChannel, id, TD.isBot(user), TD.getUserName(user), TD.getLetters(user), TD.getAvatarColorId(user.id, tdlib.myUserId()), user.profilePhoto != null ? user.profilePhoto.small : null, isScheduled, isSilent, allowDownload);
   }
 
-  public static Person buildPerson (TdlibNotificationManager context, TdApi.Chat chat, TdlibNotification notification, boolean isScheduled, boolean isSilent, boolean allowDownload) {
-    Tdlib tdlib = context.tdlib();
+  public static Person buildPerson (Tdlib tdlib, TdApi.Chat chat, TdlibNotification notification, boolean isScheduled, boolean isSilent, boolean allowDownload) {
     long senderChatId = notification.findSenderId();
     int userId = tdlib.chatUserId(chat);
     if (userId == 0 && ChatId.isUserChat(senderChatId) && notification.isSynced()) {
@@ -746,17 +745,17 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     }
     if (userId != 0) {
       TdApi.User user = tdlib.cache().user(userId);
-      return buildPerson(context, notification.isSelfChat(), TD.isMultiChat(chat), tdlib.isChannelChat(chat), user, ChatId.isSecret(chat.id) ? Long.toString(chat.id) : Long.toString(ChatId.fromUserId(userId)), isScheduled, isSilent, allowDownload);
+      return buildPerson(tdlib, notification.isSelfChat(), TD.isMultiChat(chat), tdlib.isChannelChat(chat), user, ChatId.isSecret(chat.id) ? Long.toString(chat.id) : Long.toString(ChatId.fromUserId(userId)), isScheduled, isSilent, allowDownload);
     }
     if (TD.isMultiChat(chat)) {
       String senderName = notification.findSenderName();
       TdApi.Chat senderChat = tdlib.chat(senderChatId);
-      return buildPerson(context, notification.isSelfChat(), TD.isMultiChat(chat), tdlib.isChannelChat(chat), Long.toString(senderChatId), tdlib.isBotChat(senderChatId) || tdlib.isChannel(senderChatId), senderName, TD.getLetters(senderName), tdlib.chatAvatarColorId(senderChatId), senderChat != null && senderChat.photo != null ? senderChat.photo.small : null, isScheduled, isSilent, allowDownload);
+      return buildPerson(tdlib, notification.isSelfChat(), TD.isMultiChat(chat), tdlib.isChannelChat(chat), Long.toString(senderChatId), tdlib.isBotChat(senderChatId) || tdlib.isChannel(senderChatId), senderName, TD.getLetters(senderName), tdlib.chatAvatarColorId(senderChatId), senderChat != null && senderChat.photo != null ? senderChat.photo.small : null, isScheduled, isSilent, allowDownload);
     }
-    return buildPerson(context, notification.isSelfChat(), TD.isMultiChat(chat), tdlib.isChannelChat(chat), Long.toString(chat.id), tdlib.isBotChat(chat) || tdlib.isChannelChat(chat), chat.title, tdlib.chatLetters(chat), tdlib.chatAvatarColorId(chat), chat.photo != null ? chat.photo.small : null, isScheduled, isSilent, allowDownload);
+    return buildPerson(tdlib, notification.isSelfChat(), TD.isMultiChat(chat), tdlib.isChannelChat(chat), Long.toString(chat.id), tdlib.isBotChat(chat) || tdlib.isChannelChat(chat), chat.title, tdlib.chatLetters(chat), tdlib.chatAvatarColorId(chat), chat.photo != null ? chat.photo.small : null, isScheduled, isSilent, allowDownload);
   }
 
-  public static Person buildPerson (TdlibNotificationManager context, boolean isSelfChat, boolean isGroupChat, boolean isChannel, String id, boolean isBot, String name, Letters letters, @ThemeColorId int colorId, TdApi.File photo, boolean isScheduled, boolean isSilent, boolean allowDownload) {
+  public static Person buildPerson (Tdlib tdlib, boolean isSelfChat, boolean isGroupChat, boolean isChannel, String id, boolean isBot, String name, Letters letters, @ThemeColorId int colorId, TdApi.File photo, boolean isScheduled, boolean isSilent, boolean allowDownload) {
     Person.Builder b = new Person.Builder();
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
       b.setKey(id);
@@ -764,7 +763,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       b.setName(Lang.getSilentNotificationTitle(name, true, isSelfChat, isGroupChat, isChannel, isScheduled, isSilent));
       Bitmap bitmap = null; // TODO load from cache
       if (!U.isValidBitmap(bitmap)) {
-        bitmap = isSelfChat ? TdlibNotificationUtils.buildSelfIcon(context.tdlib()) : TdlibNotificationUtils.buildLargeIcon(context.tdlib(), photo, colorId, letters, true, allowDownload);
+        bitmap = isSelfChat ? TdlibNotificationUtils.buildSelfIcon(tdlib) : TdlibNotificationUtils.buildLargeIcon(tdlib, photo, colorId, letters, true, allowDownload);
       }
       if (U.isValidBitmap(bitmap)) {
         b.setIcon(IconCompat.createWithBitmap(bitmap));
@@ -864,7 +863,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     TdApi.User user = context.myUser();
     NotificationCompat.MessagingStyle style;
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && user != null) {
-      style = new NotificationCompat.MessagingStyle(buildPerson(context, tdlib.isSelfChat(chat), tdlib.isMultiChat(chat), tdlib.isChannelChat(chat), user, null, false, false, allowDownload));
+      style = new NotificationCompat.MessagingStyle(buildPerson(tdlib, tdlib.isSelfChat(chat), tdlib.isMultiChat(chat), tdlib.isChannelChat(chat), user, null, false, false, allowDownload));
     } else {
       //noinspection deprecation
       style = new NotificationCompat.MessagingStyle("");
@@ -998,7 +997,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
             } else {
               preview = Lang.getString(R.string.YouHaveNewMessage);
             }
-            addMessage(style, preview, buildPerson(tdlib.notifications(), chat, notification, onlyScheduled, onlySilent, !isRebuild), tdlib, chat, notification, MEDIA_LOAD_TIMEOUT, isRebuild, !onlyScheduled && notification.isScheduled(), !onlySilent && notification.isVisuallySilent());
+            addMessage(style, preview, buildPerson(tdlib, chat, notification, onlyScheduled, onlySilent, !isRebuild), tdlib, chat, notification, MEDIA_LOAD_TIMEOUT, isRebuild, !onlyScheduled && notification.isScheduled(), !onlySilent && notification.isVisuallySilent());
           }
           b.setStyle(style);
         } else {

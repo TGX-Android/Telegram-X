@@ -68,20 +68,29 @@ public class NavigationProcessor extends Handler {
     }
   }
 
-  public void setController (ViewController<?> controller) {
+  public void setController (ViewController<?> controller, int stackMode) {
     if (checkUiThread()) {
-      controller.get();
+      View wrap = controller.get();
+      wrap.setAlpha(1f);
+      wrap.setTranslationX(0f);
 
-      stack.clear(navigation);
+      navigation.preventLayout();
+
       stack.push(controller, true);
+      if (stackMode != NavigationController.STACK_MODE_KEEP_ALL) {
+        boolean keepFirst = stackMode == NavigationController.STACK_MODE_KEEP_FIRST;
+        stack.reset(navigation, keepFirst);
+      }
 
       navigation.removeChildren();
       navigation.addChildWrapper(controller);
       callFocusDelayed(controller);
       navigation.getHeaderView().setTitle(controller);
       navigation.setIsAnimating(false);
+
+      navigation.layoutIfRequested();
     } else {
-      sendMessage(Message.obtain(this, SET_CONTROLLER, 0, 0, controller));
+      sendMessage(Message.obtain(this, SET_CONTROLLER, stackMode, 0, controller));
     }
   }
 
@@ -253,7 +262,7 @@ public class NavigationProcessor extends Handler {
         break;
       }
       case SET_CONTROLLER: {
-        setController((ViewController<?>) msg.obj);
+        setController((ViewController<?>) msg.obj, msg.arg1);
         break;
       }
       case SET_CONTROLLER_ANIMATED: {
