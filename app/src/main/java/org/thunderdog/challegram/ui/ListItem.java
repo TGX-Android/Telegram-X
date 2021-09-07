@@ -432,10 +432,9 @@ public class ListItem {
 
   public boolean setStringIfChanged (@NonNull CharSequence string) {
     if (!StringUtils.equalsOrBothEmpty(this.string, string)) {
-      boolean changed = stringResource == 0 || StringUtils.equalsOrBothEmpty(getString(), string);
       this.string = string;
       this.stringResource = 0;
-      return changed;
+      return true;
     }
     return false;
   }
