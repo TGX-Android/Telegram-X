@@ -7943,6 +7943,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (chat == null || chat.id == 0 || !TD.isValidRight(rightId))
       return null;
     TdApi.ChatMemberStatus status = chatStatus(chat.id);
+    boolean isNotSpecificallyRestricted = status != null && status.getConstructor() == TdApi.ChatMemberStatusMember.CONSTRUCTOR;
     if (status != null) {
       switch (status.getConstructor()) {
         case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
@@ -7958,11 +7959,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         case TdApi.ChatMemberStatusLeft.CONSTRUCTOR:
           break;
         case TdApi.ChatMemberStatusMember.CONSTRUCTOR:
-          if (isChannelChat(chat)) {
+          if (isChannelChat(chat))
             return new RestrictionStatus(chat.id, RESTRICTION_STATUS_UNAVAILABLE, 0);
-          } else if (!TD.checkRight(chat.permissions, rightId)) {
-            return new RestrictionStatus(chat.id, RESTRICTION_STATUS_EVERYONE, 0);
-          }
+          break;
       }
     }
     switch (chat.type.getConstructor()) {
@@ -7999,7 +7998,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
     }
     if (!TD.checkRight(chat.permissions, rightId))
-      return new RestrictionStatus(chat.id, RESTRICTION_STATUS_RESTRICTED, 0);
+      return new RestrictionStatus(chat.id, isNotSpecificallyRestricted ? RESTRICTION_STATUS_EVERYONE : RESTRICTION_STATUS_RESTRICTED, 0);
     return null;
   }
 
