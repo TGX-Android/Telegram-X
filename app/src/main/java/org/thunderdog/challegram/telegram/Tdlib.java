@@ -3076,7 +3076,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public String senderName (TdApi.Message msg, boolean allowForward, boolean shorten) {
     long authorId = Td.getMessageAuthorId(msg, allowForward);
-    if (ChatId.isUserChat(authorId)) {
+    if (allowForward && msg.forwardInfo != null && msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginHiddenUser.CONSTRUCTOR) {
+      return ((TdApi.MessageForwardOriginHiddenUser) msg.forwardInfo.origin).senderName;
+    } else if (ChatId.isUserChat(authorId)) {
       int userId = chatUserId(authorId);
       return shorten ? cache().userFirstName(userId) : cache().userName(userId);
     } else if (authorId == msg.chatId && !StringUtils.isEmpty(msg.authorSignature)) {
