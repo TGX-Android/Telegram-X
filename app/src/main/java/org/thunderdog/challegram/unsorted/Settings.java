@@ -694,7 +694,7 @@ public class Settings {
   @Nullable
   private Integer _preferredAudioPlaybackMode;
 
-  public static final float MAX_NIGHT_LUX_DEFAULT = 1.5f;
+  public static final float MAX_NIGHT_LUX_DEFAULT = 0.70f;
 
   @Nullable
   private Integer _mapProviderType, _mapProviderTypeCloud;

@@ -3031,7 +3031,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   public void onSensorChanged (SensorEvent e) {
     switch (e.sensor.getType()) {
       case Sensor.TYPE_LIGHT: {
-        final float lux = e.values[0];
+        final float lux = Math.min(1f, (float) Math.ceil(9.9323f * Math.log(e.values[0]) + 27.059f) / 100.0f);
         if (needsLightSensorChanges() && (lastLuxValue != lux || autoNightModeSwitch)) {
           lastLuxValue = lux;
           autoNightModeSwitch = false;

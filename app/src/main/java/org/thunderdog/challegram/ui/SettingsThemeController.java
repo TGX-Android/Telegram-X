@@ -521,18 +521,12 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       addThemeGroup(items, myThemes, true);
 
       lightSensorAvailable = false;
-      maxSensorValue = SensorManager.LIGHT_CLOUDY / 5;
+      maxSensorValue = 1f;
       try {
         SensorManager sensorManager = (SensorManager) UI.getContext().getSystemService(Context.SENSOR_SERVICE);
         if (sensorManager != null) {
           Sensor sensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
           lightSensorAvailable = sensor != null;
-          if (lightSensorAvailable) {
-            lightSensorAvailable = (maxSensorValue = Math.min(maxSensorValue, sensor.getMaximumRange())) > 0f;
-            if (lightSensorAvailable) {
-              maxSensorValue = Math.max(maxSensorValue, Settings.MAX_NIGHT_LUX_DEFAULT * 1.5f);
-            }
-          }
         }
       } catch (Throwable t) {
         Log.i("Cannot access light sensor", t);
