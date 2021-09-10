@@ -433,7 +433,7 @@ public class TGBackground {
   }
 
   public float getPatternIntensity () {
-    return isPattern() ? (float) ((TdApi.BackgroundTypePattern) type).intensity / 100f : 1f;
+    return isPattern() ? (float) Math.abs(((TdApi.BackgroundTypePattern) type).intensity) / 100f : 1f;
   }
 
   public boolean isMoving () {
