@@ -262,8 +262,10 @@ public class TGBackground {
       return StringUtils.equalsOrBothEmpty(a.getCustomPath(), b.getCustomPath());
     if (a.isFillSolid())
       return a.getBackgroundColor() == b.getBackgroundColor();
-    if (a.isFillGradient())
+    if (a.isFillGradient() || a.isPatternBackgroundGradient())
       return a.getTopColor() == b.getTopColor() && a.getBottomColor() == b.getBottomColor() && a.getRotationAngle() == b.getRotationAngle();
+    if (a.isFillFreeformGradient() || a.isPatternBackgroundFreeformGradient())
+      return a.getFreeformColors() == b.getFreeformColors();
     return StringUtils.equalsOrBothEmpty(a.getName(), b.getName());
   }
 
@@ -436,7 +438,7 @@ public class TGBackground {
     if (isPattern()) {
       float intensity = ((TdApi.BackgroundTypePattern) type).intensity;
 
-      if (intensity < 0) {
+      if (intensity <= 0) {
         intensity = intensity + 100;
       }
 
