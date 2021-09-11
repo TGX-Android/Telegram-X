@@ -824,14 +824,40 @@ public class TGBackground {
         return getPatternColor(((TdApi.BackgroundFillSolid) fill).color);
       case TdApi.BackgroundFillGradient.CONSTRUCTOR: {
         TdApi.BackgroundFillGradient gradient = (TdApi.BackgroundFillGradient) fill;
-        return getPatternColor(ColorUtils.fromToArgb(ColorUtils.color(255, gradient.topColor), ColorUtils.color(255, gradient.bottomColor), .5f));
+        return getPatternColor(getCenterColor(ColorUtils.color(255, gradient.topColor), ColorUtils.color(255, gradient.bottomColor)));
       }
       case TdApi.BackgroundFillFreeformGradient.CONSTRUCTOR: {
-        TdApi.BackgroundFillFreeformGradient gradient = (TdApi.BackgroundFillFreeformGradient) fill;
-        return getPatternColor(ColorUtils.fromToArgb(ColorUtils.color(255, gradient.colors[0]), ColorUtils.color(255, gradient.colors[gradient.colors.length - 1]), .5f));
+        return getPatternColorFreeform((TdApi.BackgroundFillFreeformGradient) fill);
       }
     }
     throw new UnsupportedOperationException(fill.toString());
+  }
+
+  private static int getPatternColorFreeform (TdApi.BackgroundFillFreeformGradient gradient) {
+    int centerColor = getCenterFreeformColor(gradient);
+    float[] hsb = RGBtoHSB(Color.red(centerColor), Color.green(centerColor), Color.blue(centerColor));
+
+    if (hsb[2] < 0.3f) {
+      return getPatternColor(centerColor);
+    } else {
+      return (getPatternColor(centerColor) & 0x00ffffff) | 0x64000000;
+    }
+  }
+
+  private static int getCenterFreeformColor (TdApi.BackgroundFillFreeformGradient gradient) {
+    int initialCenter = getCenterColor(ColorUtils.color(255, gradient.colors[0]), ColorUtils.color(255, gradient.colors[1]));
+
+    if (gradient.colors.length >= 2) {
+      for (int i = 2; i < gradient.colors.length; i++) {
+        initialCenter = getCenterColor(initialCenter, ColorUtils.color(255, gradient.colors[i]));
+      }
+    }
+
+    return initialCenter;
+  }
+
+  private static int getCenterColor (int first, int second) {
+    return ColorUtils.fromToArgb(first, second, 0.5f);
   }
 
   private static int getPatternColor (int color) {
