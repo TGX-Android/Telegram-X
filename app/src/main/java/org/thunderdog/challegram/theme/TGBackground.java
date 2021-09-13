@@ -441,13 +441,7 @@ public class TGBackground {
 
   public float getPatternIntensity () {
     if (isPattern()) {
-      float intensity = ((TdApi.BackgroundTypePattern) type).intensity;
-
-      if (intensity <= 0) {
-        intensity = intensity + 100;
-      }
-
-      return intensity / 100f;
+      return Math.abs(((TdApi.BackgroundTypePattern) type).intensity) / 100f;
     } else {
       return 1f;
     }
