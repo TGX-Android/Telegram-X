@@ -337,7 +337,7 @@ public class SvgRender {
     /**
      * Parse a list of transforms such as: foo(n,n,n...) bar(n,n,n..._ ...) Delimiters are whitespaces or commas
      */
-    private static Matrix parseTransform(String s) {
+    private static Matrix parseTransform (String s) {
         Matrix matrix = new Matrix();
         while (true) {
             parseTransformItem(s, matrix);
@@ -352,7 +352,7 @@ public class SvgRender {
         return matrix;
     }
 
-    private static Matrix parseTransformItem(String s, Matrix matrix) {
+    private static Matrix parseTransformItem (String s, Matrix matrix) {
         if (s.startsWith("matrix(")) {
             NumberParse np = parseNumbers(s.substring("matrix(".length()));
             if (np.numbers.size() == 6) {
@@ -418,7 +418,7 @@ public class SvgRender {
         return matrix;
     }
 
-    private static NumberParse parseNumbers(String s) {
+    private static NumberParse parseNumbers (String s) {
         if (s == null) return null;
         int n = s.length();
         int p = 0;
@@ -536,7 +536,7 @@ public class SvgRender {
      *
      * @param s the path string from the XML
      */
-    private static Path doPath(String s) {
+    private static Path doPath (String s) {
         int n = s.length();
         ParserHelper ph = new ParserHelper(s, 0);
         ph.skipWhitespace();
@@ -729,7 +729,7 @@ public class SvgRender {
         return p;
     }
 
-    private static void drawArc(Path p, float lastX, float lastY, float x, float y, float rx, float ry, float theta,
+    private static void drawArc (Path p, float lastX, float lastY, float x, float y, float rx, float ry, float theta,
                                 int largeArc, int sweepArc) {
         // Log.d("drawArc", "from (" + lastX + "," + lastY + ") to (" + x + ","+ y + ") r=(" + rx + "," + ry +
         // ") theta=" + theta + " flags="+ largeArc + "," + sweepArc);
@@ -807,7 +807,7 @@ public class SvgRender {
         }
     }
 
-    private static float angle(float x1, float y1, float x2, float y2) {
+    private static float angle (float x1, float y1, float x2, float y2) {
         return (float) Math.toDegrees(Math.atan2(x1, y1) - Math.atan2(x2, y2)) % 360;
     }
 
@@ -815,7 +815,7 @@ public class SvgRender {
     private static class StyleSet {
         HashMap<String, String> styleMap = new HashMap<String, String>();
 
-        private StyleSet(String string) {
+        private StyleSet (String string) {
             String[] styles = string.split(";");
             for (String s : styles) {
                 String[] style = s.split(":");
@@ -825,7 +825,7 @@ public class SvgRender {
             }
         }
 
-        public String getStyle(String name) {
+        public String getStyle (String name) {
             return styleMap.get(name);
         }
     }
@@ -883,7 +883,7 @@ public class SvgRender {
             return Integer.parseInt(v);
         }
 
-        public Integer getColor(String name) {
+        public Integer getColor (String name) {
             if (name == null) {
                 return null;
             } else if (name.startsWith("#")) {
