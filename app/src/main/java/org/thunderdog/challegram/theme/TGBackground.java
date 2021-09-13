@@ -24,6 +24,7 @@ import java.util.Map;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.leveldb.LevelDB;
+import me.vkryl.td.TdConstants;
 
 /**
  * Date: 01/04/2017
@@ -178,7 +179,11 @@ public class TGBackground {
       case TdApi.BackgroundTypePattern.CONSTRUCTOR:
       case TdApi.BackgroundTypeWallpaper.CONSTRUCTOR: {
         if (background.document != null) {
-          setTarget(new ImageFile(tdlib, background.document.document));
+          ImageFile target = new ImageFile(tdlib, background.document.document);
+          if (background.document.mimeType.equals(TdConstants.BACKGROUND_PATTERN_MIME_TYPE))
+            target.setIsVector();
+          setTarget(target);
+
           if (background.document.thumbnail != null)
             setPreview(TD.toImageFile(tdlib, background.document.thumbnail));
           if (background.document.minithumbnail != null)

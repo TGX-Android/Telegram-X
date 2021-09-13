@@ -109,7 +109,7 @@ public class ImageReader {
       }
     }
 
-    if (file.file != null && file.file.local.path.endsWith(".tgv")) {
+    if (file.isVector()) {
       readTgVectorPattern(file, listener);
       return;
     }

@@ -60,6 +60,7 @@ public class ImageFile {
   private static final int FLAG_FORCE_RGB_565 = 1 << 15;
   private static final int FLAG_FORCE_SW_RENDER = 1 << 16;
   private static final int FLAG_NEED_PALETTE = 1 << 17;
+  private static final int FLAG_IS_VECTOR = 1 << 18;
 
   protected TdApi.File file;
 
@@ -174,6 +175,10 @@ public class ImageFile {
     flags |= FLAG_PRIVATE;
   }
 
+  public void setIsVector () {
+    flags |= FLAG_IS_VECTOR;
+  }
+
   public void setNoReference () {
     flags |= FLAG_NO_REFERENCE;
   }
@@ -192,6 +197,10 @@ public class ImageFile {
 
   public boolean isPrivate () {
     return (flags & FLAG_PRIVATE) != 0;
+  }
+
+  public boolean isVector () {
+    return (flags & FLAG_IS_VECTOR) != 0;
   }
 
   public void setBlur (int radius) {
