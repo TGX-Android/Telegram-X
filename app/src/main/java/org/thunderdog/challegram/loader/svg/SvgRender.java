@@ -36,14 +36,14 @@ public class SvgRender {
     private static final Matrix arcMatrix = new Matrix();
     private static final Matrix arcMatrix2 = new Matrix();
 
-    public static Bitmap fromCompressed (String filePath) {
-        return svgAsBitmap(U.gzipFileToString(filePath));
+    public static Bitmap fromCompressed (int imageSize, String filePath) {
+        return svgAsBitmap(imageSize, U.gzipFileToString(filePath));
     }
 
     @Nullable
-    private static Bitmap svgAsBitmap (String rawData) {
+    private static Bitmap svgAsBitmap (int imageSize, String rawData) {
         try {
-            SVGHandler handler = new SVGHandler();
+            SVGHandler handler = new SVGHandler(imageSize);
             XMLReader xr = SAXParserFactory.newInstance().newSAXParser().getXMLReader();
             xr.setContentHandler(handler);
             xr.parse(new InputSource(new StringReader(rawData)));
@@ -64,6 +64,11 @@ public class SvgRender {
         private final HashMap<String, StyleSet> styleSheet = new HashMap<>();
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final RectF rect = new RectF();
+        private final int imageSize;
+
+        public SVGHandler (int imageSize) {
+            this.imageSize = imageSize;
+        }
 
         private void pushTransform (Attributes attributes) {
             final String transform = getStringAttr("transform", attributes);
@@ -85,9 +90,32 @@ public class SvgRender {
 
             switch (localName) {
                 case "svg": {
-                    int width = Math.min(Screen.currentWidth(), Screen.currentActualHeight());
-                    int height = Math.max(Screen.currentWidth(), Screen.currentActualHeight());
-                    outBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                    int bWidth = 0, bHeight = 0;
+                    int screenWidth = Screen.currentWidth(), screenHeight = Screen.currentActualHeight();
+
+                    String rawViewBox = getStringAttr("viewBox", attributes);
+                    if (rawViewBox != null) {
+                        String[] viewBox = rawViewBox.split(" ");
+                        if (viewBox.length != 4) return;
+
+                        // 0 0 1125 2436
+                        int viewBoxWidth = (int) Float.parseFloat(viewBox[2]);
+                        int viewBoxHeight = (int) Float.parseFloat(viewBox[3]);
+
+                        float sourceMinSize = Math.min(viewBoxWidth, viewBoxHeight);
+                        float sourceMaxSize = Math.max(viewBoxWidth, viewBoxHeight);
+
+                        bWidth = (int) (imageSize * (sourceMinSize / sourceMaxSize));
+                        bHeight = imageSize;
+                    }
+
+                    if (bWidth == 0 || bHeight == 0) {
+                        // fallback if SVG has no view box or it is malformed
+                        bWidth = Math.min(screenWidth, screenHeight);
+                        bHeight = Math.max(screenWidth, screenHeight);
+                    }
+
+                    outBitmap = Bitmap.createBitmap(bWidth, bHeight, Bitmap.Config.ARGB_8888);
                     outBitmap.eraseColor(Color.TRANSPARENT);
                     canvas = new Canvas(outBitmap);
                     break;
