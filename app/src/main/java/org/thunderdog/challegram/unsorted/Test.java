@@ -111,11 +111,11 @@ public class Test {
 
   public static boolean onChatClick (Tdlib tdlib, TdApi.Chat chat) {
     if (true) {
-      for (TdApi.ChatPosition position : chat.positions) {
+      /*for (TdApi.ChatPosition position : chat.positions) {
         TdApi.ChatPosition newPosition = new TdApi.ChatPosition(position.list, 0, false, null);
         tdlib.sendFakeUpdate(new TdApi.UpdateChatPosition(chat.id, newPosition), false);
-      }
-      return true;
+      }*/
+      return false;
     }
     if (BuildConfig.DEBUG) {
       /*if (true) {
