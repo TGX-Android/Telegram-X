@@ -1884,9 +1884,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void requestLoadMore () {
-    list.loadMore(chatsView != null ? chatsView.getLoadCount() : 40, () -> {
-
-    });
+    list.loadMore(chatsView != null ? chatsView.getLoadCount() : 40, null);
   }
 
   // Search mode
@@ -2473,6 +2471,13 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         if (!initialLoadFinished) {
           initialLoadFinished = true;
           adapter.checkArchive();
+        }
+      }
+      if (chatsView != null && newState == TdlibChatList.State.END_NOT_REACHED) {
+        LinearLayoutManager manager = (LinearLayoutManager) chatsView.getLayoutManager();
+        int lastVisiblePosition = manager.findLastVisibleItemPosition();
+        if (lastVisiblePosition == adapter.getItemCount() - 1) {
+          requestLoadMore();
         }
       }
     });
