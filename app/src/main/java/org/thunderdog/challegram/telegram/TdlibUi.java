@@ -39,7 +39,6 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.core.LangUtils;
-import org.thunderdog.challegram.data.ChatListManager;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGBotStart;
 import org.thunderdog.challegram.data.TGMessage;
@@ -3811,7 +3810,7 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public void showArchiveOptions (ViewController<?> context, ChatListManager archive) {
+  public void showArchiveOptions (ViewController<?> context, TdlibChatList archive) {
     boolean needMarkAsRead = tdlib.hasUnreadChats(ChatPosition.CHAT_LIST_ARCHIVE);
     final int size = needMarkAsRead ? 2 : 1;
 
@@ -3836,7 +3835,7 @@ public class TdlibUi extends Handler {
       strings.append(R.string.ArchiveHide);
     }
 
-    context.showOptions(Lang.pluralBold(R.string.xArchivedChats, archive.getTotalCount()), ids.get(), strings.get(), null, icons.get(), (v, optionId) -> {
+    context.showOptions(Lang.pluralBold(R.string.xArchivedChats, archive.totalCount()), ids.get(), strings.get(), null, icons.get(), (v, optionId) -> {
       switch (optionId) {
         case R.id.btn_markChatAsRead: {
           tdlib.readAllChats(new TdApi.ChatListArchive(), readCount -> UI.showToast(Lang.plural(R.string.ReadAllChatsDone, readCount), Toast.LENGTH_SHORT));
@@ -4013,10 +4012,10 @@ public class TdlibUi extends Handler {
         showArchiveUnarchiveChat(context, chatList, chatId, after);
         return true;
       case R.id.btn_archiveChat:
-        tdlib.client().send(new TdApi.AddChatToList(chatId, new TdApi.ChatListArchive()), tdlib.okHandler(after));
+        tdlib.client().send(new TdApi.AddChatToList(chatId, ChatPosition.CHAT_LIST_ARCHIVE), tdlib.okHandler(after));
         return true;
       case R.id.btn_unarchiveChat:
-        tdlib.client().send(new TdApi.AddChatToList(chatId, new TdApi.ChatListMain()), tdlib.okHandler(after));
+        tdlib.client().send(new TdApi.AddChatToList(chatId, ChatPosition.CHAT_LIST_MAIN), tdlib.okHandler(after));
         return true;
       case R.id.btn_markChatAsRead:
         if (messageThread != null) {

@@ -10,7 +10,6 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
-import me.vkryl.leveldb.LevelDB;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.StringList;
@@ -25,6 +24,7 @@ import me.vkryl.core.FileUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.util.Blob;
+import me.vkryl.leveldb.LevelDB;
 import me.vkryl.td.Td;
 
 /**
@@ -111,7 +111,11 @@ public class Test {
 
   public static boolean onChatClick (Tdlib tdlib, TdApi.Chat chat) {
     if (true) {
-      return false;
+      for (TdApi.ChatPosition position : chat.positions) {
+        TdApi.ChatPosition newPosition = new TdApi.ChatPosition(position.list, 0, false, null);
+        tdlib.sendFakeUpdate(new TdApi.UpdateChatPosition(chat.id, newPosition), false);
+      }
+      return true;
     }
     if (BuildConfig.DEBUG) {
       /*if (true) {

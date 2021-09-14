@@ -14,10 +14,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGChat;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.ui.ChatsController;
 import org.thunderdog.challegram.v.ChatsRecyclerView;
 
@@ -28,13 +28,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.td.ChatPosition;
 
 public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
   private ChatsController context;
 
   private final ArrayList<TGChat> chats;
-  private boolean canLoadMore;
-  private boolean finishReached;
   private int totalRes = R.string.xChats;
 
   private LinearLayoutManager layoutManager;
@@ -43,7 +42,6 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
     this.context = context;
     this.layoutManager = layoutManager;
     this.chats = new ArrayList<>();
-    canLoadMore = true;
   }
 
   public void checkChatListMode () {
@@ -54,10 +52,6 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
 
   public ArrayList<TGChat> getChats () {
     return chats;
-  }
-
-  public boolean isAbleToLoadMore () {
-    return canLoadMore;
   }
 
   public void setTotalRes (@StringRes int totalRes) {
@@ -83,7 +77,7 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
   }
 
   public void checkArchive () {
-    boolean hasArchive = this.needArchive && !context.inInitialLoading() && (chats.size() - (this.hasArchive ? 1 : 0)) > 0;
+    boolean hasArchive = this.needArchive && context.isInitialLoadFinished() && (chats.size() - (this.hasArchive ? 1 : 0)) > 0;
     if (this.hasArchive != hasArchive) {
       this.hasArchive = hasArchive;
       if (hasArchive) {
@@ -99,18 +93,18 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
   }
 
   private TGChat newArchive () {
-    return new TGChat(context, context.archiveManager(), true);
+    return new TGChat(context, context.tdlib().chatList(ChatPosition.CHAT_LIST_ARCHIVE), true);
   }
 
   public static final int ARCHIVE_UPDATE_ALL = 0;
   public static final int ARCHIVE_UPDATE_COUNTER = 1;
   public static final int ARCHIVE_UPDATE_MESSAGE = 2;
 
-  public int updateArchive (int archiveUpdateReason) {
+  public int updateArchive (int reason) {
     if (this.hasArchive) {
       TGChat chat = getChatAt(0);
       if (chat != null && chat.isArchive()) {
-        switch (archiveUpdateReason) {
+        switch (reason) {
           case ARCHIVE_UPDATE_COUNTER:
             chat.onArchiveCounterChanged();
             break;
@@ -146,7 +140,7 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
         break;
       }
       case VIEW_TYPE_INFO: {
-        if (canLoadMore) {
+        if (!context.isEndReached()) {
           holder.setInfo(null);
         } else if (chats.size() == 0) {
           holder.setEmpty(R.string.NoChats);
@@ -156,7 +150,7 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
         break;
       }
       case VIEW_TYPE_EMPTY: {
-        ((TextView) holder.itemView).setText(canLoadMore ? "" : Lang.getString(R.string.NoChats));
+        ((TextView) holder.itemView).setText(context.isEndReached() ? Lang.getString(R.string.NoChats) : "");
         break;
       }
     }
@@ -208,21 +202,10 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
     return chats.isEmpty() ? VIEW_TYPE_EMPTY : position == chats.size() ? VIEW_TYPE_INFO : VIEW_TYPE_CHAT;
   }
 
-  public void setCanLoadMore (boolean canLoadMore) {
-    if (this.canLoadMore != canLoadMore) {
-      this.canLoadMore = canLoadMore;
-      if (getItemCount() > 0) {
-        notifyChatItemChanged(chats.size());
-      }
+  public void updateInfo () {
+    if (!chats.isEmpty()) {
+      notifyItemChanged(chats.size());
     }
-  }
-
-  public void setFinishReached () {
-    finishReached = true;
-  }
-
-  public boolean isFinishReached () {
-    return finishReached;
   }
 
   public TGChat getChatAt (int index) {
@@ -281,7 +264,7 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
       }
     }
     if (addedItemCount > 0) {
-      notifyChatsInserted(atIndex, addedItemCount);
+      notifyItemRangeInserted(atIndex, addedItemCount);
       if (firstAddedItem != null && lastChat != null && lastChat.isPinnedOrSpecial() != firstAddedItem.isPinnedOrSpecial()) {
         notifyItemChanged(atIndex - 1);
       }
@@ -525,103 +508,99 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
     return removedChat;
   }
 
-  public int updateChatPosition (final boolean matchesList, final long chatId, final TdApi.ChatPosition position, final boolean orderChanged, final boolean sourceChanged, final boolean pinStateChanged) {
-    final int oldIndex = indexOfChat(chatId);
-    final long newOrder = position.order;
+  private boolean needShadowDecoration (TGChat a, TGChat b) {
+    return a != null && b != null && (a.isArchive() != b.isArchive() || a.isPinnedOrSpecial() != b.isPinnedOrSpecial());
+  }
 
-    if (!matchesList) {
-      if (oldIndex != -1) {
-        chats.get(oldIndex).updateChatPosition(chatId, position, sourceChanged, pinStateChanged);
-      }
-      return 0;
-    }
+  public int removeChatById (TdApi.Chat chat, int fromIndex, boolean needSort, Tdlib.ChatChange changeInfo) {
+    final int position = needSort ? indexOfChat(chat.id) : hasArchive ? fromIndex + 1 : fromIndex;
+    if (position != -1) {
+      TGChat removedChat = removeChat(position);
+      if (removedChat.getChatId() != chat.id)
+        throw new IllegalStateException();
 
-    int flags = sourceChanged ? ORDER_INVALIDATE_DECORATIONS : 0;
+      TGChat prevChat = getChatAt(position - 1);
+      TGChat nextChat = getChatAt(position);
 
-    if (newOrder == 0) {
-      if (oldIndex != -1) {
-        if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
-          Log.i(Log.TAG_MESSAGES_LOADER, "updateChatOrder -> 0, chatId: %d, oldIndex: %d", chatId, oldIndex);
-        }
-        TGChat chat = removeChat(oldIndex);
-        chat.updateChatPosition(chatId, position, sourceChanged, pinStateChanged);
-        notifyItemRemoved(oldIndex);
-        notifyItemChanged(chats.size());
-        context.checkDisplayNoChats();
-      }
-      return flags;
-    }
+      boolean invalidateDecorations = changeInfo.metadataChanged() ||
+        needShadowDecoration(prevChat, removedChat) ||
+        needShadowDecoration(nextChat, removedChat);
 
-    if (oldIndex != -1) { // Chat is in current list
-      final TGChat movedChat = chats.get(oldIndex);
-      final long prevOrder = movedChat.getChatOrder();
-
-      if (!movedChat.updateChatPosition(chatId, position, sourceChanged, pinStateChanged) || !orderChanged) { // Order not changed
-        return flags;
-      }
-
-      Collections.sort(chats, CHAT_COMPARATOR);
-      int newIndex = indexOfChat(chatId);
-      if (newOrder < prevOrder && newIndex == chats.size() - 1 && !finishReached) {
-        removeChat(newIndex);
-        notifyItemRemoved(oldIndex);
-        notifyItemChanged(chats.size());
-        if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
-          Log.i(Log.TAG_MESSAGES_LOADER, "Removing chat, because it took last possible position, chatId: %d", chatId);
-        }
-      } else if (newIndex != oldIndex) {
-        notifyItemMoved(oldIndex, newIndex);
-        flags |= ORDER_REMAIN_SCROLL;
-      } else if (pinStateChanged) {
-        flags |= ORDER_INVALIDATE_DECORATIONS;
-      }
-      return flags;
-    }
-
-    final TdApi.Chat chat = context.filter(context.tdlib().chatStrict(chatId));
-
-    if ((chats.size() == 0 && !finishReached) || chat == null) {
-      return 0;
-    }
-
-    TGChat newChat = new TGChat(context.getParentOrSelf(), context.chatList(), chat, false);
-    newChat.updateChatPosition(chatId, position, sourceChanged, pinStateChanged);
-    if (sourceChanged) {
-      flags |= ORDER_INVALIDATE_DECORATIONS;
-    }
-
-    int newIndex = Collections.binarySearch(chats, newChat, CHAT_COMPARATOR);
-
-    if (newIndex >= 0) {
-      Log.w(Log.TAG_MESSAGES_LOADER, "Chat seems to be already presented in the list, chatId: %d", newChat.getChatId());
-      return 0;
-    }
-
-    newIndex = newIndex * -1 - 1;
-
-    if (newIndex == chats.size() && !finishReached) {
-      return 0;
-    }
-
-    if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
-      Log.i(Log.TAG_MESSAGES_LOADER, "Adding chat to the list, chatId: %d, newIndex: %d", chatId, newIndex);
-    }
-
-    newChat.makeMeasures();
-    addChat(newIndex, newChat);
-
-    if (chats.size() == 1) {
-      notifyItemRangeInserted(0, 2);
-    } else {
-      notifyItemInserted(newIndex);
+      removedChat.updateChatPosition(chat.id, changeInfo.position, changeInfo.sourceChanged(), changeInfo.pinStateChanged());
+      notifyItemRemoved(position);
       notifyItemChanged(chats.size());
+      context.checkDisplayNoChats();
+      return invalidateDecorations || needShadowDecoration(prevChat, nextChat) ? ORDER_INVALIDATE_DECORATIONS : 0;
+    }
+    return 0;
+  }
+
+  public int moveChat (TdApi.Chat chat, int fromIndex, int toIndex, boolean needSort, Tdlib.ChatChange changeInfo) {
+    TGChat parsedChat;
+    if (needSort) {
+      fromIndex = indexOfChat(chat.id);
+      if (fromIndex == -1) {
+        return 0;
+      }
+    } else if (hasArchive) {
+      fromIndex++;
+      toIndex++;
+    }
+    parsedChat = chats.remove(fromIndex);
+    if (needSort) {
+      toIndex = Collections.binarySearch(chats, parsedChat, CHAT_COMPARATOR);
+      if (toIndex >= 0)
+        throw new IllegalStateException();
+      toIndex = toIndex * -1 - 1;
     }
 
-    flags |= ORDER_REMAIN_SCROLL;
+    boolean invalidateDecorations = changeInfo.metadataChanged() ||
+      needShadowDecoration(getChatAt(fromIndex - 1), parsedChat) ||
+      needShadowDecoration(getChatAt(fromIndex), parsedChat) ||
+      needShadowDecoration(getChatAt(fromIndex - 1), getChatAt(fromIndex)) ||
+      needShadowDecoration(getChatAt(toIndex), getChatAt(toIndex - 1));
 
-    context.checkDisplayNoChats();
-
+    parsedChat.updateChatPosition(chat.id, changeInfo.position, changeInfo.sourceChanged(), changeInfo.pinStateChanged());
+    chats.add(toIndex, parsedChat);
+    if (!invalidateDecorations) {
+      invalidateDecorations = needShadowDecoration(getChatAt(toIndex - 1), parsedChat) ||
+        needShadowDecoration(getChatAt(toIndex + 1), parsedChat);
+    }
+    int flags = invalidateDecorations ? ORDER_INVALIDATE_DECORATIONS : 0;
+    if (fromIndex != toIndex) {
+      flags |= ORDER_REMAIN_SCROLL;
+      notifyItemMoved(fromIndex, toIndex);
+    }
     return flags;
+  }
+
+  public int addChat (TdApi.Chat chat, int atIndex, boolean needSort, Tdlib.ChatChange changeInfo) {
+    TGChat newChat = new TGChat(context.getParentOrSelf(), context.chatList(), chat, false);
+    int position;
+    if (needSort) {
+      position = Collections.binarySearch(chats, newChat, CHAT_COMPARATOR);
+      if (position >= 0)
+        throw new IllegalStateException();
+      position = position * -1 - 1;
+    } else {
+      position = hasArchive ? atIndex + 1 : atIndex;
+    }
+    newChat.makeMeasures();
+    int flags = changeInfo.metadataChanged() ? ORDER_INVALIDATE_DECORATIONS : 0;
+    addChat(position, newChat);
+    notifyItemInserted(position);
+    notifyItemChanged(chats.size());
+    context.checkDisplayNoChats();
+    return flags;
+  }
+
+  public int updateChat (TdApi.Chat chat, int index, boolean needSort, Tdlib.ChatChange changeInfo) {
+    final int position = needSort ? indexOfChat(chat.id) : hasArchive ? index + 1 : index;
+    TGChat parsedChat = chats.get(position);
+    if (parsedChat.getChatId() != chat.id)
+      throw new IllegalStateException();
+    parsedChat.updateChatPosition(chat.id, changeInfo.position, changeInfo.sourceChanged(), changeInfo.pinStateChanged());
+    return changeInfo.metadataChanged() ? ORDER_INVALIDATE_DECORATIONS : 0;
   }
 
   public int updateChatPhoto (long chatId, TdApi.ChatPhotoInfo photo) {
@@ -663,14 +642,6 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
   }
 
   // Adapter state
-
-  private void notifyChatsInserted (int fromIndex, int count) {
-    notifyItemRangeInserted(fromIndex, count);
-  }
-
-  private void notifyChatItemChanged (int index) {
-    notifyItemChanged(index);
-  }
 
   private void notifyChatAppeared (int fromIndex) {
     int firstItem = layoutManager.findFirstVisibleItemPosition();
