@@ -96,23 +96,18 @@ public abstract class ListManager<T> implements Destroyable, Iterable<T> {
     tdlib.client().send(nextLoadFunction(reverse, items.size(), count), new Client.ResultHandler() {
       @Override
       public void onResult (TdApi.Object object) {
-        switch (object.getConstructor()) {
-          case TdApi.Error.CONSTRUCTOR: {
-            UI.showError(object);
-            break;
-          }
-          default: {
-            Response<T> data = processResponse(object, this, count, reverse);
-            if (data != null) {
-              runOnUiThread(() -> {
-                processData(data, reverse);
-                if (after != null) {
-                  after.run();
-                }
-              });
+        if (object.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+          UI.showError(object);
+          return;
+        }
+        Response<T> data = processResponse(object, this, count, reverse);
+        if (data != null) {
+          runOnUiThread(() -> {
+            processData(data, reverse);
+            if (after != null) {
+              after.run();
             }
-            break;
-          }
+          });
         }
       }
     });

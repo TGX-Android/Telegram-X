@@ -16,6 +16,13 @@ fun ChatPermissions.copyTo (dst: ChatPermissions) {
   dst.canChangeInfo = this.canChangeInfo
 }
 
+fun ChatPosition.copyTo (dst: ChatPosition) {
+  dst.list = this.list
+  dst.order = this.order
+  dst.isPinned = this.isPinned
+  dst.source = this.source
+}
+
 fun File.copyTo (dst: File): Boolean {
   val hasChanges = !this.equalsTo(dst, false)
 
@@ -190,6 +197,7 @@ fun Chat?.copyOf (): Chat? {
       this.unreadMentionCount,
       this.notificationSettings,
       this.messageTtlSetting,
+      this.themeName,
       this.actionBar,
       this.voiceChat,
       this.replyMarkupMessageId,
