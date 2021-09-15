@@ -5348,10 +5348,10 @@ public class TdlibUi extends Handler {
           items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendOnceOnline, Lang.getString(R.string.SendOnceOnline), R.drawable.baseline_visibility_24).bindToLastSeenAvailability(tdlib, userId));
         }
         items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendScheduled, Lang.getString(R.string.SendSchedule), R.drawable.baseline_date_range_24).bindTutorialFlag(isForward ? Settings.TUTORIAL_FORWARD_SCHEDULE : Settings.TUTORIAL_SCHEDULE));
-        if (canSendWithoutSound) {
-          items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendNoSound, Lang.getString(R.string.SendNoSound), R.drawable.baseline_notifications_off_24));
-        }
       }
+    }
+    if (!isEdit && canSendWithoutSound) {
+      items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendNoSound, Lang.getString(R.string.SendNoSound), R.drawable.baseline_notifications_off_24));
     }
     if (canToggleMarkdown) {
       items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendNoMarkdown, Lang.getString(isEdit ? R.string.SaveNoMarkdown : R.string.SendNoMarkdown), R.drawable.baseline_code_24).bindTutorialFlag(Settings.TUTORIAL_SEND_WITHOUT_MARKDOWN));
