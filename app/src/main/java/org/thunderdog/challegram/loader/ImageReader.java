@@ -119,7 +119,7 @@ public class ImageReader {
   }
 
   private void readTgVectorPattern (ImageFile file, Listener listener) {
-    Bitmap bitmap = SvgRender.fromCompressed(file.getSize(), file.getFilePath());
+    Bitmap bitmap = SvgRender.fromCompressed(file.getSize(), file.needDecodeSquare(), file.getFilePath());
     listener.onImageLoaded(bitmap != null, bitmap);
   }
 

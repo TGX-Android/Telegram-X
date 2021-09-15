@@ -12,7 +12,6 @@ import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
-import org.thunderdog.challegram.tool.Screen;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -26,6 +25,8 @@ import java.util.regex.Pattern;
 
 import javax.xml.parsers.SAXParserFactory;
 
+import me.vkryl.core.StringUtils;
+
 /**
  * A slightly rewritten version of https://github.com/japgolly/svg-android library.
  */
@@ -35,14 +36,14 @@ public class SvgRender {
   private static final Matrix arcMatrix = new Matrix();
   private static final Matrix arcMatrix2 = new Matrix();
 
-  public static Bitmap fromCompressed (int imageSize, String filePath) {
-    return svgAsBitmap(imageSize, U.gzipFileToString(filePath));
+  public static Bitmap fromCompressed (int imageSize, boolean cropSquare, String filePath) {
+    return svgAsBitmap(imageSize, cropSquare, U.gzipFileToString(filePath));
   }
 
   @Nullable
-  private static Bitmap svgAsBitmap (int imageSize, String rawData) {
+  private static Bitmap svgAsBitmap (int imageSize, boolean cropSquare, String rawData) {
     try {
-      SVGHandler handler = new SVGHandler(imageSize);
+      SVGHandler handler = new SVGHandler(imageSize, cropSquare);
       XMLReader xr = SAXParserFactory.newInstance().newSAXParser().getXMLReader();
       xr.setContentHandler(handler);
       xr.parse(new InputSource(new StringReader(rawData)));
@@ -64,9 +65,11 @@ public class SvgRender {
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rect = new RectF();
     private final int imageSize;
+    private final boolean cropSquare;
 
-    public SVGHandler (int imageSize) {
+    public SVGHandler (int imageSize, boolean cropSquare) {
       this.imageSize = imageSize;
+      this.cropSquare = cropSquare;
     }
 
     private void pushTransform (Attributes attributes) {
@@ -83,40 +86,46 @@ public class SvgRender {
       }
     }
 
+    public static class SvgException extends IllegalArgumentException { }
+
     @Override
     public void startElement (String uri, String localName, String qName, Attributes attributes) throws SAXException {
       if (boundsMode && !localName.equals("style")) return;
 
       switch (localName) {
         case "svg": {
-          int bWidth = 0, bHeight = 0;
-          int screenWidth = Screen.currentWidth(), screenHeight = Screen.currentActualHeight();
-
           String rawViewBox = getStringAttr("viewBox", attributes);
-          if (rawViewBox != null) {
-            String[] viewBox = rawViewBox.split(" ");
-            if (viewBox.length != 4) return;
+          if (StringUtils.isEmpty(rawViewBox))
+            throw new SvgException();
+          String[] viewBox = rawViewBox.split(" ");
+          if (viewBox.length != 4)
+            throw new SvgException();
 
-            // 0 0 1125 2436
-            int viewBoxWidth = (int) Float.parseFloat(viewBox[2]);
-            int viewBoxHeight = (int) Float.parseFloat(viewBox[3]);
+          // 0 0 1125 2436
+          final float viewBoxWidth = Float.parseFloat(viewBox[2]);
+          final float viewBoxHeight = Float.parseFloat(viewBox[3]);
 
-            float sourceMinSize = Math.min(viewBoxWidth, viewBoxHeight);
-            float sourceMaxSize = Math.max(viewBoxWidth, viewBoxHeight);
+          float scale = Math.min((float) imageSize / viewBoxWidth, (float) imageSize / viewBoxHeight);
 
-            bWidth = (int) (imageSize * (sourceMinSize / sourceMaxSize));
-            bHeight = imageSize;
+          int outputWidth = (int) (viewBoxWidth * scale);
+          int outputHeight = (int) (viewBoxHeight * scale);
+          boolean needCrop = cropSquare && outputWidth != outputHeight;
+          if (needCrop) {
+            int minSize = Math.min(outputWidth, outputHeight);
+            outBitmap = Bitmap.createBitmap(minSize, minSize, Bitmap.Config.ARGB_8888);
+          } else {
+            outBitmap = Bitmap.createBitmap(outputWidth, outputHeight, Bitmap.Config.ARGB_8888);
           }
-
-          if (bWidth == 0 || bHeight == 0) {
-            // fallback if SVG has no view box or it is malformed
-            bWidth = Math.min(screenWidth, screenHeight);
-            bHeight = Math.max(screenWidth, screenHeight);
-          }
-
-          outBitmap = Bitmap.createBitmap(bWidth, bHeight, Bitmap.Config.ARGB_8888);
           outBitmap.eraseColor(Color.TRANSPARENT);
           canvas = new Canvas(outBitmap);
+          if (needCrop) {
+            if (outputWidth > outputHeight) {
+              canvas.translate(-(outputWidth - outputHeight) / 2f, 0);
+            } else {
+              canvas.translate(0, -(outputHeight - outputWidth) / 2f);
+            }
+          }
+          canvas.scale(scale, scale, 0, 0);
           break;
         }
 
