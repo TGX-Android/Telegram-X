@@ -1698,16 +1698,14 @@ public class Settings {
         break;
       }
       case VERSION_37: {
-        // keep: wallpaper_\d+(_dark|_other\d+)?
-        // remove any other wallpaper_
+        // keep: ^\d+(?:|_dark|_other\d+)$
+        // remove: any other key with "wallpaper_" prefix
         final String dayPrefix = getWallpaperIdentifierSuffix(0);
         final String nightPrefix = getWallpaperIdentifierSuffix(1);
         for (final LevelDB.Entry entry : pmc.find("wallpaper_")) {
           final String suffix = entry.key().substring("wallpaper_".length());
           if (!StringUtils.isNumeric(suffix) &&
-              !suffix.matches("^\\d+" + dayPrefix + "$") &&
-              !suffix.matches("^\\d+" + nightPrefix + "$") &&
-              !suffix.matches("^\\d+_other\\d+$")
+              !suffix.matches("^\\d+(?:" + dayPrefix + "|" + nightPrefix + "|_other\\d+)$")
           ) {
             editor.remove(entry.key());
           }
