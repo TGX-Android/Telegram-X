@@ -235,6 +235,9 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
         case TdApi.ChatActionStartPlayingGame.CONSTRUCTOR:
           res = isUser ? R.string.SendingGame : userCount == 1 ? R.string.IsSendingGame : R.string.AreSendingGame;
           break;
+        case TdApi.ChatActionChoosingSticker.CONSTRUCTOR:
+          res = isUser ? R.string.ChoosingSticker : userCount == 1 ? R.string.IsChoosingSticker : R.string.AreChoosingSticker;
+          break;
         case TdApi.ChatActionRecordingVideoNote.CONSTRUCTOR:
           res = isUser ? R.string.RecordingRound : userCount == 1 ? R.string.IsRecordingRound : R.string.AreRecordingRound;
           break;
