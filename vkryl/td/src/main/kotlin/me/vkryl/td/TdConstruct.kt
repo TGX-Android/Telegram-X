@@ -46,8 +46,9 @@ fun constructChatAction (@ChatAction.Constructors constructor: Int): ChatAction?
     ChatActionRecordingVideo.CONSTRUCTOR -> ChatActionRecordingVideo()
     ChatActionChoosingContact.CONSTRUCTOR -> ChatActionChoosingContact()
     ChatActionChoosingLocation.CONSTRUCTOR -> ChatActionChoosingLocation()
+    ChatActionChoosingSticker.CONSTRUCTOR -> ChatActionChoosingSticker()
     ChatActionStartPlayingGame.CONSTRUCTOR -> ChatActionStartPlayingGame()
-    
+
     ChatActionUploadingDocument.CONSTRUCTOR,
     ChatActionUploadingPhoto.CONSTRUCTOR,
     ChatActionUploadingVideo.CONSTRUCTOR,

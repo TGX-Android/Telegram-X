@@ -207,6 +207,7 @@ fun ChatAction.equalsTo(b: ChatAction): Boolean {
       ChatActionRecordingVoiceNote.CONSTRUCTOR,
       ChatActionChoosingLocation.CONSTRUCTOR,
       ChatActionChoosingContact.CONSTRUCTOR,
+      ChatActionChoosingSticker.CONSTRUCTOR,
       ChatActionStartPlayingGame.CONSTRUCTOR,
       ChatActionRecordingVideoNote.CONSTRUCTOR,
       ChatActionCancel.CONSTRUCTOR -> true
