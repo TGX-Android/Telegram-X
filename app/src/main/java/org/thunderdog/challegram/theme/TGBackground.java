@@ -180,7 +180,7 @@ public class TGBackground {
       case TdApi.BackgroundTypeWallpaper.CONSTRUCTOR: {
         if (background.document != null) {
           ImageFile target = new ImageFile(tdlib, background.document.document);
-          if (background.document.mimeType.equals(TdConstants.BACKGROUND_PATTERN_MIME_TYPE))
+          if (TdConstants.BACKGROUND_PATTERN_MIME_TYPE.equals(background.document.mimeType))
             target.setIsVector();
           setTarget(target);
 
