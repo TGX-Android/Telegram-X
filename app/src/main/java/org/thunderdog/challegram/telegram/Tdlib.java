@@ -8097,6 +8097,21 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   public CharSequence getRestrictionText (TdApi.Chat chat, @RightId int rightId, @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes) {
     RestrictionStatus status = getRestrictionStatus(chat, rightId);
     if (status != null) {
+      switch (rightId) {
+        case R.id.right_sendStickersAndGifs: {
+          CharSequence restriction = getMediaRestrictionText(chat);
+          if (restriction != null)
+            return restriction;
+          break;
+        }
+        case R.id.right_sendMedia:
+        case R.id.right_sendPolls: {
+          CharSequence restriction = getMessageRestrictionText(chat);
+          if (restriction != null)
+            return restriction;
+          break;
+        }
+      }
       switch (status.status) {
         case RESTRICTION_STATUS_BANNED:
           return status.untilDate != 0 ? Lang.getString(R.string.ChatBannedUntil, Lang.getUntilDate(status.untilDate, TimeUnit.SECONDS)) : Lang.getString(R.string.ChatBanned);
