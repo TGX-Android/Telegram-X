@@ -836,6 +836,7 @@ public class DrawAlgorithms {
       case TdApi.ChatActionUploadingDocument.CONSTRUCTOR:
       case TdApi.ChatActionStartPlayingGame.CONSTRUCTOR:
       case TdApi.ChatActionChoosingLocation.CONSTRUCTOR:
+      case TdApi.ChatActionChoosingSticker.CONSTRUCTOR:
         return true;
     }
     return false;
@@ -853,6 +854,7 @@ public class DrawAlgorithms {
       case TdApi.ChatActionRecordingVideoNote.CONSTRUCTOR:
       case TdApi.ChatActionRecordingVideo.CONSTRUCTOR:
       case TdApi.ChatActionStartPlayingGame.CONSTRUCTOR:
+      case TdApi.ChatActionChoosingSticker.CONSTRUCTOR:
         return Screen.dp(20f);
       case TdApi.ChatActionUploadingVideo.CONSTRUCTOR:
       case TdApi.ChatActionUploadingVideoNote.CONSTRUCTOR:
@@ -992,6 +994,7 @@ public class DrawAlgorithms {
 
         return Screen.dp(26f);
       }
+      case TdApi.ChatActionChoosingSticker.CONSTRUCTOR: // TODO separate animation
       case TdApi.ChatActionStartPlayingGame.CONSTRUCTOR: {
         cy -= Screen.dp(1f);
 

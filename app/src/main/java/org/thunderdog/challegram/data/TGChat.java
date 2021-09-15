@@ -19,6 +19,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibChatList;
 import org.thunderdog.challegram.telegram.TdlibCounter;
 import org.thunderdog.challegram.telegram.TdlibStatusManager;
 import org.thunderdog.challegram.theme.ThemeColorId;
@@ -68,7 +69,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
   private final TdApi.Chat chat;
   private final TdApi.ChatList chatList;
   @Nullable
-  private final ChatListManager archive;
+  private final TdlibChatList archive;
   private int dataId;
   private int dataType;
 
@@ -159,7 +160,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     }
   }
 
-  public TGChat (ViewController<?> context, ChatListManager list, boolean makeMeasures) {
+  public TGChat (ViewController<?> context, TdlibChatList list, boolean makeMeasures) {
     this.context = context;
     this.statusHelper = null;
     this.tdlib = context.tdlib();
@@ -759,12 +760,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
   public boolean hasUnreadMentions () {
     if (isArchive()) {
-      for (ChatListManager.ChatEntry entry : archive) {
-        TdApi.Chat chat = tdlib.chat(entry.chatId);
-        if (chat != null && chat.unreadMentionCount > 0)
-          return true;
-      }
-      return false;
+      return archive.hasUnreadMentions();
     } else {
       return chat.unreadMentionCount > 0;
     }
@@ -772,12 +768,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
   public boolean hasScheduledMessages () {
     if (isArchive()) {
-      for (ChatListManager.ChatEntry entry : archive) {
-        TdApi.Chat chat = tdlib.chat(entry.chatId);
-        if (chat != null && chat.hasScheduledMessages)
-          return true;
-      }
-      return false;
+      return archive.hasScheduledMessages();
     } else {
       return chat.hasScheduledMessages;
     }
@@ -785,12 +776,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
   public boolean isFailed () {
     if (isArchive()) {
-      for (ChatListManager.ChatEntry entry : archive) {
-        TdApi.Chat chat = tdlib.chat(entry.chatId);
-        if (chat != null && TD.isFailed(chat.lastMessage))
-          return true;
-      }
-      return false;
+      return archive.hasFailedMessages();
     } else {
       return TD.isFailed(chat.lastMessage);
     }
@@ -882,20 +868,8 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
   public void setTime () {
     if (isArchive()) {
-      if (archive.getCount() > 0) {
-        int maxDate = 0;
-        for (ChatListManager.ChatEntry entry : archive) {
-          TdApi.Chat chat = tdlib.chat(entry.chatId);
-          if (chat != null && chat.lastMessage != null) {
-            maxDate = Math.max(chat.lastMessage.date, maxDate);
-            if (!ChatPosition.isPinned(chat, archive.getChatList()))
-              break;
-          }
-        }
-        time = maxDate != 0 ? Lang.timeOrDateShort(maxDate, TimeUnit.SECONDS) : "";
-      } else {
-        time = "";
-      }
+      int maxDate = archive.maxDate();
+      time = maxDate != 0 ? Lang.timeOrDateShort(maxDate, TimeUnit.SECONDS) : "";
     } else {
       TdApi.ChatSource source = getSource();
       if (source != null) {
@@ -1140,28 +1114,24 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     }
 
     if (isArchive()) {
-      List<TextEntity> entities = null;
+      List<TextEntity> entities = new ArrayList<>();
       StringBuilder b = new StringBuilder();
-      for (ChatListManager.ChatEntry entry : archive) {
-        TdApi.Chat chat = tdlib.chat(entry.chatId);
-        if (chat != null) {
-          if (b.length() > 0) {
-            b.append(Lang.getConcatSeparator());
-          }
-          int startIndex = b.length();
-          b.append(tdlib.chatTitle(chat));
-          if (chat.unreadCount > 0) {
-            if (entities == null) {
-              entities = new ArrayList<>();
-            }
-            entities.add(new TextEntityCustom(context, tdlib, null, startIndex, b.length(), 0, null).setCustomColorSet(TextColorSets.Regular.NORMAL));
-          }
+      archive.iterate(chat -> {
+        if (b.length() > 0) {
+          b.append(Lang.getConcatSeparator());
         }
-      }
+        int startIndex = b.length();
+        b.append(tdlib.chatTitle(chat));
+        if (chat.unreadCount > 0) {
+          entities.add(new TextEntityCustom(context, tdlib, null, startIndex, b.length(), 0, null)
+            .setCustomColorSet(TextColorSets.Regular.NORMAL)
+          );
+        }
+      });
       if (b.length() == 0) {
-        b.append(Lang.pluralBold(R.string.xChats, tdlib.getTotalChatsCount(ChatPosition.CHAT_LIST_ARCHIVE)));
+        b.append(Lang.pluralBold(R.string.xChats, archive.totalCount()));
       }
-      setTextValue(b.toString(), entities != null ? entities.toArray(new TextEntity[0]) : null, false);
+      setTextValue(b.toString(), !entities.isEmpty() ? entities.toArray(new TextEntity[0]) : null, false);
       setPrefix();
       return;
     }

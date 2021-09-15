@@ -124,8 +124,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private TdlibUi _handler;
 
   private final TdApi.TdlibParameters parameters;
-  /*TODO TON
-  private final TonApi.Options tonParameters;*/
   private final Client.ResultHandler okHandler = object -> {
     switch (object.getConstructor()) {
       case TdApi.Ok.CONSTRUCTOR:
@@ -205,14 +203,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   };
 
-  private static final class ClientHolder implements Client.ResultHandler, Client.ExceptionHandler/*, drinkless.org.ton.Client.ResultHandler, drinkless.org.ton.Client.ExceptionHandler*/ {
+  private static final class ClientHolder implements Client.ResultHandler, Client.ExceptionHandler {
     private final Tdlib tdlib;
     private final Client client;
-
-    /*@Nullable
-    private drinkless.org.ton.Client ton;
-    private final Object tonLock;
-    private boolean noTon;*/
 
     private final TdlibResourceManager resources, updates;
     private boolean running = true;
@@ -237,7 +230,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       Log.i(Log.TAG_ACCOUNTS, "Creating client #%d", runningClients.incrementAndGet());
       this.tdlib = tdlib;
       this.client = Client.create(this, this, this, tdlib.debugInstance);
-      // this.tonLock = Config.NEED_TON ? new Object() : null;
       tdlib.updateParameters(client);
       if (Config.NEED_ONLINE) {
         if (tdlib.isOnline) {
@@ -338,27 +330,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       client.send(new TdApi.GetApplicationConfig(), tdlib.configHandler);
     }
 
-    /*public drinkless.org.ton.Client ton () {
-      if (Config.NEED_TON && ton == null) {
-        synchronized (tonLock) {
-          if (ton != null || noTon)
-            return ton;
-          this.ton = drinkless.org.ton.Client.create(this, this, this);
-          tdlib.updateParameters(ton);
-          tdlib.context.modifyClient(tdlib, ton);
-          if (initializationTime != 0) {
-            StackTraceElement[] stackTrace = new RuntimeException().getStackTrace();
-            ton.send(new TonApi.Init(tdlib.tonParameters), result -> {
-              if (result.getConstructor() == TonApi.Error.CONSTRUCTOR) {
-                Tracer.onTonFatalError(TonApi.Init.class, (TonApi.Error) result, stackTrace);
-              }
-            });
-          }
-        }
-      }
-      return ton;
-    }*/
-
     public void sendFakeUpdate (TdApi.Update update, boolean forceUi) {
       if (forceUi) {
         tdlib.processUpdate(this, update);
@@ -431,6 +402,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private final Object clientLock = new Object();
   private final Object dataLock = new Object();
   private final HashMap<Long, TdApi.Chat> chats = new HashMap<>();
+  private final HashMap<String, TdlibChatList> chatLists = new HashMap<>();
   private final StickerSet
     animatedEmoji = new StickerSet(AnimatedEmojiListener.TYPE_EMOJI, "animatedemojies", false),
     // animatedTgxEmoji = new StickerSet(AnimatedEmojiListener.TYPE_TGX, "AnimatedTgxEmojies", false),
@@ -839,25 +811,28 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public void closeAllSecretChats (@Nullable Runnable after) {
-    runOnTdlibThread(() -> {
-      AtomicInteger closingCount = new AtomicInteger(0);
-      AtomicBoolean iterated = new AtomicBoolean(false);
-      getAllChats(null, chat -> {
-        TdApi.SecretChat secretChat = chatToSecretChat(chat.id);
-        if (secretChat != null && secretChat.state.getConstructor() != TdApi.SecretChatStateClosed.CONSTRUCTOR) {
-          closingCount.incrementAndGet();
-          client().send(new TdApi.CloseSecretChat(secretChat.id), closeResult -> {
-            if (closingCount.decrementAndGet() == 0 && iterated.get()) {
-              U.run(after);
-            }
-          });
-        }
-      }, isFinal -> {
-        iterated.set(true);
-        if (closingCount.get() == 0)
+    AtomicInteger remaining = new AtomicInteger(2);
+    AtomicInteger closingCount = new AtomicInteger(0);
+    RunnableData<TdApi.Chat> perChatCallback = chat -> {
+      TdApi.SecretChat secretChat = chatToSecretChat(chat.id);
+      if (secretChat != null && secretChat.state.getConstructor() != TdApi.SecretChatStateClosed.CONSTRUCTOR) {
+        closingCount.incrementAndGet();
+        client().send(new TdApi.CloseSecretChat(secretChat.id), closeResult -> {
+          if (closingCount.decrementAndGet() == 0 && remaining.get() == 0) {
+            U.run(after);
+          }
+        });
+      }
+    };
+    RunnableBool onEndCallback = isFinal -> {
+      if (isFinal && remaining.decrementAndGet() == 0) {
+        if (closingCount.get() == 0) {
           U.run(after);
-      }, false);
-    });
+        }
+      }
+    };
+    chatList(ChatPosition.CHAT_LIST_MAIN).loadAll(perChatCallback, onEndCallback);
+    chatList(ChatPosition.CHAT_LIST_ARCHIVE).loadAll(perChatCallback, onEndCallback);
   }
 
   void cleanupUnauthorizedData (@Nullable Runnable after) {
@@ -873,7 +848,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           }
           decrementReferenceCount(REFERENCE_TYPE_JOB);
         });
-
       }
     });
   }
@@ -1627,19 +1601,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public void searchContacts (@Nullable String searchQuery, int limit, Client.ResultHandler handler) {
-    /*if (BuildConfig.DEBUG) {
-      client().send(new TdApi.SetAlarm(0), ignored -> {
-        handler.onResult(new TdApi.Users(0, new int[0]));
-      });
-      return;
-    }*/
     client().send(new TdApi.SearchContacts(searchQuery, limit), handler);
   }
 
-  // private int resultNum;
-
-  public void getChats (@Nullable TdApi.ChatList chatList, long offsetOrder, long offsetChatId, int limit, Client.ResultHandler handler) {
-    client().send(new TdApi.GetChats(chatList, offsetOrder, offsetChatId, limit), handler);
+  public void loadMoreChats (@NonNull TdApi.ChatList chatList, int limit, Client.ResultHandler handler) {
+    client().send(new TdApi.LoadChats(chatList, limit), handler);
   }
 
   public void readAllChats (@Nullable TdApi.ChatList chatList, @Nullable RunnableInt after) {
@@ -1662,41 +1628,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         readChatsCount.incrementAndGet();
       }
     }, isFinal -> {
-      if (after != null) {
+      if (isFinal && after != null) {
         after.runWithInt(readChatsCount.get());
       }
     }, false);
   }
 
-  public void getAllChats (@Nullable TdApi.ChatList chatList, @NonNull RunnableData<TdApi.Chat> callback, @Nullable RunnableBool after, boolean callMiddle) {
-    getChats(chatList, Long.MAX_VALUE, 0, 100, new Client.ResultHandler() {
-      @Override
-      public void onResult (TdApi.Object result) {
-        switch (result.getConstructor()) {
-          case TdApi.Chats.CONSTRUCTOR: {
-            TdApi.Chats chats = (TdApi.Chats) result;
-            List<TdApi.Chat> list = chats(chats.chatIds);
-            if (list.isEmpty()) {
-              if (after != null)
-                after.runWithBool(true);
-            } else {
-              for (TdApi.Chat chat : list)
-                callback.runWithData(chat);
-              if (callMiddle && after != null)
-                after.runWithBool(false);
-              TdApi.Chat lastChat = list.get(list.size() - 1);
-              long order = ChatPosition.getOrder(lastChat, chatList);
-              getChats(chatList, order, lastChat.id, 100, this);
-            }
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR: {
-            Log.e("Unable to fetch chats: %s", TD.toErrorString(result));
-            break;
-          }
-        }
-      }
-    });
+  public void getAllChats (@NonNull TdApi.ChatList chatList, @NonNull RunnableData<TdApi.Chat> perChatCallback, @Nullable RunnableBool after, boolean callMiddle) {
+    chatList(chatList).loadAll(perChatCallback, after);
   }
 
   public static class Generation {
@@ -2283,7 +2222,33 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
     }
     return null;
+  }
 
+  public @NonNull TdlibChatList chatList (@NonNull TdApi.ChatList chatList) {
+    synchronized (dataLock) {
+      return chatListImpl(chatList);
+    }
+  }
+
+  private @NonNull TdlibChatList chatListImpl (@NonNull TdApi.ChatList chatList) {
+    final String key = TD.makeChatListKey(chatList);
+    TdlibChatList list = chatLists.get(key);
+    if (list == null) {
+      list = new TdlibChatList(this, chatList);
+      chatLists.put(key, list);
+    }
+    return list;
+  }
+
+  private @Nullable TdlibChatList[] chatListsImpl (@Nullable TdApi.ChatPosition[] positions) {
+    if (positions == null || positions.length == 0) {
+      return null;
+    }
+    final TdlibChatList[] chatLists = new TdlibChatList[positions.length];
+    for (int i = 0; i < positions.length; i++) {
+      chatLists[i] = chatListImpl(positions[i].list);
+    }
+    return chatLists;
   }
 
   public @NonNull List<TdApi.Chat> chats (long[] chatIds) {
@@ -3814,7 +3779,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public void forwardMessage (long chatId, long fromChatId, long messageId, boolean disableNotification, boolean fromBackground) {
-    client().send(new TdApi.ForwardMessages(chatId, fromChatId, new long[] {messageId}, new TdApi.MessageSendOptions(disableNotification, fromBackground, null), false, false), messageHandler());
+    client().send(new TdApi.ForwardMessages(chatId, fromChatId, new long[] {messageId}, new TdApi.MessageSendOptions(disableNotification, fromBackground, null), false, false, false), messageHandler());
   }
 
   public void sendInlineQueryResult (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions options, long queryId, String resultId) {
@@ -4536,10 +4501,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     parameters.deviceModel = TdlibManager.getDeviceModel();
     parameters.systemVersion = TdlibManager.getSystemVersion();
   }
-
-  /*private void updateParameters (drinkless.org.ton.Client client) {
-    tonParameters.keystoreDirectory = TdlibManager.getTonDirectory(accountId, true);
-  }*/
 
   private String applicationConfigJson;
 
@@ -5554,7 +5515,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private void resetContextualData () {
-    // chats.clear();
+    chats.clear();
+    chatLists.clear();
     knownChatIds.clear();
     accessibleChatTimers.clear();
     chatOnlineMemberCount.clear();
@@ -5938,6 +5900,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   @TdlibThread
   private void updateNewChat (TdApi.UpdateNewChat update) {
+    List<TdlibChatList> chatLists;
     synchronized (dataLock) {
       if (Config.TEST_CHAT_COUNTERS) {
         update.chat.unreadCount = MathUtils.random(1, 250000);
@@ -5950,6 +5913,21 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           channels.add(supergroupId);
         else
           channels.remove(supergroupId);
+      }
+      if (update.chat.positions != null && update.chat.positions.length > 0) {
+        chatLists = new ArrayList<>(update.chat.positions.length);
+        for (TdApi.ChatPosition position : update.chat.positions) {
+          if (position.order != 0) {
+            chatLists.add(chatListImpl(position.list));
+          }
+        }
+      } else {
+        chatLists = null;
+      }
+    }
+    if (chatLists != null) {
+      for (TdlibChatList chatList : chatLists) {
+        chatList.onUpdateNewChat(update.chat);
       }
     }
   }
@@ -5985,44 +5963,60 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
       Log.i(Log.TAG_MESSAGES_LOADER, "updateChatTopMessage chatId=%d messageId=%d", update.chatId, update.lastMessage != null ? update.lastMessage.id : 0);
     }
-    List<ChatPositionChange> positionChanges;
+    List<ChatListChange> listChanges;
     synchronized (dataLock) {
       final TdApi.Chat chat = chats.get(update.chatId);
       if (TdlibUtils.assertChat(update.chatId, chat, update)) {
         return;
       }
       chat.lastMessage = update.lastMessage;
-      positionChanges = setChatPositions(chat, update.positions);
+      listChanges = setChatPositions(chat, update.positions);
     }
-    listeners.updateChatLastMessage(update, positionChanges);
+    listeners.updateChatLastMessage(update, listChanges);
   }
 
   public static int CHAT_MARKED_AS_UNREAD = -1;
   public static int CHAT_FAILED = -2;
 
-  public static class ChatPositionChange {
-    private static final int CHANGED_ORDER = 1;
-    private static final int CHANGED_SOURCE = 1 << 1;
-    private static final int CHANGED_PIN_STATE = 1 << 2;
+  static class ChatListChange {
+    public final TdlibChatList list;
+    public final TdApi.Chat chat;
+    public final ChatChange change;
+
+    public ChatListChange (TdlibChatList list, TdApi.Chat chat, ChatChange change) {
+      this.list = list;
+      this.chat = chat;
+      this.change = change;
+    }
+  }
+
+  public static class ChatChange {
+    private static final int ORDER = 1;
+    private static final int SOURCE = 1 << 1;
+    private static final int PIN_STATE = 1 << 2;
 
     public final TdApi.ChatPosition position;
-    private final int changeFlags;
+    private final int flags;
 
-    private ChatPositionChange (TdApi.ChatPosition position, int changeFlags) {
+    public ChatChange (TdApi.ChatPosition position, int flags) {
       this.position = position;
-      this.changeFlags = changeFlags;
+      this.flags = flags;
     }
 
     public boolean orderChanged () {
-      return BitwiseUtils.getFlag(changeFlags, CHANGED_ORDER);
+      return BitwiseUtils.getFlag(flags, ORDER);
+    }
+
+    public boolean metadataChanged () {
+      return BitwiseUtils.setFlag(flags, ORDER, false) != 0;
     }
 
     public boolean sourceChanged () {
-      return BitwiseUtils.getFlag(changeFlags, CHANGED_SOURCE);
+      return BitwiseUtils.getFlag(flags, SOURCE);
     }
 
     public boolean pinStateChanged () {
-      return BitwiseUtils.getFlag(changeFlags, CHANGED_PIN_STATE);
+      return BitwiseUtils.getFlag(flags, PIN_STATE);
     }
   }
 
@@ -6034,7 +6028,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     int flags = 0;
     TdApi.ChatPosition position = chat.positions[existingPosition];
     if (position.order != 0) {
-      flags |= ChatPositionChange.CHANGED_ORDER;
+      flags |= ChatChange.ORDER;
     }
     chat.positions = chat.positions.length == 1 ? new TdApi.ChatPosition[0] : ArrayUtils.removeElement(chat.positions, existingPosition, new TdApi.ChatPosition[chat.positions.length - 1]);
     return flags;
@@ -6051,22 +6045,22 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     } else {
       chat.positions = new TdApi.ChatPosition[] {position};
     }
-    return ChatPositionChange.CHANGED_ORDER | ChatPositionChange.CHANGED_SOURCE;
+    return ChatChange.ORDER | ChatChange.SOURCE;
   }
 
   private static int updateOrRemoveChatPosition (TdApi.Chat chat, int existingPosition, TdApi.ChatPosition position) {
     int flags = 0;
     TdApi.ChatPosition prevPosition = chat.positions[existingPosition];
     if (prevPosition.order != position.order)
-      flags |= ChatPositionChange.CHANGED_ORDER;
+      flags |= ChatChange.ORDER;
     if (position.order == 0) {
       chat.positions = ArrayUtils.removeElement(chat.positions, existingPosition, new TdApi.ChatPosition[chat.positions.length - 1]);
     } else {
       if (!Td.equalsTo(prevPosition.source, position.source)) {
-        flags |= ChatPositionChange.CHANGED_SOURCE;
+        flags |= ChatChange.SOURCE;
       }
       if (prevPosition.isPinned != position.isPinned) {
-        flags |= ChatPositionChange.CHANGED_PIN_STATE;
+        flags |= ChatChange.PIN_STATE;
       }
       if (flags == 0) {
         return 0;
@@ -6085,8 +6079,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
-  private static List<ChatPositionChange> setChatPositions (TdApi.Chat chat, @NonNull TdApi.ChatPosition[] newPositions) {
-    List<ChatPositionChange> changes = null;
+  private List<ChatListChange> setChatPositions (TdApi.Chat chat, @NonNull TdApi.ChatPosition[] newPositions) {
+    List<ChatListChange> changes = null;
     TdApi.ChatPosition[] oldPositions = chat.positions;
     int extraPositionCount = oldPositions.length;
     for (int newPositionIndex = newPositions.length - 1; newPositionIndex >= 0; newPositionIndex--) {
@@ -6097,22 +6091,28 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         extraPositionCount--;
         TdApi.ChatPosition oldPosition = oldPositions[existingIndex];
         if (oldPosition.order != newPosition.order)
-          flags |= ChatPositionChange.CHANGED_ORDER;
+          flags |= ChatChange.ORDER;
         if (!Td.equalsTo(oldPosition.source, newPosition.source))
-          flags |= ChatPositionChange.CHANGED_SOURCE;
+          flags |= ChatChange.SOURCE;
         if (oldPosition.isPinned != newPosition.isPinned)
-          flags |= ChatPositionChange.CHANGED_PIN_STATE;
+          flags |= ChatChange.PIN_STATE;
       } else if (newPosition.order != 0) { // Added position
-        flags |= ChatPositionChange.CHANGED_ORDER;
+        flags |= ChatChange.ORDER;
         if (newPosition.source != null)
-          flags |= ChatPositionChange.CHANGED_SOURCE;
+          flags |= ChatChange.SOURCE;
         if (newPosition.isPinned)
-          flags |= ChatPositionChange.CHANGED_PIN_STATE;
+          flags |= ChatChange.PIN_STATE;
       }
       if (flags != 0) {
         if (changes == null)
           changes = new ArrayList<>(newPositionIndex + 1);
-        changes.add(new ChatPositionChange(newPosition, flags));
+        ChatChange positionChange = new ChatChange(newPosition, flags);
+        ChatListChange chatListChange = new ChatListChange(
+          chatListImpl(newPosition.list),
+          chat,
+          positionChange
+        );
+        changes.add(chatListChange);
       }
     }
     if (extraPositionCount > 0) {
@@ -6121,14 +6121,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         int newPositionIndex = ChatPosition.indexOf(newPositions, oldPosition.list);
         if (newPositionIndex == -1) { // Removed position
           if (oldPosition.order != 0) {
-            int flags = ChatPositionChange.CHANGED_ORDER;
+            int flags = ChatChange.ORDER;
             if (oldPosition.source != null)
-              flags |= ChatPositionChange.CHANGED_SOURCE;
+              flags |= ChatChange.SOURCE;
             if (oldPosition.isPinned)
-              flags |= ChatPositionChange.CHANGED_PIN_STATE;
+              flags |= ChatChange.PIN_STATE;
             if (changes == null)
               changes = new ArrayList<>(extraPositionCount);
-            changes.add(new ChatPositionChange(new TdApi.ChatPosition(oldPosition.list, 0, false, null), flags));
+            ChatChange positionChange = new ChatChange(new TdApi.ChatPosition(oldPosition.list, 0, false, null), flags);
+            changes.add(new ChatListChange(
+              chatListImpl(oldPosition.list),
+              chat,
+              positionChange
+            ));
           }
           if (--extraPositionCount == 0)
             break;
@@ -6141,16 +6146,26 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   @TdlibThread
   private void updateChatPosition (TdApi.UpdateChatPosition update) {
-    int changeFlags;
+    final ChatListChange chatListChange;
     synchronized (dataLock) {
       final TdApi.Chat chat = chats.get(update.chatId);
       if (TdlibUtils.assertChat(update.chatId, chat, update)) {
         return;
       }
-      changeFlags = setChatPosition(chat, update.position);
+      int changeFlags = setChatPosition(chat, update.position);
+      if (changeFlags != 0) {
+        TdlibChatList chatList = chatListImpl(update.position.list);
+        chatListChange = new ChatListChange(
+          chatList,
+          chat,
+          new ChatChange(update.position, changeFlags)
+        );
+      } else {
+        chatListChange = null;
+      }
     }
-    if (changeFlags != 0) {
-      listeners.updateChatPosition(update, BitwiseUtils.getFlag(changeFlags, ChatPositionChange.CHANGED_ORDER), BitwiseUtils.getFlag(changeFlags, ChatPositionChange.CHANGED_SOURCE), BitwiseUtils.getFlag(changeFlags, ChatPositionChange.CHANGED_PIN_STATE));
+    if (chatListChange != null) {
+      listeners.updateChatPosition(update, chatListChange);
     }
   }
 
@@ -6180,15 +6195,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   @TdlibThread
   private void updateChatTitle (TdApi.UpdateChatTitle update) {
     final TdApi.Chat chat;
+    final TdlibChatList[] chatLists;
     synchronized (dataLock) {
       chat = chats.get(update.chatId);
       if (TdlibUtils.assertChat(update.chatId, chat, update)) {
         return;
       }
       chat.title = update.title;
+      chatLists = chatListsImpl(chat.positions);
     }
 
-    listeners.updateChatTitle(update);
+    listeners.updateChatTitle(update, chat, chatLists);
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       int myUserId = myUserId();
@@ -6239,9 +6256,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   @TdlibThread
   private void updateChatReadInbox (TdApi.UpdateChatReadInbox update) {
+    final TdApi.Chat chat;
     final boolean availabilityChanged;
+    final TdlibChatList[] chatLists;
     synchronized (dataLock) {
-      final TdApi.Chat chat = chats.get(update.chatId);
+      chat = chats.get(update.chatId);
       if (TdlibUtils.assertChat(update.chatId, chat, update)) {
         return;
       }
@@ -6251,8 +6270,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
       availabilityChanged = (chat.unreadCount > 0) != (update.unreadCount > 0);
       chat.unreadCount = update.unreadCount;
+      chatLists = chatListsImpl(chat.positions);
     }
-    listeners.updateChatReadInbox(update, availabilityChanged);
+    listeners.updateChatReadInbox(update, availabilityChanged, chat, chatLists);
   }
 
   @TdlibThread
@@ -6283,20 +6303,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   @TdlibThread
   private void updateChatDraftMessage (TdApi.UpdateChatDraftMessage update) {
-    List<ChatPositionChange> positionChanges;
+    final List<ChatListChange> listChanges;
     synchronized (dataLock) {
       final TdApi.Chat chat = chats.get(update.chatId);
       if (TdlibUtils.assertChat(update.chatId, chat, update)) {
         return;
       }
       chat.draftMessage = update.draftMessage;
-      positionChanges = setChatPositions(chat, update.positions);
+      listChanges = setChatPositions(chat, update.positions);
     }
-    listeners.updateChatDraftMessage(update, positionChanges);
-
-    /*if (orderChanged && update.order == 0) {
-      notificationManager.removeNotificationsFromChatId(update.chatId, TdlibNotificationManager.REMOVE_REASON_ORDER);
-    }*/
+    listeners.updateChatDraftMessage(update, listChanges);
   }
 
   @TdlibThread
