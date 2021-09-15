@@ -7971,6 +7971,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (chat == null || chat.id == 0 || !TD.isValidRight(rightId))
       return null;
     TdApi.ChatMemberStatus status = chatStatus(chat.id);
+    boolean isNotSpecificallyRestricted = status != null && (
+      status.getConstructor() == TdApi.ChatMemberStatusMember.CONSTRUCTOR || (
+        status.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR &&
+        TD.checkRight(((TdApi.ChatMemberStatusRestricted) status).permissions, rightId)
+      )
+    );
     if (status != null) {
       switch (status.getConstructor()) {
         case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
@@ -7986,9 +7992,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         case TdApi.ChatMemberStatusLeft.CONSTRUCTOR:
           break;
         case TdApi.ChatMemberStatusMember.CONSTRUCTOR:
-          if (isChannelChat(chat)) {
+          if (isChannelChat(chat))
             return new RestrictionStatus(chat.id, RESTRICTION_STATUS_UNAVAILABLE, 0);
-          }
           break;
       }
     }
@@ -8026,7 +8031,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
     }
     if (!TD.checkRight(chat.permissions, rightId))
-      return new RestrictionStatus(chat.id, RESTRICTION_STATUS_RESTRICTED, 0);
+      return new RestrictionStatus(chat.id, isNotSpecificallyRestricted ? RESTRICTION_STATUS_EVERYONE : RESTRICTION_STATUS_RESTRICTED, 0);
     return null;
   }
 
@@ -8086,6 +8091,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return getRestrictionText(chat, R.id.right_sendStickersAndGifs, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil);
   }
 
+  public CharSequence getInlineRestrictionText (TdApi.Chat chat) {
+    return getRestrictionText(chat, R.id.right_sendStickersAndGifs, R.string.ChatDisabledBots, R.string.ChatRestrictedBots, R.string.ChatRestrictedBotsUntil);
+  }
+
   public CharSequence getPollRestrictionText (TdApi.Chat chat) {
     return getRestrictionText(chat, R.id.right_sendPolls, R.string.ChatDisabledPolls, R.string.ChatRestrictedPolls, R.string.ChatRestrictedPollsUntil);
   }
@@ -8117,6 +8126,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         case RESTRICTION_STATUS_EVERYONE:
           return Lang.getString(status.isUserChat() ? R.string.UserDisabledMessages : defaultRes);
       }
+
       throw new UnsupportedOperationException();
     }
     return null;
