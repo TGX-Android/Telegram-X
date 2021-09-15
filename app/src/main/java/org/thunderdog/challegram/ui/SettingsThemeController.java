@@ -910,12 +910,12 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
   }
 
   private static List<ListItem> newAutoUpdateConfigurationItems () {
-    List<ListItem> items = new ArrayList<>();
-    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.InstallBetas).setLongId(Settings.SETTING_FLAG_DOWNLOAD_BETAS));
-    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_checkUpdates, 0, R.string.CheckForUpdates));
-    return items;
+    return Arrays.asList(
+      new ListItem(ListItem.TYPE_SEPARATOR_FULL),
+      new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.InstallBetas).setLongId(Settings.SETTING_FLAG_DOWNLOAD_BETAS),
+      new ListItem(ListItem.TYPE_SEPARATOR_FULL),
+      new ListItem(ListItem.TYPE_SETTING, R.id.btn_checkUpdates, 0, R.string.CheckForUpdates)
+    );
   }
 
   @Override
