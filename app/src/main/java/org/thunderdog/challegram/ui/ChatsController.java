@@ -209,8 +209,6 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     }
   }
 
-  // private @Nullable OverlayButtonWrap composeWrap;
-
   private static class ChatPinSeparatorDecoration extends RecyclerView.ItemDecoration {
     private final ChatsController context;
     private final Paint topShadowPaint, bottomShadowPaint;
@@ -528,7 +526,9 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     TGLegacyManager.instance().addEmojiListener(this);
 
     list.initializeList(filter, this, this::displayChats, chatsView.getInitialLoadCount(), () ->
-      runOnUiThreadOptional(this::executeScheduledAnimation)
+      runOnUiThreadOptional(() ->
+        executeScheduledAnimation()
+      )
     );
 
     if (isBaseController()) {
@@ -640,9 +640,10 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         parsedChats.add(new TGChat(this, chatList(), entry.chat, initialLoadCount-- >= 0));
       }
     }
-    runOnUiThreadOptional(() ->
-      adapter.addMore(parsedChats.toArray(new TGChat[0]))
-    );
+    runOnUiThreadOptional(() -> {
+      initialLoadFinished = true;
+      adapter.addMore(parsedChats.toArray(new TGChat[0]));
+    });
   }
 
   private boolean hideArchive, archiveCollapsed;
@@ -1835,7 +1836,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     tdlib.client().send(function, result -> {
       switch (result.getConstructor()) {
         case TdApi.Ok.CONSTRUCTOR:
-          tdlib.ui().post(this::onSelectionActionComplete);
+          runOnUiThreadOptional(this::onSelectionActionComplete);
           break;
         case TdApi.Error.CONSTRUCTOR:
           UI.showError(result);
@@ -2561,7 +2562,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void onChatTopMessageChanged (final long chatId, @Nullable final TdApi.Message topMessage) {
-    tdlib.ui().post(() -> {
+    runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.updateChatTopMessage(chatId, topMessage);
       }
@@ -2570,7 +2571,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void onChatPositionChanged (final long chatId, final TdApi.ChatPosition position, boolean orderChanged, boolean sourceChanged, boolean pinStateChanged) {
-    tdlib.ui().post(() -> {
+    runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.updateChatPosition(chatId, position, orderChanged, sourceChanged, pinStateChanged);
         if (position.order == 0) {
@@ -2582,7 +2583,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void onChatTitleChanged (final long chatId, final String title) {
-    tdlib.ui().post(() -> {
+    runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.updateChatTitle(chatId, title);
       }
@@ -2591,7 +2592,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void onChatPermissionsChanged (long chatId, TdApi.ChatPermissions permissions) {
-    tdlib.ui().post(() -> {
+    runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.updateChatPermissionsChanged(chatId, permissions);
       }
@@ -2600,7 +2601,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void onChatClientDataChanged (long chatId, @Nullable String clientData) {
-    tdlib.ui().post(() -> {
+    runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.updateChatClientData(chatId, clientData);
       }
@@ -2609,7 +2610,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void onChatMarkedAsUnread (long chatId, boolean isMarkedAsUnread) {
-    tdlib.ui().post(() -> {
+    runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.updateChatMarkedAsUnread(chatId, isMarkedAsUnread);
       }
@@ -2618,7 +2619,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void onChatPhotoChanged (final long chatId, final @Nullable TdApi.ChatPhotoInfo photo) {
-    tdlib.ui().post(() -> {
+    runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.updateChatPhoto(chatId, photo);
       }
@@ -2626,17 +2627,29 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   @Override
-  public void onChatReadInbox(final long chatId, final long lastReadInboxMessageId, final int unreadCount, boolean availabilityChanged) {
-    tdlib.ui().post(() -> {
+  public void onChatReadInbox (final long chatId, final long lastReadInboxMessageId, final int unreadCount, boolean availabilityChanged) {
+    runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.updateChatReadInbox(chatId, lastReadInboxMessageId, unreadCount);
+      }
+      if (availabilityChanged && isFiltered()) {
+        TdApi.Chat chat = tdlib.chat(chatId);
+        if (chat != null && filter.accept(chat)) {
+          int index = adapter.indexOfChat(chatId);
+          if (unreadCount > 0 && index == -1) {
+            TdApi.ChatPosition position = ChatPosition.findPosition(chat, chatList());
+            if (position != null && position.order != 0) {
+              adapter.addChat(chat, index, true, new Tdlib.ChatChange(position, 0));
+            }
+          }
+        }
       }
     });
   }
 
   @Override
   public void onChatUnreadMentionCount(final long chatId, final int unreadMentionCount, boolean availabilityChanged) {
-    tdlib.ui().post(() -> {
+    runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.updateChatUnreadMentionCount(chatId, unreadMentionCount);
       }
@@ -2645,7 +2658,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void onChatHasScheduledMessagesChanged (long chatId, boolean hasScheduledMessages) {
-    tdlib.ui().post(() -> {
+    runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.updateChatHasScheduledMessages(chatId, hasScheduledMessages);
       }
@@ -2654,7 +2667,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void onChatReadOutbox (final long chatId, final long lastReadOutboxMessageId) {
-    tdlib.ui().post(() -> {
+    runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.updateChatReadOutbox(chatId, lastReadOutboxMessageId);
       }
@@ -2663,7 +2676,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void onChatDraftMessageChanged (final long chatId, final @Nullable TdApi.DraftMessage draftMessage) {
-    tdlib.ui().post(() -> {
+    runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.updateChatDraftMessage(chatId, draftMessage);
       }
@@ -2674,7 +2687,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void onSecretChatUpdated (final TdApi.SecretChat secretChat) {
-    tdlib.ui().post(() -> {
+    runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.updateSecretChat(secretChat);
       }
@@ -2686,14 +2699,14 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void onConnectionStateChanged (int newState, int oldState) {
-    tdlib.ui().post(() -> updateNetworkStatus(newState));
+    runOnUiThreadOptional(() -> updateNetworkStatus(newState));
   }
 
   // Setting updates
 
   @Override
   public void onNotificationSettingsChanged (TdApi.NotificationSettingsScope scope, TdApi.ScopeNotificationSettings settings) {
-    tdlib.ui().post(() -> {
+    runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.updateNotificationSettings(scope, settings);
       }
@@ -2702,7 +2715,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void onNotificationSettingsChanged (long chatId, TdApi.ChatNotificationSettings settings) {
-    tdlib.ui().post(() -> {
+    runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.updateNotificationSettings(chatId, settings);
       }
@@ -2720,7 +2733,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void onMessageSendAcknowledged (final long chatId, final long messageId) {
-    tdlib.ui().post(() -> {
+    runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.refreshLastMessage(chatId, messageId, false);
       }
@@ -2729,7 +2742,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void onMessageSendSucceeded (final TdApi.Message message, final long oldMessageId) {
-    tdlib.ui().post(() -> {
+    runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.updateMessageSendSucceeded(message, oldMessageId);
       }
@@ -2738,7 +2751,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void onMessageContentChanged (final long chatId, final long messageId, final TdApi.MessageContent newContent) {
-    tdlib.ui().post(() -> {
+    runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.updateMessageContent(chatId, messageId, newContent);
       }
@@ -2756,7 +2769,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void onMessageInteractionInfoChanged (long chatId, long messageId, @Nullable TdApi.MessageInteractionInfo interactionInfo) {
-    tdlib.ui().post(() -> {
+    runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.updateMessageInteractionInfo(chatId, messageId, interactionInfo);
       }
@@ -2765,7 +2778,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void onMessagesDeleted (long chatId, long[] messageIds) {
-    tdlib.ui().post(() -> {
+    runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.updateMessagesDeleted(chatId, messageIds);
       }
@@ -2777,7 +2790,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   @Override
   public void onChatCounterChanged (@NonNull TdApi.ChatList chatList, boolean availabilityChanged, int totalCount, int unreadCount, int unreadUnmutedCount) {
     if (totalCount == 0 && chatList.getConstructor() != TdApi.ChatListMain.CONSTRUCTOR && Td.equalsTo(this.chatList, chatList)) {
-      tdlib.ui().post(() -> {
+      runOnUiThreadOptional(() -> {
         if (!isDestroyed() && !isBaseController()) {
           navigateBack();
         }
@@ -2790,7 +2803,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   @Override
   public void onSupergroupUpdated (final TdApi.Supergroup supergroup) {
     if (!TD.isMember(supergroup.status)) {
-      tdlib.ui().post(() -> {
+      runOnUiThreadOptional(() -> {
         checkChatSelected(ChatId.fromSupergroupId(supergroup.id));
       });
     }
@@ -2802,7 +2815,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   @Override
   public void onBasicGroupUpdated (final TdApi.BasicGroup basicGroup, boolean migratedToSupergroup) {
     if (!TD.isMember(basicGroup.status)) {
-      tdlib.ui().post(() -> {
+      runOnUiThreadOptional(() -> {
         checkChatSelected(ChatId.fromBasicGroupId(basicGroup.id));
       });
     }
@@ -2813,7 +2826,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void onUserUpdated (final TdApi.User user) {
-    tdlib.ui().post(() -> {
+    runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.updateUser(user);
       }

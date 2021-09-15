@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -82,13 +83,12 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
       this.hasArchive = hasArchive;
       if (hasArchive) {
         chats.add(0, newArchive());
-        notifyChatAppeared(-1);
-        invalidateAttachedItemDecorations();
+        notifyChatAppeared(-1, 0);
       } else {
         chats.remove(0);
         notifyItemRemoved(0);
-        invalidateAttachedItemDecorations();
       }
+      invalidateAttachedItemDecorations();
     }
   }
 
@@ -569,7 +569,7 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
     int flags = invalidateDecorations ? ORDER_INVALIDATE_DECORATIONS : 0;
     if (fromIndex != toIndex) {
       flags |= ORDER_REMAIN_SCROLL;
-      notifyItemMoved(fromIndex, toIndex);
+      notifyChatAppeared(fromIndex, toIndex);
     }
     return flags;
   }
@@ -588,7 +588,7 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
     newChat.makeMeasures();
     int flags = changeInfo.metadataChanged() ? ORDER_INVALIDATE_DECORATIONS : 0;
     addChat(position, newChat);
-    notifyItemInserted(position);
+    notifyChatAppeared(-1, position);
     notifyItemChanged(chats.size());
     context.checkDisplayNoChats();
     return flags;
@@ -643,31 +643,23 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
 
   // Adapter state
 
-  private void notifyChatAppeared (int fromIndex) {
+  private void notifyChatAppeared (int fromIndex, int atIndex) {
     int firstItem = layoutManager.findFirstVisibleItemPosition();
     int offset;
     if (firstItem != -1) {
       View v = layoutManager.findViewByPosition(firstItem);
-      offset = v != null ? v.getTop() : 0;
+      offset = v != null ? layoutManager.getDecoratedTop(v) : 0;
     } else {
       offset = 0;
     }
     if (fromIndex == -1) {
-      notifyItemInserted(0);
+      notifyItemInserted(atIndex);
     } else {
-      notifyItemMoved(fromIndex, 0);
+      notifyItemMoved(fromIndex, atIndex);
     }
     if (firstItem != -1) {
       layoutManager.scrollToPositionWithOffset(firstItem, offset);
     }
-  }
-
-  private void notifyChatRemoved (int index) {
-    notifyItemRemoved(index);
-  }
-
-  private void notifyChatMoved (int fromIndex, int toIndex) {
-    notifyItemMoved(fromIndex, toIndex);
   }
 
   public void notifyAllChanged () {
@@ -679,7 +671,7 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
   private ArrayList<RecyclerView> attachedToRecyclers;
 
   @Override
-  public void onAttachedToRecyclerView (RecyclerView recyclerView) {
+  public void onAttachedToRecyclerView (@NonNull RecyclerView recyclerView) {
     if (attachedToRecyclers == null) {
       attachedToRecyclers = new ArrayList<>();
     }
@@ -687,7 +679,7 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
   }
 
   @Override
-  public void onDetachedFromRecyclerView (RecyclerView recyclerView) {
+  public void onDetachedFromRecyclerView (@NonNull RecyclerView recyclerView) {
     if (attachedToRecyclers != null) {
       attachedToRecyclers.remove(recyclerView);
     }
