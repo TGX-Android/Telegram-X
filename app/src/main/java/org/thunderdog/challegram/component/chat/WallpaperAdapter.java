@@ -252,8 +252,6 @@ public class WallpaperAdapter extends RecyclerView.Adapter<WallpaperAdapter.View
       if (!isDark) {
         if (a.isBuiltIn() != b.isBuiltIn())
           return a.isBuiltIn() ? -1 : 1;
-        if (a.isCat() != b.isCat())
-          return a.isCat() ? -1 : 1;
       }
       if (a.isFill() != b.isFill())
         return a.isFill() ? 1 : -1;
