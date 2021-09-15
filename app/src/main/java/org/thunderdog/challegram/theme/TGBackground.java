@@ -111,7 +111,7 @@ public class TGBackground {
       needImages = true;
     }
     if (needImages) {
-      setTarget(new ImageFileRemote(tdlib, null, "background_" + name) {
+      ImageFileRemote remoteImageFile = new ImageFileRemote(tdlib, null, "background_" + name) {
         @Override
         public void extractFile (Client.ResultHandler handler) {
           Runnable onFail = () -> this.tdlib().client().send(new TdApi.SearchBackground(name), result -> {
@@ -120,6 +120,8 @@ public class TGBackground {
               if (background.document != null && !StringUtils.isEmpty(background.document.document.remote.id)) {
                 Settings.instance().putString("wallpaper_" + name, background.document.document.remote.id);
               }
+              if (background.document != null && TdConstants.BACKGROUND_PATTERN_MIME_TYPE.equals(background.document.mimeType))
+                target.setIsVector();
               handler.onResult(background.document != null ? background.document.document : new TdApi.Error(-1, "Document is inaccessible"));
             } else {
               handler.onResult(result);
@@ -139,7 +141,10 @@ public class TGBackground {
             onFail.run();
           }
         }
-      });
+      };
+
+      setTarget(remoteImageFile);
+
       setPreview(new ImageFileRemote(tdlib, null, "background_preview_" + name) {
         @Override
         public void extractFile (Client.ResultHandler handler) {
