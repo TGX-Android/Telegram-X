@@ -631,10 +631,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
         items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER, R.id.btn_updateAutomatically, 0, R.string.AutoUpdate));
         if (Settings.instance().getAutoUpdateMode() != Settings.AUTO_UPDATE_MODE_NEVER) {
-          items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-          items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.InstallBetas).setLongId(Settings.SETTING_FLAG_DOWNLOAD_BETAS));
-          items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_checkUpdates, 0, R.string.CheckForUpdates));
+          items.addAll(newAutoUpdateConfigurationItems());
         }
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         context().appUpdater().addListener(this);
@@ -910,6 +907,15 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
 
   private static ListItem newScheduleLocationItem () {
     return new ListItem(ListItem.TYPE_SETTING, R.id.btn_autoNightModeScheduled_location);
+  }
+
+  private static List<ListItem> newAutoUpdateConfigurationItems () {
+    return Arrays.asList(
+      new ListItem(ListItem.TYPE_SEPARATOR_FULL),
+      new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.InstallBetas).setLongId(Settings.SETTING_FLAG_DOWNLOAD_BETAS),
+      new ListItem(ListItem.TYPE_SEPARATOR_FULL),
+      new ListItem(ListItem.TYPE_SETTING, R.id.btn_checkUpdates, 0, R.string.CheckForUpdates)
+    );
   }
 
   @Override
@@ -1588,6 +1594,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
     }).setAllowResize(false).setIntDelegate((id, result) -> {
       int autoUpdateMode1 = Settings.instance().getAutoUpdateMode();
       int autoUpdateResult = result.get(R.id.btn_updateAutomatically);
+      boolean shouldChangeUi = (autoUpdateMode1 == Settings.AUTO_UPDATE_MODE_NEVER && autoUpdateResult != R.id.btn_updateAutomaticallyNever) || (autoUpdateMode1 != Settings.AUTO_UPDATE_MODE_NEVER && autoUpdateResult == R.id.btn_updateAutomaticallyNever);
       switch (autoUpdateResult) {
         case R.id.btn_updateAutomaticallyAlways:
           autoUpdateMode1 = Settings.AUTO_UPDATE_MODE_ALWAYS;
@@ -1604,6 +1611,15 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       }
       Settings.instance().setAutoUpdateMode(autoUpdateMode1);
       adapter.updateValuedSettingById(R.id.btn_updateAutomatically);
+
+      int index = adapter.indexOfViewById(R.id.btn_updateAutomatically);
+      if (shouldChangeUi && index != -1) {
+        if (autoUpdateMode1 == Settings.AUTO_UPDATE_MODE_NEVER) {
+          adapter.removeRange(index + 1, 4);
+        } else {
+          adapter.addItems(index + 1, newAutoUpdateConfigurationItems().toArray(new ListItem[0]));
+        }
+      }
     }));
   }
 
