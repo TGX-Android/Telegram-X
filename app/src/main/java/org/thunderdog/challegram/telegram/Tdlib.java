@@ -7971,7 +7971,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (chat == null || chat.id == 0 || !TD.isValidRight(rightId))
       return null;
     TdApi.ChatMemberStatus status = chatStatus(chat.id);
-    boolean isNotSpecificallyRestricted = status != null && status.getConstructor() == TdApi.ChatMemberStatusMember.CONSTRUCTOR;
+    boolean isNotSpecificallyRestricted = status != null && (
+      status.getConstructor() == TdApi.ChatMemberStatusMember.CONSTRUCTOR || (
+        status.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR &&
+        TD.checkRight(((TdApi.ChatMemberStatusRestricted) status).permissions, rightId)
+      )
+    );
     if (status != null) {
       switch (status.getConstructor()) {
         case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
