@@ -22,7 +22,6 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.ChatsController;
 
 import me.vkryl.android.util.ClickHelper;
-import me.vkryl.core.lambda.FutureInt;
 
 public class ChatsRecyclerView extends CustomRecyclerView implements ClickHelper.Delegate {
   private static final int PRELOAD_SIZE = 15;
@@ -80,7 +79,6 @@ public class ChatsRecyclerView extends CustomRecyclerView implements ClickHelper
   }
 
   private final ClickHelper helper = new ClickHelper(this);
-  private boolean clicking = false;
 
   @Override
   public boolean onTouchEvent (MotionEvent e) {
@@ -113,10 +111,6 @@ public class ChatsRecyclerView extends CustomRecyclerView implements ClickHelper
     this.adapter = new ChatsAdapter(controller, manager);
     setAdapter(adapter);
     return adapter;
-  }
-
-  public void onLoadStateChanged (boolean isLoading) {
-    // TODO?
   }
 
   public void setTotalRes (int totalRes) {
@@ -276,8 +270,7 @@ public class ChatsRecyclerView extends CustomRecyclerView implements ClickHelper
     }
   }
 
-  public void updateChatPosition (boolean matchesList, long chatId, TdApi.ChatPosition position, boolean orderChanged, boolean sourceChanged, boolean pinStateChanged) {
-    processChatUpdate(() -> adapter.updateChatPosition(matchesList, chatId, position, orderChanged, sourceChanged, pinStateChanged));
+  public void updateChatPosition (long chatId, TdApi.ChatPosition position, boolean orderChanged, boolean sourceChanged, boolean pinStateChanged) {
     if (sourceChanged) {
       int i = adapter.indexOfChat(chatId);
       if (i != -1) {
@@ -286,7 +279,7 @@ public class ChatsRecyclerView extends CustomRecyclerView implements ClickHelper
     }
   }
 
-  private void processChatUpdate (FutureInt action) {
+  public void processChatUpdate (int flags) {
     int firstVisiblePosition = manager.findFirstVisibleItemPosition();
     int viewTop;
     if (firstVisiblePosition != -1) {
@@ -295,7 +288,6 @@ public class ChatsRecyclerView extends CustomRecyclerView implements ClickHelper
     } else {
       viewTop = 0;
     }
-    final int flags = action.get();
     if ((flags & ChatsAdapter.ORDER_REMAIN_SCROLL) != 0 && firstVisiblePosition != -1) {
       manager.scrollToPositionWithOffset(firstVisiblePosition, viewTop);
     }

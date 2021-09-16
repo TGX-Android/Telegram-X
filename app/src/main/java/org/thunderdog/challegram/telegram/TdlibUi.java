@@ -39,7 +39,6 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.core.LangUtils;
-import org.thunderdog.challegram.data.ChatListManager;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGBotStart;
 import org.thunderdog.challegram.data.TGMessage;
@@ -2499,7 +2498,7 @@ public class TdlibUi extends Handler {
           if (!StringUtils.isEmpty(host) && path != null && path.length() > 1) {
             switch (Settings.instance().getInstantViewMode()) {
               case Settings.INSTANT_VIEW_MODE_INTERNAL:
-                ok = tdlib.isKnownHost(host, false);
+                ok = tdlib.isKnownHost(host, true);
                 break;
               case Settings.INSTANT_VIEW_MODE_ALL:
                 ok = true;
@@ -3811,7 +3810,7 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public void showArchiveOptions (ViewController<?> context, ChatListManager archive) {
+  public void showArchiveOptions (ViewController<?> context, TdlibChatList archive) {
     boolean needMarkAsRead = tdlib.hasUnreadChats(ChatPosition.CHAT_LIST_ARCHIVE);
     final int size = needMarkAsRead ? 2 : 1;
 
@@ -3836,7 +3835,7 @@ public class TdlibUi extends Handler {
       strings.append(R.string.ArchiveHide);
     }
 
-    context.showOptions(Lang.pluralBold(R.string.xArchivedChats, archive.getTotalCount()), ids.get(), strings.get(), null, icons.get(), (v, optionId) -> {
+    context.showOptions(Lang.pluralBold(R.string.xArchivedChats, archive.totalCount()), ids.get(), strings.get(), null, icons.get(), (v, optionId) -> {
       switch (optionId) {
         case R.id.btn_markChatAsRead: {
           tdlib.readAllChats(new TdApi.ChatListArchive(), readCount -> UI.showToast(Lang.plural(R.string.ReadAllChatsDone, readCount), Toast.LENGTH_SHORT));
@@ -4013,10 +4012,10 @@ public class TdlibUi extends Handler {
         showArchiveUnarchiveChat(context, chatList, chatId, after);
         return true;
       case R.id.btn_archiveChat:
-        tdlib.client().send(new TdApi.AddChatToList(chatId, new TdApi.ChatListArchive()), tdlib.okHandler(after));
+        tdlib.client().send(new TdApi.AddChatToList(chatId, ChatPosition.CHAT_LIST_ARCHIVE), tdlib.okHandler(after));
         return true;
       case R.id.btn_unarchiveChat:
-        tdlib.client().send(new TdApi.AddChatToList(chatId, new TdApi.ChatListMain()), tdlib.okHandler(after));
+        tdlib.client().send(new TdApi.AddChatToList(chatId, ChatPosition.CHAT_LIST_MAIN), tdlib.okHandler(after));
         return true;
       case R.id.btn_markChatAsRead:
         if (messageThread != null) {
@@ -5290,23 +5289,38 @@ public class TdlibUi extends Handler {
           TdApi.BankCardInfo bankCardInfo = (TdApi.BankCardInfo) result;
           tdlib.ui().post(() -> {
             ViewController<?> c = context instanceof ViewController<?> ? (ViewController<?>) context : UI.getCurrentStackItem();
-            if (c != null && !c.isDestroyed() && bankCardInfo.actions.length > 0) {
-              IntList ids = new IntList(bankCardInfo.actions.length);
-              StringList strings = new StringList(bankCardInfo.actions.length);
-              for (TdApi.BankCardActionOpenUrl openUrl : bankCardInfo.actions) {
-                ids.append(R.id.btn_openLink);
-                strings.append(openUrl.text);
+            boolean hasAnyActions = bankCardInfo.actions.length > 0;
+            if (c != null && !c.isDestroyed()) {
+              IntList ids = new IntList(hasAnyActions ? 1 : bankCardInfo.actions.length);
+              StringList strings = new StringList(hasAnyActions ? 1 : bankCardInfo.actions.length);
+              int[] icons = null;
+
+              if (hasAnyActions) {
+                for (TdApi.BankCardActionOpenUrl openUrl : bankCardInfo.actions) {
+                  ids.append(R.id.btn_openLink);
+                  strings.append(openUrl.text);
+                }
+              } else {
+                ids.append(R.id.btn_copyLink);
+                strings.append(R.string.CopyBankCard);
+                icons = new int[] { R.drawable.baseline_content_copy_24 };
               }
-              c.showOptions(bankCardInfo.title, ids.get(), strings.get(), null, null, new OptionDelegate() {
+
+              c.showOptions(bankCardInfo.title, ids.get(), strings.get(), null, icons, new OptionDelegate() {
                 @Override
                 public boolean onOptionItemPressed (View optionItemView, int id) {
-                  Intents.openUri((String) optionItemView.getTag());
+                  if (id == R.id.btn_openLink) {
+                    Intents.openUri((String) optionItemView.getTag());
+                  } else if (id == R.id.btn_copyLink) {
+                    UI.copyText(cardNumber, R.string.CopiedBankCard);
+                  }
+
                   return true;
                 }
 
                 @Override
                 public Object getTagForItem (int position) {
-                  return bankCardInfo.actions[position].url;
+                  return hasAnyActions ? bankCardInfo.actions[position].url : null;
                 }
               });
             }
@@ -5334,10 +5348,10 @@ public class TdlibUi extends Handler {
           items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendOnceOnline, Lang.getString(R.string.SendOnceOnline), R.drawable.baseline_visibility_24).bindToLastSeenAvailability(tdlib, userId));
         }
         items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendScheduled, Lang.getString(R.string.SendSchedule), R.drawable.baseline_date_range_24).bindTutorialFlag(isForward ? Settings.TUTORIAL_FORWARD_SCHEDULE : Settings.TUTORIAL_SCHEDULE));
-        if (canSendWithoutSound) {
-          items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendNoSound, Lang.getString(R.string.SendNoSound), R.drawable.baseline_notifications_off_24));
-        }
       }
+    }
+    if (!isEdit && canSendWithoutSound) {
+      items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendNoSound, Lang.getString(R.string.SendNoSound), R.drawable.baseline_notifications_off_24));
     }
     if (canToggleMarkdown) {
       items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendNoMarkdown, Lang.getString(isEdit ? R.string.SaveNoMarkdown : R.string.SendNoMarkdown), R.drawable.baseline_code_24).bindTutorialFlag(Settings.TUTORIAL_SEND_WITHOUT_MARKDOWN));

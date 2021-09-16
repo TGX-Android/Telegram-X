@@ -38,6 +38,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibManager;
+import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Intents;
@@ -633,6 +634,12 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
     if (action.startsWith(Intents.ACTION_OPEN_CHAT)) {
       int accountId = intent.getIntExtra("account_id", TdlibAccount.NO_ID);
       long chatId = intent.getLongExtra("chat_id", 0);
+      if (chatId == 0) {
+        long localChatId = intent.getLongExtra("local_id", 0);
+        if (localChatId != 0) {
+          chatId = TdlibSettingsManager.getRemoteChatId(accountId, localChatId);
+        }
+      }
       long messageId = intent.getLongExtra("message_id", 0);
       if (accountId != TdlibAccount.NO_ID && chatId != 0) {
         openMessagesController(accountId, chatId, messageId);
