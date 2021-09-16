@@ -16,6 +16,7 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.chat.MessagePreviewView;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.support.RippleSupport;
@@ -83,21 +84,31 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
           tdlib.ui().openPrivateChat(this, user.getId(), new TdlibUi.ChatOpenParameters().keepStack());
         }
         break;
-      case R.id.btn_viewAdminActions:
       case R.id.btn_openInviterProfile:
         TGUser user2 = ((UserView) v).getUser();
         if (user2 != null) {
           tdlib.ui().openPrivateChat(this, user2.getId(), new TdlibUi.ChatOpenParameters().keepStack());
         }
         break;
-      /*case R.id.btn_viewAdminActions:
+      case R.id.btn_viewAdminActions:
+        long chatId = getArgumentsStrict().chatId;
         TGUser user3 = ((UserView) v).getUser();
         if (user3 != null) {
-          //MessagesController c = new MessagesController(context, tdlib);
-          //c.setArguments(new MessagesController.Arguments(MessagesController.PREVIEW_MODE_EVENT_LOG, null, getArgumentsStrict().chatId));
-          //navigateTo(c);
+          long userId = user3.getId();
+          tdlib.client().send(new TdApi.GetChatMember(chatId, new TdApi.MessageSenderUser((int) userId)), result -> {
+            if (result.getConstructor() != TdApi.ChatMember.CONSTRUCTOR) return;
+            TdApi.ChatMember member = (TdApi.ChatMember) result;
+            TdApi.ChatMemberStatus myStatus = tdlib.chatStatus(chatId);
+            if (myStatus != null) {
+              runOnUiThreadOptional(() -> {
+                EditRightsController c = new EditRightsController(context, tdlib);
+                c.setArguments(new EditRightsController.Args(getArgumentsStrict().chatId, user3.getId(), false, myStatus, member));
+                navigateTo(c);
+              });
+            }
+          });
         }
-        break;*/
+        break;
       case R.id.btn_showAdvanced:
         showAllUsers();
         break;
