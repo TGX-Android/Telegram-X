@@ -134,7 +134,6 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
 
         RippleSupport.setSimpleWhiteBackground(previewView);
         previewView.setMessage(message, null, statString.toString(), true);
-        previewView.setLinePadding(4f);
         previewView.setContentInset(Screen.dp(8));
         previewView.setTag(message);
       }

@@ -8,6 +8,7 @@ import androidx.annotation.IdRes;
 import androidx.annotation.StringRes;
 import androidx.collection.SparseArrayCompat;
 
+import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -37,6 +38,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.td.Td;
@@ -199,7 +201,6 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
 
         RippleSupport.setSimpleWhiteBackground(previewView);
         previewView.setMessage(container.message, null, statString.toString(), false);
-        previewView.setLinePadding(4f);
         previewView.setContentInset(Screen.dp(8));
         previewView.setTag(container);
       }
@@ -309,6 +310,8 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
       if (statistics.topInviters.length > 0) {
         setTopUsers(statistics.period, statistics.topInviters, R.string.StatsTopInviters, R.id.btn_openInviterProfile);
       }
+
+      executeScheduledAnimation();
     });
   }
 
@@ -350,7 +353,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
 
       for (int i = 10; i < messageSenderInfos.length; i++) {
         advancedItems.add(new ListItem(ListItem.TYPE_USER, R.id.btn_viewMemberMessages).setData(messageSenderInfos[i]));
-        if (i != messageSenderInfos.length - 1) advancedItems.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        if (i != messageSenderInfos.length - 1) advancedItems.add(new ListItem(ListItem.TYPE_SEPARATOR));
       }
 
       ArrayUtils.ensureCapacity(items, items.size() + advancedItems.size());
@@ -402,51 +405,62 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     setCharts(items, charts, () -> {
       if (statistics.recentMessageInteractions.length > 0) {
         setRecentMessageInteractions(statistics.period, statistics.recentMessageInteractions, R.string.StatsRecentPosts);
+      } else {
+        executeScheduledAnimation();
       }
     });
   }
 
   private void setRecentMessageInteractions (TdApi.DateRange range, TdApi.ChatStatisticsMessageInteractionInfo[] interactions, @StringRes int header) {
-    int maxLength = Math.min(10, interactions.length);
-    loadInteractionMessages(interactions, 0, maxLength, () -> {
+    loadInteractionMessages(interactions, () -> {
       int currentSize = adapter.getItems().size();
       adapter.getItems().add(new ListItem(ListItem.TYPE_CHART_HEADER_DETACHED).setData(new MiniChart(header, range)));
       adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_TOP));
 
       for (int i = 0; i < interactionMessages.size(); i++) {
         adapter.getItems().add(new ListItem(ListItem.TYPE_STATS_MESSAGE_PREVIEW, R.id.btn_messageMore).setData(interactionMessages.get(i)));
+        if (i != interactionMessages.size() - 1) adapter.getItems().add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       }
 
       adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       adapter.notifyItemRangeInserted(currentSize, adapter.getItems().size());
+
+      executeScheduledAnimation();
     });
   }
 
-  private void loadInteractionMessages (TdApi.ChatStatisticsMessageInteractionInfo[] interactions, int index, int maxSize, Runnable onMessagesLoaded) {
-    if (interactionMessages.size() > maxSize) {
-      runOnUiThread(onMessagesLoaded);
-      return;
-    }
+  private void loadInteractionMessages (TdApi.ChatStatisticsMessageInteractionInfo[] interactions, Runnable onMessagesLoaded) {
+    AtomicInteger remaining = new AtomicInteger(interactions.length);
 
-    TdApi.Message message = tdlib.getMessageLocally(getArgumentsStrict().chatId, interactions[index].messageId);
+    Client.ResultHandler handler = result -> {
+      if (result.getConstructor() == TdApi.Message.CONSTRUCTOR) {
+        TdApi.Message message = (TdApi.Message) result;
 
-    if (message != null && message.mediaAlbumId != 0) {
-      if (!interactionMessageAlbums.containsKey(message.mediaAlbumId)) {
-        interactionMessageAlbums.put(message.mediaAlbumId, new ArrayList<>());
+        if (message.mediaAlbumId != 0) {
+          if (!interactionMessageAlbums.containsKey(message.mediaAlbumId)) {
+            interactionMessageAlbums.put(message.mediaAlbumId, new ArrayList<>());
+          }
+
+          interactionMessageAlbums.get(message.mediaAlbumId).add(message);
+        }
+
+        if (message.canGetStatistics && (message.mediaAlbumId == 0 || currentMediaAlbumId != message.mediaAlbumId)) {
+          currentMediaAlbumId = message.mediaAlbumId;
+          interactionMessages.add(new MessageInteractionInfoContainer(
+                  message,
+                  interactions[interactions.length - remaining.get()]
+          ));
+        }
       }
 
-      interactionMessageAlbums.get(message.mediaAlbumId).add(message);
-    }
+      if (remaining.decrementAndGet() == 0) {
+        runOnUiThreadOptional(onMessagesLoaded);
+      }
+    };
 
-    if (message != null && message.canGetStatistics && (message.mediaAlbumId == 0 || currentMediaAlbumId != message.mediaAlbumId)) {
-      currentMediaAlbumId = message.mediaAlbumId;
-      interactionMessages.add(new MessageInteractionInfoContainer(
-              message,
-              interactions[index]
-      ));
+    for (TdApi.ChatStatisticsMessageInteractionInfo interaction : interactions) {
+      tdlib.client().send(new TdApi.GetMessageLocally(getArgumentsStrict().chatId, interaction.messageId), handler);
     }
-
-    loadInteractionMessages(interactions, index + 1, maxSize, onMessagesLoaded);
   }
 
   private void setCharts (List<ListItem> items, List<Chart> charts, Runnable onChartsLoaded) {
@@ -457,8 +471,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
           chart.load(hasData -> {
             if (isDestroyed())
               return;
-            if (--pendingRequests == 0)
-              executeScheduledAnimation();
+            --pendingRequests;
             if (hasData) {
               int startIndex = -1;
               final int originalIndex = charts.indexOf(chart);
@@ -501,7 +514,6 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     adapter.setItems(items, false);
 
     if (pendingRequests == 0) {
-      executeScheduledAnimation();
       onChartsLoaded.run();
     }
   }
