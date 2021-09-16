@@ -290,6 +290,19 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getStringBold(R.string.StatsRange, Lang.getDateRange(statistics.period.startDate, statistics.period.endDate, TimeUnit.SECONDS, true)), false));
 
+    if (statistics.topAdministrators.length > 0) {
+      addTopUsers(items, statistics.period, statistics.topAdministrators, R.string.StatsTopAdmins, R.id.btn_viewAdminActions);
+    }
+
+    if (statistics.topSenders.length > 0) {
+      messageSenderInfos = statistics.topSenders;
+      addTopUsers(items, statistics.period, statistics.topSenders, R.string.StatsTopMembers, R.id.btn_viewMemberMessages);
+    }
+
+    if (statistics.topInviters.length > 0) {
+      addTopUsers(items, statistics.period, statistics.topInviters, R.string.StatsTopInviters, R.id.btn_openInviterProfile);
+    }
+
     final long chatId = getArgumentsStrict().chatId;
     List<Chart> charts = Arrays.asList(
       new Chart(R.id.stats_memberCount, tdlib, chatId, R.string.StatsChartGrowth, ChartDataUtil.TYPE_LINEAR, statistics.memberCountGraph, 0),
@@ -302,28 +315,12 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
       new Chart(R.id.stats_topDays, tdlib, chatId, R.string.StatsChartTopDays, ChartDataUtil.TYPE_STACK_PIE, statistics.weekGraph, 0)
     );
 
-    setCharts(items, charts, () -> {
-      if (statistics.topAdministrators.length > 0) {
-        setTopUsers(statistics.period, statistics.topAdministrators, R.string.StatsTopAdmins, R.id.btn_viewAdminActions);
-      }
-
-      if (statistics.topSenders.length > 0) {
-        messageSenderInfos = statistics.topSenders;
-        setTopUsers(statistics.period, statistics.topSenders, R.string.StatsTopMembers, R.id.btn_viewMemberMessages);
-      }
-
-      if (statistics.topInviters.length > 0) {
-        setTopUsers(statistics.period, statistics.topInviters, R.string.StatsTopInviters, R.id.btn_openInviterProfile);
-      }
-
-      executeScheduledAnimation();
-    });
+    setCharts(items, charts, this::executeScheduledAnimation);
   }
 
-  private void setTopUsers (TdApi.DateRange range, TdApi.Object[] users, @StringRes int header, @IdRes int id) {
-    int currentSize = adapter.getItems().size();
-    adapter.getItems().add(new ListItem(ListItem.TYPE_CHART_HEADER_DETACHED).setData(new MiniChart(header, range)));
-    adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+  private void addTopUsers (List<ListItem> items, TdApi.DateRange range, TdApi.Object[] users, @StringRes int header, @IdRes int id) {
+    items.add(new ListItem(ListItem.TYPE_CHART_HEADER_DETACHED).setData(new MiniChart(header, range)));
+    items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
 
     int maxLength;
     if (users[0] instanceof TdApi.ChatStatisticsMessageSenderInfo) {
@@ -333,17 +330,16 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     }
 
     for (int i = 0; i < maxLength; i++) {
-      adapter.getItems().add(new ListItem(ListItem.TYPE_USER, id).setData(users[i]));
-      if (i != maxLength - 1) adapter.getItems().add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_USER, id).setData(users[i]));
+      if (i != maxLength - 1) items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     }
 
     if (maxLength < users.length) {
-      adapter.getItems().add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      adapter.getItems().add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, 0, Lang.plural(R.string.StatsXShowMore, users.length - 10), false));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, 0, Lang.plural(R.string.StatsXShowMore, users.length - 10), false));
     }
 
-    adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-    adapter.notifyItemRangeInserted(currentSize, adapter.getItems().size());
+    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
   }
 
   private void showAllUsers () {
