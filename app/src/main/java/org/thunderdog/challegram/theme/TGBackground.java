@@ -228,10 +228,11 @@ public class TGBackground {
       if (isVector) {
         target.setIsVector();
       }
-      target.setScaleType(ImageFile.CENTER_CROP);
       if (isPattern()) {
+        target.setScaleType(ImageFile.CENTER_REPEAT);
         target.setSize(Screen.widestSide());
       } else {
+        target.setScaleType(ImageFile.CENTER_CROP);
         target.setSize(Math.min(1480, Screen.widestSide()));
       }
       target.setNoBlur();

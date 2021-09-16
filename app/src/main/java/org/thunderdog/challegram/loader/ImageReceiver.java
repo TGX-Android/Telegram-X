@@ -56,6 +56,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
   private Matrix bitmapMatrix;
 
   private Paint roundPaint; // rounded corners
+  private Paint repeatPaint; // repeat mode
   private BitmapShader bitmapShader;
   private RectF roundRect;
   private RectF bitmapRectF;
@@ -199,7 +200,13 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     if (!this.hasColorFilter || this.colorFilter != colorFilter) {
       this.hasColorFilter = true;
       this.colorFilter = colorFilter;
-      this.bitmapPaint.setColorFilter(new PorterDuffColorFilter(colorFilter, PorterDuff.Mode.SRC_IN));
+
+      PorterDuffColorFilter duffColorFilter = new PorterDuffColorFilter(colorFilter, PorterDuff.Mode.SRC_IN);
+      this.bitmapPaint.setColorFilter(duffColorFilter);
+      if (repeatPaint != null) {
+        this.repeatPaint.setColorFilter(duffColorFilter);
+      }
+
       invalidate();
     }
   }
@@ -209,6 +216,9 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     if (this.hasColorFilter) {
       this.hasColorFilter = false;
       this.bitmapPaint.setColorFilter(null);
+      if (repeatPaint != null) {
+        this.repeatPaint.setColorFilter(null);
+      }
       invalidate();
     }
   }
@@ -227,6 +237,9 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
       if (savedAlpha == 0) {
         if (radius != 0) {
           roundPaint.setAlpha((int) (255f * alpha));
+        }
+        if (repeatPaint != null) {
+          repeatPaint.setAlpha((int) (255f * alpha));
         }
         bitmapPaint.setAlpha((int) (255f * alpha));
       }
@@ -597,6 +610,9 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
         if (radius != 0) {
           roundPaint.setAlpha((int) (255f * alpha));
         }
+        if (repeatPaint != null) {
+          repeatPaint.setAlpha((int) (255f * alpha));
+        }
         bitmapPaint.setAlpha((int) (255f * alpha));
       }
       invalidate();
@@ -619,6 +635,9 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
       this.alpha = alpha;
       if (radius != 0) {
         roundPaint.setAlpha((int) (255f * alpha));
+      }
+      if (repeatPaint != null) {
+        repeatPaint.setAlpha((int) (255f * alpha));
       }
       bitmapPaint.setAlpha((int) (255f * alpha));
     }
@@ -715,6 +734,9 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
         bitmapShader = null;
         if (roundPaint != null) {
           roundPaint.setShader(null);
+        }
+        if (repeatPaint != null) {
+          repeatPaint.setShader(null);
         }
       }
     }
@@ -814,6 +836,21 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
           layoutRound();
         } else {
           layoutRound();
+          bitmapChanged = true;
+        }
+      } else if (file.getScaleType() == ImageFile.CENTER_REPEAT) {
+        if (bitmapChanged) {
+          if (repeatPaint == null) {
+            repeatPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
+            repeatPaint.setAlpha(bitmapPaint.getAlpha());
+            repeatPaint.setColorFilter(bitmapPaint.getColorFilter());
+          }
+
+          bitmapShader = new BitmapShader(bitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+          repeatPaint.setShader(bitmapShader);
+          layoutRect();
+        } else {
+          layoutRect();
           bitmapChanged = true;
         }
       } else {
@@ -1012,15 +1049,17 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
 
   @Override
   public float getPaintAlpha () {
-    return (float) (roundPaint != null ? roundPaint.getAlpha() : bitmapPaint.getAlpha()) / 255f;
+    return (float) (repeatPaint != null ? repeatPaint.getAlpha() : roundPaint != null ? roundPaint.getAlpha() : bitmapPaint.getAlpha()) / 255f;
   }
 
   @Override
   public void setPaintAlpha (float factor) {
-    savedAlpha = Color.rgb(roundPaint != null ? roundPaint.getAlpha() : 0, bitmapPaint.getAlpha(), 0);
+    savedAlpha = Color.rgb(repeatPaint != null ? repeatPaint.getAlpha() : roundPaint != null ? roundPaint.getAlpha() : 0, bitmapPaint.getAlpha(), 0);
     final int alpha = (int) (255f * MathUtils.clamp(factor));
     if (roundPaint != null)
       roundPaint.setAlpha(alpha);
+    if (repeatPaint != null)
+      repeatPaint.setAlpha(alpha);
     bitmapPaint.setAlpha(alpha);
   }
 
@@ -1028,6 +1067,8 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
   public void restorePaintAlpha () {
     if (roundPaint != null)
       roundPaint.setAlpha(Color.red(savedAlpha));
+    if (repeatPaint != null)
+      repeatPaint.setAlpha(Color.red(savedAlpha));
     bitmapPaint.setAlpha(Color.green(savedAlpha));
     savedAlpha = 0;
   }
@@ -1093,32 +1134,8 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
           c.restore();
         }
       } else if (file.getScaleType() == ImageFile.CENTER_REPEAT) {
-        // TODO
-
-        int imageWidth = bitmapRect.width();
-        int imageHeight = bitmapRect.height();
-
-        int viewWidth = drawRegion.width();
-        int viewHeight = drawRegion.height();
-
-        float scale = Math.min(Math.max(1f, Screen.density() / 2f), Math.max((float) viewWidth / (float) imageWidth, (float) viewHeight / (float) imageHeight));
-
-        imageWidth *= scale;
-        imageHeight *= scale;
-
         c.save();
-        c.clipRect(left, top, right, bottom);
-
-        c.drawRect(left, top, right, bottom, Paints.fillingPaint(0xff00ff00));
-
-        c.drawRect(
-          drawRegion.centerX() - imageWidth / 2f,
-          drawRegion.centerY() - imageHeight / 2f,
-          drawRegion.centerX() + imageWidth / 2f,
-          drawRegion.centerY() + imageHeight / 2f,
-          Paints.fillingPaint(0xffff0000)
-        );
-
+        c.drawRect(left, top, right, bottom, repeatPaint);
         c.restore();
       } else {
         PaintState paintState = file.getPaintState();
