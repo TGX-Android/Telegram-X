@@ -828,3 +828,51 @@ fun MessageSender?.equalsTo(b: MessageSender?): Boolean {
     }
   }
 }
+
+fun BackgroundType?.equalsTo(b: BackgroundType?, ignoreSettings: Boolean = true): Boolean {
+  return when {
+    this === b -> true
+    this == null || b == null || this.constructor != b.constructor -> false
+    else -> {
+      when (this.constructor) {
+        BackgroundTypeWallpaper.CONSTRUCTOR -> {
+          require(this is BackgroundTypeWallpaper && b is BackgroundTypeWallpaper)
+          ignoreSettings || (this.isBlurred == b.isBlurred && this.isMoving == b.isMoving)
+        }
+        BackgroundTypeFill.CONSTRUCTOR -> {
+          require(this is BackgroundTypeFill && b is BackgroundTypeFill)
+          this.fill.equalsTo(b.fill)
+        }
+        BackgroundTypePattern.CONSTRUCTOR -> {
+          require(this is BackgroundTypePattern && b is BackgroundTypePattern)
+          this.fill.equalsTo(b.fill) && (ignoreSettings || (this.intensity == b.intensity && this.isMoving == b.isMoving))
+        }
+        else -> error(this.toString())
+      }
+    }
+  }
+}
+
+fun BackgroundFill?.equalsTo(b: BackgroundFill?): Boolean {
+  return when {
+    this === b -> true
+    this == null || b == null || this.constructor != b.constructor -> false
+    else -> {
+      when (this.constructor) {
+        BackgroundFillSolid.CONSTRUCTOR -> {
+          require(this is BackgroundFillSolid && b is BackgroundFillSolid)
+          this.color == b.color
+        }
+        BackgroundFillGradient.CONSTRUCTOR -> {
+          require(this is BackgroundFillGradient && b is BackgroundFillGradient)
+          this.topColor == b.topColor && this.bottomColor == b.bottomColor && this.rotationAngle == b.rotationAngle
+        }
+        BackgroundFillFreeformGradient.CONSTRUCTOR -> {
+          require(this is BackgroundFillFreeformGradient && b is BackgroundFillFreeformGradient)
+          this.colors.contentEquals(b.colors)
+        }
+        else -> error(this.toString())
+      }
+    }
+  }
+}

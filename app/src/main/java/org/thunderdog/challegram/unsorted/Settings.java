@@ -150,7 +150,8 @@ public class Settings {
   private static final int VERSION_34 = 34; // scrollToMessageId stack
   private static final int VERSION_35 = 35; // clear known conversions
   private static final int VERSION_36 = 36; // removed TON
-  private static final int VERSION = VERSION_36;
+  private static final int VERSION_37 = 37; // removed weird "wallpaper_" + file.remote.id unused legacy cache
+  private static final int VERSION = VERSION_37;
 
   private static final AtomicBoolean hasInstance = new AtomicBoolean(false);
   private static volatile Settings instance;
@@ -1695,6 +1696,21 @@ public class Settings {
           .remove(KEY_TON_LOG_SIZE)
           .remove(KEY_TON_OTHER)
           .remove(KEY_TON_VERBOSITY);
+        break;
+      }
+      case VERSION_37: {
+        // keep: ^\d+(?:|_dark|_other\d+)$
+        // remove: any other key with "wallpaper_" prefix
+        final String dayPrefix = getWallpaperIdentifierSuffix(0);
+        final String nightPrefix = getWallpaperIdentifierSuffix(1);
+        for (final LevelDB.Entry entry : pmc.find("wallpaper_")) {
+          final String suffix = entry.key().substring("wallpaper_".length());
+          if (!StringUtils.isNumeric(suffix) &&
+              !suffix.matches("^\\d+(?:" + dayPrefix + "|" + nightPrefix + "|_other\\d+)$")
+          ) {
+            editor.remove(entry.key());
+          }
+        }
         break;
       }
     }

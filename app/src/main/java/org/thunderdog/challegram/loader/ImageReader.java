@@ -25,6 +25,7 @@ import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.filegen.TdlibFileGenerationManager;
+import org.thunderdog.challegram.loader.svg.SvgRender;
 import org.thunderdog.challegram.support.Mp3Support;
 import org.thunderdog.challegram.tool.UI;
 
@@ -108,7 +109,17 @@ public class ImageReader {
       }
     }
 
+    if (file.isVector()) {
+      readTgVectorPattern(file, listener);
+      return;
+    }
+
     Bitmap bitmap = readImage(file, path);
+    listener.onImageLoaded(bitmap != null, bitmap);
+  }
+
+  private void readTgVectorPattern (ImageFile file, Listener listener) {
+    Bitmap bitmap = SvgRender.fromCompressed(file.getSize(), file.needDecodeSquare(), file.getFilePath());
     listener.onImageLoaded(bitmap != null, bitmap);
   }
 

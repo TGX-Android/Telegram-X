@@ -135,10 +135,7 @@ public class TdlibWallpaperManager {
           TdApi.Background[] rawBackgrounds = ((TdApi.Backgrounds) result).backgrounds;
           List<TGBackground> backgrounds = new ArrayList<>(rawBackgrounds.length);
           for (TdApi.Background rawBackground : rawBackgrounds) {
-            TGBackground background = new TGBackground(tdlib, rawBackground);
-            if (background.isPattern())
-              continue;
-            backgrounds.add(background);
+            backgrounds.add(new TGBackground(tdlib, rawBackground));
           }
           List<Callback> callbacks;
           synchronized (this.backgrounds) {
