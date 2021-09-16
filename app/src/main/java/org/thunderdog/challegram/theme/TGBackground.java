@@ -24,6 +24,7 @@ import java.util.Map;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.leveldb.LevelDB;
+import me.vkryl.td.Td;
 import me.vkryl.td.TdConstants;
 
 /**
@@ -261,16 +262,10 @@ public class TGBackground {
   public static boolean compare (TGBackground a, TGBackground b) {
     if ((a == null || a.isEmpty()) && (b == null || b.isEmpty()))
       return true;
-    if (a == null || b == null || a.isEmpty() != b.isEmpty() || a.isCustom() != b.isCustom() || a.isFill() != b.isFill() || a.isFillGradient() != b.isFillGradient() || a.isFillSolid() != b.isFillSolid())
+    if (a == null || b == null || a.isEmpty() != b.isEmpty() || a.isCustom() != b.isCustom() || !Td.equalsTo(a.type, b.type, true))
       return false;
     if (a.isCustom())
       return StringUtils.equalsOrBothEmpty(a.getCustomPath(), b.getCustomPath());
-    if (a.isFillSolid())
-      return a.getBackgroundColor() == b.getBackgroundColor();
-    if (a.isFillGradient() || a.isPatternBackgroundGradient())
-      return a.getTopColor() == b.getTopColor() && a.getBottomColor() == b.getBottomColor() && a.getRotationAngle() == b.getRotationAngle();
-    if (a.isFillFreeformGradient() || a.isPatternBackgroundFreeformGradient())
-      return a.getFreeformColors() == b.getFreeformColors();
     return StringUtils.equalsOrBothEmpty(a.getName(), b.getName());
   }
 
@@ -385,7 +380,7 @@ public class TGBackground {
     return 0;
   }
 
-  public int[] getFreeformColors() {
+  public int[] getFreeformColors () {
     if (isFillFreeformGradient()) {
       return ((TdApi.BackgroundFillFreeformGradient) ((TdApi.BackgroundTypeFill) type).fill).colors;
     } else if (isPatternBackgroundFreeformGradient()) {
