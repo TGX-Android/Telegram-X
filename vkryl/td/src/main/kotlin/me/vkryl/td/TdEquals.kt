@@ -859,7 +859,10 @@ fun BackgroundFill?.equalsTo(b: BackgroundFill?): Boolean {
     this == null || b == null || this.constructor != b.constructor -> false
     else -> {
       when (this.constructor) {
-        BackgroundFillSolid.CONSTRUCTOR -> (this as BackgroundFillSolid).color == (b as BackgroundFillSolid).color
+        BackgroundFillSolid.CONSTRUCTOR -> {
+          require(this is BackgroundFillSolid && b is BackgroundFillSolid)
+          this.color == b.color
+        }
         BackgroundFillGradient.CONSTRUCTOR -> {
           require(this is BackgroundFillGradient && b is BackgroundFillGradient)
           this.topColor == b.topColor && this.bottomColor == b.bottomColor && this.rotationAngle == b.rotationAngle
