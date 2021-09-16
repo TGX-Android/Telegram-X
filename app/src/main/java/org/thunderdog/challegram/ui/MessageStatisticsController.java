@@ -10,9 +10,9 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.charts.Chart;
 import org.thunderdog.challegram.charts.MiniChart;
-import org.thunderdog.challegram.charts.StatsMessagePreviewView;
 import org.thunderdog.challegram.charts.data.ChartDataUtil;
 import org.thunderdog.challegram.component.base.SettingView;
+import org.thunderdog.challegram.component.chat.MessagePreviewView;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGUser;
@@ -123,7 +123,7 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
 
 
       @Override
-      protected void setMessagePreview (ListItem item, int position, StatsMessagePreviewView previewView) {
+      protected void setMessagePreview (ListItem item, int position, MessagePreviewView previewView) {
         StringBuilder statString = new StringBuilder();
         TdApi.Message message = (TdApi.Message) item.getData();
 
