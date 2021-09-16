@@ -64,11 +64,11 @@ public class SvgRender {
     private final HashMap<String, StyleSet> styleSheet = new HashMap<>();
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rect = new RectF();
-    private final int imageSize;
+    private final int imageSizeLimit;
     private final boolean cropSquare;
 
-    public SVGHandler (int imageSize, boolean cropSquare) {
-      this.imageSize = imageSize;
+    public SVGHandler (int imageSizeLimit, boolean cropSquare) {
+      this.imageSizeLimit = imageSizeLimit;
       this.cropSquare = cropSquare;
     }
 
@@ -105,7 +105,7 @@ public class SvgRender {
           final float viewBoxWidth = Float.parseFloat(viewBox[2]);
           final float viewBoxHeight = Float.parseFloat(viewBox[3]);
 
-          float scale = Math.min((float) imageSize / viewBoxWidth, (float) imageSize / viewBoxHeight);
+          float scale = Math.min(1f, Math.min((float) imageSizeLimit / viewBoxWidth, (float) imageSizeLimit / viewBoxHeight));
 
           int outputWidth = (int) (viewBoxWidth * scale);
           int outputHeight = (int) (viewBoxHeight * scale);

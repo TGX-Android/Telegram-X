@@ -35,6 +35,7 @@ public class ImageFile {
 
   public static final int FIT_CENTER = 1;
   public static final int CENTER_CROP = 2;
+  public static final int CENTER_REPEAT = 3;
 
   public static final byte TYPE_BASIC = (byte) 1;
   public static final byte TYPE_GALLERY = (byte) 2;

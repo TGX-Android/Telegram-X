@@ -37,6 +37,7 @@ public class TGBackground {
   private final String name;
   private final TdApi.BackgroundType type;
   private final String customPath;
+  private final boolean isVector;
 
   private int legacyWallpaperId;
   private String legacyRemoteId;
@@ -53,7 +54,7 @@ public class TGBackground {
     int legacyWallpaperId = resolveLegacyWallpaperId(name, null);
     if (legacyWallpaperId != 0)
       return newLegacyWallpaper(tdlib, legacyWallpaperId);
-    return new TGBackground(tdlib, name, null, 0);
+    return new TGBackground(tdlib, name, null, false, 0);
   }
 
   public static TGBackground newLegacyWallpaper (Tdlib tdlib, int legacyWallpaperId) {
@@ -64,7 +65,7 @@ public class TGBackground {
       String name = getBackgroundForLegacyWallpaperId(legacyWallpaperId);
       if (name == null)
         return null;
-      background = new TGBackground(tdlib, name, new TdApi.BackgroundTypeWallpaper(false, false), legacyWallpaperId);
+      background = new TGBackground(tdlib, name, new TdApi.BackgroundTypeWallpaper(false, false), false, legacyWallpaperId);
     }
     return background;
   }
@@ -75,6 +76,7 @@ public class TGBackground {
     this.type = null;
     this.legacyWallpaperId = 0;
     this.customPath = localPath;
+    this.isVector = false;
     if (!StringUtils.isEmpty(localPath)) {
       setTarget(new ImageFileLocal(localPath));
       ImageFileLocal preview = new ImageFileLocal(localPath);
@@ -83,15 +85,16 @@ public class TGBackground {
     }
   }
 
-  private TGBackground (Tdlib tdlib, String name, TdApi.BackgroundType type, int legacyWallpaperId) {
-    this(tdlib, name, type, legacyWallpaperId, null);
+  private TGBackground (Tdlib tdlib, String name, TdApi.BackgroundType type, boolean isVector, int legacyWallpaperId) {
+    this(tdlib, name, type, isVector, legacyWallpaperId, null);
   }
 
-  private TGBackground (Tdlib tdlib, String name, TdApi.BackgroundType type, int legacyWallpaperId, String legacyRemoteIdKey) {
+  private TGBackground (Tdlib tdlib, String name, TdApi.BackgroundType type, boolean isVector, int legacyWallpaperId, String legacyRemoteIdKey) {
     this.accountId = tdlib.id();
     this.name = name;
     this.type = type;
     this.customPath = null;
+    this.isVector = isVector;
     this.legacyWallpaperId = legacyWallpaperId;
     this.legacyRemoteId = StringUtils.isEmpty(legacyRemoteIdKey) ? null : Settings.instance().getString(legacyRemoteIdKey, null);
 
@@ -118,8 +121,6 @@ public class TGBackground {
           Runnable onFail = () -> this.tdlib().client().send(new TdApi.SearchBackground(name), result -> {
             if (result.getConstructor() == TdApi.Background.CONSTRUCTOR) {
               TdApi.Background background = (TdApi.Background) result;
-              if (background.document != null && TdConstants.BACKGROUND_PATTERN_MIME_TYPE.equals(background.document.mimeType))
-                target.setIsVector();
               handler.onResult(background.document != null ? background.document.document : new TdApi.Error(-1, "Document is inaccessible"));
             } else {
               handler.onResult(result);
@@ -162,11 +163,7 @@ public class TGBackground {
   }
 
   private TGBackground (Tdlib tdlib, int solidColor, int legacyWallpaperId) {
-    this(tdlib, getNameForColor(solidColor), new TdApi.BackgroundTypeFill(new TdApi.BackgroundFillSolid(solidColor)), legacyWallpaperId);
-  }
-
-  private TGBackground (Tdlib tdlib, int topColor, int bottomColor, int rotationAngle, int legacyWallpaperId) {
-    this(tdlib, getNameForColor(topColor, bottomColor, rotationAngle), new TdApi.BackgroundTypeFill(new TdApi.BackgroundFillGradient(topColor, bottomColor, rotationAngle)), legacyWallpaperId);
+    this(tdlib, getNameForColor(solidColor), new TdApi.BackgroundTypeFill(new TdApi.BackgroundFillSolid(solidColor)), false, legacyWallpaperId);
   }
 
   public TGBackground (Tdlib tdlib, TdApi.Background background) {
@@ -174,17 +171,14 @@ public class TGBackground {
     this.name = background.name;
     this.type = background.type;
     this.customPath = null;
+    this.isVector = background.document != null && TdConstants.BACKGROUND_PATTERN_MIME_TYPE.equals(background.document.mimeType);
     this.legacyWallpaperId = resolveLegacyWallpaperId(background.name, background.type);
 
     switch (type.getConstructor()) {
       case TdApi.BackgroundTypePattern.CONSTRUCTOR:
       case TdApi.BackgroundTypeWallpaper.CONSTRUCTOR: {
         if (background.document != null) {
-          ImageFile target = new ImageFile(tdlib, background.document.document);
-          if (TdConstants.BACKGROUND_PATTERN_MIME_TYPE.equals(background.document.mimeType))
-            target.setIsVector();
-          setTarget(target);
-
+          setTarget(new ImageFile(tdlib, background.document.document));
           if (background.document.thumbnail != null)
             setPreview(TD.toImageFile(tdlib, background.document.thumbnail));
           if (background.document.minithumbnail != null)
@@ -230,10 +224,16 @@ public class TGBackground {
     this.target = target;
     if (target != null) {
       target.setNeedPalette(true);
-      target.setScaleType(ImageFile.CENTER_CROP);
       target.setForceArgb8888();
-
-      target.setSize(Math.min(1480, Screen.widestSide()));
+      if (isVector) {
+        target.setIsVector();
+      }
+      target.setScaleType(ImageFile.CENTER_CROP);
+      if (isPattern()) {
+        target.setSize(Screen.widestSide());
+      } else {
+        target.setSize(Math.min(1480, Screen.widestSide()));
+      }
       target.setNoBlur();
     }
   }
@@ -556,6 +556,11 @@ public class TGBackground {
     } else {
       editor.remove(key + "_name");
     }
+    if (isVector) {
+      editor.putBoolean(key + "_vector", true);
+    } else {
+      editor.remove(key + "_vector");
+    }
     if (type != null) {
       switch (type.getConstructor()) {
         case TdApi.BackgroundTypeFill.CONSTRUCTOR: {
@@ -639,6 +644,7 @@ public class TGBackground {
     if (prefs.getBoolean(key + "_custom", false))
       return new TGBackground(tdlib, prefs.getString(key + "_path", null));
     String name = prefs.getString(key + "_name", null);
+    boolean isVector = prefs.getBoolean(key + "_vector", false);
     TdApi.BackgroundType type;
     switch (prefs.getInt(key + "_type", 0)) {
       case BACKGROUND_TYPE_FILL: {
@@ -658,7 +664,7 @@ public class TGBackground {
       default:
         return null;
     }
-    return new TGBackground(tdlib, name, type, resolveLegacyWallpaperId(name, type), key + "_legacy_id");
+    return new TGBackground(tdlib, name, type, isVector, resolveLegacyWallpaperId(name, type), key + "_legacy_id");
   }
 
   public static void migrateLegacyWallpaper (SharedPreferences.Editor editor, String prefix, int legacyWallpaperId, int color, String persistentId) {
