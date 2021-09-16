@@ -750,6 +750,7 @@ public class Settings {
     }
     if (pmcVersion > VERSION) {
       Log.e("Downgrading database version: %d -> %d", pmcVersion, VERSION);
+      pmc.putInt(KEY_VERSION, VERSION);
     }
     for (int version = pmcVersion + 1; version <= VERSION; version++) {
       SharedPreferences.Editor editor = pmc.edit();
