@@ -307,16 +307,21 @@ public class WallpaperAdapter extends RecyclerView.Adapter<WallpaperAdapter.View
     int oldItemCount = getItemCount();
     this.wallpapers = wallpapers;
     this.selectedWallpaper = context.tdlib().settings().getWallpaper(Theme.getWallpaperIdentifier());
+    int index = indexOfWallpaper(selectedWallpaper);
+    if (index == -1) {
+      index = 0;
+      while (wallpapers.size() > index) {
+        TGBackground wallpaper = wallpapers.get(index);
+        if (!wallpaper.isCustom() && !wallpaper.isEmpty()) {
+          break;
+        }
+        index++;
+      }
+      wallpapers.add(index, selectedWallpaper);
+    }
     U.notifyItemsReplaced(this, oldItemCount);
-    centerWallpapers(false);
+    centerWallpapers(false, index);
   }
-
-  /*rprivate int calculateTotalScrollX (LinearLayoutManager manager) {
-    int i = manager.findFirstVisibleItemPosition();
-    View view = manager.findViewByPosition(i);
-    // int scrollX = i *
-    // manager.getDecoratedLeft(view)
-  }*/
 
   private static int calculateTotalScrollX (RecyclerView recyclerView, LinearLayoutManager manager, int cellSize, int spacing) {
     int i = manager.findFirstVisibleItemPosition();
@@ -332,10 +337,7 @@ public class WallpaperAdapter extends RecyclerView.Adapter<WallpaperAdapter.View
     return scrollX;
   }
 
-  public void centerWallpapers (boolean smooth) {
-    int position = indexOfWallpaper(selectedWallpaper);
-    if (position == -1)
-      return;
+  public void centerWallpapers (boolean smooth, int position) {
     for (RecyclerView recyclerView : attachedRecyclers) {
       LinearLayoutManager manager = ((LinearLayoutManager) recyclerView.getLayoutManager());
       if (recyclerView.getMeasuredWidth() == 0) {
@@ -356,6 +358,13 @@ public class WallpaperAdapter extends RecyclerView.Adapter<WallpaperAdapter.View
         continue;
       }
       manager.scrollToPositionWithOffset(position, centerX - cellSize / 2 - spacing);
+    }
+  }
+
+  public void centerWallpapers (boolean smooth) {
+    int position = indexOfWallpaper(selectedWallpaper);
+    if (position != -1) {
+      centerWallpapers(smooth, position);
     }
   }
 
