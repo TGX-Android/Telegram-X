@@ -15,15 +15,18 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.chat.MessagePreviewView;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TGFoundMessage;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.v.CustomRecyclerView;
+import org.thunderdog.challegram.widget.BetterChatView;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,16 +38,12 @@ import me.vkryl.td.MessageId;
 public class MessageStatisticsController extends RecyclerViewController<MessageStatisticsController.Args> implements View.OnClickListener {
   public static class Args {
     public final long chatId;
-    public long messageId;
-    public int date;
-    @Nullable public TdApi.MessageInteractionInfo interactionInfo;
+    @Nullable public TdApi.Message message;
     @Nullable public List<TdApi.Message> album;
 
-    public Args (long chatId, long messageId, int date, @NonNull TdApi.MessageInteractionInfo interactionInfo) {
+    public Args (long chatId, TdApi.Message message) {
       this.chatId = chatId;
-      this.messageId = messageId;
-      this.date = date;
-      this.interactionInfo = interactionInfo;
+      this.message = message;
     }
 
     public Args (long chatId, @NonNull List<TdApi.Message> album) {
@@ -75,10 +74,10 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
     } else if (v.getId() == R.id.btn_messageMore) {
       TdApi.Message message = (TdApi.Message) v.getTag();
       MessageStatisticsController msc = new MessageStatisticsController(context, tdlib);
-      msc.setArguments(new MessageStatisticsController.Args(getArgumentsStrict().chatId, message.id, message.date, new TdApi.MessageInteractionInfo(
-              message.interactionInfo.viewCount, message.interactionInfo.forwardCount, null
-      )));
+      msc.setArguments(new MessageStatisticsController.Args(getArgumentsStrict().chatId, message));
       navigateTo(msc);
+    } else if (v.getId() == R.id.btn_openChat) {
+      tdlib.ui().openMessage(this, (TdApi.Message) v.getTag(), null);
     }
   }
 
@@ -104,6 +103,13 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
             break;
           }
         }
+      }
+
+      @Override
+      protected void setChatData (ListItem item, int position, BetterChatView chatView) {
+        TdApi.Message msg = (TdApi.Message) item.getData();
+        chatView.setMessage(new TGFoundMessage(tdlib, new TdApi.ChatListMain(), tdlib.chat(getArgumentsStrict().chatId), msg, ""));
+        chatView.setTag(msg);
       }
 
       @Override
@@ -143,10 +149,10 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
     if (getArgumentsStrict().album != null) {
       setAlbum(getArgumentsStrict().album);
     } else {
-      tdlib.client().send(new TdApi.GetMessageStatistics(getArgumentsStrict().chatId, getArgumentsStrict().messageId, Theme.isDark()), result -> {
+      tdlib.client().send(new TdApi.GetMessageStatistics(getArgumentsStrict().chatId, getArgumentsStrict().message.id, Theme.isDark()), result -> {
         switch (result.getConstructor()) {
           case TdApi.MessageStatistics.CONSTRUCTOR:
-            tdlib.client().send(new TdApi.GetMessagePublicForwards(getArgumentsStrict().chatId, getArgumentsStrict().messageId, "", 20), result2 -> {
+            tdlib.client().send(new TdApi.GetMessagePublicForwards(getArgumentsStrict().chatId, getArgumentsStrict().message.id, "", 20), result2 -> {
               if (result2.getConstructor() == TdApi.FoundMessages.CONSTRUCTOR) {
                 publicShares = (TdApi.FoundMessages) result2;
               }
@@ -191,11 +197,13 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
     this.statistics = statistics;
 
     List<ListItem> items = new ArrayList<>();
-    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsViewCount, 0, R.string.StatsMessageViewCount, false).setData(getArgumentsStrict().interactionInfo.viewCount));
+    items.add(new ListItem(ListItem.TYPE_CHAT_BETTER, R.id.btn_openChat).setData(getArgumentsStrict().message));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsPrivateShares, 0, R.string.StatsMessageSharesPrivate, false).setData(getArgumentsStrict().interactionInfo.forwardCount));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsViewCount, 0, R.string.StatsMessageViewCount, false).setData(getArgumentsStrict().message.interactionInfo.viewCount));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsPublishDate, 0, R.string.StatsMessagePublishDate, false).setData(Lang.getTimestamp(getArgumentsStrict().date, TimeUnit.SECONDS)));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsPrivateShares, 0, R.string.StatsMessageSharesPrivate, false).setData(getArgumentsStrict().message.interactionInfo.forwardCount));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsPublishDate, 0, R.string.StatsMessagePublishDate, false).setData(Lang.getTimestamp(getArgumentsStrict().message.date, TimeUnit.SECONDS)));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     List<Chart> charts = Collections.singletonList(

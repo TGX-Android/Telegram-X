@@ -4873,7 +4873,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case R.id.btn_viewStatistics: {
         if (selectedMessage != null) {
           MessageStatisticsController msc = new MessageStatisticsController(context, tdlib);
-          msc.setArguments(new MessageStatisticsController.Args(getChatId(), selectedMessage.getId(), selectedMessage.getDate(), selectedMessage.getMessage().interactionInfo));
+          msc.setArguments(new MessageStatisticsController.Args(getChatId(), selectedMessage.getMessage()));
           navigateTo(msc);
         }
 

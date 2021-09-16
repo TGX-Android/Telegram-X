@@ -109,9 +109,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
         if (album != null) {
           msc.setArguments(new MessageStatisticsController.Args(getArgumentsStrict().chatId, album));
         } else {
-          msc.setArguments(new MessageStatisticsController.Args(getArgumentsStrict().chatId, container.message.id, container.message.date, new TdApi.MessageInteractionInfo(
-                  container.messageInteractionInfo.viewCount, container.messageInteractionInfo.forwardCount, null
-          )));
+          msc.setArguments(new MessageStatisticsController.Args(getArgumentsStrict().chatId, container.message));
         }
 
         navigateTo(msc);
