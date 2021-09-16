@@ -2,18 +2,14 @@ package org.thunderdog.challegram.ui;
 
 import android.content.Context;
 import android.view.View;
-import android.widget.Toast;
 
 import androidx.annotation.IdRes;
 import androidx.annotation.StringRes;
-import androidx.collection.SparseArrayCompat;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.charts.Chart;
 import org.thunderdog.challegram.charts.MiniChart;
-import org.thunderdog.challegram.charts.StatsMessagePreviewView;
 import org.thunderdog.challegram.charts.data.ChartDataUtil;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.chat.MessagePreviewView;
@@ -188,7 +184,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
       }
 
       @Override
-      protected void setMessagePreview (ListItem item, int position, StatsMessagePreviewView previewView) {
+      protected void setMessagePreview (ListItem item, int position, MessagePreviewView previewView) {
         StringBuilder statString = new StringBuilder();
         MessageInteractionInfoContainer container = (MessageInteractionInfoContainer) item.getData();
 

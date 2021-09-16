@@ -102,10 +102,12 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
 
   private TdApi.Message message;
   private String forcedTitle;
+  private boolean ignoreAlbumRefreshers, useAvatarFallback;
 
   private TD.ContentPreview contentPreview;
 
-  public void setMessage (@Nullable TdApi.Message message, @Nullable TdApi.SearchMessagesFilter filter, @Nullable String forcedTitle) {
+  public void setMessage (@Nullable TdApi.Message message, @Nullable TdApi.SearchMessagesFilter filter, @Nullable String forcedTitle, boolean ignoreAlbumRefreshers) {
+    this.ignoreAlbumRefreshers = ignoreAlbumRefreshers;
     if (this.message == message) {
       setForcedTitle(forcedTitle);
       return;
@@ -135,6 +137,10 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     }
   }
 
+  public void setUseAvatarFallback (boolean useAvatarFallback) {
+    this.useAvatarFallback = useAvatarFallback;
+  }
+
   private final ReplaceAnimator<Text> titleText = new ReplaceAnimator<>(ignored -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
   private final ReplaceAnimator<TextEntry> contentText = new ReplaceAnimator<>(ignored -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
   private final ReplaceAnimator<MediaEntry> mediaPreview = new ReplaceAnimator<>(ignored -> {
@@ -162,7 +168,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
 
   private void buildPreview () {
     this.contentPreview = TD.getChatListPreview(tdlib, message.chatId, message);
-    if (contentPreview.hasRefresher()) {
+    if (contentPreview.hasRefresher() && !(ignoreAlbumRefreshers && contentPreview.isMediaGroup())) {
       contentPreview.refreshContent((chatId, messageId, newPreview, oldPreview) -> {
         tdlib.runOnUiThread(() -> {
           if (this.contentPreview == oldPreview) {
@@ -225,7 +231,20 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   }
 
   private void buildMediaPreview (boolean animated) {
-    MediaPreview preview = MediaPreview.valueOf(tdlib, message, contentPreview, Screen.dp(IMAGE_HEIGHT), Screen.dp(3f));
+    MediaPreview preview;
+
+    if (message != null) {
+      preview = MediaPreview.valueOf(tdlib, message, contentPreview, Screen.dp(IMAGE_HEIGHT), Screen.dp(3f));
+      if (preview == null && useAvatarFallback) {
+        TdApi.Chat chat = tdlib.chat(message.chatId);
+        if (chat != null && chat.photo != null) {
+          preview = MediaPreview.valueOf(tdlib, chat.photo, Screen.dp(IMAGE_HEIGHT), Screen.dp(3f));
+        }
+      }
+    } else {
+      preview = null;
+    }
+
     if (preview == null) {
       this.mediaPreview.replace(null, animated);
     } else if (animated || this.mediaPreview.isEmpty()) {
@@ -430,7 +449,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
 
   @Override
   public void performDestroy () {
-    setMessage(null, null, null);
+    setMessage(null, null, null, false);
     TGLegacyManager.instance().removeEmojiListener(this);
   }
 
