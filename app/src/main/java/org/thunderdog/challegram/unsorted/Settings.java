@@ -1699,6 +1699,7 @@ public class Settings {
         break;
       }
       case VERSION_37: {
+        final boolean needLog = Log.checkLogLevel(Log.LEVEL_VERBOSE);
         // keep: ^\d+(?:|_dark|_other\d+)$
         // remove: any other key with "wallpaper_" prefix
         final String dayPrefix = getWallpaperIdentifierSuffix(0);
@@ -1708,6 +1709,9 @@ public class Settings {
           if (!StringUtils.isNumeric(suffix) &&
               !suffix.matches("^\\d+(?:" + dayPrefix + "|" + nightPrefix + "|_other\\d+)$")
           ) {
+            if (needLog) {
+              Log.v("Removing rudimentary key: %s", entry.key());
+            }
             editor.remove(entry.key());
           }
         }
