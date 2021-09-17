@@ -613,7 +613,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
     // Stats
 
-    if (msg.canViewStatistics()) {
+    if (!isMore && msg.canViewStatistics()) {
       ids.append(R.id.btn_viewStatistics);
       strings.append(R.string.ViewStats);
       icons.append(R.drawable.baseline_bar_chart_24);
