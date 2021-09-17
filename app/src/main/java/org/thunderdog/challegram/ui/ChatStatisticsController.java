@@ -77,13 +77,11 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
 
   @Override
   public boolean onLongClick (View v) {
-    if (v.getId() == R.id.btn_viewAdminActions) return false;
-
     final ListItem item = (ListItem) v.getTag();
     if (item == null || !(item.getData() instanceof DoubleTextWrapper))
       return false;
-    openMemberMenu((DoubleTextWrapper) item.getData());
 
+    openMemberMenu((DoubleTextWrapper) item.getData());
     return true;
   }
 
@@ -113,21 +111,9 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
         }
         break;
       case R.id.btn_viewAdminActions:
-        long chatId = getArgumentsStrict().chatId;
-        if (userId != 0) {
-          tdlib.client().send(new TdApi.GetChatMember(chatId, new TdApi.MessageSenderUser((int) userId)), result -> {
-            if (result.getConstructor() != TdApi.ChatMember.CONSTRUCTOR) return;
-            TdApi.ChatMember member = (TdApi.ChatMember) result;
-            TdApi.ChatMemberStatus myStatus = tdlib.chatStatus(chatId);
-            if (myStatus != null) {
-              runOnUiThreadOptional(() -> {
-                EditRightsController c = new EditRightsController(context, tdlib);
-                c.setArguments(new EditRightsController.Args(getArgumentsStrict().chatId, userId, false, myStatus, member));
-                navigateTo(c);
-              });
-            }
-          });
-        }
+        MessagesController c = new MessagesController(context, tdlib);
+        c.setArguments(new MessagesController.Arguments(MessagesController.PREVIEW_MODE_EVENT_LOG, null, tdlib.chat(getArgumentsStrict().chatId)).eventLogUserId(userId));
+        navigateTo(c);
         break;
       case R.id.btn_showAdvanced:
         showAllUsers();
@@ -628,10 +614,10 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
   }
 
   private void openMemberMenu (DoubleTextWrapper content) {
-    IntList ids = new IntList(3);
-    IntList colors = new IntList(3);
-    IntList icons = new IntList(3);
-    StringList strings = new StringList(3);
+    IntList ids = new IntList(4);
+    IntList colors = new IntList(4);
+    IntList icons = new IntList(4);
+    StringList strings = new StringList(4);
 
     tdlib.client().send(new TdApi.GetChatMember(getArgumentsStrict().chatId, new TdApi.MessageSenderUser((int) content.getUserId())), result -> {
       if (result.getConstructor() != TdApi.ChatMember.CONSTRUCTOR) return;
