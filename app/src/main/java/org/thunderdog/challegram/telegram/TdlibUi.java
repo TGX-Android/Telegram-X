@@ -3009,16 +3009,6 @@ public class TdlibUi extends Handler {
                     TdApi.Background wallpaper = (TdApi.Background) backgroundObj;
 
                     post(() -> {
-                      TGBackground bg = new TGBackground(tdlib, wallpaper);
-
-                      if (bg.isPattern()) {
-                        showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.ChatBackgroundNotSupported), openParameters);
-                        if (after != null) {
-                          after.runWithBool(true);
-                        }
-                        return;
-                      }
-
                       MessagesController c = new MessagesController(context.context(), context.tdlib());
                       c.setArguments(new MessagesController.Arguments(MessagesController.PREVIEW_MODE_WALLPAPER_OBJECT, null, null).setWallpaperObject(wallpaper));
                       context.context().navigation().navigateTo(c);

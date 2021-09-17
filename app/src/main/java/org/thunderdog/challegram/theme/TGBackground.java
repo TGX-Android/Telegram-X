@@ -24,6 +24,8 @@ import java.util.Map;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.leveldb.LevelDB;
+import me.vkryl.td.Td;
+import me.vkryl.td.TdConstants;
 
 /**
  * Date: 01/04/2017
@@ -35,6 +37,7 @@ public class TGBackground {
   private final String name;
   private final TdApi.BackgroundType type;
   private final String customPath;
+  private final boolean isVector;
 
   private int legacyWallpaperId;
   private String legacyRemoteId;
@@ -51,7 +54,7 @@ public class TGBackground {
     int legacyWallpaperId = resolveLegacyWallpaperId(name, null);
     if (legacyWallpaperId != 0)
       return newLegacyWallpaper(tdlib, legacyWallpaperId);
-    return new TGBackground(tdlib, name, null, 0);
+    return new TGBackground(tdlib, name, null, false, 0);
   }
 
   public static TGBackground newLegacyWallpaper (Tdlib tdlib, int legacyWallpaperId) {
@@ -62,7 +65,7 @@ public class TGBackground {
       String name = getBackgroundForLegacyWallpaperId(legacyWallpaperId);
       if (name == null)
         return null;
-      background = new TGBackground(tdlib, name, new TdApi.BackgroundTypeWallpaper(false, false), legacyWallpaperId);
+      background = new TGBackground(tdlib, name, new TdApi.BackgroundTypeWallpaper(false, false), false, legacyWallpaperId);
     }
     return background;
   }
@@ -73,6 +76,7 @@ public class TGBackground {
     this.type = null;
     this.legacyWallpaperId = 0;
     this.customPath = localPath;
+    this.isVector = false;
     if (!StringUtils.isEmpty(localPath)) {
       setTarget(new ImageFileLocal(localPath));
       ImageFileLocal preview = new ImageFileLocal(localPath);
@@ -81,15 +85,16 @@ public class TGBackground {
     }
   }
 
-  private TGBackground (Tdlib tdlib, String name, TdApi.BackgroundType type, int legacyWallpaperId) {
-    this(tdlib, name, type, legacyWallpaperId, null);
+  private TGBackground (Tdlib tdlib, String name, TdApi.BackgroundType type, boolean isVector, int legacyWallpaperId) {
+    this(tdlib, name, type, isVector, legacyWallpaperId, null);
   }
 
-  private TGBackground (Tdlib tdlib, String name, TdApi.BackgroundType type, int legacyWallpaperId, String legacyRemoteIdKey) {
+  private TGBackground (Tdlib tdlib, String name, TdApi.BackgroundType type, boolean isVector, int legacyWallpaperId, String legacyRemoteIdKey) {
     this.accountId = tdlib.id();
     this.name = name;
     this.type = type;
     this.customPath = null;
+    this.isVector = isVector;
     this.legacyWallpaperId = legacyWallpaperId;
     this.legacyRemoteId = StringUtils.isEmpty(legacyRemoteIdKey) ? null : Settings.instance().getString(legacyRemoteIdKey, null);
 
@@ -116,9 +121,6 @@ public class TGBackground {
           Runnable onFail = () -> this.tdlib().client().send(new TdApi.SearchBackground(name), result -> {
             if (result.getConstructor() == TdApi.Background.CONSTRUCTOR) {
               TdApi.Background background = (TdApi.Background) result;
-              if (background.document != null && !StringUtils.isEmpty(background.document.document.remote.id)) {
-                Settings.instance().putString("wallpaper_" + name, background.document.document.remote.id);
-              }
               handler.onResult(background.document != null ? background.document.document : new TdApi.Error(-1, "Document is inaccessible"));
             } else {
               handler.onResult(result);
@@ -139,6 +141,7 @@ public class TGBackground {
           }
         }
       });
+
       setPreview(new ImageFileRemote(tdlib, null, "background_preview_" + name) {
         @Override
         public void extractFile (Client.ResultHandler handler) {
@@ -160,11 +163,7 @@ public class TGBackground {
   }
 
   private TGBackground (Tdlib tdlib, int solidColor, int legacyWallpaperId) {
-    this(tdlib, getNameForColor(solidColor), new TdApi.BackgroundTypeFill(new TdApi.BackgroundFillSolid(solidColor)), legacyWallpaperId);
-  }
-
-  private TGBackground (Tdlib tdlib, int topColor, int bottomColor, int rotationAngle, int legacyWallpaperId) {
-    this(tdlib, getNameForColor(topColor, bottomColor, rotationAngle), new TdApi.BackgroundTypeFill(new TdApi.BackgroundFillGradient(topColor, bottomColor, rotationAngle)), legacyWallpaperId);
+    this(tdlib, getNameForColor(solidColor), new TdApi.BackgroundTypeFill(new TdApi.BackgroundFillSolid(solidColor)), false, legacyWallpaperId);
   }
 
   public TGBackground (Tdlib tdlib, TdApi.Background background) {
@@ -172,6 +171,7 @@ public class TGBackground {
     this.name = background.name;
     this.type = background.type;
     this.customPath = null;
+    this.isVector = background.document != null && TdConstants.BACKGROUND_PATTERN_MIME_TYPE.equals(background.document.mimeType);
     this.legacyWallpaperId = resolveLegacyWallpaperId(background.name, background.type);
 
     switch (type.getConstructor()) {
@@ -224,10 +224,17 @@ public class TGBackground {
     this.target = target;
     if (target != null) {
       target.setNeedPalette(true);
-      target.setScaleType(ImageFile.CENTER_CROP);
       target.setForceArgb8888();
-
-      target.setSize(Math.min(1480, Screen.widestSide()));
+      if (isVector) {
+        target.setIsVector();
+      }
+      if (isPattern()) {
+        target.setScaleType(ImageFile.CENTER_REPEAT);
+        target.setSize(Screen.widestSide());
+      } else {
+        target.setScaleType(ImageFile.CENTER_CROP);
+        target.setSize(Math.min(1480, Screen.widestSide()));
+      }
       target.setNoBlur();
     }
   }
@@ -256,14 +263,10 @@ public class TGBackground {
   public static boolean compare (TGBackground a, TGBackground b) {
     if ((a == null || a.isEmpty()) && (b == null || b.isEmpty()))
       return true;
-    if (a == null || b == null || a.isEmpty() != b.isEmpty() || a.isCustom() != b.isCustom() || a.isFill() != b.isFill() || a.isFillGradient() != b.isFillGradient() || a.isFillSolid() != b.isFillSolid())
+    if (a == null || b == null || a.isEmpty() != b.isEmpty() || a.isCustom() != b.isCustom() || !Td.equalsTo(a.type, b.type, true))
       return false;
     if (a.isCustom())
       return StringUtils.equalsOrBothEmpty(a.getCustomPath(), b.getCustomPath());
-    if (a.isFillSolid())
-      return a.getBackgroundColor() == b.getBackgroundColor();
-    if (a.isFillGradient())
-      return a.getTopColor() == b.getTopColor() && a.getBottomColor() == b.getBottomColor() && a.getRotationAngle() == b.getRotationAngle();
     return StringUtils.equalsOrBothEmpty(a.getName(), b.getName());
   }
 
@@ -378,7 +381,7 @@ public class TGBackground {
     return 0;
   }
 
-  public int[] getFreeformColors() {
+  public int[] getFreeformColors () {
     if (isFillFreeformGradient()) {
       return ((TdApi.BackgroundFillFreeformGradient) ((TdApi.BackgroundTypeFill) type).fill).colors;
     } else if (isPatternBackgroundFreeformGradient()) {
@@ -433,7 +436,11 @@ public class TGBackground {
   }
 
   public float getPatternIntensity () {
-    return isPattern() ? (float) ((TdApi.BackgroundTypePattern) type).intensity / 100f : 1f;
+    if (isPattern()) {
+      return Math.abs(((TdApi.BackgroundTypePattern) type).intensity) / 100f;
+    } else {
+      return 1f;
+    }
   }
 
   public boolean isMoving () {
@@ -550,6 +557,11 @@ public class TGBackground {
     } else {
       editor.remove(key + "_name");
     }
+    if (isVector) {
+      editor.putBoolean(key + "_vector", true);
+    } else {
+      editor.remove(key + "_vector");
+    }
     if (type != null) {
       switch (type.getConstructor()) {
         case TdApi.BackgroundTypeFill.CONSTRUCTOR: {
@@ -633,6 +645,7 @@ public class TGBackground {
     if (prefs.getBoolean(key + "_custom", false))
       return new TGBackground(tdlib, prefs.getString(key + "_path", null));
     String name = prefs.getString(key + "_name", null);
+    boolean isVector = prefs.getBoolean(key + "_vector", false);
     TdApi.BackgroundType type;
     switch (prefs.getInt(key + "_type", 0)) {
       case BACKGROUND_TYPE_FILL: {
@@ -652,7 +665,7 @@ public class TGBackground {
       default:
         return null;
     }
-    return new TGBackground(tdlib, name, type, resolveLegacyWallpaperId(name, type), key + "_legacy_id");
+    return new TGBackground(tdlib, name, type, isVector, resolveLegacyWallpaperId(name, type), key + "_legacy_id");
   }
 
   public static void migrateLegacyWallpaper (SharedPreferences.Editor editor, String prefix, int legacyWallpaperId, int color, String persistentId) {
@@ -824,14 +837,40 @@ public class TGBackground {
         return getPatternColor(((TdApi.BackgroundFillSolid) fill).color);
       case TdApi.BackgroundFillGradient.CONSTRUCTOR: {
         TdApi.BackgroundFillGradient gradient = (TdApi.BackgroundFillGradient) fill;
-        return getPatternColor(ColorUtils.fromToArgb(ColorUtils.color(255, gradient.topColor), ColorUtils.color(255, gradient.bottomColor), .5f));
+        return getPatternColor(getCenterColor(ColorUtils.color(255, gradient.topColor), ColorUtils.color(255, gradient.bottomColor)));
       }
       case TdApi.BackgroundFillFreeformGradient.CONSTRUCTOR: {
-        TdApi.BackgroundFillFreeformGradient gradient = (TdApi.BackgroundFillFreeformGradient) fill;
-        return getPatternColor(ColorUtils.fromToArgb(ColorUtils.color(255, gradient.colors[0]), ColorUtils.color(255, gradient.colors[gradient.colors.length - 1]), .5f));
+        return getPatternColorFreeform((TdApi.BackgroundFillFreeformGradient) fill);
       }
     }
     throw new UnsupportedOperationException(fill.toString());
+  }
+
+  private static int getPatternColorFreeform (TdApi.BackgroundFillFreeformGradient gradient) {
+    int centerColor = getCenterFreeformColor(gradient);
+    float[] hsb = RGBtoHSB(Color.red(centerColor), Color.green(centerColor), Color.blue(centerColor));
+
+    if (hsb[2] < 0.3f) {
+      return getPatternColor(centerColor);
+    } else {
+      return (getPatternColor(centerColor) & 0x00ffffff) | 0x64000000;
+    }
+  }
+
+  private static int getCenterFreeformColor (TdApi.BackgroundFillFreeformGradient gradient) {
+    int initialCenter = getCenterColor(ColorUtils.color(255, gradient.colors[0]), ColorUtils.color(255, gradient.colors[1]));
+
+    if (gradient.colors.length >= 2) {
+      for (int i = 2; i < gradient.colors.length; i++) {
+        initialCenter = getCenterColor(initialCenter, ColorUtils.color(255, gradient.colors[i]));
+      }
+    }
+
+    return initialCenter;
+  }
+
+  private static int getCenterColor (int first, int second) {
+    return ColorUtils.fromToArgb(first, second, 0.5f);
   }
 
   private static int getPatternColor (int color) {
