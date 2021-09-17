@@ -20,6 +20,7 @@ import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
+import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -28,6 +29,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.CustomTextView;
 
@@ -39,13 +41,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.collection.IntList;
+import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
 /**
  * Date: 2019-04-21
  * Author: default
  */
-public class ChatStatisticsController extends RecyclerViewController<ChatStatisticsController.Args> implements View.OnClickListener {
+public class ChatStatisticsController extends RecyclerViewController<ChatStatisticsController.Args> implements View.OnClickListener, View.OnLongClickListener {
   public static class Args {
     public final long chatId;
 
@@ -70,6 +74,92 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
   @Override
   public View getCustomHeaderCell () {
     return headerCell;
+  }
+
+  @Override
+  public boolean onLongClick (View v) {
+    if (v.getId() == R.id.btn_viewAdminActions) return false;
+
+    final ListItem item = (ListItem) v.getTag();
+
+    if (item == null || !(item.getData() instanceof DoubleTextWrapper)) {
+      return false;
+    }
+
+    final DoubleTextWrapper content = (DoubleTextWrapper) item.getData();
+    IntList ids = new IntList(3);
+    IntList colors = new IntList(3);
+    IntList icons = new IntList(3);
+    StringList strings = new StringList(3);
+
+    tdlib.client().send(new TdApi.GetChatMember(getArgumentsStrict().chatId, new TdApi.MessageSenderUser((int) content.getUserId())), result -> {
+      if (result.getConstructor() != TdApi.ChatMember.CONSTRUCTOR) return;
+
+      TdApi.ChatMember member = (TdApi.ChatMember) result;
+      TdApi.ChatMemberStatus myStatus = tdlib.chatStatus(getArgumentsStrict().chatId);
+
+      if (myStatus != null) {
+        int restrictMode = TD.canRestrictMember(myStatus, member.status);
+        if (restrictMode != TD.RESTRICT_MODE_NONE) {
+          ids.append(R.id.btn_restrictMember);
+          colors.append(OPTION_COLOR_NORMAL);
+          icons.append(R.drawable.baseline_block_24);
+
+          switch (restrictMode) {
+            case TD.RESTRICT_MODE_EDIT:
+              strings.append(R.string.EditUserRestrictions);
+              break;
+            case TD.RESTRICT_MODE_NEW:
+              strings.append(R.string.RestrictUser);
+              break;
+            case TD.RESTRICT_MODE_VIEW:
+              strings.append(R.string.ViewRestrictions);
+              break;
+            default:
+              throw new IllegalStateException();
+          }
+
+          if (restrictMode != TD.RESTRICT_MODE_VIEW && TD.isMember(member.status)) {
+            ids.append(R.id.btn_blockUser);
+            colors.append(OPTION_COLOR_NORMAL);
+            icons.append(R.drawable.baseline_remove_circle_24);
+            strings.append(R.string.RemoveFromGroup);
+          }
+        }
+      }
+
+      ids.append(R.id.btn_messageViewList);
+      if (tdlib.isSelfUserId(content.getUserId())) {
+        strings.append(R.string.ViewMessagesFromYou);
+      } else {
+        strings.append(Lang.getString(R.string.ViewMessagesFromUser, tdlib.cache().userFirstName(content.getUserId())));
+      }
+      icons.append(R.drawable.baseline_person_24);
+      colors.append(OPTION_COLOR_NORMAL);
+
+      runOnUiThreadOptional(() -> showOptions("", ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
+        switch (id) {
+          case R.id.btn_messageViewList:
+            HashtagChatController c = new HashtagChatController(context, tdlib);
+            c.setArguments(new HashtagChatController.Arguments(null, getArgumentsStrict().chatId, null, new TdApi.MessageSenderUser(content.getUserId()), false));
+            navigateTo(c);
+            break;
+          case R.id.btn_editRights:
+            editMember(content, false, myStatus, member);
+            break;
+          case R.id.btn_restrictMember:
+            editMember(content, true, myStatus, member);
+            break;
+          case R.id.btn_blockUser:
+            kickMember(content);
+            break;
+        }
+
+        return true;
+      }));
+    });
+
+    return true;
   }
 
   @Override
@@ -541,5 +631,50 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
       this.message = message;
       this.messageInteractionInfo = messageInteractionInfo;
     }
+  }
+
+  // TODO: migrate this to TdlibUi to not copypaste from SharedMembersController
+  private void kickMember (final DoubleTextWrapper content) {
+    final long chatId = getArgumentsStrict().chatId;
+    final ListItem headerItem = new ListItem(ListItem.TYPE_INFO, 0, 0, Lang.getStringBold(R.string.MemberCannotJoinGroup, tdlib.cache().userName(content.getUserId())), false);
+    showSettings(new SettingsWrapBuilder(R.id.btn_blockUser)
+            .addHeaderItem(headerItem)
+            .setIntDelegate((id, result) -> {
+              boolean blockUser = result.get(R.id.right_readMessages) != 0;
+              if (content.getMember().status.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR && !blockUser) {
+                TdApi.ChatMemberStatusRestricted now = (TdApi.ChatMemberStatusRestricted) content.getMember().status;
+                tdlib.setChatMemberStatus(chatId, content.getSender(), new TdApi.ChatMemberStatusRestricted(false, now.restrictedUntilDate, now.permissions), content.getMember().status, null);
+              } else {
+                tdlib.setChatMemberStatus(chatId, content.getSender(), new TdApi.ChatMemberStatusBanned(), content.getMember().status, null);
+                if (!blockUser) {
+                  tdlib.setChatMemberStatus(chatId, content.getSender(), new TdApi.ChatMemberStatusLeft(), content.getMember().status, null);
+                }
+              }
+            })
+            .setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter) -> {
+              headerItem.setString(Lang.getStringBold(settingsAdapter.getCheckIntResults().get(R.id.right_readMessages) != 0 ? R.string.MemberCannotJoinGroup : R.string.MemberCanJoinGroup, tdlib.cache().userName(content.getUserId())));
+              settingsAdapter.updateValuedSettingByPosition(settingsAdapter.indexOfView(headerItem));
+            })
+            .setRawItems(new ListItem[]{
+                    new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.right_readMessages, 0, R.string.BanMember, true)
+            }).setSaveStr(R.string.RemoveMember).setSaveColorId(R.id.theme_color_textNegative));
+  }
+
+  private void editMember (DoubleTextWrapper content, boolean restrict, TdApi.ChatMemberStatus myStatus, TdApi.ChatMember member) {
+    if (restrict) {
+      int mode = TD.canRestrictMember(myStatus, member.status);
+      if (mode == TD.RESTRICT_MODE_NEW) {
+        member = null;
+      }
+    } else {
+      int mode = TD.canPromoteAdmin(myStatus, member.status);
+      if (mode == TD.RESTRICT_MODE_NEW) {
+        member = null;
+      }
+    }
+
+    EditRightsController c = new EditRightsController(context, tdlib);
+    c.setArguments(new EditRightsController.Args(getArgumentsStrict().chatId, content.getUserId(), restrict, myStatus, member));
+    navigateTo(c);
   }
 }
