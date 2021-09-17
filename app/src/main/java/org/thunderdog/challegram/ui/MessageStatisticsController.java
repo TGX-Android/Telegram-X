@@ -209,13 +209,18 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
   private void setStatistics (TdApi.MessageStatistics statistics) {
     this.statistics = statistics;
 
+    int privateShareCount = getArgumentsStrict().message.interactionInfo.forwardCount;
+    if (publicShares != null) {
+      privateShareCount -= publicShares.totalCount;
+    }
+
     List<ListItem> items = new ArrayList<>();
     items.add(new ListItem(ListItem.TYPE_CHAT_BETTER, R.id.btn_openChat).setData(getArgumentsStrict().message));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsViewCount, 0, R.string.StatsMessageViewCount, false).setData(getArgumentsStrict().message.interactionInfo.viewCount));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsPrivateShares, 0, R.string.StatsMessageSharesPrivate, false).setData(getArgumentsStrict().message.interactionInfo.forwardCount));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsPrivateShares, 0, R.string.StatsMessageSharesPrivate, false).setData(privateShareCount));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsPublishDate, 0, R.string.StatsMessagePublishDate, false).setData(Lang.getTimestamp(getArgumentsStrict().message.date, TimeUnit.SECONDS)));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
