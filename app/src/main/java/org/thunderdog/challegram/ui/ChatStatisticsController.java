@@ -681,7 +681,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     }
 
     EditRightsController c = new EditRightsController(context, tdlib);
-    c.setArguments(new EditRightsController.Args(getArgumentsStrict().chatId, content.getUserId(), restrict, myStatus, member));
+    c.setArguments(new EditRightsController.Args(getArgumentsStrict().chatId, content.getUserId(), restrict, myStatus, member).noFocusLock());
     navigateTo(c);
   }
 }
