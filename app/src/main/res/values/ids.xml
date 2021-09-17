@@ -210,6 +210,8 @@
   <item type="id" name="controller_media_location" />
   <item type="id" name="controller_media_inlineBots" />
 
+  <item type="id" name="separator" />
+
   <item type="id" name="msg_input" />
   <item type="id" name="msg_tooltip" />
   <item type="id" name="msg_emoji" />

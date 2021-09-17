@@ -30,6 +30,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.CustomTextView;
+import org.thunderdog.challegram.widget.SeparatorView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -232,6 +233,15 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     this.headerCell = headerCell;
 
     adapter = new SettingsAdapter(this) {
+      @Override
+      protected void setSeparatorOptions (ListItem item, int position, SeparatorView separatorView) {
+        if (item.getId() == R.id.separator) {
+          separatorView.setOffsets(Screen.dp(8f) * 2 + Screen.dp(40f), 0);
+        } else {
+          super.setSeparatorOptions(item, position, separatorView);
+        }
+      }
+
       @Override
       protected void setText (ListItem item, CustomTextView view, boolean isUpdate) {
         super.setText(item, view, isUpdate);
@@ -515,7 +525,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
       adapter.getItems().add(new ListItem(ListItem.TYPE_CHART_HEADER_DETACHED).setData(new MiniChart(header, range)));
 
       for (int i = 0; i < interactionMessages.size(); i++) {
-        adapter.getItems().add(new ListItem(i == 0 ? ListItem.TYPE_SHADOW_TOP : ListItem.TYPE_SEPARATOR_FULL));
+        adapter.getItems().add(new ListItem(i == 0 ? ListItem.TYPE_SHADOW_TOP : ListItem.TYPE_SEPARATOR, i != 0 ? R.id.separator : 0));
         adapter.getItems().add(new ListItem(ListItem.TYPE_STATS_MESSAGE_PREVIEW, R.id.btn_messageMore).setData(interactionMessages.get(i)));
       }
 

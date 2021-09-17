@@ -76,6 +76,7 @@ import org.thunderdog.challegram.widget.PageBlockWrapView;
 import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.RadioView;
 import org.thunderdog.challegram.widget.ScalableTextView;
+import org.thunderdog.challegram.widget.SeparatorView;
 import org.thunderdog.challegram.widget.SettingStupidView;
 import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.SliderWrapView;
@@ -433,6 +434,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
 
   protected void setColor (ListItem item, int position, ViewGroup contentView, @Nullable View updatedView, ColorToneView toneView, ColorPaletteView paletteView, ColorPaletteView transparencyView, MaterialEditTextGroup hexView, MaterialEditTextGroup redView, MaterialEditTextGroup greenView, MaterialEditTextGroup blueView, MaterialEditTextGroup alphaView, MaterialEditTextGroup defaultView, MaterialEditTextGroup hueView, MaterialEditTextGroup saturationView, MaterialEditTextGroup lightnessView, MaterialEditTextGroup alphaPercentageView, NonMaterialButton clearButton, NonMaterialButton undoButton, NonMaterialButton redoButton, NonMaterialButton copyButton, NonMaterialButton pasteButton, NonMaterialButton opacityButton, NonMaterialButton saveButton) {
     // Override
+  }
+
+  protected void setSeparatorOptions (ListItem item, int position, SeparatorView separatorView) {
+    separatorView.setOffsets(Screen.dp(72f), 0);
   }
 
   protected void setChatData (ListItem item, VerticalChatView chatView) {
@@ -1415,6 +1420,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         float currentValue = Float.intBitsToFloat(item.getSliderValue());
         float maxValue = Float.intBitsToFloat(item.getIntValue());
         ((SliderWrapView) holder.itemView).setValue(currentValue, maxValue);
+        break;
+      }
+      case ListItem.TYPE_SEPARATOR: {
+        setSeparatorOptions(item, position, (SeparatorView) holder.itemView);
         break;
       }
       case ListItem.TYPE_SLIDER: {

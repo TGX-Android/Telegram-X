@@ -26,6 +26,7 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.BetterChatView;
+import org.thunderdog.challegram.widget.SeparatorView;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -65,24 +66,34 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
 
   @Override
   public void onClick (View v) {
+    ListItem item = (ListItem) v.getTag();
     if (v.getId() == R.id.chat) {
       TGUser user = ((UserView) v).getUser();
       if (user != null) {
-        tdlib.ui().openChat(this, user.getChatId(), new TdlibUi.ChatOpenParameters().highlightMessage(new MessageId(user.getChatId(), (long) v.getTag())).keepStack());
+        tdlib.ui().openChat(this, user.getChatId(), new TdlibUi.ChatOpenParameters().highlightMessage(new MessageId(user.getChatId(), ((TdApi.Message) item.getData()).id)).keepStack());
       }
     } else if (v.getId() == R.id.btn_messageMore) {
-      TdApi.Message message = (TdApi.Message) v.getTag();
+      TdApi.Message message = (TdApi.Message) item.getData();
       MessageStatisticsController msc = new MessageStatisticsController(context, tdlib);
       msc.setArguments(new MessageStatisticsController.Args(getArgumentsStrict().chatId, message));
       navigateTo(msc);
     } else if (v.getId() == R.id.btn_openChat) {
-      tdlib.ui().openMessage(this, (TdApi.Message) v.getTag(), null);
+      tdlib.ui().openMessage(this, (TdApi.Message) item.getData(), null);
     }
   }
 
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
     adapter = new SettingsAdapter(this) {
+      @Override
+      protected void setSeparatorOptions (ListItem item, int position, SeparatorView separatorView) {
+        if (item.getId() == R.id.separator) {
+          separatorView.setOffsets(Screen.dp(8f) * 2 + Screen.dp(40f), 0);
+        } else {
+          super.setSeparatorOptions(item, position, separatorView);
+        }
+      }
+
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         switch (item.getId()) {
@@ -108,7 +119,6 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
       protected void setChatData (ListItem item, int position, BetterChatView chatView) {
         TdApi.Message msg = (TdApi.Message) item.getData();
         chatView.setMessage(new TGFoundMessage(tdlib, new TdApi.ChatListMain(), tdlib.chat(getArgumentsStrict().chatId), msg, ""));
-        chatView.setTag(msg);
       }
 
       @Override
@@ -122,7 +132,6 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
         user.chatTitleAsUserName();
 
         userView.setUser(user);
-        userView.setTag(msg.id);
         userView.setPreviewChatId(null, msg.chatId, null, new MessageId(msg.chatId, msg.id), null);
       }
 
@@ -140,7 +149,6 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
         RippleSupport.setSimpleWhiteBackground(previewView);
         previewView.setMessage(message, null, statString.toString(), true);
         previewView.setContentInset(Screen.dp(8));
-        previewView.setTag(message);
       }
     };
     recyclerView.setAdapter(adapter);
@@ -188,7 +196,7 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
         first = false;
       } else {
-        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR, R.id.separator));
       }
       items.add(new ListItem(ListItem.TYPE_STATS_MESSAGE_PREVIEW, R.id.btn_messageMore).setData(albumMessage));
     }
