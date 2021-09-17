@@ -19,7 +19,6 @@ import org.thunderdog.challegram.data.TGFoundMessage;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
@@ -38,8 +37,8 @@ import me.vkryl.td.MessageId;
 public class MessageStatisticsController extends RecyclerViewController<MessageStatisticsController.Args> implements View.OnClickListener {
   public static class Args {
     public final long chatId;
-    @Nullable public TdApi.Message message;
-    @Nullable public List<TdApi.Message> album;
+    public @Nullable TdApi.Message message;
+    public @Nullable List<TdApi.Message> album;
 
     public Args (long chatId, TdApi.Message message) {
       this.chatId = chatId;
@@ -198,7 +197,8 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
 
     List<ListItem> items = new ArrayList<>();
     items.add(new ListItem(ListItem.TYPE_CHAT_BETTER, R.id.btn_openChat).setData(getArgumentsStrict().message));
-    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsViewCount, 0, R.string.StatsMessageViewCount, false).setData(getArgumentsStrict().message.interactionInfo.viewCount));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsPrivateShares, 0, R.string.StatsMessageSharesPrivate, false).setData(getArgumentsStrict().message.interactionInfo.forwardCount));
@@ -207,7 +207,7 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     List<Chart> charts = Collections.singletonList(
-            new Chart(R.id.stats_messageInteraction, tdlib, getArgumentsStrict().chatId, R.string.StatsChartInteractions, ChartDataUtil.TYPE_LINEAR, statistics.messageInteractionGraph, 0)
+      new Chart(R.id.stats_messageInteraction, tdlib, getArgumentsStrict().chatId, R.string.StatsChartInteractions, ChartDataUtil.TYPE_LINEAR, statistics.messageInteractionGraph, 0)
     );
 
     setCharts(items, charts, this::setPublicShares);
@@ -226,7 +226,8 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
     adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     for (int i = 0; i < publicShares.messages.length; i++) {
       adapter.getItems().add(new ListItem(ListItem.TYPE_USER, R.id.chat).setData(publicShares.messages[i]));
-      if (i != publicShares.messages.length - 1) adapter.getItems().add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      if (i != publicShares.messages.length - 1)
+        adapter.getItems().add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     }
     adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 

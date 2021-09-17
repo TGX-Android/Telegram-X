@@ -14,11 +14,9 @@ import org.thunderdog.challegram.charts.MiniChart;
 import org.thunderdog.challegram.charts.data.ChartDataUtil;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.chat.MessagePreviewView;
-import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.support.RippleSupport;
@@ -42,7 +40,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.collection.IntList;
-import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
 /**
@@ -208,7 +205,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
         showAllUsers();
         break;
       case R.id.btn_messageMore:
-        MessageInteractionInfoContainer container = (MessageInteractionInfoContainer) v.getTag();
+        MessageInteractionInfoContainer container = (MessageInteractionInfoContainer) item.getData();
         MessageStatisticsController msc = new MessageStatisticsController(context, tdlib);
         List<TdApi.Message> album = interactionMessageAlbums.get(container.message.mediaAlbumId);
 
@@ -236,7 +233,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
 
     adapter = new SettingsAdapter(this) {
       @Override
-      protected void setText(ListItem item, CustomTextView view, boolean isUpdate) {
+      protected void setText (ListItem item, CustomTextView view, boolean isUpdate) {
         super.setText(item, view, isUpdate);
 
         switch (view.getId()) {
@@ -263,7 +260,6 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
         RippleSupport.setSimpleWhiteBackground(previewView);
         previewView.setMessage(container.message, null, statString.toString(), false);
         previewView.setContentInset(Screen.dp(8));
-        previewView.setTag(container);
       }
 
       @Override
@@ -408,7 +404,8 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
 
           if (admin.deletedMessageCount > 0) {
             customStatus.append(Lang.plural(R.string.StatsXDeletions, admin.deletedMessageCount));
-            if (admin.bannedUserCount > 0 || admin.restrictedUserCount > 0) customStatus.append(", ");
+            if (admin.bannedUserCount > 0 || admin.restrictedUserCount > 0)
+              customStatus.append(", ");
           }
 
           if (admin.bannedUserCount > 0) {
@@ -453,7 +450,8 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
         DoubleTextWrapper wrapper = new DoubleTextWrapper(tdlib, (int) sender.userId, true);
         wrapper.setSubtitle(Lang.plural(R.string.xMessages, sender.sentMessageCount) + ", " + Lang.plural(R.string.StatsXCharacters, sender.averageCharacterCount));
         advancedItems.add(new ListItem(ListItem.TYPE_CHAT_SMALL, R.id.btn_viewMemberMessages).setData(wrapper));
-        if (i != messageSenderInfos.length - 1) advancedItems.add(new ListItem(ListItem.TYPE_SEPARATOR));
+        if (i != messageSenderInfos.length - 1)
+          advancedItems.add(new ListItem(ListItem.TYPE_SEPARATOR));
       }
 
       ArrayUtils.ensureCapacity(items, items.size() + advancedItems.size());
@@ -519,7 +517,8 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
 
       for (int i = 0; i < interactionMessages.size(); i++) {
         adapter.getItems().add(new ListItem(ListItem.TYPE_STATS_MESSAGE_PREVIEW, R.id.btn_messageMore).setData(interactionMessages.get(i)));
-        if (i != interactionMessages.size() - 1) adapter.getItems().add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        if (i != interactionMessages.size() - 1)
+          adapter.getItems().add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       }
 
       adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
@@ -547,8 +546,8 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
         if (message.canGetStatistics && (message.mediaAlbumId == 0 || currentMediaAlbumId != message.mediaAlbumId)) {
           currentMediaAlbumId = message.mediaAlbumId;
           interactionMessages.add(new MessageInteractionInfoContainer(
-                  message,
-                  interactions[interactions.length - remaining.get()]
+            message,
+            interactions[interactions.length - remaining.get()]
           ));
         }
       }
@@ -638,26 +637,26 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     final long chatId = getArgumentsStrict().chatId;
     final ListItem headerItem = new ListItem(ListItem.TYPE_INFO, 0, 0, Lang.getStringBold(R.string.MemberCannotJoinGroup, tdlib.cache().userName(content.getUserId())), false);
     showSettings(new SettingsWrapBuilder(R.id.btn_blockUser)
-            .addHeaderItem(headerItem)
-            .setIntDelegate((id, result) -> {
-              boolean blockUser = result.get(R.id.right_readMessages) != 0;
-              if (content.getMember().status.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR && !blockUser) {
-                TdApi.ChatMemberStatusRestricted now = (TdApi.ChatMemberStatusRestricted) content.getMember().status;
-                tdlib.setChatMemberStatus(chatId, content.getSender(), new TdApi.ChatMemberStatusRestricted(false, now.restrictedUntilDate, now.permissions), content.getMember().status, null);
-              } else {
-                tdlib.setChatMemberStatus(chatId, content.getSender(), new TdApi.ChatMemberStatusBanned(), content.getMember().status, null);
-                if (!blockUser) {
-                  tdlib.setChatMemberStatus(chatId, content.getSender(), new TdApi.ChatMemberStatusLeft(), content.getMember().status, null);
-                }
-              }
-            })
-            .setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter) -> {
-              headerItem.setString(Lang.getStringBold(settingsAdapter.getCheckIntResults().get(R.id.right_readMessages) != 0 ? R.string.MemberCannotJoinGroup : R.string.MemberCanJoinGroup, tdlib.cache().userName(content.getUserId())));
-              settingsAdapter.updateValuedSettingByPosition(settingsAdapter.indexOfView(headerItem));
-            })
-            .setRawItems(new ListItem[]{
-                    new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.right_readMessages, 0, R.string.BanMember, true)
-            }).setSaveStr(R.string.RemoveMember).setSaveColorId(R.id.theme_color_textNegative));
+      .addHeaderItem(headerItem)
+      .setIntDelegate((id, result) -> {
+        boolean blockUser = result.get(R.id.right_readMessages) != 0;
+        if (content.getMember().status.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR && !blockUser) {
+          TdApi.ChatMemberStatusRestricted now = (TdApi.ChatMemberStatusRestricted) content.getMember().status;
+          tdlib.setChatMemberStatus(chatId, content.getSender(), new TdApi.ChatMemberStatusRestricted(false, now.restrictedUntilDate, now.permissions), content.getMember().status, null);
+        } else {
+          tdlib.setChatMemberStatus(chatId, content.getSender(), new TdApi.ChatMemberStatusBanned(), content.getMember().status, null);
+          if (!blockUser) {
+            tdlib.setChatMemberStatus(chatId, content.getSender(), new TdApi.ChatMemberStatusLeft(), content.getMember().status, null);
+          }
+        }
+      })
+      .setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter) -> {
+        headerItem.setString(Lang.getStringBold(settingsAdapter.getCheckIntResults().get(R.id.right_readMessages) != 0 ? R.string.MemberCannotJoinGroup : R.string.MemberCanJoinGroup, tdlib.cache().userName(content.getUserId())));
+        settingsAdapter.updateValuedSettingByPosition(settingsAdapter.indexOfView(headerItem));
+      })
+      .setRawItems(new ListItem[]{
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.right_readMessages, 0, R.string.BanMember, true)
+      }).setSaveStr(R.string.RemoveMember).setSaveColorId(R.id.theme_color_textNegative));
   }
 
   private void editMember (DoubleTextWrapper content, boolean restrict, TdApi.ChatMemberStatus myStatus, TdApi.ChatMember member) {
