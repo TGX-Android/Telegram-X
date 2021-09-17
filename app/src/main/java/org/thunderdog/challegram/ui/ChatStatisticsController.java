@@ -513,12 +513,10 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     loadInteractionMessages(interactions, () -> {
       int currentSize = adapter.getItems().size();
       adapter.getItems().add(new ListItem(ListItem.TYPE_CHART_HEADER_DETACHED).setData(new MiniChart(header, range)));
-      adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_TOP));
 
       for (int i = 0; i < interactionMessages.size(); i++) {
+        adapter.getItems().add(new ListItem(i == 0 ? ListItem.TYPE_SHADOW_TOP : ListItem.TYPE_SEPARATOR_FULL));
         adapter.getItems().add(new ListItem(ListItem.TYPE_STATS_MESSAGE_PREVIEW, R.id.btn_messageMore).setData(interactionMessages.get(i)));
-        if (i != interactionMessages.size() - 1)
-          adapter.getItems().add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       }
 
       adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
