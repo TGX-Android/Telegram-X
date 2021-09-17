@@ -102,10 +102,12 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
 
   private TdApi.Message message;
   private String forcedTitle;
+  private boolean ignoreAlbumRefreshers, useAvatarFallback;
 
   private TD.ContentPreview contentPreview;
 
-  public void setMessage (@Nullable TdApi.Message message, @Nullable TdApi.SearchMessagesFilter filter, @Nullable String forcedTitle) {
+  public void setMessage (@Nullable TdApi.Message message, @Nullable TdApi.SearchMessagesFilter filter, @Nullable String forcedTitle, boolean ignoreAlbumRefreshers) {
+    this.ignoreAlbumRefreshers = ignoreAlbumRefreshers;
     if (this.message == message) {
       setForcedTitle(forcedTitle);
       return;
@@ -135,6 +137,10 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     }
   }
 
+  public void setUseAvatarFallback (boolean useAvatarFallback) {
+    this.useAvatarFallback = useAvatarFallback;
+  }
+
   private final ReplaceAnimator<Text> titleText = new ReplaceAnimator<>(ignored -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
   private final ReplaceAnimator<TextEntry> contentText = new ReplaceAnimator<>(ignored -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
   private final ReplaceAnimator<MediaEntry> mediaPreview = new ReplaceAnimator<>(ignored -> {
@@ -147,9 +153,22 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   private static final float TEXT_SIZE = 14f;
   private static final float IMAGE_HEIGHT = 40f;
 
+  private float customLinePadding = -1;
+
+  private float getLinePadding () {
+    return customLinePadding != -1 ? customLinePadding : LINE_PADDING;
+  }
+
+  public void setLinePadding (float customLinePadding) {
+    this.customLinePadding = customLinePadding;
+    buildText(true);
+    buildMediaPreview(false);
+    invalidate();
+  }
+
   private void buildPreview () {
     this.contentPreview = TD.getChatListPreview(tdlib, message.chatId, message);
-    if (contentPreview.hasRefresher()) {
+    if (contentPreview.hasRefresher() && !(ignoreAlbumRefreshers && contentPreview.isMediaGroup())) {
       contentPreview.refreshContent((chatId, messageId, newPreview, oldPreview) -> {
         tdlib.runOnUiThread(() -> {
           if (this.contentPreview == oldPreview) {
@@ -168,7 +187,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   private int lastTextWidth;
 
   private int getTextHorizontalOffset () {
-    return (int) (mediaPreview.getMetadata().getTotalWidth() + mediaPreview.getMetadata().getVisibility() * Screen.dp(PADDING_SIZE)) + Screen.dp(LINE_PADDING);
+    return (int) (mediaPreview.getMetadata().getTotalWidth() + mediaPreview.getMetadata().getVisibility() * Screen.dp(PADDING_SIZE)) + Screen.dp(getLinePadding());
   }
 
   private int contentInset;
@@ -181,7 +200,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   }
 
   private int calculateTextWidth () {
-    return Math.max(0, getMeasuredWidth() - Screen.dp(PADDING_SIZE) * 2 - getTextHorizontalOffset() - Screen.dp(LINE_PADDING) - contentInset);
+    return Math.max(0, getMeasuredWidth() - Screen.dp(PADDING_SIZE) * 2 - getTextHorizontalOffset() - Screen.dp(getLinePadding()) - contentInset);
   }
 
   private void buildText (boolean isLayout) {
@@ -212,7 +231,20 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   }
 
   private void buildMediaPreview (boolean animated) {
-    MediaPreview preview = MediaPreview.valueOf(tdlib, message, contentPreview, Screen.dp(IMAGE_HEIGHT), Screen.dp(3f));
+    MediaPreview preview;
+
+    if (message != null) {
+      preview = MediaPreview.valueOf(tdlib, message, contentPreview, Screen.dp(IMAGE_HEIGHT), Screen.dp(3f));
+      if (preview == null && useAvatarFallback) {
+        TdApi.Chat chat = tdlib.chat(message.chatId);
+        if (chat != null && chat.photo != null) {
+          preview = MediaPreview.valueOf(tdlib, chat.photo, Screen.dp(IMAGE_HEIGHT), Screen.dp(3f));
+        }
+      }
+    } else {
+      preview = null;
+    }
+
     if (preview == null) {
       this.mediaPreview.replace(null, animated);
     } else if (animated || this.mediaPreview.isEmpty()) {
@@ -307,7 +339,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   protected void onDraw (Canvas c) {
     if (this.message == null)
       return;
-    int textX = Screen.dp(LINE_PADDING) + Screen.dp(PADDING_SIZE) + getTextHorizontalOffset();
+    int textX = Screen.dp(getLinePadding()) + Screen.dp(PADDING_SIZE) + getTextHorizontalOffset();
     for (ListAnimator.Entry<MediaEntry> entry : mediaPreview) {
       entry.item.content.draw(this, c, entry.item.receiver, textX - entry.item.content.getWidth() - Screen.dp(PADDING_SIZE), (SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW) - Screen.dp(IMAGE_HEIGHT)) / 2f, entry.getVisibility());
     }
@@ -417,7 +449,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
 
   @Override
   public void performDestroy () {
-    setMessage(null, null, null);
+    setMessage(null, null, null, false);
     TGLegacyManager.instance().removeEmojiListener(this);
   }
 

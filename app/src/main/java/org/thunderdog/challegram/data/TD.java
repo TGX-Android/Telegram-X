@@ -5059,14 +5059,20 @@ public class TD {
     }
 
     private Refresher refresher;
+    private boolean isMediaGroup;
 
-    public ContentPreview setRefresher (Refresher refresher) {
+    public ContentPreview setRefresher (Refresher refresher, boolean isMediaGroup) {
       this.refresher = refresher;
+      this.isMediaGroup = isMediaGroup;
       return this;
     }
 
     public boolean hasRefresher () {
       return refresher != null;
+    }
+
+    public boolean isMediaGroup () {
+      return isMediaGroup;
     }
 
     public void refreshContent (@NonNull RefreshCallback callback) {
@@ -5255,7 +5261,7 @@ public class TD {
             } else {
               callback.onContentPreviewNotChanged(chatId, message.id, oldPreview);
             }
-          }));
+          }), false);
         }
       }
       case TdApi.MessageGameScore.CONSTRUCTOR: {
@@ -5276,7 +5282,7 @@ public class TD {
                 }
               }
               callback.onContentPreviewNotChanged(message.chatId, message.id, oldPreview);
-          }));
+          }), false);
         }
       }
       case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR: {
@@ -5372,7 +5378,7 @@ public class TD {
     }
     ContentPreview preview = getContentPreview(message.content.getConstructor(), tdlib, chatId, message.sender, null, !message.isChannelPost && message.isOutgoing, isChatList, argument, argumentTranslatable, arg1);
     if (preview != null) {
-      return preview.setRefresher(refresher);
+      return preview.setRefresher(refresher, true);
     }
     if (allowContent) {
       AtomicBoolean translatable = new AtomicBoolean(false);
@@ -5424,7 +5430,7 @@ public class TD {
           } else {
             callback.onContentPreviewNotChanged(message.chatId, message.id, oldPreview);
           }
-        })
+        }), true
       );
     }
     return preview;

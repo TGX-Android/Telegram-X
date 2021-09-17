@@ -59,6 +59,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     public final TdApi.ChatMember member;
     public final int mode;
     public int forwardLimit;
+    public boolean noFocusLock;
 
     public Args (long chatId, int userId, TdApi.ChatMemberStatus myStatus, TdApi.ChatMember member, int mode, int forwardLimit) {
       this.chatId = chatId;
@@ -87,6 +88,11 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
 
     public Args forwardLimit (int forwardLimit) {
       this.forwardLimit = forwardLimit;
+      return this;
+    }
+
+    public Args noFocusLock () {
+      this.noFocusLock = true;
       return this;
     }
   }
@@ -1032,7 +1038,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     items.add(customTitle = new ListItem(ListItem.TYPE_EDITTEXT_POLL_OPTION, R.id.input_customTitle, 0, 0, false).setStringValue(args.member != null ? Td.getCustomTitle(args.member.status) : null));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getStringBold(R.string.CustomTitleHint, Lang.getString(args.member != null && TD.isCreator(args.member.status) ? R.string.message_ownerSign : R.string.message_adminSignPlain)), false));
-    adapter.setLockFocusOn(this, args.member != null && TD.isCreator(args.member.status) && TD.isCreator(args.myStatus));
+    adapter.setLockFocusOn(this, !args.noFocusLock && args.member != null && TD.isCreator(args.member.status) && TD.isCreator(args.myStatus));
   }
 
   private boolean canUnbanUser () {

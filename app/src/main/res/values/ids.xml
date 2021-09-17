@@ -135,6 +135,7 @@
   <item type="id" name="controller_themeColors" />
   <item type="id" name="controller_networkStats" />
   <item type="id" name="controller_stats" />
+  <item type="id" name="controller_stats_message" />
   <item type="id" name="controller_navigation" />
   <item type="id" name="controller_text" />
   <item type="id" name="controller_language" />
@@ -208,6 +209,8 @@
   <item type="id" name="controller_media_contacts" />
   <item type="id" name="controller_media_location" />
   <item type="id" name="controller_media_inlineBots" />
+
+  <item type="id" name="separator" />
 
   <item type="id" name="msg_input" />
   <item type="id" name="msg_tooltip" />
@@ -528,6 +531,10 @@
   <item type="id" name="btn_autoNightModeScheduled_timeOff" />
   <item type="id" name="btn_autoNightModeScheduled_location" />
   <item type="id" name="btn_filter" />
+  <item type="id" name="btn_statsViewCount" />
+  <item type="id" name="btn_statsPrivateShares" />
+  <item type="id" name="btn_statsPublicShares" />
+  <item type="id" name="btn_statsPublishDate" />
 
   <item type="id" name="stats_memberCount" />
   <item type="id" name="stats_join" />
@@ -836,6 +843,10 @@
   <item type="id" name="btn_tdlib_clearLogs" />
   <item type="id" name="btn_tdlib_androidLogs" />
   <item type="id" name="btn_tdlib_debugDatacenter" />
+
+  <item type="id" name="btn_viewMemberMessages" />
+  <item type="id" name="btn_viewAdminActions" />
+  <item type="id" name="btn_openInviterProfile" />
 
   <item type="id" name="maximize" />
 

@@ -3917,6 +3917,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return !isSelfChat() && msg.sendingState == null && !msg.isOutgoing && tdlib.canReportChatSpam(msg.chatId) && !isEventLog();
   }
 
+  public final boolean canViewStatistics () {
+    return msg.canGetStatistics;
+  }
+
   public final boolean canBeDeletedOnlyForSelf () {
     return msg.canBeDeletedOnlyForSelf;
   }

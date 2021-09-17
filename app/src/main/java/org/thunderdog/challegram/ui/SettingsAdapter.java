@@ -25,6 +25,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.charts.BaseChartView;
 import org.thunderdog.challegram.charts.Chart;
+import org.thunderdog.challegram.charts.MiniChart;
 import org.thunderdog.challegram.charts.view_data.ChartHeaderView;
 import org.thunderdog.challegram.component.attach.MeasuredAdapterDelegate;
 import org.thunderdog.challegram.component.attach.MediaLocationPlaceView;
@@ -75,6 +76,7 @@ import org.thunderdog.challegram.widget.PageBlockWrapView;
 import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.RadioView;
 import org.thunderdog.challegram.widget.ScalableTextView;
+import org.thunderdog.challegram.widget.SeparatorView;
 import org.thunderdog.challegram.widget.SettingStupidView;
 import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.SliderWrapView;
@@ -432,6 +434,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
 
   protected void setColor (ListItem item, int position, ViewGroup contentView, @Nullable View updatedView, ColorToneView toneView, ColorPaletteView paletteView, ColorPaletteView transparencyView, MaterialEditTextGroup hexView, MaterialEditTextGroup redView, MaterialEditTextGroup greenView, MaterialEditTextGroup blueView, MaterialEditTextGroup alphaView, MaterialEditTextGroup defaultView, MaterialEditTextGroup hueView, MaterialEditTextGroup saturationView, MaterialEditTextGroup lightnessView, MaterialEditTextGroup alphaPercentageView, NonMaterialButton clearButton, NonMaterialButton undoButton, NonMaterialButton redoButton, NonMaterialButton copyButton, NonMaterialButton pasteButton, NonMaterialButton opacityButton, NonMaterialButton saveButton) {
     // Override
+  }
+
+  protected void setSeparatorOptions (ListItem item, int position, SeparatorView separatorView) {
+    separatorView.setOffsets(Screen.dp(72f), 0);
   }
 
   protected void setChatData (ListItem item, VerticalChatView chatView) {
@@ -1346,7 +1352,8 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         setMembersList(item, position, (RecyclerView) holder.itemView);
         break;
       }
-      case ListItem.TYPE_MESSAGE_PREVIEW: {
+      case ListItem.TYPE_MESSAGE_PREVIEW:
+      case ListItem.TYPE_STATS_MESSAGE_PREVIEW: {
         setMessagePreview(item, position, (MessagePreviewView) holder.itemView);
         break;
       }
@@ -1413,6 +1420,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         float currentValue = Float.intBitsToFloat(item.getSliderValue());
         float maxValue = Float.intBitsToFloat(item.getIntValue());
         ((SliderWrapView) holder.itemView).setValue(currentValue, maxValue);
+        break;
+      }
+      case ListItem.TYPE_SEPARATOR: {
+        setSeparatorOptions(item, position, (SeparatorView) holder.itemView);
         break;
       }
       case ListItem.TYPE_SLIDER: {
@@ -1592,6 +1603,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       }
       case ListItem.TYPE_CHART_HEADER: {
         ((ChartHeaderView) holder.itemView).setChart((Chart) item.getData());
+        break;
+      }
+      case ListItem.TYPE_CHART_HEADER_DETACHED: {
+        ((ChartHeaderView) holder.itemView).setChart((MiniChart) item.getData());
         break;
       }
       case ListItem.TYPE_CHART_LINEAR:
