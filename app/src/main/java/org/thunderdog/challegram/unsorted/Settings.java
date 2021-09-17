@@ -1700,14 +1700,30 @@ public class Settings {
       }
       case VERSION_37: {
         final boolean needLog = Log.checkLogLevel(Log.LEVEL_VERBOSE);
-        // keep: ^\d+(?:|_dark|_other\d+)$
-        // remove: any other key with "wallpaper_" prefix
-        final String dayPrefix = getWallpaperIdentifierSuffix(0);
-        final String nightPrefix = getWallpaperIdentifierSuffix(1);
+
+        final String[] whitelist = {
+          "name",
+          "type",
+          "custom",
+
+          "blurred",
+          "moving",
+          "intensity",
+
+          "empty",
+          "vector",
+
+          "color",
+          "colors",
+          "fill"
+        };
+        // remove: any other key matching "wallpaper_[a-zA-Z0-9]+"
         for (final LevelDB.Entry entry : pmc.find("wallpaper_")) {
           final String suffix = entry.key().substring("wallpaper_".length());
           if (!StringUtils.isNumeric(suffix) &&
-              !suffix.matches("^\\d+(?:" + dayPrefix + "|" + nightPrefix + "|_other\\d+)$")
+            suffix.matches("^[a-zA-Z0-9]+$") &&
+            !suffix.startsWith("other") &&
+            !ArrayUtils.contains(whitelist, suffix)
           ) {
             if (needLog) {
               Log.v("Removing rudimentary key: %s", entry.key());
