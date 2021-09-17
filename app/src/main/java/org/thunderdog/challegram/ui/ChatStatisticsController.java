@@ -326,7 +326,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
             customStatus2.append(Lang.pluralBold(R.string.StatsXCharacters, sender.averageCharacterCount));
           }
 
-          wrapper.setSubtitle(customStatus2.toString());
+          wrapper.setSubtitle(customStatus2);
           break;
         case R.id.btn_openInviterProfile:
           TdApi.ChatStatisticsInviterInfo inviter = (TdApi.ChatStatisticsInviterInfo) object;
