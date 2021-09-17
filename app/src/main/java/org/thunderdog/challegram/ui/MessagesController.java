@@ -214,6 +214,7 @@ import org.thunderdog.challegram.widget.ViewPager;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashSet;
@@ -4872,9 +4873,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_viewStatistics: {
         if (selectedMessage != null) {
-          MessageStatisticsController msc = new MessageStatisticsController(context, tdlib);
-          msc.setArguments(new MessageStatisticsController.Args(getChatId(), selectedMessage.getMessage()));
-          navigateTo(msc);
+          TdApi.Message[] messages = selectedMessage.getAllMessages();
+          MessageStatisticsController statsController = new MessageStatisticsController(context, tdlib);
+          if (messages.length == 1) {
+            statsController.setArguments(new MessageStatisticsController.Args(messages[0].chatId, messages[0]));
+          } else {
+            statsController.setArguments(new MessageStatisticsController.Args(messages[0].chatId, Arrays.asList(messages)));
+          }
+          navigateTo(statsController);
+          clearSelectedMessage();
         }
 
         return true;
