@@ -1,6 +1,7 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.text.SpannableStringBuilder;
 import android.view.View;
 
 import androidx.annotation.IdRes;
@@ -399,35 +400,35 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
         case R.id.btn_viewMemberMessages:
           TdApi.ChatStatisticsMessageSenderInfo sender = (TdApi.ChatStatisticsMessageSenderInfo) object;
           wrapper = new DoubleTextWrapper(tdlib, (int) sender.userId, true);
-          wrapper.setSubtitle(Lang.plural(R.string.xMessages, sender.sentMessageCount) + ", " + Lang.plural(R.string.StatsXCharacters, sender.averageCharacterCount));
+          wrapper.setSubtitle(new SpannableStringBuilder(Lang.pluralBold(R.string.xMessages, sender.sentMessageCount)).append(", ").append(Lang.pluralBold(R.string.StatsXCharacters, sender.averageCharacterCount)));
           break;
         case R.id.btn_openInviterProfile:
           TdApi.ChatStatisticsInviterInfo inviter = (TdApi.ChatStatisticsInviterInfo) object;
           wrapper = new DoubleTextWrapper(tdlib, (int) inviter.userId, true);
-          wrapper.setSubtitle(Lang.plural(R.string.StatsXInvitations, inviter.addedMemberCount));
+          wrapper.setSubtitle(Lang.pluralBold(R.string.StatsXInvitations, inviter.addedMemberCount));
           break;
         case R.id.btn_viewAdminActions:
           TdApi.ChatStatisticsAdministratorActionsInfo admin = (TdApi.ChatStatisticsAdministratorActionsInfo) object;
           wrapper = new DoubleTextWrapper(tdlib, (int) admin.userId, true);
 
-          StringBuilder customStatus = new StringBuilder();
+          SpannableStringBuilder customStatus = new SpannableStringBuilder();
 
           if (admin.deletedMessageCount > 0) {
-            customStatus.append(Lang.plural(R.string.StatsXDeletions, admin.deletedMessageCount));
+            customStatus.append(Lang.pluralBold(R.string.StatsXDeletions, admin.deletedMessageCount));
             if (admin.bannedUserCount > 0 || admin.restrictedUserCount > 0)
               customStatus.append(", ");
           }
 
           if (admin.bannedUserCount > 0) {
-            customStatus.append(Lang.plural(R.string.StatsXBans, admin.bannedUserCount));
+            customStatus.append(Lang.pluralBold(R.string.StatsXBans, admin.bannedUserCount));
             if (admin.restrictedUserCount > 0) customStatus.append(", ");
           }
 
           if (admin.restrictedUserCount > 0) {
-            customStatus.append(Lang.plural(R.string.StatsXRestrictions, admin.restrictedUserCount));
+            customStatus.append(Lang.pluralBold(R.string.StatsXRestrictions, admin.restrictedUserCount));
           }
 
-          wrapper.setSubtitle(customStatus.toString());
+          wrapper.setSubtitle(customStatus);
           break;
       }
 

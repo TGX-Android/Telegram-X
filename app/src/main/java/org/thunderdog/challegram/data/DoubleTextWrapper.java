@@ -366,7 +366,9 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
       return;
     }
     if (!StringUtils.isEmpty(subtitle)) {
-      trimmedSubtitle = new Text.Builder(subtitle.toString(), availWidth, Paints.robotoStyleProvider(15), TextColorSets.Regular.LIGHT).singleLine().build();
+      trimmedSubtitle = new Text.Builder(tdlib, subtitle, null, availWidth, Paints.robotoStyleProvider(15), TextColorSets.Regular.LIGHT)
+        .singleLine()
+        .build();
     } else {
       trimmedSubtitle = null;
     }
