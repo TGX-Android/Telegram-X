@@ -432,6 +432,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
       }
 
       if (wrapper != null) {
+        wrapper.setIgnoreOnline(true);
         items.add(new ListItem(ListItem.TYPE_CHAT_SMALL, id).setData(wrapper));
         if (i != maxLength - 1) items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       }

@@ -49,7 +49,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
   private final int userId;
   private int groupId, channelId;
 
-  private boolean isOnline;
+  private boolean isOnline, ignoreOnline;
 
   private TdApi.ChatMember memberInfo;
   private boolean needAdminSign;
@@ -128,6 +128,15 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
     }
     item.setMember(member, needFullDescription, needAdminSign);
     return item;
+  }
+
+  public void setIgnoreOnline (boolean ignoreOnline) {
+    if (this.ignoreOnline != ignoreOnline) {
+      this.ignoreOnline = ignoreOnline;
+      if (isOnline) {
+        setOnline(false);
+      }
+    }
   }
 
   public void setMember (TdApi.ChatMember member, boolean needFullDescription, boolean needAdminStar) {
@@ -237,7 +246,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
   }
 
   private void setOnline (boolean isOnline) {
-    if (this.isOnline != isOnline) {
+    if (this.isOnline != isOnline && !(ignoreOnline && isOnline)) {
       this.isOnline = isOnline;
       currentViews.invalidate();
     }
