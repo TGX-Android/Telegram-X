@@ -399,8 +399,22 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
       switch (id) {
         case R.id.btn_viewMemberMessages:
           TdApi.ChatStatisticsMessageSenderInfo sender = (TdApi.ChatStatisticsMessageSenderInfo) object;
+          SpannableStringBuilder customStatus2 = new SpannableStringBuilder();
           wrapper = new DoubleTextWrapper(tdlib, (int) sender.userId, true);
-          wrapper.setSubtitle(new SpannableStringBuilder(Lang.pluralBold(R.string.xMessages, sender.sentMessageCount)).append(", ").append(Lang.pluralBold(R.string.StatsXCharacters, sender.averageCharacterCount)));
+
+          if (sender.sentMessageCount > 0) {
+            customStatus2.append(Lang.pluralBold(R.string.xMessages, sender.sentMessageCount));
+          }
+
+          if (sender.averageCharacterCount > 0) {
+            if (customStatus2.length() > 0) {
+              customStatus2.append(", ");
+            }
+
+            customStatus2.append(Lang.pluralBold(R.string.StatsXCharacters, sender.averageCharacterCount));
+          }
+
+          wrapper.setSubtitle(customStatus2.toString());
           break;
         case R.id.btn_openInviterProfile:
           TdApi.ChatStatisticsInviterInfo inviter = (TdApi.ChatStatisticsInviterInfo) object;
