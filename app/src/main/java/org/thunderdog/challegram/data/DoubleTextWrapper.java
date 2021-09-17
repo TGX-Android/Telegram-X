@@ -226,7 +226,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
     }
   }
 
-  private void setSubtitle (CharSequence newSubtitle) {
+  public void setSubtitle (CharSequence newSubtitle) {
     if (!StringUtils.equalsOrBothEmpty(this.subtitle, newSubtitle)) {
       this.subtitle = newSubtitle;
       if (currentWidth != 0) {

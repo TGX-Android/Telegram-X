@@ -16,6 +16,7 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.chat.MessagePreviewView;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
@@ -73,28 +74,32 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
 
   @Override
   public void onClick (View v) {
+    int userId;
+    ListItem item = (ListItem) v.getTag();
+
+    if (item != null && item.getData() instanceof DoubleTextWrapper) {
+      userId = ((DoubleTextWrapper) item.getData()).getUserId();
+    } else {
+      userId = 0;
+    }
+
     switch (v.getId()) {
       case R.id.btn_viewMemberMessages:
-        TGUser user = ((UserView) v).getUser();
-        if (user != null) {
+        if (userId != 0) {
           HashtagChatController c = new HashtagChatController(context(), tdlib);
-          c.setArguments(new HashtagChatController.Arguments(null, getArgumentsStrict().chatId, null, new TdApi.MessageSenderUser(user.getId()), false));
+          c.setArguments(new HashtagChatController.Arguments(null, getArgumentsStrict().chatId, null, new TdApi.MessageSenderUser(userId), false));
           navigateTo(c);
-
-          tdlib.ui().openPrivateChat(this, user.getId(), new TdlibUi.ChatOpenParameters().keepStack());
+          tdlib.ui().openPrivateChat(this, userId, new TdlibUi.ChatOpenParameters().keepStack());
         }
         break;
       case R.id.btn_openInviterProfile:
-        TGUser user2 = ((UserView) v).getUser();
-        if (user2 != null) {
-          tdlib.ui().openPrivateChat(this, user2.getId(), new TdlibUi.ChatOpenParameters().keepStack());
+        if (userId != 0) {
+          tdlib.ui().openPrivateChat(this, userId, new TdlibUi.ChatOpenParameters().keepStack());
         }
         break;
       case R.id.btn_viewAdminActions:
         long chatId = getArgumentsStrict().chatId;
-        TGUser user3 = ((UserView) v).getUser();
-        if (user3 != null) {
-          long userId = user3.getId();
+        if (userId != 0) {
           tdlib.client().send(new TdApi.GetChatMember(chatId, new TdApi.MessageSenderUser((int) userId)), result -> {
             if (result.getConstructor() != TdApi.ChatMember.CONSTRUCTOR) return;
             TdApi.ChatMember member = (TdApi.ChatMember) result;
@@ -102,7 +107,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
             if (myStatus != null) {
               runOnUiThreadOptional(() -> {
                 EditRightsController c = new EditRightsController(context, tdlib);
-                c.setArguments(new EditRightsController.Args(getArgumentsStrict().chatId, user3.getId(), false, myStatus, member));
+                c.setArguments(new EditRightsController.Args(getArgumentsStrict().chatId, userId, false, myStatus, member));
                 navigateTo(c);
               });
             }
@@ -153,45 +158,6 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
             break;
           }
         }
-      }
-
-      @Override
-      protected void setUser (ListItem item, int position, UserView userView, boolean isUpdate) {
-        TGUser user;
-
-        if (item.getId() == R.id.btn_viewMemberMessages) {
-          TdApi.ChatStatisticsMessageSenderInfo sender = (TdApi.ChatStatisticsMessageSenderInfo) item.getData();
-          user = new TGUser(tdlib, tdlib.cache().user(sender.userId));
-          user.setCustomStatus(Lang.plural(R.string.xMessages, sender.sentMessageCount) + ", " + Lang.plural(R.string.StatsXCharacters, sender.averageCharacterCount));
-        } else if (item.getId() == R.id.btn_openInviterProfile) {
-          TdApi.ChatStatisticsInviterInfo sender = (TdApi.ChatStatisticsInviterInfo) item.getData();
-          user = new TGUser(tdlib, tdlib.cache().user(sender.userId));
-          user.setCustomStatus(Lang.plural(R.string.StatsXInvitations, sender.addedMemberCount));
-        } else if (item.getId() == R.id.btn_viewAdminActions) {
-          TdApi.ChatStatisticsAdministratorActionsInfo sender = (TdApi.ChatStatisticsAdministratorActionsInfo) item.getData();
-          user = new TGUser(tdlib, tdlib.cache().user(sender.userId));
-          StringBuilder customStatus = new StringBuilder();
-
-          if (sender.deletedMessageCount > 0) {
-            customStatus.append(Lang.plural(R.string.StatsXDeletions, sender.deletedMessageCount));
-            if (sender.bannedUserCount > 0 || sender.restrictedUserCount > 0) customStatus.append(", ");
-          }
-
-          if (sender.bannedUserCount > 0) {
-            customStatus.append(Lang.plural(R.string.StatsXBans, sender.bannedUserCount));
-            if (sender.restrictedUserCount > 0) customStatus.append(", ");
-          }
-
-          if (sender.restrictedUserCount > 0) {
-            customStatus.append(Lang.plural(R.string.StatsXRestrictions, sender.restrictedUserCount));
-          }
-
-          user.setCustomStatus(customStatus.toString());
-        } else {
-          throw new IllegalArgumentException("data = "+item.getData());
-        }
-
-        userView.setUser(user);
       }
 
       @Override
@@ -330,8 +296,48 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     }
 
     for (int i = 0; i < maxLength; i++) {
-      items.add(new ListItem(ListItem.TYPE_USER, id).setData(users[i]));
-      if (i != maxLength - 1) items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      DoubleTextWrapper wrapper = null;
+      TdApi.Object object = users[i];
+
+      switch (id) {
+        case R.id.btn_viewMemberMessages:
+          TdApi.ChatStatisticsMessageSenderInfo sender = (TdApi.ChatStatisticsMessageSenderInfo) object;
+          wrapper = new DoubleTextWrapper(tdlib, (int) sender.userId, true);
+          wrapper.setSubtitle(Lang.plural(R.string.xMessages, sender.sentMessageCount) + ", " + Lang.plural(R.string.StatsXCharacters, sender.averageCharacterCount));
+          break;
+        case R.id.btn_openInviterProfile:
+          TdApi.ChatStatisticsInviterInfo inviter = (TdApi.ChatStatisticsInviterInfo) object;
+          wrapper = new DoubleTextWrapper(tdlib, (int) inviter.userId, true);
+          wrapper.setSubtitle(Lang.plural(R.string.StatsXInvitations, inviter.addedMemberCount));
+          break;
+        case R.id.btn_viewAdminActions:
+          TdApi.ChatStatisticsAdministratorActionsInfo admin = (TdApi.ChatStatisticsAdministratorActionsInfo) object;
+          wrapper = new DoubleTextWrapper(tdlib, (int) admin.userId, true);
+
+          StringBuilder customStatus = new StringBuilder();
+
+          if (admin.deletedMessageCount > 0) {
+            customStatus.append(Lang.plural(R.string.StatsXDeletions, admin.deletedMessageCount));
+            if (admin.bannedUserCount > 0 || admin.restrictedUserCount > 0) customStatus.append(", ");
+          }
+
+          if (admin.bannedUserCount > 0) {
+            customStatus.append(Lang.plural(R.string.StatsXBans, admin.bannedUserCount));
+            if (admin.restrictedUserCount > 0) customStatus.append(", ");
+          }
+
+          if (admin.restrictedUserCount > 0) {
+            customStatus.append(Lang.plural(R.string.StatsXRestrictions, admin.restrictedUserCount));
+          }
+
+          wrapper.setSubtitle(customStatus.toString());
+          break;
+      }
+
+      if (wrapper != null) {
+        items.add(new ListItem(ListItem.TYPE_CHAT_SMALL, id).setData(wrapper));
+        if (i != maxLength - 1) items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      }
     }
 
     if (maxLength < users.length) {
@@ -353,7 +359,10 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
       ArrayList<ListItem> advancedItems = new ArrayList<>();
 
       for (int i = 10; i < messageSenderInfos.length; i++) {
-        advancedItems.add(new ListItem(ListItem.TYPE_USER, R.id.btn_viewMemberMessages).setData(messageSenderInfos[i]));
+        TdApi.ChatStatisticsMessageSenderInfo sender = messageSenderInfos[i];
+        DoubleTextWrapper wrapper = new DoubleTextWrapper(tdlib, (int) sender.userId, true);
+        wrapper.setSubtitle(Lang.plural(R.string.xMessages, sender.sentMessageCount) + ", " + Lang.plural(R.string.StatsXCharacters, sender.averageCharacterCount));
+        advancedItems.add(new ListItem(ListItem.TYPE_CHAT_SMALL, R.id.btn_viewMemberMessages).setData(wrapper));
         if (i != messageSenderInfos.length - 1) advancedItems.add(new ListItem(ListItem.TYPE_SEPARATOR));
       }
 
