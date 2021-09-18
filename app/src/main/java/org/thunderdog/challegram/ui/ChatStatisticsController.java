@@ -387,6 +387,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
         TdApi.ChatStatisticsMessageSenderInfo sender = messageSenderInfos[i];
         DoubleTextWrapper wrapper = new DoubleTextWrapper(tdlib, (int) sender.userId, true);
         wrapper.setSubtitle(Lang.plural(R.string.xMessages, sender.sentMessageCount) + ", " + Lang.plural(R.string.StatsXCharacters, sender.averageCharacterCount));
+        wrapper.setIgnoreOnline(true);
         advancedItems.add(new ListItem(ListItem.TYPE_CHAT_SMALL, R.id.btn_viewMemberMessages).setData(wrapper));
         if (i != messageSenderInfos.length - 1)
           advancedItems.add(new ListItem(ListItem.TYPE_SEPARATOR));
