@@ -100,6 +100,7 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
           case R.id.btn_statsViewCount:
           case R.id.btn_statsPrivateShares:
           case R.id.btn_statsPublishDate:
+          case R.id.btn_statsSignature:
           case R.id.btn_statsPublicShares: {
             view.setIgnoreEnabled(true);
             view.setEnabled(false);
@@ -209,15 +210,34 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
   private void setStatistics (TdApi.MessageStatistics statistics) {
     this.statistics = statistics;
 
+    int privateShareCount = getArgumentsStrict().message.interactionInfo.forwardCount;
+    if (publicShares != null) {
+      privateShareCount -= publicShares.totalCount;
+    }
+
+    TdApi.Message message = getArgumentsStrict().message;
+    if (message == null) {
+      throw new NullPointerException();
+    }
+
     List<ListItem> items = new ArrayList<>();
     items.add(new ListItem(ListItem.TYPE_CHAT_BETTER, R.id.btn_openChat).setData(getArgumentsStrict().message));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsViewCount, 0, R.string.StatsMessageViewCount, false).setData(getArgumentsStrict().message.interactionInfo.viewCount));
+
+    if (message.interactionInfo != null) {
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsViewCount, 0, R.string.StatsMessageViewCount, false).setData(message.interactionInfo.viewCount));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    }
+
+    if (message.authorSignature.length() > 0) {
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsSignature, 0, R.string.StatsMessageSignature, false).setData(message.authorSignature));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    }
+
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsPublishDate, 0, R.string.StatsMessagePublishDate, false).setData(Lang.getTimestamp(message.date, TimeUnit.SECONDS)));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsPrivateShares, 0, R.string.StatsMessageSharesPrivate, false).setData(getArgumentsStrict().message.interactionInfo.forwardCount));
-    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsPublishDate, 0, R.string.StatsMessagePublishDate, false).setData(Lang.getTimestamp(getArgumentsStrict().message.date, TimeUnit.SECONDS)));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsPrivateShares, 0, R.string.StatsMessageSharesPrivate, false).setData(privateShareCount));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     List<Chart> charts = Collections.singletonList(
@@ -229,7 +249,7 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
 
   private void setPublicShares () {
     if (publicShares == null || publicShares.messages.length == 0) return;
-    final int index = adapter.indexOfViewById(R.id.btn_statsPublishDate) + 1;
+    final int index = adapter.indexOfViewById(R.id.btn_statsPrivateShares) + 1;
     adapter.getItems().add(index, new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsPublicShares, 0, R.string.StatsMessageSharesPublic, false).setData(publicShares.totalCount));
     adapter.getItems().add(index, new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     adapter.notifyItemRangeInserted(index, 2);

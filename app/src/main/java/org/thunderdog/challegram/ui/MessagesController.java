@@ -2094,6 +2094,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     public Referrer referrer;
     public TdApi.InternalLinkTypeVoiceChat voiceChatInvitation;
 
+    public int eventLogUserId;
+
     public @Nullable TdApi.Background wallpaperObject;
 
     public Arguments (Tdlib tdlib, TdApi.ChatList chatList, TdApi.Chat chat, @Nullable ThreadInfo messageThread, TdApi.SearchMessagesFilter filter) {
@@ -2183,6 +2185,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     public Arguments voiceChatInvitation (TdApi.InternalLinkTypeVoiceChat voiceChatInvitation) {
       this.voiceChatInvitation = voiceChatInvitation;
+      return this;
+    }
+
+    public Arguments eventLogUserId (int eventLogUserId) {
+      this.eventLogUserId = eventLogUserId;
       return this;
     }
   }
@@ -2425,6 +2432,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
           showActionButton(R.string.Settings, ACTION_EVENT_LOG_SETTINGS);
           manager.openEventLog(chat);
           messagesView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 120l));
+          if (getArgumentsStrict().eventLogUserId != 0 && headerCell != null) {
+            manager.applyEventLogFilters(new TdApi.ChatEventLogFilters(true, true, true, true, true, true, true, true, true, true, true, true), new int[] { getArgumentsStrict().eventLogUserId });
+          }
           break;
         case PREVIEW_MODE_SEARCH:
           manager.openSearch(chat, previewSearchQuery, previewSearchSender, previewSearchFilter);

@@ -535,6 +535,7 @@
   <item type="id" name="btn_statsPrivateShares" />
   <item type="id" name="btn_statsPublicShares" />
   <item type="id" name="btn_statsPublishDate" />
+  <item type="id" name="btn_statsSignature" />
 
   <item type="id" name="stats_memberCount" />
   <item type="id" name="stats_join" />
