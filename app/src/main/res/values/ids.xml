@@ -1035,6 +1035,7 @@
 
   <item type="id" name="btn_reportChat" />
   <item type="id" name="btn_reportChatSpam" />
+  <item type="id" name="btn_reportChatFake" />
   <item type="id" name="btn_reportChatViolence" />
   <item type="id" name="btn_reportChatPornography" />
   <item type="id" name="btn_reportChatChildAbuse" />
