@@ -18,6 +18,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.CallItem;
 import org.thunderdog.challegram.data.CallSection;
 import org.thunderdog.challegram.data.TGFoundChat;
+import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.DayChangeListener;
 import org.thunderdog.challegram.telegram.MessageListener;
@@ -610,12 +611,18 @@ public class CallListController extends RecyclerViewController<Void> implements
           }
           case R.id.btn_delete: {
             if (call != null) {
-              showOptions(null, new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getString(R.string.DeleteEntry), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_sweep_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-                if (id == R.id.btn_delete) {
-                  tdlib.deleteMessages(chatId, call.getMessageIds(), false);
-                }
-                return true;
-              });
+              String firstName = tdlib.senderName(new TdApi.MessageSenderUser(call.getUserId()), true);
+              CharSequence text = Lang.getStringBold(R.string.QDeleteCallFromRecent);
+              showSettings(
+                      new SettingsWrapBuilder(R.id.btn_delete).setHeaderItem(new ListItem(ListItem.TYPE_INFO, R.id.text_title, 0, text, false)).setRawItems(
+                      new ListItem[]{
+                              new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_deleteAll, 0, Lang.getStringBold(R.string.DeleteForUser, firstName), false)
+                      }).setIntDelegate((id, result) -> {
+                        if (id == R.id.btn_delete) {
+                          tdlib.deleteMessages(chatId, call.getMessageIds(), result.get(R.id.btn_deleteAll) != 0);
+                        }
+                      }).setSaveStr(R.string.Delete).setSaveColorId(R.id.theme_color_textNegative)
+              );
             } else if (chat != null) {
               removeTopChat(chat);
             }
