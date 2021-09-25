@@ -639,7 +639,7 @@ public class PageBlockRichText extends PageBlock {
           r.draw(c);
           r.restorePaintAlpha();
         } else if (avatarPlaceholder != null) {
-          avatarPlaceholder.draw(c, cx, cy, subtitleFactor);
+          avatarPlaceholder.draw(c, cx, cy, subtitleFactor, avatarSize / 2f);
         }
         textLeft += (avatarSize + (forceBackground ? avatarPadding / 2 : avatarPadding)) * subtitleFactor;
         Views.restore(c, restoreCount);
