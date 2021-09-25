@@ -5087,12 +5087,16 @@ public class TdlibUi extends Handler {
     }, null);
   }
 
-  private static final int REPORT_REASON_COUNT = 6;
+  private static final int REPORT_REASON_COUNT = 7;
 
   private static void fillReportReasons (IntList ids, StringList strings) {
     ids.append(R.id.btn_reportChatSpam);
     // colors.append(ViewController.OPTION_COLOR_NORMAL);
     strings.append(R.string.Spam);
+
+    ids.append(R.id.btn_reportChatFake);
+    // colors.append(ViewController.OPTION_COLOR_RED);
+    strings.append(R.string.Fake);
 
     ids.append(R.id.btn_reportChatViolence);
     // colors.append(ViewController.OPTION_COLOR_NORMAL);
@@ -5120,6 +5124,9 @@ public class TdlibUi extends Handler {
     switch (reportReasonId) {
       case R.id.btn_reportChatSpam:
         reason = new TdApi.ChatReportReasonSpam();
+        break;
+      case R.id.btn_reportChatFake:
+        reason = new TdApi.ChatReportReasonFake();
         break;
       case R.id.btn_reportChatViolence:
         reason = new TdApi.ChatReportReasonViolence();
