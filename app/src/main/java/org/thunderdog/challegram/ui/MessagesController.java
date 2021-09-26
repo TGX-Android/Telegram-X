@@ -3111,6 +3111,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         header.addButton(menu, R.id.menu_btn_clearCache, R.drawable.templarian_baseline_broom_24, iconColorId, this, Screen.dp(52f))
         .setVisibility((value = canClearCacheSelectedMessages()) ? View.VISIBLE : View.GONE);
         if (value) totalButtonsCount++;
+        header.addButton(menu, R.id.menu_btn_unpinAll, R.drawable.deproko_baseline_pin_undo_24, iconColorId, this, Screen.dp(52f))
+        .setVisibility((value = canUnpinSelectedMessages()) ? View.VISIBLE : View.GONE);
+        if (value) totalButtonsCount++;
         header.addRetryButton(menu, this, iconColorId)
           .setVisibility((value = canResendSelectedMessages()) ? View.VISIBLE : View.GONE);
         if (value) totalButtonsCount++;
@@ -3341,6 +3344,22 @@ public class MessagesController extends ViewController<MessagesController.Argume
             }
           }
           TD.deleteFiles(this, ArrayUtils.asArray(files, new TdApi.File[files.size()]), () -> finishSelectMode(-1));
+        }
+        break;
+      }
+      case R.id.menu_btn_unpinAll: {
+        if (selectedMessageIds != null && selectedMessageIds.size() > 0) {
+          showOptions(Lang.pluralBold(R.string.UnpinXMessages, selectedMessageIds.size()), new int[] {R.id.btn_unpinAll, R.id.btn_cancel}, new String[] {Lang.getString(R.string.Unpin), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.deproko_baseline_pin_undo_24, R.drawable.baseline_cancel_24}, (itemView, viewId) -> {
+            if (viewId == R.id.btn_unpinAll) {
+              final int size = selectedMessageIds.size();
+              for (int i = 0; i < size; i++) {
+                tdlib.client().send(new TdApi.UnpinChatMessage(chat.id, selectedMessageIds.keyAt(i)), tdlib.okHandler());
+              }
+              exitOnTransformFinish = true;
+              finishSelectMode(-1);
+            }
+            return true;
+          });
         }
         break;
       }
@@ -4118,6 +4137,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (value) totalButtonsCount++;
       headerView.updateButton(R.id.menu_messageActions, R.id.menu_btn_clearCache, (value = canClearCacheSelectedMessages()) ? View.VISIBLE : View.GONE, 0);
       if (value) totalButtonsCount++;
+      headerView.updateButton(R.id.menu_messageActions, R.id.btn_unpinAll, (value = canUnpinSelectedMessages()) ? View.VISIBLE : View.GONE, 0);
+      if (value) totalButtonsCount++;
       headerView.updateButton(R.id.menu_messageActions, R.id.menu_btn_report, canReportSelectedMessages(totalButtonsCount) ? View.VISIBLE : View.GONE, 0);
     }
   }
@@ -4300,6 +4321,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return canClearCache > 1 || hasMergedMessages;
     }
     return false;
+  }
+
+  private boolean canUnpinSelectedMessages () {
+    return arePinnedMessages() && canPinAnyMessage(false);
   }
 
   private boolean canReplyToSelectedMessages () {
