@@ -62,7 +62,7 @@ public class WallpaperParametersView extends View {
         int fromX = getWidth() / 2;
         int lineY = getHeight() / 2;
 
-        float textWidth = this.textPaint.measureText(Lang.getString(R.string.Blur));
+        float textWidth = this.textPaint.measureText(Lang.getString(R.string.ChatBackgroundBlur));
         float checkboxScale = .75f;
         float checkboxSize = (SimplestCheckBox.size() * checkboxScale);
         float offset = (textWidth / 2) - checkboxSize;
@@ -75,7 +75,7 @@ public class WallpaperParametersView extends View {
         blurRect.right = fromX + textWidth + (checkboxSize / 2) - offset;
         c.drawRoundRect(blurRect, Screen.dp(16f), Screen.dp(16f), Paints.fillingPaint(Theme.getColor(R.id.theme_color_previewBackground)));
 
-        c.drawText(Lang.getString(R.string.Blur), fromX - offset, lineY + Screen.sp(4f), textPaint);
+        c.drawText(Lang.getString(R.string.ChatBackgroundBlur), fromX - offset, lineY + Screen.sp(4f), textPaint);
 
         c.save();
         c.scale(checkboxScale, checkboxScale, checkboxX, lineY);
