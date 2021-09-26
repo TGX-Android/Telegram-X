@@ -72,14 +72,14 @@ public class WallpaperParametersView extends View {
         blurRect.top = checkboxY - checkboxSize;
         blurRect.bottom = checkboxY + checkboxSize;
         blurRect.left = checkboxX - checkboxSize;
-        blurRect.right = fromX + textWidth + (checkboxSize / 2) - offset;
+        blurRect.right = fromX + textWidth + (int) (checkboxSize / 1.5) - offset;
         c.drawRoundRect(blurRect, Screen.dp(16f), Screen.dp(16f), Paints.fillingPaint(Theme.getColor(R.id.theme_color_previewBackground)));
 
         c.drawText(Lang.getString(R.string.ChatBackgroundBlur), fromX - offset, lineY + Screen.sp(4f), textPaint);
 
         c.save();
         c.scale(checkboxScale, checkboxScale, checkboxX, lineY);
-        c.drawCircle(checkboxX, checkboxY, checkboxSize / 2, Paints.getProgressPaint(Theme.getColor(R.id.theme_color_text), Screen.dp(1f)));
+        c.drawCircle(checkboxX, checkboxY, checkboxSize / 2, Paints.getProgressPaint(Theme.getColor(R.id.theme_color_text), Screen.dp(2f)));
         SimplestCheckBox.draw(c, checkboxX, checkboxY, isBlurEnabled.getFloatValue(), null);
         c.restore();
     }
