@@ -76,14 +76,12 @@ public class WallpaperParametersView extends View {
         c.drawRoundRect(blurRect, Screen.dp(16f), Screen.dp(16f), Paints.fillingPaint(Theme.getColor(R.id.theme_color_previewBackground)));
 
         c.drawText(Lang.getString(R.string.Blur), fromX - offset, lineY + Screen.sp(4f), textPaint);
-        c.drawCircle(checkboxX, checkboxY, Screen.dp(7f), Paints.getProgressPaint(Theme.getColor(R.id.theme_color_text), Screen.dp(1f)));
 
-        if (isBlurEnabled.getFloatValue() > 0f) {
-            c.save();
-            c.scale(checkboxScale, checkboxScale, checkboxX, lineY);
-            SimplestCheckBox.draw(c, checkboxX, checkboxY, isBlurEnabled.getFloatValue(), null);
-            c.restore();
-        }
+        c.save();
+        c.scale(checkboxScale, checkboxScale, checkboxX, lineY);
+        c.drawCircle(checkboxX, checkboxY, checkboxSize / 2, Paints.getProgressPaint(Theme.getColor(R.id.theme_color_text), Screen.dp(1f)));
+        SimplestCheckBox.draw(c, checkboxX, checkboxY, isBlurEnabled.getFloatValue(), null);
+        c.restore();
     }
 
     @Override
