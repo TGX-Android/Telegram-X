@@ -59,28 +59,29 @@ public class WallpaperParametersView extends View {
 
     @Override
     protected void onDraw (Canvas c) {
-        int fromX = getWidth() / 2;
-        int lineY = getHeight() / 2;
+        drawButton(c, getWidth() / 2, getHeight() / 2, blurRect, Lang.getString(R.string.ChatBackgroundBlur), isBlurEnabled);
+    }
 
-        float textWidth = this.textPaint.measureText(Lang.getString(R.string.ChatBackgroundBlur));
+    private void drawButton (Canvas c, int centerX, int centerY, RectF buttonRect, String text, BoolAnimator selectAnimator) {
+        float textWidth = this.textPaint.measureText(text);
         float checkboxScale = .75f;
         float checkboxSize = (SimplestCheckBox.size() * checkboxScale);
         float offset = (textWidth / 2) - checkboxSize;
-        int checkboxX = fromX - (int) (checkboxSize) / 2 - Screen.dp(8f) + (int) (Screen.dp(2f) * checkboxScale) - (int) offset;
-        int checkboxY = lineY - (int) (Screen.dp(2f) * checkboxScale);
+        int checkboxX = centerX - (int) (checkboxSize) / 2 - Screen.dp(8f) + (int) (Screen.dp(2f) * checkboxScale) - (int) offset;
+        int checkboxY = centerY - (int) (Screen.dp(2f) * checkboxScale);
 
-        blurRect.top = checkboxY - checkboxSize;
-        blurRect.bottom = checkboxY + checkboxSize;
-        blurRect.left = checkboxX - checkboxSize;
-        blurRect.right = fromX + textWidth + (int) (checkboxSize / 1.5) - offset;
-        c.drawRoundRect(blurRect, Screen.dp(16f), Screen.dp(16f), Paints.fillingPaint(Theme.getColor(R.id.theme_color_previewBackground)));
+        buttonRect.top = checkboxY - checkboxSize;
+        buttonRect.bottom = checkboxY + checkboxSize;
+        buttonRect.left = checkboxX - checkboxSize;
+        buttonRect.right = centerX + textWidth + (int) (checkboxSize / 1.5) - offset;
+        c.drawRoundRect(buttonRect, Screen.dp(16f), Screen.dp(16f), Paints.fillingPaint(Theme.getColor(R.id.theme_color_previewBackground)));
 
-        c.drawText(Lang.getString(R.string.ChatBackgroundBlur), fromX - offset, lineY + Screen.sp(4f), textPaint);
+        c.drawText(text, centerX - offset, centerY + Screen.sp(4f), textPaint);
 
         c.save();
-        c.scale(checkboxScale, checkboxScale, checkboxX, lineY);
+        c.scale(checkboxScale, checkboxScale, checkboxX, centerY);
         c.drawCircle(checkboxX, checkboxY, checkboxSize / 2, Paints.getProgressPaint(Theme.getColor(R.id.theme_color_text), Screen.dp(2f)));
-        SimplestCheckBox.draw(c, checkboxX, checkboxY, isBlurEnabled.getFloatValue(), null);
+        SimplestCheckBox.draw(c, checkboxX, checkboxY, selectAnimator.getFloatValue(), null);
         c.restore();
     }
 
