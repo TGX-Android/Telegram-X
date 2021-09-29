@@ -19,7 +19,7 @@ fun getType (chatId: Long, validate: Boolean = true): Int {
       ChatTypePrivate.CONSTRUCTOR
     }
     chatId < 0 -> when {
-      MAX_GROUP_ID <= chatId -> {
+      -MAX_GROUP_ID <= chatId -> {
         ChatTypeBasicGroup.CONSTRUCTOR
       }
       ZERO_CHANNEL_ID - MAX_CHANNEL_ID <= chatId && chatId != ZERO_CHANNEL_ID -> {
