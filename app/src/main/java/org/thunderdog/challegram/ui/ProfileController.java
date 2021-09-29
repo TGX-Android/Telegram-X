@@ -1643,7 +1643,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       @Override
       protected void setSliderValues (ListItem item, SliderWrapView view) {
         super.setSliderValues(item, view);
-        view.setShowOnlyValue(item.getId() == R.id.btn_slowMode);
+        view.setShowOnlyValue((item.getId() == R.id.btn_slowMode || item.getId() == R.id.btn_chatTtl));
       }
 
       @Override
@@ -1651,6 +1651,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         if (item.getId() == R.id.btn_slowMode) {
           slowModeDescItem.setString(getSlowModeDescription(TdConstants.SLOW_MODE_OPTIONS[value]));
           baseAdapter.updateValuedSetting(slowModeDescItem);
+          onItemsHeightProbablyChanged();
+          checkDoneButton();
+        } else if (item.getId() == R.id.btn_chatTtl) {
+          ttlDescItem.setString(getTtlDescription(TdConstants.CHAT_TTL_OPTIONS[value]));
+          baseAdapter.updateValuedSetting(ttlDescItem);
           onItemsHeightProbablyChanged();
           checkDoneButton();
         }
@@ -3272,12 +3277,18 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     return
       (chatTitleItem != null && !StringUtils.equalsOrBothEmpty(chat.title, chatTitleItem.getStringValue())) ||
       (chatDescriptionItem != null && !StringUtils.equalsOrBothEmpty(getCurrentDescription(), chatDescriptionItem.getStringValue())) ||
+      hasTtlChanges() ||
       hasSlowModeChanges();
   }
 
   private boolean hasSlowModeChanges () {
     int originalSlowMode = supergroupFull != null ? supergroupFull.slowModeDelay : 0;
     return slowModeItem != null && originalSlowMode != TdConstants.SLOW_MODE_OPTIONS[slowModeItem.getSliderValue()];
+  }
+
+  private boolean hasTtlChanges () {
+    int originalSlowMode = chat != null ? chat.messageTtlSetting : 0;
+    return ttlItem != null && originalSlowMode != TdConstants.SLOW_MODE_OPTIONS[ttlItem.getSliderValue()];
   }
 
   @Override
@@ -3344,9 +3355,14 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     boolean hasSlowModeChanges = hasSlowModeChanges();
+    boolean hasTtlChanges = hasTtlChanges();
 
     if (hasSlowModeChanges) {
       changes.add(new TdApi.SetChatSlowModeDelay(chat.id, TdConstants.SLOW_MODE_OPTIONS[slowModeItem.getSliderValue()]));
+    }
+
+    if (hasTtlChanges) {
+      changes.add(new TdApi.SetChatMessageTtlSetting(chat.id, TdConstants.CHAT_TTL_OPTIONS[ttlItem.getSliderValue()]));
     }
 
     if (changes.isEmpty()) {
@@ -3451,6 +3467,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private ListItem slowModeItem, slowModeDescItem;
+  private ListItem ttlItem, ttlDescItem;
 
   private void buildEditCells () {
     ArrayList<ListItem> items = new ArrayList<>();
@@ -3564,6 +3581,31 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(slowModeDescItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_slowModeDescription, 0, getSlowModeDescription(slowModeValue), false));
     }
 
+    if (tdlib.canDeleteMessages(chat.id) && !ChatId.isSecret(chat.id)) {
+      int ttlValue = chat != null ? chat.messageTtlSetting : 0;
+      items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.ChatTtl));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      String[] sliderValues = new String[TdConstants.CHAT_TTL_OPTIONS.length];
+      int sliderValueIndex = -1;
+      for (int i = 0; i < sliderValues.length; i++) {
+        int sliderOption = TdConstants.CHAT_TTL_OPTIONS[i];
+        if (sliderOption == 0) {
+          sliderValues[i] = Lang.getString(R.string.SlowModeOff);
+        } else {
+          sliderValues[i] = Lang.getDuration(sliderOption);
+        }
+        if (sliderOption == ttlValue) {
+          sliderValueIndex = i;
+        }
+      }
+      if (sliderValueIndex == -1) {
+        sliderValueIndex = ttlValue == 0 ? 0 : 1;
+      }
+      items.add(ttlItem = new ListItem(ListItem.TYPE_SLIDER, R.id.btn_chatTtl).setSliderInfo(sliderValues, sliderValueIndex));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      items.add(ttlDescItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_chatTtlDescription, 0, getTtlDescription(ttlValue), false));
+    }
+
     addMediaItems(items);
     baseAdapter.setItems(items, false);
   }
@@ -3577,6 +3619,14 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       return Lang.pluralBold(R.string.SlowModeMinutes, TimeUnit.SECONDS.toMinutes(seconds));
     } else {
       return Lang.pluralBold(R.string.SlowModeSeconds, seconds);
+    }
+  }
+
+  private static CharSequence getTtlDescription (int seconds) {
+    if (seconds == 0) {
+      return Lang.getString(R.string.ChatTtlDisabled);
+    } else {
+      return Lang.getStringBold(R.string.ChatTtlEnabled, Lang.getDuration(seconds));
     }
   }
 

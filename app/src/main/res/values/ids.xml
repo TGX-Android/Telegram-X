@@ -432,6 +432,8 @@
   <item type="id" name="btn_prehistoryMode" />
   <item type="id" name="btn_slowMode" />
   <item type="id" name="btn_slowModeDescription" />
+  <item type="id" name="btn_chatTtl" />
+  <item type="id" name="btn_chatTtlDescription" />
   <item type="id" name="btn_phone" />
   <item type="id" name="btn_useExplicitDice" />
   <item type="id" name="btn_night" />

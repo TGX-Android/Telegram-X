@@ -24,5 +24,6 @@ const val TELEGRAM_BOT_FATHER_ACCOUNT_ID = 93372553L
 const val TELEGRAM_BOT_FATHER_USERNAME = "BotFather"
 const val CHAT_PERMISSIONS_COUNT = 8
 @JvmField val SLOW_MODE_OPTIONS = intArrayOf(0, 10, 30, 60, 300, 900, 3600)
+@JvmField val CHAT_TTL_OPTIONS = intArrayOf(0, 86400, 604800, 2678400)
 @JvmField val TELEGRAM_HOSTS = arrayOf("t.me", "tx.me", "telegram.me", "telegram.dog")
 @JvmField val TELEGRAPH_HOSTS = arrayOf("telegram.org", "telegra.ph", "graph.org", "te.legra.ph")

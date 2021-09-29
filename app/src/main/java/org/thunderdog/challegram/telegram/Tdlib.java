@@ -7885,6 +7885,27 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return false;
   }
 
+  public boolean canDeleteMessages (long chatId) {
+    TdApi.ChatMemberStatus status = chatStatus(chatId);
+    if (status != null) {
+      switch (status.getConstructor()) {
+        case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
+          return true;
+        case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
+          if (((TdApi.ChatMemberStatusAdministrator) status).canDeleteMessages) {
+            return true;
+          }
+          break;
+        case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR:
+        case TdApi.ChatMemberStatusLeft.CONSTRUCTOR:
+        case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
+        case TdApi.ChatMemberStatusMember.CONSTRUCTOR:
+          break;
+      }
+    }
+    return false;
+  }
+
   public boolean canToggleSignMessages (TdApi.Chat chat) {
     return isChannelChat(chat) && canChangeInfo(chat, false);
   }
