@@ -835,7 +835,7 @@ public class TdlibListeners {
     if (chatLists != null) {
       for (TdlibChatList chatList : chatLists) {
         iterateChatListListeners(chatList, listener ->
-          listener.onChatListItemChanged(chatList, chat, ChatListListener.ItemChangeType.READ_INBOX)
+          listener.onChatListItemChanged(chatList, chat, availabilityChanged ? ChatListListener.ItemChangeType.UNREAD_AVAILABILITY_CHANGED : ChatListListener.ItemChangeType.READ_INBOX)
         );
       }
     }

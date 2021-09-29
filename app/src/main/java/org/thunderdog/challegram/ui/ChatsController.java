@@ -599,6 +599,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
             int reason;
             switch (changeType) {
               case ItemChangeType.TITLE:
+              case ItemChangeType.UNREAD_AVAILABILITY_CHANGED:
                 reason = ChatsAdapter.ARCHIVE_UPDATE_ALL;
                 break;
               case ItemChangeType.READ_INBOX:
