@@ -362,7 +362,7 @@ public class SettingsBlockedController extends RecyclerViewController<SettingsPr
       if (!isDestroyed() && senders != null) {
         int index = indexOfSender(chatId);
         if (isBlocked && index == -1) {
-          int userId = tdlib.chatUserId(chatId);
+          long userId = tdlib.chatUserId(chatId);
           if (userId != 0) {
             addSender(new TdApi.MessageSenderUser(userId));
           } else {
@@ -381,7 +381,7 @@ public class SettingsBlockedController extends RecyclerViewController<SettingsPr
   }
 
   @Override
-  public void onUserStatusChanged (final int userId, TdApi.UserStatus status, boolean uiOnly) {
+  public void onUserStatusChanged (final long userId, TdApi.UserStatus status, boolean uiOnly) {
     if (!isDestroyed() && senders != null) {
       adapter.updateUserViewByLongId(ChatId.fromUserId(userId), true);
     }

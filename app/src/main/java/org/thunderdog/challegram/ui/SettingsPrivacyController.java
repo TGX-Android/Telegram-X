@@ -567,7 +567,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
   }
 
   @Override
-  public void onUserFullUpdated (int userId, TdApi.UserFullInfo userFull) {
+  public void onUserFullUpdated (long userId, TdApi.UserFullInfo userFull) {
     tdlib.ui().post(() -> {
       if (!isDestroyed()) {
         tdlib.client().send(new TdApi.GetBlockedMessageSenders(0, 1), SettingsPrivacyController.this);

@@ -35,7 +35,7 @@ public class TGUser implements UserProvider {
   private static final int FLAG_CHAT_TITLE_AS_USER_NAME = 0x160;
 
   private final Tdlib tdlib;
-  private final int userId;
+  private final long userId;
   private @Nullable TdApi.User user;
   private ImageFile imageFile;
   private AvatarPlaceholder.Metadata avatarPlaceholderMetadata;
@@ -255,7 +255,7 @@ public class TGUser implements UserProvider {
     return role;
   }
 
-  public int getId () {
+  public long getId () {
     return (flags & FLAG_LOCAL) != 0 ? contactId : user == null ? 0 : user.id;
   }
 

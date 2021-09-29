@@ -121,7 +121,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
 
   @SuppressWarnings("WrongConstant")
   public void setCallItem (CallItem item) {
-    int userId = item.getUserId();
+    long userId = item.getUserId();
     TdApi.User user = tdlib.cache().user(userId);
 
     setPreviewChatId(null, item.getChatId(), null, new MessageId(item.getChatId(), item.getLatestMessageId()), null);
@@ -182,7 +182,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
       if (this.subtitleIcon != icon) {
         boolean prevHadIcon = subtitleIcon != 0;
         this.subtitleIcon = icon;
-        this.subtitleIconDrawable = getSparseDrawable(icon, 0);
+        this.subtitleIconDrawable = getSparseDrawable(icon, ThemeColorId.NONE);
         boolean nowHasIcon = icon != 0;
         if (prevHadIcon != nowHasIcon) {
           setTrimmedSubtitle();
@@ -459,7 +459,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     updateChat(chatId);
   }
 
-  private void addListeners (int userId, boolean add, boolean needStatusUiUpdates) {
+  private void addListeners (long userId, boolean add, boolean needStatusUiUpdates) {
     if (add) {
       this.needStatusUiUpdates = needStatusUiUpdates;
       tdlib.cache().subscribeToUserUpdates(userId, this);
@@ -522,7 +522,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
   private void updateSubtitle () {
     if (lastChat != null) {
       if (StringUtils.isEmpty(lastChat.getForcedSubtitle())) {
-        final int userId = lastChat.getUserId();
+        final long userId = lastChat.getUserId();
         if (lastChat.isGlobal()) {
           setSubtitle(lastChat.getUsername());
         } else {
@@ -584,16 +584,13 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
   }
 
   @Override
-  public void onUserFullUpdated (int userId, TdApi.UserFullInfo userFull) { }
-
-  @Override
   public boolean needUserStatusUiUpdates () {
     return needStatusUiUpdates;
   }
 
   @Override
   @UiThread
-  public void onUserStatusChanged (int userId, TdApi.UserStatus status, boolean uiOnly) {
+  public void onUserStatusChanged (long userId, TdApi.UserStatus status, boolean uiOnly) {
     if (lastChat != null && lastChat.getUserId() == userId) {
       updateSubtitle();
     }
@@ -605,7 +602,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
   }
 
   @Override
-  public void onBasicGroupFullUpdated (int basicGroupId, TdApi.BasicGroupFullInfo basicGroupFull) {
+  public void onBasicGroupFullUpdated (long basicGroupId, TdApi.BasicGroupFullInfo basicGroupFull) {
     updateSubtitleIfNeeded(ChatId.fromBasicGroupId(basicGroupId));
   }
 
@@ -620,7 +617,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
   }
 
   @Override
-  public void onSupergroupFullUpdated (final int supergroupId, TdApi.SupergroupFullInfo newSupergroupFull) {
+  public void onSupergroupFullUpdated (final long supergroupId, TdApi.SupergroupFullInfo newSupergroupFull) {
     updateSubtitleIfNeeded(ChatId.fromSupergroupId(supergroupId));
   }
 

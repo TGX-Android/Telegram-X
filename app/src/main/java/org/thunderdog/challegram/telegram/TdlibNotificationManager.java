@@ -315,7 +315,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
           break;
         }
         case ON_UPDATE_NOTIFICATION_CHANNELS: {
-          ((TdlibNotificationManager) msg.obj).onUpdateNotificationChannels(msg.arg1);
+          ((TdlibNotificationManager) msg.obj).onUpdateNotificationChannels(BitwiseUtils.mergeLong(msg.arg1, msg.arg2));
           break;
         }
         case ON_UPDATE_ACTIVE_NOTIFICATIONS: {
@@ -521,7 +521,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   public @Status
   int getNotificationBlockStatus () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-      int selfUserId = tdlib.myUserId();
+      long selfUserId = tdlib.myUserId();
       if (selfUserId != 0) {
         android.app.NotificationChannelGroup group = (android.app.NotificationChannelGroup) getSystemChannelGroup();
 
@@ -1005,7 +1005,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
 
   public void createChannels () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      int accountUserId = tdlib.myUserId(true);
+      long accountUserId = tdlib.myUserId(true);
       if (accountUserId != 0) {
         getChannelCache().create(tdlib.myUser());
       }
@@ -1014,7 +1014,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
 
   public TdlibNotificationChannelGroup getChannelCache () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      int accountUserId = tdlib.myUserId(true);
+      long accountUserId = tdlib.myUserId(true);
       TdApi.User account = myUser();
       if (accountUserId == 0) {
         if (channelGroupCache != null)
@@ -1036,7 +1036,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     return null;
   }
 
-  public boolean resetChannelCache (int accountUserId) {
+  public boolean resetChannelCache (long accountUserId) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && channelGroupCache != null && channelGroupCache.getAccountUserId() == accountUserId) {
       channelGroupCache = null;
       return true;
@@ -1061,7 +1061,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
 
   @TargetApi(Build.VERSION_CODES.O)
   private void incrementChannelVersion (@Nullable TdApi.NotificationSettingsScope scope, long chatId, LevelDB editor) {
-    int selfUserId = tdlib.myUserId();
+    long selfUserId = tdlib.myUserId();
     LocalScopeNotificationSettings settings = chatId != 0 ? null : getLocalNotificationSettings(scope);
     String key = chatId != 0 ? key(_CHANNEL_VERSION_CUSTOM_KEY + chatId) : settings.prefix(KEY_PREFIX_CHANNEL_VERSION);
     long oldVersion = chatId != 0 ? Settings.instance().getLong(key, 0) : settings.getChannelVersion();
@@ -1083,7 +1083,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   @TargetApi(Build.VERSION_CODES.O)
   public String getSystemChannelId (TdApi.NotificationSettingsScope scope, long customChatId) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      int accountId = tdlib.myUserId();
+      long accountId = tdlib.myUserId();
       if (accountId != 0) {
         long version = getChannelVersion(scope, customChatId);
         return TdlibNotificationChannelGroup.makeChannelId(accountId, getChannelsGlobalVersion(), scope, customChatId, version);
@@ -1096,7 +1096,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   @Nullable
   public Object getSystemChannelGroup () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      int selfUserId = tdlib.myUserId();
+      long selfUserId = tdlib.myUserId();
       if (selfUserId == 0)
         return null;
       NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
@@ -1401,7 +1401,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     _repeatNotificationMinutes = null;
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      int selfUserId = tdlib.myUserId();
+      long selfUserId = tdlib.myUserId();
       TdApi.User account = tdlib.myUser();
       if (selfUserId != 0) {
         TdlibNotificationChannelGroup.deleteChannels(tdlib, selfUserId, tdlib.account().isDebug(), account, !onlyLocal);
@@ -1841,11 +1841,11 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   }
 
   @AnyThread
-  public void onUpdateNotificationChannels (int accountId) {
+  public void onUpdateNotificationChannels (long accountUserId) {
     if (Thread.currentThread() != queue) {
-      queue.sendMessage(Message.obtain(queue.getHandler(), ON_UPDATE_NOTIFICATION_CHANNELS, accountId, 0, this), 0);
+      queue.sendMessage(Message.obtain(queue.getHandler(), ON_UPDATE_NOTIFICATION_CHANNELS, BitwiseUtils.splitLongToFirstInt(accountUserId), BitwiseUtils.splitLongToSecondInt(accountUserId), this), 0);
     } else {
-      resetNotificationGroupImpl(accountId);
+      resetNotificationGroupImpl(accountUserId);
     }
   }
 
@@ -2070,7 +2070,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   }
 
   @NotificationThread
-  public boolean isSelfUserId (int userId) {
+  public boolean isSelfUserId (long userId) {
     return userId != 0 && userId == myUserId;
   }
 
@@ -2093,7 +2093,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   }
 
   @NotificationThread
-  private void resetNotificationGroupImpl (int accountUserId) {
+  private void resetNotificationGroupImpl (long accountUserId) {
     notification.onNotificationChannelGroupReset(accountUserId);
   }
 

@@ -345,7 +345,7 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
     }
   }
 
-  public int updateUserStatus (int userId, int startIndex) {
+  public int updateUserStatus (long userId, int startIndex) {
     if (startIndex == 0) {
       int index = 0;
       for (TGChat chat : chats) {

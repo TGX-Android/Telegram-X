@@ -205,7 +205,7 @@ public class TdlibContactManager implements CleanupStartupDelegate {
                     break;
                   }
                   case TdApi.Users.CONSTRUCTOR:
-                    int[] userIds = ((TdApi.Users) object).userIds;
+                    long[] userIds = ((TdApi.Users) object).userIds;
                     if (userIds.length > 0) {
                       tdlib.client().send(new TdApi.RemoveContacts(userIds), this);
                     }
@@ -267,7 +267,7 @@ public class TdlibContactManager implements CleanupStartupDelegate {
   // Listeners
 
   public interface Listener {
-    void onRegisteredContactsChanged (int[] userIds, int totalCount, boolean newArrival);
+    void onRegisteredContactsChanged (long[] userIds, int totalCount, boolean newArrival);
     void onUnregisteredContactsChanged (int oldTotalCount, ArrayList<UnregisteredContact> contacts, int totalCount);
   }
 
@@ -284,10 +284,10 @@ public class TdlibContactManager implements CleanupStartupDelegate {
   // Counters
 
   private int registeredCount;
-  private int[] registeredUserIds;
+  private long[] registeredUserIds;
   private ArrayList<UnregisteredContact> unregisteredContacts;
 
-  public static int getCount (int[] array, int totalCount) {
+  public static int getCount (long[] array, int totalCount) {
     if (array != null) {
       if (array.length < 5) {
         return array.length;
@@ -311,14 +311,14 @@ public class TdlibContactManager implements CleanupStartupDelegate {
     return unregisteredContacts;
   }
 
-  public int[] getRegisteredUserIds () {
+  public long[] getRegisteredUserIds () {
     return registeredUserIds;
   }
 
-  private void setRegisteredContacts (int[] userIds, int registeredCount, boolean increaseOnly) {
+  private void setRegisteredContacts (long[] userIds, int registeredCount, boolean increaseOnly) {
     if (userIds != null && userIds.length > 1) {
-      List<Integer> sorted = new ArrayList<>(userIds.length);
-      for (int userId : userIds) {
+      List<Long> sorted = new ArrayList<>(userIds.length);
+      for (long userId : userIds) {
         sorted.add(userId);
       }
       Collections.sort(sorted, (a, b) -> {
@@ -328,7 +328,7 @@ public class TdlibContactManager implements CleanupStartupDelegate {
       });
       ArrayUtils.toArray(sorted, userIds);
       if (userIds.length > 5) {
-        int[] result = new int[5];
+        long[] result = new long[5];
         System.arraycopy(userIds, 0, result, 0, 5);
         userIds = result;
       }
@@ -336,7 +336,7 @@ public class TdlibContactManager implements CleanupStartupDelegate {
     handler.sendMessage(Message.obtain(handler, ACTION_SET_REGISTERED_CONTACTS, registeredCount, increaseOnly ? 1 : 0, userIds));
   }
 
-  private void setRegisteredContactsImpl (int[] userIds, int registeredCount, boolean increaseOnly) {
+  private void setRegisteredContactsImpl (long[] userIds, int registeredCount, boolean increaseOnly) {
     if (increaseOnly && registeredCount <= this.registeredCount) {
       return;
     }
@@ -399,11 +399,11 @@ public class TdlibContactManager implements CleanupStartupDelegate {
         case TdApi.Users.CONSTRUCTOR: {
           final TdApi.Users users = (TdApi.Users) object;
           final int totalCount = users.totalCount;
-          int[] userIds = users.userIds;
+          long[] userIds = users.userIds;
           if (userIds.length > 0) {
             ArrayList<TdApi.User> result = tdlib.cache().users(userIds);
             Collections.sort(result, tdlib.userComparator());
-            userIds = new int[Math.min(5, result.size())];
+            userIds = new long[Math.min(5, result.size())];
             boolean needDownload = hasAvatarExpectors();
             for (int i = 0; i < userIds.length; i++) {
               TdApi.User user = result.get(i);
@@ -1055,7 +1055,7 @@ public class TdlibContactManager implements CleanupStartupDelegate {
           TdApi.ImportedContacts imported = (TdApi.ImportedContacts) object;
           ArrayList<UnregisteredContact> unregisteredContacts = null;
           int i = 0;
-          for (int userId : imported.userIds) {
+          for (long userId : imported.userIds) {
             if (userId == 0) {
               TdApi.Contact contact = contacts[i];
               int importerCount = imported.importerCount[i];
@@ -1327,7 +1327,7 @@ public class TdlibContactManager implements CleanupStartupDelegate {
           break;
         }
         case ACTION_SET_REGISTERED_CONTACTS: {
-          context.setRegisteredContactsImpl((int[]) msg.obj, msg.arg1, msg.arg2 == 1);
+          context.setRegisteredContactsImpl((long[]) msg.obj, msg.arg1, msg.arg2 == 1);
           break;
         }
       }

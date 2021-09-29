@@ -91,6 +91,20 @@ fun equalsSorted(a: IntArray?, b: IntArray?): Boolean {
   }
   return false
 }
+fun equalsSorted(a: LongArray?, b: LongArray?): Boolean {
+  if (a === b)
+    return true
+  a?.let {
+    b?.let {
+      if (a.size == b.size) {
+        a.sort()
+        b.sort()
+        return a.contentEquals(b)
+      }
+    }
+  }
+  return false
+}
 
 fun IntArray.addElement(item: Int): IntArray {
   val result = this.copyOf(this.size + 1)
@@ -213,6 +227,12 @@ fun <T> asArray(array: SparseArrayCompat<T>, out: Array<T>): Array<T> {
   return out
 }
 fun toArray(list: List<Int>, out: IntArray) {
+  require(list.size == out.size)
+  for (i in list.indices) {
+    out[i] = list[i]
+  }
+}
+fun toArray(list: List<Long>, out: LongArray) {
   require(list.size == out.size)
   for (i in list.indices) {
     out[i] = list[i]

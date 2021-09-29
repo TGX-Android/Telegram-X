@@ -17,7 +17,7 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextPart;
 
 public class TGSourceUser extends TGSource implements TdlibCache.UserDataChangeListener {
-  private final int senderUserId;
+  private final long senderUserId;
   private TdApi.User user;
 
   public TGSourceUser (TGMessage msg, TdApi.MessageForwardOriginUser info) {
@@ -65,10 +65,7 @@ public class TGSourceUser extends TGSource implements TdlibCache.UserDataChangeL
     });
   }
 
-  @Override
-  public void onUserFullUpdated (int userId, TdApi.UserFullInfo userFull) { }
-
-  public int getSenderUserId () {
+  public long getSenderUserId () {
     return senderUserId;
   }
 

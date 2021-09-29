@@ -46,8 +46,8 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
   private final Tdlib tdlib;
 
   private long chatId;
-  private final int userId;
-  private int groupId, channelId;
+  private final long userId;
+  private long groupId, channelId;
 
   private boolean isOnline, ignoreOnline;
 
@@ -86,7 +86,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
     updateSubtitle();
   }
 
-  public DoubleTextWrapper (Tdlib tdlib, int userId, boolean needSubtitle) {
+  public DoubleTextWrapper (Tdlib tdlib, long userId, boolean needSubtitle) {
     this.tdlib = tdlib;
     this.horizontalPadding = Screen.dp(72f) + Screen.dp(11f);
 
@@ -258,7 +258,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
     return chatId;
   }
 
-  public int getUserId () {
+  public long getUserId () {
     return userId;
   }
 
@@ -271,11 +271,11 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
     return user;
   }
 
-  public int getGroupId () {
+  public long getGroupId () {
     return groupId;
   }
 
-  public int getChannelId () {
+  public long getChannelId () {
     return channelId;
   }
 

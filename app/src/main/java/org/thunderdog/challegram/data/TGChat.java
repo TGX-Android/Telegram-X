@@ -70,7 +70,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
   private final TdApi.ChatList chatList;
   @Nullable
   private final TdlibChatList archive;
-  private int dataId;
+  private long dataId;
   private int dataType;
 
   private int currentWidth;
@@ -308,7 +308,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     return tdlib.chat(getChatId());
   }
 
-  public int getChatUserId () {
+  public long getChatUserId () {
     return TD.getUserId(this.chat);
   }
 
@@ -336,15 +336,15 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     }
   }
 
-  public int getPrivateId () {
+  public long getPrivateId () {
     return dataType == TdApi.ChatTypePrivate.CONSTRUCTOR ? dataId : 0;
   }
 
-  public int getGroupId () {
+  public long getGroupId () {
     return dataType == TdApi.ChatTypeBasicGroup.CONSTRUCTOR ? dataId : 0;
   }
 
-  public int getChannelId () {
+  public long getChannelId () {
     return dataType == TdApi.ChatTypeSupergroup.CONSTRUCTOR ? dataId : 0;
   }
 

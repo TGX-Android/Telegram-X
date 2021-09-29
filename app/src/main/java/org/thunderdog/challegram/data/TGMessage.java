@@ -1094,7 +1094,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return isDemoChat() && manager.isDemoGroupChat();
   }
 
-  protected final TdApi.User userForId (int userId) {
+  protected final TdApi.User userForId (long userId) {
     if (!msg.isOutgoing && isDemoChat())
       return manager.demoParticipant(userId);
     else
@@ -2501,7 +2501,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return new TdlibUi.UrlOpenParameters().sourceMessage(this);
   }
 
-  private Text makeName (String authorName, boolean available, boolean isPsa, boolean hideName, int viaBotUserId, int maxWidth, boolean isForward) {
+  private Text makeName (String authorName, boolean available, boolean isPsa, boolean hideName, long viaBotUserId, int maxWidth, boolean isForward) {
     if (maxWidth <= 0)
       return null;
     boolean hasBot = viaBotUserId != 0;
@@ -4051,7 +4051,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return chat;
   }
 
-  public int getChannelId () {
+  public long getChannelId () {
     return ChatId.toSupergroupId(msg.chatId);
   }
 
@@ -4082,7 +4082,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (chat != null) {
       switch (chat.type.getConstructor()) {
         case TdApi.ChatTypePrivate.CONSTRUCTOR: {
-          int userId = ((TdApi.ChatTypePrivate) chat.type).userId;
+          long userId = ((TdApi.ChatTypePrivate) chat.type).userId;
           return tdlib.isSelfUserId(userId) || tdlib.cache().userBot(userId);
         }
       }
@@ -6350,7 +6350,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   // Other
 
-  public static TGMessage valueOf (MessagesManager context, TdApi.Message msg, TdApi.Chat chat, @Nullable SparseArrayCompat<TdApi.ChatAdministrator> chatAdmins) {
+  public static TGMessage valueOf (MessagesManager context, TdApi.Message msg, TdApi.Chat chat, @Nullable LongSparseArray<TdApi.ChatAdministrator> chatAdmins) {
     return valueOf(context, msg, chat, msg.sender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR && chatAdmins != null ? chatAdmins.get(((TdApi.MessageSenderUser) msg.sender).userId) : null);
   }
 
@@ -6412,7 +6412,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         TdApiExt.MessageChatEvent event = (TdApiExt.MessageChatEvent) content;
         switch (event.event.action.getConstructor()) {
           case TdApi.ChatEventMemberJoined.CONSTRUCTOR:
-            content = new TdApi.MessageChatAddMembers(new int[] {event.event.userId});
+            content = new TdApi.MessageChatAddMembers(new long[] {event.event.userId});
             break;
           case TdApi.ChatEventMemberLeft.CONSTRUCTOR:
             content = new TdApi.MessageChatDeleteMember(event.event.userId);

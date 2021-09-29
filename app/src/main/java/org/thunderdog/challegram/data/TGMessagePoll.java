@@ -243,11 +243,11 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
   private static final float VOTER_SPACING = 4f;
 
   private static class UserEntry {
-    private final int userId;
+    private final long userId;
     private final ImageFile avatarFile;
     private final AvatarPlaceholder avatarPlaceholder;
 
-    public UserEntry (Tdlib tdlib, int userId) {
+    public UserEntry (Tdlib tdlib, long userId) {
       this.userId = userId;
       this.avatarFile = tdlib.cache().userAvatar(userId);
       if (this.avatarFile != null) {
@@ -263,7 +263,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
 
     @Override
     public int hashCode() {
-      return userId;
+      return (int) (userId ^ (userId >>> 32));
     }
 
     public void draw (Canvas c, TGMessage context, ComplexReceiver complexReceiver, float cx, float cy, final float alpha) {
@@ -428,7 +428,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
   }
 
   @Override
-  public boolean filterKey (int receiverType, Receiver receiver, int key) {
+  public boolean filterKey (int receiverType, Receiver receiver, long key) {
     if (recentVoters != null) {
       for (ListAnimator.Entry<UserEntry> recentVoter : recentVoters) {
         if (recentVoter.item.userId == key) {
@@ -884,10 +884,10 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     return true;
   }
 
-  private void setRecentVoters (int[] recentVoterUserIds, boolean animated) {
+  private void setRecentVoters (long[] recentVoterUserIds, boolean animated) {
     if (recentVoterUserIds != null && recentVoterUserIds.length > 0) {
       List<UserEntry> entries = new ArrayList<>(recentVoterUserIds.length);
-      for (int userId : recentVoterUserIds) {
+      for (long userId : recentVoterUserIds) {
         entries.add(new UserEntry(tdlib, userId));
       }
       if (this.recentVoters == null)

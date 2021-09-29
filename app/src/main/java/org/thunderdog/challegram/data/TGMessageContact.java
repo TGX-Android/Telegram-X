@@ -30,7 +30,7 @@ public class TGMessageContact extends TGMessage implements TdlibCache.UserDataCh
   private boolean nameFake;
   private String phone;
 
-  private int userId;
+  private long userId;
   private TdApi.User user;
 
   private ImageFile avatar;
@@ -83,9 +83,6 @@ public class TGMessageContact extends TGMessage implements TdlibCache.UserDataCh
       }
     });
   }
-
-  @Override
-  public void onUserFullUpdated (int userId, TdApi.UserFullInfo userFull) { }
 
   private int lastMaxWidth;
 

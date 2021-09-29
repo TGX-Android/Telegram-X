@@ -578,7 +578,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
 
   private void openSavedMessages () {
     final Tdlib tdlib = context.currentTdlib();
-    final int userId = tdlib.myUserId();
+    final long userId = tdlib.myUserId();
     if (userId == 0) {
       return;
     }

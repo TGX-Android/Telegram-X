@@ -127,7 +127,7 @@ public class Test {
         return true;
       }*/
       // Testing typings
-      int userId = tdlib.chatUserId(chat);
+      long userId = tdlib.chatUserId(chat);
       if (userId == 0) {
         userId = Td.getSenderUserId(chat.lastMessage);
       }

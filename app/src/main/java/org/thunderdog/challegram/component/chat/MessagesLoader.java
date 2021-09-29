@@ -9,7 +9,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
-import androidx.collection.SparseArrayCompat;
+import androidx.collection.LongSparseArray;
 
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -442,7 +442,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
     Background.instance().post(() -> {
       List<TdApi.Message> messages = new ArrayList<>();
-      SparseArrayCompat<TdApi.User> participants = new SparseArrayCompat<>();
+      LongSparseArray<TdApi.User> participants = new LongSparseArray<>();
       boolean isGroupChat = fillPreviewMessages(manager.controller(), messages, participants);
 
       manager.setDemoParticipants(participants, isGroupChat);
@@ -543,10 +543,10 @@ public class MessagesLoader implements Client.ResultHandler {
     }
   }
 
-  private static boolean parsePreviewMessages (TdlibDelegate context, List<TdApi.Message> out, SparseArrayCompat<TdApi.User> participants, String json) throws Throwable {
+  private static boolean parsePreviewMessages (TdlibDelegate context, List<TdApi.Message> out, LongSparseArray<TdApi.User> participants, String json) throws Throwable {
     Tdlib tdlib = context.tdlib();
     boolean isGroupChat = false;
-    final int myUserId = tdlib.myUserId();
+    final long myUserId = tdlib.myUserId();
 
     JSONObject chat = null;
     JSONArray chatsArray = new JSONArray(json.startsWith("[") && json.endsWith("]") ? json : "[" + json + "]");
@@ -865,7 +865,7 @@ public class MessagesLoader implements Client.ResultHandler {
     return false;
   }
 
-  private static boolean fillPreviewMessages (TdlibDelegate context, List<TdApi.Message> out, SparseArrayCompat<TdApi.User> participants) {
+  private static boolean fillPreviewMessages (TdlibDelegate context, List<TdApi.Message> out, LongSparseArray<TdApi.User> participants) {
     String json = Lang.getString(R.string.json_ChatDemo);
     if (!StringUtils.isEmpty(json) && !json.equals("0")) {
       try {
@@ -1037,7 +1037,7 @@ public class MessagesLoader implements Client.ResultHandler {
       false, false,
       false, false,
       false, false,
-      false,
+      false, false,
       false, false,
       isChannel,
       false,
@@ -1177,7 +1177,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
     final long chatId, lastReadOutboxMessageId, lastReadInboxMessageId;
     final boolean hasUnreadMessages;
-    final SparseArrayCompat<TdApi.ChatAdministrator> chatAdmins = manager.getChatAdmins();
+    final LongSparseArray<TdApi.ChatAdministrator> chatAdmins = manager.getChatAdmins();
     if (messageThread != null) {
       chatId = messageThread.getChatId();
       lastReadOutboxMessageId = messageThread.getReplyInfo().lastReadOutboxMessageId;
@@ -1214,7 +1214,7 @@ public class MessagesLoader implements Client.ResultHandler {
     final TGMessage topMessage = manager.getAdapter().getTopMessage();
     final long startTop = topMessage != null ? topMessage.getSmallestId() : 0;
 
-    int adminUserId = 0;
+    long adminUserId = 0;
     TdApi.ChatAdministrator administrator = null;
 
     int minIndex = 0;

@@ -266,7 +266,7 @@ fun MessageContent.isSecret (): Boolean {
   }
 }
 
-fun MessageSender?.getSenderUserId (): Int {
+fun MessageSender?.getSenderUserId (): Long {
   return if (this?.constructor == MessageSenderUser.CONSTRUCTOR) {
     (this as MessageSenderUser).userId
   } else {
@@ -274,7 +274,7 @@ fun MessageSender?.getSenderUserId (): Int {
   }
 }
 
-fun Message?.getSenderUserId (): Int {
+fun Message?.getSenderUserId (): Long {
   return this?.sender.getSenderUserId()
 }
 

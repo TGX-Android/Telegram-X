@@ -269,7 +269,7 @@ public class TdlibUi extends Handler {
           boolean reportSpam = result.get(R.id.btn_reportSpam) != 0;
           boolean deleteAll = result.get(R.id.btn_deleteAll) != 0;
 
-          final int senderUserId1 = Td.getSenderUserId(deletingMessages[0]);
+          final long senderUserId1 = Td.getSenderUserId(deletingMessages[0]);
           final long[] messageIds = TD.getMessageIds(deletingMessages).valueAt(0);
 
           if (banUser) {
@@ -1329,7 +1329,7 @@ public class TdlibUi extends Handler {
 
   // Picker users
 
-  private void addToGroup (final TdlibDelegate context, int userId) {
+  private void addToGroup (final TdlibDelegate context, long userId) {
     if (TdlibManager.inBackgroundThread()) {
       tdlib.runOnUiThread(() -> addToGroup(context, userId));
       return;
@@ -1345,7 +1345,7 @@ public class TdlibUi extends Handler {
         if (chat.type.getConstructor() == TdApi.ChatTypePrivate.CONSTRUCTOR) {
           tdlib.client().send(new TdApi.AddChatMember(chat.id, userId, 0), tdlib.okHandler());
         } else if (chat.type.getConstructor() == TdApi.ChatTypeSupergroup.CONSTRUCTOR) {
-          tdlib.client().send(new TdApi.AddChatMembers(chat.id, new int[] {userId}), tdlib.okHandler());
+          tdlib.client().send(new TdApi.AddChatMembers(chat.id, new long[] {userId}), tdlib.okHandler());
         } else {
           return false;
         }
@@ -2209,7 +2209,7 @@ public class TdlibUi extends Handler {
     openChat(context, 0, new TdApi.SearchPublicChat(username), new ChatOpenParameters().keepStack().highlightMessage(messageId).ensureHighlightAvailable().urlOpenParameters(urlOpenParameters));
   }
 
-  public void openSupergroupMessage (final TdlibDelegate context, final int supergroupId, final MessageId messageId, @Nullable UrlOpenParameters urlOpenParameters) {
+  public void openSupergroupMessage (final TdlibDelegate context, final long supergroupId, final MessageId messageId, @Nullable UrlOpenParameters urlOpenParameters) {
     if (messageId != null) {
       openChat(context, 0, new TdApi.CreateSupergroupChat(supergroupId, false), new ChatOpenParameters().keepStack().highlightMessage(messageId).ensureHighlightAvailable().urlOpenParameters(urlOpenParameters));
     } else {
@@ -2243,15 +2243,15 @@ public class TdlibUi extends Handler {
     openChat(context, chatId, new ChatOpenParameters().keepStack().scheduledOnly().highlightMessage(messageId).ensureHighlightAvailable());
   }
 
-  public void openPrivateChat (final TdlibDelegate context, final int userId, final @Nullable ChatOpenParameters openParameters) {
+  public void openPrivateChat (final TdlibDelegate context, final long userId, final @Nullable ChatOpenParameters openParameters) {
     openChat(context, ChatId.fromUserId(userId), new TdApi.CreatePrivateChat(userId, false), openParameters);
   }
 
-  public void openPrivateProfile (final TdlibDelegate context, final int userId, final UrlOpenParameters openParameters) {
+  public void openPrivateProfile (final TdlibDelegate context, final long userId, final UrlOpenParameters openParameters) {
     openChatProfile(context, ChatId.fromUserId(userId), null, new TdApi.CreatePrivateChat(userId, false), openParameters);
   }
 
-  public void startSecretChat (final TdlibDelegate context, final int userId, final boolean allowExisting, final @Nullable ChatOpenParameters params) {
+  public void startSecretChat (final TdlibDelegate context, final long userId, final boolean allowExisting, final @Nullable ChatOpenParameters params) {
     // TODO open existing active secret chat if allowExisting == true
     // TODO progress
     tdlib.client().send(new TdApi.CreateNewSecretChat(userId), object -> {
@@ -2266,23 +2266,23 @@ public class TdlibUi extends Handler {
     });
   }
 
-  public void openSupergroupChat (final TdlibDelegate context, final int supergroupId, final @Nullable ChatOpenParameters params) {
+  public void openSupergroupChat (final TdlibDelegate context, final long supergroupId, final @Nullable ChatOpenParameters params) {
     openChat(context, ChatId.fromSupergroupId(supergroupId), new TdApi.CreateSupergroupChat(supergroupId, false), params);
   }
 
-  public void openLinkedChat (final TdlibDelegate context, final int supergroupId, final @Nullable ChatOpenParameters params) {
+  public void openLinkedChat (final TdlibDelegate context, final long supergroupId, final @Nullable ChatOpenParameters params) {
     openChat(context, 0, new TdApi.GetSupergroupFullInfo(supergroupId), params);
   }
 
-  public void openSupergroupProfile (final TdlibDelegate context, final int supergroupId, final @Nullable UrlOpenParameters openParameters) {
+  public void openSupergroupProfile (final TdlibDelegate context, final long supergroupId, final @Nullable UrlOpenParameters openParameters) {
     openChatProfile(context, ChatId.fromSupergroupId(supergroupId), null, new TdApi.CreateSupergroupChat(supergroupId, false), openParameters);
   }
 
-  public void openBasicGroupChat (final TdlibDelegate context, final int basicGroupId, final @Nullable ChatOpenParameters params) {
+  public void openBasicGroupChat (final TdlibDelegate context, final long basicGroupId, final @Nullable ChatOpenParameters params) {
     openChat(context, ChatId.fromSupergroupId(basicGroupId), new TdApi.CreateBasicGroupChat(basicGroupId, false), params);
   }
 
-  public void openBasicGroupProfile (final TdlibDelegate context, final int supergroupId, final @Nullable UrlOpenParameters openParameters) {
+  public void openBasicGroupProfile (final TdlibDelegate context, final long supergroupId, final @Nullable UrlOpenParameters openParameters) {
     openChatProfile(context, ChatId.fromSupergroupId(supergroupId), null, new TdApi.CreateSupergroupChat(supergroupId, false), openParameters);
   }
 
@@ -2657,7 +2657,7 @@ public class TdlibUi extends Handler {
         break;
       }
       case "privatepost": {
-        int supergroupId = StringUtils.parseInt(uri.getQueryParameter("channel"));
+        long supergroupId = StringUtils.parseInt(uri.getQueryParameter("channel"));
         int messageId = StringUtils.parseInt(uri.getQueryParameter("msg_id"));
         if (supergroupId != 0) {
           if (messageId != 0) {
@@ -3483,7 +3483,7 @@ public class TdlibUi extends Handler {
     }
     boolean needAdd = forceAdd || (ChatId.isBasicGroup(chatId) && status.getConstructor() == TdApi.ChatMemberStatusLeft.CONSTRUCTOR && newStatus.getConstructor() == TdApi.ChatMemberStatusMember.CONSTRUCTOR);
     RunnableBool act = (deleteChat) -> {
-      int myUserId = tdlib.myUserId();
+      long myUserId = tdlib.myUserId();
       if (myUserId != 0) {
         if (needAdd) {
           tdlib.client().send(new TdApi.AddChatMember(chatId, myUserId, 0), tdlib.okHandler());
@@ -3674,7 +3674,7 @@ public class TdlibUi extends Handler {
     };
     switch (ChatId.getType(chatId)) {
       case TdApi.ChatTypePrivate.CONSTRUCTOR: {
-        int userId = ChatId.toUserId(chatId);
+        long userId = ChatId.toUserId(chatId);
         String userName = tdlib.cache().userFirstName(userId);
         boolean deleteAndStop = blockUser && tdlib.isBotChat(chatId);
         showDeleteOrClearHistory(context, chatId,
@@ -4034,7 +4034,7 @@ public class TdlibUi extends Handler {
     final boolean hasSelect = canSelect && onSelect != null;
     if (allowInteractions) {
       if (tdlib.chatAvailable(chat)) {
-        int userId = TD.getUserId(chat);
+        long userId = TD.getUserId(chat);
         if (!tdlib.isSelfUserId(userId)) {
           if (userId != 0) {
             if (Config.CALL_FROM_PREVIEW && tdlib.cache().userGeneral(userId)) {
@@ -5340,7 +5340,7 @@ public class TdlibUi extends Handler {
       if (tdlib.isSelfChat(chatId)) {
         items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendScheduled, Lang.getString(R.string.SendReminder), R.drawable.baseline_date_range_24).bindTutorialFlag(Settings.TUTORIAL_SET_REMINDER));
       } else {
-        int userId = tdlib.chatUserId(chatId);
+        long userId = tdlib.chatUserId(chatId);
         if (userId != 0) {
           items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendOnceOnline, Lang.getString(R.string.SendOnceOnline), R.drawable.baseline_visibility_24).bindToLastSeenAvailability(tdlib, userId));
         }
@@ -5489,11 +5489,11 @@ public class TdlibUi extends Handler {
     return true;
   }
 
-  public void deleteContact (ViewController<?> context, int userId) {
+  public void deleteContact (ViewController<?> context, long userId) {
     if (tdlib.cache().userContact(userId)) {
       context.showOptions(Lang.getStringBold(R.string.DeleteContactConfirm, tdlib.cache().userName(userId)), new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getString(R.string.Delete), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
         if (!context.isDestroyed() && id1 == R.id.btn_delete) {
-          tdlib.client().send(new TdApi.RemoveContacts(new int[] {userId}), tdlib.okHandler());
+          tdlib.client().send(new TdApi.RemoveContacts(new long[] {userId}), tdlib.okHandler());
         }
         return true;
       });

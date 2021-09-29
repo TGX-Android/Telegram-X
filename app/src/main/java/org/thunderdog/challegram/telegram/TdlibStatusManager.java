@@ -46,9 +46,9 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
   }
 
   public static class UserAction {
-    public final int userId;
+    public final long userId;
     public TdApi.ChatAction action;
-    public UserAction (int userId, TdApi.ChatAction action) {
+    public UserAction (long userId, TdApi.ChatAction action) {
       this.userId = userId;
       this.action = action;
     }
@@ -272,7 +272,7 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
       applyChanges(changeFlags);
     }
 
-    public void setAction (int userId, TdApi.ChatAction action) {
+    public void setAction (long userId, TdApi.ChatAction action) {
       int foundIndex = -1;
       int i = 0;
       for (UserAction userAction : actions) {
@@ -289,7 +289,7 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
       applyChanges(changeFlags);
     }
 
-    private int setActionAt (int index, int userId, TdApi.ChatAction action) {
+    private int setActionAt (int index, long userId, TdApi.ChatAction action) {
       boolean isCancel = action.getConstructor() == TdApi.ChatActionCancel.CONSTRUCTOR;
       int changeFlags = 0;
       if (isCancel) {
@@ -614,22 +614,22 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
     throw new IllegalArgumentException(chat.type.toString());
   }
 
-  public String getPrivateChatSubtitle (int userId) {
+  public String getPrivateChatSubtitle (long userId) {
     return getPrivateChatSubtitle(userId, tdlib.cache().user(userId), true, true);
   }
 
-  public String getPrivateChatSubtitle (int userId, @Nullable TdApi.User user, boolean allowMyself) {
+  public String getPrivateChatSubtitle (long userId, @Nullable TdApi.User user, boolean allowMyself) {
     return getPrivateChatSubtitle(userId, user, allowMyself, true);
   }
 
-  public boolean isOnline (int userId) {
+  public boolean isOnline (long userId) {
     if (tdlib.isSelfUserId(userId) || tdlib.isServiceNotificationsChat(ChatId.fromUserId(userId)))
       return false;
     TdApi.User user = tdlib.cache().user(userId);
     return user != null && user.type.getConstructor() == TdApi.UserTypeRegular.CONSTRUCTOR && user.status.getConstructor() == TdApi.UserStatusOnline.CONSTRUCTOR;
   }
 
-  public String getPrivateChatSubtitle (int userId, @Nullable TdApi.User user, boolean allowMyself, boolean allowDuration) {
+  public String getPrivateChatSubtitle (long userId, @Nullable TdApi.User user, boolean allowMyself, boolean allowDuration) {
     if (allowMyself && tdlib.isSelfUserId(userId)) {
       return Lang.lowercase(Lang.getString(R.string.ChatWithYourself));
     }
@@ -660,7 +660,7 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
     return Lang.getUserStatus(tdlib, user.status, allowDuration);
   }
 
-  private CharSequence getBasicGroupChatSubtitle (int basicGroupId) {
+  private CharSequence getBasicGroupChatSubtitle (long basicGroupId) {
     TdApi.BasicGroup group = tdlib.cache().basicGroup(basicGroupId);
     if (group == null || !group.isActive) {
       return Lang.getString(R.string.inactiveGroup);
@@ -673,7 +673,7 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
     }
   }
 
-  private CharSequence getSupergroupChatSubtitle (int supergroupId) {
+  private CharSequence getSupergroupChatSubtitle (long supergroupId) {
     int memberCount = 0;
     TdApi.SupergroupFullInfo supergroupFull = tdlib.cache().supergroupFull(supergroupId, true);
     if (supergroupFull != null) {

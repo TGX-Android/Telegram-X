@@ -142,7 +142,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     return chat != null ? chat.getId() : 0;
   }
 
-  public int getUserId () {
+  public long getUserId () {
     return chat != null && !chat.isSelfChat() ? chat.getUserId() : 0;
   }
 
@@ -170,7 +170,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
         tdlib.listeners().unsubscribeFromChatUpdates(oldChatId, this);
         tdlib.listeners().unsubscribeFromSettingsUpdates(oldChatId, this);
       }
-      int oldUserId = getUserId();
+      long oldUserId = getUserId();
       if (oldUserId != 0) {
         tdlib.cache().unsubscribeFromUserUpdates(oldUserId, this);
       }
@@ -179,7 +179,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
       if (chat != null) {
         updateTextColor();
         updateChat(false);
-        int newUserId = getUserId();
+        long newUserId = getUserId();
         setIsOnline(!chat.isSelfChat() && newUserId != 0 && tdlib.cache().isOnline(newUserId), false);
         if (!chat.noSubscription()) {
           tdlib.listeners().subscribeToChatUpdates(newChatId, this);
@@ -306,7 +306,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
 
   @Override
   @UiThread
-  public void onUserStatusChanged (int userId, TdApi.UserStatus status, boolean uiOnly) {
+  public void onUserStatusChanged (long userId, TdApi.UserStatus status, boolean uiOnly) {
     if (!uiOnly && getUserId() == userId) {
       setIsOnline(TD.isOnline(status), true);
     }

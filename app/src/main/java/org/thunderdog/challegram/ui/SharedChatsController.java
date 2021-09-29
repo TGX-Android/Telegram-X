@@ -178,7 +178,7 @@ public class SharedChatsController extends SharedBaseController<DoubleTextWrappe
   }
 
   @Override
-  public void onBasicGroupFullUpdated (int basicGroupId, TdApi.BasicGroupFullInfo basicGroupFull) {
+  public void onBasicGroupFullUpdated (long basicGroupId, TdApi.BasicGroupFullInfo basicGroupFull) {
     updateChatSubtitle(ChatId.fromBasicGroupId(basicGroupId));
   }
 
@@ -188,7 +188,7 @@ public class SharedChatsController extends SharedBaseController<DoubleTextWrappe
   }
 
   @Override
-  public void onSupergroupFullUpdated (int supergroupId, TdApi.SupergroupFullInfo newSupergroupFull) {
+  public void onSupergroupFullUpdated (long supergroupId, TdApi.SupergroupFullInfo newSupergroupFull) {
     updateChatSubtitle(ChatId.fromSupergroupId(supergroupId));
   }
 }

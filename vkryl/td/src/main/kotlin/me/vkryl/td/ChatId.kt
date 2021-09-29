@@ -4,43 +4,63 @@ package me.vkryl.td
 
 import org.drinkless.td.libcore.telegram.TdApi.*
 
-const val MIN_SECRET_ID = -2002147483648L
-const val ZERO_SECRET_ID = -2000000000000L
-const val MAX_SECRET_ID = -1997852516353L
-const val MIN_CHANNEL_ID = -1002147483647L
-const val MAX_CHANNEL_ID = -1000000000000L
-const val MIN_CHAT_ID = -2147483647L
-const val MAX_USER_ID = 2147483647L
+// the last (1 << 31) - 1 identifiers will be used for secret chat dialog identifiers
+const val MAX_CHANNEL_ID = 1000000000000L - (1L shl 31)
+const val MAX_USER_ID = (1L shl 40) - 1
+const val MAX_GROUP_ID = 999999999999L
+const val ZERO_SECRET_CHAT_ID = -2000000000000L
+const val ZERO_CHANNEL_ID = -1000000000000L
 
 @ChatType.Constructors
 @JvmOverloads
 fun getType (chatId: Long, validate: Boolean = true): Int {
-  return when (chatId) {
-    in 1 .. MAX_USER_ID -> ChatTypePrivate.CONSTRUCTOR
-    in MIN_CHAT_ID .. -1 -> ChatTypeBasicGroup.CONSTRUCTOR
-    in MIN_CHANNEL_ID until MAX_CHANNEL_ID -> ChatTypeSupergroup.CONSTRUCTOR
-    in MIN_SECRET_ID until MAX_SECRET_ID -> ChatTypeSecret.CONSTRUCTOR
-    else -> if (validate) error(chatId.toString()) else 0
+  return when {
+    chatId in 1..MAX_USER_ID -> {
+      ChatTypePrivate.CONSTRUCTOR
+    }
+    chatId < 0 -> when {
+      MAX_GROUP_ID <= chatId -> {
+        ChatTypeBasicGroup.CONSTRUCTOR
+      }
+      ZERO_CHANNEL_ID - MAX_CHANNEL_ID <= chatId && chatId != ZERO_CHANNEL_ID -> {
+        ChatTypeSupergroup.CONSTRUCTOR
+      }
+      ZERO_SECRET_CHAT_ID + Int.MIN_VALUE <= chatId && chatId != ZERO_SECRET_CHAT_ID -> {
+        ChatTypeSecret.CONSTRUCTOR
+      }
+      else -> {
+        if (validate) {
+          error(chatId.toString())
+        }
+        0
+      }
+    }
+    else -> {
+      if (validate) {
+        error(chatId.toString())
+      }
+      0
+    }
   }
 }
 
-fun toUserId (chatId: Long): Int {
-  return if (getType(chatId, false) == ChatTypePrivate.CONSTRUCTOR) chatId.toInt() else 0
+fun toUserId (chatId: Long): Long {
+  return if (getType(chatId, false) == ChatTypePrivate.CONSTRUCTOR) chatId else 0
 }
 fun toSecretChatId (chatId: Long): Int {
-  return if (getType(chatId, false) == ChatTypeSecret.CONSTRUCTOR) (chatId - ZERO_SECRET_ID).toInt() else 0
+  return if (getType(chatId, false) == ChatTypeSecret.CONSTRUCTOR) (chatId - ZERO_SECRET_CHAT_ID).toInt() else 0
 }
-fun toBasicGroupId (chatId: Long): Int {
-  return if (getType(chatId, false) == ChatTypeBasicGroup.CONSTRUCTOR) (-chatId).toInt() else 0
+fun toBasicGroupId (chatId: Long): Long {
+  return if (getType(chatId, false) == ChatTypeBasicGroup.CONSTRUCTOR) -chatId else 0
 }
-fun toSupergroupId (chatId: Long): Int {
-  return if (getType(chatId, false) == ChatTypeSupergroup.CONSTRUCTOR) (MAX_CHANNEL_ID - chatId).toInt() else 0
+fun toSupergroupId (chatId: Long): Long {
+  return if (getType(chatId, false) == ChatTypeSupergroup.CONSTRUCTOR) (ZERO_CHANNEL_ID - chatId) else 0
 }
 
-fun isBasicGroup (chatId: Long): Boolean = toBasicGroupId(chatId) != 0
+fun isBasicGroup (chatId: Long): Boolean = toBasicGroupId(chatId) != 0L
 fun isSecret (chatId: Long): Boolean = toSecretChatId(chatId) != 0
-fun isPrivate (chatId: Long): Boolean = toUserId(chatId) != 0
-fun isSupergroup (chatId: Long): Boolean = toSupergroupId(chatId) != 0
+fun isPrivate (chatId: Long): Boolean = toUserId(chatId) != 0L
+fun isSupergroup (chatId: Long): Boolean = toSupergroupId(chatId) != 0L
 
 fun isUserChat (chatId: Long): Boolean {
   return when (getType(chatId, false)) {
@@ -57,8 +77,8 @@ fun isMultiChat (chatId: Long): Boolean {
   }
 }
 
-fun fromUserId (userId: Int): Long = userId.toLong()
-fun fromBasicGroupId (basicGroupId: Int): Long = (-basicGroupId).toLong()
-fun fromSupergroupId (supergroupId: Int): Long = MAX_CHANNEL_ID - supergroupId.toLong()
-fun fromSecretChatId (secretChatId: Int): Long = ZERO_SECRET_ID + secretChatId.toLong()
+fun fromUserId (userId: Long): Long = userId
+fun fromBasicGroupId (basicGroupId: Long): Long = -basicGroupId
+fun fromSupergroupId (supergroupId: Long): Long = ZERO_CHANNEL_ID - supergroupId;
+fun fromSecretChatId (secretChatId: Int): Long = ZERO_SECRET_CHAT_ID + secretChatId
 

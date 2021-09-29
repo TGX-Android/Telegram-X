@@ -201,7 +201,7 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
     private final DrawerHeaderView context;
     private final TdlibAccount account;
 
-    private final int userId;
+    private final long userId;
     private final String name, phone;
     private ImageFile avatar, avatarFull;
     private final AvatarPlaceholder avatarPlaceholder;

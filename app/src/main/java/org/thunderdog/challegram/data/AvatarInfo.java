@@ -12,7 +12,7 @@ import org.thunderdog.challegram.util.text.Letters;
  */
 public class AvatarInfo {
   public final Tdlib tdlib;
-  public final int userId;
+  public final long userId;
   public ImageFile imageFile;
 
   public int avatarColorId;
@@ -20,7 +20,7 @@ public class AvatarInfo {
 
   public float lettersWidth15dp;
 
-  public AvatarInfo (Tdlib tdlib, int userId) {
+  public AvatarInfo (Tdlib tdlib, long userId) {
     this.tdlib = tdlib;
     this.userId = userId;
     updateUser();

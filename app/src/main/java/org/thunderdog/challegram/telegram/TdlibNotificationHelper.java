@@ -279,7 +279,7 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
     displayNotificationGroup(group, needNotification, notificationSettingsChatId);
   }
 
-  public void onNotificationChannelGroupReset (int accountUserId) {
+  public void onNotificationChannelGroupReset (long accountUserId) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       if (tdlib.notifications().resetChannelCache(accountUserId)) {
         rebuild();
@@ -307,7 +307,7 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
 
   public boolean isEmpty () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      int accountUserId = tdlib.myUserId(true);
+      long accountUserId = tdlib.myUserId(true);
       if (accountUserId != 0) {
         try {
           TdlibNotificationChannelGroup channelGroup = tdlib.notifications().getChannelCache();

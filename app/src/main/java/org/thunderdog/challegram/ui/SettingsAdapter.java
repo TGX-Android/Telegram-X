@@ -1500,7 +1500,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
               if (item.getData() instanceof Tdlib) {
                 tdlib = (Tdlib) item.getData();
               }
-              avatarView.setUser(tdlib, item.getIntValue(), false);
+              avatarView.setUser(tdlib, item.getLongValue(), false);
             }
             break;
           }

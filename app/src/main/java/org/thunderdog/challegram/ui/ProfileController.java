@@ -308,7 +308,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
   }
 
-  private void replaceWithSupergroup (int supergroupId) {
+  private void replaceWithSupergroup (long supergroupId) {
     if (isDestroyed())
       return;
     if (mode != MODE_EDIT_GROUP && mode != MODE_GROUP)
@@ -559,7 +559,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     boolean isBot = user.type.getConstructor() == TdApi.UserTypeBot.CONSTRUCTOR;
-    final int myUserId = tdlib.myUserId();
+    final long myUserId = tdlib.myUserId();
 
     if (!isBot && user.id == myUserId && user.id != 0) {
       showMore(new int[] {R.id.more_btn_edit}, new String[] {Lang.getString(R.string.EditName)}, 0);
@@ -4147,7 +4147,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
   }
 
-  private boolean canKickMember (int userId) {
+  private boolean canKickMember (long userId) {
     switch (mode) {
       case MODE_GROUP: {
         if (membersAdapter == null || tdlib.isSelfUserId(userId) || groupFull == null) {
@@ -4157,7 +4157,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         if (member == null || TD.isCreator(member.status)) {
           return false;
         }
-        int meId = tdlib.myUserId();
+        long meId = tdlib.myUserId();
         return TD.isCreator(group.status) || groupFull.creatorUserId == meId || member.inviterUserId == meId ||
           (TD.isAdmin(group.status) && !TD.isAdmin(member.status));
       }
@@ -4171,7 +4171,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           return false;
         }
 
-        int meId = tdlib.myUserId();
+        long meId = tdlib.myUserId();
         return TD.isCreator(supergroup.status) || member.inviterUserId == meId ||
           (TD.isAdmin(supergroup.status) && !TD.isAdmin(member.status));
 
@@ -5494,7 +5494,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   @Override
-  public void onUserFullUpdated (final int userId, TdApi.UserFullInfo userFull) {
+  public void onUserFullUpdated (final long userId, TdApi.UserFullInfo userFull) {
     processUserFull(userFull);
   }
 
@@ -5505,7 +5505,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @UiThread
   @Override
-  public void onUserStatusChanged (final int userId, TdApi.UserStatus status, boolean uiOnly) {
+  public void onUserStatusChanged (final long userId, TdApi.UserStatus status, boolean uiOnly) {
     switch (mode) {
       case MODE_USER:
       case MODE_SECRET: {
@@ -5659,7 +5659,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   @Override
-  public void onBasicGroupFullUpdated (final int basicGroupId, final TdApi.BasicGroupFullInfo basicGroupFull) {
+  public void onBasicGroupFullUpdated (final long basicGroupId, final TdApi.BasicGroupFullInfo basicGroupFull) {
     processGroupFull(basicGroupFull);
   }
 
@@ -5792,7 +5792,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   @Override
-  public void onSupergroupFullUpdated (final int supergroupId, final TdApi.SupergroupFullInfo newSupergroupFull) {
+  public void onSupergroupFullUpdated (final long supergroupId, final TdApi.SupergroupFullInfo newSupergroupFull) {
     processChannelFull(newSupergroupFull);
   }
 

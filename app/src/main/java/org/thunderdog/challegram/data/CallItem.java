@@ -22,7 +22,7 @@ import me.vkryl.core.DateUtils;
 
 public class CallItem {
   private final ArrayList<TdApi.Message> messages;
-  private final int userId;
+  private final long userId;
 
   public CallItem (Tdlib tdlib, TdApi.Message message) {
     this.messages = new ArrayList<>();
@@ -30,7 +30,7 @@ public class CallItem {
     this.userId = tdlib.calleeUserId(message);
   }
 
-  public int getUserId () {
+  public long getUserId () {
     return userId;
   }
 

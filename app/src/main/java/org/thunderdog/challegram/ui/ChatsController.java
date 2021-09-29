@@ -383,6 +383,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   private long initializationTime;
+  private boolean listInitalized;
 
   private ItemTouchHelper touchHelper;
   private LiveLocationHelper liveLocationHelper;
@@ -526,9 +527,10 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     TGLegacyManager.instance().addEmojiListener(this);
 
     list.initializeList(filter, this, this::displayChats, chatsView.getInitialLoadCount(), () ->
-      runOnUiThreadOptional(() ->
-        executeScheduledAnimation()
-      )
+      runOnUiThreadOptional(() -> {
+        this.listInitalized = true;
+        executeScheduledAnimation();
+      })
     );
 
     if (isBaseController()) {
@@ -1554,9 +1556,9 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
             break;
           case R.id.more_btn_block:
           case R.id.more_btn_unblock:
-            Set<Integer> userIds = new HashSet<>();
+            Set<Long> userIds = new HashSet<>();
             for (int i = 0; i < selectedChats.size(); i++) {
-              int userId = tdlib.chatUserId(selectedChats.valueAt(i));
+              long userId = tdlib.chatUserId(selectedChats.valueAt(i));
               userIds.add(userId);
               if (tdlib.cache().userBot(userId)) {
                 botCount++;
@@ -2342,7 +2344,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   private CharSequence makeContactsDesc () {
-    int[] userIds = tdlib.contacts().getRegisteredUserIds();
+    long[] userIds = tdlib.contacts().getRegisteredUserIds();
     int count = tdlib.contacts().getAvailableRegisteredCount();
     switch (count) {
       case 1:
@@ -2388,7 +2390,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   private CancellableRunnable scheduledUserIdsChange;
 
   @Override
-  public void onRegisteredContactsChanged (final int[] userIds, final int totalCount, boolean newArrival) {
+  public void onRegisteredContactsChanged (final long[] userIds, final int totalCount, boolean newArrival) {
     if (isDestroyed()) {
       return;
     }
@@ -2416,7 +2418,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     }
   }
 
-  private void setUserIds (int[] userIds, int totalCount, boolean animated) {
+  private void setUserIds (long[] userIds, int totalCount, boolean animated) {
     int i = noChatsAdapter.indexOfViewById(R.id.inviteFriendsText);
     if (i != -1) {
       ListItem item = noChatsAdapter.getItems().get(i);
@@ -2452,7 +2454,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public boolean needAsynchronousAnimation () {
-    return adapter == null || (list.isLoading() && list.count(filter) == 0);
+    return !listInitalized;
   }
 
   @Override
@@ -2810,9 +2812,6 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   @Override
-  public void onSupergroupFullUpdated (int supergroupId, TdApi.SupergroupFullInfo newSupergroupFull) { }
-
-  @Override
   public void onBasicGroupUpdated (final TdApi.BasicGroup basicGroup, boolean migratedToSupergroup) {
     if (!TD.isMember(basicGroup.status)) {
       runOnUiThreadOptional(() -> {
@@ -2820,9 +2819,6 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       });
     }
   }
-
-  @Override
-  public void onBasicGroupFullUpdated (int basicGroupId, TdApi.BasicGroupFullInfo basicGroupFull) { }
 
   @Override
   public void onUserUpdated (final TdApi.User user) {
@@ -2834,7 +2830,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   @Override
-  public void onUserStatusChanged (int userId, TdApi.UserStatus status, boolean uiOnly) {
+  public void onUserStatusChanged (long userId, TdApi.UserStatus status, boolean uiOnly) {
     if (chatsView != null) {
       chatsView.updateUserStatus(userId);
     }

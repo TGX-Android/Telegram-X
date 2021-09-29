@@ -22,6 +22,7 @@ import org.thunderdog.challegram.telegram.PollListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.telegram.UserListManager;
+import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.v.CustomRecyclerView;
@@ -119,9 +120,9 @@ public class PollResultsController extends RecyclerViewController<PollResultsCon
     }
 
     @Override
-    public void onItemsAdded (ListManager<Integer> list, List<Integer> items, int startIndex, boolean isInitialChunk) {
+    public void onItemsAdded (ListManager<Long> list, List<Long> items, int startIndex, boolean isInitialChunk) {
       List<ListItem> itemsToAdd = new ArrayList<>(items.size());
-      for (int userId : items) {
+      for (long userId : items) {
         itemsToAdd.add(new ListItem(ListItem.TYPE_CHAT_VERTICAL, R.id.user).setData(new TGFoundChat(tdlib, userId).setNoUnread()).setLongId(ChatId.fromUserId(userId)));
       }
       adapter.getItems().addAll(startIndex, itemsToAdd);
@@ -132,7 +133,7 @@ public class PollResultsController extends RecyclerViewController<PollResultsCon
     }
 
     @Override
-    public void onItemAdded (ListManager<Integer> list, Integer userId, int toIndex) {
+    public void onItemAdded (ListManager<Long> list, Long userId, int toIndex) {
       adapter.addItem(toIndex, new ListItem(ListItem.TYPE_CHAT_VERTICAL).setData(new TGFoundChat(tdlib, userId).setNoUnread()).setLongId(ChatId.fromUserId(userId)));
       if (NEED_CENTER_DECORATION) {
         adapter.invalidateItemDecorations();
@@ -140,7 +141,7 @@ public class PollResultsController extends RecyclerViewController<PollResultsCon
     }
 
     @Override
-    public void onItemChanged (ListManager<Integer> list, Integer item, int index, int cause) {
+    public void onItemChanged (ListManager<Long> list, Long item, int index, int cause) {
       // Do nothing
     }
   }
@@ -222,7 +223,7 @@ public class PollResultsController extends RecyclerViewController<PollResultsCon
             view.setTextSize(15f);
             view.setPadding(Screen.dp(16f), Screen.dp(6f), Screen.dp(16f), Screen.dp(6f));
             view.setTextColorId(R.id.theme_color_background_text);
-            ViewSupport.setThemedBackground(view, 0, PollResultsController.this);
+            ViewSupport.setThemedBackground(view, ThemeColorId.NONE, PollResultsController.this);
             break;
           }
         }

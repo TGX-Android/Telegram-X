@@ -567,7 +567,7 @@ public class CallListController extends RecyclerViewController<Void> implements
       return null;
     }
 
-    final int userId;
+    final long userId;
     final long chatId;
     final CallItem call;
     final TGFoundChat chat;
