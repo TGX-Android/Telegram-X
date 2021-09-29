@@ -3288,7 +3288,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private boolean hasTtlChanges () {
     int originalSlowMode = chat != null ? chat.messageTtlSetting : 0;
-    return ttlItem != null && originalSlowMode != TdConstants.SLOW_MODE_OPTIONS[ttlItem.getSliderValue()];
+    return ttlItem != null && originalSlowMode != TdConstants.CHAT_TTL_OPTIONS[ttlItem.getSliderValue()];
   }
 
   @Override
