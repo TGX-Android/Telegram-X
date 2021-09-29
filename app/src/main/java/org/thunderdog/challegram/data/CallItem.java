@@ -51,6 +51,14 @@ public class CallItem {
     return messageIds;
   }
 
+  public boolean canBeDeletedForAllUsers () {
+    for (TdApi.Message message : messages) {
+      if (!message.canBeDeletedForAllUsers)
+        return false;
+    }
+    return true;
+  }
+
   public int getRevokeCount () {
     int count = 0;
     for (TdApi.Message message : messages) {

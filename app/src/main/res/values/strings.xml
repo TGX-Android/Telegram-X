@@ -2488,7 +2488,7 @@
   <string name="c_seekEmpty">Not yet downloaded part of the file.</string>
   <string name="c_seekReady">Downloaded part of the file.</string>
   <string name="c_seekDone">Playback progress of the file.</string>
-  <string name="c_promo">New trending sticker set.</string>
+  <string name="c_promo">New trending sticker set</string>
   <string name="c_statusBarLegacy">Used on **Android&#160;5.x** and lower.</string>
 
   <string name="p_parentTheme">Default values are inherited from this theme when a color or property is not explicitly set.</string>
@@ -3749,7 +3749,7 @@
   <string name="NoRightDisallowPin">All members can pin messages in this chat.</string>
 
   <string name="CopyBankCard">Copy card number</string>
-  <string name="CopiedBankCard">Card number has been copied to the clipboard</string>
+  <string name="CopiedBankCard">Card number copied to the clipboard</string>
 
   <string name="ChoosingSticker">choosing a sticker</string>
   <string name="IsChoosingSticker">%1$s is choosing a sticker</string>
