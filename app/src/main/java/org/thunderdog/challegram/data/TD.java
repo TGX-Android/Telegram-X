@@ -2192,6 +2192,8 @@ public class TD {
       case "PEER_FLOOD": res = R.string.NobodyLikesSpam2; break;
       case "STICKERSET_INVALID": res = R.string.error_STICKERSET_INVALID; break;
       case "CHANNELS_TOO_MUCH": res = R.string.error_CHANNELS_TOO_MUCH; break;
+      case "BOTS_TOO_MUCH": res = R.string.error_BOTS_TOO_MUCH; break;
+      case "ADMINS_TOO_MUCH": res = R.string.error_ADMINS_TOO_MUCH; break;
       case "Not enough rights to invite members to the group chat": res = R.string.YouCantInviteMembers; break;
       case "Message must be non-empty": res = R.string.MessageInputEmpty; break;
       case "Not Found": res = R.string.error_NotFound; break;

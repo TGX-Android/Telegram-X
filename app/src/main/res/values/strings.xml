@@ -2693,6 +2693,8 @@
   <string name="errorPrivacyAddMember">Sorry, the user restricted who can add them to chats in their privacy settings.</string>
   <string name="UserPrivacyRestricted">Sorry, the user restricted this action in their privacy settings.</string>
   <string name="NobodyLikesSpam2">Sorry, you can interact only with mutual contacts at the moment.</string> <!--PEER_FLOOD-->
+  <string name="error_BOTS_TOO_MUCH">Sorry, this group contains too many bots. Please remove one of your existing ones first.</string>
+  <string name="error_ADMINS_TOO_MUCH">Sorry, this group contains too many admins. Please remove one of your existing ones first.</string>
 
   <string name="NotificationImportance">Notification Style</string>
   <string name="NotificationImportanceHigh">Sound and pop-up</string>
