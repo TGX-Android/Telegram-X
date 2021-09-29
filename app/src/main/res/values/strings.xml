@@ -3755,6 +3755,8 @@
   <string name="IsChoosingSticker">%1$s is choosing a sticker</string>
   <string name="AreChoosingSticker">%1$s are choosing stickers</string>
 
+  <string name="QDeleteCallFromRecent">Delete call from recent?</string>
+
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
   <string name="suggested_language_code_plural" />
