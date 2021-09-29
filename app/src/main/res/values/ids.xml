@@ -66,6 +66,7 @@
   <item type="id" name="menu_btn_stopwatch" />
   <item type="id" name="menu_btn_call" />
   <item type="id" name="menu_btn_share" />
+  <item type="id" name="menu_btn_unpinAll" />
 
   <item type="id" name="menu_btn_masks" />
   <item type="id" name="menu_btn_pictureInPicture" />
