@@ -4308,7 +4308,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private boolean canEditSelectedMessages () {
     TdApi.Message msg = getSingleSelectedMessage();
-    return pagerScrollPosition == 0 && msg != null && msg.canBeEdited && TD.canEditText(msg.content);
+    return !arePinnedMessages() && pagerScrollPosition == 0 && msg != null && msg.canBeEdited && TD.canEditText(msg.content);
   }
 
   private boolean canShareSelectedMessages () {
