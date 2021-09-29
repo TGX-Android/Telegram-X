@@ -65,7 +65,7 @@ public class Test {
 
   // public static boolean HIDE_PHONE_NUMBER = false;
 
-  public static final boolean NEED_CLICK = BuildConfig.DEBUG;
+  public static final boolean NEED_CLICK = false;
   public static final String CLICK_NAME = "Run test";
 
   public static TdApi.ChatAction testAction;
@@ -110,13 +110,6 @@ public class Test {
   }
 
   public static boolean onChatClick (Tdlib tdlib, TdApi.Chat chat) {
-    if (true) {
-      /*for (TdApi.ChatPosition position : chat.positions) {
-        TdApi.ChatPosition newPosition = new TdApi.ChatPosition(position.list, 0, false, null);
-        tdlib.sendFakeUpdate(new TdApi.UpdateChatPosition(chat.id, newPosition), false);
-      }*/
-      return false;
-    }
     if (BuildConfig.DEBUG) {
       /*if (true) {
         if (!tdlib.isChannelChat(chat) || !TD.isAdmin(tdlib.chatStatus(chat.id)))
