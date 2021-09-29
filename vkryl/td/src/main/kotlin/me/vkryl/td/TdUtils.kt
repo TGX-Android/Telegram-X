@@ -285,11 +285,22 @@ fun Message?.getMessageAuthorId(allowForward: Boolean = true): Long {
   if (allowForward) {
     val forwardInfo = this.forwardInfo
     if (forwardInfo != null) {
-      when (forwardInfo.origin.constructor) {
-        MessageForwardOriginUser.CONSTRUCTOR -> return fromUserId((forwardInfo.origin as MessageForwardOriginUser).senderUserId)
-        MessageForwardOriginChannel.CONSTRUCTOR -> return (forwardInfo.origin as MessageForwardOriginChannel).chatId
-        MessageForwardOriginChat.CONSTRUCTOR -> return (forwardInfo.origin as MessageForwardOriginChat).senderChatId
-        MessageForwardOriginHiddenUser.CONSTRUCTOR -> { /*proceed with fallback*/
+      return when (forwardInfo.origin.constructor) {
+        MessageForwardOriginUser.CONSTRUCTOR -> {
+          fromUserId((forwardInfo.origin as MessageForwardOriginUser).senderUserId)
+        }
+        MessageForwardOriginChannel.CONSTRUCTOR -> {
+          (forwardInfo.origin as MessageForwardOriginChannel).chatId
+        }
+        MessageForwardOriginChat.CONSTRUCTOR -> {
+          (forwardInfo.origin as MessageForwardOriginChat).senderChatId
+        }
+        MessageForwardOriginHiddenUser.CONSTRUCTOR,
+        MessageForwardOriginMessageImport.CONSTRUCTOR -> {
+          0
+        }
+        else -> {
+          TODO(forwardInfo.origin.toString())
         }
       }
     }

@@ -276,6 +276,10 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     return !StringUtils.isEmpty(forcedTitle) ? forcedTitle : message != null ? tdlib.senderName(message, true, false) : null;
   }
 
+  private boolean needBoldTitle () {
+    return !StringUtils.isEmpty(forcedTitle) || (message != null && Td.getMessageAuthorId(message, true) != 0);
+  }
+
   private void buildTitleText (int availWidth, boolean animated) {
     String title = getTitle();
     Text newText;
@@ -289,7 +293,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
       ).viewProvider(viewProvider)
        .singleLine()
        .allClickable()
-       .allBold()
+       .allBold(needBoldTitle())
        .build();
     } else {
       newText = null;
