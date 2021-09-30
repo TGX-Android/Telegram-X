@@ -491,11 +491,16 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         lastActiveLinkIdx = adapter.indexOfViewByData(inviteLinks.get(inviteLinks.size() - 1)) + 1;
       } else {
         // find the "Create Link" instead
-        lastActiveLinkIdx = adapter.indexOfViewById(R.id.btn_createInviteLink) + 2;
+        if (adapter.indexOfViewById(R.id.btn_createInviteLink) == -1) {
+          // Viewing other admin, so "Create button" is not available - using a hint as index then
+          lastActiveLinkIdx = adapter.indexOfViewByType(ListItem.TYPE_DESCRIPTION) + 3;
+        } else {
+          lastActiveLinkIdx = adapter.indexOfViewById(R.id.btn_createInviteLink) + 2;
+        }
       }
 
       lastActiveLinkIdx += 1; // include the shadow
-
+      
       ListItem[] arr = new ListItem[]{
         new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.RevokedInviteLinks),
         new ListItem(ListItem.TYPE_SHADOW_TOP),
