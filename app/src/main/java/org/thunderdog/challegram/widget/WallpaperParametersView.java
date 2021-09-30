@@ -2,19 +2,15 @@ package org.thunderdog.challegram.widget;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.text.TextPaint;
-import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.Theme;
@@ -24,15 +20,15 @@ import org.thunderdog.challegram.tool.Screen;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
-import me.vkryl.core.ColorUtils;
+import me.vkryl.android.util.ClickHelper;
 
-public class WallpaperParametersView extends View {
+public class WallpaperParametersView extends View implements ClickHelper.Delegate {
     private WallpaperParametersListener listener;
     private boolean isInitialBlur;
-    private boolean isBlurClicked;
 
     private final Paint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
     private final RectF blurRect = new RectF();
+    private final ClickHelper helper = new ClickHelper(this);
 
     private final BoolAnimator isBlurEnabled = new BoolAnimator(0, (id, factor, fraction, callee) -> {
         if (listener != null) listener.onBlurValueChanged(isInitialBlur ? 1f - factor : factor);
@@ -86,23 +82,20 @@ public class WallpaperParametersView extends View {
     }
 
     @Override
-    public boolean onTouchEvent (MotionEvent event) {
-        switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN: {
-                return isBlurClicked = blurRect.contains(event.getX(), event.getY());
-            }
+    public boolean onTouchEvent(MotionEvent event) {
+        return helper.onTouchEvent(this, event);
+    }
 
-            case MotionEvent.ACTION_UP: {
-                if (isBlurClicked) {
-                    isBlurClicked = false;
-                    isBlurEnabled.toggleValue(true);
-                }
+    @Override
+    public boolean needClickAt (View view, float x, float y) {
+        return blurRect.contains(x, y);
+    }
 
-                break;
-            }
+    @Override
+    public void onClickAt (View view, float x, float y) {
+        if (blurRect.contains(x, y)) {
+            isBlurEnabled.toggleValue(true);
         }
-
-        return super.onTouchEvent(event);
     }
 
     public interface WallpaperParametersListener {
