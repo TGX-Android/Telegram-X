@@ -3712,9 +3712,12 @@
   <string name="RevokedInviteLinks">Revoked Links</string>
   <string name="OtherAdminsInviteLinks">Links created by other admins</string>
   <string name="InviteLinkNoJoins">no one joined</string>
-  <string name="InviteLinkJoins">%s joined</string>
-  <string name="InviteLinkRemains">%s remaining</string>
-  <string name="InviteLinkCanJoin">%s can join</string>
+  <string name="InviteLinkJoins_one">%1$s joined</string>
+  <string name="InviteLinkJoins_other">%1$s joined</string>
+  <string name="InviteLinkRemains_one">%1$s remaining</string>
+  <string name="InviteLinkRemains_other">%1$s remaining</string>
+  <string name="InviteLinkCanJoin_one">%1$s can join</string>
+  <string name="InviteLinkCanJoin_other">%1$s can join</string>
   <string name="InviteLinkExpired">expired</string>
   <string name="InviteLinkRevoked">revoked</string>
   <string name="InviteLinkExpires">expires in %s</string>
