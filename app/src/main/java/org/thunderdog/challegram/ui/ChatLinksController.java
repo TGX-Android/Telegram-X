@@ -535,6 +535,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     }
 
     if (adminUserId != tdlib.myUserId() && inviteLinks.size() == 1) {
+      if (revokedInviteLink.isPrimary) return;
       // No additional links left, we can also remove header
       adapter.removeRange(adapter.indexOfViewById(R.id.btn_inviteLink) + 3, 3);
     }
