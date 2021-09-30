@@ -3726,7 +3726,7 @@
   <string name="InviteLinkExpires_seconds_other">expires in %1$s seconds</string>
   <string name="InviteLinkExpires_minutes_one">expires in %1$s minute</string>
   <string name="InviteLinkExpires_minutes_other">expires in %1$s minutes</string>
-  <string name="InviteLinkExpires_one">expires in %1$s hour</string>
+  <string name="InviteLinkExpires_hours_one">expires in %1$s hour</string>
   <string name="InviteLinkExpires_hours_other">expires in %1$s hours</string>
   <string name="InviteLinkExpires_today">expires at %1$s</string>
   <string name="InviteLinkExpires_tomorrow">expires tomorrow at %1$s</string>
