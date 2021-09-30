@@ -14,71 +14,70 @@ import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeInvalidateListener;
-import org.thunderdog.challegram.tool.Screen;
 
 import me.vkryl.core.lambda.Destroyable;
 
 public class EmbeddableStickerView extends LinearLayout implements ThemeInvalidateListener, Destroyable {
-    private final StickerSmallView stickerSmallView;
-    private final TextView captionTextView;
+  private final StickerSmallView stickerSmallView;
+  private final TextView captionTextView;
 
-    public EmbeddableStickerView (Context context) {
-        this(context, null, 0);
-    }
+  public EmbeddableStickerView (Context context) {
+    this(context, null, 0);
+  }
 
-    public EmbeddableStickerView (Context context, @Nullable AttributeSet attrs) {
-        this(context, attrs, 0);
-    }
+  public EmbeddableStickerView (Context context, @Nullable AttributeSet attrs) {
+    this(context, attrs, 0);
+  }
 
-    public EmbeddableStickerView (Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-        setOrientation(LinearLayout.VERTICAL);
+  public EmbeddableStickerView (Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+    super(context, attrs, defStyleAttr);
+    setOrientation(LinearLayout.VERTICAL);
 
-        stickerSmallView = new StickerSmallView(context);
+    stickerSmallView = new StickerSmallView(context);
 
-        stickerSmallView.setLayoutParams(LayoutHelper.createLinear(128, 128, Gravity.CENTER_HORIZONTAL, 0, 8, 0,0));
-        addView(stickerSmallView);
+    stickerSmallView.setLayoutParams(LayoutHelper.createLinear(128, 128, Gravity.CENTER_HORIZONTAL, 0, 8, 0, 0));
+    addView(stickerSmallView);
 
-        captionTextView = new TextView(context);
-        captionTextView.setGravity(Gravity.CENTER_HORIZONTAL);
-        captionTextView.setTextSize(14);
-        addView(captionTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 16, 16, 8, 16, 8));
+    captionTextView = new TextView(context);
+    captionTextView.setGravity(Gravity.CENTER_HORIZONTAL);
+    captionTextView.setTextSize(14);
+    addView(captionTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 16, 16, 8, 16, 8));
 
-        recolor();
-    }
+    recolor();
+  }
 
-    public void recolor () {
-        captionTextView.setTextColor(Theme.textDecentColor());
-    }
+  public void recolor () {
+    captionTextView.setTextColor(Theme.textDecentColor());
+  }
 
-    public void attach () {
-        stickerSmallView.attach();
-    }
+  public void attach () {
+    stickerSmallView.attach();
+  }
 
-    public void detach () {
-        stickerSmallView.detach();
-    }
+  public void detach () {
+    stickerSmallView.detach();
+  }
 
-    public void setCaptionText (String text) {
-        captionTextView.setText(text);
-    }
+  public void setCaptionText (String text) {
+    captionTextView.setText(text);
+  }
 
-    public void init (Tdlib tdlib) {
-        stickerSmallView.init(tdlib);
-    }
+  public void init (Tdlib tdlib) {
+    stickerSmallView.init(tdlib);
+  }
 
-    public void setSticker (TGStickerObj tgStickerObj) {
-        stickerSmallView.setSticker(tgStickerObj);
-    }
+  public void setSticker (TGStickerObj tgStickerObj) {
+    stickerSmallView.setSticker(tgStickerObj);
+  }
 
-    @Override
-    public void performDestroy () {
-        stickerSmallView.performDestroy();
-    }
+  @Override
+  public void performDestroy () {
+    stickerSmallView.performDestroy();
+  }
 
-    @Override
-    public void onThemeInvalidate (boolean isTempUpdate) {
-        recolor();
-        invalidate();
-    }
+  @Override
+  public void onThemeInvalidate (boolean isTempUpdate) {
+    recolor();
+    invalidate();
+  }
 }
