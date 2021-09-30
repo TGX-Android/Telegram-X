@@ -607,7 +607,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
     if (showAdditionalLinks) {
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AdditionalInviteLinksHint));
+      if (!viewingOtherAdmin) items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AdditionalInviteLinksHint));
     }
 
     if (!inviteLinksRevoked.isEmpty()) {
