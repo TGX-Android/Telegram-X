@@ -115,6 +115,7 @@
   <item type="id" name="controller_simplePager" />
   <item type="id" name="controller_logOut" />
   <item type="id" name="controller_editLanguage" />
+  <item type="id" name="controller_editChatLink" />
   <item type="id" name="controller_strings" />
   <item type="id" name="controller_editPhone" />
   <item type="id" name="controller_request" />
@@ -210,6 +211,9 @@
   <item type="id" name="controller_media_contacts" />
   <item type="id" name="controller_media_location" />
   <item type="id" name="controller_media_inlineBots" />
+  <item type="id" name="controller_backgroundGrid" />
+  <item type="id" name="controller_chatLinks" />
+  <item type="id" name="controller_chatLinkMembers" />
 
   <item type="id" name="separator" />
 
@@ -708,6 +712,14 @@
   <item type="id" name="btn_reverseOrder" />
   <item type="id" name="btn_showInPlaylist" />
   <item type="id" name="btn_revokeLink" />
+  <item type="id" name="btn_deleteLink" />
+  <item type="id" name="btn_deleteAllRevokedLinks" />
+  <item type="id" name="btn_createInviteLink" />
+  <item type="id" name="btn_viewInviteLinkMembers" />
+  <item type="id" name="btn_openAdminInviteLinks" />
+  <item type="id" name="btn_inviteLinkUserLimit" />
+  <item type="id" name="btn_inviteLinkUserSlider" />
+  <item type="id" name="btn_inviteLinkDateLimit" />
   <item type="id" name="btn_saveGif" />
   <item type="id" name="btn_stickers" />
   <item type="id" name="btn_stickerSetInfo" />

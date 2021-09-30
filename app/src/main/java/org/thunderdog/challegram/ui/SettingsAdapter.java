@@ -34,6 +34,7 @@ import org.thunderdog.challegram.component.base.TogglerView;
 import org.thunderdog.challegram.component.chat.MessagePreviewView;
 import org.thunderdog.challegram.component.inline.CustomResultView;
 import org.thunderdog.challegram.component.sharedmedia.MediaSmallView;
+import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
@@ -65,6 +66,7 @@ import org.thunderdog.challegram.widget.ChartLayout;
 import org.thunderdog.challegram.widget.CheckBox;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.DoubleTextView;
+import org.thunderdog.challegram.widget.EmbeddableStickerView;
 import org.thunderdog.challegram.widget.EmptySmartView;
 import org.thunderdog.challegram.widget.FileProgressComponent;
 import org.thunderdog.challegram.widget.JoinedUsersView;
@@ -374,6 +376,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
   }
 
   protected void setUser (ListItem item, int position, UserView userView, boolean isUpdate) {
+    // Override
+  }
+
+  protected void setEmbedSticker (ListItem item, int position, EmbeddableStickerView userView, boolean isUpdate) {
     // Override
   }
 
@@ -1410,6 +1416,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       }
       case ListItem.TYPE_USER: {
         setUser(item, position, (UserView) holder.itemView, false);
+        break;
+      }
+      case ListItem.TYPE_EMBED_STICKER: {
+        setEmbedSticker(item, position, (EmbeddableStickerView) holder.itemView, false);
         break;
       }
       case ListItem.TYPE_INFO: {

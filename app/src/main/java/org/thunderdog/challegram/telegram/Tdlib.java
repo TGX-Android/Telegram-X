@@ -406,6 +406,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private final HashMap<String, TdlibChatList> chatLists = new HashMap<>();
   private final StickerSet
     animatedEmoji = new StickerSet(AnimatedEmojiListener.TYPE_EMOJI, "animatedemojies", false),
+    utyan = new StickerSet(AnimatedEmojiListener.TYPE_EMOJI, "utyan", false),
     // animatedTgxEmoji = new StickerSet(AnimatedEmojiListener.TYPE_TGX, "AnimatedTgxEmojies", false),
     animatedDiceExplicit = new StickerSet(AnimatedEmojiListener.TYPE_DICE, "BetterDice", true);
   private final HashSet<Long> knownChatIds = new HashSet<>();
@@ -5538,6 +5539,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     pendingMessageTexts.clear();
     pendingMessageCaptions.clear();
     animatedEmoji.clear();
+    utyan.clear();
     animatedDiceExplicit.clear();
     telegramServiceNotificationsChatId = TdConstants.TELEGRAM_ACCOUNT_ID;
     repliesBotChatId = TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID;
@@ -5643,6 +5645,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   @Nullable
   public TdApi.Sticker findAnimatedEmoji (String emoji) {
     return animatedEmoji.find(emoji);
+  }
+
+  @Nullable
+  public TdApi.Sticker findUtyanEmoji (String emoji) {
+    return utyan.find(emoji);
   }
 
   private TdApi.Sticker findExplicitDiceEmoji (int value) {
@@ -7036,6 +7043,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private void updateStickerSet (TdApi.StickerSet stickerSet) {
     animatedEmoji.update(this, stickerSet);
+    utyan.update(this, stickerSet);
     animatedDiceExplicit.update(this, stickerSet);
     listeners.updateStickerSet(stickerSet);
   }
@@ -7641,6 +7649,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     checkDeviceToken();
     // animatedTgxEmoji.load(this);
     animatedEmoji.load(this);
+    utyan.load(this);
+
     if (Settings.instance().getNewSetting(Settings.SETTING_FLAG_EXPLICIT_DICE) && !isDebugInstance()) {
       animatedDiceExplicit.load(this);
     }

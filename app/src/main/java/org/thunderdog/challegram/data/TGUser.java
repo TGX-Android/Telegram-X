@@ -147,8 +147,8 @@ public class TGUser implements UserProvider {
   }
 
   public void setCustomStatus (String statusText) {
-    if (this.statusText == null || !this.statusText.equals(statusText)) {
-      if (statusText == null || statusText.isEmpty()) {
+    if (!StringUtils.equalsOrBothEmpty(this.statusText, statusText)) {
+      if (StringUtils.isEmpty(statusText)) {
         this.flags &= ~FLAG_CUSTOM_STATUS_TEXT;
         updateStatus();
       } else {
