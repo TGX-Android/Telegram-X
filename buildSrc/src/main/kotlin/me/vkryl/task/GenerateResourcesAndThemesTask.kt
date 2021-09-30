@@ -271,7 +271,11 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
       sortedSetOf(
         "now", "seconds", "minutes", "hours", "today", "yesterday", "weekday", "date"
       ), sortedSetOf(
+        "now", "seconds", "minutes", "hours", "today", "tomorrow", "weekday", "date"
+      ), sortedSetOf(
         "now", "seconds", "minutes", "hours", "today", "yesterday", "days", "weeks", "months", "years"
+      ), sortedSetOf(
+        "now", "seconds", "minutes", "hours", "today", "tomorrow", "days", "weeks", "months", "years"
       )
     )
     for (entry in foundRelativeDates) {
