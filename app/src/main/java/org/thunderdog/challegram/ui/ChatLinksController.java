@@ -327,11 +327,12 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   private String generateLinkSubtitle (TdApi.ChatInviteLink inviteLink) {
     StringBuilder subtitle = new StringBuilder();
 
-    int exIn = (int) (inviteLink.expireDate - (System.currentTimeMillis() / 1000));
+    long nowMs = tdlib.currentTimeMillis();
+    long expiresInMs = TimeUnit.SECONDS.toMillis(inviteLink.expireDate) - nowMs;
 
     if (inviteLink.memberCount > 0) {
       subtitle.append(Lang.plural(R.string.InviteLinkJoins, inviteLink.memberCount));
-    } else if (inviteLink.isPrimary || inviteLink.memberLimit == 0 || (inviteLink.memberCount == 0 && exIn < 0)) {
+    } else if (inviteLink.isPrimary || inviteLink.memberLimit == 0 || (inviteLink.memberCount == 0 && expiresInMs < 0)) {
       subtitle.append(Lang.getString(R.string.InviteLinkNoJoins));
     }
 
@@ -343,7 +344,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
     if (inviteLink.expireDate == 0 && inviteLink.memberCount == 0 && inviteLink.memberLimit > 0) {
       subtitle.append(Lang.plural(R.string.InviteLinkCanJoin, inviteLink.memberLimit)).append(" • ");
-    } else if (inviteLink.memberLimit > inviteLink.memberCount && (exIn > 0 || inviteLink.expireDate == 0)) {
+    } else if (inviteLink.memberLimit > inviteLink.memberCount && (expiresInMs > 0 || inviteLink.expireDate == 0)) {
       subtitle.append(Lang.plural(R.string.InviteLinkRemains, inviteLink.memberLimit - inviteLink.memberCount)).append(inviteLink.expireDate != 0 ? " • " : "");
     }
 
@@ -351,8 +352,8 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       subtitle.append(Lang.getString(R.string.InviteLinkRevoked));
     } else if (inviteLink.expireDate == 0) {
       // add nothing
-    } else if (exIn > 0) {
-      subtitle.append(Lang.getString(R.string.InviteLinkExpires, Lang.getDuration(exIn)));
+    } else if (expiresInMs > 0) {
+      subtitle.append(Lang.getRelativeDate(nowMs, TimeUnit.MILLISECONDS, inviteLink.expireDate, TimeUnit.SECONDS, true, 0, R.string.InviteLinkExpires, false));
     } else {
       subtitle.append(Lang.getString(R.string.InviteLinkExpired));
     }
