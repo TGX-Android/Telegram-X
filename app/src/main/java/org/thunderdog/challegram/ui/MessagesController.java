@@ -6794,13 +6794,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
                   return false;
                 }
 
-                tdlib.client().send(new TdApi.AddChatMember(chat.id, user.id, 0), object -> {
+                tdlib.setChatMemberStatus(chat.id, new TdApi.MessageSenderUser(user.id), new TdApi.ChatMemberStatusMember(), null, (ok, error) -> {
                   runOnUiThreadOptional(() -> {
-                    if (object.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+                    if (!ok && error != null) {
                       context.context()
                               .tooltipManager()
                               .builder(view)
-                              .show(context, tdlib, R.drawable.baseline_error_24, TD.toErrorString(object));
+                              .show(context, tdlib, R.drawable.baseline_error_24, TD.toErrorString(error));
                     } else {
                       context.navigateBack();
                     }
