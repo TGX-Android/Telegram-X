@@ -5864,6 +5864,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   @TdlibThread
+  private void updateAnimatedEmojiMessageClicked (TdApi.UpdateAnimatedEmojiMessageClicked update) {
+    listeners.updateAnimatedEmojiMessageClicked(update);
+  }
+
+  @TdlibThread
   private void updateMessageIsPinned (TdApi.UpdateMessageIsPinned update) {
     listeners.updateMessageIsPinned(update);
   }
@@ -6227,6 +6232,21 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         TdlibNotificationChannelGroup.updateChat(this, myUserId, chat);
       }
     }
+  }
+
+  @TdlibThread
+  private void updateChatTheme (TdApi.UpdateChatTheme update) {
+    final TdApi.Chat chat;
+    final TdlibChatList[] chatLists;
+    synchronized (dataLock) {
+      chat = chats.get(update.chatId);
+      if (TdlibUtils.assertChat(update.chatId, chat, update)) {
+        return;
+      }
+      chat.themeName = update.themeName;
+      chatLists = chatListsImpl(chat.positions);
+    }
+    listeners.updateChatTheme(update, chat, chatLists);
   }
 
   @TdlibThread
@@ -6655,6 +6675,25 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   public TdApi.SuggestedAction[] getSuggestedActions () {
     synchronized (dataLock) {
       return suggestedActions.toArray(new TdApi.SuggestedAction[0]);
+    }
+  }
+
+  private final Map<String, TdApi.ChatTheme> chatThemes = new HashMap<>();
+
+  @TdlibThread
+  private void updateChatThemes (TdApi.UpdateChatThemes update) {
+    synchronized (dataLock) {
+      chatThemes.clear();
+      for (TdApi.ChatTheme theme : update.chatThemes) {
+        chatThemes.put(theme.name, theme);
+      }
+    }
+  }
+
+  @AnyThread
+  public @Nullable TdApi.ChatTheme chatTheme (String themeName) {
+    synchronized (dataLock) {
+      return chatThemes.get(themeName);
     }
   }
 
@@ -7163,6 +7202,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         updateMessageContentOpened((TdApi.UpdateMessageContentOpened) update);
         break;
       }
+      case TdApi.UpdateAnimatedEmojiMessageClicked.CONSTRUCTOR: {
+        updateAnimatedEmojiMessageClicked((TdApi.UpdateAnimatedEmojiMessageClicked) update);
+        break;
+      }
       case TdApi.UpdateMessageIsPinned.CONSTRUCTOR: {
         updateMessageIsPinned((TdApi.UpdateMessageIsPinned) update);
         break;
@@ -7237,6 +7280,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
       case TdApi.UpdateChatTitle.CONSTRUCTOR: {
         updateChatTitle((TdApi.UpdateChatTitle) update);
+        break;
+      }
+      case TdApi.UpdateChatTheme.CONSTRUCTOR: {
+        updateChatTheme((TdApi.UpdateChatTheme) update);
         break;
       }
       case TdApi.UpdateChatActionBar.CONSTRUCTOR: {
@@ -7435,6 +7482,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
       case TdApi.UpdateSuggestedActions.CONSTRUCTOR: {
         updateSuggestedActions((TdApi.UpdateSuggestedActions) update);
+        break;
+      }
+      case TdApi.UpdateChatThemes.CONSTRUCTOR: {
+        updateChatThemes((TdApi.UpdateChatThemes) update);
         break;
       }
 

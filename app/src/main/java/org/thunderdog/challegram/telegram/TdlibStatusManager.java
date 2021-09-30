@@ -533,6 +533,10 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
 
   @UiThread
   void onUpdateChatUserAction (TdApi.UpdateUserChatAction update) {
+    if (update.action.getConstructor() == TdApi.ChatActionWatchingAnimations.CONSTRUCTOR) {
+      // TODO?
+      return;
+    }
     String key = makeKey(update.chatId, update.messageThreadId);
     ChatState state = chatStates.get(key);
     if (state == null) {

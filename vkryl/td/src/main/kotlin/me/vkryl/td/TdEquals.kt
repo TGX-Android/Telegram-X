@@ -215,6 +215,10 @@ fun ChatAction.equalsTo(b: ChatAction): Boolean {
         require(this is ChatActionUploadingVideo && b is ChatActionUploadingVideo)
         this.progress == b.progress
       }
+      ChatActionWatchingAnimations.CONSTRUCTOR -> {
+        require(this is ChatActionWatchingAnimations && b is ChatActionWatchingAnimations)
+        this.emoji == b.emoji
+      }
       ChatActionUploadingVoiceNote.CONSTRUCTOR -> {
         require(this is ChatActionUploadingVoiceNote && b is ChatActionUploadingVoiceNote)
         this.progress == b.progress
@@ -231,7 +235,7 @@ fun ChatAction.equalsTo(b: ChatAction): Boolean {
         require(this is ChatActionUploadingVideoNote && b is ChatActionUploadingVideoNote)
         this.progress == b.progress
       }
-      else -> error(this.toString())
+      else -> TODO(this.toString())
     }
   }
 }

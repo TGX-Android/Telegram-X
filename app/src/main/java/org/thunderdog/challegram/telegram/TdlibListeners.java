@@ -553,6 +553,21 @@ public class TdlibListeners {
     updateMessageContentOpened(update, messageChatListeners.iterator(update.chatId));
   }
 
+  // updateAnimatedEmojiMessageClicked
+
+  private static void updateAnimatedEmojiMessageClicked (TdApi.UpdateAnimatedEmojiMessageClicked update, @Nullable Iterator<MessageListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onAnimatedEmojiMessageClicked(update.chatId, update.messageId, update.sticker);
+      }
+    }
+  }
+
+  void updateAnimatedEmojiMessageClicked (TdApi.UpdateAnimatedEmojiMessageClicked update) {
+    updateAnimatedEmojiMessageClicked(update, messageListeners.iterator());
+    updateAnimatedEmojiMessageClicked(update, messageChatListeners.iterator(update.chatId));
+  }
+
   // updateMessageIsPinned
 
   private static void updateMessageIsPinned (TdApi.UpdateMessageIsPinned update, @Nullable Iterator<MessageListener> list) {
@@ -769,6 +784,28 @@ public class TdlibListeners {
       for (TdlibChatList chatList : chatLists) {
         iterateChatListListeners(chatList, listener ->
           listener.onChatListItemChanged(chatList, chat, ChatListListener.ItemChangeType.TITLE)
+        );
+      }
+    }
+  }
+
+  // updateChatTheme
+
+  private static void updateChatTheme (TdApi.UpdateChatTheme update, @Nullable Iterator<ChatListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onChatThemeChanged(update.chatId, update.themeName);
+      }
+    }
+  }
+
+  void updateChatTheme (TdApi.UpdateChatTheme update, TdApi.Chat chat, TdlibChatList[] chatLists) {
+    updateChatTheme(update, chatListeners.iterator());
+    updateChatTheme(update, specificChatListeners.iterator(update.chatId));
+    if (chatLists != null) {
+      for (TdlibChatList chatList : chatLists) {
+        iterateChatListListeners(chatList, listener ->
+          listener.onChatListItemChanged(chatList, chat, ChatListListener.ItemChangeType.THEME)
         );
       }
     }

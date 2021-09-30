@@ -38,7 +38,8 @@ public interface ChatListListener {
     ItemChangeType.READ_INBOX,
     ItemChangeType.LAST_MESSAGE,
     ItemChangeType.DRAFT,
-    ItemChangeType.UNREAD_AVAILABILITY_CHANGED
+    ItemChangeType.UNREAD_AVAILABILITY_CHANGED,
+    ItemChangeType.THEME
   })
   @interface ItemChangeType {
     int TITLE = 0;
@@ -46,6 +47,7 @@ public interface ChatListListener {
     int LAST_MESSAGE = 2;
     int DRAFT = 3;
     int UNREAD_AVAILABILITY_CHANGED = 4;
+    int THEME = 5;
   }
   default void onChatListItemChanged (TdlibChatList chatList, TdApi.Chat chat, @ItemChangeType int changeType) { }
 }
