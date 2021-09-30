@@ -1933,7 +1933,7 @@ public class Lang {
       return getString(LangUtils.getRelativeDateForm(res, RelativeDateForm.TODAY), time);
     }
     if (days == 1) { // Yesterday
-      return getString(LangUtils.getRelativeDateForm(res, RelativeDateForm.YESTERDAY), time);
+      return getString(LangUtils.getRelativeDateForm(res, RelativeDateForm.YESTERDAY_OR_TOMORROW), time);
     }
     if (approximate) {
       if (days < 14) { // Less than 2 weeks
@@ -2221,8 +2221,7 @@ public class Lang {
     RelativeDateForm.HOURS,
 
     RelativeDateForm.TODAY,
-    RelativeDateForm.TOMORROW,
-    RelativeDateForm.YESTERDAY,
+    RelativeDateForm.YESTERDAY_OR_TOMORROW,
 
     RelativeDateForm.WEEKDAY,
     RelativeDateForm.DATE,
@@ -2238,8 +2237,7 @@ public class Lang {
     int MINUTES = 2;
     int HOURS = 3;
     int TODAY = 4;
-    int TOMORROW = 5;
-    int YESTERDAY = 6;
+    int YESTERDAY_OR_TOMORROW = 5;
     
     int WEEKDAY = 10;
     int DATE = 11;
