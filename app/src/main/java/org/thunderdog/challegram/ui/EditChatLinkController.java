@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.StringUtils;
 
 public class EditChatLinkController extends EditBaseController<EditChatLinkController.Args> implements View.OnClickListener {
   private static final int[] PRESETS = new int[]{0, 3600, 3600 * 24, 3600 * 24 * 7, 1};
@@ -168,14 +169,15 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
       });
     } else if (v.getId() == R.id.btn_inviteLinkUserLimit) {
       openInputAlert(Lang.getString(R.string.InviteLinkLimitedByUsersItem), Lang.getString(R.string.InviteLinkLimitedByUsersAlertHint), R.string.Done, R.string.Cancel, String.valueOf(memberLimit), (inputView, result) -> {
-        try {
-          memberLimit = Math.min(Math.max(0, Integer.parseInt(result)), 99999);
-          updateMemberCountSlider();
-          adapter.updateItemById(R.id.btn_inviteLinkUserSlider);
-          checkDoneButton();
-        } catch (NumberFormatException ignored) {
+        int data = StringUtils.parseInt(result, -1);
+        if (data == -1)
+          return false;
 
-        }
+        memberLimit = Math.min(Math.max(0, data), 99999);
+        updateMemberCountSlider();
+        adapter.updateItemById(R.id.btn_inviteLinkUserSlider);
+        checkDoneButton();
+
         return true;
       }, true).getEditText().setInputType(InputType.TYPE_CLASS_NUMBER);
     }
