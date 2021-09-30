@@ -1961,6 +1961,44 @@ public class Lang {
     }
   }
 
+  public static long getNextReverseRelativeDateUpdateMs (long unixTime, TimeUnit futureUnit, long fromUnixTime, TimeUnit fromUnit, boolean allowDuration, int justNowSeconds) {
+    long fromUnixTimeMs = fromUnit.toMillis(fromUnixTime);
+    long futureUnixTimeMs = futureUnit.toMillis(unixTime);
+    if (allowDuration) {
+      long differenceMs = futureUnixTimeMs - fromUnixTimeMs;
+      long difference = TimeUnit.MILLISECONDS.toSeconds(differenceMs);
+      if (difference >= -5 * 60) {
+        if (difference < justNowSeconds) // just now -> seconds
+          return TimeUnit.SECONDS.toMillis(justNowSeconds) - differenceMs;
+        if (difference < 60) // seconds
+          return 1000 - differenceMs % 1000;
+        difference /= 60;
+        if (difference < 60) // minutes
+          return (difference + 1l) * 60000l - differenceMs;
+        difference /= 60;
+        if (difference < 4) // hours
+          return (difference + 1) * 60l * 60000l - differenceMs;
+      }
+    }
+    Calendar c;
+    c = DateUtils.calendarInstance(futureUnixTimeMs);
+    DateUtils.resetToStartOfDay(c);
+    long unixTimeFutureStartMs = c.getTimeInMillis();
+
+    c = DateUtils.calendarInstance(fromUnixTimeMs);
+    DateUtils.resetToStartOfDay(c);
+    long unixTimeFromStartMs = c.getTimeInMillis();
+
+    int days = (int) TimeUnit.MILLISECONDS.toDays(unixTimeFutureStartMs - unixTimeFromStartMs);
+
+    if (days == 0 || days == 1) {
+      c.add(Calendar.DAY_OF_MONTH, 1);
+      DateUtils.resetToStartOfDay(c);
+      return Math.max(-1, c.getTimeInMillis() - fromUnixTimeMs);
+    }
+    return -1;
+  }
+
   public static String getRelativeDate (long unixTime, TimeUnit unit, long fromUnixTime, TimeUnit fromUnit, boolean allowDuration, int justNowSeconds, @StringRes int res, boolean approximate) {
     if (allowDuration) {
       long difference = fromUnit.toSeconds(fromUnixTime) - unit.toSeconds(unixTime);
