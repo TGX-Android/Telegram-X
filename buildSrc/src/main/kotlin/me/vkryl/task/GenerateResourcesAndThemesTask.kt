@@ -150,7 +150,7 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
     val relativeDateForms = sortedSetOf(
       "now",
       "seconds", "minutes", "hours",
-      "today", "yesterday", "weekday", "date",
+      "today", "tomorrow", "yesterday", "weekday", "date",
       "days", "weeks", "months", "years"
     )
     val pluralForms = sortedSetOf(
