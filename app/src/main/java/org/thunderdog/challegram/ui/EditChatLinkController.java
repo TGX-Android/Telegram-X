@@ -35,6 +35,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
   private int expireDate;
   private int memberLimit;
   private boolean isCreation;
+  private TdApi.ChatInviteLink existingInviteLink;
 
   public EditChatLinkController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -65,10 +66,40 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
   }
 
   @Override
+  public boolean onBackPressed (boolean fromTop) {
+    if (!isCreation && hasAnyChanges()) {
+      showUnsavedChangesPromptBeforeLeaving(null);
+      return true;
+    }
+
+    return false;
+  }
+
+  @Override
+  protected boolean swipeNavigationEnabled () {
+    return isCreation || !hasAnyChanges();
+  }
+
+  private void checkDoneButton () {
+    if (!isCreation) {
+      setDoneVisible(hasAnyChanges());
+    }
+  }
+
+  private boolean hasAnyChanges () {
+    if (existingInviteLink == null || isCreation) {
+      return true;
+    }
+
+    return memberLimit != existingInviteLink.memberLimit || expireDate != existingInviteLink.expireDate;
+  }
+
+  @Override
   public void setArguments (Args args) {
     super.setArguments(args);
     isCreation = args.existingInviteLink == null;
     if (args.existingInviteLink != null) {
+      existingInviteLink = args.existingInviteLink;
       expireDate = args.existingInviteLink.expireDate;
       memberLimit = args.existingInviteLink.memberLimit;
       updateMemberCountSlider();
@@ -123,6 +154,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
             showDateTimePicker(Lang.getString(R.string.InviteLinkExpireHeader), R.string.InviteLinkExpireConfirm, R.string.InviteLinkExpireConfirm, R.string.InviteLinkExpireConfirm, millis -> {
               expireDate = (int) TimeUnit.MILLISECONDS.toSeconds(millis);
               adapter.updateValuedSettingById(R.id.btn_inviteLinkDateLimit);
+              checkDoneButton();
             }, null);
             break;
           default:
@@ -131,6 +163,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
         }
 
         adapter.updateValuedSettingById(R.id.btn_inviteLinkDateLimit);
+        checkDoneButton();
         return true;
       });
     } else if (v.getId() == R.id.btn_inviteLinkUserLimit) {
@@ -139,6 +172,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
           memberLimit = Math.min(Math.max(0, Integer.parseInt(result)), 99999);
           updateMemberCountSlider();
           adapter.updateItemById(R.id.btn_inviteLinkUserSlider);
+          checkDoneButton();
         } catch (NumberFormatException ignored) {
 
         }
@@ -199,6 +233,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
       @Override
       protected void onSliderValueChanged (ListItem item, SliderWrapView view, int newValue, int oldValue) {
         memberLimit = (newValue == memberCountSliderData.length - 1) ? 0 : Integer.parseInt(memberCountSliderData[newValue]);
+        checkDoneButton();
       }
     };
 
@@ -223,6 +258,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
     adapter.setItems(items, false);
     recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
     recyclerView.setAdapter(adapter);
+    checkDoneButton();
   }
 
   public static class Args {
