@@ -3720,7 +3720,19 @@
   <string name="InviteLinkCanJoin_other">%1$s can join</string>
   <string name="InviteLinkExpired">expired</string>
   <string name="InviteLinkRevoked">revoked</string>
-  <string name="InviteLinkExpires">expires in %s</string>
+
+  <string name="InviteLinkExpires_now">expires in a moment</string>
+  <string name="InviteLinkExpires_seconds_one">expires in %1$s second</string>
+  <string name="InviteLinkExpires_seconds_other">expires in %1$s seconds</string>
+  <string name="InviteLinkExpires_minutes_one">expires in %1$s minute</string>
+  <string name="InviteLinkExpires_minutes_other">expires in %1$s minutes</string>
+  <string name="InviteLinkExpires_one">expires in %1$s hour</string>
+  <string name="InviteLinkExpires_hours_other">expires in %1$s hours</string>
+  <string name="InviteLinkExpires_today">expires at %1$s</string>
+  <string name="InviteLinkExpires_tomorrow">expires tomorrow at %1$s</string>
+  <string name="InviteLinkExpires_weekday">expires %1$s at %2$s</string>
+  <string name="InviteLinkExpires_date">expires %1$s at %2$s</string>
+
   <string name="DeleteAllRevokedLinks">Delete All Revoked Links</string>
   <string name="AreYouSureDeleteAllInviteLinks">Are you sure you want to delete all revoked links?</string>
   <string name="AreYouSureRevokeInviteLinkGroup">Are you sure you want to revoke this link? Once this is done, nobody will be able to use it to join the group.</string>
@@ -3740,10 +3752,15 @@
   <string name="InviteLinkNoLimitSet">no limit</string>
   <string name="InviteLinkExpireHeader">Expire after</string>
   <string name="InviteLinkExpireConfirm">Set Expiration Date</string>
-  <string name="InviteLinkExpireIn">Expire in %s</string>
+  <string name="InviteLinkExpireInHours_one">Expire in %1$s hour</string>
+  <string name="InviteLinkExpireInHours_other">Expire in %1$s hours</string>
+  <string name="InviteLinkExpireInDays_one">Expire in %1$s day</string>
+  <string name="InviteLinkExpireInDays_other">Expire in %1$s days</string>
+  <string name="InviteLinkExpireInWeeks_one">Expire in %1$s week</string>
+  <string name="InviteLinkExpireInWeeks_other">Expire in %1$s weeks</string>
   <string name="InviteLinkExpireInCustomDate">Expire at specific date…</string>
   <string name="InviteLinkExpireNone">Do not expire</string>
-  <string name="InviteLinkOtherAdminHint">**%s** can see this link and use it to invite new members to **%s**.</string>
+  <string name="InviteLinkOtherAdminHint">**%1$s** can see this link and use it to invite new members to **%2$s**.</string>
   <string name="InviteLinkViewMembers">View joined members</string>
   <string name="InviteLinkViewMembersTitle">Joined members</string>
   <string name="CreatedByXOnDate">Created by %1$s %2$s</string>

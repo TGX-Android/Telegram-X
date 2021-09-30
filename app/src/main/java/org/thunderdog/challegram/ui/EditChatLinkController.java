@@ -84,7 +84,8 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
 
       for (int i = 0; i < PRESETS.length; i++) {
         ids[i] = i;
-        switch (PRESETS[i]) {
+        final int expireIn = PRESETS[i];
+        switch (expireIn) {
           case 0:
             icons[i] = R.drawable.baseline_cancel_24;
             strings[i] = Lang.getString(R.string.InviteLinkExpireNone);
@@ -93,10 +94,23 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
             icons[i] = R.drawable.baseline_date_range_24;
             strings[i] = Lang.getString(R.string.InviteLinkExpireInCustomDate);
             break;
-          default:
+          default: {
             icons[i] = R.drawable.baseline_schedule_24;
-            strings[i] = Lang.getString(R.string.InviteLinkExpireIn, Lang.getDuration(PRESETS[i]));
+            int stringRes;
+            long num;
+            if (expireIn < TimeUnit.DAYS.toSeconds(1)) {
+              stringRes = R.string.InviteLinkExpireInHours;
+              num = TimeUnit.SECONDS.toHours(expireIn);
+            } else if (expireIn < TimeUnit.DAYS.toSeconds(7)) {
+              stringRes = R.string.InviteLinkExpireInDays;
+              num = TimeUnit.SECONDS.toDays(expireIn);
+            } else {
+              stringRes = R.string.InviteLinkExpireInWeeks;
+              num = TimeUnit.SECONDS.toDays(expireIn) / 7;
+            }
+            strings[i] = Lang.plural(stringRes, num);
             break;
+          }
         }
       }
 
