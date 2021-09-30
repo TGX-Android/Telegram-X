@@ -135,9 +135,13 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
       });
     } else if (v.getId() == R.id.btn_inviteLinkUserLimit) {
       openInputAlert(Lang.getString(R.string.InviteLinkLimitedByUsersItem), Lang.getString(R.string.InviteLinkLimitedByUsersAlertHint), R.string.Done, R.string.Cancel, String.valueOf(memberLimit), (inputView, result) -> {
-        memberLimit = Math.min(Math.max(0, Integer.parseInt(result)), 99999);
-        updateMemberCountSlider();
-        adapter.updateItemById(R.id.btn_inviteLinkUserSlider);
+        try {
+          memberLimit = Math.min(Math.max(0, Integer.parseInt(result)), 99999);
+          updateMemberCountSlider();
+          adapter.updateItemById(R.id.btn_inviteLinkUserSlider);
+        } catch (NumberFormatException ignored) {
+
+        }
         return true;
       }, true).getEditText().setInputType(InputType.TYPE_CLASS_NUMBER);
     }
