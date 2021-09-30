@@ -16,14 +16,18 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
+import org.thunderdog.challegram.widget.CheckBox;
 import org.thunderdog.challegram.widget.EmbeddableStickerView;
+import org.thunderdog.challegram.widget.SmallChatView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -170,6 +174,14 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       }
 
       @Override
+      protected void modifyChatView(ListItem item, SmallChatView chatView, @Nullable CheckBox checkBox, boolean isUpdate) {
+        DoubleTextWrapper wrapper = new DoubleTextWrapper(tdlib, adminUserId, true);
+        wrapper.setSubtitle(Lang.pluralBold(R.string.xLinks, inviteLinks.size() + inviteLinksRevoked.size()));
+        wrapper.setIgnoreOnline(true);
+        chatView.setChat(wrapper);
+      }
+
+      @Override
       protected void setEmbedSticker (ListItem item, int position, EmbeddableStickerView userView, boolean isUpdate) {
         userView.setSticker(new TGStickerObj(tdlib, (TdApi.Sticker) item.getData(), UTYAN_EMOJI, false));
         userView.setCaptionText(Lang.getString(isChannel ? R.string.ChannelLinkInfo : R.string.LinkInfo));
@@ -184,6 +196,10 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   @Override
   public void onClick (View v) {
     switch (v.getId()) {
+      case R.id.btn_openChat: {
+        tdlib.ui().openChat(this, adminUserId, new TdlibUi.ChatOpenParameters().keepStack());
+        break;
+      }
       case R.id.btn_openAdminInviteLinks:
         ChatLinksController cc = new ChatLinksController(context, tdlib);
         cc.setArguments(new ChatLinksController.Args(chatId, (Integer) v.getTag(), null, this, false));
@@ -318,6 +334,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   }
 
   private void notifyParentIfPossible () {
+    adapter.updateItemById(R.id.btn_openChat);
     if (getArgumentsStrict().parent == null) {
       return;
     }
@@ -510,7 +527,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         new ListItem(ListItem.TYPE_SHADOW_BOTTOM)
       };
 
-      adapter.addItems(lastActiveLinkIdx, arr);
+      adapter.addItems(Math.min(lastActiveLinkIdx, adapter.getItemCount()), arr);
     } else {
       int firstRevokedLinkIdx = adapter.indexOfViewByData(inviteLinksRevoked.get(1)) - 1; // 0 is our new link
       adapter.addItem(firstRevokedLinkIdx, linkItem);
@@ -568,14 +585,17 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
   private void buildCells () {
     ArrayList<ListItem> items = new ArrayList<>();
-    items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
 
     int lastIvIndex = inviteLinks.size() - 1;
     int lastRvIndex = inviteLinksRevoked.size() - 1;
     boolean viewingOtherAdmin = adminUserId != tdlib.myUserId();
     boolean showAdditionalLinks = true;
 
-    if (!viewingOtherAdmin) {
+    if (viewingOtherAdmin) {
+      items.add(new ListItem(ListItem.TYPE_CHAT_SMALL, R.id.btn_openChat));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    } else {
+      items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
       items.add(new ListItem(ListItem.TYPE_EMBED_STICKER).setData(tdlib.findUtyanEmoji(UTYAN_EMOJI)));
     }
 
