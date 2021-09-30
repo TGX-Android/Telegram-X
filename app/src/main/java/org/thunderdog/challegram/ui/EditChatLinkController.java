@@ -171,10 +171,10 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
     } else if (v.getId() == R.id.btn_inviteLinkUserLimit) {
       openInputAlert(Lang.getString(R.string.InviteLinkLimitedByUsersItem), Lang.getString(R.string.InviteLinkLimitedByUsersAlertHint), R.string.Done, R.string.Cancel, String.valueOf(memberLimit), (inputView, result) -> {
         int data = StringUtils.parseInt(result, -1);
-        if (data < 0 || data > TdConstants.MAX_CHAT_INVITE_LINK_USER_COUNT)
+        if (data < 0)
           return false;
 
-        memberLimit = data;
+        memberLimit = Math.min(data, TdConstants.MAX_CHAT_INVITE_LINK_USER_COUNT);
         updateMemberCountSlider();
         adapter.updateItemById(R.id.btn_inviteLinkUserSlider);
         checkDoneButton();
