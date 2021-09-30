@@ -531,17 +531,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       case MODE_EDIT_CHANNEL:
       case MODE_EDIT_SUPERGROUP: {
         int count = 0;
-        if (needHiddenInviteLinkAccess())
-          count++;
         if (canDestroyChat())
           count++;
         if (count > 0) {
           IntList ids = new IntList(count);
           StringList strings = new StringList(count);
-          if (needHiddenInviteLinkAccess()) {
-            ids.append(R.id.btn_inviteLink);
-            strings.append(R.string.InviteLink);
-          }
           if (canDestroyChat()) {
             ids.append(R.id.btn_destroyChat);
             strings.append(supergroup.isChannel ? R.string.DestroyChannel : R.string.DestroyGroup);
@@ -800,6 +794,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
       case R.id.btn_editUsername: {
         editChannelUsername();
+        break;
+      }
+      case R.id.btn_manageInviteLinks: {
+        openInviteLink();
         break;
       }
       case R.id.btn_copyUsername: {
@@ -4288,11 +4286,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private boolean hasMoreItems () {
-    return canDestroyChat() || needHiddenInviteLinkAccess();
-  }
-
-  private boolean needHiddenInviteLinkAccess () {
-    return (isPublicChannel() || isPublicGroup()) && tdlib.canCreateInviteLink(chat);
+    return canDestroyChat();
   }
 
   private boolean canDestroyChat () {
@@ -4378,8 +4372,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
       case R.id.btn_username: {
         boolean canSetUsername = supergroupFull != null && supergroupFull.canSetUsername;
+        boolean canInviteUsers = chat != null && tdlib.canInviteUsers(chat);
 
-        int size = canSetUsername ? 4 : 3;
+        int size = 3;
+        if (canSetUsername) size++;
+        if (canInviteUsers) size++;
+
         IntList ids = new IntList(size);
         StringList strings = new StringList(size);
         IntList icons = new IntList(size);
@@ -4388,6 +4386,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           ids.append(R.id.btn_editUsername);
           strings.append(R.string.edit);
           icons.append(R.drawable.baseline_edit_24);
+        }
+
+        if (canInviteUsers) {
+          ids.append(R.id.btn_manageInviteLinks);
+          strings.append(R.string.InviteLinkManage);
+          icons.append(R.drawable.baseline_person_add_24);
         }
 
         ids.append(R.id.btn_copyUsername);

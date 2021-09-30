@@ -500,7 +500,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       }
 
       lastActiveLinkIdx += 1; // include the shadow
-      
+
       ListItem[] arr = new ListItem[]{
         new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.RevokedInviteLinks),
         new ListItem(ListItem.TYPE_SHADOW_TOP),
