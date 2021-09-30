@@ -5,7 +5,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.Nullable;
-import androidx.collection.SparseArrayCompat;
+import androidx.collection.LongSparseArray;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -50,13 +50,13 @@ public class SimpleUsersAdapter extends RecyclerView.Adapter<SimpleUsersAdapter.
     this.callback = callback;
     this.isClickable = (options & OPTION_CLICKABLE) != 0;
     this.isSelectable = (options & OPTION_SELECTABLE) != 0;
-    this.selected = isSelectable ? new SparseArrayCompat<>() : null;
+    this.selected = isSelectable ? new LongSparseArray<>() : null;
     this.needCounter = (options & OPTION_COUNTER) != 0;
     this.themeProvider = themeProvider;
   }
 
   private List<TGUser> users;
-  private final SparseArrayCompat<TGUser> selected;
+  private final LongSparseArray<TGUser> selected;
 
   public void setUsers (List<TGUser> users) {
     int oldItemCount = getItemCount();
@@ -64,7 +64,7 @@ public class SimpleUsersAdapter extends RecyclerView.Adapter<SimpleUsersAdapter.
     U.notifyItemsReplaced(this, oldItemCount);
   }
 
-  public SparseArrayCompat<TGUser> getSelectedUsers () {
+  public LongSparseArray<TGUser> getSelectedUsers () {
     return selected;
   }
 

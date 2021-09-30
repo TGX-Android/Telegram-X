@@ -126,7 +126,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
   private String title;
   private TdApi.User actionUser;
   private TdlibSender actionSender;
-  private int[] actionUserIds;
+  private long[] actionUserIds;
   private TdApi.ChatPhoto photo;
   private ImageFile avatar;
 
@@ -172,6 +172,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
 
   public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageChatChangePhoto photo) {
     super(context, msg);
+    //noinspection WrongConstant
     if (isEventLog() && msg.content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR) {
       TdApi.ChatEventAction action = ((TdApiExt.MessageChatEvent) msg.content).event.action;
       if (action.getConstructor() == TdApi.ChatEventPhotoChanged.CONSTRUCTOR && ((TdApi.ChatEventPhotoChanged) action).newPhoto == null) {
@@ -1023,15 +1024,15 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
     private TdApi.Location location;
     private boolean isActive, isUrl;
 
-    private int[] userIds;
+    private long[] userIds;
     private String[] strings;
     private long chatId;
 
-    public Arg (TGMessage context, int[] userIds) {
+    public Arg (TGMessage context, long[] userIds) {
       this.userIds = userIds;
       this.strings = new String[userIds.length];
       int i = 0;
-      for (int userId : userIds) {
+      for (long userId : userIds) {
         strings[i] = wrap(TD.getUserName(userId, context.userForId(userId)));
         i++;
       }
@@ -1274,7 +1275,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
                 String concatSeparator = Lang.getConcatSeparator();
                 String concatSeparatorLast = Lang.getConcatSeparatorLast(true);
                 int index = 0;
-                for (int userId : data.userIds) {
+                for (long userId : data.userIds) {
                   if (index > 0) {
                     if (index == data.userIds.length - 1) {
                       spanned.insert(i, concatSeparatorLast);

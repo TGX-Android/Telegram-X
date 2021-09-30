@@ -423,7 +423,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   @Override
-  public int provideInlineSearchChatUserId (InputView v) {
+  public long provideInlineSearchChatUserId (InputView v) {
     TdApi.Chat chat = tdlib.chat(provideInlineSearchChatId(v));
     return chat != null ? TD.getUserId(chat) : 0;
   }
@@ -1604,7 +1604,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           CharSequence caption = null, exportCaption = null;
           switch (mode) {
             case MODE_PROFILE: {
-              int userId = Td.getSenderUserId(stack.getCurrent().getSourceSender());
+              long userId = Td.getSenderUserId(stack.getCurrent().getSourceSender());
               String userName = tdlib.cache().userName(userId);
               if (!StringUtils.isEmpty(userName)) {
                 exportCaption = Lang.getString(R.string.ShareTextProfile, userName);
@@ -1951,7 +1951,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         break;
       }
       case MODE_PROFILE: {
-        int userId = Td.getSenderUserId(stack.getCurrent().getSourceSender());
+        long userId = Td.getSenderUserId(stack.getCurrent().getSourceSender());
         if (!loadedInitialChunk || (edgeReached && isEnd) || stack.getCurrentIndex() <= stack.getCurrentSize() - LOAD_THRESHOLD) {
           isLoading = true;
           tdlib.client().send(new TdApi.GetUserProfilePhotos(userId, loadedInitialChunk ? stack.getCurrentSize() : 0, LOAD_COUNT_PROFILE), this);
@@ -1978,7 +1978,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       }
     }
 
-    int sourceUserId = Td.getSenderUserId(stack.getCurrent().getSourceSender());
+    long sourceUserId = Td.getSenderUserId(stack.getCurrent().getSourceSender());
     ArrayList<MediaItem> items = new ArrayList<>(photos.photos.length);
     for (TdApi.ChatPhoto photo : photos.photos) {
       if (skipCount > 0) {

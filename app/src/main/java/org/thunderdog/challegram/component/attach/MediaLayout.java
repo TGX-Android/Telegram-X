@@ -20,7 +20,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.collection.SparseArrayCompat;
+import androidx.collection.LongSparseArray;
 
 import com.google.android.gms.maps.MapsInitializer;
 
@@ -940,7 +940,7 @@ public class MediaLayout extends FrameLayoutFix implements
     });
   }
 
-  public void sendContacts (SparseArrayCompat<TGUser> users, TdApi.MessageSendOptions options) {
+  public void sendContacts (LongSparseArray<TGUser> users, TdApi.MessageSendOptions options) {
     if (users == null || users.size() == 0)
       return;
     if (target != null) {

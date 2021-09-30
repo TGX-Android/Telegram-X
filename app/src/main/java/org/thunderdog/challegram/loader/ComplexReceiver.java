@@ -3,7 +3,7 @@ package org.thunderdog.challegram.loader;
 import android.view.View;
 
 import androidx.annotation.Nullable;
-import androidx.collection.SparseArrayCompat;
+import androidx.collection.LongSparseArray;
 
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 
@@ -17,39 +17,39 @@ import me.vkryl.core.lambda.RunnableData;
 
 public class ComplexReceiver implements Destroyable {
   public interface KeyFilter {
-    boolean filterKey (int receiverType, Receiver receiver, int key);
+    boolean filterKey (int receiverType, Receiver receiver, long key);
   }
 
   private final View view;
-  private final SparseArrayCompat<ImageReceiver> imageReceivers;
-  private final SparseArrayCompat<GifReceiver> gifReceivers;
-  private final SparseArrayCompat<DoubleImageReceiver> previews;
+  private final LongSparseArray<ImageReceiver> imageReceivers;
+  private final LongSparseArray<GifReceiver> gifReceivers;
+  private final LongSparseArray<DoubleImageReceiver> previews;
 
   public ComplexReceiver(View view) {
     this.view = view;
-    this.imageReceivers = new SparseArrayCompat<>(10);
-    this.gifReceivers = new SparseArrayCompat<>(10);
-    this.previews = new SparseArrayCompat<>(10);
+    this.imageReceivers = new LongSparseArray<>(10);
+    this.gifReceivers = new LongSparseArray<>(10);
+    this.previews = new LongSparseArray<>(10);
   }
 
-  private static <T extends Receiver> void clearReceiversWithHigherKey (SparseArrayCompat<T> receivers, int key) {
+  private static <T extends Receiver> void clearReceiversWithHigherKey (LongSparseArray<T> receivers, long key) {
     final int size = receivers.size();
     for (int i = 0; i < size; i++) {
-      int sparseKey = receivers.keyAt(i);
+      long sparseKey = receivers.keyAt(i);
       if (sparseKey >= key) {
         receivers.valueAt(i).clear();
       }
     }
   }
 
-  private static <T extends Receiver> void clearReceiver (SparseArrayCompat<T> target, int key) {
+  private static <T extends Receiver> void clearReceiver (LongSparseArray<T> target, long key) {
     Receiver receiver = target.get(key);
     if (receiver != null) {
       receiver.clear();
     }
   }
 
-  private static <T extends Receiver> void clearReceivers (SparseArrayCompat<T> target, int receiverType, @Nullable KeyFilter filter) {
+  private static <T extends Receiver> void clearReceivers (LongSparseArray<T> target, int receiverType, @Nullable KeyFilter filter) {
     int size = target.size();
     for (int i = 0; i < size; i++) {
       Receiver receiver = target.valueAt(i);
@@ -89,7 +89,7 @@ public class ComplexReceiver implements Destroyable {
   private static final int TYPE_IMAGE = 2;
   private static final int TYPE_GIF = 3;
 
-  private static <T extends Receiver> T getReceiver (SparseArrayCompat<T> target, View view, boolean isAttached, boolean animationsDisabled, int key, int type) {
+  private static <T extends Receiver> T getReceiver (LongSparseArray<T> target, View view, boolean isAttached, boolean animationsDisabled, long key, int type) {
     int i = target.indexOfKey(key);
     if (i >= 0) {
       return target.valueAt(i);
@@ -118,18 +118,18 @@ public class ComplexReceiver implements Destroyable {
     return receiver;
   }
 
-  public Receiver getReceiver (int key, boolean isGif) {
+  public Receiver getReceiver (long key, boolean isGif) {
     if (isGif)
       return getGifReceiver(key);
     else
       return getImageReceiver(key);
   }
 
-  public ImageReceiver getImageReceiver (int key) {
+  public ImageReceiver getImageReceiver (long key) {
     return getReceiver(imageReceivers, view, isAttached, animationsDisabled, key, TYPE_IMAGE);
   }
 
-  public GifReceiver getGifReceiver (int key) {
+  public GifReceiver getGifReceiver (long key) {
     return getReceiver(gifReceivers, view, isAttached, animationsDisabled, key, TYPE_GIF);
   }
 
@@ -152,14 +152,14 @@ public class ComplexReceiver implements Destroyable {
     iterate(previews, callback);
   }
 
-  private static <T extends Receiver> void iterate (SparseArrayCompat<T> receivers, RunnableData<Receiver> callback) {
+  private static <T extends Receiver> void iterate (LongSparseArray<T> receivers, RunnableData<Receiver> callback) {
     final int count = receivers.size();
     for (int i = 0; i < count; i++) {
       callback.runWithData(receivers.valueAt(i));
     }
   }
 
-  private static <T extends Receiver> void attachDetach (SparseArrayCompat<T> receivers, boolean attach) {
+  private static <T extends Receiver> void attachDetach (LongSparseArray<T> receivers, boolean attach) {
     final int count = receivers.size();
     if (attach) {
       for (int i = 0; i < count; i++) {

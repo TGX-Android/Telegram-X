@@ -55,7 +55,7 @@ public class TdlibSender {
         break;
       }
       case TdApi.MessageSenderUser.CONSTRUCTOR: {
-        final int userId = ((TdApi.MessageSenderUser) sender).userId;
+        final long userId = ((TdApi.MessageSenderUser) sender).userId;
         TdApi.User user = isDemo && manager != null ? manager.demoParticipant(userId) : tdlib.cache().user(userId);
         TdApi.ProfilePhoto profilePhoto = user != null ? user.profilePhoto : null;
 
@@ -102,7 +102,7 @@ public class TdlibSender {
     return isChat() && tdlib.isChannel(getChatId());
   }
 
-  public int getUserId () {
+  public long getUserId () {
     return isUser() ? ((TdApi.MessageSenderUser) sender).userId : 0;
   }
 

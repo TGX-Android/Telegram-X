@@ -49,7 +49,7 @@ public class InlineResultMention extends InlineResult<UserContext> {
     return userContext.getUser();
   }
 
-  public int getUserId () {
+  public long getUserId () {
     return userContext.getId();
   }
 

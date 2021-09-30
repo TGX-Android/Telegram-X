@@ -24,7 +24,7 @@ import org.thunderdog.challegram.tool.Screen;
 public class InlineResultCommand extends InlineResult<TdApi.BotCommand> {
   private final UserContext userContext;
 
-  public InlineResultCommand (BaseActivity context, Tdlib tdlib, int userId, TdApi.BotCommand botCommand) {
+  public InlineResultCommand (BaseActivity context, Tdlib tdlib, long userId, TdApi.BotCommand botCommand) {
     super(context, tdlib, TYPE_COMMAND, null, botCommand);
     this.userContext = new UserContext(tdlib, userId);
   }

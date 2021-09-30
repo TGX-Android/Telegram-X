@@ -214,6 +214,7 @@ import org.thunderdog.challegram.widget.ViewPager;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashSet;
@@ -1464,7 +1465,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return messageThread != null ? messageThread.getDraft() : chat.draftMessage;
   }
 
-  public int getChatUserId () {
+  public long getChatUserId () {
     return TD.getUserId(chat);
   }
 
@@ -1488,7 +1489,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return tdlib.isChannel(getChatId());
   }
 
-  public boolean comparePrivateUserId (int userId) {
+  public boolean comparePrivateUserId (long userId) {
     return userId != 0 && ChatId.toUserId(getChatId()) == userId;
   }
 
@@ -1515,7 +1516,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return canWriteMessages() ? inputView : null;
   }
 
-  public void removeInlineBot (int userId) {
+  public void removeInlineBot (long userId) {
     if (inputView != null) {
       inputView.getInlineSearchContext().removeInlineBot(userId);
     }
@@ -2093,6 +2094,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     public Referrer referrer;
     public TdApi.InternalLinkTypeVoiceChat voiceChatInvitation;
 
+    public long eventLogUserId;
+
     public @Nullable TdApi.Background wallpaperObject;
 
     public Arguments (Tdlib tdlib, TdApi.ChatList chatList, TdApi.Chat chat, @Nullable ThreadInfo messageThread, TdApi.SearchMessagesFilter filter) {
@@ -2182,6 +2185,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     public Arguments voiceChatInvitation (TdApi.InternalLinkTypeVoiceChat voiceChatInvitation) {
       this.voiceChatInvitation = voiceChatInvitation;
+      return this;
+    }
+
+    public Arguments eventLogUserId (long eventLogUserId) {
+      this.eventLogUserId = eventLogUserId;
       return this;
     }
   }
@@ -2424,6 +2432,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
           showActionButton(R.string.Settings, ACTION_EVENT_LOG_SETTINGS);
           manager.openEventLog(chat);
           messagesView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 120l));
+          if (getArgumentsStrict().eventLogUserId != 0 && headerCell != null) {
+            manager.applyEventLogFilters(new TdApi.ChatEventLogFilters(true, true, true, true, true, true, true, true, true, true, true, true), new long[] { getArgumentsStrict().eventLogUserId });
+          }
           break;
         case PREVIEW_MODE_SEARCH:
           manager.openSearch(chat, previewSearchQuery, previewSearchSender, previewSearchFilter);
@@ -3100,6 +3111,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         header.addButton(menu, R.id.menu_btn_clearCache, R.drawable.templarian_baseline_broom_24, iconColorId, this, Screen.dp(52f))
         .setVisibility((value = canClearCacheSelectedMessages()) ? View.VISIBLE : View.GONE);
         if (value) totalButtonsCount++;
+        header.addButton(menu, R.id.menu_btn_unpinAll, R.drawable.deproko_baseline_pin_undo_24, iconColorId, this, Screen.dp(52f))
+        .setVisibility((value = canUnpinSelectedMessages()) ? View.VISIBLE : View.GONE);
+        if (value) totalButtonsCount++;
         header.addRetryButton(menu, this, iconColorId)
           .setVisibility((value = canResendSelectedMessages()) ? View.VISIBLE : View.GONE);
         if (value) totalButtonsCount++;
@@ -3333,6 +3347,22 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         break;
       }
+      case R.id.menu_btn_unpinAll: {
+        if (selectedMessageIds != null && selectedMessageIds.size() > 0) {
+          showOptions(Lang.pluralBold(R.string.UnpinXMessages, selectedMessageIds.size()), new int[] {R.id.btn_unpinAll, R.id.btn_cancel}, new String[] {Lang.getString(R.string.Unpin), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.deproko_baseline_pin_undo_24, R.drawable.baseline_cancel_24}, (itemView, viewId) -> {
+            if (viewId == R.id.btn_unpinAll) {
+              final int size = selectedMessageIds.size();
+              for (int i = 0; i < size; i++) {
+                tdlib.client().send(new TdApi.UnpinChatMessage(chat.id, selectedMessageIds.keyAt(i)), tdlib.okHandler());
+              }
+              exitOnTransformFinish = true;
+              finishSelectMode(-1);
+            }
+            return true;
+          });
+        }
+        break;
+      }
       case R.id.menu_btn_delete: {
         if (pagerScrollPosition != 0 && pagerContentAdapter != null) {
           SharedBaseController<?> c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
@@ -3438,7 +3468,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         tutorialFlag = Settings.TUTORIAL_SCHEDULE;
       }
       if (Settings.instance().needTutorial(tutorialFlag)) {
-        int userId = tdlib.chatUserId(getChatId());
+        long userId = tdlib.chatUserId(getChatId());
         boolean canSendOnceOnline = !isSelfChat() && tdlib.cache().userLastSeenAvailable(userId);
         String tutorialKey = tutorialFlag + (isSelfChat() ? "_self" : canSendOnceOnline ? "_online" : isChannel() ? "_channel" : "");
         if (shownTutorials == null || !shownTutorials.contains(tutorialKey)) {
@@ -3666,7 +3696,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void checkLinkedChat () {
-    int supergroupId = ChatId.toSupergroupId(getChatId());
+    long supergroupId = ChatId.toSupergroupId(getChatId());
     TdApi.SupergroupFullInfo info = supergroupId != 0 ? tdlib.cache().supergroupFull(supergroupId) : null;
     long linkedChatId = info != null ? info.linkedChatId : 0;
     if (this.linkedChatId != linkedChatId) {
@@ -3990,7 +4020,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return true;
   }
 
-  public void setInputInlineBot (int userId, String username) {
+  public void setInputInlineBot (long userId, String username) {
     if (canWriteMessages()) {
       // pressed via @NephoBot message
       inputView.setInput(username + " ", true);
@@ -4106,6 +4136,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       headerView.updateButton(R.id.menu_messageActions, R.id.menu_btn_send, (value = canSendSelectedMessages()) ? View.VISIBLE : View.GONE, 0);
       if (value) totalButtonsCount++;
       headerView.updateButton(R.id.menu_messageActions, R.id.menu_btn_clearCache, (value = canClearCacheSelectedMessages()) ? View.VISIBLE : View.GONE, 0);
+      if (value) totalButtonsCount++;
+      headerView.updateButton(R.id.menu_messageActions, R.id.btn_unpinAll, (value = canUnpinSelectedMessages()) ? View.VISIBLE : View.GONE, 0);
       if (value) totalButtonsCount++;
       headerView.updateButton(R.id.menu_messageActions, R.id.menu_btn_report, canReportSelectedMessages(totalButtonsCount) ? View.VISIBLE : View.GONE, 0);
     }
@@ -4291,13 +4323,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return false;
   }
 
+  private boolean canUnpinSelectedMessages () {
+    return arePinnedMessages() && canPinAnyMessage(false);
+  }
+
   private boolean canReplyToSelectedMessages () {
     return pagerScrollPosition == 0 && TD.canReplyTo(getSingleSelectedMessage()) && canWriteMessages();
   }
 
   private boolean canEditSelectedMessages () {
     TdApi.Message msg = getSingleSelectedMessage();
-    return pagerScrollPosition == 0 && msg != null && msg.canBeEdited && TD.canEditText(msg.content);
+    return !arePinnedMessages() && pagerScrollPosition == 0 && msg != null && msg.canBeEdited && TD.canEditText(msg.content);
   }
 
   private boolean canShareSelectedMessages () {
@@ -4870,6 +4906,22 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         return true;
       }
+      case R.id.btn_viewStatistics: {
+        if (selectedMessage != null) {
+          TdApi.Message[] messages = selectedMessage.getAllMessages();
+          MessageStatisticsController statsController = new MessageStatisticsController(context, tdlib);
+          if (messages.length == 1) {
+            statsController.setArguments(new MessageStatisticsController.Args(messages[0].chatId, messages[0]));
+          } else {
+            statsController.setArguments(new MessageStatisticsController.Args(messages[0].chatId, Arrays.asList(messages)));
+          }
+          navigateTo(statsController);
+          clearSelectedMessage();
+        }
+
+        return true;
+
+      }
       case R.id.btn_deleteFile: {
         if (selectedMessage != null) {
           if (selectedMessageTag != null) {
@@ -5056,7 +5108,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void showActionUnblockButton () {
-    int userId = tdlib.chatUserId(chat);
+    long userId = tdlib.chatUserId(chat);
     if (!tdlib.isRepliesChat(chat.id) && tdlib.isBotChat(chat)) {
       showActionButton(R.string.RestartBot, ACTION_BOT_START);
     } else {
@@ -6804,7 +6856,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     inputView.setText("");
   }
 
-  public void openGame (int ownerUserId, TdApi.Game game, final String url, TdApi.Message message) {
+  public void openGame (long ownerUserId, TdApi.Game game, final String url, TdApi.Message message) {
     TdApi.User user = tdlib.cache().user(ownerUserId);
     GameController controller = new GameController(context, tdlib);
     controller.setArguments(new GameController.Args(user != null ? user.id : 0, game, user != null ? "@" + user.username : "Game", url, message, this));
@@ -6814,7 +6866,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     navigateTo(controller);
   }
 
-  public void switchInline (int viaBotUserId, final TdApi.InlineKeyboardButtonTypeSwitchInline switchInline) {
+  public void switchInline (long viaBotUserId, final TdApi.InlineKeyboardButtonTypeSwitchInline switchInline) {
     if (chat == null) {
       return;
     }
@@ -7656,7 +7708,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
 
         TdApi.ChatEventLogFilters filters = manager.getEventLogFilters();
-        int[] userIds = manager.getEventLogUserIds();
+        long[] userIds = manager.getEventLogUserIds();
 
         ArrayList<ListItem> items = new ArrayList<>();
 
@@ -7739,7 +7791,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
         for (TdApi.ChatAdministrator admin : chatAdmins.administrators) {
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-          items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR, R.id.user, 0, tdlib.cache().userName(admin.userId), userIds == null || ArrayUtils.indexOf(userIds, admin.userId) != -1).setLongId(admin.userId).setIntValue(admin.userId));
+          items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR, R.id.user, 0, tdlib.cache().userName(admin.userId), userIds == null || ArrayUtils.indexOf(userIds, admin.userId) != -1).setLongId(admin.userId).setLongValue(admin.userId));
         }
 
 
@@ -7773,14 +7825,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
               true,
               true
             );
-            final IntList userIds1;
+            final LongList userIds1;
 
 
             int i12 = wrap.adapter.indexOfViewById(R.id.btn_members);
             if (i12 != -1 && wrap.adapter.getItems().get(i12).isSelected()) {
               userIds1 = null;
             } else {
-              userIds1 = new IntList(chatAdmins != null ? chatAdmins.administrators.length : 10);
+              userIds1 = new LongList(chatAdmins != null ? chatAdmins.administrators.length : 10);
             }
 
             int filterCount = 0;
@@ -9017,7 +9069,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onUserUpdated (TdApi.User user) { }
 
   @Override
-  public void onUserFullUpdated (final int userId, final TdApi.UserFullInfo userFull) {
+  public void onUserFullUpdated (final long userId, final TdApi.UserFullInfo userFull) {
     tdlib.ui().post(() -> {
       if (chat != null && TD.getUserId(chat) == userId) {
         updateBottomBar(true);
@@ -9032,7 +9084,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @UiThread
   @Override
-  public void onUserStatusChanged (int userId, TdApi.UserStatus status, boolean uiOnly) {
+  public void onUserStatusChanged (long userId, TdApi.UserStatus status, boolean uiOnly) {
     if (chat != null && headerCell != null && TD.getUserId(chat) == userId) {
       headerCell.updateUserStatus(chat);
     }
@@ -9056,7 +9108,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public void onSupergroupFullUpdated (final int supergroupId, final TdApi.SupergroupFullInfo newSupergroupFull) {
+  public void onSupergroupFullUpdated (final long supergroupId, final TdApi.SupergroupFullInfo newSupergroupFull) {
     tdlib.ui().post(() -> {
       if (ChatId.toSupergroupId(getChatId()) == supergroupId) {
         headerCell.updateUserStatus(chat);
@@ -9085,7 +9137,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public void onBasicGroupFullUpdated (final int basicGroupId, TdApi.BasicGroupFullInfo basicGroupFull) {
+  public void onBasicGroupFullUpdated (final long basicGroupId, TdApi.BasicGroupFullInfo basicGroupFull) {
     tdlib.ui().post(() -> {
       if (chat != null && ChatId.toBasicGroupId(getChatId()) == basicGroupId) {
         headerCell.updateUserStatus(chat);

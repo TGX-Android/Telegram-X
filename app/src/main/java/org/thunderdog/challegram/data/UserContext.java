@@ -25,7 +25,7 @@ import org.thunderdog.challegram.util.text.Letters;
 
 public class UserContext {
   private final Tdlib tdlib;
-  private final int userId;
+  private final long userId;
   private @Nullable TdApi.User user;
 
   private String fullName;
@@ -40,7 +40,7 @@ public class UserContext {
   private int lettersWidth;
   private int nameWidth;
 
-  public UserContext (Tdlib tdlib, int userId) {
+  public UserContext (Tdlib tdlib, long userId) {
     this.tdlib = tdlib;
     this.userId = userId;
     TdApi.User user = tdlib.cache().user(userId);
@@ -91,7 +91,7 @@ public class UserContext {
     return imageFile != null;
   }
 
-  public int getId () {
+  public long getId () {
     return userId;
   }
 

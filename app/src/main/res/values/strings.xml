@@ -1394,6 +1394,7 @@
   <string name="Report">Report</string>
   <string name="ReportChat">Report %1$s</string>
   <string name="Spam">Spam</string>
+  <string name="Fake">Fake</string>
   <string name="Violence">Violence</string>
   <string name="ChildAbuse">Child Abuse</string>
   <string name="Pornography">Pornography</string>
@@ -2487,7 +2488,7 @@
   <string name="c_seekEmpty">Not yet downloaded part of the file.</string>
   <string name="c_seekReady">Downloaded part of the file.</string>
   <string name="c_seekDone">Playback progress of the file.</string>
-  <string name="c_promo">New trending sticker set.</string>
+  <string name="c_promo">New trending sticker set</string>
   <string name="c_statusBarLegacy">Used on **Android&#160;5.x** and lower.</string>
 
   <string name="p_parentTheme">Default values are inherited from this theme when a color or property is not explicitly set.</string>
@@ -2692,6 +2693,8 @@
   <string name="errorPrivacyAddMember">Sorry, the user restricted who can add them to chats in their privacy settings.</string>
   <string name="UserPrivacyRestricted">Sorry, the user restricted this action in their privacy settings.</string>
   <string name="NobodyLikesSpam2">Sorry, you can interact only with mutual contacts at the moment.</string> <!--PEER_FLOOD-->
+  <string name="error_BOTS_TOO_MUCH">Sorry, this group contains too many bots. Please remove one of your existing ones first.</string>
+  <string name="error_ADMINS_TOO_MUCH">Sorry, this group contains too many admins. Please remove one of your existing ones first.</string>
 
   <string name="NotificationImportance">Notification Style</string>
   <string name="NotificationImportanceHigh">Sound and pop-up</string>
@@ -3462,6 +3465,31 @@
   <string name="StatsChartInteractions">Interactions</string>
   <string name="StatsChartIv">IV Interactions</string>
 
+  <string name="StatsTopMembers">Top members</string>
+  <string name="StatsTopAdmins">Top admins</string>
+  <string name="StatsTopInviters">Top inviters</string>
+  <string name="StatsXCharacters_one">%1$s character per message</string>
+  <string name="StatsXCharacters_other">%1$s characters per message</string>
+  <string name="StatsXDeletions_one">%1$s deletion</string>
+  <string name="StatsXDeletions_other">%1$s deletions</string>
+  <string name="StatsXBans_one">%1$s ban</string>
+  <string name="StatsXBans_other">%1$s bans</string>
+  <string name="StatsXRestrictions_one">%1$s restriction</string>
+  <string name="StatsXRestrictions_other">%1$s restrictions</string>
+  <string name="StatsXInvitations_one">%1$s invitation</string>
+  <string name="StatsXInvitations_other">%1$s invitations</string>
+  <string name="StatsXShowMore_one">Show %1$s More</string>
+  <string name="StatsXShowMore_other">Show %1$s More</string>
+  <string name="StatsRecentPosts">Recent Posts</string>
+  <string name="StatsXShared_one">%1$s share</string>
+  <string name="StatsXShared_other">%1$s shares</string>
+  <string name="StatsMessageInfo">Message Statistics</string>
+  <string name="StatsMessageViewCount">View Count</string>
+  <string name="StatsMessageSharesPrivate">Private Shares</string>
+  <string name="StatsMessageSharesPublic">Public Shares</string>
+  <string name="StatsMessagePublishDate">Publication Date</string>
+  <string name="StatsMessageSignature">Author Signature</string>
+
   <string name="SendDiceAsEmoji">Send as emoji</string>
   <string name="SendDiceHint">Send a %1$s emoji to any chat to get a random number from Telegram.</string>
   <string name="SendDice">Send a dice</string>
@@ -3578,7 +3606,7 @@
   <string name="locationUpdated_yesterday">updated yesterday at %1$s</string>
   <string name="locationUpdated_weekday">updated on %1$s at %2$s</string>
   <string name="locationUpdated_date">updated on %1$s at %2$s</string>
-  
+
   <string name="modified_now">modified just now</string>
   <string name="modified_seconds_one">modified %1$s second ago</string>
   <string name="modified_seconds_other">modified %1$s seconds ago</string>
@@ -3717,6 +3745,9 @@
   <string name="InviteLinkViewMembersTitle">Joined members</string>
   <string name="CreatedByXOnDate">Created by %1$s %2$s</string>
   <string name="Infinity">∞</string>
+  <string name="ChatTtl">Auto-delete messages</string>
+  <string name="ChatTtlDisabled">Choose a certain period of time when messages will be automatically deleted for members of the group.</string>
+  <string name="ChatTtlEnabled">Automatically delete new messages after %1$s for members of the group.</string>
 
   <string name="ChatBackgroundPreview">Chat Background Preview</string>
   <string name="ChatBackgroundNotSupported">Sorry, this type of chat background is not yet supported.</string>
@@ -3757,6 +3788,15 @@
   <string name="NoRightDisallowInvite">All members can invite new members in this chat.</string>
   <string name="NoRightDisallowChangeInfo">All members can change info of this chat.</string>
   <string name="NoRightDisallowPin">All members can pin messages in this chat.</string>
+
+  <string name="CopyBankCard">Copy card number</string>
+  <string name="CopiedBankCard">Card number copied to the clipboard</string>
+
+  <string name="ChoosingSticker">choosing a sticker</string>
+  <string name="IsChoosingSticker">%1$s is choosing a sticker</string>
+  <string name="AreChoosingSticker">%1$s are choosing stickers</string>
+
+  <string name="QDeleteCallFromRecent">Delete call from recent?</string>
 
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />

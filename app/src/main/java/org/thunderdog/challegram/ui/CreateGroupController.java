@@ -97,10 +97,10 @@ public class CreateGroupController extends ViewController<Void> implements EditH
 
   @Override
   public boolean saveInstanceState (Bundle outState, String keyPrefix) {
-    int[] userIds = getUserIds();
+    long[] userIds = getUserIds();
     if (userIds != null && userIds.length > 0) {
       super.saveInstanceState(outState, keyPrefix);
-      outState.putIntArray(keyPrefix + "userIds", userIds);
+      outState.putLongArray(keyPrefix + "userIds", userIds);
       return true;
     }
     return false;
@@ -108,12 +108,12 @@ public class CreateGroupController extends ViewController<Void> implements EditH
 
   @Override
   public boolean restoreInstanceState (Bundle in, String keyPrefix) {
-    int[] userIds = in.getIntArray(keyPrefix + "userIds");
+    long[] userIds = in.getLongArray(keyPrefix + "userIds");
     if (userIds == null || userIds.length == 0) {
       return false;
     }
     ArrayList<TGUser> members = null;
-    for (int userId : userIds) {
+    for (long userId : userIds) {
       TdApi.User user = tdlib.cache().user(userId);
       if (user == null) {
         return false;
@@ -131,11 +131,11 @@ public class CreateGroupController extends ViewController<Void> implements EditH
     return false;
   }
 
-  private int[] getUserIds () {
+  private long[] getUserIds () {
     if (members == null || members.isEmpty()) {
-      return ArrayUtils.EMPTY_INTS;
+      return ArrayUtils.EMPTY_LONGS;
     }
-    int[] userIds = new int[members.size()];
+    long[] userIds = new long[members.size()];
     int i = 0;
     for (TGUser user : members) {
       userIds[i++] = user.getId();
@@ -158,7 +158,7 @@ public class CreateGroupController extends ViewController<Void> implements EditH
     tdlib.cache().unsubscribeFromUserUpdates(getUserIds(), this);
   }
 
-  private int indexOfUser (int userId) {
+  private int indexOfUser (long userId) {
     if (members == null || members.isEmpty()) {
       return -1;
     }
@@ -178,16 +178,13 @@ public class CreateGroupController extends ViewController<Void> implements EditH
   }
 
   @Override
-  public void onUserFullUpdated (int userId, TdApi.UserFullInfo userFull) { }
-
-  @Override
   public boolean needUserStatusUiUpdates () {
     return true;
   }
 
   @Override
   @UiThread
-  public void onUserStatusChanged (final int userId, final TdApi.UserStatus status, boolean uiOnly) {
+  public void onUserStatusChanged (final long userId, final TdApi.UserStatus status, boolean uiOnly) {
     updateUserStatus(userId, status);
   }
 
@@ -199,7 +196,7 @@ public class CreateGroupController extends ViewController<Void> implements EditH
     }
   }
 
-  private void updateUserStatus (int userId, TdApi.UserStatus status) {
+  private void updateUserStatus (long userId, TdApi.UserStatus status) {
     int i = indexOfUser(userId);
     if (i != 0) {
       members.get(i).setStatus(status);
@@ -209,7 +206,7 @@ public class CreateGroupController extends ViewController<Void> implements EditH
 
   private void updateUserAtIndex (int i, boolean subtextOnly) {
     View view = recyclerView.getLayoutManager().findViewByPosition(i);
-    if (view != null && view instanceof UserView) {
+    if (view instanceof UserView) {
       if (subtextOnly) {
         ((UserView) view).updateSubtext();
       } else {
@@ -334,7 +331,7 @@ public class CreateGroupController extends ViewController<Void> implements EditH
     switch (id) {
       case R.id.btn_deleteMember: {
         if (pickedUser != null) {
-          int userId = pickedUser.getId();
+          long userId = pickedUser.getId();
           int index = indexOfUser(userId);
           if (index != -1) {
             tdlib.cache().unsubscribeFromUserUpdates(userId, this);
@@ -380,7 +377,7 @@ public class CreateGroupController extends ViewController<Void> implements EditH
 
   private boolean isCreating;
   private String currentPhoto;
-  private int[] currentMemberIds;
+  private long[] currentMemberIds;
   private boolean currentIsChannel;
 
   public interface Callback {
@@ -410,7 +407,7 @@ public class CreateGroupController extends ViewController<Void> implements EditH
 
     String title = headerCell.getInput();
 
-    this.currentMemberIds = new int[members.size()];
+    this.currentMemberIds = new long[members.size()];
     int i = 0;
     for (TGUser member : members) {
       currentMemberIds[i++] = member.getId();

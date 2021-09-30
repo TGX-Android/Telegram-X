@@ -68,7 +68,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     long provideInlineSearchChatId ();
     TdApi.Chat provideInlineSearchChat ();
     TdApi.WebPage provideExistingWebPage (TdApi.FormattedText currentText);
-    int provideInlineSearchChatUserId ();
+    long provideInlineSearchChatUserId ();
     boolean isDisplayingItems ();
     void updateInlineMode (boolean isInInlineMode, boolean isInProgress);
     void showInlinePlaceholder (@NonNull String username, @NonNull String placeholder);
@@ -656,10 +656,10 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     }
   }
 
-  private static ArrayList<InlineResult<?>> parseInlineResults (BaseActivity context, Tdlib tdlib, int inlineBotId, String inlineQuery, TdApi.InlineQueryResults results, @Nullable String switchPmText, @Nullable String switchPmParameter, TdApi.GetInlineQueryResults queryResults, String inlineNextOffset) {
+  private static ArrayList<InlineResult<?>> parseInlineResults (BaseActivity context, Tdlib tdlib, long inlineBotUserId, String inlineQuery, TdApi.InlineQueryResults results, @Nullable String switchPmText, @Nullable String switchPmParameter, TdApi.GetInlineQueryResults queryResults, String inlineNextOffset) {
     final ArrayList<InlineResult<?>> items = new ArrayList<>(results.results.length + (switchPmText != null && !switchPmText.isEmpty() ? 1 : 0));
     if (switchPmText != null && !switchPmText.isEmpty()) {
-      items.add(new InlineResultButton(context, tdlib, inlineBotId, switchPmText, switchPmParameter));
+      items.add(new InlineResultButton(context, tdlib, inlineBotUserId, switchPmText, switchPmParameter));
     }
     TGPlayerController.PlayListBuilder builder = new CommonPlayListBuilder(items, queryResults, inlineNextOffset);
     for (TdApi.InlineQueryResult result : results.results) {
@@ -678,7 +678,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     cancelInlineQueryMoreRequest();
     final TdApi.Location location = userLocation != null ? new TdApi.Location(userLocation.getLatitude(), userLocation.getLongitude(), userLocation.getAccuracy()) : null;
     final long queryStartTime = SystemClock.uptimeMillis();
-    final int botUserId = inlineBot.id;
+    final long botUserId = inlineBot.id;
     final long chatId = callback.provideInlineSearchChatId();
     final TdApi.GetInlineQueryResults function = new TdApi.GetInlineQueryResults(botUserId, chatId, location, inlineQuery, null);
     inlineQueryHandler = new CancellableResultHandler() {
@@ -889,7 +889,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     }
   }
 
-  public void removeInlineBot (int userId) {
+  public void removeInlineBot (long userId) {
     if (inlineBots != null) {
       int i = 0;
       for (InlineResult<?> result : inlineBots) {
@@ -911,7 +911,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     }
   }
 
-  private static int indexOfMention (ArrayList<InlineResult<?>> items, int userId) {
+  private static int indexOfMention (ArrayList<InlineResult<?>> items, long userId) {
     if (items == null || items.isEmpty()) {
       return -1;
     }
@@ -962,7 +962,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
                   break;
                 }
                 case TdApi.Users.CONSTRUCTOR: {
-                  int[] userIds = ((TdApi.Users) object).userIds;
+                  long[] userIds = ((TdApi.Users) object).userIds;
                   ArrayList<TdApi.User> users = tdlib.cache().users(userIds);
                   inlineBotResults.ensureCapacity(userIds.length);
                   for (TdApi.User user : users) {
@@ -1027,7 +1027,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
         final ArrayList<InlineResult<?>> addedResults = new ArrayList<>();
         switch (object.getConstructor()) {
           case TdApi.Users.CONSTRUCTOR: {
-            int[] userIds = ((TdApi.Users) object).userIds;
+            long[] userIds = ((TdApi.Users) object).userIds;
             if (userIds.length > 0) {
               ArrayList<TdApi.User> users = tdlib.cache().users(userIds);
               addedResults.ensureCapacity(userIds.length);

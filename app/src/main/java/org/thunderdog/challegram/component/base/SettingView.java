@@ -390,7 +390,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     }
   }
 
-  private int colorDataId;
+  private int colorDataId = ThemeColorId.NONE;
 
   public void setColorDataId (@ThemeColorId int color) {
     if (this.colorDataId != color) {

@@ -118,7 +118,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
     long provideInlineSearchChatId (InputView v);
     TdApi.Chat provideInlineSearchChat (InputView v);
-    int provideInlineSearchChatUserId (InputView v);
+    long provideInlineSearchChatUserId (InputView v);
     void showInlineResults (InputView v, ArrayList<InlineResult<?>> items, boolean isContent);
     void addInlineResults (InputView v, ArrayList<InlineResult<?>> items);
   }
@@ -1096,7 +1096,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   @Override
-  public int provideInlineSearchChatUserId () {
+  public long provideInlineSearchChatUserId () {
     return controller != null ? controller.getChatUserId() : inputListener != null && inputListener.canSearchInline(this) ? inputListener.provideInlineSearchChatUserId(this) : 0;
   }
 

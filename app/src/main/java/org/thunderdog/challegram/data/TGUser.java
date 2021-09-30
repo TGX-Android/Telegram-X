@@ -32,9 +32,10 @@ public class TGUser implements UserProvider {
   private static final int FLAG_NO_BOT_STATE = 0x20;
   private static final int FLAG_SHOW_PHONE_NUMBER = 0x40;
   private static final int FLAG_CUSTOM_STATUS_TEXT = 0x80;
+  private static final int FLAG_CHAT_TITLE_AS_USER_NAME = 0x160;
 
   private final Tdlib tdlib;
-  private final int userId;
+  private final long userId;
   private @Nullable TdApi.User user;
   private ImageFile imageFile;
   private AvatarPlaceholder.Metadata avatarPlaceholderMetadata;
@@ -146,8 +147,8 @@ public class TGUser implements UserProvider {
   }
 
   public void setCustomStatus (String statusText) {
-    if (!this.statusText.equals(statusText)) {
-      if (statusText == null || statusText.isEmpty()) {
+    if (!StringUtils.equalsOrBothEmpty(this.statusText, statusText)) {
+      if (StringUtils.isEmpty(statusText)) {
         this.flags &= ~FLAG_CUSTOM_STATUS_TEXT;
         updateStatus();
       } else {
@@ -156,6 +157,10 @@ public class TGUser implements UserProvider {
         this.flags &= ~FLAG_ONLINE;
       }
     }
+  }
+
+  public void chatTitleAsUserName () {
+    this.flags |= FLAG_CHAT_TITLE_AS_USER_NAME;
   }
 
   private long chatId;
@@ -199,6 +204,7 @@ public class TGUser implements UserProvider {
   }
 
   public boolean updateName () {
+    if ((flags & FLAG_CHAT_TITLE_AS_USER_NAME) != 0) return false;
     String nameText = (flags & FLAG_LOCAL) != 0 ? TD.getUserName(firstName, lastName) : TD.getUserName(userId, user);
     if (!StringUtils.equalsOrBothEmpty(this.nameText, nameText)) {
       this.nameText = nameText;
@@ -249,7 +255,7 @@ public class TGUser implements UserProvider {
     return role;
   }
 
-  public int getId () {
+  public long getId () {
     return (flags & FLAG_LOCAL) != 0 ? contactId : user == null ? 0 : user.id;
   }
 
@@ -294,7 +300,7 @@ public class TGUser implements UserProvider {
   }
 
   public String getFirstName () {
-    return (flags & FLAG_LOCAL) != 0 ? firstName : user != null ? user.firstName : "User#" + userId;
+    return (flags & FLAG_CHAT_TITLE_AS_USER_NAME) != 0 ? nameText : (flags & FLAG_LOCAL) != 0 ? firstName : user != null ? user.firstName : "User#" + userId;
   }
 
   public String getLastName () {

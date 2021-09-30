@@ -39,7 +39,7 @@ public class TdlibNotificationChannelGroup {
 
   private static final String ACCOUNT_PREFIX = "account_";
   private static final String ACCOUNT_PREFIX_DEBUG = "debug_account_";
-  private final int accountUserId;
+  private final long accountUserId;
   private final int globalVersion;
   private final String groupId;
   private final boolean isDebug;
@@ -66,11 +66,11 @@ public class TdlibNotificationChannelGroup {
   private static final String CUSTOM_SUFFIX = "_chat_";
   private final LongSparseArray<ChannelEntry> customChannels = new LongSparseArray<>();
 
-  private static String makePrefix (int accountId, int globalVersion) {
-    return accountId + "_" + globalVersion;
+  private static String makePrefix (long accountUserId, int globalVersion) {
+    return accountUserId + "_" + globalVersion;
   }
 
-  public TdlibNotificationChannelGroup (Tdlib tdlib, int accountUserId, boolean isDebugAccount, @Nullable TdApi.User account) {
+  public TdlibNotificationChannelGroup (Tdlib tdlib, long accountUserId, boolean isDebugAccount, @Nullable TdApi.User account) {
     this.tdlib = tdlib;
     this.accountUserId = accountUserId;
     this.isDebug = isDebugAccount;
@@ -191,7 +191,7 @@ public class TdlibNotificationChannelGroup {
 
   // API
 
-  public int getAccountUserId () {
+  public long getAccountUserId () {
     return accountUserId;
   }
 
@@ -231,7 +231,7 @@ public class TdlibNotificationChannelGroup {
 
   // Utils
 
-  public static String makeGroupId (int accountUserId, boolean isDebug) {
+  public static String makeGroupId (long accountUserId, boolean isDebug) {
     return (isDebug ? ACCOUNT_PREFIX_DEBUG : ACCOUNT_PREFIX) + accountUserId;
   }
 
@@ -260,7 +260,7 @@ public class TdlibNotificationChannelGroup {
     return channel;
   }
 
-  private static Object makeCustomChannel (Tdlib tdlib, int accountUserId, boolean isDebug, int globalVersion, long chatId, long channelVersion) {
+  private static Object makeCustomChannel (Tdlib tdlib, long accountUserId, boolean isDebug, int globalVersion, long chatId, long channelVersion) {
     int priority = tdlib.notifications().getEffectivePriorityOrImportance(chatId);
     int vibrateMode = tdlib.notifications().getEffectiveVibrateMode(chatId);
     int ledColor = tdlib.notifications().getEffectiveLedColor(chatId);
@@ -345,8 +345,8 @@ public class TdlibNotificationChannelGroup {
     throw new RuntimeException();
   }
 
-  public static String makeChannelId (int accountId, int globalVersion, TdApi.NotificationSettingsScope scope, long customChatId, long channelVersion) {
-    StringBuilder b = new StringBuilder(makePrefix(accountId, globalVersion));
+  public static String makeChannelId (long accountUserId, int globalVersion, TdApi.NotificationSettingsScope scope, long customChatId, long channelVersion) {
+    StringBuilder b = new StringBuilder(makePrefix(accountUserId, globalVersion));
     b.append(customChatId != 0 ? CUSTOM_SUFFIX : getSuffix(scope));
     if (customChatId != 0) {
       b.append(customChatId);
@@ -373,7 +373,7 @@ public class TdlibNotificationChannelGroup {
       NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
       if (m == null)
         return;
-      int accountUserId = tdlib.myUserId(true);
+      long accountUserId = tdlib.myUserId(true);
       if (accountUserId == 0)
         return;
       List<android.app.NotificationChannel> channels = m.getNotificationChannels();
@@ -441,7 +441,7 @@ public class TdlibNotificationChannelGroup {
 
         for (int j = 0; j < 2; j++) {
           boolean isDebug = j == 1;
-          int[] userIds = TdlibManager.instance().availableUserIds(isDebug);
+          long[] userIds = TdlibManager.instance().availableUserIds(isDebug);
           String prefix = isDebug ? ACCOUNT_PREFIX_DEBUG : ACCOUNT_PREFIX;
           for (int i = groups.size() - 1; i >= 0; i--) {
             android.app.NotificationChannelGroup group = groups.get(i);
@@ -458,8 +458,8 @@ public class TdlibNotificationChannelGroup {
     }
   }
 
-  public static void updateChannelSettings (Tdlib tdlib, int accountId, boolean isDebug, int globalVersion, TdApi.NotificationSettingsScope scope, long customChatId, long channelVersion) {
-    if (accountId == 0) {
+  public static void updateChannelSettings (Tdlib tdlib, long accountUserId, boolean isDebug, int globalVersion, TdApi.NotificationSettingsScope scope, long customChatId, long channelVersion) {
+    if (accountUserId == 0) {
       return;
     }
     NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
@@ -467,7 +467,7 @@ public class TdlibNotificationChannelGroup {
       if (customChatId != 0) {
         TdApi.Chat chat = tdlib.chat(customChatId);
         if (chat != null) {
-          android.app.NotificationChannel channel = (android.app.NotificationChannel) makeCustomChannel(tdlib, accountId, isDebug, globalVersion, chat.id, channelVersion);
+          android.app.NotificationChannel channel = (android.app.NotificationChannel) makeCustomChannel(tdlib, accountUserId, isDebug, globalVersion, chat.id, channelVersion);
           if (tdlib.notifications().hasCustomChatSettings(customChatId)) {
             m.createNotificationChannel(channel);
           }
@@ -476,19 +476,19 @@ public class TdlibNotificationChannelGroup {
         tdlib.notifications().createChannels();
       }
       while (channelVersion > 0) {
-        m.deleteNotificationChannel(makeChannelId(accountId, globalVersion, scope, customChatId, --channelVersion));
+        m.deleteNotificationChannel(makeChannelId(accountUserId, globalVersion, scope, customChatId, --channelVersion));
       }
     }
   }
 
-  public static void updateChat (Tdlib tdlib, int accountId, TdApi.Chat chat) {
-    if (accountId == 0) {
+  public static void updateChat (Tdlib tdlib, long accountUserId, TdApi.Chat chat) {
+    if (accountUserId == 0) {
       return;
     }
     NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
     if (m != null) {
       long channelVersion = tdlib.notifications().getChannelVersion(null, chat.id);
-      String channelId = makeChannelId(accountId, tdlib.notifications().getChannelsGlobalVersion(), null, chat.id, channelVersion);
+      String channelId = makeChannelId(accountUserId, tdlib.notifications().getChannelsGlobalVersion(), null, chat.id, channelVersion);
       android.app.NotificationChannel channel = m.getNotificationChannel(channelId);
       if (channel != null) {
         channel.setName(tdlib.chatTitle(chat));
@@ -498,7 +498,7 @@ public class TdlibNotificationChannelGroup {
     }
   }
 
-  public static void deleteChannels (Tdlib tdlib, int accountUserId, boolean isDebug, @Nullable TdApi.User account, boolean recreate) {
+  public static void deleteChannels (Tdlib tdlib, long accountUserId, boolean isDebug, @Nullable TdApi.User account, boolean recreate) {
     if (account == null) {
       return;
     }

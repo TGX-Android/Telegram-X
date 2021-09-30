@@ -21,6 +21,23 @@ import me.vkryl.td.ChatId;
  * Author: default
  */
 public class TdlibNotificationExtras {
+  private static long[] getLongOrIntArray (Bundle bundle, String key) {
+    try {
+      Object data = bundle.get(key);
+      if (data instanceof long[]) {
+        return (long[]) data;
+      } else if (data instanceof int[]) {
+        int[] array = (int[]) data;
+        long[] result = new long[array.length];
+        for (int i = 0; i < array.length; i++) {
+          result[i] = array[i];
+        }
+        return result;
+      }
+    } catch (Throwable ignored) { }
+    return null;
+  }
+
   private static long[] getLongArray (Bundle bundle, String key) {
     try {
       return bundle.getLongArray(key);
@@ -74,7 +91,7 @@ public class TdlibNotificationExtras {
     boolean needReply = bundle.getBoolean("need_reply");
     boolean mentions = bundle.getBoolean("mentions");
     long[] messageIds = getLongArray(bundle, "message_ids");
-    int[] userIds = getIntArray(bundle, "user_ids");
+    long[] userIds = getLongOrIntArray(bundle, "user_ids");
     if (accountId == TdlibAccount.NO_ID || category == -1 || chatId == 0 || maxNotificationId == 0 || notificationGroupId == 0) {
       Log.w("Incomplete notification extras: %s", bundle);
       return null;
@@ -91,9 +108,9 @@ public class TdlibNotificationExtras {
   public final boolean needReply;
   public final boolean areMentions;
   public final long[] messageIds;
-  public final int[] userIds;
+  public final long[] userIds;
 
-  private TdlibNotificationExtras (int accountId, int category, long chatId, long messageThreadId, int maxNotificationId, int notificationGroupId, boolean needReply, boolean areMentions, long[] messageIds, int[] userIds) {
+  private TdlibNotificationExtras (int accountId, int category, long chatId, long messageThreadId, int maxNotificationId, int notificationGroupId, boolean needReply, boolean areMentions, long[] messageIds, long[] userIds) {
     this.accountId = accountId;
     this.category = category;
     this.chatId = chatId;
@@ -106,7 +123,7 @@ public class TdlibNotificationExtras {
     this.userIds = userIds != null && userIds.length > 0 ? userIds : null;
   }
 
-  public static void put (Intent intent, Tdlib tdlib, TdlibNotificationGroup group, boolean needReply, long[] messageIds, int[] userIds) {
+  public static void put (Intent intent, Tdlib tdlib, TdlibNotificationGroup group, boolean needReply, long[] messageIds, long[] userIds) {
     final TdlibNotification lastNotification = group.lastNotification();
     intent.putExtra("account_id", tdlib.id());
     intent.putExtra("category", group.getCategory());
@@ -133,7 +150,7 @@ public class TdlibNotificationExtras {
             text = Lang.plural(R.string.NotificationMutedPersons, userIds.length);
           }
         }
-        for (int userId : userIds) {
+        for (long userId : userIds) {
           tdlib.setMuteForSync(userId, muteFor);
         }
       }

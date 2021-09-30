@@ -33,14 +33,14 @@ public class BotHelper implements Client.ResultHandler, Runnable, InlineSearchCo
   private static final int FLAG_LOADED = 0x02;
 
   private int flags;
-  private MessagesController context;
+  private final MessagesController context;
 
   private long chatId;
   private int type;
 
   private TGMessageBotInfo botInfoMessage;
 
-  private int objectId;
+  private long objectId;
 
   private ArrayList<InlineResult<?>> commands;
 
@@ -185,7 +185,7 @@ public class BotHelper implements Client.ResultHandler, Runnable, InlineSearchCo
   public void onUserUpdated (TdApi.User user) { }
 
   @Override
-  public void onUserFullUpdated (int userId, TdApi.UserFullInfo userFull) {
+  public void onUserFullUpdated (long userId, TdApi.UserFullInfo userFull) {
     processUserFull(userFull);
   }
 
@@ -200,12 +200,12 @@ public class BotHelper implements Client.ResultHandler, Runnable, InlineSearchCo
   }
 
   @Override
-  public void onSupergroupFullUpdated (int supergroupId, TdApi.SupergroupFullInfo newSupergroupFull) {
+  public void onSupergroupFullUpdated (long supergroupId, TdApi.SupergroupFullInfo newSupergroupFull) {
     processSupergroupFull(newSupergroupFull);
   }
 
   @Override
-  public void onBasicGroupFullUpdated (int basicGroupId, TdApi.BasicGroupFullInfo basicGroupFull) {
+  public void onBasicGroupFullUpdated (long basicGroupId, TdApi.BasicGroupFullInfo basicGroupFull) {
     processGroupFull(basicGroupFull);
   }
 

@@ -121,6 +121,7 @@ public class ListItem {
   public static final int TYPE_CHART_DOUBLE_LINEAR = 103;
   public static final int TYPE_CHART_STACK_BAR = 104;
   public static final int TYPE_CHART_STACK_PIE = 105;
+  public static final int TYPE_CHART_HEADER_DETACHED = 106;
 
   public static final int TYPE_HEADER_MULTILINE = 110;
 
@@ -433,7 +434,7 @@ public class ListItem {
 
   public boolean setStringIfChanged (@NonNull CharSequence string) {
     if (!StringUtils.equalsOrBothEmpty(this.string, string)) {
-      boolean changed = stringResource == 0 || StringUtils.equalsOrBothEmpty(getString(), string);
+      boolean changed = stringResource == 0 || !StringUtils.equalsOrBothEmpty(getString(), string);
       this.string = string;
       this.stringResource = 0;
       return changed;

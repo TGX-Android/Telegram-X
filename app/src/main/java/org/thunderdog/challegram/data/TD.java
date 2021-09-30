@@ -665,7 +665,7 @@ public class TD {
         bundle.putLong(prefix + "chat_id", ((TdApi.MessageSenderChat) sender).chatId);
         break;
       case TdApi.MessageSenderUser.CONSTRUCTOR:
-        bundle.putInt(prefix + "user_id", ((TdApi.MessageSenderUser) sender).userId);
+        bundle.putLong(prefix + "user_id", ((TdApi.MessageSenderUser) sender).userId);
         break;
       default:
         throw new RuntimeException(sender.toString());
@@ -676,7 +676,7 @@ public class TD {
     long chatId = bundle.getLong(prefix + "chat_id");
     if (chatId != 0)
       return new TdApi.MessageSenderChat(chatId);
-    int userId = bundle.getInt(prefix + "user_id");
+    long userId = bundle.getLong(prefix + "user_id");
     if (userId != 0)
       return new TdApi.MessageSenderUser(userId);
     return null;
@@ -814,9 +814,9 @@ public class TD {
     throw new UnsupportedOperationException(chatList.toString());
   }
 
-  public static int getColorIndex (int selfUserId, int id) {
+  public static int getColorIndex (long selfUserId, long id) {
     if (id >= 0 && id < color_ids.length) {
-      return id;
+      return (int) id;
     }
     try {
       String str;
@@ -830,7 +830,7 @@ public class TD {
       }
       java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
       byte[] digest = md.digest(str.getBytes(StringUtils.UTF_8));
-      int b = digest[Math.abs(id % 16)];
+      int b = digest[(int) Math.abs(id % 16)];
       if (b < 0) {
         b += 256;
       }
@@ -839,7 +839,7 @@ public class TD {
       Log.e("Cannot calculate user color", t);
     }
 
-    return Math.abs(id % color_ids.length);
+    return (int) Math.abs(id % color_ids.length);
   }
 
   public static ImageFile getAvatar (Tdlib tdlib, TdApi.User user) {
@@ -887,7 +887,7 @@ public class TD {
     if (attempt != 0) {
       return attempt;
     }
-    return Integer.compare(left.id, right.id);
+    return Long.compare(left.id, right.id);
   }
 
   public static TdApi.FormattedText withPrefix (String prefix, TdApi.FormattedText text) {
@@ -1003,7 +1003,7 @@ public class TD {
     return new TdApi.Photo(false, null, sizes);
   }
 
-  public static int getAvatarColorId (TdApi.User user, int selfUserId) {
+  public static int getAvatarColorId (TdApi.User user, long selfUserId) {
     return getAvatarColorId(isUserDeleted(user) ? -1 : user == null ? 0 : user.id, selfUserId);
   }
 
@@ -1053,7 +1053,7 @@ public class TD {
     return selfUserId != 0 && selfUserId == id ? R.id.theme_color_chatAuthor : id == -1 ? R.id.theme_color_chatAuthorDead : color_ids[getColorIndex(selfUserId, id)];
   }*/
 
-  public static int getAvatarColorId (int id, int selfUserId) {
+  public static int getAvatarColorId (long id, long selfUserId) {
     return id == -1 ? R.id.theme_color_avatarInactive : color_ids[getColorIndex(selfUserId, id)];
   }
 
@@ -1481,7 +1481,7 @@ public class TD {
     for (TdApi.Message message : messages) {
       if (message.chatId != fromChatId) {
         if (size > 0) {
-          out.add(new TdApi.ForwardMessages(toChatId, fromChatId, getMessageIds(messages, index, size), options, sendCopy, removeCaption));
+          out.add(new TdApi.ForwardMessages(toChatId, fromChatId, getMessageIds(messages, index, size), options, sendCopy, removeCaption, false));
         }
         fromChatId = message.chatId;
         index += size;
@@ -1490,7 +1490,7 @@ public class TD {
       size++;
     }
     if (size > 0) {
-      out.add(new TdApi.ForwardMessages(toChatId, fromChatId, getMessageIds(messages, index, size), options, sendCopy, removeCaption));
+      out.add(new TdApi.ForwardMessages(toChatId, fromChatId, getMessageIds(messages, index, size), options, sendCopy, removeCaption, false));
     }
     return true;
   }
@@ -1526,7 +1526,7 @@ public class TD {
     return user != null && user.type.getConstructor() == TdApi.UserTypeDeleted.CONSTRUCTOR;
   }
 
-  public static String getUserName (int userId, @Nullable TdApi.User user) {
+  public static String getUserName (long userId, @Nullable TdApi.User user) {
     if (userId == TdConstants.TELEGRAM_ACCOUNT_ID) {
       return "Telegram";
     }
@@ -1551,7 +1551,7 @@ public class TD {
     return firstName + ' ' + lastName;
   }
 
-  public static String getUserSingleName (int userId, @Nullable TdApi.User user) {
+  public static String getUserSingleName (long userId, @Nullable TdApi.User user) {
     if (userId != 0 && user == null) {
       return "User#" + userId;
     }
@@ -1947,7 +1947,7 @@ public class TD {
     return !StringUtils.isEmpty(extension) && isSupportedMusicExtension(extension);
   }
 
-  public static TdApi.User newFakeUser (int userId, String firstName, String lastName) {
+  public static TdApi.User newFakeUser (long userId, String firstName, String lastName) {
     return new TdApi.User(userId, firstName, lastName, "", "", new TdApi.UserStatusEmpty(), null, false, false, false, false, null, false, false, true, new TdApi.UserTypeRegular(), null);
   }
 
@@ -2035,7 +2035,7 @@ public class TD {
     return message != null ? message.id : 0;
   }
 
-  public static String getChatMemberSubtitle (Tdlib tdlib, int userId, @Nullable TdApi.User user, boolean allowBotState) {
+  public static String getChatMemberSubtitle (Tdlib tdlib, long userId, @Nullable TdApi.User user, boolean allowBotState) {
     final long chatId = ChatId.fromUserId(userId);
     if (tdlib.isServiceNotificationsChat(chatId)) {
       return Lang.getString(R.string.ServiceNotifications);
@@ -2192,6 +2192,8 @@ public class TD {
       case "PEER_FLOOD": res = R.string.NobodyLikesSpam2; break;
       case "STICKERSET_INVALID": res = R.string.error_STICKERSET_INVALID; break;
       case "CHANNELS_TOO_MUCH": res = R.string.error_CHANNELS_TOO_MUCH; break;
+      case "BOTS_TOO_MUCH": res = R.string.error_BOTS_TOO_MUCH; break;
+      case "ADMINS_TOO_MUCH": res = R.string.error_ADMINS_TOO_MUCH; break;
       case "Not enough rights to invite members to the group chat": res = R.string.YouCantInviteMembers; break;
       case "Message must be non-empty": res = R.string.MessageInputEmpty; break;
       case "Not Found": res = R.string.error_NotFound; break;
@@ -2988,7 +2990,7 @@ public class TD {
     return sequence;
   }
 
-  private static CharSequence getMemberDescriptionString (TdlibDelegate context, int userId, int date, int resFull, int resShort, int fallbackRes) {
+  private static CharSequence getMemberDescriptionString (TdlibDelegate context, long userId, int date, int resFull, int resShort, int fallbackRes) {
     if (userId != 0 && date != 0) {
       return TD.makeClickable(Lang.getString(resFull, context.context() != null ? ((target, argStart, argEnd, spanIndex, needFakeBold) -> spanIndex == 0 ? Lang.newUserSpan(context, userId) : null) : null, context.tdlib().cache().userName(userId), Lang.getRelativeTimestamp(date, TimeUnit.SECONDS)));
     } else if (userId != 0) {
@@ -3008,7 +3010,7 @@ public class TD {
   }
 
   public static @Nullable CharSequence getMemberDescription (TdlibDelegate context, TdApi.ChatMember member, boolean needFull) {
-    int inviterUserId = member.inviterUserId;
+    long inviterUserId = member.inviterUserId;
     int permissionChangeDate = 0;
     CharSequence result;
     switch (member.status.getConstructor()) {
@@ -3231,7 +3233,7 @@ public class TD {
     return secretChat != null && secretChat.state.getConstructor() == TdApi.SecretChatStateReady.CONSTRUCTOR;
   }
 
-  public static int getUserId (TdApi.ChatType type) {
+  public static long getUserId (TdApi.ChatType type) {
     switch (type.getConstructor()) {
       case TdApi.ChatTypePrivate.CONSTRUCTOR: {
         return ((TdApi.ChatTypePrivate) type).userId;
@@ -3243,7 +3245,7 @@ public class TD {
     return 0;
   }
 
-  public static int getUserId (TdApi.Chat chat) {
+  public static long getUserId (TdApi.Chat chat) {
     return chat != null ? getUserId(chat.type) : 0;
   }
 
@@ -3633,7 +3635,7 @@ public class TD {
           }
         } else {
           if (users.memberUserIds.length == 1) {
-            int joinedUserId = users.memberUserIds[0];
+            long joinedUserId = users.memberUserIds[0];
             if (joinedUserId != Td.getSenderUserId(m)) {
               if (tdlib.isSelfUserId(joinedUserId)) {
                 return Lang.getString(R.string.group_user_added_self, tdlib.senderName(m.sender, true));
@@ -3657,7 +3659,7 @@ public class TD {
 
       case TdApi.MessageChatDeleteMember.CONSTRUCTOR: {
         U.set(isTranslatable, true);
-        final int deletedUserId = ((TdApi.MessageChatDeleteMember) m.content).userId;
+        final long deletedUserId = ((TdApi.MessageChatDeleteMember) m.content).userId;
         if (m.isChannelPost && Td.getSenderUserId(m) == deletedUserId) {
           if (tdlib.isSelfUserId(deletedUserId)) {
             return Lang.getString(R.string.channel_user_remove_self);
@@ -5059,14 +5061,20 @@ public class TD {
     }
 
     private Refresher refresher;
+    private boolean isMediaGroup;
 
-    public ContentPreview setRefresher (Refresher refresher) {
+    public ContentPreview setRefresher (Refresher refresher, boolean isMediaGroup) {
       this.refresher = refresher;
+      this.isMediaGroup = isMediaGroup;
       return this;
     }
 
     public boolean hasRefresher () {
       return refresher != null;
+    }
+
+    public boolean isMediaGroup () {
+      return isMediaGroup;
     }
 
     public void refreshContent (@NonNull RefreshCallback callback) {
@@ -5255,7 +5263,7 @@ public class TD {
             } else {
               callback.onContentPreviewNotChanged(chatId, message.id, oldPreview);
             }
-          }));
+          }), false);
         }
       }
       case TdApi.MessageGameScore.CONSTRUCTOR: {
@@ -5276,7 +5284,7 @@ public class TD {
                 }
               }
               callback.onContentPreviewNotChanged(message.chatId, message.id, oldPreview);
-          }));
+          }), false);
         }
       }
       case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR: {
@@ -5299,7 +5307,7 @@ public class TD {
       case TdApi.MessageInviteVoiceChatParticipants.CONSTRUCTOR: {
         TdApi.MessageInviteVoiceChatParticipants info = (TdApi.MessageInviteVoiceChatParticipants) message.content;
         if (info.userIds.length == 1) {
-          int userId = info.userIds[0];
+          long userId = info.userIds[0];
           if (tdlib.isSelfUserId(userId)) {
             return new ContentPreview(EMOJI_GROUP_INVITE, R.string.ChatContentVoiceChatInviteYou);
           } else {
@@ -5312,7 +5320,7 @@ public class TD {
       case TdApi.MessageChatAddMembers.CONSTRUCTOR: {
         TdApi.MessageChatAddMembers info = (TdApi.MessageChatAddMembers) message.content;
         if (info.memberUserIds.length == 1) {
-          int userId = info.memberUserIds[0];
+          long userId = info.memberUserIds[0];
           if (userId == Td.getSenderUserId(message)) {
             if (ChatId.isSupergroup(message.chatId)) {
               return new ContentPreview(EMOJI_GROUP, message.isOutgoing ? R.string.ChatContentGroupJoinPublic_outgoing : R.string.ChatContentGroupJoinPublic);
@@ -5329,7 +5337,7 @@ public class TD {
         }
       }
       case TdApi.MessageChatDeleteMember.CONSTRUCTOR: {
-        int userId = ((TdApi.MessageChatDeleteMember) message.content).userId;
+        long userId = ((TdApi.MessageChatDeleteMember) message.content).userId;
         if (userId == Td.getSenderUserId(message)) {
           return new ContentPreview(EMOJI_GROUP, message.isOutgoing ? R.string.ChatContentGroupLeft_outgoing : R.string.ChatContentGroupLeft);
         } else if (tdlib.isSelfUserId(userId)) {
@@ -5372,7 +5380,7 @@ public class TD {
     }
     ContentPreview preview = getContentPreview(message.content.getConstructor(), tdlib, chatId, message.sender, null, !message.isChannelPost && message.isOutgoing, isChatList, argument, argumentTranslatable, arg1);
     if (preview != null) {
-      return preview.setRefresher(refresher);
+      return preview.setRefresher(refresher, true);
     }
     if (allowContent) {
       AtomicBoolean translatable = new AtomicBoolean(false);
@@ -5424,7 +5432,7 @@ public class TD {
           } else {
             callback.onContentPreviewNotChanged(message.chatId, message.id, oldPreview);
           }
-        })
+        }), true
       );
     }
     return preview;

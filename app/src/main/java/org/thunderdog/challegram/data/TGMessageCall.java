@@ -138,7 +138,7 @@ public class TGMessageCall extends TGMessage {
       case MotionEvent.ACTION_UP: {
         if (caught) {
           caught = true;
-          int userId;
+          long userId;
           if (isOutgoing()) {
             userId = ChatId.toUserId(msg.chatId);
           } else {

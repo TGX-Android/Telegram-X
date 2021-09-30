@@ -66,6 +66,7 @@
   <item type="id" name="menu_btn_stopwatch" />
   <item type="id" name="menu_btn_call" />
   <item type="id" name="menu_btn_share" />
+  <item type="id" name="menu_btn_unpinAll" />
 
   <item type="id" name="menu_btn_masks" />
   <item type="id" name="menu_btn_pictureInPicture" />
@@ -136,6 +137,7 @@
   <item type="id" name="controller_themeColors" />
   <item type="id" name="controller_networkStats" />
   <item type="id" name="controller_stats" />
+  <item type="id" name="controller_stats_message" />
   <item type="id" name="controller_navigation" />
   <item type="id" name="controller_text" />
   <item type="id" name="controller_language" />
@@ -209,10 +211,11 @@
   <item type="id" name="controller_media_contacts" />
   <item type="id" name="controller_media_location" />
   <item type="id" name="controller_media_inlineBots" />
-
   <item type="id" name="controller_backgroundGrid" />
   <item type="id" name="controller_chatLinks" />
   <item type="id" name="controller_chatLinkMembers" />
+
+  <item type="id" name="separator" />
 
   <item type="id" name="msg_input" />
   <item type="id" name="msg_tooltip" />
@@ -433,6 +436,8 @@
   <item type="id" name="btn_prehistoryMode" />
   <item type="id" name="btn_slowMode" />
   <item type="id" name="btn_slowModeDescription" />
+  <item type="id" name="btn_chatTtl" />
+  <item type="id" name="btn_chatTtlDescription" />
   <item type="id" name="btn_phone" />
   <item type="id" name="btn_useExplicitDice" />
   <item type="id" name="btn_night" />
@@ -533,6 +538,11 @@
   <item type="id" name="btn_autoNightModeScheduled_timeOff" />
   <item type="id" name="btn_autoNightModeScheduled_location" />
   <item type="id" name="btn_filter" />
+  <item type="id" name="btn_statsViewCount" />
+  <item type="id" name="btn_statsPrivateShares" />
+  <item type="id" name="btn_statsPublicShares" />
+  <item type="id" name="btn_statsPublishDate" />
+  <item type="id" name="btn_statsSignature" />
 
   <item type="id" name="stats_memberCount" />
   <item type="id" name="stats_join" />
@@ -850,6 +860,10 @@
   <item type="id" name="btn_tdlib_androidLogs" />
   <item type="id" name="btn_tdlib_debugDatacenter" />
 
+  <item type="id" name="btn_viewMemberMessages" />
+  <item type="id" name="btn_viewAdminActions" />
+  <item type="id" name="btn_openInviterProfile" />
+
   <item type="id" name="maximize" />
 
   <item type="id" name="theme_chat" />
@@ -1036,6 +1050,7 @@
 
   <item type="id" name="btn_reportChat" />
   <item type="id" name="btn_reportChatSpam" />
+  <item type="id" name="btn_reportChatFake" />
   <item type="id" name="btn_reportChatViolence" />
   <item type="id" name="btn_reportChatPornography" />
   <item type="id" name="btn_reportChatChildAbuse" />
