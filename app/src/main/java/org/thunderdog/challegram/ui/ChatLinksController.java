@@ -563,6 +563,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     int lastIvIndex = inviteLinks.size() - 1;
     int lastRvIndex = inviteLinksRevoked.size() - 1;
     boolean viewingOtherAdmin = adminUserId != tdlib.myUserId();
+    boolean showAdditionalLinks = true;
 
     if (!viewingOtherAdmin) {
       items.add(new ListItem(ListItem.TYPE_EMBED_STICKER).setData(tdlib.findUtyanEmoji(UTYAN_EMOJI)));
@@ -580,12 +581,15 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
           TdApi.User adminUser = tdlib.cache().user(adminUserId);
           CharSequence hintText = Lang.getMarkdownString(new TdlibContext(context, tdlib), R.string.InviteLinkOtherAdminHint, TD.getUserName(adminUser), tdlib.chatTitle(chatId));
           items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, hintText, false));
+          showAdditionalLinks = inviteLinks.size() > 1;
         }
 
-        items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.AdditionalInviteLinks));
-        items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-        items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_createInviteLink, R.drawable.baseline_add_24, R.string.CreateLink));
-        if (inviteLinks.size() > 1) items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        if (showAdditionalLinks) {
+          items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.AdditionalInviteLinks));
+          items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+          if (!viewingOtherAdmin) items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_createInviteLink, R.drawable.baseline_add_24, R.string.CreateLink));
+          if (inviteLinks.size() > 1) items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        }
 
         continue;
       }
@@ -596,8 +600,10 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     }
 
-    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AdditionalInviteLinksHint));
+    if (showAdditionalLinks) {
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AdditionalInviteLinksHint));
+    }
 
     if (!inviteLinksRevoked.isEmpty()) {
       items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.RevokedInviteLinks));
