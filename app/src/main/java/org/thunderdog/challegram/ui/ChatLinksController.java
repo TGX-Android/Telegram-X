@@ -353,7 +353,11 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     } else if (inviteLink.expireDate == 0) {
       // add nothing
     } else if (expiresInMs > 0) {
-      subtitle.append(Lang.getRelativeDate(nowMs, TimeUnit.MILLISECONDS, inviteLink.expireDate, TimeUnit.SECONDS, true, 0, R.string.InviteLinkExpires, false));
+      subtitle.append(Lang.getReverseRelativeDate(
+        inviteLink.expireDate, TimeUnit.SECONDS,
+        nowMs, TimeUnit.MILLISECONDS,
+        true, 0, R.string.InviteLinkExpires, false
+      ));
     } else {
       subtitle.append(Lang.getString(R.string.InviteLinkExpired));
     }

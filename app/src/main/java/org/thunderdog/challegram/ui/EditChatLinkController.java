@@ -121,12 +121,12 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
             break;
           case 4:
             showDateTimePicker(Lang.getString(R.string.InviteLinkExpireHeader), R.string.InviteLinkExpireConfirm, R.string.InviteLinkExpireConfirm, R.string.InviteLinkExpireConfirm, millis -> {
-              expireDate = (int) (millis / 1000L);
+              expireDate = (int) TimeUnit.MILLISECONDS.toSeconds(millis);
               adapter.updateValuedSettingById(R.id.btn_inviteLinkDateLimit);
             }, null);
             break;
           default:
-            expireDate = (int) ((System.currentTimeMillis() / 1000L) + PRESETS[id]);
+            expireDate = (int) TimeUnit.MILLISECONDS.toSeconds(tdlib.currentTimeMillis() + TimeUnit.SECONDS.toMillis(PRESETS[id]));
             break;
         }
 
