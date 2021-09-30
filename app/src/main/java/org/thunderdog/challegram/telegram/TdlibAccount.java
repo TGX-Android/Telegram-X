@@ -17,7 +17,6 @@ import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageFileLocal;
-import me.vkryl.leveldb.LevelDB;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.unsorted.Settings;
 
@@ -29,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.leveldb.LevelDB;
 
 /**
  * Date: 2/20/18
@@ -37,6 +37,10 @@ import me.vkryl.core.unit.BitwiseUtils;
 public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   public static final int NO_ID = -1;
   public static final int ID_MAX = 0xffff;
+
+  public static final int VERSION_1 = 1;
+  public static final int VERSION_2 = 2;
+  public static final int VERSION = VERSION_2;
 
   private static final int FLAG_UNAUTHORIZED = 1;
   private static final int FLAG_DEBUG = 1 << 1;
@@ -51,7 +55,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   public final int id;
 
   private int flags;
-  private int knownUserId;
+  private long knownUserId;
   private long modificationTime;
   private int order;
 
@@ -72,10 +76,10 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
     }
   }
 
-  TdlibAccount (TdlibManager context, int id, RandomAccessFile r) throws IOException {
+  TdlibAccount (TdlibManager context, int id, RandomAccessFile r, int version) throws IOException {
     this.context = context;
     this.id = id;
-    restore(r);
+    restore(r, version);
   }
 
   void markAsUsed () {
@@ -104,19 +108,19 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
     return Integer.compare(this.id, o.id);
   }
 
-  private void restore (RandomAccessFile r) throws IOException {
+  private void restore (RandomAccessFile r, int version) throws IOException {
     this.flags            = r.readByte();
-    this.knownUserId      = r.readInt();
+    this.knownUserId      = version == VERSION_2 ? r.readLong() : r.readInt();
     this.modificationTime = r.readLong();
     this.order            = r.readInt();
     Log.i(Log.TAG_ACCOUNTS, "restored accountId:%d flags:%d userId:%d time:%d order:%d", id, flags, knownUserId, modificationTime, order);
   }
 
-  static final int SIZE_PER_ENTRY = 1 /*flags*/ + 4 /*knownUserId*/ + 8 /*modification_time*/ + 4 /*order*/;
+  static final int SIZE_PER_ENTRY = 1 /*flags*/ + 8 /*knownUserId*/ + 8 /*modification_time*/ + 4 /*order*/;
 
   void save (RandomAccessFile r) throws IOException {
     r.write(flags);
-    r.writeInt(knownUserId);
+    r.writeLong(knownUserId);
     r.writeLong(modificationTime);
     r.writeInt(order);
   }
@@ -124,7 +128,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   int saveOrder (RandomAccessFile r, final int position) throws IOException {
     int skipSize =
         1 /*flags*/
-      + 4 /*knownUserId*/
+      + 8 /*knownUserId*/
       + 8 /*modificationTime*/;
     r.seek(position + skipSize);
     r.writeInt(order);
@@ -224,7 +228,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
 
   // user_id
 
-  public boolean setKnownUserId (int knownUserId) {
+  public boolean setKnownUserId (long knownUserId) {
     if (this.knownUserId != knownUserId) {
       this.knownUserId = knownUserId;
       return true;
@@ -232,7 +236,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
     return false;
   }
 
-  public int getKnownUserId () {
+  public long getKnownUserId () {
     return knownUserId;
   }
 
@@ -354,7 +358,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
     return BitwiseUtils.getFlag(flags, FLAG_UNAUTHORIZED);
   }
 
-  boolean setUnauthorized (boolean isUnauthorized, int knownUserId) {
+  boolean setUnauthorized (boolean isUnauthorized, long knownUserId) {
     boolean changed = changeFlag(FLAG_UNAUTHORIZED, isUnauthorized);
     if (changed) {
       this.modificationTime = System.currentTimeMillis();
@@ -381,7 +385,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   public static class DisplayInformation {
     public final String prefix;
 
-    private int userId;
+    private long userId;
     private String firstName;
     private String lastName;
     private String username;
@@ -468,7 +472,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
 
     private void saveAll () {
       LevelDB editor = Settings.instance().edit();
-      editor.putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_ID, userId);
+      editor.putLong(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_ID, userId);
       editor.putString(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_NAME1, firstName);
       editor.putString(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_NAME2, lastName);
       editor.putString(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_USERNAME, username);
@@ -486,20 +490,20 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
       editor.apply();
     }
 
-    static DisplayInformation fullRestore (String prefix, int expectedUserId) {
+    static DisplayInformation fullRestore (String prefix, long expectedUserId) {
       DisplayInformation info = null;
       for (LevelDB.Entry entry : Settings.instance().pmc().find(prefix)) {
-        if (entry.key().length() == prefix.length()) {
-          int userId = entry.asInt();
+        /*if (entry.key().length() == prefix.length()) {
+          long userId = entry.asLong();
           if (userId != expectedUserId)
             return null;
           info = new DisplayInformation(prefix);
-        }
+        }*/
         if (info == null)
           info = new DisplayInformation(prefix);
         switch (entry.key().substring(prefix.length())) {
           case Settings.KEY_ACCOUNT_INFO_SUFFIX_ID:
-            info.userId = entry.asInt();
+            info.userId = entry.asLong();
             if (info.userId != expectedUserId)
               return null;
             break;
@@ -531,7 +535,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
     avatarSmallFile = avatarBigFile = null;
     if (user != null && user.id == knownUserId) {
       String prefix = Settings.accountInfoPrefix(id);
-      boolean isUpdate = Settings.instance().getInt(prefix, 0) == user.id;
+      boolean isUpdate = Settings.instance().getLong(prefix, 0) == user.id;
       displayInformation = new DisplayInformation(prefix, id, user, isUpdate);
     } else {
       deleteDisplayInformation();
@@ -587,7 +591,8 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   }
 
   private boolean hasUserInformation () {
-    return knownUserId != 0 && (displayInformation != null && displayInformation.userId == knownUserId) || (Settings.instance().pmc().getInt(Settings.accountInfoPrefix(id) + Settings.KEY_ACCOUNT_INFO_SUFFIX_ID, 0) == knownUserId);
+    return knownUserId != 0 && (displayInformation != null && displayInformation.userId == knownUserId) ||
+      (Settings.instance().pmc().getLong(Settings.accountInfoPrefix(id) + Settings.KEY_ACCOUNT_INFO_SUFFIX_ID, 0) == knownUserId);
   }
 
   // In-memory

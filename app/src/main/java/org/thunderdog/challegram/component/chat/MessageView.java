@@ -849,7 +849,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       if (content != null) {
         switch (content.getConstructor()) {
           case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR: {
-            int basicGroupId = ((TdApi.MessageChatUpgradeFrom) content).basicGroupId;
+            long basicGroupId = ((TdApi.MessageChatUpgradeFrom) content).basicGroupId;
             if (basicGroupId != 0) {
               m.tdlib().ui().openBasicGroupChat(m, basicGroupId, null);
               return true;
@@ -857,7 +857,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
             return false;
           }
           case TdApi.MessageChatUpgradeTo.CONSTRUCTOR: {
-            int supergroupId = ((TdApi.MessageChatUpgradeTo) content).supergroupId;
+            long supergroupId = ((TdApi.MessageChatUpgradeTo) content).supergroupId;
             if (supergroupId != 0) {
               m.tdlib().ui().openSupergroupChat(m, supergroupId, null);
               return true;

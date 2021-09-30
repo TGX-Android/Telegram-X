@@ -1085,6 +1085,7 @@ public class DrawAlgorithms {
         break;
       }
       case TdApi.ChatActionCancel.CONSTRUCTOR:
+      case TdApi.ChatActionWatchingAnimations.CONSTRUCTOR:
         break;
     }
 

@@ -529,8 +529,8 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     return Settings.instance().getInt(key, 0);
   }
 
-  private static int getRegisteredDeviceUserId (int accountId) {
-    return Settings.instance().getInt(key(DEVICE_UID_KEY, accountId), 0);
+  private static long getRegisteredDeviceUserId (int accountId) {
+    return Settings.instance().getLong(key(DEVICE_UID_KEY, accountId), 0);
   }
 
   private static int getRegisteredDeviceTdlibVersion (int accountId) {
@@ -541,19 +541,20 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     return Settings.instance().getString(key(DEVICE_TOKEN_KEY, accountId), null);
   }
 
-  private static int[] getRegisteredDeviceOtherUserIds (int accountId) {
-    return Settings.instance().pmc().getIntArray(key(DEVICE_OTHER_UID_KEY, accountId));
+  private static long[] getRegisteredDeviceOtherUserIds (int accountId) {
+    return Settings.instance().pmc().getLongArray(key(DEVICE_OTHER_UID_KEY, accountId));
   }
 
-  public static void setRegisteredDevice (int accountId, int userId, String token, @Nullable int[] otherUserIds) {
+  public static void setRegisteredDevice (int accountId, long userId, String token, @Nullable long[] otherUserIds) {
     if (StringUtils.isEmpty(token)) {
       unregisterDevice(accountId);
     } else {
       LevelDB pmc = Settings.instance().edit();
-      pmc.putString(key(DEVICE_TOKEN_KEY, accountId), token).putInt(key(DEVICE_UID_KEY, accountId), userId);
+      pmc.putString(key(DEVICE_TOKEN_KEY, accountId), token);
+      pmc.putLong(key(DEVICE_UID_KEY, accountId), userId);
       pmc.putInt(key(DEVICE_TDLIB_VERSION_KEY, accountId), BuildConfig.TDLIB_VERSION);
       if (otherUserIds != null && otherUserIds.length > 0) {
-        pmc.putIntArray(key(DEVICE_OTHER_UID_KEY, accountId), otherUserIds);
+        pmc.putLongArray(key(DEVICE_OTHER_UID_KEY, accountId), otherUserIds);
       } else {
         pmc.remove(key(DEVICE_OTHER_UID_KEY, accountId));
       }
@@ -561,7 +562,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     }
   }
 
-  public static boolean checkRegisteredDeviceToken (int accountId, int userId, String token, int[] otherUserIds, boolean skipOtherUserIdsCheck) {
+  public static boolean checkRegisteredDeviceToken (int accountId, long userId, String token, long[] otherUserIds, boolean skipOtherUserIdsCheck) {
     return
       getRegisteredDeviceTdlibVersion(accountId) == BuildConfig.TDLIB_VERSION &&
       getRegisteredDeviceUserId(accountId) == userId &&

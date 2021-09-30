@@ -36,6 +36,7 @@ import org.thunderdog.challegram.component.base.TogglerView;
 import org.thunderdog.challegram.component.chat.MessagePreviewView;
 import org.thunderdog.challegram.component.inline.CustomResultView;
 import org.thunderdog.challegram.component.sharedmedia.MediaSmallView;
+import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.InlineResult;
@@ -61,6 +62,7 @@ import org.thunderdog.challegram.widget.ChartLayout;
 import org.thunderdog.challegram.widget.CheckBox;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.DoubleTextView;
+import org.thunderdog.challegram.widget.EmbeddableStickerView;
 import org.thunderdog.challegram.widget.EmptySmartView;
 import org.thunderdog.challegram.widget.JoinedUsersView;
 import org.thunderdog.challegram.widget.ListInfoView;
@@ -225,6 +227,9 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_EDITTEXT_WITH_PHOTO: {
         return Screen.dp(86f);
       }
+      case ListItem.TYPE_EMBED_STICKER: {
+        return Screen.dp(96f);
+      }
       case ListItem.TYPE_EDITTEXT_WITH_PHOTO_SMALLER:
         return Screen.dp(82f);
       case ListItem.TYPE_LIVE_LOCATION_PROMO:
@@ -262,6 +267,10 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_DOUBLE_TEXTVIEW:
       case ListItem.TYPE_DOUBLE_TEXTVIEW_ROUNDED: {
         ((DoubleTextView) itemView).attach();
+        break;
+      }
+      case ListItem.TYPE_EMBED_STICKER: {
+        ((EmbeddableStickerView) itemView).attach();
         break;
       }
       case ListItem.TYPE_MEMBERS_LIST: {
@@ -334,6 +343,10 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       }
       case ListItem.TYPE_LIVE_LOCATION_TARGET: {
         ((DrawerItemView) ((FrameLayoutFix) itemView).getChildAt(0)).detach();
+        break;
+      }
+      case ListItem.TYPE_EMBED_STICKER: {
+        ((EmbeddableStickerView) itemView).detach();
         break;
       }
       case ListItem.TYPE_MEMBERS_LIST: {
@@ -1079,6 +1092,15 @@ public class SettingHolder extends RecyclerView.ViewHolder {
           stupidView.addThemeListeners(themeProvider);
         }
         return new SettingHolder(stupidView);
+      }
+      case ListItem.TYPE_EMBED_STICKER: {
+        EmbeddableStickerView view = new EmbeddableStickerView(context);
+        view.init(tdlib);
+        view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        if (themeProvider != null) {
+          themeProvider.addThemeInvalidateListener(view);
+        }
+        return new SettingHolder(view);
       }
       case ListItem.TYPE_MEMBERS_LIST: {
         RecyclerView recyclerView = new RecyclerView(context) {

@@ -2160,7 +2160,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     default boolean forceInstantView (String link) { return false; }
     default boolean onCommandClick (View view, Text text, TextPart part, String command, boolean isLongPress) { return false; }
     default boolean onUsernameClick (String username) { return false; }
-    default boolean onUserClick (int userId) { return false; }
+    default boolean onUserClick (long userId) { return false; }
     default boolean onEmailClick (String email) { return false; }
     default boolean onPhoneNumberClick (String phoneNumber) { return false; }
     default boolean onBankCardNumberClick (String cardNumber) { return false; }

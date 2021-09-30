@@ -151,7 +151,8 @@ public class Settings {
   private static final int VERSION_35 = 35; // clear known conversions
   private static final int VERSION_36 = 36; // removed TON
   private static final int VERSION_37 = 37; // removed weird "wallpaper_" + file.remote.id unused legacy cache
-  private static final int VERSION = VERSION_37;
+  private static final int VERSION_38 = 38; // int32 -> int64
+  private static final int VERSION = VERSION_38;
 
   private static final AtomicBoolean hasInstance = new AtomicBoolean(false);
   private static volatile Settings instance;
@@ -1729,6 +1730,69 @@ public class Settings {
               Log.v("Removing rudimentary key: %s", entry.key());
             }
             editor.remove(entry.key());
+          }
+        }
+        break;
+      }
+      case VERSION_38: {
+        int accountNum = TdlibManager.readAccountNum();
+        for (int accountId = 0; accountId < accountNum; accountId++) {
+          String[] intToLongKeys = {
+            accountInfoPrefix(accountId) + Settings.KEY_ACCOUNT_INFO_SUFFIX_ID,
+            TdlibSettingsManager.key(TdlibSettingsManager.DEVICE_UID_KEY, accountId)
+          };
+          String[] intToLongArrayKeys = {
+            TdlibSettingsManager.key(TdlibSettingsManager.DEVICE_OTHER_UID_KEY, accountId)
+          };
+          for (String key : intToLongKeys) {
+            int int32 = getInt(key, 0);
+            if (int32 != 0) {
+              editor.putLong(key, int32);
+            } else {
+              editor.remove(key);
+            }
+          }
+          for (String key : intToLongArrayKeys) {
+            int[] int32Array = pmc.getIntArray(key);
+            if (int32Array != null) {
+              long[] int64Array = new long[int32Array.length];
+              for (int i = 0; i < int32Array.length; i++) {
+                int64Array[i] = int32Array[i];
+              }
+              pmc.putLongArray(key, int64Array);
+            } else {
+              editor.remove(key);
+            }
+          }
+        }
+
+        File oldConfigFile = TdlibManager.getAccountConfigFile();
+        if (oldConfigFile.exists()) {
+          TdlibManager.AccountConfig config = null;
+          try (RandomAccessFile r = new RandomAccessFile(oldConfigFile, TdlibManager.MODE_R)) {
+            config = TdlibManager.readAccountConfig(null, r, TdlibAccount.VERSION_1);
+          } catch (IOException e) {
+            Log.e(e);
+          }
+          if (config != null) {
+            File newConfigFile = new File(oldConfigFile.getParentFile(), oldConfigFile.getName() + ".tmp");
+            try {
+              if (newConfigFile.exists() || newConfigFile.createNewFile()) {
+                try (RandomAccessFile r = new RandomAccessFile(newConfigFile, TdlibManager.MODE_RW)) {
+                  TdlibManager.writeAccountConfigFully(r, config);
+                } catch (IOException e) {
+                  Tracer.onLaunchError(e);
+                  throw new RuntimeException(e);
+                }
+              }
+              if (!oldConfigFile.renameTo(new File(oldConfigFile.getParentFile(), oldConfigFile.getName() + ".bak." + TdlibAccount.VERSION_1)))
+                throw new RuntimeException("Cannot backup old config");
+              if (!newConfigFile.renameTo(oldConfigFile))
+                throw new RuntimeException("Cannot save new config");
+            } catch (Throwable t) {
+              Tracer.onLaunchError(t);
+              throw new RuntimeException(t);
+            }
           }
         }
         break;
@@ -3337,11 +3401,11 @@ public class Settings {
 
   // Bots
 
-  public boolean allowLocationForBot (int userId) {
+  public boolean allowLocationForBot (long userId) {
     return getBoolean("allow_location_" + userId, false);
   }
 
-  public void setAllowLocationForBot (int userId) {
+  public void setAllowLocationForBot (long userId) {
     putBoolean("allow_location_" + userId, true);
   }
 

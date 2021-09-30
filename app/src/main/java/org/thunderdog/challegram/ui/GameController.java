@@ -29,14 +29,14 @@ import org.thunderdog.challegram.v.WebViewProxy;
 
 public class GameController extends WebkitController<GameController.Args> implements Menu, MoreDelegate {
   public static class Args {
-    public int userId;
+    public long userId;
     public TdApi.Game game;
     public String username;
     public String gameUrl;
     public TdApi.Message message;
     public MessagesController ownerController;
 
-    public Args (int userId, TdApi.Game game, String username, String gameUrl, TdApi.Message message, MessagesController ownerController) {
+    public Args (long userId, TdApi.Game game, String username, String gameUrl, TdApi.Message message, MessagesController ownerController) {
       this.userId = userId;
       this.game = game;
       this.username = username;

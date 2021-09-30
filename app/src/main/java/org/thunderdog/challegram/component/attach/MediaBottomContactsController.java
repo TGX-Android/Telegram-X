@@ -145,7 +145,7 @@ public class MediaBottomContactsController extends MediaBottomBaseController<Voi
         break;
       }
       case TdApi.Users.CONSTRUCTOR: {
-        int[] userIds = ((TdApi.Users) object).userIds;
+        long[] userIds = ((TdApi.Users) object).userIds;
         ArrayList<TdApi.User> contacts = tdlib.cache().users(userIds);
         final ArrayList<TGUser> users = new ArrayList<>(userIds.length);
         for (TdApi.User user : contacts) {
