@@ -357,7 +357,7 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
       for (entry in foundRelativeDates) {
         kt.append("  R.string.").append(entry.key).append(" -> when (form) {\n")
         entry.value.forEach { form ->
-          kt.append("    Lang.RelativeDateForm.").append(form.toUpperCase(Locale.US))
+          kt.append("    Lang.RelativeDateForm.").append(if (form == "yesterday" || form == "tomorrow") "YESTERDAY_OR_TOMORROW" else form.toUpperCase(Locale.US))
                 .append(" -> ")
                 .append("R.string.").append(entry.key).append("_").append(form)
                 .append("\n")
