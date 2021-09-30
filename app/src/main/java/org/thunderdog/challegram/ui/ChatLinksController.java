@@ -1,8 +1,12 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.view.View;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.util.Consumer;
 
@@ -45,6 +49,50 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   private List<TdApi.ChatInviteLink> inviteLinks;
   private List<TdApi.ChatInviteLink> inviteLinksRevoked;
   private TdApi.ChatInviteLinkCount[] inviteLinkCounts;
+
+  private List<TdApi.ChatInviteLink> pendingRefreshLinks = new ArrayList<>();
+  private Handler cellUpdateHandler = new Handler(Looper.getMainLooper()) {
+    @Override
+    public void handleMessage(@NonNull Message msg) {
+      requestUpdateLinkCell((TdApi.ChatInviteLink) msg.obj, false);
+    }
+  };
+
+  private void requestUpdateLinkCell (TdApi.ChatInviteLink linkObj, boolean ignoreUpdate) {
+    if (!ignoreUpdate) adapter.updateValuedSettingByData(linkObj);
+
+    if (linkObj.isRevoked || TimeUnit.SECONDS.toMillis(linkObj.expireDate) < tdlib.currentTimeMillis()) {
+      cellUpdateHandler.removeMessages(0, linkObj);
+      pendingRefreshLinks.remove(linkObj);
+      return;
+    }
+
+    long relativeUpd = Lang.getNextReverseRelativeDateUpdateMs(linkObj.expireDate, TimeUnit.SECONDS, tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS, true, 0);
+    if (relativeUpd != -1) {
+      pendingRefreshLinks.add(linkObj);
+      cellUpdateHandler.sendMessageDelayed(Message.obtain(cellUpdateHandler, 0, linkObj), relativeUpd);
+    }
+  }
+
+  @Override
+  public void onActivityResume() {
+    super.onActivityResume();
+    for (TdApi.ChatInviteLink linkToUpdate : new ArrayList<>(pendingRefreshLinks)) {
+      requestUpdateLinkCell(linkToUpdate, false);
+    }
+  }
+
+  @Override
+  public void onActivityPause() {
+    super.onActivityPause();
+    cellUpdateHandler.removeMessages(0);
+  }
+
+  @Override
+  public void destroy() {
+    super.destroy();
+    cellUpdateHandler.removeMessages(0);
+  }
 
   public void onLinkCreated (TdApi.ChatInviteLink newLink, @Nullable TdApi.ChatInviteLink existingLink) {
     if (existingLink != null) {
@@ -129,7 +177,6 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     requestLinkRebind();
     recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
     recyclerView.setAdapter(this.adapter);
-    UI.post(this::updateLinksExpiration, 1000L);
   }
 
   @Override
@@ -319,11 +366,6 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     c.show();
   }
 
-  private void updateLinksExpiration () {
-    adapter.updateAllValuedSettingsById(R.id.btn_inviteLink);
-    if (!isDestroyed()) UI.post(this::updateLinksExpiration, 1000L);
-  }
-
   private String generateLinkSubtitle (TdApi.ChatInviteLink inviteLink) {
     StringBuilder subtitle = new StringBuilder();
 
@@ -497,6 +539,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     int newIndex = adapter.indexOfViewById(R.id.btn_createInviteLink) + 1;
     adapter.addItem(newIndex, new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, 0, newLink.inviteLink, false).setData(newLink));
     adapter.addItem(newIndex, new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    requestUpdateLinkCell(newLink, true);
   }
 
   public void smOnUserLinkCountChanged (long userId, int newCount) {
@@ -546,6 +589,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       }
 
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, 0, inviteLink.inviteLink, false).setData(inviteLink));
+      requestUpdateLinkCell(inviteLink, true);
       if (inviteLinks.indexOf(inviteLink) != lastIvIndex)
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     }
