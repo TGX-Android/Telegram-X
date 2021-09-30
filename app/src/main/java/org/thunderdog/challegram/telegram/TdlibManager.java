@@ -845,9 +845,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     this.currentAccount = null;
     this.preferredAccountId = 0;
     File file = getAccountConfigFile();
+    AccountConfig config = null;
     if (file.exists()) {
       try (RandomAccessFile r = new RandomAccessFile(file, MODE_R)) {
-        readAccountConfig(r);
+        config = readAccountConfig(this, r, TdlibAccount.VERSION);
       } catch (IOException e) {
         Log.e(e);
       }
@@ -860,6 +861,16 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       }
     }
 
+    if (config != null) {
+      this.preferredAccountId = config.preferredAccountId;
+      this.currentAccount = config.currentAccount;
+      this.accounts.addAll(config.accounts);
+      if (this.currentAccount != null)
+        this.currentAccount.markAsUsed();
+      for (TdlibAccount account : config.accounts) {
+        checkAliveAccount(account);
+      }
+    }
     if (accounts.isEmpty()) {
       TdlibAccount account = new TdlibAccount(this, 0, false);
       accounts.add(account);
@@ -875,7 +886,19 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }
   }
 
-  private void readAccountConfig (RandomAccessFile r) throws IOException {
+  public static class AccountConfig {
+    public TdlibAccount currentAccount;
+    public List<TdlibAccount> accounts;
+    public int preferredAccountId;
+
+    public AccountConfig (TdlibAccount currentAccount, List<TdlibAccount> accounts, int preferredAccountId) {
+      this.currentAccount = currentAccount;
+      this.accounts = accounts;
+      this.preferredAccountId = preferredAccountId;
+    }
+  }
+
+  public static AccountConfig readAccountConfig (@Nullable TdlibManager context, RandomAccessFile r, int version) throws IOException {
     long ms = SystemClock.uptimeMillis();
 
     long binlogSize = r.length();
@@ -884,15 +907,14 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     final int accountNum = binlogSize >= 4 ? r.readInt() : 0;
     if (accountNum <= 0 || accountNum > TdlibAccount.ID_MAX) {
       Log.i("readAccountConfig accountNum:%d accounts in %dms", accountNum, SystemClock.uptimeMillis() - ms);
-      return;
+      return null;
     }
 
     TdlibAccount currentAccount = null;
-    this.preferredAccountId = r.readInt();
-
-    accounts.ensureCapacity(accountNum);
+    final int preferredAccountId = r.readInt();
+    final List<TdlibAccount> accounts = new ArrayList<>(accountNum);
     for (int accountId = 0; accountId < accountNum; accountId++) {
-      TdlibAccount account = new TdlibAccount(this, accountId, r);
+      TdlibAccount account = new TdlibAccount(context, accountId, r, version);
       if (!account.isUnauthorized()) {
         if (accountId == preferredAccountId || currentAccount == null || currentAccount.id < preferredAccountId) {
           currentAccount = account;
@@ -903,17 +925,15 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
     Log.i("readAccountConfig finished, accountNum:%d in %dms, preferredAccountId:%d", accounts.size(), SystemClock.uptimeMillis() - ms, preferredAccountId);
 
-    this.currentAccount = currentAccount;
-    if (currentAccount != null)
-      this.currentAccount.markAsUsed();
-
-    for (TdlibAccount account : accounts) {
-      checkAliveAccount(account);
-    }
+    return new AccountConfig(currentAccount, accounts, preferredAccountId);
   }
 
   private int binlogSize () {
-    return BINLOG_PREFIX_SIZE + accounts.size() * TdlibAccount.SIZE_PER_ENTRY;
+    return binlogSize(accounts.size());
+  }
+
+  public static int binlogSize (int accountsNum) {
+    return BINLOG_PREFIX_SIZE + accountsNum * TdlibAccount.SIZE_PER_ENTRY;
   }
 
   private int writeAccountConfig (RandomAccessFile r, int mode, int accountId) throws IOException {
@@ -988,10 +1008,16 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       return saveCount;
     }
 
-    r.setLength(binlogSize);
-    r.writeInt(accountNum);
-    r.writeInt(preferredAccountId);
-    for (TdlibAccount account : accounts) {
+    return writeAccountConfigFully(r, new AccountConfig(currentAccount, accounts, preferredAccountId));
+  }
+
+  public static int writeAccountConfigFully (RandomAccessFile r, AccountConfig config) throws IOException {
+    int accountsNum = config.accounts.size();
+    r.setLength(binlogSize(accountsNum));
+    r.writeInt(accountsNum);
+    r.writeInt(config.preferredAccountId);
+    int saveCount = 0;
+    for (TdlibAccount account : config.accounts) {
       account.save(r);
       saveCount++;
     }
@@ -1004,8 +1030,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   private static final int WRITE_MODE_ORDERS = 3;
   private static final int WRITE_MODE_FLAGS = 4;
 
-  private static final String MODE_RW = "rw";
-  private static final String MODE_R = "r";
+  public static final String MODE_RW = "rw";
+  public static final String MODE_R = "r";
 
   private synchronized void saveAccountConfig (int mode, int accountId) {
     long ms = SystemClock.uptimeMillis();
@@ -1205,11 +1231,11 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }
   }
 
-  void unregisterDevices (boolean isDebug, int excludeAccountId, int[] excludeUserIds) {
+  void unregisterDevices (boolean isDebug, int excludeAccountId, long[] excludeUserIds) {
     for (TdlibAccount account : this) {
       if (account.isDebug() != isDebug || account.id == excludeAccountId)
         continue;
-      int knownUserId = account.getKnownUserId();
+      long knownUserId = account.getKnownUserId();
       if (knownUserId == 0 || Arrays.binarySearch(excludeUserIds, knownUserId) < 0) {
         Log.i(Log.TAG_FCM, "Unregistered accountId:%d userId:%d", account.id, knownUserId);
         setDeviceRegistered(account.id, false);
@@ -1437,12 +1463,12 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   }
 
   private void dispatchDeviceToken (String token) {
-    int[] debugUserIds = null, productionUserIds = null;
+    long[] debugUserIds = null, productionUserIds = null;
     boolean hasNonRegistered = false;
     for (TdlibAccount account : this) {
       if (!account.isUnauthorized() || account.hasTdlib(false)) {
-        int[] otherUserIds;
-        int myUserId = account.getKnownUserId();
+        long[] otherUserIds;
+        long myUserId = account.getKnownUserId();
         if (account.isDebug()) {
           if (debugUserIds == null)
             debugUserIds = availableUserIds(true);
@@ -1640,20 +1666,20 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   // Event managements
 
   @NonNull
-  int[] availableUserIds (boolean debug) {
-    SortedSet<Integer> userIds = new TreeSet<>();
+  long[] availableUserIds (boolean debug) {
+    SortedSet<Long> userIds = new TreeSet<>();
     for (TdlibAccount account : accounts) {
       if (!account.isUnauthorized() && account.isDebug() == debug) {
-        int knownUserId = account.getKnownUserId();
+        long knownUserId = account.getKnownUserId();
         if (knownUserId != 0)
           userIds.add(knownUserId);
       }
     }
     if (userIds.isEmpty())
-      return new int[0];
-    int[] array = new int[userIds.size()];
+      return new long[0];
+    long[] array = new long[userIds.size()];
     int index = 0;
-    for (int userId : userIds)
+    for (long userId : userIds)
       array[index++] = userId;
     return array;
   }
@@ -1671,7 +1697,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   }
 
   @UiThread
-  void onAuthStateChanged (Tdlib tdlib, TdApi.AuthorizationState authState, int status, int userId) {
+  void onAuthStateChanged (Tdlib tdlib, TdApi.AuthorizationState authState, int status, long userId) {
     if (status == Tdlib.STATUS_UNKNOWN) {
       return;
     }
@@ -1702,9 +1728,9 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return getAccountConfigFile().length();
   }
 
-  private static File getAccountConfigFile () {
+  public static File getAccountConfigFile () {
     File parent = UI.getAppContext().getFilesDir();
-    return new File(parent, /*debug ? "tdlib_accounts_debug.bin" :*/ "tdlib_accounts.bin");
+    return new File(parent, "tdlib_accounts.bin");
   }
 
   public static final String LOG_FILE = "tdlib_log.txt";

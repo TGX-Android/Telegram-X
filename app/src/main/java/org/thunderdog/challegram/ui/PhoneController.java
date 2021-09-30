@@ -921,7 +921,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
           case TdApi.ImportedContacts.CONSTRUCTOR: {
             if (mode == MODE_ADD_CONTACT) {
               final TdApi.ImportedContacts contacts = (TdApi.ImportedContacts) object;
-              final int[] userIds = contacts.userIds;
+              final long[] userIds = contacts.userIds;
               tdlib.ui().post(() -> {
                 if (!isDestroyed()) {
                   setInProgress(false);
@@ -1034,7 +1034,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
     return new HelpInfo(res, error, email, title, message);
   }
 
-  private void suggestInvitingUser (int userId, int importerCount) {
+  private void suggestInvitingUser (long userId, int importerCount) {
     CharSequence msg;
     if (importerCount > 1) {
       msg = Lang.plural(R.string.SuggestInvitingUserCommon, importerCount, Lang.boldCreator(), getFirstName());

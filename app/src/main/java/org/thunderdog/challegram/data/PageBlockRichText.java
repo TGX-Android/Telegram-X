@@ -294,7 +294,7 @@ public class PageBlockRichText extends PageBlock {
     context.runOnUiThreadOptional(() -> {
       int avatarSize = (getComputedHeight() - Screen.dp(8f) * 2);
       avatarFile = context.tdlib().chatAvatar(chat.id);
-      avatarPlaceholder = context.tdlib().chatPlaceholder(chat, false, avatarSize / 2f, null);
+      avatarPlaceholder = context.tdlib().chatPlaceholder(chat, false, Screen.px(avatarSize / 2f), null);
       invalidateContent();
 
       CharSequence text = context.tdlib().status().chatStatus(chat);

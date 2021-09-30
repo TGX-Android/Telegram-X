@@ -992,7 +992,7 @@ public class MosaicWrapper implements FactorAnimator.Target, ComplexReceiver.Key
   // ImageReceiver
 
   @Override
-  public boolean filterKey (int receiverType, Receiver receiver, int key) {
+  public boolean filterKey (int receiverType, Receiver receiver, long key) {
     return receiver.getTag() == this;
   }
 

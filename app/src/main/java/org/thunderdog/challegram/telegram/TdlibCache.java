@@ -5,7 +5,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
-import android.util.SparseIntArray;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
@@ -39,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.collection.LongSparseIntArray;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceIntMap;
@@ -56,12 +56,12 @@ import me.vkryl.td.Td;
 public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupStartupDelegate, UI.StateListener {
   public interface UserDataChangeListener {
     void onUserUpdated (TdApi.User user);
-    default void onUserFullUpdated (int userId, TdApi.UserFullInfo userFull) { }
+    default void onUserFullUpdated (long userId, TdApi.UserFullInfo userFull) { }
   }
 
   public interface UserStatusChangeListener {
     @UiThread
-    void onUserStatusChanged (int userId, TdApi.UserStatus status, boolean uiOnly);
+    void onUserStatusChanged (long userId, TdApi.UserStatus status, boolean uiOnly);
     default boolean needUserStatusUiUpdates () { return false; }
   }
 
@@ -72,12 +72,12 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
 
   public interface BasicGroupDataChangeListener {
     default void onBasicGroupUpdated (TdApi.BasicGroup basicGroup, boolean migratedToSupergroup) { }
-    default void onBasicGroupFullUpdated (int basicGroupId, TdApi.BasicGroupFullInfo basicGroupFull) { }
+    default void onBasicGroupFullUpdated (long basicGroupId, TdApi.BasicGroupFullInfo basicGroupFull) { }
   }
 
   public interface SupergroupDataChangeListener {
     default void onSupergroupUpdated (TdApi.Supergroup supergroup) { }
-    default void onSupergroupFullUpdated (int supergroupId, TdApi.SupergroupFullInfo newSupergroupFull) { }
+    default void onSupergroupFullUpdated (long supergroupId, TdApi.SupergroupFullInfo newSupergroupFull) { }
   }
 
   public interface SecretChatDataChangeListener {
@@ -96,26 +96,26 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   }
 
   private final Tdlib tdlib;
-  private volatile int myUserId;
+  private volatile long myUserId;
 
-  private final HashMap<Integer, TdApi.User> users = new HashMap<>();
-  private final HashMap<Integer, TdApi.UserFullInfo> userFulls = new HashMap<>();
-  private final ReferenceIntMap<UserDataChangeListener> userListeners = new ReferenceIntMap<>(true);
+  private final HashMap<Long, TdApi.User> users = new HashMap<>();
+  private final HashMap<Long, TdApi.UserFullInfo> userFulls = new HashMap<>();
+  private final ReferenceLongMap<UserDataChangeListener> userListeners = new ReferenceLongMap<>(true);
 
-  private final ReferenceMap.FullnessListener<Integer, UserStatusChangeListener> statusFullnessListener = (list, isFull) -> setRefreshNeeded(isFull);
-  private final ReferenceIntMap<UserStatusChangeListener> statusListeners = new ReferenceIntMap<>(true, statusFullnessListener);
-  private final ReferenceIntMap<UserStatusChangeListener> simpleStatusListeners = new ReferenceIntMap<>(true, null);
+  private final ReferenceMap.FullnessListener<Long, UserStatusChangeListener> statusFullnessListener = (list, isFull) -> setRefreshNeeded(isFull);
+  private final ReferenceLongMap<UserStatusChangeListener> statusListeners = new ReferenceLongMap<>(true, statusFullnessListener);
+  private final ReferenceLongMap<UserStatusChangeListener> simpleStatusListeners = new ReferenceLongMap<>(true, null);
   private final ReferenceList<MyUserDataChangeListener> myUserListeners = new ReferenceList<>(true);
 
-  private final HashMap<Integer, TdApi.BasicGroup> basicGroup = new HashMap<>();
-  private final HashMap<Integer, TdApi.BasicGroupFullInfo> basicGroupFull = new HashMap<>();
+  private final HashMap<Long, TdApi.BasicGroup> basicGroup = new HashMap<>();
+  private final HashMap<Long, TdApi.BasicGroupFullInfo> basicGroupFull = new HashMap<>();
   private final ReferenceList<BasicGroupDataChangeListener> groupsGlobalListeners = new ReferenceList<>(true);
-  private final ReferenceIntMap<BasicGroupDataChangeListener> groupListeners = new ReferenceIntMap<>(true);
+  private final ReferenceLongMap<BasicGroupDataChangeListener> groupListeners = new ReferenceLongMap<>(true);
 
-  private final HashMap<Integer, TdApi.Supergroup> supergroups = new HashMap<>();
-  private final HashMap<Integer, TdApi.SupergroupFullInfo> supergroupsFulls = new HashMap<>();
+  private final HashMap<Long, TdApi.Supergroup> supergroups = new HashMap<>();
+  private final HashMap<Long, TdApi.SupergroupFullInfo> supergroupsFulls = new HashMap<>();
   private final ReferenceList<SupergroupDataChangeListener> supergroupsGlobalListeners = new ReferenceList<>();
-  private final ReferenceIntMap<SupergroupDataChangeListener> supergroupListeners = new ReferenceIntMap<>();
+  private final ReferenceLongMap<SupergroupDataChangeListener> supergroupListeners = new ReferenceLongMap<>();
 
   private final HashMap<Integer, TdApi.SecretChat> secretChats = new HashMap<>();
   private final ReferenceList<SecretChatDataChangeListener> secretChatsGlobalListeners = new ReferenceList<>();
@@ -134,7 +134,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   private boolean loadingMyUser;
   private final Client.ResultHandler meHandler, dataHandler;
 
-  private final SparseIntArray pendingStatusRefresh = new SparseIntArray();
+  private final LongSparseIntArray pendingStatusRefresh = new LongSparseIntArray();
   private final Handler onlineHandler;
 
   private final Client.ResultHandler locationListHandler = object -> {
@@ -162,7 +162,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
 
     @Override
     public void handleMessage (Message msg) {
-      final int userId = msg.what;
+      final long userId = (long) msg.obj;
       final int wasOnline = msg.arg1;
       final TdApi.User user = context.user(userId);
       context.onUserStatusUpdate(userId, wasOnline, user);
@@ -170,7 +170,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   }
 
   @UiThread
-  private void onUserStatusUpdate (int userId, int wasOnline, @Nullable TdApi.User user) {
+  private void onUserStatusUpdate (long userId, int wasOnline, @Nullable TdApi.User user) {
     if (user == null) {
       return;
     }
@@ -378,7 +378,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
       long ms = SystemClock.elapsedRealtime();
       final int size = pendingStatusRefresh.size();
       for (int i = size - 1; i >= 0; i--) {
-        final int userId = pendingStatusRefresh.keyAt(i);
+        final long userId = pendingStatusRefresh.keyAt(i);
         final int wasOnline = pendingStatusRefresh.valueAt(i);
         final TdApi.User user = users.get(userId);
         if (user != null) {
@@ -409,7 +409,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   }
 
   @TdlibThread
-  void onUpdateMyUserId (int userId) {
+  void onUpdateMyUserId (long userId) {
     TdApi.User myUser;
     synchronized (dataLock) {
       if (this.myUserId == userId) {
@@ -508,14 +508,14 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
         return;
       }
       if (pendingWasOnline != 0) {
-        onlineHandler.removeMessages(user.id);
+        onlineHandler.removeMessages(0, user.id);
         pendingStatusRefresh.delete(user.id);
       }
       long nextRefreshInMs = Lang.getNextRelativeDateUpdateMs(wasOnline, TimeUnit.SECONDS, tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS, true, 60);
       if (nextRefreshInMs != -1) {
         pendingStatusRefresh.put(user.id, wasOnline);
         if (refreshActive) {
-          Message msg = Message.obtain(onlineHandler, user.id, wasOnline, 0);
+          Message msg = Message.obtain(onlineHandler, 0, wasOnline, 0, user.id);
           if (force) {
             onlineHandler.sendMessage(msg);
           } else {
@@ -526,7 +526,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     } else {
       int pendingWasOnline = pendingStatusRefresh.get(user.id);
       if (pendingWasOnline != 0) {
-        onlineHandler.removeMessages(user.id);
+        onlineHandler.removeMessages(0, user.id);
         pendingStatusRefresh.delete(user.id);
       }
     }
@@ -566,7 +566,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   @TdlibThread
   void onUpdateBasicGroup (TdApi.UpdateBasicGroup update) {
     boolean updated;
-    int migratedToSupergroupId;
+    long migratedToSupergroupId;
     synchronized (dataLock) {
       TdApi.BasicGroup group = update.basicGroup;
       TdApi.BasicGroup oldGroup = basicGroup.get(group.id);
@@ -612,7 +612,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
 
   @TdlibThread
   void onUpdateSupergroupFull (TdApi.UpdateSupergroupFullInfo update) {
-    final int supergroupId = update.supergroupId;
+    final long supergroupId = update.supergroupId;
     final TdApi.SupergroupFullInfo supergroupFullInfo = update.supergroupFullInfo;
     boolean updated;
     synchronized (dataLock) {
@@ -790,43 +790,43 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     }
   }
 
-  public <T extends UserDataChangeListener & UserStatusChangeListener> void subscribeToUserUpdates (int userId, T listener) {
+  public <T extends UserDataChangeListener & UserStatusChangeListener> void subscribeToUserUpdates (long userId, T listener) {
     __putUserListener(userId, listener);
     subscribeToUserStatusChanges(userId, listener);
   }
 
-  public <T extends UserDataChangeListener & UserStatusChangeListener> void unsubscribeFromUserUpdates (int userId, T listener) {
+  public <T extends UserDataChangeListener & UserStatusChangeListener> void unsubscribeFromUserUpdates (long userId, T listener) {
     __deleteUserListener(userId, listener);
     unsubscribeFromUserStatusChanges(userId, listener);
   }
 
-  public <T extends UserDataChangeListener & UserStatusChangeListener> void subscribeToUserUpdates (int[] userIds, T listener) {
-    for (int userId : userIds) {
+  public <T extends UserDataChangeListener & UserStatusChangeListener> void subscribeToUserUpdates (long[] userIds, T listener) {
+    for (long userId : userIds) {
       __putUserListener(userId, listener);
       subscribeToUserStatusChanges(userId, listener);
     }
   }
 
-  public <T extends UserDataChangeListener & UserStatusChangeListener> void unsubscribeFromUserUpdates (int[] userIds, T listener) {
-    for (int userId : userIds) {
+  public <T extends UserDataChangeListener & UserStatusChangeListener> void unsubscribeFromUserUpdates (long[] userIds, T listener) {
+    for (long userId : userIds) {
       __deleteUserListener(userId, listener);
       unsubscribeFromUserStatusChanges(userId, listener);
     }
   }
 
-  public void subscribeToGroupUpdates (int groupId, BasicGroupDataChangeListener listener) {
-    putGroupListener(groupId, listener);
+  public void subscribeToGroupUpdates (long basicGroupId, BasicGroupDataChangeListener listener) {
+    putGroupListener(basicGroupId, listener);
   }
 
-  public void unsubscribeFromGroupUpdates (int groupId, BasicGroupDataChangeListener listener) {
-    deleteGroupListener(groupId, listener);
+  public void unsubscribeFromGroupUpdates (long basicGroupId, BasicGroupDataChangeListener listener) {
+    deleteGroupListener(basicGroupId, listener);
   }
 
-  public void subscribeToSupergroupUpdates (int supergroupId, SupergroupDataChangeListener listener) {
+  public void subscribeToSupergroupUpdates (long supergroupId, SupergroupDataChangeListener listener) {
     putSupergroupListener(supergroupId, listener);
   }
 
-  public void unsubscribeFromSupergroupUpdates (int supergroupId, SupergroupDataChangeListener listener) {
+  public void unsubscribeFromSupergroupUpdates (long supergroupId, SupergroupDataChangeListener listener) {
     deleteSupergroupListener(supergroupId, listener);
   }
 
@@ -856,16 +856,16 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
 
   // Getters
 
-  public ArrayList<TdApi.User> users (int[] userIds) {
+  public ArrayList<TdApi.User> users (long[] userIds) {
     final ArrayList<TdApi.User> out = new ArrayList<>(userIds.length);
     users(userIds, out);
     return out;
   }
 
-  public int users (int[] userIds, ArrayList<TdApi.User> out) {
+  public int users (long[] userIds, ArrayList<TdApi.User> out) {
     int addedCount = 0;
     synchronized (dataLock) {
-      for (int userId : userIds) {
+      for (long userId : userIds) {
         if (userId != 0) {
           TdApi.User user = users.get(userId);
           if (user != null) {
@@ -880,7 +880,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     return addedCount;
   }
 
-  public @Nullable TdApi.User user (int userId) {
+  public @Nullable TdApi.User user (long userId) {
     if (userId == 0) {
       Log.bug("getUser for userId=0");
       return null;
@@ -894,7 +894,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   }
 
   @NonNull
-  public TdApi.User userStrict (int userId) {
+  public TdApi.User userStrict (long userId) {
     if (userId == 0)
       throw new IllegalArgumentException();
     synchronized (dataLock) {
@@ -905,7 +905,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     }
   }
 
-  public boolean userLastSeenAvailable (int userId) {
+  public boolean userLastSeenAvailable (long userId) {
     if (userId == 0)
       return false;
     synchronized (dataLock) {
@@ -915,11 +915,11 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     }
   }
 
-  public boolean userGeneral (int userId) {
+  public boolean userGeneral (long userId) {
     return userId != 0 && TD.isGeneralUser(user(userId));
   }
 
-  public int userAvatarColorId (int userId) {
+  public int userAvatarColorId (long userId) {
     return userAvatarColorId(userId != 0 ? user(userId) : null);
   }
 
@@ -931,7 +931,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     return TD.getLetters(user);
   }
 
-  public Letters userLetters (int userId) {
+  public Letters userLetters (long userId) {
     TdApi.User user = user(userId);
     return user != null ? TD.getLetters(user) : TD.getLetters();
   }
@@ -967,7 +967,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     return new AvatarPlaceholder.Metadata(avatarColorId, avatarLetters != null ? avatarLetters.text : null, desiredDrawableRes, extraDrawableRes);
   }
 
-  public AvatarPlaceholder userPlaceholder (int userId, boolean allowSavedMessages, float radius, @Nullable DrawableProvider provider) {
+  public AvatarPlaceholder userPlaceholder (long userId, boolean allowSavedMessages, float radius, @Nullable DrawableProvider provider) {
     return userPlaceholder(userId, user(userId), allowSavedMessages, radius, provider);
   }
 
@@ -975,7 +975,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     return userPlaceholder(user != null ? user.id : 0, user, allowSavedMessages, radius, provider);
   }
 
-  public @Nullable ImageFile userAvatar (int userId) {
+  public @Nullable ImageFile userAvatar (long userId) {
     if (userId == 0)
       return null;
     TdApi.User user = user(userId);
@@ -987,7 +987,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     return avatarFile;
   }
 
-  public AvatarPlaceholder.Metadata userPlaceholderMetadata (int userId, @Nullable TdApi.User user, boolean allowSavedMessages) {
+  public AvatarPlaceholder.Metadata userPlaceholderMetadata (long userId, @Nullable TdApi.User user, boolean allowSavedMessages) {
     if (user != null || userId == 0) {
       return userPlaceholderMetadata(user, allowSavedMessages);
     } else {
@@ -995,11 +995,11 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     }
   }
 
-  public AvatarPlaceholder userPlaceholder (int userId, @Nullable TdApi.User user, boolean allowSavedMessage, float radius, @Nullable DrawableProvider provider) {
+  public AvatarPlaceholder userPlaceholder (long userId, @Nullable TdApi.User user, boolean allowSavedMessage, float radius, @Nullable DrawableProvider provider) {
     return new AvatarPlaceholder(radius, userPlaceholderMetadata(userId, user, allowSavedMessage), provider);
   }
 
-  public String userDisplayName (int userId, boolean allowSavedMessages, boolean shorten) {
+  public String userDisplayName (long userId, boolean allowSavedMessages, boolean shorten) {
     if (allowSavedMessages && tdlib.isSelfUserId(userId)) {
       return Lang.getString(R.string.SavedMessages);
     }
@@ -1016,11 +1016,11 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     return TD.getUserName(userId, user);
   }
 
-  public boolean userDeleted (int userId) {
+  public boolean userDeleted (long userId) {
     return userId != 0 && TD.isUserDeleted(user(userId));
   }
 
-  public boolean userBot (int userId) {
+  public boolean userBot (long userId) {
     return userId != 0 && TD.isBot(user(userId));
   }
 
@@ -1028,19 +1028,19 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     return sender != null && sender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR && userBot(((TdApi.MessageSenderUser) sender).userId);
   }
 
-  public boolean userContact (int userId) {
+  public boolean userContact (long userId) {
     return userId != 0 && TD.isContact(user(userId));
   }
 
-  public @NonNull String userName (int userId) {
+  public @NonNull String userName (long userId) {
     return userId != 0 ? TD.getUserName(userId, user(userId)) : "VOID";
   }
 
-  public String userFirstName (int userId) {
+  public String userFirstName (long userId) {
     return userId != 0 ? TD.getUserSingleName(userId, user(userId)) : "VOID";
   }
 
-  public @Nullable String userUsername (int userId) {
+  public @Nullable String userUsername (long userId) {
     if (userId != 0) {
       TdApi.User user = user(userId);
       return user != null && !StringUtils.isEmpty(user.username) ? user.username : null;
@@ -1049,15 +1049,15 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   }
 
   @Nullable
-  public TdApi.UserFullInfo userFull (int userId) {
+  public TdApi.UserFullInfo userFull (long userId) {
     return userFull(userId, true);
   }
 
   @Nullable
-  public TdApi.UserFullInfo userFull (int userId, boolean allowRequest) {
+  public TdApi.UserFullInfo userFull (long userId, boolean allowRequest) {
     TdApi.UserFullInfo userFull;
     synchronized (dataLock) {
-      Integer key = userId;
+      Long key = userId;
       userFull = userFulls.get(key);
       if (userFull == null || allowRequest) {
         TdApi.User user = users.get(key);
@@ -1074,8 +1074,8 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   public @Nullable TdApi.User searchUser (String username) {
     TdApi.User result = null;
     synchronized (dataLock) {
-      final Set<HashMap.Entry<Integer, TdApi.User>> entries = users.entrySet();
-      for (HashMap.Entry<Integer, TdApi.User> entry : entries) {
+      final Set<HashMap.Entry<Long, TdApi.User>> entries = users.entrySet();
+      for (HashMap.Entry<Long, TdApi.User> entry : entries) {
         TdApi.User user = entry.getValue();
         if (user.username != null && user.username.length() == username.length() && user.username.toLowerCase().equals(username)) {
           result = user;
@@ -1087,66 +1087,66 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   }
 
   @Nullable
-  public TdApi.BasicGroup basicGroup (int groupId) {
+  public TdApi.BasicGroup basicGroup (long basicGroupId) {
     synchronized (dataLock) {
-      return basicGroup.get(groupId);
+      return basicGroup.get(basicGroupId);
     }
   }
 
   @NonNull
-  public TdApi.BasicGroup basicGroupStrict (int groupId) {
-    if (groupId == 0)
+  public TdApi.BasicGroup basicGroupStrict (long basicGroupId) {
+    if (basicGroupId == 0)
       throw new IllegalArgumentException();
     synchronized (dataLock) {
-      TdApi.BasicGroup group = basicGroup.get(groupId);
+      TdApi.BasicGroup group = basicGroup.get(basicGroupId);
       if (group == null)
-        throw new IllegalStateException("id:" + groupId);
+        throw new IllegalStateException("id:" + basicGroupId);
       return group;
     }
   }
 
-  public boolean basicGroupActive (int groupId) {
-    TdApi.BasicGroup basicGroup = basicGroup(groupId);
+  public boolean basicGroupActive (long basicGroupId) {
+    TdApi.BasicGroup basicGroup = basicGroup(basicGroupId);
     return basicGroup != null && basicGroup.isActive;
   }
 
   @Nullable
-  public TdApi.BasicGroupFullInfo basicGroupFull (int groupId) {
-    return basicGroupFull(groupId, true);
+  public TdApi.BasicGroupFullInfo basicGroupFull (long basicGroupId) {
+    return basicGroupFull(basicGroupId, true);
   }
 
   @Nullable
-  public TdApi.BasicGroupFullInfo basicGroupFull (int groupId, boolean allowRequest) {
+  public TdApi.BasicGroupFullInfo basicGroupFull (long basicGroupId, boolean allowRequest) {
     synchronized (dataLock) {
-      return basicGroupFullUnsafe(groupId, allowRequest);
+      return basicGroupFullUnsafe(basicGroupId, allowRequest);
     }
   }
 
   @Nullable
-  private TdApi.BasicGroupFullInfo basicGroupFullUnsafe (int groupId, boolean allowRequest) {
-    Integer key = groupId;
+  private TdApi.BasicGroupFullInfo basicGroupFullUnsafe (long basicGroupId, boolean allowRequest) {
+    Long key = basicGroupId;
     TdApi.BasicGroupFullInfo groupFull;
     groupFull = basicGroupFull.get(key);
     if (groupFull == null || allowRequest) {
       TdApi.BasicGroup basicGroup = this.basicGroup.get(key);
       if (basicGroup != null) {
-        tdlib.client().send(new TdApi.GetBasicGroupFullInfo(groupId), dataHandler);
+        tdlib.client().send(new TdApi.GetBasicGroupFullInfo(basicGroupId), dataHandler);
       } else {
-        tdlib.client().send(new TdApi.GetBasicGroup(groupId), ignored -> tdlib.client().send(new TdApi.GetBasicGroupFullInfo(groupId), dataHandler));
+        tdlib.client().send(new TdApi.GetBasicGroup(basicGroupId), ignored -> tdlib.client().send(new TdApi.GetBasicGroupFullInfo(basicGroupId), dataHandler));
       }
     }
     return groupFull;
   }
 
   @Nullable
-  public TdApi.Supergroup supergroup (int supergroupId) {
+  public TdApi.Supergroup supergroup (long supergroupId) {
     synchronized (dataLock) {
       return supergroups.get(supergroupId);
     }
   }
 
   @NonNull
-  public TdApi.Supergroup supergroupStrict (int supergroupId) {
+  public TdApi.Supergroup supergroupStrict (long supergroupId) {
     if (supergroupId == 0)
       throw new IllegalArgumentException();
     synchronized (dataLock) {
@@ -1158,15 +1158,15 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   }
 
   @Nullable
-  public TdApi.SupergroupFullInfo supergroupFull (int supergroupId) {
+  public TdApi.SupergroupFullInfo supergroupFull (long supergroupId) {
     return supergroupFull(supergroupId, true);
   }
 
   @Nullable
-  public TdApi.SupergroupFullInfo supergroupFull (int supergroupId, boolean allowRequest) {
+  public TdApi.SupergroupFullInfo supergroupFull (long supergroupId, boolean allowRequest) {
     TdApi.SupergroupFullInfo result;
     synchronized (dataLock) {
-      Integer key = supergroupId;
+      Long key = supergroupId;
       result = supergroupsFulls.get(key);
       if (result == null || allowRequest) {
         TdApi.Supergroup supergroup = supergroups.get(key);
@@ -1180,7 +1180,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     return result;
   }
 
-  public void supergroupFull (int supergroupId, RunnableData<TdApi.SupergroupFullInfo> callback) {
+  public void supergroupFull (long supergroupId, RunnableData<TdApi.SupergroupFullInfo> callback) {
     if (supergroupId == 0) {
       if (callback != null) {
         callback.runWithData(null);
@@ -1226,12 +1226,12 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   }
 
   @Deprecated
-  /*pacakge*/ int myUserId () {
+  /*pacakge*/ long myUserId () {
     // TODO move myUserId to TdlibContext
     return myUserId;
   }
 
-  public boolean isMe (int userId) {
+  public boolean isMe (long userId) {
     return myUserId == userId;
   }
 
@@ -1245,7 +1245,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     return result;
   }
 
-  public boolean isOnline (int userId) {
+  public boolean isOnline (long userId) {
     if (userId == 0) {
       return false;
     }
@@ -1263,7 +1263,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     return isOnline;
   }
 
-  /*public int secondsTillOffline (int userId) {
+  /*public int secondsTillOffline (long userId) {
     if (userId == 0) {
       return -1;
     }
@@ -1489,7 +1489,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     }
   }
 
-  private static void notifyListeners (@Nullable Iterator<UserDataChangeListener> list, int userId, TdApi.UserFullInfo userFull) {
+  private static void notifyListeners (@Nullable Iterator<UserDataChangeListener> list, long userId, TdApi.UserFullInfo userFull) {
     if (list != null) {
       while (list.hasNext()) {
         list.next().onUserFullUpdated(userId, userFull);
@@ -1513,7 +1513,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     }
   }
 
-  private static void notifyUserStatusListeners (@Nullable Iterator<UserStatusChangeListener> list, int userId, TdApi.UserStatus status, boolean uiOnly) {
+  private static void notifyUserStatusListeners (@Nullable Iterator<UserStatusChangeListener> list, long userId, TdApi.UserStatus status, boolean uiOnly) {
     if (list != null) {
       while (list.hasNext()) {
         list.next().onUserStatusChanged(userId, status, uiOnly);
@@ -1575,15 +1575,15 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     }
   }
 
-  private static void notifyListeners (@Nullable Iterator<BasicGroupDataChangeListener> list, int groupId, TdApi.BasicGroupFullInfo groupFull) {
+  private static void notifyListeners (@Nullable Iterator<BasicGroupDataChangeListener> list, long basicGroupId, TdApi.BasicGroupFullInfo groupFull) {
     if (list != null) {
       while (list.hasNext()) {
-        list.next().onBasicGroupFullUpdated(groupId, groupFull);
+        list.next().onBasicGroupFullUpdated(basicGroupId, groupFull);
       }
     }
   }
 
-  private static void notifyListeners (@Nullable Iterator<SupergroupDataChangeListener> list, int supergroupId, TdApi.SupergroupFullInfo supergroupFull) {
+  private static void notifyListeners (@Nullable Iterator<SupergroupDataChangeListener> list, long supergroupId, TdApi.SupergroupFullInfo supergroupFull) {
     if (list != null) {
       while (list.hasNext()) {
         list.next().onSupergroupFullUpdated(supergroupId, supergroupFull);
@@ -1595,18 +1595,18 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
 
   // data
   private void __putGlobalUserDataListener (UserDataChangeListener listener) {
-    userListeners.add(0, listener);
+    userListeners.add(0L, listener);
   }
   private void __deleteGlobalUserDataListener (UserDataChangeListener listener) {
-    userListeners.remove(0, listener);
+    userListeners.remove(0L, listener);
   }
-  private void __putUserListener (int userId, UserDataChangeListener listener) {
+  private void __putUserListener (long userId, UserDataChangeListener listener) {
     if (userId == 0) {
       throw new IllegalArgumentException("userId == " + userId);
     }
     userListeners.add(userId, listener);
   }
-  private void __deleteUserListener (int userId, UserDataChangeListener listener) {
+  private void __deleteUserListener (long userId, UserDataChangeListener listener) {
     if (userId == 0) {
       throw new IllegalArgumentException("userId == " + userId);
     }
@@ -1615,19 +1615,19 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   // status
   private void __putGlobalStatusListener (UserStatusChangeListener listener) {
     if (listener.needUserStatusUiUpdates()) {
-      statusListeners.add(0, listener);
+      statusListeners.add(0L, listener);
     } else {
-      simpleStatusListeners.add(0, listener);
+      simpleStatusListeners.add(0L, listener);
     }
   }
   private void __deleteGlobalStatusListener (UserStatusChangeListener listener) {
     if (listener.needUserStatusUiUpdates()) {
-      statusListeners.remove(0, listener);
+      statusListeners.remove(0L, listener);
     } else {
-      simpleStatusListeners.remove(0, listener);
+      simpleStatusListeners.remove(0L, listener);
     }
   }
-  public void subscribeToUserStatusChanges (int userId, UserStatusChangeListener listener) {
+  public void subscribeToUserStatusChanges (long userId, UserStatusChangeListener listener) {
     if (userId == 0)
       throw new IllegalArgumentException("userId == " + userId);
     if (listener.needUserStatusUiUpdates()) {
@@ -1636,7 +1636,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
       simpleStatusListeners.add(userId, listener);
     }
   }
-  public void unsubscribeFromUserStatusChanges (int userId, UserStatusChangeListener listener) {
+  public void unsubscribeFromUserStatusChanges (long userId, UserStatusChangeListener listener) {
     if (userId == 0)
       throw new IllegalArgumentException("userId == " + userId);
     if (listener.needUserStatusUiUpdates()) {
@@ -1653,10 +1653,10 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     __deleteGlobalUserDataListener(listener);
   }
 
-  public void addUserDataListener (int userId, UserDataChangeListener listener) {
+  public void addUserDataListener (long userId, UserDataChangeListener listener) {
     __putUserListener(userId, listener);
   }
-  public void removeUserDataListener (int userId, UserDataChangeListener listener) {
+  public void removeUserDataListener (long userId, UserDataChangeListener listener) {
     __deleteUserListener(userId, listener);
   }
 
@@ -1670,19 +1670,19 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   }
 
   private void notifyUserListeners (TdApi.User user) {
-    notifyListeners(userListeners.iterator(0), user);
+    notifyListeners(userListeners.iterator(0L), user);
     notifyListeners(userListeners.iterator(user.id), user);
   }
 
-  private void notifyUserFullListeners (int userId, TdApi.UserFullInfo userFull) {
-    notifyListeners(userListeners.iterator(0), userId, userFull);
+  private void notifyUserFullListeners (long userId, TdApi.UserFullInfo userFull) {
+    notifyListeners(userListeners.iterator(0L), userId, userFull);
     notifyListeners(userListeners.iterator(userId), userId, userFull);
   }
 
-  private void notifyUserStatusChanged (int userId, TdApi.UserStatus status, boolean uiOnly) {
-    notifyUserStatusListeners(statusListeners.iterator(0), userId, status, uiOnly);
+  private void notifyUserStatusChanged (long userId, TdApi.UserStatus status, boolean uiOnly) {
+    notifyUserStatusListeners(statusListeners.iterator(0L), userId, status, uiOnly);
     notifyUserStatusListeners(statusListeners.iterator(userId), userId, status, uiOnly);
-    notifyUserStatusListeners(simpleStatusListeners.iterator(0), userId, status, uiOnly);
+    notifyUserStatusListeners(simpleStatusListeners.iterator(0L), userId, status, uiOnly);
     notifyUserStatusListeners(simpleStatusListeners.iterator(userId), userId, status, uiOnly);
   }
 
@@ -1696,12 +1696,12 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     groupsGlobalListeners.remove(listener);
   }
 
-  private void putGroupListener (int groupId, BasicGroupDataChangeListener listener) {
-    groupListeners.add(groupId, listener);
+  private void putGroupListener (long basicGroupId, BasicGroupDataChangeListener listener) {
+    groupListeners.add(basicGroupId, listener);
   }
 
-  private void deleteGroupListener (int groupId, BasicGroupDataChangeListener listener) {
-    groupListeners.remove(groupId, listener);
+  private void deleteGroupListener (long basicGroupId, BasicGroupDataChangeListener listener) {
+    groupListeners.remove(basicGroupId, listener);
   }
 
   // Supergroup
@@ -1714,11 +1714,11 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     supergroupsGlobalListeners.remove(listener);
   }
 
-  private void putSupergroupListener (int supergroupId, SupergroupDataChangeListener listener) {
+  private void putSupergroupListener (long supergroupId, SupergroupDataChangeListener listener) {
     supergroupListeners.add(supergroupId, listener);
   }
 
-  private void deleteSupergroupListener (int supergroupId, SupergroupDataChangeListener listener) {
+  private void deleteSupergroupListener (long supergroupId, SupergroupDataChangeListener listener) {
     supergroupListeners.remove(supergroupId, listener);
   }
 
@@ -1758,7 +1758,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
 
   // Setters (internal)
 
-  private boolean putUserFull (int userId, TdApi.UserFullInfo userFull) {
+  private boolean putUserFull (long userId, TdApi.UserFullInfo userFull) {
     userFulls.put(userId, userFull);
     return true;
   }
@@ -1769,8 +1769,8 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     return updated;
   }
 
-  private boolean putGroupFull (int groupId, TdApi.BasicGroupFullInfo groupFull) {
-    basicGroupFull.put(groupId, groupFull);
+  private boolean putGroupFull (long basicGroupId, TdApi.BasicGroupFullInfo groupFull) {
+    basicGroupFull.put(basicGroupId, groupFull);
     return true;
   }
 
@@ -1790,7 +1790,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     return mode;
   }
 
-  private boolean putSupergroupFull (int supergroupId, TdApi.SupergroupFullInfo supergroupFull) {
+  private boolean putSupergroupFull (long supergroupId, TdApi.SupergroupFullInfo supergroupFull) {
     supergroupsFulls.put(supergroupId, supergroupFull);
     return true;
   }

@@ -18,6 +18,7 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -69,14 +70,14 @@ public class JoinedUsersView extends View implements Destroyable, FactorAnimator
     this.icon = Drawables.get(getResources(), R.drawable.baseline_forum_96);
     this.receivers = new ImageReceiver[5];
 
-    int[] userIds = tdlib.contacts().getRegisteredUserIds();
+    long[] userIds = tdlib.contacts().getRegisteredUserIds();
     int count = tdlib.contacts().getAvailableRegisteredCount();
 
     if (userIds != null) {
       setUserIdsImpl(userIds, count, false);
     }
 
-    this.inviteText = Strings.replaceBoldTokens(Lang.getString(R.string.NoChatsText), 0);
+    this.inviteText = Strings.replaceBoldTokens(Lang.getString(R.string.NoChatsText), ThemeColorId.NONE);
 
     tdlib.contacts().addAvatarExpector(this);
   }
@@ -151,7 +152,7 @@ public class JoinedUsersView extends View implements Destroyable, FactorAnimator
     }
   }
 
-  private int[] userIds;
+  private long[] userIds;
   private AvatarInfo[] avatarInfos;
   private String moreCounter;
 
@@ -218,11 +219,11 @@ public class JoinedUsersView extends View implements Destroyable, FactorAnimator
 
   private boolean isVisible;
 
-  public void setUserIds (int[] userIds, int totalCount, boolean animated) {
+  public void setUserIds (long[] userIds, int totalCount, boolean animated) {
     setUserIdsImpl(userIds, totalCount, animated && getMeasuredWidth() > 0 && getMeasuredHeight() > 0 && parent != null && parent.isFocused());
   }
 
-  private void setUserIdsImpl (int[] userIds, int totalCount, boolean animated) {
+  private void setUserIdsImpl (long[] userIds, int totalCount, boolean animated) {
     String counter;
     if (totalCount > 5) {
       counter = "+" + (totalCount - userIds.length + 1);
@@ -252,7 +253,7 @@ public class JoinedUsersView extends View implements Destroyable, FactorAnimator
         this.avatarInfos = new AvatarInfo[userIds.length];
       }
       int i = 0;
-      for (int userId : userIds) {
+      for (long userId : userIds) {
         avatarInfos[i] = new AvatarInfo(tdlib, userId);
         i++;
       }
@@ -283,7 +284,7 @@ public class JoinedUsersView extends View implements Destroyable, FactorAnimator
   private static long START_DELAY = 28l;
   private static long AVATAR_DURATION = 120l;
 
-  private static long calculateDuration (int[] userIds, boolean includeIcon) {
+  private static long calculateDuration (long[] userIds, boolean includeIcon) {
     return (includeIcon ? ICON_DURATION : 0) + ((userIds.length - 1) * START_DELAY + AVATAR_DURATION);
   }
 
@@ -326,7 +327,7 @@ public class JoinedUsersView extends View implements Destroyable, FactorAnimator
       if (avatarInfos[i] == null) {
         continue;
       }
-      int userId = avatarInfos[i].userId;
+      long userId = avatarInfos[i].userId;
       if (x >= cx - avatarRadius && x <= cx + avatarRadius && y >= centerY - avatarRadius && y <= centerY + avatarRadius) {
         tdlib.ui().openPrivateChat(ViewController.findRoot(this), userId, null);
         ViewUtils.onClick(this);

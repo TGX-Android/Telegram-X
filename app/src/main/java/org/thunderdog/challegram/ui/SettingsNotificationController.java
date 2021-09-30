@@ -49,6 +49,7 @@ import org.thunderdog.challegram.telegram.TdlibOptionListener;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -184,7 +185,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     this.customChatId = chatId;
     long callChatId = 0;
     if (chatId != 0 && ChatId.isUserChat(chatId)) {
-      int userId = tdlib.chatUserId(chatId);
+      long userId = tdlib.chatUserId(chatId);
       if (userId != 0) {
         TdApi.User user = tdlib.cache().user(userId);
         if (user != null && user.type.getConstructor() == TdApi.UserTypeRegular.CONSTRUCTOR) {
@@ -703,7 +704,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
               case R.id.btn_customChat_led:
                 color = tdlib.notifications().getCustomLedColor(customChatId, TdlibNotificationManager.LED_COLOR_UNSET);
                 if (color == TdlibNotificationManager.LED_COLOR_UNSET || color == tdlib.notifications().getDefaultLedColor(tdlib.notifications().scope(customChatId))) {
-                  view.setColorDataId(0);
+                  view.setColorDataId(ThemeColorId.NONE);
                   view.setData(R.string.LedDefault);
                   return;
                 }

@@ -587,7 +587,7 @@ public class SearchManager {
           case TdApi.Chats.CONSTRUCTOR: {
             long[] chatIds = ((TdApi.Chats) object).chatIds;
             foundChats = new ArrayList<>(chatIds.length);
-            final int selfUserId = tdlib.myUserId();
+            final long selfUserId = tdlib.myUserId();
             final long selfChatId = ChatId.fromUserId(selfUserId);
             if (selfChatId != 0 && !StringUtils.isEmpty(query) && state[1] == 0) {
               state[1] = 1;
@@ -615,7 +615,7 @@ public class SearchManager {
             break;
           }
           case TdApi.Users.CONSTRUCTOR: {
-            int[] userIds = ((TdApi.Users) object).userIds;
+            long[] userIds = ((TdApi.Users) object).userIds;
             if (userIds.length == 0) {
               foundChats = null;
               break;

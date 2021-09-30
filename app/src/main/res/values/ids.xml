@@ -66,6 +66,7 @@
   <item type="id" name="menu_btn_stopwatch" />
   <item type="id" name="menu_btn_call" />
   <item type="id" name="menu_btn_share" />
+  <item type="id" name="menu_btn_unpinAll" />
 
   <item type="id" name="menu_btn_masks" />
   <item type="id" name="menu_btn_pictureInPicture" />
@@ -114,6 +115,7 @@
   <item type="id" name="controller_simplePager" />
   <item type="id" name="controller_logOut" />
   <item type="id" name="controller_editLanguage" />
+  <item type="id" name="controller_editChatLink" />
   <item type="id" name="controller_strings" />
   <item type="id" name="controller_editPhone" />
   <item type="id" name="controller_request" />
@@ -209,6 +211,9 @@
   <item type="id" name="controller_media_contacts" />
   <item type="id" name="controller_media_location" />
   <item type="id" name="controller_media_inlineBots" />
+  <item type="id" name="controller_backgroundGrid" />
+  <item type="id" name="controller_chatLinks" />
+  <item type="id" name="controller_chatLinkMembers" />
 
   <item type="id" name="separator" />
 
@@ -431,6 +436,8 @@
   <item type="id" name="btn_prehistoryMode" />
   <item type="id" name="btn_slowMode" />
   <item type="id" name="btn_slowModeDescription" />
+  <item type="id" name="btn_chatTtl" />
+  <item type="id" name="btn_chatTtlDescription" />
   <item type="id" name="btn_phone" />
   <item type="id" name="btn_useExplicitDice" />
   <item type="id" name="btn_night" />
@@ -705,6 +712,14 @@
   <item type="id" name="btn_reverseOrder" />
   <item type="id" name="btn_showInPlaylist" />
   <item type="id" name="btn_revokeLink" />
+  <item type="id" name="btn_deleteLink" />
+  <item type="id" name="btn_deleteAllRevokedLinks" />
+  <item type="id" name="btn_createInviteLink" />
+  <item type="id" name="btn_viewInviteLinkMembers" />
+  <item type="id" name="btn_openAdminInviteLinks" />
+  <item type="id" name="btn_inviteLinkUserLimit" />
+  <item type="id" name="btn_inviteLinkUserSlider" />
+  <item type="id" name="btn_inviteLinkDateLimit" />
   <item type="id" name="btn_saveGif" />
   <item type="id" name="btn_stickers" />
   <item type="id" name="btn_stickerSetInfo" />
@@ -1035,6 +1050,7 @@
 
   <item type="id" name="btn_reportChat" />
   <item type="id" name="btn_reportChatSpam" />
+  <item type="id" name="btn_reportChatFake" />
   <item type="id" name="btn_reportChatViolence" />
   <item type="id" name="btn_reportChatPornography" />
   <item type="id" name="btn_reportChatChildAbuse" />

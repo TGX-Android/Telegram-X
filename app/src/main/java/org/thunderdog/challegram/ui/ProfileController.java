@@ -308,7 +308,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
   }
 
-  private void replaceWithSupergroup (int supergroupId) {
+  private void replaceWithSupergroup (long supergroupId) {
     if (isDestroyed())
       return;
     if (mode != MODE_EDIT_GROUP && mode != MODE_GROUP)
@@ -559,10 +559,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     boolean isBot = user.type.getConstructor() == TdApi.UserTypeBot.CONSTRUCTOR;
-    final int myUserId = tdlib.myUserId();
+    final long myUserId = tdlib.myUserId();
 
     if (!isBot && user.id == myUserId && user.id != 0) {
-      showMore(new int[] {R.id.more_btn_edit}, new String[] {Lang.getString(R.string.EditName)}, 0);
+      showMore(new int[]{R.id.more_btn_edit}, new String[]{Lang.getString(R.string.EditName)}, 0);
       return;
     }
 
@@ -714,7 +714,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
               final boolean needBlock = !tdlib.chatBlocked(chat.id);
               final boolean isBot = tdlib.isBotChat(chat.id);
               if (needBlock) {
-                showOptions(Lang.getStringBold(isBot ? R.string.BlockBotConfirm : R.string.BlockUserConfirm, tdlib.chatTitle(chat.id)), new int[] {R.id.btn_blockUser, R.id.btn_cancel}, new String[] {Lang.getString(isBot ? R.string.BlockBot : R.string.BlockContact), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_block_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
+                showOptions(Lang.getStringBold(isBot ? R.string.BlockBotConfirm : R.string.BlockUserConfirm, tdlib.chatTitle(chat.id)), new int[]{R.id.btn_blockUser, R.id.btn_cancel}, new String[]{Lang.getString(isBot ? R.string.BlockBot : R.string.BlockContact), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_block_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
                   if (!isDestroyed() && id1 == R.id.btn_blockUser) {
                     tdlib.blockSender(tdlib.sender(chat.id), true, result -> {
                       if (TD.isOk(result)) {
@@ -891,7 +891,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private FrameLayoutFix contentView;
 
-  private @Nullable ComplexHeaderView headerCell;
+  private @Nullable
+  ComplexHeaderView headerCell;
   private CustomRecyclerView baseRecyclerView;
   private SettingsAdapter baseAdapter;
 
@@ -1308,7 +1309,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   @Override
-  public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) { }
+  public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
+  }
 
   /*protected int getTopSearchOffset () {
     return (int) ((float) -getPagerTopViewHeight() * getSearchTransformFactor());
@@ -1643,7 +1645,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       @Override
       protected void setSliderValues (ListItem item, SliderWrapView view) {
         super.setSliderValues(item, view);
-        view.setShowOnlyValue(item.getId() == R.id.btn_slowMode);
+        view.setShowOnlyValue((item.getId() == R.id.btn_slowMode || item.getId() == R.id.btn_chatTtl));
       }
 
       @Override
@@ -1651,6 +1653,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         if (item.getId() == R.id.btn_slowMode) {
           slowModeDescItem.setString(getSlowModeDescription(TdConstants.SLOW_MODE_OPTIONS[value]));
           baseAdapter.updateValuedSetting(slowModeDescItem);
+          onItemsHeightProbablyChanged();
+          checkDoneButton();
+        } else if (item.getId() == R.id.btn_chatTtl) {
+          ttlDescItem.setString(getTtlDescription(TdConstants.CHAT_TTL_OPTIONS[value]));
+          baseAdapter.updateValuedSetting(ttlDescItem);
           onItemsHeightProbablyChanged();
           checkDoneButton();
         }
@@ -2279,7 +2286,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }*/
 
   private ListItem newInviteLinkItem () {
-    return new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, R.drawable.baseline_person_add_24, R.string.InviteLink);
+    return new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, R.drawable.baseline_person_add_24, R.string.PrimaryInviteLinkMenu);
   }
 
   private ListItem newNotificationItem () {
@@ -3024,45 +3031,45 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       headerItem.setString(Lang.plural(R.string.ChatHistoryPartiallyHiddenInfo, 100));
     showSettings(
       new SettingsWrapBuilder(R.id.btn_prehistoryMode)
-        .setRawItems(new ListItem[] {
+        .setRawItems(new ListItem[]{
           new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_visible, 0, R.string.ChatHistoryVisible, R.id.btn_prehistoryMode, currentValue),
           new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_hidden, 0, R.string.ChatHistoryHidden, R.id.btn_prehistoryMode, !currentValue)
         })
         .setHeaderItem(headerItem)
-      .setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter) -> {
-        boolean visible = settingsAdapter.getCheckIntResults().get(R.id.btn_prehistoryMode) == R.id.btn_visible;
-        if (groupFull != null && !visible) {
-          headerItem.setString(Lang.plural(R.string.ChatHistoryPartiallyHiddenInfo, 100));
-        } else if (!visible && supergroupFull != null && supergroupFull.linkedChatId != 0) {
-          headerItem.setString(new SpannableStringBuilder(Lang.getString(R.string.ChatHistoryHiddenInfo))
-            .append("\n\n")
-            .append(Lang.getStringBold(R.string.ChatHistoryWarnLinkedChannel, tdlib.chatTitle(supergroupFull.linkedChatId))));
-        } else {
-          headerItem.setString(visible ? R.string.ChatHistoryVisibleInfo : R.string.ChatHistoryHiddenInfo);
-        }
-        settingsAdapter.updateValuedSettingByPosition(settingsAdapter.indexOfView(headerItem));
-      })
-      .setIntDelegate((id, result) -> {
-        boolean visible = result.get(R.id.btn_prehistoryMode) == R.id.btn_visible;
-        if (currentValue != visible) {
-          if (groupFull != null) {
-            showConfirm(Lang.getMarkdownString(this, R.string.UpgradeChatPrompt), Lang.getString(R.string.Proceed), () ->
-              tdlib.upgradeToSupergroup(chat.id, (oldChatId, newChatId, error) -> {
-                if (newChatId != 0) {
-                  tdlib.client().send(new TdApi.ToggleSupergroupIsAllHistoryAvailable(ChatId.toSupergroupId(newChatId), visible), tdlib.okHandler());
-                }
-              })
-            );
+        .setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter) -> {
+          boolean visible = settingsAdapter.getCheckIntResults().get(R.id.btn_prehistoryMode) == R.id.btn_visible;
+          if (groupFull != null && !visible) {
+            headerItem.setString(Lang.plural(R.string.ChatHistoryPartiallyHiddenInfo, 100));
+          } else if (!visible && supergroupFull != null && supergroupFull.linkedChatId != 0) {
+            headerItem.setString(new SpannableStringBuilder(Lang.getString(R.string.ChatHistoryHiddenInfo))
+              .append("\n\n")
+              .append(Lang.getStringBold(R.string.ChatHistoryWarnLinkedChannel, tdlib.chatTitle(supergroupFull.linkedChatId))));
           } else {
-            if (supergroupFull != null && supergroupFull.linkedChatId != 0) {
-              tdlib.client().send(new TdApi.SetChatDiscussionGroup(0, chat.id), ignored -> tdlib.client().send(new TdApi.ToggleSupergroupIsAllHistoryAvailable(supergroup.id, visible), tdlib.okHandler()));
-            } else {
-              tdlib.client().send(new TdApi.ToggleSupergroupIsAllHistoryAvailable(supergroup.id, visible), tdlib.okHandler());
-            }
-            baseAdapter.updateValuedSettingById(R.id.btn_prehistoryMode);
+            headerItem.setString(visible ? R.string.ChatHistoryVisibleInfo : R.string.ChatHistoryHiddenInfo);
           }
-        }
-      })
+          settingsAdapter.updateValuedSettingByPosition(settingsAdapter.indexOfView(headerItem));
+        })
+        .setIntDelegate((id, result) -> {
+          boolean visible = result.get(R.id.btn_prehistoryMode) == R.id.btn_visible;
+          if (currentValue != visible) {
+            if (groupFull != null) {
+              showConfirm(Lang.getMarkdownString(this, R.string.UpgradeChatPrompt), Lang.getString(R.string.Proceed), () ->
+                tdlib.upgradeToSupergroup(chat.id, (oldChatId, newChatId, error) -> {
+                  if (newChatId != 0) {
+                    tdlib.client().send(new TdApi.ToggleSupergroupIsAllHistoryAvailable(ChatId.toSupergroupId(newChatId), visible), tdlib.okHandler());
+                  }
+                })
+              );
+            } else {
+              if (supergroupFull != null && supergroupFull.linkedChatId != 0) {
+                tdlib.client().send(new TdApi.SetChatDiscussionGroup(0, chat.id), ignored -> tdlib.client().send(new TdApi.ToggleSupergroupIsAllHistoryAvailable(supergroup.id, visible), tdlib.okHandler()));
+              } else {
+                tdlib.client().send(new TdApi.ToggleSupergroupIsAllHistoryAvailable(supergroup.id, visible), tdlib.okHandler());
+              }
+              baseAdapter.updateValuedSettingById(R.id.btn_prehistoryMode);
+            }
+          }
+        })
     );
   }
 
@@ -3126,7 +3133,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         icons.append(R.drawable.baseline_group_add_24);
         strings.append(R.string.ChannelGroupNew);
 
-        showOptions(info, ids.get(), strings.get(), size == 3 ? new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL, OPTION_COLOR_NORMAL} : null, icons.get(), (v, id) -> {
+        showOptions(info, ids.get(), strings.get(), size == 3 ? new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL, OPTION_COLOR_NORMAL} : null, icons.get(), (v, id) -> {
           switch (id) {
             case R.id.btn_delete:
               if (linkedChat != null) {
@@ -3177,7 +3184,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         if (linkedChat == null)
           return;
         CharSequence info = Lang.getString(R.string.GroupChannelInfo, linkedChatCreator, tdlib.chatTitle(linkedChat));
-        showOptions(info, new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.GroupChannelUnlink), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int [] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (v, id) -> {
+        showOptions(info, new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getString(R.string.GroupChannelUnlink), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (v, id) -> {
           if (id == R.id.btn_delete) {
             showConfirm(Lang.getString(R.string.UnlinkChannelConfirm, linkedChatCreator, tdlib.chatTitle(linkedChat)), Lang.getString(R.string.UnlinkChannelDone), R.drawable.baseline_remove_circle_24, OPTION_COLOR_RED, () ->
               tdlib.client().send(new TdApi.SetChatDiscussionGroup(0, chat.id), tdlib.okHandler())
@@ -3256,7 +3263,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       if (selectedFullInfo != null && !selectedFullInfo.isAllHistoryAvailable) {
         b.append("\n\n").append(Lang.getMarkdownString(this, R.string.LinkGroupConfirmWarnPreHistory));
       }
-      showOptions(b, new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.LinkGroupConfirmDone), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_BLUE, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_link_24, R.drawable.baseline_cancel_24}, (optionView, optionId) -> {
+      showOptions(b, new int[]{R.id.btn_done, R.id.btn_cancel}, new String[]{Lang.getString(R.string.LinkGroupConfirmDone), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_BLUE, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_link_24, R.drawable.baseline_cancel_24}, (optionView, optionId) -> {
         if (optionId == R.id.btn_done) {
           doneAct.run();
         }
@@ -3271,13 +3278,19 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private boolean hasUnsavedChanges () {
     return
       (chatTitleItem != null && !StringUtils.equalsOrBothEmpty(chat.title, chatTitleItem.getStringValue())) ||
-      (chatDescriptionItem != null && !StringUtils.equalsOrBothEmpty(getCurrentDescription(), chatDescriptionItem.getStringValue())) ||
-      hasSlowModeChanges();
+        (chatDescriptionItem != null && !StringUtils.equalsOrBothEmpty(getCurrentDescription(), chatDescriptionItem.getStringValue())) ||
+        hasTtlChanges() ||
+        hasSlowModeChanges();
   }
 
   private boolean hasSlowModeChanges () {
     int originalSlowMode = supergroupFull != null ? supergroupFull.slowModeDelay : 0;
     return slowModeItem != null && originalSlowMode != TdConstants.SLOW_MODE_OPTIONS[slowModeItem.getSliderValue()];
+  }
+
+  private boolean hasTtlChanges () {
+    int originalSlowMode = chat != null ? chat.messageTtlSetting : 0;
+    return ttlItem != null && originalSlowMode != TdConstants.CHAT_TTL_OPTIONS[ttlItem.getSliderValue()];
   }
 
   @Override
@@ -3344,9 +3357,14 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     boolean hasSlowModeChanges = hasSlowModeChanges();
+    boolean hasTtlChanges = hasTtlChanges();
 
     if (hasSlowModeChanges) {
       changes.add(new TdApi.SetChatSlowModeDelay(chat.id, TdConstants.SLOW_MODE_OPTIONS[slowModeItem.getSliderValue()]));
+    }
+
+    if (hasTtlChanges) {
+      changes.add(new TdApi.SetChatMessageTtlSetting(chat.id, TdConstants.CHAT_TTL_OPTIONS[ttlItem.getSliderValue()]));
     }
 
     if (changes.isEmpty()) {
@@ -3451,6 +3469,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private ListItem slowModeItem, slowModeDescItem;
+  private ListItem ttlItem, ttlDescItem;
 
   private void buildEditCells () {
     ArrayList<ListItem> items = new ArrayList<>();
@@ -3458,7 +3477,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (tdlib.canChangeInfo(chat)) {
       chatTitleItem = new ListItem(mode == MODE_EDIT_GROUP ? ListItem.TYPE_EDITTEXT_WITH_PHOTO : ListItem.TYPE_EDITTEXT_WITH_PHOTO_SMALLER, R.id.title, 0, mode == MODE_EDIT_CHANNEL ? R.string.ChannelName : R.string.GroupName)
         .setStringValue(chat.title)
-        .setInputFilters(new InputFilter[] {
+        .setInputFilters(new InputFilter[]{
           new InputFilter.LengthFilter(TdConstants.MAX_CHAT_TITLE_LENGTH)
         })
         .setOnEditorActionListener(new EditBaseController.SimpleEditorActionListener(EditorInfo.IME_ACTION_DONE, this));
@@ -3564,6 +3583,31 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(slowModeDescItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_slowModeDescription, 0, getSlowModeDescription(slowModeValue), false));
     }
 
+    if (tdlib.canDeleteMessages(chat.id) && !ChatId.isSecret(chat.id)) {
+      int ttlValue = chat != null ? chat.messageTtlSetting : 0;
+      items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.ChatTtl));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      String[] sliderValues = new String[TdConstants.CHAT_TTL_OPTIONS.length];
+      int sliderValueIndex = -1;
+      for (int i = 0; i < sliderValues.length; i++) {
+        int sliderOption = TdConstants.CHAT_TTL_OPTIONS[i];
+        if (sliderOption == 0) {
+          sliderValues[i] = Lang.getString(R.string.SlowModeOff);
+        } else {
+          sliderValues[i] = Lang.getDuration(sliderOption);
+        }
+        if (sliderOption == ttlValue) {
+          sliderValueIndex = i;
+        }
+      }
+      if (sliderValueIndex == -1) {
+        sliderValueIndex = ttlValue == 0 ? 0 : 1;
+      }
+      items.add(ttlItem = new ListItem(ListItem.TYPE_SLIDER, R.id.btn_chatTtl).setSliderInfo(sliderValues, sliderValueIndex));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      items.add(ttlDescItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_chatTtlDescription, 0, getTtlDescription(ttlValue), false));
+    }
+
     addMediaItems(items);
     baseAdapter.setItems(items, false);
   }
@@ -3577,6 +3621,14 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       return Lang.pluralBold(R.string.SlowModeMinutes, TimeUnit.SECONDS.toMinutes(seconds));
     } else {
       return Lang.pluralBold(R.string.SlowModeSeconds, seconds);
+    }
+  }
+
+  private static CharSequence getTtlDescription (int seconds) {
+    if (seconds == 0) {
+      return Lang.getString(R.string.ChatTtlDisabled);
+    } else {
+      return Lang.getStringBold(R.string.ChatTtlEnabled, Lang.getDuration(seconds));
     }
   }
 
@@ -3867,34 +3919,34 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (forwardLimit == -1 && (mode == MODE_MEMBER_REGULAR || mode == MODE_MEMBER_ADMIN) && !TD.isMember(member.status, false) && isBasicGroup()) {
       showSettings(new SettingsWrapBuilder(R.id.btn_addMember)
         .addHeaderItem(Lang.getStringBold(mode == MODE_MEMBER_ADMIN ? R.string.AddAdminToTheGroup : R.string.AddToTheGroup, memberName))
-        .setRawItems(new ListItem[] {
-        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_forwardLast100, 0, Lang.plural(R.string.ForwardLastXMessages, 100), R.id.btn_addMember, false),
-        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_forwardLast50, 0, Lang.plural(R.string.ForwardLastXMessages, 50), R.id.btn_addMember, true),
-        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_forwardLast15, 0, Lang.plural(R.string.ForwardLastXMessages, 15), R.id.btn_addMember, false),
-        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_addToGroup, 0, R.string.justAdd, R.id.btn_addMember, false)
-      }).setIntDelegate((id, result) -> {
-        if (id != R.id.btn_addMember) {
-          return;
-        }
-        int chosenForwardCount = 0;
-        if (result.size() > 0) {
-          switch (result.get(R.id.btn_addMember)) {
-            case R.id.btn_forwardLast100: {
-              chosenForwardCount = 100;
-              break;
-            }
-            case R.id.btn_forwardLast50: {
-              chosenForwardCount = 50;
-              break;
-            }
-            case R.id.btn_forwardLast15: {
-              chosenForwardCount = 15;
-              break;
+        .setRawItems(new ListItem[]{
+          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_forwardLast100, 0, Lang.plural(R.string.ForwardLastXMessages, 100), R.id.btn_addMember, false),
+          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_forwardLast50, 0, Lang.plural(R.string.ForwardLastXMessages, 50), R.id.btn_addMember, true),
+          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_forwardLast15, 0, Lang.plural(R.string.ForwardLastXMessages, 15), R.id.btn_addMember, false),
+          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_addToGroup, 0, R.string.justAdd, R.id.btn_addMember, false)
+        }).setIntDelegate((id, result) -> {
+          if (id != R.id.btn_addMember) {
+            return;
+          }
+          int chosenForwardCount = 0;
+          if (result.size() > 0) {
+            switch (result.get(R.id.btn_addMember)) {
+              case R.id.btn_forwardLast100: {
+                chosenForwardCount = 100;
+                break;
+              }
+              case R.id.btn_forwardLast50: {
+                chosenForwardCount = 50;
+                break;
+              }
+              case R.id.btn_forwardLast15: {
+                chosenForwardCount = 15;
+                break;
+              }
             }
           }
-        }
-        addMember(mode, context, view, user, member, chosenForwardCount, false);
-      }).setSaveStr(R.string.AddMemberBtn));
+          addMember(mode, context, view, user, member, chosenForwardCount, false);
+        }).setSaveStr(R.string.AddMemberBtn));
       return;
     }
     switch (mode) {
@@ -3911,10 +3963,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
         if (needConfirm) {
           showOptions(new Options.Builder()
-            .info(Lang.getStringBold(isChannel() ? R.string.QAddXToChannel : R.string.AddToTheGroup, memberName))
-            .item(new OptionItem(R.id.btn_addMember, Lang.getString(R.string.AddMember), OPTION_COLOR_NORMAL, R.drawable.baseline_person_add_24))
-            .cancelItem()
-            .build(),
+              .info(Lang.getStringBold(isChannel() ? R.string.QAddXToChannel : R.string.AddToTheGroup, memberName))
+              .item(new OptionItem(R.id.btn_addMember, Lang.getString(R.string.AddMember), OPTION_COLOR_NORMAL, R.drawable.baseline_person_add_24))
+              .cancelItem()
+              .build(),
             (itemView, id) -> {
               if (id == R.id.btn_addMember) {
                 addMember(mode, context, view, user, member, forwardLimit, false);
@@ -3941,7 +3993,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
         if (!canBanMembers() && (
           member.status.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR ||
-          member.status.getConstructor() == TdApi.ChatMemberStatusBanned.CONSTRUCTOR
+            member.status.getConstructor() == TdApi.ChatMemberStatusBanned.CONSTRUCTOR
         )) {
           context.context()
             .tooltipManager()
@@ -4147,7 +4199,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
   }
 
-  private boolean canKickMember (int userId) {
+  private boolean canKickMember (long userId) {
     switch (mode) {
       case MODE_GROUP: {
         if (membersAdapter == null || tdlib.isSelfUserId(userId) || groupFull == null) {
@@ -4157,7 +4209,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         if (member == null || TD.isCreator(member.status)) {
           return false;
         }
-        int meId = tdlib.myUserId();
+        long meId = tdlib.myUserId();
         return TD.isCreator(group.status) || groupFull.creatorUserId == meId || member.inviterUserId == meId ||
           (TD.isAdmin(group.status) && !TD.isAdmin(member.status));
       }
@@ -4171,7 +4223,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           return false;
         }
 
-        int meId = tdlib.myUserId();
+        long meId = tdlib.myUserId();
         return TD.isCreator(supergroup.status) || member.inviterUserId == meId ||
           (TD.isAdmin(supergroup.status) && !TD.isAdmin(member.status));
 
@@ -4256,9 +4308,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       memberCount--;
     }
     CharSequence msg = memberCount > 0 ? Lang.plural(R.string.DestroyX, memberCount, Lang.boldCreator(), tdlib.chatTitle(getChatId())) : Lang.getStringBold(R.string.DestroyXNoMembers, tdlib.chatTitle(getChatId()));
-    showOptions(msg, new int[] {R.id.btn_destroyChat, R.id.btn_cancel}, new String[] {Lang.getString(supergroup.isChannel ? R.string.DestroyChannel : R.string.DestroyGroup), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    showOptions(msg, new int[]{R.id.btn_destroyChat, R.id.btn_cancel}, new String[]{Lang.getString(supergroup.isChannel ? R.string.DestroyChannel : R.string.DestroyGroup), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_destroyChat) {
-        showOptions(Lang.getString(supergroup.isChannel ? R.string.DestroyChannelHint : R.string.DestroyGroupHint), new int[] {R.id.btn_destroyChat, R.id.btn_cancel}, new String[] {Lang.getString(supergroup.isChannel ? R.string.DestroyChannel : R.string.DestroyGroup), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
+        showOptions(Lang.getString(supergroup.isChannel ? R.string.DestroyChannelHint : R.string.DestroyGroupHint), new int[]{R.id.btn_destroyChat, R.id.btn_cancel}, new String[]{Lang.getString(supergroup.isChannel ? R.string.DestroyChannel : R.string.DestroyGroup), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
           if (resultId == R.id.btn_destroyChat) {
             tdlib.client().send(new TdApi.DeleteChat(ChatId.fromSupergroupId(supergroup.id)), tdlib.okHandler());
             tdlib.ui().exitToChatScreen(this, getChatId());
@@ -4445,27 +4497,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private void openInviteLink () {
-    TdApi.ChatInviteLink inviteLink;
-    switch (mode) {
-      case MODE_CHANNEL:
-      case MODE_SUPERGROUP:
-      case MODE_EDIT_CHANNEL:
-      case MODE_EDIT_SUPERGROUP: {
-        inviteLink = supergroupFull != null ? supergroupFull.inviteLink : null;
-        break;
-      }
-      case MODE_GROUP:
-      case MODE_EDIT_GROUP: {
-        inviteLink = groupFull != null ? groupFull.inviteLink : null;
-        break;
-      }
-      default: {
-        return;
-      }
-    }
-    InviteLinkController c = new InviteLinkController(context, tdlib);
-    c.setArguments(new InviteLinkController.Arguments(chat.id, inviteLink));
-    c.setCallback(this);
+    TdApi.ChatMemberStatus status = tdlib.chatStatus(chat.id);
+    if (status == null)
+      return;
+
+    ChatLinksController c = new ChatLinksController(context, tdlib);
+    c.setArguments(new ChatLinksController.Args(chat.id, tdlib.myUserId(), this, null, status.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR));
     navigateTo(c);
   }
 
@@ -5295,7 +5332,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     for (int i = indexGuess; i < count; i++) {
       SharedBaseController<?> c = controllers.get(i);
       if (SharedBaseController.isMediaController(c)) {
-        TdApi.SearchMessagesFilter currentFilter =  c.provideSearchFilter();
+        TdApi.SearchMessagesFilter currentFilter = c.provideSearchFilter();
         if (filter.getConstructor() == currentFilter.getConstructor()) {
           return true;
         }
@@ -5324,7 +5361,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (filters != null)
       return filters;
     if (separate) {
-      return (filtersOrder2 = new TdApi.SearchMessagesFilter[] {
+      return (filtersOrder2 = new TdApi.SearchMessagesFilter[]{
         new TdApi.SearchMessagesFilterPhoto(),
         new TdApi.SearchMessagesFilterVideo(),
         new TdApi.SearchMessagesFilterDocument(),
@@ -5335,7 +5372,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         new TdApi.SearchMessagesFilterVideoNote()
       });
     } else {
-      return (filtersOrder = new TdApi.SearchMessagesFilter[] {
+      return (filtersOrder = new TdApi.SearchMessagesFilter[]{
         new TdApi.SearchMessagesFilterPhotoAndVideo(),
         new TdApi.SearchMessagesFilterDocument(),
         new TdApi.SearchMessagesFilterUrl(),
@@ -5377,14 +5414,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   @Override
-  public void onAfterHide (int position, ViewController<?> controller) { }
+  public void onAfterHide (int position, ViewController<?> controller) {
+  }
 
   // Manage chat
 
   private void manageChat () {
     if (supergroupFull != null || groupFull != null) {
       ProfileController controller = new ProfileController(context, tdlib);
-      controller.setArguments(new Args(chat, messageThread,true));
+      controller.setArguments(new Args(chat, messageThread, true));
       navigateTo(controller);
     }
   }
@@ -5494,7 +5532,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   @Override
-  public void onUserFullUpdated (final int userId, TdApi.UserFullInfo userFull) {
+  public void onUserFullUpdated (final long userId, TdApi.UserFullInfo userFull) {
     processUserFull(userFull);
   }
 
@@ -5505,7 +5543,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @UiThread
   @Override
-  public void onUserStatusChanged (final int userId, TdApi.UserStatus status, boolean uiOnly) {
+  public void onUserStatusChanged (final long userId, TdApi.UserStatus status, boolean uiOnly) {
     switch (mode) {
       case MODE_USER:
       case MODE_SECRET: {
@@ -5659,7 +5697,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   @Override
-  public void onBasicGroupFullUpdated (final int basicGroupId, final TdApi.BasicGroupFullInfo basicGroupFull) {
+  public void onBasicGroupFullUpdated (final long basicGroupId, final TdApi.BasicGroupFullInfo basicGroupFull) {
     processGroupFull(basicGroupFull);
   }
 
@@ -5792,7 +5830,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   @Override
-  public void onSupergroupFullUpdated (final int supergroupId, final TdApi.SupergroupFullInfo newSupergroupFull) {
+  public void onSupergroupFullUpdated (final long supergroupId, final TdApi.SupergroupFullInfo newSupergroupFull) {
     processChannelFull(newSupergroupFull);
   }
 
@@ -5967,7 +6005,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   public void onMessageSendFailed (final TdApi.Message message, final long oldMessageId, int errorCode, String errorMessage) {
     tdlib.ui().post(() -> {
       if (!isDestroyed() && chat.id == message.chatId) {
-        removeMessages(new long[] {oldMessageId});
+        removeMessages(new long[]{oldMessageId});
       }
     });
   }

@@ -149,7 +149,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     private String exportText;
 
     private TdApi.Game game;
-    private int botUserId;
+    private long botUserId;
     private TdApi.Message botMessage;
     private boolean withUserScore;
 
@@ -192,7 +192,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       this.text = text;
     }
 
-    public Args (TdApi.Game game, int botUserId, TdApi.Message message, boolean withUserScore) {
+    public Args (TdApi.Game game, long botUserId, TdApi.Message message, boolean withUserScore) {
       this.mode = MODE_GAME;
       this.game = game;
       this.botUserId = botUserId;
@@ -1187,7 +1187,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       }
 
       @Override
-      public int provideInlineSearchChatUserId (InputView v) {
+      public long provideInlineSearchChatUserId (InputView v) {
         return 0;
       }
 
@@ -2952,7 +2952,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
       final TdApi.Chat chat = tdlib.chat(selectedChatIds.get(i));
       if (chat == null) {
-        int myUserId = tdlib.myUserId();
+        long myUserId = tdlib.myUserId();
         if (chatId != myUserId) {
           throw new RuntimeException("Unknown chatId:" + chatId);
         }

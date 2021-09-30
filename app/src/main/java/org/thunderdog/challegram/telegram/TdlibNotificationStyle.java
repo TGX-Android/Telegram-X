@@ -175,7 +175,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
   // Grouped notification
 
-  private static void styleIntent (String action, Intent intent, Tdlib tdlib, TdlibNotificationGroup group, boolean needReply, long[] messageIds, int[] userIds) {
+  private static void styleIntent (String action, Intent intent, Tdlib tdlib, TdlibNotificationGroup group, boolean needReply, long[] messageIds, long[] userIds) {
     Intents.secureIntent(intent, true);
     intent.setAction(action);
     TdlibNotificationExtras.put(intent, tdlib, group, needReply, messageIds, userIds);
@@ -298,7 +298,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     final boolean needReply = !Passcode.instance().isLocked() && needPreview && (!isSummary || Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) && !isChannel && tdlib.hasWritePermission(chat) && !group.isOnlyScheduled();
     final boolean needReplyToMessage = needReply && canReplyTo(group) && (!ChatId.isPrivate(chatId) || (singleNotification != null && chat.unreadCount > 1));
     final long[] allMessageIds = group.getAllMessageIds();
-    final int[] allUserIds = group.isMention() ? group.getAllUserIds() : null;
+    final long[] allUserIds = group.isMention() ? group.getAllUserIds() : null;
     final boolean[] hasCustomText = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? new boolean[1] : null;
 
     NotificationCompat.CarExtender.UnreadConversation.Builder conversationBuilder = new NotificationCompat.CarExtender.UnreadConversation.Builder(visualChatTitle != null ? visualChatTitle.toString() : null).setLatestTimestamp(TimeUnit.SECONDS.toMillis(lastNotification.getDate()));
@@ -733,14 +733,14 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     if (context.isSelfUserId(user.id))
       id = "0";
     else if (id == null)
-      id = Integer.toString(user.id);
+      id = Long.toString(user.id);
     return buildPerson(context, isSelfChat, isGroupChat, isChannel, id, TD.isBot(user), TD.getUserName(user), TD.getLetters(user), TD.getAvatarColorId(user.id, context.myUserId()), user.profilePhoto != null ? user.profilePhoto.small : null, isScheduled, isSilent, allowDownload);
   }
 
   public static Person buildPerson (TdlibNotificationManager context, TdApi.Chat chat, TdlibNotification notification, boolean isScheduled, boolean isSilent, boolean allowDownload) {
     Tdlib tdlib = context.tdlib();
     long senderChatId = notification.findSenderId();
-    int userId = tdlib.chatUserId(chat);
+    long userId = tdlib.chatUserId(chat);
     if (userId == 0 && ChatId.isUserChat(senderChatId) && notification.isSynced()) {
       userId = ChatId.toUserId(senderChatId);
     }

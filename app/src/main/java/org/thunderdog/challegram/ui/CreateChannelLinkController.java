@@ -180,7 +180,7 @@ public class CreateChannelLinkController extends ViewController<CreateChannelLin
     return scrollView;
   }
 
-  private int getSupergroupId () {
+  private long getSupergroupId () {
     return ChatId.toSupergroupId(chat.id);
   }
 

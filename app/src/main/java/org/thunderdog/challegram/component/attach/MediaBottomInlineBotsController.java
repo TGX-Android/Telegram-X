@@ -122,7 +122,7 @@ public class MediaBottomInlineBotsController extends MediaBottomBaseController<V
         break;
       }
       case TdApi.Users.CONSTRUCTOR: {
-        int[] userIds = ((TdApi.Users) object).userIds;
+        long[] userIds = ((TdApi.Users) object).userIds;
         if (userIds.length == 0) {
           loadNextBot();
           break;

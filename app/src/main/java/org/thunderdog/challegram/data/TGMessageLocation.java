@@ -82,7 +82,7 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
     if (livePeriod != 0) {
       switch (msg.sender.getConstructor()) {
         case TdApi.MessageSenderUser.CONSTRUCTOR: {
-          int userId = ((TdApi.MessageSenderUser) msg.sender).userId;
+          long userId = ((TdApi.MessageSenderUser) msg.sender).userId;
           updatePreviewUser(userId, tdlib.cache().user(userId));
           break;
         }
@@ -120,7 +120,7 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
     }
   }
 
-  private void updatePreviewUser (int userId, TdApi.User user) {
+  private void updatePreviewUser (long userId, TdApi.User user) {
     this.previewAvatarColorId = tdlib.cache().userAvatarColorId(user);
     if (user != null) {
       this.previewFile = TD.getAvatar(tdlib, user);
