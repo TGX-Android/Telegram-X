@@ -167,9 +167,9 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       @Override
       protected void setUser (ListItem item, int position, UserView userView, boolean isUpdate) {
         TGUser tgUser = new TGUser(tdlib, tdlib.cache().user(item.getLongId()));
+        tgUser.setCustomStatus(Lang.plural(R.string.xLinks, item.getIntValue()));
 
         if (item.getId() == R.id.btn_openChat) {
-          tgUser.setCustomStatus(Lang.plural(R.string.xLinks, inviteLinks.size() + inviteLinksRevoked.size()));
           userView.setPreviewChatId(new TdApi.ChatListMain(), adminUserId, null);
           userView.setPreviewActionListProvider((v, forceTouchContext, ids, icons, strings, target) -> {
             ids.append(R.id.btn_openChat);
@@ -201,11 +201,9 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
               }
             };
           });
-        } else {
-          tgUser.setCustomStatus(Lang.plural(R.string.xLinks, item.getIntValue()));
         }
 
-        userView.setUser(tgUser);
+        userView.setUserForced(tgUser);
         userView.setTag(item.getLongId());
       }
 
@@ -375,11 +373,10 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   }
 
   private void notifyParentIfPossible () {
-    adapter.updateItemById(R.id.btn_openChat);
-    if (getArgumentsStrict().parent == null) {
-      return;
+    smOnUserLinkCountChanged(adminUserId, inviteLinks.size() + inviteLinksRevoked.size());
+    if (getArgumentsStrict().parent != null) {
+      getArgumentsStrict().parent.smOnUserLinkCountChanged(adminUserId, inviteLinks.size() + inviteLinksRevoked.size());
     }
-    getArgumentsStrict().parent.smOnUserLinkCountChanged(adminUserId, inviteLinks.size() + inviteLinksRevoked.size());
   }
 
   private void revokeLink (TdApi.ChatInviteLink link) {
@@ -638,7 +635,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     boolean showAdditionalLinks = true;
 
     if (viewingOtherAdmin) {
-      items.add(new ListItem(ListItem.TYPE_USER, R.id.btn_openChat).setLongId(adminUserId));
+      items.add(new ListItem(ListItem.TYPE_USER, R.id.btn_openChat).setLongId(adminUserId).setIntValue(inviteLinks.size() + inviteLinksRevoked.size()));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     } else {
       items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
