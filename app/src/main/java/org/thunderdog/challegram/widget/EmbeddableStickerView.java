@@ -3,6 +3,7 @@ package org.thunderdog.challegram.widget;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -33,8 +34,12 @@ public class EmbeddableStickerView extends LinearLayout implements ThemeInvalida
     super(context, attrs, defStyleAttr);
     setOrientation(LinearLayout.VERTICAL);
 
-    stickerSmallView = new StickerSmallView(context);
-
+    stickerSmallView = new StickerSmallView(context) {
+      @Override
+      public boolean dispatchTouchEvent(MotionEvent event) {
+        return false;
+      }
+    };
     stickerSmallView.setLayoutParams(LayoutHelper.createLinear(128, 128, Gravity.CENTER_HORIZONTAL, 0, 8, 0, 0));
     addView(stickerSmallView);
 
