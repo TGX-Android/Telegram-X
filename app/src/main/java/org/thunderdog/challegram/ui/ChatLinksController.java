@@ -19,14 +19,17 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGUser;
+import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
+import org.thunderdog.challegram.widget.BaseView;
 import org.thunderdog.challegram.widget.CheckBox;
 import org.thunderdog.challegram.widget.EmbeddableStickerView;
+import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.SmallChatView;
 
 import java.util.ArrayList;
@@ -179,6 +182,30 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         wrapper.setSubtitle(Lang.pluralBold(R.string.xLinks, inviteLinks.size() + inviteLinksRevoked.size()));
         wrapper.setIgnoreOnline(true);
         chatView.setChat(wrapper);
+        chatView.setPreviewChatId(new TdApi.ChatListMain(), adminUserId, null);
+        chatView.setPreviewActionListProvider((v, forceTouchContext, ids, icons, strings, target) -> {
+          ids.append(R.id.btn_openChat);
+          icons.append(R.drawable.baseline_forum_24);
+          strings.append(R.string.OpenChat);
+
+          ids.append(R.id.btn_editRights);
+          icons.append(R.drawable.baseline_stars_24);
+          strings.append(R.string.EditAdminRights);
+
+          forceTouchContext.setExcludeHeader(true);
+
+          return new ForceTouchView.ActionListener() {
+            @Override
+            public void onForceTouchAction(ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
+
+            }
+
+            @Override
+            public void onAfterForceTouchAction(ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
+
+            }
+          };
+        });
       }
 
       @Override
