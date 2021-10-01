@@ -600,7 +600,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     ListItem oldLinkItem = adapter.getItem(oldLinkIndex);
 
     if (oldLinkItem != null) {
-      oldLinkItem.setString(newLink.inviteLink);
+      oldLinkItem.setString(simplifyInviteLink(newLink));
       oldLinkItem.setData(newLink);
       adapter.notifyItemChanged(oldLinkIndex);
     }
