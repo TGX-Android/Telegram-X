@@ -497,7 +497,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   public void smOnLinkRevoked (TdApi.ChatInviteLink wasActiveInviteLink, TdApi.ChatInviteLink revokedInviteLink) {
     boolean shouldAddHeader = inviteLinksRevoked.size() == 1;
 
-    ListItem linkItem = new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, 0, revokedInviteLink.inviteLink, false).setData(revokedInviteLink);
+    ListItem linkItem = new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, 0, simplifyInviteLink(revokedInviteLink), false).setData(revokedInviteLink);
     ListItem linkItemSeparator = new ListItem(ListItem.TYPE_SEPARATOR_FULL);
 
     if (wasActiveInviteLink != null)
@@ -569,7 +569,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
   public void smOnLinkCreated (TdApi.ChatInviteLink newLink) {
     int newIndex = adapter.indexOfViewById(R.id.btn_createInviteLink) + 1;
-    adapter.addItem(newIndex, new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, 0, newLink.inviteLink, false).setData(newLink));
+    adapter.addItem(newIndex, new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, 0, simplifyInviteLink(newLink), false).setData(newLink));
     adapter.addItem(newIndex, new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     requestUpdateLinkCell(newLink, true);
   }
@@ -582,6 +582,11 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       oldLinkItem.setIntValue(newCount);
       adapter.notifyItemChanged(oldLinkIndex);
     }
+  }
+
+  private String simplifyInviteLink (TdApi.ChatInviteLink link) {
+    String[] linkSegments = link.inviteLink.split("/");
+    return linkSegments[linkSegments.length - 1];
   }
 
   //
@@ -607,7 +612,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         currentInviteLink = inviteLink;
         items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.PrimaryInviteLink));
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, 0, inviteLink.inviteLink, false).setData(inviteLink));
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, 0, simplifyInviteLink(inviteLink), false).setData(inviteLink));
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
         if (viewingOtherAdmin) {
@@ -627,7 +632,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         continue;
       }
 
-      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, 0, inviteLink.inviteLink, false).setData(inviteLink));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, 0, simplifyInviteLink(inviteLink), false).setData(inviteLink));
       requestUpdateLinkCell(inviteLink, true);
       if (inviteLinks.indexOf(inviteLink) != lastIvIndex)
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -645,7 +650,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
 
       for (TdApi.ChatInviteLink inviteLink : inviteLinksRevoked) {
-        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, 0, inviteLink.inviteLink, false).setData(inviteLink));
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, 0, simplifyInviteLink(inviteLink), false).setData(inviteLink));
         if (inviteLinksRevoked.indexOf(inviteLink) != lastRvIndex)
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       }
