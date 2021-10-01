@@ -60,7 +60,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     public void handleMessage(@NonNull Message msg) {
       requestUpdateLinkCell((TdApi.ChatInviteLink) msg.obj, false);
     }
-  };
+  }
 
   private void requestUpdateLinkCell (TdApi.ChatInviteLink linkObj, boolean ignoreUpdate) {
     if (!ignoreUpdate) adapter.updateValuedSettingByData(linkObj);
@@ -237,7 +237,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
           ids.append(R.id.btn_shareLink);
           strings.append(R.string.ShareLink);
-          icons.append(R.drawable.baseline_share_arrow_24);
+          icons.append(R.drawable.baseline_forward_24);
           colors.append(OPTION_COLOR_NORMAL);
         }
 
