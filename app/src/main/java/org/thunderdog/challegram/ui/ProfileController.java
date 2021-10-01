@@ -3543,6 +3543,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_viewStatistics, 0, R.string.ViewStats));
       added = true;
     }
+    if (tdlib.canInviteUsers(chat)) {
+      items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_manageInviteLinks, 0, R.string.InviteLinkManage));
+      added = true;
+    }
     boolean hasActions = false;
     if (TD.isAdmin(myStatus) && supergroup != null) { // TODO server: recent actions for basic groups?
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
@@ -4456,7 +4461,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         }
         break;
       }
-      case R.id.btn_inviteLink: {
+      case R.id.btn_inviteLink:
+      case R.id.btn_manageInviteLinks: {
         openInviteLink();
         break;
       }
