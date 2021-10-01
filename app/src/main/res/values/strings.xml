@@ -3765,6 +3765,8 @@
   <string name="InviteLinkViewMembersTitle">Joined members</string>
   <string name="CreatedByXOnDate">Created by %1$s %2$s</string>
   <string name="Infinity">∞</string>
+  <string name="InviteLinkManage">Manage Invite Links</string>
+
   <string name="ChatTtl">Auto-delete messages</string>
   <string name="ChatTtlDisabled">Choose a certain period of time when messages will be automatically deleted for members of the group.</string>
   <string name="ChatTtlEnabled">Automatically delete new messages after %1$s for members of the group.</string>

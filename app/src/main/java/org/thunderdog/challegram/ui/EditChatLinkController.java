@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.StringUtils;
+import me.vkryl.td.TdConstants;
 
 public class EditChatLinkController extends EditBaseController<EditChatLinkController.Args> implements View.OnClickListener {
   private static final int[] PRESETS = new int[]{0, 3600, 3600 * 24, 3600 * 24 * 7, 1};
@@ -35,6 +37,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
   private int expireDate;
   private int memberLimit;
   private boolean isCreation;
+  private TdApi.ChatInviteLink existingInviteLink;
 
   public EditChatLinkController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -65,10 +68,40 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
   }
 
   @Override
+  public boolean onBackPressed (boolean fromTop) {
+    if (!isCreation && hasAnyChanges()) {
+      showUnsavedChangesPromptBeforeLeaving(null);
+      return true;
+    }
+
+    return false;
+  }
+
+  @Override
+  protected boolean swipeNavigationEnabled () {
+    return isCreation || !hasAnyChanges();
+  }
+
+  private void checkDoneButton () {
+    if (!isCreation) {
+      setDoneVisible(hasAnyChanges());
+    }
+  }
+
+  private boolean hasAnyChanges () {
+    if (existingInviteLink == null || isCreation) {
+      return true;
+    }
+
+    return memberLimit != existingInviteLink.memberLimit || expireDate != existingInviteLink.expireDate;
+  }
+
+  @Override
   public void setArguments (Args args) {
     super.setArguments(args);
     isCreation = args.existingInviteLink == null;
     if (args.existingInviteLink != null) {
+      existingInviteLink = args.existingInviteLink;
       expireDate = args.existingInviteLink.expireDate;
       memberLimit = args.existingInviteLink.memberLimit;
       updateMemberCountSlider();
@@ -123,6 +156,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
             showDateTimePicker(Lang.getString(R.string.InviteLinkExpireHeader), R.string.InviteLinkExpireConfirm, R.string.InviteLinkExpireConfirm, R.string.InviteLinkExpireConfirm, millis -> {
               expireDate = (int) TimeUnit.MILLISECONDS.toSeconds(millis);
               adapter.updateValuedSettingById(R.id.btn_inviteLinkDateLimit);
+              checkDoneButton();
             }, null);
             break;
           default:
@@ -131,13 +165,20 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
         }
 
         adapter.updateValuedSettingById(R.id.btn_inviteLinkDateLimit);
+        checkDoneButton();
         return true;
       });
     } else if (v.getId() == R.id.btn_inviteLinkUserLimit) {
       openInputAlert(Lang.getString(R.string.InviteLinkLimitedByUsersItem), Lang.getString(R.string.InviteLinkLimitedByUsersAlertHint), R.string.Done, R.string.Cancel, String.valueOf(memberLimit), (inputView, result) -> {
-        memberLimit = Math.min(Math.max(0, Integer.parseInt(result)), 99999);
+        int data = StringUtils.parseInt(result, -1);
+        if (data < 0)
+          return false;
+
+        memberLimit = Math.min(data, TdConstants.MAX_CHAT_INVITE_LINK_USER_COUNT);
         updateMemberCountSlider();
         adapter.updateItemById(R.id.btn_inviteLinkUserSlider);
+        checkDoneButton();
+
         return true;
       }, true).getEditText().setInputType(InputType.TYPE_CLASS_NUMBER);
     }
@@ -195,6 +236,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
       @Override
       protected void onSliderValueChanged (ListItem item, SliderWrapView view, int newValue, int oldValue) {
         memberLimit = (newValue == memberCountSliderData.length - 1) ? 0 : Integer.parseInt(memberCountSliderData[newValue]);
+        checkDoneButton();
       }
     };
 
@@ -219,6 +261,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
     adapter.setItems(items, false);
     recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
     recyclerView.setAdapter(adapter);
+    checkDoneButton();
   }
 
   public static class Args {

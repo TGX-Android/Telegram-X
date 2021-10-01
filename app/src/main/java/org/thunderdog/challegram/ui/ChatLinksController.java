@@ -1,8 +1,12 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.view.View;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.util.Consumer;
 
@@ -12,14 +16,18 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
+import org.thunderdog.challegram.widget.CheckBox;
 import org.thunderdog.challegram.widget.EmbeddableStickerView;
+import org.thunderdog.challegram.widget.SmallChatView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,6 +53,50 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   private List<TdApi.ChatInviteLink> inviteLinks;
   private List<TdApi.ChatInviteLink> inviteLinksRevoked;
   private TdApi.ChatInviteLinkCount[] inviteLinkCounts;
+
+  private List<TdApi.ChatInviteLink> pendingRefreshLinks = new ArrayList<>();
+  private Handler cellUpdateHandler = new Handler(Looper.getMainLooper()) {
+    @Override
+    public void handleMessage(@NonNull Message msg) {
+      requestUpdateLinkCell((TdApi.ChatInviteLink) msg.obj, false);
+    }
+  };
+
+  private void requestUpdateLinkCell (TdApi.ChatInviteLink linkObj, boolean ignoreUpdate) {
+    if (!ignoreUpdate) adapter.updateValuedSettingByData(linkObj);
+
+    if (linkObj.isRevoked || TimeUnit.SECONDS.toMillis(linkObj.expireDate) < tdlib.currentTimeMillis()) {
+      cellUpdateHandler.removeMessages(0, linkObj);
+      pendingRefreshLinks.remove(linkObj);
+      return;
+    }
+
+    long relativeUpd = Lang.getNextReverseRelativeDateUpdateMs(linkObj.expireDate, TimeUnit.SECONDS, tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS, true, 0);
+    if (relativeUpd != -1) {
+      pendingRefreshLinks.add(linkObj);
+      cellUpdateHandler.sendMessageDelayed(Message.obtain(cellUpdateHandler, 0, linkObj), relativeUpd);
+    }
+  }
+
+  @Override
+  public void onActivityResume() {
+    super.onActivityResume();
+    for (TdApi.ChatInviteLink linkToUpdate : new ArrayList<>(pendingRefreshLinks)) {
+      requestUpdateLinkCell(linkToUpdate, false);
+    }
+  }
+
+  @Override
+  public void onActivityPause() {
+    super.onActivityPause();
+    cellUpdateHandler.removeMessages(0);
+  }
+
+  @Override
+  public void destroy() {
+    super.destroy();
+    cellUpdateHandler.removeMessages(0);
+  }
 
   public void onLinkCreated (TdApi.ChatInviteLink newLink, @Nullable TdApi.ChatInviteLink existingLink) {
     if (existingLink != null) {
@@ -104,6 +156,8 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
           TdApi.ChatInviteLink link = (TdApi.ChatInviteLink) item.getData();
           view.setData(generateLinkSubtitle(link));
           view.setTag(link);
+        } else if (item.getId() == R.id.btn_deleteAllRevokedLinks) {
+          view.setIconColorId(R.id.theme_color_textNegative);
         }
       }
 
@@ -120,6 +174,14 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       }
 
       @Override
+      protected void modifyChatView(ListItem item, SmallChatView chatView, @Nullable CheckBox checkBox, boolean isUpdate) {
+        DoubleTextWrapper wrapper = new DoubleTextWrapper(tdlib, adminUserId, true);
+        wrapper.setSubtitle(Lang.pluralBold(R.string.xLinks, inviteLinks.size() + inviteLinksRevoked.size()));
+        wrapper.setIgnoreOnline(true);
+        chatView.setChat(wrapper);
+      }
+
+      @Override
       protected void setEmbedSticker (ListItem item, int position, EmbeddableStickerView userView, boolean isUpdate) {
         userView.setSticker(new TGStickerObj(tdlib, (TdApi.Sticker) item.getData(), UTYAN_EMOJI, false));
         userView.setCaptionText(Lang.getString(isChannel ? R.string.ChannelLinkInfo : R.string.LinkInfo));
@@ -129,12 +191,15 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     requestLinkRebind();
     recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
     recyclerView.setAdapter(this.adapter);
-    UI.post(this::updateLinksExpiration, 1000L);
   }
 
   @Override
   public void onClick (View v) {
     switch (v.getId()) {
+      case R.id.btn_openChat: {
+        tdlib.ui().openChat(this, adminUserId, new TdlibUi.ChatOpenParameters().keepStack());
+        break;
+      }
       case R.id.btn_openAdminInviteLinks:
         ChatLinksController cc = new ChatLinksController(context, tdlib);
         cc.setArguments(new ChatLinksController.Args(chatId, (Integer) v.getTag(), null, this, false));
@@ -233,7 +298,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         );
         break;
       case R.id.btn_deleteAllRevokedLinks:
-        showOptions(Lang.getString(R.string.AreYouSureDeleteAllInviteLinks), new int[]{R.id.btn_deleteAllRevokedLinks, R.id.btn_cancel}, new String[]{Lang.getString(R.string.DeleteAllRevokedLinks), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        showOptions(Lang.getString(R.string.AreYouSureDeleteAllInviteLinks), new int[]{R.id.btn_deleteAllRevokedLinks, R.id.btn_cancel}, new String[]{Lang.getString(R.string.DeleteAllRevokedLinks), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
           if (id == R.id.btn_deleteAllRevokedLinks) {
             TdApi.ChatInviteLink firstLink = inviteLinksRevoked.get(0);
             TdApi.ChatInviteLink lastLink = inviteLinksRevoked.get(inviteLinksRevoked.size() - 1);
@@ -256,7 +321,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   }
 
   private void deleteLink (TdApi.ChatInviteLink link) {
-    showOptions(Lang.getString(R.string.AreYouSureDeleteInviteLink), new int[]{R.id.btn_deleteLink, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkDelete), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
+    showOptions(Lang.getString(R.string.AreYouSureDeleteInviteLink), new int[]{R.id.btn_deleteLink, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkDelete), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
       if (id2 == R.id.btn_deleteLink) {
         inviteLinksRevoked.remove(link);
         smOnRevokedLinkDeleted(link);
@@ -269,6 +334,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   }
 
   private void notifyParentIfPossible () {
+    adapter.updateItemById(R.id.btn_openChat);
     if (getArgumentsStrict().parent == null) {
       return;
     }
@@ -317,11 +383,6 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     ShareController c = new ShareController(context, tdlib);
     c.setArguments(new ShareController.Args(text).setShare(exportText, null));
     c.show();
-  }
-
-  private void updateLinksExpiration () {
-    adapter.updateAllValuedSettingsById(R.id.btn_inviteLink);
-    if (!isDestroyed()) UI.post(this::updateLinksExpiration, 1000L);
   }
 
   private String generateLinkSubtitle (TdApi.ChatInviteLink inviteLink) {
@@ -447,7 +508,12 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         lastActiveLinkIdx = adapter.indexOfViewByData(inviteLinks.get(inviteLinks.size() - 1)) + 1;
       } else {
         // find the "Create Link" instead
-        lastActiveLinkIdx = adapter.indexOfViewById(R.id.btn_createInviteLink) + 2;
+        if (adapter.indexOfViewById(R.id.btn_createInviteLink) == -1) {
+          // Viewing other admin, so "Create button" is not available - using a hint as index then
+          lastActiveLinkIdx = adapter.indexOfViewByType(ListItem.TYPE_DESCRIPTION) + 3;
+        } else {
+          lastActiveLinkIdx = adapter.indexOfViewById(R.id.btn_createInviteLink) + 2;
+        }
       }
 
       lastActiveLinkIdx += 1; // include the shadow
@@ -455,17 +521,23 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       ListItem[] arr = new ListItem[]{
         new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.RevokedInviteLinks),
         new ListItem(ListItem.TYPE_SHADOW_TOP),
-        new ListItem(ListItem.TYPE_SETTING, R.id.btn_deleteAllRevokedLinks, 0, R.string.DeleteAllRevokedLinks).setTextColorId(R.id.theme_color_textNegative),
+        new ListItem(ListItem.TYPE_SETTING, R.id.btn_deleteAllRevokedLinks, R.drawable.baseline_delete_24, R.string.DeleteAllRevokedLinks).setTextColorId(R.id.theme_color_textNegative),
         new ListItem(ListItem.TYPE_SEPARATOR_FULL),
         linkItem,
         new ListItem(ListItem.TYPE_SHADOW_BOTTOM)
       };
 
-      adapter.addItems(lastActiveLinkIdx, arr);
+      adapter.addItems(Math.min(lastActiveLinkIdx, adapter.getItemCount()), arr);
     } else {
       int firstRevokedLinkIdx = adapter.indexOfViewByData(inviteLinksRevoked.get(1)) - 1; // 0 is our new link
       adapter.addItem(firstRevokedLinkIdx, linkItem);
       adapter.addItem(firstRevokedLinkIdx, linkItemSeparator);
+    }
+
+    if (adminUserId != tdlib.myUserId() && inviteLinks.size() == 1) {
+      if (revokedInviteLink.isPrimary) return;
+      // No additional links left, we can also remove header
+      adapter.removeRange(adapter.indexOfViewById(R.id.btn_inviteLink) + 3, 3);
     }
   }
 
@@ -497,6 +569,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     int newIndex = adapter.indexOfViewById(R.id.btn_createInviteLink) + 1;
     adapter.addItem(newIndex, new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, 0, newLink.inviteLink, false).setData(newLink));
     adapter.addItem(newIndex, new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    requestUpdateLinkCell(newLink, true);
   }
 
   public void smOnUserLinkCountChanged (long userId, int newCount) {
@@ -513,13 +586,17 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
   private void buildCells () {
     ArrayList<ListItem> items = new ArrayList<>();
-    items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
 
     int lastIvIndex = inviteLinks.size() - 1;
     int lastRvIndex = inviteLinksRevoked.size() - 1;
     boolean viewingOtherAdmin = adminUserId != tdlib.myUserId();
+    boolean showAdditionalLinks = true;
 
-    if (!viewingOtherAdmin) {
+    if (viewingOtherAdmin) {
+      items.add(new ListItem(ListItem.TYPE_CHAT_SMALL, R.id.btn_openChat));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    } else {
+      items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
       items.add(new ListItem(ListItem.TYPE_EMBED_STICKER).setData(tdlib.findUtyanEmoji(UTYAN_EMOJI)));
     }
 
@@ -535,28 +612,34 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
           TdApi.User adminUser = tdlib.cache().user(adminUserId);
           CharSequence hintText = Lang.getMarkdownString(new TdlibContext(context, tdlib), R.string.InviteLinkOtherAdminHint, TD.getUserName(adminUser), tdlib.chatTitle(chatId));
           items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, hintText, false));
+          showAdditionalLinks = inviteLinks.size() > 1;
         }
 
-        items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.AdditionalInviteLinks));
-        items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-        items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_createInviteLink, 0, R.string.CreateLink));
-        if (inviteLinks.size() > 1) items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        if (showAdditionalLinks) {
+          items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.AdditionalInviteLinks));
+          items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+          if (!viewingOtherAdmin) items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_createInviteLink, R.drawable.baseline_add_24, R.string.CreateLink));
+          if (inviteLinks.size() > 1) items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        }
 
         continue;
       }
 
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, 0, inviteLink.inviteLink, false).setData(inviteLink));
+      requestUpdateLinkCell(inviteLink, true);
       if (inviteLinks.indexOf(inviteLink) != lastIvIndex)
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     }
 
-    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AdditionalInviteLinksHint));
+    if (showAdditionalLinks) {
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      if (!viewingOtherAdmin) items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AdditionalInviteLinksHint));
+    }
 
     if (!inviteLinksRevoked.isEmpty()) {
       items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.RevokedInviteLinks));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_deleteAllRevokedLinks, 0, R.string.DeleteAllRevokedLinks).setTextColorId(R.id.theme_color_textNegative));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_deleteAllRevokedLinks, R.drawable.baseline_delete_24, R.string.DeleteAllRevokedLinks).setTextColorId(R.id.theme_color_textNegative));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
 
       for (TdApi.ChatInviteLink inviteLink : inviteLinksRevoked) {
