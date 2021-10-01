@@ -60,7 +60,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     public void handleMessage(@NonNull Message msg) {
       requestUpdateLinkCell((TdApi.ChatInviteLink) msg.obj, false);
     }
-  }
+  };
 
   private void requestUpdateLinkCell (TdApi.ChatInviteLink linkObj, boolean ignoreUpdate) {
     if (!ignoreUpdate) adapter.updateValuedSettingByData(linkObj);
@@ -321,12 +321,14 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   }
 
   private void deleteLink (TdApi.ChatInviteLink link) {
-    showOptions(Lang.getString(R.string.AreYouSureDeleteInviteLink), new int[]{R.id.btn_deleteLink, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkDelete), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
+    showOptions(Lang.getString(R.string.AreYouSureDeleteInviteLink), new int[]{R.id.btn_deleteLink, R.id.btn_copyLink, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkDelete), Lang.getString(R.string.InviteLinkCopy), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_content_copy_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
       if (id2 == R.id.btn_deleteLink) {
         inviteLinksRevoked.remove(link);
         smOnRevokedLinkDeleted(link);
         notifyParentIfPossible();
         tdlib.client().send(new TdApi.DeleteRevokedChatInviteLink(chatId, link.inviteLink), null);
+      } else if (id2 == R.id.btn_copyLink) {
+        UI.copyText(link.inviteLink, R.string.CopiedLink);
       }
 
       return true;
