@@ -399,6 +399,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
               smOnLinkEdited(link, currentInviteLink);
               smOnLinkRevoked(null, inviteLinksRevoked.get(0));
+              notifyParentIfPossible();
 
               if (callback != null && isOwner && adminUserId == tdlib().myUserId()) {
                 callback.onInviteLinkChanged(currentInviteLink);
