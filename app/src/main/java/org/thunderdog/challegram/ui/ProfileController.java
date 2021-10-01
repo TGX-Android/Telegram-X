@@ -4396,7 +4396,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         if (canInviteUsers) {
           ids.append(R.id.btn_manageInviteLinks);
           strings.append(R.string.InviteLinkManage);
-          icons.append(R.drawable.baseline_person_add_24);
+          icons.append(R.drawable.baseline_add_link_24);
         }
 
         ids.append(R.id.btn_copyUsername);

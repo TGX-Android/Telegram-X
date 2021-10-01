@@ -249,14 +249,15 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         }
 
         if (link.isRevoked) {
+          icons.append(R.drawable.baseline_delete_forever_24);
           ids.append(R.id.btn_deleteLink);
           strings.append(R.string.InviteLinkDelete);
         } else {
+          icons.append(R.drawable.baseline_link_off_24);
           ids.append(R.id.btn_revokeLink);
           strings.append(R.string.RevokeLink);
         }
 
-        icons.append(R.drawable.baseline_delete_forever_24);
         colors.append(OPTION_COLOR_RED);
 
         CharSequence info = TD.makeClickable(Lang.getString(R.string.CreatedByXOnDate, ((target, argStart, argEnd, spanIndex, needFakeBold) -> spanIndex == 0 ? Lang.newUserSpan(new TdlibContext(context, tdlib), link.creatorUserId) : null), tdlib.cache().userName(link.creatorUserId), Lang.getRelativeTimestamp(link.date, TimeUnit.SECONDS)));
@@ -625,7 +626,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         if (showAdditionalLinks) {
           items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.AdditionalInviteLinks));
           items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-          if (!viewingOtherAdmin) items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_createInviteLink, R.drawable.baseline_add_24, R.string.CreateLink));
+          if (!viewingOtherAdmin) items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_createInviteLink, R.drawable.baseline_add_link_24, R.string.CreateLink));
           if (inviteLinks.size() > 1) items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         }
 
