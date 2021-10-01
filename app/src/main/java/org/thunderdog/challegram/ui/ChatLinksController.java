@@ -166,46 +166,47 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
       @Override
       protected void setUser (ListItem item, int position, UserView userView, boolean isUpdate) {
-        if (isUpdate) {
-          userView.updateSubtext();
+        TGUser tgUser = new TGUser(tdlib, tdlib.cache().user(item.getLongId()));
+
+        if (item.getId() == R.id.btn_openChat) {
+          tgUser.setCustomStatus(Lang.plural(R.string.xLinks, inviteLinks.size() + inviteLinksRevoked.size()));
+          userView.setPreviewChatId(new TdApi.ChatListMain(), adminUserId, null);
+          userView.setPreviewActionListProvider((v, forceTouchContext, ids, icons, strings, target) -> {
+            ids.append(R.id.btn_openChat);
+            icons.append(R.drawable.baseline_forum_24);
+            strings.append(R.string.OpenChat);
+
+            ids.append(R.id.btn_editRights);
+            icons.append(R.drawable.baseline_stars_24);
+            strings.append(R.string.EditAdminRights);
+
+            forceTouchContext.setExcludeHeader(true);
+
+            return new ForceTouchView.ActionListener() {
+              @Override
+              public void onForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
+
+              }
+
+              @Override
+              public void onAfterForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
+                switch (actionId) {
+                  case R.id.btn_openChat:
+                    tdlib.ui().openChat(ChatLinksController.this, adminUserId, new TdlibUi.ChatOpenParameters().keepStack());
+                    break;
+                  case R.id.btn_editRights:
+                    openRightsScreen();
+                    break;
+                }
+              }
+            };
+          });
         } else {
-          TGUser tgUser = new TGUser(tdlib, tdlib.cache().user((int) item.getLongId()));
           tgUser.setCustomStatus(Lang.plural(R.string.xLinks, item.getIntValue()));
-          userView.setUser(tgUser);
-          userView.setTag((int) item.getLongId());
         }
-      }
 
-      @Override
-      protected void modifyChatView(ListItem item, SmallChatView chatView, @Nullable CheckBox checkBox, boolean isUpdate) {
-        DoubleTextWrapper wrapper = new DoubleTextWrapper(tdlib, adminUserId, true);
-        wrapper.setSubtitle(Lang.pluralBold(R.string.xLinks, inviteLinks.size() + inviteLinksRevoked.size()));
-        wrapper.setIgnoreOnline(true);
-        chatView.setChat(wrapper);
-        chatView.setPreviewChatId(new TdApi.ChatListMain(), adminUserId, null);
-        chatView.setPreviewActionListProvider((v, forceTouchContext, ids, icons, strings, target) -> {
-          ids.append(R.id.btn_openChat);
-          icons.append(R.drawable.baseline_forum_24);
-          strings.append(R.string.OpenChat);
-
-          ids.append(R.id.btn_editRights);
-          icons.append(R.drawable.baseline_stars_24);
-          strings.append(R.string.EditAdminRights);
-
-          forceTouchContext.setExcludeHeader(true);
-
-          return new ForceTouchView.ActionListener() {
-            @Override
-            public void onForceTouchAction(ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
-
-            }
-
-            @Override
-            public void onAfterForceTouchAction(ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
-
-            }
-          };
-        });
+        userView.setUser(tgUser);
+        userView.setTag(item.getLongId());
       }
 
       @Override
@@ -220,16 +221,26 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     recyclerView.setAdapter(this.adapter);
   }
 
+  private void openRightsScreen () {
+    tdlib.client().send(new TdApi.GetChatMember(chatId, new TdApi.MessageSenderUser(adminUserId)), result -> {
+      if (result.getConstructor() != TdApi.ChatMember.CONSTRUCTOR) return;
+      TdApi.ChatMember member = (TdApi.ChatMember) result;
+      EditRightsController c = new EditRightsController(context, tdlib);
+      c.setArguments(new EditRightsController.Args(chatId, adminUserId, false, tdlib.chatStatus(chatId), member).noFocusLock());
+      navigateTo(c);
+    });
+  }
+
   @Override
   public void onClick (View v) {
     switch (v.getId()) {
       case R.id.btn_openChat: {
-        tdlib.ui().openChat(this, adminUserId, new TdlibUi.ChatOpenParameters().keepStack());
+        tdlib.ui().openPrivateProfile(this, adminUserId, new TdlibUi.UrlOpenParameters());
         break;
       }
       case R.id.btn_openAdminInviteLinks:
         ChatLinksController cc = new ChatLinksController(context, tdlib);
-        cc.setArguments(new ChatLinksController.Args(chatId, (Integer) v.getTag(), null, this, false));
+        cc.setArguments(new ChatLinksController.Args(chatId, (Long) v.getTag(), null, this, false));
         navigateTo(cc);
         break;
       case R.id.btn_inviteLink:
@@ -628,7 +639,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     boolean showAdditionalLinks = true;
 
     if (viewingOtherAdmin) {
-      items.add(new ListItem(ListItem.TYPE_CHAT_SMALL, R.id.btn_openChat));
+      items.add(new ListItem(ListItem.TYPE_USER, R.id.btn_openChat).setLongId(adminUserId));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     } else {
       items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
