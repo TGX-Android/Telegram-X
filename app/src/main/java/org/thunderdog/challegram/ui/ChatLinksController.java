@@ -252,11 +252,6 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
           return;
         }
 
-        if (link.isRevoked && link.memberCount == 0) {
-          deleteLink(link, true);
-          return;
-        }
-
         StringList strings = new StringList(5);
         IntList icons = new IntList(5);
         IntList ids = new IntList(5);
@@ -286,19 +281,22 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
           strings.append(R.string.ShareLink);
           icons.append(R.drawable.baseline_forward_24);
           colors.append(OPTION_COLOR_NORMAL);
-        }
 
-        if (link.isRevoked) {
-          icons.append(R.drawable.baseline_delete_forever_24);
-          ids.append(R.id.btn_deleteLink);
-          strings.append(R.string.InviteLinkDelete);
-        } else {
           icons.append(R.drawable.baseline_link_off_24);
           ids.append(R.id.btn_revokeLink);
           strings.append(R.string.RevokeLink);
-        }
+          colors.append(OPTION_COLOR_RED);
+        } else {
+          ids.append(R.id.btn_copyLink);
+          strings.append(R.string.InviteLinkCopy);
+          icons.append(R.drawable.baseline_content_copy_24);
+          colors.append(OPTION_COLOR_NORMAL);
 
-        colors.append(OPTION_COLOR_RED);
+          icons.append(R.drawable.baseline_delete_forever_24);
+          ids.append(R.id.btn_deleteLink);
+          strings.append(R.string.InviteLinkDelete);
+          colors.append(OPTION_COLOR_RED);
+        }
 
         CharSequence info = TD.makeClickable(Lang.getString(R.string.CreatedByXOnDate, ((target, argStart, argEnd, spanIndex, needFakeBold) -> spanIndex == 0 ? Lang.newUserSpan(new TdlibContext(context, tdlib), link.creatorUserId) : null), tdlib.cache().userName(link.creatorUserId), Lang.getRelativeTimestamp(link.date, TimeUnit.SECONDS)));
         Lang.SpanCreator firstBoldCreator = (target, argStart, argEnd, spanIndex, needFakeBold) -> spanIndex == 0 ? Lang.newBoldSpan(needFakeBold) : null;
@@ -321,7 +319,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
                 shareLink(link);
                 break;
               case R.id.btn_deleteLink:
-                deleteLink(link, false);
+                deleteLink(link);
                 break;
               case R.id.btn_revokeLink:
                 showOptions(Lang.getString(isChannel ? R.string.AreYouSureRevokeInviteLinkChannel : R.string.AreYouSureRevokeInviteLinkGroup), new int[]{R.id.btn_revokeLink, R.id.btn_cancel}, new String[]{Lang.getString(R.string.RevokeLink), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_link_off_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
@@ -361,25 +359,13 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     }
   }
 
-  private void deleteLink (TdApi.ChatInviteLink link, boolean showCreationTime) {
-    CharSequence infoString;
-
-    if (showCreationTime) {
-      CharSequence info = TD.makeClickable(Lang.getString(R.string.CreatedByXOnDate, ((target, argStart, argEnd, spanIndex, needFakeBold) -> spanIndex == 0 ? Lang.newUserSpan(new TdlibContext(context, tdlib), link.creatorUserId) : null), tdlib.cache().userName(link.creatorUserId), Lang.getRelativeTimestamp(link.date, TimeUnit.SECONDS)));
-      Lang.SpanCreator firstBoldCreator = (target, argStart, argEnd, spanIndex, needFakeBold) -> spanIndex == 0 ? Lang.newBoldSpan(needFakeBold) : null;
-      infoString = Lang.getString(R.string.format_nameAndStatus, firstBoldCreator, Lang.getString(R.string.AreYouSureDeleteInviteLink), info);
-    } else {
-      infoString = Lang.getString(R.string.AreYouSureDeleteInviteLink);
-    }
-
-    showOptions(infoString, new int[]{R.id.btn_deleteLink, R.id.btn_copyLink, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkDelete), Lang.getString(R.string.InviteLinkCopy), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_content_copy_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
+  private void deleteLink (TdApi.ChatInviteLink link) {
+    showOptions(Lang.getString(R.string.AreYouSureDeleteInviteLink), new int[]{R.id.btn_deleteLink, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkDelete), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
       if (id2 == R.id.btn_deleteLink) {
         inviteLinksRevoked.remove(link);
         smOnRevokedLinkDeleted(link);
         notifyParentIfPossible();
         tdlib.client().send(new TdApi.DeleteRevokedChatInviteLink(chatId, link.inviteLink), null);
-      } else if (id2 == R.id.btn_copyLink) {
-        UI.copyText(link.inviteLink, R.string.CopiedLink);
       }
 
       return true;
