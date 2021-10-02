@@ -280,7 +280,7 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
   private static TGUser parseSender (Tdlib tdlib, TdApi.ChatInviteLinkMember sender, ArrayList<TGUser> senders) {
     TGUser parsedUser = new TGUser(tdlib, tdlib.cache().user(sender.userId));
     parsedUser.setNoBotState();
-    parsedUser.setCustomStatus(Lang.getRelativeDate(sender.joinedChatDate, TimeUnit.SECONDS, System.currentTimeMillis(), TimeUnit.MILLISECONDS, true, 60, R.string.RoleMember, true));
+    parsedUser.setCustomStatus(Lang.getString(R.string.MemberSince, Lang.getDate(sender.joinedChatDate, TimeUnit.SECONDS), Lang.time(sender.joinedChatDate, TimeUnit.SECONDS)));
     parsedUser.setBoundList(senders);
     return parsedUser;
   }
