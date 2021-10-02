@@ -27,11 +27,17 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.td.TdConstants;
 
 public class EditChatLinkController extends EditBaseController<EditChatLinkController.Args> implements View.OnClickListener {
-  private static final int[] PRESETS = new int[]{0, 3600, 3600 * 24, 3600 * 24 * 7, 1};
+  private static final int[] EXPIRE_DATE_PRESETS = new int[]{3600, 3600 * 24, 3600 * 24 * 7};
   private static final String[] DEFAULT_MEMBER_COUNT = new String[]{"1", "10", "50", "100", Lang.getString(R.string.Infinity)};
+  private static final String[] DEFAULT_DATE_VALUES = new String[]{Lang.getDuration(EXPIRE_DATE_PRESETS[0]), Lang.getDuration(EXPIRE_DATE_PRESETS[1]), Lang.getDuration(EXPIRE_DATE_PRESETS[2]), Lang.getString(R.string.Infinity)};
 
   private String[] memberCountSliderData = DEFAULT_MEMBER_COUNT;
   private int memberCountSliderIndex = DEFAULT_MEMBER_COUNT.length - 1;
+
+  private String[] expireDateSliderData = DEFAULT_DATE_VALUES;
+  private int[] expireDateSliderDataInternal = EXPIRE_DATE_PRESETS;
+  private int expireDateSliderIndex = DEFAULT_DATE_VALUES.length - 1;
+  private int actualTdlibSeconds;
 
   private SettingsAdapter adapter;
   private int expireDate;
@@ -45,6 +51,10 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
 
   private boolean isMemberLimitPreset () {
     return memberLimit == 0 || memberLimit == 1 || memberLimit == 10 || memberLimit == 50 || memberLimit == 100;
+  }
+
+  private boolean isExpireDatePreset () {
+    return expireDate == 0 || expireDate == EXPIRE_DATE_PRESETS[0] || expireDate == EXPIRE_DATE_PRESETS[1] || expireDate == EXPIRE_DATE_PRESETS[2];
   }
 
   private void updateMemberCountSlider () {
@@ -65,6 +75,28 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
     }
 
     memberCountSliderData = strings.get();
+  }
+
+  private void updateExpireDateSlider () {
+    int[] data = isExpireDatePreset() ? new int[]{3600, 3600 * 24, 3600 * 24 * 7, Integer.MAX_VALUE} : new int[]{3600, 3600 * 24, 3600 * 24 * 7, Integer.MAX_VALUE, expireDate};
+
+    Arrays.sort(data);
+
+    StringList strings = new StringList(data.length);
+
+    for (int i = 0; i < data.length; i++) {
+      int datum = data[i];
+      strings.append(datum == Integer.MAX_VALUE ? Lang.getString(R.string.Infinity) : Lang.getDuration(datum));
+      if (expireDate == datum) expireDateSliderIndex = i;
+    }
+
+    if (expireDateSliderIndex == -1) {
+      expireDateSliderIndex = data.length - 1;
+    }
+
+    expireDateSliderData = strings.get();
+    expireDateSliderDataInternal = data;
+    actualTdlibSeconds = (int) TimeUnit.MILLISECONDS.toSeconds(tdlib.currentTimeMillis());
   }
 
   @Override
@@ -93,7 +125,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
       return true;
     }
 
-    return memberLimit != existingInviteLink.memberLimit || expireDate != existingInviteLink.expireDate;
+    return memberLimit != existingInviteLink.memberLimit || expireDate != (existingInviteLink.expireDate - actualTdlibSeconds);
   }
 
   @Override
@@ -102,72 +134,25 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
     isCreation = args.existingInviteLink == null;
     if (args.existingInviteLink != null) {
       existingInviteLink = args.existingInviteLink;
-      expireDate = args.existingInviteLink.expireDate;
+      expireDate = Math.max(0, (int) (args.existingInviteLink.expireDate - TimeUnit.MILLISECONDS.toSeconds(tdlib.currentTimeMillis())));
       memberLimit = args.existingInviteLink.memberLimit;
       updateMemberCountSlider();
+      updateExpireDateSlider();
+    } else {
+      actualTdlibSeconds = (int) TimeUnit.MILLISECONDS.toSeconds(tdlib.currentTimeMillis());
     }
   }
 
   @Override
   public void onClick (View v) {
     if (v.getId() == R.id.btn_inviteLinkDateLimit) {
-      int[] ids = new int[PRESETS.length];
-      int[] icons = new int[PRESETS.length];
-      String[] strings = new String[PRESETS.length];
-
-      for (int i = 0; i < PRESETS.length; i++) {
-        ids[i] = i;
-        final int expireIn = PRESETS[i];
-        switch (expireIn) {
-          case 0:
-            icons[i] = R.drawable.baseline_cancel_24;
-            strings[i] = Lang.getString(R.string.InviteLinkExpireNone);
-            break;
-          case 1:
-            icons[i] = R.drawable.baseline_date_range_24;
-            strings[i] = Lang.getString(R.string.InviteLinkExpireInCustomDate);
-            break;
-          default: {
-            icons[i] = R.drawable.baseline_schedule_24;
-            int stringRes;
-            long num;
-            if (expireIn < TimeUnit.DAYS.toSeconds(1)) {
-              stringRes = R.string.InviteLinkExpireInHours;
-              num = TimeUnit.SECONDS.toHours(expireIn);
-            } else if (expireIn < TimeUnit.DAYS.toSeconds(7)) {
-              stringRes = R.string.InviteLinkExpireInDays;
-              num = TimeUnit.SECONDS.toDays(expireIn);
-            } else {
-              stringRes = R.string.InviteLinkExpireInWeeks;
-              num = TimeUnit.SECONDS.toDays(expireIn) / 7;
-            }
-            strings[i] = Lang.plural(stringRes, num);
-            break;
-          }
-        }
-      }
-
-      showOptions(null, ids, strings, null, icons, (itemView, id) -> {
-        switch (id) {
-          case 0:
-            expireDate = 0;
-            break;
-          case 4:
-            showDateTimePicker(Lang.getString(R.string.InviteLinkExpireHeader), R.string.InviteLinkExpireConfirm, R.string.InviteLinkExpireConfirm, R.string.InviteLinkExpireConfirm, millis -> {
-              expireDate = (int) TimeUnit.MILLISECONDS.toSeconds(millis);
-              adapter.updateValuedSettingById(R.id.btn_inviteLinkDateLimit);
-              checkDoneButton();
-            }, null);
-            break;
-          default:
-            expireDate = (int) TimeUnit.MILLISECONDS.toSeconds(tdlib.currentTimeMillis() + TimeUnit.SECONDS.toMillis(PRESETS[id]));
-            break;
-        }
-
+      showDateTimePicker(Lang.getString(R.string.InviteLinkExpireHeader), R.string.InviteLinkExpireConfirm, R.string.InviteLinkExpireConfirm, R.string.InviteLinkExpireConfirm, millis -> {
+        expireDate = (int) TimeUnit.MILLISECONDS.toSeconds(millis - tdlib.currentTimeMillis());
+        updateExpireDateSlider();
         adapter.updateValuedSettingById(R.id.btn_inviteLinkDateLimit);
+        adapter.updateItemById(R.id.btn_inviteLinkDateSlider);
         checkDoneButton();
-        return true;
-      });
+      }, null);
     } else if (v.getId() == R.id.btn_inviteLinkUserLimit) {
       openInputAlert(Lang.getString(R.string.InviteLinkLimitedByUsersItem), Lang.getString(R.string.InviteLinkLimitedByUsersAlertHint), R.string.Done, R.string.Cancel, String.valueOf(memberLimit), (inputView, result) -> {
         int data = StringUtils.parseInt(result, -1);
@@ -193,7 +178,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
   protected boolean onDoneClick () {
     setDoneInProgress(true);
     tdlib.client().send(
-      isCreation ? new TdApi.CreateChatInviteLink(getArgumentsStrict().chatId, expireDate, memberLimit) : new TdApi.EditChatInviteLink(getArgumentsStrict().chatId, getArgumentsStrict().existingInviteLink.inviteLink, expireDate, memberLimit), result -> {
+      isCreation ? new TdApi.CreateChatInviteLink(getArgumentsStrict().chatId, actualTdlibSeconds + expireDate, memberLimit) : new TdApi.EditChatInviteLink(getArgumentsStrict().chatId, getArgumentsStrict().existingInviteLink.inviteLink, expireDate, memberLimit), result -> {
         runOnUiThreadOptional(() -> {
           if (result.getConstructor() == TdApi.ChatInviteLink.CONSTRUCTOR) {
             getArgumentsStrict().controller.onLinkCreated((TdApi.ChatInviteLink) result, getArgumentsStrict().existingInviteLink);
@@ -222,7 +207,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         if (item.getId() == R.id.btn_inviteLinkDateLimit) {
-          view.setData(expireDate > 0 ? Lang.getUntilDate(expireDate, TimeUnit.SECONDS) : Lang.getString(R.string.InviteLinkNoLimitSet));
+          view.setData(expireDate > 0 ? Lang.getUntilDate(actualTdlibSeconds + expireDate, TimeUnit.SECONDS) : Lang.getString(R.string.InviteLinkNoLimitSet));
         }
       }
 
@@ -230,12 +215,22 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
       protected void setSliderValues (ListItem item, SliderWrapView view) {
         view.setPadding(view.getPaddingLeft(), view.getPaddingTop(), Screen.dp(16f), view.getPaddingBottom());
         view.setShowOnlyValue(true);
-        view.setValues("", memberCountSliderData, memberCountSliderIndex);
+        if (item.getId() == R.id.btn_inviteLinkDateSlider) {
+          view.setValues("", expireDateSliderData, expireDateSliderIndex);
+        } else if (item.getId() == R.id.btn_inviteLinkUserSlider) {
+          view.setValues("", memberCountSliderData, memberCountSliderIndex);
+        }
       }
 
       @Override
       protected void onSliderValueChanged (ListItem item, SliderWrapView view, int newValue, int oldValue) {
-        memberLimit = (newValue == memberCountSliderData.length - 1) ? 0 : Integer.parseInt(memberCountSliderData[newValue]);
+        if (item.getId() == R.id.btn_inviteLinkDateSlider) {
+          expireDate = (newValue == expireDateSliderData.length - 1) ? 0 : expireDateSliderDataInternal[newValue];
+          adapter.updateValuedSettingById(R.id.btn_inviteLinkDateLimit);
+        } else if (item.getId() == R.id.btn_inviteLinkUserSlider) {
+          memberLimit = (newValue == memberCountSliderData.length - 1) ? 0 : Integer.parseInt(memberCountSliderData[newValue]);
+        }
+
         checkDoneButton();
       }
     };
@@ -246,6 +241,8 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
 
     items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.InviteLinkLimitedByPeriod));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+    items.add(new ListItem(ListItem.TYPE_SLIDER, R.id.btn_inviteLinkDateSlider));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLinkDateLimit, 0, R.string.InviteLinkLimitedByPeriodItem));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.InviteLinkLimitedByPeriodHint));

@@ -3745,7 +3745,7 @@
   <string name="InviteLinkLimitedByUsers">Limited by number of users</string>
   <string name="InviteLinkLimitedByPeriodHint">You can make the link expire after a certain time.</string>
   <string name="InviteLinkLimitedByUsersHint">You can make the link expire after it has been used for a certain number of times.</string>
-  <string name="InviteLinkLimitedByPeriodItem">Expiry Date</string>
+  <string name="InviteLinkLimitedByPeriodItem">Enter custom expire date</string>
   <string name="InviteLinkLimitedByUsersItem">Number of Users</string>
   <string name="InviteLinkLimitedByUsersAlertHint">0 - no limit</string>
   <string name="InviteLinkLimitedByUsersCustom">Enter custom limit</string>
