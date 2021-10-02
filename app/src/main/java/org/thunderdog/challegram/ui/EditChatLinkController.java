@@ -126,7 +126,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
       return true;
     }
 
-    return memberLimit != existingInviteLink.memberLimit || expireDate != (expireDate == 0 ? 0 : existingInviteLink.expireDate - actualTdlibSeconds);
+    return memberLimit != existingInviteLink.memberLimit || expireDate != (existingInviteLink.expireDate == 0 ? 0 : existingInviteLink.expireDate - actualTdlibSeconds);
   }
 
   @Override
