@@ -16,22 +16,17 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGUser;
-import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
-import org.thunderdog.challegram.widget.BaseView;
-import org.thunderdog.challegram.widget.CheckBox;
 import org.thunderdog.challegram.widget.EmbeddableStickerView;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.ListInfoView;
-import org.thunderdog.challegram.widget.SmallChatView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -258,7 +253,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         }
 
         if (link.isRevoked && link.memberCount == 0) {
-          deleteLink(link);
+          deleteLink(link, true);
           return;
         }
 
@@ -326,7 +321,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
                 shareLink(link);
                 break;
               case R.id.btn_deleteLink:
-                deleteLink(link);
+                deleteLink(link, false);
                 break;
               case R.id.btn_revokeLink:
                 showOptions(Lang.getString(isChannel ? R.string.AreYouSureRevokeInviteLinkChannel : R.string.AreYouSureRevokeInviteLinkGroup), new int[]{R.id.btn_revokeLink, R.id.btn_cancel}, new String[]{Lang.getString(R.string.RevokeLink), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_link_off_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
@@ -366,8 +361,18 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     }
   }
 
-  private void deleteLink (TdApi.ChatInviteLink link) {
-    showOptions(Lang.getString(R.string.AreYouSureDeleteInviteLink), new int[]{R.id.btn_deleteLink, R.id.btn_copyLink, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkDelete), Lang.getString(R.string.InviteLinkCopy), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_content_copy_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
+  private void deleteLink (TdApi.ChatInviteLink link, boolean showCreationTime) {
+    CharSequence infoString;
+
+    if (showCreationTime) {
+      CharSequence info = TD.makeClickable(Lang.getString(R.string.CreatedByXOnDate, ((target, argStart, argEnd, spanIndex, needFakeBold) -> spanIndex == 0 ? Lang.newUserSpan(new TdlibContext(context, tdlib), link.creatorUserId) : null), tdlib.cache().userName(link.creatorUserId), Lang.getRelativeTimestamp(link.date, TimeUnit.SECONDS)));
+      Lang.SpanCreator firstBoldCreator = (target, argStart, argEnd, spanIndex, needFakeBold) -> spanIndex == 0 ? Lang.newBoldSpan(needFakeBold) : null;
+      infoString = Lang.getString(R.string.format_nameAndStatus, firstBoldCreator, Lang.getString(R.string.AreYouSureDeleteInviteLink), info);
+    } else {
+      infoString = Lang.getString(R.string.AreYouSureDeleteInviteLink);
+    }
+
+    showOptions(infoString, new int[]{R.id.btn_deleteLink, R.id.btn_copyLink, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkDelete), Lang.getString(R.string.InviteLinkCopy), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_content_copy_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
       if (id2 == R.id.btn_deleteLink) {
         inviteLinksRevoked.remove(link);
         smOnRevokedLinkDeleted(link);
