@@ -373,9 +373,9 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   }
 
   private void notifyParentIfPossible () {
-    smOnUserLinkCountChanged(adminUserId, inviteLinks.size() + inviteLinksRevoked.size());
+    smOnUserLinkCountChanged(adminUserId, inviteLinks.size());
     if (getArgumentsStrict().parent != null) {
-      getArgumentsStrict().parent.smOnUserLinkCountChanged(adminUserId, inviteLinks.size() + inviteLinksRevoked.size());
+      getArgumentsStrict().parent.smOnUserLinkCountChanged(adminUserId, inviteLinks.size());
     }
   }
 
@@ -432,7 +432,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
     if (inviteLink.memberCount > 0) {
       subtitle.append(Lang.plural(R.string.InviteLinkJoins, inviteLink.memberCount));
-    } else if (inviteLink.isPrimary || inviteLink.memberLimit == 0 || (inviteLink.memberCount == 0 && expiresInMs < 0)) {
+    } else if (inviteLink.isPrimary || inviteLink.memberLimit == 0) {
       subtitle.append(Lang.getString(R.string.InviteLinkNoJoins));
     }
 
@@ -635,7 +635,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     boolean showAdditionalLinks = true;
 
     if (viewingOtherAdmin) {
-      items.add(new ListItem(ListItem.TYPE_USER, R.id.btn_openChat).setLongId(adminUserId).setIntValue(inviteLinks.size() + inviteLinksRevoked.size()));
+      items.add(new ListItem(ListItem.TYPE_USER, R.id.btn_openChat).setLongId(adminUserId).setIntValue(inviteLinks.size()));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     } else {
       items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
