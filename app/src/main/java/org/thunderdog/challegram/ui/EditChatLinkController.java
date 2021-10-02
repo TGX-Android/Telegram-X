@@ -65,13 +65,14 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
     StringList strings = new StringList(data.length);
 
     for (int datum : data) {
+      if (existingInviteLink != null && datum < existingInviteLink.memberCount) continue;
       strings.append(datum == Integer.MAX_VALUE ? Lang.getString(R.string.Infinity) : String.valueOf(datum));
     }
 
     memberCountSliderIndex = strings.indexOf(String.valueOf(memberLimit));
 
     if (memberCountSliderIndex == -1) {
-      memberCountSliderIndex = data.length - 1;
+      memberCountSliderIndex = strings.get().length - 1;
     }
 
     memberCountSliderData = strings.get();
@@ -125,7 +126,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
       return true;
     }
 
-    return memberLimit != existingInviteLink.memberLimit || expireDate != (existingInviteLink.expireDate - actualTdlibSeconds);
+    return memberLimit != existingInviteLink.memberLimit || expireDate != (expireDate == 0 ? 0 : existingInviteLink.expireDate - actualTdlibSeconds);
   }
 
   @Override
@@ -156,12 +157,13 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
     } else if (v.getId() == R.id.btn_inviteLinkUserLimit) {
       openInputAlert(Lang.getString(R.string.InviteLinkLimitedByUsersItem), Lang.getString(R.string.InviteLinkLimitedByUsersAlertHint), R.string.Done, R.string.Cancel, String.valueOf(memberLimit), (inputView, result) -> {
         int data = StringUtils.parseInt(result, -1);
-        if (data < 0)
+        if (data < 0 || (isCanJoinNegative(data) && data != 0))
           return false;
 
         memberLimit = Math.min(data, TdConstants.MAX_CHAT_INVITE_LINK_USER_COUNT);
         updateMemberCountSlider();
         adapter.updateItemById(R.id.btn_inviteLinkUserSlider);
+        adapter.updateValuedSettingById(R.id.btn_inviteLinkUserLimit);
         checkDoneButton();
 
         return true;
@@ -177,8 +179,9 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
   @Override
   protected boolean onDoneClick () {
     setDoneInProgress(true);
+    int actualExpireDate = expireDate == 0 ? 0 : actualTdlibSeconds + expireDate;
     tdlib.client().send(
-      isCreation ? new TdApi.CreateChatInviteLink(getArgumentsStrict().chatId, actualTdlibSeconds + expireDate, memberLimit) : new TdApi.EditChatInviteLink(getArgumentsStrict().chatId, getArgumentsStrict().existingInviteLink.inviteLink, expireDate, memberLimit), result -> {
+      isCreation ? new TdApi.CreateChatInviteLink(getArgumentsStrict().chatId, actualExpireDate, memberLimit) : new TdApi.EditChatInviteLink(getArgumentsStrict().chatId, getArgumentsStrict().existingInviteLink.inviteLink, actualExpireDate, memberLimit), result -> {
         runOnUiThreadOptional(() -> {
           if (result.getConstructor() == TdApi.ChatInviteLink.CONSTRUCTOR) {
             getArgumentsStrict().controller.onLinkCreated((TdApi.ChatInviteLink) result, getArgumentsStrict().existingInviteLink);
@@ -191,6 +194,11 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
       });
 
     return true;
+  }
+
+  private boolean isCanJoinNegative (int memberLimit) {
+    if (existingInviteLink == null) return false;
+    return (memberLimit - existingInviteLink.memberCount) < 0;
   }
 
   @Override
@@ -208,6 +216,14 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         if (item.getId() == R.id.btn_inviteLinkDateLimit) {
           view.setData(expireDate > 0 ? Lang.getUntilDate(actualTdlibSeconds + expireDate, TimeUnit.SECONDS) : Lang.getString(R.string.InviteLinkNoLimitSet));
+        } else if (item.getId() == R.id.btn_inviteLinkUserLimit) {
+          int newCanJoin = memberLimit;
+
+          if (existingInviteLink != null) {
+            newCanJoin = memberLimit - existingInviteLink.memberCount;
+          }
+
+          view.setData(memberLimit == 0 ? Lang.getString(R.string.InviteLinkNoLimitSet) : Lang.plural(R.string.InviteLinkRemains, newCanJoin));
         }
       }
 
@@ -229,6 +245,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
           adapter.updateValuedSettingById(R.id.btn_inviteLinkDateLimit);
         } else if (item.getId() == R.id.btn_inviteLinkUserSlider) {
           memberLimit = (newValue == memberCountSliderData.length - 1) ? 0 : Integer.parseInt(memberCountSliderData[newValue]);
+          adapter.updateValuedSettingById(R.id.btn_inviteLinkUserLimit);
         }
 
         checkDoneButton();
@@ -251,7 +268,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     items.add(new ListItem(ListItem.TYPE_SLIDER, R.id.btn_inviteLinkUserSlider));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_inviteLinkUserLimit, 0, R.string.InviteLinkLimitedByUsersCustom));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLinkUserLimit, 0, R.string.InviteLinkLimitedByUsersCustom));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.InviteLinkLimitedByUsersHint));
 
