@@ -590,6 +590,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     int lastRvIndex = inviteLinksRevoked.size() - 1;
     boolean viewingOtherAdmin = adminUserId != tdlib.myUserId();
     boolean showAdditionalLinks = true;
+    boolean primaryHeaderCreated = false;
 
     if (viewingOtherAdmin) {
       items.add(new ListItem(ListItem.TYPE_USER, R.id.btn_openChat).setLongId(adminUserId).setIntValue(inviteLinks.size()));
@@ -600,7 +601,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     }
 
     for (TdApi.ChatInviteLink inviteLink : inviteLinks) {
-      if (inviteLink.isPrimary) {
+      if (inviteLink.isPrimary && !primaryHeaderCreated) {
         currentInviteLink = inviteLink;
         items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.PrimaryInviteLink));
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -621,6 +622,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
           if (inviteLinks.size() > 1) items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         }
 
+        primaryHeaderCreated = true;
         continue;
       }
 
