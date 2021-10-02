@@ -156,12 +156,15 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     this.adapter = new SettingsAdapter(this) {
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
-        if (item.getId() == R.id.btn_inviteLink) {
+        if (item.getId() == R.id.btn_deleteAllRevokedLinks) {
+          view.setIconColorId(R.id.theme_color_textNegative);
+        } else if (item.getId() == R.id.btn_inviteLink) {
           TdApi.ChatInviteLink link = (TdApi.ChatInviteLink) item.getData();
           view.setData(generateLinkSubtitle(link));
           view.setTag(link);
-        } else if (item.getId() == R.id.btn_deleteAllRevokedLinks) {
-          view.setIconColorId(R.id.theme_color_textNegative);
+          view.setIconColorId(R.id.theme_color_icon);
+        } else {
+          view.setIconColorId(R.id.theme_color_icon);
         }
       }
 
