@@ -47,7 +47,6 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   private InviteLinkController.Callback callback;
 
   private TdApi.ChatInviteLink currentInviteLink;
-  private TdApi.ChatInviteLink revokingInviteLink;
 
   private List<TdApi.ChatInviteLink> inviteLinks;
   private List<TdApi.ChatInviteLink> inviteLinksRevoked;
@@ -248,93 +247,12 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       case R.id.btn_inviteLink:
         TdApi.ChatInviteLink link = (TdApi.ChatInviteLink) v.getTag();
 
-        if (revokingInviteLink != null && link.inviteLink.equals(revokingInviteLink.inviteLink)) {
-          return;
-        }
+        tdlib.ui().showInviteLinkOptions(this, link, chatId, () -> {
+          inviteLinksRevoked.remove(link);
+          smOnRevokedLinkDeleted(link);
+          notifyParentIfPossible();
+        }, (links) -> onLinkRevoked(link, links));
 
-        StringList strings = new StringList(5);
-        IntList icons = new IntList(5);
-        IntList ids = new IntList(5);
-        IntList colors = new IntList(5);
-
-        if (link.memberCount > 0) {
-          ids.append(R.id.btn_viewInviteLinkMembers);
-          strings.append(R.string.InviteLinkViewMembers);
-          icons.append(R.drawable.baseline_visibility_24);
-          colors.append(OPTION_COLOR_NORMAL);
-        }
-
-        if (!link.isRevoked) {
-          if (!link.isPrimary) {
-            ids.append(R.id.btn_edit);
-            strings.append(R.string.InviteLinkEdit);
-            icons.append(R.drawable.baseline_edit_24);
-            colors.append(OPTION_COLOR_NORMAL);
-          }
-
-          ids.append(R.id.btn_copyLink);
-          strings.append(R.string.InviteLinkCopy);
-          icons.append(R.drawable.baseline_content_copy_24);
-          colors.append(OPTION_COLOR_NORMAL);
-
-          ids.append(R.id.btn_shareLink);
-          strings.append(R.string.ShareLink);
-          icons.append(R.drawable.baseline_forward_24);
-          colors.append(OPTION_COLOR_NORMAL);
-
-          icons.append(R.drawable.baseline_link_off_24);
-          ids.append(R.id.btn_revokeLink);
-          strings.append(R.string.RevokeLink);
-          colors.append(OPTION_COLOR_RED);
-        } else {
-          ids.append(R.id.btn_copyLink);
-          strings.append(R.string.InviteLinkCopy);
-          icons.append(R.drawable.baseline_content_copy_24);
-          colors.append(OPTION_COLOR_NORMAL);
-
-          icons.append(R.drawable.baseline_delete_forever_24);
-          ids.append(R.id.btn_deleteLink);
-          strings.append(R.string.InviteLinkDelete);
-          colors.append(OPTION_COLOR_RED);
-        }
-
-        CharSequence info = TD.makeClickable(Lang.getString(R.string.CreatedByXOnDate, ((target, argStart, argEnd, spanIndex, needFakeBold) -> spanIndex == 0 ? Lang.newUserSpan(new TdlibContext(context, tdlib), link.creatorUserId) : null), tdlib.cache().userName(link.creatorUserId), Lang.getRelativeTimestamp(link.date, TimeUnit.SECONDS)));
-        Lang.SpanCreator firstBoldCreator = (target, argStart, argEnd, spanIndex, needFakeBold) -> spanIndex == 0 ? Lang.newBoldSpan(needFakeBold) : null;
-        showOptions(Lang.getString(R.string.format_nameAndStatus, firstBoldCreator, link.inviteLink, info), ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
-            switch (id) {
-              case R.id.btn_viewInviteLinkMembers:
-                ChatLinkMembersController c2 = new ChatLinkMembersController(context, tdlib);
-                c2.setArguments(new ChatLinkMembersController.Args(chatId, link.inviteLink));
-                navigateTo(c2);
-                break;
-              case R.id.btn_edit:
-                EditChatLinkController c = new EditChatLinkController(context, tdlib);
-                c.setArguments(new EditChatLinkController.Args(link, chatId, this));
-                navigateTo(c);
-                break;
-              case R.id.btn_copyLink:
-                UI.copyText(link.inviteLink, R.string.CopiedLink);
-                break;
-              case R.id.btn_shareLink:
-                shareLink(link);
-                break;
-              case R.id.btn_deleteLink:
-                deleteLink(link);
-                break;
-              case R.id.btn_revokeLink:
-                showOptions(Lang.getString(isChannel ? R.string.AreYouSureRevokeInviteLinkChannel : R.string.AreYouSureRevokeInviteLinkGroup), new int[]{R.id.btn_revokeLink, R.id.btn_cancel}, new String[]{Lang.getString(R.string.RevokeLink), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_link_off_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
-                  if (id2 == R.id.btn_revokeLink) {
-                    revokeLink(link);
-                  }
-
-                  return true;
-                });
-                break;
-            }
-
-            return true;
-          }
-        );
         break;
       case R.id.btn_deleteAllRevokedLinks:
         showOptions(Lang.getString(R.string.AreYouSureDeleteAllInviteLinks), new int[]{R.id.btn_deleteAllRevokedLinks, R.id.btn_cancel}, new String[]{Lang.getString(R.string.DeleteAllRevokedLinks), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
@@ -359,19 +277,6 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     }
   }
 
-  private void deleteLink (TdApi.ChatInviteLink link) {
-    showOptions(Lang.getString(R.string.AreYouSureDeleteInviteLink), new int[]{R.id.btn_deleteLink, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkDelete), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
-      if (id2 == R.id.btn_deleteLink) {
-        inviteLinksRevoked.remove(link);
-        smOnRevokedLinkDeleted(link);
-        notifyParentIfPossible();
-        tdlib.client().send(new TdApi.DeleteRevokedChatInviteLink(chatId, link.inviteLink), null);
-      }
-
-      return true;
-    });
-  }
-
   private void notifyParentIfPossible () {
     smOnUserLinkCountChanged(adminUserId, inviteLinks.size());
     if (getArgumentsStrict().parent != null) {
@@ -379,49 +284,26 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     }
   }
 
-  private void revokeLink (TdApi.ChatInviteLink link) {
-    revokingInviteLink = link;
-    tdlib.client().send(new TdApi.RevokeChatInviteLink(chatId, link.inviteLink), result -> {
-      if (result.getConstructor() == TdApi.ChatInviteLinks.CONSTRUCTOR) {
-        runOnUiThreadOptional(() -> {
-          final TdApi.ChatInviteLinks newInviteLink = (TdApi.ChatInviteLinks) result;
+  private void onLinkRevoked (TdApi.ChatInviteLink link, final TdApi.ChatInviteLinks newInviteLink) {
+    if (newInviteLink.inviteLinks.length > 0) {
+      inviteLinks.remove(link);
+      inviteLinksRevoked.add(0, newInviteLink.inviteLinks[0]);
 
-          if (newInviteLink.inviteLinks.length > 0) {
-            inviteLinks.remove(link);
-            inviteLinksRevoked.add(0, newInviteLink.inviteLinks[0]);
+      if (link.isPrimary && newInviteLink.inviteLinks.length > 1) {
+        currentInviteLink = newInviteLink.inviteLinks[1];
+        inviteLinks.add(0, currentInviteLink);
 
-            if (link.isPrimary && newInviteLink.inviteLinks.length > 1) {
-              currentInviteLink = newInviteLink.inviteLinks[1];
-              inviteLinks.add(0, currentInviteLink);
+        smOnLinkEdited(link, currentInviteLink);
+        smOnLinkRevoked(null, inviteLinksRevoked.get(0));
+        notifyParentIfPossible();
 
-              smOnLinkEdited(link, currentInviteLink);
-              smOnLinkRevoked(null, inviteLinksRevoked.get(0));
-              notifyParentIfPossible();
-
-              if (callback != null && isOwner && adminUserId == tdlib().myUserId()) {
-                callback.onInviteLinkChanged(currentInviteLink);
-              }
-            } else {
-              smOnLinkRevoked(link, inviteLinksRevoked.get(0));
-            }
-          }
-
-          revokingInviteLink = null;
-        });
-      } else if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
-        UI.showError(result);
-        revokingInviteLink = null;
+        if (callback != null && isOwner && adminUserId == tdlib().myUserId()) {
+          callback.onInviteLinkChanged(currentInviteLink);
+        }
+      } else {
+        smOnLinkRevoked(link, inviteLinksRevoked.get(0));
       }
-    });
-  }
-
-  private void shareLink (TdApi.ChatInviteLink link) {
-    String chatName = tdlib.chatTitle(chatId);
-    String exportText = Lang.getString(tdlib.isChannel(chatId) ? R.string.ShareTextChannelLink : R.string.ShareTextChatLink, chatName, link.inviteLink);
-    String text = Lang.getString(R.string.ShareTextLink, chatName, link.inviteLink);
-    ShareController c = new ShareController(context, tdlib);
-    c.setArguments(new ShareController.Args(text).setShare(exportText, null));
-    c.show();
+    }
   }
 
   private String generateLinkSubtitle (TdApi.ChatInviteLink inviteLink) {

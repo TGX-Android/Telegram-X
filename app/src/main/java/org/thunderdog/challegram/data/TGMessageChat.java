@@ -1191,7 +1191,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
       if (isActive) {
         if (data.isActive) {
           span.setOnClickListener((view, span12) -> {
-            if (type == TYPE_SCORE || type == TYPE_PINNED_MESSAGE || type == TYPE_PAYMENT_SUCCESSFUL) {
+            if (type == TYPE_SCORE || type == TYPE_PINNED_MESSAGE || type == TYPE_PAYMENT_SUCCESSFUL || type == TYPE_JOIN_BY_LINK) {
               long otherMessageId;
               switch (type) {
                 case TYPE_PINNED_MESSAGE:
@@ -1203,6 +1203,9 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
                 case TYPE_PAYMENT_SUCCESSFUL:
                   otherMessageId = msg.replyToMessageId;
                   break;
+                case TYPE_JOIN_BY_LINK:
+                  tdlib.ui().showInviteLinkOptions(controller(), inviteLinkValue, getChatId(), null, null);
+                  return true;
                 default:
                   otherMessageId = 0;
                   break;
