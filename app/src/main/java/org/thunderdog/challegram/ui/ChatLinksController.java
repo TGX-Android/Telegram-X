@@ -30,6 +30,7 @@ import org.thunderdog.challegram.widget.BaseView;
 import org.thunderdog.challegram.widget.CheckBox;
 import org.thunderdog.challegram.widget.EmbeddableStickerView;
 import org.thunderdog.challegram.widget.ForceTouchView;
+import org.thunderdog.challegram.widget.ListInfoView;
 import org.thunderdog.challegram.widget.SmallChatView;
 
 import java.util.ArrayList;
@@ -60,7 +61,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   private List<TdApi.ChatInviteLink> pendingRefreshLinks = new ArrayList<>();
   private Handler cellUpdateHandler = new Handler(Looper.getMainLooper()) {
     @Override
-    public void handleMessage(@NonNull Message msg) {
+    public void handleMessage (@NonNull Message msg) {
       requestUpdateLinkCell((TdApi.ChatInviteLink) msg.obj, false);
     }
   };
@@ -82,7 +83,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   }
 
   @Override
-  public void onActivityResume() {
+  public void onActivityResume () {
     super.onActivityResume();
     for (TdApi.ChatInviteLink linkToUpdate : new ArrayList<>(pendingRefreshLinks)) {
       requestUpdateLinkCell(linkToUpdate, false);
@@ -90,13 +91,13 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   }
 
   @Override
-  public void onActivityPause() {
+  public void onActivityPause () {
     super.onActivityPause();
     cellUpdateHandler.removeMessages(0);
   }
 
   @Override
-  public void destroy() {
+  public void destroy () {
     super.destroy();
     cellUpdateHandler.removeMessages(0);
   }
@@ -211,6 +212,11 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       protected void setEmbedSticker (ListItem item, int position, EmbeddableStickerView userView, boolean isUpdate) {
         userView.setSticker(new TGStickerObj(tdlib, (TdApi.Sticker) item.getData(), UTYAN_EMOJI, false));
         userView.setCaptionText(Lang.getString(isChannel ? R.string.ChannelLinkInfo : R.string.LinkInfo));
+      }
+
+      @Override
+      protected void setInfo (ListItem item, int position, ListInfoView infoView) {
+        infoView.showInfo(Lang.pluralBold(R.string.xInviteLinks, item.getIntValue()));
       }
     };
 
@@ -578,6 +584,8 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       // No additional links left, we can also remove header
       adapter.removeRange(adapter.indexOfViewById(R.id.btn_inviteLink) + 3, 3);
     }
+
+    updateTotalCount();
   }
 
   // Remove from "Revoked Links". If there is no revoked links left, remove header.
@@ -618,6 +626,24 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     if (oldLinkItem != null) {
       oldLinkItem.setIntValue(newCount);
       adapter.notifyItemChanged(oldLinkIndex);
+    }
+
+    updateTotalCount();
+  }
+
+  private void updateTotalCount() {
+    int infoIndex = adapter.indexOfViewByType(ListItem.TYPE_LIST_INFO_VIEW);
+    ListItem infoItem = adapter.getItem(infoIndex);
+    if (infoItem != null) {
+      int totalCount = 0;
+
+      for (ListItem item : adapter.getItems()) {
+        if (item.getId() == R.id.btn_openAdminInviteLinks) totalCount += item.getIntValue();
+      }
+
+      totalCount += inviteLinks.size();
+      infoItem.setIntValue(totalCount);
+      adapter.updateValuedSettingByPosition(infoIndex);
     }
   }
 
@@ -709,7 +735,9 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     }
 
+    items.add(new ListItem(ListItem.TYPE_LIST_INFO_VIEW));
     adapter.setItems(items, false);
+    updateTotalCount();
   }
 
   @Override

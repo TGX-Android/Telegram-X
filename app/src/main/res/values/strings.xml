@@ -3767,6 +3767,9 @@
   <string name="Infinity">∞</string>
   <string name="InviteLinkManage">Manage Invite Links</string>
 
+  <string name="xInviteLinks_one">%1$s invite link</string>
+  <string name="xInviteLinks_other">%1$s invite links</string>
+
   <string name="ChatTtl">Auto-delete messages</string>
   <string name="ChatTtlDisabled">Choose a certain period of time when messages will be automatically deleted for members of the group.</string>
   <string name="ChatTtlEnabled">Automatically delete new messages after %1$s for members of the group.</string>
