@@ -254,7 +254,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       case R.id.btn_inviteLink:
         TdApi.ChatInviteLink link = (TdApi.ChatInviteLink) v.getTag();
 
-        tdlib.ui().showInviteLinkOptions(this, link, chatId, false, () -> {
+        tdlib.ui().showInviteLinkOptions(this, link, chatId, false, false, () -> {
           inviteLinksRevoked.remove(link);
           smOnRevokedLinkDeleted(link);
           notifyParentIfPossible();

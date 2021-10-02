@@ -3987,18 +3987,18 @@ public class TdlibUi extends Handler {
   public void showInviteLinkOptionsPreload (ViewController<?> context, final TdApi.ChatInviteLink link, final long chatId, final boolean showNavigatingToLinks, @Nullable Runnable onLinkDeleted, @Nullable RunnableData<TdApi.ChatInviteLinks> onLinkRevoked) {
     context.tdlib().send(new TdApi.GetChatInviteLink(chatId, link.inviteLink), result -> {
       if (result.getConstructor() == TdApi.ChatInviteLink.CONSTRUCTOR) {
-        context.runOnUiThreadOptional(() -> showInviteLinkOptions(context, (TdApi.ChatInviteLink) result, chatId, showNavigatingToLinks, onLinkDeleted, onLinkRevoked));
+        context.runOnUiThreadOptional(() -> showInviteLinkOptions(context, (TdApi.ChatInviteLink) result, chatId, showNavigatingToLinks, false, onLinkDeleted, onLinkRevoked));
       }
     });
   }
 
-  public void showInviteLinkOptions (ViewController<?> context, final TdApi.ChatInviteLink link, final long chatId, final boolean showNavigatingToLinks, @Nullable Runnable onLinkDeleted, @Nullable RunnableData<TdApi.ChatInviteLinks> onLinkRevoked) {
+  public void showInviteLinkOptions (ViewController<?> context, final TdApi.ChatInviteLink link, final long chatId, final boolean showNavigatingToLinks, final boolean deleted, @Nullable Runnable onLinkDeleted, @Nullable RunnableData<TdApi.ChatInviteLinks> onLinkRevoked) {
     StringList strings = new StringList(6);
     IntList icons = new IntList(6);
     IntList ids = new IntList(6);
     IntList colors = new IntList(6);
 
-    if (link.memberCount > 0) {
+    if (!deleted && link.memberCount > 0) {
       ids.append(R.id.btn_viewInviteLinkMembers);
       strings.append(R.string.InviteLinkViewMembers);
       icons.append(R.drawable.baseline_visibility_24);
@@ -4012,7 +4012,7 @@ public class TdlibUi extends Handler {
       colors.append(ViewController.OPTION_COLOR_NORMAL);
     }
 
-    if (!link.isRevoked) {
+    if (!deleted && !link.isRevoked) {
       if (!link.isPrimary && context instanceof ChatLinksController) {
         ids.append(R.id.btn_edit);
         strings.append(R.string.InviteLinkEdit);
@@ -4040,10 +4040,12 @@ public class TdlibUi extends Handler {
       icons.append(R.drawable.baseline_content_copy_24);
       colors.append(ViewController.OPTION_COLOR_NORMAL);
 
-      icons.append(R.drawable.baseline_delete_24);
-      ids.append(R.id.btn_deleteLink);
-      strings.append(R.string.InviteLinkDelete);
-      colors.append(ViewController.OPTION_COLOR_RED);
+      if (!deleted) {
+        icons.append(R.drawable.baseline_delete_24);
+        ids.append(R.id.btn_deleteLink);
+        strings.append(R.string.InviteLinkDelete);
+        colors.append(ViewController.OPTION_COLOR_RED);
+      }
     }
 
     CharSequence info = TD.makeClickable(Lang.getString(R.string.CreatedByXOnDate, ((target, argStart, argEnd, spanIndex, needFakeBold) -> spanIndex == 0 ? Lang.newUserSpan(new TdlibContext(context.context(), context.tdlib()), link.creatorUserId) : null), context.tdlib().cache().userName(link.creatorUserId), Lang.getRelativeTimestamp(link.date, TimeUnit.SECONDS)));
