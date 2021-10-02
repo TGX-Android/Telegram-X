@@ -118,7 +118,7 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
                   case R.id.btn_openChat:
                     tdlib.ui().openChat(ChatLinkMembersController.this, user.getChatId(), new TdlibUi.ChatOpenParameters().keepStack());
                     break;
-                  case R.id.btn_editRights:
+                  case R.id.btn_restrictMember:
                     openRightsScreen(user.getId());
                     break;
                 }
