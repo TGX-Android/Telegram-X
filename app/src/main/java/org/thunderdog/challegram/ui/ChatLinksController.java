@@ -10,16 +10,19 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.util.Consumer;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
+import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.emoji.Emoji;
+import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -227,6 +230,45 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     requestLinkRebind();
     recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
     recyclerView.setAdapter(this.adapter);
+
+    RemoveHelper.attach(recyclerView, new RemoveHelper.Callback() {
+      @Override
+      public boolean canRemove (RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int position) {
+        ListItem item = (ListItem) adapter.getItems().get(position);
+        return item != null && item.getId() == R.id.btn_inviteLink;
+      }
+
+      @Override
+      public void onRemove (RecyclerView.ViewHolder viewHolder) {
+        ListItem item = (ListItem) adapter.getItems().get(viewHolder.getBindingAdapterPosition());
+        TdApi.ChatInviteLink link = (TdApi.ChatInviteLink) item.getData();
+
+        if (link.isRevoked) {
+          showOptions(Lang.getString(R.string.AreYouSureDeleteInviteLink), new int[]{R.id.btn_deleteLink, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkDelete), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
+            if (id2 == R.id.btn_deleteLink) {
+              inviteLinksRevoked.remove(link);
+              smOnRevokedLinkDeleted(link);
+              notifyParentIfPossible();
+              tdlib.client().send(new TdApi.DeleteRevokedChatInviteLink(chatId, link.inviteLink), null);
+            }
+
+            return true;
+          });
+        } else {
+          showOptions(Lang.getString(tdlib.isChannel(chatId) ? R.string.AreYouSureRevokeInviteLinkChannel : R.string.AreYouSureRevokeInviteLinkGroup), new int[]{R.id.btn_revokeLink, R.id.btn_cancel}, new String[]{Lang.getString(R.string.RevokeLink), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_link_off_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
+            if (id2 == R.id.btn_revokeLink) {
+              tdlib.client().send(new TdApi.RevokeChatInviteLink(chatId, link.inviteLink), result -> {
+                if (result.getConstructor() == TdApi.ChatInviteLinks.CONSTRUCTOR) {
+                  runOnUiThreadOptional(() -> onLinkRevoked(link, (TdApi.ChatInviteLinks) result));
+                }
+              });
+            }
+
+            return true;
+          });
+        }
+      }
+    });
   }
 
   private void openRightsScreen () {
@@ -332,7 +374,13 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     }
 
     if (!inviteLink.isRevoked && inviteLink.memberLimit > 0) {
-      subtitle.append(Lang.plural(R.string.InviteLinkRemains, inviteLink.memberLimit - inviteLink.memberCount)).append(inviteLink.expireDate != 0 ? " • " : "");
+      if (inviteLink.memberCount == inviteLink.memberLimit) {
+        subtitle.append(Lang.getString(R.string.InviteLinkMemberLimitReached));
+      } else {
+        subtitle.append(Lang.plural(R.string.InviteLinkRemains, inviteLink.memberLimit - inviteLink.memberCount));
+      }
+
+      subtitle.append(inviteLink.expireDate != 0 ? " • " : "");
     }
 
     if (inviteLink.isRevoked || inviteLink.expireDate == 0) {
@@ -344,7 +392,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         true, 0, R.string.InviteLinkExpires, false
       ));
     } else {
-      subtitle.append(Lang.getString(R.string.InviteLinkExpired));
+      subtitle.append(Lang.getString(R.string.InviteLinkExpiredAt, Lang.getTimestamp(inviteLink.expireDate, TimeUnit.SECONDS)));
     }
 
     if (subtitle.charAt(subtitle.length() - 2) == '•') {

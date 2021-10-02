@@ -3718,6 +3718,8 @@
   <string name="InviteLinkRemains_other">%1$s remaining</string>
   <string name="InviteLinkExpired">expired</string>
   <string name="InviteLinkRevoked">revoked</string>
+  <string name="InviteLinkMemberLimitReached">member limit reached</string>
+  <string name="InviteLinkExpiredAt">expired at %1$s</string>
 
   <string name="InviteLinkExpires_now">expires in a moment</string>
   <string name="InviteLinkExpires_seconds_one">expires in %1$s second</string>
