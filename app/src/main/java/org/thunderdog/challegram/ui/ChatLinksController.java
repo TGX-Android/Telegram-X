@@ -258,6 +258,13 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         IntList ids = new IntList(5);
         IntList colors = new IntList(5);
 
+        if (link.memberCount > 0) {
+          ids.append(R.id.btn_viewInviteLinkMembers);
+          strings.append(R.string.InviteLinkViewMembers);
+          icons.append(R.drawable.baseline_visibility_24);
+          colors.append(OPTION_COLOR_NORMAL);
+        }
+
         if (!link.isRevoked) {
           if (!link.isPrimary) {
             ids.append(R.id.btn_edit);
@@ -274,13 +281,6 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
           ids.append(R.id.btn_shareLink);
           strings.append(R.string.ShareLink);
           icons.append(R.drawable.baseline_forward_24);
-          colors.append(OPTION_COLOR_NORMAL);
-        }
-
-        if (link.memberCount > 0) {
-          ids.append(R.id.btn_viewInviteLinkMembers);
-          strings.append(R.string.InviteLinkViewMembers);
-          icons.append(R.drawable.baseline_visibility_24);
           colors.append(OPTION_COLOR_NORMAL);
         }
 
