@@ -3986,9 +3986,13 @@ public class TdlibUi extends Handler {
 
   public void showInviteLinkOptionsPreload (ViewController<?> context, final TdApi.ChatInviteLink link, final long chatId, final boolean showNavigatingToLinks, @Nullable Runnable onLinkDeleted, @Nullable RunnableData<TdApi.ChatInviteLinks> onLinkRevoked) {
     context.tdlib().send(new TdApi.GetChatInviteLink(chatId, link.inviteLink), result -> {
-      if (result.getConstructor() == TdApi.ChatInviteLink.CONSTRUCTOR) {
-        context.runOnUiThreadOptional(() -> showInviteLinkOptions(context, (TdApi.ChatInviteLink) result, chatId, showNavigatingToLinks, false, onLinkDeleted, onLinkRevoked));
-      }
+      context.runOnUiThreadOptional(() -> {
+        if (result.getConstructor() == TdApi.ChatInviteLink.CONSTRUCTOR) {
+          showInviteLinkOptions(context, (TdApi.ChatInviteLink) result, chatId, showNavigatingToLinks, false, onLinkDeleted, onLinkRevoked);
+        } else {
+          showInviteLinkOptions(context, link, chatId, showNavigatingToLinks, true, onLinkDeleted, onLinkRevoked);
+        }
+      });
     });
   }
 
