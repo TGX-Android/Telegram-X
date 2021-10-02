@@ -432,7 +432,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
     if (inviteLink.memberCount > 0) {
       subtitle.append(Lang.plural(R.string.InviteLinkJoins, inviteLink.memberCount));
-    } else if (inviteLink.isPrimary || inviteLink.memberLimit == 0) {
+    } else if (inviteLink.isPrimary || inviteLink.memberLimit == 0 || (inviteLink.memberCount == 0 && inviteLink.isRevoked)) {
       subtitle.append(Lang.getString(R.string.InviteLinkNoJoins));
     }
 
@@ -541,7 +541,9 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     if (shouldAddHeader) {
       int lastActiveLinkIdx;
 
-      if (inviteLinks.size() > 1) {
+      if (inviteLinkCounts != null && inviteLinkCounts.length > 0) {
+        lastActiveLinkIdx = adapter.indexOfViewByData(inviteLinkCounts[inviteLinkCounts.length - 1]) + 1;
+      } else if (inviteLinks.size() > 1) {
         lastActiveLinkIdx = adapter.indexOfViewByData(inviteLinks.get(inviteLinks.size() - 1)) + 1;
       } else {
         // find the "Create Link" instead
@@ -678,6 +680,20 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       if (!viewingOtherAdmin) items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AdditionalInviteLinksHint));
     }
 
+    if (inviteLinkCounts != null && inviteLinkCounts.length > 1) {
+      items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.OtherAdminsInviteLinks));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+
+      for (int i = 0; i < inviteLinkCounts.length; i++) {
+        TdApi.ChatInviteLinkCount linkCount = inviteLinkCounts[i];
+        if (linkCount.userId == tdlib.myUserId()) continue;
+        items.add(new ListItem(ListItem.TYPE_USER, R.id.btn_openAdminInviteLinks).setLongId(linkCount.userId).setIntValue(linkCount.inviteLinkCount).setData(linkCount));
+        if (i != inviteLinkCounts.length - 1) items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      }
+
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    }
+
     if (!inviteLinksRevoked.isEmpty()) {
       items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.RevokedInviteLinks));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -688,20 +704,6 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, 0, simplifyInviteLink(inviteLink), false).setData(inviteLink));
         if (inviteLinksRevoked.indexOf(inviteLink) != lastRvIndex)
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      }
-
-      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-    }
-
-    if (inviteLinkCounts != null && inviteLinkCounts.length > 1) {
-      items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.OtherAdminsInviteLinks));
-      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-
-      for (int i = 0; i < inviteLinkCounts.length; i++) {
-        TdApi.ChatInviteLinkCount linkCount = inviteLinkCounts[i];
-        if (linkCount.userId == tdlib.myUserId()) continue;
-        items.add(new ListItem(ListItem.TYPE_USER, R.id.btn_openAdminInviteLinks).setLongId(linkCount.userId).setIntValue(linkCount.inviteLinkCount));
-        if (i != inviteLinkCounts.length - 1) items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       }
 
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
