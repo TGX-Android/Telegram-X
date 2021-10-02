@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.view.View;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -18,6 +19,7 @@ import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGUser;
+import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -215,6 +217,11 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       protected void setInfo (ListItem item, int position, ListInfoView infoView) {
         infoView.showInfo(Lang.pluralBold(R.string.xInviteLinks, item.getIntValue()));
       }
+
+      @Override
+      protected void modifyDescription (ListItem item, TextView textView) {
+        textView.setText(Emoji.instance().replaceEmoji(textView.getText()));
+      }
     };
 
     requestLinkRebind();
@@ -247,7 +254,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       case R.id.btn_inviteLink:
         TdApi.ChatInviteLink link = (TdApi.ChatInviteLink) v.getTag();
 
-        tdlib.ui().showInviteLinkOptions(this, link, chatId, () -> {
+        tdlib.ui().showInviteLinkOptions(this, link, chatId, false, () -> {
           inviteLinksRevoked.remove(link);
           smOnRevokedLinkDeleted(link);
           notifyParentIfPossible();
