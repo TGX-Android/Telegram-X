@@ -428,10 +428,10 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     if (shouldAddHeader) {
       int lastActiveLinkIdx;
 
-      if (inviteLinkCounts != null && inviteLinkCounts.length > 0) {
+      if (inviteLinkCounts != null && inviteLinkCounts.length > 1) {
         lastActiveLinkIdx = adapter.indexOfViewByData(inviteLinkCounts[inviteLinkCounts.length - 1]) + 1;
       } else if (inviteLinks.size() > 1) {
-        lastActiveLinkIdx = adapter.indexOfViewByData(inviteLinks.get(inviteLinks.size() - 1)) + 1;
+        lastActiveLinkIdx = adapter.indexOfViewByData(inviteLinks.get(inviteLinks.size() - 1)) + 2;
       } else {
         // find the "Create Link" instead
         if (adapter.indexOfViewById(R.id.btn_createInviteLink) == -1) {

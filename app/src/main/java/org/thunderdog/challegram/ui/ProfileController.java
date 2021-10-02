@@ -250,6 +250,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   TdApi.SupergroupFullInfo supergroupFull;
 
   private SortedUsersAdapter membersAdapter;
+  private int inviteLinksCount = -1;
 
   @Override
   public void setArguments (Args args) {
@@ -1746,6 +1747,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             } else {
               view.setName(isUserMode() && !TD.isBot(user) ? R.string.UserBio : R.string.Description);
             }
+            break;
+          }
+          case R.id.btn_manageInviteLinks: {
+            view.setData(inviteLinksCount == -1 ? Lang.getString(R.string.LoadingInformation) : Lang.plural(R.string.xInviteLinks, inviteLinksCount));
             break;
           }
           case R.id.btn_inviteLink: {
@@ -3546,7 +3551,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
     if (tdlib.canInviteUsers(chat)) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
-      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_manageInviteLinks, 0, R.string.InviteLinkManage));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_manageInviteLinks, 0, R.string.InviteLinkManage));
       added = true;
     }
     boolean hasActions = false;
@@ -3614,6 +3619,36 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
     addMediaItems(items);
     baseAdapter.setItems(items, false);
+
+    if (tdlib.canInviteUsers(chat)) {
+      if (tdlib.chatStatus(chat.id).getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
+        tdlib.client().send(new TdApi.GetChatInviteLinkCounts(chat.id), object -> {
+          if (object.getConstructor() == TdApi.ChatInviteLinkCounts.CONSTRUCTOR) {
+            for (TdApi.ChatInviteLinkCount count : ((TdApi.ChatInviteLinkCounts) object).inviteLinkCounts) {
+              inviteLinksCount += count.inviteLinkCount;
+            }
+          }
+
+          tdlib.client().send(new TdApi.GetChatInviteLinks(chat.id, tdlib.myUserId(), false, 0, null, 1), object2 -> {
+            if (object.getConstructor() == TdApi.ChatInviteLinks.CONSTRUCTOR) {
+              inviteLinksCount += ((TdApi.ChatInviteLinks) object).totalCount;
+            }
+
+            inviteLinksCount++;
+            baseAdapter.updateValuedSettingById(R.id.btn_manageInviteLinks);
+          });
+        });
+      } else {
+        tdlib.client().send(new TdApi.GetChatInviteLinks(chat.id, tdlib.myUserId(), false, 0, null, 1), object -> {
+          if (object.getConstructor() == TdApi.ChatInviteLinks.CONSTRUCTOR) {
+            inviteLinksCount += ((TdApi.ChatInviteLinks) object).totalCount;
+          }
+
+          inviteLinksCount++;
+          baseAdapter.updateValuedSettingById(R.id.btn_manageInviteLinks);
+        });
+      }
+    }
   }
 
   private static CharSequence getSlowModeDescription (int seconds) {
