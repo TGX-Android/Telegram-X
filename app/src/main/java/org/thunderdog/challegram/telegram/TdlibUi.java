@@ -3984,16 +3984,27 @@ public class TdlibUi extends Handler {
     });
   }
 
-  public void showInviteLinkOptions (ViewController<?> context, final TdApi.ChatInviteLink link, final long chatId, @Nullable Runnable onLinkDeleted, @Nullable RunnableData<TdApi.ChatInviteLinks> onLinkRevoked) {
-    StringList strings = new StringList(5);
-    IntList icons = new IntList(5);
-    IntList ids = new IntList(5);
-    IntList colors = new IntList(5);
+  public void showInviteLinkOptions (ViewController<?> context, final TdApi.ChatInviteLink link, final long chatId) {
+    showInviteLinkOptions(context, link, chatId, false, null, null);
+  }
+
+  public void showInviteLinkOptions (ViewController<?> context, final TdApi.ChatInviteLink link, final long chatId, final boolean showNavigatingToLinks, @Nullable Runnable onLinkDeleted, @Nullable RunnableData<TdApi.ChatInviteLinks> onLinkRevoked) {
+    StringList strings = new StringList(6);
+    IntList icons = new IntList(6);
+    IntList ids = new IntList(6);
+    IntList colors = new IntList(6);
 
     if (link.memberCount > 0) {
       ids.append(R.id.btn_viewInviteLinkMembers);
       strings.append(R.string.InviteLinkViewMembers);
       icons.append(R.drawable.baseline_visibility_24);
+      colors.append(ViewController.OPTION_COLOR_NORMAL);
+    }
+
+    if (showNavigatingToLinks) {
+      ids.append(R.id.btn_manageInviteLinks);
+      strings.append(R.string.InviteLinkManage);
+      icons.append(R.drawable.baseline_add_link_24);
       colors.append(ViewController.OPTION_COLOR_NORMAL);
     }
 
@@ -4044,6 +4055,11 @@ public class TdlibUi extends Handler {
           EditChatLinkController c = new EditChatLinkController(context.context(), context.tdlib());
           c.setArguments(new EditChatLinkController.Args(link, chatId, (ChatLinksController) context));
           context.navigateTo(c);
+          break;
+        case R.id.btn_manageInviteLinks:
+          ChatLinksController cc = new ChatLinksController(context.context(), context.tdlib());
+          cc.setArguments(new ChatLinksController.Args(chatId, context.tdlib().myUserId(), null, null, tdlib.chatStatus(chatId).getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR));
+          context.navigateTo(cc);
           break;
         case R.id.btn_copyLink:
           UI.copyText(link.inviteLink, R.string.CopiedLink);
