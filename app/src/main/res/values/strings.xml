@@ -3716,8 +3716,6 @@
   <string name="InviteLinkJoins_other">%1$s joined</string>
   <string name="InviteLinkRemains_one">%1$s remaining</string>
   <string name="InviteLinkRemains_other">%1$s remaining</string>
-  <string name="InviteLinkCanJoin_one">%1$s can join</string>
-  <string name="InviteLinkCanJoin_other">%1$s can join</string>
   <string name="InviteLinkExpired">expired</string>
   <string name="InviteLinkRevoked">revoked</string>
 
