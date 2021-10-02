@@ -700,7 +700,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       for (int i = 0; i < inviteLinkCounts.length; i++) {
         TdApi.ChatInviteLinkCount linkCount = inviteLinkCounts[i];
         if (linkCount.userId == tdlib.myUserId()) continue;
-        items.add(new ListItem(ListItem.TYPE_USER, R.id.btn_openAdminInviteLinks).setLongId(linkCount.userId).setIntValue(linkCount.inviteLinkCount + linkCount.revokedInviteLinkCount));
+        items.add(new ListItem(ListItem.TYPE_USER, R.id.btn_openAdminInviteLinks).setLongId(linkCount.userId).setIntValue(linkCount.inviteLinkCount));
         if (i != inviteLinkCounts.length - 1) items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       }
 
