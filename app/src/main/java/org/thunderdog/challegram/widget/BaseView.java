@@ -57,6 +57,7 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
   protected final Tdlib tdlib;
   protected final ClickHelper forceTouchHelper;
   private boolean usesDefaultClickListener;
+  private boolean ignoreForceTouchChatPreferences;
   private SlideOffListener slideOffListener;
 
   public BaseView (Context context, Tdlib tdlib) {
@@ -125,6 +126,10 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
   protected final void setUseDefaultClickListener (boolean use) {
     this.usesDefaultClickListener = use;
     super.setOnClickListener(use ? this : null);
+  }
+
+  public final void setIgnoreForceTouchChatPreferences (boolean ignoreForceTouchChatPreferences) {
+    this.ignoreForceTouchChatPreferences = ignoreForceTouchChatPreferences;
   }
 
   protected final boolean usesDefaultClickListener () {
@@ -429,7 +434,7 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
     if (!Config.FORCE_TOUCH_ENABLED) {
       return FORCE_TOUCH_NONE;
     }
-    if (tdlib != null && chatId != 0 && Settings.instance().needPreviewChatOnHold()) {
+    if (tdlib != null && chatId != 0 && (Settings.instance().needPreviewChatOnHold() || ignoreForceTouchChatPreferences)) {
       if (ChatId.isSecret(chatId))
         return FORCE_TOUCH_NONE;
       TdApi.Chat chat = tdlib.chatSync(chatId, 100l);

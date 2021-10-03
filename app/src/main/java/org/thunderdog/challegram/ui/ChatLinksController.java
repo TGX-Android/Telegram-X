@@ -203,6 +203,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
         if (item.getId() == R.id.btn_openChat) {
           chatView.setPreviewChatId(new TdApi.ChatListMain(), adminUserId, null);
+          chatView.setIgnoreForceTouchChatPreferences(true);
           chatView.setPreviewActionListProvider((v, forceTouchContext, ids, icons, strings, target) -> {
             ids.append(R.id.btn_openChat);
             icons.append(R.drawable.baseline_forum_24);
@@ -235,6 +236,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
           });
         } else {
           chatView.clearPreviewChat();
+          chatView.setIgnoreForceTouchChatPreferences(false);
           chatView.setPreviewActionListProvider(null);
         }
       }
