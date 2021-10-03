@@ -40,7 +40,7 @@ public class VideoGenerationInfo extends GenerationInfo implements AbstractVideo
     boolean needMute = StringUtils.parseInt(args[0]) == 1;
     int rotate = 0;
     long startTime = -1, endTime = -1;
-    int mostMajor = -1, mostMinor = -1;
+    int mostMajor = Settings.DEFAULT_VIDEO_LIMIT, mostMinor = Settings.DEFAULT_VIDEO_LIMIT;
     int sourceId = 0;
     boolean noTranscoding = false;
     long bitrate = DefaultVideoStrategy.BITRATE_UNKNOWN;
