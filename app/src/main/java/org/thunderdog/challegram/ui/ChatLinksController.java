@@ -23,6 +23,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -40,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.collection.IntList;
 
-public class ChatLinksController extends RecyclerViewController<ChatLinksController.Args> implements View.OnClickListener {
+public class ChatLinksController extends RecyclerViewController<ChatLinksController.Args> implements View.OnClickListener, TGLegacyManager.EmojiLoadListener {
   private SettingsAdapter adapter;
   private static final String UTYAN_EMOJI = "\uD83E\uDD73";
 
@@ -99,6 +100,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   public void destroy () {
     super.destroy();
     cellUpdateHandler.removeMessages(0);
+    TGLegacyManager.instance().removeEmojiListener(this);
   }
 
   public void onLinkCreated (TdApi.ChatInviteLink newLink, @Nullable TdApi.ChatInviteLink existingLink) {
@@ -118,6 +120,11 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         notifyParentIfPossible();
       }
     }, 250L);
+  }
+
+  @Override
+  public void onEmojiPartLoaded () {
+    adapter.updateValuedSettingByLongId(chatId);
   }
 
   public static class Args {
@@ -223,13 +230,15 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
       @Override
       protected void modifyDescription (ListItem item, TextView textView) {
-        textView.setText(Emoji.instance().replaceEmoji(textView.getText()));
+        textView.setText(Emoji.instance().replaceEmoji(item.getString()));
       }
     };
 
     requestLinkRebind();
     recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
     recyclerView.setAdapter(this.adapter);
+
+    TGLegacyManager.instance().addEmojiListener(this);
 
     RemoveHelper.attach(recyclerView, new RemoveHelper.Callback() {
       @Override
@@ -611,7 +620,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         if (viewingOtherAdmin) {
           TdApi.User adminUser = tdlib.cache().user(adminUserId);
           CharSequence hintText = Lang.getMarkdownString(new TdlibContext(context, tdlib), R.string.InviteLinkOtherAdminHint, TD.getUserName(adminUser), tdlib.chatTitle(chatId));
-          items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, hintText, false));
+          items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, hintText, false).setLongId(chatId));
           showAdditionalLinks = inviteLinks.size() > 1;
         }
 
