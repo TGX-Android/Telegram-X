@@ -97,7 +97,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
 
     expireDateSliderData = strings.get();
     expireDateSliderDataInternal = data;
-    actualTdlibSeconds = (int) TimeUnit.MILLISECONDS.toSeconds(tdlib.currentTimeMillis());
+    actualTdlibSeconds = (int) tdlib.currentTime(TimeUnit.SECONDS);
   }
 
   @Override
@@ -140,7 +140,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
       updateMemberCountSlider();
       updateExpireDateSlider();
     } else {
-      actualTdlibSeconds = (int) TimeUnit.MILLISECONDS.toSeconds(tdlib.currentTimeMillis());
+      actualTdlibSeconds = (int) tdlib.currentTime(TimeUnit.SECONDS);
     }
   }
 
