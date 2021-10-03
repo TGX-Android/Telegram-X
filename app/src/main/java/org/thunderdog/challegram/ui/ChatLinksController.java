@@ -135,9 +135,9 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     private final long adminUserId;
     private final boolean isOwner;
     private final @Nullable InviteLinkController.Callback callback;
-    private final @Nullable ChatLinksController parent;
+    private final @Nullable ViewController<?> parent;
 
-    public Args (long chatId, long adminUserId, @Nullable InviteLinkController.Callback callback, @Nullable ChatLinksController parent, boolean isOwner) {
+    public Args (long chatId, long adminUserId, @Nullable InviteLinkController.Callback callback, @Nullable ViewController<?> parent, boolean isOwner) {
       this.chatId = chatId;
       this.adminUserId = adminUserId;
       this.callback = callback;
@@ -351,8 +351,8 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
   private void notifyParentIfPossible () {
     smOnUserLinkCountChanged(adminUserId, inviteLinks.size());
-    if (getArgumentsStrict().parent != null) {
-      getArgumentsStrict().parent.smOnUserLinkCountChanged(adminUserId, inviteLinks.size());
+    if (getArgumentsStrict().parent != null && getArgumentsStrict().parent instanceof ChatLinksController) {
+      ((ChatLinksController) getArgumentsStrict().parent).smOnUserLinkCountChanged(adminUserId, inviteLinks.size());
     }
   }
 
@@ -602,6 +602,10 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
       infoItem.setIntValue(totalCount).setLongValue(totalCountRevoked);
       adapter.updateValuedSettingByPosition(infoIndex);
+
+      if (getArgumentsStrict().parent != null && getArgumentsStrict().parent instanceof ProfileController) {
+        ((ProfileController) getArgumentsStrict().parent).onInviteLinkCountChanged(totalCount, totalCountRevoked);
+      }
     }
   }
 

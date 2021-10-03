@@ -3668,6 +3668,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
   }
 
+  public void onInviteLinkCountChanged (int totalActive, int totalRevoked) {
+    inviteLinksCount = totalActive;
+    inviteLinksRevokedCount = totalRevoked;
+    baseAdapter.updateValuedSettingById(R.id.btn_manageInviteLinks);
+  }
+
   private static CharSequence getSlowModeDescription (int seconds) {
     if (seconds == 0) {
       return Lang.getString(R.string.SlowModeDisabled);
@@ -4588,7 +4594,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       return;
 
     ChatLinksController c = new ChatLinksController(context, tdlib);
-    c.setArguments(new ChatLinksController.Args(chat.id, tdlib.myUserId(), this, null, status.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR));
+    c.setArguments(new ChatLinksController.Args(chat.id, tdlib.myUserId(), this, this, status.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR));
     navigateTo(c);
   }
 
