@@ -135,7 +135,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
     isCreation = args.existingInviteLink == null;
     if (args.existingInviteLink != null) {
       existingInviteLink = args.existingInviteLink;
-      expireDate = Math.max(0, (int) (args.existingInviteLink.expireDate - TimeUnit.MILLISECONDS.toSeconds(tdlib.currentTimeMillis())));
+      expireDate = Math.max(0, (int) (args.existingInviteLink.expireDate - tdlib.currentTime(TimeUnit.SECONDS)));
       memberLimit = args.existingInviteLink.memberLimit;
       updateMemberCountSlider();
       updateExpireDateSlider();
