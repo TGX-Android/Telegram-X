@@ -283,10 +283,12 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   private void openRightsScreen () {
     tdlib.client().send(new TdApi.GetChatMember(chatId, new TdApi.MessageSenderUser(adminUserId)), result -> {
       if (result.getConstructor() != TdApi.ChatMember.CONSTRUCTOR) return;
-      TdApi.ChatMember member = (TdApi.ChatMember) result;
-      EditRightsController c = new EditRightsController(context, tdlib);
-      c.setArguments(new EditRightsController.Args(chatId, adminUserId, false, tdlib.chatStatus(chatId), member).noFocusLock());
-      navigateTo(c);
+      runOnUiThreadOptional(() -> {
+        TdApi.ChatMember member = (TdApi.ChatMember) result;
+        EditRightsController c = new EditRightsController(context, tdlib);
+        c.setArguments(new EditRightsController.Args(chatId, adminUserId, false, tdlib.chatStatus(chatId), member).noFocusLock());
+        navigateTo(c);
+      });
     });
   }
 
