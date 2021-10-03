@@ -4645,8 +4645,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
-  public long toTdlibTimeMillis (long millis) {
-    return millis + (currentTimeMillis() - System.currentTimeMillis());
+  public long currentTime (TimeUnit unit) {
+    return unit.convert(currentTimeMillis(), TimeUnit.MILLISECONDS);
+  }
+
+  public long toTdlibTimeMillis (long systemTime, TimeUnit unit) {
+    return unit.toMillis(systemTime) + (currentTimeMillis() - System.currentTimeMillis());
   }
 
   public long toSystemTimeMillis (long tdlibTime, TimeUnit unit) {
