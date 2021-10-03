@@ -4636,7 +4636,18 @@ public class ProfileController extends ViewController<ProfileController.Args> im
                 if (result.getConstructor() == TdApi.ChatInviteLinks.CONSTRUCTOR) {
                   runOnUiThreadOptional(() -> {
                     final TdApi.ChatInviteLinks newInviteLink = (TdApi.ChatInviteLinks) result;
-                    onInviteLinkChanged(newInviteLink.inviteLinks[1]);
+                    TdApi.ChatInviteLink newPrimaryLink = null;
+
+                    for (TdApi.ChatInviteLink candidate : newInviteLink.inviteLinks) {
+                      if (candidate.isPrimary && !candidate.isRevoked) {
+                        newPrimaryLink = candidate;
+                        break;
+                      }
+                    }
+
+                    if (newPrimaryLink != null) {
+                      onInviteLinkChanged(newPrimaryLink);
+                    }
                   });
                 }
               });
