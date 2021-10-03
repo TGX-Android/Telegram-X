@@ -19,6 +19,7 @@ import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.emoji.Emoji;
@@ -30,9 +31,11 @@ import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
+import org.thunderdog.challegram.widget.CheckBox;
 import org.thunderdog.challegram.widget.EmbeddableStickerView;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.ListInfoView;
+import org.thunderdog.challegram.widget.SmallChatView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -175,13 +178,32 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       }
 
       @Override
-      protected void setUser (ListItem item, int position, UserView userView, boolean isUpdate) {
-        TGUser tgUser = new TGUser(tdlib, tdlib.cache().user(item.getLongId()));
-        tgUser.setCustomStatus(Lang.plural(R.string.xLinks, item.getIntValue()));
+      protected void setEmbedSticker (ListItem item, int position, EmbeddableStickerView userView, boolean isUpdate) {
+        userView.setSticker(new TGStickerObj(tdlib, (TdApi.Sticker) item.getData(), UTYAN_EMOJI, false));
+        userView.setCaptionText(Lang.getString(isChannel ? R.string.ChannelLinkInfo : R.string.LinkInfo));
+      }
+
+      @Override
+      protected void setInfo (ListItem item, int position, ListInfoView infoView) {
+        infoView.showInfo(Lang.pluralBold(R.string.xInviteLinks, item.getIntValue()));
+      }
+
+      @Override
+      protected void modifyDescription (ListItem item, TextView textView) {
+        textView.setText(Emoji.instance().replaceEmoji(item.getString()));
+      }
+
+      @Override
+      protected void modifyChatView (ListItem item, SmallChatView chatView, @Nullable CheckBox checkBox, boolean isUpdate) {
+        DoubleTextWrapper wrapper = new DoubleTextWrapper(tdlib, item.getLongId(), true);
+        wrapper.setSubtitle(Lang.pluralBold(R.string.xLinks, item.getIntValue()));
+        wrapper.setIgnoreOnline(true);
+        chatView.setChat(wrapper);
+        chatView.setTag(item.getLongId());
 
         if (item.getId() == R.id.btn_openChat) {
-          userView.setPreviewChatId(new TdApi.ChatListMain(), adminUserId, null);
-          userView.setPreviewActionListProvider((v, forceTouchContext, ids, icons, strings, target) -> {
+          chatView.setPreviewChatId(new TdApi.ChatListMain(), adminUserId, null);
+          chatView.setPreviewActionListProvider((v, forceTouchContext, ids, icons, strings, target) -> {
             ids.append(R.id.btn_openChat);
             icons.append(R.drawable.baseline_forum_24);
             strings.append(R.string.OpenChat);
@@ -211,26 +233,10 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
               }
             };
           });
+        } else {
+          chatView.clearPreviewChat();
+          chatView.setPreviewActionListProvider(null);
         }
-
-        userView.setUserForced(tgUser);
-        userView.setTag(item.getLongId());
-      }
-
-      @Override
-      protected void setEmbedSticker (ListItem item, int position, EmbeddableStickerView userView, boolean isUpdate) {
-        userView.setSticker(new TGStickerObj(tdlib, (TdApi.Sticker) item.getData(), UTYAN_EMOJI, false));
-        userView.setCaptionText(Lang.getString(isChannel ? R.string.ChannelLinkInfo : R.string.LinkInfo));
-      }
-
-      @Override
-      protected void setInfo (ListItem item, int position, ListInfoView infoView) {
-        infoView.showInfo(Lang.pluralBold(R.string.xInviteLinks, item.getIntValue()));
-      }
-
-      @Override
-      protected void modifyDescription (ListItem item, TextView textView) {
-        textView.setText(Emoji.instance().replaceEmoji(item.getString()));
       }
     };
 
@@ -604,7 +610,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     boolean primaryHeaderCreated = false;
 
     if (viewingOtherAdmin) {
-      items.add(new ListItem(ListItem.TYPE_USER, R.id.btn_openChat).setLongId(adminUserId).setIntValue(inviteLinks.size()));
+      items.add(new ListItem(ListItem.TYPE_CHAT_SMALL, R.id.btn_openChat).setLongId(adminUserId).setIntValue(inviteLinks.size()));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     } else {
       items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
@@ -655,7 +661,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       for (int i = 0; i < inviteLinkCounts.length; i++) {
         TdApi.ChatInviteLinkCount linkCount = inviteLinkCounts[i];
         if (linkCount.userId == tdlib.myUserId()) continue;
-        items.add(new ListItem(ListItem.TYPE_USER, R.id.btn_openAdminInviteLinks).setLongId(linkCount.userId).setIntValue(linkCount.inviteLinkCount).setData(linkCount));
+        items.add(new ListItem(ListItem.TYPE_CHAT_SMALL, R.id.btn_openAdminInviteLinks).setLongId(linkCount.userId).setIntValue(linkCount.inviteLinkCount).setData(linkCount));
         if (i != inviteLinkCounts.length - 1) items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       }
 
