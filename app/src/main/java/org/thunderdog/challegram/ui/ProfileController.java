@@ -250,7 +250,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   TdApi.SupergroupFullInfo supergroupFull;
 
   private SortedUsersAdapter membersAdapter;
-  private int inviteLinksCount = -1;
+  private int inviteLinksCount = -1, inviteLinksRevokedCount = -1;
 
   @Override
   public void setArguments (Args args) {
@@ -1750,7 +1750,14 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             break;
           }
           case R.id.btn_manageInviteLinks: {
-            view.setData(inviteLinksCount == -1 ? Lang.getString(R.string.LoadingInformation) : Lang.plural(R.string.xInviteLinks, inviteLinksCount));
+            if (inviteLinksCount == -1) {
+              view.setData(Lang.getString(R.string.LoadingInformation));
+            } else if (inviteLinksRevokedCount > 0) {
+              view.setData(Lang.getString(R.string.format_activeAndRevokedLinks, Lang.pluralBold(R.string.xActiveLinks, inviteLinksCount), Lang.pluralBold(R.string.xRevokedLinks, inviteLinksRevokedCount)));
+            } else {
+              view.setData(Lang.pluralBold(R.string.xActiveLinks, inviteLinksCount));
+            }
+
             break;
           }
           case R.id.btn_inviteLink: {
@@ -3621,39 +3628,43 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     baseAdapter.setItems(items, false);
 
     if (tdlib.canInviteUsers(chat)) {
-      if (tdlib.chatStatus(chat.id).getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
-        tdlib.client().send(new TdApi.GetChatInviteLinkCounts(chat.id), object -> {
-          if (object.getConstructor() == TdApi.ChatInviteLinkCounts.CONSTRUCTOR) {
-            runOnUiThreadOptional(() -> {
-              for (TdApi.ChatInviteLinkCount count : ((TdApi.ChatInviteLinkCounts) object).inviteLinkCounts) {
-                inviteLinksCount += count.inviteLinkCount;
-              }
-            });
-          }
+      requestInviteLinks(tdlib.chatStatus(chat.id).getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR);
+    }
+  }
 
-          tdlib.client().send(new TdApi.GetChatInviteLinks(chat.id, tdlib.myUserId(), false, 0, null, 1), object2 -> {
-            runOnUiThreadOptional(() -> {
-              if (object.getConstructor() == TdApi.ChatInviteLinks.CONSTRUCTOR) {
-                inviteLinksCount += ((TdApi.ChatInviteLinks) object).totalCount;
-              }
+  private void requestInviteLinks (boolean owner) {
+    Runnable update = () -> baseAdapter.updateValuedSettingById(R.id.btn_manageInviteLinks);
 
-              inviteLinksCount++;
-              baseAdapter.updateValuedSettingById(R.id.btn_manageInviteLinks);
-            });
-          });
-        });
-      } else {
-        tdlib.client().send(new TdApi.GetChatInviteLinks(chat.id, tdlib.myUserId(), false, 0, null, 1), object -> {
+    inviteLinksCount = 0;
+    inviteLinksRevokedCount = 0;
+
+    if (owner) {
+      tdlib.client().send(new TdApi.GetChatInviteLinkCounts(chat.id), object3 -> {
+        if (object3.getConstructor() == TdApi.ChatInviteLinkCounts.CONSTRUCTOR) {
           runOnUiThreadOptional(() -> {
-            if (object.getConstructor() == TdApi.ChatInviteLinks.CONSTRUCTOR) {
-              inviteLinksCount += ((TdApi.ChatInviteLinks) object).totalCount;
+            for (TdApi.ChatInviteLinkCount count : ((TdApi.ChatInviteLinkCounts) object3).inviteLinkCounts) {
+              inviteLinksCount += count.inviteLinkCount;
+              inviteLinksRevokedCount += count.revokedInviteLinkCount;
             }
 
-            inviteLinksCount++;
-            baseAdapter.updateValuedSettingById(R.id.btn_manageInviteLinks);
+            update.run();
           });
+        }
+      });
+    } else {
+      tdlib.client().send(new TdApi.GetChatInviteLinks(chat.id, tdlib.myUserId(), false, 0, null, 1), object -> {
+        if (object.getConstructor() == TdApi.ChatInviteLinks.CONSTRUCTOR) {
+          inviteLinksCount += ((TdApi.ChatInviteLinks) object).totalCount;
+        }
+
+        tdlib.client().send(new TdApi.GetChatInviteLinks(chat.id, tdlib.myUserId(), true, 0, null, 1), object2 -> {
+          if (object2.getConstructor() == TdApi.ChatInviteLinks.CONSTRUCTOR) {
+            inviteLinksRevokedCount += ((TdApi.ChatInviteLinks) object2).totalCount;
+          }
+
+          runOnUiThreadOptional(update);
         });
-      }
+      });
     }
   }
 

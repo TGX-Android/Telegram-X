@@ -185,7 +185,11 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
       @Override
       protected void setInfo (ListItem item, int position, ListInfoView infoView) {
-        infoView.showInfo(Lang.pluralBold(R.string.xInviteLinks, item.getIntValue()));
+        if (item.getLongValue() > 0) {
+          infoView.showInfo(Lang.getString(R.string.format_activeAndRevokedLinks, Lang.pluralBold(R.string.xActiveLinks, item.getIntValue()), Lang.pluralBold(R.string.xRevokedLinks, item.getLongValue())));
+        } else {
+          infoView.showInfo(Lang.pluralBold(R.string.xActiveLinks, item.getIntValue()));
+        }
       }
 
       @Override
@@ -584,13 +588,19 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     ListItem infoItem = adapter.getItem(infoIndex);
     if (infoItem != null) {
       int totalCount = 0;
+      int totalCountRevoked = 0;
 
       for (ListItem item : adapter.getItems()) {
-        if (item.getId() == R.id.btn_openAdminInviteLinks) totalCount += item.getIntValue();
+        if (item.getId() == R.id.btn_openAdminInviteLinks) {
+          totalCount += item.getIntValue();
+          totalCountRevoked += item.getLongValue();
+        }
       }
 
       totalCount += inviteLinks.size();
-      infoItem.setIntValue(totalCount);
+      totalCountRevoked += inviteLinksRevoked.size();
+
+      infoItem.setIntValue(totalCount).setLongValue(totalCountRevoked);
       adapter.updateValuedSettingByPosition(infoIndex);
     }
   }
@@ -663,7 +673,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       for (int i = 0; i < inviteLinkCounts.length; i++) {
         TdApi.ChatInviteLinkCount linkCount = inviteLinkCounts[i];
         if (linkCount.userId == tdlib.myUserId()) continue;
-        items.add(new ListItem(ListItem.TYPE_CHAT_SMALL, R.id.btn_openAdminInviteLinks).setLongId(linkCount.userId).setIntValue(linkCount.inviteLinkCount).setData(linkCount));
+        items.add(new ListItem(ListItem.TYPE_CHAT_SMALL, R.id.btn_openAdminInviteLinks).setLongId(linkCount.userId).setIntValue(linkCount.inviteLinkCount).setLongValue(linkCount.revokedInviteLinkCount).setData(linkCount));
         if (i != inviteLinkCounts.length - 1) items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       }
 
