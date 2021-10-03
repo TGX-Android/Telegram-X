@@ -172,13 +172,13 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
   private void openRightsScreen (long userId) {
     tdlib.client().send(new TdApi.GetChatMember(getArgumentsStrict().chatId, new TdApi.MessageSenderUser(userId)), result -> {
       if (result.getConstructor() != TdApi.ChatMember.CONSTRUCTOR) return;
-      TdApi.ChatMember member = (TdApi.ChatMember) result;
-      TdApi.ChatMemberStatus myStatus = tdlib.chatStatus(getArgumentsStrict().chatId);
-      int mode = TD.canRestrictMember(myStatus, member.status);
-      if (mode == TD.RESTRICT_MODE_NEW) {
-        member = null;
-      }
       runOnUiThreadOptional(() -> {
+        TdApi.ChatMember member = (TdApi.ChatMember) result;
+        TdApi.ChatMemberStatus myStatus = tdlib.chatStatus(getArgumentsStrict().chatId);
+        int mode = TD.canRestrictMember(myStatus, member.status);
+        if (mode == TD.RESTRICT_MODE_NEW) {
+          member = null;
+        }
         EditRightsController c = new EditRightsController(context, tdlib);
         c.setArguments(new EditRightsController.Args(getArgumentsStrict().chatId, userId, true, myStatus, member).noFocusLock());
         navigateTo(c);
