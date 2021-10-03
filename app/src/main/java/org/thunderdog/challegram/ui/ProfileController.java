@@ -3544,14 +3544,14 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_chatPermissions, 0, R.string.ChatPermissions));
       added = true;
     }
-    if (supergroupFull != null && supergroupFull.canGetStatistics) {
-      items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
-      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_viewStatistics, 0, R.string.ViewStats));
-      added = true;
-    }
     if (tdlib.canInviteUsers(chat)) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_manageInviteLinks, 0, R.string.InviteLinkManage));
+      added = true;
+    }
+    if (supergroupFull != null && supergroupFull.canGetStatistics) {
+      items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_viewStatistics, 0, R.string.ViewStats));
       added = true;
     }
     boolean hasActions = false;
