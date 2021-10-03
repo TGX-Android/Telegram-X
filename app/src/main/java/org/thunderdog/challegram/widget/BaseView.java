@@ -429,7 +429,7 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
     if (!Config.FORCE_TOUCH_ENABLED) {
       return FORCE_TOUCH_NONE;
     }
-    if (tdlib != null && chatId != 0 && (Settings.instance().needPreviewChatOnHold())) {
+    if (tdlib != null && chatId != 0 && Settings.instance().needPreviewChatOnHold()) {
       if (ChatId.isSecret(chatId))
         return FORCE_TOUCH_NONE;
       TdApi.Chat chat = tdlib.chatSync(chatId, 100l);
