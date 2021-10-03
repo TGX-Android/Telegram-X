@@ -304,7 +304,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   public void onClick (View v) {
     switch (v.getId()) {
       case R.id.btn_openChat: {
-        tdlib.ui().openPrivateProfile(this, adminUserId, new TdlibUi.UrlOpenParameters());
+        openRightsScreen();
         break;
       }
       case R.id.btn_openAdminInviteLinks:
