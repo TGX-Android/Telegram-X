@@ -207,7 +207,19 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
         if (item.getId() == R.id.btn_openChat) {
           chatView.setPreviewChatId(new TdApi.ChatListMain(), adminUserId, null);
-          chatView.setIgnoreForceTouchChatPreferences(true);
+          chatView.setOnLongClickListener(v -> {
+            showOptions(tdlib.cache().userName(adminUserId), new int[] { R.id.btn_openChat, R.id.btn_editRights }, new String[] { Lang.getString(R.string.OpenChat), Lang.getString(R.string.EditAdminRights) }, null, new int[] { R.drawable.baseline_forum_24, R.drawable.baseline_stars_24 }, (view, id) -> {
+              if (id == R.id.btn_openChat) {
+                tdlib.ui().openChat(ChatLinksController.this, adminUserId, new TdlibUi.ChatOpenParameters().keepStack());
+              } else if (id == R.id.btn_editRights) {
+                openRightsScreen();
+              }
+              
+              return true;
+            });
+
+            return true;
+          });
           chatView.setPreviewActionListProvider((v, forceTouchContext, ids, icons, strings, target) -> {
             ids.append(R.id.btn_openChat);
             icons.append(R.drawable.baseline_forum_24);
@@ -240,7 +252,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
           });
         } else {
           chatView.clearPreviewChat();
-          chatView.setIgnoreForceTouchChatPreferences(false);
+          chatView.setOnLongClickListener(null);
           chatView.setPreviewActionListProvider(null);
         }
       }
