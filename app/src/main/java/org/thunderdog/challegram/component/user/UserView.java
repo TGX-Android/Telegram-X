@@ -214,6 +214,13 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
     receiver.requestFile(user.getAvatar());
   }
 
+  public void setUserForced (@NonNull TGUser user) {
+    this.user = user;
+    this.unregisteredContact = null;
+    buildLayout();
+    receiver.requestFile(user.getAvatar());
+  }
+
   public @Nullable TGUser getUser () {
     return user;
   }

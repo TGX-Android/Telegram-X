@@ -1337,7 +1337,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         break;
       }
       case ListItem.TYPE_CHAT_SMALL: {
-        ((SmallChatView) holder.itemView).setChat((DoubleTextWrapper) item.getData());
+        if (item.getData() instanceof DoubleTextWrapper) {
+          ((SmallChatView) holder.itemView).setChat((DoubleTextWrapper) item.getData());
+        }
+
         modifyChatView(item, (SmallChatView) holder.itemView, null, false);
         break;
       }

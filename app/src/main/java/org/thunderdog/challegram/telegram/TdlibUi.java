@@ -71,7 +71,10 @@ import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.ui.ChatLinkMembersController;
+import org.thunderdog.challegram.ui.ChatLinksController;
 import org.thunderdog.challegram.ui.ChatsController;
+import org.thunderdog.challegram.ui.EditChatLinkController;
 import org.thunderdog.challegram.ui.EditNameController;
 import org.thunderdog.challegram.ui.EditProxyController;
 import org.thunderdog.challegram.ui.EditRightsController;
@@ -3977,6 +3980,133 @@ public class TdlibUi extends Handler {
       if (id == R.id.btn_unarchiveChat || id == R.id.btn_archiveChat) {
         processChatAction(context, chatList, chatId, null, id, after);
       }
+      return true;
+    });
+  }
+
+  public void showInviteLinkOptionsPreload (ViewController<?> context, final TdApi.ChatInviteLink link, final long chatId, final boolean showNavigatingToLinks, @Nullable Runnable onLinkDeleted, @Nullable RunnableData<TdApi.ChatInviteLinks> onLinkRevoked) {
+    context.tdlib().send(new TdApi.GetChatInviteLink(chatId, link.inviteLink), result -> {
+      context.runOnUiThreadOptional(() -> {
+        if (result.getConstructor() == TdApi.ChatInviteLink.CONSTRUCTOR) {
+          showInviteLinkOptions(context, (TdApi.ChatInviteLink) result, chatId, showNavigatingToLinks, false, onLinkDeleted, onLinkRevoked);
+        } else {
+          showInviteLinkOptions(context, link, chatId, showNavigatingToLinks, true, onLinkDeleted, onLinkRevoked);
+        }
+      });
+    });
+  }
+
+  public void showInviteLinkOptions (ViewController<?> context, final TdApi.ChatInviteLink link, final long chatId, final boolean showNavigatingToLinks, final boolean deleted, @Nullable Runnable onLinkDeleted, @Nullable RunnableData<TdApi.ChatInviteLinks> onLinkRevoked) {
+    StringList strings = new StringList(6);
+    IntList icons = new IntList(6);
+    IntList ids = new IntList(6);
+    IntList colors = new IntList(6);
+
+    if (!deleted && link.memberCount > 0) {
+      ids.append(R.id.btn_viewInviteLinkMembers);
+      strings.append(R.string.InviteLinkViewMembers);
+      icons.append(R.drawable.baseline_visibility_24);
+      colors.append(ViewController.OPTION_COLOR_NORMAL);
+    }
+
+    if (showNavigatingToLinks) {
+      ids.append(R.id.btn_manageInviteLinks);
+      strings.append(R.string.InviteLinkManage);
+      icons.append(R.drawable.baseline_add_link_24);
+      colors.append(ViewController.OPTION_COLOR_NORMAL);
+    }
+
+    if (!deleted && !link.isRevoked) {
+      if (!link.isPrimary && context instanceof ChatLinksController) {
+        ids.append(R.id.btn_edit);
+        strings.append(R.string.InviteLinkEdit);
+        icons.append(R.drawable.baseline_edit_24);
+        colors.append(ViewController.OPTION_COLOR_NORMAL);
+      }
+
+      ids.append(R.id.btn_copyLink);
+      strings.append(R.string.InviteLinkCopy);
+      icons.append(R.drawable.baseline_content_copy_24);
+      colors.append(ViewController.OPTION_COLOR_NORMAL);
+
+      ids.append(R.id.btn_shareLink);
+      strings.append(R.string.ShareLink);
+      icons.append(R.drawable.baseline_forward_24);
+      colors.append(ViewController.OPTION_COLOR_NORMAL);
+
+      icons.append(R.drawable.baseline_link_off_24);
+      ids.append(R.id.btn_revokeLink);
+      strings.append(R.string.RevokeLink);
+      colors.append(ViewController.OPTION_COLOR_RED);
+    } else {
+      ids.append(R.id.btn_copyLink);
+      strings.append(R.string.InviteLinkCopy);
+      icons.append(R.drawable.baseline_content_copy_24);
+      colors.append(ViewController.OPTION_COLOR_NORMAL);
+
+      if (!deleted) {
+        icons.append(R.drawable.baseline_delete_24);
+        ids.append(R.id.btn_deleteLink);
+        strings.append(R.string.InviteLinkDelete);
+        colors.append(ViewController.OPTION_COLOR_RED);
+      }
+    }
+
+    CharSequence info = TD.makeClickable(Lang.getString(R.string.CreatedByXOnDate, ((target, argStart, argEnd, spanIndex, needFakeBold) -> spanIndex == 0 ? Lang.newUserSpan(new TdlibContext(context.context(), context.tdlib()), link.creatorUserId) : null), context.tdlib().cache().userName(link.creatorUserId), Lang.getRelativeTimestamp(link.date, TimeUnit.SECONDS)));
+    Lang.SpanCreator firstBoldCreator = (target, argStart, argEnd, spanIndex, needFakeBold) -> spanIndex == 0 ? Lang.newBoldSpan(needFakeBold) : null;
+    context.showOptions(Lang.getString(R.string.format_nameAndStatus, firstBoldCreator, link.inviteLink, info), ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
+      switch (id) {
+        case R.id.btn_viewInviteLinkMembers:
+          ChatLinkMembersController c2 = new ChatLinkMembersController(context.context(), context.tdlib());
+          c2.setArguments(new ChatLinkMembersController.Args(chatId, link.inviteLink));
+          context.navigateTo(c2);
+          break;
+        case R.id.btn_edit:
+          EditChatLinkController c = new EditChatLinkController(context.context(), context.tdlib());
+          c.setArguments(new EditChatLinkController.Args(link, chatId, (ChatLinksController) context));
+          context.navigateTo(c);
+          break;
+        case R.id.btn_manageInviteLinks:
+          ChatLinksController cc = new ChatLinksController(context.context(), context.tdlib());
+          cc.setArguments(new ChatLinksController.Args(chatId, context.tdlib().myUserId(), null, null, tdlib.chatStatus(chatId).getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR));
+          context.navigateTo(cc);
+          break;
+        case R.id.btn_copyLink:
+          UI.copyText(link.inviteLink, R.string.CopiedLink);
+          break;
+        case R.id.btn_shareLink:
+          String chatName = context.tdlib().chatTitle(chatId);
+          String exportText = Lang.getString(context.tdlib().isChannel(chatId) ? R.string.ShareTextChannelLink : R.string.ShareTextChatLink, chatName, link.inviteLink);
+          String text = Lang.getString(R.string.ShareTextLink, chatName, link.inviteLink);
+          ShareController sc = new ShareController(context.context(), context.tdlib());
+          sc.setArguments(new ShareController.Args(text).setShare(exportText, null));
+          sc.show();
+          break;
+        case R.id.btn_deleteLink:
+          context.showOptions(Lang.getString(R.string.AreYouSureDeleteInviteLink), new int[]{R.id.btn_deleteLink, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkDelete), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
+            if (id2 == R.id.btn_deleteLink) {
+              if (onLinkDeleted != null) onLinkDeleted.run();
+              context.tdlib().client().send(new TdApi.DeleteRevokedChatInviteLink(chatId, link.inviteLink), null);
+            }
+
+            return true;
+          });
+          break;
+        case R.id.btn_revokeLink:
+          context.showOptions(Lang.getString(context.tdlib().isChannel(chatId) ? R.string.AreYouSureRevokeInviteLinkChannel : R.string.AreYouSureRevokeInviteLinkGroup), new int[]{R.id.btn_revokeLink, R.id.btn_cancel}, new String[]{Lang.getString(R.string.RevokeLink), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_link_off_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
+            if (id2 == R.id.btn_revokeLink) {
+              context.tdlib().client().send(new TdApi.RevokeChatInviteLink(chatId, link.inviteLink), result -> {
+                if (result.getConstructor() == TdApi.ChatInviteLinks.CONSTRUCTOR && onLinkRevoked != null) {
+                  context.runOnUiThreadOptional(() -> onLinkRevoked.runWithData((TdApi.ChatInviteLinks) result));
+                }
+              });
+            }
+
+            return true;
+          });
+          break;
+      }
+
       return true;
     });
   }

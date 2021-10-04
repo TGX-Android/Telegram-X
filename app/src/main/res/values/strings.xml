@@ -3706,7 +3706,7 @@
 
   <string name="InviteLinks">Invite Links</string>
   <string name="PrimaryInviteLinkMenu">Primary Invite Link</string>
-  <string name="PrimaryInviteLink">Permanent Link</string>
+  <string name="PrimaryInviteLink">Primary Link</string>
   <string name="AdditionalInviteLinks">Additional Links</string>
   <string name="AdditionalInviteLinksHint">You can create additional invite links with an optional expiration date and joined members limit.</string>
   <string name="RevokedInviteLinks">Revoked Links</string>
@@ -3716,10 +3716,10 @@
   <string name="InviteLinkJoins_other">%1$s joined</string>
   <string name="InviteLinkRemains_one">%1$s remaining</string>
   <string name="InviteLinkRemains_other">%1$s remaining</string>
-  <string name="InviteLinkCanJoin_one">%1$s can join</string>
-  <string name="InviteLinkCanJoin_other">%1$s can join</string>
   <string name="InviteLinkExpired">expired</string>
   <string name="InviteLinkRevoked">revoked</string>
+  <string name="InviteLinkMemberLimitReached">member limit reached</string>
+  <string name="InviteLinkExpiredAt">expired at %1$s</string>
 
   <string name="InviteLinkExpires_now">expires in a moment</string>
   <string name="InviteLinkExpires_seconds_one">expires in %1$s second</string>
@@ -3745,7 +3745,7 @@
   <string name="InviteLinkLimitedByUsers">Limited by number of users</string>
   <string name="InviteLinkLimitedByPeriodHint">You can make the link expire after a certain time.</string>
   <string name="InviteLinkLimitedByUsersHint">You can make the link expire after it has been used for a certain number of times.</string>
-  <string name="InviteLinkLimitedByPeriodItem">Expiry Date</string>
+  <string name="InviteLinkLimitedByPeriodItem">Enter custom expire date</string>
   <string name="InviteLinkLimitedByUsersItem">Number of Users</string>
   <string name="InviteLinkLimitedByUsersAlertHint">0 - no limit</string>
   <string name="InviteLinkLimitedByUsersCustom">Enter custom limit</string>
@@ -3766,6 +3766,12 @@
   <string name="CreatedByXOnDate">Created by %1$s %2$s</string>
   <string name="Infinity">∞</string>
   <string name="InviteLinkManage">Manage Invite Links</string>
+
+  <string name="xActiveLinks_one">%1$s active link</string>
+  <string name="xActiveLinks_other">%1$s active links</string>
+  <string name="xRevokedLinks_one">%1$s revoked link</string>
+  <string name="xRevokedLinks_other">%1$s revoked links</string>
+  <string name="format_activeAndRevokedLinks">%1$s, %2$s</string>
 
   <string name="ChatTtl">Auto-delete messages</string>
   <string name="ChatTtlDisabled">Choose a certain period of time when messages will be automatically deleted for members of the group.</string>

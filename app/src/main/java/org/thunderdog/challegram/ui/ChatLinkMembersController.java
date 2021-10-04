@@ -11,6 +11,7 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -18,6 +19,7 @@ import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.v.CustomRecyclerView;
+import org.thunderdog.challegram.widget.ForceTouchView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,7 +75,7 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
   public void onClick (View v) {
     TGUser user = ((UserView) v).getUser();
     if (user != null) {
-      tdlib.ui().openPrivateChat(this, user.getId(), new TdlibUi.ChatOpenParameters().keepStack());
+      tdlib.ui().openPrivateProfile(this, user.getId(), new TdlibUi.UrlOpenParameters());
     }
   }
 
@@ -91,7 +93,40 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
         if (isUpdate) {
           userView.updateSubtext();
         } else {
-          userView.setUser(senders.get(position));
+          TGUser user = senders.get(position);
+          userView.setPreviewChatId(new TdApi.ChatListMain(), user.getChatId(), null);
+          userView.setPreviewActionListProvider((v, forceTouchContext, ids, icons, strings, target) -> {
+            ids.append(R.id.btn_openChat);
+            icons.append(R.drawable.baseline_forum_24);
+            strings.append(R.string.OpenChat);
+
+            ids.append(R.id.btn_restrictMember);
+            icons.append(R.drawable.baseline_remove_circle_24);
+            strings.append(R.string.RestrictUser);
+
+            forceTouchContext.setExcludeHeader(true);
+
+            return new ForceTouchView.ActionListener() {
+              @Override
+              public void onForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
+
+              }
+
+              @Override
+              public void onAfterForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
+                switch (actionId) {
+                  case R.id.btn_openChat:
+                    tdlib.ui().openChat(ChatLinkMembersController.this, user.getChatId(), new TdlibUi.ChatOpenParameters().keepStack());
+                    break;
+                  case R.id.btn_restrictMember:
+                    openRightsScreen(user.getId());
+                    break;
+                }
+              }
+            };
+          });
+
+          userView.setUser(user);
         }
       }
     };
@@ -132,6 +167,23 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
     });
 
     tdlib.listeners().subscribeForAnyUpdates(this);
+  }
+
+  private void openRightsScreen (long userId) {
+    tdlib.client().send(new TdApi.GetChatMember(getArgumentsStrict().chatId, new TdApi.MessageSenderUser(userId)), result -> {
+      if (result.getConstructor() != TdApi.ChatMember.CONSTRUCTOR) return;
+      runOnUiThreadOptional(() -> {
+        TdApi.ChatMember member = (TdApi.ChatMember) result;
+        TdApi.ChatMemberStatus myStatus = tdlib.chatStatus(getArgumentsStrict().chatId);
+        int mode = TD.canRestrictMember(myStatus, member.status);
+        if (mode == TD.RESTRICT_MODE_NEW) {
+          member = null;
+        }
+        EditRightsController c = new EditRightsController(context, tdlib);
+        c.setArguments(new EditRightsController.Args(getArgumentsStrict().chatId, userId, true, myStatus, member).noFocusLock());
+        navigateTo(c);
+      });
+    });
   }
 
   @Override
@@ -230,7 +282,7 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
   private static TGUser parseSender (Tdlib tdlib, TdApi.ChatInviteLinkMember sender, ArrayList<TGUser> senders) {
     TGUser parsedUser = new TGUser(tdlib, tdlib.cache().user(sender.userId));
     parsedUser.setNoBotState();
-    parsedUser.setCustomStatus(Lang.getRelativeDate(sender.joinedChatDate, TimeUnit.SECONDS, System.currentTimeMillis(), TimeUnit.MILLISECONDS, true, 60, R.string.RoleMember, true));
+    parsedUser.setCustomStatus(Lang.getString(R.string.MemberSince, Lang.getDate(sender.joinedChatDate, TimeUnit.SECONDS), Lang.time(sender.joinedChatDate, TimeUnit.SECONDS)));
     parsedUser.setBoundList(senders);
     return parsedUser;
   }

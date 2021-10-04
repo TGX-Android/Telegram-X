@@ -1227,7 +1227,13 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
             span.setColorId(colorId);
           }
           span.setOnClickListener((view, span1) -> {
-            data.onClick(this);
+            if ((type == TYPE_JOIN_BY_LINK || type == TYPE_EVENT_INVITE_LINK_REVOKED) && inviteLinkValue != null) {
+              tdlib.ui().showInviteLinkOptionsPreload(controller(), inviteLinkValue, getChatId(), true, null, null);
+            } else if (type == TYPE_EVENT_INVITE_LINK_DELETE && inviteLinkValue != null) {
+              tdlib.ui().showInviteLinkOptions(controller(), inviteLinkValue, getChatId(), true, true, null, null);
+            } else {
+              data.onClick(this);
+            }
             return true;
           });
         }

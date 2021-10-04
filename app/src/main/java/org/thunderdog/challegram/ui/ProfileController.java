@@ -77,6 +77,7 @@ import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
@@ -249,6 +250,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   TdApi.SupergroupFullInfo supergroupFull;
 
   private SortedUsersAdapter membersAdapter;
+  private int inviteLinksCount = -1, inviteLinksRevokedCount = -1;
 
   @Override
   public void setArguments (Args args) {
@@ -1747,6 +1749,17 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             }
             break;
           }
+          case R.id.btn_manageInviteLinks: {
+            if (inviteLinksCount == -1) {
+              view.setData(Lang.getString(R.string.LoadingInformation));
+            } else if (inviteLinksRevokedCount > 0) {
+              view.setData(Lang.getString(R.string.format_activeAndRevokedLinks, Lang.pluralBold(R.string.xActiveLinks, inviteLinksCount), Lang.pluralBold(R.string.xRevokedLinks, inviteLinksRevokedCount)));
+            } else {
+              view.setData(Lang.pluralBold(R.string.xActiveLinks, inviteLinksCount));
+            }
+
+            break;
+          }
           case R.id.btn_inviteLink: {
             TdApi.ChatInviteLink inviteLink;
             switch (mode) {
@@ -2284,7 +2297,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }*/
 
   private ListItem newInviteLinkItem () {
-    return new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, R.drawable.baseline_person_add_24, R.string.PrimaryInviteLinkMenu);
+    return new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inviteLink, R.drawable.baseline_link_24, R.string.PrimaryInviteLinkMenu);
   }
 
   private ListItem newNotificationItem () {
@@ -3538,6 +3551,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_chatPermissions, 0, R.string.ChatPermissions));
       added = true;
     }
+    if (tdlib.canInviteUsers(chat)) {
+      items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_manageInviteLinks, 0, R.string.InviteLinkManage));
+      added = true;
+    }
     if (supergroupFull != null && supergroupFull.canGetStatistics) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_viewStatistics, 0, R.string.ViewStats));
@@ -3608,6 +3626,52 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
     addMediaItems(items);
     baseAdapter.setItems(items, false);
+
+    if (tdlib.canInviteUsers(chat)) {
+      requestInviteLinks(tdlib.chatStatus(chat.id).getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR);
+    }
+  }
+
+  private void requestInviteLinks (boolean owner) {
+    Runnable update = () -> baseAdapter.updateValuedSettingById(R.id.btn_manageInviteLinks);
+
+    inviteLinksCount = 0;
+    inviteLinksRevokedCount = 0;
+
+    if (owner) {
+      tdlib.client().send(new TdApi.GetChatInviteLinkCounts(chat.id), object3 -> {
+        if (object3.getConstructor() == TdApi.ChatInviteLinkCounts.CONSTRUCTOR) {
+          runOnUiThreadOptional(() -> {
+            for (TdApi.ChatInviteLinkCount count : ((TdApi.ChatInviteLinkCounts) object3).inviteLinkCounts) {
+              inviteLinksCount += count.inviteLinkCount;
+              inviteLinksRevokedCount += count.revokedInviteLinkCount;
+            }
+
+            update.run();
+          });
+        }
+      });
+    } else {
+      tdlib.client().send(new TdApi.GetChatInviteLinks(chat.id, tdlib.myUserId(), false, 0, null, 1), object -> {
+        if (object.getConstructor() == TdApi.ChatInviteLinks.CONSTRUCTOR) {
+          inviteLinksCount += ((TdApi.ChatInviteLinks) object).totalCount;
+        }
+
+        tdlib.client().send(new TdApi.GetChatInviteLinks(chat.id, tdlib.myUserId(), true, 0, null, 1), object2 -> {
+          if (object2.getConstructor() == TdApi.ChatInviteLinks.CONSTRUCTOR) {
+            inviteLinksRevokedCount += ((TdApi.ChatInviteLinks) object2).totalCount;
+          }
+
+          runOnUiThreadOptional(update);
+        });
+      });
+    }
+  }
+
+  public void onInviteLinkCountChanged (int totalActive, int totalRevoked) {
+    inviteLinksCount = totalActive;
+    inviteLinksRevokedCount = totalRevoked;
+    baseAdapter.updateValuedSettingById(R.id.btn_manageInviteLinks);
   }
 
   private static CharSequence getSlowModeDescription (int seconds) {
@@ -4391,7 +4455,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         if (canInviteUsers) {
           ids.append(R.id.btn_manageInviteLinks);
           strings.append(R.string.InviteLinkManage);
-          icons.append(R.drawable.baseline_person_add_24);
+          icons.append(R.drawable.baseline_add_link_24);
         }
 
         ids.append(R.id.btn_copyUsername);
@@ -4457,6 +4521,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         break;
       }
       case R.id.btn_inviteLink: {
+        openInviteLinkMenu();
+        break;
+      }
+      case R.id.btn_manageInviteLinks: {
         openInviteLink();
         break;
       }
@@ -4500,14 +4568,118 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
   }
 
+  private TdApi.ChatInviteLink getInviteLink () {
+    TdApi.ChatInviteLink inviteLink;
+    switch (mode) {
+      case MODE_GROUP: {
+        inviteLink = groupFull != null ? groupFull.inviteLink : null;
+        break;
+      }
+      case MODE_SUPERGROUP:
+      case MODE_CHANNEL: {
+        inviteLink = supergroupFull != null ? supergroupFull.inviteLink : null;
+        break;
+      }
+      default: {
+        inviteLink = null;
+        break;
+      }
+    }
+    return inviteLink;
+  }
+
   private void openInviteLink () {
     TdApi.ChatMemberStatus status = tdlib.chatStatus(chat.id);
     if (status == null)
       return;
 
     ChatLinksController c = new ChatLinksController(context, tdlib);
-    c.setArguments(new ChatLinksController.Args(chat.id, tdlib.myUserId(), this, null, status.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR));
+    c.setArguments(new ChatLinksController.Args(chat.id, tdlib.myUserId(), this, this, status.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR));
     navigateTo(c);
+  }
+
+  private void openInviteLinkMenu () {
+    TdApi.ChatInviteLink link = getInviteLink();
+
+    if (link == null) {
+      openInviteLink();
+      return;
+    }
+
+    StringList strings = new StringList(4);
+    IntList icons = new IntList(4);
+    IntList ids = new IntList(4);
+    IntList colors = new IntList(4);
+
+    ids.append(R.id.btn_manageInviteLinks);
+    strings.append(R.string.InviteLinkManage);
+    icons.append(R.drawable.baseline_add_link_24);
+    colors.append(OPTION_COLOR_NORMAL);
+
+    ids.append(R.id.btn_copyLink);
+    strings.append(R.string.InviteLinkCopy);
+    icons.append(R.drawable.baseline_content_copy_24);
+    colors.append(OPTION_COLOR_NORMAL);
+
+    ids.append(R.id.btn_shareLink);
+    strings.append(R.string.ShareLink);
+    icons.append(R.drawable.baseline_forward_24);
+    colors.append(OPTION_COLOR_NORMAL);
+
+    icons.append(R.drawable.baseline_link_off_24);
+    ids.append(R.id.btn_revokeLink);
+    strings.append(R.string.RevokeLink);
+    colors.append(OPTION_COLOR_RED);
+
+    CharSequence info = TD.makeClickable(Lang.getString(R.string.CreatedByXOnDate, ((target, argStart, argEnd, spanIndex, needFakeBold) -> spanIndex == 0 ? Lang.newUserSpan(new TdlibContext(context, tdlib), link.creatorUserId) : null), tdlib.cache().userName(link.creatorUserId), Lang.getRelativeTimestamp(link.date, TimeUnit.SECONDS)));
+    Lang.SpanCreator firstBoldCreator = (target, argStart, argEnd, spanIndex, needFakeBold) -> spanIndex == 0 ? Lang.newBoldSpan(needFakeBold) : null;
+    showOptions(Lang.getString(R.string.format_nameAndStatus, firstBoldCreator, link.inviteLink, info), ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
+      switch (id) {
+        case R.id.btn_copyLink:
+          UI.copyText(link.inviteLink, R.string.CopiedLink);
+          break;
+        case R.id.btn_shareLink:
+          String chatName = tdlib.chatTitle(chat.id);
+          String exportText = Lang.getString(tdlib.isChannel(chat.id) ? R.string.ShareTextChannelLink : R.string.ShareTextChatLink, chatName, link.inviteLink);
+          String text = Lang.getString(R.string.ShareTextLink, chatName, link.inviteLink);
+          ShareController c = new ShareController(context, tdlib);
+          c.setArguments(new ShareController.Args(text).setShare(exportText, null));
+          c.show();
+          break;
+        case R.id.btn_revokeLink:
+          showOptions(Lang.getString(tdlib.isChannel(chat.id) ? R.string.AreYouSureRevokeInviteLinkChannel : R.string.AreYouSureRevokeInviteLinkGroup), new int[]{R.id.btn_revokeLink, R.id.btn_cancel}, new String[]{Lang.getString(R.string.RevokeLink), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_link_off_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
+            if (id2 == R.id.btn_revokeLink) {
+              tdlib.client().send(new TdApi.RevokeChatInviteLink(chat.id, link.inviteLink), result -> {
+                if (result.getConstructor() == TdApi.ChatInviteLinks.CONSTRUCTOR) {
+                  runOnUiThreadOptional(() -> {
+                    final TdApi.ChatInviteLinks newInviteLink = (TdApi.ChatInviteLinks) result;
+                    TdApi.ChatInviteLink newPrimaryLink = null;
+
+                    for (TdApi.ChatInviteLink candidate : newInviteLink.inviteLinks) {
+                      if (candidate.isPrimary && !candidate.isRevoked) {
+                        newPrimaryLink = candidate;
+                        break;
+                      }
+                    }
+
+                    if (newPrimaryLink != null) {
+                      onInviteLinkChanged(newPrimaryLink);
+                    }
+                  });
+                }
+              });
+            }
+
+            return true;
+          });
+          break;
+        case R.id.btn_manageInviteLinks:
+          openInviteLink();
+          break;
+      }
+
+      return true;
+    });
   }
 
   @Override
