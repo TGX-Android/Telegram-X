@@ -1656,7 +1656,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           onItemsHeightProbablyChanged();
           checkDoneButton();
         } else if (item.getId() == R.id.btn_chatTtl) {
-          ttlDescItem.setString(getTtlDescription(TdConstants.CHAT_TTL_OPTIONS[value]));
+          ttlDescItem.setString(getTtlDescription(TdConstants.CHAT_TTL_OPTIONS[value], isChannel()));
           baseAdapter.updateValuedSetting(ttlDescItem);
           onItemsHeightProbablyChanged();
           checkDoneButton();
@@ -3600,15 +3600,16 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     if (tdlib.canDeleteMessages(chat.id) && !ChatId.isSecret(chat.id)) {
-      int ttlValue = chat != null ? chat.messageTtlSetting : 0;
-      items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.ChatTtl));
+      final int ttlValue = chat != null ? chat.messageTtlSetting : 0;
+      final boolean isChannel = isChannel();
+      items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, isChannel ? R.string.ChannelTtl : R.string.ChatTtl));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
       String[] sliderValues = new String[TdConstants.CHAT_TTL_OPTIONS.length];
       int sliderValueIndex = -1;
       for (int i = 0; i < sliderValues.length; i++) {
         int sliderOption = TdConstants.CHAT_TTL_OPTIONS[i];
         if (sliderOption == 0) {
-          sliderValues[i] = Lang.getString(R.string.SlowModeOff);
+          sliderValues[i] = Lang.getString(isChannel ? R.string.ChannelTtlOff : R.string.ChatTtlOff);
         } else {
           sliderValues[i] = Lang.getDuration(sliderOption);
         }
@@ -3621,7 +3622,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
       items.add(ttlItem = new ListItem(ListItem.TYPE_SLIDER, R.id.btn_chatTtl).setSliderInfo(sliderValues, sliderValueIndex));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-      items.add(ttlDescItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_chatTtlDescription, 0, getTtlDescription(ttlValue), false));
+      items.add(ttlDescItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_chatTtlDescription, 0, getTtlDescription(ttlValue, isChannel), false));
     }
 
     addMediaItems(items);
@@ -3686,11 +3687,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
   }
 
-  private static CharSequence getTtlDescription (int seconds) {
+  private static CharSequence getTtlDescription (int seconds, boolean isChannel) {
     if (seconds == 0) {
-      return Lang.getString(R.string.ChatTtlDisabled);
+      return Lang.getString(isChannel ? R.string.ChannelTtlDisabled : R.string.ChatTtlDisabled);
     } else {
-      return Lang.getStringBold(R.string.ChatTtlEnabled, Lang.getDuration(seconds));
+      return Lang.getStringBold(isChannel ? R.string.ChannelTtlEnabled : R.string.ChatTtlEnabled, Lang.getDuration(seconds));
     }
   }
 

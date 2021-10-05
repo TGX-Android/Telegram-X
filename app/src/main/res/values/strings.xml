@@ -3774,8 +3774,13 @@
   <string name="format_activeAndRevokedLinks">%1$s, %2$s</string>
 
   <string name="ChatTtl">Auto-delete messages</string>
+  <string name="ChatTtlOff">Off</string>
   <string name="ChatTtlDisabled">Choose a certain period of time when messages will be automatically deleted for members of the group.</string>
   <string name="ChatTtlEnabled">Automatically delete new messages after %1$s for members of the group.</string>
+  <string name="ChannelTtl">Auto-delete posts</string>
+  <string name="ChannelTtlOff">Off</string>
+  <string name="ChannelTtlDisabled">Choose a certain period of time when posts will be automatically deleted for subscribers of the channel.</string>
+  <string name="ChannelTtlEnabled">Automatically delete new posts after %1$s for subscribers of the channel.</string>
 
   <string name="ChatBackgroundPreview">Chat Background Preview</string>
   <string name="ChatBackgroundNotSupported">Sorry, this type of chat background is not yet supported.</string>
