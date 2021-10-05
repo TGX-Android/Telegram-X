@@ -2197,7 +2197,7 @@ public class TD {
       case "Not enough rights to invite members to the group chat": res = R.string.YouCantInviteMembers; break;
       case "Message must be non-empty": res = R.string.MessageInputEmpty; break;
       case "Not Found": res = R.string.error_NotFound; break;
-      case "Maximum number of pinned chats exceeded": return Lang.plural(R.string.ErrorPinnedChatsLimit, TdlibManager.instance().current().pinnedChatsMaxCount());
+      case "The maximum number of pinned chats exceeded": return Lang.plural(R.string.ErrorPinnedChatsLimit, TdlibManager.instance().current().pinnedChatsMaxCount());
       default: {
         String lookup = StringUtils.toCamelCase(message);
         if (lookup.matches("^[A-Za-z0-9_]+$")) {

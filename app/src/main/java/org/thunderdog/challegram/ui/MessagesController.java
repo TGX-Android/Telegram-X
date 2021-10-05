@@ -7888,7 +7888,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
                 case R.id.user: {
                   if (item.isSelected() && userIds1 != null) {
-                    userIds1.append(item.getIntValue());
+                    userIds1.append(item.getLongValue());
                   }
                   break;
                 }
