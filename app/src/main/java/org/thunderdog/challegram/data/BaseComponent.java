@@ -15,18 +15,25 @@ import org.thunderdog.challegram.util.DrawableProvider;
 import me.vkryl.android.util.ViewProvider;
 
 public abstract class BaseComponent {
-    protected @Nullable ViewProvider viewProvider;
+  protected @Nullable ViewProvider viewProvider;
 
-    public void setViewProvider (@Nullable ViewProvider provider) {
-        this.viewProvider = provider;
-    }
+  public void setViewProvider (@Nullable ViewProvider provider) {
+    this.viewProvider = provider;
+  }
 
-    abstract public <T extends View & DrawableProvider> void draw (T view, Canvas c, int startX, int startY, Receiver preview, Receiver receiver, @ColorInt int backgroundColor, int contentReplaceColor, float alpha, float checkFactor);
-    abstract public void buildLayout (int maxWidth);
-    abstract public void requestPreview (DoubleImageReceiver receiver);
-    abstract public void requestContent (ImageReceiver receiver);
-    abstract public int getHeight ();
-    abstract public int getWidth ();
-    abstract public int getContentRadius (int defaultValue);
-    abstract public boolean onTouchEvent (View view, MotionEvent event);
+  abstract public <T extends View & DrawableProvider> void draw (T view, Canvas c, int startX, int startY, Receiver preview, Receiver receiver, @ColorInt int backgroundColor, int contentReplaceColor, float alpha, float checkFactor);
+
+  abstract public void buildLayout (int maxWidth);
+
+  abstract public void requestPreview (DoubleImageReceiver receiver);
+
+  abstract public void requestContent (ImageReceiver receiver);
+
+  abstract public int getHeight ();
+
+  abstract public int getWidth ();
+
+  abstract public int getContentRadius (int defaultValue);
+
+  abstract public boolean onTouchEvent (View view, MotionEvent event);
 }
