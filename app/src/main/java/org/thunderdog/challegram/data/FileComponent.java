@@ -55,7 +55,7 @@ import me.vkryl.core.unit.ByteUnit;
  * Author: default
  */
 
-public class FileComponent implements FileProgressComponent.SimpleListener, TGLegacyAudioManager.PlayListener, TGPlayerController.TrackListener {
+public class FileComponent extends BaseComponent implements FileProgressComponent.SimpleListener, TGLegacyAudioManager.PlayListener, TGPlayerController.TrackListener {
   private @Nullable TdApi.Document doc;
   private @Nullable TdApi.Audio audio;
   private @Nullable TdApi.VoiceNote voice;

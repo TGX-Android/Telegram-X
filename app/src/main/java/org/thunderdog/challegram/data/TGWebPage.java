@@ -41,6 +41,7 @@ import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.widget.FileProgressComponent;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.android.util.ViewProvider;
@@ -110,7 +111,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   private final TdApi.WebPage webPage;
   private final String url;
 
-  private FileComponent component;
+  private BaseComponent component;
   private int componentY;
 
   private float instantTextWidth;
@@ -265,18 +266,21 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
           buildGif(webPage, maxWidth);
           break;
         }
-        case TYPE_TELEGRAM_BACKGROUND: {
-          if (!isTgWallpaper() || !isTgWallpaperWithPreview())
-            break;
-          buildPhoto(webPage, maxWidth);
-          break;
-        }
         case TYPE_PHOTO: {
           buildPhoto(webPage, maxWidth);
           break;
         }
         default: {
-          if (webPage.audio != null) {
+          if (type == TYPE_TELEGRAM_BACKGROUND) {
+            String[] partedUrl = url.split("/bg/");
+            if (partedUrl.length == 2) {
+              this.component = new WallpaperComponent(parent, partedUrl[1]);
+            } else if (webPage.document != null) {
+              this.component = new FileComponent(parent, webPage.document);
+            } else {
+              this.component = null;
+            }
+          } else if (webPage.audio != null) {
             this.component = new FileComponent(parent, webPage.audio, null, null);
           } else if (webPage.voiceNote != null) {
             this.component = new FileComponent(parent, webPage.voiceNote, null, null);
@@ -698,8 +702,8 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     if (mediaWrapper != null) {
       mediaWrapper.updateMessageId(oldMessageId, newMessageId, success);
     }
-    if (component != null) {
-      component.getFileProgress().updateMessageId(oldMessageId, newMessageId, success);
+    if (component != null && component instanceof FileComponent) {
+      ((FileComponent) component).getFileProgress().updateMessageId(oldMessageId, newMessageId, success);
     }
     if (instantItems != null) {
       for (MediaItem item : instantItems) {
@@ -761,10 +765,6 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         mediaWrapper = new MediaWrapper(parent.context(), parent.tdlib(), webPage.video, chatId, messageId, parent, false);
       } else if (webPage.photo != null) {
         mediaWrapper = new MediaWrapper(parent.context(), parent.tdlib(), webPage.photo, chatId, messageId, parent, false, false, EmbeddedService.parse(webPage));
-      } else if (isTgWallpaper() && isTgWallpaperWithPreview()) {
-        mediaWrapper = new MediaWrapper(parent.context(), parent.tdlib(), new TdApi.Photo(false, webPage.document.minithumbnail,
-                new TdApi.PhotoSize[]{ new TdApi.PhotoSize("x", webPage.document.document, Screen.dp(500f), Screen.dp(400f), new int[] {}) }
-        ), chatId, messageId, parent, false, false, EmbeddedService.parse(webPage));
       } else {
         throw new NullPointerException();
       }
@@ -963,8 +963,8 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   }
 
   public TdApi.File getTargetFile () {
-    if (component != null) {
-      return component.getFileProgress().getFile();
+    if (component != null && component instanceof FileComponent) {
+      return ((FileComponent) component).getFileProgress().getFile();
     }
     if (mediaWrapper != null) {
       return mediaWrapper.getTargetFile();
@@ -973,7 +973,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   }
 
   public FileComponent getFileComponent () {
-    return component;
+    return (FileComponent) component;
   }
 
   public boolean needInstantView () {
@@ -986,10 +986,6 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
 
   protected boolean isTgWallpaper() {
     return type == TYPE_TELEGRAM_BACKGROUND;
-  }
-
-  protected boolean isTgWallpaperWithPreview() {
-    return webPage.document != null && !TdConstants.BACKGROUND_PATTERN_MIME_TYPE.equals(webPage.document.mimeType);
   }
 
   public boolean performLongPress (View view, TGMessageText msg) {
