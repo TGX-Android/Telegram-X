@@ -241,12 +241,12 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
   }
 
   @Override
-  public boolean needClickAt(View view, float x, float y) {
+  public boolean needClickAt (View view, float x, float y) {
     return placeholderRect.contains(x, y);
   }
 
   @Override
-  public void onClickAt(View view, float x, float y) {
+  public void onClickAt (View view, float x, float y) {
     MessagesController c = new MessagesController(context.context(), context.tdlib());
     c.setArguments(new MessagesController.Arguments(MessagesController.PREVIEW_MODE_WALLPAPER_OBJECT, null, null).setWallpaperObject(background));
     context.context().navigation().navigateTo(c);
