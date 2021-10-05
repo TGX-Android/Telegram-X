@@ -1757,6 +1757,8 @@
   <string name="EventLogFilterVoiceChats">Video chats</string>
   <string name="EventLogSlowModeChanged">%1$s set the slow mode timer to %2$s</string>
   <string name="EventLogSlowModeDisabled">%1$s disabled the slow mode</string>
+  <string name="EventLogSlowModeChangedYou">%1$s set the slow mode timer to %2$s</string>
+  <string name="EventLogSlowModeDisabledYou">%1$s disabled the slow mode</string>
   <string name="EventLogLinkedChannelChanged">%1$s linked this group to %2$s</string>
   <string name="EventLogLinkedChannelRemoved">%1$s unlinked this group from %2$s</string>
   <string name="EventLogLinkedChannelChangedUnknown">This group was linked to %1$s</string>

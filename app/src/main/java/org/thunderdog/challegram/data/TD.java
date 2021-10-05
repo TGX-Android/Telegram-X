@@ -3546,7 +3546,13 @@ public class TD {
             if (TD.isOut(m)) {
               return Lang.getString(R.string.YouDisabledAutoDelete);
             } else {
-              return Lang.getString(R.string.XDisabledAutoDelete, tdlib.senderName(m.sender, true));
+              return Lang.getString(m.isChannelPost ? R.string.XDisabledAutoDeletePosts : R.string.XDisabledAutoDelete, tdlib.senderName(m.sender, true));
+            }
+          } else if (m.isChannelPost) {
+            if (TD.isOut(m)) {
+              return Lang.pluralDuration(ttl.ttl, TimeUnit.SECONDS, R.string.YouSetAutoDeletePostsSeconds, R.string.YouSetAutoDeletePostsMinutes, R.string.YouSetAutoDeletePostsHours, R.string.YouSetAutoDeletePostsDays, R.string.YouSetAutoDeletePostsWeeks, R.string.YouSetAutoDeletePostsMonths).toString();
+            } else {
+              return Lang.pluralDuration(ttl.ttl, TimeUnit.SECONDS, R.string.XSetAutoDeletePostsSeconds, R.string.XSetAutoDeletePostsMinutes, R.string.XSetAutoDeletePostsHours, R.string.XSetAutoDeletePostsDays, R.string.XSetAutoDeletePostsWeeks, R.string.XSetAutoDeletePostsMonths, tdlib.senderName(m.sender, true)).toString();
             }
           } else {
             if (TD.isOut(m)) {

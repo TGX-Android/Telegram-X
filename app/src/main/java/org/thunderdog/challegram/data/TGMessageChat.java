@@ -899,7 +899,11 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
         makeText(R.string.EventLogRemovedCaption, new Arg(sender));
         break;
       case TYPE_EVENT_SLOW_MODE_DELAY_CHANGED:
-        makeText(R.string.EventLogSlowModeChanged, new Arg(sender), new Arg(Lang.getDuration((int) longValue)));
+        if (msg.isOutgoing) {
+          makeText(R.string.EventLogSlowModeChangedYou, new Arg(Lang.getDuration((int) longValue)));
+        } else {
+          makeText(R.string.EventLogSlowModeChanged, new Arg(sender), new Arg(Lang.getDuration((int) longValue)));
+        }
         break;
       case TYPE_EVENT_SLOW_MODE_DELAY_DISABLED:
         makeText(R.string.EventLogSlowModeDisabled, new Arg(sender));

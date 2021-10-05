@@ -2480,114 +2480,118 @@ public class TdlibUi extends Handler {
     });
   }
 
+  private void openUrlImpl (final TdlibDelegate context, final String url, @Nullable UrlOpenParameters options) {
+    Uri uri = Strings.wrapHttps(url);
+    if (uri == null) {
+      UI.openUrl(url);
+      return;
+    }
+
+    int instantViewMode = options != null ? options.instantViewMode : INSTANT_VIEW_UNSPECIFIED;
+
+    if (instantViewMode == INSTANT_VIEW_UNSPECIFIED) {
+      boolean ok = false;
+      try {
+        String host = uri.getHost();
+        String path = uri.getPath();
+        if (!StringUtils.isEmpty(host) && path != null && path.length() > 1) {
+          switch (Settings.instance().getInstantViewMode()) {
+            case Settings.INSTANT_VIEW_MODE_INTERNAL:
+              ok = tdlib.isKnownHost(host, true);
+              break;
+            case Settings.INSTANT_VIEW_MODE_ALL:
+              ok = true;
+              break;
+          }
+        }
+      } catch (Throwable t) {
+        Log.i(t);
+      }
+      instantViewMode = ok ? INSTANT_VIEW_ENABLED : INSTANT_VIEW_DISABLED;
+    }
+    final Uri uriFinal = uri;
+    if (instantViewMode == INSTANT_VIEW_DISABLED) {
+      UI.openUrl(url);
+      return;
+    }
+
+    final boolean[] signal = new boolean[1];
+    CancellableRunnable[] runnable = new CancellableRunnable[1];
+
+    tdlib.client().send(new TdApi.GetWebPagePreview(new TdApi.FormattedText(url, null)), page -> {
+      switch (page.getConstructor()) {
+        case TdApi.WebPage.CONSTRUCTOR: {
+          TdApi.WebPage webPage = (TdApi.WebPage) page;
+          if (!TD.hasInstantView(webPage.instantViewVersion) || TD.shouldInlineIv(webPage)) {
+            post(runnable[0]);
+            return;
+          }
+          tdlib.client().send(new TdApi.GetWebPageInstantView(url, false), preview -> {
+            switch (preview.getConstructor()) {
+              case TdApi.WebPageInstantView.CONSTRUCTOR: {
+                TdApi.WebPageInstantView instantView = (TdApi.WebPageInstantView) preview;
+                if (!TD.hasInstantView(instantView.version))
+                  return;
+                post(() -> {
+                  if (!signal[0]) {
+                    signal[0] = true;
+                    runnable[0].cancel();
+
+                    InstantViewController controller = new InstantViewController(context.context(), context.tdlib());
+                    try {
+                      controller.setArguments(new InstantViewController.Args(webPage, instantView, Uri.parse(url).getEncodedFragment()));
+                      controller.show();
+                    } catch (Throwable t) {
+                      Log.e("Unable to open instantView, url:%s", t, url);
+                      UI.showToast(R.string.InstantViewUnsupported, Toast.LENGTH_SHORT);
+                      UI.openUrl(url);
+                    }
+                  }
+                });
+                break;
+              }
+              case TdApi.Error.CONSTRUCTOR: {
+                post(runnable[0]);
+                break;
+              }
+            }
+          });
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          post(runnable[0]);
+          break;
+        }
+      }
+    });
+    runnable[0] = new CancellableRunnable() {
+      @Override
+      public void act () {
+        if (!signal[0]) {
+          signal[0] = true;
+          if (tdlib.isKnownHost(uriFinal.getHost(), false)) {
+            List<String> segments = uriFinal.getPathSegments();
+            if (segments != null && segments.size() == 1 && "iv".equals(segments.get(0))) {
+              String originalUrl = uriFinal.getQueryParameter("url");
+              if (Strings.isValidLink(originalUrl)) {
+                openUrl(context, originalUrl, new UrlOpenParameters(options).disableInstantView());
+                return;
+              }
+            }
+          }
+          UI.openUrl(url);
+        }
+      }
+    };
+    runnable[0].removeOnCancel(UI.getAppHandler());
+    UI.post(runnable[0], 2000);
+  }
+
   public void openUrl (final TdlibDelegate context, final String url, @Nullable UrlOpenParameters options) {
     openTelegramUrl(context, url, options, processed -> {
-      if (processed)
-        return;
-      Uri uri = Strings.wrapHttps(url);
-      if (uri == null) {
-        UI.openUrl(url);
-        return;
+      if (!processed) {
+        openUrlImpl(context, url, options);
       }
-
-      int instantViewMode = options != null ? options.instantViewMode : INSTANT_VIEW_UNSPECIFIED;
-
-      if (instantViewMode == INSTANT_VIEW_UNSPECIFIED) {
-        boolean ok = false;
-        try {
-          String host = uri.getHost();
-          String path = uri.getPath();
-          if (!StringUtils.isEmpty(host) && path != null && path.length() > 1) {
-            switch (Settings.instance().getInstantViewMode()) {
-              case Settings.INSTANT_VIEW_MODE_INTERNAL:
-                ok = tdlib.isKnownHost(host, true);
-                break;
-              case Settings.INSTANT_VIEW_MODE_ALL:
-                ok = true;
-                break;
-            }
-          }
-        } catch (Throwable t) {
-          Log.i(t);
-        }
-        instantViewMode = ok ? INSTANT_VIEW_ENABLED : INSTANT_VIEW_DISABLED;
-      }
-      final Uri uriFinal = uri;
-      if (instantViewMode == INSTANT_VIEW_DISABLED) {
-        UI.openUrl(url);
-        return;
-      }
-
-      final boolean[] signal = new boolean[1];
-      CancellableRunnable[] runnable = new CancellableRunnable[1];
-
-      tdlib.client().send(new TdApi.GetWebPagePreview(new TdApi.FormattedText(url, null)), page -> {
-        switch (page.getConstructor()) {
-          case TdApi.WebPage.CONSTRUCTOR: {
-            TdApi.WebPage webPage = (TdApi.WebPage) page;
-            if (!TD.hasInstantView(webPage.instantViewVersion) || TD.shouldInlineIv(webPage)) {
-              post(runnable[0]);
-              return;
-            }
-            tdlib.client().send(new TdApi.GetWebPageInstantView(url, false), preview -> {
-              switch (preview.getConstructor()) {
-                case TdApi.WebPageInstantView.CONSTRUCTOR: {
-                  TdApi.WebPageInstantView instantView = (TdApi.WebPageInstantView) preview;
-                  if (!TD.hasInstantView(instantView.version))
-                    return;
-                  post(() -> {
-                    if (!signal[0]) {
-                      signal[0] = true;
-                      runnable[0].cancel();
-
-                      InstantViewController controller = new InstantViewController(context.context(), context.tdlib());
-                      try {
-                        controller.setArguments(new InstantViewController.Args(webPage, instantView, Uri.parse(url).getEncodedFragment()));
-                        controller.show();
-                      } catch (Throwable t) {
-                        Log.e("Unable to open instantView, url:%s", t, url);
-                        UI.showToast(R.string.InstantViewUnsupported, Toast.LENGTH_SHORT);
-                        UI.openUrl(url);
-                      }
-                    }
-                  });
-                  break;
-                }
-                case TdApi.Error.CONSTRUCTOR: {
-                  post(runnable[0]);
-                  break;
-                }
-              }
-            });
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR: {
-            post(runnable[0]);
-            break;
-          }
-        }
-      });
-      runnable[0] = new CancellableRunnable() {
-        @Override
-        public void act () {
-          if (!signal[0]) {
-            signal[0] = true;
-            if (tdlib.isKnownHost(uriFinal.getHost(), false)) {
-              List<String> segments = uriFinal.getPathSegments();
-              if (segments != null && segments.size() == 1 && "iv".equals(segments.get(0))) {
-                String originalUrl = uriFinal.getQueryParameter("url");
-                if (Strings.isValidLink(originalUrl)) {
-                  openUrl(context, originalUrl, new UrlOpenParameters(options).disableInstantView());
-                  return;
-                }
-              }
-            }
-            UI.openUrl(url);
-          }
-        }
-      };
-      runnable[0].removeOnCancel(UI.getAppHandler());
-      UI.post(runnable[0], 2000);
     });
   }
 
@@ -2921,7 +2925,11 @@ public class TdlibUi extends Handler {
             }
             case TdApi.InternalLinkTypePublicChat.CONSTRUCTOR: {
               TdApi.InternalLinkTypePublicChat publicChat = (TdApi.InternalLinkTypePublicChat) linkType;
-              openPublicChat(context, publicChat.chatUsername, openParameters);
+              if (TdConstants.IV_PREVIEW_USERNAME.equals(publicChat.chatUsername)) {
+                openUrlImpl(context, url, new UrlOpenParameters(openParameters).forceInstantView());
+              } else {
+                openPublicChat(context, publicChat.chatUsername, openParameters);
+              }
               break;
             }
             case TdApi.InternalLinkTypeVoiceChat.CONSTRUCTOR: {
