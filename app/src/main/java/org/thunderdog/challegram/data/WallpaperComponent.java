@@ -1,6 +1,7 @@
 package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
 import android.os.Build;
@@ -25,7 +26,6 @@ import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.util.DrawableProvider;
 
 import me.vkryl.android.util.ClickHelper;
@@ -36,6 +36,7 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
   private final TGMessage context;
   private final DrawAlgorithms.GradientCache gradientCache = new DrawAlgorithms.GradientCache();
   private final RectF placeholderRect = new RectF();
+  private final Paint placeholderPaint = new Paint();
   private final ClickHelper clickHelper = new ClickHelper(this);
   private final String fullUrl;
 
@@ -47,16 +48,16 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
 
   private ImageFile imageFileMinithumbnail;
   private ImageFile imageFilePrimary;
-  private ImageReceiver imageReceiver;
-  private DoubleImageReceiver imageReceiverMini;
 
-  public WallpaperComponent (@NonNull TGMessage context, @NonNull String fullUrl, @NonNull String wallpaperUrl) {
+  public WallpaperComponent (@NonNull TGMessage context, @NonNull TdApi.WebPage webPage, @NonNull String wallpaperUrl) {
     this.context = context;
-    this.fullUrl = fullUrl;
+    this.fullUrl = webPage.url;
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
       this.placeholderPath = new Path();
     }
+
+    updateBackground(webPage.document);
 
     context.tdlib.client().send(new TdApi.SearchBackground(wallpaperUrl), result -> {
       if (result.getConstructor() == TdApi.Background.CONSTRUCTOR) {
@@ -68,8 +69,6 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
           tgBackground = new TGBackground(context.tdlib, background);
         }
 
-        updateBackground();
-
         if (viewProvider != null) {
           viewProvider.invalidate();
         }
@@ -77,10 +76,10 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
     });
   }
 
-  private void updateBackground () {
-    if (background.document != null) {
-      if (background.document.minithumbnail != null) {
-        imageFileMinithumbnail = new ImageFileLocal(background.document.minithumbnail);
+  private void updateBackground (TdApi.Document document) {
+    if (document != null) {
+      if (document.minithumbnail != null) {
+        imageFileMinithumbnail = new ImageFileLocal(document.minithumbnail);
         imageFileMinithumbnail.setScaleType(ImageFile.CENTER_CROP);
         imageFileMinithumbnail.setDecodeSquare(true);
         imageFileMinithumbnail.setSize(getHeight());
@@ -88,9 +87,9 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
         imageFileMinithumbnail = null;
       }
 
-      if (background.document.document != null) {
-        boolean isPattern = background.document.mimeType.equals(TdConstants.BACKGROUND_PATTERN_MIME_TYPE);
-        imageFilePrimary = new ImageFile(context.tdlib, background.document.document);
+      if (document.document != null) {
+        boolean isPattern = document.mimeType.equals(TdConstants.BACKGROUND_PATTERN_MIME_TYPE);
+        imageFilePrimary = new ImageFile(context.tdlib, document.document);
         imageFilePrimary.setScaleType(ImageFile.CENTER_CROP);
         imageFilePrimary.setNoBlur();
         imageFilePrimary.setDecodeSquare(true);
@@ -100,14 +99,6 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
         }
       } else {
         imageFilePrimary = null;
-      }
-
-      if (imageReceiverMini != null) {
-        requestPreview(imageReceiverMini);
-      }
-
-      if (imageReceiver != null) {
-        requestContent(imageReceiver);
       }
     } else {
       imageFileMinithumbnail = null;
@@ -132,6 +123,7 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
     int right = startX + getWidth();
     int bottom = startY + getHeight();
 
+    placeholderPaint.setColor(Theme.getColor(R.id.theme_color_placeholder));
     placeholderRect.set(startX, startY, right, bottom);
 
     final boolean clipped = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && placeholderPath != null;
@@ -157,6 +149,8 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
       DrawAlgorithms.drawReceiver(c, preview, receiver, true, true, startX, startY, right, bottom);
       receiver.restorePaintAlpha();
       preview.restorePaintAlpha();
+    } else {
+      c.drawRoundRect(placeholderRect, radius, radius, placeholderPaint);
     }
 
     if (clipped) {
@@ -206,7 +200,6 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
 
   @Override
   public void requestPreview (DoubleImageReceiver receiver) {
-    this.imageReceiverMini = receiver;
     if (imageFileMinithumbnail != null) {
       receiver.requestFile(null, imageFileMinithumbnail);
     } else {
@@ -216,7 +209,6 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
 
   @Override
   public void requestContent (ImageReceiver receiver) {
-    this.imageReceiver = receiver;
     if (imageFilePrimary != null) {
       receiver.requestFile(imageFilePrimary);
     } else {

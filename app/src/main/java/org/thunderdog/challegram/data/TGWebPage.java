@@ -274,7 +274,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
           if (type == TYPE_TELEGRAM_BACKGROUND) {
             String[] partedUrl = url.split("/bg/");
             if (partedUrl.length == 2) {
-              this.component = new WallpaperComponent(parent, partedUrl[1]);
+              this.component = new WallpaperComponent(parent, webPage, partedUrl[1]);
             } else if (webPage.document != null) {
               this.component = new FileComponent(parent, webPage.document);
             } else {
