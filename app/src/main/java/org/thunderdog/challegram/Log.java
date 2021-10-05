@@ -1039,6 +1039,10 @@ public class Log {
   }
 
   public static int blobSize (@NonNull Throwable t) {
+    return blobSize(t, true);
+  }
+
+  private static int blobSize (@NonNull Throwable t, boolean isRoot) {
     int count = Blob.sizeOf(t.getClass().getName(), true) +
            1 + (Blob.sizeOf(t.getMessage(), false)) +
            1 + (Blob.sizeOf(StringUtils.equalsOrBothEmpty(t.getMessage(), t.getLocalizedMessage()) ? null : t.getLocalizedMessage(), false)) +
@@ -1047,15 +1051,35 @@ public class Log {
     for (StackTraceElement element : stackTrace) {
       count += 1 + Blob.sizeOf(element.getClassName(), false) + 1 + Blob.sizeOf(element.getMethodName(), false) + 1 + Blob.sizeOf(element.getFileName(), false) + 4;
     }
-    count += 1;
-    Throwable cause = t.getCause();
-    if (cause != null) {
-      count += blobSize(t);
+    if (isRoot) {
+      int limit = BLOB_CAUSE_LIMIT;
+      Throwable cause = t;
+      do {
+        Throwable newCause = cause.getCause();
+        cause = newCause != cause ? newCause : null;
+        if (cause != null && --limit == 0) {
+          while (cause.getCause() != null && cause.getCause() != cause) {
+            cause = cause.getCause();
+          }
+        }
+        count++;
+        if (cause != null) {
+          count += blobSize(cause, false);
+        } else {
+          break;
+        }
+      } while (limit > 0);
     }
     return count;
   }
 
   public static void toBlob (@NonNull Throwable t, @NonNull Blob blob) {
+    toBlob(t, blob, true);
+  }
+
+  private static final int BLOB_CAUSE_LIMIT = 5;
+
+  private static void toBlob (@NonNull Throwable t, @NonNull Blob blob, boolean isRoot) {
     blob.writeString(t.getClass().getName());
 
     String message = t.getMessage();
@@ -1106,11 +1130,24 @@ public class Log {
       }
     }
 
-    Throwable cause = t.getCause();
-
-    blob.writeBoolean(cause != null);
-    if (cause != null) {
-      toBlob(cause, blob);
+    if (isRoot) {
+      int limit = BLOB_CAUSE_LIMIT;
+      Throwable cause = t;
+      do {
+        Throwable newCause = cause.getCause();
+        cause = newCause != cause ? newCause : null;
+        if (cause != null && --limit == 0) {
+          while (cause.getCause() != null && cause.getCause() != cause) {
+            cause = cause.getCause();
+          }
+        }
+        blob.writeBoolean(cause != null);
+        if (cause != null) {
+          toBlob(cause, blob, false);
+        } else {
+          break;
+        }
+      } while (limit > 0);
     }
   }
 
