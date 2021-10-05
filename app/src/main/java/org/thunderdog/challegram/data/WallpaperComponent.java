@@ -28,19 +28,20 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.util.DrawableProvider;
 
+import me.vkryl.android.util.ClickHelper;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.td.TdConstants;
 
-public class WallpaperComponent extends BaseComponent {
-  private final DrawAlgorithms.GradientCache gradientCache = new DrawAlgorithms.GradientCache();
+public class WallpaperComponent extends BaseComponent implements ClickHelper.Delegate {
   private final TGMessage context;
+  private final DrawAlgorithms.GradientCache gradientCache = new DrawAlgorithms.GradientCache();
   private final RectF placeholderRect = new RectF();
   private final Paint placeholderPaint = new Paint();
+  private final ClickHelper clickHelper = new ClickHelper(this);
 
   private Path placeholderPath;
 
   private int lastMaxWidth, lastRadius;
-  private boolean isClickedOnBackground;
   private TdApi.Background background;
 
   private ImageFile imageFileMinithumbnail;
@@ -230,27 +231,22 @@ public class WallpaperComponent extends BaseComponent {
 
   @Override
   public boolean onTouchEvent (View view, MotionEvent event) {
-    switch (event.getAction()) {
-      case MotionEvent.ACTION_DOWN: {
-        isClickedOnBackground = placeholderRect.contains(event.getX(), event.getY());
-        return isClickedOnBackground;
-      }
-
-      case MotionEvent.ACTION_UP: {
-        if (isClickedOnBackground) {
-          isClickedOnBackground = false;
-          MessagesController c = new MessagesController(context.context(), context.tdlib());
-          c.setArguments(new MessagesController.Arguments(MessagesController.PREVIEW_MODE_WALLPAPER_OBJECT, null, null).setWallpaperObject(background));
-          context.context().navigation().navigateTo(c);
-          return true;
-        }
-      }
-    }
-
-    return false;
+    return clickHelper.onTouchEvent(view, event);
   }
 
   private int getRadius () {
     return Screen.dp(Theme.getBubbleMergeRadius());
+  }
+
+  @Override
+  public boolean needClickAt(View view, float x, float y) {
+    return placeholderRect.contains(x, y);
+  }
+
+  @Override
+  public void onClickAt(View view, float x, float y) {
+    MessagesController c = new MessagesController(context.context(), context.tdlib());
+    c.setArguments(new MessagesController.Arguments(MessagesController.PREVIEW_MODE_WALLPAPER_OBJECT, null, null).setWallpaperObject(background));
+    context.context().navigation().navigateTo(c);
   }
 }
