@@ -199,7 +199,7 @@ public class ChatsRecyclerView extends CustomRecyclerView implements ClickHelper
     adapter.updateUser(this, user);
   }
 
-  public void updateUserStatus (int userId) {
+  public void updateUserStatus (long userId) {
     int startIndex = 0, updated;
     while (true) {
       updated = adapter.updateUserStatus(userId, startIndex);

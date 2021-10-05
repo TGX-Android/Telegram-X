@@ -786,7 +786,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
         multiSelect ? account.id + 1 : R.id.account,
         isCurrent || (inRecoveryMode && multiSelect)
       ).setData(account)
-       .setIntValue(account.getKnownUserId()));
+       .setLongValue(account.getKnownUserId()));
     }
     items.add(new ListItem(ListItem.TYPE_PADDING).setHeight(Screen.dp(12f)).setBoolValue(true));
 

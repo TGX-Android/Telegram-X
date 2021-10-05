@@ -38,7 +38,7 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
     public final Drawable icon;
 
     private Tdlib tdlib;
-    private int userId;
+    private long userId;
     private TdlibCache.UserStatusChangeListener userStatusChangeListener;
 
     private View.OnClickListener onClickListener;
@@ -64,7 +64,7 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
       return this;
     }
 
-    public MenuItem bindToLastSeenAvailability (Tdlib tdlib, int userId) {
+    public MenuItem bindToLastSeenAvailability (Tdlib tdlib, long userId) {
       if (tdlib == null || userId == 0)
         return this;
       this.tdlib = tdlib;

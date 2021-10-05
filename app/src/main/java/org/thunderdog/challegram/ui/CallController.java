@@ -603,7 +603,7 @@ public class CallController extends ViewController<CallController.Arguments> imp
     tdlib.context().calls().makeCall(this, call.userId, null);
   }
 
-  public boolean compareUserId (int userId) {
+  public boolean compareUserId (long userId) {
     return call.userId == userId;
   }
 
@@ -783,9 +783,6 @@ public class CallController extends ViewController<CallController.Arguments> imp
       }
     });
   }
-
-  @Override
-  public void onUserFullUpdated (int userId, TdApi.UserFullInfo userFull) { }
 
   @Override
   public void onCallUpdated (final TdApi.Call call) {

@@ -13,7 +13,6 @@ import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 import androidx.annotation.WorkerThread;
 import androidx.collection.LongSparseArray;
-import androidx.collection.SparseArrayCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -80,10 +79,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private final MessagesLoader loader;
 
   private String eventLogQuery;
-  private int[] eventLogUserIds;
+  private long[] eventLogUserIds;
   private TdApi.ChatEventLogFilters eventLogFilters;
 
-  private SparseArrayCompat<TdApi.ChatAdministrator> chatAdmins;
+  private LongSparseArray<TdApi.ChatAdministrator> chatAdmins;
 
   private static final int TOP_PRELOAD_COUNT = 10;
   private static final int BOTTOM_PRELOAD_COUNT = 7;
@@ -141,7 +140,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   public void onChatMemberStatusChange (long chatId, TdApi.ChatMember member) {
     tdlib.ui().post(() -> {
       if (loader.getChatId() == chatId && chatAdmins != null && member.memberId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
-        final int userId = ((TdApi.MessageSenderUser) member.memberId).userId;
+        final long userId = ((TdApi.MessageSenderUser) member.memberId).userId;
         int existingIndex = chatAdmins.indexOfKey(userId);
         TdApi.ChatAdministrator existingAdmin = existingIndex >= 0 ? chatAdmins.valueAt(existingIndex) : null;
         boolean changed = false;
@@ -172,7 +171,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void setChatAdmins (TdApi.ChatAdministrators administrators) {
-    SparseArrayCompat<TdApi.ChatAdministrator> chatAdmins = new SparseArrayCompat<>(administrators.administrators.length);
+    LongSparseArray<TdApi.ChatAdministrator> chatAdmins = new LongSparseArray<>(administrators.administrators.length);
     for (TdApi.ChatAdministrator admin : administrators.administrators) {
       chatAdmins.put(admin.userId, admin);
     }
@@ -181,14 +180,14 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   private void updateAdministratorSigns () {
-    int adminUserId = 0;
+    long adminUserId = 0;
     TdApi.ChatAdministrator administrator = null;
     for (int i = 0; i < adapter.getMessageCount(); i++) {
       TGMessage msg = adapter.getMessage(i);
       if (msg == null) {
         continue;
       }
-      int userId = Td.getSenderUserId(msg.getMessage());
+      long userId = Td.getSenderUserId(msg.getMessage());
       if (adminUserId != userId) {
         administrator = chatAdmins != null ? chatAdmins.get(adminUserId = userId) : null;
       }
@@ -208,7 +207,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   // Implementation
 
-  public SparseArrayCompat<TdApi.ChatAdministrator> getChatAdmins () {
+  public LongSparseArray<TdApi.ChatAdministrator> getChatAdmins () {
     return chatAdmins;
   }
 
@@ -517,11 +516,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     loadFromStart();
   }
 
-  public void applyEventLogFilters (TdApi.ChatEventLogFilters filters, int[] userIds) {
+  public void applyEventLogFilters (TdApi.ChatEventLogFilters filters, long[] userIds) {
     applyEventLogFilters(filters, eventLogQuery, userIds);
   }
 
-  public void applyEventLogFilters (TdApi.ChatEventLogFilters filters, String query, int[] userIds) {
+  public void applyEventLogFilters (TdApi.ChatEventLogFilters filters, String query, long[] userIds) {
     if (!StringUtils.equalsOrBothEmpty(eventLogQuery, query) || !Td.equalsTo(eventLogFilters, filters) || !ArrayUtils.equalsSorted(this.eventLogUserIds, userIds)) {
       this.eventLogQuery = query;
       this.eventLogFilters = filters;
@@ -535,7 +534,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     return eventLogQuery;
   }
 
-  public int[] getEventLogUserIds () {
+  public long[] getEventLogUserIds () {
     return eventLogUserIds;
   }
 
@@ -783,14 +782,14 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   private boolean isDemoGroupChat;
-  private SparseArrayCompat<TdApi.User> demoParticipants;
+  private LongSparseArray<TdApi.User> demoParticipants;
 
-  public void setDemoParticipants (SparseArrayCompat<TdApi.User> participants, boolean isGroupChat) {
+  public void setDemoParticipants (LongSparseArray<TdApi.User> participants, boolean isGroupChat) {
     this.demoParticipants = participants;
     this.isDemoGroupChat = isGroupChat;
   }
 
-  public TdApi.User demoParticipant (int userId) {
+  public TdApi.User demoParticipant (long userId) {
     return demoParticipants != null ? demoParticipants.get(userId) : null;
   }
 
@@ -999,14 +998,14 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       }
       return;
     }
-    SparseArrayCompat<TdApi.ChatAdministrator> chatAdmins = this.chatAdmins;
+    LongSparseArray<TdApi.ChatAdministrator> chatAdmins = this.chatAdmins;
     if (chatAdmins != null) {
-      int adminUserId = 0;
+      long adminUserId = 0;
       TdApi.ChatAdministrator administrator = null;
       for (TGMessage message : items) {
         if (message.getAdministrator() != null)
           continue;
-        int userId = message.getSender().getUserId();
+        long userId = message.getSender().getUserId();
         if (adminUserId != userId) {
           adminUserId = userId;
           administrator = chatAdmins.get(adminUserId);
@@ -2487,7 +2486,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     final List<TGMessage> parsedMessages = new ArrayList<>(messages.size());
     final TdApi.Chat chat = tdlib.chatStrict(messages.get(0).chatId);
     TGMessage cur = null;
-    SparseArrayCompat<TdApi.ChatAdministrator> chatAdmins = this.chatAdmins;
+    LongSparseArray<TdApi.ChatAdministrator> chatAdmins = this.chatAdmins;
     for (TdApi.Message message : messages) {
       if (cur != null) {
         if (cur.combineWith(message, true)) {

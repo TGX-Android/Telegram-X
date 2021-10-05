@@ -599,15 +599,19 @@ public class TGBackground {
             .putBoolean(key + "_blurred", wallpaper.isBlurred)
 
             .remove(key + "_color")
-            .remove(key + "_intensity");
+            .remove(key + "_intensity")
+            .remove(key + "_inverted");
           break;
         }
         case TdApi.BackgroundTypePattern.CONSTRUCTOR: {
           TdApi.BackgroundTypePattern pattern = (TdApi.BackgroundTypePattern) type;
+          if (pattern.intensity < 0)
+            throw new IllegalArgumentException();
           editor
             .putInt(key + "_type", BACKGROUND_TYPE_PATTERN)
             .putInt(key + "_intensity", pattern.intensity)
             .putBoolean(key + "_moving", pattern.isMoving)
+            .putBoolean(key + "_inverted", pattern.isInverted)
 
             .remove(key + "_blurred");
           putFill(editor, key, pattern.fill);
@@ -621,6 +625,7 @@ public class TGBackground {
         .remove(key + "_type")
         .remove(key + "_color")
         .remove(key + "_intensity")
+        .remove(key + "_inverted")
         .remove(key + "_moving")
         .remove(key + "_blurred")
         .remove(key + "_fill")
@@ -676,9 +681,17 @@ public class TGBackground {
       case BACKGROUND_TYPE_WALLPAPER:
         type = new TdApi.BackgroundTypeWallpaper(prefs.getBoolean(key + "_blurred", false), prefs.getBoolean(key + "_moving", false));
         break;
-      case BACKGROUND_TYPE_PATTERN:
-        type = new TdApi.BackgroundTypePattern(restoreFill(prefs, key), prefs.getInt(key + "_intensity", 0), prefs.getBoolean(key + "_moving", false));
+      case BACKGROUND_TYPE_PATTERN: {
+        int intensity = prefs.getInt(key + "_intensity", 0);
+        boolean isInverted = intensity < 0 || prefs.getBoolean(key + "_inverted", false);
+        type = new TdApi.BackgroundTypePattern(
+          restoreFill(prefs, key),
+          Math.abs(intensity),
+          isInverted,
+          prefs.getBoolean(key + "_moving", false)
+        );
         break;
+      }
       default:
         return null;
     }

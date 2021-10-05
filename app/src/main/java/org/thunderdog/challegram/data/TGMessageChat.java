@@ -126,7 +126,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
   private String title;
   private TdApi.User actionUser;
   private TdlibSender actionSender;
-  private int[] actionUserIds;
+  private long[] actionUserIds;
   private TdApi.ChatPhoto photo;
   private ImageFile avatar;
 
@@ -172,6 +172,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
 
   public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageChatChangePhoto photo) {
     super(context, msg);
+    //noinspection WrongConstant
     if (isEventLog() && msg.content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR) {
       TdApi.ChatEventAction action = ((TdApiExt.MessageChatEvent) msg.content).event.action;
       if (action.getConstructor() == TdApi.ChatEventPhotoChanged.CONSTRUCTOR && ((TdApi.ChatEventPhotoChanged) action).newPhoto == null) {
@@ -722,9 +723,9 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
             }
           } else {
             if (msg.isOutgoing) {
-              makePluralDuration(R.string.YouSetTimerSeconds, R.string.YouSetTimerMinutes, R.string.YouSetTimerHours, R.string.YouSetTimerDays, R.string.YouSetTimerWeeks, ttl, TimeUnit.SECONDS);
+              makePluralDuration(R.string.YouSetTimerSeconds, R.string.YouSetTimerMinutes, R.string.YouSetTimerHours, R.string.YouSetTimerDays, R.string.YouSetTimerWeeks, R.string.YouSetTimerMonths, ttl, TimeUnit.SECONDS);
             } else {
-              makePluralDuration(R.string.XSetTimerSeconds, R.string.XSetTimerMinutes, R.string.XSetTimerHours, R.string.XSetTimerDays, R.string.XSetTimerWeeks, ttl, TimeUnit.SECONDS, new Arg(sender, true));
+              makePluralDuration(R.string.XSetTimerSeconds, R.string.XSetTimerMinutes, R.string.XSetTimerHours, R.string.XSetTimerDays, R.string.XSetTimerWeeks, R.string.XSetTimerMonths, ttl, TimeUnit.SECONDS, new Arg(sender, true));
             }
           }
         } else {
@@ -732,13 +733,19 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
             if (msg.isOutgoing) {
               makeText(R.string.YouDisabledAutoDelete);
             } else {
-              makeText(R.string.XDisabledAutoDelete, new Arg(sender, true));
+              makeText(msg.isChannelPost ? R.string.XDisabledAutoDeletePosts : R.string.XDisabledAutoDelete, new Arg(sender, true));
+            }
+          } else if (msg.isChannelPost) {
+            if (msg.isOutgoing) {
+              makePluralDuration(R.string.YouSetAutoDeletePostsSeconds, R.string.YouSetAutoDeletePostsMinutes, R.string.YouSetAutoDeletePostsHours, R.string.YouSetAutoDeletePostsDays, R.string.YouSetAutoDeletePostsWeeks, R.string.YouSetAutoDeletePostsMonths, ttl, TimeUnit.SECONDS);
+            } else {
+              makePluralDuration(R.string.XSetAutoDeletePostsSeconds, R.string.XSetAutoDeletePostsMinutes, R.string.XSetAutoDeletePostsHours, R.string.XSetAutoDeletePostsDays, R.string.XSetAutoDeletePostsWeeks, R.string.XSetAutoDeletePostsMonths, ttl, TimeUnit.SECONDS, new Arg(sender, true));
             }
           } else {
             if (msg.isOutgoing) {
-              makePluralDuration(R.string.YouSetAutoDeleteSeconds, R.string.YouSetAutoDeleteMinutes, R.string.YouSetAutoDeleteHours, R.string.YouSetAutoDeleteDays, R.string.YouSetAutoDeleteWeeks, ttl, TimeUnit.SECONDS);
+              makePluralDuration(R.string.YouSetAutoDeleteSeconds, R.string.YouSetAutoDeleteMinutes, R.string.YouSetAutoDeleteHours, R.string.YouSetAutoDeleteDays, R.string.YouSetAutoDeleteWeeks, R.string.YouSetAutoDeleteMonths, ttl, TimeUnit.SECONDS);
             } else {
-              makePluralDuration(R.string.XSetAutoDeleteSeconds, R.string.XSetAutoDeleteMinutes, R.string.XSetAutoDeleteHours, R.string.XSetAutoDeleteDays, R.string.XSetAutoDeleteWeeks, ttl, TimeUnit.SECONDS, new Arg(sender, true));
+              makePluralDuration(R.string.XSetAutoDeleteSeconds, R.string.XSetAutoDeleteMinutes, R.string.XSetAutoDeleteHours, R.string.XSetAutoDeleteDays, R.string.XSetAutoDeleteWeeks, R.string.XSetAutoDeleteMonths, ttl, TimeUnit.SECONDS, new Arg(sender, true));
             }
           }
         }
@@ -892,7 +899,11 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
         makeText(R.string.EventLogRemovedCaption, new Arg(sender));
         break;
       case TYPE_EVENT_SLOW_MODE_DELAY_CHANGED:
-        makeText(R.string.EventLogSlowModeChanged, new Arg(sender), new Arg(Lang.getDuration((int) longValue)));
+        if (msg.isOutgoing) {
+          makeText(R.string.EventLogSlowModeChangedYou, new Arg(Lang.getDuration((int) longValue)));
+        } else {
+          makeText(R.string.EventLogSlowModeChanged, new Arg(sender), new Arg(Lang.getDuration((int) longValue)));
+        }
         break;
       case TYPE_EVENT_SLOW_MODE_DELAY_DISABLED:
         makeText(R.string.EventLogSlowModeDisabled, new Arg(sender));
@@ -1023,15 +1034,15 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
     private TdApi.Location location;
     private boolean isActive, isUrl;
 
-    private int[] userIds;
+    private long[] userIds;
     private String[] strings;
     private long chatId;
 
-    public Arg (TGMessage context, int[] userIds) {
+    public Arg (TGMessage context, long[] userIds) {
       this.userIds = userIds;
       this.strings = new String[userIds.length];
       int i = 0;
-      for (int userId : userIds) {
+      for (long userId : userIds) {
         strings[i] = wrap(TD.getUserName(userId, context.userForId(userId)));
         i++;
       }
@@ -1130,34 +1141,45 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
     makeTextImpl(resId, false, 0, args);
   }
 
-  private void makePluralDuration (@StringRes int secondsRes, @StringRes int minutesRes, @StringRes int hoursRes, @StringRes int daysRes, @StringRes int weeksRes, final long time, final TimeUnit unit, Arg... args) {
-    int days = (int) unit.toDays(time);
-    if (days >= 7) {
-      makePlural(weeksRes, days / 7, args);
+  private void makePluralDuration (@StringRes int secondsRes, @StringRes int minutesRes, @StringRes int hoursRes, @StringRes int daysRes, @StringRes int weeksRes, @StringRes int monthsRes, final long duration, final TimeUnit unit, Arg... args) {
+    final long days = unit.toDays(duration);
+    final long months = days / 30;
+    final long weeks = days / 7;
+    final long hours = unit.toHours(duration);
+    final long minutes = unit.toMinutes(duration);
+    final long seconds = unit.toSeconds(duration);
+    if (monthsRes != 0 && months > 0) {
+      makePlural(monthsRes, months, args);
       return;
     }
-    if (days > 0) {
+    if (weeksRes != 0 && weeks > 0) {
+      makePlural(weeksRes, weeks, args);
+      return;
+    }
+    if (daysRes != 0 && days > 0) {
       makePlural(daysRes, days, args);
       return;
     }
-    int hours = (int) unit.toHours(time);
-    if (hours > 0) {
+    if (hoursRes != 0 && hours > 0) {
       makePlural(hoursRes, hours, args);
       return;
     }
-    int minutes = (int) unit.toMinutes(time);
-    if (minutes > 0) {
+    if (minutesRes != 0 && minutes > 0) {
       makePlural(minutesRes, minutes, args);
       return;
     }
-    makePlural(secondsRes, (int) unit.toSeconds(time), args);
+    if (secondsRes != 0) {
+      makePlural(secondsRes, seconds, args);
+      return;
+    }
+    throw new IllegalArgumentException();
   }
 
-  private void makePlural (@StringRes int pluralResId, int num, Arg... args) {
+  private void makePlural (@StringRes int pluralResId, long num, Arg... args) {
     makeTextImpl(pluralResId, true, num, args);
   }
 
-  private void makeTextImpl (@StringRes int resId, boolean isPlural, int num, Arg... args) {
+  private void makeTextImpl (@StringRes int resId, boolean isPlural, long num, Arg... args) {
     if ((args == null || args.length == 0) && !isPlural) {
       setText(resId != 0 ? Lang.getString(resId) : customFormat);
       return;
@@ -1226,7 +1248,13 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
             span.setColorId(colorId);
           }
           span.setOnClickListener((view, span1) -> {
-            data.onClick(this);
+            if ((type == TYPE_JOIN_BY_LINK || type == TYPE_EVENT_INVITE_LINK_REVOKED) && inviteLinkValue != null) {
+              tdlib.ui().showInviteLinkOptionsPreload(controller(), inviteLinkValue, getChatId(), true, null, null);
+            } else if (type == TYPE_EVENT_INVITE_LINK_DELETE && inviteLinkValue != null) {
+              tdlib.ui().showInviteLinkOptions(controller(), inviteLinkValue, getChatId(), true, true, null, null);
+            } else {
+              data.onClick(this);
+            }
             return true;
           });
         }
@@ -1274,7 +1302,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
                 String concatSeparator = Lang.getConcatSeparator();
                 String concatSeparatorLast = Lang.getConcatSeparatorLast(true);
                 int index = 0;
-                for (int userId : data.userIds) {
+                for (long userId : data.userIds) {
                   if (index > 0) {
                     if (index == data.userIds.length - 1) {
                       spanned.insert(i, concatSeparatorLast);

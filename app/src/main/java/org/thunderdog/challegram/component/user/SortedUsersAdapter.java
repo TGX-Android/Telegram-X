@@ -14,7 +14,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
-import androidx.collection.SparseArrayCompat;
+import androidx.collection.LongSparseArray;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -43,7 +43,7 @@ import java.util.Comparator;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.StringUtils;
-import me.vkryl.core.collection.IntList;
+import me.vkryl.core.collection.LongList;
 
 /**
  * Date: 26/12/2016
@@ -158,7 +158,7 @@ public class SortedUsersAdapter extends RecyclerView.Adapter<SortedUsersAdapter.
       return -1;
     }
 
-    int myUserId = context.tdlib().myUserId();
+    long myUserId = context.tdlib().myUserId();
     int x, y;
     if (left.id == myUserId) {
       x = Integer.MAX_VALUE;
@@ -194,7 +194,7 @@ public class SortedUsersAdapter extends RecyclerView.Adapter<SortedUsersAdapter.
 
   private void clear (boolean notify) {
     if (!users.isEmpty()) {
-      IntList ids = new IntList(users.size());
+      LongList ids = new LongList(users.size());
       for (UserItem item : users) {
         ids.append(item.getId());
       }
@@ -217,7 +217,7 @@ public class SortedUsersAdapter extends RecyclerView.Adapter<SortedUsersAdapter.
       return;
     }
 
-    SparseArrayCompat<TdApi.ChatMember> sparseMembers = new SparseArrayCompat<>(members.length);
+    LongSparseArray<TdApi.ChatMember> sparseMembers = new LongSparseArray<>(members.length);
 
     for (TdApi.ChatMember member : members) {
       sparseMembers.put(((TdApi.MessageSenderUser) member.memberId).userId, member);
@@ -277,7 +277,7 @@ public class SortedUsersAdapter extends RecyclerView.Adapter<SortedUsersAdapter.
     int oldItemCount = getItemCount();
     clear(false);
     users.ensureCapacity(members.length);
-    IntList ids = new IntList(members.length);
+    LongList ids = new LongList(members.length);
     for (TdApi.ChatMember member : members) {
       addUser(new UserItem(context.tdlib(), member), false);
       ids.append(((TdApi.MessageSenderUser) member.memberId).userId);
@@ -286,7 +286,7 @@ public class SortedUsersAdapter extends RecyclerView.Adapter<SortedUsersAdapter.
     U.replaceItems(this, oldItemCount);
   }
 
-  private int indexOfUser (int userId) {
+  private int indexOfUser (long userId) {
     int i = 0;
     for (UserItem item : users) {
       if (item.getId() == userId) {
@@ -307,7 +307,7 @@ public class SortedUsersAdapter extends RecyclerView.Adapter<SortedUsersAdapter.
     }
   }
 
-  public @Nullable TdApi.ChatMember getChatMember (int userId) {
+  public @Nullable TdApi.ChatMember getChatMember (long userId) {
     int i = indexOfUser(userId);
     return i != -1 ? users.get(i).member : null;
   }
@@ -354,10 +354,7 @@ public class SortedUsersAdapter extends RecyclerView.Adapter<SortedUsersAdapter.
     }
   }
 
-  @Override
-  public void onUserFullUpdated (int userId, TdApi.UserFullInfo userFull) { }
-
-  private void updateStatusInternal (int index, int userId, boolean isOnline) {
+  private void updateStatusInternal (int index, long userId, boolean isOnline) {
     boolean needNotify = false;
     for (RecyclerView recyclerView : recyclerViews) {
       View view = recyclerView.getLayoutManager().findViewByPosition(index);
@@ -383,7 +380,7 @@ public class SortedUsersAdapter extends RecyclerView.Adapter<SortedUsersAdapter.
 
   @UiThread
   @Override
-  public void onUserStatusChanged (int userId, TdApi.UserStatus status, boolean uiOnly) {
+  public void onUserStatusChanged (long userId, TdApi.UserStatus status, boolean uiOnly) {
     if (uiOnly) {
       return;
     }
@@ -451,7 +448,7 @@ public class SortedUsersAdapter extends RecyclerView.Adapter<SortedUsersAdapter.
       this.member = member;
     }
 
-    public int getId () {
+    public long getId () {
       return context.getId();
     }
 
@@ -517,7 +514,7 @@ public class SortedUsersAdapter extends RecyclerView.Adapter<SortedUsersAdapter.
       receiver.setBounds(centerX - imageSize / 2, paddingTop, centerX + imageSize / 2, paddingTop + imageSize);
     }
 
-    public int getUserId () {
+    public long getUserId () {
       return user != null ? user.getId() : 0;
     }
 

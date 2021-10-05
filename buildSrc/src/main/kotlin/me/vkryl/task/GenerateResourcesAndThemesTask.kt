@@ -150,8 +150,11 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
     val relativeDateForms = sortedSetOf(
       "now",
       "seconds", "minutes", "hours",
-      "today", "yesterday", "weekday", "date",
+      "today", "tomorrow", "yesterday", "weekday", "date",
       "days", "weeks", "months", "years"
+    )
+    val relativeDateWhiteList = sortedSetOf(
+      "format_tomorrow"
     )
     val pluralForms = sortedSetOf(
       "zero", "one", "two", "few", "many", "other"
@@ -217,7 +220,7 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
         } else {
           ordinaryKeys.add(name)
         }
-        if (relativeDateForms.contains(suffix)) {
+        if (relativeDateForms.contains(suffix) && !relativeDateWhiteList.contains(name)) {
           val list = foundRelativeDates[key]
           if (list != null) {
             list.add(suffix)
@@ -271,7 +274,11 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
       sortedSetOf(
         "now", "seconds", "minutes", "hours", "today", "yesterday", "weekday", "date"
       ), sortedSetOf(
+        "now", "seconds", "minutes", "hours", "today", "tomorrow", "weekday", "date"
+      ), sortedSetOf(
         "now", "seconds", "minutes", "hours", "today", "yesterday", "days", "weeks", "months", "years"
+      ), sortedSetOf(
+        "now", "seconds", "minutes", "hours", "today", "tomorrow", "days", "weeks", "months", "years"
       )
     )
     for (entry in foundRelativeDates) {

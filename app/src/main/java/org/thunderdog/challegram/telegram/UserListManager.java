@@ -8,12 +8,12 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import java.util.ArrayList;
 import java.util.List;
 
-import me.vkryl.core.collection.IntSet;
+import me.vkryl.core.collection.LongSet;
 
-public abstract class UserListManager extends ListManager<Integer> implements TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener {
-  public interface ChangeListener extends ListManager.ListChangeListener<Integer> { }
+public abstract class UserListManager extends ListManager<Long> implements TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener {
+  public interface ChangeListener extends ListManager.ListChangeListener<Long> { }
 
-  private final IntSet userIdsCheck = new IntSet();
+  private final LongSet userIdsCheck = new LongSet();
 
   public UserListManager (Tdlib tdlib, int initialLoadCount, int loadCount, @Nullable ChangeListener listener) {
     super(tdlib, initialLoadCount, loadCount, false, listener);
@@ -30,11 +30,11 @@ public abstract class UserListManager extends ListManager<Integer> implements Td
   }
 
   @Override
-  protected Response<Integer> processResponse (TdApi.Object response, Client.ResultHandler retryHandler, int retryLoadCount, boolean reverse) {
+  protected Response<Long> processResponse (TdApi.Object response, Client.ResultHandler retryHandler, int retryLoadCount, boolean reverse) {
     TdApi.Users users = (TdApi.Users) response;
-    int[] rawUserIds = users.userIds;
-    List<Integer> userIds = new ArrayList<>(rawUserIds.length);
-    for (int userId : rawUserIds) {
+    long[] rawUserIds = users.userIds;
+    List<Long> userIds = new ArrayList<>(rawUserIds.length);
+    for (long userId : rawUserIds) {
       if (userIdsCheck.add(userId)) {
         userIds.add(userId);
       }
@@ -44,7 +44,7 @@ public abstract class UserListManager extends ListManager<Integer> implements Td
 
   // Updates
 
-  private void runWithUser (int userId, Runnable act) {
+  private void runWithUser (long userId, Runnable act) {
     runOnUiThreadIfReady(() -> {
       if (userIdsCheck.has(userId)) {
         act.run();
@@ -67,7 +67,7 @@ public abstract class UserListManager extends ListManager<Integer> implements Td
   }
 
   @Override
-  public void onUserFullUpdated (int userId, TdApi.UserFullInfo userFull) {
+  public void onUserFullUpdated (long userId, TdApi.UserFullInfo userFull) {
     runWithUser(userId, () -> {
       int index = indexOfItem(userId);
       if (index != -1) {
@@ -77,7 +77,7 @@ public abstract class UserListManager extends ListManager<Integer> implements Td
   }
 
   @Override
-  public void onUserStatusChanged(int userId, TdApi.UserStatus status, boolean uiOnly) {
+  public void onUserStatusChanged(long userId, TdApi.UserStatus status, boolean uiOnly) {
     runWithUser(userId, () -> {
       int index = indexOfItem(userId);
       if (index != -1) {

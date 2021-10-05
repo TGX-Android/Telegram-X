@@ -108,7 +108,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
   @Override
   protected TdApi.Function buildRequest (long chatId, long messageThreadId, String query, long offset, String secretOffset, int limit) {
     limit = offset == 0 ? 50 : 100;
-    int supergroupId = ChatId.toSupergroupId(chatId);
+    long supergroupId = ChatId.toSupergroupId(chatId);
     if (!StringUtils.isEmpty(query)) {
       TdApi.ChatMembersFilter chatMembersFilter = null;
       if (specificFilter != null) {
@@ -132,14 +132,14 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
     if (supergroupId != 0) {
       return new TdApi.GetSupergroupMembers(supergroupId, specificFilter != null ? specificFilter : new TdApi.SupergroupMembersFilterRecent(), (int) offset, limit);
     }
-    int basicGroupId = ChatId.toBasicGroupId(chatId);
+    long basicGroupId = ChatId.toBasicGroupId(chatId);
     if (basicGroupId != 0) {
       processGroupFull(tdlib.cache().basicGroupFull(basicGroupId));
     }
     return null;
   }
 
-  private int groupId;
+  private long groupId;
 
   @Override
   protected void onCreateView (Context context, MediaRecyclerView recyclerView, SettingsAdapter adapter) {
@@ -485,7 +485,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
         boolean addBackToGroup = result.get(R.id.right_readMessages) != 0;
         tdlib.setChatMemberStatus(chatId, content.getSender(), new TdApi.ChatMemberStatusLeft(), content.getMember().status, null);
         if (addBackToGroup) {
-          tdlib.client().send(new TdApi.AddChatMembers(chatId, new int[] {content.getUserId()}), tdlib.okHandler());
+          tdlib.client().send(new TdApi.AddChatMembers(chatId, new long[] {content.getUserId()}), tdlib.okHandler());
         }
       })
       .setRawItems(new ListItem[] {
@@ -676,7 +676,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
   }
 
   @Override
-  public void onBasicGroupFullUpdated (int basicGroupId, final TdApi.BasicGroupFullInfo basicGroupFull) {
+  public void onBasicGroupFullUpdated (long basicGroupId, final TdApi.BasicGroupFullInfo basicGroupFull) {
     tdlib.ui().post(() -> {
       if (!isDestroyed() && groupId == basicGroupId) {
         processGroupFull(basicGroupFull);
@@ -697,12 +697,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
 
   @Override
   public void onUserUpdated (TdApi.User user) {
-
-  }
-
-  @Override
-  public void onUserFullUpdated (int userId, TdApi.UserFullInfo userFull) {
-
+    // TODO?
   }
 
   private static int indexOfMember (TdApi.ChatMember[] members, TdApi.MessageSender memberId) {
@@ -733,7 +728,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
     return -1;
   }
 
-  private void updateUserStatus (ArrayList<DoubleTextWrapper> array, int userId, boolean reorder, boolean notify) {
+  private void updateUserStatus (ArrayList<DoubleTextWrapper> array, long userId, boolean reorder, boolean notify) {
     final int fromIndex = indexOfMember(array, new TdApi.MessageSenderUser(userId));
     if (fromIndex == -1)
       return;
@@ -959,7 +954,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
 
   @Override
   @UiThread
-  public void onUserStatusChanged (int userId, TdApi.UserStatus status, boolean uiOnly) {
+  public void onUserStatusChanged (long userId, TdApi.UserStatus status, boolean uiOnly) {
     final boolean isSearching = isSearching();
     if (this.data != null && !this.data.isEmpty()) {
       updateUserStatus(this.data, userId, !uiOnly, !isSearching);

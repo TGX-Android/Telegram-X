@@ -87,7 +87,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
 
   @Override
   public void onClick (View v) {
-    int userId;
+    long userId;
     ListItem item = (ListItem) v.getTag();
 
     if (item != null && item.getData() instanceof DoubleTextWrapper) {

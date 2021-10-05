@@ -54,7 +54,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
 
   public static class Args {
     public long chatId;
-    public final int userId;
+    public final long userId;
     public final TdApi.ChatMemberStatus myStatus;
     public final TdApi.ChatMember member;
     public final int mode;
@@ -70,7 +70,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       this.forwardLimit = forwardLimit;
     }
 
-    public Args (long chatId, int userId, boolean isRestrict, @NonNull TdApi.ChatMemberStatus myStatus, @Nullable TdApi.ChatMember member) {
+    public Args (long chatId, long userId, boolean isRestrict, @NonNull TdApi.ChatMemberStatus myStatus, @Nullable TdApi.ChatMember member) {
       this.chatId = chatId;
       this.userId = userId;
       this.mode = isRestrict ? MODE_RESTRICTION : MODE_ADMIN_PROMOTION;
@@ -558,9 +558,6 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     }
   }
 
-  @Override
-  public void onBasicGroupFullUpdated (int basicGroupId, TdApi.BasicGroupFullInfo basicGroupFull) { }
-
   private boolean isNewRuleSet () {
     Args args = getArgumentsStrict();
     if (args.mode == MODE_CHAT_PERMISSIONS)
@@ -775,7 +772,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       return;
 
     long chatId = getArgumentsStrict().chatId;
-    int userId = getArgumentsStrict().userId;
+    long userId = getArgumentsStrict().userId;
 
     boolean isChannel = tdlib.isChannel(chatId);
     CharSequence text;

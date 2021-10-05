@@ -358,7 +358,7 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
     this(context, tdlib, sourceChatId, sourceMessageId, sourceSender, sourceDate, video.video, video.caption, allowIcon);
   }
 
-  public MediaItem (BaseActivity context, Tdlib tdlib, int userId, TdApi.ProfilePhoto profilePhoto) {
+  public MediaItem (BaseActivity context, Tdlib tdlib, long userId, TdApi.ProfilePhoto profilePhoto) {
     this.context = context;
     this.tdlib = tdlib;
     this.type = TYPE_USER_PROFILE;

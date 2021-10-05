@@ -34,7 +34,7 @@ public class TGFoundChat {
   private final Tdlib tdlib;
   private final TdApi.ChatList chatList;
   private final long chatId;
-  private int userId;
+  private long userId;
 
 
   private @Nullable TdApi.Chat chatTitleSource;
@@ -47,7 +47,7 @@ public class TGFoundChat {
   private AvatarPlaceholder.Metadata avatarPlaceholderMetadata;
 
   public TGFoundChat (Tdlib tdlib) {
-    int userId = tdlib.myUserId();
+    long userId = tdlib.myUserId();
     this.tdlib = tdlib;
     this.chatId = 0;
     this.chatList = null;
@@ -71,7 +71,7 @@ public class TGFoundChat {
     setChat(chat, query, isGlobal);
   }
 
-  public TGFoundChat (Tdlib tdlib, int userId) {
+  public TGFoundChat (Tdlib tdlib, long userId) {
     this(tdlib, tdlib.cache().user(userId), null, false);
   }
 
@@ -186,7 +186,7 @@ public class TGFoundChat {
       rawUsername.append(username);
     }
     if (chat.type.getConstructor() == TdApi.ChatTypeSupergroup.CONSTRUCTOR) {
-      int supergroupId = ChatId.toSupergroupId(chat.id);
+      long supergroupId = ChatId.toSupergroupId(chat.id);
       TdApi.SupergroupFullInfo supergroupFull = tdlib.cache().supergroupFull(supergroupId);
       int memberCount = supergroupFull != null ? supergroupFull.memberCount : 0;
       if (memberCount == 0) {
@@ -232,7 +232,7 @@ public class TGFoundChat {
     return chatId;
   }
 
-  public int getUserId () {
+  public long getUserId () {
     return userId;
   }
 
