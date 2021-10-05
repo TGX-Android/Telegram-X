@@ -7863,7 +7863,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return allowDefault && chat.permissions.canInviteUsers;
   }
 
-  public boolean canInviteUsersAsAdmin (TdApi.Chat chat) {
+  public boolean canManageInviteLinks(TdApi.Chat chat) {
     if (chat == null || chat.id == 0) {
       return false;
     }
