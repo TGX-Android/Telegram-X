@@ -3536,9 +3536,9 @@ public class TD {
             }
           } else {
             if (TD.isOut(m)) {
-              return Lang.pluralDuration(R.string.YouSetTimerSeconds, R.string.YouSetTimerMinutes, R.string.YouSetTimerHours, R.string.YouSetTimerDays, R.string.YouSetTimerWeeks, ttl.ttl, TimeUnit.SECONDS);
+              return Lang.pluralDuration(ttl.ttl, TimeUnit.SECONDS, R.string.YouSetTimerSeconds, R.string.YouSetTimerMinutes, R.string.YouSetTimerHours, R.string.YouSetTimerDays, R.string.YouSetTimerWeeks, R.string.YouSetTimerMonths).toString();
             } else {
-              return Lang.pluralDuration(R.string.XSetTimerSeconds, R.string.XSetTimerMinutes, R.string.XSetTimerHours, R.string.XSetTimerDays, R.string.XSetTimerWeeks, ttl.ttl, TimeUnit.SECONDS, tdlib.senderName(m.sender, true));
+              return Lang.pluralDuration(ttl.ttl, TimeUnit.SECONDS, R.string.XSetTimerSeconds, R.string.XSetTimerMinutes, R.string.XSetTimerHours, R.string.XSetTimerDays, R.string.XSetTimerWeeks, R.string.XSetTimerMonths, tdlib.senderName(m.sender, true)).toString();
             }
           }
         } else {
@@ -3550,9 +3550,9 @@ public class TD {
             }
           } else {
             if (TD.isOut(m)) {
-              return Lang.pluralDuration(R.string.YouSetAutoDeleteSeconds, R.string.YouSetAutoDeleteMinutes, R.string.YouSetAutoDeleteHours, R.string.YouSetAutoDeleteDays, R.string.YouSetAutoDeleteWeeks, ttl.ttl, TimeUnit.SECONDS);
+              return Lang.pluralDuration(ttl.ttl, TimeUnit.SECONDS, R.string.YouSetAutoDeleteSeconds, R.string.YouSetAutoDeleteMinutes, R.string.YouSetAutoDeleteHours, R.string.YouSetAutoDeleteDays, R.string.YouSetAutoDeleteWeeks, R.string.YouSetAutoDeleteMonths).toString();
             } else {
-              return Lang.pluralDuration(R.string.XSetAutoDeleteSeconds, R.string.XSetAutoDeleteMinutes, R.string.XSetAutoDeleteHours, R.string.XSetAutoDeleteDays, R.string.XSetAutoDeleteWeeks, ttl.ttl, TimeUnit.SECONDS, tdlib.senderName(m.sender, true));
+              return Lang.pluralDuration(ttl.ttl, TimeUnit.SECONDS, R.string.XSetAutoDeleteSeconds, R.string.XSetAutoDeleteMinutes, R.string.XSetAutoDeleteHours, R.string.XSetAutoDeleteDays, R.string.XSetAutoDeleteWeeks, R.string.XSetAutoDeleteMonths, tdlib.senderName(m.sender, true)).toString();
             }
           }
         }
@@ -5111,6 +5111,7 @@ public class TD {
   }
 
   private static final int ARG_NONE = 0;
+  private static final int ARG_TRUE = 1;
   private static final int ARG_POLL_QUIZ = 1;
   private static final int ARG_CALL_DECLINED = -1;
   private static final int ARG_CALL_MISSED = -2;
@@ -5167,7 +5168,7 @@ public class TD {
             }
           }
           if (isUrl) {
-            arg1 = 1;
+            arg1 = ARG_TRUE;
           }
         }
         break;
@@ -5348,6 +5349,9 @@ public class TD {
       }
       case TdApi.MessageChatChangeTitle.CONSTRUCTOR:
         alternativeText = ((TdApi.MessageChatChangeTitle) message.content).title;
+        break;
+      case TdApi.MessageChatSetTtl.CONSTRUCTOR:
+        arg1 = ((TdApi.MessageChatSetTtl) message.content).ttl;
         break;
     }
     ContentPreview.Refresher refresher = null;
@@ -5868,6 +5872,8 @@ public class TD {
     EMOJI_DICE_5 = new Emoji("\uD83C\uDFB2", R.drawable.belledeboheme_baseline_dice_5_16),
     EMOJI_DICE_6 = new Emoji("\uD83C\uDFB2", R.drawable.belledeboheme_baseline_dice_6_16),
     EMOJI_CALL = new Emoji("\uD83D\uDCDE", R.drawable.baseline_call_16),
+    EMOJI_TIMER = new Emoji("\u23F2", R.drawable.baseline_timer_16),
+    EMOJI_TIMER_OFF = new Emoji("\u23F2", R.drawable.baseline_timer_off_16),
     EMOJI_CALL_END = new Emoji("\uD83D\uDCDE", R.drawable.baseline_call_end_16),
     EMOJI_CALL_MISSED = new Emoji("\u260E", R.drawable.baseline_call_missed_18),
     EMOJI_CALL_DECLINED = new Emoji("\u260E", R.drawable.baseline_call_received_18),
@@ -5892,7 +5898,7 @@ public class TD {
   private static ContentPreview getContentPreview (@TdApi.MessageContent.Constructors int type, Tdlib tdlib, long chatId, TdApi.MessageSender sender, String senderName, boolean isOutgoing, boolean isChatsList, TdApi.FormattedText formattedArgument, boolean argumentTranslatable, int arg1) {
     switch (type) {
       case TdApi.MessageText.CONSTRUCTOR:
-        return new ContentPreview(arg1 == 1 ? EMOJI_LINK : null, R.string.YouHaveNewMessage, formattedArgument, argumentTranslatable);
+        return new ContentPreview(arg1 == ARG_TRUE ? EMOJI_LINK : null, R.string.YouHaveNewMessage, formattedArgument, argumentTranslatable);
       case TdApi.MessagePhoto.CONSTRUCTOR:
         return new ContentPreview(EMOJI_PHOTO, R.string.ChatContentPhoto, formattedArgument, argumentTranslatable);
       case TdApi.MessageVideo.CONSTRUCTOR:
@@ -5904,7 +5910,7 @@ public class TD {
       case TdApi.MessageContact.CONSTRUCTOR:
         return new ContentPreview(EMOJI_CONTACT, R.string.AttachContact, formattedArgument, argumentTranslatable);
       case TdApi.MessagePoll.CONSTRUCTOR:
-        if (arg1 == 1)
+        if (arg1 == ARG_POLL_QUIZ)
           return new ContentPreview(EMOJI_QUIZ, R.string.Quiz, formattedArgument, argumentTranslatable);
         else
           return new ContentPreview(EMOJI_POLL, R.string.Poll, formattedArgument, argumentTranslatable);
@@ -5962,6 +5968,45 @@ public class TD {
           return new ContentPreview(EMOJI_CHANNEL, 0, Lang.getString(R.string.ActionChannelChangedTitleTo, Td.getText(formattedArgument)), true);
         else
           return new ContentPreview(EMOJI_GROUP, 0, Lang.getString(isOutgoing ? R.string.ChatContentGroupName_outgoing : R.string.ChatContentGroupName, Td.getText(formattedArgument)), true);
+      case TdApi.MessageChatSetTtl.CONSTRUCTOR: {
+        if (arg1 > 0) {
+          final int secondsRes, minutesRes, hoursRes, daysRes, weeksRes, monthsRes;
+          if (ChatId.isUserChat(chatId)) {
+            secondsRes = R.string.ChatContentTtlSeconds;
+            minutesRes = R.string.ChatContentTtlMinutes;
+            hoursRes = R.string.ChatContentTtlHours;
+            daysRes = R.string.ChatContentTtlDays;
+            weeksRes = R.string.ChatContentTtlWeeks;
+            monthsRes = R.string.ChatContentTtlMonths;
+          } else if (tdlib.isChannel(chatId)) {
+            secondsRes = R.string.ChatContentChannelTtlSeconds;
+            minutesRes = R.string.ChatContentChannelTtlMinutes;
+            hoursRes = R.string.ChatContentChannelTtlHours;
+            daysRes = R.string.ChatContentChannelTtlDays;
+            weeksRes = R.string.ChatContentChannelTtlWeeks;
+            monthsRes = R.string.ChatContentChannelTtlMonths;
+          } else {
+            secondsRes = R.string.ChatContentGroupTtlSeconds;
+            minutesRes = R.string.ChatContentGroupTtlMinutes;
+            hoursRes = R.string.ChatContentGroupTtlHours;
+            daysRes = R.string.ChatContentGroupTtlDays;
+            weeksRes = R.string.ChatContentGroupTtlWeeks;
+            monthsRes = R.string.ChatContentGroupTtlMonths;
+          }
+          final CharSequence text = Lang.pluralDuration(arg1, TimeUnit.SECONDS, secondsRes, minutesRes, hoursRes, daysRes, weeksRes, monthsRes);
+          return new ContentPreview(EMOJI_TIMER, 0, TD.toFormattedText(text, false), true);
+        } else {
+          final int stringRes;
+          if (ChatId.isUserChat(chatId)) {
+            stringRes = R.string.ChatContentTtlOff;
+          } else if (tdlib.isChannel(chatId)) {
+            stringRes = R.string.ChatContentChannelTtlOff;
+          } else {
+            stringRes = R.string.ChatContentGroupTtlOff;
+          }
+          return new ContentPreview(EMOJI_TIMER_OFF, stringRes);
+        }
+      }
       case TdApi.MessageDice.CONSTRUCTOR: {
         String diceEmoji = !Td.isEmpty(formattedArgument) && tdlib.isDiceEmoji(formattedArgument.text) ? formattedArgument.text : TD.EMOJI_DICE.textRepresentation;
         if (TD.EMOJI_DART.textRepresentation.equals(diceEmoji)) {
@@ -6007,7 +6052,6 @@ public class TD {
         }
       case TdApi.MessageChatAddMembers.CONSTRUCTOR:
       case TdApi.MessageChatDeleteMember.CONSTRUCTOR:
-      case TdApi.MessageChatSetTtl.CONSTRUCTOR:
       case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR:
       case TdApi.MessageChatUpgradeTo.CONSTRUCTOR:
       case TdApi.MessageCustomServiceAction.CONSTRUCTOR:
@@ -6020,11 +6064,12 @@ public class TD {
       case TdApi.MessageVenue.CONSTRUCTOR:
       case TdApi.MessageWebsiteConnected.CONSTRUCTOR:
       case TdApi.MessageUnsupported.CONSTRUCTOR:
-        break;
       case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR:
       case TdApi.MessageInviteVoiceChatParticipants.CONSTRUCTOR:
       case TdApi.MessageVoiceChatStarted.CONSTRUCTOR:
       case TdApi.MessageVoiceChatEnded.CONSTRUCTOR:
+      case TdApi.MessageChatSetTheme.CONSTRUCTOR:
+      case TdApi.MessageVoiceChatScheduled.CONSTRUCTOR:
         break;
     }
     return null;

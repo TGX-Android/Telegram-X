@@ -334,6 +334,45 @@
   <string name="ChatContentGroupPhotoRemove_outgoing">Removed the group photo</string>
   <string name="ChatContentGroupName">Renamed the group to «%1$s»</string>
   <string name="ChatContentGroupName_outgoing">Renamed the group to «%1$s»</string>
+  <string name="ChatContentGroupTtlSeconds_one">Set messages to auto-delete in %1$s second</string>
+  <string name="ChatContentGroupTtlSeconds_other">Set messages to auto-delete in %1$s seconds</string>
+  <string name="ChatContentGroupTtlMinutes_one">Set messages to auto-delete in %1$s minute</string>
+  <string name="ChatContentGroupTtlMinutes_other">Set messages to auto-delete in %1$s minutes</string>
+  <string name="ChatContentGroupTtlHours_one">Set messages to auto-delete in %1$s hour</string>
+  <string name="ChatContentGroupTtlHours_other">Set messages to auto-delete in %1$s hours</string>
+  <string name="ChatContentGroupTtlDays_one">Set messages to auto-delete in %1$s days</string>
+  <string name="ChatContentGroupTtlDays_other">Set messages to auto-delete in %1$s days</string>
+  <string name="ChatContentGroupTtlWeeks_one">Set messages to auto-delete in %1$s week</string>
+  <string name="ChatContentGroupTtlWeeks_other">Set messages to auto-delete in %1$s weeks</string>
+  <string name="ChatContentGroupTtlMonths_one">Set messages to auto-delete in %1$s month</string>
+  <string name="ChatContentGroupTtlMonths_other">Set messages to auto-delete in %1$s months</string>
+  <string name="ChatContentGroupTtlOff">Disabled the auto-delete timer</string>
+  <string name="ChatContentChannelTtlSeconds_one">Set posts to auto-delete in %1$s second</string>
+  <string name="ChatContentChannelTtlSeconds_other">Set posts to auto-delete in %1$s seconds</string>
+  <string name="ChatContentChannelTtlMinutes_one">Set posts to auto-delete in %1$s minute</string>
+  <string name="ChatContentChannelTtlMinutes_other">Set posts to auto-delete in %1$s minutes</string>
+  <string name="ChatContentChannelTtlHours_one">Set posts to auto-delete in %1$s hour</string>
+  <string name="ChatContentChannelTtlHours_other">Set posts to auto-delete in %1$s hours</string>
+  <string name="ChatContentChannelTtlDays_one">Set posts to auto-delete in %1$s days</string>
+  <string name="ChatContentChannelTtlDays_other">Set posts to auto-delete in %1$s days</string>
+  <string name="ChatContentChannelTtlWeeks_one">Set posts to auto-delete in %1$s week</string>
+  <string name="ChatContentChannelTtlWeeks_other">Set posts to auto-delete in %1$s weeks</string>
+  <string name="ChatContentChannelTtlMonths_one">Set posts to auto-delete in %1$s month</string>
+  <string name="ChatContentChannelTtlMonths_other">Set posts to auto-delete in %1$s months</string>
+  <string name="ChatContentChannelTtlOff">Disabled the auto-delete timer</string>
+  <string name="ChatContentTtlSeconds_one">Set the self-destruct timer to %1$s second</string>
+  <string name="ChatContentTtlSeconds_other">Set the self-destruct timer to %1$s seconds</string>
+  <string name="ChatContentTtlMinutes_one">Set the self-destruct timer to %1$s minute</string>
+  <string name="ChatContentTtlMinutes_other">Set the self-destruct timer to %1$s minutes</string>
+  <string name="ChatContentTtlHours_one">Set the self-destruct timer to %1$s hour</string>
+  <string name="ChatContentTtlHours_other">Set the self-destruct timer to %1$s hours</string>
+  <string name="ChatContentTtlDays_one">Set the self-destruct timer to %1$s days</string>
+  <string name="ChatContentTtlDays_other">Set the self-destruct timer to %1$s days</string>
+  <string name="ChatContentTtlWeeks_one">Set the self-destruct timer to %1$s week</string>
+  <string name="ChatContentTtlWeeks_other">Set the self-destruct timer to %1$s weeks</string>
+  <string name="ChatContentTtlMonths_one">Set the self-destruct timer to %1$s month</string>
+  <string name="ChatContentTtlMonths_other">Set the self-destruct timer to %1$s months</string>
+  <string name="ChatContentTtlOff">Disabled the self-destruct timer</string>
   <string name="ChatContentVoiceChatStarted">Started a video chat</string>
   <string name="ChatContentVoiceChatStarted_outgoing">Started a video chat</string>
   <string name="ChatContentVoiceChatFinished">Ended the video chat (%1$s)</string>
@@ -901,6 +940,8 @@
   <string name="XDisabledTimer">%1$s disabled the self-destruct timer</string>
   <string name="YouDisabledAutoDelete">You disabled the auto-delete timer</string>
   <string name="XDisabledAutoDelete">%1$s disabled the auto-delete timer</string>
+  <string name="YouDisabledAutoDeletePosts">You disabled the auto-delete timer</string>
+  <string name="XDisabledAutoDeletePosts">%1$s disabled the auto-delete timer</string>
 
   <string name="XSetTimerSeconds_one">%2$s set the self-destruct timer to %1$s second</string>
   <string name="XSetTimerSeconds_other">%2$s set the self-destruct timer to %1$s seconds</string>
@@ -927,6 +968,11 @@
   <string name="YouSetTimerWeeks_one">You set the self-destruct timer to %1$s week</string>
   <string name="YouSetTimerWeeks_other">You set the self-destruct timer to %1$s weeks</string>
 
+  <string name="XSetTimerMonths_one">%2$s set the self-destruct timer to %1$s month</string>
+  <string name="XSetTimerMonths_other">%2$s set the self-destruct timer to %1$s months</string>
+  <string name="YouSetTimerMonths_one">You set the self-destruct timer to %1$s month</string>
+  <string name="YouSetTimerMonths_other">You set the self-destruct timer to %1$s months</string>
+
   <string name="XSetAutoDeleteSeconds_one">%2$s set the messages to auto-delete in %1$s second</string>
   <string name="XSetAutoDeleteSeconds_other">%2$s set the messages to auto-delete in %1$s seconds</string>
   <string name="YouSetAutoDeleteSeconds_one">You set the messages to auto-delete in %1$s second</string>
@@ -951,6 +997,41 @@
   <string name="XSetAutoDeleteWeeks_other">%2$s set the messages to auto-delete in %1$s weeks</string>
   <string name="YouSetAutoDeleteWeeks_one">You set the messages to auto-delete in %1$s week</string>
   <string name="YouSetAutoDeleteWeeks_other">You set the messages to auto-delete in %1$s weeks</string>
+
+  <string name="XSetAutoDeleteMonths_one">%2$s set the messages to auto-delete in %1$s month</string>
+  <string name="XSetAutoDeleteMonths_other">%2$s set the messages to auto-delete in %1$s months</string>
+  <string name="YouSetAutoDeleteMonths_one">You set the messages to auto-delete in %1$s month</string>
+  <string name="YouSetAutoDeleteMonths_other">You set the messages to auto-delete in %1$s months</string>
+
+  <string name="XSetAutoDeletePostsSeconds_one">%2$s set posts to auto-delete in %1$s second</string>
+  <string name="XSetAutoDeletePostsSeconds_other">%2$s set posts to auto-delete in %1$s seconds</string>
+  <string name="YouSetAutoDeletePostsSeconds_one">You set posts to auto-delete in %1$s second</string>
+  <string name="YouSetAutoDeletePostsSeconds_other">You set posts to auto-delete in %1$s seconds</string>
+
+  <string name="XSetAutoDeletePostsMinutes_one">%2$s set posts to auto-delete in %1$s minute</string>
+  <string name="XSetAutoDeletePostsMinutes_other">%2$s set posts to auto-delete in %1$s minutes</string>
+  <string name="YouSetAutoDeletePostsMinutes_one">You set posts to auto-delete in %1$s minute</string>
+  <string name="YouSetAutoDeletePostsMinutes_other">You set posts to auto-delete in %1$s minutes</string>
+
+  <string name="XSetAutoDeletePostsHours_one">%2$s set posts to auto-delete in %1$s hour</string>
+  <string name="XSetAutoDeletePostsHours_other">%2$s set posts to auto-delete in %1$s hours</string>
+  <string name="YouSetAutoDeletePostsHours_one">You set posts to auto-delete in %1$s hour</string>
+  <string name="YouSetAutoDeletePostsHours_other">You set posts to auto-delete in %1$s hours</string>
+
+  <string name="XSetAutoDeletePostsDays_one">%2$s set posts to auto-delete in %1$s day</string>
+  <string name="XSetAutoDeletePostsDays_other">%2$s set posts to auto-delete in %1$s days</string>
+  <string name="YouSetAutoDeletePostsDays_one">You set posts to auto-delete in %1$s day</string>
+  <string name="YouSetAutoDeletePostsDays_other">You set posts to auto-delete in %1$s days</string>
+
+  <string name="XSetAutoDeletePostsWeeks_one">%2$s set posts to auto-delete in %1$s week</string>
+  <string name="XSetAutoDeletePostsWeeks_other">%2$s set posts to auto-delete in %1$s weeks</string>
+  <string name="YouSetAutoDeletePostsWeeks_one">You set posts to auto-delete in %1$s week</string>
+  <string name="YouSetAutoDeletePostsWeeks_other">You set posts to auto-delete in %1$s weeks</string>
+
+  <string name="XSetAutoDeletePostsMonths_one">%2$s set posts to auto-delete in %1$s month</string>
+  <string name="XSetAutoDeletePostsMonths_other">%2$s set posts to auto-delete in %1$s months</string>
+  <string name="YouSetAutoDeletePostsMonths_one">You set posts to auto-delete in %1$s month</string>
+  <string name="YouSetAutoDeletePostsMonths_other">You set posts to auto-delete in %1$s months</string>
 
   <string name="AddCaption">Add a caption…</string>
   <string name="Enhance">Enhance</string>

@@ -1202,7 +1202,6 @@ public class MessagesLoader implements Client.ResultHandler {
     boolean isStub = chat == null;
     boolean isSupergroup = chat != null && TD.isSupergroup(chat.type);
     boolean isChannel = chat != null && !isSupergroup && TD.isChannel(chat.type);
-    boolean isBot = chat != null && !isChannel && tdlib.isBotChat(chat);
 
     int scrollItemIndex = -1;
     TGMessage scrollItem = null;
@@ -1301,7 +1300,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
       if (!isChannel) {
         if (cur.isOutgoing()) {
-          if (!isBot && !isStub) {
+          if (!isStub) {
             cur.setUnread(lastReadOutboxMessageId);
           }
         } else if (!isStub) {

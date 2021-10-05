@@ -1568,25 +1568,6 @@ public class Lang {
 
   // Duration
 
-  public static String pluralDuration (@StringRes int secondsRes, @StringRes int minutesRes, @StringRes int hoursRes, @StringRes int daysRes, @StringRes int weeksRes, final long time, final TimeUnit unit, Object... args) {
-    int days = (int) unit.toDays(time);
-    if (days >= 7) {
-      return plural(weeksRes, days / 7, args);
-    }
-    if (days > 0) {
-      return plural(daysRes, days, args);
-    }
-    int hours = (int) unit.toHours(time);
-    if (hours > 0) {
-      return plural(hoursRes, hours, args);
-    }
-    int minutes = (int) unit.toMinutes(time);
-    if (minutes > 0) {
-      return plural(minutesRes, minutes, args);
-    }
-    return plural(secondsRes, (int) unit.toSeconds(time), args);
-  }
-
   public static boolean preferTimeForDuration (int seconds) {
     return (seconds / 60 / 60 / 24 / 7) > 2 || seconds <= 0;
   }
@@ -1876,6 +1857,38 @@ public class Lang {
 
   public static String getMessageTimestamp (long unixTime, TimeUnit unit) {
     return getRelativeTimestamp(unixTime, unit);
+  }
+
+
+  public static CharSequence pluralDuration (long duration, TimeUnit unit,
+                                             @StringRes int secondsRes, @StringRes int minutesRes, @StringRes int hoursRes,
+                                             @StringRes int daysRes, @StringRes int weeksRes, @StringRes int monthsRes,
+                                             Object... args) {
+    final long days = unit.toDays(duration);
+    final long months = days / 30;
+    final long weeks = days / 7;
+    final long hours = unit.toHours(duration);
+    final long minutes = unit.toMinutes(duration);
+    final long seconds = unit.toSeconds(duration);
+    if (monthsRes != 0 && months > 0) {
+      return Lang.pluralBold(monthsRes, months, args);
+    }
+    if (weeksRes != 0 && weeks > 0) {
+      return Lang.pluralBold(weeksRes, weeks, args);
+    }
+    if (daysRes != 0 && days > 0) {
+      return Lang.pluralBold(daysRes, days, args);
+    }
+    if (hoursRes != 0 && hours > 0) {
+      return Lang.pluralBold(hoursRes, hours, args);
+    }
+    if (minutesRes != 0 && minutes > 0) {
+      return Lang.pluralBold(minutesRes, minutes, args);
+    }
+    if (secondsRes != 0) {
+      return Lang.pluralBold(secondsRes, seconds, args);
+    }
+    throw new IllegalArgumentException();
   }
 
   public static String getModifiedTimestamp (long unixTime, TimeUnit unit) {
