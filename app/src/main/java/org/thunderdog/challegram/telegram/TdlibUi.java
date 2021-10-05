@@ -3997,6 +3997,8 @@ public class TdlibUi extends Handler {
   }
 
   public void showInviteLinkOptions (ViewController<?> context, final TdApi.ChatInviteLink link, final long chatId, final boolean showNavigatingToLinks, final boolean deleted, @Nullable Runnable onLinkDeleted, @Nullable RunnableData<TdApi.ChatInviteLinks> onLinkRevoked) {
+    TdApi.Chat chat = tdlib.chat(chatId);
+
     StringList strings = new StringList(6);
     IntList icons = new IntList(6);
     IntList ids = new IntList(6);
@@ -4009,7 +4011,7 @@ public class TdlibUi extends Handler {
       colors.append(ViewController.OPTION_COLOR_NORMAL);
     }
 
-    if (showNavigatingToLinks) {
+    if (showNavigatingToLinks && tdlib.canInviteUsers(chat) && tdlib.isAtLeastAdmin(chat)) {
       ids.append(R.id.btn_manageInviteLinks);
       strings.append(R.string.InviteLinkManage);
       icons.append(R.drawable.baseline_add_link_24);

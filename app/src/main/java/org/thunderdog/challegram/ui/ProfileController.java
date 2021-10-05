@@ -4436,7 +4436,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
       case R.id.btn_username: {
         boolean canSetUsername = supergroupFull != null && supergroupFull.canSetUsername;
-        boolean canInviteUsers = chat != null && tdlib.canInviteUsers(chat);
+        boolean canInviteUsers = chat != null && tdlib.canInviteUsers(chat) && tdlib.isAtLeastAdmin(chat);
 
         int size = 3;
         if (canSetUsername) size++;

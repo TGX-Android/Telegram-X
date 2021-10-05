@@ -7863,6 +7863,24 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return allowDefault && chat.permissions.canInviteUsers;
   }
 
+  public boolean isAtLeastAdmin (TdApi.Chat chat) {
+    if (chat == null || chat.id == 0) {
+      return false;
+    }
+    TdApi.ChatMemberStatus status = chatStatus(chat.id);
+    if (status != null) {
+      switch (status.getConstructor()) {
+        case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
+        case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
+          return true;
+        default:
+          return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
   public boolean canCreateInviteLink (TdApi.Chat chat) {
     return canInviteUsers(chat, false);
   }
