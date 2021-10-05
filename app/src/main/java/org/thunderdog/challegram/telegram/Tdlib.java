@@ -1625,7 +1625,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     client().send(new TdApi.LoadChats(chatList, limit), handler);
   }
 
-  public void readAllChats (@Nullable TdApi.ChatList chatList, @Nullable RunnableInt after) {
+  public void readAllChats (@NonNull TdApi.ChatList chatList, @Nullable RunnableInt after) {
     AtomicInteger readChatsCount = new AtomicInteger(0);
     getAllChats(chatList, chat -> {
       boolean read = false;
