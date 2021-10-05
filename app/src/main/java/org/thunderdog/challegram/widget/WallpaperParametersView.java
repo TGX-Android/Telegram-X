@@ -23,82 +23,82 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.util.ClickHelper;
 
 public class WallpaperParametersView extends View implements ClickHelper.Delegate {
-    private WallpaperParametersListener listener;
-    private boolean isInitialBlur;
+  private WallpaperParametersListener listener;
+  private boolean isInitialBlur;
 
-    private final Paint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
-    private final RectF blurRect = new RectF();
-    private final ClickHelper helper = new ClickHelper(this);
+  private final Paint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
+  private final RectF blurRect = new RectF();
+  private final ClickHelper helper = new ClickHelper(this);
 
-    private final BoolAnimator isBlurEnabled = new BoolAnimator(0, (id, factor, fraction, callee) -> {
-        if (listener != null) listener.onBlurValueChanged(isInitialBlur ? 1f - factor : factor);
-        invalidate();
-    }, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
+  private final BoolAnimator isBlurEnabled = new BoolAnimator(0, (id, factor, fraction, callee) -> {
+    if (listener != null) listener.onBlurValueChanged(isInitialBlur ? 1f - factor : factor);
+    invalidate();
+  }, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
 
-    public WallpaperParametersView (Context context) {
-        super(context);
-        this.textPaint.setColor(Theme.textAccentColor());
-        this.textPaint.setTypeface(Fonts.getRobotoRegular());
-        this.textPaint.setTextSize(Screen.sp(14f));
-        setWillNotDraw(false);
+  public WallpaperParametersView (Context context) {
+    super(context);
+    this.textPaint.setColor(Theme.textAccentColor());
+    this.textPaint.setTypeface(Fonts.getRobotoRegular());
+    this.textPaint.setTextSize(Screen.sp(14f));
+    setWillNotDraw(false);
+  }
+
+  public void initWith (TdApi.Background background, @Nullable WallpaperParametersListener listener) {
+    this.isBlurEnabled.setValue(((TdApi.BackgroundTypeWallpaper) background.type).isBlurred, false);
+    this.isInitialBlur = this.isBlurEnabled.getValue();
+    this.listener = listener;
+  }
+
+  public boolean isBlurred () {
+    return isBlurEnabled.getValue();
+  }
+
+  @Override
+  protected void onDraw (Canvas c) {
+    drawButton(c, getWidth() / 2, getHeight() / 2, blurRect, Lang.getString(R.string.ChatBackgroundBlur), isBlurEnabled);
+  }
+
+  private void drawButton (Canvas c, int centerX, int centerY, RectF buttonRect, String text, BoolAnimator selectAnimator) {
+    float textWidth = this.textPaint.measureText(text);
+    float checkboxScale = .75f;
+    float checkboxSize = (SimplestCheckBox.size() * checkboxScale);
+    float offset = (textWidth / 2) - checkboxSize;
+    int checkboxX = centerX - (int) (checkboxSize) / 2 - Screen.dp(8f) + (int) (Screen.dp(2f) * checkboxScale) - (int) offset;
+    int checkboxY = centerY - (int) (Screen.dp(2f) * checkboxScale);
+
+    buttonRect.top = checkboxY - checkboxSize;
+    buttonRect.bottom = checkboxY + checkboxSize;
+    buttonRect.left = checkboxX - checkboxSize;
+    buttonRect.right = centerX + textWidth + (int) (checkboxSize / 1.5) - offset;
+    c.drawRoundRect(buttonRect, Screen.dp(16f), Screen.dp(16f), Paints.fillingPaint(Theme.getColor(R.id.theme_color_previewBackground)));
+
+    c.drawText(text, centerX - offset, centerY + Screen.sp(4f), textPaint);
+
+    c.save();
+    c.scale(checkboxScale, checkboxScale, checkboxX, centerY);
+    c.drawCircle(checkboxX, checkboxY, checkboxSize / 2, Paints.getProgressPaint(Theme.getColor(R.id.theme_color_text), Screen.dp(2f)));
+    SimplestCheckBox.draw(c, checkboxX, checkboxY, selectAnimator.getFloatValue(), null);
+    c.restore();
+  }
+
+  @Override
+  public boolean onTouchEvent (MotionEvent event) {
+    return helper.onTouchEvent(this, event);
+  }
+
+  @Override
+  public boolean needClickAt (View view, float x, float y) {
+    return blurRect.contains(x, y);
+  }
+
+  @Override
+  public void onClickAt (View view, float x, float y) {
+    if (blurRect.contains(x, y)) {
+      isBlurEnabled.toggleValue(true);
     }
+  }
 
-    public void initWith (TdApi.Background background, @Nullable WallpaperParametersListener listener) {
-        this.isBlurEnabled.setValue(((TdApi.BackgroundTypeWallpaper) background.type).isBlurred, false);
-        this.isInitialBlur = this.isBlurEnabled.getValue();
-        this.listener = listener;
-    }
-
-    public boolean isBlurred () {
-        return isBlurEnabled.getValue();
-    }
-
-    @Override
-    protected void onDraw (Canvas c) {
-        drawButton(c, getWidth() / 2, getHeight() / 2, blurRect, Lang.getString(R.string.ChatBackgroundBlur), isBlurEnabled);
-    }
-
-    private void drawButton (Canvas c, int centerX, int centerY, RectF buttonRect, String text, BoolAnimator selectAnimator) {
-        float textWidth = this.textPaint.measureText(text);
-        float checkboxScale = .75f;
-        float checkboxSize = (SimplestCheckBox.size() * checkboxScale);
-        float offset = (textWidth / 2) - checkboxSize;
-        int checkboxX = centerX - (int) (checkboxSize) / 2 - Screen.dp(8f) + (int) (Screen.dp(2f) * checkboxScale) - (int) offset;
-        int checkboxY = centerY - (int) (Screen.dp(2f) * checkboxScale);
-
-        buttonRect.top = checkboxY - checkboxSize;
-        buttonRect.bottom = checkboxY + checkboxSize;
-        buttonRect.left = checkboxX - checkboxSize;
-        buttonRect.right = centerX + textWidth + (int) (checkboxSize / 1.5) - offset;
-        c.drawRoundRect(buttonRect, Screen.dp(16f), Screen.dp(16f), Paints.fillingPaint(Theme.getColor(R.id.theme_color_previewBackground)));
-
-        c.drawText(text, centerX - offset, centerY + Screen.sp(4f), textPaint);
-
-        c.save();
-        c.scale(checkboxScale, checkboxScale, checkboxX, centerY);
-        c.drawCircle(checkboxX, checkboxY, checkboxSize / 2, Paints.getProgressPaint(Theme.getColor(R.id.theme_color_text), Screen.dp(2f)));
-        SimplestCheckBox.draw(c, checkboxX, checkboxY, selectAnimator.getFloatValue(), null);
-        c.restore();
-    }
-
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        return helper.onTouchEvent(this, event);
-    }
-
-    @Override
-    public boolean needClickAt (View view, float x, float y) {
-        return blurRect.contains(x, y);
-    }
-
-    @Override
-    public void onClickAt (View view, float x, float y) {
-        if (blurRect.contains(x, y)) {
-            isBlurEnabled.toggleValue(true);
-        }
-    }
-
-    public interface WallpaperParametersListener {
-        void onBlurValueChanged (float factor);
-    }
+  public interface WallpaperParametersListener {
+    void onBlurValueChanged (float factor);
+  }
 }
