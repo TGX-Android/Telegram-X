@@ -2465,7 +2465,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   protected static final float LETTERS_SIZE_SMALL = 15f;
 
   private boolean onNameClick (View view, Text text, TextPart part, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    if (part.getEntity() != null && part.getEntity().getTag() instanceof Integer) {
+    if (part.getEntity() != null && part.getEntity().getTag() instanceof Long) {
       manager.controller().setInputInlineBot(msg.viaBotUserId, viaBotUsername);
       return true;
     } else {
