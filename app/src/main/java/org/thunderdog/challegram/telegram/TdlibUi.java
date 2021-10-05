@@ -56,7 +56,6 @@ import org.thunderdog.challegram.navigation.SettingsWrap;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.theme.TGBackground;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeColors;
 import org.thunderdog.challegram.theme.ThemeCustom;
@@ -3997,6 +3996,8 @@ public class TdlibUi extends Handler {
   }
 
   public void showInviteLinkOptions (ViewController<?> context, final TdApi.ChatInviteLink link, final long chatId, final boolean showNavigatingToLinks, final boolean deleted, @Nullable Runnable onLinkDeleted, @Nullable RunnableData<TdApi.ChatInviteLinks> onLinkRevoked) {
+    TdApi.Chat chat = tdlib.chat(chatId);
+
     StringList strings = new StringList(6);
     IntList icons = new IntList(6);
     IntList ids = new IntList(6);
@@ -4009,7 +4010,7 @@ public class TdlibUi extends Handler {
       colors.append(ViewController.OPTION_COLOR_NORMAL);
     }
 
-    if (showNavigatingToLinks) {
+    if (showNavigatingToLinks && tdlib.canManageInviteLinks(chat)) {
       ids.append(R.id.btn_manageInviteLinks);
       strings.append(R.string.InviteLinkManage);
       icons.append(R.drawable.baseline_add_link_24);

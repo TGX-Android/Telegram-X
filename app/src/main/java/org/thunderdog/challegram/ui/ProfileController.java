@@ -3551,7 +3551,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_chatPermissions, 0, R.string.ChatPermissions));
       added = true;
     }
-    if (tdlib.canInviteUsers(chat)) {
+    if (tdlib.canManageInviteLinks(chat)) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_manageInviteLinks, 0, R.string.InviteLinkManage));
       added = true;
@@ -4437,7 +4437,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
       case R.id.btn_username: {
         boolean canSetUsername = supergroupFull != null && supergroupFull.canSetUsername;
-        boolean canInviteUsers = chat != null && tdlib.canInviteUsers(chat);
+        boolean canInviteUsers = chat != null && tdlib.canManageInviteLinks(chat);
 
         int size = 3;
         if (canSetUsername) size++;
