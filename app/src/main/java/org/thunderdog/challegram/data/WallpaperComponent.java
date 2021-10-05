@@ -1,7 +1,6 @@
 package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
 import android.os.Build;
@@ -18,6 +17,7 @@ import org.thunderdog.challegram.loader.ImageFileLocal;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.TGBackground;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeDelegate;
@@ -36,11 +36,10 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
   private final TGMessage context;
   private final DrawAlgorithms.GradientCache gradientCache = new DrawAlgorithms.GradientCache();
   private final RectF placeholderRect = new RectF();
-  private final Paint placeholderPaint = new Paint();
   private final ClickHelper clickHelper = new ClickHelper(this);
+  private final String fullUrl;
 
   private Path placeholderPath;
-
   private int lastMaxWidth, lastRadius;
 
   private TdApi.Background background;
@@ -51,8 +50,9 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
   private ImageReceiver imageReceiver;
   private DoubleImageReceiver imageReceiverMini;
 
-  public WallpaperComponent (@NonNull TGMessage context, @NonNull String wallpaperUrl) {
+  public WallpaperComponent (@NonNull TGMessage context, @NonNull String fullUrl, @NonNull String wallpaperUrl) {
     this.context = context;
+    this.fullUrl = fullUrl;
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
       this.placeholderPath = new Path();
@@ -132,9 +132,7 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
     int right = startX + getWidth();
     int bottom = startY + getHeight();
 
-    placeholderPaint.setColor(Theme.getColor(R.id.theme_color_placeholder));
     placeholderRect.set(startX, startY, right, bottom);
-    c.drawRoundRect(placeholderRect, radius, radius, placeholderPaint);
 
     final boolean clipped = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && placeholderPath != null;
     final int saveCount;
@@ -156,7 +154,7 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
     if (imageFilePrimary != null) {
       preview.setPaintAlpha(alpha + preview.getAlpha());
       receiver.setPaintAlpha(alpha + receiver.getAlpha());
-      DrawAlgorithms.drawReceiver(c, preview, receiver, true, false, startX, startY, right, bottom);
+      DrawAlgorithms.drawReceiver(c, preview, receiver, true, true, startX, startY, right, bottom);
       receiver.restorePaintAlpha();
       preview.restorePaintAlpha();
     }
@@ -257,8 +255,6 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
 
   @Override
   public void onClickAt (View view, float x, float y) {
-    MessagesController c = new MessagesController(context.context(), context.tdlib());
-    c.setArguments(new MessagesController.Arguments(MessagesController.PREVIEW_MODE_WALLPAPER_OBJECT, null, null).setWallpaperObject(background));
-    context.context().navigation().navigateTo(c);
+    context.tdlib().ui().openUrl(context.controller(), fullUrl, new TdlibUi.UrlOpenParameters().disableInstantView());
   }
 }
