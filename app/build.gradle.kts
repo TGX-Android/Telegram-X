@@ -195,7 +195,7 @@ dependencies {
     // Play Core: https://developer.android.com/reference/com/google/android/play/core/release-notes
     implementation("com.google.android.play:core:1.10.2")
     // ExoPlayer: https://github.com/google/ExoPlayer/blob/release-v2/RELEASENOTES.md
-    implementation("com.google.android.exoplayer:exoplayer-core:2.15.0")
+    implementation("com.google.android.exoplayer:exoplayer-core:2.15.1")
     // The Checker Framework: https://checkerframework.org/CHANGELOG.md
     compileOnly("org.checkerframework:checker-qual:3.17.0")
     // OkHttp: https://github.com/square/okhttp/blob/master/CHANGELOG.md
@@ -207,7 +207,7 @@ dependencies {
     // Konfetti: https://github.com/DanielMartinus/Konfetti/blob/master/README.md
     implementation("nl.dionsegijn:konfetti:1.2.6")
     // Transcoder: https://github.com/natario1/Transcoder/blob/master/docs/_about/changelog.md
-    implementation("com.github.natario1:Transcoder:dab9ac2")
+    implementation("com.github.natario1:Transcoder:ba8f098c94")
 
     // YouTube: https://developers.google.com/youtube/android/player/
     implementation(files("thirdparty/YouTubeAndroidPlayerApi.jar"))
