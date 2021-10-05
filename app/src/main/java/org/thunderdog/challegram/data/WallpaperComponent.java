@@ -42,7 +42,9 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
   private Path placeholderPath;
 
   private int lastMaxWidth, lastRadius;
+
   private TdApi.Background background;
+  private TGBackground tgBackground;
 
   private ImageFile imageFileMinithumbnail;
   private ImageFile imageFilePrimary;
@@ -62,6 +64,10 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
       }
 
       context.tdlib.ui().post(() -> {
+        if (background != null) {
+          tgBackground = new TGBackground(context.tdlib, background);
+        }
+
         updateBackground();
 
         if (viewProvider != null) {
@@ -123,12 +129,16 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
   @Override
   public <T extends View & DrawableProvider> void draw (T view, Canvas c, int startX, int startY, Receiver preview, Receiver receiver, int backgroundColor, int contentReplaceColor, float alpha, float checkFactor) {
     int radius = getRadius();
+    int right = startX + getWidth();
+    int bottom = startY + getHeight();
+
     placeholderPaint.setColor(Theme.getColor(R.id.theme_color_placeholder));
-    placeholderRect.set(startX, startY, startX + getWidth(), startY + getHeight());
+    placeholderRect.set(startX, startY, right, bottom);
     c.drawRoundRect(placeholderRect, radius, radius, placeholderPaint);
 
     final boolean clipped = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && placeholderPath != null;
     final int saveCount;
+    
     if (clipped) {
       if (lastRadius != radius) {
         layoutPath(startX, startY, radius);
@@ -139,21 +149,21 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
       saveCount = Integer.MIN_VALUE;
     }
 
-    if (background != null) {
-      drawBackground(c, new TGBackground(context.tdlib, background), startX, startY, startX + getWidth(), startY + getHeight(), alpha, receiver);
+    if (tgBackground != null) {
+      drawBackground(c, tgBackground, startX, startY, right, bottom, alpha, receiver);
     }
 
     if (imageFilePrimary != null) {
       preview.setPaintAlpha(alpha + preview.getAlpha());
       receiver.setPaintAlpha(alpha + receiver.getAlpha());
-      DrawAlgorithms.drawReceiver(c, preview, receiver, true, false, startX, startY, startX + getWidth(), startY + getHeight());
+      DrawAlgorithms.drawReceiver(c, preview, receiver, true, false, startX, startY, right, bottom);
       receiver.restorePaintAlpha();
       preview.restorePaintAlpha();
     }
 
     if (clipped) {
       ViewSupport.restoreClipPath(c, saveCount);
-      TGMessage.drawCornerFixes(c, context, 1f, startX, startY, startX + getWidth(), startY + getHeight(), radius, radius, radius, radius);
+      TGMessage.drawCornerFixes(c, context, 1f, startX, startY, right, bottom, radius, radius, radius, radius);
     }
   }
 
