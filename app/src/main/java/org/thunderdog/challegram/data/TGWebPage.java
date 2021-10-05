@@ -973,7 +973,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   }
 
   public FileComponent getFileComponent () {
-    return (FileComponent) component;
+    return component instanceof FileComponent ? (FileComponent) component : null;
   }
 
   public boolean needInstantView () {

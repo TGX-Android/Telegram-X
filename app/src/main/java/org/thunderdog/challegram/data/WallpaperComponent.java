@@ -1,10 +1,8 @@
 package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Build;
 import android.view.MotionEvent;
@@ -13,10 +11,7 @@ import android.view.View;
 import androidx.annotation.NonNull;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.component.chat.WallpaperView;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageFileLocal;
@@ -30,6 +25,7 @@ import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.util.DrawableProvider;
 
 import me.vkryl.core.ColorUtils;
@@ -44,6 +40,7 @@ public class WallpaperComponent extends BaseComponent {
     private Path placeholderPath;
 
     private int lastMaxWidth, lastRadius;
+    private boolean isClickedOnBackground;
     private TdApi.Background background;
 
     private ImageFile imageFileMinithumbnail;
@@ -233,7 +230,24 @@ public class WallpaperComponent extends BaseComponent {
 
     @Override
     public boolean onTouchEvent (View view, MotionEvent event) {
-        return true;
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN: {
+                isClickedOnBackground = placeholderRect.contains(event.getX(), event.getY());
+                return isClickedOnBackground;
+            }
+
+            case MotionEvent.ACTION_UP: {
+                if (isClickedOnBackground) {
+                    isClickedOnBackground = false;
+                    MessagesController c = new MessagesController(context.context(), context.tdlib());
+                    c.setArguments(new MessagesController.Arguments(MessagesController.PREVIEW_MODE_WALLPAPER_OBJECT, null, null).setWallpaperObject(background));
+                    context.context().navigation().navigateTo(c);
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private int getRadius () {
