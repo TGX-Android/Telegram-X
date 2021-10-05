@@ -973,35 +973,35 @@
   <string name="YouSetTimerMonths_one">You set the self-destruct timer to %1$s month</string>
   <string name="YouSetTimerMonths_other">You set the self-destruct timer to %1$s months</string>
 
-  <string name="XSetAutoDeleteSeconds_one">%2$s set the messages to auto-delete in %1$s second</string>
-  <string name="XSetAutoDeleteSeconds_other">%2$s set the messages to auto-delete in %1$s seconds</string>
-  <string name="YouSetAutoDeleteSeconds_one">You set the messages to auto-delete in %1$s second</string>
-  <string name="YouSetAutoDeleteSeconds_other">You set the messages to auto-delete in %1$s seconds</string>
+  <string name="XSetAutoDeleteSeconds_one">%2$s set messages to auto-delete in %1$s second</string>
+  <string name="XSetAutoDeleteSeconds_other">%2$s set messages to auto-delete in %1$s seconds</string>
+  <string name="YouSetAutoDeleteSeconds_one">You set messages to auto-delete in %1$s second</string>
+  <string name="YouSetAutoDeleteSeconds_other">You set messages to auto-delete in %1$s seconds</string>
 
-  <string name="XSetAutoDeleteMinutes_one">%2$s set the messages to auto-delete in %1$s minute</string>
-  <string name="XSetAutoDeleteMinutes_other">%2$s set the messages to auto-delete in %1$s minutes</string>
-  <string name="YouSetAutoDeleteMinutes_one">You set the messages to auto-delete in %1$s minute</string>
-  <string name="YouSetAutoDeleteMinutes_other">You set the messages to auto-delete in %1$s minutes</string>
+  <string name="XSetAutoDeleteMinutes_one">%2$s set messages to auto-delete in %1$s minute</string>
+  <string name="XSetAutoDeleteMinutes_other">%2$s set messages to auto-delete in %1$s minutes</string>
+  <string name="YouSetAutoDeleteMinutes_one">You set messages to auto-delete in %1$s minute</string>
+  <string name="YouSetAutoDeleteMinutes_other">You set messages to auto-delete in %1$s minutes</string>
 
-  <string name="XSetAutoDeleteHours_one">%2$s set the messages to auto-delete in %1$s hour</string>
-  <string name="XSetAutoDeleteHours_other">%2$s set the messages to auto-delete in %1$s hours</string>
-  <string name="YouSetAutoDeleteHours_one">You set the messages to auto-delete in %1$s hour</string>
-  <string name="YouSetAutoDeleteHours_other">You set the messages to auto-delete in %1$s hours</string>
+  <string name="XSetAutoDeleteHours_one">%2$s set messages to auto-delete in %1$s hour</string>
+  <string name="XSetAutoDeleteHours_other">%2$s set messages to auto-delete in %1$s hours</string>
+  <string name="YouSetAutoDeleteHours_one">You set messages to auto-delete in %1$s hour</string>
+  <string name="YouSetAutoDeleteHours_other">You set messages to auto-delete in %1$s hours</string>
 
-  <string name="XSetAutoDeleteDays_one">%2$s set the messages to auto-delete in %1$s day</string>
-  <string name="XSetAutoDeleteDays_other">%2$s set the messages to auto-delete in %1$s days</string>
-  <string name="YouSetAutoDeleteDays_one">You set the messages to auto-delete in %1$s day</string>
-  <string name="YouSetAutoDeleteDays_other">You set the messages to auto-delete in %1$s days</string>
+  <string name="XSetAutoDeleteDays_one">%2$s set messages to auto-delete in %1$s day</string>
+  <string name="XSetAutoDeleteDays_other">%2$s set messages to auto-delete in %1$s days</string>
+  <string name="YouSetAutoDeleteDays_one">You set messages to auto-delete in %1$s day</string>
+  <string name="YouSetAutoDeleteDays_other">You set messages to auto-delete in %1$s days</string>
 
-  <string name="XSetAutoDeleteWeeks_one">%2$s set the messages to auto-delete in %1$s week</string>
-  <string name="XSetAutoDeleteWeeks_other">%2$s set the messages to auto-delete in %1$s weeks</string>
-  <string name="YouSetAutoDeleteWeeks_one">You set the messages to auto-delete in %1$s week</string>
-  <string name="YouSetAutoDeleteWeeks_other">You set the messages to auto-delete in %1$s weeks</string>
+  <string name="XSetAutoDeleteWeeks_one">%2$s set messages to auto-delete in %1$s week</string>
+  <string name="XSetAutoDeleteWeeks_other">%2$s set messages to auto-delete in %1$s weeks</string>
+  <string name="YouSetAutoDeleteWeeks_one">You set messages to auto-delete in %1$s week</string>
+  <string name="YouSetAutoDeleteWeeks_other">You set messages to auto-delete in %1$s weeks</string>
 
-  <string name="XSetAutoDeleteMonths_one">%2$s set the messages to auto-delete in %1$s month</string>
-  <string name="XSetAutoDeleteMonths_other">%2$s set the messages to auto-delete in %1$s months</string>
-  <string name="YouSetAutoDeleteMonths_one">You set the messages to auto-delete in %1$s month</string>
-  <string name="YouSetAutoDeleteMonths_other">You set the messages to auto-delete in %1$s months</string>
+  <string name="XSetAutoDeleteMonths_one">%2$s set messages to auto-delete in %1$s month</string>
+  <string name="XSetAutoDeleteMonths_other">%2$s set messages to auto-delete in %1$s months</string>
+  <string name="YouSetAutoDeleteMonths_one">You set messages to auto-delete in %1$s month</string>
+  <string name="YouSetAutoDeleteMonths_other">You set messages to auto-delete in %1$s months</string>
 
   <string name="XSetAutoDeletePostsSeconds_one">%2$s set posts to auto-delete in %1$s second</string>
   <string name="XSetAutoDeletePostsSeconds_other">%2$s set posts to auto-delete in %1$s seconds</string>
