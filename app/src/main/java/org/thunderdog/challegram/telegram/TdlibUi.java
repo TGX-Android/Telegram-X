@@ -4011,7 +4011,7 @@ public class TdlibUi extends Handler {
       colors.append(ViewController.OPTION_COLOR_NORMAL);
     }
 
-    if (showNavigatingToLinks && tdlib.canInviteUsers(chat) && tdlib.isAtLeastAdmin(chat)) {
+    if (showNavigatingToLinks && tdlib.canInviteUsersAsAdmin(chat)) {
       ids.append(R.id.btn_manageInviteLinks);
       strings.append(R.string.InviteLinkManage);
       icons.append(R.drawable.baseline_add_link_24);
