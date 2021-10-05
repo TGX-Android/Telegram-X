@@ -139,7 +139,9 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
       saveCount = Integer.MIN_VALUE;
     }
 
-    drawBackground(c, new TGBackground(context.tdlib, background), startX, startY, startX + getWidth(), startY + getHeight(), alpha, receiver);
+    if (background != null) {
+      drawBackground(c, new TGBackground(context.tdlib, background), startX, startY, startX + getWidth(), startY + getHeight(), alpha, receiver);
+    }
 
     if (imageFilePrimary != null) {
       preview.setPaintAlpha(alpha + preview.getAlpha());
