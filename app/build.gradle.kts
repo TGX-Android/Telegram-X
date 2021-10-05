@@ -171,16 +171,16 @@ dependencies {
     implementation("androidx.palette:palette:1.0.0")
     implementation("androidx.recyclerview:recyclerview:1.2.1")
     implementation("androidx.viewpager:viewpager:1.0.0")
-    implementation("androidx.work:work-runtime:2.5.0")
+    implementation("androidx.work:work-runtime:2.6.0")
     implementation("androidx.browser:browser:1.3.0")
     implementation("androidx.exifinterface:exifinterface:1.3.3")
     implementation("androidx.collection:collection:1.1.0")
     implementation("androidx.interpolator:interpolator:1.0.0")
     implementation("androidx.gridlayout:gridlayout:1.0.0")
     // CameraX: https://developer.android.com/jetpack/androidx/releases/camera
-    implementation("androidx.camera:camera-camera2:1.1.0-alpha08")
-    implementation("androidx.camera:camera-lifecycle:1.1.0-alpha08")
-    implementation("androidx.camera:camera-view:1.0.0-alpha28")
+    implementation("androidx.camera:camera-camera2:1.1.0-alpha09")
+    implementation("androidx.camera:camera-lifecycle:1.1.0-alpha09")
+    implementation("androidx.camera:camera-view:1.0.0-alpha29")
     // Google Play Services: https://developers.google.com/android/guides/releases
     implementation("com.google.android.gms:play-services-base:17.6.0")
     implementation("com.google.android.gms:play-services-basement:17.6.0")
@@ -193,13 +193,13 @@ dependencies {
         exclude(group = "com.google.firebase", module = "firebase-measurement-connector")
     }
     // Play Core: https://developer.android.com/reference/com/google/android/play/core/release-notes
-    implementation("com.google.android.play:core:1.10.0")
+    implementation("com.google.android.play:core:1.10.2")
     // ExoPlayer: https://github.com/google/ExoPlayer/blob/release-v2/RELEASENOTES.md
     implementation("com.google.android.exoplayer:exoplayer-core:2.15.0")
     // The Checker Framework: https://checkerframework.org/CHANGELOG.md
     compileOnly("org.checkerframework:checker-qual:3.17.0")
     // OkHttp: https://github.com/square/okhttp/blob/master/CHANGELOG.md
-    implementation("com.squareup.okhttp3:okhttp:4.9.1")
+    implementation("com.squareup.okhttp3:okhttp:4.9.2")
     // ShortcutBadger: https://github.com/leolin310148/ShortcutBadger
     implementation("me.leolin:ShortcutBadger:1.1.22@aar")
     // ReLinker: https://github.com/KeepSafe/ReLinker/blob/master/CHANGELOG.md
@@ -207,7 +207,7 @@ dependencies {
     // Konfetti: https://github.com/DanielMartinus/Konfetti/blob/master/README.md
     implementation("nl.dionsegijn:konfetti:1.2.6")
     // Transcoder: https://github.com/natario1/Transcoder/blob/master/docs/_about/changelog.md
-    implementation("com.github.natario1:Transcoder:ba8f098")
+    implementation("com.github.natario1:Transcoder:dab9ac2")
 
     // YouTube: https://developers.google.com/youtube/android/player/
     implementation(files("thirdparty/YouTubeAndroidPlayerApi.jar"))
