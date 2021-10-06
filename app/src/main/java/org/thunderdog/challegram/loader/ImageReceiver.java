@@ -236,7 +236,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
         this.alpha = 0f;
       }
       if (savedAlpha == 0) {
-        if (radius != 0) {
+        if (roundPaint != null) {
           roundPaint.setAlpha((int) (255f * alpha));
         }
         if (repeatPaint != null) {
@@ -608,7 +608,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     if (ANIMATION_ENABLED && !animationDisabled && this.alpha != alpha) {
       this.alpha = alpha;
       if (savedAlpha == 0) {
-        if (radius != 0) {
+        if (roundPaint != null) {
           roundPaint.setAlpha((int) (255f * alpha));
         }
         if (repeatPaint != null) {
@@ -634,7 +634,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
         animator.cancel();
       }
       this.alpha = alpha;
-      if (radius != 0) {
+      if (roundPaint != null) {
         roundPaint.setAlpha((int) (255f * alpha));
       }
       if (repeatPaint != null) {
