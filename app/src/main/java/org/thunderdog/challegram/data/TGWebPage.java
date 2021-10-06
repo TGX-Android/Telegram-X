@@ -702,8 +702,10 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     if (mediaWrapper != null) {
       mediaWrapper.updateMessageId(oldMessageId, newMessageId, success);
     }
-    if (component != null && component instanceof FileComponent) {
-      ((FileComponent) component).getFileProgress().updateMessageId(oldMessageId, newMessageId, success);
+    if (component != null) {
+      if (component.getFileProgress() != null) {
+        component.getFileProgress().updateMessageId(oldMessageId, newMessageId, success);
+      }
     }
     if (instantItems != null) {
       for (MediaItem item : instantItems) {
@@ -963,8 +965,8 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   }
 
   public TdApi.File getTargetFile () {
-    if (component != null && component instanceof FileComponent) {
-      return ((FileComponent) component).getFileProgress().getFile();
+    if (component != null) {
+      return component.getFile();
     }
     if (mediaWrapper != null) {
       return mediaWrapper.getTargetFile();

@@ -7,10 +7,12 @@ import android.view.View;
 import androidx.annotation.ColorInt;
 import androidx.annotation.Nullable;
 
+import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.util.DrawableProvider;
+import org.thunderdog.challegram.widget.FileProgressComponent;
 
 import me.vkryl.android.util.ViewProvider;
 
@@ -36,4 +38,12 @@ public abstract class BaseComponent {
   abstract public int getContentRadius (int defaultValue);
 
   abstract public boolean onTouchEvent (View view, MotionEvent event);
+
+  public @Nullable TdApi.File getFile() {
+    return null;
+  }
+
+  public @Nullable FileProgressComponent getFileProgress() {
+    return null;
+  }
 }

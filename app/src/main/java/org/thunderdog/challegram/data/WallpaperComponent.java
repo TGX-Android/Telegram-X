@@ -9,6 +9,7 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
@@ -18,6 +19,7 @@ import org.thunderdog.challegram.loader.ImageFileLocal;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.TGBackground;
 import org.thunderdog.challegram.theme.Theme;
@@ -26,9 +28,12 @@ import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.util.DrawableProvider;
+import org.thunderdog.challegram.widget.FileProgressComponent;
 
 import me.vkryl.android.util.ClickHelper;
+import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.td.TdConstants;
 
@@ -45,9 +50,13 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
 
   private TdApi.Background background;
   private TGBackground tgBackground;
+  private TdApi.File backgroundFile;
+  private int backgroundFileState = -1;
 
   private ImageFile imageFileMinithumbnail;
   private ImageFile imageFilePrimary;
+
+  private FileProgressComponent progress;
 
   public WallpaperComponent (@NonNull TGMessage context, @NonNull TdApi.WebPage webPage, @NonNull String wallpaperUrl) {
     this.context = context;
@@ -58,6 +67,32 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
     }
 
     updateBackground(webPage.document);
+
+    this.progress = new FileProgressComponent(context.context(), context.tdlib(), TdlibFilesManager.DOWNLOAD_FLAG_FILE, webPage.document != null && TGMimeType.isImageMimeType(webPage.document.mimeType), context.getChatId(), context.getId());
+    this.progress.setBackgroundColorProvider(context);
+    this.progress.setSimpleListener(new FileProgressComponent.SimpleListener() {
+      @Override
+      public boolean onClick (FileProgressComponent context, View view, TdApi.File file, long messageId) {
+        openBackgroundPreview();
+        return true;
+      }
+
+      @Override
+      public void onStateChanged (TdApi.File file, int state) {
+        backgroundFileState = state;
+        context.postInvalidate();
+      }
+
+      @Override
+      public void onProgress (TdApi.File file, float progress) {
+        context.postInvalidate();
+      }
+    });
+    this.progress.setBackgroundColor(0x44000000);
+    this.progress.setFile(webPage.document != null ? webPage.document.document : null, context.getMessage());
+    if (viewProvider != null) {
+      this.progress.setViewProvider(viewProvider);
+    }
 
     context.tdlib.client().send(new TdApi.SearchBackground(wallpaperUrl), result -> {
       if (result.getConstructor() == TdApi.Background.CONSTRUCTOR) {
@@ -88,6 +123,7 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
       }
 
       if (document.document != null) {
+        backgroundFile = document.document;
         boolean isPattern = document.mimeType.equals(TdConstants.BACKGROUND_PATTERN_MIME_TYPE);
         imageFilePrimary = new ImageFile(context.tdlib, document.document);
         imageFilePrimary.setScaleType(ImageFile.CENTER_CROP);
@@ -99,10 +135,12 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
         }
       } else {
         imageFilePrimary = null;
+        backgroundFile = null;
       }
     } else {
       imageFileMinithumbnail = null;
       imageFilePrimary = null;
+      backgroundFile = null;
     }
   }
 
@@ -143,7 +181,12 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
       drawBackground(c, tgBackground, startX, startY, right, bottom, alpha, receiver);
     }
 
-    if (imageFilePrimary != null) {
+    if (backgroundFileState != -1 && backgroundFileState != TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED) {
+      preview.setPaintAlpha(alpha + preview.getAlpha());
+      preview.setBounds(startX, startY, right, bottom);
+      preview.draw(c);
+      preview.restorePaintAlpha();
+    } else if (imageFilePrimary != null) {
       preview.setPaintAlpha(alpha + preview.getAlpha());
       receiver.setPaintAlpha(alpha + receiver.getAlpha());
       DrawAlgorithms.drawReceiver(c, preview, receiver, true, true, startX, startY, right, bottom);
@@ -152,6 +195,10 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
     } else {
       c.drawRoundRect(placeholderRect, radius, radius, placeholderPaint);
     }
+
+    progress.setRequestedAlpha(alpha);
+    progress.setBounds(startX, startY, right, bottom);
+    progress.draw(view, c);
 
     if (clipped) {
       ViewSupport.restoreClipPath(c, saveCount);
@@ -233,6 +280,10 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
 
   @Override
   public boolean onTouchEvent (View view, MotionEvent event) {
+    if (progress.onTouchEvent(view, event)) {
+      return true;
+    }
+
     return clickHelper.onTouchEvent(view, event);
   }
 
@@ -247,6 +298,28 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
 
   @Override
   public void onClickAt (View view, float x, float y) {
+    openBackgroundPreview();
+  }
+
+  private void openBackgroundPreview() {
     context.tdlib().ui().openUrl(context.controller(), fullUrl, new TdlibUi.UrlOpenParameters().disableInstantView());
+  }
+
+  @Nullable
+  @Override
+  public TdApi.File getFile () {
+    return backgroundFile;
+  }
+
+  @Override
+  public void setViewProvider (@Nullable ViewProvider provider) {
+    super.setViewProvider(provider);
+    progress.setViewProvider(provider);
+  }
+
+  @Nullable
+  @Override
+  public FileProgressComponent getFileProgress () {
+    return progress;
   }
 }

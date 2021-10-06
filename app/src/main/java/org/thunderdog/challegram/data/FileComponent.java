@@ -830,4 +830,10 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
     }
     return mimeType;
   }
+
+  @Nullable
+  @Override
+  public TdApi.File getFile () {
+    return getFileProgress().getFile();
+  }
 }
