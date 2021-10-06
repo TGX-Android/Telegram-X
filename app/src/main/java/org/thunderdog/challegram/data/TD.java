@@ -4461,6 +4461,12 @@ public class TD {
         }
         break;
       }
+      case TGWebPage.TYPE_TELEGRAM_BACKGROUND: {
+        if (rawPage.document != null) {
+          return TD.DownloadedFile.valueOf(rawPage.document);
+        }
+        return null;
+      }
       case TGWebPage.TYPE_PHOTO: {
         if (rawPage.photo != null) {
           return TD.DownloadedFile.valueOfPhoto(webPage.getTargetFile(), false);
