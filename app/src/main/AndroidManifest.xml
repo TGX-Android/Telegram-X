@@ -128,11 +128,16 @@
               android:exported="false"
               android:syncable="true" />
 
-    <provider
+    <!--<provider
+      android:name="androidx.startup.InitializationProvider"
+      android:authorities="org.thunderdog.challegram.androidx-startup"
       android:exported="false"
-      android:name="androidx.work.impl.WorkManagerInitializer"
-      android:authorities="org.thunderdog.challegram.workmanager-init"
-      tools:node="remove" />
+      tools:node="merge">
+      <meta-data
+        android:name="androidx.work.WorkManagerInitializer"
+        android:value="androidx.startup"
+        tools:node="remove" />
+    </provider>-->
 
     <service android:name=".sync.StubAuthenticatorService"
              android:exported="false">
