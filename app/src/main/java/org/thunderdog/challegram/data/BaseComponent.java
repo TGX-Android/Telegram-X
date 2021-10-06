@@ -39,7 +39,7 @@ public abstract class BaseComponent {
 
   abstract public boolean onTouchEvent (View view, MotionEvent event);
 
-  public @Nullable TdApi.File getFile() {
+  public @Nullable TdApi.File getFile () {
     return null;
   }
 
