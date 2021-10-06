@@ -43,7 +43,7 @@ public abstract class BaseComponent {
     return null;
   }
 
-  public @Nullable FileProgressComponent getFileProgress() {
+  public @Nullable FileProgressComponent getFileProgress () {
     return null;
   }
 }
