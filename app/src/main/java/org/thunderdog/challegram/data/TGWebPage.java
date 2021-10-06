@@ -32,6 +32,7 @@ import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -1104,12 +1105,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     } else if (simpleImageFile != null || simpleGifFile != null) {
       final int imageX = rtl ? startX + previewWidth - this.imageX - this.imageWidth : startX + this.imageX;
       final int imageY = startY + this.imageY;
-      if (receiver.needPlaceholder()) {
-        preview.setBounds(imageX, imageY, imageX + simpleImageWidth, imageY + simpleImageHeight);
-        preview.draw(c);
-      }
-      receiver.setBounds(imageX, imageY, imageX + simpleImageWidth, imageY + simpleImageHeight);
-      receiver.draw(c);
+      DrawAlgorithms.drawReceiver(c, preview, receiver, false, true, imageX, imageY, imageX + simpleImageWidth, imageY + simpleImageHeight);
     }
     if (rippleButton != null) {
       // c.drawRect(startX + paddingLeft, startY + instantButtonY, startX + width, startY + height, Paints.fillingPaint(0xa0ff0000));
