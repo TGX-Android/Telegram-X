@@ -2489,7 +2489,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private boolean onForwardClick (View view, Text text, TextPart part, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     if (part.getEntity() == null && text.getEntityCount() == 1)
       return false;
-    if (part.getEntity() != null && part.getEntity().getTag() instanceof Integer) {
+    if (part.getEntity() != null && part.getEntity().getTag() instanceof Long) {
       manager.controller().setInputInlineBot(msg.viaBotUserId, viaBotUsername);
     } else {
       forwardInfo.open(view, text, part, openParameters, null);
