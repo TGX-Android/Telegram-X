@@ -200,7 +200,7 @@ public class TdlibNotificationUtils {
     return bitmap;
   }
 
-  static PendingIntent newIntent (int accountId, long forChatId, long specificMessageId) {
-    return PendingIntent.getActivity(UI.getContext(), 0, forChatId != 0 ? Intents.valueOfChatId(accountId, forChatId, specificMessageId) : Intents.valueOfMain(accountId), PendingIntent.FLAG_ONE_SHOT);
+  static PendingIntent newIntent (int accountId, long forLocalChatId, long specificMessageId) {
+    return PendingIntent.getActivity(UI.getContext(), 0, forLocalChatId != 0 ? Intents.valueOfLocalChatId(accountId, forLocalChatId, specificMessageId) : Intents.valueOfMain(accountId), PendingIntent.FLAG_ONE_SHOT);
   }
 }

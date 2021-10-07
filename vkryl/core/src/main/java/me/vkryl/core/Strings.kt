@@ -4,6 +4,8 @@ package me.vkryl.core
 
 import android.net.Uri
 import android.os.Build
+import java.io.UnsupportedEncodingException
+import java.net.URLDecoder
 import java.nio.charset.Charset
 import java.util.*
 
@@ -146,6 +148,14 @@ fun join(separator: String, separatorForLastItem: String, list: List<String>): S
     }
   }
   return b.toString()
+}
+
+fun decodeURIComponent(component: String): String? {
+  return try {
+    URLDecoder.decode(component, "UTF-8")
+  } catch (ignored: UnsupportedEncodingException) {
+    null
+  }
 }
 
 fun urlWithoutProtocol(url: String): String {

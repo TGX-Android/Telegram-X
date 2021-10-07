@@ -2057,7 +2057,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   private OptionsLayout optionsWrap;
   private View.OnClickListener onOptionClick;
 
-  public final void showCallOptions (final String phoneNumber, final int userId) {
+  public final void showCallOptions (final String phoneNumber, final long userId) {
     if (userId == 0) {
       Intents.openNumber(phoneNumber);
       return;

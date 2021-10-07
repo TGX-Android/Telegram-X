@@ -210,7 +210,7 @@ public class EditNameController extends EditBaseController<EditNameController.Ar
   public void onUserUpdated (TdApi.User user) { }
 
   @Override
-  public void onUserFullUpdated (int userId, TdApi.UserFullInfo userFull) {
+  public void onUserFullUpdated (long userId, TdApi.UserFullInfo userFull) {
     tdlib.ui().post(() -> {
       if (isDestroyed() && adapter != null && mode == MODE_ADD_CONTACT && user != null && userId == user.id) {
         if (userFull.needPhoneNumberPrivacyException) {

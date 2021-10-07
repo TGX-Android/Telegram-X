@@ -158,7 +158,7 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
     }
   }
 
-  public int getUserId () {
+  public long getUserId () {
     return user != null ? user.id : 0;
   }
 
@@ -192,13 +192,13 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
     invalidate();
   }
 
-  public void setUser (Tdlib tdlib, int userId, boolean allowSavedMessages) {
+  public void setUser (Tdlib tdlib, long userId, boolean allowSavedMessages) {
     setUser(tdlib, tdlib.cache().user(userId), allowSavedMessages);
   }
 
   public void setUser (Tdlib tdlib, @Nullable TdApi.User user, boolean allowSavedMessages) {
-    int newUserId = user != null ? user.id : 0;
-    int oldUserId = getUserId();
+    long newUserId = user != null ? user.id : 0;
+    long oldUserId = getUserId();
     if (oldUserId != newUserId) {
       if (oldUserId != 0) {
         this.tdlib.cache().removeUserDataListener(oldUserId, this);

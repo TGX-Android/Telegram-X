@@ -43,6 +43,8 @@ public class Config {
     return false;
   }
 
+  public static final boolean DISABLE_SHARE_CHAT_LIST_UPDATE = true;
+
   public static final boolean TEST_NOTIFICATION_PROBLEM_RESOLUTION = false; // BuildConfig.DEBUG;
 
   public static final boolean SO_SHARED = true;

@@ -46,10 +46,10 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
   private final Tdlib tdlib;
 
   private long chatId;
-  private final int userId;
-  private int groupId, channelId;
+  private final long userId;
+  private long groupId, channelId;
 
-  private boolean isOnline;
+  private boolean isOnline, ignoreOnline;
 
   private TdApi.ChatMember memberInfo;
   private boolean needAdminSign;
@@ -86,7 +86,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
     updateSubtitle();
   }
 
-  public DoubleTextWrapper (Tdlib tdlib, int userId, boolean needSubtitle) {
+  public DoubleTextWrapper (Tdlib tdlib, long userId, boolean needSubtitle) {
     this.tdlib = tdlib;
     this.horizontalPadding = Screen.dp(72f) + Screen.dp(11f);
 
@@ -128,6 +128,15 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
     }
     item.setMember(member, needFullDescription, needAdminSign);
     return item;
+  }
+
+  public void setIgnoreOnline (boolean ignoreOnline) {
+    if (this.ignoreOnline != ignoreOnline) {
+      this.ignoreOnline = ignoreOnline;
+      if (isOnline) {
+        setOnline(false);
+      }
+    }
   }
 
   public void setMember (TdApi.ChatMember member, boolean needFullDescription, boolean needAdminStar) {
@@ -226,7 +235,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
     }
   }
 
-  private void setSubtitle (CharSequence newSubtitle) {
+  public void setSubtitle (CharSequence newSubtitle) {
     if (!StringUtils.equalsOrBothEmpty(this.subtitle, newSubtitle)) {
       this.subtitle = newSubtitle;
       if (currentWidth != 0) {
@@ -237,7 +246,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
   }
 
   private void setOnline (boolean isOnline) {
-    if (this.isOnline != isOnline) {
+    if (this.isOnline != isOnline && !(ignoreOnline && isOnline)) {
       this.isOnline = isOnline;
       currentViews.invalidate();
     }
@@ -249,7 +258,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
     return chatId;
   }
 
-  public int getUserId () {
+  public long getUserId () {
     return userId;
   }
 
@@ -262,11 +271,11 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
     return user;
   }
 
-  public int getGroupId () {
+  public long getGroupId () {
     return groupId;
   }
 
-  public int getChannelId () {
+  public long getChannelId () {
     return channelId;
   }
 
@@ -357,7 +366,9 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
       return;
     }
     if (!StringUtils.isEmpty(subtitle)) {
-      trimmedSubtitle = new Text.Builder(subtitle.toString(), availWidth, Paints.robotoStyleProvider(15), TextColorSets.Regular.LIGHT).singleLine().build();
+      trimmedSubtitle = new Text.Builder(tdlib, subtitle, null, availWidth, Paints.robotoStyleProvider(15), TextColorSets.Regular.LIGHT)
+        .singleLine()
+        .build();
     } else {
       trimmedSubtitle = null;
     }

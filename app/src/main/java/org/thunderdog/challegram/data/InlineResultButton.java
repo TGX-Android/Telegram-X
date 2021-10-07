@@ -13,11 +13,11 @@ import org.thunderdog.challegram.tool.Screen;
  */
 
 public class InlineResultButton extends InlineResult<String> {
-  private final int userId;
+  private final long userId;
   private final @NonNull String text;
   private long sourceChatId;
 
-  public InlineResultButton (BaseActivity context, Tdlib tdlib, int inlineBotId, @NonNull String text, @Nullable String parameter) {
+  public InlineResultButton (BaseActivity context, Tdlib tdlib, long inlineBotId, @NonNull String text, @Nullable String parameter) {
     super(context, tdlib, TYPE_BUTTON, null, parameter);
     this.userId = inlineBotId;
     this.text = text;
@@ -31,7 +31,7 @@ public class InlineResultButton extends InlineResult<String> {
     this.sourceChatId = chatId;
   }
 
-  public int getUserId () {
+  public long getUserId () {
     return userId;
   }
 

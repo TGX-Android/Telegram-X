@@ -183,6 +183,15 @@ public abstract class EditBaseController<T> extends ViewController<T> implements
     }
   }
 
+  protected void setInstantDoneVisible (boolean isVisible) {
+    if (this.doneVisible != isVisible) {
+      this.doneVisible = isVisible;
+      this.doneVisibilityFactor = 1f;
+      doneButton.setMaximumAlpha(1f);
+      doneButton.setIsVisible(isVisible, false);
+    }
+  }
+
   private boolean inProgress;
 
   protected final boolean isInProgress () {

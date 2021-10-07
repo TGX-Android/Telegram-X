@@ -334,6 +334,45 @@
   <string name="ChatContentGroupPhotoRemove_outgoing">Removed the group photo</string>
   <string name="ChatContentGroupName">Renamed the group to «%1$s»</string>
   <string name="ChatContentGroupName_outgoing">Renamed the group to «%1$s»</string>
+  <string name="ChatContentGroupTtlSeconds_one">Set messages to auto-delete in %1$s second</string>
+  <string name="ChatContentGroupTtlSeconds_other">Set messages to auto-delete in %1$s seconds</string>
+  <string name="ChatContentGroupTtlMinutes_one">Set messages to auto-delete in %1$s minute</string>
+  <string name="ChatContentGroupTtlMinutes_other">Set messages to auto-delete in %1$s minutes</string>
+  <string name="ChatContentGroupTtlHours_one">Set messages to auto-delete in %1$s hour</string>
+  <string name="ChatContentGroupTtlHours_other">Set messages to auto-delete in %1$s hours</string>
+  <string name="ChatContentGroupTtlDays_one">Set messages to auto-delete in %1$s days</string>
+  <string name="ChatContentGroupTtlDays_other">Set messages to auto-delete in %1$s days</string>
+  <string name="ChatContentGroupTtlWeeks_one">Set messages to auto-delete in %1$s week</string>
+  <string name="ChatContentGroupTtlWeeks_other">Set messages to auto-delete in %1$s weeks</string>
+  <string name="ChatContentGroupTtlMonths_one">Set messages to auto-delete in %1$s month</string>
+  <string name="ChatContentGroupTtlMonths_other">Set messages to auto-delete in %1$s months</string>
+  <string name="ChatContentGroupTtlOff">Disabled the auto-delete timer</string>
+  <string name="ChatContentChannelTtlSeconds_one">Set posts to auto-delete in %1$s second</string>
+  <string name="ChatContentChannelTtlSeconds_other">Set posts to auto-delete in %1$s seconds</string>
+  <string name="ChatContentChannelTtlMinutes_one">Set posts to auto-delete in %1$s minute</string>
+  <string name="ChatContentChannelTtlMinutes_other">Set posts to auto-delete in %1$s minutes</string>
+  <string name="ChatContentChannelTtlHours_one">Set posts to auto-delete in %1$s hour</string>
+  <string name="ChatContentChannelTtlHours_other">Set posts to auto-delete in %1$s hours</string>
+  <string name="ChatContentChannelTtlDays_one">Set posts to auto-delete in %1$s days</string>
+  <string name="ChatContentChannelTtlDays_other">Set posts to auto-delete in %1$s days</string>
+  <string name="ChatContentChannelTtlWeeks_one">Set posts to auto-delete in %1$s week</string>
+  <string name="ChatContentChannelTtlWeeks_other">Set posts to auto-delete in %1$s weeks</string>
+  <string name="ChatContentChannelTtlMonths_one">Set posts to auto-delete in %1$s month</string>
+  <string name="ChatContentChannelTtlMonths_other">Set posts to auto-delete in %1$s months</string>
+  <string name="ChatContentChannelTtlOff">Disabled the auto-delete timer</string>
+  <string name="ChatContentTtlSeconds_one">Set the self-destruct timer to %1$s second</string>
+  <string name="ChatContentTtlSeconds_other">Set the self-destruct timer to %1$s seconds</string>
+  <string name="ChatContentTtlMinutes_one">Set the self-destruct timer to %1$s minute</string>
+  <string name="ChatContentTtlMinutes_other">Set the self-destruct timer to %1$s minutes</string>
+  <string name="ChatContentTtlHours_one">Set the self-destruct timer to %1$s hour</string>
+  <string name="ChatContentTtlHours_other">Set the self-destruct timer to %1$s hours</string>
+  <string name="ChatContentTtlDays_one">Set the self-destruct timer to %1$s days</string>
+  <string name="ChatContentTtlDays_other">Set the self-destruct timer to %1$s days</string>
+  <string name="ChatContentTtlWeeks_one">Set the self-destruct timer to %1$s week</string>
+  <string name="ChatContentTtlWeeks_other">Set the self-destruct timer to %1$s weeks</string>
+  <string name="ChatContentTtlMonths_one">Set the self-destruct timer to %1$s month</string>
+  <string name="ChatContentTtlMonths_other">Set the self-destruct timer to %1$s months</string>
+  <string name="ChatContentTtlOff">Disabled the self-destruct timer</string>
   <string name="ChatContentVoiceChatStarted">Started a video chat</string>
   <string name="ChatContentVoiceChatStarted_outgoing">Started a video chat</string>
   <string name="ChatContentVoiceChatFinished">Ended the video chat (%1$s)</string>
@@ -901,6 +940,8 @@
   <string name="XDisabledTimer">%1$s disabled the self-destruct timer</string>
   <string name="YouDisabledAutoDelete">You disabled the auto-delete timer</string>
   <string name="XDisabledAutoDelete">%1$s disabled the auto-delete timer</string>
+  <string name="YouDisabledAutoDeletePosts">You disabled the auto-delete timer</string>
+  <string name="XDisabledAutoDeletePosts">%1$s disabled the auto-delete timer</string>
 
   <string name="XSetTimerSeconds_one">%2$s set the self-destruct timer to %1$s second</string>
   <string name="XSetTimerSeconds_other">%2$s set the self-destruct timer to %1$s seconds</string>
@@ -927,30 +968,70 @@
   <string name="YouSetTimerWeeks_one">You set the self-destruct timer to %1$s week</string>
   <string name="YouSetTimerWeeks_other">You set the self-destruct timer to %1$s weeks</string>
 
-  <string name="XSetAutoDeleteSeconds_one">%2$s set the messages to auto-delete in %1$s second</string>
-  <string name="XSetAutoDeleteSeconds_other">%2$s set the messages to auto-delete in %1$s seconds</string>
-  <string name="YouSetAutoDeleteSeconds_one">You set the messages to auto-delete in %1$s second</string>
-  <string name="YouSetAutoDeleteSeconds_other">You set the messages to auto-delete in %1$s seconds</string>
+  <string name="XSetTimerMonths_one">%2$s set the self-destruct timer to %1$s month</string>
+  <string name="XSetTimerMonths_other">%2$s set the self-destruct timer to %1$s months</string>
+  <string name="YouSetTimerMonths_one">You set the self-destruct timer to %1$s month</string>
+  <string name="YouSetTimerMonths_other">You set the self-destruct timer to %1$s months</string>
 
-  <string name="XSetAutoDeleteMinutes_one">%2$s set the messages to auto-delete in %1$s minute</string>
-  <string name="XSetAutoDeleteMinutes_other">%2$s set the messages to auto-delete in %1$s minutes</string>
-  <string name="YouSetAutoDeleteMinutes_one">You set the messages to auto-delete in %1$s minute</string>
-  <string name="YouSetAutoDeleteMinutes_other">You set the messages to auto-delete in %1$s minutes</string>
+  <string name="XSetAutoDeleteSeconds_one">%2$s set messages to auto-delete in %1$s second</string>
+  <string name="XSetAutoDeleteSeconds_other">%2$s set messages to auto-delete in %1$s seconds</string>
+  <string name="YouSetAutoDeleteSeconds_one">You set messages to auto-delete in %1$s second</string>
+  <string name="YouSetAutoDeleteSeconds_other">You set messages to auto-delete in %1$s seconds</string>
 
-  <string name="XSetAutoDeleteHours_one">%2$s set the messages to auto-delete in %1$s hour</string>
-  <string name="XSetAutoDeleteHours_other">%2$s set the messages to auto-delete in %1$s hours</string>
-  <string name="YouSetAutoDeleteHours_one">You set the messages to auto-delete in %1$s hour</string>
-  <string name="YouSetAutoDeleteHours_other">You set the messages to auto-delete in %1$s hours</string>
+  <string name="XSetAutoDeleteMinutes_one">%2$s set messages to auto-delete in %1$s minute</string>
+  <string name="XSetAutoDeleteMinutes_other">%2$s set messages to auto-delete in %1$s minutes</string>
+  <string name="YouSetAutoDeleteMinutes_one">You set messages to auto-delete in %1$s minute</string>
+  <string name="YouSetAutoDeleteMinutes_other">You set messages to auto-delete in %1$s minutes</string>
 
-  <string name="XSetAutoDeleteDays_one">%2$s set the messages to auto-delete in %1$s day</string>
-  <string name="XSetAutoDeleteDays_other">%2$s set the messages to auto-delete in %1$s days</string>
-  <string name="YouSetAutoDeleteDays_one">You set the messages to auto-delete in %1$s day</string>
-  <string name="YouSetAutoDeleteDays_other">You set the messages to auto-delete in %1$s days</string>
+  <string name="XSetAutoDeleteHours_one">%2$s set messages to auto-delete in %1$s hour</string>
+  <string name="XSetAutoDeleteHours_other">%2$s set messages to auto-delete in %1$s hours</string>
+  <string name="YouSetAutoDeleteHours_one">You set messages to auto-delete in %1$s hour</string>
+  <string name="YouSetAutoDeleteHours_other">You set messages to auto-delete in %1$s hours</string>
 
-  <string name="XSetAutoDeleteWeeks_one">%2$s set the messages to auto-delete in %1$s week</string>
-  <string name="XSetAutoDeleteWeeks_other">%2$s set the messages to auto-delete in %1$s weeks</string>
-  <string name="YouSetAutoDeleteWeeks_one">You set the messages to auto-delete in %1$s week</string>
-  <string name="YouSetAutoDeleteWeeks_other">You set the messages to auto-delete in %1$s weeks</string>
+  <string name="XSetAutoDeleteDays_one">%2$s set messages to auto-delete in %1$s day</string>
+  <string name="XSetAutoDeleteDays_other">%2$s set messages to auto-delete in %1$s days</string>
+  <string name="YouSetAutoDeleteDays_one">You set messages to auto-delete in %1$s day</string>
+  <string name="YouSetAutoDeleteDays_other">You set messages to auto-delete in %1$s days</string>
+
+  <string name="XSetAutoDeleteWeeks_one">%2$s set messages to auto-delete in %1$s week</string>
+  <string name="XSetAutoDeleteWeeks_other">%2$s set messages to auto-delete in %1$s weeks</string>
+  <string name="YouSetAutoDeleteWeeks_one">You set messages to auto-delete in %1$s week</string>
+  <string name="YouSetAutoDeleteWeeks_other">You set messages to auto-delete in %1$s weeks</string>
+
+  <string name="XSetAutoDeleteMonths_one">%2$s set messages to auto-delete in %1$s month</string>
+  <string name="XSetAutoDeleteMonths_other">%2$s set messages to auto-delete in %1$s months</string>
+  <string name="YouSetAutoDeleteMonths_one">You set messages to auto-delete in %1$s month</string>
+  <string name="YouSetAutoDeleteMonths_other">You set messages to auto-delete in %1$s months</string>
+
+  <string name="XSetAutoDeletePostsSeconds_one">Admins set posts to auto-delete in %1$s second</string>
+  <string name="XSetAutoDeletePostsSeconds_other">Admins set posts to auto-delete in %1$s seconds</string>
+  <string name="YouSetAutoDeletePostsSeconds_one">You set posts to auto-delete in %1$s second</string>
+  <string name="YouSetAutoDeletePostsSeconds_other">You set posts to auto-delete in %1$s seconds</string>
+
+  <string name="XSetAutoDeletePostsMinutes_one">Admins set posts to auto-delete in %1$s minute</string>
+  <string name="XSetAutoDeletePostsMinutes_other">Admins set posts to auto-delete in %1$s minutes</string>
+  <string name="YouSetAutoDeletePostsMinutes_one">You set posts to auto-delete in %1$s minute</string>
+  <string name="YouSetAutoDeletePostsMinutes_other">You set posts to auto-delete in %1$s minutes</string>
+
+  <string name="XSetAutoDeletePostsHours_one">Admins set posts to auto-delete in %1$s hour</string>
+  <string name="XSetAutoDeletePostsHours_other">Admins set posts to auto-delete in %1$s hours</string>
+  <string name="YouSetAutoDeletePostsHours_one">You set posts to auto-delete in %1$s hour</string>
+  <string name="YouSetAutoDeletePostsHours_other">You set posts to auto-delete in %1$s hours</string>
+
+  <string name="XSetAutoDeletePostsDays_one">Admins set posts to auto-delete in %1$s day</string>
+  <string name="XSetAutoDeletePostsDays_other">Admins set posts to auto-delete in %1$s days</string>
+  <string name="YouSetAutoDeletePostsDays_one">You set posts to auto-delete in %1$s day</string>
+  <string name="YouSetAutoDeletePostsDays_other">You set posts to auto-delete in %1$s days</string>
+
+  <string name="XSetAutoDeletePostsWeeks_one">Admins set posts to auto-delete in %1$s week</string>
+  <string name="XSetAutoDeletePostsWeeks_other">Admins set posts to auto-delete in %1$s weeks</string>
+  <string name="YouSetAutoDeletePostsWeeks_one">You set posts to auto-delete in %1$s week</string>
+  <string name="YouSetAutoDeletePostsWeeks_other">You set posts to auto-delete in %1$s weeks</string>
+
+  <string name="XSetAutoDeletePostsMonths_one">Admins set posts to auto-delete in %1$s month</string>
+  <string name="XSetAutoDeletePostsMonths_other">Admins set posts to auto-delete in %1$s months</string>
+  <string name="YouSetAutoDeletePostsMonths_one">You set posts to auto-delete in %1$s month</string>
+  <string name="YouSetAutoDeletePostsMonths_other">You set posts to auto-delete in %1$s months</string>
 
   <string name="AddCaption">Add a caption…</string>
   <string name="Enhance">Enhance</string>
@@ -1394,6 +1475,7 @@
   <string name="Report">Report</string>
   <string name="ReportChat">Report %1$s</string>
   <string name="Spam">Spam</string>
+  <string name="Fake">Fake</string>
   <string name="Violence">Violence</string>
   <string name="ChildAbuse">Child Abuse</string>
   <string name="Pornography">Pornography</string>
@@ -1675,6 +1757,8 @@
   <string name="EventLogFilterVoiceChats">Video chats</string>
   <string name="EventLogSlowModeChanged">%1$s set the slow mode timer to %2$s</string>
   <string name="EventLogSlowModeDisabled">%1$s disabled the slow mode</string>
+  <string name="EventLogSlowModeChangedYou">%1$s set the slow mode timer to %2$s</string>
+  <string name="EventLogSlowModeDisabledYou">%1$s disabled the slow mode</string>
   <string name="EventLogLinkedChannelChanged">%1$s linked this group to %2$s</string>
   <string name="EventLogLinkedChannelRemoved">%1$s unlinked this group from %2$s</string>
   <string name="EventLogLinkedChannelChangedUnknown">This group was linked to %1$s</string>
@@ -2487,7 +2571,7 @@
   <string name="c_seekEmpty">Not yet downloaded part of the file.</string>
   <string name="c_seekReady">Downloaded part of the file.</string>
   <string name="c_seekDone">Playback progress of the file.</string>
-  <string name="c_promo">New trending sticker set.</string>
+  <string name="c_promo">New trending sticker set</string>
   <string name="c_statusBarLegacy">Used on **Android&#160;5.x** and lower.</string>
 
   <string name="p_parentTheme">Default values are inherited from this theme when a color or property is not explicitly set.</string>
@@ -2692,6 +2776,8 @@
   <string name="errorPrivacyAddMember">Sorry, the user restricted who can add them to chats in their privacy settings.</string>
   <string name="UserPrivacyRestricted">Sorry, the user restricted this action in their privacy settings.</string>
   <string name="NobodyLikesSpam2">Sorry, you can interact only with mutual contacts at the moment.</string> <!--PEER_FLOOD-->
+  <string name="error_BOTS_TOO_MUCH">Sorry, this group contains too many bots. Please remove one of your existing ones first.</string>
+  <string name="error_ADMINS_TOO_MUCH">Sorry, this group contains too many admins. Please remove one of your existing ones first.</string>
 
   <string name="NotificationImportance">Notification Style</string>
   <string name="NotificationImportanceHigh">Sound and pop-up</string>
@@ -3462,6 +3548,31 @@
   <string name="StatsChartInteractions">Interactions</string>
   <string name="StatsChartIv">IV Interactions</string>
 
+  <string name="StatsTopMembers">Top members</string>
+  <string name="StatsTopAdmins">Top admins</string>
+  <string name="StatsTopInviters">Top inviters</string>
+  <string name="StatsXCharacters_one">%1$s character per message</string>
+  <string name="StatsXCharacters_other">%1$s characters per message</string>
+  <string name="StatsXDeletions_one">%1$s deletion</string>
+  <string name="StatsXDeletions_other">%1$s deletions</string>
+  <string name="StatsXBans_one">%1$s ban</string>
+  <string name="StatsXBans_other">%1$s bans</string>
+  <string name="StatsXRestrictions_one">%1$s restriction</string>
+  <string name="StatsXRestrictions_other">%1$s restrictions</string>
+  <string name="StatsXInvitations_one">%1$s invitation</string>
+  <string name="StatsXInvitations_other">%1$s invitations</string>
+  <string name="StatsXShowMore_one">Show %1$s More</string>
+  <string name="StatsXShowMore_other">Show %1$s More</string>
+  <string name="StatsRecentPosts">Recent Posts</string>
+  <string name="StatsXShared_one">%1$s share</string>
+  <string name="StatsXShared_other">%1$s shares</string>
+  <string name="StatsMessageInfo">Message Statistics</string>
+  <string name="StatsMessageViewCount">View Count</string>
+  <string name="StatsMessageSharesPrivate">Private Shares</string>
+  <string name="StatsMessageSharesPublic">Public Shares</string>
+  <string name="StatsMessagePublishDate">Publication Date</string>
+  <string name="StatsMessageSignature">Author Signature</string>
+
   <string name="SendDiceAsEmoji">Send as emoji</string>
   <string name="SendDiceHint">Send a %1$s emoji to any chat to get a random number from Telegram.</string>
   <string name="SendDice">Send a dice</string>
@@ -3578,7 +3689,7 @@
   <string name="locationUpdated_yesterday">updated yesterday at %1$s</string>
   <string name="locationUpdated_weekday">updated on %1$s at %2$s</string>
   <string name="locationUpdated_date">updated on %1$s at %2$s</string>
-  
+
   <string name="modified_now">modified just now</string>
   <string name="modified_seconds_one">modified %1$s second ago</string>
   <string name="modified_seconds_other">modified %1$s seconds ago</string>
@@ -3677,6 +3788,84 @@
   <string name="SlowModeHours_other">Members will be able to send only one message every %1$s hours.</string>
   <string name="SlowModeOff">Off</string>
 
+  <string name="InviteLinks">Invite Links</string>
+  <string name="PrimaryInviteLinkMenu">Primary Invite Link</string>
+  <string name="PrimaryInviteLink">Primary Link</string>
+  <string name="AdditionalInviteLinks">Additional Links</string>
+  <string name="AdditionalInviteLinksHint">You can create additional invite links with an optional expiration date and joined members limit.</string>
+  <string name="RevokedInviteLinks">Revoked Links</string>
+  <string name="OtherAdminsInviteLinks">Links created by other admins</string>
+  <string name="InviteLinkNoJoins">no one joined</string>
+  <string name="InviteLinkJoins_one">%1$s joined</string>
+  <string name="InviteLinkJoins_other">%1$s joined</string>
+  <string name="InviteLinkRemains_one">%1$s remaining</string>
+  <string name="InviteLinkRemains_other">%1$s remaining</string>
+  <string name="InviteLinkExpired">expired</string>
+  <string name="InviteLinkRevoked">revoked</string>
+  <string name="InviteLinkMemberLimitReached">member limit reached</string>
+  <string name="InviteLinkExpiredAt">expired at %1$s</string>
+
+  <string name="InviteLinkExpires_now">expires in a moment</string>
+  <string name="InviteLinkExpires_seconds_one">expires in %1$s second</string>
+  <string name="InviteLinkExpires_seconds_other">expires in %1$s seconds</string>
+  <string name="InviteLinkExpires_minutes_one">expires in %1$s minute</string>
+  <string name="InviteLinkExpires_minutes_other">expires in %1$s minutes</string>
+  <string name="InviteLinkExpires_hours_one">expires in %1$s hour</string>
+  <string name="InviteLinkExpires_hours_other">expires in %1$s hours</string>
+  <string name="InviteLinkExpires_today">expires at %1$s</string>
+  <string name="InviteLinkExpires_tomorrow">expires tomorrow at %1$s</string>
+  <string name="InviteLinkExpires_weekday">expires %1$s at %2$s</string>
+  <string name="InviteLinkExpires_date">expires %1$s at %2$s</string>
+
+  <string name="DeleteAllRevokedLinks">Delete All Revoked Links</string>
+  <string name="AreYouSureDeleteAllInviteLinks">Are you sure you want to delete all revoked links?</string>
+  <string name="AreYouSureRevokeInviteLinkGroup">Are you sure you want to revoke this link? Once this is done, nobody will be able to use it to join the group.</string>
+  <string name="AreYouSureRevokeInviteLinkChannel">Are you sure you want to revoke this link? Once this is done, nobody will be able to use it to join the channel.</string>
+  <string name="AreYouSureDeleteInviteLink">Are you sure you want to delete this link?</string>
+  <string name="InviteLinkEdit">Edit Link</string>
+  <string name="InviteLinkDelete">Delete Link</string>
+  <string name="InviteLinkCopy">Copy Link</string>
+  <string name="InviteLinkLimitedByPeriod">Limited by period</string>
+  <string name="InviteLinkLimitedByUsers">Limited by number of users</string>
+  <string name="InviteLinkLimitedByPeriodHint">You can make the link expire after a certain time.</string>
+  <string name="InviteLinkLimitedByUsersHint">You can make the link expire after it has been used for a certain number of times.</string>
+  <string name="InviteLinkLimitedByPeriodItem">Enter custom expire date</string>
+  <string name="InviteLinkLimitedByUsersItem">Number of Users</string>
+  <string name="InviteLinkLimitedByUsersAlertHint">0 - no limit</string>
+  <string name="InviteLinkLimitedByUsersCustom">Enter custom limit</string>
+  <string name="InviteLinkNoLimitSet">no limit</string>
+  <string name="InviteLinkExpireHeader">Expire after</string>
+  <string name="InviteLinkExpireConfirm">Set Expiration Date</string>
+  <string name="InviteLinkExpireInHours_one">Expire in %1$s hour</string>
+  <string name="InviteLinkExpireInHours_other">Expire in %1$s hours</string>
+  <string name="InviteLinkExpireInDays_one">Expire in %1$s day</string>
+  <string name="InviteLinkExpireInDays_other">Expire in %1$s days</string>
+  <string name="InviteLinkExpireInWeeks_one">Expire in %1$s week</string>
+  <string name="InviteLinkExpireInWeeks_other">Expire in %1$s weeks</string>
+  <string name="InviteLinkExpireInCustomDate">Expire at specific date…</string>
+  <string name="InviteLinkExpireNone">Do not expire</string>
+  <string name="InviteLinkOtherAdminHint">**%1$s** can see this link and use it to invite new members to **%2$s**.</string>
+  <string name="InviteLinkViewMembers">View joined members</string>
+  <string name="InviteLinkViewMembersTitle">Joined members</string>
+  <string name="CreatedByXOnDate">Created by %1$s %2$s</string>
+  <string name="Infinity">∞</string>
+  <string name="InviteLinkManage">Manage Invite Links</string>
+
+  <string name="xActiveLinks_one">%1$s active link</string>
+  <string name="xActiveLinks_other">%1$s active links</string>
+  <string name="xRevokedLinks_one">%1$s revoked link</string>
+  <string name="xRevokedLinks_other">%1$s revoked links</string>
+  <string name="format_activeAndRevokedLinks">%1$s, %2$s</string>
+
+  <string name="ChatTtl">Auto-delete messages</string>
+  <string name="ChatTtlOff">Off</string>
+  <string name="ChatTtlDisabled">Choose a certain period of time when messages will be automatically deleted for members of the group.</string>
+  <string name="ChatTtlEnabled">Automatically delete new messages after %1$s for members of the group.</string>
+  <string name="ChannelTtl">Auto-delete posts</string>
+  <string name="ChannelTtlOff">Off</string>
+  <string name="ChannelTtlDisabled">Choose a certain period of time when posts will be automatically deleted for subscribers of the channel.</string>
+  <string name="ChannelTtlEnabled">Automatically delete new posts after %1$s for subscribers of the channel.</string>
+
   <string name="ChatBackgroundPreview">Chat Background Preview</string>
   <string name="ChatBackgroundNotSupported">Sorry, this type of chat background is not yet supported.</string>
   <string name="ChatBackgroundApply">Apply Chat Background</string>
@@ -3716,6 +3905,15 @@
   <string name="NoRightDisallowInvite">All members can invite new members in this chat.</string>
   <string name="NoRightDisallowChangeInfo">All members can change info of this chat.</string>
   <string name="NoRightDisallowPin">All members can pin messages in this chat.</string>
+
+  <string name="CopyBankCard">Copy card number</string>
+  <string name="CopiedBankCard">Card number copied to the clipboard</string>
+
+  <string name="ChoosingSticker">choosing a sticker</string>
+  <string name="IsChoosingSticker">%1$s is choosing a sticker</string>
+  <string name="AreChoosingSticker">%1$s are choosing stickers</string>
+
+  <string name="QDeleteCallFromRecent">Delete call from recent?</string>
 
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />

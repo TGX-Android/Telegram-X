@@ -18,6 +18,7 @@ import org.thunderdog.challegram.telegram.PrivacySettings;
 import org.thunderdog.challegram.telegram.PrivacySettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.BetterChatView;
 
@@ -138,7 +139,7 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
     final long chatId = getChatId();
-    final int userId = tdlib.chatUserId(chatId);
+    final long userId = tdlib.chatUserId(chatId);
     final boolean isBot = tdlib.isBotChat(chatId);
     final boolean isMultiChat = tdlib.isMultiChat(chatId);
     final boolean suggestAddContact = userId != 0 && !tdlib.isSelfUserId(userId) && !isBot;
@@ -306,7 +307,7 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
     if (suggestAddContact) {
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       boolean isContact = tdlib.cache().userContact(userId);
-      items.add(contactItem = new ListItem(ListItem.TYPE_SETTING, R.id.btn_newContact, isContact ? R.drawable.baseline_delete_24 : R.drawable.baseline_person_add_24, isContact ? R.string.DeleteContact : R.string.AddContact).setTextColorId(isContact ? R.id.theme_color_textNegative : 0).setBoolValue(isContact));
+      items.add(contactItem = new ListItem(ListItem.TYPE_SETTING, R.id.btn_newContact, isContact ? R.drawable.baseline_delete_24 : R.drawable.baseline_person_add_24, isContact ? R.string.DeleteContact : R.string.AddContact).setTextColorId(isContact ? R.id.theme_color_textNegative : ThemeColorId.NONE).setBoolValue(isContact));
     }
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
@@ -382,7 +383,7 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
         boolean value = adapter.toggleView(v);
         long chatId = getChatId();
         boolean isMultiChat = tdlib.isMultiChat(chatId);
-        int userId = tdlib.chatUserId(chatId);
+        long userId = tdlib.chatUserId(chatId);
         TdApi.UserPrivacySettingRules rules;
         if (isMultiChat) {
           rules = privacy.toggleChat(chatId, false, value);
@@ -411,7 +412,7 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
         break;
       }
       case R.id.btn_newContact: {
-        int userId = tdlib.chatUserId(getChatId());
+        long userId = tdlib.chatUserId(getChatId());
         if (userId != 0) {
           if (tdlib.cache().userContact(userId)) {
             tdlib.ui().deleteContact(this, userId);
@@ -429,7 +430,7 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
     super.destroy();
     tdlib.listeners().unsubscribeFromPrivacyUpdates(this);
     long chatId = getChatId();
-    int userId = tdlib.chatUserId(chatId);
+    long userId = tdlib.chatUserId(chatId);
     if (userId != 0) {
       tdlib.cache().removeUserDataListener(userId, this);
     } else {
@@ -457,7 +458,7 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
           contactItem.setBoolValue(isContact);
           contactItem.setString(isContact ? R.string.DeleteContact : R.string.AddContact);
           contactItem.setIconRes(isContact ? R.drawable.baseline_delete_24 : R.drawable.baseline_person_add_24);
-          contactItem.setTextColorId(isContact ? R.id.theme_color_textNegative : 0);
+          contactItem.setTextColorId(isContact ? R.id.theme_color_textNegative : ThemeColorId.NONE);
           adapter.updateAllValuedSettings(item -> item.getId() == R.id.text_title || item.getId() == R.id.btn_newContact || item.getId() == R.id.text_title || item.getId() == R.id.btn_privacyRule);
         } else {
           adapter.updateAllValuedSettings(item -> item.getId() == R.id.text_title);

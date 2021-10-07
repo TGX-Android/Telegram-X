@@ -51,6 +51,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.unit.ByteUnit;
+import me.vkryl.td.ChatPosition;
 
 /**
  * Date: 06/03/2017
@@ -627,7 +628,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_secret_dropSavedScrollPositions, 0, "Drop saved scroll positions", false));
 
-        if (testerLevel >= Tdlib.TESTER_LEVEL_CREATOR) {
+        if (testerLevel >= Tdlib.TESTER_LEVEL_CREATOR || Settings.instance().dontReadMessages()) {
           if (items.size() > initialSize)
             items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_dontReadMessages, 0, "Don't read messages", false));
@@ -1158,9 +1159,13 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         break;
       }
       case R.id.btn_secret_readAllChats: {
-        showConfirm(Lang.getString(R.string.ReadAllChatsInfo), null, () -> {
-          tdlib.readAllChats(null, readCount -> UI.showToast(Lang.plural(R.string.ReadAllChatsDone, readCount), Toast.LENGTH_SHORT));
-        });
+        showConfirm(Lang.getString(R.string.ReadAllChatsInfo), null, () ->
+          tdlib.readAllChats(ChatPosition.CHAT_LIST_MAIN, readCount ->
+            tdlib.readAllChats(ChatPosition.CHAT_LIST_ARCHIVE, archiveReadCount ->
+              UI.showToast(Lang.plural(R.string.ReadAllChatsDone, readCount + archiveReadCount), Toast.LENGTH_SHORT)
+            )
+          )
+        );
         break;
       }
       case R.id.btn_tdlib_verbosity: {

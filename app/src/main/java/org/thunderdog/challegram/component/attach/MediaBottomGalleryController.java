@@ -790,7 +790,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   }
 
   private String awaitingQuery;
-  private int bingUserId;
+  private long bingUserId;
   private boolean bingUserLoading;
 
   private void searchInternal (final String q) {

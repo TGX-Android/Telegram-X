@@ -242,13 +242,17 @@ public class InstantViewController extends ViewController<InstantViewController.
   private boolean scrollToAnchor (String anchor, boolean smooth) {
     if (anchor == null)
       return false;
+    String decodedAnchor = StringUtils.decodeURIComponent(anchor);
+    if (anchor.equals(decodedAnchor)) {
+      decodedAnchor = null;
+    }
     List<ListItem> items = adapter.getItems();
     int index = 0;
     for (ListItem item : items) {
       Object data = item.getData();
       if (data instanceof PageBlock) {
-        PageBlock pageBlock = (PageBlock) data;
-        boolean hasMatchingAnchor = anchor.equals(pageBlock.getAnchor());
+        final PageBlock pageBlock = (PageBlock) data;
+        final boolean hasMatchingAnchor = anchor.equals(pageBlock.getAnchor()) || (decodedAnchor != null && decodedAnchor.equals(pageBlock.getAnchor()));
         if (hasMatchingAnchor && !pageBlock.isAnchorOnBottom()) {
           scrollToBlock(index, pageBlock, null, true);
           return true;
