@@ -624,8 +624,8 @@ fun CharSequence.subSequence(entity: TextEntity?): CharSequence? {
 }
 
 @kotlin.ExperimentalStdlibApi
-fun FormattedText.findUrl(lookupUrl: String, returnAny: Boolean): String? {
-  if (this.entities.isNullOrEmpty())
+fun FormattedText?.findUrl(lookupUrl: String, returnAny: Boolean): String? {
+  if (this?.entities?.isNullOrEmpty() ?: return null)
     return null
   val lookupUri = wrapHttps(lookupUrl) ?: return null
   var count = 0
