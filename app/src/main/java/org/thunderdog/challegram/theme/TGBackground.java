@@ -274,9 +274,15 @@ public class TGBackground {
   }
 
   public static boolean compare (TGBackground a, TGBackground b) {
+    return compare(a, b, true);
+  }
+
+  public static boolean compare (TGBackground a, TGBackground b, boolean ignoreAdditionalInfo) {
     if ((a == null || a.isEmpty()) && (b == null || b.isEmpty()))
       return true;
-    if (a == null || b == null || a.isEmpty() != b.isEmpty() || a.isCustom() != b.isCustom() || !Td.equalsTo(a.type, b.type, true) || isBlurred(a.type) != isBlurred(b.type))
+    if (a == null || b == null || a.isEmpty() != b.isEmpty() || a.isCustom() != b.isCustom() || !Td.equalsTo(a.type, b.type, true))
+      return false;
+    if (!ignoreAdditionalInfo && isBlurred(a.type) != isBlurred(b.type))
       return false;
     if (a.isCustom())
       return StringUtils.equalsOrBothEmpty(a.getCustomPath(), b.getCustomPath());

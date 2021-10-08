@@ -96,7 +96,7 @@ public class WallpaperView extends View implements ThemeChangeListener, ChatStyl
     }
     if (this.wallpaper != wallpaper) {
       if (animated) {
-        if (TGBackground.compare(this.wallpaper, wallpaper)) {
+        if (TGBackground.compare(this.wallpaper, wallpaper, false)) {
           return;
         }
         this.previewWallpaper = wallpaper;
