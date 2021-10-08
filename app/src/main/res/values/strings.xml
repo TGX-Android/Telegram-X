@@ -452,6 +452,7 @@
   <string name="ClearHistory">Clear history</string>
   <string name="Cancel">Cancel</string>
   <string name="AddMember">Add member</string>
+  <string name="AddMembers">Add members</string>
   <string name="DeleteAndLeave">Delete and exit</string>
   <string name="justAdd">Just add to group</string>
   <string name="KickFromGroup">Remove from group</string>

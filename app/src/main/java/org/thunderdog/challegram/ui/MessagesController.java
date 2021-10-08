@@ -195,6 +195,7 @@ import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.Unlockable;
+import org.thunderdog.challegram.util.UserPickerDelegate;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.v.MessagesLayoutManager;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
@@ -6770,6 +6771,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           }
           break;
         }
+
         case TdApi.ChatActionBarReportAddBlock.CONSTRUCTOR: {
           TdApi.ChatActionBarReportAddBlock reportAddBlock = (TdApi.ChatActionBarReportAddBlock) actionBar;
           items.add(newReportItem(chatId, true));
@@ -6777,6 +6779,45 @@ public class MessagesController extends ViewController<MessagesController.Argume
           if (reportAddBlock.canUnarchive) {
             items.add(newUnarchiveItem(chatId));
           }
+          break;
+        }
+
+        case TdApi.ChatActionBarInviteMembers.CONSTRUCTOR: {
+          items.add(new TopBarView.Item(R.id.btn_invite, R.string.AddMember, v -> {
+            ContactsController c = new ContactsController(context, tdlib);
+            c.initWithMode(ContactsController.MODE_ADD_MEMBER);
+            c.setAllowBots(true);
+            c.setArguments(new ContactsController.Args(new UserPickerDelegate() {
+              @Override
+              public boolean onUserPick (ContactsController context, View view, TdApi.User user) {
+                if (tdlib.isSelfUserId(user.id)) {
+                  return false;
+                }
+
+                tdlib.setChatMemberStatus(chat.id, new TdApi.MessageSenderUser(user.id), new TdApi.ChatMemberStatusMember(), null, (ok, error) -> {
+                  runOnUiThreadOptional(() -> {
+                    if (!ok && error != null) {
+                      context.context()
+                        .tooltipManager()
+                        .builder(view)
+                        .show(context, tdlib, R.drawable.baseline_error_24, TD.toErrorString(error));
+                    } else {
+                      context.navigateBack();
+                    }
+                  });
+                });
+
+                return true;
+              }
+
+              @Override
+              public void onUserConfirm (ContactsController context, TdApi.User user, int option) {
+
+              }
+            }));
+            c.setChatTitle(R.string.AddMember, chat.title);
+            navigateTo(c);
+          }));
           break;
         }
 
