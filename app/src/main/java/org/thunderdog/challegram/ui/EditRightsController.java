@@ -865,12 +865,13 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     boolean isChannel = tdlib.isChannel(getArgumentsStrict().chatId);
     boolean canTransfer = canTransferOwnership();
     if (canTransfer) {
+      int transferOwnershipIdx = adapter.indexOfViewById(R.id.btn_transferOwnership);
       int i = adapter.indexOfViewById(R.id.btn_dismissAdmin);
-      if (i != -1) {
+      if (i != -1 && transferOwnershipIdx == -1) {
         adapter.getItems().add(i, new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         adapter.getItems().add(i, newTransferOwnershipItem(isChannel));
         adapter.notifyItemRangeInserted(i, 2);
-      } else if (adapter.indexOfViewById(R.id.btn_transferOwnership) == -1) {
+      } else if (transferOwnershipIdx == -1) {
         int startIndex = adapter.getItemCount() - 1;
         adapter.getItems().addAll(startIndex, Arrays.asList(
           new ListItem(ListItem.TYPE_SHADOW_TOP),
