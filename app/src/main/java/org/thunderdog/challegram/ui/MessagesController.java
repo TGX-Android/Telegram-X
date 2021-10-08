@@ -6783,7 +6783,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
 
         case TdApi.ChatActionBarInviteMembers.CONSTRUCTOR: {
-          items.add(new TopBarView.Item(R.id.btn_invite, R.string.AddMembers, v -> {
+          items.add(new TopBarView.Item(R.id.btn_invite, R.string.AddMember, v -> {
             ContactsController c = new ContactsController(context, tdlib);
             c.initWithMode(ContactsController.MODE_ADD_MEMBER);
             c.setAllowBots(true);
