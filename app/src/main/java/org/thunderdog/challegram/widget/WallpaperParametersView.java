@@ -13,6 +13,7 @@ import androidx.annotation.Nullable;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.theme.TGBackground;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
@@ -31,9 +32,9 @@ public class WallpaperParametersView extends View implements ClickHelper.Delegat
   private final ClickHelper helper = new ClickHelper(this);
 
   private final BoolAnimator isBlurEnabled = new BoolAnimator(0, (id, factor, fraction, callee) -> {
-    if (listener != null) listener.onBlurValueChanged(isInitialBlur ? 1f - factor : factor);
+    if (listener != null) listener.onBlurValueAnimated(isInitialBlur ? 1f - factor : factor);
     invalidate();
-  }, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
+  }, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
 
   public WallpaperParametersView (Context context) {
     super(context);
@@ -47,6 +48,17 @@ public class WallpaperParametersView extends View implements ClickHelper.Delegat
     this.isBlurEnabled.setValue(((TdApi.BackgroundTypeWallpaper) background.type).isBlurred, false);
     this.isInitialBlur = this.isBlurEnabled.getValue();
     this.listener = listener;
+  }
+
+  public void initWith (TGBackground background, @Nullable WallpaperParametersListener listener) {
+    this.isBlurEnabled.setValue(background.isBlurred(), false);
+    this.isInitialBlur = this.isBlurEnabled.getValue();
+    this.listener = listener;
+  }
+
+  public void updateBackground (TGBackground background) {
+    this.isBlurEnabled.setValue(background.isBlurred(), true);
+    this.isInitialBlur = this.isBlurEnabled.getValue();
   }
 
   public boolean isBlurred () {
@@ -95,10 +107,12 @@ public class WallpaperParametersView extends View implements ClickHelper.Delegat
   public void onClickAt (View view, float x, float y) {
     if (blurRect.contains(x, y)) {
       isBlurEnabled.toggleValue(true);
+      if (listener != null) listener.onBlurValueChanged(isBlurred());
     }
   }
 
   public interface WallpaperParametersListener {
-    void onBlurValueChanged (float factor);
+    default void onBlurValueAnimated (float factor) {}
+    default void onBlurValueChanged (boolean newValue) {}
   }
 }

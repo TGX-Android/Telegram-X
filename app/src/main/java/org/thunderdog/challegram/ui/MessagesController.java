@@ -1026,28 +1026,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         case PREVIEW_MODE_WALLPAPER_OBJECT: {
           ViewSupport.setThemedBackground(wallpapersList, R.id.theme_color_filling, this);
-
-          if (getArgumentsStrict().wallpaperObject.type.getConstructor() == TdApi.BackgroundTypeWallpaper.CONSTRUCTOR) {
-            int height = Screen.dp(49f);
-
-            backgroundParamsView = new WallpaperParametersView(context);
-            backgroundParamsView.initWith(getArgumentsStrict().wallpaperObject, factor -> wallpaperViewBlurPreview.setAlpha(MathUtils.clamp(factor)));
-
-            params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, height);
-            params.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
-            //params.bottomMargin = -Screen.dp(2f);
-            backgroundParamsView.setLayoutParams(params);
-
-            params = ((RelativeLayout.LayoutParams) messagesView.getLayoutParams());
-            params.bottomMargin = height;
-            messagesView.setLayoutParams(params);
-
-            wallpaperViewBlurPreview = new WallpaperView(context, manager, tdlib);
-            wallpaperViewBlurPreview.initWithCustomWallpaper(new TGBackground(tdlib, getArguments().wallpaperObject, !backgroundParamsView.isBlurred()));
-            wallpaperViewBlurPreview.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-            wallpaperViewBlurPreview.setAlpha(0f);
-          }
-
           break;
         }
         case PREVIEW_MODE_FONT_SIZE: {
@@ -1119,6 +1097,50 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
     } else if (inputView != null) {
       bottomWrap.addView(inputView);
+    }
+
+    if (inWallpaperMode()) {
+      TGBackground currentBackground = tdlib.settings().getWallpaper(Theme.getWallpaperIdentifier());
+      boolean shouldUseParams = inWallpaperPreviewMode() ? getArgumentsStrict().wallpaperObject.type.getConstructor() == TdApi.BackgroundTypeWallpaper.CONSTRUCTOR : currentBackground.isWallpaper();
+
+      if (shouldUseParams) {
+        int height = Screen.dp(49f);
+
+        backgroundParamsView = new WallpaperParametersView(context);
+        if (inWallpaperPreviewMode()) {
+          backgroundParamsView.initWith(getArgumentsStrict().wallpaperObject, new WallpaperParametersView.WallpaperParametersListener() {
+            @Override
+            public void onBlurValueAnimated (float factor) {
+              wallpaperViewBlurPreview.setAlpha(MathUtils.clamp(factor));
+            }
+          });
+        } else {
+          backgroundParamsView.initWith(currentBackground, new WallpaperParametersView.WallpaperParametersListener() {
+            @Override
+            public void onBlurValueChanged (boolean newValue) {
+              TGBackground newBg = new TGBackground(currentBackground);
+              newBg.setTargetBlur(newValue);
+              //tdlib.wallpaper().addBackground(currentBackground, Theme.isDark());
+              tdlib.settings().setWallpaper(newBg, true, Theme.getWallpaperIdentifier());
+            }
+          });
+        }
+
+        params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, height);
+        params.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
+        backgroundParamsView.setLayoutParams(params);
+
+        params = ((RelativeLayout.LayoutParams) messagesView.getLayoutParams());
+        params.bottomMargin = height;
+        messagesView.setLayoutParams(params);
+
+        wallpaperViewBlurPreview = new WallpaperView(context, manager, tdlib);
+        if (inWallpaperPreviewMode()) {
+          wallpaperViewBlurPreview.initWithCustomWallpaper(new TGBackground(tdlib, getArguments().wallpaperObject, !backgroundParamsView.isBlurred()));
+        }
+        wallpaperViewBlurPreview.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        wallpaperViewBlurPreview.setAlpha(0f);
+      }
     }
 
     // Bottom bar
