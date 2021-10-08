@@ -88,7 +88,7 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
       this.descriptionEntities = webPage.description.entities;
       String urlInText = Td.findUrl(text, webPage.url, true);
       this.url = !StringUtils.isEmpty(urlInText) ? urlInText : webPage.url;
-    } else {
+    } else if (text != null) {
       TdApi.TextEntity effectiveEntity = null;
       main: for (TdApi.TextEntity entity : text.entities) {
         switch (entity.type.getConstructor()) {
