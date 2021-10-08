@@ -6798,9 +6798,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
                   runOnUiThreadOptional(() -> {
                     if (!ok && error != null) {
                       context.context()
-                              .tooltipManager()
-                              .builder(view)
-                              .show(context, tdlib, R.drawable.baseline_error_24, TD.toErrorString(error));
+                        .tooltipManager()
+                        .builder(view)
+                        .show(context, tdlib, R.drawable.baseline_error_24, TD.toErrorString(error));
                     } else {
                       context.navigateBack();
                     }
