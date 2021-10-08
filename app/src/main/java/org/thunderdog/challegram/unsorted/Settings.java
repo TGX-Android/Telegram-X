@@ -2641,7 +2641,7 @@ public class Settings {
     return result;
   }
 
-  public static final int DEFAULT_VIDEO_LIMIT = 640;
+  public static final int DEFAULT_VIDEO_LIMIT = 854;
   public static final int DEFAULT_FRAME_RATE = 29; // DefaultVideoStrategy.DEFAULT_FRAME_RATE;
 
   public static class VideoSize {

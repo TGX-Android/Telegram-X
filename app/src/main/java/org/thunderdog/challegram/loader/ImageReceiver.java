@@ -19,6 +19,8 @@ import android.graphics.Shader;
 import android.os.Build;
 import android.view.View;
 
+import androidx.annotation.FloatRange;
+
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
@@ -26,7 +28,6 @@ import org.thunderdog.challegram.mediaview.crop.CropState;
 import org.thunderdog.challegram.mediaview.paint.PaintState;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
-import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 
 import me.vkryl.android.AnimatorUtils;
@@ -235,7 +236,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
         this.alpha = 0f;
       }
       if (savedAlpha == 0) {
-        if (radius != 0) {
+        if (roundPaint != null) {
           roundPaint.setAlpha((int) (255f * alpha));
         }
         if (repeatPaint != null) {
@@ -603,11 +604,11 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     return bottom - top;
   }
 
-  public void setAlpha (float alpha) {
+  public void setAlpha (@FloatRange(from = 0.0, to = 1.0) float alpha) {
     if (ANIMATION_ENABLED && !animationDisabled && this.alpha != alpha) {
       this.alpha = alpha;
       if (savedAlpha == 0) {
-        if (radius != 0) {
+        if (roundPaint != null) {
           roundPaint.setAlpha((int) (255f * alpha));
         }
         if (repeatPaint != null) {
@@ -633,7 +634,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
         animator.cancel();
       }
       this.alpha = alpha;
-      if (radius != 0) {
+      if (roundPaint != null) {
         roundPaint.setAlpha((int) (255f * alpha));
       }
       if (repeatPaint != null) {
@@ -1054,7 +1055,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
 
   @Override
   public void setPaintAlpha (float factor) {
-    savedAlpha = Color.rgb(repeatPaint != null ? repeatPaint.getAlpha() : roundPaint != null ? roundPaint.getAlpha() : 0, bitmapPaint.getAlpha(), 0);
+    savedAlpha = Color.rgb(repeatPaint != null ? repeatPaint.getAlpha() : 0, roundPaint != null ? roundPaint.getAlpha() : 0, bitmapPaint.getAlpha());
     final int alpha = (int) (255f * MathUtils.clamp(factor));
     if (roundPaint != null)
       roundPaint.setAlpha(alpha);
@@ -1065,11 +1066,11 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
 
   @Override
   public void restorePaintAlpha () {
-    if (roundPaint != null)
-      roundPaint.setAlpha(Color.red(savedAlpha));
     if (repeatPaint != null)
       repeatPaint.setAlpha(Color.red(savedAlpha));
-    bitmapPaint.setAlpha(Color.green(savedAlpha));
+    if (roundPaint != null)
+      roundPaint.setAlpha(Color.green(savedAlpha));
+    bitmapPaint.setAlpha(Color.blue(savedAlpha));
     savedAlpha = 0;
   }
 

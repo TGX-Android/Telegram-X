@@ -312,7 +312,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
         case R.id.btn_viewMemberMessages:
           TdApi.ChatStatisticsMessageSenderInfo sender = (TdApi.ChatStatisticsMessageSenderInfo) object;
           SpannableStringBuilder customStatus2 = new SpannableStringBuilder();
-          wrapper = new DoubleTextWrapper(tdlib, (int) sender.userId, true);
+          wrapper = new DoubleTextWrapper(tdlib, sender.userId, true);
 
           if (sender.sentMessageCount > 0) {
             customStatus2.append(Lang.pluralBold(R.string.xMessages, sender.sentMessageCount));
@@ -330,12 +330,12 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
           break;
         case R.id.btn_openInviterProfile:
           TdApi.ChatStatisticsInviterInfo inviter = (TdApi.ChatStatisticsInviterInfo) object;
-          wrapper = new DoubleTextWrapper(tdlib, (int) inviter.userId, true);
+          wrapper = new DoubleTextWrapper(tdlib, inviter.userId, true);
           wrapper.setSubtitle(Lang.pluralBold(R.string.StatsXInvitations, inviter.addedMemberCount));
           break;
         case R.id.btn_viewAdminActions:
           TdApi.ChatStatisticsAdministratorActionsInfo admin = (TdApi.ChatStatisticsAdministratorActionsInfo) object;
-          wrapper = new DoubleTextWrapper(tdlib, (int) admin.userId, true);
+          wrapper = new DoubleTextWrapper(tdlib, admin.userId, true);
 
           SpannableStringBuilder customStatus = new SpannableStringBuilder();
 
@@ -385,7 +385,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
 
       for (int i = 10; i < messageSenderInfos.length; i++) {
         TdApi.ChatStatisticsMessageSenderInfo sender = messageSenderInfos[i];
-        DoubleTextWrapper wrapper = new DoubleTextWrapper(tdlib, (int) sender.userId, true);
+        DoubleTextWrapper wrapper = new DoubleTextWrapper(tdlib, sender.userId, true);
         wrapper.setSubtitle(Lang.plural(R.string.xMessages, sender.sentMessageCount) + ", " + Lang.plural(R.string.StatsXCharacters, sender.averageCharacterCount));
         wrapper.setIgnoreOnline(true);
         advancedItems.add(new ListItem(ListItem.TYPE_CHAT_SMALL, R.id.btn_viewMemberMessages).setData(wrapper));
@@ -620,7 +620,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     IntList icons = new IntList(4);
     StringList strings = new StringList(4);
 
-    tdlib.client().send(new TdApi.GetChatMember(getArgumentsStrict().chatId, new TdApi.MessageSenderUser((int) content.getUserId())), result -> {
+    tdlib.client().send(new TdApi.GetChatMember(getArgumentsStrict().chatId, new TdApi.MessageSenderUser(content.getUserId())), result -> {
       if (result.getConstructor() != TdApi.ChatMember.CONSTRUCTOR) return;
 
       TdApi.ChatMember member = (TdApi.ChatMember) result;

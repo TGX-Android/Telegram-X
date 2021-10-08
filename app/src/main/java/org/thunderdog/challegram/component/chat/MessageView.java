@@ -884,6 +884,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       icons.append(R.drawable.baseline_reply_all_24);
     }
 
+    if (m.tdlib().canCopyPostLink(msg.getMessage())) {
+      ids.append(R.id.btn_messageCopyLink);
+      strings.append(R.string.CopyLink);
+      icons.append(R.drawable.baseline_link_24);
+    }
+
     if (this.msg.canBeDeletedForSomebody()) {
       ids.append(R.id.btn_messageDelete);
       strings.append(R.string.Delete);
