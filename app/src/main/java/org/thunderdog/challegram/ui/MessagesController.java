@@ -3838,6 +3838,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
       emojiLayout.reset();
     }
 
+    if (wallpaperViewBlurPreview != null) {
+      wallpaperViewBlurPreview.performDestroy();
+    }
+
+    if (backgroundParamsView != null) {
+      backgroundParamsView.performDestroy();
+
+      if (inWallpaperMode() && !inWallpaperPreviewMode()) {
+        TGBackground background = tdlib.settings().getWallpaper(Theme.getWallpaperIdentifier());
+        if (background != null && background.isWallpaper()) {
+          tdlib.settings().setWallpaper(TGBackground.newBlurredWallpaper(tdlib, background, backgroundParamsView.isBlurred()), true, Theme.getWallpaperIdentifier());
+        }
+      }
+    }
+
     botStartArgument = null;
 
     // switch pm state
