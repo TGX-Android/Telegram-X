@@ -1119,6 +1119,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
         } else if (currentBackground != null) {
           backgroundParamsView.initWith(currentBackground, new WallpaperParametersView.WallpaperParametersListener() {
             @Override
+            public void onParametersViewScaleChanged (float factor) {
+              float clamped = MathUtils.clamp(factor);
+              backgroundParamsView.setTranslationY(height * (1f - clamped));
+              messagesView.setTranslationY(-(height * clamped));
+            }
+
+            @Override
             public void onBlurValueAnimated (float factor) {
               wallpaperViewBlurPreview.setAlpha(MathUtils.clamp(factor));
             }
@@ -1128,10 +1135,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, height);
         params.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
         backgroundParamsView.setLayoutParams(params);
-
-        params = ((RelativeLayout.LayoutParams) messagesView.getLayoutParams());
-        params.bottomMargin = height;
-        messagesView.setLayoutParams(params);
+        messagesView.setTranslationY(-height);
 
         boolean previewBlurValue = !backgroundParamsView.isBlurred();
 
@@ -1201,7 +1205,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     if (backgroundParamsView != null) {
-      contentView.addView(backgroundParamsView);
+      contentView.addView(backgroundParamsView, 2);
     }
 
     updateView();

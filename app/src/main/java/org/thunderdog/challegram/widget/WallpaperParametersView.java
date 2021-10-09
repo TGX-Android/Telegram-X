@@ -13,8 +13,11 @@ import androidx.annotation.Nullable;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ChatStyleChangeListener;
 import org.thunderdog.challegram.theme.TGBackground;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -22,8 +25,9 @@ import org.thunderdog.challegram.tool.Screen;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.util.ClickHelper;
+import me.vkryl.core.lambda.Destroyable;
 
-public class WallpaperParametersView extends View implements ClickHelper.Delegate {
+public class WallpaperParametersView extends View implements ClickHelper.Delegate, Destroyable, ChatStyleChangeListener {
   private WallpaperParametersListener listener;
   private boolean isInitialBlur;
 
@@ -36,11 +40,17 @@ public class WallpaperParametersView extends View implements ClickHelper.Delegat
     invalidate();
   }, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
 
+  private final BoolAnimator isViewShown = new BoolAnimator(1, (id, factor, fraction, callee) -> {
+    if (listener != null) listener.onParametersViewScaleChanged(factor);
+  }, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
+
   public WallpaperParametersView (Context context) {
     super(context);
     this.textPaint.setColor(Theme.textAccentColor());
     this.textPaint.setTypeface(Fonts.getRobotoRegular());
     this.textPaint.setTextSize(Screen.sp(14f));
+    this.isViewShown.setValue(true, false);
+    ThemeManager.instance().addChatStyleListener(this);
     setWillNotDraw(false);
   }
 
@@ -59,6 +69,10 @@ public class WallpaperParametersView extends View implements ClickHelper.Delegat
   public void updateBackground (TGBackground background) {
     this.isBlurEnabled.setValue(background.isBlurred(), true);
     this.isInitialBlur = this.isBlurEnabled.getValue();
+  }
+
+  public void setParametersAvailability (boolean value) {
+    this.isViewShown.setValue(value, true);
   }
 
   public boolean isBlurred () {
@@ -111,8 +125,24 @@ public class WallpaperParametersView extends View implements ClickHelper.Delegat
     }
   }
 
+  @Override
+  public void performDestroy () {
+    ThemeManager.instance().removeChatStyleListener(this);
+  }
+
+  @Override
+  public void onChatStyleChanged (Tdlib tdlib, int newChatStyle) {
+
+  }
+
+  @Override
+  public void onChatWallpaperChanged (Tdlib tdlib, @Nullable TGBackground wallpaper, int usageIdentifier) {
+    setParametersAvailability(wallpaper != null && wallpaper.isWallpaper());
+  }
+
   public interface WallpaperParametersListener {
     default void onBlurValueAnimated (float factor) {}
     default void onBlurValueChanged (boolean newValue) {}
+    default void onParametersViewScaleChanged (float factor) {}
   }
 }
