@@ -60,8 +60,8 @@ public class WallpaperParametersView extends View implements ClickHelper.Delegat
     this.listener = listener;
   }
 
-  public void initWith (TGBackground background, @Nullable WallpaperParametersListener listener) {
-    this.isBlurEnabled.setValue(background.isBlurred(), false);
+  public void initWith (@Nullable TGBackground background, @Nullable WallpaperParametersListener listener) {
+    this.isBlurEnabled.setValue(background != null && background.isBlurred(), false);
     this.isInitialBlur = this.isBlurEnabled.getValue();
     this.listener = listener;
   }
@@ -71,8 +71,8 @@ public class WallpaperParametersView extends View implements ClickHelper.Delegat
     this.isInitialBlur = this.isBlurEnabled.getValue();
   }
 
-  public void setParametersAvailability (boolean value) {
-    this.isViewShown.setValue(value, true);
+  public void setParametersAvailability (boolean value, boolean animate) {
+    this.isViewShown.setValue(value, animate);
   }
 
   public boolean isBlurred () {
@@ -137,7 +137,7 @@ public class WallpaperParametersView extends View implements ClickHelper.Delegat
 
   @Override
   public void onChatWallpaperChanged (Tdlib tdlib, @Nullable TGBackground wallpaper, int usageIdentifier) {
-    setParametersAvailability(wallpaper != null && wallpaper.isWallpaper());
+    setParametersAvailability(wallpaper != null && wallpaper.isWallpaper(), true);
   }
 
   public interface WallpaperParametersListener {

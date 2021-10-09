@@ -46,7 +46,11 @@ public class TGBackground {
   private ImageFile preview;
   private ImageFile miniThumbnail;
 
-  public static TGBackground newBlurredWallpaper (Tdlib tdlib, TGBackground base, boolean blurIfSupported) {
+  public static TGBackground newBlurredWallpaper (Tdlib tdlib, @Nullable TGBackground base, boolean blurIfSupported) {
+    if (base == null) {
+      return newEmptyWallpaper(tdlib);
+    }
+
     TdApi.BackgroundType newType;
 
     if (base.type != null && base.type.getConstructor() == TdApi.BackgroundTypeWallpaper.CONSTRUCTOR) {

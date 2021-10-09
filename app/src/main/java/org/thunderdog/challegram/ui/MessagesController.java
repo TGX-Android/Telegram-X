@@ -1102,13 +1102,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (inWallpaperMode()) {
       TdApi.Background currentBackgroundObj = getArgumentsStrict().wallpaperObject;
       TGBackground currentBackground = tdlib.settings().getWallpaper(Theme.getWallpaperIdentifier());
-
-      boolean shouldUseParams = inWallpaperPreviewMode() ? currentBackgroundObj != null && currentBackgroundObj.type.getConstructor() == TdApi.BackgroundTypeWallpaper.CONSTRUCTOR : currentBackground != null && currentBackground.isWallpaper();
+      boolean shouldUseParams = !inWallpaperPreviewMode() || currentBackgroundObj != null && currentBackgroundObj.type.getConstructor() == TdApi.BackgroundTypeWallpaper.CONSTRUCTOR;
 
       if (shouldUseParams) {
         int height = Screen.dp(49f);
-
         backgroundParamsView = new WallpaperParametersView(context);
+        params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, height);
+        params.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
+        backgroundParamsView.setLayoutParams(params);
+
+        wallpaperViewBlurPreview = new WallpaperView(context, manager, tdlib);
+        wallpaperViewBlurPreview.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        wallpaperViewBlurPreview.setAlpha(0f);
+
         if (inWallpaperPreviewMode() && currentBackgroundObj != null) {
           backgroundParamsView.initWith(currentBackgroundObj, new WallpaperParametersView.WallpaperParametersListener() {
             @Override
@@ -1116,7 +1122,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
               wallpaperViewBlurPreview.setAlpha(MathUtils.clamp(factor));
             }
           });
-        } else if (currentBackground != null) {
+
+          wallpaperViewBlurPreview.initWithCustomWallpaper(new TGBackground(tdlib, currentBackgroundObj, !backgroundParamsView.isBlurred()));
+          messagesView.setTranslationY(-height);
+        } else {
           backgroundParamsView.initWith(currentBackground, new WallpaperParametersView.WallpaperParametersListener() {
             @Override
             public void onParametersViewScaleChanged (float factor) {
@@ -1130,26 +1139,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
               wallpaperViewBlurPreview.setAlpha(MathUtils.clamp(factor));
             }
           });
-        }
 
-        params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, height);
-        params.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
-        backgroundParamsView.setLayoutParams(params);
-        messagesView.setTranslationY(-height);
-
-        boolean previewBlurValue = !backgroundParamsView.isBlurred();
-
-        wallpaperViewBlurPreview = new WallpaperView(context, manager, tdlib);
-
-        if (inWallpaperPreviewMode() && currentBackgroundObj != null) {
-          wallpaperViewBlurPreview.initWithCustomWallpaper(new TGBackground(tdlib, currentBackgroundObj, previewBlurValue));
-        } else if (currentBackground != null) {
+          boolean previewBlurValue = !backgroundParamsView.isBlurred();
           wallpaperViewBlurPreview.initWithCustomWallpaper(TGBackground.newBlurredWallpaper(tdlib, currentBackground, previewBlurValue));
           wallpaperViewBlurPreview.setSelfBlur(previewBlurValue);
+          backgroundParamsView.setParametersAvailability(currentBackground != null && currentBackground.isWallpaper(), false);
+          if (currentBackground != null && currentBackground.isWallpaper()) {
+            messagesView.setTranslationY(-height);
+          }
         }
-
-        wallpaperViewBlurPreview.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        wallpaperViewBlurPreview.setAlpha(0f);
       }
     }
 
