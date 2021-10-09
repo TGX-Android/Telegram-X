@@ -1143,6 +1143,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           boolean previewBlurValue = !backgroundParamsView.isBlurred();
           wallpaperViewBlurPreview.initWithCustomWallpaper(TGBackground.newBlurredWallpaper(tdlib, currentBackground, previewBlurValue));
           wallpaperViewBlurPreview.setSelfBlur(previewBlurValue);
+          wallpaperView.setSelfBlur(!previewBlurValue);
           backgroundParamsView.setParametersAvailability(currentBackground != null && currentBackground.isWallpaper(), false);
           if (currentBackground != null && currentBackground.isWallpaper()) {
             messagesView.setTranslationY(-height);
