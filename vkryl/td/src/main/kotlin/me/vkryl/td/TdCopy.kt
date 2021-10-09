@@ -299,12 +299,3 @@ fun ChatMemberStatus?.copyOf (): ChatMemberStatus? {
     }
   }
 }
-
-fun BackgroundTypeWallpaper?.copyOf (): BackgroundTypeWallpaper? {
-  return this?.let {
-    BackgroundTypeWallpaper(
-      this.isBlurred,
-      this.isMoving
-    )
-  }
-}

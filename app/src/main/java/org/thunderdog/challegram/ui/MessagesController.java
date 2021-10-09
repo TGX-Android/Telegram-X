@@ -1118,10 +1118,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           backgroundParamsView.initWith(currentBackground, new WallpaperParametersView.WallpaperParametersListener() {
             @Override
             public void onBlurValueChanged (boolean newValue) {
-              TGBackground newBg = new TGBackground(currentBackground);
-              newBg.setTargetBlur(newValue);
-              //tdlib.wallpaper().addBackground(currentBackground, Theme.isDark());
-              tdlib.settings().setWallpaper(newBg, true, Theme.getWallpaperIdentifier());
+              tdlib.settings().setWallpaper(TGBackground.newBlurredWallpaper(tdlib, currentBackground, newValue), true, Theme.getWallpaperIdentifier());
             }
           });
         }

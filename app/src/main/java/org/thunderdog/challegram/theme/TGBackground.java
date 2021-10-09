@@ -32,7 +32,7 @@ import me.vkryl.td.TdConstants;
  * Author: default
  */
 
-public class TGBackground implements Cloneable {
+public class TGBackground {
   private final int accountId;
   private final String name;
   private TdApi.BackgroundType type;
@@ -46,22 +46,16 @@ public class TGBackground implements Cloneable {
   private ImageFile preview;
   private ImageFile miniThumbnail;
 
-  public TGBackground (TGBackground clone) {
-    this.accountId = clone.accountId;
-    this.name = clone.name;
-    this.customPath = clone.customPath;
-    this.isVector = clone.isVector;
-    this.legacyWallpaperId = clone.legacyWallpaperId;
-    this.legacyRemoteId = clone.legacyRemoteId;
-    this.target = clone.target;
-    this.preview = clone.preview;
-    this.miniThumbnail = clone.miniThumbnail;
-    this.cachedColor = clone.cachedColor;
-    if (clone.type.getConstructor() == TdApi.BackgroundTypeWallpaper.CONSTRUCTOR) {
-      this.type = Td.copyOf((TdApi.BackgroundTypeWallpaper) clone.type);
+  public static TGBackground newBlurredWallpaper (Tdlib tdlib, TGBackground base, boolean blurIfSupported) {
+    TdApi.BackgroundType newType;
+
+    if (base.type.getConstructor() == TdApi.BackgroundTypeWallpaper.CONSTRUCTOR) {
+      newType = new TdApi.BackgroundTypeWallpaper(blurIfSupported, ((TdApi.BackgroundTypeWallpaper) base.type).isMoving);
     } else {
-      this.type = clone.type;
+      newType = base.type;
     }
+
+    return new TGBackground(tdlib, base.name, newType, base.isVector, base.legacyWallpaperId, base.legacyRemoteId);
   }
 
   public static TGBackground newEmptyWallpaper (Tdlib tdlib) {
@@ -136,8 +130,11 @@ public class TGBackground implements Cloneable {
     } else {
       needImages = true;
     }
+
+    String additionalSuffix = needBlur ? "_blurred" : "";
+
     if (needImages) {
-      setTarget(new ImageFileRemote(tdlib, null, "background_" + name) {
+      setTarget(new ImageFileRemote(tdlib, null, "background_" + name + additionalSuffix) {
         @Override
         public void extractFile (Client.ResultHandler handler) {
           Runnable onFail = () -> this.tdlib().client().send(new TdApi.SearchBackground(name), result -> {
@@ -164,7 +161,7 @@ public class TGBackground implements Cloneable {
         }
       }, needBlur);
 
-      setPreview(new ImageFileRemote(tdlib, null, "background_preview_" + name) {
+      setPreview(new ImageFileRemote(tdlib, null, "background_preview_" + name + additionalSuffix) {
         @Override
         public void extractFile (Client.ResultHandler handler) {
           this.tdlib().client().send(new TdApi.SearchBackground(name), result -> {
@@ -267,21 +264,6 @@ public class TGBackground implements Cloneable {
           target.setNoBlur();
         }
       }
-    }
-  }
-
-  public void setTargetBlur (boolean blur) {
-    if (!isWallpaper()) return;
-    TdApi.BackgroundTypeWallpaper newType = (TdApi.BackgroundTypeWallpaper) type;
-    newType.isBlurred = blur;
-    type = newType;
-
-    if (blur) {
-      target.setSize(160);
-      target.setNeedBlur();
-    } else {
-      target.setSize(Math.min(1480, Screen.widestSide()));
-      target.setNoBlur();
     }
   }
 
