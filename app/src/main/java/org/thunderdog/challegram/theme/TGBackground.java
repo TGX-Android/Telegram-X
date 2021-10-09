@@ -49,7 +49,7 @@ public class TGBackground {
   public static TGBackground newBlurredWallpaper (Tdlib tdlib, TGBackground base, boolean blurIfSupported) {
     TdApi.BackgroundType newType;
 
-    if (base.type.getConstructor() == TdApi.BackgroundTypeWallpaper.CONSTRUCTOR) {
+    if (base.type != null && base.type.getConstructor() == TdApi.BackgroundTypeWallpaper.CONSTRUCTOR) {
       newType = new TdApi.BackgroundTypeWallpaper(blurIfSupported, ((TdApi.BackgroundTypeWallpaper) base.type).isMoving);
     } else {
       newType = base.type;
