@@ -6804,7 +6804,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
         switch (name) {
           case "my_id":
-            onUpdateMyUserId((int) longValue);
+            onUpdateMyUserId(longValue);
             break;
           case "unix_time": {
             final long receivedTime = SystemClock.elapsedRealtime();
