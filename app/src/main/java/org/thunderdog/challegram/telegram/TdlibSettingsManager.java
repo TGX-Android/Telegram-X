@@ -400,7 +400,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
 
   public void setWallpaper (@NonNull TGBackground wallpaper, boolean force, int usageIdentifier) {
     TGBackground currentWallpaper = getWallpaper(usageIdentifier);
-    if ((currentWallpaper == null && wallpaper != null) || (force && !TGBackground.compare(currentWallpaper, wallpaper))) {
+    if ((currentWallpaper == null && wallpaper != null) || (force && !TGBackground.compare(currentWallpaper, wallpaper, false))) {
       ThemeManager.instance().notifyChatWallpaperChanged(tdlib, wallpaper, 0, usageIdentifier);
       if (wallpaper != null) {
         wallpaper.save(usageIdentifier);
