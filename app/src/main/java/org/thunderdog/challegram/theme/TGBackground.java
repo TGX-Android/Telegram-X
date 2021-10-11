@@ -49,6 +49,8 @@ public class TGBackground {
   public static TGBackground newBlurredWallpaper (Tdlib tdlib, @Nullable TGBackground base, boolean blurIfSupported) {
     if (base == null) {
       return newEmptyWallpaper(tdlib);
+    } else if (base.isCustom()) {
+      return base;
     }
 
     return new TGBackground(tdlib, base.name, makeBlurredBackgroundType(base.type, blurIfSupported), base.isVector, base.legacyWallpaperId, base.legacyRemoteId);
