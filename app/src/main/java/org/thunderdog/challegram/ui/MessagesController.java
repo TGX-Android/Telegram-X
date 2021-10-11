@@ -212,6 +212,7 @@ import org.thunderdog.challegram.widget.RtlViewPager;
 import org.thunderdog.challegram.widget.SendButton;
 import org.thunderdog.challegram.widget.SeparatorView;
 import org.thunderdog.challegram.widget.ViewPager;
+import org.thunderdog.challegram.widget.WallpaperParametersView;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -302,6 +303,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private InvisibleImageView cameraButton, scheduleButton;
   private InvisibleImageView commandButton;
   private @Nullable SilentButton silentButton;
+
+  private WallpaperView wallpaperViewBlurPreview;
+  private WallpaperParametersView backgroundParamsView;
 
   private FrameLayoutFix scrollToBottomButtonWrap, mentionButtonWrap;
   private CircleButton scrollToBottomButton, mentionButton;
@@ -1096,6 +1100,59 @@ public class MessagesController extends ViewController<MessagesController.Argume
       bottomWrap.addView(inputView);
     }
 
+    if (inWallpaperMode()) {
+      TdApi.Background currentBackgroundObj = getArgumentsStrict().wallpaperObject;
+      TGBackground currentBackground = tdlib.settings().getWallpaper(Theme.getWallpaperIdentifier());
+      boolean shouldUseParams = !inWallpaperPreviewMode() || currentBackgroundObj != null && currentBackgroundObj.type.getConstructor() == TdApi.BackgroundTypeWallpaper.CONSTRUCTOR;
+
+      if (shouldUseParams) {
+        int height = Screen.dp(49f);
+        backgroundParamsView = new WallpaperParametersView(context);
+        params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, height);
+        params.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
+        backgroundParamsView.setLayoutParams(params);
+
+        wallpaperViewBlurPreview = new WallpaperView(context, manager, tdlib);
+        wallpaperViewBlurPreview.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        wallpaperViewBlurPreview.setAlpha(0f);
+
+        if (inWallpaperPreviewMode() && currentBackgroundObj != null) {
+          backgroundParamsView.initWith(currentBackgroundObj, new WallpaperParametersView.WallpaperParametersListener() {
+            @Override
+            public void onBlurValueAnimated (float factor) {
+              wallpaperViewBlurPreview.setAlpha(MathUtils.clamp(factor));
+            }
+          });
+
+          wallpaperViewBlurPreview.initWithCustomWallpaper(new TGBackground(tdlib, currentBackgroundObj, !backgroundParamsView.isBlurred()));
+          messagesView.setTranslationY(-height);
+        } else {
+          backgroundParamsView.initWith(currentBackground, new WallpaperParametersView.WallpaperParametersListener() {
+            @Override
+            public void onParametersViewScaleChanged (float factor) {
+              float clamped = MathUtils.clamp(factor);
+              backgroundParamsView.setTranslationY(height * (1f - clamped));
+              messagesView.setTranslationY(-(height * clamped));
+            }
+
+            @Override
+            public void onBlurValueAnimated (float factor) {
+              wallpaperViewBlurPreview.setAlpha(MathUtils.clamp(factor));
+            }
+          });
+
+          boolean previewBlurValue = !backgroundParamsView.isBlurred();
+          wallpaperViewBlurPreview.initWithCustomWallpaper(TGBackground.newBlurredWallpaper(tdlib, currentBackground, previewBlurValue));
+          wallpaperViewBlurPreview.setSelfBlur(previewBlurValue);
+          wallpaperView.setSelfBlur(!previewBlurValue);
+          backgroundParamsView.setParametersAvailability(currentBackground != null && currentBackground.isWallpaper(), false);
+          if (currentBackground != null && currentBackground.isWallpaper()) {
+            messagesView.setTranslationY(-height);
+          }
+        }
+      }
+    }
+
     // Bottom bar
 
     params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48f));
@@ -1121,6 +1178,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     // Setup
 
     contentView.addView(wallpaperView);
+    if (wallpaperViewBlurPreview != null) {
+      contentView.addView(wallpaperViewBlurPreview);
+    }
     if (!inPreviewMode) {
       contentView.addView(replyView);
     }
@@ -1142,6 +1202,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       contentView.addView(searchControlsLayout);
 
       addStaticListeners();
+    }
+
+    if (backgroundParamsView != null) {
+      contentView.addView(backgroundParamsView, 2);
     }
 
     updateView();
@@ -1653,9 +1717,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
         break;
       }
       case R.id.btn_applyWallpaper: {
+        TdApi.BackgroundType newBackgroundType = getArgumentsStrict().wallpaperObject.type;
+
+        if (newBackgroundType.getConstructor() == TdApi.BackgroundTypeWallpaper.CONSTRUCTOR && backgroundParamsView != null) {
+          ((TdApi.BackgroundTypeWallpaper) newBackgroundType).isBlurred = backgroundParamsView.isBlurred();
+        }
+
         tdlib().client().send(new TdApi.SetBackground(
                 new TdApi.InputBackgroundRemote(getArgumentsStrict().wallpaperObject.id),
-                getArgumentsStrict().wallpaperObject.type,
+                newBackgroundType,
                 Theme.isDark()
         ), result -> {
           if (result.getConstructor() == TdApi.Background.CONSTRUCTOR) {
@@ -3768,6 +3838,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (emojiLayout != null) {
       emojiLayout.reset();
+    }
+
+    if (wallpaperViewBlurPreview != null) {
+      wallpaperViewBlurPreview.performDestroy();
+    }
+
+    if (backgroundParamsView != null) {
+      backgroundParamsView.performDestroy();
+
+      if (inWallpaperMode() && !inWallpaperPreviewMode()) {
+        TGBackground background = tdlib.settings().getWallpaper(Theme.getWallpaperIdentifier());
+        if (background != null && background.isWallpaper()) {
+          tdlib.settings().setWallpaper(TGBackground.newBlurredWallpaper(tdlib, background, backgroundParamsView.isBlurred()), true, Theme.getWallpaperIdentifier());
+        }
+      }
     }
 
     botStartArgument = null;

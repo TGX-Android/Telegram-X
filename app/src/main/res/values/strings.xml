@@ -3875,6 +3875,7 @@
   <string name="ChatBackgroundTypeSolid">solid color</string>
   <string name="ChatBackgroundTypeGradient">gradient</string>
   <string name="ChatBackgroundTypeMulticolor">multicolor gradient</string>
+  <string name="ChatBackgroundBlur">Blurred</string>
 
   <string name="NoCloudThemeSupport">This theme is not designed for **Telegram X**.\n\nHowever, you may check for user-made themes in @tgx_perfection.</string>
 

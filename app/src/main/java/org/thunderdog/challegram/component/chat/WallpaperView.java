@@ -45,7 +45,7 @@ public class WallpaperView extends View implements ThemeChangeListener, ChatStyl
   private @Nullable
   TGBackground wallpaper, previewWallpaper;
 
-  private boolean inSetupMode;
+  private boolean inSetupMode, inSelfBlurMode, selfBlurValue;
 
   public WallpaperView (Context context, MessagesManager manager, Tdlib tdlib) {
     super(context);
@@ -67,6 +67,12 @@ public class WallpaperView extends View implements ThemeChangeListener, ChatStyl
     this.inSetupMode = true;
     preview = new DoubleImageReceiver(this, 0);
     setWallpaper(wallpaper, false);
+  }
+
+  public void setSelfBlur (boolean value) {
+    inSelfBlurMode = true;
+    selfBlurValue = value;
+    ThemeManager.instance().addChatStyleListener(this);
   }
 
   @Override
@@ -96,7 +102,7 @@ public class WallpaperView extends View implements ThemeChangeListener, ChatStyl
     }
     if (this.wallpaper != wallpaper) {
       if (animated) {
-        if (TGBackground.compare(this.wallpaper, wallpaper)) {
+        if (TGBackground.compare(this.wallpaper, wallpaper, false)) {
           return;
         }
         this.previewWallpaper = wallpaper;
@@ -162,6 +168,10 @@ public class WallpaperView extends View implements ThemeChangeListener, ChatStyl
   @Override
   public void onChatWallpaperChanged (Tdlib tdlib, TGBackground wallpaper, int usageIdentifier) {
     if (this.tdlib == tdlib && usageIdentifier == Theme.getWallpaperIdentifier()) {
+      if (inSelfBlurMode) {
+        wallpaper = TGBackground.newBlurredWallpaper(tdlib, wallpaper, selfBlurValue);
+      }
+
       setWallpaper(wallpaper, true);
     }
   }

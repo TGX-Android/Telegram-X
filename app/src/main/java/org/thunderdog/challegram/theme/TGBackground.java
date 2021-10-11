@@ -35,7 +35,7 @@ import me.vkryl.td.TdConstants;
 public class TGBackground {
   private final int accountId;
   private final String name;
-  private final TdApi.BackgroundType type;
+  private TdApi.BackgroundType type;
   private final String customPath;
   private final boolean isVector;
 
@@ -45,6 +45,22 @@ public class TGBackground {
   private ImageFile target;
   private ImageFile preview;
   private ImageFile miniThumbnail;
+
+  public static TGBackground newBlurredWallpaper (Tdlib tdlib, @Nullable TGBackground base, boolean blurIfSupported) {
+    if (base == null) {
+      return newEmptyWallpaper(tdlib);
+    }
+
+    TdApi.BackgroundType newType;
+
+    if (base.type != null && base.type.getConstructor() == TdApi.BackgroundTypeWallpaper.CONSTRUCTOR) {
+      newType = new TdApi.BackgroundTypeWallpaper(blurIfSupported, ((TdApi.BackgroundTypeWallpaper) base.type).isMoving);
+    } else {
+      newType = base.type;
+    }
+
+    return new TGBackground(tdlib, base.name, newType, base.isVector, base.legacyWallpaperId, base.legacyRemoteId);
+  }
 
   public static TGBackground newEmptyWallpaper (Tdlib tdlib) {
     return new TGBackground(tdlib, (String) null);
@@ -78,7 +94,7 @@ public class TGBackground {
     this.customPath = localPath;
     this.isVector = false;
     if (!StringUtils.isEmpty(localPath)) {
-      setTarget(new ImageFileLocal(localPath));
+      setTarget(new ImageFileLocal(localPath), false);
       ImageFileLocal preview = new ImageFileLocal(localPath);
       preview.setSize(Screen.dp(105f));
       setPreview(preview);
@@ -99,10 +115,14 @@ public class TGBackground {
     this.legacyRemoteId = StringUtils.isEmpty(legacyRemoteIdKey) ? null : Settings.instance().getString(legacyRemoteIdKey, null);
 
     boolean needImages;
+    boolean needBlur = false;
     if (type != null) {
       switch (type.getConstructor()) {
         case TdApi.BackgroundTypePattern.CONSTRUCTOR:
+          needImages = true;
+          break;
         case TdApi.BackgroundTypeWallpaper.CONSTRUCTOR:
+          needBlur = ((TdApi.BackgroundTypeWallpaper) type).isBlurred;
           needImages = true;
           break;
         case TdApi.BackgroundTypeFill.CONSTRUCTOR:
@@ -114,8 +134,11 @@ public class TGBackground {
     } else {
       needImages = true;
     }
+
+    String additionalSuffix = needBlur ? "_blurred" : "";
+
     if (needImages) {
-      setTarget(new ImageFileRemote(tdlib, null, "background_" + name) {
+      setTarget(new ImageFileRemote(tdlib, null, "background_" + name + additionalSuffix) {
         @Override
         public void extractFile (Client.ResultHandler handler) {
           Runnable onFail = () -> this.tdlib().client().send(new TdApi.SearchBackground(name), result -> {
@@ -140,9 +163,9 @@ public class TGBackground {
             onFail.run();
           }
         }
-      });
+      }, needBlur);
 
-      setPreview(new ImageFileRemote(tdlib, null, "background_preview_" + name) {
+      setPreview(new ImageFileRemote(tdlib, null, "background_preview_" + name + additionalSuffix) {
         @Override
         public void extractFile (Client.ResultHandler handler) {
           this.tdlib().client().send(new TdApi.SearchBackground(name), result -> {
@@ -167,6 +190,10 @@ public class TGBackground {
   }
 
   public TGBackground (Tdlib tdlib, TdApi.Background background) {
+    this(tdlib, background, isBlurred(background.type));
+  }
+
+  public TGBackground (Tdlib tdlib, TdApi.Background background, boolean blur) {
     this.accountId = tdlib.id();
     this.name = background.name;
     this.type = background.type;
@@ -178,7 +205,7 @@ public class TGBackground {
       case TdApi.BackgroundTypePattern.CONSTRUCTOR:
       case TdApi.BackgroundTypeWallpaper.CONSTRUCTOR: {
         if (background.document != null) {
-          setTarget(new ImageFile(tdlib, background.document.document));
+          setTarget(new ImageFile(tdlib, background.document.document), blur);
           if (background.document.thumbnail != null)
             setPreview(TD.toImageFile(tdlib, background.document.thumbnail));
           if (background.document.minithumbnail != null)
@@ -220,7 +247,7 @@ public class TGBackground {
     throw Theme.newError(themeId, "themeId");
   }
 
-  private void setTarget (ImageFile target) {
+  private void setTarget (ImageFile target, boolean blur) {
     this.target = target;
     if (target != null) {
       target.setNeedPalette(true);
@@ -233,9 +260,14 @@ public class TGBackground {
         target.setSize(Screen.widestSide());
       } else {
         target.setScaleType(ImageFile.CENTER_CROP);
-        target.setSize(Math.min(1480, Screen.widestSide()));
+        if (blur) {
+          target.setSize(160);
+          target.setNeedBlur();
+        } else {
+          target.setSize(Math.min(1480, Screen.widestSide()));
+          target.setNoBlur();
+        }
       }
-      target.setNoBlur();
     }
   }
 
@@ -261,9 +293,15 @@ public class TGBackground {
   }
 
   public static boolean compare (TGBackground a, TGBackground b) {
+    return compare(a, b, true);
+  }
+
+  public static boolean compare (TGBackground a, TGBackground b, boolean ignoreAdditionalInfo) {
     if ((a == null || a.isEmpty()) && (b == null || b.isEmpty()))
       return true;
     if (a == null || b == null || a.isEmpty() != b.isEmpty() || a.isCustom() != b.isCustom() || !Td.equalsTo(a.type, b.type, true))
+      return false;
+    if (!ignoreAdditionalInfo && isBlurred(a.type) != isBlurred(b.type))
       return false;
     if (a.isCustom())
       return StringUtils.equalsOrBothEmpty(a.getCustomPath(), b.getCustomPath());
@@ -298,6 +336,10 @@ public class TGBackground {
     return type != null && type.getConstructor() == TdApi.BackgroundTypePattern.CONSTRUCTOR;
   }
 
+  public boolean isWallpaper () {
+    return type != null && type.getConstructor() == TdApi.BackgroundTypeWallpaper.CONSTRUCTOR;
+  }
+
   public boolean isPatternBackgroundGradient () {
     return isPattern() && ((TdApi.BackgroundTypePattern) type).fill.getConstructor() == TdApi.BackgroundFillGradient.CONSTRUCTOR;
   }
@@ -328,6 +370,14 @@ public class TGBackground {
 
   public boolean isCustom () {
     return !StringUtils.isEmpty(customPath);
+  }
+
+  public TdApi.BackgroundType getType() {
+    return type;
+  }
+
+  public boolean isNetwork() {
+    return !isCustom() && name != null;
   }
 
   public String getCustomPath () {
@@ -458,6 +508,10 @@ public class TGBackground {
   }
 
   public boolean isBlurred () {
+    return isBlurred(type);
+  }
+
+  public static boolean isBlurred (TdApi.BackgroundType type) {
     return type != null && type.getConstructor() == TdApi.BackgroundTypeWallpaper.CONSTRUCTOR && ((TdApi.BackgroundTypeWallpaper) type).isBlurred;
   }
 
