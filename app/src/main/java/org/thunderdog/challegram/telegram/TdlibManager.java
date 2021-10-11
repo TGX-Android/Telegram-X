@@ -1685,7 +1685,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   }
 
   @TdlibThread
-  void onKnownUserIdChanged (int accountId, int userId) {
+  void onKnownUserIdChanged (int accountId, long userId) {
     TdlibAccount account = accounts.get(accountId);
     if (/*!account.isUnauthorized() &&*/ account.setKnownUserId(userId)) {
       saveAccount(account, ACCOUNT_USER_CHANGED);

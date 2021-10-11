@@ -6640,7 +6640,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   @TdlibThread
-  private void onUpdateMyUserId (int myUserId) {
+  private void onUpdateMyUserId (long myUserId) {
     context.onKnownUserIdChanged(accountId, myUserId);
     cache().onUpdateMyUserId(myUserId);
     notificationManager.onUpdateMyUserId(myUserId);

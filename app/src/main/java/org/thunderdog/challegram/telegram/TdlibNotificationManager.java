@@ -382,7 +382,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
           break;
         }
         case ON_UPDATE_MY_USER_ID: {
-          ((TdlibNotificationManager) msg.obj).onUpdateMyUserIdImpl(msg.arg1);
+          ((TdlibNotificationManager) msg.obj).onUpdateMyUserIdImpl(BitwiseUtils.mergeLong(msg.arg1, msg.arg2));
           break;
         }
         case ON_UPDATE_MY_USER: {
@@ -1986,8 +1986,8 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   }
 
   @TdlibThread
-  void onUpdateMyUserId (int myUserId) {
-    sendLockedMessage(Message.obtain(queue.getHandler(), ON_UPDATE_MY_USER_ID, myUserId, 0, this), null);
+  void onUpdateMyUserId (long myUserId) {
+    sendLockedMessage(Message.obtain(queue.getHandler(), ON_UPDATE_MY_USER_ID, BitwiseUtils.splitLongToFirstInt(myUserId), BitwiseUtils.splitLongToSecondInt(myUserId), this), null);
   }
 
   @TdlibThread
@@ -2061,11 +2061,11 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     }
   }*/
 
-  private int myUserId;
+  private long myUserId;
   private @Nullable TdApi.User myUser;
 
   @NotificationThread
-  public int myUserId () {
+  public long myUserId () {
     return myUserId;
   }
 
@@ -2081,7 +2081,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   }
 
   @NotificationThread
-  private void onUpdateMyUserIdImpl (int userId) {
+  private void onUpdateMyUserIdImpl (long userId) {
     this.myUserId = userId;
     if (userId == 0)
       myUser = null;
