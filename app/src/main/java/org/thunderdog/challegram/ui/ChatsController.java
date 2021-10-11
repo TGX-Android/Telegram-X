@@ -529,6 +529,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     list.initializeList(filter, this, this::displayChats, chatsView.getInitialLoadCount(), () ->
       runOnUiThreadOptional(() -> {
         this.listInitalized = true;
+        checkDisplayNoChats();
         executeScheduledAnimation();
       })
     );
