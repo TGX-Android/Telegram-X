@@ -181,7 +181,7 @@ public class CameraManagerX extends CameraManager<PreviewView> {
 
     if (REUSE_PREVIEW_DISABLED || preview == null || previewRotation != getSurfaceRotation()) {
       Preview.Builder previewBuilder = new Preview.Builder()
-              .setTargetRotation(previewRotation = getSurfaceRotation());
+        .setTargetRotation(previewRotation = getSurfaceRotation());
       if (aspectRatioCustom != null) {
         previewBuilder.setTargetResolution(toSize(aspectRatioCustom, getSurfaceRotation()));
       } else {
@@ -191,10 +191,10 @@ public class CameraManagerX extends CameraManager<PreviewView> {
     }
 
     if (REUSE_CAPTURE_DISABLED || imageCapture == null) {
-       ImageCapture.Builder imageCaptureBuilder = new ImageCapture.Builder()
-              .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-              .setFlashMode(flashMode)
-              .setTargetRotation(getSurfaceRotation());
+      ImageCapture.Builder imageCaptureBuilder = new ImageCapture.Builder()
+        .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+        .setFlashMode(flashMode)
+        .setTargetRotation(getSurfaceRotation());
       if (aspectRatioCustom != null) {
         imageCaptureBuilder.setTargetResolution(toSize(aspectRatioCustom, getSurfaceRotation()));
       } else {
@@ -207,7 +207,7 @@ public class CameraManagerX extends CameraManager<PreviewView> {
     }
     if (REUSE_CAPTURE_DISABLED || videoCapture == null) {
       VideoCapture.Builder b = new VideoCapture.Builder()
-              .setTargetRotation(getSurfaceRotation());
+        .setTargetRotation(getSurfaceRotation());
       if (aspectRatioCustom != null) {
         b.setTargetResolution(toSize(aspectRatioCustom, getSurfaceRotation()));
       } else {
@@ -219,9 +219,9 @@ public class CameraManagerX extends CameraManager<PreviewView> {
     }
 
     ImageAnalysis imageAnalyzer = new ImageAnalysis.Builder()
-            .setTargetRotation(getSurfaceRotation())
-            .setTargetAspectRatio(aspectRatio)
-            .build();
+      .setTargetRotation(getSurfaceRotation())
+      .setTargetAspectRatio(aspectRatio)
+      .build();
 
     if (delegate.useQrScanner()) {
       if (cameraQrBridge == null) {

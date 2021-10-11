@@ -70,10 +70,10 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
     float scaleY = (float) getHeight() / height;
 
     Rect qrBounds = new Rect(
-            (int) (boundingBox.left * scaleX),
-            (int) (boundingBox.top * scaleY),
-            (int) (boundingBox.right * scaleX),
-            (int) (boundingBox.bottom * scaleY)
+      (int) (boundingBox.left * scaleX),
+      (int) (boundingBox.top * scaleY),
+      (int) (boundingBox.right * scaleX),
+      (int) (boundingBox.bottom * scaleY)
     );
 
     if (Settings.instance().getCameraAspectRatioMode() == Settings.CAMERA_RATIO_4_3) {
@@ -209,13 +209,13 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
     public float y;
     public float size;
 
-    public void set(float x, float y, float size) {
+    public void set (float x, float y, float size) {
       this.x = x;
       this.y = y;
       this.size = size;
     }
 
-    public void copyFrom(QrBoxLocation other) {
+    public void copyFrom (QrBoxLocation other) {
       set(other.x, other.y, other.size);
     }
   }
