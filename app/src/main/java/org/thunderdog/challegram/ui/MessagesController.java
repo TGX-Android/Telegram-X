@@ -1835,14 +1835,22 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
     switch (id) {
+      case R.id.btn_copyLink:
       case R.id.btn_share: {
-        ShareController c = new ShareController(context(), tdlib());
-        c.setArguments(new ShareController.Args(tdlib().tMeBackgroundUrl(getArgumentsStrict().wallpaperObject.name)));
-        c.show();
-        break;
-      }
-      case R.id.btn_copyLink: {
-        UI.copyText(tdlib().tMeBackgroundUrl(getArgumentsStrict().wallpaperObject.name), R.string.CopiedLink);
+        tdlib.client().send(new TdApi.GetBackgroundUrl(getArgumentsStrict().wallpaperObject.name, TGBackground.makeBlurredBackgroundType(getArgumentsStrict().wallpaperObject.type, backgroundParamsView.isBlurred())), result -> {
+          if (result.getConstructor() == TdApi.HttpUrl.CONSTRUCTOR) {
+            TdApi.HttpUrl url = (TdApi.HttpUrl) result;
+            runOnUiThreadOptional(() -> {
+              if (id == R.id.btn_copyLink) {
+                UI.copyText(url.url, R.string.CopiedLink);
+              } else {
+                ShareController c = new ShareController(context(), tdlib());
+                c.setArguments(new ShareController.Args(url.url));
+                c.show();
+              }
+            });
+          }
+        });
         break;
       }
       case R.id.btn_openLinkedChat: {
