@@ -68,7 +68,7 @@ public class TdlibWallpaperManager {
     if (!force && !needLoadWallpaper(themeId)) {
       return;
     }
-    String name = extractWallpaperName(Theme.getDefaultWallpaper(themeId));
+    String name = Theme.getDefaultWallpaper(themeId);
     if (StringUtils.isEmpty(name)) {
       tdlib.settings().setWallpaper(TGBackground.newEmptyWallpaper(tdlib), force, Theme.getWallpaperIdentifier(themeId));
     } else {
