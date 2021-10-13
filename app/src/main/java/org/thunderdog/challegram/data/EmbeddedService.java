@@ -193,7 +193,7 @@ public class EmbeddedService {
           }
           break;
         }
-        case "vimeo.com": {
+        /*case "vimeo.com": {
           // https://vimeo.com/360123613
           viewType = TYPE_VIMEO;
           if (segments.length == 1 && StringUtils.isNumeric(segments[0])) {
@@ -248,7 +248,7 @@ public class EmbeddedService {
           }
           break;
         }
-        /*case "soundcloud.com": {
+        case "soundcloud.com": {
           // https://soundcloud.com/leagueoflegends/star-guardian-2019-login-theme
           // https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/680741072&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true
           viewType = TYPE_SOUNDCLOUD;
@@ -257,7 +257,7 @@ public class EmbeddedService {
         }*/
       }
       if (viewType != 0 && !StringUtils.isEmpty(viewUrl)) {
-        return new EmbeddedService(viewType, viewUrl, width, height, thumbnail);
+        return new EmbeddedService(viewType, viewUrl, width, height, thumbnail, null, null);
       }
     } catch (Throwable t) {
       Log.e("Unable to parse embedded service", t);
