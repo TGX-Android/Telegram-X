@@ -149,11 +149,19 @@ public class CameraQrBridge {
     if (result.getResultPoints().length < 3) return null;
 
     ResultPoint[] points = result.getResultPoints();
+    //Log.w("ZXing bounding box %s", Arrays.toString(points));
+    // [(948.5,1216.0), (546.0,1224.5), (557.5,1619.0), (914.5,1571.5)]
+    // 948, 1224 - 557, 1571
+    int x1 = (int) points[0].getX();
+    int x2 = (int) points[2].getX();
+    int y1 = (int) points[1].getX();
+    int y2 = (int) points[0].getX();
+    int ySize = Math.max(y1, y2) - Math.min(y1, y2);
     return new Rect(
-      (int) points[0].getX(), // left
-      (int) points[1].getY(), // top
-      (int) points[2].getX(), // right
-      (int) points[0].getY() // bottom
+      Math.min(x1, x2), // left
+      Math.min(y1, y2) + ySize, // top
+      Math.max(x1, x2), // right
+      Math.max(y1, y2) + ySize // bottom
     );
   }
 
