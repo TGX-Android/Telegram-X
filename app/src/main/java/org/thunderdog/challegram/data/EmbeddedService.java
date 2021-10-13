@@ -3,6 +3,7 @@ package org.thunderdog.challegram.data;
 import android.net.Uri;
 
 import androidx.annotation.DrawableRes;
+import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
@@ -30,17 +31,19 @@ public class EmbeddedService {
   public static final int TYPE_SOUNDCLOUD = 5;
 
   public final int type;
-  public final String viewUrl;
+  public final String viewUrl, embedUrl, embedType;
 
   public final int width, height;
   public final TdApi.Photo thumbnail;
 
-  public EmbeddedService (int type, String url, int width, int height, TdApi.Photo thumbnail) {
+  public EmbeddedService (int type, String url, int width, int height, TdApi.Photo thumbnail, @Nullable String embedUrl, @Nullable String embedType) {
     this.type = type;
     this.viewUrl = url;
     this.width = width;
     this.height = height;
     this.thumbnail = thumbnail;
+    this.embedUrl = embedUrl;
+    this.embedType = embedType;
   }
 
   public @DrawableRes
@@ -132,7 +135,7 @@ public class EmbeddedService {
            ("video".equals(webPage.type) && webPage.photo != null && webPage.animation == null) ||
            ("photo".equals(webPage.type) && webPage.photo != null && webPage.animation == null)
           ) && webPage.video == null && webPage.videoNote == null && webPage.document == null && webPage.audio == null) {
-        return new EmbeddedService(resolveTypeForHost(StringUtils.domainOf(webPage.url)), webPage.url, webPage.embedWidth, webPage.embedHeight, webPage.photo);
+        return new EmbeddedService(resolveTypeForHost(StringUtils.domainOf(webPage.url)), webPage.url, webPage.embedWidth, webPage.embedHeight, webPage.photo, webPage.embedUrl, webPage.embedType);
       }
     }
     // if ("type".equals(webPage.type) && webpage)
