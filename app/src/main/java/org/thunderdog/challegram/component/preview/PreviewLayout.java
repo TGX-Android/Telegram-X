@@ -58,6 +58,7 @@ public abstract class PreviewLayout extends FrameLayoutFix implements View.OnCli
         break;
       }
       case R.id.btn_share: {
+        popupLayout.hideWindow(true);
         TD.shareLink(parent, nativeEmbed.viewUrl);
         break;
       }
