@@ -364,6 +364,14 @@ public class SettingsController extends ViewController<Void> implements
         }
         view.setUnreadCounter(hasError ? Tdlib.CHAT_FAILED : 0, false, isUpdate);
         switch (item.getId()) {
+          case R.id.btn_changePhoneNumber: {
+            view.setData(Lang.getStringBold(R.string.ReminderCheckPhoneNumberText, myPhone));
+            break;
+          }
+          case R.id.btn_2fa: {
+            view.setData(R.string.ReminderCheckTfaPasswordText);
+            break;
+          }
           case R.id.btn_username: {
             if (myUsername == null) {
               view.setData(R.string.LoadingUsername);
@@ -405,6 +413,30 @@ public class SettingsController extends ViewController<Void> implements
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_INFO_MULTILINE, R.id.btn_bio, R.drawable.baseline_info_24, R.string.UserBio).setContentStrings(R.string.LoadingInformation, R.string.BioNone));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+
+    TdApi.SuggestedAction[] actions = tdlib.getSuggestedActions();
+    for (int i = 0; i < actions.length; i++) {
+      if (i == 0) {
+        items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      }
+
+      switch (actions[i].getConstructor()) {
+        case TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR: {
+          items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_changePhoneNumber, R.drawable.baseline_sim_card_alert_24, R.string.ReminderCheckPhoneNumber));
+          break;
+        }
+        case TdApi.SuggestedActionCheckPassword.CONSTRUCTOR: {
+          items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_2fa, R.drawable.baseline_gpp_maybe_24, R.string.ReminderCheckTfaPassword));
+          break;
+        }
+      }
+
+      if (i == actions.length - 1) {
+        items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      } else {
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+      }
+    }
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     /*if (Settings.instance().hasProxyConfiguration()) {
@@ -710,6 +742,14 @@ public class SettingsController extends ViewController<Void> implements
         tdlib.ui().openUrl(this, Lang.getStringSecure(R.string.url_privacyPolicy), new TdlibUi.UrlOpenParameters().forceInstantView());
         break;
       }
+      case R.id.btn_changePhoneNumber: {
+        showSuggestionPopup(new TdApi.SuggestedActionCheckPhoneNumber());
+        break;
+      }
+      case R.id.btn_2fa: {
+        showSuggestionPopup(new TdApi.SuggestedActionCheckPassword());
+        break;
+      }
       case R.id.btn_build: {
         if (Settings.instance().hasLogsEnabled()) {
           showBuildOptions(true);
@@ -723,6 +763,129 @@ public class SettingsController extends ViewController<Void> implements
         break;
       }
     }
+  }
+
+  private void showSuggestionPopup (TdApi.SuggestedAction suggestedAction) {
+    CharSequence info = null;
+    IntList ids = new IntList(3);
+    StringList titles = new StringList(3);
+    IntList colors = new IntList(3);
+    IntList icons = new IntList(3);
+
+    switch (suggestedAction.getConstructor()) {
+      case TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR: {
+        info = Lang.getString(R.string.ReminderCheckPhoneNumberDescription);
+
+        ids.append(R.id.btn_changePhoneNumber);
+        titles.append(R.string.ReminderActionChangePhoneNumber);
+        colors.append(OPTION_COLOR_RED);
+        icons.append(R.drawable.baseline_edit_24);
+
+        ids.append(R.id.btn_info);
+        titles.append(R.string.ReminderActionLearnMore);
+        colors.append(OPTION_COLOR_NORMAL);
+        icons.append(R.drawable.baseline_info_24);
+
+        break;
+      }
+      case TdApi.SuggestedActionCheckPassword.CONSTRUCTOR: {
+        info = Lang.getString(R.string.ReminderCheckTfaPasswordDescription);
+
+        ids.append(R.id.btn_2fa);
+        titles.append(R.string.ReminderActionVerifyPassword);
+        colors.append(OPTION_COLOR_RED);
+        icons.append(R.drawable.baseline_security_24);
+
+        break;
+      }
+    }
+
+    ids.append(R.id.btn_cancel);
+    titles.append(R.string.ReminderActionDismiss);
+    colors.append(OPTION_COLOR_NORMAL);
+    icons.append(R.drawable.baseline_cancel_24);
+
+    showOptions(info, ids.get(), titles.get(), colors.get(), icons.get(), (view, id) -> {
+      switch (id) {
+        case R.id.btn_changePhoneNumber: {
+          dismissSuggestion(suggestedAction);
+          navigateTo(new SettingsPhoneController(context, tdlib));
+          break;
+        }
+        case R.id.btn_2fa: {
+          tdlib.client().send(new TdApi.GetPasswordState(), result -> {
+            if (result.getConstructor() == TdApi.PasswordState.CONSTRUCTOR) {
+              runOnUiThreadOptional(() -> {
+                PasswordController controller = new PasswordController(context, tdlib);
+                controller.setArguments(new PasswordController.Args(PasswordController.MODE_CONFIRM, (TdApi.PasswordState) result).setSuccessListener((pwd) -> {
+                  dismissSuggestion(suggestedAction);
+                }));
+                navigateTo(controller);
+              });
+            } else {
+              UI.showError(result);
+            }
+          });
+          break;
+        }
+        case R.id.btn_info: {
+          tdlib.ui().openUrl(this, Lang.getStringSecure(R.string.url_faqPhoneNumber), new TdlibUi.UrlOpenParameters().forceInstantView());
+          break;
+        }
+        case R.id.btn_cancel: {
+          dismissSuggestion(suggestedAction);
+          break;
+        }
+      }
+
+      return true;
+    });
+  }
+
+  private void dismissSuggestion (TdApi.SuggestedAction suggestedAction) {
+    if (suggestedAction.getConstructor() != TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR && suggestedAction.getConstructor() != TdApi.SuggestedActionCheckPassword.CONSTRUCTOR)
+      return;
+
+    int removalIndex;
+
+    switch (suggestedAction.getConstructor()) {
+      case TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR: {
+        removalIndex = adapter.indexOfViewById(R.id.btn_changePhoneNumber);
+        break;
+      }
+      case TdApi.SuggestedActionCheckPassword.CONSTRUCTOR: {
+        removalIndex = adapter.indexOfViewById(R.id.btn_2fa);
+        break;
+      }
+      default: {
+        return;
+      }
+    }
+
+    ListItem previousItem = adapter.getItem(removalIndex - 1);
+    ListItem nextItem = adapter.getItem(removalIndex + 1);
+    if (nextItem == null || previousItem == null)
+      return;
+    int previousViewType = previousItem.getViewType();
+    int nextViewType = nextItem.getViewType();
+
+    switch (nextViewType) {
+      case ListItem.TYPE_SHADOW_BOTTOM: {
+        if (previousViewType == ListItem.TYPE_SHADOW_TOP) {
+          adapter.removeRange(removalIndex - 1, 3);
+        } else if (previousViewType == ListItem.TYPE_SEPARATOR) {
+          adapter.removeRange(removalIndex - 1, 2);
+        }
+        break;
+      }
+
+      case ListItem.TYPE_SEPARATOR: {
+        adapter.removeRange(removalIndex, 2);
+        break;
+      }
+    }
+
+    tdlib.client().send(new TdApi.HideSuggestedAction(suggestedAction), tdlib.okHandler());
   }
 
   private void showBuildOptions (boolean allowDebug) {

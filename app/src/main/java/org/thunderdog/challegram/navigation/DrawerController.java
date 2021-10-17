@@ -40,6 +40,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibBadgeCounter;
 import org.thunderdog.challegram.telegram.TdlibManager;
+import org.thunderdog.challegram.telegram.TdlibOptionListener;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
@@ -77,7 +78,7 @@ import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.td.ChatId;
 
-public class DrawerController extends ViewController<Void> implements View.OnClickListener, Settings.ProxyChangeListener, GlobalAccountListener, GlobalCountersListener, BaseView.CustomControllerProvider, BaseView.ActionListProvider, View.OnLongClickListener, TdlibSettingsManager.NotificationProblemListener {
+public class DrawerController extends ViewController<Void> implements View.OnClickListener, Settings.ProxyChangeListener, GlobalAccountListener, GlobalCountersListener, BaseView.CustomControllerProvider, BaseView.ActionListProvider, View.OnLongClickListener, TdlibSettingsManager.NotificationProblemListener, TdlibOptionListener {
   private int currentWidth, shadowWidth;
 
   private boolean isVisible;
@@ -118,15 +119,26 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   public void onCurrentTdlibChanged (Tdlib tdlib) {
     if (lastTdlib != null) {
       lastTdlib.settings().removeNotificationProblemAvailabilityChangeListener(this);
+      lastTdlib.listeners().removeOptionListener(this);
     }
     this.lastTdlib = tdlib;
     tdlib.settings().addNotificationProblemAvailabilityChangeListener(this);
+    tdlib.listeners().addOptionsListener(this);
     checkSettingsError();
   }
 
   @Override
   public void onNotificationProblemsAvailabilityChanged (Tdlib tdlib, boolean available) {
     tdlib.ui().post(() -> {
+      if (!isDestroyed()) {
+        checkSettingsError();
+      }
+    });
+  }
+
+  @Override
+  public void onSuggestedActionsChanged (TdApi.SuggestedAction[] addedActions, TdApi.SuggestedAction[] removedActions) {
+    context.currentTdlib().ui().post(() -> {
       if (!isDestroyed()) {
         checkSettingsError();
       }
