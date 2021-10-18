@@ -48,12 +48,13 @@ public class CameraManagerLegacy extends CameraManagerTexture {
     }
   }
 
-  public void onPreviewFrame(byte[] data, Camera camera) {
+  public void onPreviewFrame (byte[] data, Camera camera) {
     if (cameraQrBridge != null && api.isCameraActive) {
       try {
         Camera.Size previewSize = camera.getParameters().getPreviewSize();
         cameraQrBridge.processImage(data, previewSize.width, previewSize.height, (CameraApiLegacy) api);
-      } catch (Exception ignored) {}
+      } catch (Exception ignored) {
+      }
     }
   }
 

@@ -1356,7 +1356,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
   }
 
   @Override
-  public boolean useQrScanner() {
+  public boolean useQrScanner () {
     return isInQrScanMode();
   }
 
