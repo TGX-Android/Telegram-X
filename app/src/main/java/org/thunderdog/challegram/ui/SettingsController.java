@@ -415,27 +415,27 @@ public class SettingsController extends ViewController<Void> implements
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     TdApi.SuggestedAction[] actions = tdlib.getSuggestedActions();
-    for (int i = 0; i < actions.length; i++) {
-      if (i == 0) {
-        items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+    if (actions.length > 0) {
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+
+      for (int i = 0; i < actions.length; i++) {
+        switch (actions[i].getConstructor()) {
+          case TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR: {
+            items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_changePhoneNumber, R.drawable.baseline_sim_card_alert_24, R.string.ReminderCheckPhoneNumber));
+            break;
+          }
+          case TdApi.SuggestedActionCheckPassword.CONSTRUCTOR: {
+            items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_2fa, R.drawable.baseline_gpp_maybe_24, R.string.ReminderCheckTfaPassword));
+            break;
+          }
+        }
+
+        if (i != actions.length - 1) {
+          items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+        }
       }
 
-      switch (actions[i].getConstructor()) {
-        case TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR: {
-          items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_changePhoneNumber, R.drawable.baseline_sim_card_alert_24, R.string.ReminderCheckPhoneNumber));
-          break;
-        }
-        case TdApi.SuggestedActionCheckPassword.CONSTRUCTOR: {
-          items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_2fa, R.drawable.baseline_gpp_maybe_24, R.string.ReminderCheckTfaPassword));
-          break;
-        }
-      }
-
-      if (i == actions.length - 1) {
-        items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-      } else {
-        items.add(new ListItem(ListItem.TYPE_SEPARATOR));
-      }
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     }
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -862,6 +862,8 @@ public class SettingsController extends ViewController<Void> implements
       }
     }
 
+    if (removalIndex == -1)
+      return;
     ListItem previousItem = adapter.getItem(removalIndex - 1);
     ListItem nextItem = adapter.getItem(removalIndex + 1);
     if (nextItem == null || previousItem == null)
