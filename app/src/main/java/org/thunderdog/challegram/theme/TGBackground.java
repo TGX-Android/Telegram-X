@@ -49,17 +49,23 @@ public class TGBackground {
   public static TGBackground newBlurredWallpaper (Tdlib tdlib, @Nullable TGBackground base, boolean blurIfSupported) {
     if (base == null) {
       return newEmptyWallpaper(tdlib);
+    } else if (base.isCustom()) {
+      return base;
     }
 
+    return new TGBackground(tdlib, base.name, makeBlurredBackgroundType(base.type, blurIfSupported), base.isVector, base.legacyWallpaperId, base.legacyRemoteId);
+  }
+
+  public static TdApi.BackgroundType makeBlurredBackgroundType (TdApi.BackgroundType base, boolean isBlurred) {
     TdApi.BackgroundType newType;
 
-    if (base.type != null && base.type.getConstructor() == TdApi.BackgroundTypeWallpaper.CONSTRUCTOR) {
-      newType = new TdApi.BackgroundTypeWallpaper(blurIfSupported, ((TdApi.BackgroundTypeWallpaper) base.type).isMoving);
+    if (base != null && base.getConstructor() == TdApi.BackgroundTypeWallpaper.CONSTRUCTOR) {
+      newType = new TdApi.BackgroundTypeWallpaper(isBlurred, ((TdApi.BackgroundTypeWallpaper) base).isMoving);
     } else {
-      newType = base.type;
+      newType = base;
     }
 
-    return new TGBackground(tdlib, base.name, newType, base.isVector, base.legacyWallpaperId, base.legacyRemoteId);
+    return newType;
   }
 
   public static TGBackground newEmptyWallpaper (Tdlib tdlib) {
