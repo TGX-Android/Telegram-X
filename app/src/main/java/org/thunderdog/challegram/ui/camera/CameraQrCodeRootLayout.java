@@ -134,7 +134,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
     cornerBRPath.lineTo(x + size - cornerSize, y + size);
   }
 
-  public static float interpolate(float v1, float v2, float f) {
+  public static float interpolate (float v1, float v2, float f) {
     return v1 + (v2 - v1) * f;
   }
 
