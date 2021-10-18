@@ -808,7 +808,6 @@ public class SettingsController extends ViewController<Void> implements
     showOptions(info, ids.get(), titles.get(), colors.get(), icons.get(), (view, id) -> {
       switch (id) {
         case R.id.btn_changePhoneNumber: {
-          dismissSuggestion(suggestedAction);
           navigateTo(new SettingsPhoneController(context, tdlib));
           break;
         }
