@@ -22,6 +22,7 @@ import me.vkryl.core.MathUtils;
 class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.Target {
   private final static long ANIMATION_DURATION = 350L;
   private final static long RESET_DURATION = 150L;
+  private final static long RESET_DURATION_LEGACY = 250L;
   private final static long CONFIRMATION_DURATION = 750L;
 
   private final static int ANIMATOR_GENERAL = 0;
@@ -46,8 +47,8 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   private int cameraViewHeight;
 
   private final BoolAnimator qrFoundAnimator = new BoolAnimator(ANIMATOR_STATUS, this, AnimatorUtils.LINEAR_INTERPOLATOR, CONFIRMATION_DURATION, false);
-  private final BoolAnimator resetAnimator = new BoolAnimator(ANIMATOR_RESET, this, AnimatorUtils.LINEAR_INTERPOLATOR, RESET_DURATION, false);
   private final BoolAnimator qrParamsAnimator = new BoolAnimator(ANIMATOR_GENERAL, this, AnimatorUtils.OVERSHOOT_INTERPOLATOR, ANIMATION_DURATION, false);
+  private final BoolAnimator resetAnimator = new BoolAnimator(ANIMATOR_RESET, this, AnimatorUtils.LINEAR_INTERPOLATOR, RESET_DURATION, false);
 
   private boolean qrMode;
 
@@ -61,7 +62,10 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   }
 
   @Override
-  public void setQrCorner (Rect boundingBox, int height, int width) {
+  public void setQrCorner (Rect boundingBox, int height, int width, boolean isLegacyZxing) {
+    resetAnimator.setValue(false, false);
+    resetAnimator.setDuration(isLegacyZxing ? RESET_DURATION_LEGACY : RESET_DURATION);
+
     if (boundingBox == null) {
       qrFoundAnimator.setValue(true, false);
       return;
@@ -70,11 +74,13 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
     float scaleX = (float) getWidth() / width;
     float scaleY = (float) getHeight() / height;
 
+    int topPad = isLegacyZxing ? (getHeight() - height) : 0;
+
     Rect qrBounds = new Rect(
       (int) (boundingBox.left * scaleX),
-      (int) (boundingBox.top * scaleY),
+      (int) (boundingBox.top * scaleY) + topPad,
       (int) (boundingBox.right * scaleX),
-      (int) (boundingBox.bottom * scaleY)
+      (int) (boundingBox.bottom * scaleY) + topPad
     );
 
     if (Settings.instance().getCameraAspectRatioMode() == Settings.CAMERA_RATIO_4_3) {
@@ -86,7 +92,6 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
     //Log.d("box: %s | scaleX: %s | scaleY: %s | preview: (%s x %s) | view: (%s x %s) | camera: (%s x %s)", qrBounds.toString(), scaleX, scaleY, width, height, getWidth(), getHeight(), cameraViewWidth, cameraViewHeight);
 
     animateQrLocation(qrBounds.left, qrBounds.top, (qrBounds.right - qrBounds.left) + cornerSize);
-    resetAnimator.setValue(false, false);
     qrFoundAnimator.setValue(true, true);
   }
 
@@ -161,6 +166,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   @Override
   protected boolean drawChild (Canvas canvas, View child, long drawingTime) {
     boolean result = super.drawChild(canvas, child, drawingTime);
+
     if (child instanceof CameraLayout && qrMode) {
       // X, Y defines center point - where size defines distance between center point and corner
       float size, x, y;

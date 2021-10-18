@@ -104,9 +104,9 @@ public class CameraQrBridge {
         Barcode first = barcodes.get(0);
 
         if (swapSizes) {
-          delegate.onQrCodeFound(first.getRawValue(), first.getBoundingBox(), image.getWidth(), image.getHeight());
+          delegate.onQrCodeFound(first.getRawValue(), first.getBoundingBox(), image.getWidth(), image.getHeight(), false);
         } else {
-          delegate.onQrCodeFound(first.getRawValue(), first.getBoundingBox(), image.getHeight(), image.getWidth());
+          delegate.onQrCodeFound(first.getRawValue(), first.getBoundingBox(), image.getHeight(), image.getWidth(), false);
         }
       }
     }).addOnFailureListener(ex -> {
@@ -128,7 +128,8 @@ public class CameraQrBridge {
       try {
         Result match = zxingImplementationImpl(data, width, height, rotation);
         if (match != null && match.getText() != null && !match.getText().isEmpty()) {
-          mainExecutor.execute(() -> delegate.onQrCodeFound(match.getText(), zxingBoundingBox(match), width, height));
+          Rect zxingBox = zxingBoundingBox(match);
+          mainExecutor.execute(() -> delegate.onQrCodeFound(match.getText(), zxingBox, width, height, true));
         } else {
           mainExecutor.execute(delegate::onQrCodeNotFound);
         }
@@ -149,19 +150,17 @@ public class CameraQrBridge {
     if (result.getResultPoints().length < 3) return null;
 
     ResultPoint[] points = result.getResultPoints();
-    //Log.w("ZXing bounding box %s", Arrays.toString(points));
     // [(948.5,1216.0), (546.0,1224.5), (557.5,1619.0), (914.5,1571.5)]
     // 948, 1224 - 557, 1571
     int x1 = (int) points[0].getX();
     int x2 = (int) points[2].getX();
     int y1 = (int) points[1].getX();
     int y2 = (int) points[0].getX();
-    int ySize = Math.max(y1, y2) - Math.min(y1, y2);
     return new Rect(
       Math.min(x1, x2), // left
-      Math.min(y1, y2) + ySize, // top
+      Math.min(y1, y2), // top
       Math.max(x1, x2), // right
-      Math.max(y1, y2) + ySize // bottom
+      Math.max(y1, y2) // bottom
     );
   }
 
