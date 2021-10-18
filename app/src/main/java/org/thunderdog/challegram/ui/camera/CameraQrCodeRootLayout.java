@@ -6,11 +6,9 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.view.View;
-import android.view.animation.Interpolator;
 
 import androidx.annotation.NonNull;
 
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
@@ -19,7 +17,6 @@ import org.thunderdog.challegram.unsorted.Settings;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
-import me.vkryl.core.MathUtils;
 
 class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.Target {
   private final static long ANIMATION_DURATION = 350L;
@@ -30,16 +27,20 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   private final static int ANIMATOR_STATUS = 3;
   private final static int ANIMATOR_RESET = 4;
 
-  private final int cornerSize = Screen.dp(20);
   private final Paint dimmerPaint = new Paint();
   private final Paint cornerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-  private final Path cornerPath = new Path();
 
   private final QrBoxLocation initialLocation = new QrBoxLocation();
   private final QrBoxLocation initialCurrentLocation = new QrBoxLocation();
   private final QrBoxLocation currentLocation = new QrBoxLocation();
   private QrBoxLocation futureLocation;
 
+  private final Path cornerTLPath = new Path();
+  private final Path cornerTRPath = new Path();
+  private final Path cornerBLPath = new Path();
+  private final Path cornerBRPath = new Path();
+
+  private final int cornerSize = Screen.dp(20);
   private int cameraViewWidth;
   private int cameraViewHeight;
 
@@ -107,8 +108,34 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
     qrParamsAnimator.setValue(true, true);
   }
 
-  public static float interpolate(float x1, float x2, float f) {
-    return x1 + (x2 - x1) * f;
+  private void updateBoundingBoxPaths () {
+    float x = currentLocation.x;
+    float y = currentLocation.y;
+    float size = currentLocation.size;
+
+    cornerTLPath.reset();
+    cornerTLPath.moveTo(x, y + cornerSize);
+    cornerTLPath.lineTo(x, y);
+    cornerTLPath.lineTo(x + cornerSize, y);
+
+    cornerTRPath.reset();
+    cornerTRPath.moveTo(x + size, y + cornerSize);
+    cornerTRPath.lineTo(x + size, y);
+    cornerTRPath.lineTo(x + size - cornerSize, y);
+
+    cornerBLPath.reset();
+    cornerBLPath.moveTo(x, y + size - cornerSize);
+    cornerBLPath.lineTo(x, y + size);
+    cornerBLPath.lineTo(x + cornerSize, y + size);
+
+    cornerBRPath.reset();
+    cornerBRPath.moveTo(x + size, y + size - cornerSize);
+    cornerBRPath.lineTo(x + size, y + size);
+    cornerBRPath.lineTo(x + size - cornerSize, y + size);
+  }
+
+  public static float interpolate(float v1, float v2, float f) {
+    return v1 + (v2 - v1) * f;
   }
 
   @Override
@@ -117,6 +144,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
       currentLocation.x = interpolate(initialCurrentLocation.x, futureLocation.x, factor);
       currentLocation.y = interpolate(initialCurrentLocation.y, futureLocation.y, factor);
       currentLocation.size = interpolate(initialCurrentLocation.size, futureLocation.size, factor);
+      updateBoundingBoxPaths();
       invalidate();
     }
   }
@@ -145,6 +173,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
         currentLocation.y = initialLocation.y = y = (getHeight() - size) / 2;
         cameraViewWidth = child.getWidth();
         cameraViewHeight = child.getHeight();
+        updateBoundingBoxPaths();
       } else {
         size = currentLocation.size;
         x = currentLocation.x;
@@ -158,29 +187,10 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
       canvas.drawRect(x + size, y, child.getMeasuredWidth(), getHeight(), dimmerPaint);
 
       // draw corners
-      cornerPath.reset();
-      cornerPath.moveTo(x, y + cornerSize);
-      cornerPath.lineTo(x, y);
-      cornerPath.lineTo(x + cornerSize, y);
-      canvas.drawPath(cornerPath, cornerPaint);
-
-      cornerPath.reset();
-      cornerPath.moveTo(x + size, y + cornerSize);
-      cornerPath.lineTo(x + size, y);
-      cornerPath.lineTo(x + size - cornerSize, y);
-      canvas.drawPath(cornerPath, cornerPaint);
-
-      cornerPath.reset();
-      cornerPath.moveTo(x, y + size - cornerSize);
-      cornerPath.lineTo(x, y + size);
-      cornerPath.lineTo(x + cornerSize, y + size);
-      canvas.drawPath(cornerPath, cornerPaint);
-
-      cornerPath.reset();
-      cornerPath.moveTo(x + size, y + size - cornerSize);
-      cornerPath.lineTo(x + size, y + size);
-      cornerPath.lineTo(x + size - cornerSize, y + size);
-      canvas.drawPath(cornerPath, cornerPaint);
+      canvas.drawPath(cornerTLPath, cornerPaint);
+      canvas.drawPath(cornerTRPath, cornerPaint);
+      canvas.drawPath(cornerBLPath, cornerPaint);
+      canvas.drawPath(cornerBRPath, cornerPaint);
     }
 
     return result;
