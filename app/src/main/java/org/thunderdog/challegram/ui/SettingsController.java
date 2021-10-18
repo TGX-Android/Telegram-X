@@ -415,7 +415,7 @@ public class SettingsController extends ViewController<Void> implements
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     TdApi.SuggestedAction[] actions = tdlib.getSuggestedActions();
-    if (actions.length > 0) {
+    if (actions.length > 0 && tdlib.haveAnySettingsSuggestions()) {
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
 
       for (int i = 0; i < actions.length; i++) {
