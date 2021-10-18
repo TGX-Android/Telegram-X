@@ -991,14 +991,7 @@ public class TGInlineKeyboard {
     }
 
     private void openUrl (int contextId, View view, String url, boolean needVerify) {
-      ViewController<?> c = parent.context().navigation().getCurrentStackItem();
-      if (c != null) {
-        if (needVerify) {
-          c.openLinkAlert(url, openParameters(contextId, view));
-        } else {
-          context.context.tdlib().ui().openUrl(context.context.controller(), url, openParameters(contextId, view));
-        }
-      }
+      context.context.tdlib().ui().openUrl(context.context.controller(), url, openParameters(contextId, view).requireOpenPrompt(needVerify));
     }
 
     public void showTooltip (View view, int stringRes) {
@@ -1188,11 +1181,10 @@ public class TGInlineKeyboard {
         switch (object.getConstructor()) {
           case TdApi.LoginUrlInfoOpen.CONSTRUCTOR: {
             TdApi.LoginUrlInfoOpen open = (TdApi.LoginUrlInfoOpen) object;
-            if (open.skipConfirm) {
-              context.context.tdlib().ui().openUrl(context.context.controller(), open.url, openParameters(currentContextId, view).disableInstantView());
-            } else {
-              context.context.controller().openLinkAlert(open.url, openParameters(currentContextId, view).disableInstantView());
-            }
+            context.context.tdlib().ui()
+              .openUrl(context.context.controller(), open.url, openParameters(currentContextId, view)
+              .disableInstantView()
+              .requireOpenPrompt(!open.skipConfirm));
             break;
           }
           case TdApi.LoginUrlInfoRequestConfirmation.CONSTRUCTOR:
@@ -1240,7 +1232,7 @@ public class TGInlineKeyboard {
                       break;
                   }
                 })
-              .setOnSettingItemClick(confirm.requestWriteAccess ? (ViewController.OnSettingItemClick) (itemView, settingsId, item, doneButton, settingsAdapter) -> {
+              .setOnSettingItemClick(confirm.requestWriteAccess ? (itemView, settingsId, item, doneButton, settingsAdapter) -> {
                 switch (item.getId()) {
                   case R.id.btn_signIn: {
                     boolean needSignIn = settingsAdapter.getCheckIntResults().get(R.id.btn_signIn) == R.id.btn_signIn;

@@ -108,6 +108,7 @@ import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.StringList;
+import org.thunderdog.challegram.widget.CheckBox;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.InfiniteRecyclerView;
 import org.thunderdog.challegram.widget.PopupLayout;
@@ -2377,6 +2378,8 @@ public class TdlibUi extends Handler {
     public MessageId messageId;
     public String refererUrl, instantViewFallbackUrl;
     public TooltipOverlayView.TooltipBuilder tooltip;
+    public boolean requireOpenPrompt;
+    public String displayUrl;
 
     private ViewController<?> parentController;
     private TGMessage sourceMessage;
@@ -2390,6 +2393,8 @@ public class TdlibUi extends Handler {
         this.refererUrl = options.refererUrl;
         this.instantViewFallbackUrl = options.instantViewFallbackUrl;
         this.tooltip = options.tooltip;
+        this.requireOpenPrompt = options.requireOpenPrompt;
+        this.displayUrl = options.displayUrl;
         this.parentController = options.parentController;
         if (options.sourceMessage != null) {
           sourceMessage(options.sourceMessage);
@@ -2407,6 +2412,20 @@ public class TdlibUi extends Handler {
 
     public UrlOpenParameters controller (@Nullable ViewController<?> controller) {
       this.parentController = controller;
+      return this;
+    }
+
+    public UrlOpenParameters fromChat (long chatId) {
+      if (this.sourceMessage != null) {
+        if (this.sourceMessage.getChatId() != chatId)
+          throw new IllegalStateException();
+        return this;
+      }
+      return sourceMessage(new MessageId(chatId, 0l));
+    }
+
+    public UrlOpenParameters displayUrl (String displayUrl) {
+      this.displayUrl = displayUrl;
       return this;
     }
 
@@ -2445,6 +2464,20 @@ public class TdlibUi extends Handler {
       return this;
     }
 
+    public UrlOpenParameters requireOpenPrompt () {
+      return requireOpenPrompt(true);
+    }
+
+    public UrlOpenParameters requireOpenPrompt (boolean requirePrompt) {
+      this.requireOpenPrompt = requirePrompt;
+      return this;
+    }
+
+    public UrlOpenParameters disableOpenPrompt () {
+      this.requireOpenPrompt = false;
+      return this;
+    }
+
     public UrlOpenParameters forceInstantView () {
       return instantViewMode(TdlibUi.INSTANT_VIEW_ENABLED);
     }
@@ -2480,7 +2513,136 @@ public class TdlibUi extends Handler {
     });
   }
 
+  private void openExternalUrl (final TdlibDelegate context, final String originalUrl, @Nullable UrlOpenParameters options) {
+    if (options != null && options.messageId != null && ChatId.isSecret(options.messageId.getChatId())) {
+      openUrlImpl(context, originalUrl, options);
+      return;
+    }
+    tdlib.client().send(new TdApi.GetExternalLinkInfo(originalUrl), externalLinkInfoResult -> {
+      switch (externalLinkInfoResult.getConstructor()) {
+        case TdApi.LoginUrlInfoOpen.CONSTRUCTOR: {
+          TdApi.LoginUrlInfoOpen open = (TdApi.LoginUrlInfoOpen) externalLinkInfoResult;
+          if (options != null) {
+            if (open.skipConfirm) {
+              options.disableOpenPrompt();
+            }
+            options.displayUrl(originalUrl);
+          }
+          openUrlImpl(context, open.url, options);
+          break;
+        }
+        case TdApi.LoginUrlInfoRequestConfirmation.CONSTRUCTOR: {
+          TdApi.LoginUrlInfoRequestConfirmation confirm = (TdApi.LoginUrlInfoRequestConfirmation) externalLinkInfoResult;
+          List<ListItem> items = new ArrayList<>();
+          items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION_MULTILINE,
+            R.id.btn_signIn, 0,
+            Lang.getString(R.string.LogInAsOn,
+              (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex == 1 ?
+                new CustomTypefaceSpan(null, R.id.theme_color_textLink) :
+                Lang.newBoldSpan(needFakeBold),
+              context.tdlib().accountName(),
+              confirm.domain),
+            true
+          ));
+          if (confirm.requestWriteAccess) {
+            items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION_MULTILINE,
+              R.id.btn_allowWriteAccess,
+              0,
+              Lang.getString(R.string.AllowWriteAccess, Lang.boldCreator(), context.tdlib().cache().userName(confirm.botUserId)),
+              true
+            ));
+          }
+
+          ViewController<?> controller = context instanceof ViewController<?> ? (ViewController<?>) context : context.context().navigation().getCurrentStackItem();
+          if (controller != null && !controller.isDestroyed()) {
+            controller.showSettings(
+              new SettingsWrapBuilder(R.id.btn_open)
+                .addHeaderItem(Lang.getString(R.string.OpenLinkConfirm, (target, argStart, argEnd, spanIndex, needFakeBold) -> new CustomTypefaceSpan(null, R.id.theme_color_textLink), confirm.url))
+                .setRawItems(items)
+                .setIntDelegate((id, result) -> {
+                  boolean needSignIn = items.get(0).isSelected();
+                  boolean needWriteAccess = items.size() > 1 && items.get(1).isSelected();
+                  if (needSignIn) {
+                    context.tdlib().client().send(
+                      new TdApi.GetExternalLink(originalUrl, needWriteAccess), externalLinkResult -> {
+                        switch (externalLinkResult.getConstructor()) {
+                          case TdApi.HttpUrl.CONSTRUCTOR:
+                            openUrlImpl(context, ((TdApi.HttpUrl) externalLinkResult).url, options != null ? options.disableOpenPrompt() : null);
+                            break;
+                          case TdApi.Error.CONSTRUCTOR:
+                            openUrlImpl(context, originalUrl, options != null ? options.disableOpenPrompt() : null);
+                            break;
+                        }
+                      });
+                  } else {
+                    openUrlImpl(context, originalUrl, options != null ? options.disableOpenPrompt() : null);
+                  }
+                })
+                .setSettingProcessor((item, itemView, isUpdate) -> {
+                  switch (item.getViewType()) {
+                    case ListItem.TYPE_CHECKBOX_OPTION:
+                    case ListItem.TYPE_CHECKBOX_OPTION_MULTILINE:
+                    case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
+                      ((CheckBox) itemView.getChildAt(0)).setChecked(item.isSelected(), isUpdate);
+                      break;
+                  }
+                })
+                .setOnSettingItemClick(confirm.requestWriteAccess ? (itemView, settingsId, item, doneButton, settingsAdapter) -> {
+                  switch (item.getId()) {
+                    case R.id.btn_signIn: {
+                      boolean needSignIn = settingsAdapter.getCheckIntResults().get(R.id.btn_signIn) == R.id.btn_signIn;
+                      if (!needSignIn) {
+                        items.get(1).setSelected(false);
+                        settingsAdapter.updateValuedSettingById(R.id.btn_allowWriteAccess);
+                      }
+                      break;
+                    }
+                    case R.id.btn_allowWriteAccess: {
+                      boolean needWriteAccess = settingsAdapter.getCheckIntResults().get(R.id.btn_allowWriteAccess) == R.id.btn_allowWriteAccess;
+                      if (needWriteAccess) {
+                        items.get(0).setSelected(true);
+                        settingsAdapter.updateValuedSettingById(R.id.btn_signIn);
+                      }
+                      break;
+                    }
+                  }
+                } : null)
+                .setSaveStr(R.string.Open)
+                .setRawItems(items)
+            );
+          }
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          openUrlImpl(context, originalUrl, options);
+          break;
+        }
+      }
+    });
+  }
+
   private void openUrlImpl (final TdlibDelegate context, final String url, @Nullable UrlOpenParameters options) {
+    if (!UI.inUiThread()) {
+      tdlib.ui().post(() -> openUrlImpl(context, url, options));
+      return;
+    }
+
+    if (options != null && options.requireOpenPrompt) {
+      ViewController<?> c = context instanceof ViewController<?> ? (ViewController<?>) context : context.context().navigation().getCurrentStackItem();
+      if (c != null && !c.isDestroyed()) {
+        AlertDialog.Builder b = new AlertDialog.Builder(context.context(), Theme.dialogTheme());
+        b.setTitle(Lang.getString(R.string.AppName));
+        b.setMessage(Lang.getString(R.string.OpenThisLink, !StringUtils.isEmpty(options.displayUrl) ? options.displayUrl : url));
+        b.setPositiveButton(Lang.getString(R.string.Open), (dialog, which) ->
+          tdlib.ui()
+            .openExternalUrl(context, url, options.disableOpenPrompt())
+        );
+        b.setNegativeButton(Lang.getString(R.string.Cancel), (dialog, which) -> dialog.dismiss());
+        c.showAlert(b);
+      }
+      return;
+    }
+
     Uri uri = Strings.wrapHttps(url);
     if (uri == null) {
       UI.openUrl(url);
@@ -2590,7 +2752,7 @@ public class TdlibUi extends Handler {
   public void openUrl (final TdlibDelegate context, final String url, @Nullable UrlOpenParameters options) {
     openTelegramUrl(context, url, options, processed -> {
       if (!processed) {
-        openUrlImpl(context, url, options);
+        openExternalUrl(context, url, options);
       }
     });
   }
@@ -2926,7 +3088,7 @@ public class TdlibUi extends Handler {
             case TdApi.InternalLinkTypePublicChat.CONSTRUCTOR: {
               TdApi.InternalLinkTypePublicChat publicChat = (TdApi.InternalLinkTypePublicChat) linkType;
               if (TdConstants.IV_PREVIEW_USERNAME.equals(publicChat.chatUsername)) {
-                openUrlImpl(context, url, new UrlOpenParameters(openParameters).forceInstantView());
+                openExternalUrl(context, url, new UrlOpenParameters(openParameters).forceInstantView());
               } else {
                 openPublicChat(context, publicChat.chatUsername, openParameters);
               }
