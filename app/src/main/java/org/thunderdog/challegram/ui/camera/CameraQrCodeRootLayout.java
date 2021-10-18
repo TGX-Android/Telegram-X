@@ -17,6 +17,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.core.MathUtils;
 
 class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.Target {
   private final static long ANIMATION_DURATION = 350L;
@@ -134,16 +135,12 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
     cornerBRPath.lineTo(x + size - cornerSize, y + size);
   }
 
-  public static float interpolate (float v1, float v2, float f) {
-    return v1 + (v2 - v1) * f;
-  }
-
   @Override
   public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
     if (id == ANIMATOR_GENERAL) {
-      currentLocation.x = interpolate(initialCurrentLocation.x, futureLocation.x, factor);
-      currentLocation.y = interpolate(initialCurrentLocation.y, futureLocation.y, factor);
-      currentLocation.size = interpolate(initialCurrentLocation.size, futureLocation.size, factor);
+      currentLocation.x = MathUtils.fromTo(initialCurrentLocation.x, futureLocation.x, factor);
+      currentLocation.y = MathUtils.fromTo(initialCurrentLocation.y, futureLocation.y, factor);
+      currentLocation.size = MathUtils.fromTo(initialCurrentLocation.size, futureLocation.size, factor);
       updateBoundingBoxPaths();
       invalidate();
     }
