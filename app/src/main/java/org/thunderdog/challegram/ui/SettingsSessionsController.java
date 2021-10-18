@@ -63,7 +63,6 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
 
   private TdApi.Session currentSession;
   private ArrayList<TdApi.Session> sessions;
-  private boolean isAddingQrSession;
 
   private void setSessions (TdApi.Session[] sessions) {
     this.sessions = new ArrayList<>(Math.max(sessions.length - 1, 0));
@@ -289,7 +288,7 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
 
   private void requestActiveSessions () {
     tdlib.client().send(new TdApi.GetActiveSessions(), object -> tdlib.ui().post(() -> {
-      if (!isDestroyed() && !isAddingQrSession) {
+      if (!isDestroyed()) {
         switch (object.getConstructor()) {
           case TdApi.Sessions.CONSTRUCTOR: {
             TdApi.Session[] sessions = ((TdApi.Sessions) object).sessions;
@@ -557,14 +556,14 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
         tdlib().client().send(new TdApi.ConfirmQrCodeAuthentication(qrCode), result2 -> {
           if (result2 instanceof TdApi.Session) {
             runOnUiThreadOptional(() -> {
-              isAddingQrSession = true;
               TdApi.Session newSession = (TdApi.Session) result2;
+              if (indexOfSession(newSession.id) != -1)
+                return;
               sessions.add(0, newSession);
               if (getArguments() != null)
                 getArguments().updateAuthorizations(sessions, currentSession);
               buildCells();
               UI.showCustomToast(Lang.getString(R.string.ScanQRAuthorizedToast, newSession.applicationName), Toast.LENGTH_LONG, 0);
-              isAddingQrSession = false;
             });
           }
         });
