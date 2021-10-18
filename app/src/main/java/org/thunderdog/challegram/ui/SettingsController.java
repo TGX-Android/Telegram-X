@@ -419,18 +419,22 @@ public class SettingsController extends ViewController<Void> implements
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
 
       for (int i = 0; i < actions.length; i++) {
+        boolean isRightSuggestion = false;
+
         switch (actions[i].getConstructor()) {
           case TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR: {
             items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_changePhoneNumber, R.drawable.baseline_sim_card_alert_24, R.string.ReminderCheckPhoneNumber));
+            isRightSuggestion = true;
             break;
           }
           case TdApi.SuggestedActionCheckPassword.CONSTRUCTOR: {
             items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_2fa, R.drawable.baseline_gpp_maybe_24, R.string.ReminderCheckTfaPassword));
+            isRightSuggestion = true;
             break;
           }
         }
 
-        if (i != actions.length - 1) {
+        if (i != actions.length - 1 && isRightSuggestion) {
           items.add(new ListItem(ListItem.TYPE_SEPARATOR));
         }
       }
