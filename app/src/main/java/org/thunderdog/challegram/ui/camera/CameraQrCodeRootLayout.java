@@ -10,6 +10,7 @@ import android.view.animation.Interpolator;
 
 import androidx.annotation.NonNull;
 
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
@@ -18,16 +19,14 @@ import org.thunderdog.challegram.unsorted.Settings;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.core.MathUtils;
 
 class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.Target {
-  private final static Interpolator ANIMATION_INTERPOLATOR = AnimatorUtils.OVERSHOOT_INTERPOLATOR;
-  private final static long ANIMATION_DURATION = 250L;
+  private final static long ANIMATION_DURATION = 350L;
   private final static long RESET_DURATION = 150L;
   private final static long CONFIRMATION_DURATION = 750L;
 
-  private final static int ANIMATOR_LOCATION_X = 0;
-  private final static int ANIMATOR_LOCATION_Y = 1;
-  private final static int ANIMATOR_SIZE = 2;
+  private final static int ANIMATOR_GENERAL = 0;
   private final static int ANIMATOR_STATUS = 3;
   private final static int ANIMATOR_RESET = 4;
 
@@ -36,17 +35,17 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   private final Paint cornerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
   private final Path cornerPath = new Path();
 
-  private final QrBoxLocation currentLocation = new QrBoxLocation();
   private final QrBoxLocation initialLocation = new QrBoxLocation();
+  private final QrBoxLocation initialCurrentLocation = new QrBoxLocation();
+  private final QrBoxLocation currentLocation = new QrBoxLocation();
+  private QrBoxLocation futureLocation;
 
   private int cameraViewWidth;
   private int cameraViewHeight;
 
-  private final BoolAnimator qrFoundAnimator = new BoolAnimator(ANIMATOR_STATUS, this, ANIMATION_INTERPOLATOR, CONFIRMATION_DURATION, false);
-  private final BoolAnimator resetAnimator = new BoolAnimator(ANIMATOR_RESET, this, ANIMATION_INTERPOLATOR, RESET_DURATION, false);
-  private FactorAnimator sizeChangeAnimator;
-  private FactorAnimator locationChangeAnimatorX;
-  private FactorAnimator locationChangeAnimatorY;
+  private final BoolAnimator qrFoundAnimator = new BoolAnimator(ANIMATOR_STATUS, this, AnimatorUtils.LINEAR_INTERPOLATOR, CONFIRMATION_DURATION, false);
+  private final BoolAnimator resetAnimator = new BoolAnimator(ANIMATOR_RESET, this, AnimatorUtils.LINEAR_INTERPOLATOR, RESET_DURATION, false);
+  private final BoolAnimator qrParamsAnimator = new BoolAnimator(ANIMATOR_GENERAL, this, AnimatorUtils.OVERSHOOT_INTERPOLATOR, ANIMATION_DURATION, false);
 
   private boolean qrMode;
 
@@ -84,9 +83,9 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
 
     //Log.d("box: %s | scaleX: %s | scaleY: %s | preview: (%s x %s) | view: (%s x %s) | camera: (%s x %s)", qrBounds.toString(), scaleX, scaleY, width, height, getWidth(), getHeight(), cameraViewWidth, cameraViewHeight);
 
+    animateQrLocation(qrBounds.left, qrBounds.top, (qrBounds.right - qrBounds.left) + cornerSize);
     resetAnimator.setValue(false, false);
     qrFoundAnimator.setValue(true, true);
-    animateQrLocation(qrBounds.left, qrBounds.top, (qrBounds.right - qrBounds.left) + cornerSize);
   }
 
   @Override
@@ -102,42 +101,24 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   }
 
   private void animateQrLocation (float x, float y, float size) {
-    if (locationChangeAnimatorX == null) {
-      locationChangeAnimatorX = createFactorAnimator(ANIMATOR_LOCATION_X, currentLocation.x);
-    }
-
-    if (locationChangeAnimatorY == null) {
-      locationChangeAnimatorY = createFactorAnimator(ANIMATOR_LOCATION_Y, currentLocation.y);
-    }
-
-    if (sizeChangeAnimator == null) {
-      sizeChangeAnimator = createFactorAnimator(ANIMATOR_SIZE, currentLocation.size);
-    }
-
-    locationChangeAnimatorX.animateTo(x);
-    locationChangeAnimatorY.animateTo(y);
-    sizeChangeAnimator.animateTo(size);
+    initialCurrentLocation.copyFrom(currentLocation);
+    futureLocation = new QrBoxLocation(x, y, size);
+    qrParamsAnimator.setValue(false, false);
+    qrParamsAnimator.setValue(true, true);
   }
 
-  private FactorAnimator createFactorAnimator (int id, float initialValue) {
-    return new FactorAnimator(id, this, ANIMATION_INTERPOLATOR, ANIMATION_DURATION, initialValue);
+  public static float interpolate(float x1, float x2, float f) {
+    return x1 + (x2 - x1) * f;
   }
 
   @Override
   public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
-    switch (id) {
-      case ANIMATOR_LOCATION_X:
-        currentLocation.x = factor;
-        break;
-      case ANIMATOR_LOCATION_Y:
-        currentLocation.y = factor;
-        break;
-      case ANIMATOR_SIZE:
-        currentLocation.size = factor;
-        break;
+    if (id == ANIMATOR_GENERAL) {
+      currentLocation.x = interpolate(initialCurrentLocation.x, futureLocation.x, factor);
+      currentLocation.y = interpolate(initialCurrentLocation.y, futureLocation.y, factor);
+      currentLocation.size = interpolate(initialCurrentLocation.size, futureLocation.size, factor);
+      invalidate();
     }
-
-    invalidate();
   }
 
   @Override
@@ -145,6 +126,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
     if (id == ANIMATOR_STATUS && finalFactor == 1f) {
       ((CameraController) controller).onQrCodeFoundAndWaited();
       qrFoundAnimator.setValue(false, false);
+      animateQrLocation(initialLocation.x, initialLocation.y, initialLocation.size);
     } else if (id == ANIMATOR_RESET && finalFactor == 1f) {
       qrFoundAnimator.setValue(false, false);
       animateQrLocation(initialLocation.x, initialLocation.y, initialLocation.size);
@@ -208,6 +190,16 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
     public float x;
     public float y;
     public float size;
+
+    public QrBoxLocation () {
+
+    }
+
+    public QrBoxLocation (float x, float y, float size) {
+      this.x = x;
+      this.y = y;
+      this.size = size;
+    }
 
     public void set (float x, float y, float size) {
       this.x = x;
