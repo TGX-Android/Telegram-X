@@ -418,24 +418,25 @@ public class SettingsController extends ViewController<Void> implements
     if (actions.length > 0 && tdlib.haveAnySettingsSuggestions()) {
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
 
-      for (int i = 0; i < actions.length; i++) {
-        boolean isRightSuggestion = false;
+      int addedItems = 0;
 
-        switch (actions[i].getConstructor()) {
-          case TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR: {
-            items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_changePhoneNumber, R.drawable.baseline_sim_card_alert_24, R.string.ReminderCheckPhoneNumber));
-            isRightSuggestion = true;
-            break;
-          }
-          case TdApi.SuggestedActionCheckPassword.CONSTRUCTOR: {
-            items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_2fa, R.drawable.baseline_gpp_maybe_24, R.string.ReminderCheckTfaPassword));
-            isRightSuggestion = true;
-            break;
+      for (TdApi.SuggestedAction action : actions) {
+        if (tdlib.isSettingSuggestion(action)) {
+          if (addedItems++ > 0) {
+            items.add(new ListItem(ListItem.TYPE_SEPARATOR));
           }
         }
 
-        if (i != actions.length - 1 && isRightSuggestion) {
-          items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+        switch (action.getConstructor()) {
+          case TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR: {
+            items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_changePhoneNumber, R.drawable.baseline_sim_card_alert_24, R.string.ReminderCheckPhoneNumber));
+            break;
+          }
+
+          case TdApi.SuggestedActionCheckPassword.CONSTRUCTOR: {
+            items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_2fa, R.drawable.baseline_gpp_maybe_24, R.string.ReminderCheckTfaPassword));
+            break;
+          }
         }
       }
 
@@ -846,7 +847,7 @@ public class SettingsController extends ViewController<Void> implements
   }
 
   private void dismissSuggestion (TdApi.SuggestedAction suggestedAction) {
-    if (suggestedAction.getConstructor() != TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR && suggestedAction.getConstructor() != TdApi.SuggestedActionCheckPassword.CONSTRUCTOR)
+    if (!tdlib.isSettingSuggestion(suggestedAction))
       return;
 
     int removalIndex;

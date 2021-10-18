@@ -8277,9 +8277,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return getRestrictionStatus(chat, R.id.right_sendMedia) == null;
   }
 
+  public boolean isSettingSuggestion (TdApi.SuggestedAction action) {
+    return action.getConstructor() == TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR || action.getConstructor() == TdApi.SuggestedActionCheckPassword.CONSTRUCTOR;
+  }
+
   public boolean haveAnySettingsSuggestions () {
     for (TdApi.SuggestedAction action: getSuggestedActions()) {
-      if (action.getConstructor() == TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR || action.getConstructor() == TdApi.SuggestedActionCheckPassword.CONSTRUCTOR) {
+      if (isSettingSuggestion(action)) {
         return true;
       }
     }
