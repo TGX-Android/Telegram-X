@@ -104,9 +104,9 @@ public class CameraQrBridge {
         Barcode first = barcodes.get(0);
 
         if (swapSizes) {
-          delegate.onQrCodeFound(first.getRawValue(), first.getBoundingBox(), image.getWidth(), image.getHeight(), false);
+          delegate.onQrCodeFound(first.getRawValue(), first.getBoundingBox(), image.getWidth(), image.getHeight(), 0,  false);
         } else {
-          delegate.onQrCodeFound(first.getRawValue(), first.getBoundingBox(), image.getHeight(), image.getWidth(), false);
+          delegate.onQrCodeFound(first.getRawValue(), first.getBoundingBox(), image.getHeight(), image.getWidth(), 0, false);
         }
       }
     }).addOnFailureListener(ex -> {
@@ -129,7 +129,7 @@ public class CameraQrBridge {
         Result match = zxingImplementationImpl(data, width, height, rotation);
         if (match != null && match.getText() != null && !match.getText().isEmpty()) {
           Rect zxingBox = zxingBoundingBox(match);
-          mainExecutor.execute(() -> delegate.onQrCodeFound(match.getText(), zxingBox, width, height, true));
+          mainExecutor.execute(() -> delegate.onQrCodeFound(match.getText(), zxingBox, width, height, rotation, true));
         } else {
           mainExecutor.execute(delegate::onQrCodeNotFound);
         }

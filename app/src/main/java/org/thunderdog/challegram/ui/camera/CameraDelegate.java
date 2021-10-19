@@ -101,7 +101,7 @@ public interface CameraDelegate {
   /**
    * Called when a QR code is found and successfully scanned
    * */
-  void onQrCodeFound (String qrCodeData, @Nullable Rect boundingBox, int height, int width, boolean isLegacyZxing);
+  void onQrCodeFound (String qrCodeData, @Nullable Rect boundingBox, int height, int width, int rotation, boolean isLegacyZxing);
 
   /**
    * Called when a QR code reader wants to know how it should compensate preview image (only for Camera1 API)

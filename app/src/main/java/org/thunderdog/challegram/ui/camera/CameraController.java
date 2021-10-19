@@ -1524,10 +1524,10 @@ public class CameraController extends ViewController<Void> implements CameraDele
   }
 
   @Override
-  public void onQrCodeFound (String qrCodeData, @Nullable Rect boundingBox, int height, int width, boolean isLegacyZxing) {
+  public void onQrCodeFound (String qrCodeData, @Nullable Rect boundingBox, int height, int width, int rotation, boolean isLegacyZxing) {
     if (qrCodeListener != null && !qrCodeData.isEmpty() && (qrCodeData.startsWith("tg://") || qrCodeData.startsWith(context.currentTdlib().tMeUrl())) && !qrCodeConfirmed) {
       savedQrCodeData = qrCodeData;
-      rootLayout.setQrCorner(boundingBox, height, width, isLegacyZxing);
+      rootLayout.setQrCorner(boundingBox, height, width, rotation, isLegacyZxing);
     }
   }
 

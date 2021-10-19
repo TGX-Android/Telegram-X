@@ -9,7 +9,9 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -62,7 +64,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   }
 
   @Override
-  public void setQrCorner (Rect boundingBox, int height, int width, boolean isLegacyZxing) {
+  public void setQrCorner (Rect boundingBox, int height, int width, int rotation, boolean isLegacyZxing) {
     resetAnimator.setValue(false, false);
     resetAnimator.setDuration(isLegacyZxing ? RESET_DURATION_LEGACY : RESET_DURATION);
 
@@ -91,7 +93,8 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
 
     //Log.d("box: %s | scaleX: %s | scaleY: %s | preview: (%s x %s) | view: (%s x %s) | camera: (%s x %s)", qrBounds.toString(), scaleX, scaleY, width, height, getWidth(), getHeight(), cameraViewWidth, cameraViewHeight);
 
-    animateQrLocation(qrBounds.left, qrBounds.top, (qrBounds.right - qrBounds.left) + cornerSize);
+    float qrSize = (isLegacyZxing && U.isRotated(rotation)) ? (qrBounds.bottom - qrBounds.top) : (qrBounds.right - qrBounds.left) + cornerSize;
+    animateQrLocation(qrBounds.left, qrBounds.top, qrSize);
     qrFoundAnimator.setValue(true, true);
   }
 
