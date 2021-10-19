@@ -25,6 +25,8 @@ import com.google.zxing.Result;
 import com.google.zxing.ResultPoint;
 import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.qrcode.QRCodeReader;
+import com.google.zxing.qrcode.detector.AlignmentPattern;
+import com.google.zxing.qrcode.detector.FinderPattern;
 
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
@@ -128,7 +130,7 @@ public class CameraQrBridge {
       try {
         Result match = zxingImplementationImpl(data, width, height, rotation);
         if (match != null && match.getText() != null && !match.getText().isEmpty()) {
-          Rect zxingBox = zxingBoundingBox(match);
+          Rect zxingBox = zxingBoundingBox(match, rotation);
           mainExecutor.execute(() -> delegate.onQrCodeFound(match.getText(), zxingBox, width, height, rotation, true));
         } else {
           mainExecutor.execute(delegate::onQrCodeNotFound);
@@ -145,22 +147,37 @@ public class CameraQrBridge {
     });
   }
 
-  private Rect zxingBoundingBox (Result result) {
+  private Rect zxingBoundingBox (Result result, int rotation) {
     // ordered in: bottom-left, top-left, top-right
     if (result.getResultPoints().length < 3) return null;
 
     ResultPoint[] points = result.getResultPoints();
-    // [(948.5,1216.0), (546.0,1224.5), (557.5,1619.0), (914.5,1571.5)]
-    // 948, 1224 - 557, 1571
-    int x1 = (int) points[0].getX();
-    int x2 = (int) points[2].getX();
-    int y1 = (int) points[1].getX();
-    int y2 = (int) points[0].getX();
+    ResultPoint bottomLeft, topLeft, topRight;
+    int moduleSize;
+
+    if (U.isRotated(rotation)) {
+      bottomLeft = points[2];
+      topLeft = points[1];
+      topRight = points[0];
+    } else {
+      bottomLeft = points[0];
+      topLeft = points[1];
+      topRight = points[2];
+    }
+
+    if (bottomLeft instanceof FinderPattern) {
+      moduleSize = (int) ((FinderPattern) bottomLeft).getEstimatedModuleSize();
+    } else {
+      moduleSize = 0;
+    }
+
+    int x1 = (int) topLeft.getX() - moduleSize;
+    int x2 = (int) topRight.getX() + moduleSize;
+    int y1 = (int) topLeft.getY() - moduleSize;
+    int y2 = (int) bottomLeft.getY() + moduleSize;
+
     return new Rect(
-      Math.min(x1, x2), // left
-      Math.min(y1, y2), // top
-      Math.max(x1, x2), // right
-      Math.max(y1, y2) // bottom
+      x1, y1, x2, y2
     );
   }
 

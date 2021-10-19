@@ -9,9 +9,7 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -76,13 +74,11 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
     float scaleX = (float) getWidth() / width;
     float scaleY = (float) getHeight() / height;
 
-    int topPad = isLegacyZxing ? (getHeight() - height) : 0;
-
     Rect qrBounds = new Rect(
       (int) (boundingBox.left * scaleX),
-      (int) (boundingBox.top * scaleY) + topPad,
+      (int) (boundingBox.top * scaleY),
       (int) (boundingBox.right * scaleX),
-      (int) (boundingBox.bottom * scaleY) + topPad
+      (int) (boundingBox.bottom * scaleY)
     );
 
     if (Settings.instance().getCameraAspectRatioMode() == Settings.CAMERA_RATIO_4_3) {
@@ -93,7 +89,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
 
     //Log.d("box: %s | scaleX: %s | scaleY: %s | preview: (%s x %s) | view: (%s x %s) | camera: (%s x %s)", qrBounds.toString(), scaleX, scaleY, width, height, getWidth(), getHeight(), cameraViewWidth, cameraViewHeight);
 
-    float qrSize = (isLegacyZxing && U.isRotated(rotation)) ? (qrBounds.bottom - qrBounds.top) : (qrBounds.right - qrBounds.left) + cornerSize;
+    float qrSize = (qrBounds.right - qrBounds.left) + cornerSize;
     animateQrLocation(qrBounds.left, qrBounds.top, qrSize);
     qrFoundAnimator.setValue(true, true);
   }
