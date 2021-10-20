@@ -5527,6 +5527,8 @@ public class Settings {
   private static final int UTILITY_FEATURE_INSTANT_TDLIB_RESTART = 1 << 3;
   private static final int UTILITY_FEATURE_NO_NETWORK = 1 << 4;
   private static final int UTILITY_FEATURE_TABS = 1 << 5;
+  private static final int UTILITY_FEATURE_NO_QR_PROCESS = 1 << 6;
+  private static final int UTILITY_FEATURE_QR_ZXING = 1 << 7;
 
   private int getUtilityFeatures () {
     return pmc.getInt(KEY_UTILITY_FEATURES, 0);
@@ -5565,6 +5567,22 @@ public class Settings {
 
   public void setHidePhoneNumber (boolean enabled) {
     toggleUtilityFeature(UTILITY_FEATURE_HIDE_NUMBER, enabled);
+  }
+
+  public boolean needDisableQrProcessing () {
+    return checkUtilityFeature(UTILITY_FEATURE_NO_QR_PROCESS);
+  }
+
+  public void setDisableQrProcessing (boolean enabled) {
+    toggleUtilityFeature(UTILITY_FEATURE_NO_QR_PROCESS, enabled);
+  }
+
+  public boolean needForceZxingQrProcessing () {
+    return checkUtilityFeature(UTILITY_FEATURE_QR_ZXING);
+  }
+
+  public void setForceZxingQrProcessing (boolean enabled) {
+    toggleUtilityFeature(UTILITY_FEATURE_QR_ZXING, enabled);
   }
 
   public void setForceTcpInCalls (boolean enabled) {

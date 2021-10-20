@@ -830,6 +830,8 @@
   <item type="id" name="btn_secret_forceTcpInCalls" />
   <item type="id" name="btn_secret_forceTdlibRestarts" />
   <item type="id" name="btn_secret_dropHidden" />
+  <item type="id" name="btn_secret_disableQrProcess" />
+  <item type="id" name="btn_secret_forceQrZxing" />
   <item type="id" name="btn_string" />
 
   <item type="id" name="btn_test_database" />

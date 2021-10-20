@@ -33,6 +33,7 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.camera.legacy.CameraApiLegacy;
+import org.thunderdog.challegram.unsorted.Settings;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -53,7 +54,7 @@ public class CameraQrBridge {
     this.delegate = manager.delegate;
     this.mainExecutor = ContextCompat.getMainExecutor(manager.context);
 
-    if (U.isGooglePlayServicesAvailable(UI.getAppContext()) && !Config.QR_FORCE_ZXING) {
+    if (U.isGooglePlayServicesAvailable(UI.getAppContext()) && !Settings.instance().needForceZxingQrProcessing()) {
       try {
         barcodeScanner = BarcodeScanning.getClient(new BarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).build());
       } catch (Exception e) {

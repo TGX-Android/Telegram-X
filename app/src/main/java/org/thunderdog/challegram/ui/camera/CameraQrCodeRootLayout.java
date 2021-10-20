@@ -87,8 +87,6 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
       qrBounds.top = (int) (topPadding + (boundingBox.top * scaleY));
     }
 
-    //Log.d("box: %s | scaleX: %s | scaleY: %s | preview: (%s x %s) | view: (%s x %s) | camera: (%s x %s)", qrBounds.toString(), scaleX, scaleY, width, height, getWidth(), getHeight(), cameraViewWidth, cameraViewHeight);
-
     float qrSize = (qrBounds.right - qrBounds.left) + cornerSize;
     animateQrLocation(qrBounds.left, qrBounds.top, qrSize);
     qrFoundAnimator.setValue(true, true);
@@ -153,9 +151,11 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   @Override
   public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
     if (id == ANIMATOR_STATUS && finalFactor == 1f) {
-      ((CameraController) controller).onQrCodeFoundAndWaited();
-      qrFoundAnimator.setValue(false, false);
-      animateQrLocation(initialLocation.x, initialLocation.y, initialLocation.size);
+      if (!Settings.instance().needDisableQrProcessing()) {
+        ((CameraController) controller).onQrCodeFoundAndWaited();
+        qrFoundAnimator.setValue(false, false);
+        animateQrLocation(initialLocation.x, initialLocation.y, initialLocation.size);
+      }
     } else if (id == ANIMATOR_RESET && finalFactor == 1f) {
       qrFoundAnimator.setValue(false, false);
       animateQrLocation(initialLocation.x, initialLocation.y, initialLocation.size);

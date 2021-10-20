@@ -388,6 +388,14 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
             view.getToggler().setRadioEnabled(Settings.instance().needHidePhoneNumber(), isUpdate);
             break;
           }
+          case R.id.btn_secret_disableQrProcess: {
+            view.getToggler().setRadioEnabled(Settings.instance().needDisableQrProcessing(), isUpdate);
+            break;
+          }
+          case R.id.btn_secret_forceQrZxing: {
+            view.getToggler().setRadioEnabled(Settings.instance().needForceZxingQrProcessing(), isUpdate);
+            break;
+          }
           case R.id.btn_secret_disableNetwork: {
             view.getToggler().setRadioEnabled(Settings.instance().forceDisableNetwork(), isUpdate);
             break;
@@ -665,6 +673,16 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
             items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_disableNetwork, 0, "Force disable network", Settings.instance().forceDisableNetwork()));
         }
+        if (testerLevel >= Tdlib.TESTER_LEVEL_ADMIN || Settings.instance().needDisableQrProcessing()) {
+          if (items.size() > initialSize)
+            items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+          items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_disableQrProcess, 0, "Disable QR code processing", Settings.instance().needDisableQrProcessing()));
+        }
+        if (testerLevel >= Tdlib.TESTER_LEVEL_ADMIN || Settings.instance().needForceZxingQrProcessing()) {
+          if (items.size() > initialSize)
+            items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+          items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_forceQrZxing, 0, "Force ZXing in QR code scanner", Settings.instance().needForceZxingQrProcessing()));
+        }
 
         /*if (Config.RTL_BETA) {
           items.add(new SettingItem(SettingItem.TYPE_SEPARATOR_FULL));
@@ -938,6 +956,14 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       }
       case R.id.btn_secret_replacePhoneNumber: {
         Settings.instance().setHidePhoneNumber(adapter.toggleView(v));
+        break;
+      }
+      case R.id.btn_secret_disableQrProcess: {
+        Settings.instance().setDisableQrProcessing(adapter.toggleView(v));
+        break;
+      }
+      case R.id.btn_secret_forceQrZxing: {
+        Settings.instance().setForceZxingQrProcessing(adapter.toggleView(v));
         break;
       }
       case R.id.btn_secret_disableNetwork: {
