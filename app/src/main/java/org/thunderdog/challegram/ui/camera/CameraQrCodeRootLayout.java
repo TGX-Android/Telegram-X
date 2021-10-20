@@ -2,6 +2,7 @@ package org.thunderdog.challegram.ui.camera;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
@@ -10,9 +11,13 @@ import android.view.View;
 import androidx.annotation.NonNull;
 
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.text.Text;
+import org.thunderdog.challegram.util.text.TextColorSet;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
@@ -26,8 +31,9 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   private final static long CONFIRMATION_DURATION = 750L;
 
   private final static int ANIMATOR_GENERAL = 0;
-  private final static int ANIMATOR_STATUS = 3;
-  private final static int ANIMATOR_RESET = 4;
+  private final static int ANIMATOR_STATUS = 1;
+  private final static int ANIMATOR_RESET = 2;
+  private final static int ANIMATOR_QR_TEXT = 3;
 
   private final Paint dimmerPaint = new Paint();
   private final Paint cornerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -49,6 +55,11 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   private final BoolAnimator qrFoundAnimator = new BoolAnimator(ANIMATOR_STATUS, this, AnimatorUtils.LINEAR_INTERPOLATOR, CONFIRMATION_DURATION, false);
   private final BoolAnimator qrParamsAnimator = new BoolAnimator(ANIMATOR_GENERAL, this, AnimatorUtils.OVERSHOOT_INTERPOLATOR, ANIMATION_DURATION, false);
   private final BoolAnimator resetAnimator = new BoolAnimator(ANIMATOR_RESET, this, AnimatorUtils.LINEAR_INTERPOLATOR, RESET_DURATION, false);
+  private final BoolAnimator qrTextAnimator = new BoolAnimator(ANIMATOR_QR_TEXT, this, AnimatorUtils.LINEAR_INTERPOLATOR, RESET_DURATION_LEGACY, true);
+
+  private Text qrTextTitle;
+  private Text qrTextSubtitle;
+  private float qrTextAlpha = 1f;
 
   private boolean qrMode;
 
@@ -59,6 +70,12 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
     cornerPaint.setStyle(Paint.Style.STROKE);
     cornerPaint.setStrokeWidth(Screen.dp(2));
     cornerPaint.setStrokeJoin(Paint.Join.ROUND);
+  }
+
+  private void updateTexts (int width) {
+    TextColorSet forceWhite = () -> Color.WHITE;
+    qrTextTitle = new Text.Builder(Lang.getString(R.string.ScanQRFullTitle), width, Paints.robotoStyleProvider(31), forceWhite).allBold().addFlags(Text.FLAG_ALIGN_CENTER).singleLine().build();
+    qrTextSubtitle = new Text.Builder(Lang.getString(R.string.ScanQRFullSubtitle), width, Paints.robotoStyleProvider(16), forceWhite).addFlags(Text.FLAG_ALIGN_CENTER).maxLineCount(2).build();
   }
 
   @Override
@@ -145,6 +162,11 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
       currentLocation.size = MathUtils.fromTo(initialCurrentLocation.size, futureLocation.size, factor);
       updateBoundingBoxPaths();
       invalidate();
+    } else if (id == ANIMATOR_QR_TEXT) {
+      qrTextAlpha = MathUtils.clamp(factor);
+      invalidate();
+    } else if (id == ANIMATOR_STATUS && factor > 0.25f && !qrTextAnimator.isAnimating()) {
+      qrTextAnimator.setValue(false, true);
     }
   }
 
@@ -158,6 +180,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
       }
     } else if (id == ANIMATOR_RESET && finalFactor == 1f) {
       qrFoundAnimator.setValue(false, false);
+      qrTextAnimator.setValue(true, true);
       animateQrLocation(initialLocation.x, initialLocation.y, initialLocation.size);
     }
   }
@@ -176,6 +199,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
         cameraViewWidth = child.getWidth();
         cameraViewHeight = child.getHeight();
         updateBoundingBoxPaths();
+        updateTexts((int) initialLocation.size);
       } else {
         size = currentLocation.size;
         x = currentLocation.x;
@@ -193,6 +217,12 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
       canvas.drawPath(cornerTRPath, cornerPaint);
       canvas.drawPath(cornerBLPath, cornerPaint);
       canvas.drawPath(cornerBRPath, cornerPaint);
+
+      if (qrTextTitle != null && qrTextSubtitle != null) {
+        int titleTextSize = Screen.dp(31);
+        qrTextTitle.draw(canvas, (int) initialLocation.x, (int) (initialLocation.y - (titleTextSize * 3) - (titleTextSize / 2)), null, qrTextAlpha);
+        qrTextSubtitle.draw(canvas, (int) initialLocation.x, (int) (initialLocation.y - (titleTextSize * 2)), null, qrTextAlpha);
+      }
     }
 
     return result;
