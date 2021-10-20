@@ -193,6 +193,26 @@ public class EmbeddedService {
           }
           break;
         }
+        case "coub.com": {
+          // https://coub.com/embed/20k5cb?muted=false&autostart=false&originalSize=false&startWithHD=false
+          // https://coub.com/view/20k5cb
+          // https://coub.com/api/v2/coubs/20k5cb.json
+          viewType = TYPE_COUB;
+          if (segments.length == 2 && !StringUtils.isEmpty(segments[1])) {
+            if ("view".equals(segments[0])) {
+              viewUrl = url;
+              viewIdentifier = segments[1];
+            } else if ("embed".equals(segments[0])) {
+              viewIdentifier = segments[1];
+              viewUrl = "https://coub.com/view/" + viewIdentifier;
+              String query = uri.getEncodedQuery();
+              if (!StringUtils.isEmpty(query)) {
+                viewUrl += "?" + query;
+              }
+            }
+          }
+          break;
+        }
         /*case "vimeo.com": {
           // https://vimeo.com/360123613
           viewType = TYPE_VIMEO;
@@ -224,26 +244,6 @@ public class EmbeddedService {
             String query = uri.getEncodedQuery();
             if (!StringUtils.isEmpty(query)) {
               viewUrl += "?" + query;
-            }
-          }
-          break;
-        }
-        case "coub.com": {
-          // https://coub.com/embed/20k5cb?muted=false&autostart=false&originalSize=false&startWithHD=false
-          // https://coub.com/view/20k5cb
-          // https://coub.com/api/v2/coubs/20k5cb.json
-          viewType = TYPE_COUB;
-          if (segments.length == 2 && !StringUtils.isEmpty(segments[1])) {
-            if ("view".equals(segments[0])) {
-              viewUrl = url;
-              viewIdentifier = segments[1];
-            } else if ("embed".equals(segments[0])) {
-              viewIdentifier = segments[1];
-              viewUrl = "https://coub.com/view/" + viewIdentifier;
-              String query = uri.getEncodedQuery();
-              if (!StringUtils.isEmpty(query)) {
-                viewUrl += "?" + query;
-              }
             }
           }
           break;
