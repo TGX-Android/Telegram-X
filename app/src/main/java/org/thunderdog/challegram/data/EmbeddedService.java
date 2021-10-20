@@ -12,6 +12,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.preview.PreviewLayout;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.ui.MessagesController;
 
 import java.util.List;
 import java.util.regex.Pattern;
@@ -97,7 +98,8 @@ public class EmbeddedService {
 
   public void open (BaseActivity context) {
     ViewController<?> c = context.navigation().getCurrentStackItem();
-    if (c == null || !PreviewLayout.show(c, this)) {
+    boolean needConfirmation = c instanceof MessagesController && ((MessagesController) c).isSecretChat();
+    if (c == null || !PreviewLayout.show(c, this, needConfirmation)) {
       UI.openUrl(viewUrl);
     }
   }
