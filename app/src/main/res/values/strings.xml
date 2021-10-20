@@ -2314,6 +2314,7 @@
   <string name="url_faq">https://telegram.org/faq#general-questions</string>
   <string name="url_privacyPolicy">https://telegram.org/privacy</string>
   <string name="url_translationsPrefix">https://translations.telegram.org/en/android_x/unsorted/</string>
+  <string name="url_faqPhoneNumber">https://telegram.org/faq#q-i-have-a-new-phone-number-what-do-i-do</string>
   <string name="xSecondsShort_one">%1$ss</string>
   <string name="xSecondsShort_other">%1$ss</string>
   <string name="xMinutesShort_one">%1$sm</string>
@@ -3915,6 +3916,18 @@
   <string name="AreChoosingSticker">%1$s are choosing stickers</string>
 
   <string name="QDeleteCallFromRecent">Delete call from recent?</string>
+
+  <string name="ReminderCheckPhoneNumber">Check your phone number</string>
+  <string name="ReminderCheckPhoneNumberText">Is %1$s still your number?</string>
+  <string name="ReminderCheckPhoneNumberDescription">Keep your number up to date to ensure you can always log into Telegram.</string>
+  <string name="ReminderCheckPhoneNumberHide">Keep %1$s</string>
+  <string name="ReminderCheckTfaPassword">Check your password</string>
+  <string name="ReminderCheckTfaPasswordText">Do you still remember your password?</string>
+  <string name="ReminderCheckTfaPasswordDescription">Check that you still know 2-Step Verification password to ensure you can always log into Telegram.</string>
+  <string name="ReminderCheckTfaPasswordHide">Hide Suggestion</string>
+  <string name="ReminderActionLearnMore">Learn More</string>
+  <string name="ReminderActionChangePhoneNumber">Change Phone Number</string>
+  <string name="ReminderActionVerifyPassword">Verify Password</string>
 
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
