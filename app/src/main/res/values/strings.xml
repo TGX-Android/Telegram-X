@@ -3917,16 +3917,17 @@
 
   <string name="QDeleteCallFromRecent">Delete call from recent?</string>
 
-  <string name="ReminderCheckPhoneNumber">Check phone number</string>
+  <string name="ReminderCheckPhoneNumber">Check your phone number</string>
   <string name="ReminderCheckPhoneNumberText">Is %1$s still your number?</string>
   <string name="ReminderCheckPhoneNumberDescription">Keep your number up to date to ensure you can always log into Telegram.</string>
-  <string name="ReminderCheckTfaPassword">You have 2-Step Verification enabled</string>
+  <string name="ReminderCheckPhoneNumberHide">Keep %1$s</string>
+  <string name="ReminderCheckTfaPassword">Check your password</string>
   <string name="ReminderCheckTfaPasswordText">Do you still remember your password?</string>
   <string name="ReminderCheckTfaPasswordDescription">Check that you still know 2-Step Verification password to ensure you can always log into Telegram.</string>
+  <string name="ReminderCheckTfaPasswordHide">Hide Suggestion</string>
   <string name="ReminderActionLearnMore">Learn More</string>
   <string name="ReminderActionChangePhoneNumber">Change Phone Number</string>
   <string name="ReminderActionVerifyPassword">Verify Password</string>
-  <string name="ReminderActionDismiss">Dismiss Suggestion</string>
 
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
