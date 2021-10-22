@@ -1138,6 +1138,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
 
   private void updateRotations () {
     float rotation = getTransformedRotation();
+    rootLayout.setComponentRotation(rotation);
     button.setComponentRotation(rotation);
     switchCameraButtonParent.setRotation(rotation);
     flashButton.setComponentRotation(rotation);

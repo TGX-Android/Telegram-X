@@ -52,4 +52,5 @@ class CameraRootLayout extends FrameLayoutFix {
   public void resetQrCorner () {}
   public void setQrMode (boolean enable) {}
   public void onCameraClosed () {}
+  public void setComponentRotation (float rotation) {}
 }

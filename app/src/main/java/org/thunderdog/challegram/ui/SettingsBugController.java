@@ -396,6 +396,10 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
             view.getToggler().setRadioEnabled(Settings.instance().needForceZxingQrProcessing(), isUpdate);
             break;
           }
+          case R.id.btn_secret_debugQrRegions: {
+            view.getToggler().setRadioEnabled(Settings.instance().needShowQrRegions(), isUpdate);
+            break;
+          }
           case R.id.btn_secret_disableNetwork: {
             view.getToggler().setRadioEnabled(Settings.instance().forceDisableNetwork(), isUpdate);
             break;
@@ -676,12 +680,17 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         if (testerLevel >= Tdlib.TESTER_LEVEL_ADMIN || Settings.instance().needDisableQrProcessing()) {
           if (items.size() > initialSize)
             items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-          items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_disableQrProcess, 0, "Disable QR code processing", Settings.instance().needDisableQrProcessing()));
+          items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_disableQrProcess, 0, "Disable QR processing", Settings.instance().needDisableQrProcessing()));
         }
         if (testerLevel >= Tdlib.TESTER_LEVEL_ADMIN || Settings.instance().needForceZxingQrProcessing()) {
           if (items.size() > initialSize)
             items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-          items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_forceQrZxing, 0, "Force ZXing in QR code scanner", Settings.instance().needForceZxingQrProcessing()));
+          items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_forceQrZxing, 0, "Force ZXing in QR scanner", Settings.instance().needForceZxingQrProcessing()));
+        }
+        if (testerLevel >= Tdlib.TESTER_LEVEL_ADMIN || Settings.instance().needShowQrRegions()) {
+          if (items.size() > initialSize)
+            items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+          items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_debugQrRegions, 0, "Show QR scanner UI regions", Settings.instance().needForceZxingQrProcessing()));
         }
 
         /*if (Config.RTL_BETA) {
@@ -964,6 +973,10 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       }
       case R.id.btn_secret_forceQrZxing: {
         Settings.instance().setForceZxingQrProcessing(adapter.toggleView(v));
+        break;
+      }
+      case R.id.btn_secret_debugQrRegions: {
+        Settings.instance().setShowQrRegions(adapter.toggleView(v));
         break;
       }
       case R.id.btn_secret_disableNetwork: {

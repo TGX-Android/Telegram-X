@@ -5529,6 +5529,7 @@ public class Settings {
   private static final int UTILITY_FEATURE_TABS = 1 << 5;
   private static final int UTILITY_FEATURE_NO_QR_PROCESS = 1 << 6;
   private static final int UTILITY_FEATURE_QR_ZXING = 1 << 7;
+  private static final int UTILITY_FEATURE_QR_REGION_DEBUG = 1 << 8;
 
   private int getUtilityFeatures () {
     return pmc.getInt(KEY_UTILITY_FEATURES, 0);
@@ -5575,6 +5576,14 @@ public class Settings {
 
   public void setDisableQrProcessing (boolean enabled) {
     toggleUtilityFeature(UTILITY_FEATURE_NO_QR_PROCESS, enabled);
+  }
+
+  public boolean needShowQrRegions () {
+    return checkUtilityFeature(UTILITY_FEATURE_QR_REGION_DEBUG);
+  }
+
+  public void setShowQrRegions (boolean enabled) {
+    toggleUtilityFeature(UTILITY_FEATURE_QR_REGION_DEBUG, enabled);
   }
 
   public boolean needForceZxingQrProcessing () {

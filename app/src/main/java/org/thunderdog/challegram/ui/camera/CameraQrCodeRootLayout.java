@@ -10,7 +10,6 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.Theme;
@@ -38,6 +37,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
 
   private final Paint dimmerPaint = new Paint();
   private final Paint cornerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+  private final Paint dbgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
   private final QrBoxLocation initialLocation = new QrBoxLocation();
   private final QrBoxLocation initialCurrentLocation = new QrBoxLocation();
@@ -48,6 +48,8 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   private final Path cornerTRPath = new Path();
   private final Path cornerBLPath = new Path();
   private final Path cornerBRPath = new Path();
+
+  private Rect guideLinePart1, guideLinePart2, guideLinePart3;
 
   private final int cornerSize = Screen.dp(20);
   private int cameraViewWidth;
@@ -61,8 +63,9 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   private Text qrTextTitle;
   private Text qrTextSubtitle;
   private float qrTextAlpha = 1f;
+  private float qrRotation = 0;
 
-  private boolean qrMode, qrModeClosing;
+  private boolean qrMode, qrModeClosing, qrModeInvertedOrientation, qrModePortrait;
 
   public CameraQrCodeRootLayout (@NonNull Context context) {
     super(context);
@@ -71,6 +74,10 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
     cornerPaint.setStyle(Paint.Style.STROKE);
     cornerPaint.setStrokeWidth(Screen.dp(2));
     cornerPaint.setStrokeJoin(Paint.Join.ROUND);
+    dbgPaint.setColor(Theme.getColor(R.id.theme_color_textNegative));
+    dbgPaint.setStyle(Paint.Style.STROKE);
+    dbgPaint.setStrokeWidth(Screen.dp(2));
+    dbgPaint.setStrokeJoin(Paint.Join.ROUND);
   }
 
   private void updateTexts (int width) {
@@ -195,25 +202,76 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
     }
   }
 
+  private int getDisplayRotation () {
+    return controller.context().getWindowRotationDegrees();
+  }
+
   @Override
   protected boolean drawChild (Canvas canvas, View child, long drawingTime) {
     boolean result = super.drawChild(canvas, child, drawingTime);
 
     if (child instanceof CameraLayout && qrMode) {
       // X, Y defines center point - where size defines distance between center point and corner
+      Rect activeGuideLinePart1, activeGuideLinePart3;
+
       float size, x, y;
-      if (currentLocation.size == 0) {
-        currentLocation.size = initialLocation.size = size = (int) (Math.min(child.getWidth(), child.getHeight()) / 1.5f);
-        currentLocation.x = initialLocation.x = x = (getWidth() - size) / 2;
-        currentLocation.y = initialLocation.y = y = (getHeight() - size) / 2;
+      if (guideLinePart1 == null || guideLinePart2 == null || guideLinePart3 == null || currentLocation.size == 0) {
+        qrModeInvertedOrientation = getDisplayRotation() == 90;
+        qrModePortrait = getDisplayRotation() == 0;
+
+        int buttonRegion = Screen.dp(80f + 56f);
+
+        switch (getDisplayRotation()) {
+          case 90: {
+            guideLinePart3 = new Rect(canvas.getWidth() - buttonRegion, 0, canvas.getWidth(), canvas.getHeight());
+            guideLinePart1 = new Rect(0, 0, (canvas.getWidth() - guideLinePart3.width()) / 2, canvas.getHeight());
+            guideLinePart2 = new Rect(guideLinePart1.right, 0, guideLinePart3.left, canvas.getHeight());
+            break;
+          }
+
+          case 270: {
+            guideLinePart1 = new Rect(0, 0, buttonRegion, canvas.getHeight());
+            guideLinePart2 = new Rect(guideLinePart1.right, 0, (int) (guideLinePart1.right + ((canvas.getWidth() - guideLinePart1.right) / 2f)), canvas.getHeight());
+            guideLinePart3 = new Rect(guideLinePart2.right, 0, canvas.getWidth(), canvas.getHeight());
+            break;
+          }
+
+          default: {
+            guideLinePart1 = new Rect(0, canvas.getHeight() - buttonRegion, canvas.getWidth(), canvas.getHeight());
+            guideLinePart3 = new Rect(0, 0, canvas.getWidth(), (canvas.getHeight() - guideLinePart1.height()) / 2);
+            guideLinePart2 = new Rect(0, guideLinePart3.bottom, canvas.getWidth(), guideLinePart1.top);
+            break;
+          }
+        }
+
+        if (qrModePortrait) {
+          initialLocation.size = size = guideLinePart2.width() / 1.5f;
+          initialLocation.x = x = guideLinePart2.left + (size / 4);
+          initialLocation.y = y = guideLinePart2.top + (size / 6);
+          updateTexts((int) (guideLinePart3.width() / 1.5f));
+        } else {
+          initialLocation.size = size = guideLinePart2.width() / 1.5f;
+          initialLocation.x = x = guideLinePart2.left + (size / 4);
+          initialLocation.y = y = guideLinePart2.centerY() / 2f;
+          updateTexts((qrModeInvertedOrientation ? guideLinePart1 : guideLinePart3).width());
+        }
+
+        currentLocation.copyFrom(initialLocation);
         cameraViewWidth = child.getWidth();
         cameraViewHeight = child.getHeight();
         updateBoundingBoxPaths();
-        updateTexts((int) initialLocation.size);
       } else {
         size = currentLocation.size;
         x = currentLocation.x;
         y = currentLocation.y;
+      }
+
+      if (qrModeInvertedOrientation) {
+        activeGuideLinePart1 = guideLinePart3;
+        activeGuideLinePart3 = guideLinePart1;
+      } else {
+        activeGuideLinePart1 = guideLinePart1;
+        activeGuideLinePart3 = guideLinePart3;
       }
 
       // draw surrounding boxes to create dimming around the box
@@ -230,12 +288,34 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
 
       if (qrTextTitle != null && qrTextSubtitle != null) {
         int titleTextSize = Screen.dp(31);
-        qrTextTitle.draw(canvas, (int) initialLocation.x, (int) (initialLocation.y - (titleTextSize * 3) - (titleTextSize / 2)), null, qrTextAlpha);
-        qrTextSubtitle.draw(canvas, (int) initialLocation.x, (int) (initialLocation.y - (titleTextSize * 2)), null, qrTextAlpha);
+        int vertPadding = Screen.dp(6);
+        canvas.save();
+        canvas.rotate(qrRotation, activeGuideLinePart3.centerX(), activeGuideLinePart3.centerY());
+        qrTextTitle.draw(canvas, activeGuideLinePart3.left, activeGuideLinePart3.right, 0, activeGuideLinePart3.centerY() - titleTextSize - vertPadding, null, qrTextAlpha);
+        qrTextSubtitle.draw(canvas, activeGuideLinePart3.left, activeGuideLinePart3.right, 0,activeGuideLinePart3.centerY() + vertPadding, null, qrTextAlpha);
+        if (Settings.instance().needShowQrRegions()) {
+          dbgPaint.setColor(Color.MAGENTA);
+          canvas.drawRect(activeGuideLinePart3.left, activeGuideLinePart3.centerY() - titleTextSize - vertPadding, activeGuideLinePart3.right, activeGuideLinePart3.centerY() + qrTextSubtitle.getHeight() + vertPadding, dbgPaint);
+          dbgPaint.setColor(Theme.getColor(R.id.theme_color_textNegative));
+        }
+        canvas.restore();
+      }
+
+      if (Settings.instance().needShowQrRegions()) {
+        canvas.drawRect(activeGuideLinePart1, dbgPaint);
+        canvas.drawRect(guideLinePart2, dbgPaint);
+        canvas.drawRect(activeGuideLinePart3, dbgPaint);
       }
     }
 
     return result;
+  }
+
+  @Override
+  public void setComponentRotation (float rotation) {
+    //Log.e("rotate %s", rotation);
+    qrRotation = rotation;
+    invalidate();
   }
 
   private final static class QrBoxLocation {
