@@ -596,6 +596,10 @@ public class CameraController extends ViewController<Void> implements CameraDele
     hasRenderedFrame = false;
     cameraOverlayView.setOverlayVisible(true, !isPaused(), after);
 
+    if (isInQrScanMode()) {
+      rootLayout.onCameraClosed();
+    }
+
     executeScheduledAnimation();
   }
 

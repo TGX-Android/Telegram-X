@@ -51,4 +51,5 @@ class CameraRootLayout extends FrameLayoutFix {
   public void setQrCorner (Rect boundingBox, int height, int width, int rotation, boolean isLegacyZxing) {}
   public void resetQrCorner () {}
   public void setQrMode (boolean enable) {}
+  public void onCameraClosed () {}
 }

@@ -10,6 +10,7 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.Theme;
@@ -55,13 +56,13 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   private final BoolAnimator qrFoundAnimator = new BoolAnimator(ANIMATOR_STATUS, this, AnimatorUtils.LINEAR_INTERPOLATOR, CONFIRMATION_DURATION, false);
   private final BoolAnimator qrParamsAnimator = new BoolAnimator(ANIMATOR_GENERAL, this, AnimatorUtils.OVERSHOOT_INTERPOLATOR, ANIMATION_DURATION, false);
   private final BoolAnimator resetAnimator = new BoolAnimator(ANIMATOR_RESET, this, AnimatorUtils.LINEAR_INTERPOLATOR, RESET_DURATION, false);
-  private final BoolAnimator qrTextAnimator = new BoolAnimator(ANIMATOR_QR_TEXT, this, AnimatorUtils.LINEAR_INTERPOLATOR, RESET_DURATION_LEGACY, true);
+  private final BoolAnimator qrTextAnimator = new BoolAnimator(ANIMATOR_QR_TEXT, this, AnimatorUtils.OVERSHOOT_INTERPOLATOR, ANIMATION_DURATION, true);
 
   private Text qrTextTitle;
   private Text qrTextSubtitle;
   private float qrTextAlpha = 1f;
 
-  private boolean qrMode;
+  private boolean qrMode, qrModeClosing;
 
   public CameraQrCodeRootLayout (@NonNull Context context) {
     super(context);
@@ -80,6 +81,10 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
 
   @Override
   public void setQrCorner (Rect boundingBox, int height, int width, int rotation, boolean isLegacyZxing) {
+    if (qrModeClosing) {
+      return;
+    }
+
     resetAnimator.setValue(false, false);
     resetAnimator.setDuration(isLegacyZxing ? RESET_DURATION_LEGACY : RESET_DURATION);
 
@@ -107,11 +112,13 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
     float qrSize = (qrBounds.right - qrBounds.left) + cornerSize;
     animateQrLocation(qrBounds.left, qrBounds.top, qrSize);
     qrFoundAnimator.setValue(true, true);
+    qrTextAnimator.setValue(false, true);
   }
 
   @Override
   public void setQrMode (boolean qrMode) {
     this.qrMode = qrMode;
+    qrModeClosing = false;
     currentLocation.copyFrom(initialLocation);
     invalidate();
   }
@@ -166,8 +173,18 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
       qrTextAlpha = MathUtils.clamp(factor);
       invalidate();
     } else if (id == ANIMATOR_STATUS && factor > 0.25f && !qrTextAnimator.isAnimating()) {
-      qrTextAnimator.setValue(false, true);
+      //qrTextAnimator.setValue(false, true);
     }
+  }
+
+  @Override
+  public void onCameraClosed () {
+    qrModeClosing = true;
+    qrFoundAnimator.setValue(false, false);
+    qrParamsAnimator.setValue(false, false);
+    qrTextAnimator.setValue(true, true);
+    currentLocation.set(initialLocation.x, initialLocation.y, initialLocation.size);
+    updateBoundingBoxPaths();
   }
 
   @Override
@@ -176,7 +193,6 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
       if (!Settings.instance().needDisableQrProcessing()) {
         ((CameraController) controller).onQrCodeFoundAndWaited();
         qrFoundAnimator.setValue(false, false);
-        animateQrLocation(initialLocation.x, initialLocation.y, initialLocation.size);
       }
     } else if (id == ANIMATOR_RESET && finalFactor == 1f) {
       qrFoundAnimator.setValue(false, false);
