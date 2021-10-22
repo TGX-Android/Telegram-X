@@ -175,7 +175,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public boolean hasSettingsError () {
-    return hasTdlib() && currentTdlib().notifications().hasLocalNotificationProblem();
+    return hasTdlib() && (currentTdlib().notifications().hasLocalNotificationProblem() || currentTdlib().haveAnySettingsSuggestions());
   }
 
   public boolean isAnimating (boolean intercept) {

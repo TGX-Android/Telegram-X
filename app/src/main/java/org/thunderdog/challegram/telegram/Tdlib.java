@@ -5545,6 +5545,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     animatedEmoji.clear();
     utyan.clear();
     animatedDiceExplicit.clear();
+    suggestedActions.clear();
     telegramServiceNotificationsChatId = TdConstants.TELEGRAM_ACCOUNT_ID;
     repliesBotChatId = TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID;
     // animatedTgxEmoji.clear();
@@ -8274,5 +8275,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public boolean canSendMedia (TdApi.Chat chat) {
     return getRestrictionStatus(chat, R.id.right_sendMedia) == null;
+  }
+
+  public boolean isSettingSuggestion (TdApi.SuggestedAction action) {
+    return action.getConstructor() == TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR || action.getConstructor() == TdApi.SuggestedActionCheckPassword.CONSTRUCTOR;
+  }
+
+  public boolean haveAnySettingsSuggestions () {
+    for (TdApi.SuggestedAction action: getSuggestedActions()) {
+      if (isSettingSuggestion(action)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 }
