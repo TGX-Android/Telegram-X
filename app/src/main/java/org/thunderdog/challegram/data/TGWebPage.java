@@ -522,7 +522,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
           MediaViewController.openFromMessage(parent);
           break;
         }
-        if (!PreviewLayout.show(parent.controller(), webPage)) {
+        if (!PreviewLayout.show(parent.controller(), webPage, parent.isSecretChat())) {
           if (mediaWrapper != null && webPage.photo != null) {
             MediaViewController.openFromMessage(parent);
           } else {

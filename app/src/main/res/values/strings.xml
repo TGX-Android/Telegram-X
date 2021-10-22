@@ -3929,6 +3929,10 @@
   <string name="ReminderActionChangePhoneNumber">Change Phone Number</string>
   <string name="ReminderActionVerifyPassword">Verify Password</string>
 
+  <string name="OpenPreviewInSecretChatWarning">Are you sure you want to open preview of %1$s with the following URL:\n\n%2$s</string>
+  <string name="OpenPreviewInSecretChatActionOpen">Open as preview</string>
+  <string name="OpenPreviewInSecretChatActionBrowser">Open in browser</string>
+
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
   <string name="suggested_language_code_plural" />

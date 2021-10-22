@@ -5,6 +5,7 @@
 package org.thunderdog.challegram.component.preview;
 
 import android.content.Context;
+import android.net.Uri;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,7 +26,9 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.widget.PopupLayout;
 
 import me.vkryl.android.widget.FrameLayoutFix;
@@ -125,12 +128,12 @@ public abstract class PreviewLayout extends FrameLayoutFix implements View.OnCli
     UI.getContext(getContext()).removeGlobalThemeListeners(themeListeners);
   }
 
-  public static boolean show (ViewController<?> parent, TdApi.WebPage webPage) {
+  public static boolean show (ViewController<?> parent, TdApi.WebPage webPage, boolean needConfirmation) {
     EmbeddedService service = EmbeddedService.parse(webPage);
-    return show(parent, service);
+    return show(parent, service, needConfirmation);
   }
 
-  public static boolean show (ViewController<?> parent, EmbeddedService service) {
+  public static boolean show (ViewController<?> parent, EmbeddedService service, boolean needConfirmation) {
     if (service != null) {
       BaseActivity context = parent.context();
 
@@ -143,10 +146,48 @@ public abstract class PreviewLayout extends FrameLayoutFix implements View.OnCli
       }
       context.closeOtherPips();
 
+      if (service.type == EmbeddedService.TYPE_UNKNOWN && needConfirmation) {
+        Uri viewUri = Uri.parse(service.viewUrl);
+
+        parent.showOptions(Lang.getStringBold(
+          R.string.OpenPreviewInSecretChatWarning,
+          Strings.unwrapWww(viewUri.getHost()),
+          service.embedUrl
+        ), new int[]{
+          R.id.btn_openLink,
+          R.id.btn_useInAppBrowser,
+          R.id.btn_cancel
+        }, new String[]{
+          Lang.getString(R.string.OpenPreviewInSecretChatActionOpen),
+          Lang.getString(R.string.OpenPreviewInSecretChatActionBrowser),
+          Lang.getString(R.string.Cancel),
+        }, null, new int[]{
+          R.drawable.baseline_play_circle_filled_24_white,
+          R.drawable.baseline_open_in_browser_24,
+          R.drawable.baseline_cancel_24
+        }, (optionItemView, id) -> {
+          switch (id) {
+            case R.id.btn_openLink:
+              show(parent, service, false);
+              break;
+            case R.id.btn_useInAppBrowser:
+              UI.openUrl(service.viewUrl);
+              break;
+          }
+
+          return true;
+        });
+
+        return true;
+      }
+
       PreviewLayout popup = null;
       switch (service.type) {
         case EmbeddedService.TYPE_YOUTUBE:
           popup = new YouTubePreviewLayout(context, parent);
+          break;
+        case EmbeddedService.TYPE_UNKNOWN:
+          popup = new WebViewPreviewLayout(context, parent);
           break;
       }
 

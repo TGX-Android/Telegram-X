@@ -3111,6 +3111,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   public static final int SCREEN_FLAG_PLAYING_REGULAR_VIDEO = 1 << 1;
   public static final int SCREEN_FLAG_RECORDING = 1 << 2;
   public static final int SCREEN_FLAG_CAMERA_OPEN = 1 << 3;
+  public static final int SCREEN_FLAG_PLAYING_FULLSCREEN_WEB_VIDEO = 1 << 4;
 
   private int screenFlags;
 
