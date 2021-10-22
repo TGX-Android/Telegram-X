@@ -113,7 +113,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   public void setQrMode (boolean qrMode) {
     this.qrMode = qrMode;
     qrModeClosing = false;
-    currentLocation.copyFrom(initialLocation);
+    currentLocation.set(0, 0, 0);
     invalidate();
   }
 
