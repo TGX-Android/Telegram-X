@@ -95,22 +95,16 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
 
     float scaleX = (float) getWidth() / width;
     float scaleY = (float) getHeight() / height;
+    //Log.e("sX %s sY %s max %s [view %s x %s, preview %s x %s] == src %s -> dst %s", scaleX, scaleY, scale, getHeight(), getWidth(), height, width, boundingBox, qrBounds);
 
-    Rect qrBounds = new Rect(
-      (int) (boundingBox.left * scaleX),
-      (int) (boundingBox.top * scaleY),
-      (int) (boundingBox.right * scaleX),
-      (int) (boundingBox.bottom * scaleY)
-    );
-
-    if (Settings.instance().getCameraAspectRatioMode() == Settings.CAMERA_RATIO_4_3) {
-      int topPadding = (getHeight() - cameraViewHeight) / 2;
-      scaleY = (float) cameraViewHeight / height;
-      qrBounds.top = (int) (topPadding + (boundingBox.top * scaleY));
+    float qrSize;
+    if (scaleX == 1f || scaleY == 1f) {
+      qrSize = boundingBox.width();
+    } else {
+      qrSize = (boundingBox.width() * Math.max(scaleX, scaleY)) + cornerSize;
     }
 
-    float qrSize = (qrBounds.right - qrBounds.left) + cornerSize;
-    animateQrLocation(qrBounds.left, qrBounds.top, qrSize);
+    animateQrLocation(boundingBox.left * scaleX, boundingBox.top * scaleY, qrSize);
     qrFoundAnimator.setValue(true, true);
     qrTextAnimator.setValue(false, true);
   }
