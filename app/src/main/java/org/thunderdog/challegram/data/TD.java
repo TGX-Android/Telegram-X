@@ -4126,6 +4126,7 @@ public class TD {
       case TdApi.PushMessageContentVoiceNote.CONSTRUCTOR: return ((TdApi.PushMessageContentVoiceNote) content).caption;*/
 
       case TdApi.PushMessageContentChatChangeTitle.CONSTRUCTOR: return ((TdApi.PushMessageContentChatChangeTitle) content).title;
+      // case TdApi.PushMessageContentChatSetTheme.CONSTRUCTOR: return ((TdApi.PushMessageContentChatSetTheme) content).themeName;
     }
     return null;
   }
@@ -5720,6 +5721,9 @@ public class TD {
 
       case TdApi.PushMessageContentChatChangeTitle.CONSTRUCTOR:
         return getNotificationPreview(TdApi.MessageChatChangeTitle.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, ((TdApi.PushMessageContentChatChangeTitle) push.content).title, 0);
+
+      case TdApi.PushMessageContentChatSetTheme.CONSTRUCTOR:
+        return getNotificationPreview(TdApi.MessageChatSetTheme.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, ((TdApi.PushMessageContentChatSetTheme) push.content).themeName, 0);
     }
     throw new AssertionError(push.content);
   }
@@ -5771,6 +5775,7 @@ public class TD {
       case TdApi.PushMessageContentMediaAlbum.CONSTRUCTOR:
       case TdApi.PushMessageContentMessageForwards.CONSTRUCTOR:
       case TdApi.PushMessageContentScreenshotTaken.CONSTRUCTOR:
+      case TdApi.PushMessageContentChatSetTheme.CONSTRUCTOR:
         return false;
     }
     return false;
@@ -5820,6 +5825,7 @@ public class TD {
       case TdApi.PushMessageContentMediaAlbum.CONSTRUCTOR:
       case TdApi.PushMessageContentMessageForwards.CONSTRUCTOR:
       case TdApi.PushMessageContentScreenshotTaken.CONSTRUCTOR:
+      case TdApi.PushMessageContentChatSetTheme.CONSTRUCTOR:
         return null;
     }
     return null;
@@ -5980,6 +5986,15 @@ public class TD {
           return new ContentPreview(EMOJI_CHANNEL, 0, Lang.getString(R.string.ActionChannelChangedTitleTo, Td.getText(formattedArgument)), true);
         else
           return new ContentPreview(EMOJI_GROUP, 0, Lang.getString(isOutgoing ? R.string.ChatContentGroupName_outgoing : R.string.ChatContentGroupName, Td.getText(formattedArgument)), true);
+      /*TODO case TdApi.MessageChatSetTheme.CONSTRUCTOR: {
+        if (ChatId.isUserChat(chatId)) {
+          return new ContentPreview(EMOJI_THEME, 0, )
+        } else if (tdlib.isChannel(chatId)) {
+
+        } else {
+
+        }
+      }*/
       case TdApi.MessageChatSetTtl.CONSTRUCTOR: {
         if (arg1 > 0) {
           final int secondsRes, minutesRes, hoursRes, daysRes, weeksRes, monthsRes;
@@ -6080,8 +6095,8 @@ public class TD {
       case TdApi.MessageInviteVoiceChatParticipants.CONSTRUCTOR:
       case TdApi.MessageVoiceChatStarted.CONSTRUCTOR:
       case TdApi.MessageVoiceChatEnded.CONSTRUCTOR:
-      case TdApi.MessageChatSetTheme.CONSTRUCTOR:
       case TdApi.MessageVoiceChatScheduled.CONSTRUCTOR:
+      case TdApi.MessageChatSetTheme.CONSTRUCTOR:
         break;
     }
     return null;
