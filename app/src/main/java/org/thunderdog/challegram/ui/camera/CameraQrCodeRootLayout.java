@@ -217,10 +217,10 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
       }
 
       // draw surrounding boxes to create dimming around the box
-      canvas.drawRect(0, 0, child.getMeasuredWidth(), y, dimmerPaint);
+      canvas.drawRect(0, 0, canvas.getWidth(), y, dimmerPaint);
       canvas.drawRect(0, y, x, getHeight(), dimmerPaint);
       canvas.drawRect(x, y + size, x + size, getHeight(), dimmerPaint);
-      canvas.drawRect(x + size, y, child.getMeasuredWidth(), getHeight(), dimmerPaint);
+      canvas.drawRect(x + size, y, canvas.getWidth(), getHeight(), dimmerPaint);
 
       // draw corners
       canvas.drawPath(cornerTLPath, cornerPaint);
