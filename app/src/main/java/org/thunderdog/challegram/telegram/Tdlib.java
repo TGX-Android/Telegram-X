@@ -1111,10 +1111,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   @TdlibThread
   private void updateAuthState (ClientHolder context, TdApi.AuthorizationState newAuthState) {
+    final int prevStatus = getStatus(currentAuthState);
     this.currentAuthState = newAuthState;
     closeListeners.trigger(true);
 
     final int status = getStatus(newAuthState);
+
+    if (prevStatus == STATUS_UNKNOWN && status != STATUS_UNKNOWN) {
+      chats.clear();
+    }
+
     switch (status) {
       case STATUS_UNKNOWN: {
         if (newAuthState.getConstructor() == TdApi.AuthorizationStateClosed.CONSTRUCTOR) {
@@ -1252,6 +1258,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private static int getStatus (TdApi.AuthorizationState state) {
+    if (state == null)
+      return STATUS_UNKNOWN;
     switch (state.getConstructor()) {
       case TdApi.AuthorizationStateWaitTdlibParameters.CONSTRUCTOR:
       case TdApi.AuthorizationStateWaitEncryptionKey.CONSTRUCTOR:
@@ -5534,7 +5542,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private void resetContextualData () {
-    chats.clear();
+    // chats.clear();
     chatLists.clear();
     knownChatIds.clear();
     accessibleChatTimers.clear();
