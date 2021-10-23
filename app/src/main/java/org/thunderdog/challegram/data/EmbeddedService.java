@@ -200,7 +200,8 @@ public class EmbeddedService {
         case "coub.com": {
           if (segments.length == 2 && !StringUtils.isEmpty(segments[1])) {
             if ("view".equals(segments[0])) {
-              viewUrl = "https://coub.com/embed/" + segments[1] + "?muted=false&autostart=false&originalSize=false&startWithHD=false";
+              viewType = TYPE_CUSTOM_EMBED;
+              viewUrl = "https://coub.com/embed/" + segments[1] + "?muted=false&autostart=true&originalSize=false&startWithHD=false";
             }
           }
           break;
