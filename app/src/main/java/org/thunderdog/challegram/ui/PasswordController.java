@@ -62,6 +62,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
   public static final int MODE_CODE_CHANGE = 8;
   public static final int MODE_CODE_PHONE_CONFIRM = 9;
   public static final int MODE_TRANSFER_OWNERSHIP_CONFIRM = 10;
+  public static final int MODE_CONFIRM = 11;
 
   public static class Args {
     public final int mode;
@@ -170,6 +171,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       case MODE_NEW: {
         return Lang.getString(R.string.YourPassword);
       }
+      case MODE_CONFIRM:
       case MODE_UNLOCK_EDIT: {
         return Lang.getString(R.string.EnterPassword);
       }
@@ -218,6 +220,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       case MODE_EMAIL_CHANGE:
       case MODE_CODE_CHANGE:
       case MODE_CODE_PHONE_CONFIRM:
+      case MODE_CONFIRM:
       case MODE_TRANSFER_OWNERSHIP_CONFIRM:
         return R.drawable.baseline_check_24;
     }
@@ -291,6 +294,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         break;
       }
       case MODE_TRANSFER_OWNERSHIP_CONFIRM:
+      case MODE_CONFIRM:
       case MODE_UNLOCK_EDIT: {
         if (state != null && state.passwordHint != null && !state.passwordHint.isEmpty()) {
           editText.setHint(Lang.getString(R.string.Hint, state.passwordHint));
@@ -340,11 +344,12 @@ public class PasswordController extends ViewController<PasswordController.Args> 
 
     switch (mode) {
       case MODE_TRANSFER_OWNERSHIP_CONFIRM:
+      case MODE_CONFIRM:
       case MODE_UNLOCK_EDIT:
       case MODE_EMAIL_RECOVERY:
       case MODE_LOGIN_EMAIL_RECOVERY:
       case MODE_LOGIN: {
-        if (mode == MODE_UNLOCK_EDIT || mode == MODE_LOGIN || mode == MODE_TRANSFER_OWNERSHIP_CONFIRM) {
+        if (mode == MODE_CONFIRM || mode == MODE_UNLOCK_EDIT || mode == MODE_LOGIN || mode == MODE_TRANSFER_OWNERSHIP_CONFIRM) {
           forgotView.setText(Lang.getString(R.string.ForgotPassword));
           hint = Lang.getString(mode == MODE_TRANSFER_OWNERSHIP_CONFIRM ? R.string.TransferOwnershipPasswordAlertHint : R.string.LoginPasswordText);
         } else if ((mode == MODE_EMAIL_RECOVERY || mode == MODE_LOGIN_EMAIL_RECOVERY)) {
@@ -374,7 +379,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       }
     }
 
-    if (mode == MODE_TRANSFER_OWNERSHIP_CONFIRM || mode == MODE_UNLOCK_EDIT || mode == MODE_LOGIN || mode == MODE_CODE || mode == MODE_CODE_CHANGE || mode == MODE_CODE_PHONE_CONFIRM) {
+    if (mode == MODE_TRANSFER_OWNERSHIP_CONFIRM || mode == MODE_UNLOCK_EDIT || mode == MODE_CONFIRM || mode == MODE_LOGIN || mode == MODE_CODE || mode == MODE_CODE_CHANGE || mode == MODE_CODE_PHONE_CONFIRM) {
       RelativeLayout forgotWrap = new RelativeLayout(context);
       forgotWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM));
 
@@ -905,7 +910,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
             Settings2FAController c = new Settings2FAController(context, tdlib);
             c.setArguments(new Settings2FAController.Args((SettingsPrivacyController) prev, password, recoveryEmail));
             navigateTo(c);
-          } else if (mode == MODE_TRANSFER_OWNERSHIP_CONFIRM && getArguments() != null && getArguments().onSuccessListener != null) {
+          } else if ((mode == MODE_CONFIRM || mode == MODE_TRANSFER_OWNERSHIP_CONFIRM) && getArguments() != null && getArguments().onSuccessListener != null) {
             navigateBack();
             getArgumentsStrict().onSuccessListener.runWithData(password);
           }
@@ -1223,6 +1228,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
   private void proceed () {
     String input = editText.getText().toString();
     switch (mode) {
+      case MODE_CONFIRM:
       case MODE_TRANSFER_OWNERSHIP_CONFIRM:
       case MODE_UNLOCK_EDIT: {
         if (!input.isEmpty()) {
@@ -1286,6 +1292,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         requestNextCodeType();
         break;
       }
+      case MODE_CONFIRM:
       case MODE_TRANSFER_OWNERSHIP_CONFIRM:
       case MODE_UNLOCK_EDIT:
       case MODE_LOGIN: {

@@ -150,6 +150,19 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   private TextPart lastPart;
   private int maxPartHeight;
 
+  public static @Nullable TextEntity[] toEntities (CharSequence text, boolean onlyLinks, Tdlib tdlib, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    TdApi.TextEntity[] entities = TD.toEntities(text, onlyLinks);
+    if (entities != null && entities.length > 0) {
+      TextEntity[] parsedEntities = new TextEntity[entities.length];
+      String in = text.toString();
+      for (int i = 0; i < entities.length; i++) {
+        parsedEntities[i] = new TextEntityMessage(tdlib, in, entities[i], openParameters);
+      }
+      return parsedEntities;
+    }
+    return null;
+  }
+
   public static @Nullable TextEntity[] makeEntities (String in, int linkFlags, @Nullable TextEntity[] entities, Tdlib tdlib, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     if (entities != null && entities.length > 0) {
       return entities;
