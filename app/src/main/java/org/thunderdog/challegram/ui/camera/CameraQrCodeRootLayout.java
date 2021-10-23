@@ -245,10 +245,10 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
         }
 
         if (qrModePortrait) {
-          initialLocation.size = size = guideLinePart2.width() / 1.5f;
-          initialLocation.x = x = guideLinePart2.left + (size / 4);
-          initialLocation.y = y = guideLinePart2.top + (size / 6);
-          updateTexts((int) ((qrModePortrait ? guideLinePart3.height() : guideLinePart3.width()) / 1.5f));
+          initialLocation.size = size = (int) (Math.min(child.getWidth(), child.getHeight()) / 1.5f);
+          initialLocation.x = x = (getWidth() - size) / 2;
+          initialLocation.y = y = (getHeight() - size) / 2;
+          updateTexts((int) (guideLinePart3.width() / 1.5f));
         } else {
           initialLocation.size = size = guideLinePart2.width() / 1.5f;
           initialLocation.x = x = guideLinePart2.left + (size / 4);
@@ -289,13 +289,14 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
       if (qrTextTitle != null && qrTextSubtitle != null) {
         int titleTextSize = Screen.dp(31);
         int vertPadding = Screen.dp(6);
+        int yBaseline = (qrModePortrait) ? (int) (initialLocation.y - titleTextSize * 4) : activeGuideLinePart3.centerY();
         canvas.save();
-        canvas.rotate(qrRotation, activeGuideLinePart3.centerX(), activeGuideLinePart3.centerY());
-        qrTextTitle.draw(canvas, activeGuideLinePart3.left, activeGuideLinePart3.right, 0, activeGuideLinePart3.centerY() - titleTextSize - vertPadding, null, qrTextAlpha);
-        qrTextSubtitle.draw(canvas, activeGuideLinePart3.left, activeGuideLinePart3.right, 0,activeGuideLinePart3.centerY() + vertPadding, null, qrTextAlpha);
+        canvas.rotate(qrRotation, activeGuideLinePart3.centerX(), yBaseline);
+        qrTextTitle.draw(canvas, activeGuideLinePart3.left, activeGuideLinePart3.right, 0, yBaseline - titleTextSize - vertPadding, null, qrTextAlpha);
+        qrTextSubtitle.draw(canvas, activeGuideLinePart3.left, activeGuideLinePart3.right, 0, yBaseline + vertPadding, null, qrTextAlpha);
         if (Settings.instance().needShowQrRegions()) {
           dbgPaint.setColor(Color.MAGENTA);
-          canvas.drawRect(activeGuideLinePart3.left, activeGuideLinePart3.centerY() - titleTextSize - vertPadding, activeGuideLinePart3.right, activeGuideLinePart3.centerY() + qrTextSubtitle.getHeight() + vertPadding, dbgPaint);
+          canvas.drawRect(activeGuideLinePart3.left, yBaseline - titleTextSize - vertPadding, activeGuideLinePart3.right, yBaseline + qrTextSubtitle.getHeight() + vertPadding, dbgPaint);
           dbgPaint.setColor(Theme.getColor(R.id.theme_color_textNegative));
         }
         canvas.restore();
