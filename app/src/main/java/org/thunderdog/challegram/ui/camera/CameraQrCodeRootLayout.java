@@ -224,14 +224,14 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
         switch (getDisplayRotation()) {
           case 90: {
             guideLinePart3 = new Rect(canvas.getWidth() - buttonRegion, 0, canvas.getWidth(), canvas.getHeight());
-            guideLinePart1 = new Rect(0, 0, (canvas.getWidth() - guideLinePart3.width()) / 2, canvas.getHeight());
+            guideLinePart1 = new Rect(0, 0, ((canvas.getWidth() - guideLinePart3.width()) / 2) - Screen.getStatusBarHeight(), canvas.getHeight());
             guideLinePart2 = new Rect(guideLinePart1.right, 0, guideLinePart3.left, canvas.getHeight());
             break;
           }
 
           case 270: {
             guideLinePart1 = new Rect(0, 0, buttonRegion, canvas.getHeight());
-            guideLinePart2 = new Rect(guideLinePart1.right, 0, (int) (guideLinePart1.right + ((canvas.getWidth() - guideLinePart1.right) / 2f)), canvas.getHeight());
+            guideLinePart2 = new Rect(guideLinePart1.right, 0, (int) (guideLinePart1.right + ((canvas.getWidth() - guideLinePart1.right) / 2f)) + Screen.getStatusBarHeight(), canvas.getHeight());
             guideLinePart3 = new Rect(guideLinePart2.right, 0, canvas.getWidth(), canvas.getHeight());
             break;
           }
@@ -248,11 +248,11 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
           initialLocation.size = size = guideLinePart2.width() / 1.5f;
           initialLocation.x = x = guideLinePart2.left + (size / 4);
           initialLocation.y = y = guideLinePart2.top + (size / 6);
-          updateTexts((int) (guideLinePart3.width() / 1.5f));
+          updateTexts((int) ((qrModePortrait ? guideLinePart3.height() : guideLinePart3.width()) / 1.5f));
         } else {
           initialLocation.size = size = guideLinePart2.width() / 1.5f;
           initialLocation.x = x = guideLinePart2.left + (size / 4);
-          initialLocation.y = y = guideLinePart2.centerY() / 2f;
+          initialLocation.y = y = guideLinePart2.top + (size / 4);
           updateTexts((qrModeInvertedOrientation ? guideLinePart1 : guideLinePart3).width());
         }
 
