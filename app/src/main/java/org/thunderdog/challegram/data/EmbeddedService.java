@@ -206,6 +206,15 @@ public class EmbeddedService {
             return new EmbeddedService(TYPE_UNKNOWN, url, width, height, thumbnail, viewUrl, embedType);
           }
         }
+        case "open.spotify.com": {
+          if (segments.length == 2 && !StringUtils.isEmpty(segments[1])) {
+            viewUrl = "https://open.spotify.com/embed/" + segments[0] + "/" + segments[1];
+          }
+
+          if (viewUrl != null) {
+            return new EmbeddedService(TYPE_UNKNOWN, url, 1, 1, thumbnail, viewUrl, embedType);
+          }
+        }
         /*case "coub.com": {
           // https://coub.com/embed/20k5cb?muted=false&autostart=false&originalSize=false&startWithHD=false
           // https://coub.com/view/20k5cb
