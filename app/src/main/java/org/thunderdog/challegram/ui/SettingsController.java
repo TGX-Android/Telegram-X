@@ -790,7 +790,7 @@ public class SettingsController extends ViewController<Void> implements
         icons.append(R.drawable.baseline_edit_24);
 
         ids.append(R.id.btn_cancel);
-        titles.append(Lang.getString(R.string.ReminderCheckPhoneNumberHide, myPhone));
+        titles.append(Lang.getString(R.string.ReminderCheckPhoneNumberHide, Strings.formatPhone(tdlib.myUser().phoneNumber)));
         colors.append(OPTION_COLOR_NORMAL);
         icons.append(R.drawable.baseline_check_24);
 
