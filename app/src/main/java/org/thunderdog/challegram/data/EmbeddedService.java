@@ -11,6 +11,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.preview.PreviewLayout;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.MessagesController;
 
@@ -30,6 +31,7 @@ public class EmbeddedService {
   public static final int TYPE_DAILYMOTION = 3;
   public static final int TYPE_COUB = 4;
   public static final int TYPE_SOUNDCLOUD = 5;
+  public static final int TYPE_CUSTOM_EMBED = 99;
 
   public final int type;
   public final String viewUrl, embedUrl, embedType;
@@ -201,18 +203,39 @@ public class EmbeddedService {
               viewUrl = "https://coub.com/embed/" + segments[1] + "?muted=false&autostart=false&originalSize=false&startWithHD=false";
             }
           }
-
-          if (viewUrl != null) {
-            return new EmbeddedService(TYPE_UNKNOWN, url, width, height, thumbnail, viewUrl, embedType);
-          }
         }
         case "open.spotify.com": {
+          // https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M
+          // https://open.spotify.com/track/1S1c300Ip9sd3468pjyZrw?si=bc58b541be9c4e74
+          // https://open.spotify.com/show/0DbCZ1Xs8K1AElDii3RX3v?si=9799ae6776d7433a
+          // https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M
           if (segments.length == 2 && !StringUtils.isEmpty(segments[1])) {
-            viewUrl = "https://open.spotify.com/embed/" + segments[0] + "/" + segments[1];
-          }
+            String embedVerb;
 
-          if (viewUrl != null) {
-            return new EmbeddedService(TYPE_UNKNOWN, url, 1, 1, thumbnail, viewUrl, embedType);
+            if (segments[0].equals("show")) {
+              embedVerb = "embed-podcast";
+              width = height = Screen.dp(231); // hardcoded on Spotify's CSS
+            } else {
+              embedVerb = "embed";
+              width = height = 1;
+            }
+
+            viewUrl = "https://open.spotify.com/"+embedVerb+"/" + segments[0] + "/" + segments[1];
+
+            // Needed if the service is not supported for embedding using TDLib (height will be normal anyway)
+            viewType = TYPE_CUSTOM_EMBED;
+          }
+        }
+        case "music.apple.com": {
+          // NOTE: I haven't found any public documentation for AM's embedding, so the research is done from macOS Music.app
+          // https://music.apple.com/ru/album/audacity-feat-headie-one/1487951013?i=1487951015
+          // https://music.apple.com/ru/playlist/need-for-speed-2015-in-game-tracks/pl.u-GgA5kAghobyv8l
+          // https://embed.music.apple.com/ru/album/audacity-feat-headie-one/1487951013?i=1487951015
+          if (segments.length == 4 && !StringUtils.isEmpty(segments[1])) {
+            viewUrl = url.replace("music.apple.com", "embed.music.apple.com");
+            // Needed if the service is not supported for embedding using TDLib (height will be normal anyway)
+            width = height = 1;
+            viewType = TYPE_CUSTOM_EMBED;
           }
         }
         /*case "coub.com": {
@@ -279,7 +302,7 @@ public class EmbeddedService {
         }*/
       }
       if (viewType != 0 && !StringUtils.isEmpty(viewUrl)) {
-        return new EmbeddedService(viewType, viewUrl, width, height, thumbnail, null, null);
+        return new EmbeddedService(viewType, viewUrl, width, height, thumbnail, viewUrl, embedType);
       }
     } catch (Throwable t) {
       Log.e("Unable to parse embedded service", t);
