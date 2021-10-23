@@ -203,6 +203,7 @@ public class EmbeddedService {
               viewUrl = "https://coub.com/embed/" + segments[1] + "?muted=false&autostart=false&originalSize=false&startWithHD=false";
             }
           }
+          break;
         }
         case "open.spotify.com": {
           // https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M
@@ -234,9 +235,30 @@ public class EmbeddedService {
           if (segments.length == 4 && !StringUtils.isEmpty(segments[1])) {
             viewUrl = url.replace("music.apple.com", "embed.music.apple.com");
             // Needed if the service is not supported for embedding using TDLib (height will be normal anyway)
-            width = height = 1;
+            if (uri.getQueryParameter("i") != null) {
+              width = height = Screen.dp(175); // reference to a specific track, AM uses smaller player
+            } else {
+              width = height = 1;
+            }
             viewType = TYPE_CUSTOM_EMBED;
           }
+          break;
+        }
+        case "podcasts.apple.com": {
+          // NOTE: I haven't found any public documentation for AP's embedding, so the research is done from macOS Podcasts.app
+          // https://podcasts.apple.com/ru/podcast/%D0%B4%D1%83%D1%88%D0%B5%D0%B2%D0%BD%D1%8B%D0%B9-%D0%BF%D0%BE%D0%B4%D0%BA%D0%B0%D1%81%D1%82/id1130785672?i=1000538952815
+          // https://podcasts.apple.com/ru/podcast/zavtracast-%D0%B7%D0%B0%D0%B2%D1%82%D1%80%D0%B0%D0%BA%D0%B0%D1%81%D1%82/id1068329384
+          if (segments.length == 4 && !StringUtils.isEmpty(segments[1])) {
+            viewUrl = url.replace("podcasts.apple.com", "embed.podcasts.apple.com");
+            // Needed if the service is not supported for embedding using TDLib (height will be normal anyway)
+            if (uri.getQueryParameter("i") != null) {
+              width = height = Screen.dp(175); // reference to a specific track, AM uses smaller player
+            } else {
+              width = height = 1;
+            }
+            viewType = TYPE_CUSTOM_EMBED;
+          }
+          break;
         }
         /*case "coub.com": {
           // https://coub.com/embed/20k5cb?muted=false&autostart=false&originalSize=false&startWithHD=false
