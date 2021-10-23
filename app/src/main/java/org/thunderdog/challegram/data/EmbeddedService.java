@@ -128,7 +128,7 @@ public class EmbeddedService {
   }
 
   public static EmbeddedService parse (TdApi.WebPage webPage) {
-    EmbeddedService service = parse(webPage.url, webPage.embedWidth, webPage.embedHeight, webPage.photo);
+    EmbeddedService service = parse(webPage.url, webPage.embedWidth, webPage.embedHeight, webPage.photo, webPage.embedUrl, webPage.embedType);
     if (service != null)
       return service;
     if ("iframe".equals(webPage.embedType) && !StringUtils.isEmpty(webPage.embedUrl)) {
@@ -145,10 +145,10 @@ public class EmbeddedService {
   }
 
   public static EmbeddedService parse (TdApi.PageBlockEmbedded embedded) {
-    return parse(embedded.url, embedded.width, embedded.height, embedded.posterPhoto);
+    return parse(embedded.url, embedded.width, embedded.height, embedded.posterPhoto, null, null);
   }
 
-  private static EmbeddedService parse (String url, int width, int height, TdApi.Photo thumbnail) {
+  private static EmbeddedService parse (String url, int width, int height, TdApi.Photo thumbnail, @Nullable String embedUrl, @Nullable String embedType) {
     if (StringUtils.isEmpty(url))
       return null;
     try {
@@ -196,6 +196,17 @@ public class EmbeddedService {
           break;
         }
         case "coub.com": {
+          if (segments.length == 2 && !StringUtils.isEmpty(segments[1])) {
+            if ("view".equals(segments[0])) {
+              viewUrl = "https://coub.com/embed/" + segments[1] + "?muted=false&autostart=false&originalSize=false&startWithHD=false";
+            }
+          }
+
+          if (viewUrl != null) {
+            return new EmbeddedService(TYPE_UNKNOWN, url, width, height, thumbnail, viewUrl, embedType);
+          }
+        }
+        /*case "coub.com": {
           // https://coub.com/embed/20k5cb?muted=false&autostart=false&originalSize=false&startWithHD=false
           // https://coub.com/view/20k5cb
           // https://coub.com/api/v2/coubs/20k5cb.json
@@ -215,7 +226,7 @@ public class EmbeddedService {
           }
           break;
         }
-        /*case "vimeo.com": {
+        case "vimeo.com": {
           // https://vimeo.com/360123613
           viewType = TYPE_VIMEO;
           if (segments.length == 1 && StringUtils.isNumeric(segments[0])) {
