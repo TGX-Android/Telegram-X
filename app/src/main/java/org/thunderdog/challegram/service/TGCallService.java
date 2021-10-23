@@ -893,7 +893,11 @@ public class TGCallService extends Service implements
       for (android.app.NotificationChannel channel : channels) {
         String id = channel.getId();
         if (id.startsWith("call_") && !(callChannelId != null && callChannelId.equals(id))) {
-          m.deleteNotificationChannel(channel.getId());
+          try {
+            m.deleteNotificationChannel(channel.getId());
+          } catch (Throwable t) {
+            Log.e("Unable to delete notification channel", t);
+          }
         }
       }
     }

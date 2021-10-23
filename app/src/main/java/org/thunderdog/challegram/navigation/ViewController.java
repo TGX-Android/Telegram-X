@@ -1705,16 +1705,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public void openLinkAlert (final String url, @Nullable TdlibUi.UrlOpenParameters options) {
-    tdlib.ui().openTelegramUrl(this, url, options, processed -> {
-      if (!processed && !isDestroyed()) {
-        AlertDialog.Builder b = new AlertDialog.Builder(context, Theme.dialogTheme());
-        b.setTitle(Lang.getString(R.string.AppName));
-        b.setMessage(Lang.getString(R.string.OpenThisLink, url));
-        b.setPositiveButton(Lang.getString(R.string.Open), (dialog, which) -> tdlib.ui().openUrl(ViewController.this, url, options));
-        b.setNegativeButton(Lang.getString(R.string.Cancel), (dialog, which) -> dialog.dismiss());
-        showAlert(b);
-      }
-    });
+    tdlib.ui().openUrl(this, url, options == null ? new TdlibUi.UrlOpenParameters().requireOpenPrompt() : options.requireOpenPrompt());
   }
 
   public void openOkAlert (String title, CharSequence message) {

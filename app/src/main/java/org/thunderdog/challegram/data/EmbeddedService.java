@@ -3,6 +3,7 @@ package org.thunderdog.challegram.data;
 import android.net.Uri;
 
 import androidx.annotation.DrawableRes;
+import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
@@ -11,6 +12,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.preview.PreviewLayout;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.ui.MessagesController;
 
 import java.util.List;
 import java.util.regex.Pattern;
@@ -30,17 +32,19 @@ public class EmbeddedService {
   public static final int TYPE_SOUNDCLOUD = 5;
 
   public final int type;
-  public final String viewUrl;
+  public final String viewUrl, embedUrl, embedType;
 
   public final int width, height;
   public final TdApi.Photo thumbnail;
 
-  public EmbeddedService (int type, String url, int width, int height, TdApi.Photo thumbnail) {
+  public EmbeddedService (int type, String url, int width, int height, TdApi.Photo thumbnail, @Nullable String embedUrl, @Nullable String embedType) {
     this.type = type;
     this.viewUrl = url;
     this.width = width;
     this.height = height;
     this.thumbnail = thumbnail;
+    this.embedUrl = embedUrl;
+    this.embedType = embedType;
   }
 
   public @DrawableRes
@@ -94,7 +98,8 @@ public class EmbeddedService {
 
   public void open (BaseActivity context) {
     ViewController<?> c = context.navigation().getCurrentStackItem();
-    if (c == null || !PreviewLayout.show(c, this)) {
+    boolean needConfirmation = c instanceof MessagesController && ((MessagesController) c).isSecretChat();
+    if (c == null || !PreviewLayout.show(c, this, needConfirmation)) {
       UI.openUrl(viewUrl);
     }
   }
@@ -132,7 +137,7 @@ public class EmbeddedService {
            ("video".equals(webPage.type) && webPage.photo != null && webPage.animation == null) ||
            ("photo".equals(webPage.type) && webPage.photo != null && webPage.animation == null)
           ) && webPage.video == null && webPage.videoNote == null && webPage.document == null && webPage.audio == null) {
-        return new EmbeddedService(resolveTypeForHost(StringUtils.domainOf(webPage.url)), webPage.url, webPage.embedWidth, webPage.embedHeight, webPage.photo);
+        return new EmbeddedService(resolveTypeForHost(StringUtils.domainOf(webPage.url)), webPage.url, webPage.embedWidth, webPage.embedHeight, webPage.photo, webPage.embedUrl, webPage.embedType);
       }
     }
     // if ("type".equals(webPage.type) && webpage)
@@ -190,7 +195,27 @@ public class EmbeddedService {
           }
           break;
         }
-        case "vimeo.com": {
+        case "coub.com": {
+          // https://coub.com/embed/20k5cb?muted=false&autostart=false&originalSize=false&startWithHD=false
+          // https://coub.com/view/20k5cb
+          // https://coub.com/api/v2/coubs/20k5cb.json
+          viewType = TYPE_COUB;
+          if (segments.length == 2 && !StringUtils.isEmpty(segments[1])) {
+            if ("view".equals(segments[0])) {
+              viewUrl = url;
+              viewIdentifier = segments[1];
+            } else if ("embed".equals(segments[0])) {
+              viewIdentifier = segments[1];
+              viewUrl = "https://coub.com/view/" + viewIdentifier;
+              String query = uri.getEncodedQuery();
+              if (!StringUtils.isEmpty(query)) {
+                viewUrl += "?" + query;
+              }
+            }
+          }
+          break;
+        }
+        /*case "vimeo.com": {
           // https://vimeo.com/360123613
           viewType = TYPE_VIMEO;
           if (segments.length == 1 && StringUtils.isNumeric(segments[0])) {
@@ -225,27 +250,7 @@ public class EmbeddedService {
           }
           break;
         }
-        case "coub.com": {
-          // https://coub.com/embed/20k5cb?muted=false&autostart=false&originalSize=false&startWithHD=false
-          // https://coub.com/view/20k5cb
-          // https://coub.com/api/v2/coubs/20k5cb.json
-          viewType = TYPE_COUB;
-          if (segments.length == 2 && !StringUtils.isEmpty(segments[1])) {
-            if ("view".equals(segments[0])) {
-              viewUrl = url;
-              viewIdentifier = segments[1];
-            } else if ("embed".equals(segments[0])) {
-              viewIdentifier = segments[1];
-              viewUrl = "https://coub.com/view/" + viewIdentifier;
-              String query = uri.getEncodedQuery();
-              if (!StringUtils.isEmpty(query)) {
-                viewUrl += "?" + query;
-              }
-            }
-          }
-          break;
-        }
-        /*case "soundcloud.com": {
+        case "soundcloud.com": {
           // https://soundcloud.com/leagueoflegends/star-guardian-2019-login-theme
           // https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/680741072&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true
           viewType = TYPE_SOUNDCLOUD;
@@ -254,7 +259,7 @@ public class EmbeddedService {
         }*/
       }
       if (viewType != 0 && !StringUtils.isEmpty(viewUrl)) {
-        return new EmbeddedService(viewType, viewUrl, width, height, thumbnail);
+        return new EmbeddedService(viewType, viewUrl, width, height, thumbnail, null, null);
       }
     } catch (Throwable t) {
       Log.e("Unable to parse embedded service", t);
