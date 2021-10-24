@@ -50,6 +50,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   private final Path cornerBRPath = new Path();
 
   private Rect guideLinePart1, guideLinePart2, guideLinePart3;
+  private Rect dbgBox, dbgBox2;
 
   private final int cornerSize = Screen.dp(20);
   private int cameraViewWidth;
@@ -66,6 +67,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   private float qrRotation = 0;
 
   private boolean qrMode, qrModeClosing, qrModeInvertedOrientation, qrModePortrait;
+  private boolean qrDebugRegions;
 
   public CameraQrCodeRootLayout (@NonNull Context context) {
     super(context);
@@ -74,7 +76,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
     cornerPaint.setStyle(Paint.Style.STROKE);
     cornerPaint.setStrokeWidth(Screen.dp(2));
     cornerPaint.setStrokeJoin(Paint.Join.ROUND);
-    dbgPaint.setColor(Theme.getColor(R.id.theme_color_textNegative));
+    dbgPaint.setColor(Color.RED);
     dbgPaint.setStyle(Paint.Style.STROKE);
     dbgPaint.setStrokeWidth(Screen.dp(2));
     dbgPaint.setStrokeJoin(Paint.Join.ROUND);
@@ -113,6 +115,17 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
 
     int nx = getWidth() / 2 + (boundingBox.left - width / 2);
     int ny = getHeight() / 2 + (boundingBox.top - height / 2);
+
+    if (qrDebugRegions) {
+      dbgBox = boundingBox;
+      dbgBox2 = new Rect(
+              (int) (boundingBox.left * scaleX),
+              (int) (boundingBox.top * scaleY),
+              (int) ((boundingBox.left * scaleX) + qrSize),
+              (int) ((boundingBox.top * scaleY) + qrSize)
+      );
+    }
+
     animateQrLocation(nx, ny, qrSize);
     qrFoundAnimator.setValue(true, true);
     qrTextAnimator.setValue(false, true);
@@ -121,6 +134,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   @Override
   public void setQrMode (boolean qrMode) {
     this.qrMode = qrMode;
+    qrDebugRegions = Settings.instance().needShowQrRegions();
     qrModeClosing = false;
     currentLocation.set(0, 0, 0);
     invalidate();
@@ -296,18 +310,26 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
         canvas.rotate(qrRotation, activeGuideLinePart3.centerX(), yBaseline);
         qrTextTitle.draw(canvas, activeGuideLinePart3.left, activeGuideLinePart3.right, 0, yBaseline - titleTextSize - vertPadding, null, qrTextAlpha);
         qrTextSubtitle.draw(canvas, activeGuideLinePart3.left, activeGuideLinePart3.right, 0, yBaseline + vertPadding, null, qrTextAlpha);
-        if (Settings.instance().needShowQrRegions()) {
-          dbgPaint.setColor(Color.MAGENTA);
-          canvas.drawRect(activeGuideLinePart3.left, yBaseline - titleTextSize - vertPadding, activeGuideLinePart3.right, yBaseline + qrTextSubtitle.getHeight() + vertPadding, dbgPaint);
-          dbgPaint.setColor(Theme.getColor(R.id.theme_color_textNegative));
-        }
+        //if (qrDebugRegions) {
+        //  dbgPaint.setColor(Color.MAGENTA);
+        //  canvas.drawRect(activeGuideLinePart3.left, yBaseline - titleTextSize - vertPadding, activeGuideLinePart3.right, yBaseline + qrTextSubtitle.getHeight() + vertPadding, dbgPaint);
+        //  dbgPaint.setColor(Theme.getColor(R.id.theme_color_textNegative));
+        //}
         canvas.restore();
       }
 
-      if (Settings.instance().needShowQrRegions()) {
+      if (qrDebugRegions) {
         canvas.drawRect(activeGuideLinePart1, dbgPaint);
         canvas.drawRect(guideLinePart2, dbgPaint);
         canvas.drawRect(activeGuideLinePart3, dbgPaint);
+
+        if (dbgBox != null) {
+          dbgPaint.setColor(Color.GREEN);
+          canvas.drawRect(dbgBox, dbgPaint);
+          dbgPaint.setColor(Color.BLUE);
+          canvas.drawRect(dbgBox2, dbgPaint);
+          dbgPaint.setColor(Color.RED);
+        }
       }
     }
 
