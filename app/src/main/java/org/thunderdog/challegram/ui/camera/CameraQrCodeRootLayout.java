@@ -110,7 +110,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
     if (scaleX == 1f || scaleY == 1f) {
       qrSize = boundingBox.width();
     } else {
-      qrSize = (boundingBox.width() * Math.max(scaleX, scaleY)) + cornerSize;
+      qrSize = (boundingBox.width() * Math.max(scaleX, scaleY));
     }
 
     int nx = getWidth() / 2 + (boundingBox.left - width / 2);
