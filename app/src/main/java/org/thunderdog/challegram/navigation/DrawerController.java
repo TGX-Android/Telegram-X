@@ -247,7 +247,28 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
             break;
           }
           default: {
-            view.setError(item.getId() == R.id.btn_settings && hasSettingsError, isUpdate);
+            if (item.getId() == R.id.btn_settings && hasSettingsError) {
+              TdApi.SuggestedAction[] actions = context().currentTdlib().getSettingsSuggestions();
+              boolean hasNotificationIssue = context().currentTdlib().notifications().hasLocalNotificationProblem();
+
+              if (actions.length > 1 || (actions.length == 1 && hasNotificationIssue)) {
+                view.setErrorIcon(0);
+                view.setError(true, isUpdate);
+              } else if (hasNotificationIssue) {
+                view.setErrorIcon(R.drawable.baseline_notification_important_14);
+              } else if (actions[0].getConstructor() == TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR) {
+                view.setErrorIcon(R.drawable.baseline_sim_card_alert_14);
+              } else if (actions[0].getConstructor() == TdApi.SuggestedActionCheckPassword.CONSTRUCTOR) {
+                view.setErrorIcon(R.drawable.baseline_gpp_maybe_14);
+              } else {
+                view.setErrorIcon(0);
+                view.setError(false, isUpdate);
+              }
+            } else {
+              view.setErrorIcon(0);
+              view.setError(false, isUpdate);
+            }
+
             break;
           }
         }

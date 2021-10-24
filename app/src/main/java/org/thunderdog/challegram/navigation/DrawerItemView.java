@@ -8,12 +8,14 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.ScaleDrawable;
 import android.view.Gravity;
 import android.view.ViewGroup;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -40,7 +42,7 @@ import me.vkryl.core.lambda.Destroyable;
 
 public class DrawerItemView extends BaseView implements FactorAnimator.Target, AttachDelegate, Destroyable, TGLegacyManager.EmojiLoadListener {
   private int iconLeft, iconTop;
-  private @Nullable Drawable icon;
+  private @Nullable Drawable icon, errorIcon;
 
   private String text;
   private Text trimmedText;
@@ -104,6 +106,12 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
     iconLeft = left;
     iconTop = top;
     icon = rawResource == 0 ? null : Drawables.get(getResources(), rawResource);
+  }
+
+  public void setErrorIcon (@DrawableRes int rawResource) {
+    this.errorIcon = rawResource == 0 ? null : Drawables.get(getResources(), rawResource);
+    setError(false, false);
+    invalidate();
   }
 
   /*public void setIcon (int left, @DrawableRes int rawResource) {
@@ -288,5 +296,11 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
     }
     if (counter != null)
       counter.draw(c, rtl ? Screen.dp(24f) : viewWidth - Screen.dp(24f), getMeasuredHeight() / 2f, Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT, 1f);
+    if (errorIcon != null) {
+      c.save();
+      c.drawCircle(rtl ? 0 : viewWidth - icon.getMinimumWidth(), getMeasuredHeight() / 2f, Screen.dp(11f), Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_badgeFailed)));
+      Drawables.drawCentered(c, errorIcon, rtl ? 0 : viewWidth - icon.getMinimumWidth(), getMeasuredHeight() / 2f, Paints.getActiveKeyboardPaint());
+      c.restore();
+    }
   }
 }

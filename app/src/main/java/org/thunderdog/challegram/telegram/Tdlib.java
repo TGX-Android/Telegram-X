@@ -8290,12 +8290,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public boolean haveAnySettingsSuggestions () {
+    return getSettingsSuggestions().length > 0;
+  }
+
+  public TdApi.SuggestedAction[] getSettingsSuggestions () {
+    List<TdApi.SuggestedAction> size = new ArrayList<>();
+
     for (TdApi.SuggestedAction action: getSuggestedActions()) {
       if (isSettingSuggestion(action)) {
-        return true;
+        size.add(action);
       }
     }
 
-    return false;
+    return size.toArray(new TdApi.SuggestedAction[0]);
   }
 }
