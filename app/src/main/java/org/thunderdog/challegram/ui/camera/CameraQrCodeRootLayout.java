@@ -111,7 +111,9 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
       qrSize = (boundingBox.width() * Math.max(scaleX, scaleY)) + cornerSize;
     }
 
-    animateQrLocation(boundingBox.left * scaleX, boundingBox.top * scaleY, qrSize);
+    int nx = getWidth() / 2 + (boundingBox.left - width / 2);
+    int ny = getHeight() / 2 + (boundingBox.top - height / 2);
+    animateQrLocation(nx, ny, qrSize);
     qrFoundAnimator.setValue(true, true);
     qrTextAnimator.setValue(false, true);
   }
