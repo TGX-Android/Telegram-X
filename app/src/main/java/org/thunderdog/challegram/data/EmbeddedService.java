@@ -222,7 +222,7 @@ public class EmbeddedService {
               width = height = 1;
             }
 
-            viewUrl = "https://open.spotify.com/"+embedVerb+"/" + segments[0] + "/" + segments[1];
+            viewUrl = "https://open.spotify.com/" + embedVerb + "/" + segments[0] + "/" + segments[1];
 
             // Needed if the service is not supported for embedding using TDLib (height will be normal anyway)
             viewType = TYPE_CUSTOM_EMBED;
