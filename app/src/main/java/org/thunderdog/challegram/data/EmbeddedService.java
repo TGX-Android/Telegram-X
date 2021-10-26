@@ -150,13 +150,13 @@ public class EmbeddedService {
     return parse(embedded.url, embedded.width, embedded.height, embedded.posterPhoto, null, null);
   }
 
-  private static EmbeddedService parse (String url, int width, int height, TdApi.Photo thumbnail, @Nullable String embedUrl, @Nullable String embedType) {
-    if (StringUtils.isEmpty(url))
+  private static EmbeddedService parse (String webPageUrl, int width, int height, TdApi.Photo thumbnail, @Nullable String embedUrl, @Nullable String embedType) {
+    if (StringUtils.isEmpty(webPageUrl))
       return null;
     try {
-      if (!url.startsWith("https://") && !url.startsWith("http://"))
-        url = "https://" + url;
-      Uri uri = Uri.parse(url);
+      if (!webPageUrl.startsWith("https://") && !webPageUrl.startsWith("http://"))
+        webPageUrl = "https://" + webPageUrl;
+      Uri uri = Uri.parse(webPageUrl);
       String host = uri.getHost();
       List<String> segmentsList = uri.getPathSegments();
       if (StringUtils.isEmpty(host) || segmentsList == null || segmentsList.isEmpty())
@@ -180,7 +180,7 @@ public class EmbeddedService {
               viewUrl += "&" + query;
             }
           } else if (segments.length == 1 && "watch".equals(segments[0]) && !StringUtils.isEmpty(viewIdentifier = uri.getQueryParameter("v"))) {
-            viewUrl = url;
+            viewUrl = webPageUrl;
           }
           break;
         }
@@ -228,29 +228,23 @@ public class EmbeddedService {
             viewType = TYPE_CUSTOM_EMBED;
           }
         }
-        case "music.apple.com": {
+        case "music.apple.com":
+        case "podcasts.apple.com": {
           // NOTE: I haven't found any public documentation for AM's embedding, so the research is done from macOS Music.app
           // https://music.apple.com/ru/album/audacity-feat-headie-one/1487951013?i=1487951015
           // https://music.apple.com/ru/playlist/need-for-speed-2015-in-game-tracks/pl.u-GgA5kAghobyv8l
           // https://embed.music.apple.com/ru/album/audacity-feat-headie-one/1487951013?i=1487951015
-          if (segments.length == 4 && !StringUtils.isEmpty(segments[1])) {
-            viewUrl = url.replace("music.apple.com", "embed.music.apple.com");
-            // Needed if the service is not supported for embedding using TDLib (height will be normal anyway)
-            if (uri.getQueryParameter("i") != null) {
-              width = height = Screen.dp(175); // reference to a specific track, AM uses smaller player
-            } else {
-              width = height = 1;
-            }
-            viewType = TYPE_CUSTOM_EMBED;
-          }
-          break;
-        }
-        case "podcasts.apple.com": {
+
           // NOTE: I haven't found any public documentation for AP's embedding, so the research is done from macOS Podcasts.app
           // https://podcasts.apple.com/ru/podcast/%D0%B4%D1%83%D1%88%D0%B5%D0%B2%D0%BD%D1%8B%D0%B9-%D0%BF%D0%BE%D0%B4%D0%BA%D0%B0%D1%81%D1%82/id1130785672?i=1000538952815
           // https://podcasts.apple.com/ru/podcast/zavtracast-%D0%B7%D0%B0%D0%B2%D1%82%D1%80%D0%B0%D0%BA%D0%B0%D1%81%D1%82/id1068329384
-          if (segments.length == 4 && !StringUtils.isEmpty(segments[1])) {
-            viewUrl = url.replace("podcasts.apple.com", "embed.podcasts.apple.com");
+
+          if (uri.getPath().matches("^(?:/[^/]*)?/(?:podcast|album|playlist)/[^/]+/[^/]+")) {
+            viewUrl = uri.buildUpon()
+              .authority(uri.getAuthority().replaceAll("([a-zA-Z0-9\\-]+)(?=\\.apple\\.com$)", "embed.$1"))
+              .path(uri.getPath().replaceAll("^/?/([^/]+/[^/]+/[^/]+)$", "/us/$1"))
+              .build()
+              .toString();
             // Needed if the service is not supported for embedding using TDLib (height will be normal anyway)
             if (uri.getQueryParameter("i") != null) {
               width = height = Screen.dp(175); // reference to a specific track, AM uses smaller player
