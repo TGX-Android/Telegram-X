@@ -2195,6 +2195,7 @@ public class TD {
       case "BOTS_TOO_MUCH": res = R.string.error_BOTS_TOO_MUCH; break;
       case "ADMINS_TOO_MUCH": res = R.string.error_ADMINS_TOO_MUCH; break;
       case "Not enough rights to invite members to the group chat": res = R.string.YouCantInviteMembers; break;
+      case "Invalid chat identifier specified": res = R.string.error_ChatInfoNotFound; break;
       case "Message must be non-empty": res = R.string.MessageInputEmpty; break;
       case "Not Found": res = R.string.error_NotFound; break;
       case "The maximum number of pinned chats exceeded": return Lang.plural(R.string.ErrorPinnedChatsLimit, TdlibManager.instance().current().pinnedChatsMaxCount());

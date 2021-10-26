@@ -692,6 +692,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       );
       return;
     }
+    if (force) {
+      revokeReturnMessages();
+    }
 
     stopScroll();
     if (loader.canLoadBottom()) {

@@ -105,13 +105,13 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   private RecyclerView recyclerView;
   private ItemTouchHelper touchHelper;
 
-  private ListItem proxyItem = new ListItem(ListItem.TYPE_DRAWER_ITEM_WITH_RADIO_SEPARATED, R.id.btn_proxy, R.drawable.baseline_security_24, R.string.Proxy);
+  private final ListItem proxyItem = new ListItem(ListItem.TYPE_DRAWER_ITEM_WITH_RADIO_SEPARATED, R.id.btn_proxy, R.drawable.baseline_security_24, R.string.Proxy);
 
   private boolean proxyAvailable;
-  private boolean hasSettingsError;
+  private int settingsErrorIcon;
 
-  private boolean hasSettingsError () {
-    return context.hasSettingsError();
+  private int getSettingsErrorIcon () {
+    return context.getSettingsErrorIcon();
   }
 
   private Tdlib lastTdlib;
@@ -146,9 +146,9 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   }
 
   private void checkSettingsError () {
-    boolean hasError = hasSettingsError();
-    if (this.hasSettingsError != hasError) {
-      this.hasSettingsError = hasError;
+    int settingsErrorIcon = getSettingsErrorIcon();
+    if (this.settingsErrorIcon != settingsErrorIcon) {
+      this.settingsErrorIcon = settingsErrorIcon;
       if (adapter != null) {
         int i = adapter.indexOfViewById(R.id.btn_settings);
         if (i != -1) {
@@ -205,7 +205,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
 
     items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_contacts, R.drawable.baseline_perm_contact_calendar_24, R.string.Contacts));
     items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_savedMessages, R.drawable.baseline_bookmark_24, R.string.SavedMessages));
-    this.hasSettingsError = hasSettingsError();
+    this.settingsErrorIcon = getSettingsErrorIcon();
     items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_settings, R.drawable.baseline_settings_24, R.string.Settings));
     items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_invite, R.drawable.baseline_person_add_24, R.string.InviteFriends));
 
@@ -246,8 +246,12 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
             view.setPreviewActionListProvider(DrawerController.this);
             break;
           }
+          case R.id.btn_settings: {
+            view.setError(settingsErrorIcon != 0, settingsErrorIcon != Tdlib.CHAT_FAILED ? settingsErrorIcon : 0, isUpdate);
+            break;
+          }
           default: {
-            view.setError(item.getId() == R.id.btn_settings && hasSettingsError, isUpdate);
+            view.setError(false, 0, isUpdate);
             break;
           }
         }

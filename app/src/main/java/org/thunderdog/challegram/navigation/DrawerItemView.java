@@ -14,6 +14,7 @@ import android.view.ViewGroup;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -185,19 +186,48 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
     invalidate();
   }
 
-  public void setError (boolean error, boolean animated) {
-    if (error) {
+  public void setError (boolean error, int errorIcon, boolean animated) {
+    if (errorIcon != 0) {
+      setErrorIcon(errorIcon, animated);
+    } else if (error) {
       setUnreadCount(Tdlib.CHAT_FAILED, counter != null && counter.isMuted(), animated);
+    } else if (iconDrawableRes != 0) {
+      setErrorIcon(0, animated);
     } else {
       setUnreadCount(0, false, animated);
     }
   }
 
+  private @DrawableRes int iconDrawableRes;
+
+  public void setErrorIcon (@DrawableRes int drawableRes, boolean animated) {
+    if (this.iconDrawableRes != drawableRes) {
+      this.iconDrawableRes = drawableRes;
+      if (drawableRes != 0) {
+        // TODO support icon replacement inside Counter without need in re-creating it
+        this.counter = new Counter.Builder()
+          .drawable(drawableRes, 14f, 0, Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT)
+          .callback((counter, sizeChanged) -> {
+          if (sizeChanged) {
+            trimText(false);
+          }
+          invalidate();
+        }).build();
+        this.counter.setCount(Tdlib.CHAT_FAILED, animated);
+      } else if (animated && counter != null) {
+        this.counter.hide(true);
+      } else {
+        this.counter = null;
+      }
+    }
+  }
+
   public void setUnreadCount (int unreadCount, boolean muted, boolean animated) {
-    if (unreadCount == 0 && this.counter == null)
+    if (unreadCount == 0 && this.counter == null && iconDrawableRes == 0)
       return;
-    if (this.counter == null){
-      this.counter = new Counter.Builder().callback((counter, sizeChanged) -> {
+    if (this.counter == null || iconDrawableRes != 0) {
+      this.counter = new Counter.Builder()
+        .callback((counter, sizeChanged) -> {
         if (sizeChanged) {
           trimText(false);
         }
@@ -286,7 +316,8 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
       }
 
     }
-    if (counter != null)
-      counter.draw(c, rtl ? Screen.dp(24f) : viewWidth - Screen.dp(24f), getMeasuredHeight() / 2f, Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT, 1f);
+    if (counter != null) {
+      counter.draw(c, rtl ? Screen.dp(24f) : viewWidth - Screen.dp(24f), getMeasuredHeight() / 2f, Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT, 1f, this, R.id.theme_color_badgeFailedText);
+    }
   }
 }

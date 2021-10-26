@@ -1872,13 +1872,16 @@ public class TdlibUi extends Handler {
           }
         }
         if (error) {
-          UI.showToast(TD.isChannel(chatFinal.type) ? R.string.PostNotFound : R.string.MessageNotFound, Toast.LENGTH_SHORT);
           if (!(context instanceof MessagesController && ((MessagesController) context).compareChat(chatFinal.id, params != null ? params.threadInfo : null))) {
+            UI.showToast(TD.isChannel(chatFinal.type) ? R.string.PostNotFound : R.string.MessageNotFound, Toast.LENGTH_SHORT);
             params.options &= ~CHAT_OPTION_ENSURE_HIGHLIGHT_AVAILABILITY;
             params.highlightSet = false;
             openChat(context, chatFinal, params);
           } else {
-            tdlib.ui().post(params::onDone);
+            tdlib.ui().post(() -> {
+              showLinkTooltip(context.tdlib(), R.drawable.baseline_warning_24, Lang.getString(TD.isChannel(chatFinal.type) ? R.string.PostNotFound : R.string.MessageNotFound), params.urlOpenParameters);
+              params.onDone();
+            });
           }
         } else {
           params.options &= ~CHAT_OPTION_ENSURE_HIGHLIGHT_AVAILABILITY;
@@ -2233,7 +2236,9 @@ public class TdlibUi extends Handler {
       // TODO support for album, comments, etc
       openMessage(context, messageLink.chatId, new MessageId(messageLink.message.chatId, messageLink.message.id), openParameters);
     } else {
-      UI.showToast(tdlib.isChannel(messageLink.chatId) ? R.string.PostNotFound : R.string.MessageNotFound, Toast.LENGTH_SHORT);
+      if (tdlib.chat(messageLink.chatId) != null) {
+        UI.showToast(tdlib.isChannel(messageLink.chatId) ? R.string.PostNotFound : R.string.MessageNotFound, Toast.LENGTH_SHORT);
+      }
       openChat(context, messageLink.chatId, new ChatOpenParameters().keepStack().urlOpenParameters(openParameters));
     }
   }

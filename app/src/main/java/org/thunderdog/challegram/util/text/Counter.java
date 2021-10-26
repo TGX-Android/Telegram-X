@@ -224,7 +224,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     isMuted.setValue(muted, animateChanges);
     isFailed.setValue(count == Tdlib.CHAT_FAILED, animateChanges);
     boolean hasCounter = count > 0 || count == Tdlib.CHAT_MARKED_AS_UNREAD || count == Tdlib.CHAT_FAILED;
-    if (count == Tdlib.CHAT_FAILED) {
+    if (count == Tdlib.CHAT_FAILED && drawableRes == 0) {
       counter.setCounter(count, "!", animateChanges);
     } else if (count > 0) {
       counter.setCounter(count, Strings.buildCounter(count), animateChanges);
