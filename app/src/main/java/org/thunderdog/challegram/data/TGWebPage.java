@@ -463,7 +463,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
 
     isImageBig = false;
 
-    mediaWrapper = new MediaWrapper(parent.context(), parent.tdlib(), photo, chatId, messageId, parent, false);
+    mediaWrapper = new MediaWrapper(parent.context(), parent.tdlib(), photo, chatId, messageId, parent, false, false, EmbeddedService.parse(webPage));
     mediaWrapper.setViewProvider(viewProvider);
     mediaWrapper.setHideLoader(true);
     mediaWrapper.setOnClickListener(this);

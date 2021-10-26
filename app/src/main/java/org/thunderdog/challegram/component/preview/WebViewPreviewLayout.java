@@ -143,6 +143,10 @@ public class WebViewPreviewLayout extends PreviewLayout {
   }
 
   private int getWebViewHeight (int currentWidth) {
+    if (nativeEmbed.type == EmbeddedService.TYPE_CUSTOM_EMBED && nativeEmbed.height != 1) {
+      return nativeEmbed.height;
+    }
+
     float scale = nativeEmbed.width / (float) currentWidth;
     return (int) Math.min(nativeEmbed.height / scale, Screen.getDisplayHeight() / 2f);
   }

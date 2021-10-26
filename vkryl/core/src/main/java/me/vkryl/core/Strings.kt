@@ -8,6 +8,7 @@ import java.io.UnsupportedEncodingException
 import java.net.URLDecoder
 import java.nio.charset.Charset
 import java.util.*
+import java.util.regex.Pattern
 
 @JvmField
 val UTF_8: Charset = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) java.nio.charset.StandardCharsets.UTF_8 else Charset.forName("UTF-8")
@@ -44,6 +45,15 @@ fun isNumeric(str: String?): Boolean {
       }
       return true
     }
+  }
+}
+
+fun String.match(pattern: Pattern): String? {
+  val matcher = pattern.matcher(this)
+  return if (matcher.matches()) {
+    matcher.group()
+  } else {
+    null
   }
 }
 
