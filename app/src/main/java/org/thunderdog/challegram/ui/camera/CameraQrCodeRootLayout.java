@@ -63,6 +63,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
 
   private Text qrTextTitle;
   private Text qrTextSubtitle;
+  private Text qrTextDebug;
   private float qrTextAlpha = 1f;
   private float qrRotation = 0;
 
@@ -106,17 +107,12 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
     float scaleY = (float) getHeight() / height;
     //Log.e("sX %s sY %s max %s [view %s x %s, preview %s x %s] == src %s -> dst %s", scaleX, scaleY, scale, getHeight(), getWidth(), height, width, boundingBox, qrBounds);
 
-    float qrSize;
-    if (scaleX == 1f || scaleY == 1f) {
-      qrSize = boundingBox.width();
-    } else {
-      qrSize = (boundingBox.width() * Math.max(scaleX, scaleY));
-    }
-
+    float qrSize = boundingBox.width();
     int nx = getWidth() / 2 + (boundingBox.left - width / 2);
     int ny = getHeight() / 2 + (boundingBox.top - height / 2);
 
     if (qrDebugRegions) {
+      qrTextDebug = new Text.Builder(Lang.formatString("camera = %s x %s, view = %s x %s\naspect = %s, zxing = %s\nsx: %s, sy: %s\nX: %s, Y: %s, size: %s\nSource bounds: %s (width: %s)", null, height, width, getHeight(), getWidth(), Settings.instance().getCameraAspectRatioMode(), isLegacyZxing, scaleX, scaleY, nx, ny, qrSize, boundingBox, boundingBox.width()).toString(), getWidth(), Paints.robotoStyleProvider(14), () -> Color.RED).build();
       dbgBox = boundingBox;
       dbgBox2 = new Rect(
               (int) (boundingBox.left * scaleX),
@@ -319,9 +315,12 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
       }
 
       if (qrDebugRegions) {
-        canvas.drawRect(activeGuideLinePart1, dbgPaint);
-        canvas.drawRect(guideLinePart2, dbgPaint);
-        canvas.drawRect(activeGuideLinePart3, dbgPaint);
+        //canvas.drawRect(activeGuideLinePart1, dbgPaint);
+        //canvas.drawRect(guideLinePart2, dbgPaint);
+        //canvas.drawRect(activeGuideLinePart3, dbgPaint);
+        if (qrTextDebug != null) {
+          qrTextDebug.draw(canvas, 0, Screen.getStatusBarHeight());
+        }
 
         if (dbgBox != null) {
           dbgPaint.setColor(Color.GREEN);

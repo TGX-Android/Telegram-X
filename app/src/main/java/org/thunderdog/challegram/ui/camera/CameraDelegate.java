@@ -109,6 +109,11 @@ public interface CameraDelegate {
   int getCurrentCameraOrientation ();
 
   /**
+   * Called when a QR code reader wants to know how it should compensate preview image box coordinate rotation (only for Camera1 API)
+   * */
+  int getCurrentCameraSensorOrientation ();
+
+  /**
    * Called when a QR code is not found at the moment - use this to reset the animation.
    * */
   void onQrCodeNotFound ();

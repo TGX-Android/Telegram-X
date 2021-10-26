@@ -129,10 +129,17 @@ public class CameraQrBridge {
   private void zxingImplementation (byte[] data, int width, int height, int rotation, @Nullable Runnable onFinish) {
     backgroundExecutor.submit(() -> {
       try {
+        int sensorRotation = delegate.getCurrentCameraSensorOrientation();
         Result match = zxingImplementationImpl(data, width, height, rotation);
         if (match != null && match.getText() != null && !match.getText().isEmpty()) {
-          Rect zxingBox = zxingBoundingBox(match, rotation);
-          mainExecutor.execute(() -> delegate.onQrCodeFound(match.getText(), zxingBox, width, height, rotation, true));
+          Rect zxingBox;
+          if (sensorRotation != rotation && U.isRotated(sensorRotation)) {
+            zxingBox = zxingBoundingBox(match, rotation, true, width, height);
+            mainExecutor.execute(() -> delegate.onQrCodeFound(match.getText(), zxingBox, height, width, rotation, true));
+          } else {
+            zxingBox = zxingBoundingBox(match, rotation, false, width, height);
+            mainExecutor.execute(() -> delegate.onQrCodeFound(match.getText(), zxingBox, width, height, rotation, true));
+          }
         } else {
           mainExecutor.execute(delegate::onQrCodeNotFound);
         }
@@ -148,7 +155,7 @@ public class CameraQrBridge {
     });
   }
 
-  private Rect zxingBoundingBox (Result result, int rotation) {
+  private Rect zxingBoundingBox (Result result, int rotation, boolean sensorRotationInverted, int width, int height) {
     // ordered in: bottom-left, top-left, top-right
     if (result.getResultPoints().length < 3) return null;
 
@@ -172,13 +179,21 @@ public class CameraQrBridge {
       moduleSize = 0;
     }
 
-    int x1 = (int) topLeft.getX() - moduleSize;
-    int x2 = (int) topRight.getX() + moduleSize;
-    int y1 = (int) topLeft.getY() - moduleSize;
-    int y2 = (int) bottomLeft.getY() + moduleSize;
+    int x1 = (int) Math.min(Math.min(topLeft.getX(), topRight.getX()), bottomLeft.getX());
+    int x2 = (int) Math.max(Math.max(topLeft.getX(), topRight.getX()), bottomLeft.getX());
+    int y1 = (int) Math.min(Math.min(topLeft.getY(), topRight.getY()), bottomLeft.getY());
+    int y2 = (int) Math.max(Math.max(topLeft.getY(), topRight.getY()), bottomLeft.getY());
+
+    if (sensorRotationInverted) {
+      // these rotations need inverting zones
+      int px1 = width - x1;
+      int px2 = width - x2;
+      x1 = px2;
+      x2 = px1;
+    }
 
     return new Rect(
-      x1, y1, x2, y2
+      x1 - moduleSize, y1 - moduleSize, x2 + moduleSize, y2 + moduleSize
     );
   }
 

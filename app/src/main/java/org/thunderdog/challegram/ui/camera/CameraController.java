@@ -1545,6 +1545,15 @@ public class CameraController extends ViewController<Void> implements CameraDele
     }
   }
 
+  @Override
+  public int getCurrentCameraSensorOrientation () {
+    if (manager instanceof CameraManagerLegacy) {
+      return ((CameraManagerLegacy) manager).getCurrentCameraSensorOrientation();
+    } else {
+      return 0; // CameraX impl won't call this anyway
+    }
+  }
+
   public void onQrCodeFoundAndWaited () {
     if (qrCodeListener != null && savedQrCodeData != null) {
       qrCodeListener.onQrCodeScanned(savedQrCodeData);

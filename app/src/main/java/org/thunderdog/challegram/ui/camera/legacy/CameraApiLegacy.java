@@ -550,6 +550,11 @@ public class CameraApiLegacy extends CameraApi implements Camera.PreviewCallback
     return result;
   }
 
+  @Override
+  protected int getSensorOrientation() {
+    return cameraInfo.orientation;
+  }
+
   private int calculateOutputRotation () {
     int result;
     int orientation = this.mForcedOutputOrientation != -1 ? this.mForcedOutputOrientation : this.mDisplayOrientation;

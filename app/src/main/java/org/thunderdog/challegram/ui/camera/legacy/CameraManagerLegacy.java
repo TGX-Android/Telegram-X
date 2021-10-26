@@ -281,6 +281,10 @@ public class CameraManagerLegacy extends CameraManagerTexture {
     return api.calculateDisplayOrientation();
   }
 
+  public int getCurrentCameraSensorOrientation () {
+    return api.getSensorOrientation();
+  }
+
   public void showFatalError (String error) {
     delegate.displayFatalErrorMessage(error);
   }
