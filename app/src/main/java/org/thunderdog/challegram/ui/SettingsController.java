@@ -366,7 +366,7 @@ public class SettingsController extends ViewController<Void> implements
         view.setUnreadCounter(hasError ? Tdlib.CHAT_FAILED : 0, false, isUpdate);
         switch (item.getId()) {
           case R.id.btn_changePhoneNumber: {
-            view.setText(obtainWrapper(Lang.getStringBold(R.string.ReminderCheckPhoneNumberText, myPhone), ID_RATIONALE_PHONE_NUMBER));
+            view.setText(obtainWrapper(Lang.getStringBold(R.string.ReminderCheckPhoneNumberText, originalPhoneNumber != null ? myPhone : Strings.ELLIPSIS), ID_RATIONALE_PHONE_NUMBER));
             break;
           }
           case R.id.btn_2fa: {
@@ -618,6 +618,7 @@ public class SettingsController extends ViewController<Void> implements
         }
         if (setPhoneNumber(myUser)) {
           adapter.updateValuedSettingById(R.id.btn_phone);
+          adapter.updateValuedSettingById(R.id.btn_changePhoneNumber);
         }
       }
     });
