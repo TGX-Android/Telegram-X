@@ -629,7 +629,7 @@ public class SettingsController extends ViewController<Void> implements
   }
 
   private String myUsername;
-  private String myPhone;
+  private String myPhone, originalPhoneNumber;
   private @Nullable String about;
 
   private void initMyUser () {
@@ -648,17 +648,18 @@ public class SettingsController extends ViewController<Void> implements
   }
 
   private boolean setPhoneNumber (@Nullable TdApi.User user) {
-    String phoneNumber;
+    String displayPhoneNumber;
     if (user != null) {
-      phoneNumber = Strings.formatPhone(user.phoneNumber);
+      displayPhoneNumber = originalPhoneNumber = Strings.formatPhone(user.phoneNumber);
       if (Settings.instance().needHidePhoneNumber()) {
-        phoneNumber = Strings.replaceNumbers(phoneNumber);
+        displayPhoneNumber = Strings.replaceNumbers(displayPhoneNumber);
       }
     } else {
-      phoneNumber = Lang.getString(R.string.LoadingPhone);
+      displayPhoneNumber = Lang.getString(R.string.LoadingPhone);
+      originalPhoneNumber = null;
     }
-    if (myPhone == null || !myPhone.equals(phoneNumber)) {
-      this.myPhone = phoneNumber;
+    if (!StringUtils.equalsOrBothEmpty(myPhone, displayPhoneNumber)) {
+      this.myPhone = displayPhoneNumber;
       return true;
     }
     return false;
@@ -790,7 +791,7 @@ public class SettingsController extends ViewController<Void> implements
         icons.append(R.drawable.baseline_edit_24);
 
         ids.append(R.id.btn_cancel);
-        titles.append(Lang.getString(R.string.ReminderCheckPhoneNumberHide, myPhone));
+        titles.append(Lang.getString(R.string.ReminderCheckPhoneNumberHide, originalPhoneNumber));
         colors.append(OPTION_COLOR_NORMAL);
         icons.append(R.drawable.baseline_check_24);
 
