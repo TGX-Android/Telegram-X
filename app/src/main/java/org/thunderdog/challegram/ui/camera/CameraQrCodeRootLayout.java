@@ -59,7 +59,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   private final BoolAnimator qrFoundAnimator = new BoolAnimator(ANIMATOR_STATUS, this, AnimatorUtils.LINEAR_INTERPOLATOR, CONFIRMATION_DURATION, false);
   private final BoolAnimator qrParamsAnimator = new BoolAnimator(ANIMATOR_GENERAL, this, AnimatorUtils.OVERSHOOT_INTERPOLATOR, ANIMATION_DURATION, false);
   private final BoolAnimator resetAnimator = new BoolAnimator(ANIMATOR_RESET, this, AnimatorUtils.LINEAR_INTERPOLATOR, RESET_DURATION, false);
-  private final BoolAnimator qrTextAnimator = new BoolAnimator(ANIMATOR_QR_TEXT, this, AnimatorUtils.OVERSHOOT_INTERPOLATOR, ANIMATION_DURATION, true);
+  private final BoolAnimator qrTextAnimator = new BoolAnimator(ANIMATOR_QR_TEXT, this, AnimatorUtils.OVERSHOOT_INTERPOLATOR, CONFIRMATION_DURATION, true);
 
   private Text qrTextTitle;
   private Text qrTextSubtitle;
