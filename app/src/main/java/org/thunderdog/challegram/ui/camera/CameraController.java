@@ -127,7 +127,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
 
       return;
     }
-    setForceLegacy(mode == MODE_ROUND_VIDEO);
+    setForceLegacy(mode == MODE_ROUND_VIDEO || mode == MODE_QR);
     this.cameraMode = mode;
     if (contentView != null) {
       updateContentScale();
