@@ -85,6 +85,12 @@ public class CameraController extends ViewController<Void> implements CameraDele
     Manifest.permission.WRITE_EXTERNAL_STORAGE
   };
 
+  public static final String[] VIDEO_ONLY_PERMISSIONS = new String[] {
+    Manifest.permission.CAMERA,
+    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+    Manifest.permission.READ_EXTERNAL_STORAGE
+  };
+
   private static final boolean ALLOW_EARLY_INITIALIZATION = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
 
   public interface ReadyListener {

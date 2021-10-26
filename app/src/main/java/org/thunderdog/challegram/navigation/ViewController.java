@@ -3113,6 +3113,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     public @Nullable View anchorView;
     public boolean noTrace;
     public boolean allowSystem = true;
+    public boolean optionalMicrophone = false;
     public int mode;
     public boolean ignoreAnchor;
     public CameraController.ReadyListener readyListener;
@@ -3150,6 +3151,11 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
     public CameraOpenOptions allowSystem (boolean allowSystem) {
       this.allowSystem = allowSystem;
+      return this;
+    }
+
+    public CameraOpenOptions optionalMicrophone (boolean optionalMicrophone) {
+      this.optionalMicrophone = optionalMicrophone;
       return this;
     }
   }

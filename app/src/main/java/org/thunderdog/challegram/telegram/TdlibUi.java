@@ -3457,7 +3457,7 @@ public class TdlibUi extends Handler {
           break;
         }
         case R.id.btn_proxyQr: {
-          postDelayed(() -> c.openInAppCamera(new ViewController.CameraOpenOptions().ignoreAnchor(true).noTrace(true).allowSystem(false).mode(CameraController.MODE_QR).qrCodeListener((qrCode) -> {
+          postDelayed(() -> c.openInAppCamera(new ViewController.CameraOpenOptions().ignoreAnchor(true).noTrace(true).allowSystem(false).optionalMicrophone(true).mode(CameraController.MODE_QR).qrCodeListener((qrCode) -> {
             context.tdlib().client().send(new TdApi.GetInternalLinkType(qrCode), result -> {
               if (result.getConstructor() == TdApi.InternalLinkTypeProxy.CONSTRUCTOR) {
                 post(() -> {
