@@ -174,7 +174,7 @@ public class CameraQrBridge {
     }
 
     if (bottomLeft instanceof FinderPattern) {
-      moduleSize = (int) ((FinderPattern) bottomLeft).getEstimatedModuleSize();
+      moduleSize = (int) ((FinderPattern) bottomLeft).getEstimatedModuleSize() * 2;
     } else {
       moduleSize = 0;
     }
