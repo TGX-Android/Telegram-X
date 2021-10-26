@@ -11,6 +11,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.preview.PreviewLayout;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.MessagesController;
 
@@ -30,6 +31,7 @@ public class EmbeddedService {
   public static final int TYPE_DAILYMOTION = 3;
   public static final int TYPE_COUB = 4;
   public static final int TYPE_SOUNDCLOUD = 5;
+  public static final int TYPE_CUSTOM_EMBED = 99;
 
   public final int type;
   public final String viewUrl, embedUrl, embedType;
@@ -128,7 +130,7 @@ public class EmbeddedService {
   }
 
   public static EmbeddedService parse (TdApi.WebPage webPage) {
-    EmbeddedService service = parse(webPage.url, webPage.embedWidth, webPage.embedHeight, webPage.photo);
+    EmbeddedService service = parse(webPage.url, webPage.embedWidth, webPage.embedHeight, webPage.photo, webPage.embedUrl, webPage.embedType);
     if (service != null)
       return service;
     if ("iframe".equals(webPage.embedType) && !StringUtils.isEmpty(webPage.embedUrl)) {
@@ -145,16 +147,16 @@ public class EmbeddedService {
   }
 
   public static EmbeddedService parse (TdApi.PageBlockEmbedded embedded) {
-    return parse(embedded.url, embedded.width, embedded.height, embedded.posterPhoto);
+    return parse(embedded.url, embedded.width, embedded.height, embedded.posterPhoto, null, null);
   }
 
-  private static EmbeddedService parse (String url, int width, int height, TdApi.Photo thumbnail) {
-    if (StringUtils.isEmpty(url))
+  private static EmbeddedService parse (String webPageUrl, int width, int height, TdApi.Photo thumbnail, @Nullable String embedUrl, @Nullable String embedType) {
+    if (StringUtils.isEmpty(webPageUrl))
       return null;
     try {
-      if (!url.startsWith("https://") && !url.startsWith("http://"))
-        url = "https://" + url;
-      Uri uri = Uri.parse(url);
+      if (!webPageUrl.startsWith("https://") && !webPageUrl.startsWith("http://"))
+        webPageUrl = "https://" + webPageUrl;
+      Uri uri = Uri.parse(webPageUrl);
       String host = uri.getHost();
       List<String> segmentsList = uri.getPathSegments();
       if (StringUtils.isEmpty(host) || segmentsList == null || segmentsList.isEmpty())
@@ -178,7 +180,7 @@ public class EmbeddedService {
               viewUrl += "&" + query;
             }
           } else if (segments.length == 1 && "watch".equals(segments[0]) && !StringUtils.isEmpty(viewIdentifier = uri.getQueryParameter("v"))) {
-            viewUrl = url;
+            viewUrl = webPageUrl;
           }
           break;
         }
@@ -196,6 +198,64 @@ public class EmbeddedService {
           break;
         }
         case "coub.com": {
+          if (segments.length == 2 && !StringUtils.isEmpty(segments[1])) {
+            if ("view".equals(segments[0])) {
+              viewType = TYPE_CUSTOM_EMBED;
+              viewUrl = "https://coub.com/embed/" + segments[1] + "?muted=false&autostart=true&originalSize=false&startWithHD=false";
+            }
+          }
+          break;
+        }
+        case "open.spotify.com": {
+          // https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M
+          // https://open.spotify.com/track/1S1c300Ip9sd3468pjyZrw?si=bc58b541be9c4e74
+          // https://open.spotify.com/show/0DbCZ1Xs8K1AElDii3RX3v?si=9799ae6776d7433a
+          // https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M
+          if (segments.length == 2 && !StringUtils.isEmpty(segments[1])) {
+            String embedVerb;
+
+            if (segments[0].equals("show")) {
+              embedVerb = "embed-podcast";
+              width = height = Screen.dp(231); // hardcoded on Spotify's CSS
+            } else {
+              embedVerb = "embed";
+              width = height = 1;
+            }
+
+            viewUrl = "https://open.spotify.com/" + embedVerb + "/" + segments[0] + "/" + segments[1];
+
+            // Needed if the service is not supported for embedding using TDLib (height will be normal anyway)
+            viewType = TYPE_CUSTOM_EMBED;
+          }
+        }
+        case "music.apple.com":
+        case "podcasts.apple.com": {
+          // NOTE: I haven't found any public documentation for AM's embedding, so the research is done from macOS Music.app
+          // https://music.apple.com/ru/album/audacity-feat-headie-one/1487951013?i=1487951015
+          // https://music.apple.com/ru/playlist/need-for-speed-2015-in-game-tracks/pl.u-GgA5kAghobyv8l
+          // https://embed.music.apple.com/ru/album/audacity-feat-headie-one/1487951013?i=1487951015
+
+          // NOTE: I haven't found any public documentation for AP's embedding, so the research is done from macOS Podcasts.app
+          // https://podcasts.apple.com/ru/podcast/%D0%B4%D1%83%D1%88%D0%B5%D0%B2%D0%BD%D1%8B%D0%B9-%D0%BF%D0%BE%D0%B4%D0%BA%D0%B0%D1%81%D1%82/id1130785672?i=1000538952815
+          // https://podcasts.apple.com/ru/podcast/zavtracast-%D0%B7%D0%B0%D0%B2%D1%82%D1%80%D0%B0%D0%BA%D0%B0%D1%81%D1%82/id1068329384
+
+          if (uri.getPath().matches("^(?:/[^/]*)?/(?:podcast|album|playlist)/[^/]+/[^/]+")) {
+            viewUrl = uri.buildUpon()
+              .authority(uri.getAuthority().replaceAll("([a-zA-Z0-9\\-]+)(?=\\.apple\\.com$)", "embed.$1"))
+              .path(uri.getPath().replaceAll("^/?/([^/]+/[^/]+/[^/]+)$", "/us/$1"))
+              .build()
+              .toString();
+            // Needed if the service is not supported for embedding using TDLib (height will be normal anyway)
+            if (uri.getQueryParameter("i") != null) {
+              width = height = Screen.dp(175); // reference to a specific track, AM uses smaller player
+            } else {
+              width = height = 1;
+            }
+            viewType = TYPE_CUSTOM_EMBED;
+          }
+          break;
+        }
+        /*case "coub.com": {
           // https://coub.com/embed/20k5cb?muted=false&autostart=false&originalSize=false&startWithHD=false
           // https://coub.com/view/20k5cb
           // https://coub.com/api/v2/coubs/20k5cb.json
@@ -215,7 +275,7 @@ public class EmbeddedService {
           }
           break;
         }
-        /*case "vimeo.com": {
+        case "vimeo.com": {
           // https://vimeo.com/360123613
           viewType = TYPE_VIMEO;
           if (segments.length == 1 && StringUtils.isNumeric(segments[0])) {
@@ -259,7 +319,7 @@ public class EmbeddedService {
         }*/
       }
       if (viewType != 0 && !StringUtils.isEmpty(viewUrl)) {
-        return new EmbeddedService(viewType, viewUrl, width, height, thumbnail, null, null);
+        return new EmbeddedService(viewType, viewUrl, width, height, thumbnail, viewUrl, embedType);
       }
     } catch (Throwable t) {
       Log.e("Unable to parse embedded service", t);

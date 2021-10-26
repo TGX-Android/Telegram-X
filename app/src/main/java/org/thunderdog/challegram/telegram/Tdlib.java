@@ -8289,13 +8289,41 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return action.getConstructor() == TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR || action.getConstructor() == TdApi.SuggestedActionCheckPassword.CONSTRUCTOR;
   }
 
-  public boolean haveAnySettingsSuggestions () {
-    for (TdApi.SuggestedAction action: getSuggestedActions()) {
-      if (isSettingSuggestion(action)) {
-        return true;
+  public int getSettingSuggestionCount () {
+    synchronized (dataLock) {
+      int count = 0;
+      for (TdApi.SuggestedAction action : suggestedActions) {
+        if (isSettingSuggestion(action)) {
+          count++;
+        }
       }
+      return count;
     }
+  }
 
-    return false;
+  public boolean haveAnySettingsSuggestions () {
+    synchronized (dataLock) {
+      for (TdApi.SuggestedAction action: suggestedActions) {
+        if (isSettingSuggestion(action))
+          return true;
+      }
+      return false;
+    }
+  }
+
+  public TdApi.SuggestedAction singleSettingsSuggestion () {
+    synchronized (dataLock) {
+      TdApi.SuggestedAction suggestedAction = null;
+      for (TdApi.SuggestedAction action : suggestedActions) {
+        if (isSettingSuggestion(action)) {
+          if (suggestedAction == null) {
+            suggestedAction = action;
+          } else {
+            return null;
+          }
+        }
+      }
+      return suggestedAction;
+    }
   }
 }

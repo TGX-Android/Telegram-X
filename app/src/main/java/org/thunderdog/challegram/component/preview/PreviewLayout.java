@@ -187,6 +187,7 @@ public abstract class PreviewLayout extends FrameLayoutFix implements View.OnCli
           popup = new YouTubePreviewLayout(context, parent);
           break;
         case EmbeddedService.TYPE_UNKNOWN:
+        case EmbeddedService.TYPE_CUSTOM_EMBED:
           popup = new WebViewPreviewLayout(context, parent);
           break;
       }
