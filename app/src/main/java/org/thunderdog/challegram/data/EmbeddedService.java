@@ -214,7 +214,7 @@ public class EmbeddedService {
           if (segments.length == 2 && !StringUtils.isEmpty(segments[1])) {
             String embedVerb;
 
-            if (segments[0].equals("show")) {
+            if (segments[0].equals("show") || segments[0].equals("episode")) {
               embedVerb = "embed-podcast";
               width = height = Screen.dp(231); // hardcoded on Spotify's CSS
             } else {
