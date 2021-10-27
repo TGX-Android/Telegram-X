@@ -352,7 +352,7 @@ public class MessagesLoader implements Client.ResultHandler {
               }
             }
           }
-        } else if (messages.length != 0 && (needMoreTop || needMoreBottom)) {
+        } else if (Config.NEED_MEDIA_GROUP_MERGE_REQUESTS && messages.length != 0 && (needMoreTop || needMoreBottom)) {
           // Let's check if we need to load anything more
 
           TdApi.Message oldestMessage = messages[messages.length - 1];

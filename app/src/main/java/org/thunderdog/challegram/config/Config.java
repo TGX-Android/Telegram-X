@@ -92,6 +92,7 @@ public class Config {
   public static final boolean HARDWARE_MEDIA_VIEWER = HARDWARE_CLIP_PATH_FIX;
 
   public static final boolean ALLOW_MORE_CACHED_MESSAGES = false;
+  public static final boolean NEED_MEDIA_GROUP_MERGE_REQUESTS = false;
 
   public static final int CHANNEL_MEMBER_STRING = R.string.xSubscribers;
 
