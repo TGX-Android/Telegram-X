@@ -55,6 +55,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   private final int cornerSize = Screen.dp(20);
   private int cameraViewWidth;
   private int cameraViewHeight;
+  private int cameraScaledWidth;
 
   private final BoolAnimator qrFoundAnimator = new BoolAnimator(ANIMATOR_STATUS, this, AnimatorUtils.LINEAR_INTERPOLATOR, CONFIRMATION_DURATION, false);
   private final BoolAnimator qrParamsAnimator = new BoolAnimator(ANIMATOR_GENERAL, this, AnimatorUtils.OVERSHOOT_INTERPOLATOR, ANIMATION_DURATION, false);
@@ -110,7 +111,20 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
     int nx = getWidth() / 2 + (boundingBox.left - width / 2);
     int nx2 = getWidth() / 2 + (boundingBox.right - width / 2);
     int ny = getHeight() / 2 + (boundingBox.top - height / 2);
-    float qrSize = (nx2 - nx);
+    float qrSize;
+    if (Settings.instance().getCameraAspectRatioMode() == Settings.CAMERA_RATIO_FULL_SCREEN) {
+      scaleX = (float) cameraScaledWidth / width;
+      Rect bbx = new Rect(
+              (int) (boundingBox.left * scaleX),
+              (int) (boundingBox.top * scaleY),
+              (int) ((boundingBox.right * scaleX)),
+              (int) ((boundingBox.bottom * scaleY))
+      );
+      ny = bbx.top;
+      qrSize = Math.max(bbx.width(), bbx.height());
+    } else {
+      qrSize = (nx2 - nx);
+    }
 
     if (qrDebugRegions) {
       qrTextDebug = new Text.Builder(Lang.formatString("camera = %s x %s, view = %s x %s, cameraView = %s x %s\naspect = %s, zxing = %s\nsx: %s, sy: %s\nX: %s, Y: %s, size: %s\nSource bounds: %s (width: %s)", null, height, width, getHeight(), getWidth(), cameraViewHeight, cameraViewWidth, Settings.instance().getCameraAspectRatioMode(), isLegacyZxing, scaleX, scaleY, nx, ny, qrSize, boundingBox, boundingBox.width()).toString(), getWidth(), Paints.robotoStyleProvider(14), () -> Color.RED).build();
@@ -270,8 +284,10 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
         }
 
         currentLocation.copyFrom(initialLocation);
-        cameraViewWidth = child.getWidth();
-        cameraViewHeight = child.getHeight();
+        View possibleCameraView = ((CameraLayout) child).getChildAt(0);
+        if (possibleCameraView instanceof CameraTextureView) {
+          cameraScaledWidth = ((CameraTextureView) possibleCameraView).scaledImageWidth;
+        }
         updateBoundingBoxPaths();
       } else {
         size = currentLocation.size;
