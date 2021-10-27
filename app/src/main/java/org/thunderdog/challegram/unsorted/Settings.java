@@ -1745,7 +1745,7 @@ public class Settings {
             TdlibSettingsManager.key(TdlibSettingsManager.DEVICE_OTHER_UID_KEY, accountId)
           };
           for (String key : intToLongKeys) {
-            int int32 = getInt(key, 0);
+            long int32 = pmc.getIntOrLong(key, 0);
             if (int32 != 0) {
               editor.putLong(key, int32);
             } else {
@@ -1753,7 +1753,12 @@ public class Settings {
             }
           }
           for (String key : intToLongArrayKeys) {
-            int[] int32Array = pmc.getIntArray(key);
+            int[] int32Array = null;
+            try {
+              int32Array = pmc.getIntArray(key);
+            } catch (IllegalStateException ignored) {
+              // Since it's just DEVICE_OTHER_UID_KEY, it's not critical
+            }
             if (int32Array != null) {
               long[] int64Array = new long[int32Array.length];
               for (int i = 0; i < int32Array.length; i++) {
@@ -1767,7 +1772,8 @@ public class Settings {
         }
 
         File oldConfigFile = TdlibManager.getAccountConfigFile();
-        if (oldConfigFile.exists()) {
+        File backupFile = new File(oldConfigFile.getParentFile(), oldConfigFile.getName() + ".bak." + TdlibAccount.VERSION_1);
+        if (oldConfigFile.exists() && !backupFile.exists()) {
           TdlibManager.AccountConfig config = null;
           try (RandomAccessFile r = new RandomAccessFile(oldConfigFile, TdlibManager.MODE_R)) {
             config = TdlibManager.readAccountConfig(null, r, TdlibAccount.VERSION_1);
@@ -1785,7 +1791,7 @@ public class Settings {
                   throw new RuntimeException(e);
                 }
               }
-              if (!oldConfigFile.renameTo(new File(oldConfigFile.getParentFile(), oldConfigFile.getName() + ".bak." + TdlibAccount.VERSION_1)))
+              if (!oldConfigFile.renameTo(backupFile))
                 throw new RuntimeException("Cannot backup old config");
               if (!newConfigFile.renameTo(oldConfigFile))
                 throw new RuntimeException("Cannot save new config");
