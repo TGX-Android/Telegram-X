@@ -2,6 +2,7 @@ package org.thunderdog.challegram.ui.camera;
 
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.media.Image;
 import android.os.Build;
 
@@ -107,9 +108,9 @@ public class CameraQrBridge {
         Barcode first = barcodes.get(0);
 
         if (swapSizes) {
-          delegate.onQrCodeFound(first.getRawValue(), first.getBoundingBox(), image.getWidth(), image.getHeight(), 0,  false);
+          delegate.onQrCodeFound(first.getRawValue(), new RectF(first.getBoundingBox()), image.getWidth(), image.getHeight(), 0,  false);
         } else {
-          delegate.onQrCodeFound(first.getRawValue(), first.getBoundingBox(), image.getHeight(), image.getWidth(), 0, false);
+          delegate.onQrCodeFound(first.getRawValue(), new RectF(first.getBoundingBox()), image.getHeight(), image.getWidth(), 0, false);
         }
       }
     }).addOnFailureListener(ex -> {
@@ -132,7 +133,7 @@ public class CameraQrBridge {
         int sensorRotation = delegate.getCurrentCameraSensorOrientation();
         Result match = zxingImplementationImpl(data, width, height, rotation);
         if (match != null && match.getText() != null && !match.getText().isEmpty()) {
-          Rect zxingBox;
+          RectF zxingBox;
           if (sensorRotation != rotation && U.isRotated(sensorRotation)) {
             zxingBox = zxingBoundingBox(match, rotation, true, width, height);
             mainExecutor.execute(() -> delegate.onQrCodeFound(match.getText(), zxingBox, height, width, rotation, true));
@@ -155,7 +156,7 @@ public class CameraQrBridge {
     });
   }
 
-  private Rect zxingBoundingBox (Result result, int rotation, boolean sensorRotationInverted, int width, int height) {
+  private RectF zxingBoundingBox (Result result, int rotation, boolean sensorRotationInverted, int width, int height) {
     // ordered in: bottom-left, top-left, top-right
     if (result.getResultPoints().length < 3) return null;
 
@@ -192,7 +193,7 @@ public class CameraQrBridge {
       x2 = px1;
     }
 
-    return new Rect(
+    return new RectF(
       x1 - moduleSize, y1 - moduleSize, x2 + moduleSize, y2 + moduleSize
     );
   }

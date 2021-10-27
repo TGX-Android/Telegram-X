@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -50,7 +51,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   private final Path cornerBRPath = new Path();
 
   private Rect guideLinePart1, guideLinePart2, guideLinePart3;
-  private Rect dbgBox, dbgBox2;
+  private RectF dbgBox, dbgBox2;
 
   private final int cornerSize = Screen.dp(20);
   private int cameraViewWidth;
@@ -91,7 +92,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   }
 
   @Override
-  public void setQrCorner (Rect boundingBox, int height, int width, int rotation, boolean isLegacyZxing) {
+  public void setQrCorner (RectF boundingBox, int height, int width, int rotation, boolean isLegacyZxing) {
     if (qrModeClosing) {
       return;
     }
@@ -108,17 +109,17 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
     float scaleY = (float) getHeight() / height;
     //Log.e("sX %s sY %s max %s [view %s x %s, preview %s x %s] == src %s -> dst %s", scaleX, scaleY, scale, getHeight(), getWidth(), height, width, boundingBox, qrBounds);
 
-    int nx = getWidth() / 2 + (boundingBox.left - width / 2);
-    int nx2 = getWidth() / 2 + (boundingBox.right - width / 2);
-    int ny = getHeight() / 2 + (boundingBox.top - height / 2);
+    float nx = getWidth() / 2f + (boundingBox.left - width / 2f);
+    float nx2 = getWidth() / 2f + (boundingBox.right - width / 2f);
+    float ny = getHeight() / 2f + (boundingBox.top - height / 2f);
     float qrSize;
     if (Settings.instance().getCameraAspectRatioMode() == Settings.CAMERA_RATIO_FULL_SCREEN) {
       scaleX = (float) cameraScaledWidth / width;
-      Rect bbx = new Rect(
-              (int) (boundingBox.left * scaleX),
-              (int) (boundingBox.top * scaleY),
-              (int) ((boundingBox.right * scaleX)),
-              (int) ((boundingBox.bottom * scaleY))
+      RectF bbx = new RectF(
+              (boundingBox.left * scaleX),
+              (boundingBox.top * scaleY),
+              (boundingBox.right * scaleX),
+              (boundingBox.bottom * scaleY)
       );
       ny = bbx.top;
       qrSize = Math.max(bbx.width(), bbx.height());
@@ -129,11 +130,11 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
     if (qrDebugRegions) {
       qrTextDebug = new Text.Builder(Lang.formatString("camera = %s x %s, view = %s x %s, cameraView = %s x %s\naspect = %s, zxing = %s\nsx: %s, sy: %s\nX: %s, Y: %s, size: %s\nSource bounds: %s (width: %s)", null, height, width, getHeight(), getWidth(), cameraViewHeight, cameraViewWidth, Settings.instance().getCameraAspectRatioMode(), isLegacyZxing, scaleX, scaleY, nx, ny, qrSize, boundingBox, boundingBox.width()).toString(), getWidth(), Paints.robotoStyleProvider(14), () -> Color.RED).build();
       dbgBox = boundingBox;
-      dbgBox2 = new Rect(
-              (int) (boundingBox.left * scaleX),
-              (int) (boundingBox.top * scaleY),
-              (int) ((boundingBox.right * scaleX)),
-              (int) ((boundingBox.bottom * scaleY))
+      dbgBox2 = new RectF(
+              (boundingBox.left * scaleX),
+              (boundingBox.top * scaleY),
+              (boundingBox.right * scaleX),
+              (boundingBox.bottom * scaleY)
       );
     }
 

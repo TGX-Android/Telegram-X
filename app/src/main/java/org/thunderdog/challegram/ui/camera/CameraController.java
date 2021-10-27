@@ -7,6 +7,7 @@ import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -1529,7 +1530,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
   }
 
   @Override
-  public void onQrCodeFound (String qrCodeData, @Nullable Rect boundingBox, int height, int width, int rotation, boolean isLegacyZxing) {
+  public void onQrCodeFound (String qrCodeData, @Nullable RectF boundingBox, int height, int width, int rotation, boolean isLegacyZxing) {
     if (qrCodeListener != null && !qrCodeData.isEmpty() && (qrCodeData.startsWith("tg://") || qrCodeData.startsWith(context.currentTdlib().tMeUrl())) && !qrCodeConfirmed) {
       savedQrCodeData = qrCodeData;
       rootLayout.setQrCorner(boundingBox, height, width, rotation, isLegacyZxing);
