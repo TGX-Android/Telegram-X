@@ -107,18 +107,19 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
     float scaleY = (float) getHeight() / height;
     //Log.e("sX %s sY %s max %s [view %s x %s, preview %s x %s] == src %s -> dst %s", scaleX, scaleY, scale, getHeight(), getWidth(), height, width, boundingBox, qrBounds);
 
-    float qrSize = boundingBox.width();
     int nx = getWidth() / 2 + (boundingBox.left - width / 2);
+    int nx2 = getWidth() / 2 + (boundingBox.right - width / 2);
     int ny = getHeight() / 2 + (boundingBox.top - height / 2);
+    float qrSize = (nx2 - nx);
 
     if (qrDebugRegions) {
-      qrTextDebug = new Text.Builder(Lang.formatString("camera = %s x %s, view = %s x %s\naspect = %s, zxing = %s\nsx: %s, sy: %s\nX: %s, Y: %s, size: %s\nSource bounds: %s (width: %s)", null, height, width, getHeight(), getWidth(), Settings.instance().getCameraAspectRatioMode(), isLegacyZxing, scaleX, scaleY, nx, ny, qrSize, boundingBox, boundingBox.width()).toString(), getWidth(), Paints.robotoStyleProvider(14), () -> Color.RED).build();
+      qrTextDebug = new Text.Builder(Lang.formatString("camera = %s x %s, view = %s x %s, cameraView = %s x %s\naspect = %s, zxing = %s\nsx: %s, sy: %s\nX: %s, Y: %s, size: %s\nSource bounds: %s (width: %s)", null, height, width, getHeight(), getWidth(), cameraViewHeight, cameraViewWidth, Settings.instance().getCameraAspectRatioMode(), isLegacyZxing, scaleX, scaleY, nx, ny, qrSize, boundingBox, boundingBox.width()).toString(), getWidth(), Paints.robotoStyleProvider(14), () -> Color.RED).build();
       dbgBox = boundingBox;
       dbgBox2 = new Rect(
               (int) (boundingBox.left * scaleX),
               (int) (boundingBox.top * scaleY),
-              (int) ((boundingBox.left * scaleX) + qrSize),
-              (int) ((boundingBox.top * scaleY) + qrSize)
+              (int) ((boundingBox.right * scaleX)),
+              (int) ((boundingBox.bottom * scaleY))
       );
     }
 
