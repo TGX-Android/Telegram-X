@@ -2774,12 +2774,12 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (camera == null) {
       camera = new CameraController(this);
       camera.setMode(options.mode, options.readyListener);
-      camera.setQrListener(options.qrCodeListener);
+      camera.setQrListener(options.qrCodeListener, options.qrModeSubtitle);
       camera.get(); // Ensure view creation
       addActivityListener(camera);
     } else {
       camera.setMode(options.mode, options.readyListener);
-      camera.setQrListener(options.qrCodeListener);
+      camera.setQrListener(options.qrCodeListener, options.qrModeSubtitle);
     }
     hideContextualPopups(false);
     closeAllMedia(true);

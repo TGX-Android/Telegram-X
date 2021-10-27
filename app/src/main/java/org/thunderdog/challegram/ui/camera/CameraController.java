@@ -28,6 +28,7 @@ import android.widget.TextView;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
@@ -113,9 +114,14 @@ public class CameraController extends ViewController<Void> implements CameraDele
   private @Nullable QrCodeListener qrCodeListener;
   private String savedQrCodeData;
   private boolean qrCodeConfirmed;
+  private int qrSubtitleRes;
 
-  public void setQrListener (@Nullable QrCodeListener qrCodeListener) {
+  public void setQrListener (@Nullable QrCodeListener qrCodeListener, @StringRes int subtitleRes) {
     this.qrCodeListener = qrCodeListener;
+    this.qrSubtitleRes = subtitleRes;
+    if (this.cameraMode == MODE_QR && rootLayout != null) {
+      rootLayout.setQrModeSubtitle(subtitleRes);
+    }
   }
 
   public void setMode (int mode, @Nullable ReadyListener readyListener) {
@@ -708,6 +714,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
       flashButton.setVisibility(View.GONE);
       blurView.setVisibility(View.GONE);
       rootLayout.setQrMode(true);
+      rootLayout.setQrModeSubtitle(qrSubtitleRes);
     } else {
       switchCameraButton.setVisibility(View.VISIBLE);
       flashButton.setVisibility(View.VISIBLE);
