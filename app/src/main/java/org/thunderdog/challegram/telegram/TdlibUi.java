@@ -3418,13 +3418,15 @@ public class TdlibUi extends Handler {
     }
     boolean needInstallTor = needTor && !U.isAppInstalled(U.PACKAGE_TOR);*/
 
-    IntList ids = new IntList(3);
-    StringList strings = new StringList(3);
+    boolean showShowQr = tdlib.allowQrLoginCamera();
+
+    IntList ids = new IntList(showShowQr ? 4 : 3);
+    StringList strings = new StringList(showShowQr ? 4 : 3);
 
     ids.append(R.id.btn_proxyTelegram);
     ids.append(R.id.btn_proxySocks5);
     ids.append(R.id.btn_proxyHttp);
-    ids.append(R.id.btn_proxyQr);
+
     if (needProxyHint) {
       strings.append(R.string.AddMtprotoProxy);
       strings.append(R.string.AddSocks5Proxy);
@@ -3434,7 +3436,11 @@ public class TdlibUi extends Handler {
       strings.append(R.string.Socks5Proxy);
       strings.append(R.string.HttpProxy);
     }
-    strings.append(R.string.ScanQR);
+
+    if (showShowQr) {
+      ids.append(R.id.btn_proxyQr);
+      strings.append(R.string.ScanQR);
+    }
 
     OptionDelegate callback = (itemView, id) -> {
       switch (id) {
