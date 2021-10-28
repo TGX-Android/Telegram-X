@@ -424,6 +424,9 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     }
     height += Screen.dp(10f) + Screen.dp(14f);
     height += Screen.dp(12f);
+    if (useBubbles()) {
+      height += Screen.dp(8f);
+    }
     return height;
   }
 
