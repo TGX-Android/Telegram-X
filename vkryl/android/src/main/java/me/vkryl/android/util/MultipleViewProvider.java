@@ -113,6 +113,22 @@ public class MultipleViewProvider implements ViewProvider {
     return false;
   }
 
+  public final int detachFromAllViews () {
+    if (views != null) {
+      final int size = views.size();
+      int removedCount = 0;
+      for (int i = size - 1; i >= 0; i--) {
+        View currentView = views.get(i).get();
+        views.remove(i);
+        if (currentView != null) {
+          removedCount++;
+        }
+      }
+      return removedCount;
+    }
+    return 0;
+  }
+
   @Override
   public void invalidateParent (int left, int top, int right, int bottom) {
     if (views != null) {

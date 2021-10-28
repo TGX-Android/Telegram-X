@@ -443,7 +443,7 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
 
     @Override
     public ViewController<?> getTargetParent (Invalidator context) {
-      return this.parent;
+      return this.parent != null ? this.parent.getParentOrSelf() : null;
     }
 
     @Override

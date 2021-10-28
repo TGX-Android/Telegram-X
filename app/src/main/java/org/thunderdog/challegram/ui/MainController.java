@@ -1137,25 +1137,6 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     }
   }
 
-  /*private CancellableRunnable supportOpen;
-
-  @Override
-  public void onMoreItemPressed (int id) {
-    switch (id) {
-      case R.id.more_btn_settings: {
-        navigateTo(new SettingsController(context, tdlib));
-        break;
-      }
-      case R.id.more_btn_help: {
-        if (supportOpen != null) {
-          supportOpen.cancel();
-        }
-        supportOpen = tdlib.ui().openSupport(this);
-        break;
-      }
-    }
-  }*/
-
   @Override
   public boolean onBackPressed (boolean fromTop) {
     if (composeWrap != null && composeWrap.isShowing()) {

@@ -45,12 +45,13 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
+import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.unit.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
 import me.vkryl.td.Td;
 
-public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPreview.RefreshCallback, Counter.Callback {
+public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPreview.RefreshCallback, Counter.Callback, Destroyable {
   private static final int FLAG_HAS_PREFIX = 1;
   private static final int FLAG_TEXT_DRAFT = 1 << 4;
   private static final int FLAG_SHOW_VERIFY = 1 << 5;
@@ -1347,7 +1348,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
   @Override
   public boolean canLoop () {
-    return (flags & FLAG_ATTACHED) != 0;
+    return BitwiseUtils.getFlag(flags, FLAG_ATTACHED);
   }
 
   @Override
@@ -1365,6 +1366,12 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
   @Override
   public boolean canAnimate () {
-    return ((flags & FLAG_ATTACHED) != 0) && currentViews.hasAnyTargetToInvalidate() && context.getAttachState();
+    return ((flags & FLAG_ATTACHED) != 0) && currentViews.hasAnyTargetToInvalidate() && context.getParentOrSelf().getAttachState();
+  }
+
+  @Override
+  public void performDestroy () {
+    currentViews.detachFromAllViews();
+    setViewAttached(false);
   }
 }

@@ -15,6 +15,7 @@ import android.view.ViewGroup;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
@@ -35,6 +36,7 @@ import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.ChatsController;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -367,7 +369,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
 
   public boolean needAnimateChanges () {
     ViewController<?> c = ViewController.findAncestor(ChatView.this);
-    return c == null || c.isAttachedToNavigationController();
+    return c == null || c.getParentOrSelf().getAttachState();
   }
 
   public void updateOnline () {
