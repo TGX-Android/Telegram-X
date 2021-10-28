@@ -315,7 +315,7 @@ public class ColorPickerView extends View implements FactorAnimator.Target {
 
   private FactorAnimator tapAnimator;
   private static final int ANIMATOR_TAP = 4;
-  private float[] tapColor = new float[3];
+  private final float[] tapColor = new float[3];
 
   private void cancelTapMovement () {
     if (tapAnimator != null) {

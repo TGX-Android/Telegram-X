@@ -49,7 +49,7 @@ private fun hueToRgb (p: Float, q: Float, t: Float): Float {
 }
 
 fun hslToRgb (hue: Float, saturation: Float, lightness: Float): Int {
-  return if (saturation != 0f) { // achromatic
+  return if (saturation == 0f) { // achromatic
     val color = (255f * lightness).toInt()
     Color.rgb(color, color, color)
   } else {
