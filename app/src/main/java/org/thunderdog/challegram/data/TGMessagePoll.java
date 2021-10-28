@@ -740,7 +740,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       for (ListAnimator.Entry<Button> entry : button) {
         maxVisibility = Math.max(entry.getVisibility(), maxVisibility);
         int x = startX + maxWidth / 2 - entry.item.text.getWidth() / 2;
-        int y = startY + Screen.dp(4f);
+        int y = startY + Screen.dp(useBubbles() ? 6f : 4f);
         /*float textVisibility = entry.getVisibility();
         if (textVisibility != 1f) {
           float scale = .9f + .1f * textVisibility;
@@ -769,7 +769,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       decentColor = U.alphaColor(1f - maxVisibility, decentColor);
     }*/
     int textCx = startX + maxWidth / 2 - totalVoterCountStrWidth / 2;
-    int textCy = startY + textOffset - Screen.dp(7f);
+    int textCy = startY + textOffset - Screen.dp(useBubbles() ? 5f : 7f);
     if (!isAnonymous() || isMultiChoicePoll()) {
       decentColor = ColorUtils.alphaColor(1f - maxVisibility, decentColor);
       c.drawText(totalVoterCountStr, textCx, textCy, Paints.getRegularTextPaint(12f, decentColor));
