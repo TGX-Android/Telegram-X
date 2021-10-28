@@ -833,6 +833,7 @@
   <item type="id" name="btn_secret_disableQrProcess" />
   <item type="id" name="btn_secret_debugQrRegions" />
   <item type="id" name="btn_secret_forceQrZxing" />
+  <item type="id" name="btn_secret_qrTest" />
   <item type="id" name="btn_string" />
 
   <item type="id" name="btn_test_database" />

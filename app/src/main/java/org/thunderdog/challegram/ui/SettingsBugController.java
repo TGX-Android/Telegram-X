@@ -35,6 +35,7 @@ import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.ui.camera.CameraController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Test;
 import org.thunderdog.challegram.util.StringList;
@@ -694,6 +695,11 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
               items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
             items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_debugQrRegions, 0, "Show QR scanner UI regions", Settings.instance().needForceZxingQrProcessing()));
           }
+          if (testerLevel >= Tdlib.TESTER_LEVEL_TESTER) {
+            if (items.size() > initialSize)
+              items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+            items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_secret_qrTest, 0, "Test QR scanner", false));
+          }
         }
 
         /*if (Config.RTL_BETA) {
@@ -980,6 +986,10 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       }
       case R.id.btn_secret_debugQrRegions: {
         Settings.instance().setShowQrRegions(adapter.toggleView(v));
+        break;
+      }
+      case R.id.btn_secret_qrTest: {
+        openInAppCamera(new ViewController.CameraOpenOptions().ignoreAnchor(true).noTrace(true).allowSystem(false).optionalMicrophone(true).qrModeDebug(true).mode(CameraController.MODE_QR).qrCodeListener((qrCode) -> UI.showToast(qrCode, Toast.LENGTH_LONG)));
         break;
       }
       case R.id.btn_secret_disableNetwork: {

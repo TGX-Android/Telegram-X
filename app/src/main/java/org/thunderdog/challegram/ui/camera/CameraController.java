@@ -115,12 +115,15 @@ public class CameraController extends ViewController<Void> implements CameraDele
   private String savedQrCodeData;
   private boolean qrCodeConfirmed;
   private int qrSubtitleRes;
+  private boolean qrModeDebug;
 
-  public void setQrListener (@Nullable QrCodeListener qrCodeListener, @StringRes int subtitleRes) {
+  public void setQrListener (@Nullable QrCodeListener qrCodeListener, @StringRes int subtitleRes, boolean qrModeDebug) {
     this.qrCodeListener = qrCodeListener;
     this.qrSubtitleRes = subtitleRes;
+    this.qrModeDebug = qrModeDebug;
     if (this.cameraMode == MODE_QR && rootLayout != null) {
       rootLayout.setQrModeSubtitle(subtitleRes);
+      rootLayout.setQrMode(true, qrModeDebug);
     }
   }
 
@@ -129,7 +132,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
     this.readyListener = readyListener;
     if (this.cameraMode == mode) {
       if (this.cameraMode == MODE_QR) {
-        rootLayout.setQrMode(true);
+        rootLayout.setQrMode(true, false);
       }
 
       return;
@@ -713,13 +716,13 @@ public class CameraController extends ViewController<Void> implements CameraDele
       switchCameraButton.setVisibility(View.GONE);
       flashButton.setVisibility(View.GONE);
       blurView.setVisibility(View.GONE);
-      rootLayout.setQrMode(true);
+      rootLayout.setQrMode(true, qrModeDebug);
       rootLayout.setQrModeSubtitle(qrSubtitleRes);
     } else {
       switchCameraButton.setVisibility(View.VISIBLE);
       flashButton.setVisibility(View.VISIBLE);
       blurView.setVisibility(View.VISIBLE);
-      rootLayout.setQrMode(false);
+      rootLayout.setQrMode(false, qrModeDebug);
     }
   }
 
