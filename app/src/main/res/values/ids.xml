@@ -527,6 +527,7 @@
   <item type="id" name="btn_updateAutomaticallyAlways" />
   <item type="id" name="btn_updateAutomaticallyPrompt" />
   <item type="id" name="btn_checkUpdates" />
+  <item type="id" name="btn_subscribeToBeta" />
   <item type="id" name="btn_abort2FA" />
   <item type="id" name="btn_autoNightMode" />
   <item type="id" name="btn_autoNightMode_description" />

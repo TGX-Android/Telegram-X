@@ -3753,6 +3753,7 @@
   <string name="BiometricsError">System biometrics driver failure, see log for details.</string>
 
   <string name="InAppUpdates">In-App Updates</string>
+  <string name="AppUpdates">App Updates</string>
   <string name="AutoUpdate">Update automatically</string>
   <string name="AutoUpdateNever">Never</string>
   <string name="AutoUpdateAlways">Always</string>
@@ -3932,6 +3933,9 @@
   <string name="OpenPreviewInSecretChatWarning">Are you sure you want to open preview of %1$s with the following URL:\n\n%2$s</string>
   <string name="OpenPreviewInSecretChatActionOpen">Open as preview</string>
   <string name="OpenPreviewInSecretChatActionBrowser">Open in browser</string>
+
+  <string name="SubscribeToBeta">Subscribe to beta updates</string>
+  <string name="url_betaSubscription">https://play.google.com/apps/testing/org.thunderdog.challegram</string>
 
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
