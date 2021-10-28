@@ -1740,7 +1740,7 @@
   <string name="EventLogPromotedRemainAnonymous">Remain anonymous</string>
   <string name="EventLogPromotedManageVoiceChats">Manage video chats</string>
   <string name="EventLogPromotedTitle">Title: %1$s</string>
-  <string name="EventLogPromotedTitleChange">Title: %1$s -> %2$s</string>
+  <string name="EventLogPromotedTitleChange">Title: %1$s → %2$s</string>
   <string name="EventLogPromotedBanUsers">Ban users</string>
   <string name="EventLogPromotedAddUsers">Add users</string>
   <string name="EventLogPromotedPinMessages">Pin messages</string>
@@ -2778,8 +2778,8 @@
   <string name="errorPrivacyAddMember">Sorry, the user restricted who can add them to chats in their privacy settings.</string>
   <string name="UserPrivacyRestricted">Sorry, the user restricted this action in their privacy settings.</string>
   <string name="NobodyLikesSpam2">Sorry, you can interact only with mutual contacts at the moment.</string> <!--PEER_FLOOD-->
-  <string name="error_BOTS_TOO_MUCH">Sorry, this group contains too many bots. Please remove one of your existing ones first.</string>
-  <string name="error_ADMINS_TOO_MUCH">Sorry, this group contains too many admins. Please remove one of your existing ones first.</string>
+  <string name="error_BOTS_TOO_MUCH">Sorry, this group has too many bots. Please remove some of the bots you\'re not using first.</string>
+  <string name="error_ADMINS_TOO_MUCH">Sorry, this group has too many admins. Please remove one of the existing admins first.</string>
 
   <string name="NotificationImportance">Notification Style</string>
   <string name="NotificationImportanceHigh">Sound and pop-up</string>
@@ -3798,7 +3798,7 @@
   <string name="PrimaryInviteLinkMenu">Primary Invite Link</string>
   <string name="PrimaryInviteLink">Primary Link</string>
   <string name="AdditionalInviteLinks">Additional Links</string>
-  <string name="AdditionalInviteLinksHint">You can create additional invite links with an optional expiration date and joined members limit.</string>
+  <string name="AdditionalInviteLinksHint">You can create additional invite links that have a limited time or number of uses.</string>
   <string name="RevokedInviteLinks">Revoked Links</string>
   <string name="OtherAdminsInviteLinks">Links created by other admins</string>
   <string name="InviteLinkNoJoins">no one joined</string>
@@ -3837,7 +3837,7 @@
   <string name="InviteLinkLimitedByUsersHint">You can make the link expire after it has been used for a certain number of times.</string>
   <string name="InviteLinkLimitedByPeriodItem">Enter custom expire date</string>
   <string name="InviteLinkLimitedByUsersItem">Number of Users</string>
-  <string name="InviteLinkLimitedByUsersAlertHint">0 - no limit</string>
+  <string name="InviteLinkLimitedByUsersAlertHint">0 — no limit</string>
   <string name="InviteLinkLimitedByUsersCustom">Enter custom limit</string>
   <string name="InviteLinkNoLimitSet">no limit</string>
   <string name="InviteLinkExpireHeader">Expire after</string>
@@ -3865,7 +3865,7 @@
 
   <string name="ChatTtl">Auto-delete messages</string>
   <string name="ChatTtlOff">Off</string>
-  <string name="ChatTtlDisabled">Choose a certain period of time when messages will be automatically deleted for members of the group.</string>
+  <string name="ChatTtlDisabled">Choose a period of time after which messages will be automatically deleted for members of the group.</string>
   <string name="ChatTtlEnabled">Automatically delete new messages after %1$s for members of the group.</string>
   <string name="ChannelTtl">Auto-delete posts</string>
   <string name="ChannelTtlOff">Off</string>
@@ -3920,7 +3920,7 @@
   <string name="IsChoosingSticker">%1$s is choosing a sticker</string>
   <string name="AreChoosingSticker">%1$s are choosing stickers</string>
 
-  <string name="QDeleteCallFromRecent">Delete call from recent?</string>
+  <string name="QDeleteCallFromRecent">Delete call from recents?</string>
 
   <string name="ReminderCheckPhoneNumber">Check your phone number</string>
   <string name="ReminderCheckPhoneNumberText">Is %1$s still your number?</string>
@@ -3928,7 +3928,7 @@
   <string name="ReminderCheckPhoneNumberHide">Keep %1$s</string>
   <string name="ReminderCheckTfaPassword">Check your password</string>
   <string name="ReminderCheckTfaPasswordText">Do you still remember your password?</string>
-  <string name="ReminderCheckTfaPasswordDescription">Check that you still know 2-Step Verification password to ensure you can always log into Telegram.</string>
+  <string name="ReminderCheckTfaPasswordDescription">Check that you still remember your 2-Step Verification password to ensure you can always log into Telegram.</string>
   <string name="ReminderCheckTfaPasswordHide">Hide Suggestion</string>
   <string name="ReminderActionLearnMore">Learn More</string>
   <string name="ReminderActionChangePhoneNumber">Change Phone Number</string>
