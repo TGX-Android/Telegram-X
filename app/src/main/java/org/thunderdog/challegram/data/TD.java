@@ -5367,6 +5367,9 @@ public class TD {
       case TdApi.MessageChatSetTtl.CONSTRUCTOR:
         arg1 = ((TdApi.MessageChatSetTtl) message.content).ttl;
         break;
+      case TdApi.MessageChatSetTheme.CONSTRUCTOR:
+        alternativeText = ((TdApi.MessageChatSetTheme) message.content).themeName;
+        break;
     }
     ContentPreview.Refresher refresher = null;
     if (message.mediaAlbumId != 0 && getCombineMode(message) != COMBINE_MODE_NONE) {
@@ -5861,6 +5864,7 @@ public class TD {
     EMOJI_LINK = new Emoji("\uD83D\uDD17", R.drawable.baseline_link_16),
     EMOJI_GAME = new Emoji("\uD83C\uDFAE", R.drawable.baseline_videogame_asset_16),
     EMOJI_GROUP = new Emoji("\uD83D\uDC65", R.drawable.baseline_group_16),
+    EMOJI_THEME = new Emoji("\uD83C\uDFA8", R.drawable.baseline_palette_16),
     EMOJI_GROUP_INVITE = new Emoji("\uD83D\uDC65", R.drawable.baseline_group_add_16),
     EMOJI_CHANNEL = new Emoji("\uD83D\uDCE2", R.drawable.baseline_bullhorn_16), //  "\uD83D\uDCE3"
     EMOJI_FILE = new Emoji("\uD83D\uDCCE", R.drawable.baseline_insert_drive_file_16),
@@ -5987,15 +5991,11 @@ public class TD {
           return new ContentPreview(EMOJI_CHANNEL, 0, Lang.getString(R.string.ActionChannelChangedTitleTo, Td.getText(formattedArgument)), true);
         else
           return new ContentPreview(EMOJI_GROUP, 0, Lang.getString(isOutgoing ? R.string.ChatContentGroupName_outgoing : R.string.ChatContentGroupName, Td.getText(formattedArgument)), true);
-      /*TODO case TdApi.MessageChatSetTheme.CONSTRUCTOR: {
-        if (ChatId.isUserChat(chatId)) {
-          return new ContentPreview(EMOJI_THEME, 0, )
-        } else if (tdlib.isChannel(chatId)) {
-
-        } else {
-
-        }
-      }*/
+      case TdApi.MessageChatSetTheme.CONSTRUCTOR:
+        if (isOutgoing)
+          return new ContentPreview(EMOJI_THEME, 0, toFormattedText(Lang.getStringBold(R.string.ChatContentThemeSet_outgoing, formattedArgument.text), true));
+        else
+          return new ContentPreview(EMOJI_THEME, 0, toFormattedText(Lang.getStringBold(R.string.ChatContentThemeSet, formattedArgument.text), true));
       case TdApi.MessageChatSetTtl.CONSTRUCTOR: {
         if (arg1 > 0) {
           final int secondsRes, minutesRes, hoursRes, daysRes, weeksRes, monthsRes;
@@ -6022,7 +6022,7 @@ public class TD {
             monthsRes = R.string.ChatContentGroupTtlMonths;
           }
           final CharSequence text = Lang.pluralDuration(arg1, TimeUnit.SECONDS, secondsRes, minutesRes, hoursRes, daysRes, weeksRes, monthsRes);
-          return new ContentPreview(EMOJI_TIMER, 0, TD.toFormattedText(text, false), true);
+          return new ContentPreview(EMOJI_TIMER, 0, toFormattedText(text, false), true);
         } else {
           final int stringRes;
           if (ChatId.isUserChat(chatId)) {
@@ -6097,7 +6097,6 @@ public class TD {
       case TdApi.MessageVoiceChatStarted.CONSTRUCTOR:
       case TdApi.MessageVoiceChatEnded.CONSTRUCTOR:
       case TdApi.MessageVoiceChatScheduled.CONSTRUCTOR:
-      case TdApi.MessageChatSetTheme.CONSTRUCTOR:
         break;
     }
     return null;

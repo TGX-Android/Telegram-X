@@ -345,6 +345,8 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
       case TdApi.NotificationTypeNewPushMessage.CONSTRUCTOR: {
         TdApi.NotificationTypeNewPushMessage push = (TdApi.NotificationTypeNewPushMessage) notification.type;
         TD.ContentPreview content = TD.getNotificationPreview(tdlib, getChatId(), push, allowContent);
+        if (content == null)
+          throw new UnsupportedOperationException(Integer.toString(push.content.getConstructor()));
         if (hasCustomText != null && !content.isTranslatable) {
           hasCustomText[0] = true;
         }

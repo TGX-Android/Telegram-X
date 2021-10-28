@@ -547,12 +547,6 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
       toIndex++;
     }
     parsedChat = chats.remove(fromIndex);
-    if (needSort) {
-      toIndex = Collections.binarySearch(chats, parsedChat, CHAT_COMPARATOR);
-      if (toIndex >= 0)
-        throw new IllegalStateException();
-      toIndex = toIndex * -1 - 1;
-    }
 
     boolean invalidateDecorations = changeInfo.metadataChanged() ||
       needShadowDecoration(getChatAt(fromIndex - 1), parsedChat) ||
@@ -561,6 +555,14 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
       needShadowDecoration(getChatAt(toIndex), getChatAt(toIndex - 1));
 
     parsedChat.updateChatPosition(chat.id, changeInfo.position, changeInfo.sourceChanged(), changeInfo.pinStateChanged());
+
+    if (needSort) {
+      toIndex = Collections.binarySearch(chats, parsedChat, CHAT_COMPARATOR);
+      if (toIndex >= 0)
+        throw new IllegalStateException();
+      toIndex = toIndex * -1 - 1;
+    }
+
     chats.add(toIndex, parsedChat);
     if (!invalidateDecorations) {
       invalidateDecorations = needShadowDecoration(getChatAt(toIndex - 1), parsedChat) ||

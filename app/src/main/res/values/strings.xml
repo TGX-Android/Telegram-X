@@ -334,6 +334,8 @@
   <string name="ChatContentGroupPhotoRemove_outgoing">Removed the group photo</string>
   <string name="ChatContentGroupName">Renamed the group to «%1$s»</string>
   <string name="ChatContentGroupName_outgoing">Renamed the group to «%1$s»</string>
+  <string name="ChatContentThemeSet">Changed the chat theme to %1$s</string>
+  <string name="ChatContentThemeSet_outgoing">Changed the chat theme to %1$s</string>
   <string name="ChatContentGroupTtlSeconds_one">Set messages to auto-delete in %1$s second</string>
   <string name="ChatContentGroupTtlSeconds_other">Set messages to auto-delete in %1$s seconds</string>
   <string name="ChatContentGroupTtlMinutes_one">Set messages to auto-delete in %1$s minute</string>
