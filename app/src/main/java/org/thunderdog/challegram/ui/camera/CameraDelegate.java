@@ -1,5 +1,11 @@
 package org.thunderdog.challegram.ui.camera;
 
+import android.graphics.Point;
+import android.graphics.Rect;
+import android.graphics.RectF;
+
+import androidx.annotation.Nullable;
+
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 
 public interface CameraDelegate {
@@ -84,9 +90,34 @@ public interface CameraDelegate {
   boolean usePrivateFolder ();
 
   /**
+   * Return true if camera should scan QR codes
+   * */
+  boolean useQrScanner ();
+
+  /**
    * Called when video capture has been started
    * */
   void onVideoCaptureStarted (long startTimeMs);
+
+  /**
+   * Called when a QR code is found and successfully scanned
+   * */
+  void onQrCodeFound (String qrCodeData, @Nullable RectF boundingBox, int height, int width, int rotation, boolean isLegacyZxing);
+
+  /**
+   * Called when a QR code reader wants to know how it should compensate preview image (only for Camera1 API)
+   * */
+  int getCurrentCameraOrientation ();
+
+  /**
+   * Called when a QR code reader wants to know how it should compensate preview image box coordinate rotation (only for Camera1 API)
+   * */
+  int getCurrentCameraSensorOrientation ();
+
+  /**
+   * Called when a QR code is not found at the moment - use this to reset the animation.
+   * */
+  void onQrCodeNotFound ();
 
   /**
    * Called when video capture has been finished

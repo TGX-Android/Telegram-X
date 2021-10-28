@@ -2401,8 +2401,8 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   private boolean openCameraByPermissionRequest (ViewController.CameraOpenOptions options) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      if (U.needsPermissionRequest(CameraController.VIDEO_PERMISSIONS)) {
-        U.requestPermissions(CameraController.VIDEO_PERMISSIONS, result -> {
+      if (U.needsPermissionRequest(options.optionalMicrophone ? CameraController.VIDEO_ONLY_PERMISSIONS : CameraController.VIDEO_PERMISSIONS)) {
+        U.requestPermissions(options.optionalMicrophone ? CameraController.VIDEO_ONLY_PERMISSIONS : CameraController.VIDEO_PERMISSIONS, result -> {
           if (result) {
             openCameraByTap(options);
           }
@@ -2774,10 +2774,12 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (camera == null) {
       camera = new CameraController(this);
       camera.setMode(options.mode, options.readyListener);
+      camera.setQrListener(options.qrCodeListener, options.qrModeSubtitle, options.qrModeDebug);
       camera.get(); // Ensure view creation
       addActivityListener(camera);
     } else {
       camera.setMode(options.mode, options.readyListener);
+      camera.setQrListener(options.qrCodeListener, options.qrModeSubtitle, options.qrModeDebug);
     }
     hideContextualPopups(false);
     closeAllMedia(true);

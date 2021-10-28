@@ -706,6 +706,8 @@ public abstract class CameraApi {
   protected abstract int getCameraOutputWidth ();
   @WorkerThread
   protected abstract int getCameraOutputHeight ();
+  @WorkerThread
+  protected abstract int getSensorOrientation ();
 
   @WorkerThread
   protected abstract void closeCamera () throws Throwable;

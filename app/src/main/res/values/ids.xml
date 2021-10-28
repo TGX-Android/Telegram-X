@@ -514,6 +514,7 @@
   <item type="id" name="btn_proxySocks5" />
   <item type="id" name="btn_proxyTelegram" />
   <item type="id" name="btn_proxyHttp" />
+  <item type="id" name="btn_proxyQr" />
   <item type="id" name="btn_showAdvanced" />
   <item type="id" name="btn_autoplayGIFs" />
   <item type="id" name="btn_stickerSuggestions" />
@@ -830,6 +831,10 @@
   <item type="id" name="btn_secret_forceTcpInCalls" />
   <item type="id" name="btn_secret_forceTdlibRestarts" />
   <item type="id" name="btn_secret_dropHidden" />
+  <item type="id" name="btn_secret_disableQrProcess" />
+  <item type="id" name="btn_secret_debugQrRegions" />
+  <item type="id" name="btn_secret_forceQrZxing" />
+  <item type="id" name="btn_secret_qrTest" />
   <item type="id" name="btn_string" />
 
   <item type="id" name="btn_test_database" />

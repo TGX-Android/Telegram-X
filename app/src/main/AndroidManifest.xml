@@ -124,6 +124,9 @@
     <meta-data
       android:name="google_analytics_adid_collection_enabled"
       android:value="false" />
+    <meta-data
+        android:name="com.google.mlkit.vision.DEPENDENCIES"
+        android:value="barcode,model2,model3" />
 
     <service android:name=".service.FirebaseListenerService">
       <intent-filter>

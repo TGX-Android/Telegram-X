@@ -550,6 +550,11 @@ public class CameraApiLegacy extends CameraApi implements Camera.PreviewCallback
     return result;
   }
 
+  @Override
+  protected int getSensorOrientation() {
+    return cameraInfo.orientation;
+  }
+
   private int calculateOutputRotation () {
     int result;
     int orientation = this.mForcedOutputOrientation != -1 ? this.mForcedOutputOrientation : this.mDisplayOrientation;
@@ -808,6 +813,19 @@ public class CameraApiLegacy extends CameraApi implements Camera.PreviewCallback
   @Override
   public void onPreviewFrame (byte[] data, Camera camera) {
     manager.onRenderedFirstFrame();
+    camera.setOneShotPreviewCallback(this::onPreviewFrameInternal);
+  }
+
+  public void onPreviewFrameInternal (byte[] data, Camera camera) {
+    manager.onPreviewFrame(data, camera);
+  }
+
+  public void notifyCanReadNextFrame () {
+    if (isCameraActive) {
+      try {
+        camera.setOneShotPreviewCallback(this::onPreviewFrameInternal);
+      } catch (RuntimeException ignored) {}
+    }
   }
 
   @Override

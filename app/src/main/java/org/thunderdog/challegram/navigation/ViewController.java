@@ -3113,9 +3113,13 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     public @Nullable View anchorView;
     public boolean noTrace;
     public boolean allowSystem = true;
+    public boolean optionalMicrophone = false;
     public int mode;
     public boolean ignoreAnchor;
     public CameraController.ReadyListener readyListener;
+    public CameraController.QrCodeListener qrCodeListener;
+    public @StringRes int qrModeSubtitle;
+    public boolean qrModeDebug;
 
     public CameraOpenOptions anchor (View anchorView) {
       this.anchorView = anchorView;
@@ -3124,6 +3128,11 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
     public CameraOpenOptions readyListener (CameraController.ReadyListener readyListener) {
       this.readyListener = readyListener;
+      return this;
+    }
+
+    public CameraOpenOptions qrCodeListener (CameraController.QrCodeListener qrCodeListener) {
+      this.qrCodeListener = qrCodeListener;
       return this;
     }
 
@@ -3142,8 +3151,23 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       return this;
     }
 
+    public CameraOpenOptions qrModeSubtitle (@StringRes int qrModeSubtitle) {
+      this.qrModeSubtitle = qrModeSubtitle;
+      return this;
+    }
+
     public CameraOpenOptions allowSystem (boolean allowSystem) {
       this.allowSystem = allowSystem;
+      return this;
+    }
+
+    public CameraOpenOptions optionalMicrophone (boolean optionalMicrophone) {
+      this.optionalMicrophone = optionalMicrophone;
+      return this;
+    }
+
+    public CameraOpenOptions qrModeDebug (boolean qrModeDebug) {
+      this.qrModeDebug = qrModeDebug;
       return this;
     }
   }
@@ -3152,7 +3176,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     openInAppCamera(new CameraOpenOptions());
   }
 
-  protected final void openInAppCamera (@NonNull CameraOpenOptions options) {
+  public final void openInAppCamera (@NonNull CameraOpenOptions options) {
     if (options.allowSystem && Settings.instance().getCameraType() == Settings.CAMERA_TYPE_SYSTEM) {
       showOptions(null, new int[] {R.id.btn_takePhoto, R.id.btn_takeVideo}, new String[] {Lang.getString(R.string.TakePhoto), Lang.getString(R.string.TakeVideo)}, null, new int[] {R.drawable.baseline_camera_alt_24, R.drawable.baseline_videocam_24}, (itemView, id) -> {
         switch (id) {

@@ -415,6 +415,7 @@ public class Settings {
   public static final long TUTORIAL_HOLD_VIDEO = 1 << 15;
   public static final long TUTORIAL_PROXY_SPONSOR = 1 << 16;
   public static final long TUTORIAL_BRUSH_COLOR_TONE = 1 << 17;
+  public static final long TUTORIAL_QR_SCAN = 1 << 18;
 
   @Nullable
   private Long _tutorialFlags;
@@ -5532,6 +5533,9 @@ public class Settings {
   private static final int UTILITY_FEATURE_INSTANT_TDLIB_RESTART = 1 << 3;
   private static final int UTILITY_FEATURE_NO_NETWORK = 1 << 4;
   private static final int UTILITY_FEATURE_TABS = 1 << 5;
+  private static final int UTILITY_FEATURE_NO_QR_PROCESS = 1 << 6;
+  private static final int UTILITY_FEATURE_QR_ZXING = 1 << 7;
+  private static final int UTILITY_FEATURE_QR_REGION_DEBUG = 1 << 8;
 
   private int getUtilityFeatures () {
     return pmc.getInt(KEY_UTILITY_FEATURES, 0);
@@ -5570,6 +5574,30 @@ public class Settings {
 
   public void setHidePhoneNumber (boolean enabled) {
     toggleUtilityFeature(UTILITY_FEATURE_HIDE_NUMBER, enabled);
+  }
+
+  public boolean needDisableQrProcessing () {
+    return checkUtilityFeature(UTILITY_FEATURE_NO_QR_PROCESS);
+  }
+
+  public void setDisableQrProcessing (boolean enabled) {
+    toggleUtilityFeature(UTILITY_FEATURE_NO_QR_PROCESS, enabled);
+  }
+
+  public boolean needShowQrRegions () {
+    return checkUtilityFeature(UTILITY_FEATURE_QR_REGION_DEBUG);
+  }
+
+  public void setShowQrRegions (boolean enabled) {
+    toggleUtilityFeature(UTILITY_FEATURE_QR_REGION_DEBUG, enabled);
+  }
+
+  public boolean needForceZxingQrProcessing () {
+    return checkUtilityFeature(UTILITY_FEATURE_QR_ZXING);
+  }
+
+  public void setForceZxingQrProcessing (boolean enabled) {
+    toggleUtilityFeature(UTILITY_FEATURE_QR_ZXING, enabled);
   }
 
   public void setForceTcpInCalls (boolean enabled) {

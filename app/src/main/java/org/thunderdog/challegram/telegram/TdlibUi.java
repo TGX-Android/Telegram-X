@@ -103,6 +103,7 @@ import org.thunderdog.challegram.ui.SettingsThemeController;
 import org.thunderdog.challegram.ui.SettingsWebsitesController;
 import org.thunderdog.challegram.ui.ShareController;
 import org.thunderdog.challegram.ui.SimpleViewPagerController;
+import org.thunderdog.challegram.ui.camera.CameraController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.HapticMenuHelper;
@@ -3258,7 +3259,7 @@ public class TdlibUi extends Handler {
     });
   }
 
-  private static StringBuilder newProxyDescription (String server, String port) {
+  public static StringBuilder newProxyDescription (String server, String port) {
     StringBuilder desc = new StringBuilder("<b>");
     desc.append(Lang.getString(R.string.UseProxyServer));
     desc.append(":</b> ");
@@ -3277,7 +3278,7 @@ public class TdlibUi extends Handler {
     desc.append(value);
   }
 
-  private void openProxyAlert (TdlibDelegate context, String server, int port, TdApi.ProxyType type, String proxyDescription) {
+  public void openProxyAlert (TdlibDelegate context, String server, int port, TdApi.ProxyType type, String proxyDescription) {
     ViewController<?> c = context.context().navigation().getCurrentStackItem();
     if (c == null)
       return;
@@ -3417,12 +3418,15 @@ public class TdlibUi extends Handler {
     }
     boolean needInstallTor = needTor && !U.isAppInstalled(U.PACKAGE_TOR);*/
 
-    IntList ids = new IntList(3);
-    StringList strings = new StringList(3);
+    boolean showShowQr = tdlib.allowQrLoginCamera();
+
+    IntList ids = new IntList(showShowQr ? 4 : 3);
+    StringList strings = new StringList(showShowQr ? 4 : 3);
 
     ids.append(R.id.btn_proxyTelegram);
     ids.append(R.id.btn_proxySocks5);
     ids.append(R.id.btn_proxyHttp);
+
     if (needProxyHint) {
       strings.append(R.string.AddMtprotoProxy);
       strings.append(R.string.AddSocks5Proxy);
@@ -3431,6 +3435,11 @@ public class TdlibUi extends Handler {
       strings.append(R.string.MtprotoProxy);
       strings.append(R.string.Socks5Proxy);
       strings.append(R.string.HttpProxy);
+    }
+
+    if (showShowQr) {
+      ids.append(R.id.btn_proxyQr);
+      strings.append(R.string.ScanQR);
     }
 
     OptionDelegate callback = (itemView, id) -> {
@@ -3451,6 +3460,19 @@ public class TdlibUi extends Handler {
           EditProxyController e = new EditProxyController(context.context(), context.tdlib());
           e.setArguments(new EditProxyController.Args(EditProxyController.MODE_HTTP));
           c.navigateTo(e);
+          break;
+        }
+        case R.id.btn_proxyQr: {
+          postDelayed(() -> c.openInAppCamera(new ViewController.CameraOpenOptions().ignoreAnchor(true).noTrace(true).allowSystem(false).optionalMicrophone(true).qrModeSubtitle(R.string.ScanQRFullSubtitleProxy).mode(CameraController.MODE_QR).qrCodeListener((qrCode) -> {
+            context.tdlib().client().send(new TdApi.GetInternalLinkType(qrCode), result -> {
+              if (result.getConstructor() == TdApi.InternalLinkTypeProxy.CONSTRUCTOR) {
+                post(() -> {
+                  TdApi.InternalLinkTypeProxy proxy = (TdApi.InternalLinkTypeProxy) result;
+                  openProxyAlert(context, proxy.server, proxy.port, proxy.type, TdlibUi.newProxyDescription(proxy.server, Integer.toString(proxy.port)).toString());
+                });
+              }
+            });
+          })), 250L);
           break;
         }
         /*case R.id.btn_proxyTor: {

@@ -29,6 +29,7 @@
 * [ShortcutBadger](https://github.com/leolin310148/ShortcutBadger): used to show badge near app shortcut
 * [ReLinker](https://github.com/KeepSafe/ReLinker): used to properly load native shared libraries
 * [Konfetti](https://github.com/DanielMartinus/Konfetti): confetti animation
+* [ZXing](https://github.com/zxing/zxing/): QR scanning on devices where Google Play Services are not available
 
 * [Google's Material Icons](https://material.io/resources/icons): most of application icons
 * [Material Design Icons](https://materialdesignicons.com): various icons by [Austin Andrews](https://twitter.com/Templarian), [Yasmina Lembachar][https://twitter.com/belledeboheme], [Haley Halcyon](https://twitter.com/itsspelledhaley), [Michael Richins](https://twitter.com/MrGrigri)

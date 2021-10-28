@@ -3779,6 +3779,10 @@
   <string name="ScanQRLogInInfo">Use camera to sign in on the desktop app.</string>
   <string name="PrivacyPolicy">Privacy Policy</string>
   <string name="ScanQRLinkHint">Use Settings — Devices — Scan QR to sign in with QR code.</string>
+  <string name="ScanQRAuthorizedToast">Authorized %1$s</string>
+  <string name="ScanQRFullTitle">Scan QR Code</string>
+  <string name="ScanQRFullSubtitle">Scan a QR code to log into this account on another device.</string>
+  <string name="ScanQRFullSubtitleProxy">Scan a QR code to add a proxy server.</string>
 
   <string name="SlowMode">Slow Mode</string>
   <string name="SlowModeDisabled">Choose how long each member must wait before sending their next message.</string>

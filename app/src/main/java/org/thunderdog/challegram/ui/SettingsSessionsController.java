@@ -4,15 +4,21 @@ import android.content.Context;
 import android.view.View;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.collection.LongSparseArray;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
+import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibContext;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.camera.CameraController;
@@ -27,13 +33,14 @@ import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.DateUtils;
 import me.vkryl.td.Td;
+import me.vkryl.td.TdConstants;
 
 /**
  * Date: 17/11/2016
  * Author: default
  */
 
-public class SettingsSessionsController extends RecyclerViewController<SettingsPrivacyController> implements SettingsPrivacyController.AuthorizationsLoadListener, View.OnClickListener, OptionDelegate {
+public class SettingsSessionsController extends RecyclerViewController<SettingsPrivacyController> implements SettingsPrivacyController.AuthorizationsLoadListener, View.OnClickListener, OptionDelegate, CameraController.QrCodeListener, MessageListener {
   public SettingsSessionsController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
@@ -72,17 +79,6 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
 
   private void buildCells () {
     if (sessions == null || currentSession == null) {
-      return;
-    }
-    if (sessions.isEmpty()) {
-      adapter.setItems(new ListItem[] {
-        new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL),
-        new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.ThisDevice),
-        new ListItem(ListItem.TYPE_SHADOW_TOP),
-        new ListItem(ListItem.TYPE_SESSION, R.id.btn_currentSession, 0, 0),
-        new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
-        new ListItem(ListItem.TYPE_SESSIONS_EMPTY)
-      }, false);
       return;
     }
 
@@ -131,6 +127,7 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
     }
 
     adapter.setItems(items, false);
+    executeScheduledAnimation();
   }
 
   private void clearSessionList () {
@@ -265,49 +262,58 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
     if (sessions != null) {
       buildCells();
     }
-    /*RemoveHelper.attach(recyclerView, new RemoveHelper.Callback() {
-      @Override
-      public boolean canRemove (RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int position) {
-        if (viewHolder.getItemViewType() == SettingItem.TYPE_SESSION) {
-          SettingItem item = adapter.getItems().get(position);
-          if (item.getId() != R.id.btn_currentSession && !terminatingAll && (terminatingSessions == null || terminatingSessions.get(item.getLongId()) == null)) {
-            return true;
-          }
-        }
-        return false;
-      }
-
-      @Override
-      public void onRemove (RecyclerView.ViewHolder viewHolder) {
-        killSession((TdApi.Session) viewHolder.itemView.getTag(), false);
-      }
-    });*/
 
     if (getArguments() == null) {
-      tdlib.client().send(new TdApi.GetActiveSessions(), object -> tdlib.ui().post(() -> {
-        if (!isDestroyed()) {
-          switch (object.getConstructor()) {
-            case TdApi.Sessions.CONSTRUCTOR: {
-              TdApi.Session[] sessions = ((TdApi.Sessions) object).sessions;
-              Td.sort(sessions);
-              setSessions(sessions);
-              buildCells();
-              break;
-            }
-            case TdApi.Error.CONSTRUCTOR: {
-              UI.showError(object);
-              break;
-            }
-            default: {
-              Log.unexpectedTdlibResponse(object, TdApi.GetActiveSessions.class, TdApi.Sessions.class);
-              break;
-            }
-          }
+      RemoveHelper.attach(recyclerView, new RemoveHelper.Callback() {
+        @Override
+        public boolean canRemove (RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int position) {
+          ListItem item = adapter.getItems().get(position);
+          return item.getId() == R.id.btn_session && !terminatingAll && (terminatingSessions == null || terminatingSessions.get(item.getLongId()) == null);
         }
-      }));
+
+        @Override
+        public void onRemove (RecyclerView.ViewHolder viewHolder) {
+          killSession((TdApi.Session) viewHolder.itemView.getTag(), false);
+        }
+      });
+    }
+
+    if (getArguments() == null) {
+      requestActiveSessions();
     }
 
     recyclerView.setAdapter(adapter);
+    tdlib.listeners().subscribeToMessageUpdates(TdConstants.TELEGRAM_ACCOUNT_ID, this);
+  }
+
+  private void requestActiveSessions () {
+    tdlib.client().send(new TdApi.GetActiveSessions(), object -> tdlib.ui().post(() -> {
+      if (!isDestroyed()) {
+        switch (object.getConstructor()) {
+          case TdApi.Sessions.CONSTRUCTOR: {
+            TdApi.Session[] sessions = ((TdApi.Sessions) object).sessions;
+            Td.sort(sessions);
+            setSessions(sessions);
+            buildCells();
+            break;
+          }
+          case TdApi.Error.CONSTRUCTOR: {
+            UI.showError(object);
+            break;
+          }
+          default: {
+            Log.unexpectedTdlibResponse(object, TdApi.GetActiveSessions.class, TdApi.Sessions.class);
+            break;
+          }
+        }
+      }
+    }));
+  }
+
+  @Override
+  public void onNewMessage (TdApi.Message message) {
+    if (message.chatId != TdConstants.TELEGRAM_ACCOUNT_ID) return;
+    requestActiveSessions();
   }
 
   @Override
@@ -471,7 +477,7 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
   private TdApi.Session sessionToTerminate;
 
   private void killSession (final TdApi.Session session, boolean alert) {
-    showOptions(Lang.getString(session.isPasswordPending ? R.string.TerminateIncompleteSessionQuestion : R.string.TerminateSessionQuestion) + "\n\n" + getSubtext(session, true), new int[] {R.id.btn_terminateSession, R.id.btn_cancel, R.id.btn_copyText}, new String[] {Lang.getString(session.isPasswordPending ? R.string.TerminateIncompleteSession : R.string.TerminateSession), Lang.getString(R.string.Cancel), Lang.getString(R.string.Copy)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24, R.drawable.baseline_content_copy_24}, (itemView, id) -> {
+    showOptions(Lang.getString(session.isPasswordPending ? R.string.TerminateIncompleteSessionQuestion : R.string.TerminateSessionQuestion) + "\n\n" + getSubtext(session, true), new int[]{R.id.btn_terminateSession, R.id.btn_cancel, R.id.btn_copyText}, new String[]{Lang.getString(session.isPasswordPending ? R.string.TerminateIncompleteSession : R.string.TerminateSession), Lang.getString(R.string.Cancel), Lang.getString(R.string.Copy)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24, R.drawable.baseline_content_copy_24}, (itemView, id) -> {
       switch (id) {
         case R.id.btn_terminateSession: {
           terminateSession(session);
@@ -505,7 +511,7 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
   public void onClick (View v) {
     switch (v.getId()) {
       case R.id.btn_terminateAllSessions: {
-        showOptions(Lang.getString(R.string.AreYouSureSessions), new int[] {R.id.btn_terminateAllSessions, R.id.btn_cancel}, new String[] {Lang.getString(R.string.TerminateAllSessions), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        showOptions(Lang.getString(R.string.AreYouSureSessions), new int[]{R.id.btn_terminateAllSessions, R.id.btn_cancel}, new String[]{Lang.getString(R.string.TerminateAllSessions), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
           if (id == R.id.btn_terminateAllSessions) {
             terminateOtherSessions();
           }
@@ -514,7 +520,7 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
         break;
       }
       case R.id.btn_qrLogin: {
-        openInAppCamera(new CameraOpenOptions().anchor(v).noTrace(true).mode(CameraController.MODE_QR));
+        openInAppCamera(new CameraOpenOptions().anchor(v).noTrace(true).allowSystem(false).optionalMicrophone(true).mode(CameraController.MODE_QR).qrCodeListener(this));
         break;
       }
       case R.id.btn_session: {
@@ -530,6 +536,7 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
   @Override
   public void destroy () {
     super.destroy();
+    tdlib.listeners().unsubscribeFromMessageUpdates(TdConstants.TELEGRAM_ACCOUNT_ID, this);
     SettingsPrivacyController controller = getArguments();
     if (controller != null) {
       controller.setAuthorizationsLoadListener(null);
@@ -539,5 +546,30 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
   @Override
   public CharSequence getName () {
     return Lang.getString(R.string.Devices);
+  }
+
+  @Override
+  public void onQrCodeScanned (String qrCode) {
+    if (!qrCode.startsWith("tg://")) return;
+    tdlib().client().send(new TdApi.GetInternalLinkType(qrCode), result -> {
+      if (result.getConstructor() == TdApi.InternalLinkTypeQrCodeAuthentication.CONSTRUCTOR) {
+        tdlib().client().send(new TdApi.ConfirmQrCodeAuthentication(qrCode), result2 -> {
+          if (result2 instanceof TdApi.Session) {
+            runOnUiThreadOptional(() -> {
+              TdApi.Session newSession = (TdApi.Session) result2;
+              if (indexOfSession(newSession.id) != -1)
+                return;
+              sessions.add(0, newSession);
+              if (getArguments() != null)
+                getArguments().updateAuthorizations(sessions, currentSession);
+              buildCells();
+              UI.showCustomToast(Lang.getString(R.string.ScanQRAuthorizedToast, newSession.applicationName), Toast.LENGTH_LONG, 0);
+            });
+          }
+        });
+      } else {
+        tdlib().ui().openTelegramUrl(new TdlibContext(context, tdlib), qrCode, null, null);
+      }
+    });
   }
 }

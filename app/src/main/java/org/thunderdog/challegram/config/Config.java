@@ -253,4 +253,8 @@ public class Config {
   public static final boolean DISABLE_PASSWORD_INVISIBILITY = true;
 
   public static final int SUPPORTED_INSTANT_VIEW_VERSION = 2;
+  public static final boolean INSTANT_VIEW_WRONG_LAYOUT = false;
+
+  public static final boolean QR_AVAILABLE = true;
+  public static final boolean QR_FORCE_ZXING = false;
 }

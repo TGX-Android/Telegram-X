@@ -34,7 +34,7 @@ public class CameraButton extends View implements FactorAnimator.Target, Runnabl
   private CameraController parent;
   private CameraBlurView blurView;
 
-  private Bitmap cameraIcon, stopIcon;
+  private Bitmap cameraIcon, stopIcon, closeIcon;
 
   public CameraButton (Context context) {
     super(context);
@@ -49,6 +49,7 @@ public class CameraButton extends View implements FactorAnimator.Target, Runnabl
     // cameraIcon = new EraseDrawable(R.drawable.baseline_camera_alt_24, R.id.theme_color_white);
     // stopIcon = new EraseDrawable(R.drawable.baseline_stop_24, R.id.theme_color_white);
     cameraIcon = Drawables.toBitmap(Drawables.get(R.drawable.baseline_camera_alt_24));
+    closeIcon = Drawables.toBitmap(Drawables.get(R.drawable.baseline_close_24));
     stopIcon = Drawables.toBitmap(Drawables.get(R.drawable.baseline_stop_24));
   }
 
@@ -291,6 +292,12 @@ public class CameraButton extends View implements FactorAnimator.Target, Runnabl
       c.save();
       c.rotate(componentRotation, cx, cy);
     }*/
+
+    if (parent.isInQrScanMode()) {
+      drawBitmap(c, closeIcon, cx, cy, 1f - recordFactor / .5f);
+      return;
+    }
+
     if (recordFactor > .3f) {
       float alpha = ((recordFactor - .3f) / .7f);
       drawBitmap(c, stopIcon, cx, cy, alpha);
