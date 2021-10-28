@@ -627,15 +627,25 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
       if (U.isAppSideLoaded()) {
-        items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.InAppUpdates));
-        items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER, R.id.btn_updateAutomatically, 0, R.string.AutoUpdate));
+        items.addAll(Arrays.asList(
+          new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.InAppUpdates),
+          new ListItem(ListItem.TYPE_SHADOW_TOP),
+          new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER, R.id.btn_updateAutomatically, 0, R.string.AutoUpdate)
+        ));
         if (Settings.instance().getAutoUpdateMode() != Settings.AUTO_UPDATE_MODE_NEVER) {
           items.addAll(newAutoUpdateConfigurationItems());
         }
-        items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-        context().appUpdater().addListener(this);
+      } else {
+        items.addAll(Arrays.asList(
+          new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.AppUpdates),
+          new ListItem(ListItem.TYPE_SHADOW_TOP),
+          new ListItem(ListItem.TYPE_SETTING, R.id.btn_checkUpdates, 0, R.string.CheckForUpdates),
+          new ListItem(ListItem.TYPE_SEPARATOR_FULL),
+          new ListItem(ListItem.TYPE_SETTING, R.id.btn_subscribeToBeta, 0, R.string.SubscribeToBeta)
+        ));
       }
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      context().appUpdater().addListener(this);
 
       items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.Chats));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -1435,6 +1445,10 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         if (value && item.getLongId() == Settings.SETTING_FLAG_DOWNLOAD_BETAS) {
           context().appUpdater().checkForUpdates();
         }
+        break;
+      }
+      case R.id.btn_subscribeToBeta: {
+        tdlib.ui().openUrl(this, Lang.getStringSecure(R.string.url_betaSubscription), null);
         break;
       }
       case R.id.btn_checkUpdates: {
