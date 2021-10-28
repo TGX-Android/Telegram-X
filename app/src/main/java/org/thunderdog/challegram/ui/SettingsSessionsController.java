@@ -267,6 +267,10 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
       RemoveHelper.attach(recyclerView, new RemoveHelper.Callback() {
         @Override
         public boolean canRemove (RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int position) {
+          if (position < 0 || position >= adapter.getItems().size()) {
+            return false;
+          }
+
           ListItem item = adapter.getItems().get(position);
           return item.getId() == R.id.btn_session && !terminatingAll && (terminatingSessions == null || terminatingSessions.get(item.getLongId()) == null);
         }

@@ -36,6 +36,7 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.ui.HashtagChatController;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
@@ -1324,12 +1325,14 @@ public class TGInlineKeyboard {
               }
 
               ViewController<?> c = parent.context().navigation().getCurrentStackItem();
-              if (!(c instanceof MessagesController) || c.getChatId() != parent.getChatId()) {
+              boolean isMessagesController = c instanceof MessagesController;
+
+              if (c == null || c.getChatId() != parent.getChatId()) {
                 return;
               }
 
               if (!StringUtils.isEmpty(url)) {
-                if (isGame) {
+                if (isGame && isMessagesController) {
                   TdApi.Message msg = parent.getMessage();
                   ((MessagesController) c).openGame(msg.viaBotUserId != 0 ? msg.viaBotUserId : Td.getSenderUserId(msg), ((TdApi.MessageGame) msg.content).game, url, msg);
                 } else {
@@ -1337,7 +1340,7 @@ public class TGInlineKeyboard {
                 }
               }
               if (answerText != null) {
-                if (showAlert) {
+                if (showAlert || !isMessagesController) {
                   c.openOkAlert(context.context.tdlib().messageUsername(parent.getMessage()), answerText);
                 } else {
                   ((MessagesController) c).showCallbackToast(answerText);
