@@ -287,17 +287,21 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     return (flags & FLAG_ONLINE) != 0;
   }
 
-  public void checkLayout (int width) {
+  public boolean checkLayout (int width) {
     if (currentWidth == 0) {
+      boolean changed = width > 0;
       buildLayout(width);
+      return changed;
     } else {
       if (currentWidth != width && width > 0) {
         currentWidth = width;
         layoutTime();
         layoutTitle(false);
         layoutContent();
+        return true;
       }
     }
+    return false;
   }
 
   public boolean isArchive () {

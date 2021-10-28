@@ -413,8 +413,8 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(getViewHeight(getChatListMode()), MeasureSpec.EXACTLY));
     layoutReceiver();
-    if (chat != null) {
-      chat.checkLayout(getMeasuredWidth());
+    if (chat != null && chat.checkLayout(getMeasuredWidth())) {
+      imageReceiver.requestFile(chat.getAvatar());
     }
   }
 
