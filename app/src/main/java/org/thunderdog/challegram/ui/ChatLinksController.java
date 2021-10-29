@@ -461,7 +461,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
     List<TdApi.ChatInviteLink> inviteList = revoked ? inviteLinksRevoked : inviteLinks;
 
-    requestLinks(revoked, inviteList.get(inviteList.size() - 1).inviteLink, links -> {
+    requestLinks(revoked, true, inviteList.get(inviteList.size() - 1).inviteLink, links -> {
       final int index = adapter.indexOfViewByIdAndValue(R.id.btn_showAdvanced, revoked ? 1 : 0);
       if (index == -1) return;
 
@@ -478,7 +478,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
         if (inviteList.size() < (revoked ? totalRevokedLinkCount : totalLinkCount)) {
           newItems.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-          newItems.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, R.drawable.baseline_arrow_downward_24, Lang.plural(R.string.StatsXShowMore, (revoked ? totalRevokedLinkCount : totalLinkCount) - inviteList.size()), false).setIntValue(revoked ? 1 : 0));
+          newItems.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, R.drawable.baseline_arrow_downward_24, Lang.plural(R.string.StatsXShowMore, Math.min(100, (revoked ? totalRevokedLinkCount : totalLinkCount) - inviteList.size())), false).setIntValue(revoked ? 1 : 0));
         }
 
         adapter.removeItem(index);
@@ -489,10 +489,10 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   }
 
   private void requestLinkRebind () {
-    requestLinks(false, "", activeLinks -> {
+    requestLinks(false, false, "", activeLinks -> {
       this.totalLinkCount = activeLinks.totalCount;
       this.inviteLinks = new ArrayList<>(Arrays.asList(activeLinks.inviteLinks));
-      requestLinks(true, "", revokedLinks -> {
+      requestLinks(true, false, "", revokedLinks -> {
         this.totalRevokedLinkCount = revokedLinks.totalCount;
         this.inviteLinksRevoked = new ArrayList<>(Arrays.asList(revokedLinks.inviteLinks));
 
@@ -513,8 +513,8 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     executeScheduledAnimation();
   }
 
-  private void requestLinks (boolean revoked, String offsetInviteLink, Consumer<TdApi.ChatInviteLinks> linksConsumer) {
-    tdlib.client().send(new TdApi.GetChatInviteLinks(chatId, adminUserId, revoked, 0, offsetInviteLink, 20), object -> {
+  private void requestLinks (boolean revoked, boolean maxedRequest, String offsetInviteLink, Consumer<TdApi.ChatInviteLinks> linksConsumer) {
+    tdlib.client().send(new TdApi.GetChatInviteLinks(chatId, adminUserId, revoked, 0, offsetInviteLink, maxedRequest ? 100 : 20), object -> {
       if (object.getConstructor() == TdApi.ChatInviteLinks.CONSTRUCTOR) {
         linksConsumer.accept(((TdApi.ChatInviteLinks) object));
       } else if (object.getConstructor() == TdApi.Error.CONSTRUCTOR) {
@@ -740,7 +740,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
     if (inviteLinks.size() < totalLinkCount) {
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, R.drawable.baseline_arrow_downward_24, Lang.plural(R.string.StatsXShowMore, totalLinkCount - inviteLinks.size()), false).setIntValue(0));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, R.drawable.baseline_arrow_downward_24, Lang.plural(R.string.StatsXShowMore, Math.min(100, totalLinkCount - inviteLinks.size())), false).setIntValue(0));
     }
 
     if (showAdditionalLinks) {
@@ -776,7 +776,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
       if (inviteLinksRevoked.size() < totalRevokedLinkCount) {
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-        items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, R.drawable.baseline_arrow_downward_24, Lang.plural(R.string.StatsXShowMore, totalRevokedLinkCount - inviteLinksRevoked.size()), false).setIntValue(1));
+        items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, R.drawable.baseline_arrow_downward_24, Lang.plural(R.string.StatsXShowMore, Math.min(100, totalRevokedLinkCount - inviteLinksRevoked.size())), false).setIntValue(1));
       }
 
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
