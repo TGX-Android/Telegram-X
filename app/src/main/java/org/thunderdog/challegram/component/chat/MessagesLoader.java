@@ -1227,17 +1227,23 @@ public class MessagesLoader implements Client.ResultHandler {
     if (messages.length > 0) {
       switch (loadingMode) {
         case MODE_MORE_BOTTOM: {
-          while (maxIndex >= 0 && (messages[maxIndex].id <= startBottom || (bottomMessage != null && bottomMessage.wouldCombineWith(messages[maxIndex])))) {
-            combineWithMessages.add(messages[maxIndex]);
+          while (maxIndex >= 0) {
+            if (messages[maxIndex].id > startBottom) {
+              if (bottomMessage == null || !bottomMessage.wouldCombineWith(messages[maxIndex]))
+                break;
+              combineWithMessages.add(messages[maxIndex]);
+            }
             maxIndex--;
           }
-          // messages[0] - newest (biggest id)
-          // messages[messages.length - 1] - oldest (smallest id)
           break;
         }
         case MODE_MORE_TOP: {
-          while (minIndex < messages.length && (messages[minIndex].id >= startTop || (topMessage != null && topMessage.wouldCombineWith(messages[minIndex])))) {
-            combineWithMessages.add(messages[minIndex]);
+          while (minIndex < messages.length) {
+            if (messages[minIndex].id < startTop) {
+              if (topMessage == null || !topMessage.wouldCombineWith(messages[minIndex]))
+                break;
+              combineWithMessages.add(messages[minIndex]);
+            }
             minIndex++;
           }
           break;
@@ -1248,7 +1254,7 @@ public class MessagesLoader implements Client.ResultHandler {
       endMeasureStep(null, 0, 0);
     }
 
-    if (combineWithMessages != null) {
+    if (!combineWithMessages.isEmpty()) {
       final boolean bottom = loadingMode == MODE_MORE_BOTTOM;
       UI.post(() -> {
         for (TdApi.Message message : combineWithMessages) {

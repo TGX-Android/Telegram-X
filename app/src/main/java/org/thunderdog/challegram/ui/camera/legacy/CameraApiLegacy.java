@@ -812,12 +812,18 @@ public class CameraApiLegacy extends CameraApi implements Camera.PreviewCallback
 
   @Override
   public void onPreviewFrame (byte[] data, Camera camera) {
-    manager.onRenderedFirstFrame();
-    camera.setOneShotPreviewCallback(this::onPreviewFrameInternal);
+    if (isCameraActive) {
+      manager.onRenderedFirstFrame();
+      try {
+        camera.setOneShotPreviewCallback(this::onPreviewFrameInternal);
+      } catch (RuntimeException ignored) { }
+    }
   }
 
   public void onPreviewFrameInternal (byte[] data, Camera camera) {
-    manager.onPreviewFrame(data, camera);
+    if (isCameraActive) {
+      manager.onPreviewFrame(data, camera);
+    }
   }
 
   public void notifyCanReadNextFrame () {
