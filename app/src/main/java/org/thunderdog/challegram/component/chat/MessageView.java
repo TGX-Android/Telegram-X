@@ -684,10 +684,10 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         TD.DownloadedFile baseDownloadedFile = downloadedFiles.get(0);
         if (baseDownloadedFile.getFileType().getConstructor() == TdApi.FileTypeAnimation.CONSTRUCTOR) {
           ids.append(R.id.btn_saveGif);
-          if (downloadedFiles.size() == 1) {
+          if (allMessages.length == 1) {
             strings.append(R.string.SaveGif);
           } else {
-            strings.append(Lang.plural(R.string.SaveGif, downloadedFiles.size()));
+            strings.append(Lang.plural(R.string.SaveXGifs, downloadedFiles.size()));
           }
           icons.append(R.drawable.deproko_baseline_gif_24);
         }
@@ -700,7 +700,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           case TdApi.FileTypeVideo.CONSTRUCTOR:
           case TdApi.FileTypePhoto.CONSTRUCTOR: {
             ids.append(R.id.btn_saveFile);
-            if (downloadedFiles.size() == 1) {
+            if (allMessages.length == 1) {
               strings.append(R.string.SaveToGallery);
             } else {
               strings.append(Lang.plural(R.string.SaveXToGallery, downloadedFiles.size()));
@@ -710,7 +710,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           }
           case TdApi.FileTypeAudio.CONSTRUCTOR: {
             ids.append(R.id.btn_saveFile);
-            if (downloadedFiles.size() == 1) {
+            if (allMessages.length == 1) {
               strings.append(R.string.SaveToMusic);
             } else {
               strings.append(Lang.plural(R.string.SaveXToMusic, downloadedFiles.size()));
@@ -734,7 +734,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
             }
 
             ids.append(R.id.btn_saveFile);
-            if (downloadedFiles.size() == 1) {
+            if (allMessages.length == 1) {
               strings.append(R.string.SaveToDownloads);
             } else {
               strings.append(Lang.plural(R.string.SaveXToDownloads, downloadedFiles.size()));
