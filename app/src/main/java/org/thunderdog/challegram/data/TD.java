@@ -4364,8 +4364,12 @@ public class TD {
     return isFileLoaded(file);
   }
 
-  public static void deleteFile (final ViewController<?> context, TdApi.File file) {
-    deleteFiles(context, new TdApi.File[] {file}, null);
+  public static void deleteFiles (final ViewController<?> context, List<TD.DownloadedFile> downloadedFiles, final @Nullable Runnable after) {
+    TdApi.File[] files = new TdApi.File[downloadedFiles.size()];
+    for (int i = 0; i < files.length; i++) {
+      files[i] = downloadedFiles.get(i).getFile();
+    }
+    deleteFiles(context, files, after);
   }
 
   public static void deleteFiles (final ViewController<?> context, final TdApi.File[] files, final @Nullable Runnable after) {

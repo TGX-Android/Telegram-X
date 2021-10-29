@@ -5012,7 +5012,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case R.id.btn_deleteFile: {
         if (selectedMessage != null) {
           if (selectedMessageTag != null) {
-            TD.deleteFile(this, ((TD.DownloadedFile) selectedMessageTag).getFile());
+            //noinspection unchecked
+            TD.deleteFiles(this, (List<TD.DownloadedFile>) selectedMessageTag, null);
           } else {
             TdApi.Message[] messages = selectedMessage.getAllMessages();
             final SparseArrayCompat<TdApi.File> files = new SparseArrayCompat<>(messages.length);
