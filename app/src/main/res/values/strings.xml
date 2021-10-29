@@ -830,6 +830,7 @@
   <string name="GroupsAndChannels">Groups and Channels</string>
   <string name="SecurityTitle">Security</string>
   <string name="SessionsTitle">Active Sessions</string>
+  <string name="ActiveDevices">Active Devices</string>
   <string name="SessionsIncompleteTitle">Incomplete Login Attempts</string>
   <string name="SessionsIncompleteInfo">The devices above have no access to your messages. The code was entered correctly, but no correct password was given.</string>
   <string name="TwoStepVerification">Two-Step Verification</string>
