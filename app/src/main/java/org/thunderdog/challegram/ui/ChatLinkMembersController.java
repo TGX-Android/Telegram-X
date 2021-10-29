@@ -30,6 +30,8 @@ import me.vkryl.td.ChatId;
 
 public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMembersController.Args> implements View.OnClickListener, Client.ResultHandler, TdlibCache.UserDataChangeListener {
   private ArrayList<TGUser> senders;
+  private ArrayList<TdApi.ChatInviteLinkMember> sendersTdlib = new ArrayList<>();
+
   private DoubleHeaderView headerCell;
   private SettingsAdapter adapter;
 
@@ -151,6 +153,7 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
         ArrayList<TGUser> list = new ArrayList<>(senders.members.length);
 
         for (TdApi.ChatInviteLinkMember sender : senders.members) {
+          sendersTdlib.add(sender);
           list.add(parseSender(tdlib, sender, list));
         }
 
@@ -201,6 +204,7 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
     final TdApi.ChatInviteLinkMembers senders = (TdApi.ChatInviteLinkMembers) object;
     final ArrayList<TGUser> parsedChats = new ArrayList<>(senders.members.length);
     for (TdApi.ChatInviteLinkMember sender : senders.members) {
+      sendersTdlib.add(sender);
       parsedChats.add(parseSender(tdlib, sender, this.senders));
     }
 
@@ -288,11 +292,11 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
   }
 
   private void loadMore () {
-    if (isLoadingMore || !canLoadMore) {
+    if (isLoadingMore || !canLoadMore || sendersTdlib.isEmpty()) {
       return;
     }
 
     isLoadingMore = true;
-    tdlib.client().send(new TdApi.GetChatInviteLinkMembers(getArgumentsStrict().chatId, getArgumentsStrict().inviteLink, new TdApi.ChatInviteLinkMember(senders.get(senders.size() - 1).getId(), 0), 50), this);
+    tdlib.client().send(new TdApi.GetChatInviteLinkMembers(getArgumentsStrict().chatId, getArgumentsStrict().inviteLink, sendersTdlib.get(sendersTdlib.size() - 1), 50), this);
   }
 }
