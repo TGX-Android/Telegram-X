@@ -51,6 +51,8 @@ import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
 import org.thunderdog.challegram.widget.SparseDrawableView;
 
+import java.util.List;
+
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.FactorAnimator;
@@ -660,89 +662,96 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           icons.append(R.drawable.deproko_baseline_stickers_24);
         }
       }
-      if (isSent && (!msg.isHot() || TD.isOut(msg.getMessage()))) {
-        int playListAddMode = TdlibManager.instance().player().canAddToPlayList(msg.tdlib(), msg.getMessage());
+    }
+    if (isSent && !isMore && (!msg.isHot() || TD.isOut(msg.getMessage()))) {
+      int playListAddMode = TdlibManager.instance().player().canAddToPlayList(msg.tdlib(), msg.getMessage());
+      TdApi.Message singleMessage = msg.getMessage();
+      TdApi.Message[] allMessages = msg.getAllMessages();
 
-        TdApi.Message message = msg.getMessage();
-        TD.DownloadedFile downloadedFile = TD.getDownloadedFile(message);
-        if (downloadedFile == null && message.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR && msg instanceof TGMessageText) {
-          TGWebPage webPage = ((TGMessageText) msg).getParsedWebPage();
-          if (webPage != null) {
-            downloadedFile = TD.getDownloadedFile(webPage);
+      List<TD.DownloadedFile> downloadedFiles = TD.getDownloadedFiles(allMessages);
+      if (downloadedFiles.isEmpty() && singleMessage.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR && msg instanceof TGMessageText) {
+        TGWebPage webPage = ((TGMessageText) msg).getParsedWebPage();
+        if (webPage != null) {
+          TD.DownloadedFile downloadedFile = TD.getDownloadedFile(webPage);
+          if (downloadedFile != null) {
+            downloadedFiles.add(downloadedFile);
           }
         }
-        if (downloadedFile != null) {
-          tag = downloadedFile;
-          if (downloadedFile.getFileType().getConstructor() == TdApi.FileTypeAnimation.CONSTRUCTOR) {
-            if (!isMore) {
-              ids.append(R.id.btn_saveGif);
-              strings.append(R.string.SaveGif);
-              icons.append(R.drawable.deproko_baseline_gif_24);
-            }
-          }
-          if (TD.canSaveToDownloads(msg)) {
-            switch (downloadedFile.getFileType().getConstructor()) {
-              case TdApi.FileTypeVoiceNote.CONSTRUCTOR:
-              case TdApi.FileTypeVideoNote.CONSTRUCTOR: {
-                break;
-              }
-              case TdApi.FileTypeAnimation.CONSTRUCTOR:
-              case TdApi.FileTypeVideo.CONSTRUCTOR:
-              case TdApi.FileTypePhoto.CONSTRUCTOR: {
-                if (!isMore) {
-                  ids.append(R.id.btn_saveFile);
-                  strings.append(R.string.SaveToGallery);
-                  icons.append(R.drawable.baseline_image_24);
-                }
-                break;
-              }
-              case TdApi.FileTypeAudio.CONSTRUCTOR: {
-                if (!isMore) {
-                  ids.append(R.id.btn_saveFile);
-                  strings.append(R.string.SaveToMusic);
-                  icons.append(R.drawable.baseline_music_note_24);
-                }
-                break;
-              }
-              default: {
-                /*if (!isMore && msg instanceof TGMessageFile && ((TGMessageFile) msg).getFile().needOpenIn()) {
-                  ids.append(R.id.btn_openIn);
-                  strings.append(R.string.OpenInExternalApp);
-                  icons.append(R.drawable.baseline_open_in_browser_24);
-                }*/
-                if (!isMore) {
-                  if (msg.getMessage().content.getConstructor() == TdApi.MessageDocument.CONSTRUCTOR) {
-                    TdApi.Document document = ((TdApi.MessageDocument) msg.getMessage().content).document;
-                    if (TdlibUi.canInstallLanguage(document)) {
-                      ids.append(R.id.btn_messageApplyLocalization);
-                      strings.append(R.string.LanguageInstall);
-                      icons.append(R.drawable.baseline_language_24);
-                    }
-                    if (TdlibUi.canInstallTheme(document)) {
-                      ids.append(R.id.btn_messageInstallTheme);
-                      strings.append(R.string.ThemeInstallDone);
-                      icons.append(R.drawable.baseline_palette_24);
-                    }
-                  }
+      }
+      if (!downloadedFiles.isEmpty()) {
+        tag = downloadedFiles;
 
-                  ids.append(R.id.btn_saveFile);
-                  strings.append(R.string.SaveToDownloads);
-                  icons.append(R.drawable.baseline_file_download_24);
-                }
-                break;
-              }
-            }
-          }
-        }
-        if (!isMore && playListAddMode != TGPlayerController.ADD_MODE_NONE) {
-          ids.append(R.id.btn_addToPlaylist);
-          if (playListAddMode == TGPlayerController.ADD_MODE_MOVE) {
-            strings.append(R.string.PlayListPlayNext);
-            icons.append(R.drawable.baseline_queue_music_24);
+        TD.DownloadedFile baseDownloadedFile = downloadedFiles.get(0);
+        if (baseDownloadedFile.getFileType().getConstructor() == TdApi.FileTypeAnimation.CONSTRUCTOR) {
+          ids.append(R.id.btn_saveGif);
+          if (downloadedFiles.size() == 1) {
+            strings.append(R.string.SaveGif);
           } else {
-            strings.append(playListAddMode == TGPlayerController.ADD_MODE_RESTORE ? R.string.PlayListRestore : R.string.PlayListAdd);
-            icons.append(R.drawable.baseline_playlist_add_24);
+            strings.append(Lang.plural(R.string.SaveGif, downloadedFiles.size()));
           }
+          icons.append(R.drawable.deproko_baseline_gif_24);
+        }
+        switch (baseDownloadedFile.getFileType().getConstructor()) {
+          case TdApi.FileTypeVoiceNote.CONSTRUCTOR:
+          case TdApi.FileTypeVideoNote.CONSTRUCTOR: {
+            break;
+          }
+          case TdApi.FileTypeAnimation.CONSTRUCTOR:
+          case TdApi.FileTypeVideo.CONSTRUCTOR:
+          case TdApi.FileTypePhoto.CONSTRUCTOR: {
+            ids.append(R.id.btn_saveFile);
+            if (downloadedFiles.size() == 1) {
+              strings.append(R.string.SaveToGallery);
+            } else {
+              strings.append(Lang.plural(R.string.SaveXToGallery, downloadedFiles.size()));
+            }
+            icons.append(R.drawable.baseline_image_24);
+            break;
+          }
+          case TdApi.FileTypeAudio.CONSTRUCTOR: {
+            ids.append(R.id.btn_saveFile);
+            if (downloadedFiles.size() == 1) {
+              strings.append(R.string.SaveToMusic);
+            } else {
+              strings.append(Lang.plural(R.string.SaveXToMusic, downloadedFiles.size()));
+            }
+            icons.append(R.drawable.baseline_music_note_24);
+            break;
+          }
+          default: {
+            if (allMessages.length == 1 && msg.getMessage().content.getConstructor() == TdApi.MessageDocument.CONSTRUCTOR) {
+              TdApi.Document document = ((TdApi.MessageDocument) msg.getMessage().content).document;
+              if (TdlibUi.canInstallLanguage(document)) {
+                ids.append(R.id.btn_messageApplyLocalization);
+                strings.append(R.string.LanguageInstall);
+                icons.append(R.drawable.baseline_language_24);
+              }
+              if (TdlibUi.canInstallTheme(document)) {
+                ids.append(R.id.btn_messageInstallTheme);
+                strings.append(R.string.ThemeInstallDone);
+                icons.append(R.drawable.baseline_palette_24);
+              }
+            }
+
+            ids.append(R.id.btn_saveFile);
+            if (downloadedFiles.size() == 1) {
+              strings.append(R.string.SaveToDownloads);
+            } else {
+              strings.append(Lang.plural(R.string.SaveXToDownloads, downloadedFiles.size()));
+            }
+            icons.append(R.drawable.baseline_file_download_24);
+            break;
+          }
+        }
+      }
+      if (allMessages.length == 1 && playListAddMode != TGPlayerController.ADD_MODE_NONE) {
+        ids.append(R.id.btn_addToPlaylist);
+        if (playListAddMode == TGPlayerController.ADD_MODE_MOVE) {
+          strings.append(R.string.PlayListPlayNext);
+          icons.append(R.drawable.baseline_queue_music_24);
+        } else {
+          strings.append(playListAddMode == TGPlayerController.ADD_MODE_RESTORE ? R.string.PlayListRestore : R.string.PlayListAdd);
+          icons.append(R.drawable.baseline_playlist_add_24);
         }
       }
     }

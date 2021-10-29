@@ -3573,33 +3573,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return context.account(accountId).getName();
   }
 
-  /*public String userDisplayName () {
-    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O) {
-      return "";
-    }
-    return null;
-  }*/
-
   // Actions
 
   public void sendScreenshotMessage (long chatId) {
     client().send(new TdApi.SendChatScreenshotTakenNotification(chatId), messageHandler());
-  }
-
-  public void saveGif (int fileId) {
-    if (fileId == 0) {
-      return;
-    }
-    client().send(new TdApi.AddSavedAnimation(new TdApi.InputFileId(fileId)), object -> {
-      switch (object.getConstructor()) {
-        case TdApi.Ok.CONSTRUCTOR:
-          UI.showToast(R.string.GifSaved, Toast.LENGTH_SHORT);
-          break;
-        case TdApi.Error.CONSTRUCTOR:
-          UI.showError(object);
-          break;
-      }
-    });
   }
 
   public void sendMessage (long chatId, long messageThreadId, long replyToMessageId, boolean disableNotification, boolean fromBackground, TdApi.Animation animation) {

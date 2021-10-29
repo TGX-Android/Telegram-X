@@ -91,13 +91,13 @@ import org.thunderdog.challegram.component.chat.EmojiToneHelper;
 import org.thunderdog.challegram.component.chat.InlineResultsWrap;
 import org.thunderdog.challegram.component.chat.InputView;
 import org.thunderdog.challegram.component.chat.InvisibleImageView;
-import org.thunderdog.challegram.component.chat.PinnedMessagesBar;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessageViewGroup;
 import org.thunderdog.challegram.component.chat.MessagesAdapter;
 import org.thunderdog.challegram.component.chat.MessagesHolder;
 import org.thunderdog.challegram.component.chat.MessagesLayout;
 import org.thunderdog.challegram.component.chat.MessagesManager;
+import org.thunderdog.challegram.component.chat.PinnedMessagesBar;
 import org.thunderdog.challegram.component.chat.RaiseHelper;
 import org.thunderdog.challegram.component.chat.ReplyView;
 import org.thunderdog.challegram.component.chat.SilentButton;
@@ -183,7 +183,6 @@ import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
-import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.camera.CameraAccessImageView;
@@ -4946,22 +4945,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_saveGif: {
         if (selectedMessage != null && selectedMessageTag != null) {
-          tdlib.saveGif(((TD.DownloadedFile) selectedMessageTag).getFileId());
-          clearSelectedMessage();
-        }
-        return true;
-      }
-      case R.id.btn_saveToGallery: {
-        if (selectedMessage != null && selectedMessageTag != null) {
-          TD.DownloadedFile file = (TD.DownloadedFile) selectedMessageTag;
-          U.copyToGallery(file.getPath(), TGMimeType.isVideoMimeType(file.getMimeType()) ? U.TYPE_VIDEO : U.TYPE_PHOTO);
+          //noinspection unchecked
+          tdlib.ui().saveGifs(((List<TD.DownloadedFile>) selectedMessageTag));
           clearSelectedMessage();
         }
         return true;
       }
       case R.id.btn_saveFile: {
         if (selectedMessage != null && selectedMessageTag != null) {
-          TD.saveFile((TD.DownloadedFile) selectedMessageTag);
+          //noinspection unchecked
+          TD.saveFiles((List<TD.DownloadedFile>) selectedMessageTag);
           clearSelectedMessage();
         }
         return true;

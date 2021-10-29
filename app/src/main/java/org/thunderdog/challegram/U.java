@@ -1707,6 +1707,7 @@ public class U {
   public static final int TYPE_PHOTO = 0;
   public static final int TYPE_VIDEO = 1;
   public static final int TYPE_GIF = 2;
+  public static final int TYPE_FILE = 3;
 
   public static void savePhotoToGallery (final Bitmap bitmap, boolean transparent) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && needsPermissionRequest(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE)) {
@@ -1737,38 +1738,50 @@ public class U {
   }
 
   public static void copyToGallery (final String fromPath, final int type) {
+    copyToGallery(fromPath, type, true);
+  }
+
+  public static boolean copyToGalleryImpl (final String fromPath, int type) {
+    File file = generateMediaPath(fromPath, type);
+    if (file != null) {
+      try {
+        if (FileUtils.copy(new File(fromPath), file)) {
+          addToGallery(file);
+          return true;
+        } else {
+          Log.w("Cannot copy file to gallery");
+        }
+      } catch (Throwable t) {
+        Log.w("Cannot save file to gallery", t);
+      }
+    }
+    return false;
+  }
+
+  public static void copyToGallery (final String fromPath, final int type, boolean needAlert) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && needsPermissionRequest(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
       requestPermissions(new String[] {Manifest.permission.WRITE_EXTERNAL_STORAGE}, result -> {
         if (result) {
-          copyToGallery(fromPath, type);
+          copyToGallery(fromPath, type, needAlert);
         }
       });
       return;
     }
-
-    if (fromPath != null && fromPath.length() > 0) {
+    if (fromPath != null && !fromPath.isEmpty()) {
       Background.instance().post(() -> {
-        File file = generateMediaPath(fromPath, type);
-        if (file != null) {
-          try {
-            if (FileUtils.copy(new File(fromPath), file)) {
-              addToGallery(file);
-              switch (type) {
-                case TYPE_GIF:
-                  UI.showToast(R.string.GifHasBeenSavedToGallery, Toast.LENGTH_SHORT);
-                  break;
-                case TYPE_VIDEO:
-                  UI.showToast(R.string.VideoHasBeenSavedToGallery, Toast.LENGTH_SHORT);
-                  break;
-                case TYPE_PHOTO:
-                  UI.showToast(R.string.PhotoHasBeenSavedToGallery, Toast.LENGTH_SHORT);
-                  break;
-              }
-            } else {
-              Log.w("Cannot copy file to gallery");
+        if (copyToGalleryImpl(fromPath, type)) {
+          if (needAlert) {
+            switch (type) {
+              case TYPE_GIF:
+                UI.showToast(R.string.GifHasBeenSavedToGallery, Toast.LENGTH_SHORT);
+                break;
+              case TYPE_VIDEO:
+                UI.showToast(R.string.VideoHasBeenSavedToGallery, Toast.LENGTH_SHORT);
+                break;
+              case TYPE_PHOTO:
+                UI.showToast(R.string.PhotoHasBeenSavedToGallery, Toast.LENGTH_SHORT);
+                break;
             }
-          } catch (Throwable t) {
-            Log.w("Cannot save file to gallery", t);
           }
         }
       });

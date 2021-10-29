@@ -4404,6 +4404,96 @@ public class TD {
     });
   }
 
+  public static void saveFiles (List<DownloadedFile> files) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      BaseActivity context = UI.getUiContext();
+      if (context == null) {
+        return;
+      }
+      if (context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+        context.requestCustomPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, (code, granted) -> {
+          if (granted) {
+            saveFiles(files);
+          }
+        });
+        return;
+      }
+    }
+    Background.instance().post(() -> {
+      int savedCount = 0;
+      int allSavedType = -1;
+      List<String> savedFiles = new ArrayList<>();
+      for (DownloadedFile file : files) {
+        boolean ok = false;
+        int savedType = -1;
+        switch (file.getFileType().getConstructor()) {
+          case TdApi.FileTypeAnimation.CONSTRUCTOR: {
+            ok = U.copyToGalleryImpl(file.getPath(), savedType = U.TYPE_GIF);
+            break;
+          }
+          case TdApi.FileTypeVideo.CONSTRUCTOR: {
+            ok = U.copyToGalleryImpl(file.getPath(), savedType = U.TYPE_VIDEO);
+            break;
+          }
+          case TdApi.FileTypePhoto.CONSTRUCTOR: {
+            ok = U.copyToGalleryImpl(file.getPath(), savedType = U.TYPE_PHOTO);
+            break;
+          }
+          default: {
+            savedType = U.TYPE_FILE;
+            File savedFile = saveToDownloadsImpl(file);
+            if (savedFile != null) {
+              savedFiles.add(savedFile.getPath());
+            }
+            ok = savedFile != null;
+            break;
+          }
+        }
+        if (ok) {
+          savedCount++;
+          if (savedCount == 1) {
+            allSavedType = savedType;
+          } else if (allSavedType != savedType) {
+            allSavedType = -1;
+          }
+        }
+      }
+      if (savedCount > 0) {
+        if (allSavedType != -1) {
+          switch (allSavedType) {
+            case U.TYPE_PHOTO:
+              if (savedCount == 1)
+                UI.showToast(R.string.PhotoHasBeenSavedToGallery, Toast.LENGTH_SHORT);
+              else
+                UI.showToast(Lang.pluralBold(R.string.XPhotoSaved, savedCount), Toast.LENGTH_SHORT);
+              break;
+            case U.TYPE_VIDEO:
+              if (savedCount == 1)
+                UI.showToast(R.string.VideoHasBeenSavedToGallery, Toast.LENGTH_SHORT);
+              else
+                UI.showToast(Lang.pluralBold(R.string.XVideoSaved, savedCount), Toast.LENGTH_SHORT);
+              break;
+            case U.TYPE_GIF:
+              if (savedCount == 1)
+                UI.showToast(R.string.GifHasBeenSavedToGallery, Toast.LENGTH_SHORT);
+              else
+                UI.showToast(Lang.pluralBold(R.string.SavedXGifToGallery, savedCount), Toast.LENGTH_SHORT);
+              break;
+            case U.TYPE_FILE:
+              if (savedCount == 1) {
+                UI.showToast(Lang.getStringBold(R.string.DownloadedToPath, savedFiles.get(0)), Toast.LENGTH_LONG);
+              } else {
+                UI.showToast(Lang.pluralBold(R.string.DownloadedXFiles, savedCount, Strings.join("\n", savedFiles)), Toast.LENGTH_LONG);
+              }
+              break;
+          }
+        } else {
+          UI.showToast(Lang.pluralBold(R.string.SavedXFiles, savedCount), Toast.LENGTH_SHORT);
+        }
+      }
+    });
+  }
+
   public static void saveFile (DownloadedFile file) {
     switch (file.getFileType().getConstructor()) {
       case TdApi.FileTypeAnimation.CONSTRUCTOR: {
@@ -4482,6 +4572,16 @@ public class TD {
     return null;
   }
 
+  public static @NonNull List<DownloadedFile> getDownloadedFiles (TdApi.Message[] messages) {
+    List<DownloadedFile> list = new ArrayList<>();
+    for (TdApi.Message message : messages) {
+      DownloadedFile file = getDownloadedFile(message);
+      if (file != null)
+        list.add(file);
+    }
+    return list;
+  }
+
   public static @Nullable DownloadedFile getDownloadedFile (TdApi.Message msg) {
     switch (msg.content.getConstructor()) {
       case TdApi.MessagePhoto.CONSTRUCTOR: {
@@ -4523,10 +4623,10 @@ public class TD {
     return null;
   }
 
-  private static boolean saveToDownloadsImpl (final DownloadedFile file) {
+  private static File saveToDownloadsImpl (final DownloadedFile file) {
     final File sourceFile = new File(file.getPath());
     if (!sourceFile.exists()) {
-      return false;
+      return null;
     }
 
     final File destDir;
@@ -4544,7 +4644,7 @@ public class TD {
     }
 
     if (!destDir.exists() && !destDir.mkdir()) {
-      return false;
+      return null;
     }
 
     File destFile;
@@ -4555,47 +4655,42 @@ public class TD {
 
     final File resultFile = destFile;
 
-    boolean ok = FileUtils.copy(sourceFile, destFile);
-    if (ok) {
-      U.scanFile(destFile);
-      UI.post(() -> {
-        if (file.fileType.getConstructor() == TdApi.FileTypeAudio.CONSTRUCTOR) {
-          U.addToGallery(resultFile);
-          UI.showToast(Lang.getString(R.string.DownloadedToPath, resultFile.getPath()), Toast.LENGTH_LONG);
-        } else {
-          final DownloadManager downloadManager = (DownloadManager) UI.getAppContext().getSystemService(Context.DOWNLOAD_SERVICE);
-          String name = resultFile.getName();
-          String mimeType = file.mimeType;
-          if (StringUtils.isEmpty(mimeType)) {
-            String extension = U.getExtension(name);
-            if (!StringUtils.isEmpty(extension)) {
-              mimeType = TGMimeType.mimeTypeForExtension(extension);
-            }
-          }
-          if (StringUtils.isEmpty(name)) {
-            if (StringUtils.isEmpty(mimeType)) {
-              name = "file";
-            } else {
-              name = "file." + TGMimeType.extensionForMimeType(mimeType);
-            }
-          }
-          if (downloadManager != null) {
-            final String nameFinal = name;
-            final String mimeTypeFinal = mimeType;
-            Background.instance().post(() -> {
-              try {
-                downloadManager.addCompletedDownload(nameFinal, nameFinal, true, mimeTypeFinal, resultFile.getAbsolutePath(), resultFile.length(), true);
-              } catch (Throwable t) {
-                Log.w("Failed to notify about saved download", t);
-                UI.showToast("File added to downloads: " + resultFile.getPath(), Toast.LENGTH_SHORT);
-              }
-            });
-          }
-        }
-      });
+    if (!FileUtils.copy(sourceFile, destFile))
+      return null;
+
+    U.scanFile(destFile);
+
+    if (file.fileType.getConstructor() == TdApi.FileTypeAudio.CONSTRUCTOR) {
+      U.addToGallery(resultFile);
+      return resultFile;
     }
 
-    return ok;
+    final DownloadManager downloadManager = (DownloadManager) UI.getAppContext().getSystemService(Context.DOWNLOAD_SERVICE);
+    String name = resultFile.getName();
+    String mimeType = file.mimeType;
+    if (StringUtils.isEmpty(mimeType)) {
+      String extension = U.getExtension(name);
+      if (!StringUtils.isEmpty(extension)) {
+        mimeType = TGMimeType.mimeTypeForExtension(extension);
+      }
+    }
+    if (StringUtils.isEmpty(name)) {
+      if (StringUtils.isEmpty(mimeType)) {
+        name = "file";
+      } else {
+        name = "file." + TGMimeType.extensionForMimeType(mimeType);
+      }
+    }
+    if (downloadManager != null) {
+      final String nameFinal = name;
+      final String mimeTypeFinal = mimeType;
+      try {
+        downloadManager.addCompletedDownload(nameFinal, nameFinal, true, mimeTypeFinal, resultFile.getAbsolutePath(), resultFile.length(), true);
+      } catch (Throwable t) {
+        Log.w("Failed to notify about saved download", t);
+      }
+    }
+    return resultFile;
   }
 
   private static void saveToDownloadsImpl (final File sourceFile, final String sourceMimeType) {
@@ -4668,7 +4763,12 @@ public class TD {
       }
     }
 
-    Background.instance().post(() -> saveToDownloadsImpl(file));
+    Background.instance().post(() -> {
+      File savedFile = saveToDownloadsImpl(file);
+      if (savedFile != null) {
+        UI.showToast(Lang.getString(R.string.DownloadedToPath, savedFile.getPath()), Toast.LENGTH_LONG);
+      }
+    });
   }
 
   // other
