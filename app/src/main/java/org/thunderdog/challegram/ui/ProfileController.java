@@ -3801,7 +3801,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   public boolean canAddAnyKindOfMembers () {
     TdApi.ChatMemberStatus status = tdlib.chatStatus(chat.id);
-    return (status != null && status.getConstructor() != TdApi.ChatMemberStatusLeft.CONSTRUCTOR) && (tdlib.canInviteUsers(chat, false) || canBanMembers() || canPromoteMembers()); // FIXME or not?
+    return (status != null && status.getConstructor() != TdApi.ChatMemberStatusLeft.CONSTRUCTOR) && (tdlib.canInviteUsers(chat) || canBanMembers() || canPromoteMembers()); // FIXME or not?
   }
 
   @Override

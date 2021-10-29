@@ -5895,4 +5895,44 @@ public class TdlibUi extends Handler {
       });
     });
   }
+
+  public void saveGifs (List<TD.DownloadedFile> downloadedFiles) {
+    AtomicInteger remaining = new AtomicInteger(downloadedFiles.size());
+    AtomicInteger successfull = new AtomicInteger(0);
+    for (TD.DownloadedFile downloadedFile : downloadedFiles) {
+      tdlib.client().send(new TdApi.AddSavedAnimation(new TdApi.InputFileId(downloadedFile.getFileId())), object -> {
+        switch (object.getConstructor()) {
+          case TdApi.Ok.CONSTRUCTOR:
+            successfull.incrementAndGet();
+            break;
+          case TdApi.Error.CONSTRUCTOR:
+            UI.showError(object);
+            break;
+        }
+        if (remaining.decrementAndGet() == 0) {
+          if (successfull.get() == 1) {
+            UI.showToast(R.string.GifSaved, Toast.LENGTH_SHORT);
+          } else {
+            UI.showToast(Lang.pluralBold(R.string.GifSaved, downloadedFiles.size()), Toast.LENGTH_SHORT);
+          }
+        }
+      });
+    }
+  }
+
+  public void saveGif (int fileId) {
+    if (fileId == 0) {
+      return;
+    }
+    tdlib.client().send(new TdApi.AddSavedAnimation(new TdApi.InputFileId(fileId)), object -> {
+      switch (object.getConstructor()) {
+        case TdApi.Ok.CONSTRUCTOR:
+          UI.showToast(R.string.GifSaved, Toast.LENGTH_SHORT);
+          break;
+        case TdApi.Error.CONSTRUCTOR:
+          UI.showError(object);
+          break;
+      }
+    });
+  }
 }

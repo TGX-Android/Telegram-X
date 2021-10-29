@@ -18,7 +18,6 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
-import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.camera.CameraController;
@@ -32,6 +31,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.DateUtils;
+import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
 import me.vkryl.td.TdConstants;
 
@@ -115,7 +115,7 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
         }
         if (first) {
           isPending = session.isPasswordPending;
-          items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, session.isPasswordPending ? R.string.SessionsIncompleteTitle : R.string.SessionsTitle));
+          items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, session.isPasswordPending ? R.string.SessionsIncompleteTitle : R.string.ActiveDevices));
           items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
           first = false;
         } else {
@@ -164,30 +164,35 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
   }
 
   private static String getTitle (TdApi.Session session) {
-    StringBuilder b = new StringBuilder(session.applicationName.length() + session.applicationVersion.length() + 3);
-    if (session.applicationName.isEmpty()) {
-      b.append("Unknown App (#");
-      b.append(session.apiId);
-      b.append(")");
-    } else {
+    return session.deviceModel;
+    /*StringBuilder b = new StringBuilder(session.applicationName.length() + session.applicationVersion.length() + 3);
+
+    return b.toString();*/
+  }
+
+  private static String getSubtext (TdApi.Session session, boolean full) {
+    StringBuilder b = new StringBuilder();
+    if (full) {
+      b.append(getTitle(session));
+    }
+
+    if (b.length() > 0) {
+      b.append('\n');
+    }
+    if (!StringUtils.isEmpty(session.applicationName)) {
       b.append(session.applicationName);
+    } else {
+      b.append("App #");
+      b.append(session.apiId);
     }
     if (!session.applicationVersion.isEmpty()) {
       b.append(" ");
       b.append(session.applicationVersion);
     }
-    return b.toString();
-  }
 
-  private static String getSubtext (TdApi.Session session, boolean full) {
-    StringBuilder b = new StringBuilder(session.deviceModel.length() + session.systemVersion.length() + 2);
-    b.append(getTitle(session));
-    if (!session.deviceModel.isEmpty()) {
-      b.append('\n').append(session.deviceModel);
-    }
     if (!session.systemVersion.isEmpty() || !session.platform.isEmpty()) {
       if (b.length() > 0) {
-        b.append(", ");
+        b.append('\n');
       }
       b.append(session.platform);
       if (!session.systemVersion.isEmpty() && !session.platform.isEmpty()) {
@@ -195,6 +200,7 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
       }
       b.append(session.systemVersion);
     }
+
     if (full || session.isCurrent)
       b.append('\n').append(Lang.getString(R.string.SessionLogInDate, Lang.getTimestamp(session.logInDate, TimeUnit.SECONDS)));
     if (full) {

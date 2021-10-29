@@ -185,8 +185,10 @@ public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterCh
 
   @AnyThread
   public void initializeList (@Nullable Filter<TdApi.Chat> filter, ChatListListener listener, @NonNull RunnableData<List<Entry>> callback, int initialChunk, Runnable onLoadInitialChunk) {
-    getChats(filter, callback);
-    subscribeToUpdates(listener);
+    getChats(filter, (list) -> {
+      callback.runWithData(list);
+      subscribeToUpdates(listener);
+    });
     loadAtLeast(filter, initialChunk, onLoadInitialChunk);
   }
 

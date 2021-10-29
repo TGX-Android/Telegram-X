@@ -1084,9 +1084,7 @@ public class TooltipOverlayView extends ViewGroup {
     public boolean hasVisibleTarget () {
       if (viewProvider != null) {
         View view = viewProvider.findAnyTarget();
-        if (view != null && ViewCompat.isAttachedToWindow(view)) {
-          return true;
-        }
+        return view != null && ViewCompat.isAttachedToWindow(view);
       }
       if (controller != null) {
         return controller.isFocused();

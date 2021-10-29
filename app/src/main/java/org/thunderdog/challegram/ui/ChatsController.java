@@ -2546,6 +2546,12 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     if (archiveList != null) {
       archiveList.unsubscribeFromUpdates(archiveListListener);
     }
+    if (adapter != null) {
+      List<TGChat> chats = adapter.getChats();
+      for (TGChat chat : chats) {
+        chat.performDestroy();
+      }
+    }
     Settings.instance().removeChatListModeListener(this);
     tdlib.settings().removeUserPreferenceChangeListener(this);
     tdlib.listeners().unsubscribeFromAnyUpdates(this);

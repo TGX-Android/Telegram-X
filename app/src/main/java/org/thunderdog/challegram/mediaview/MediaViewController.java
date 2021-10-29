@@ -1564,7 +1564,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       case R.id.btn_saveGif: {
         TdApi.File file = item.getTargetFile();
         if (file != null) {
-          tdlib.saveGif(file.id);
+          tdlib.ui().saveGif(file.id);
         }
         break;
       }
