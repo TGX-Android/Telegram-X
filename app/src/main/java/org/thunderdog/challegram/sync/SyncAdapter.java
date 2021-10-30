@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.SyncResult;
 import android.os.Bundle;
 
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -21,8 +22,8 @@ import org.thunderdog.challegram.unsorted.Settings;
  * Author: default
  */
 public class SyncAdapter extends AbstractThreadedSyncAdapter {
-  private static final String AUTHORITY = "org.thunderdog.challegram.sync.provider";
-  private static final String ACCOUNT_TYPE = "org.thunderdog.challegram.sync.account";
+  private static final String AUTHORITY = BuildConfig.APPLICATION_ID + ".sync.provider";
+  private static final String ACCOUNT_TYPE = BuildConfig.APPLICATION_ID + ".sync.account";
   private static final String ACCOUNT_NAME = "Telegram";
 
   private static final String EXTRA_ACCOUNT_ID = "account_id";
