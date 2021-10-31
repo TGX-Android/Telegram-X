@@ -76,8 +76,8 @@
   <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
   <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
 
-  <uses-permission android:name="org.thunderdog.challegram.permission.MAPS_RECEIVE" />
-  <uses-permission android:name="org.thunderdog.challegram.permission.C2D_MESSAGE" />
+  <uses-permission android:name="${applicationId}.permission.MAPS_RECEIVE" />
+  <uses-permission android:name="${applicationId}.permission.C2D_MESSAGE" />
 
   <uses-permission android:name="com.sec.android.provider.badge.permission.READ" />
   <uses-permission android:name="com.sec.android.provider.badge.permission.WRITE" />
@@ -109,7 +109,6 @@
     android:icon="@mipmap/app_launcher"
     android:label="@string/AppName"
     android:largeHeap="true"
-    android:requestLegacyExternalStorage="true"
     android:roundIcon="@mipmap/app_launcher_round"
     android:supportsRtl="true"
     android:theme="@style/AppTheme"
@@ -152,20 +151,20 @@
       android:exported="false"
       android:stopWithTask="false">
       <intent-filter>
-        <action android:name="org.thunderdog.challegram.start" />
+        <action android:name="${applicationId}.start" />
         <action android:name="android.intent.action.BOOT_COMPLETED" />
       </intent-filter>
     </service>
 
     <provider
       android:name="org.thunderdog.challegram.sync.StubProvider"
-      android:authorities="org.thunderdog.challegram.sync.provider"
+      android:authorities="${applicationId}.sync.provider"
       android:exported="false"
       android:syncable="true" />
 
     <provider
       android:name="androidx.startup.InitializationProvider"
-      android:authorities="org.thunderdog.challegram.androidx-startup"
+      android:authorities="${applicationId}.androidx-startup"
       android:exported="false"
       tools:node="merge">
       <meta-data
@@ -409,7 +408,7 @@
 
     <provider
       android:name=".FileProvider"
-      android:authorities="org.thunderdog.challegram.provider"
+      android:authorities="${applicationId}.provider"
       android:exported="false"
       android:grantUriPermissions="true">
       <meta-data
