@@ -26,6 +26,7 @@ import android.os.Build
     Build.VERSION_CODES.P -> "Pie"
     Build.VERSION_CODES.Q -> "Q"
     Build.VERSION_CODES.R -> "R"
+    Build.VERSION_CODES.S -> "S"
     Build.VERSION_CODES.CUR_DEVELOPMENT -> "Magic Version"
     else -> "Unknown"
   }
@@ -53,6 +54,7 @@ fun getPrettyVersionCode (apiLevel: Int): String {
     Build.VERSION_CODES.P -> "9.0"
     Build.VERSION_CODES.Q -> "10"
     Build.VERSION_CODES.R -> "11"
+    Build.VERSION_CODES.S -> "12"
     Build.VERSION_CODES.CUR_DEVELOPMENT -> "Magic Version"
     else -> "Unknown"
   }
