@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGChat;
@@ -581,8 +582,10 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
     int position;
     if (needSort) {
       position = Collections.binarySearch(chats, newChat, CHAT_COMPARATOR);
-      if (position >= 0)
-        throw new IllegalStateException();
+      if (position >= 0) {
+        Log.i("Chat %d is already present in the list.", chat.id);
+        return 0;
+      }
       position = position * -1 - 1;
     } else {
       position = hasArchive ? atIndex + 1 : atIndex;
