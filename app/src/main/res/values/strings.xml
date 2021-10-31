@@ -597,8 +597,8 @@
   <string name="SaveXGifs_one">Save %1$s GIF</string>
   <string name="SaveXGifs_other">Save %1$s GIFs</string>
   <string name="GifSaved">GIF is now available in the media keyboard</string>
-  <string name="XGifSaved_one">%1$s GIF is now available in the media keyboard</string>
-  <string name="XGifSaved_other">%1$s GIFs are now available in the media keyboard</string>
+  <string name="XGifSaved_one">%1$s new GIF available in the media keyboard</string>
+  <string name="XGifSaved_other">%1$s new GIFs available in the media keyboard</string>
   <string name="RemoveGifConfirm">Delete saved GIF?</string>
   <string name="NoMediaYet">No photos or videos yet</string>
   <string name="AttachAudio">Voice Message</string>
@@ -3804,8 +3804,8 @@
   <string name="ScanQRLinkHint">Use Settings — Devices — Scan QR to sign in with QR code.</string>
   <string name="ScanQRAuthorizedToast">Authorized %1$s</string>
   <string name="ScanQRFullTitle">Scan QR Code</string>
-  <string name="ScanQRFullSubtitle">Scan a QR code to log into this account on another device.</string>
-  <string name="ScanQRFullSubtitleProxy">Scan a QR code to add a proxy server.</string>
+  <string name="ScanQRFullSubtitle">Scan the QR code to log into this account on another device.</string>
+  <string name="ScanQRFullSubtitleProxy">Scan the QR code to add a proxy server.</string>
 
   <string name="SlowMode">Slow Mode</string>
   <string name="SlowModeDisabled">Choose how long each member must wait before sending their next message.</string>
