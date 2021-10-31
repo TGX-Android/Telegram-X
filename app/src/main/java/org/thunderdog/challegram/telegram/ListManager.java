@@ -61,6 +61,10 @@ public abstract class ListManager<T> implements Destroyable, Iterable<T> {
     subscribeToUpdates();
   }
 
+  protected void loadTotalCount (@Nullable Runnable after) {
+    // Implement in the child if the count may desync from the list size
+  }
+
   @UiThread
   public final void loadInitialChunk (@Nullable Runnable after) {
     if (items.isEmpty()) {
@@ -259,8 +263,11 @@ public abstract class ListManager<T> implements Destroyable, Iterable<T> {
 
   protected final boolean changeTotalCount (int delta) {
     if (this.totalCount != COUNT_UNKNOWN && delta != 0) {
-      if (this.totalCount + delta < 0)
-        throw new IllegalStateException(this.totalCount + " + " + delta);
+      if (this.totalCount + delta < 0) {
+        boolean listAvailable = setTotalCount(items.size());
+        loadTotalCount(null);
+        return listAvailable;
+      }
       return setTotalCount(this.totalCount + delta);
     }
     return false;
