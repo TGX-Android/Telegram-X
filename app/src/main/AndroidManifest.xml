@@ -98,8 +98,11 @@
   <uses-permission android:name="android.permission.GET_ACCOUNTS" />
   <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS" />
 
-  <!--<permission android:name="org.thunderdog.challegram.permission.MAPS_RECEIVE" android:protectionLevel="signature"/>
-  <permission android:name="org.thunderdog.challegram.permission.C2D_MESSAGE" android:protectionLevel="signature" />-->
+  <queries>
+    <intent>
+      <action android:name="com.google.android.youtube.api.service.START" />
+    </intent>
+  </queries>
 
   <application
     android:name="org.thunderdog.challegram.BaseApplication"
