@@ -109,7 +109,6 @@
     android:icon="@mipmap/app_launcher"
     android:label="@string/AppName"
     android:largeHeap="true"
-    android:requestLegacyExternalStorage="true"
     android:roundIcon="@mipmap/app_launcher_round"
     android:supportsRtl="true"
     android:theme="@style/AppTheme"
