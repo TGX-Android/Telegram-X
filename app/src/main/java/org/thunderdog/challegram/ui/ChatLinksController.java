@@ -17,11 +17,9 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.component.user.RemoveHelper;
-import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
@@ -29,7 +27,6 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.UI;
-import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.CheckBox;
 import org.thunderdog.challegram.widget.EmbeddableStickerView;
@@ -41,8 +38,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import me.vkryl.core.collection.IntList;
 
 public class ChatLinksController extends RecyclerViewController<ChatLinksController.Args> implements View.OnClickListener, TGLegacyManager.EmojiLoadListener {
   private SettingsAdapter adapter;
@@ -478,7 +473,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
         if (inviteList.size() < (revoked ? totalRevokedLinkCount : totalLinkCount)) {
           newItems.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-          newItems.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, R.drawable.baseline_arrow_downward_24, Lang.plural(R.string.StatsXShowMore, Math.min(100, (revoked ? totalRevokedLinkCount : totalLinkCount) - inviteList.size())), false).setIntValue(revoked ? 1 : 0));
+          newItems.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, R.drawable.baseline_direction_arrow_down_24, Lang.plural(R.string.StatsXShowMore, Math.min(100, (revoked ? totalRevokedLinkCount : totalLinkCount) - inviteList.size())), false).setIntValue(revoked ? 1 : 0));
         }
 
         adapter.removeItem(index);
@@ -740,7 +735,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
     if (inviteLinks.size() < totalLinkCount) {
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, R.drawable.baseline_arrow_downward_24, Lang.plural(R.string.StatsXShowMore, Math.min(100, totalLinkCount - inviteLinks.size())), false).setIntValue(0));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, R.drawable.baseline_direction_arrow_down_24, Lang.plural(R.string.StatsXShowMore, Math.min(100, totalLinkCount - inviteLinks.size())), false).setIntValue(0));
     }
 
     if (showAdditionalLinks) {
@@ -776,7 +771,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
       if (inviteLinksRevoked.size() < totalRevokedLinkCount) {
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-        items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, R.drawable.baseline_arrow_downward_24, Lang.plural(R.string.StatsXShowMore, Math.min(100, totalRevokedLinkCount - inviteLinksRevoked.size())), false).setIntValue(1));
+        items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, R.drawable.baseline_direction_arrow_down_24, Lang.plural(R.string.StatsXShowMore, Math.min(100, totalRevokedLinkCount - inviteLinksRevoked.size())), false).setIntValue(1));
       }
 
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));

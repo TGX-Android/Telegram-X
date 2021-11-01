@@ -367,7 +367,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
 
     if (maxLength < users.length) {
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, R.drawable.baseline_arrow_downward_24, Lang.plural(R.string.StatsXShowMore, users.length - 10), false));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, R.drawable.baseline_direction_arrow_down_24, Lang.plural(R.string.StatsXShowMore, users.length - 10), false));
     }
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
