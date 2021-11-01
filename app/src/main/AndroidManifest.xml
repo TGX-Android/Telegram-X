@@ -119,7 +119,9 @@
     android:roundIcon="@mipmap/app_launcher_round"
     android:supportsRtl="true"
     android:theme="@style/AppTheme"
-    tools:targetApi="q">
+    android:requestLegacyExternalStorage="true"
+    android:preserveLegacyExternalStorage="true"
+    tools:targetApi="r">
 
     <meta-data
       android:name="firebase_analytics_collection_deactivated"
