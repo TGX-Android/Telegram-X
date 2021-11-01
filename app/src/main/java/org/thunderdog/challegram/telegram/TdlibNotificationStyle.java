@@ -15,6 +15,7 @@ import android.util.SparseIntArray;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.Person;
@@ -674,8 +675,11 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
   // Common notification
 
+  @RequiresApi(api = Build.VERSION_CODES.R)
   protected final String createShortcut (NotificationCompat.Builder builder, Context context, @NonNull TdlibNotificationGroup group, CharSequence visualChatTitle, long chatId, Bitmap icon, NotificationCompat.MessagingStyle messagingStyle) {
-    ShortcutInfoCompat.Builder attachedShortcut = new ShortcutInfoCompat.Builder(context, "tgx_ns_" + chatId);
+    long localChatId = tdlib.settings().getLocalChatId(chatId);
+
+    ShortcutInfoCompat.Builder attachedShortcut = new ShortcutInfoCompat.Builder(context, "tgx_ns_" + localChatId);
     HashMap<String, Person> persons = new HashMap<>();
 
     for (NotificationCompat.MessagingStyle.Message msg : messagingStyle.getMessages()) {
@@ -688,7 +692,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     attachedShortcut.setPersons(persons.values().toArray(new Person[0]));
     attachedShortcut.setLongLived(true);
     attachedShortcut.setShortLabel(visualChatTitle);
-    attachedShortcut.setIntent(TdlibNotificationUtils.newCoreIntent(tdlib.id(), tdlib.settings().getLocalChatId(chatId), group.findTargetMessageId()));
+    attachedShortcut.setIntent(TdlibNotificationUtils.newCoreIntent(tdlib.id(), localChatId, group.findTargetMessageId()));
 
     if (U.isValidBitmap(icon)) {
       attachedShortcut.setIcon(IconCompat.createWithBitmap(icon));
@@ -698,6 +702,10 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
     ShortcutManagerCompat.pushDynamicShortcut(context, si);
     builder.setShortcutInfo(si);
+
+    // TODO: Uncomment to support bubbles. Not usable at the moment.
+    //NotificationCompat.BubbleMetadata.Builder bm = new NotificationCompat.BubbleMetadata.Builder(si.getId());
+    //builder.setBubbleMetadata(bm.build());
 
     return si.getId();
   }
