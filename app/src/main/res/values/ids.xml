@@ -895,6 +895,11 @@
   <item type="id" name="btn_notifications_channel" />
   <item type="id" name="btn_notifications_includeDismissed" />
 
+  <item type="id" name="btn_notificationMode" />
+  <item type="id" name="btn_notificationMode_all" />
+  <item type="id" name="btn_notificationMode_active" />
+  <item type="id" name="btn_notificationMode_selected" />
+
   <item type="id" name="btn_customChat_priorityOrImportance" />
   <item type="id" name="btn_customChat_preview" />
   <item type="id" name="btn_customChat_vibrate" />

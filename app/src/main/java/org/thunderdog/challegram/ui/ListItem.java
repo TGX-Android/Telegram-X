@@ -39,7 +39,7 @@ public class ListItem {
   public static final int TYPE_EMPTY_OFFSET_SMALL = 14;
   public static final int TYPE_PROGRESS = 15;
   public static final int TYPE_SESSION = 16;
-  public static final int TYPE_VALUED_SETTING_RED = 17;
+  // public static final int TYPE_VALUED_SETTING_RED = 17;
   public static final int TYPE_SESSIONS_EMPTY = 18;
   public static final int TYPE_ICONIZED_EMPTY = 19;
   public static final int TYPE_BUTTON = 20;

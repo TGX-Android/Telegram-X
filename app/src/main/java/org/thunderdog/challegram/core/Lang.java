@@ -299,6 +299,25 @@ public class Lang {
     return null;
   }
 
+  public static CharSequence boldify (CharSequence text) {
+    return wrap(text, boldCreator());
+  }
+
+  public static CharSequence codify (CharSequence text) {
+    return wrap(text, codeCreator());
+  }
+
+  public static CharSequence wrap (CharSequence text, SpanCreator spanCreator) {
+    return spanCreator != null ? formatString("%s", spanCreator, text) : text;
+    /*Object span = spanCreator.onCreateSpan(text, 0, text.length(), 0, Text.needFakeBold(text));
+    if (span != null) {
+      SpannableStringBuilder str = new SpannableStringBuilder(text);
+      str.setSpan(span, 0, str.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+      return str;
+    }
+    return text;*/
+  }
+
   public static CharSequence getStringBold (@StringRes int resource, Object... formatArgs) {
     return getStringImpl(null, resource, true, 0, boldCreator(), formatArgs);
   }
@@ -362,6 +381,14 @@ public class Lang {
     return (target, argStart, argEnd, argIndex, needFakeBold) -> newBoldSpan(needFakeBold);
   }
 
+  public static Object newCodeSpan (boolean needFakeBold) {
+    return TD.toDisplaySpan(new TdApi.TextEntityTypeCode(), null, needFakeBold);
+  }
+
+  public static SpanCreator codeCreator () {
+    return (target, argStart, argEnd, argIndex, needFakeBold) -> newCodeSpan(needFakeBold);
+  }
+
   public static SpanCreator entityCreator (TdApi.TextEntityType entity) {
     return (target, argStart, argEnd, argIndex, needFakeBold) -> TD.toSpan(entity);
   }
@@ -371,14 +398,6 @@ public class Lang {
       context.tdlib().ui().openPrivateProfile(context, userId, null);
       return true;
     });
-  }
-
-  public static CharSequence wrapBold (String text) {
-    return wrap(text, boldCreator());
-  }
-
-  public static CharSequence wrap (String text, SpanCreator creator) {
-    return formatString("%s", creator, text);
   }
 
   public static CharSequence getString (@StringRes int resId, SpanCreator creator, Object... formatArgs) {

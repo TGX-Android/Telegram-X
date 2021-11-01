@@ -476,6 +476,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       case Status.INTERNAL_ERROR:
         return true;
 
+      case Status.ACCOUNT_NOT_SELECTED:
       case Status.NOT_BLOCKED:
         return false;
     }
@@ -506,7 +507,8 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     Status.DISABLED_SYNC,
     Status.DISABLED_APP_SYNC,
     Status.FIREBASE_MISSING,
-    Status.INTERNAL_ERROR
+    Status.INTERNAL_ERROR,
+    Status.ACCOUNT_NOT_SELECTED
   })
   public @interface Status {
     int NOT_BLOCKED = 0;
@@ -516,6 +518,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     int DISABLED_APP_SYNC = 4;
     int FIREBASE_MISSING = 5;
     int INTERNAL_ERROR = 6;
+    int ACCOUNT_NOT_SELECTED = 7;
   }
 
   public @Status
@@ -542,6 +545,8 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     }
     if (tdlib.settings().hasNotificationProblems())
       return Status.INTERNAL_ERROR;
+    if (!tdlib.account().forceEnableNotifications() && Settings.instance().checkNotificationFlag(Settings.NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS))
+      return Status.ACCOUNT_NOT_SELECTED;
     return Status.NOT_BLOCKED;
   }
 
@@ -1438,10 +1443,10 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       updated = Settings.instance().setNeedSplitNotificationCategories(true);
       updated = Settings.instance().setNeedHideSecretChats(false) || updated;
       if (Settings.instance().resetBadge()) {
-        TdlibManager.instance().resetBadge();
+        tdlib.context().resetBadge();
       }
       if (updated) {
-        TdlibManager.instance().onUpdateNotifications(null);
+        tdlib.context().onUpdateAllNotifications();
       }
     }
 

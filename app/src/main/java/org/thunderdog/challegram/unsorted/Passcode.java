@@ -319,7 +319,7 @@ public class Passcode implements UI.StateListener {
     }
     edit.apply();
     if (turnedOn) {
-      TdlibManager.instance().onUpdateNotifications(null);
+      TdlibManager.instance().onUpdateAllNotifications();
     }
   }
 

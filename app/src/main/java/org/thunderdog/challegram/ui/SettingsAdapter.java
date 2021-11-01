@@ -34,7 +34,6 @@ import org.thunderdog.challegram.component.base.TogglerView;
 import org.thunderdog.challegram.component.chat.MessagePreviewView;
 import org.thunderdog.challegram.component.inline.CustomResultView;
 import org.thunderdog.challegram.component.sharedmedia.MediaSmallView;
-import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
@@ -1585,20 +1584,16 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER:
       case ListItem.TYPE_INFO_MULTILINE:
-      case ListItem.TYPE_VALUED_SETTING_RED:
       case ListItem.TYPE_INFO_SETTING: {
         SettingView settingView = (SettingView) holder.itemView;
         settingView.setIcon(item.getIconResource());
         settingView.setName(item.getString());
+        settingView.setTextColorId(item.getTextColorId(ThemeColorId.NONE));
         holder.itemView.setEnabled(true);
         switch (viewType) {
           case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_COLOR: {
             View view = ((ViewGroup) (holder.itemView)).getChildAt(0);
             Views.setGravity(view, Gravity.CENTER_VERTICAL | (Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT));
-            break;
-          }
-          case ListItem.TYPE_VALUED_SETTING_RED: {
-            settingView.setTextColorId(item.getTextColorId(R.id.theme_color_textNegative));
             break;
           }
           case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO: {

@@ -4084,6 +4084,47 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     });
   }
 
+  public void terminateSession (TdApi.Session session, RunnableData<TdApi.Error> after) {
+    client().send(new TdApi.TerminateSession(session.id), result -> {
+      after.runWithData(result.getConstructor() == TdApi.Error.CONSTRUCTOR ? (TdApi.Error) result : null);
+      if (result.getConstructor() != TdApi.Error.CONSTRUCTOR) {
+        listeners.notifySessionTerminated(session);
+      }
+    });
+  }
+
+  public void terminateAllOtherSessions (TdApi.Session currentSession, RunnableData<TdApi.Error> after) {
+    client().send(new TdApi.TerminateAllOtherSessions(), result -> {
+      if (after != null) {
+        after.runWithData(result.getConstructor() == TdApi.Error.CONSTRUCTOR ? (TdApi.Error) result : null);
+      }
+      if (result.getConstructor() != TdApi.Error.CONSTRUCTOR) {
+        listeners.notifyAllSessionsTerminated(currentSession);
+      }
+    });
+  }
+
+  public void confirmQrCodeAuthentication (String qrLoginUri, RunnableData<TdApi.Session> onDone, RunnableData<TdApi.Error> onError) {
+    client().send(new TdApi.ConfirmQrCodeAuthentication(qrLoginUri), result -> {
+      switch (result.getConstructor()) {
+        case TdApi.Session.CONSTRUCTOR: {
+          TdApi.Session session = (TdApi.Session) result;
+          if (onDone != null) {
+            onDone.runWithData(session);
+          }
+          listeners.notifySessionCreatedViaQrCode(session);
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          if (onError != null) {
+            onError.runWithData((TdApi.Error) result);
+          }
+          break;
+        }
+      }
+    });
+  }
+
   public interface SupergroupUpgradeCallback {
     void onSupergroupUpgraded (final long fromChatId, final long toChatId, @Nullable TdApi.Error error);
   }
@@ -4262,7 +4303,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (!StringUtils.equalsOrBothEmpty(languagePackId, languagePackId)) {
       this.languagePackId = languagePackId;
       if (dispatch) {
-        client().send(new TdApi.SetOption("language_pack_id", new TdApi.OptionValueString(languagePackId)), okHandler);
+        updateLanguageParameters(client(), false);
       }
       return true;
     }
@@ -4384,11 +4425,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
-  private void updateLanguageParameters (Client client) {
-    this.languagePackId = Settings.instance().getLanguagePackInfo().id;
-
-    client.send(new TdApi.SetOption("language_pack_database_path", new TdApi.OptionValueString(context.languageDatabasePath())), okHandler);
-    client.send(new TdApi.SetOption("localization_target", new TdApi.OptionValueString(BuildConfig.LANGUAGE_PACK)), okHandler);
+  private void updateLanguageParameters (Client client, boolean isInitialization) {
+    if (isInitialization) {
+      this.languagePackId = Settings.instance().getLanguagePackInfo().id;
+      client.send(new TdApi.SetOption("language_pack_database_path", new TdApi.OptionValueString(context.languageDatabasePath())), okHandler);
+      client.send(new TdApi.SetOption("localization_target", new TdApi.OptionValueString(BuildConfig.LANGUAGE_PACK)), okHandler);
+    }
     client.send(new TdApi.SetOption("language_pack_id", new TdApi.OptionValueString(languagePackId)), okHandler);
   }
 
@@ -4420,6 +4462,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     } else {
       act.run();
     }
+  }
+
+  private void updateNotificationParameters (Client client) {
+    final int notificationGroupCountMax = 25;
+    final int notificationGroupSizeMax = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ? 7 : 10;
+
+    client.send(new TdApi.SetOption("notification_group_count_max", new TdApi.OptionValueInteger(notificationGroupCountMax)), okHandler);
+    client.send(new TdApi.SetOption("notification_group_size_max", new TdApi.OptionValueInteger(notificationGroupSizeMax)), okHandler);
   }
 
   private static final String DEVICE_TOKEN_KEY = "device_token";
@@ -4473,11 +4523,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private void updateParameters (Client client) {
-    updateLanguageParameters(client);
+    updateLanguageParameters(client, true);
     client.send(new TdApi.SetOption("use_quick_ack", new TdApi.OptionValueBoolean(true)), okHandler);
     client.send(new TdApi.SetOption("use_pfs", new TdApi.OptionValueBoolean(true)), okHandler);
-    client.send(new TdApi.SetOption("notification_group_count_max", new TdApi.OptionValueInteger(25)), okHandler);
-    client.send(new TdApi.SetOption("notification_group_size_max", new TdApi.OptionValueInteger(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ? 7 : 10)), okHandler);
+    updateNotificationParameters(client);
     client.send(new TdApi.SetOption("is_emulator", new TdApi.OptionValueBoolean(isEmulator = Settings.instance().isEmulator())), okHandler);
     client.send(new TdApi.SetOption("storage_max_files_size", new TdApi.OptionValueInteger(Integer.MAX_VALUE)), okHandler);
     client.send(new TdApi.SetOption("ignore_default_disable_notification", new TdApi.OptionValueBoolean(true)), okHandler);
@@ -5784,6 +5833,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     notificationManager.onUpdateNewMessage(update);
 
     context.global().notifyUpdateNewMessage(this, update);
+
+    if (!debugInstance && update.message.chatId == ChatId.fromUserId(TdConstants.TELEGRAM_ACCOUNT_ID)) {
+      listeners.notifySessionListPossiblyChanged(true);
+    }
   }
 
   private void updateMessageSendSucceeded (TdApi.UpdateMessageSendSucceeded update) {

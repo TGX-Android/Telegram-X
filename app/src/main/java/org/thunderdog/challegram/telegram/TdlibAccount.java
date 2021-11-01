@@ -49,6 +49,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   private static final int FLAG_DEVICE_REGISTERED = 1 << 4;
   private static final int FLAG_LOGGING_OUT = 1 << 5;
   private static final int FLAG_NO_PRIVATE_DATA = 1 << 6;
+  private static final int FLAG_FORCE_DISABLE_NOTIFICATIONS = 1 << 7;
 
   final TdlibManager context;
 
@@ -197,6 +198,26 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
 
   boolean hasPrivateData () {
     return !BitwiseUtils.getFlag(flags, FLAG_NO_PRIVATE_DATA);
+  }
+
+  // notifications
+
+  boolean setForceEnableNotifications (boolean enableNotifications) {
+    return changeFlag(FLAG_FORCE_DISABLE_NOTIFICATIONS, !enableNotifications);
+  }
+
+  public boolean forceEnableNotifications () {
+    return !BitwiseUtils.getFlag(flags, FLAG_FORCE_DISABLE_NOTIFICATIONS);
+  }
+
+  public boolean allowNotifications () {
+    if (Settings.instance().checkNotificationFlag(Settings.NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT)) {
+      return context.preferredAccountId() == this.accountId();
+    }
+    if (Settings.instance().checkNotificationFlag(Settings.NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS)) {
+      return forceEnableNotifications();
+    }
+    return true;
   }
 
   // is_debug

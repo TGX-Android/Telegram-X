@@ -44,6 +44,7 @@ public class TdlibListeners {
   final ReferenceList<ChatsNearbyListener> chatsNearbyListeners;
   final ReferenceList<PrivacySettingsListener> privacySettingsListeners;
   final ReferenceList<CallsListener> callsListeners;
+  final ReferenceList<SessionListener> sessionListeners;
 
   final ReferenceList<AnimatedEmojiListener> animatedEmojiListeners;
 
@@ -75,6 +76,7 @@ public class TdlibListeners {
     this.chatsNearbyListeners = new ReferenceList<>(true);
     this.privacySettingsListeners = new ReferenceList<>();
     this.callsListeners = new ReferenceList<>(true);
+    this.sessionListeners = new ReferenceList<>(true);
 
     this.animatedEmojiListeners = new ReferenceList<>(true);
 
@@ -149,6 +151,9 @@ public class TdlibListeners {
       if (any instanceof CallsListener) {
         callsListeners.add((CallsListener) any);
       }
+      if (any instanceof SessionListener) {
+        sessionListeners.add((SessionListener) any);
+      }
     }
   }
 
@@ -197,6 +202,9 @@ public class TdlibListeners {
       if (any instanceof CallsListener) {
         callsListeners.remove((CallsListener) any);
       }
+      if (any instanceof SessionListener) {
+        sessionListeners.remove((SessionListener) any);
+      }
     }
   }
 
@@ -208,6 +216,40 @@ public class TdlibListeners {
   @AnyThread
   public void removeAuthorizationChangeListener (AuthorizationListener listener) {
     authorizationListeners.remove(listener);
+  }
+
+  @AnyThread
+  public void subscribeToSessionUpdates (SessionListener listener) {
+    sessionListeners.add(listener);
+  }
+
+  @AnyThread
+  public void unsubscribeFromSessionUpdates (SessionListener listener) {
+    sessionListeners.remove(listener);
+  }
+
+  void notifyAllSessionsTerminated (TdApi.Session currentSession) {
+    for (SessionListener listener : sessionListeners) {
+      listener.onAllOtherSessionsTerminated(currentSession);
+    }
+  }
+
+  void notifySessionCreatedViaQrCode (TdApi.Session newSession) {
+    for (SessionListener listener : sessionListeners) {
+      listener.onSessionCreatedViaQrCode(newSession);
+    }
+  }
+
+  void notifySessionTerminated (TdApi.Session session) {
+    for (SessionListener listener : sessionListeners) {
+      listener.onSessionTerminated(session);
+    }
+  }
+
+  void notifySessionListPossiblyChanged (boolean isWeakGuess) {
+    for (SessionListener listener : sessionListeners) {
+      listener.onSessionListChanged(isWeakGuess);
+    }
   }
 
   @AnyThread

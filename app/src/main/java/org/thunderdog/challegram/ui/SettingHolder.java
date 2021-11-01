@@ -36,7 +36,6 @@ import org.thunderdog.challegram.component.base.TogglerView;
 import org.thunderdog.challegram.component.chat.MessagePreviewView;
 import org.thunderdog.challegram.component.inline.CustomResultView;
 import org.thunderdog.challegram.component.sharedmedia.MediaSmallView;
-import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.InlineResult;
@@ -180,8 +179,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         return Screen.dp(55f);
       }
       case ListItem.TYPE_INFO_MULTILINE:
-      case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE:
-      case ListItem.TYPE_VALUED_SETTING_RED: {
+      case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE: {
         return Screen.dp(76f);
       }
       case ListItem.TYPE_HEADER_PADDED: {
@@ -436,7 +434,6 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER:
       case ListItem.TYPE_VALUED_SETTING_WITH_RADIO:
       case ListItem.TYPE_INFO_MULTILINE:
-      case ListItem.TYPE_VALUED_SETTING_RED:
       case ListItem.TYPE_INFO_SETTING:
       case ListItem.TYPE_VALUED_SETTING_RED_STUPID:
       case ListItem.TYPE_RADIO_SETTING:
@@ -830,7 +827,6 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_COLOR:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER:
-      case ListItem.TYPE_VALUED_SETTING_RED:
       case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE: {
         SettingView settingView = new SettingView(context, tdlib);
         switch (viewType) {
@@ -848,10 +844,6 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         settingView.setOnClickListener(onClickListener);
         settingView.setOnLongClickListener(onLongClickListener);
         switch (viewType) {
-          case ListItem.TYPE_VALUED_SETTING_RED: {
-            // settingView.setIsRed();
-            break;
-          }
           case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE: {
             CheckBox checkBox = CheckBox.simpleCheckBox(context);
             settingView.addView(checkBox);
@@ -1360,15 +1352,26 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         FrameLayoutFix frameLayout = new FrameLayoutFix(context) {
           @Override
           protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-            final int paddingTop =
-              measureHeightForType(ListItem.TYPE_HEADER) +
-                measureHeightForType(ListItem.TYPE_SHADOW_TOP) +
-                measureHeightForType(ListItem.TYPE_SESSION) +
-                measureHeightForType(ListItem.TYPE_SHADOW_BOTTOM);
             ViewParent parent = this;
             do {
               parent = parent.getParent();
             } while (!(parent instanceof RecyclerView) && parent != null);
+
+            int position = adapter.indexOfViewByType(viewType);
+            int paddingTop = 0;
+
+            for (int i = 0; i < position; i++) {
+              int viewType = adapter.getItems().get(i).getViewType();
+              if (viewType == ListItem.TYPE_SESSION && parent != null) {
+                View view = ((RecyclerView) parent).getLayoutManager().findViewByPosition(i);
+                if (view != null) {
+                  paddingTop += view.getMeasuredHeight();
+                  continue;
+                }
+              }
+              paddingTop += measureHeightForType(viewType);
+            }
+
             int totalHeight = parent != null ? ((RecyclerView) parent).getMeasuredHeight() : 0;
             int availHeight = totalHeight - paddingTop;
 

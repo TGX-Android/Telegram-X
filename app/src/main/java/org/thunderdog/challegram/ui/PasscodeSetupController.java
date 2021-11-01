@@ -520,7 +520,7 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
       case R.id.btn_notificationContent: {
         if (notificationsView != null) {
           Passcode.instance().setDisplayNotifications(notificationsView.toggleRadio());
-          TdlibManager.instance().onUpdateNotifications(null);
+          TdlibManager.instance().onUpdateAllNotifications();
         }
         break;
       }

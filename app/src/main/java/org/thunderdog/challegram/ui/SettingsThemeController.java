@@ -1104,7 +1104,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         break;
       }
       case R.id.btn_cameraRatio: {
-        showOptions(Lang.wrapBold(Lang.getString(R.string.CameraRatio)), new int[] {
+        showOptions(Lang.boldify(Lang.getString(R.string.CameraRatio)), new int[] {
           R.id.btn_cameraRatio_16_9,
           R.id.btn_cameraRatio_4_3,
           // R.id.btn_cameraRatio_1_1,
@@ -1143,7 +1143,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         break;
       }
       case R.id.btn_cameraVolume: {
-        showOptions(Lang.wrapBold(Lang.getString(R.string.CameraVolume)), new int[] {
+        showOptions(Lang.boldify(Lang.getString(R.string.CameraVolume)), new int[] {
           R.id.btn_cameraVolumeShoot,
           R.id.btn_cameraVolumeZoom,
           R.id.btn_cameraVolumeNone

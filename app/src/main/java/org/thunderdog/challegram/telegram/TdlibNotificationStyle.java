@@ -212,7 +212,8 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
   public static final int DISPLAY_STATE_FAIL = 0;
   public static final int DISPLAY_STATE_HIDDEN = 1;
-  public static final int DISPLAY_STATE_OK = 2;
+  public static final int DISPLAY_STATE_POSTPONED = 2;
+  public static final int DISPLAY_STATE_OK = 3;
 
   protected final int displayChildNotification (NotificationManagerCompat manager, Context context, @NonNull TdlibNotificationHelper helper, int badgeCount, boolean allowPreview, @NonNull TdlibNotificationGroup group, TdlibNotificationSettings settings, boolean isRebuild) {
     return displayChildNotification(manager, context, helper, badgeCount, allowPreview, group, settings, helper.getNotificationIdForGroup(group.getId()), false, isRebuild);
@@ -230,6 +231,11 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     if (visualSize == 0) {
       manager.cancel(notificationId);
       return DISPLAY_STATE_HIDDEN;
+    }
+
+    if (!tdlib.account().allowNotifications()) {
+      manager.cancel(notificationId);
+      return DISPLAY_STATE_POSTPONED;
     }
 
     final long chatId = group.getChatId();
@@ -664,7 +670,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
   protected final void displaySummaryNotification (NotificationManagerCompat manager, Context context, @NonNull TdlibNotificationHelper helper, int badgeCount, boolean allowPreview, TdlibNotificationSettings settings, int category, boolean isRebuild) {
     int notificationId = helper.getBaseNotificationId(category);
-    if (helper.isEmpty()) {
+    if (helper.isEmpty() || !tdlib.account().allowNotifications()) {
       manager.cancel(notificationId);
       return;
     }

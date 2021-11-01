@@ -6205,4 +6205,12 @@ public class TD {
     }
     return null;
   }
+
+  public static boolean hasIncompleteLoginAttempts (TdApi.Session[] sessions) {
+    for (TdApi.Session session : sessions) {
+      if (session.isPasswordPending)
+        return true;
+    }
+    return false;
+  }
 }

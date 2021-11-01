@@ -1084,17 +1084,20 @@ public class Strings {
     return b.toString();
   }
 
-  public static String concatIpLocation (String ip, String location) {
+  public static CharSequence concatIpLocation (CharSequence ip, CharSequence location) {
     return concat(" – ", ip, location);
   }
 
-  public static String concat (CharSequence separator, CharSequence... params) {
+  public static CharSequence concat (CharSequence separator, CharSequence... params) {
     int totalLength = 0;
     int separatorLen = separator.length();
     boolean hasSpannable = false;
     for (CharSequence param : params) {
       if (totalLength > 0) {
         totalLength += separatorLen;
+        if (separator instanceof Spanned) {
+          hasSpannable = true;
+        }
       }
       totalLength += param != null ? param.length() : 0;
       if (param instanceof Spanned) {
@@ -1121,7 +1124,7 @@ public class Strings {
         }
       }
     }
-    return b.toString();
+    return b;
   }
 
   public static void buildHexColor (int color, boolean allowShort, StringBuilder b) {

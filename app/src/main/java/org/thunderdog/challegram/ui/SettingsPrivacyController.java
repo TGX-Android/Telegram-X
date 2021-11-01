@@ -356,7 +356,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
           adapter.updateValuedSetting(secretInfo);
         }
         if (updated) {
-          TdlibManager.instance().onUpdateNotifications(new TdApi.NotificationSettingsScopePrivateChats());
+          TdlibManager.instance().onUpdateSecretChatNotifications();
         }
         break;
       }

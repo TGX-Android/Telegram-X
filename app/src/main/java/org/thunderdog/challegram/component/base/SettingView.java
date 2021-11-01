@@ -215,8 +215,8 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     return receiver;
   }
 
-  public void setTextColorId (int textColorId) {
-    if (textColorId == 0)
+  public void setTextColorId (@ThemeColorId int textColorId) {
+    if (textColorId == ThemeColorId.NONE)
       textColorId = R.id.theme_color_text;
     if (this.textColorId != textColorId) {
       this.textColorId = textColorId;

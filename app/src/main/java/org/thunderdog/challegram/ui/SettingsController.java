@@ -41,10 +41,12 @@ import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ConnectionListener;
+import org.thunderdog.challegram.telegram.SessionListener;
 import org.thunderdog.challegram.telegram.StickersListener;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.telegram.TdlibNotificationManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
@@ -59,8 +61,12 @@ import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
@@ -78,7 +84,7 @@ public class SettingsController extends ViewController<Void> implements
   View.OnClickListener, ComplexHeaderView.Callback,
   Menu, MoreDelegate, OptionDelegate,
   TdlibCache.MyUserDataChangeListener, ConnectionListener, StickersListener, MediaLayout.MediaGalleryCallback,
-  ActivityResultHandler, Client.ResultHandler, View.OnLongClickListener {
+  ActivityResultHandler, Client.ResultHandler, View.OnLongClickListener, SessionListener {
   private ComplexHeaderView headerCell;
   private ComplexRecyclerView contentView;
   private SettingsAdapter adapter;
@@ -300,14 +306,91 @@ public class SettingsController extends ViewController<Void> implements
   }
 
   private boolean hasNotificationError;
+  private int notificationErrorDescriptionRes;
+  private long problematicChatId;
+
+  private int getNotificationErrorDescription () {
+    this.problematicChatId = 0;
+    if (!hasNotificationError)
+      return 0;
+    @TdlibNotificationManager.Status int status = tdlib.notifications().getNotificationBlockStatus();
+    switch (status) {
+      case TdlibNotificationManager.Status.BLOCKED_ALL:
+        return R.string.NotificationsErrorBlocked;
+      case TdlibNotificationManager.Status.BLOCKED_CATEGORY:
+        return R.string.NotificationsErrorBlockedCategory;
+      case TdlibNotificationManager.Status.DISABLED_SYNC:
+      case TdlibNotificationManager.Status.DISABLED_APP_SYNC:
+      case TdlibNotificationManager.Status.FIREBASE_MISSING:
+        return R.string.NotificationsErrorBackground;
+      case TdlibNotificationManager.Status.INTERNAL_ERROR: {
+        this.problematicChatId = tdlib.settings().getLastNotificationProblematicChat();
+        if (problematicChatId != 0) {
+          TdApi.Chat chat = tdlib.chatSync(problematicChatId);
+          if (chat != null) {
+            return R.string.NotificationsErrorErrorChat;
+          }
+        }
+        return R.string.NotificationsErrorError;
+      }
+      case TdlibNotificationManager.Status.ACCOUNT_NOT_SELECTED:
+        return R.string.NotificationsErrorUnselected;
+      case TdlibNotificationManager.Status.NOT_BLOCKED:
+        break;
+    }
+
+    boolean blockedPrivate = tdlib.notifications().areNotificationsBlocked(tdlib.notifications().scopePrivate());
+    boolean blockedGroup = tdlib.notifications().areNotificationsBlocked(tdlib.notifications().scopeGroup());
+    boolean blockedChannel = tdlib.notifications().areNotificationsBlocked(tdlib.notifications().scopeChannel());
+
+    int scopeCount = 0;
+    if (blockedPrivate)
+      scopeCount++;
+    if (blockedGroup)
+      scopeCount++;
+    if (blockedChannel)
+      scopeCount++;
+
+    if (scopeCount == 1) {
+      if (blockedPrivate) {
+        return R.string.NotificationsErrorBlockedPrivate;
+      } else if (blockedGroup) {
+        return R.string.NotificationsErrorBlockedGroup;
+      } else if (blockedChannel) {
+        return R.string.NotificationsErrorBlockedChannel;
+      }
+      throw new RuntimeException();
+    } else if (scopeCount > 1) {
+      return R.string.NotificationsErrorBlockedMixed;
+    }
+
+    return 0;
+  }
 
   private void checkErrors () {
+    long oldProblematicChatId = this.problematicChatId;
     boolean hasNotificationError = tdlib.notifications().hasLocalNotificationProblem();
-    if (this.hasNotificationError != hasNotificationError) {
+    int notificationErrorDescriptionRes = hasNotificationError ? getNotificationErrorDescription() : 0;
+    boolean hadDescription = this.notificationErrorDescriptionRes != 0;
+    boolean hasDescription = notificationErrorDescriptionRes != 0;
+
+    if (this.hasNotificationError != hasNotificationError || (hasNotificationError && (this.notificationErrorDescriptionRes != notificationErrorDescriptionRes || this.problematicChatId != oldProblematicChatId))) {
       this.hasNotificationError = hasNotificationError;
+      this.notificationErrorDescriptionRes = notificationErrorDescriptionRes;
       if (adapter != null) {
-        adapter.updateValuedSettingById(R.id.btn_notificationSettings);
+        int position = adapter.indexOfViewById(R.id.btn_notificationSettings);
+        if (position != -1) {
+          final ListItem item = adapter.getItems().get(position);
+          if (hadDescription != hasDescription) {
+            item.setViewType(hasDescription ? ListItem.TYPE_VALUED_SETTING_COMPACT : ListItem.TYPE_SETTING);
+            adapter.notifyItemChanged(position);
+          } else {
+            adapter.updateValuedSettingByPosition(position);
+          }
+        }
       }
+    } else {
+      this.notificationErrorDescriptionRes = notificationErrorDescriptionRes;
     }
   }
 
@@ -362,9 +445,50 @@ public class SettingsController extends ViewController<Void> implements
           case R.id.btn_notificationSettings:
             hasError = hasNotificationError = tdlib.notifications().hasLocalNotificationProblem();
             break;
+          case R.id.btn_devices:
+            hasError = sessions != null && incompleteLoginAttemptsCount > 0;
+            break;
         }
         view.setUnreadCounter(hasError ? Tdlib.CHAT_FAILED : 0, false, isUpdate);
         switch (item.getId()) {
+          case R.id.btn_devices: {
+            if (sessions == null) {
+              view.setData(R.string.LoadingInformation);
+            } else if (incompleteLoginAttemptsCount > 0) {
+              view.setData(Lang.pluralBold(R.string.XSignInAttempts, incompleteLoginAttemptsCount));
+            } else if (otherSessionCount == 0) {
+              view.setData(R.string.SignedInNoOtherSessions);
+            } else if (otherSession != null) {
+              if (otherDevicesCount == 1 && !StringUtils.isEmpty(otherSession.deviceModel)) {
+                view.setData(Lang.getStringBold(R.string.SignedInOtherDevice, otherSession.deviceModel));
+              } else {
+                view.setData(Lang.getStringBold(R.string.SignedInOtherSession, otherSession.applicationName));
+              }
+            } else if (otherSessionCount - sessionsOnCurrentDeviceCount == 0) {
+              view.setData(Lang.pluralBold(R.string.SignedInXOtherApps, sessionsOnCurrentDeviceCount - 1));
+            } else if (sessionsOnCurrentDeviceCount == 1) {
+              if (otherDevicesCount == otherSessionCount) {
+                view.setData(Lang.pluralBold(R.string.SignedInXOtherDevices, otherDevicesCount));
+              } else {
+                view.setData(Lang.getCharSequence(R.string.format_signedInAppsOnDevices, Lang.pluralBold(R.string.part_SignedInXApps, otherSessionCount), Lang.pluralBold(R.string.part_SignedInXOtherDevices, otherDevicesCount)));
+              }
+            } else if (otherSessionCount == otherDevicesCount + 1) {
+              view.setData(Lang.pluralBold(R.string.SignedInXOtherApps, otherSessionCount));
+            } else {
+              view.setData(Lang.getCharSequence(R.string.format_signedInAppsOnDevices, Lang.pluralBold(R.string.part_SignedInXOtherApps, otherSessionCount), Lang.pluralBold(R.string.part_SignedInXDevices, otherDevicesCount + 1)));
+            }
+            break;
+          }
+          case R.id.btn_notificationSettings: {
+            if (notificationErrorDescriptionRes != 0) {
+              if (notificationErrorDescriptionRes == R.string.NotificationsErrorErrorChat) {
+                view.setData(Lang.getStringBold(notificationErrorDescriptionRes, tdlib.chatTitle(problematicChatId)));
+              } else {
+                view.setData(notificationErrorDescriptionRes);
+              }
+            }
+            break;
+          }
           case R.id.btn_changePhoneNumber: {
             view.setText(obtainWrapper(Lang.getStringBold(R.string.ReminderCheckPhoneNumberText, originalPhoneNumber != null ? myPhone : Strings.ELLIPSIS), ID_RATIONALE_PHONE_NUMBER));
             break;
@@ -439,13 +563,11 @@ public class SettingsController extends ViewController<Void> implements
     }
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    /*if (Settings.instance().hasProxyConfiguration()) {
-      items.add(newProxyItem());
-      items.add(new SettingItem(SettingItem.TYPE_SEPARATOR));
-    }*/
-    this.hasNotificationError = tdlib.notifications().hasLocalNotificationProblem();
-    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_devices, R.drawable.baseline_devices_other_24, R.string.Devices));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_devices, R.drawable.baseline_devices_other_24, R.string.Devices));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+
+    this.hasNotificationError = tdlib.notifications().hasLocalNotificationProblem();
+
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_notificationSettings, R.drawable.baseline_notifications_24, R.string.Notifications));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_chatSettings, R.drawable.baseline_data_usage_24, R.string.DataSettings));
@@ -476,9 +598,90 @@ public class SettingsController extends ViewController<Void> implements
 
     tdlib.cache().addMyUserListener(this);
     tdlib.listeners().subscribeToConnectivityUpdates(this);
+    tdlib.listeners().subscribeToSessionUpdates(this);
     TGLegacyManager.instance().addEmojiListener(adapter);
 
+    loadActiveSessions();
+
     return contentView;
+  }
+
+  @Override
+  public void onSessionListChanged (boolean isWeakGuess) {
+    runOnUiThreadOptional(this::loadActiveSessions);
+  }
+
+  private boolean loadingActiveSessions;
+
+  private static String getSessionSignature (TdApi.Session session) {
+    return session.deviceModel + " " + session.platform + " " + session.systemVersion;
+  }
+
+  private void loadActiveSessions () {
+    if (loadingActiveSessions)
+      return;
+    loadingActiveSessions = true;
+    tdlib.client().send(new TdApi.GetActiveSessions(), result -> {
+      if (result.getConstructor() == TdApi.Sessions.CONSTRUCTOR) {
+        TdApi.Session[] sessions = ((TdApi.Sessions) result).sessions;
+        AtomicInteger incompleteLoginAttempts = new AtomicInteger();
+        AtomicInteger otherSessionCount = new AtomicInteger();
+        AtomicInteger otherSessionOnCurrentDeviceCount = new AtomicInteger();
+        Map<String, AtomicInteger> devicesMap = new HashMap<>();
+        TdApi.Session currentSession = null;
+        AtomicReference<TdApi.Session> otherSession = new AtomicReference<>();
+        for (TdApi.Session session : sessions) {
+          if (session.isPasswordPending) {
+            incompleteLoginAttempts.incrementAndGet();
+          } else {
+            String signature = getSessionSignature(session);
+            AtomicInteger counter = devicesMap.get(signature);
+            if (counter != null) {
+              counter.incrementAndGet();
+            } else {
+              devicesMap.put(signature, new AtomicInteger(1));
+            }
+            if (session.isCurrent) {
+              currentSession = session;
+            } else {
+              int count = otherSessionCount.incrementAndGet();
+              if (count == 1) {
+                otherSession.set(session);
+              } else if (count == 2) {
+                otherSession.set(null);
+              }
+            }
+          }
+        }
+        if (currentSession != null) {
+          AtomicInteger removedCounter = devicesMap.remove(getSessionSignature(currentSession));
+          if (removedCounter != null) {
+            otherSessionOnCurrentDeviceCount.set(removedCounter.get());
+          }
+        }
+        runOnUiThreadOptional(() -> {
+          this.sessions = sessions;
+          this.incompleteLoginAttemptsCount = incompleteLoginAttempts.get();
+          this.otherDevicesCount = devicesMap.size();
+          this.otherSessionCount = otherSessionCount.get();
+          this.sessionsOnCurrentDeviceCount = otherSessionOnCurrentDeviceCount.get();
+          this.otherSession = otherSession.get();
+          this.loadingActiveSessions = false;
+          adapter.updateValuedSettingById(R.id.btn_devices);
+          executeScheduledAnimation();
+        });
+      }
+    });
+  }
+
+  @Override
+  public boolean needAsynchronousAnimation () {
+    return sessions == null;
+  }
+
+  @Override
+  public long getAsynchronousAnimationTimeout (boolean fastAnimation) {
+    return 400l;
   }
 
   @Override
@@ -578,6 +781,7 @@ public class SettingsController extends ViewController<Void> implements
     tdlib.cache().removeMyUserListener(this);
     tdlib.listeners().unsubscribeFromConnectivityUpdates(this);
     tdlib.listeners().unsubscribeFromStickerUpdates(this);
+    tdlib.listeners().unsubscribeFromSessionUpdates(this);
     TGLegacyManager.instance().removeEmojiListener(adapter);
     headerCell.performDestroy();
   }
@@ -632,6 +836,9 @@ public class SettingsController extends ViewController<Void> implements
   private String myUsername;
   private String myPhone, originalPhoneNumber;
   private @Nullable String about;
+  private TdApi.Session[] sessions;
+  private TdApi.Session otherSession;
+  private int incompleteLoginAttemptsCount, otherDevicesCount, otherSessionCount, sessionsOnCurrentDeviceCount;
 
   private void initMyUser () {
     TdApi.User user = tdlib.myUser();

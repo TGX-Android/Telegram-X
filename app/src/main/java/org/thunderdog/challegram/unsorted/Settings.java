@@ -430,6 +430,8 @@ public class Settings {
   public static final int NOTIFICATION_FLAG_INCLUDE_PRIVATE = 1;
   public static final int NOTIFICATION_FLAG_INCLUDE_GROUPS = 1 << 1;
   public static final int NOTIFICATION_FLAG_INCLUDE_CHANNELS = 1 << 2;
+  public static final int NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT = 1 << 3;
+  public static final int NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS = 1 << 4;
   public static final int NOTIFICATION_FLAGS_DEFAULT = NOTIFICATION_FLAG_INCLUDE_PRIVATE;
 
   @Nullable
@@ -2399,8 +2401,14 @@ public class Settings {
   }
 
   private int getNotificationFlags () {
-    if (_notificationFlags == null)
-      _notificationFlags = pmc.getInt(KEY_NOTIFICATION_FLAGS, NOTIFICATION_FLAGS_DEFAULT);
+    if (_notificationFlags == null) {
+      int flags = pmc.getInt(KEY_NOTIFICATION_FLAGS, NOTIFICATION_FLAGS_DEFAULT);
+      if (BitwiseUtils.getFlag(flags, NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT) && BitwiseUtils.getFlag(flags, NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS)) {
+        flags = BitwiseUtils.setFlag(flags, NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT, false);
+        flags = BitwiseUtils.setFlag(flags, NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS, false);
+      }
+      _notificationFlags = flags;
+    }
     return _notificationFlags;
   }
 
@@ -2409,7 +2417,15 @@ public class Settings {
   }
 
   public boolean setNotificationFlag (int flag, boolean enabled) {
-    return setNotificationFlags(BitwiseUtils.setFlag(getNotificationFlags(), flag, enabled));
+    int flags = getNotificationFlags();
+    if (enabled) {
+      if (flag == NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT) {
+        flags = BitwiseUtils.setFlag(flags, NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS, false);
+      } else if (flag == NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS) {
+        flags = BitwiseUtils.setFlag(flags, NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT, false);
+      }
+    }
+    return setNotificationFlags(BitwiseUtils.setFlag(flags, flag, enabled));
   }
 
   public boolean resetNotificationFlags () {

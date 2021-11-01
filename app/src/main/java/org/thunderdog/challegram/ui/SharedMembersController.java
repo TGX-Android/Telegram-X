@@ -366,7 +366,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
       } else if (info != null) {
         result = Lang.getString(R.string.format_nameAndStatus, firstBoldCreator, name, info);
       } else {
-        result = Lang.wrapBold(name);
+        result = Lang.boldify(name);
       }
       showOptions(result, ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
         switch (id) {

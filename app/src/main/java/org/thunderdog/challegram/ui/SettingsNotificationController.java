@@ -43,6 +43,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.sync.SyncAdapter;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibNotificationManager;
 import org.thunderdog.challegram.telegram.TdlibOptionListener;
@@ -63,8 +64,10 @@ import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.RadioView;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
@@ -154,7 +157,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     return true;
   }
 
-  private ListItem pinnedMessagesInfo, mentionsInfo, mergeInfo, dismissedHint, enabledInfo, secretInfo, errorHint, errorButton;
+  private ListItem pinnedMessagesInfo, mentionsInfo, mergeInfo, dismissedHint, notificationModeHint, enabledInfo, secretInfo, errorHint, errorButton;
 
   @Override
   public CharSequence getName () {
@@ -426,21 +429,40 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           return;
         adapter.removeRange(i - 1, 3); // Removing from the original place
 
+        int viewType = adapter.getItems().get(0).getViewType();
+
         @TdlibNotificationManager.Status int status = tdlib.notifications().getNotificationBlockStatus();
 
-        adapter.getItems().add(0, errorButton = new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, getErrorIcon(status), getErrorText(status)).setTextColorId(R.id.theme_color_textNegative));
-        adapter.getItems().add(1, new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-        adapter.getItems().add(2, errorHint = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, makeErrorDescription(status), false));
-        adapter.getItems().add(3, new ListItem(ListItem.TYPE_SHADOW_TOP));
-        adapter.notifyItemRangeInserted(0, 4);
+        List<ListItem> itemsToAdd = new ArrayList<>();
+        itemsToAdd.add(errorButton = new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, getErrorIcon(status), getErrorText(status)).setTextColorId(R.id.theme_color_textNegative));
+        itemsToAdd.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+        itemsToAdd.add(errorHint = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, makeErrorDescription(status), false));
+        if (viewType != ListItem.TYPE_HEADER_PADDED) {
+          itemsToAdd.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+        }
+
+        adapter.getItems().addAll(0, itemsToAdd);
+        adapter.notifyItemRangeInserted(0, itemsToAdd.size());
+        if (viewType == ListItem.TYPE_HEADER_PADDED) {
+          final int index = itemsToAdd.size();
+          adapter.getItems().get(index).setViewType(ListItem.TYPE_HEADER);
+          adapter.notifyItemChanged(index);
+        }
       } else {
-        adapter.removeRange(0, 4);
+        boolean keepHeader = notificationModeHint != null;
+        adapter.removeRange(0, keepHeader ? 3 : 4);
 
         int index = adapter.getItems().size();
-        adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-        adapter.getItems().add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, 0, R.string.SystemNotificationSettings));
-        adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+        adapter.getItems().addAll(Arrays.asList(
+          new ListItem(ListItem.TYPE_SHADOW_TOP),
+          new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, 0, R.string.SystemNotificationSettings),
+          new ListItem(ListItem.TYPE_SHADOW_BOTTOM)
+        ));
         adapter.notifyItemRangeInserted(index, 3);
+        if (keepHeader) {
+          adapter.getItems().get(0).setViewType(ListItem.TYPE_HEADER_PADDED);
+          adapter.notifyItemChanged(0);
+        }
       }
       this.inErrorMode = need;
       if (need) {
@@ -538,6 +560,140 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       }
       adapter.updateValuedSettingById(R.id.btn_notifications_snooze);
     }
+  }
+
+  private static final int NOTIFICATION_MODE_ALL = 0;
+  private static final int NOTIFICATION_MODE_ACTIVE = 1;
+  private static final int NOTIFICATION_MODE_SELECTED = 2;
+
+  private int getNotificationMode () {
+    if (Settings.instance().checkNotificationFlag(Settings.NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT))
+      return NOTIFICATION_MODE_ACTIVE;
+    if (Settings.instance().checkNotificationFlag(Settings.NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS))
+      return NOTIFICATION_MODE_SELECTED;
+    return NOTIFICATION_MODE_ALL;
+  }
+
+  private void updateNotificationModeHint (boolean isUpdate) {
+    if (notificationModeHint == null)
+      return;
+    int mode = getNotificationMode();
+    boolean changed;
+    switch (mode) {
+      case NOTIFICATION_MODE_ALL:
+        changed = notificationModeHint.setStringIfChanged(R.string.NotificationsModeAllHint);
+        break;
+      case NOTIFICATION_MODE_ACTIVE:
+        changed = notificationModeHint.setStringIfChanged(Lang.getStringBold(R.string.NotificationsModeActiveHint, tdlib.accountName()));
+        break;
+      case NOTIFICATION_MODE_SELECTED:
+        changed = notificationModeHint.setStringIfChanged(Lang.pluralBold(R.string.NotificationsModeSelectedHint, tdlib.context().getNumberOfAccountsWithEnabledNotifications()));
+        break;
+      default:
+        throw new IllegalArgumentException(Integer.toString(mode));
+    }
+    if (changed) {
+      int position = adapter.indexOfView(notificationModeHint);
+      if (position != -1) {
+        adapter.notifyItemChanged(position);
+      }
+    }
+  }
+
+  private static int notificationModeToId (int mode) {
+    switch (mode) {
+      case NOTIFICATION_MODE_ACTIVE:
+        return R.id.btn_notificationMode_active;
+      case NOTIFICATION_MODE_SELECTED:
+        return R.id.btn_notificationMode_selected;
+      case NOTIFICATION_MODE_ALL:
+        return R.id.btn_notificationMode_all;
+    }
+    throw new IllegalArgumentException(Integer.toString(mode));
+  }
+
+  private List<TdlibAccount> displayingAccounts;
+
+  private boolean updateNotificationMode (int oldMode, int newMode, boolean updateToggle) {
+    if (updateToggle) {
+      int oldIndex = adapter.indexOfViewById(notificationModeToId(oldMode));
+      int newIndex = adapter.indexOfViewById(notificationModeToId(newMode));
+      if (oldIndex != newIndex) {
+        adapter.processToggle(null, adapter.getItems().get(newIndex), true);
+      }
+    }
+    if (oldMode != newMode && newMode != -1) {
+      switch (newMode) {
+        case NOTIFICATION_MODE_ALL: {
+          Settings.instance().setNotificationFlag(oldMode == NOTIFICATION_MODE_SELECTED ? Settings.NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS : Settings.NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT, false);
+          break;
+        }
+        case NOTIFICATION_MODE_ACTIVE: {
+          Settings.instance().setNotificationFlag(Settings.NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT, true);
+          break;
+        }
+        case NOTIFICATION_MODE_SELECTED: {
+          Settings.instance().setNotificationFlag(Settings.NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS, true);
+          break;
+        }
+      }
+
+      updateNotificationModeHint(false);
+
+      boolean hadAccountsList = oldMode == NOTIFICATION_MODE_SELECTED;
+      boolean hasAccountsList = newMode == NOTIFICATION_MODE_SELECTED;
+
+      if (hadAccountsList != hasAccountsList) {
+        int notificationModeHintPosition = adapter.indexOfView(notificationModeHint);;
+        if (notificationModeHintPosition == -1)
+          throw new IllegalStateException();
+        if (hasAccountsList) {
+          displayingAccounts = getDisplayingAccounts();
+          List<ListItem> newItems = new ArrayList<>(1 + displayingAccounts.size() * 2);
+          for (TdlibAccount account : displayingAccounts) {
+            if (newItems.isEmpty()) {
+              newItems.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+            } else {
+              newItems.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+            }
+            newItems.add(newAccountItem(account));
+          }
+          newItems.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+          adapter.getItems().addAll(notificationModeHintPosition + 1, newItems);
+          adapter.notifyItemRangeInserted(notificationModeHintPosition + 1, newItems.size());
+        } else if (displayingAccounts != null) {
+          adapter.removeRange(notificationModeHintPosition + 1, 1 + displayingAccounts.size() * 2);
+          displayingAccounts = null;
+        }
+      }
+
+      return true;
+    }
+
+    return false;
+  }
+
+  private List<TdlibAccount> getDisplayingAccounts () {
+    List<TdlibAccount> accounts = tdlib.context().accountsQueue();
+    Collections.sort(accounts, (a, b) -> {
+      int currentAccountId = tdlib.context().preferredAccountId();
+      return (a.id == currentAccountId) != (b.id == currentAccountId) ? Boolean.compare((b.id == currentAccountId), (a.id == currentAccountId)) :
+      a.forceEnableNotifications() != b.forceEnableNotifications() ? Boolean.compare(b.forceEnableNotifications(), a.forceEnableNotifications()) :
+      0;
+    });
+    return accounts;
+  }
+
+  private ListItem newAccountItem (TdlibAccount account) {
+    String name = account.getLongName();
+    return new ListItem(
+      ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR,
+      account.id + 1, 0,
+      account.id == tdlib.id() ? Lang.getString(R.string.CurrentAccount, name) : name,
+      account.id + 1,
+      account.forceEnableNotifications()
+    ).setData(account)
+     .setLongValue(account.getKnownUserId());
   }
 
   @Override
@@ -827,6 +983,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     adapter.setOnLongClickListener(this);
 
     ArrayList<ListItem> items = new ArrayList<>();
+    boolean hasOptions = false;
 
     if (customChatId != 0) {
       if (hasVibrateAndSound = needVibrateAndSoundSettings()) {
@@ -966,8 +1123,56 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
             items.add(errorButton = new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, getErrorIcon(status), getErrorText(status)).setTextColorId(R.id.theme_color_textNegative));
             items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
             items.add(errorHint = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, makeErrorDescription(status), false));
-            items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
           }
+        }
+
+        final int notificationMode = getNotificationMode();
+        if (notificationMode == NOTIFICATION_MODE_SELECTED || tdlib.context().isMultiUser()) {
+          hasOptions = true;
+
+          items.add(new ListItem(items.isEmpty() ? ListItem.TYPE_HEADER_PADDED : ListItem.TYPE_HEADER, 0, 0, R.string.NotificationsMode));
+          items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+          items.add(new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_notificationMode_all, 0, R.string.NotificationsModeAll, R.id.btn_notificationMode, notificationMode == NOTIFICATION_MODE_ALL));
+          items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+          items.add(new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_notificationMode_active, 0, R.string.NotificationsModeActive, R.id.btn_notificationMode, notificationMode == NOTIFICATION_MODE_ACTIVE));
+          items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+          items.add(new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_notificationMode_selected, 0, R.string.NotificationsModeSelected, R.id.btn_notificationMode, notificationMode == NOTIFICATION_MODE_SELECTED));
+          items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+
+          switch (notificationMode) {
+            case NOTIFICATION_MODE_ALL: {
+              items.add(notificationModeHint = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.NotificationsModeAllHint));
+              break;
+            }
+            case NOTIFICATION_MODE_ACTIVE: {
+              items.add(notificationModeHint = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getStringBold(R.string.NotificationsModeActiveHint, tdlib.accountName()), false));
+              break;
+            }
+            case NOTIFICATION_MODE_SELECTED: {
+              items.add(notificationModeHint = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.pluralBold(R.string.NotificationsModeSelectedHint, tdlib.context().getNumberOfAccountsWithEnabledNotifications()), false));
+              break;
+            }
+          }
+
+          if (notificationMode == NOTIFICATION_MODE_SELECTED) {
+            items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+            boolean first = true;
+            this.displayingAccounts = getDisplayingAccounts();
+            for (TdlibAccount account : displayingAccounts) {
+              if (first) {
+                first = false;
+              } else {
+                items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+              }
+              items.add(newAccountItem(account));
+            }
+            items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+          }
+        }
+
+        if (!items.isEmpty()) {
+          items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.NotificationSettings));
+          items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
         }
         items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_notifications_snooze, R.drawable.baseline_person_24, R.string.PrivateChats).setData(tdlib.notifications().scopePrivate()));
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -1053,7 +1258,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       }
     }
 
-    adapter.setItems(items, false);
+    adapter.setItems(items, hasOptions);
     recyclerView.setAdapter(adapter);
 
     tdlib.listeners().subscribeToSettingsUpdates(this);
@@ -1121,6 +1326,15 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     if (item == null)
       return;
     final int viewId = v.getId();
+    if (item.getViewType() == ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR) {
+      TdlibAccount selectedAccount = (TdlibAccount) item.getData();
+      boolean toggleValue = adapter.toggleView(v);
+      adapter.processToggle(v, item, toggleValue);
+      tdlib.context().setForceEnableNotifications(selectedAccount.id, toggleValue);
+      updateNotificationModeHint(true);
+      tdlib.context().onUpdateNotifications(null, notificationAccount -> notificationAccount.id == selectedAccount.id);
+      return;
+    }
     switch (viewId) {
       case R.id.btn_notifications_preview: {
         TdApi.NotificationSettingsScope scope = getScope(item);
@@ -1143,7 +1357,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           adapter.updateValuedSetting(secretInfo);
         }
         if (updated) {
-          TdlibManager.instance().onUpdateNotifications(new TdApi.NotificationSettingsScopePrivateChats());
+          TdlibManager.instance().onUpdateSecretChatNotifications();
         }
         break;
       }
@@ -1234,11 +1448,25 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         int flag = item.getIntValue();
         if (Settings.instance().setNotificationFlag(flag, enabled)) {
           TdApi.NotificationSettingsScope scope = getScope(item);
-          TdlibManager.instance().onUpdateNotifications(scope);
+          TdlibManager.instance().onUpdateNotifications(scope, null);
           if (dismissedHint != null) {
             dismissedHint.setString(enabled ? R.string.IncludeDismissedHintOff : R.string.IncludeDismissedHintOn);
             adapter.updateValuedSetting(dismissedHint);
           }
+        }
+        break;
+      }
+      case R.id.btn_notificationMode_all:
+      case R.id.btn_notificationMode_active:
+      case R.id.btn_notificationMode_selected: {
+        boolean enabled = adapter.processToggle(v);
+        int oldMode = getNotificationMode();
+        int newMode =
+          (viewId == R.id.btn_notificationMode_active && enabled) ? NOTIFICATION_MODE_ACTIVE :
+          (viewId == R.id.btn_notificationMode_selected && enabled) ? NOTIFICATION_MODE_SELECTED :
+          (viewId == R.id.btn_notificationMode_all && enabled) ? NOTIFICATION_MODE_ALL : -1;
+        if (updateNotificationMode(oldMode, newMode, false)) {
+          TdlibManager.instance().onUpdateAllNotifications();
         }
         break;
       }
@@ -1649,7 +1877,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           adapter.updateValuedSetting(mergeInfo);
         }
         if (updated) {
-          TdlibManager.instance().onUpdateNotifications(null);
+          TdlibManager.instance().onUpdateAllNotifications();
         }
         break;
       }
@@ -1715,11 +1943,13 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     tdlib.notifications().resetNotificationSettings(false);
     tdlib.setDisableContactRegisteredNotifications(false);
     tdlib.client().send(new TdApi.ResetAllNotificationSettings(), tdlib.okHandler());
-    boolean update;
-    update = Settings.instance().resetNotificationFlags();
-    // update = Settings.instance().resetBadge() || update;
+    int oldMode = getNotificationMode();
+    boolean update = Settings.instance().resetNotificationFlags();
     if (update) {
-      TdlibManager.instance().onUpdateNotifications(null);
+      int newMode = getNotificationMode();
+      if (oldMode != newMode && updateNotificationMode(oldMode, newMode, true)) {
+        TdlibManager.instance().onUpdateAllNotifications();
+      }
     }
     adapter.updateAllValuedSettings();
   }

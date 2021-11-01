@@ -43,7 +43,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -475,9 +474,21 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   public TdlibBadgeCounter getTotalUnreadBadgeCounter (int excludeAccountId) {
     TdlibBadgeCounter counter = new TdlibBadgeCounter();
-    for (TdlibAccount account : this) {
-      if (account.id != excludeAccountId) {
+    if (excludeAccountId == TdlibAccount.NO_ID) {
+      boolean onlyActive = Settings.instance().checkNotificationFlag(Settings.NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT);
+      boolean onlySelected = Settings.instance().checkNotificationFlag(Settings.NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS);
+      for (TdlibAccount account : this) {
+        if (onlyActive && account.id != preferredAccountId)
+          continue;
+        if (onlySelected && !account.forceEnableNotifications())
+          continue;
         counter.add(account.getUnreadBadge());
+      }
+    } else {
+      for (TdlibAccount account : this) {
+        if (account.id != excludeAccountId) {
+          counter.add(account.getUnreadBadge());
+        }
       }
     }
     return counter;
@@ -516,9 +527,20 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }*/
   }
 
-  public void onUpdateNotifications (@Nullable TdApi.NotificationSettingsScope scope) {
+  public void onUpdateAllNotifications () {
+    onUpdateNotifications(null, null);
+  }
+
+  public void onUpdateSecretChatNotifications () {
+    onUpdateNotifications(new TdApi.NotificationSettingsScopePrivateChats(), null);
+  }
+
+  public void onUpdateNotifications (@Nullable TdApi.NotificationSettingsScope scope, @Nullable Filter<TdlibAccount> filter) {
+    // FIXME implement without waking up each TDLib instance?
     for (TdlibAccount account : this) {
-      account.tdlib().notifications().onUpdateNotifications(scope);
+      if (filter == null || filter.accept(account)) {
+        account.tdlib().notifications().onUpdateNotifications(scope);
+      }
     }
   }
 
@@ -1165,6 +1187,9 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     account.markAsUsed();
     global().notifyAccountSwitched(account, account.tdlib().myUser(), reason, oldAccount);
     onConnectionStateChanged(account.tdlib(), account.tdlib().connectionState());
+    if (Settings.instance().checkNotificationFlag(Settings.NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT)) {
+      onUpdateNotifications(null, notificationAccount -> notificationAccount.id == account.id || (oldAccount != null && notificationAccount.id == oldAccount.id));
+    }
   }
 
   void onUpdateAccountProfile (int accountId, TdApi.User user, boolean isLoaded) {
@@ -1248,6 +1273,13 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   void setHasUnprocessedPushes (int accountId, boolean hasUnprocessedPushes) {
     TdlibAccount account = account(accountId);
     if (account.setHasUnprocessedPushes(hasUnprocessedPushes)) {
+      saveAccountFlags(account);
+    }
+  }
+
+  public void setForceEnableNotifications (int accountId, boolean forceEnable) {
+    TdlibAccount account = account(accountId);
+    if (account.setForceEnableNotifications(forceEnable)) {
       saveAccountFlags(account);
     }
   }
@@ -1583,6 +1615,17 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   public TdlibAccount findNextAccount (int excludeAccountId) {
     int accountId = findNextAccountId(excludeAccountId);
     return accountId != TdlibAccount.NO_ID ? account(accountId) : null;
+  }
+
+  public int getNumberOfAccountsWithEnabledNotifications () {
+    List<TdlibAccount> accounts = accountsQueue();
+    int selectedCount = 0;
+    for (TdlibAccount account : accounts) {
+      if (account.forceEnableNotifications()) {
+        selectedCount++;
+      }
+    }
+    return selectedCount;
   }
 
   public LinkedList<TdlibAccount> accountsQueueReversed () {
