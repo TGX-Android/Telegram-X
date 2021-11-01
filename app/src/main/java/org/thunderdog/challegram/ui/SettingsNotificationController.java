@@ -724,10 +724,10 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         int dataColorId = 0;
+        if (item.getViewType() == ListItem.TYPE_SETTING) {
+          view.setIconColorId(item.getId() == R.id.btn_showAdvanced ? R.id.theme_color_iconNegative : 0);
+        }
         switch (item.getId()) {
-          case R.id.btn_showAdvanced:
-            view.setIconColorId(R.id.theme_color_iconNegative);
-            break;
           case R.id.btn_notifications_preview:
             view.getToggler().setRadioEnabled(tdlib.notifications().defaultShowPreview(getScope(item)), isUpdate);
             break;
