@@ -610,7 +610,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     }
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-      rShortcutId = createShortcut(builder, context, group, visualChatTitle, chatId, bitmap, messagingStyle);
+      rShortcutId = createShortcut(builder, context, group, visualChatTitle, chatId, bitmap);
     }
 
     int state;
@@ -676,38 +676,33 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
   // Common notification
 
   @RequiresApi(api = Build.VERSION_CODES.R)
-  protected final String createShortcut (NotificationCompat.Builder builder, Context context, @NonNull TdlibNotificationGroup group, CharSequence visualChatTitle, long chatId, Bitmap icon, NotificationCompat.MessagingStyle messagingStyle) {
+  protected final String createShortcut (NotificationCompat.Builder builder, Context context, @NonNull TdlibNotificationGroup group, CharSequence visualChatTitle, long chatId, Bitmap icon) {
     long localChatId = tdlib.settings().getLocalChatId(chatId);
+    String localKey = "tgx_ns_" + localChatId;
+    IconCompat chatIcon = U.isValidBitmap(icon) ? IconCompat.createWithBitmap(icon) : null;
 
-    ShortcutInfoCompat.Builder attachedShortcut = new ShortcutInfoCompat.Builder(context, "tgx_ns_" + localChatId);
-    HashMap<String, Person> persons = new HashMap<>();
+    Person groupPerson = new Person.Builder()
+            .setName(visualChatTitle)
+            .setIcon(chatIcon)
+            .setKey(localKey)
+            .build();
 
-    for (NotificationCompat.MessagingStyle.Message msg : messagingStyle.getMessages()) {
-      Person person = msg.getPerson();
-      if (person != null) {
-        persons.put(person.getKey(), person);
-      }
-    }
+    ShortcutInfoCompat shortcut = new ShortcutInfoCompat.Builder(context, localKey)
+            .setPerson(groupPerson)
+            .setIsConversation()
+            .setLongLived(true)
+            .setShortLabel(visualChatTitle)
+            .setIntent(TdlibNotificationUtils.newCoreIntent(tdlib.id(), localChatId, group.findTargetMessageId()))
+            .setIcon(chatIcon)
+            .build();
 
-    attachedShortcut.setPersons(persons.values().toArray(new Person[0]));
-    attachedShortcut.setLongLived(true);
-    attachedShortcut.setShortLabel(visualChatTitle);
-    attachedShortcut.setIntent(TdlibNotificationUtils.newCoreIntent(tdlib.id(), localChatId, group.findTargetMessageId()));
-
-    if (U.isValidBitmap(icon)) {
-      attachedShortcut.setIcon(IconCompat.createWithBitmap(icon));
-    }
-
-    ShortcutInfoCompat si = attachedShortcut.build();
-
-    ShortcutManagerCompat.pushDynamicShortcut(context, si);
-    builder.setShortcutInfo(si);
+    ShortcutManagerCompat.pushDynamicShortcut(context, shortcut);
+    builder.setShortcutInfo(shortcut);
 
     // TODO: Uncomment to support bubbles. Not usable at the moment.
-    //NotificationCompat.BubbleMetadata.Builder bm = new NotificationCompat.BubbleMetadata.Builder(si.getId());
-    //builder.setBubbleMetadata(bm.build());
+    // builder.setBubbleMetadata(new NotificationCompat.BubbleMetadata.Builder(si.getId().build());
 
-    return si.getId();
+    return shortcut.getId();
   }
 
   protected final void hideExtraSummaryNotifications (NotificationManagerCompat manager, @NonNull TdlibNotificationHelper helper, SparseIntArray displayedCategories) {
