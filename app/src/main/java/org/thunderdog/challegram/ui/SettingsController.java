@@ -61,12 +61,8 @@ import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
@@ -445,7 +441,7 @@ public class SettingsController extends ViewController<Void> implements
             hasError = hasNotificationError;
             break;
           case R.id.btn_devices:
-            hasError = sessions != null && incompleteLoginAttemptsCount > 0;
+            hasError = sessions != null && sessions.incompleteLoginAttempts.length > 0;
             break;
         }
         view.setUnreadCounter(hasError ? Tdlib.CHAT_FAILED : 0, false, isUpdate);
@@ -453,26 +449,27 @@ public class SettingsController extends ViewController<Void> implements
           case R.id.btn_devices: {
             if (sessions == null) {
               view.setData(R.string.LoadingInformation);
-            } else if (incompleteLoginAttemptsCount > 0) {
-              view.setData(Lang.pluralBold(R.string.XSignInAttempts, incompleteLoginAttemptsCount));
-            } else if (otherSessionCount == 0) {
+            } else if (sessions.incompleteLoginAttempts.length > 0) {
+              view.setData(Lang.pluralBold(R.string.XSignInAttempts, sessions.incompleteLoginAttempts.length));
+            } else if (sessions.otherActiveSessions.length == 0) {
               view.setData(R.string.SignedInNoOtherSessions);
-            } else if (otherSession != null) {
-              if (otherDevicesCount == 1 && !StringUtils.isEmpty(otherSession.deviceModel)) {
+            } else if (sessions.otherActiveSessions.length == 1) {
+              TdApi.Session otherSession = sessions.otherActiveSessions[0];
+              if (sessions.otherDevicesCount == 1 && !StringUtils.isEmpty(otherSession.deviceModel)) {
                 view.setData(Lang.getStringBold(R.string.SignedInOtherDevice, otherSession.deviceModel));
               } else {
                 view.setData(Lang.getStringBold(R.string.SignedInOtherSession, otherSession.applicationName));
               }
-            } else if (otherSessionCount == sessionsOnCurrentDeviceCount - 1) {
-              view.setData(Lang.pluralBold(R.string.SignedInXOtherApps, otherSessionCount));
-            } else if (sessionsOnCurrentDeviceCount == 1) { // All sessions on other devices
-              if (otherDevicesCount == otherSessionCount) {
-                view.setData(Lang.pluralBold(R.string.SignedInXOtherDevices, otherDevicesCount));
+            } else if (sessions.otherDevicesCount == 0) {
+              view.setData(Lang.pluralBold(R.string.SignedInXOtherApps, sessions.otherActiveSessions.length));
+            } else if (sessions.sessionCountOnCurrentDevice == 1) { // All sessions on other devices
+              if (sessions.otherActiveSessions.length == sessions.otherDevicesCount) {
+                view.setData(Lang.pluralBold(R.string.SignedInXOtherDevices, sessions.otherDevicesCount));
               } else {
-                view.setData(Lang.getCharSequence(R.string.format_signedInAppsOnDevices, Lang.pluralBold(R.string.part_SignedInXApps, otherSessionCount), Lang.pluralBold(R.string.part_SignedInXOtherDevices, otherDevicesCount)));
+                view.setData(Lang.getCharSequence(R.string.format_signedInAppsOnDevices, Lang.pluralBold(R.string.part_SignedInXApps, sessions.otherActiveSessions.length), Lang.pluralBold(R.string.part_SignedInXOtherDevices, sessions.otherDevicesCount)));
               }
             } else {
-              view.setData(Lang.getCharSequence(R.string.format_signedInAppsOnDevices, Lang.pluralBold(R.string.part_SignedInXOtherApps, otherSessionCount), Lang.pluralBold(R.string.part_SignedInXDevices, otherDevicesCount + 1)));
+              view.setData(Lang.getCharSequence(R.string.format_signedInAppsOnDevices, Lang.pluralBold(R.string.part_SignedInXOtherApps, sessions.otherActiveSessions.length), Lang.pluralBold(R.string.part_SignedInXDevices, sessions.otherDevicesCount + 1)));
             }
             break;
           }
@@ -604,71 +601,25 @@ public class SettingsController extends ViewController<Void> implements
   }
 
   @Override
-  public void onSessionListChanged (boolean isWeakGuess) {
+  public void onSessionListChanged (Tdlib tdlib, boolean isWeakGuess) {
     runOnUiThreadOptional(this::loadActiveSessions);
   }
 
   private boolean loadingActiveSessions;
-
-  private static String getSessionSignature (TdApi.Session session) {
-    return session.deviceModel + " " + session.platform + " " + session.systemVersion;
-  }
+  private Tdlib.SessionsInfo sessions;
 
   private void loadActiveSessions () {
     if (loadingActiveSessions)
       return;
     loadingActiveSessions = true;
-    tdlib.client().send(new TdApi.GetActiveSessions(), result -> {
-      if (result.getConstructor() == TdApi.Sessions.CONSTRUCTOR) {
-        TdApi.Session[] sessions = ((TdApi.Sessions) result).sessions;
-        AtomicInteger incompleteLoginAttempts = new AtomicInteger();
-        AtomicInteger otherSessionCount = new AtomicInteger();
-        AtomicInteger sessionOnCurrentDeviceCount = new AtomicInteger();
-        Map<String, AtomicInteger> devicesMap = new HashMap<>();
-        TdApi.Session currentSession = null;
-        AtomicReference<TdApi.Session> otherSession = new AtomicReference<>();
-        for (TdApi.Session session : sessions) {
-          if (session.isPasswordPending) {
-            incompleteLoginAttempts.incrementAndGet();
-          } else {
-            String signature = getSessionSignature(session);
-            AtomicInteger counter = devicesMap.get(signature);
-            if (counter != null) {
-              counter.incrementAndGet();
-            } else {
-              devicesMap.put(signature, new AtomicInteger(1));
-            }
-            if (session.isCurrent) {
-              currentSession = session;
-            } else {
-              int count = otherSessionCount.incrementAndGet();
-              if (count == 1) {
-                otherSession.set(session);
-              } else if (count == 2) {
-                otherSession.set(null);
-              }
-            }
-          }
-        }
-        if (currentSession != null) {
-          AtomicInteger removedCounter = devicesMap.remove(getSessionSignature(currentSession));
-          if (removedCounter != null) {
-            sessionOnCurrentDeviceCount.set(removedCounter.get());
-          }
-        }
-        runOnUiThreadOptional(() -> {
-          this.sessions = sessions;
-          this.incompleteLoginAttemptsCount = incompleteLoginAttempts.get();
-          this.otherDevicesCount = devicesMap.size();
-          this.otherSessionCount = otherSessionCount.get();
-          this.sessionsOnCurrentDeviceCount = sessionOnCurrentDeviceCount.get();
-          this.otherSession = otherSession.get();
-          this.loadingActiveSessions = false;
-          adapter.updateValuedSettingById(R.id.btn_devices);
-          executeScheduledAnimation();
-        });
-      }
-    });
+    tdlib.getSessions(false, sessionsInfo ->
+      runOnUiThreadOptional(() -> {
+        this.sessions = sessionsInfo;
+        this.loadingActiveSessions = false;
+        adapter.updateValuedSettingById(R.id.btn_devices);
+        executeScheduledAnimation();
+      })
+    );
   }
 
   @Override
@@ -833,9 +784,6 @@ public class SettingsController extends ViewController<Void> implements
   private String myUsername;
   private String myPhone, originalPhoneNumber;
   private @Nullable String about;
-  private TdApi.Session[] sessions;
-  private TdApi.Session otherSession;
-  private int incompleteLoginAttemptsCount, otherDevicesCount, otherSessionCount, sessionsOnCurrentDeviceCount;
 
   private void initMyUser () {
     TdApi.User user = tdlib.myUser();

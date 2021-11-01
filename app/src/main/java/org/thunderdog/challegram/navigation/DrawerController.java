@@ -36,6 +36,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.GlobalAccountListener;
 import org.thunderdog.challegram.telegram.GlobalCountersListener;
+import org.thunderdog.challegram.telegram.SessionListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibBadgeCounter;
@@ -78,7 +79,7 @@ import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.td.ChatId;
 
-public class DrawerController extends ViewController<Void> implements View.OnClickListener, Settings.ProxyChangeListener, GlobalAccountListener, GlobalCountersListener, BaseView.CustomControllerProvider, BaseView.ActionListProvider, View.OnLongClickListener, TdlibSettingsManager.NotificationProblemListener, TdlibOptionListener {
+public class DrawerController extends ViewController<Void> implements View.OnClickListener, Settings.ProxyChangeListener, GlobalAccountListener, GlobalCountersListener, BaseView.CustomControllerProvider, BaseView.ActionListProvider, View.OnLongClickListener, TdlibSettingsManager.NotificationProblemListener, TdlibOptionListener, SessionListener {
   private int currentWidth, shadowWidth;
 
   private boolean isVisible;
@@ -109,9 +110,19 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
 
   private boolean proxyAvailable;
   private int settingsErrorIcon;
+  private Tdlib.SessionsInfo sessionsInfo; // TODO move to BaseActivity
 
   private int getSettingsErrorIcon () {
-    return context.getSettingsErrorIcon();
+    int errorIcon = context.getSettingsErrorIcon();
+    boolean haveIncompleteLoginAttempts = sessionsInfo != null && sessionsInfo.incompleteLoginAttempts.length > 0;
+    if (errorIcon != 0 && haveIncompleteLoginAttempts) {
+      return Tdlib.CHAT_FAILED;
+    } else if (errorIcon != 0) {
+      return errorIcon;
+    } else if (haveIncompleteLoginAttempts) {
+      return Tdlib.CHAT_FAILED; // TODO find a good matching icon
+    }
+    return 0;
   }
 
   private Tdlib lastTdlib;
@@ -120,11 +131,40 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     if (lastTdlib != null) {
       lastTdlib.settings().removeNotificationProblemAvailabilityChangeListener(this);
       lastTdlib.listeners().removeOptionListener(this);
+      lastTdlib.listeners().unsubscribeFromSessionUpdates(this);
     }
     this.lastTdlib = tdlib;
+    this.sessionsInfo = null;
     tdlib.settings().addNotificationProblemAvailabilityChangeListener(this);
     tdlib.listeners().addOptionsListener(this);
+    tdlib.listeners().subscribeToSessionUpdates(this);
     checkSettingsError();
+    fetchSessions();
+  }
+
+  private void fetchSessions () {
+    Tdlib tdlib = lastTdlib;
+    if (tdlib != null) {
+      tdlib.getSessions(true, sessionsInfo -> {
+        if (sessionsInfo != null && this.sessionsInfo != sessionsInfo) {
+          runOnUiThreadOptional(() -> {
+            if (this.lastTdlib == tdlib) {
+              this.sessionsInfo = sessionsInfo;
+              checkSettingsError();
+            }
+          });
+        }
+      });
+    }
+  }
+
+  @Override
+  public void onSessionListChanged (Tdlib tdlib, boolean isWeakGuess) {
+    runOnUiThreadOptional(() -> {
+      if (lastTdlib == tdlib) {
+        fetchSessions();
+      }
+    });
   }
 
   @Override
