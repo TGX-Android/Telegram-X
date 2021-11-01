@@ -145,7 +145,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     });
   }
 
-  private void checkSettingsError () {
+  public void checkSettingsError () {
     int settingsErrorIcon = getSettingsErrorIcon();
     if (this.settingsErrorIcon != settingsErrorIcon) {
       this.settingsErrorIcon = settingsErrorIcon;

@@ -1177,8 +1177,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           }
 
           if (notificationMode == NOTIFICATION_MODE_SELECTED) {
-            List<ListItem> accountsList = generateAccountsList();
-            items.addAll(accountsList);
+            items.addAll(generateAccountsList());
           }
         }
 
@@ -1343,6 +1342,9 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       boolean toggleValue = adapter.toggleView(v);
       adapter.processToggle(v, item, toggleValue);
       tdlib.context().setForceEnableNotifications(selectedAccount.id, toggleValue);
+      if (selectedAccount.id == tdlib.id()) {
+        context.getDrawer().checkSettingsError(); // FIXME re-work to listeners
+      }
       updateNotificationModeHint(true);
       tdlib.context().onUpdateNotifications(null, notificationAccount -> notificationAccount.id == selectedAccount.id);
       return;

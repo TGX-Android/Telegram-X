@@ -209,7 +209,7 @@ public class SettingsController extends ViewController<Void> implements
       }
       this.textSize = textSize;
     }
-    checkErrors();
+    checkErrors(true);
   }
 
   @Override
@@ -311,8 +311,6 @@ public class SettingsController extends ViewController<Void> implements
 
   private int getNotificationErrorDescription () {
     this.problematicChatId = 0;
-    if (!hasNotificationError)
-      return 0;
     @TdlibNotificationManager.Status int status = tdlib.notifications().getNotificationBlockStatus();
     switch (status) {
       case TdlibNotificationManager.Status.BLOCKED_ALL:
@@ -367,7 +365,7 @@ public class SettingsController extends ViewController<Void> implements
     return 0;
   }
 
-  private void checkErrors () {
+  private void checkErrors (boolean updateList) {
     long oldProblematicChatId = this.problematicChatId;
     boolean hasNotificationError = tdlib.notifications().hasLocalNotificationProblem();
     int notificationErrorDescriptionRes = hasNotificationError ? getNotificationErrorDescription() : 0;
@@ -377,7 +375,7 @@ public class SettingsController extends ViewController<Void> implements
     if (this.hasNotificationError != hasNotificationError || (hasNotificationError && (this.notificationErrorDescriptionRes != notificationErrorDescriptionRes || this.problematicChatId != oldProblematicChatId))) {
       this.hasNotificationError = hasNotificationError;
       this.notificationErrorDescriptionRes = notificationErrorDescriptionRes;
-      if (adapter != null) {
+      if (updateList && adapter != null) {
         int position = adapter.indexOfViewById(R.id.btn_notificationSettings);
         if (position != -1) {
           final ListItem item = adapter.getItems().get(position);
@@ -397,7 +395,7 @@ public class SettingsController extends ViewController<Void> implements
   @Override
   public void onActivityResume () {
     super.onActivityResume();
-    checkErrors();
+    checkErrors(true);
   }
 
   private void updateButtonsColor () {
@@ -443,7 +441,8 @@ public class SettingsController extends ViewController<Void> implements
         boolean hasError = false;
         switch (item.getId()) {
           case R.id.btn_notificationSettings:
-            hasError = hasNotificationError = tdlib.notifications().hasLocalNotificationProblem();
+            checkErrors(false);
+            hasError = hasNotificationError;
             break;
           case R.id.btn_devices:
             hasError = sessions != null && incompleteLoginAttemptsCount > 0;
@@ -566,9 +565,9 @@ public class SettingsController extends ViewController<Void> implements
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_devices, R.drawable.baseline_devices_other_24, R.string.Devices));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
 
-    this.hasNotificationError = tdlib.notifications().hasLocalNotificationProblem();
+    checkErrors(false);
 
-    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_notificationSettings, R.drawable.baseline_notifications_24, R.string.Notifications));
+    items.add(new ListItem(notificationErrorDescriptionRes != 0 ? ListItem.TYPE_VALUED_SETTING_COMPACT : ListItem.TYPE_SETTING, R.id.btn_notificationSettings, R.drawable.baseline_notifications_24, R.string.Notifications));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_chatSettings, R.drawable.baseline_data_usage_24, R.string.DataSettings));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));

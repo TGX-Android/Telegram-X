@@ -462,7 +462,10 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   // Properties
 
   public boolean hasLocalNotificationProblem () {
-    return areNotificationsBlockedGlobally() || areNotificationsBlocked(scopePrivate()) || areNotificationsBlocked(scopeGroup()) || areNotificationsBlocked(scopeChannel()) || !hasFirebase();
+    return areNotificationsBlockedGlobally() || areNotificationsBlocked(scopePrivate()) ||
+      areNotificationsBlocked(scopeGroup()) || areNotificationsBlocked(scopeChannel()) ||
+      !hasFirebase() ||
+      tdlib.notifications().getNotificationBlockStatus() == TdlibNotificationManager.Status.ACCOUNT_NOT_SELECTED;
   }
 
   public boolean areNotificationsBlockedGlobally () {

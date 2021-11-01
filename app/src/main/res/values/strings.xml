@@ -4009,13 +4009,13 @@
   <string name="part_SignedInXDevices_other">on %1$s devices</string>
 
   <string name="NotificationsErrorBlocked">Notifications are blocked in system settings</string>
-  <string name="NotificationsErrorBlockedCategory">Notification from current account are blocked in system settings</string>
-  <string name="NotificationsErrorBlockedMixed">Some notifications from current account are blocked in system settings</string>
+  <string name="NotificationsErrorBlockedCategory">Notification from this account are blocked in system settings</string>
+  <string name="NotificationsErrorBlockedMixed">Some notifications are blocked in system settings</string>
   <string name="NotificationsErrorBlockedGroup">Notifications from groups are blocked in system settings</string>
   <string name="NotificationsErrorBlockedChannel">Notifications from channels are blocked in system settings</string>
   <string name="NotificationsErrorBlockedPrivate">Notifications from private chats are blocked in system settings</string>
   <string name="NotificationsErrorBackground">Notification may not work while app is closed</string>
-  <string name="NotificationsErrorUnselected">Notifications from current account are disabled</string>
+  <string name="NotificationsErrorUnselected">Notifications from this account are disabled</string>
   <string name="NotificationsErrorError">Couldn\'t display some notifications</string>
   <string name="NotificationsErrorErrorChat">Couldn\'t display notification from %1$s</string>
 
