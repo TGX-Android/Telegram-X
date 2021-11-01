@@ -196,7 +196,7 @@ public class Config {
     return false;
   }
 
-  public static final boolean REQUEST_BACKGROUND_LOCATION = false;
+  public static final boolean REQUEST_BACKGROUND_LOCATION = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
 
   public static final boolean DISABLE_VIEWER_ELEVATION = false;
 
