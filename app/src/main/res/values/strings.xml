@@ -3992,7 +3992,7 @@
   <string name="SignedInXOtherDevices_one">You are signed in on %1$s other device</string>
   <string name="SignedInXOtherDevices_other">You are signed in on %1$s other devices</string>
   <!-- All session from current device, no sessions on other devices -->
-  <string name="SignedInXOtherApps_one">You are signed in %1$s other apps</string>
+  <string name="SignedInXOtherApps_one">You are signed in %1$s other app</string>
   <string name="SignedInXOtherApps_other">You are signed in %1$s other apps</string>
   <!-- %1$s — SignedInXApp, %1$s — SignedInXOtherDevices or SignedInXDevices -->
   <string name="format_signedInAppsOnDevices">%1$s %2$s</string>

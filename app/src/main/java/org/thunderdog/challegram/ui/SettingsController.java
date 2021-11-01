@@ -463,16 +463,14 @@ public class SettingsController extends ViewController<Void> implements
               } else {
                 view.setData(Lang.getStringBold(R.string.SignedInOtherSession, otherSession.applicationName));
               }
-            } else if (otherSessionCount - sessionsOnCurrentDeviceCount == 0) {
-              view.setData(Lang.pluralBold(R.string.SignedInXOtherApps, sessionsOnCurrentDeviceCount - 1));
-            } else if (sessionsOnCurrentDeviceCount == 1) {
+            } else if (otherSessionCount == sessionsOnCurrentDeviceCount - 1) {
+              view.setData(Lang.pluralBold(R.string.SignedInXOtherApps, otherSessionCount));
+            } else if (sessionsOnCurrentDeviceCount == 1) { // All sessions on other devices
               if (otherDevicesCount == otherSessionCount) {
                 view.setData(Lang.pluralBold(R.string.SignedInXOtherDevices, otherDevicesCount));
               } else {
                 view.setData(Lang.getCharSequence(R.string.format_signedInAppsOnDevices, Lang.pluralBold(R.string.part_SignedInXApps, otherSessionCount), Lang.pluralBold(R.string.part_SignedInXOtherDevices, otherDevicesCount)));
               }
-            } else if (otherSessionCount == otherDevicesCount + 1) {
-              view.setData(Lang.pluralBold(R.string.SignedInXOtherApps, otherSessionCount));
             } else {
               view.setData(Lang.getCharSequence(R.string.format_signedInAppsOnDevices, Lang.pluralBold(R.string.part_SignedInXOtherApps, otherSessionCount), Lang.pluralBold(R.string.part_SignedInXDevices, otherDevicesCount + 1)));
             }
@@ -625,7 +623,7 @@ public class SettingsController extends ViewController<Void> implements
         TdApi.Session[] sessions = ((TdApi.Sessions) result).sessions;
         AtomicInteger incompleteLoginAttempts = new AtomicInteger();
         AtomicInteger otherSessionCount = new AtomicInteger();
-        AtomicInteger otherSessionOnCurrentDeviceCount = new AtomicInteger();
+        AtomicInteger sessionOnCurrentDeviceCount = new AtomicInteger();
         Map<String, AtomicInteger> devicesMap = new HashMap<>();
         TdApi.Session currentSession = null;
         AtomicReference<TdApi.Session> otherSession = new AtomicReference<>();
@@ -655,7 +653,7 @@ public class SettingsController extends ViewController<Void> implements
         if (currentSession != null) {
           AtomicInteger removedCounter = devicesMap.remove(getSessionSignature(currentSession));
           if (removedCounter != null) {
-            otherSessionOnCurrentDeviceCount.set(removedCounter.get());
+            sessionOnCurrentDeviceCount.set(removedCounter.get());
           }
         }
         runOnUiThreadOptional(() -> {
@@ -663,7 +661,7 @@ public class SettingsController extends ViewController<Void> implements
           this.incompleteLoginAttemptsCount = incompleteLoginAttempts.get();
           this.otherDevicesCount = devicesMap.size();
           this.otherSessionCount = otherSessionCount.get();
-          this.sessionsOnCurrentDeviceCount = otherSessionOnCurrentDeviceCount.get();
+          this.sessionsOnCurrentDeviceCount = sessionOnCurrentDeviceCount.get();
           this.otherSession = otherSession.get();
           this.loadingActiveSessions = false;
           adapter.updateValuedSettingById(R.id.btn_devices);
