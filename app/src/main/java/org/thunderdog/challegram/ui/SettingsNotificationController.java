@@ -595,7 +595,11 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     if (changed) {
       int position = adapter.indexOfView(notificationModeHint);
       if (position != -1) {
-        adapter.notifyItemChanged(position);
+        if (isUpdate) {
+          adapter.updateValuedSettingByPosition(position);
+        } else {
+          adapter.notifyItemChanged(position);
+        }
       }
     }
   }
@@ -613,6 +617,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   }
 
   private List<TdlibAccount> displayingAccounts;
+  private int collapsedAccountsCount;
 
   private boolean updateNotificationMode (int oldMode, int newMode, boolean updateToggle) {
     if (updateToggle) {
@@ -648,22 +653,13 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         if (notificationModeHintPosition == -1)
           throw new IllegalStateException();
         if (hasAccountsList) {
-          displayingAccounts = getDisplayingAccounts();
-          List<ListItem> newItems = new ArrayList<>(1 + displayingAccounts.size() * 2);
-          for (TdlibAccount account : displayingAccounts) {
-            if (newItems.isEmpty()) {
-              newItems.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-            } else {
-              newItems.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-            }
-            newItems.add(newAccountItem(account));
-          }
-          newItems.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+          List<ListItem> newItems = generateAccountsList();
           adapter.getItems().addAll(notificationModeHintPosition + 1, newItems);
           adapter.notifyItemRangeInserted(notificationModeHintPosition + 1, newItems.size());
         } else if (displayingAccounts != null) {
-          adapter.removeRange(notificationModeHintPosition + 1, 1 + displayingAccounts.size() * 2);
+          adapter.removeRange(notificationModeHintPosition + 1, 1 + (displayingAccounts.size() - collapsedAccountsCount + (collapsedAccountsCount > 0 ? 1 : 0)) * 2);
           displayingAccounts = null;
+          collapsedAccountsCount = 0;
         }
       }
 
@@ -672,6 +668,32 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
 
     return false;
   }
+
+  private List<ListItem> generateAccountsList () {
+    displayingAccounts = getDisplayingAccounts();
+    collapsedAccountsCount = 0;
+    int addedCount = 0;
+    List<ListItem> newItems = new ArrayList<>(1 + displayingAccounts.size() * 2);
+    for (TdlibAccount account : displayingAccounts) {
+      if (newItems.isEmpty()) {
+        newItems.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      } else {
+        newItems.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      }
+      if (addedCount >= 1 && displayingAccounts.size() - addedCount > 1 && (!account.forceEnableNotifications() || addedCount >= MAXIMUM_DISPLAY_ACCOUNTS_NUM)) {
+        collapsedAccountsCount = displayingAccounts.size() - addedCount;
+        newItems.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showMore, R.drawable.baseline_direction_arrow_down_24, Lang.pluralBold(account.forceEnableNotifications() ? R.string.NotificationsModeSelectedMore : R.string.NotificationsModeSelectedMoreMuted, collapsedAccountsCount), false));
+        break;
+      } else {
+        newItems.add(newAccountItem(account));
+      }
+      addedCount++;
+    }
+    newItems.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    return newItems;
+  }
+
+  private static final int MAXIMUM_DISPLAY_ACCOUNTS_NUM = 3;
 
   private List<TdlibAccount> getDisplayingAccounts () {
     List<TdlibAccount> accounts = tdlib.context().accountsQueue();
@@ -1155,18 +1177,8 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           }
 
           if (notificationMode == NOTIFICATION_MODE_SELECTED) {
-            items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-            boolean first = true;
-            this.displayingAccounts = getDisplayingAccounts();
-            for (TdlibAccount account : displayingAccounts) {
-              if (first) {
-                first = false;
-              } else {
-                items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-              }
-              items.add(newAccountItem(account));
-            }
-            items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+            List<ListItem> accountsList = generateAccountsList();
+            items.addAll(accountsList);
           }
         }
 
@@ -1467,6 +1479,30 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           (viewId == R.id.btn_notificationMode_all && enabled) ? NOTIFICATION_MODE_ALL : -1;
         if (updateNotificationMode(oldMode, newMode, false)) {
           TdlibManager.instance().onUpdateAllNotifications();
+        }
+        break;
+      }
+      case R.id.btn_showMore: {
+        if (getNotificationMode() == NOTIFICATION_MODE_SELECTED && collapsedAccountsCount > 0) {
+          int position = adapter.indexOfView(notificationModeHint);
+          if (position != -1) {
+            position += 2 + (displayingAccounts.size() - collapsedAccountsCount) * 2;
+            List<ListItem> items = new ArrayList<>(collapsedAccountsCount * 2);
+            for (int i = displayingAccounts.size() - collapsedAccountsCount; i < displayingAccounts.size(); i++) {
+              TdlibAccount account = displayingAccounts.get(i);
+              if (!items.isEmpty()) {
+                items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+              }
+              items.add(newAccountItem(account));
+            }
+            adapter.getItems().remove(position); // "show more" button
+            adapter.getItems().addAll(position, items);
+            adapter.notifyItemChanged(position);
+            if (items.size() > 1) {
+              adapter.notifyItemRangeInserted(position + 1, items.size() - 1);
+            }
+            collapsedAccountsCount = 0;
+          }
         }
         break;
       }

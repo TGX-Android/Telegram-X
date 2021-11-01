@@ -3969,13 +3969,16 @@
   <string name="NotificationsModeAll">All accounts</string>
   <string name="NotificationsModeActive">Current account</string>
   <string name="NotificationsModeSelected">Selected accounts</string>
+  <string name="NotificationsModeSelectedMoreMuted_one">Show %1$s muted account</string>
+  <string name="NotificationsModeSelectedMoreMuted_other">Show %1$s muted accounts</string>
+  <string name="NotificationsModeSelectedMore_one">Show %1$s more account</string>
+  <string name="NotificationsModeSelectedMore_other">Show %1$s more accounts</string>
   <string name="NotificationsModeAllHint">You will receive notifications from all accounts.</string>
   <string name="NotificationsModeActiveHint">You will receive notifications only from currently active account.</string>
   <string name="NotificationsModeSelectedHint_one">You will receive notifications only from %1$s account selected below.</string>
   <string name="NotificationsModeSelectedHint_other">You will receive notifications only from %1$s accounts selected below.</string>
   <string name="NotificationsModeSelectedHintExcluded_one">You will receive notifications only from %1$s selected account. Current account is not selected.</string>
   <string name="NotificationsModeSelectedHintExcluded_other">You will receive notifications only from %1$s selected accounts. Current account is not selected.</string>
-
   <string name="NotificationSettings">Notifications for chats</string>
 
   <string name="XSignInAttempts_one">You have %1$s incomplete login attempt</string>

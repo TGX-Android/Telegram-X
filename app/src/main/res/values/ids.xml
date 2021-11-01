@@ -769,6 +769,7 @@
   <item type="id" name="btn_galleryFiles" />
   <item type="id" name="btn_reduceMotion" />
   <item type="id" name="btn_other" />
+  <item type="id" name="btn_showMore" />
   <item type="id" name="btn_junk" />
   <item type="id" name="btn_storageUsage" />
   <item type="id" name="btn_dataUsageTotal" />
