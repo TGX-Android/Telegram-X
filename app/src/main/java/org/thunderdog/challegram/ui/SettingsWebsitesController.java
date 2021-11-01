@@ -163,7 +163,7 @@ public class SettingsWebsitesController extends RecyclerViewController<SettingsP
     TGLegacyManager.instance().removeEmojiListener(adapter);
     SettingsPrivacyController controller = getArguments();
     if (controller != null) {
-      controller.setAuthorizationsLoadListener(null);
+      controller.setWebsitesLoadListener(null);
     }
   }
 

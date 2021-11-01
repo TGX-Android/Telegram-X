@@ -3,14 +3,14 @@ package org.thunderdog.challegram.telegram;
 import org.drinkless.td.libcore.telegram.TdApi;
 
 public interface SessionListener {
-  void onSessionListChanged (boolean isWeakGuess);
-  default void onSessionTerminated (TdApi.Session session) {
-    onSessionListChanged(false);
+  void onSessionListChanged (Tdlib tdlib, boolean isWeakGuess);
+  default void onSessionTerminated (Tdlib tdlib, TdApi.Session session) {
+    onSessionListChanged(tdlib, false);
   }
-  default void onAllOtherSessionsTerminated (TdApi.Session currentSession) {
-    onSessionListChanged(false);
+  default void onAllOtherSessionsTerminated (Tdlib tdlib, TdApi.Session currentSession) {
+    onSessionListChanged(tdlib, false);
   }
-  default void onSessionCreatedViaQrCode (TdApi.Session session) {
-    onSessionListChanged(false);
+  default void onSessionCreatedViaQrCode (Tdlib tdlib, TdApi.Session session) {
+    onSessionListChanged(tdlib, false);
   }
 }

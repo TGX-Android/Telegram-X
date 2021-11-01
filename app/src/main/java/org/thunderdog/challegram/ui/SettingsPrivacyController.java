@@ -21,6 +21,7 @@ import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.PrivacySettings;
 import org.thunderdog.challegram.telegram.PrivacySettingsListener;
+import org.thunderdog.challegram.telegram.SessionListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibContactManager;
@@ -34,14 +35,12 @@ import org.thunderdog.challegram.v.CustomRecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
-import me.vkryl.td.Td;
-
 /**
  * Date: 16/11/2016
  * Author: default
  */
 
-public class SettingsPrivacyController extends RecyclerViewController<SettingsPrivacyController.Args> implements View.OnClickListener, Client.ResultHandler, ViewController.SettingsIntDelegate, TdlibCache.UserDataChangeListener, TdlibContactManager.StatusChangeListener, PrivacySettingsListener {
+public class SettingsPrivacyController extends RecyclerViewController<SettingsPrivacyController.Args> implements View.OnClickListener, Client.ResultHandler, ViewController.SettingsIntDelegate, TdlibCache.UserDataChangeListener, TdlibContactManager.StatusChangeListener, PrivacySettingsListener, SessionListener {
   public static class Args {
     private final boolean onlyPrivacy;
 
@@ -230,7 +229,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
     recyclerView.setAdapter(adapter);
 
     tdlib.client().send(new TdApi.GetBlockedMessageSenders(0, 1), this);
-    tdlib.client().send(new TdApi.GetActiveSessions(), this);
+    fetchSessions();
     tdlib.client().send(new TdApi.GetPasswordState(), this);
     tdlib.client().send(new TdApi.GetAccountTtl(), this);
     tdlib.client().send(new TdApi.GetConnectedWebsites(), this);
@@ -440,7 +439,6 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
       case R.id.btn_sessions: {
         lastClickedButton = id;
         SettingsSessionsController sessions = new SettingsSessionsController(context, tdlib);
-        sessions.setArguments(this);
         SettingsWebsitesController websites = new SettingsWebsitesController(context, tdlib);
         websites.setArguments(this);
 
@@ -478,10 +476,10 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
         int months = days / 30;
         int years = months / 12;
         showSettings(id, new ListItem[] {
-          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_1month, 0, Lang.plural(R.string.xMonths, 1), R.id.btn_accountTTL, months == 1),
-          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_3months, 0, Lang.plural(R.string.xMonths, 3), R.id.btn_accountTTL, months == 3),
-          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_6month, 0, Lang.plural(R.string.xMonths, 6), R.id.btn_accountTTL, months == 6),
-          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_1year, 0, Lang.plural(R.string.xYears, 1), R.id.btn_accountTTL, years == 1)
+          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_1month, 0, Lang.pluralBold(R.string.xMonths, 1), R.id.btn_accountTTL, months == 1),
+          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_3months, 0, Lang.pluralBold(R.string.xMonths, 3), R.id.btn_accountTTL, months == 3),
+          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_6month, 0, Lang.pluralBold(R.string.xMonths, 6), R.id.btn_accountTTL, months == 6),
+          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_1year, 0, Lang.pluralBold(R.string.xYears, 1), R.id.btn_accountTTL, years == 1)
         }, this);
         break;
       }
@@ -577,56 +575,41 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
 
   // Sessions
 
-  public interface AuthorizationsLoadListener {
-    void onAuthorizationsLoaded (TdApi.Sessions sessions);
+  private Tdlib.SessionsInfo sessions;
+
+  private void fetchSessions () {
+    tdlib.getSessions(true, sessionsInfo -> {
+      if (sessionsInfo != null) {
+        runOnUiThreadOptional(() -> {
+          setSessions(sessionsInfo);
+        });
+      }
+    });
   }
 
-  private @Nullable AuthorizationsLoadListener authorizationsListener;
-  private TdApi.Sessions sessions;
-
-  private void setSessions (TdApi.Sessions sessions) {
+  private void setSessions (Tdlib.SessionsInfo sessions) {
     this.sessions = sessions;
-    Td.sort(sessions.sessions);
-    adapter.updateValuedSettingById(R.id.btn_sessions);
-    if (authorizationsListener != null) {
-      authorizationsListener.onAuthorizationsLoaded(sessions);
-    }
-  }
-
-  public void updateAuthorizations (ArrayList<TdApi.Session> sessions, TdApi.Session current) {
-    TdApi.Session[] auths = new TdApi.Session[sessions.size() + 1];
-    auths[0] = current;
-    int i = 1;
-    for (TdApi.Session auth : sessions) {
-      auths[i++] = auth;
-    }
-    this.sessions = new TdApi.Sessions(auths);
     adapter.updateValuedSettingById(R.id.btn_sessions);
   }
 
-  public void setAuthorizationsLoadListener (@Nullable AuthorizationsLoadListener listener) {
-    this.authorizationsListener = listener;
+  @Override
+  public void onSessionListChanged (Tdlib tdlib, boolean isWeakGuess) {
+    fetchSessions();
   }
 
-  public TdApi.Sessions getSessions () {
+  public Tdlib.SessionsInfo getSessions () {
     return sessions;
   }
 
-  private String getAuthorizationsCount () {
+  private CharSequence getAuthorizationsCount () {
     if (sessions == null) {
       return Lang.getString(R.string.LoadingInformation);
     }
-    int sessionCount = 0;
-    for (TdApi.Session session : sessions.sessions) {
-      if (!session.isPasswordPending) {
-        sessionCount++;
-      }
-    }
-    String sessionsStr = Lang.plural(R.string.xSessions, sessionCount);
+    CharSequence sessionsStr = Lang.pluralBold(R.string.xSessions, sessions.activeSessionCount);
     if (websites == null || websites.websites.length == 0) {
       return sessionsStr;
     } else {
-      return Lang.getString(R.string.format_sessionsAndWebsites, sessionsStr, Lang.plural(R.string.xWebsites, websites.websites.length));
+      return Lang.getCharSequence(R.string.format_sessionsAndWebsites, sessionsStr, Lang.pluralBold(R.string.xWebsites, websites.websites.length));
     }
   }
 
@@ -709,19 +692,19 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
     adapter.updateValuedSettingById(R.id.btn_accountTTL);
   }
 
-  public String getAccountTTLIn () {
+  public CharSequence getAccountTTLIn () {
     if (accountTtl != null) {
-      String duration;
+      CharSequence duration;
       int days = accountTtl.days;
       if (days < 30) {
-        duration = Lang.plural(R.string.DeleteAccountIfAwayForDays, days);
+        duration = Lang.pluralBold(R.string.DeleteAccountIfAwayForDays, days);
       } else {
         days /= 30;
         if (days < 12) {
-          duration = Lang.plural(R.string.DeleteAccountIfAwayForMonths, days);
+          duration = Lang.pluralBold(R.string.DeleteAccountIfAwayForMonths, days);
         } else {
           days /= 12;
-          duration = Lang.plural(R.string.DeleteAccountIfAwayForYears, days);
+          duration = Lang.pluralBold(R.string.DeleteAccountIfAwayForYears, days);
         }
       }
       return duration;
@@ -769,10 +752,6 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
             this.blockedChatsCount = totalCount;
             adapter.updateValuedSettingById(R.id.btn_blockedUsers);
           }
-          break;
-        }
-        case TdApi.Sessions.CONSTRUCTOR: {
-          setSessions((TdApi.Sessions) object);
           break;
         }
         case TdApi.ConnectedWebsites.CONSTRUCTOR: {

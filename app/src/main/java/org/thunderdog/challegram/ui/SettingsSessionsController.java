@@ -11,7 +11,6 @@ import androidx.collection.LongSparseArray;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.user.RemoveHelper;
@@ -23,7 +22,6 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.camera.CameraController;
-import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.AvatarView;
@@ -33,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
@@ -42,7 +41,7 @@ import me.vkryl.td.Td;
  * Author: default
  */
 
-public class SettingsSessionsController extends RecyclerViewController<SettingsPrivacyController> implements SettingsPrivacyController.AuthorizationsLoadListener, View.OnClickListener, OptionDelegate, CameraController.QrCodeListener, SessionListener {
+public class SettingsSessionsController extends RecyclerViewController<Void> implements View.OnClickListener, OptionDelegate, CameraController.QrCodeListener, SessionListener {
   public SettingsSessionsController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
@@ -52,35 +51,16 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
     return R.id.controller_sessions;
   }
 
-  @Override
-  public void setArguments (SettingsPrivacyController args) {
-    super.setArguments(args);
-    TdApi.Sessions sessions = args.getSessions();
-    if (sessions == null || sessions.sessions.length == 0) {
-      args.setAuthorizationsLoadListener(this);
-    } else {
-      setSessions(sessions.sessions);
-    }
-  }
+  private Tdlib.SessionsInfo sessions;
 
-  private TdApi.Session currentSession;
-  private ArrayList<TdApi.Session> sessions;
-
-  private void setSessions (TdApi.Session[] sessions) {
-    this.sessions = new ArrayList<>(Math.max(sessions.length - 1, 0));
-    for (TdApi.Session session : sessions) {
-      if (session.isCurrent) {
-        currentSession = session;
-      } else {
-        this.sessions.add(session);
-      }
-    }
+  private void setSessions (Tdlib.SessionsInfo sessions) {
+    this.sessions = sessions;
   }
 
   private SettingsAdapter adapter;
 
   private void buildCells () {
-    if (sessions == null || currentSession == null) {
+    if (sessions == null || sessions.currentSession == null) {
       return;
     }
 
@@ -95,36 +75,50 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     items.add(new ListItem(ListItem.TYPE_SESSION, R.id.btn_currentSession, 0, 0));
 
-    if (sessions.isEmpty()) {
+    if (sessions.otherActiveSessions.length == 0) {
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_SESSIONS_EMPTY));
     } else {
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_terminateAllSessions, R.drawable.baseline_cancel_24, R.string.TerminateAllSessions).setTextColorId(R.id.theme_color_textNegative));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+
       boolean first = true;
-      boolean isPending = false;
-      boolean havePending = false;
-      for (TdApi.Session session : sessions) {
-        if (!first && isPending != session.isPasswordPending) {
-          first = true;
-          havePending = true;
-          items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-          if (isPending) {
-            items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.SessionsIncompleteInfo));
-          }
-        }
+
+      // Incomplete login attempts
+      for (TdApi.Session session : sessions.incompleteLoginAttempts) {
         if (first) {
-          isPending = session.isPasswordPending;
-          items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, session.isPasswordPending ? R.string.SessionsIncompleteTitle : havePending ? R.string.ActiveDevices : R.string.OtherDevices));
+          items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.SessionsIncompleteTitle));
           items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+
           first = false;
         } else {
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         }
         items.add(new ListItem(ListItem.TYPE_SESSION, R.id.btn_session, 0, 0).setLongId(session.id).setData(session));
       }
-      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      if (!first) {
+        items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+        items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.SessionsIncompleteInfo));
+
+        first = true;
+      }
+
+      // Other sessions
+      for (TdApi.Session session : sessions.otherActiveSessions) {
+        if (first) {
+          items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, sessions.incompleteLoginAttempts.length > 0 ? R.string.ActiveDevices : R.string.OtherDevices));
+          items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+
+          first = false;
+        } else {
+          items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        }
+        items.add(new ListItem(ListItem.TYPE_SESSION, R.id.btn_session, 0, 0).setLongId(session.id).setData(session));
+      }
+      if (!first) {
+        items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      }
     }
 
     adapter.setItems(items, false);
@@ -132,7 +126,7 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
   }
 
   private void clearSessionList () {
-    if (sessions == null || sessions.isEmpty()) {
+    if (sessions == null || sessions.onlyCurrent) {
       return;
     }
     List<ListItem> items = adapter.getItems();
@@ -158,10 +152,7 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
       adapter.notifyItemRangeInserted(index, 2);
     }
 
-    sessions.clear();
-    if (getArguments() != null) {
-      getArguments().updateAuthorizations(sessions, currentSession);
-    }
+    sessions = new Tdlib.SessionsInfo(new TdApi.Sessions(new TdApi.Session[] {sessions.currentSession}));
   }
 
   private static CharSequence getTitle (TdApi.Session session) {
@@ -249,9 +240,9 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
           case R.id.btn_currentSession: {
             parent.setTag(null);
             timeView.setText("");
-            titleView.setText(getTitle(currentSession));
-            subtextView.setText(getSubtext(currentSession, false));
-            locationView.setText(Strings.concatIpLocation(currentSession.ip, currentSession.country));
+            titleView.setText(getTitle(sessions.currentSession));
+            subtextView.setText(getSubtext(sessions.currentSession, false));
+            locationView.setText(Strings.concatIpLocation(sessions.currentSession.ip, sessions.currentSession.country));
             progressView.forceFactor(0f);
             parent.setEnabled(false);
             break;
@@ -313,12 +304,12 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
   }
 
   @Override
-  public void onSessionListChanged (boolean isWeakGuess) {
+  public void onSessionListChanged (Tdlib tdlib, boolean isWeakGuess) {
     requestActiveSessions();
   }
 
   @Override
-  public void onSessionTerminated (TdApi.Session session) {
+  public void onSessionTerminated (Tdlib tdlib, TdApi.Session session) {
     runOnUiThreadOptional(() -> {
       if (terminatingSessions != null) {
         terminatingSessions.remove(session.id);
@@ -328,7 +319,7 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
   }
 
   @Override
-  public void onAllOtherSessionsTerminated (TdApi.Session currentSession) {
+  public void onAllOtherSessionsTerminated (Tdlib tdlib, TdApi.Session currentSession) {
     runOnUiThreadOptional(() -> {
       if (terminatingSessions != null) {
         terminatingSessions.clear();
@@ -336,7 +327,7 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
       terminatingAll = false;
       clearSessionList();
       if (sessions != null) {
-        for (TdApi.Session session : sessions) {
+        for (TdApi.Session session : sessions.allSessions) {
           updateSessionById(session.id);
         }
       }
@@ -344,41 +335,20 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
   }
 
   private void requestActiveSessions () {
-    tdlib.client().send(new TdApi.GetActiveSessions(), object -> tdlib.ui().post(() -> {
-      if (!isDestroyed()) {
-        switch (object.getConstructor()) {
-          case TdApi.Sessions.CONSTRUCTOR: {
-            TdApi.Session[] sessions = ((TdApi.Sessions) object).sessions;
-            Td.sort(sessions);
-            setSessions(sessions);
-            buildCells();
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR: {
-            UI.showError(object);
-            break;
-          }
-          default: {
-            Log.unexpectedTdlibResponse(object, TdApi.GetActiveSessions.class, TdApi.Sessions.class);
-            break;
-          }
-        }
+    tdlib.getSessions(false, sessionsInfo -> {
+      if (sessionsInfo != null) {
+        runOnUiThreadOptional(() -> {
+          setSessions(sessionsInfo);
+          buildCells();
+        });
       }
-    }));
-  }
-
-  @Override
-  public void onAuthorizationsLoaded (TdApi.Sessions sessions) {
-    if (!isDestroyed()) {
-      setSessions(sessions.sessions);
-      buildCells();
-    }
+    });
   }
 
   private boolean terminatingAll;
 
   private void terminateOtherSessions () {
-    if (sessions == null || sessions.isEmpty() || terminatingAll) {
+    if (sessions == null || sessions.onlyCurrent || terminatingAll) {
       return;
     }
     terminatingAll = true;
@@ -386,12 +356,14 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
     if (terminatingSessions == null) {
       terminatingSessions = new LongSparseArray<>();
     }
-    for (TdApi.Session session : sessions) {
-      terminatingSessions.put(session.id, session);
-      updateSessionById(session.id);
+    for (TdApi.Session session : sessions.allSessions) {
+      if (!session.isCurrent) {
+        terminatingSessions.put(session.id, session);
+        updateSessionById(session.id);
+      }
     }
 
-    tdlib.terminateAllOtherSessions(currentSession, error -> {
+    tdlib.terminateAllOtherSessions(sessions.currentSession, error -> {
       if (error != null) {
         UI.showError(error); // TODO tooltip?
       }
@@ -440,12 +412,12 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
 
   private int indexOfSessionInAdapter (long sessionId) {
     int index = indexOfSession(sessionId);
-    return index != -1 ? adapter.indexOfViewByData(sessions.get(index)) : -1;
+    return index != -1 ? adapter.indexOfViewByData(sessions.allSessions[index]) : -1;
   }
 
   private int indexOfSession (long sessionId) {
     int i = 0;
-    for (TdApi.Session check : sessions) {
+    for (TdApi.Session check : sessions.allSessions) {
       if (check.id == sessionId) {
         return i;
       }
@@ -455,9 +427,9 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
   }
 
   private void removeSessionFromList (TdApi.Session session) {
-    if (sessions == null)
+    if (sessions == null || sessions.onlyCurrent)
       return;
-    if (sessions.size() == 1) {
+    if (sessions.allSessions.length == 1) {
       clearSessionList();
       return;
     }
@@ -467,10 +439,8 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
       return;
     }
 
-    sessions.remove(index);
-    if (getArguments() != null) {
-      getArguments().updateAuthorizations(sessions, currentSession);
-    }
+    TdApi.Session[] newSessions = ArrayUtils.removeElement(sessions.allSessions, index, new TdApi.Session[sessions.allSessions.length - 1]);
+    this.sessions = new Tdlib.SessionsInfo(new TdApi.Sessions(newSessions));
 
     final int itemIndex = adapter.indexOfViewByData(session);
     if (itemIndex == -1)
@@ -553,20 +523,11 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
   public void destroy () {
     super.destroy();
     tdlib.listeners().unsubscribeFromSessionUpdates(this);
-    SettingsPrivacyController controller = getArguments();
-    if (controller != null) {
-      controller.setAuthorizationsLoadListener(null);
-    }
   }
 
   @Override
   public CharSequence getName () {
     return Lang.getString(R.string.Devices);
-  }
-
-  @Override
-  public void onSessionCreatedViaQrCode (TdApi.Session session) {
-    // Overriding to avoid default onSessionListChanged(false) call
   }
 
   @Override
@@ -578,9 +539,10 @@ public class SettingsSessionsController extends RecyclerViewController<SettingsP
           runOnUiThreadOptional(() -> {
             if (indexOfSession(session.id) != -1)
               return;
-            sessions.add(0, session);
-            if (getArguments() != null)
-              getArguments().updateAuthorizations(sessions, currentSession);
+            TdApi.Session[] newSessions = new TdApi.Session[sessions.allSessions.length + 1];
+            newSessions[sessions.allSessions.length] = session;
+            Td.sort(newSessions);
+            this.sessions = new Tdlib.SessionsInfo(new TdApi.Sessions(newSessions));
             buildCells();
             UI.showCustomToast(Lang.getString(R.string.ScanQRAuthorizedToast, session.applicationName), Toast.LENGTH_LONG, 0);
           });

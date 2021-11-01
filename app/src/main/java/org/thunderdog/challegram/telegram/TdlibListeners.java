@@ -230,25 +230,25 @@ public class TdlibListeners {
 
   void notifyAllSessionsTerminated (TdApi.Session currentSession) {
     for (SessionListener listener : sessionListeners) {
-      listener.onAllOtherSessionsTerminated(currentSession);
+      listener.onAllOtherSessionsTerminated(tdlib, currentSession);
     }
   }
 
   void notifySessionCreatedViaQrCode (TdApi.Session newSession) {
     for (SessionListener listener : sessionListeners) {
-      listener.onSessionCreatedViaQrCode(newSession);
+      listener.onSessionCreatedViaQrCode(tdlib, newSession);
     }
   }
 
   void notifySessionTerminated (TdApi.Session session) {
     for (SessionListener listener : sessionListeners) {
-      listener.onSessionTerminated(session);
+      listener.onSessionTerminated(tdlib, session);
     }
   }
 
   void notifySessionListPossiblyChanged (boolean isWeakGuess) {
     for (SessionListener listener : sessionListeners) {
-      listener.onSessionListChanged(isWeakGuess);
+      listener.onSessionListChanged(tdlib, isWeakGuess);
     }
   }
 

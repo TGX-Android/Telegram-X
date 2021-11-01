@@ -4087,7 +4087,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   public void terminateSession (TdApi.Session session, RunnableData<TdApi.Error> after) {
     client().send(new TdApi.TerminateSession(session.id), result -> {
       after.runWithData(result.getConstructor() == TdApi.Error.CONSTRUCTOR ? (TdApi.Error) result : null);
-      if (result.getConstructor() != TdApi.Error.CONSTRUCTOR) {
+      if (result.getConstructor() == TdApi.Ok.CONSTRUCTOR) {
+        this.sessionsInfo = null;
         listeners.notifySessionTerminated(session);
       }
     });
@@ -4098,10 +4099,109 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       if (after != null) {
         after.runWithData(result.getConstructor() == TdApi.Error.CONSTRUCTOR ? (TdApi.Error) result : null);
       }
-      if (result.getConstructor() != TdApi.Error.CONSTRUCTOR) {
+      if (result.getConstructor() == TdApi.Ok.CONSTRUCTOR) {
+        this.sessionsInfo = null;
         listeners.notifyAllSessionsTerminated(currentSession);
       }
     });
+  }
+
+  public static class SessionsInfo {
+    public final TdApi.Session[] allSessions, otherActiveSessions, incompleteLoginAttempts;
+    public final TdApi.Session currentSession;
+    public final boolean onlyCurrent;
+
+    public final int otherDevicesCount;
+    public final int sessionCountOnCurrentDevice;
+    public final int activeSessionCount;
+
+    public SessionsInfo (TdApi.Sessions sessions) {
+      Td.sort(sessions.sessions);
+
+      TdApi.Session currentSession = null;
+      List<TdApi.Session> pendingPasswords = null;
+      List<TdApi.Session> otherSessions = null;
+      Map<String, AtomicInteger> devicesMap = new HashMap<>();
+      int activeSessionCount = 0;
+      int totalSessionCount = 0;
+      for (TdApi.Session session : sessions.sessions) {
+        totalSessionCount++;
+        if (session.isCurrent) {
+          currentSession = session;
+        } else if (session.isPasswordPending) {
+          if (pendingPasswords == null) {
+            pendingPasswords = new ArrayList<>();
+          }
+          pendingPasswords.add(session);
+          continue;
+        } else {
+          if (otherSessions == null) {
+            otherSessions = new ArrayList<>();
+          }
+          otherSessions.add(session);
+        }
+
+        final String signature = getSignature(session);
+        final AtomicInteger counter = devicesMap.get(signature);
+        if (counter != null) {
+          counter.incrementAndGet();
+        } else {
+          devicesMap.put(signature, new AtomicInteger(1));
+        }
+        activeSessionCount++;
+      }
+
+      AtomicInteger currentDeviceCounter = currentSession != null ? devicesMap.remove(getSignature(currentSession)) : null;
+
+      this.allSessions = sessions.sessions;
+      this.currentSession = currentSession;
+      this.sessionCountOnCurrentDevice = currentDeviceCounter != null ? currentDeviceCounter.get() : 1;
+      this.otherDevicesCount = devicesMap.size();
+      this.activeSessionCount = activeSessionCount;
+      this.onlyCurrent = totalSessionCount == 1;
+      this.incompleteLoginAttempts = pendingPasswords != null && !pendingPasswords.isEmpty() ? pendingPasswords.toArray(new TdApi.Session[0]) : new TdApi.Session[0];
+      this.otherActiveSessions = otherSessions != null && !otherSessions.isEmpty() ? otherSessions.toArray(new TdApi.Session[0]) : new TdApi.Session[0];
+    }
+
+    private static String getSignature (TdApi.Session session) {
+      return session.deviceModel + " " + session.platform + " " + session.systemVersion;
+    }
+  }
+
+  private SessionsInfo sessionsInfo;
+
+  public void getSessions (boolean allowCached, RunnableData<SessionsInfo> callback) {
+    if (allowCached) {
+      runOnTdlibThread(() -> {
+        if (sessionsInfo != null) {
+          if (callback != null) {
+            callback.runWithData(sessionsInfo);
+          }
+        } else {
+          getSessions(false, callback);
+        }
+      });
+    } else {
+      client().send(new TdApi.GetActiveSessions(), result -> {
+        switch (result.getConstructor()) {
+          case TdApi.Sessions.CONSTRUCTOR: {
+            TdApi.Sessions sessions = (TdApi.Sessions) result;
+            this.sessionsInfo = new SessionsInfo(sessions);
+            if (callback != null) {
+              callback.runWithData(this.sessionsInfo);
+            }
+            break;
+          }
+          case TdApi.Error.CONSTRUCTOR: {
+            Log.e("Unable to fetch sessions", TD.toErrorString(result));
+            if (callback != null) {
+              callback.runWithData(null);
+            }
+            break;
+          }
+        }
+      });
+    }
   }
 
   public void confirmQrCodeAuthentication (String qrLoginUri, RunnableData<TdApi.Session> onDone, RunnableData<TdApi.Error> onError) {
@@ -5582,6 +5682,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     suggestedActions.clear();
     telegramServiceNotificationsChatId = TdConstants.TELEGRAM_ACCOUNT_ID;
     repliesBotChatId = TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID;
+    sessionsInfo = null;
     // animatedTgxEmoji.clear();
   }
 
