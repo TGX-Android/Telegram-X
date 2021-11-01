@@ -739,7 +739,6 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
           y -= decoratedTop;
           chatsView.stopScroll();
           liveLocationHelper.onClickAt(x, y);
-          ViewUtils.onClick(chatsView);
         }
       }
     }
