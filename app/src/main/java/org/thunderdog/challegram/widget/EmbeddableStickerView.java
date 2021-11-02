@@ -72,6 +72,10 @@ public class EmbeddableStickerView extends LinearLayout implements ThemeInvalida
   }
 
   public void setSticker (TGStickerObj tgStickerObj) {
+    if (tgStickerObj != null && !tgStickerObj.isEmpty()) {
+      tgStickerObj.getPreviewAnimation().setPlayOnce(false);
+    }
+
     stickerSmallView.setSticker(tgStickerObj);
   }
 

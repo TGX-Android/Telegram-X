@@ -36,6 +36,7 @@ import org.thunderdog.challegram.component.base.TogglerView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.navigation.ActivityResultHandler;
 import org.thunderdog.challegram.navigation.MoreDelegate;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
@@ -707,11 +708,11 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   }
 
   private ListItem newAccountItem (TdlibAccount account) {
-    String name = account.getLongName();
+    CharSequence name = Emoji.instance().replaceEmoji(account.getLongName());
     return new ListItem(
       ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR,
       account.id + 1, 0,
-      account.id == tdlib.id() ? Lang.getString(R.string.CurrentAccount, name) : name,
+      account.id == tdlib.id() ? Lang.getCharSequence(R.string.CurrentAccount, name) : name,
       account.id + 1,
       account.forceEnableNotifications()
     ).setData(account)
