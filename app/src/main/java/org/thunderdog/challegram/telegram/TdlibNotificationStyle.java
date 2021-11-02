@@ -15,10 +15,13 @@ import android.util.SparseIntArray;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.Person;
 import androidx.core.app.RemoteInput;
+import androidx.core.content.pm.ShortcutInfoCompat;
+import androidx.core.content.pm.ShortcutManagerCompat;
 import androidx.core.graphics.drawable.IconCompat;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -50,6 +53,8 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -257,6 +262,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     final int category = group.getCategory();
 
     String channelId;
+    String rShortcutId = null;
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       android.app.NotificationChannel channel = (android.app.NotificationChannel) tdlib.notifications().getSystemChannel(group);
       if (channel == null) {
@@ -603,6 +609,10 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       builder.setAllowSystemGeneratedContextualActions(allowPreview && needPreview && hasCustomText[0]);
     }
 
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      rShortcutId = createShortcut(builder, context, group, visualChatTitle, chatId, bitmap);
+    }
+
     int state;
     Notification notification;
     try {
@@ -650,6 +660,10 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     // FIXME 7.0-7.1 android.os.FileUriExposedException:
     // Cleanup
 
+    if (rShortcutId != null) {
+      ShortcutManagerCompat.removeDynamicShortcuts(context, Collections.singletonList(rShortcutId));
+    }
+
     if (cloudReferences != null) {
       for (TdApi.File file : cloudReferences) {
         tdlib.files().removeCloudReference(file, this);
@@ -660,6 +674,36 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
   }
 
   // Common notification
+
+  @RequiresApi(api = Build.VERSION_CODES.R)
+  protected final String createShortcut (NotificationCompat.Builder builder, Context context, @NonNull TdlibNotificationGroup group, CharSequence visualChatTitle, long chatId, Bitmap icon) {
+    long localChatId = tdlib.settings().getLocalChatId(chatId);
+    String localKey = "tgx_ns_" + tdlib.id() + "_" + localChatId;
+    IconCompat chatIcon = U.isValidBitmap(icon) ? IconCompat.createWithBitmap(icon) : null;
+
+    Person groupPerson = new Person.Builder()
+      .setName(visualChatTitle)
+      .setIcon(chatIcon)
+      .setKey(localKey)
+      .build();
+
+    ShortcutInfoCompat shortcut = new ShortcutInfoCompat.Builder(context, localKey)
+      .setPerson(groupPerson)
+      .setIsConversation()
+      .setLongLived(true)
+      .setShortLabel(visualChatTitle)
+      .setIntent(TdlibNotificationUtils.newCoreIntent(tdlib.id(), localChatId, group.findTargetMessageId()))
+      .setIcon(chatIcon)
+      .build();
+
+    ShortcutManagerCompat.pushDynamicShortcut(context, shortcut);
+    builder.setShortcutInfo(shortcut);
+
+    // TODO: Uncomment to support bubbles. Not usable at the moment.
+    // builder.setBubbleMetadata(new NotificationCompat.BubbleMetadata.Builder(si.getId().build());
+
+    return shortcut.getId();
+  }
 
   protected final void hideExtraSummaryNotifications (NotificationManagerCompat manager, @NonNull TdlibNotificationHelper helper, SparseIntArray displayedCategories) {
     for (int category = TdlibNotificationGroup.CATEGORY_DEFAULT; category <= TdlibNotificationGroup.MAX_CATEGORY; category++) {
