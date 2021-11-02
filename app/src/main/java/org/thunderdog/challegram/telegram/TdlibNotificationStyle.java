@@ -678,7 +678,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
   @RequiresApi(api = Build.VERSION_CODES.R)
   protected final String createShortcut (NotificationCompat.Builder builder, Context context, @NonNull TdlibNotificationGroup group, CharSequence visualChatTitle, long chatId, Bitmap icon) {
     long localChatId = tdlib.settings().getLocalChatId(chatId);
-    String localKey = "tgx_ns_" + localChatId;
+    String localKey = "tgx_ns_" + tdlib.id() + "_" + localChatId;
     IconCompat chatIcon = U.isValidBitmap(icon) ? IconCompat.createWithBitmap(icon) : null;
 
     Person groupPerson = new Person.Builder()
