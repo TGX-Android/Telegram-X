@@ -309,6 +309,21 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
   }
 
   @Override
+  public void onSessionCreatedViaQrCode (Tdlib tdlib, TdApi.Session session) {
+    runOnUiThreadOptional(() -> {
+      if (indexOfSession(session.id) != -1)
+        return;
+      TdApi.Session[] newSessions = new TdApi.Session[sessions.allSessions.length + 1];
+      System.arraycopy(sessions.allSessions, 0, newSessions, 0, sessions.allSessions.length);
+      newSessions[sessions.allSessions.length] = session;
+      Td.sort(newSessions);
+      this.sessions = new Tdlib.SessionsInfo(new TdApi.Sessions(newSessions));
+      buildCells();
+      UI.showCustomToast(Lang.getString(R.string.ScanQRAuthorizedToast, session.applicationName), Toast.LENGTH_LONG, 0);
+    });
+  }
+
+  @Override
   public void onSessionTerminated (Tdlib tdlib, TdApi.Session session) {
     runOnUiThreadOptional(() -> {
       if (terminatingSessions != null) {
@@ -535,18 +550,7 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
     if (!qrCode.startsWith("tg://")) return;
     tdlib().client().send(new TdApi.GetInternalLinkType(qrCode), result -> {
       if (result.getConstructor() == TdApi.InternalLinkTypeQrCodeAuthentication.CONSTRUCTOR) {
-        tdlib.confirmQrCodeAuthentication(qrCode, (session) -> {
-          runOnUiThreadOptional(() -> {
-            if (indexOfSession(session.id) != -1)
-              return;
-            TdApi.Session[] newSessions = new TdApi.Session[sessions.allSessions.length + 1];
-            newSessions[sessions.allSessions.length] = session;
-            Td.sort(newSessions);
-            this.sessions = new Tdlib.SessionsInfo(new TdApi.Sessions(newSessions));
-            buildCells();
-            UI.showCustomToast(Lang.getString(R.string.ScanQRAuthorizedToast, session.applicationName), Toast.LENGTH_LONG, 0);
-          });
-        }, UI::showError);
+        tdlib.confirmQrCodeAuthentication(qrCode, null, UI::showError);
       }
     });
   }
