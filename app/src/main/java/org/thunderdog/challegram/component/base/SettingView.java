@@ -204,6 +204,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     Views.destroy(this);
     if (receiver != null)
       receiver.destroy();
+    TGLegacyManager.instance().removeEmojiListener(this);
   }
 
   public ImageReceiver getReceiver () {
