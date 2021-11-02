@@ -44,7 +44,6 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.DrawModifier;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.TextColorSet;
-import org.thunderdog.challegram.util.text.TextStyleProvider;
 import org.thunderdog.challegram.util.text.TextWrapper;
 import org.thunderdog.challegram.widget.AttachDelegate;
 import org.thunderdog.challegram.widget.CheckBox;
@@ -69,8 +68,6 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   public static final int TYPE_RADIO = 0x03;
   public static final int TYPE_SETTING_INACTIVE = 0x04;
   public static final int TYPE_INFO_MULTILINE = 0x05;
-  @Deprecated
-  public static final int TYPE_INFO_MULTILINE_NAME = 0x06;
   public static final int TYPE_INFO_COMPACT = 0x07;
 
   private static final int FLAG_CENTER_ICON = 1 << 3;
@@ -111,7 +108,6 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   private final Tdlib tdlib;
 
   private TextWrapper text;
-  private TextWrapper wrapper;
   private IconOverlay overlay;
 
   public SettingView (Context context, Tdlib tdlib) {
@@ -138,11 +134,6 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
         break;
       }
       case TYPE_INFO_MULTILINE: {
-        setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        TGLegacyManager.instance().addEmojiListener(this);
-        break;
-      }
-      case TYPE_INFO_MULTILINE_NAME: {
         setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         break;
       }
@@ -204,7 +195,10 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     Views.destroy(this);
     if (receiver != null)
       receiver.destroy();
-    TGLegacyManager.instance().removeEmojiListener(this);
+    if (subscribedToEmojiUpdates) {
+      TGLegacyManager.instance().removeEmojiListener(this);
+      subscribedToEmojiUpdates = false;
+    }
   }
 
   public ImageReceiver getReceiver () {
@@ -276,12 +270,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   @SuppressWarnings ("Range")
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-    if (type == TYPE_INFO_MULTILINE_NAME) {
-      if (lastMeasuredWidth != MeasureSpec.getSize(widthMeasureSpec) || lastMeasuredHeight != getCurrentHeight()) {
-        buildLayout(MeasureSpec.getSize(widthMeasureSpec), getCurrentHeight());
-      }
-      super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(getCurrentHeight(), MeasureSpec.EXACTLY));
-    } else if (type == TYPE_INFO_MULTILINE) {
+    if (type == TYPE_INFO_MULTILINE) {
       if (text != null) {
         int paddingLeft = measurePaddingLeft();
         int paddingRight = Screen.dp(17f);
@@ -342,9 +331,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   }
 
   private int getCurrentHeight () {
-    if (wrapper != null) {
-      return Math.max(wrapper.getHeight() + (type == TYPE_INFO_MULTILINE ? (int) pDataTop + Screen.dp(25) : (int) pTop) - Screen.dp(13f) + Screen.dp(12f), Screen.dp(76f));
-    } else if (text != null) {
+    if (text != null) {
       return Math.max(text.getHeight() + (int) pDataTop - Screen.dp(13f) + Screen.dp(12f) + Screen.dp(25), Screen.dp(76f));
     } else {
       return Screen.dp(76f);
@@ -376,16 +363,11 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   }
 
   public void setData (CharSequence data) {
-    if (this.itemData == null || data == null || !this.itemData.equals(data) || type == TYPE_INFO_MULTILINE_NAME) {
+    if (this.itemData == null || data == null || !this.itemData.equals(data)) {
       boolean rebuild = this.itemData != null;
       this.itemData = data == null || data.length() == 0 ? null : data;
       if (rebuild) {
         buildLayout();
-        if (type == TYPE_INFO_MULTILINE_NAME) {
-          if (getMeasuredHeight() != getCurrentHeight()) {
-            requestLayout();
-          }
-        }
         invalidate();
       }
     }
@@ -477,6 +459,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
       displayItemNameLayout = U.createLayout(str, (int) availWidth, paint);
       displayItemNameWidth = displayItemNameLayout.getWidth();
     }
+    checkEmojiListener();
   }
 
   private void setDisplayItemData (CharSequence str, float availWidth, TextPaint paint) {
@@ -489,6 +472,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
       displayItemDataLayout = U.createLayout(str, (int) availWidth, paint);
       displayItemDataWidth = displayItemDataLayout.getWidth();
     }
+    checkEmojiListener();
   }
 
   private void buildLayout (int totalWidth, int totalHeight) {
@@ -528,7 +512,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
       displayItemName = itemName;
     }
 
-    if (type == TYPE_INFO || type == TYPE_INFO_COMPACT || type == TYPE_INFO_MULTILINE || type == TYPE_INFO_MULTILINE_NAME) {
+    if (type == TYPE_INFO || type == TYPE_INFO_COMPACT || type == TYPE_INFO_MULTILINE) {
       pDataLeft = pLeft;
       pDataTop = pTop;
       pTop = pTop + Screen.dp(20f);
@@ -541,14 +525,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
         lastTextAvailWidth = 0;
       }
       if (displayItemName != null) {
-        if (type == TYPE_INFO_MULTILINE_NAME) {
-          if (wrapper == null || !wrapper.getText().equals(displayItemName.toString())) {
-            wrapper = new TextWrapper(tdlib, displayItemName.toString(), new TextStyleProvider(Paints.getSubtitlePaint()), this, 0, null);
-          }
-          wrapper.get((int) availWidth);
-        } else {
-          setDisplayItemName(displayItemName, availWidth, Paints.getRegularTextPaint(13f));
-        }
+        setDisplayItemName(displayItemName, availWidth, Paints.getRegularTextPaint(13f));
       }
     } else {
       if (displayItemData != null) {
@@ -561,8 +538,22 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
       }
     }
 
-    pIconTop = (flags & FLAG_CENTER_ICON) != 0 && icon != null ?  (totalHeight / 2 - icon.getMinimumHeight() / 2) : Screen.dp(type == TYPE_INFO || type == TYPE_INFO_COMPACT || type == TYPE_INFO_MULTILINE || type == TYPE_INFO_MULTILINE_NAME ? 20f : 16f);
+    pIconTop = (flags & FLAG_CENTER_ICON) != 0 && icon != null ?  (totalHeight / 2f - icon.getMinimumHeight() / 2f) : Screen.dp(type == TYPE_INFO || type == TYPE_INFO_COMPACT || type == TYPE_INFO_MULTILINE ? 20f : 16f);
     pIconLeft = Screen.dp(18f);
+  }
+
+  private boolean subscribedToEmojiUpdates;
+
+  private void checkEmojiListener () {
+    boolean needEmojiListener = this.displayItemNameLayout != null || this.displayItemDataLayout != null;
+    if (this.subscribedToEmojiUpdates != needEmojiListener) {
+      this.subscribedToEmojiUpdates = needEmojiListener;
+      if (needEmojiListener) {
+        TGLegacyManager.instance().addEmojiListener(this);
+      } else {
+        TGLegacyManager.instance().removeEmojiListener(this);
+      }
+    }
   }
 
   private final BoolAnimator isEnabled = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 168l, true);
@@ -668,7 +659,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
 
   @Override
   public void getTargetBounds (View targetView, Rect outRect) {
-    if (type == TYPE_INFO || type == TYPE_INFO_COMPACT || (type == TYPE_INFO_MULTILINE && text == null) || (type == TYPE_INFO_MULTILINE_NAME && wrapper == null)) {
+    if (type == TYPE_INFO || type == TYPE_INFO_COMPACT || (type == TYPE_INFO_MULTILINE && text == null)) {
       if (itemData != null) {
         int dataTop = (int) (pDataTop - Screen.dp(13f));
         Paint.FontMetricsInt fm = Paints.getTextPaint16().getFontMetricsInt();
@@ -741,7 +732,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
 
     final int dataColor = defaultTextColor();
 
-    if (type == TYPE_INFO || type == TYPE_INFO_COMPACT || (type == TYPE_INFO_MULTILINE && text == null) || (type == TYPE_INFO_MULTILINE_NAME && wrapper == null)) {
+    if (type == TYPE_INFO || type == TYPE_INFO_COMPACT || (type == TYPE_INFO_MULTILINE && text == null)) {
       if (displayItemName != null) {
         int subtitleColor = Theme.getColor(dataColorId != 0 ? dataColorId : R.id.theme_color_textLight);
         if ((flags & FLAG_DATA_SUBTITLE) != 0) {
@@ -767,13 +758,6 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
         } else {
           text.draw(c, (int) pLeft, (int) (pLeft + text.getWidth()), 0, (int) pDataTop - Screen.dp(13f), this, 1f);
         }
-      } else if (wrapper != null) {
-        wrapper.draw(c, (int) (rtl ? width - pLeft - wrapper.getWidth() : pLeft), (int) pDataTop - Screen.dp(13f), this, 1f);
-      }
-    } else if (type == TYPE_INFO_MULTILINE_NAME) {
-      wrapper.draw(c, (int) (rtl ? width - pLeft - displayItemNameWidth : pLeft), (int) pTop - Screen.dp(13f), this, 1f);
-      if (displayItemData != null) {
-        drawText(c, displayItemData, displayItemDataLayout, pDataLeft, pDataTop, Paints.getTextPaint16(dataColor), rtl, width, displayItemDataWidth);
       }
     } else {
       if (displayItemData != null) {
