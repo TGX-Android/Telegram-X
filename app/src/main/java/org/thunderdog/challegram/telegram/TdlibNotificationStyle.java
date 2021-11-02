@@ -682,19 +682,19 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     IconCompat chatIcon = U.isValidBitmap(icon) ? IconCompat.createWithBitmap(icon) : null;
 
     Person groupPerson = new Person.Builder()
-            .setName(visualChatTitle)
-            .setIcon(chatIcon)
-            .setKey(localKey)
-            .build();
+      .setName(visualChatTitle)
+      .setIcon(chatIcon)
+      .setKey(localKey)
+      .build();
 
     ShortcutInfoCompat shortcut = new ShortcutInfoCompat.Builder(context, localKey)
-            .setPerson(groupPerson)
-            .setIsConversation()
-            .setLongLived(true)
-            .setShortLabel(visualChatTitle)
-            .setIntent(TdlibNotificationUtils.newCoreIntent(tdlib.id(), localChatId, group.findTargetMessageId()))
-            .setIcon(chatIcon)
-            .build();
+      .setPerson(groupPerson)
+      .setIsConversation()
+      .setLongLived(true)
+      .setShortLabel(visualChatTitle)
+      .setIntent(TdlibNotificationUtils.newCoreIntent(tdlib.id(), localChatId, group.findTargetMessageId()))
+      .setIcon(chatIcon)
+      .build();
 
     ShortcutManagerCompat.pushDynamicShortcut(context, shortcut);
     builder.setShortcutInfo(shortcut);
