@@ -851,7 +851,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
   }
 
   private boolean canTransferOwnership () {
-    if (targetAdmin == null || !targetAdmin.canBeEdited || getArgumentsStrict().mode != MODE_ADMIN_PROMOTION || getArgumentsStrict().myStatus.getConstructor() != TdApi.ChatMemberStatusCreator.CONSTRUCTOR)
+    if (targetAdmin == null || tdlib.cache().userBot(getArgumentsStrict().userId) || !targetAdmin.canBeEdited || getArgumentsStrict().mode != MODE_ADMIN_PROMOTION || getArgumentsStrict().myStatus.getConstructor() != TdApi.ChatMemberStatusCreator.CONSTRUCTOR)
       return false;
     boolean isChannel = tdlib.isChannel(getArgumentsStrict().chatId);
     if (isChannel) {
