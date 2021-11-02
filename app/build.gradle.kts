@@ -167,20 +167,20 @@ dependencies {
     implementation(project(":vkryl:android"))
     implementation(project(":vkryl:td"))
     // AndroidX: https://developer.android.com/jetpack/androidx/releases/
-    implementation("androidx.activity:activity:1.3.1")
+    implementation("androidx.activity:activity:1.4.0")
     implementation("androidx.palette:palette:1.0.0")
     implementation("androidx.recyclerview:recyclerview:1.2.1")
     implementation("androidx.viewpager:viewpager:1.0.0")
-    implementation("androidx.work:work-runtime:2.6.0")
+    implementation("androidx.work:work-runtime:2.7.0")
     implementation("androidx.browser:browser:1.3.0")
     implementation("androidx.exifinterface:exifinterface:1.3.3")
     implementation("androidx.collection:collection:1.1.0")
     implementation("androidx.interpolator:interpolator:1.0.0")
     implementation("androidx.gridlayout:gridlayout:1.0.0")
     // CameraX: https://developer.android.com/jetpack/androidx/releases/camera
-    implementation("androidx.camera:camera-camera2:1.1.0-alpha09")
-    implementation("androidx.camera:camera-lifecycle:1.1.0-alpha09")
-    implementation("androidx.camera:camera-view:1.0.0-alpha29")
+    implementation("androidx.camera:camera-camera2:1.1.0-alpha10")
+    implementation("androidx.camera:camera-lifecycle:1.1.0-alpha10")
+    implementation("androidx.camera:camera-view:1.0.0-alpha30")
     // Google Play Services: https://developers.google.com/android/guides/releases
     implementation("com.google.android.gms:play-services-base:17.6.0")
     implementation("com.google.android.gms:play-services-basement:17.6.0")
@@ -198,7 +198,7 @@ dependencies {
     // ExoPlayer: https://github.com/google/ExoPlayer/blob/release-v2/RELEASENOTES.md
     implementation("com.google.android.exoplayer:exoplayer-core:2.15.1")
     // The Checker Framework: https://checkerframework.org/CHANGELOG.md
-    compileOnly("org.checkerframework:checker-qual:3.17.0")
+    compileOnly("org.checkerframework:checker-qual:3.18.1")
     // OkHttp: https://github.com/square/okhttp/blob/master/CHANGELOG.md
     implementation("com.squareup.okhttp3:okhttp:4.9.2")
     // ShortcutBadger: https://github.com/leolin310148/ShortcutBadger
