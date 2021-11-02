@@ -1504,7 +1504,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         switch (viewType) {
           case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
           case ListItem.TYPE_RADIO_OPTION_WITH_AVATAR: {
-            ((SettingView) holder.itemView).setName(Emoji.instance().replaceEmoji(item.getString()));
+            ((SettingView) holder.itemView).setName(item.getString());
             AvatarView avatarView = ((AvatarView) ((SettingView) holder.itemView).getChildAt(1));
             if (item.getData() instanceof TdlibAccount) {
               TdlibAccount account = (TdlibAccount) item.getData();
