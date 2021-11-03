@@ -420,6 +420,13 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
 
     tdlib.terminateSession(session, error -> {
       if (error != null) {
+        if (terminatingSessions != null) {
+          runOnUiThreadOptional(() -> {
+            terminatingSessions.remove(session.id);
+            adapter.updateSessionByPosition(adapterPosition);
+          });
+        }
+
         UI.showError(error); // TODO tooltip?
       }
     });
