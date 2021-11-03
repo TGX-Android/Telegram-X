@@ -423,7 +423,11 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
         if (terminatingSessions != null) {
           runOnUiThreadOptional(() -> {
             terminatingSessions.remove(session.id);
-            adapter.updateSessionByPosition(adapterPosition);
+
+            int newAdapterPosition = indexOfSessionInAdapter(session.id);
+            if (newAdapterPosition != -1) {
+              adapter.updateSessionByPosition(newAdapterPosition);
+            }
           });
         }
 
