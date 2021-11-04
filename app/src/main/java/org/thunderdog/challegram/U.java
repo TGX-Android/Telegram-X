@@ -3384,4 +3384,23 @@ public class U {
       return -1;
     }
   }
+
+  public static boolean canManageStorage (Context context) {
+    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
+      return true; // Q allows for requestExternalStorage
+    }
+
+    return Environment.isExternalStorageLegacy() || Environment.isExternalStorageManager();
+  }
+
+  public static void requestManageStorage (Context context) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+      return;
+    }
+
+    Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+    Uri uri = Uri.fromParts("package", context.getPackageName(), null);
+    intent.setData(uri);
+    context.startActivity(intent);
+  }
 }
