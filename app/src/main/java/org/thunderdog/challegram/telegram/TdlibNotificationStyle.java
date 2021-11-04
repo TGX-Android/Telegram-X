@@ -678,7 +678,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
   @RequiresApi(api = Build.VERSION_CODES.R)
   protected final String createShortcut (NotificationCompat.Builder builder, Context context, @NonNull TdlibNotificationGroup group, CharSequence visualChatTitle, long chatId, Bitmap icon) {
     long localChatId = tdlib.settings().getLocalChatId(chatId);
-    String localKey = "tgx_ns_" + tdlib.id() + "_" + localChatId;
+    String localKey = generatePersonKey(tdlib.id(), localChatId);
     IconCompat chatIcon = U.isValidBitmap(icon) ? IconCompat.createWithBitmap(icon) : null;
 
     Person groupPerson = new Person.Builder()
@@ -703,6 +703,14 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     // builder.setBubbleMetadata(new NotificationCompat.BubbleMetadata.Builder(si.getId().build());
 
     return shortcut.getId();
+  }
+
+  private String generatePersonKey (long chatId) {
+    return generatePersonKey(tdlib.id(), tdlib.settings().getLocalChatId(chatId));
+  }
+
+  private static String generatePersonKey (long accountId, long localChatId) {
+    return "tgx_ns_" + accountId + "_" + localChatId;
   }
 
   protected final void hideExtraSummaryNotifications (NotificationManagerCompat manager, @NonNull TdlibNotificationHelper helper, SparseIntArray displayedCategories) {
@@ -783,7 +791,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     if (context.isSelfUserId(user.id))
       id = "0";
     else if (id == null)
-      id = Long.toString(user.id);
+      id = generatePersonKey(context.tdlib().id(), user.id);
     return buildPerson(context, isSelfChat, isGroupChat, isChannel, id, TD.isBot(user), TD.getUserName(user), TD.getLetters(user), TD.getAvatarColorId(user.id, context.myUserId()), user.profilePhoto != null ? user.profilePhoto.small : null, isScheduled, isSilent, allowDownload);
   }
 
@@ -796,14 +804,14 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     }
     if (userId != 0) {
       TdApi.User user = tdlib.cache().user(userId);
-      return buildPerson(context, notification.isSelfChat(), TD.isMultiChat(chat), tdlib.isChannelChat(chat), user, ChatId.isSecret(chat.id) ? Long.toString(chat.id) : Long.toString(ChatId.fromUserId(userId)), isScheduled, isSilent, allowDownload);
+      return buildPerson(context, notification.isSelfChat(), TD.isMultiChat(chat), tdlib.isChannelChat(chat), user, ChatId.isSecret(chat.id) ? Long.toString(chat.id) : generatePersonKey(context.tdlib().id(), (ChatId.fromUserId(userId))), isScheduled, isSilent, allowDownload);
     }
     if (TD.isMultiChat(chat)) {
       String senderName = notification.findSenderName();
       TdApi.Chat senderChat = tdlib.chat(senderChatId);
-      return buildPerson(context, notification.isSelfChat(), TD.isMultiChat(chat), tdlib.isChannelChat(chat), Long.toString(senderChatId), tdlib.isBotChat(senderChatId) || tdlib.isChannel(senderChatId), senderName, TD.getLetters(senderName), tdlib.chatAvatarColorId(senderChatId), senderChat != null && senderChat.photo != null ? senderChat.photo.small : null, isScheduled, isSilent, allowDownload);
+      return buildPerson(context, notification.isSelfChat(), TD.isMultiChat(chat), tdlib.isChannelChat(chat), generatePersonKey(context.tdlib().id(), senderChatId), tdlib.isBotChat(senderChatId) || tdlib.isChannel(senderChatId), senderName, TD.getLetters(senderName), tdlib.chatAvatarColorId(senderChatId), senderChat != null && senderChat.photo != null ? senderChat.photo.small : null, isScheduled, isSilent, allowDownload);
     }
-    return buildPerson(context, notification.isSelfChat(), TD.isMultiChat(chat), tdlib.isChannelChat(chat), Long.toString(chat.id), tdlib.isBotChat(chat) || tdlib.isChannelChat(chat), chat.title, tdlib.chatLetters(chat), tdlib.chatAvatarColorId(chat), chat.photo != null ? chat.photo.small : null, isScheduled, isSilent, allowDownload);
+    return buildPerson(context, notification.isSelfChat(), TD.isMultiChat(chat), tdlib.isChannelChat(chat), generatePersonKey(context.tdlib().id(), chat.id), tdlib.isBotChat(chat) || tdlib.isChannelChat(chat), chat.title, tdlib.chatLetters(chat), tdlib.chatAvatarColorId(chat), chat.photo != null ? chat.photo.small : null, isScheduled, isSilent, allowDownload);
   }
 
   public static Person buildPerson (TdlibNotificationManager context, boolean isSelfChat, boolean isGroupChat, boolean isChannel, String id, boolean isBot, String name, Letters letters, @ThemeColorId int colorId, TdApi.File photo, boolean isScheduled, boolean isSilent, boolean allowDownload) {
