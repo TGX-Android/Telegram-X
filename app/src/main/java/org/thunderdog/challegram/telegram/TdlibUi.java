@@ -3581,7 +3581,7 @@ public class TdlibUi extends Handler {
           ids.append(R.id.btn_removeChatFromList);
           strings.append(tdlib.isChannel(chatId) ? R.string.LeaveChannel : R.string.LeaveMegaMenu);
         } else if (TD.canReturnToChat(status)) {
-          if (status.getConstructor() == TdApi.ChatMemberStatusLeft.CONSTRUCTOR && !(tdlib.isPublicChat(chatId) || tdlib.isTemporaryAccessible(chatId))) {
+          if (status.getConstructor() == TdApi.ChatMemberStatusLeft.CONSTRUCTOR && (tdlib.isPublicChat(chatId) || tdlib.isTemporaryAccessible(chatId))) {
             if (forceJoin) {
               ids.append(R.id.btn_returnToChat);
               strings.append(tdlib.isChannel(chatId) ? R.string.JoinChannel : R.string.JoinChat);

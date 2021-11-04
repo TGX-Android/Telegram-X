@@ -404,7 +404,14 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
         textBuilder.append("\n\n");
       }
 
-      final Person person = buildPerson(this.context, chat, mergedList.get(0), onlyScheduled, onlySilent, !isRebuild);
+      Person p = buildPerson(this.context, chat, mergedList.get(0), onlyScheduled, onlySilent, !isRebuild);
+      final Person person;
+
+      if (p.getKey().equals(Long.toString(chat.id))) {
+        person = p.toBuilder().setName(visualChatTitle).build();
+      } else {
+        person = p;
+      }
 
       if (mergedList.size() == 1) {
         TdlibNotification notification = mergedList.get(0);

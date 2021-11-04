@@ -129,7 +129,12 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
 
         TGUser user = new TGUser(tdlib, chat);
         user.setChat(msg.chatId, chat);
-        user.setCustomStatus(Lang.plural(R.string.xViews, msg.interactionInfo.viewCount));
+        if (msg.interactionInfo != null) {
+          user.setCustomStatus(Lang.plural(R.string.xViews, msg.interactionInfo.viewCount));
+        } else {
+          user.setCustomStatus("");
+        }
+        
         user.chatTitleAsUserName();
 
         userView.setUser(user);
@@ -139,16 +144,21 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
 
       @Override
       protected void setMessagePreview (ListItem item, int position, MessagePreviewView previewView) {
-        StringBuilder statString = new StringBuilder();
         TdApi.Message message = (TdApi.Message) item.getData();
 
-        statString.append(Lang.plural(R.string.xViews, message.interactionInfo.viewCount));
-        if (message.interactionInfo.forwardCount > 0) {
-          statString.append(", ").append(Lang.plural(R.string.StatsXShared, message.interactionInfo.forwardCount));
+        if (message.interactionInfo != null) {
+          StringBuilder statString = new StringBuilder();
+          statString.append(Lang.plural(R.string.xViews, message.interactionInfo.viewCount));
+          if (message.interactionInfo.forwardCount > 0) {
+            statString.append(", ").append(Lang.plural(R.string.StatsXShared, message.interactionInfo.forwardCount));
+          }
+          previewView.setMessage(message, null, statString.toString(), true);
+
+        } else {
+          previewView.setMessage(message, null, null, false);
         }
 
         RippleSupport.setSimpleWhiteBackground(previewView);
-        previewView.setMessage(message, null, statString.toString(), true);
         previewView.setContentInset(Screen.dp(8));
       }
     };
