@@ -1498,6 +1498,10 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
     if (!U.canReadFile(filePath)) {
       filePath = uri.toString();
+
+      if (!U.canReadContentUri(uri)) {
+        return false;
+      }
     }
 
     TD.FileInfo info = new TD.FileInfo();

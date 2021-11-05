@@ -3423,4 +3423,12 @@ public class U {
       return false;
     }
   }
+
+  public static boolean canReadContentUri (Uri uri) {
+    try (InputStream is = openInputStream(uri.toString())) {
+      return true;
+    } catch (Exception e) {
+      return false;
+    }
+  }
 }
