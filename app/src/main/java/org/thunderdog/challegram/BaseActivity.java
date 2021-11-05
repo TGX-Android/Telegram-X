@@ -2152,6 +2152,17 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
   }
 
+  public void requestReadWritePermissionsR () {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      if (!U.canManageStorage() && !U.isManageStorageDeclined()) {
+        U.requestManageStorage(this);
+        return;
+      }
+    }
+
+    requestReadWritePermissions();
+  }
+
   public void requestReadWritePermissions () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       requestPermissions(new String[] {Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_READ_STORAGE);

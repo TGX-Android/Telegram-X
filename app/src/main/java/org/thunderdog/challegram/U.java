@@ -6,6 +6,7 @@ package org.thunderdog.challegram;
 
 import android.Manifest;
 import android.animation.ValueAnimator;
+import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.Service;
@@ -3382,6 +3383,52 @@ public class U {
       return totalBlocks * blockSize;
     } else {
       return -1;
+    }
+  }
+
+  // ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION opened, but the permission is still not granted. Ignore until the app restarts.
+  private static boolean manageStoragePermissionDeclined = false;
+
+  public static boolean canManageStorage () {
+    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q || !Config.MANAGE_STORAGE_PERMISSION_AVAILABLE) {
+      return true; // Q allows for requestExternalStorage
+    }
+
+    return Environment.isExternalStorageLegacy() || Environment.isExternalStorageManager();
+  }
+
+  public static boolean isManageStorageDeclined () {
+    return manageStoragePermissionDeclined;
+  }
+
+  public static void setManageStorageDeclined (boolean value) {
+    manageStoragePermissionDeclined = value;
+  }
+
+  public static void requestManageStorage (Context context) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || isManageStorageDeclined()) {
+      return;
+    }
+
+    Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+    intent.setData(Uri.parse("package:" + context.getPackageName()));
+    ((Activity) context).startActivityForResult(intent, Intents.ACTIVITY_RESULT_MANAGE_STORAGE);
+  }
+
+  public static boolean canReadFile (String url) {
+    try {
+      return new File(url).canRead();
+    } catch (Exception e) {
+      e.printStackTrace();
+      return false;
+    }
+  }
+
+  public static boolean canReadContentUri (Uri uri) {
+    try (InputStream is = openInputStream(uri.toString())) {
+      return true;
+    } catch (Exception e) {
+      return false;
     }
   }
 }

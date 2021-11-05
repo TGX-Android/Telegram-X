@@ -49,6 +49,7 @@ import org.thunderdog.challegram.theme.ThemeChangeListener;
 import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.Fonts;
+import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
@@ -447,6 +448,11 @@ public class MediaLayout extends FrameLayoutFix implements
 
   @Override
   public void onActivityResult (int requestCode, int resultCode, Intent data) {
+    if (requestCode == Intents.ACTIVITY_RESULT_MANAGE_STORAGE) {
+      onActivityPermissionResult(Intents.ACTIVITY_RESULT_MANAGE_STORAGE, U.canManageStorage());
+      return;
+    }
+
     ViewController<?> c = getCurrentController();
     if (c instanceof ActivityResultHandler) {
       ((ActivityResultHandler) c).onActivityResult(requestCode, resultCode, data);
@@ -500,9 +506,14 @@ public class MediaLayout extends FrameLayoutFix implements
         }
         break;
       }
+      case Intents.ACTIVITY_RESULT_MANAGE_STORAGE:
       case BaseActivity.REQUEST_READ_STORAGE: {
         if (requestedPermissionIndex == 1) {
-          if (granted) {
+          if (code == Intents.ACTIVITY_RESULT_MANAGE_STORAGE) {
+            U.setManageStorageDeclined(!granted);
+          }
+
+          if (granted || code == Intents.ACTIVITY_RESULT_MANAGE_STORAGE) {
             if (bottomBar != null) {
               bottomBar.setSelectedIndex(1);
             }
@@ -555,9 +566,10 @@ public class MediaLayout extends FrameLayoutFix implements
       case 1: {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
           if (getContext().checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
-            getContext().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            getContext().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
+            (!U.canManageStorage() && !U.isManageStorageDeclined())) {
             requestedPermissionIndex = toIndex;
-            ((BaseActivity) getContext()).requestReadWritePermissions();
+            ((BaseActivity) getContext()).requestReadWritePermissionsR();
             return false;
           }
         }

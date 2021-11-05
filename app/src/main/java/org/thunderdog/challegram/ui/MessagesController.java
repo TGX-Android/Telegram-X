@@ -8581,6 +8581,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
         break;
       }
+      case Intents.ACTIVITY_RESULT_SEND_SAF_FILE:
       case Intents.ACTIVITY_RESULT_GALLERY:
       case Intents.ACTIVITY_RESULT_GALLERY_FILE: {
         final Uri path = data != null ? data.getData() : null;
@@ -8599,6 +8600,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
           sendSticker(imagePath, true, false, null);
         } else if (requestCode == Intents.ACTIVITY_RESULT_GALLERY_FILE) {
           sendFiles(Collections.singletonList(imagePath), false, true, false, null);
+        } else if (requestCode == Intents.ACTIVITY_RESULT_SEND_SAF_FILE) {
+          sendFiles(Collections.singletonList(U.canReadFile(imagePath) ? imagePath : path.toString()), false, true, false, null);
         } else {
           sendPhotoCompressed(imagePath, 0, true);
         }

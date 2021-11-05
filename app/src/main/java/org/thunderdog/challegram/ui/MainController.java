@@ -1402,7 +1402,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       return false;
     }
 
-    final String filePath = U.tryResolveFilePath(uri);
+    String filePath = U.tryResolveFilePath(uri);
 
     if (StringUtils.isEmpty(filePath)) {
       throw new IllegalArgumentException("filePath cannot be resolved for type " + mimeType + ", uri: " + uri);
@@ -1493,6 +1493,14 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         }
 
         return true;
+      }
+    }
+
+    if (!U.canReadFile(filePath)) {
+      filePath = uri.toString();
+
+      if (!U.canReadContentUri(uri)) {
+        return false;
       }
     }
 
