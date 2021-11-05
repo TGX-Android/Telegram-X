@@ -257,5 +257,5 @@ public class Config {
 
   public static final boolean QR_AVAILABLE = true;
   public static final boolean QR_FORCE_ZXING = false;
-  public static final boolean MANAGE_STORAGE_PERMISSION_AVAILABLE = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
+  public static final boolean MANAGE_STORAGE_PERMISSION_AVAILABLE = false; // Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
 }
