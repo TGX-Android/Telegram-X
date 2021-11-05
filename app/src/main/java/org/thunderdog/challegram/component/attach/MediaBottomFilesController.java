@@ -1,6 +1,7 @@
 package org.thunderdog.challegram.component.attach;
 
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.os.Environment;
 import android.os.Looper;
@@ -27,6 +28,7 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
@@ -129,7 +131,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
       }
 
       final ArrayList<String> externalStorageFiles = U.getExternalStorageDirectories(baseExternalDir != null ? baseExternalDir.getPath() : null, false);
-      if (externalStorageFiles != null) {
+      if (externalStorageFiles != null && U.canManageStorage()) {
         for (String dir : externalStorageFiles) {
           InlineResultCommon internalStorage = new InlineResultCommon(context, tdlib, KEY_FOLDER + dir, R.id.theme_color_fileAttach, R.drawable.baseline_storage_24, Lang.getString(R.string.Storage), dir);
           items.add(createItem(internalStorage, R.id.btn_internalStorage));
@@ -148,7 +150,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
 
     try {
       File file = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-      if (file.exists() && file.isDirectory()) {
+      if (file.exists() && file.isDirectory() && U.canManageStorage()) {
         File[] files = file.listFiles();
         if (files != null && files.length > 0) {
           InlineResultCommon common = createItem(context, tdlib, KEY_FOLDER + file.getPath(), R.drawable.baseline_file_download_24, Lang.getString(R.string.Downloads), Lang.plural(R.string.xFiles, files.length));
@@ -796,6 +798,24 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
           break;
         }
         default: {
+          if (v.getId() == R.id.btn_internalStorage && !U.canManageStorage()) {
+            try {
+              Intent intent;
+
+              intent = new Intent(Intent.ACTION_GET_CONTENT);
+              intent.setType("*/*");
+              intent.putExtra("android.content.extra.SHOW_ADVANCED", true);
+              intent.addCategory(Intent.CATEGORY_OPENABLE);
+
+              UI.startActivityForResult(intent, Intents.ACTIVITY_RESULT_SEND_SAF_FILE);
+              mediaLayout.hide(false);
+            } catch (Throwable t) {
+              Log.w("Cannot open picker intent", t);
+            }
+
+            return;
+          }
+
           String path = result.getId();
           if (path != null) {
             if (KEY_GALLERY.equals(path) || KEY_MUSIC.equals(path) || KEY_BUCKET.equals(path) || path.startsWith(KEY_FOLDER)) {

@@ -62,6 +62,8 @@ public class Intents {
   public static final int ACTIVITY_RESULT_RINGTONE = 107;
   public static final int ACTIVITY_RESULT_RINGTONE_NOTIFICATION = 108;
   public static final int ACTIVITY_RESULT_VIDEO_CAPTURE = 109;
+  public static final int ACTIVITY_RESULT_MANAGE_STORAGE = 110;
+  public static final int ACTIVITY_RESULT_SEND_SAF_FILE = 111;
 
   private static final String PACKAGE_NAME = BuildConfig.APPLICATION_ID; // UI.getAppContext().getPackageName();
 

@@ -2154,7 +2154,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   public void requestReadWritePermissionsR () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-      if (!U.canManageStorage(this)) {
+      if (!U.canManageStorage() && !U.isManageStorageDeclined()) {
         U.requestManageStorage(this);
         return;
       }
