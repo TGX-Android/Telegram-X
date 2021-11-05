@@ -407,7 +407,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       Person p = buildPerson(this.context, chat, mergedList.get(0), onlyScheduled, onlySilent, !isRebuild);
       final Person person;
 
-      if (p.getKey().equals(Long.toString(chat.id))) {
+      if (p.getKey() != null && chat != null && p.getKey().equals(Long.toString(chat.id))) {
         person = p.toBuilder().setName(visualChatTitle).build();
       } else {
         person = p;
