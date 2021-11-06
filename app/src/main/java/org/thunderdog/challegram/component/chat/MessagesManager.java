@@ -1660,9 +1660,28 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (controller.isInForceTouchMode()) {
       return false;
     }
+
     final boolean isOpen = tdlib.isChatOpen(chatId);
+    final long[] messageIds = viewed.toArray();
+
+    if (viewed.size() == 1 && messageIds[0] < 0) {
+      if (isFocused && isOpen) {
+        if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
+          Log.i(Log.TAG_MESSAGES_LOADER, "Reading %d sponsored message: %s", messageIds.length, Arrays.toString(messageIds));
+        }
+
+        if (BuildConfig.DEBUG && Settings.instance().dontReadMessages()) {
+
+        } else {
+          tdlib.client().send(new TdApi.ViewSponsoredMessage(chatId, -((int) (messageIds[0]))), loader);
+        }
+        return true;
+      }
+
+      return false;
+    }
+
     if (isFocused && isOpen) {
-      long[] messageIds = viewed.toArray();
       if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
         Log.i(Log.TAG_MESSAGES_LOADER, "Reading %d messages: %s", messageIds.length, Arrays.toString(messageIds));
       }
@@ -1677,6 +1696,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       }
       return true;
     }
+
     if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
       Log.i(Log.TAG_MESSAGES_LOADER, "Scheduling messages read. isFocused: %b, isOpen: %b, append: %b", isFocused, isOpen, append);
     }

@@ -4023,6 +4023,8 @@
   <string name="session_App">App: %1$s</string>
   <string name="session_System">System: %1$s</string>
 
+  <string name="SponsoredSign">sponsored</string>
+
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
   <string name="suggested_language_code_plural" />

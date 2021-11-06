@@ -384,6 +384,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private String genTime () {
     if (isEventLog()) {
       return Lang.getRelativeTimestampShort(msg.date, TimeUnit.SECONDS);
+    } else if (msg.id < 0) {
+      return Lang.getString(R.string.SponsoredSign);
     }
     StringBuilder b = new StringBuilder();
     String signature;

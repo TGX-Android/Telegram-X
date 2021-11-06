@@ -11,6 +11,9 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.collection.LongSparseArray;
 
+import com.google.common.collect.Lists;
+
+import org.checkerframework.checker.units.qual.A;
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.json.JSONArray;
@@ -24,6 +27,8 @@ import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
+import org.thunderdog.challegram.data.TGMessageChat;
+import org.thunderdog.challegram.data.TGMessageSponsored;
 import org.thunderdog.challegram.data.TdApiExt;
 import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -68,6 +73,9 @@ public class MessagesLoader implements Client.ResultHandler {
 
   private boolean isLoading;
   private int loadingMode;
+
+  private LongSparseArray<TdApi.SponsoredMessage[]> sponsoredMessages = new LongSparseArray<>();
+  private boolean isLoadingSponsoredMessages;
 
   // private TGMessage edgeMessage;
 
@@ -940,14 +948,40 @@ public class MessagesLoader implements Client.ResultHandler {
         });
         return;
       }
+
+      final long sourceChatId = fromMessageId.getChatId() != 0 ? fromMessageId.getChatId() : messageThread != null ? messageThread.getChatId() : getChatId();
+
+      if (sponsoredMessages.get(sourceChatId) == null && isChannel()) {
+        if (!isLoadingSponsoredMessages) {
+          isLoadingSponsoredMessages = true;
+
+          boolean finalOnlyLocal = onlyLocal;
+          boolean finalAllowMoreTop = allowMoreTop;
+          boolean finalAllowMoreBottom = allowMoreBottom;
+
+          tdlib.client().send(new TdApi.GetChatSponsoredMessages(sourceChatId), object -> {
+            if (object.getConstructor() == TdApi.SponsoredMessages.CONSTRUCTOR) {
+              sponsoredMessages.put(sourceChatId, ((TdApi.SponsoredMessages) object).messages);
+            } else {
+              sponsoredMessages.put(sourceChatId, new TdApi.SponsoredMessage[0]);
+            }
+
+            isLoadingSponsoredMessages = false;
+            UI.post(() -> load(fromMessageId, offset, limit, mode, finalOnlyLocal, finalAllowMoreTop, finalAllowMoreBottom));
+          });
+        }
+
+        return;
+      } else if (sponsoredMessages.get(sourceChatId) != null && fromMessageId.getMessageId() < 0) {
+        fromMessageId.setMessageId(0);
+      }
+
       isLoading = true;
 
       loadingMode = mode;
       loadingLocal = onlyLocal;
       loadingAllowMoreTop = allowMoreTop;
       loadingAllowMoreBottom = allowMoreBottom;
-
-      final long sourceChatId = fromMessageId.getChatId() != 0 ? fromMessageId.getChatId() : messageThread != null ? messageThread.getChatId() : getChatId();
 
       TdApi.Function function;
 
@@ -1353,6 +1387,20 @@ public class MessagesLoader implements Client.ResultHandler {
       if (needMeasureSpeed) {
         endMeasureStep(cur, cur.getId(), cur.getMessageCount());
       }
+    }
+
+    if (!items.isEmpty() && sponsoredMessages.get(chatId) != null && sponsoredMessages.get(chatId).length > 0 && !canLoadBottom) {
+      TGMessage tgm = TGMessageSponsored.sponsoredToTgx(manager, chatId, cur.getDate(), sponsoredMessages.get(chatId)[0]);
+
+      tgm.setUnread(Long.MAX_VALUE);
+      tgm.setShowUnreadBadge(false);
+
+      tgm.mergeWith(cur, true);
+      tgm.prepareLayout();
+
+      cur.setNeedExtraPadding(false);
+
+      items.add(items.size() - 1, tgm);
     }
 
     if (needMeasureSpeed) {
