@@ -509,9 +509,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
     Views.setScrollBarPosition(chatsView);
 
-    if (list.isLoading()) {
-      showProgressView();
-    }
+    checkDisplayProgress();
 
     if (!isBaseController()) {
       generateChatSearchView(contentView);
@@ -528,7 +526,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     list.initializeList(filter, this, this::displayChats, chatsView.getInitialLoadCount(), () ->
       runOnUiThreadOptional(() -> {
         this.listInitalized = true;
-        checkDisplayNoChats();
+        checkListState();
         executeScheduledAnimation();
       })
     );
@@ -2212,12 +2210,24 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   // Placeholder
 
+  public final void checkDisplayProgress () {
+    if (list.isEmpty(filter) && !list.isEndReached()) {
+      showProgressView();
+    } else {
+      hideProgressView();
+    }
+  }
+
   public final void checkDisplayNoChats () {
     adapter.checkArchive();
     boolean noChats = list.isEndReached() && adapter.getChats().size() == 0;
     setDisplayNoChats(noChats);
   }
 
+  public void checkListState () {
+    checkDisplayProgress();
+    checkDisplayNoChats();
+  }
 
   private static final int ANIMATOR_PLACEHOLDER = 0;
 
@@ -2395,7 +2405,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       return;
     }
     boolean animated = parentController != null && parentController.isFocused() && noChatsAnimator != null && noChatsAnimator.getFloatValue() > 0f;
-    checkDisplayNoChats();
+    checkListState();
     if (noChatsAdapter != null) {
       if (scheduledUserIdsChange != null) {
         scheduledUserIdsChange.cancel();
@@ -2463,12 +2473,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       if (newState == TdlibChatList.State.END_REACHED) {
         adapter.updateInfo();
       }
-      checkDisplayNoChats();
-      if (newState == TdlibChatList.State.LOADING && adapter.getChats().isEmpty()) {
-        showProgressView();
-      } else {
-        hideProgressView();
-      }
+      checkListState();
       if (oldState == TdlibChatList.State.LOADING) {
         hideProgressView();
         if (!initialLoadFinished) {
@@ -2490,7 +2495,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   public void onChatListChanged (TdlibChatList chatList, @ChangeType int changeType) {
     runOnUiThreadOptional(() -> {
       if (changeType == ChangeType.ITEM_ADDED || changeType == ChangeType.ITEM_REMOVED) {
-        checkDisplayNoChats();
+        checkListState();
       }
     });
   }

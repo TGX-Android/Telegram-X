@@ -530,7 +530,7 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
       removedChat.updateChatPosition(chat.id, changeInfo.position, changeInfo.sourceChanged(), changeInfo.pinStateChanged());
       notifyItemRemoved(position);
       notifyItemChanged(chats.size());
-      context.checkDisplayNoChats();
+      context.checkListState();
       return invalidateDecorations || needShadowDecoration(prevChat, nextChat) ? ORDER_INVALIDATE_DECORATIONS : 0;
     }
     return 0;
@@ -595,7 +595,7 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
     addChat(position, newChat);
     notifyChatAppeared(-1, position);
     notifyItemChanged(chats.size());
-    context.checkDisplayNoChats();
+    context.checkListState();
     return flags;
   }
 

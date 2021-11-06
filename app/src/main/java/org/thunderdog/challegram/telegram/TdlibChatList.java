@@ -74,10 +74,6 @@ public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterCh
 
   // State API
 
-  public boolean isLoading () {
-    return state == State.LOADING;
-  }
-
   public boolean canLoad () {
     return state == State.END_NOT_REACHED;
   }
@@ -96,6 +92,10 @@ public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterCh
 
   public int totalCount () {
     return Math.max(tdlib.getTotalChatsCount(chatList), count(null));
+  }
+
+  public boolean isEmpty (@Nullable Filter<TdApi.Chat> filter) {
+    return count(filter) == 0;
   }
 
   public int count (@Nullable Filter<TdApi.Chat> filter) {
