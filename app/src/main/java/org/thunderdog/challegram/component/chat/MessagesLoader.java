@@ -1400,7 +1400,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
       cur.setNeedExtraPadding(false);
 
-      items.add(items.size() - 1, tgm);
+      items.add(0, tgm);
     }
 
     if (needMeasureSpeed) {
