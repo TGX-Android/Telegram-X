@@ -7,6 +7,7 @@ import android.graphics.Path
 import me.vkryl.core.UTF_8
 import me.vkryl.core.wrapHttps
 import org.drinkless.td.libcore.telegram.Client
+import org.drinkless.td.libcore.telegram.TdApi
 import org.drinkless.td.libcore.telegram.TdApi.*
 import kotlin.contracts.ExperimentalContracts
 import kotlin.math.max
@@ -690,3 +691,10 @@ fun InlineKeyboardButtonTypeCallbackWithPassword.isBotOwnershipTransfer (): Bool
 } catch (e: IllegalArgumentException) {
   false
 }
+
+class SplitMsgIds (val messageIds: LongArray, val sponsoredIds: IntArray) {
+  fun hasSponsored () = sponsoredIds.isNotEmpty()
+  fun getSponsoredQueries (chatId: Long) = sponsoredIds.map { ViewSponsoredMessage(chatId, it) }.toTypedArray()
+}
+
+fun LongArray.splitMessageIds () = this.partition { it > 0 }.let { parts -> SplitMsgIds(parts.first.toLongArray(), parts.second.map { id -> ((-id).toInt()) }.toIntArray()) }
