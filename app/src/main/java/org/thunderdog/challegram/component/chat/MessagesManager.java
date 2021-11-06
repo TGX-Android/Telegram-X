@@ -66,6 +66,7 @@ import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
+import me.vkryl.td.SplitMsgIds;
 import me.vkryl.td.Td;
 
 public class MessagesManager implements Client.ResultHandler, MessagesSearchManager.Delegate,
@@ -1663,8 +1664,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
     final boolean isOpen = tdlib.isChatOpen(chatId);
     final long[] messageIds = viewed.toArray();
+    final SplitMsgIds splitMessageIds = Td.splitMessageIds(messageIds);
 
-    if (viewed.size() == 1 && messageIds[0] < 0) {
+    if (splitMessageIds.hasSponsored()) {
       if (isFocused && isOpen) {
         if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
           Log.i(Log.TAG_MESSAGES_LOADER, "Reading %d sponsored message: %s", messageIds.length, Arrays.toString(messageIds));
@@ -1673,7 +1675,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (BuildConfig.DEBUG && Settings.instance().dontReadMessages()) {
 
         } else {
-          tdlib.client().send(new TdApi.ViewSponsoredMessage(chatId, -((int) (messageIds[0]))), loader);
+          tdlib.sendAll(splitMessageIds.getSponsoredQueries(chatId), loader, null);
         }
         return true;
       }
@@ -1821,13 +1823,17 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       refreshViewsRunnable = new CancellableRunnable() {
         @Override
         public void act () {
-          TdApi.Function[] functions = new TdApi.Function[refreshMessageIds.size()];
+          ArrayList<TdApi.Function> functions = new ArrayList<>();
           for (int i = 0; i < refreshMessageIds.size(); i++) {
             long chatId = refreshMessageIds.keyAt(i);
             long[] messageIds = refreshMessageIds.valueAt(i);
-            functions[i] = new TdApi.ViewMessages(chatId, chatId == refreshChatId ? refreshMessageThreadId : 0, messageIds, false);
+            SplitMsgIds splitIds = Td.splitMessageIds(messageIds);
+            functions.add(new TdApi.ViewMessages(chatId, chatId == refreshChatId ? refreshMessageThreadId : 0, splitIds.getMessageIds(), false));
+            if (splitIds.hasSponsored()) {
+              functions.addAll(Arrays.asList(splitIds.getSponsoredQueries(chatId)));
+            }
           }
-          tdlib.sendAll(functions, tdlib.okHandler(), () -> tdlib.ui().post(MessagesManager.this::scheduleRefresh));
+          tdlib.sendAll(functions.toArray(new TdApi.Function[0]), tdlib.okHandler(), () -> tdlib.ui().post(MessagesManager.this::scheduleRefresh));
         }
       };
       refreshViewsRunnable.removeOnCancel(tdlib.ui());
