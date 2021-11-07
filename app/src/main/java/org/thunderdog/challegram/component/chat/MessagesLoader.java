@@ -104,6 +104,10 @@ public class MessagesLoader implements Client.ResultHandler {
   // TODO: can there be more than 1 sponsored message?
   private List<TdApi.SponsoredMessage> getSponsoredMessages (long chatId) {
     synchronized (sponsoredMessages) {
+      if (sponsoredMessages.containsKey(chatId) && true) {
+        return Collections.singletonList(TGMessageSponsored.generateSponsoredMessage(tdlib));
+      }
+
       return sponsoredMessages.get(chatId);
     }
   }
@@ -1409,23 +1413,15 @@ public class MessagesLoader implements Client.ResultHandler {
       }
     }
 
-    boolean cond1 = !items.isEmpty();
-    List<TdApi.SponsoredMessage> messagess = getSponsoredMessages(chatId);
-    boolean cond3 = messagess != null && !messagess.isEmpty();
-    boolean cond4 = !canLoadBottom;
-    if (cond1 && cond3 && cond4) {
-      TGMessage tgm = TGMessageSponsored.sponsoredToTgx(manager, chatId, cur.getDate(), messagess.get(0));
+    List<TdApi.SponsoredMessage> sponsoredMessages = getSponsoredMessages(chatId);
+    if (!items.isEmpty() && sponsoredMessages != null && !sponsoredMessages.isEmpty() && !canLoadBottom && sponsoredMessages.get(0).content.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
+      TGMessage tgm = TGMessageSponsored.sponsoredToTgx(manager, chatId, cur.getDate(), sponsoredMessages.get(0));
 
       tgm.setUnread(Long.MAX_VALUE);
       tgm.setShowUnreadBadge(false);
 
-      if (manager.useBubbles()) {
-        tgm.forceAvatarWhenMerging(true);
-        tgm.mergeWith(null, true);
-      } else {
-        tgm.forceAvatarWhenMerging(false);
-        tgm.mergeWith(cur, true);
-      }
+      tgm.forceAvatarWhenMerging(manager.useBubbles());
+      tgm.mergeWith(cur, true);
 
       tgm.prepareLayout();
       cur.setNeedExtraPadding(false);
