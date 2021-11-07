@@ -171,6 +171,7 @@ import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.TGBackground;
@@ -4687,6 +4688,20 @@ public class MessagesController extends ViewController<MessagesController.Argume
           TdApi.Document document = ((TdApi.MessageDocument) selectedMessage.getMessage().content).document;
           tdlib.ui().readCustomTheme(this, document, null, null);
         }
+        return true;
+      }
+      case R.id.btn_messageSponsorInfo: {
+        final AlertDialog.Builder b = new AlertDialog.Builder(UI.getContext(), Theme.dialogTheme());
+        b.setTitle(Lang.getString(R.string.SponsoredInfoMenu));
+        b.setMessage(Lang.getMarkdownString(new TdlibContext(context, tdlib), R.string.SponsoredInfoText, Lang.getString(R.string.url_promote)));
+        b.setNeutralButton(Lang.getString(R.string.SponsoredInfoAction), (dialog, which) -> {
+          Intents.openUriInBrowser(Uri.parse(Lang.getString(R.string.url_promote)));
+          dialog.dismiss();
+        });
+        b.setPositiveButton(Lang.getOK(), (dialog, which) -> {
+          dialog.dismiss();
+        });
+        context.showAlert(b);
         return true;
       }
       case R.id.btn_messageCopyLink: {
