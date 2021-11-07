@@ -509,7 +509,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
     setIsBottom(true);
 
-    if (top == null || top.isThreadHeader() != isThreadHeader() || !(isEventLog() ? needHideEventDate() || (DateUtils.isSameHour(top.getComparingDate(), getComparingDate()) /*|| !(msg.content instanceof TdApiExt.MessageChatEvent)*/) : DateUtils.isSameDay(top.getComparingDate(), getComparingDate())) || BitwiseUtils.getFlag(flags, MESSAGE_FLAG_FORCE_AVATAR)) {
+    if (top == null || top.isThreadHeader() != isThreadHeader() || !(isEventLog() ? needHideEventDate() || (DateUtils.isSameHour(top.getComparingDate(), getComparingDate()) /*|| !(msg.content instanceof TdApiExt.MessageChatEvent)*/) : DateUtils.isSameDay(top.getComparingDate(), getComparingDate()))) {
       if (top != null) {
         top.setIsBottom(true);
       }
