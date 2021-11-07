@@ -1242,7 +1242,7 @@ public class TdlibListeners {
   void updateChatAdded (TdlibChatList chatList, TdApi.Chat chat, int atIndex, Tdlib.ChatChange changeInfo) {
     iterateChatListListeners(chatList, listener -> {
       listener.onChatAdded(chatList, chat, atIndex, changeInfo);
-      listener.onChatListChanged(chatList, ChatListListener.ChangeType.ITEM_ADDED);
+      listener.onChatListChanged(chatList, ChatListListener.ChangeFlags.ITEM_ADDED);
     });
   }
 
@@ -1250,7 +1250,7 @@ public class TdlibListeners {
   void updateChatRemoved (TdlibChatList chatList, TdApi.Chat chat, int fromIndex, Tdlib.ChatChange changeInfo) {
     iterateChatListListeners(chatList, listener -> {
       listener.onChatRemoved(chatList, chat, fromIndex, changeInfo);
-      listener.onChatListChanged(chatList, ChatListListener.ChangeType.ITEM_REMOVED);
+      listener.onChatListChanged(chatList, ChatListListener.ChangeFlags.ITEM_REMOVED);
     });
   }
 
@@ -1258,7 +1258,7 @@ public class TdlibListeners {
   void updateChatMoved (TdlibChatList chatList, TdApi.Chat chat, int fromIndex, int toIndex, Tdlib.ChatChange changeInfo) {
     iterateChatListListeners(chatList, listener -> {
       listener.onChatMoved(chatList, chat, fromIndex, toIndex, changeInfo);
-      listener.onChatListChanged(chatList, ChatListListener.ChangeType.ITEM_MOVED);
+      listener.onChatListChanged(chatList, ChatListListener.ChangeFlags.ITEM_MOVED);
     });
   }
 
@@ -1266,7 +1266,7 @@ public class TdlibListeners {
   void updateChatChanged (TdlibChatList chatList, TdApi.Chat chat, int index, Tdlib.ChatChange changeInfo) {
     iterateChatListListeners(chatList, listener -> {
       listener.onChatChanged(chatList, chat, index, changeInfo);
-      listener.onChatListChanged(chatList, ChatListListener.ChangeType.ITEM_METADATA_CHANGED);
+      listener.onChatListChanged(chatList, ChatListListener.ChangeFlags.ITEM_METADATA_CHANGED);
     });
   }
 

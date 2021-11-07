@@ -14,19 +14,19 @@ public interface ChatListListener {
   default void onChatMoved (TdlibChatList chatList, TdApi.Chat chat, int fromIndex, int toIndex, Tdlib.ChatChange changeInfo) {  }
 
   @Retention(RetentionPolicy.SOURCE)
-  @IntDef({
-    ChangeType.ITEM_METADATA_CHANGED,
-    ChangeType.ITEM_ADDED,
-    ChangeType.ITEM_REMOVED,
-    ChangeType.ITEM_MOVED
-  })
-  @interface ChangeType {
-    int ITEM_METADATA_CHANGED = 0;
-    int ITEM_ADDED = 1;
-    int ITEM_REMOVED = 2;
-    int ITEM_MOVED = 3;
+  @IntDef(value = {
+    ChangeFlags.ITEM_METADATA_CHANGED,
+    ChangeFlags.ITEM_ADDED,
+    ChangeFlags.ITEM_REMOVED,
+    ChangeFlags.ITEM_MOVED
+  }, flag = true)
+  @interface ChangeFlags {
+    int ITEM_METADATA_CHANGED = 1;
+    int ITEM_ADDED = 1 << 1;
+    int ITEM_REMOVED = 1 << 2;
+    int ITEM_MOVED = 1 << 3;
   }
-  default void onChatListChanged (TdlibChatList chatList, @ChangeType int changeType) { }
+  default void onChatListChanged (TdlibChatList chatList, @ChangeFlags int changeFlags) { }
 
   default void onChatListStateChanged (TdlibChatList chatList,
                                        @TdlibChatList.State int newState,

@@ -71,6 +71,7 @@ import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibChatList;
+import org.thunderdog.challegram.telegram.TdlibChatListSlice;
 import org.thunderdog.challegram.telegram.TdlibContactManager;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibThread;
@@ -194,6 +195,8 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   @Override
   public void setArguments (Arguments args) {
     super.setArguments(args);
+    if (this.list != null)
+      throw new IllegalStateException();
     if (args == null) {
       this.shareIntent = null;
       this.filter = null;
@@ -386,11 +389,11 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   private ItemTouchHelper touchHelper;
   private LiveLocationHelper liveLocationHelper;
-  private TdlibChatList list;
+  private TdlibChatListSlice list;
 
-  public TdlibChatList list () {
+  public TdlibChatListSlice list () {
     if (list == null) {
-      this.list = tdlib.chatList(chatList());
+      this.list = new TdlibChatListSlice(tdlib, chatList(), filter);
     }
     return list;
   }
@@ -523,7 +526,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     Settings.instance().addChatListModeListener(this);
     TGLegacyManager.instance().addEmojiListener(this);
 
-    list.initializeList(filter, this, this::displayChats, chatsView.getInitialLoadCount(), () ->
+    list.initializeList(this, this::displayChats, chatsView.getInitialLoadCount(), () ->
       runOnUiThreadOptional(() -> {
         this.listInitalized = true;
         checkListState();
@@ -583,8 +586,8 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         archiveList = tdlib.chatList(ChatPosition.CHAT_LIST_ARCHIVE);
         archiveListListener = new ChatListListener() {
           @Override
-          public void onChatListChanged (TdlibChatList chatList, @ChangeType int changeType) {
-            if (changeType != ChangeType.ITEM_METADATA_CHANGED) {
+          public void onChatListChanged (TdlibChatList chatList, @ChangeFlags int changeFlags) {
+            if (BitwiseUtils.setFlag(changeFlags, ChangeFlags.ITEM_METADATA_CHANGED, false) != 0) {
               runOnUiThreadOptional(() -> {
                 adapter.setNeedArchive(chatList.totalCount() > 0);
                 adapter.updateArchive(ChatsAdapter.ARCHIVE_UPDATE_ALL);
@@ -633,13 +636,11 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   @TdlibThread
-  private void displayChats (List<TdlibChatList.Entry> entries) {
+  private void displayChats (List<TdApi.Chat> entries) {
     int initialLoadCount = chatsView.getInitialLoadCount();
     List<TGChat> parsedChats = new ArrayList<>(entries.size());
-    for (TdlibChatList.Entry entry : entries) {
-      if (filter == null || filter.accept(entry.chat)) {
-        parsedChats.add(new TGChat(this, chatList(), entry.chat, initialLoadCount-- >= 0));
-      }
+    for (TdApi.Chat chat : entries) {
+      parsedChats.add(new TGChat(this, chatList(), chat, initialLoadCount-- >= 0));
     }
     runOnUiThreadOptional(() -> {
       initialLoadFinished = true;
@@ -2211,7 +2212,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   // Placeholder
 
   public final void checkDisplayProgress () {
-    if (list.isEmpty(filter) && !list.isEndReached()) {
+    if (list.needProgressPlaceholder()) {
       showProgressView();
     } else {
       hideProgressView();
@@ -2492,9 +2493,9 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   @Override
-  public void onChatListChanged (TdlibChatList chatList, @ChangeType int changeType) {
+  public void onChatListChanged (TdlibChatList chatList, @ChangeFlags int changeFlags) {
     runOnUiThreadOptional(() -> {
-      if (changeType == ChangeType.ITEM_ADDED || changeType == ChangeType.ITEM_REMOVED) {
+      if (BitwiseUtils.getFlag(changeFlags, ChangeFlags.ITEM_MOVED | ChangeFlags.ITEM_ADDED)) {
         checkListState();
       }
     });
@@ -2504,36 +2505,34 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   public void onChatChanged (TdlibChatList chatList, TdApi.Chat chat, int index, Tdlib.ChatChange changeInfo) {
     runOnUiThreadOptional(() -> {
       chatsView.processChatUpdate(
-        adapter.updateChat(chat, index, filter != null, changeInfo)
+        adapter.updateChat(chat, index, changeInfo)
       );
     });
   }
 
   @Override
   public void onChatAdded (TdlibChatList chatList, TdApi.Chat chat, int atIndex, Tdlib.ChatChange changeInfo) {
-    runOnUiThreadOptional(() -> {
-      if (filter == null || filter.accept(chat)) {
-        chatsView.processChatUpdate(
-          adapter.addChat(chat, atIndex, filter != null, changeInfo)
-        );
-      }
-    });
+    runOnUiThreadOptional(() ->
+      chatsView.processChatUpdate(
+        adapter.addChat(chat, atIndex, changeInfo)
+      )
+    );
   }
 
   @Override
   public void onChatRemoved (TdlibChatList chatList, TdApi.Chat chat, int fromIndex, Tdlib.ChatChange changeInfo) {
-    runOnUiThreadOptional(() -> {
+    runOnUiThreadOptional(() ->
       chatsView.processChatUpdate(
-        adapter.removeChatById(chat, fromIndex, filter != null, changeInfo)
-      );
-    });
+        adapter.removeChatById(chat, fromIndex, changeInfo)
+      )
+    );
   }
 
   @Override
   public void onChatMoved (TdlibChatList chatList, TdApi.Chat chat, int fromIndex, int toIndex, Tdlib.ChatChange changeInfo) {
     runOnUiThreadOptional(() ->
       chatsView.processChatUpdate(
-        adapter.moveChat(chat, fromIndex, toIndex, filter != null, changeInfo)
+        adapter.moveChat(chat, fromIndex, toIndex, changeInfo)
       )
     );
   }
@@ -2644,18 +2643,6 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.updateChatReadInbox(chatId, lastReadInboxMessageId, unreadCount);
-      }
-      if (availabilityChanged && isFiltered()) {
-        TdApi.Chat chat = tdlib.chat(chatId);
-        if (chat != null && filter.accept(chat)) {
-          int index = adapter.indexOfChat(chatId);
-          if (unreadCount > 0 && index == -1) {
-            TdApi.ChatPosition position = ChatPosition.findPosition(chat, chatList());
-            if (position != null && position.order != 0) {
-              adapter.addChat(chat, index, true, new Tdlib.ChatChange(position, 0));
-            }
-          }
-        }
       }
     });
   }

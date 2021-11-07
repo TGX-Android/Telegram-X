@@ -15,7 +15,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGChat;
@@ -24,7 +23,6 @@ import org.thunderdog.challegram.ui.ChatsController;
 import org.thunderdog.challegram.v.ChatsRecyclerView;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
@@ -33,7 +31,7 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.td.ChatPosition;
 
 public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
-  private ChatsController context;
+  private final ChatsController context;
 
   private final ArrayList<TGChat> chats;
   private int totalRes = R.string.xChats;
@@ -513,8 +511,8 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
     return a != null && b != null && (a.isArchive() != b.isArchive() || a.isPinnedOrSpecial() != b.isPinnedOrSpecial());
   }
 
-  public int removeChatById (TdApi.Chat chat, int fromIndex, boolean needSort, Tdlib.ChatChange changeInfo) {
-    final int position = needSort ? indexOfChat(chat.id) : hasArchive ? fromIndex + 1 : fromIndex;
+  public int removeChatById (TdApi.Chat chat, int fromIndex, Tdlib.ChatChange changeInfo) {
+    final int position = hasArchive ? fromIndex + 1 : fromIndex;
     if (position != -1) {
       TGChat removedChat = removeChat(position);
       if (removedChat.getChatId() != chat.id)
@@ -536,14 +534,9 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
     return 0;
   }
 
-  public int moveChat (TdApi.Chat chat, int fromIndex, int toIndex, boolean needSort, Tdlib.ChatChange changeInfo) {
+  public int moveChat (TdApi.Chat chat, int fromIndex, int toIndex, Tdlib.ChatChange changeInfo) {
     TGChat parsedChat;
-    if (needSort) {
-      fromIndex = indexOfChat(chat.id);
-      if (fromIndex == -1) {
-        return 0;
-      }
-    } else if (hasArchive) {
+    if (hasArchive) {
       fromIndex++;
       toIndex++;
     }
@@ -556,13 +549,6 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
       needShadowDecoration(getChatAt(toIndex), getChatAt(toIndex - 1));
 
     parsedChat.updateChatPosition(chat.id, changeInfo.position, changeInfo.sourceChanged(), changeInfo.pinStateChanged());
-
-    if (needSort) {
-      toIndex = Collections.binarySearch(chats, parsedChat, CHAT_COMPARATOR);
-      if (toIndex >= 0)
-        throw new IllegalStateException();
-      toIndex = toIndex * -1 - 1;
-    }
 
     chats.add(toIndex, parsedChat);
     if (!invalidateDecorations) {
@@ -577,19 +563,9 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
     return flags;
   }
 
-  public int addChat (TdApi.Chat chat, int atIndex, boolean needSort, Tdlib.ChatChange changeInfo) {
+  public int addChat (TdApi.Chat chat, int atIndex, Tdlib.ChatChange changeInfo) {
     TGChat newChat = new TGChat(context.getParentOrSelf(), context.chatList(), chat, false);
-    int position;
-    if (needSort) {
-      position = Collections.binarySearch(chats, newChat, CHAT_COMPARATOR);
-      if (position >= 0) {
-        Log.i("Chat %d is already present in the list.", chat.id);
-        return 0;
-      }
-      position = position * -1 - 1;
-    } else {
-      position = hasArchive ? atIndex + 1 : atIndex;
-    }
+    int position = hasArchive ? atIndex + 1 : atIndex;
     newChat.makeMeasures();
     int flags = changeInfo.metadataChanged() ? ORDER_INVALIDATE_DECORATIONS : 0;
     addChat(position, newChat);
@@ -599,8 +575,8 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
     return flags;
   }
 
-  public int updateChat (TdApi.Chat chat, int index, boolean needSort, Tdlib.ChatChange changeInfo) {
-    final int position = needSort ? indexOfChat(chat.id) : hasArchive ? index + 1 : index;
+  public int updateChat (TdApi.Chat chat, int index, Tdlib.ChatChange changeInfo) {
+    final int position = hasArchive ? index + 1 : index;
     TGChat parsedChat = chats.get(position);
     if (parsedChat.getChatId() != chat.id)
       throw new IllegalStateException();

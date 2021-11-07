@@ -6161,12 +6161,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public static class ChatChange {
-    private static final int ORDER = 1;
-    private static final int SOURCE = 1 << 1;
-    private static final int PIN_STATE = 1 << 2;
+    public static final int ORDER = 1;
+    public static final int SOURCE = 1 << 1;
+    public static final int PIN_STATE = 1 << 2;
+    public static final int ALL = ORDER | SOURCE | PIN_STATE;
 
     public final TdApi.ChatPosition position;
-    private final int flags;
+    public final int flags;
 
     public ChatChange (TdApi.ChatPosition position, int flags) {
       this.position = position;
