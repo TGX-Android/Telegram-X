@@ -509,11 +509,7 @@ public class MediaLayout extends FrameLayoutFix implements
       case Intents.ACTIVITY_RESULT_MANAGE_STORAGE:
       case BaseActivity.REQUEST_READ_STORAGE: {
         if (requestedPermissionIndex == 1) {
-          if (code == Intents.ACTIVITY_RESULT_MANAGE_STORAGE) {
-            U.setManageStorageDeclined(!granted);
-          }
-
-          if (granted || code == Intents.ACTIVITY_RESULT_MANAGE_STORAGE) {
+          if (granted) {
             if (bottomBar != null) {
               bottomBar.setSelectedIndex(1);
             }
@@ -566,10 +562,9 @@ public class MediaLayout extends FrameLayoutFix implements
       case 1: {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
           if (getContext().checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
-            getContext().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
-            (!U.canManageStorage() && !U.isManageStorageDeclined())) {
+              getContext().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             requestedPermissionIndex = toIndex;
-            ((BaseActivity) getContext()).requestReadWritePermissionsR();
+            ((BaseActivity) getContext()).requestReadWritePermissions();
             return false;
           }
         }

@@ -1222,6 +1222,7 @@
   <string name="AccessError">Access error</string>
   <string name="FolderDoesNotExist">This folder doesn\'t exist</string>
   <string name="NoMusicFilesFound">No music files found</string>
+  <string name="NoDownloadFilesFound">No downloaded files found</string>
   <string name="FolderEmpty">This folder is empty</string>
   <string name="AttachFolderHome">Home</string>
   <string name="DataSettings">Data and Storage</string>

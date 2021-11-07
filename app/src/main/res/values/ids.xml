@@ -48,6 +48,7 @@
   <item type="id" name="menu_btn_done" />
   <item type="id" name="menu_btn_forward" />
   <item type="id" name="menu_btn_copy" />
+  <item type="id" name="menu_btn_archive" />
   <item type="id" name="menu_btn_help" />
   <item type="id" name="menu_btn_reply" />
   <item type="id" name="menu_btn_report" />
@@ -766,6 +767,7 @@
   <item type="id" name="btn_abortRecoveryEmail" />
   <item type="id" name="btn_internalStorage" />
   <item type="id" name="btn_musicFiles" />
+  <item type="id" name="btn_downloads" />
   <item type="id" name="btn_galleryFiles" />
   <item type="id" name="btn_reduceMotion" />
   <item type="id" name="btn_other" />

@@ -10,6 +10,7 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.util.DrawableProvider;
 
 import java.io.File;
@@ -103,17 +104,11 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
   }
 
   public static MediaPreview valueOf (Tdlib tdlib, File file, String mimeType, int size, int cornerRadius) {
-    /*if (TGMimeType.isImageMimeType(mimeType)) {
-      radius = Screen.dp(50f) / 2;
-      preview = FileComponent.createFullPreview(new ImageFileLocal(file.getPath()), mimeType);
-      preview.setProbablyRotated();
-      preview.setDecodeSquare(true);
-    } else if (TGMimeType.isVideoMimeType(mimeType)) {
-      radius = Screen.dp(50f) / 2;
-      preview = FileComponent.createFullPreview(new ImageVideoThumbFile(tdlib, TD.newFile(file)), mimeType);
-      preview.setDecodeSquare(true);
-    }*/
-    return null; // TODO
+    try {
+      return new MediaPreviewSimple(tdlib, size, cornerRadius, file, mimeType);
+    } catch (UnsupportedOperationException ignored) {
+      return null;
+    }
   }
 
   public static MediaPreview valueOf (Tdlib tdlib, TdApi.Message message, @Nullable TD.ContentPreview preview, int size, int cornerRadius) {
