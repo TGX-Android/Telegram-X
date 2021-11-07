@@ -766,6 +766,7 @@
   <item type="id" name="btn_abortRecoveryEmail" />
   <item type="id" name="btn_internalStorage" />
   <item type="id" name="btn_musicFiles" />
+  <item type="id" name="btn_downloads" />
   <item type="id" name="btn_galleryFiles" />
   <item type="id" name="btn_reduceMotion" />
   <item type="id" name="btn_other" />

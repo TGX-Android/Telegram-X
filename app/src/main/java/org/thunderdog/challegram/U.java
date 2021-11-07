@@ -6,6 +6,7 @@ package org.thunderdog.challegram;
 
 import android.Manifest;
 import android.animation.ValueAnimator;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -3387,32 +3388,21 @@ public class U {
   }
 
   // ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION opened, but the permission is still not granted. Ignore until the app restarts.
-  private static boolean manageStoragePermissionDeclined = false;
 
   public static boolean canManageStorage () {
-    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q || !Config.MANAGE_STORAGE_PERMISSION_AVAILABLE) {
-      return true; // Q allows for requestExternalStorage
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      return Environment.isExternalStorageLegacy() || Environment.isExternalStorageManager();
     }
-
-    return Environment.isExternalStorageLegacy() || Environment.isExternalStorageManager();
+    return true; // Q allows for requestExternalStorage
   }
 
-  public static boolean isManageStorageDeclined () {
-    return manageStoragePermissionDeclined;
-  }
-
-  public static void setManageStorageDeclined (boolean value) {
-    manageStoragePermissionDeclined = value;
-  }
-
+  @TargetApi(Build.VERSION_CODES.R)
   public static void requestManageStorage (Context context) {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || isManageStorageDeclined()) {
-      return;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+      intent.setData(Uri.parse("package:" + context.getPackageName()));
+      ((Activity) context).startActivityForResult(intent, Intents.ACTIVITY_RESULT_MANAGE_STORAGE);
     }
-
-    Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
-    intent.setData(Uri.parse("package:" + context.getPackageName()));
-    ((Activity) context).startActivityForResult(intent, Intents.ACTIVITY_RESULT_MANAGE_STORAGE);
   }
 
   public static boolean canReadFile (String url) {

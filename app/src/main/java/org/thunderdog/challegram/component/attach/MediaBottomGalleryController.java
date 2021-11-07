@@ -25,7 +25,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.core.Media;
 import org.thunderdog.challegram.data.TD;
@@ -206,16 +205,16 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     GridLayoutManager manager = new RtlGridLayoutManager(context(), spanCount);
 
     int options = MediaGalleryAdapter.OPTION_SELECTABLE | MediaGalleryAdapter.OPTION_ALWAYS_SELECTABLE;
-    if (U.deviceHasAnyCamera(context)) {
+    /*if (U.deviceHasAnyCamera(context)) {
       options |= MediaGalleryAdapter.OPTION_CAMERA_AVAILABLE;
-    }
+    }*/
     adapter = new MediaGalleryAdapter(context(), recyclerView, manager, this, options);
     setLayoutManager(manager);
     setAdapter(adapter);
     addItemDecoration(decoration);
 
     if (galleryLoaded) {
-      if (gallery == null && !U.deviceHasAnyCamera(context)) {
+      if (gallery == null/* && !U.deviceHasAnyCamera(context)*/) {
         showError(getErrorString(hasGalleryAccess), false);
       } else {
         showGallery(false);
@@ -309,7 +308,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     final Media.Gallery gallery = hasAccess && cursor != null && cursor.getCount() > 0 ? Media.instance().parseGallery(cursor, true, ImageFile.CENTER_CROP) : null;
     Log.i("Parsed gallery in %dms", SystemClock.uptimeMillis() - requestTime);
     UI.post(() -> {
-      if ((gallery == null || gallery.isEmpty()) && !U.deviceHasAnyCamera(context())) {
+      if ((gallery == null || gallery.isEmpty()) /*&& !U.deviceHasAnyCamera(context())*/) {
         setError(hasAccess);
       } else {
         setGallery(gallery);

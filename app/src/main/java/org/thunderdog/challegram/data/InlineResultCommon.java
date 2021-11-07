@@ -16,17 +16,10 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.attach.MediaBottomFilesController;
 import org.thunderdog.challegram.component.chat.MediaPreview;
-import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.component.inline.CustomResultView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ComplexReceiver;
-import org.thunderdog.challegram.loader.ImageFile;
-import org.thunderdog.challegram.loader.ImageFileLocal;
-import org.thunderdog.challegram.loader.ImageFileRemote;
-import org.thunderdog.challegram.loader.ImageMp3File;
-import org.thunderdog.challegram.loader.ImageReceiver;
-import org.thunderdog.challegram.loader.ImageVideoThumbFile;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
@@ -36,7 +29,6 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
-import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
@@ -349,6 +341,29 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
 
   public Object getTag () {
     return tag;
+  }
+
+  public InlineResultCommon (BaseActivity context, Tdlib tdlib, MediaBottomFilesController.FileEntry entry) {
+    super(context, tdlib, TYPE_DOCUMENT, Long.toString(entry.getId()), null);
+
+    this.tag = entry;
+
+    this.title = entry.getDisplayName();
+    this.description = Strings.buildSize(entry.getSize());
+    this.ignoreDescriptionUpdates = true;
+
+    this.targetFile = TD.newFile(-1, Long.toString(entry.getId()), entry.getData(), (int) entry.getSize());
+
+    this.fileProgress = new FileProgressComponent(context, tdlib, TdlibFilesManager.DOWNLOAD_FLAG_MUSIC, false, 0, 0);
+    this.fileProgress.setViewProvider(currentViews);
+    this.fileProgress.setSimpleListener(this);
+    this.fileProgress.setIsLocal();
+    this.fileProgress.setDownloadedIconRes(FileProgressComponent.PLAY_ICON);
+    if (getMediaPreview() != null) {
+      this.fileProgress.setBackgroundColor(0x44000000);
+    } else {
+      this.fileProgress.setBackgroundColorId(R.id.theme_color_file);
+    }
   }
 
   public InlineResultCommon (BaseActivity context, Tdlib tdlib, MediaBottomFilesController.MusicEntry entry, TGPlayerController.PlayListBuilder builder) {
