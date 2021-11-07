@@ -1890,6 +1890,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
     if (i != -1 && MessagesHolder.isMessageType(adapter.getItemViewType(i))) {
       TGMessage message = adapter.getMessage(i);
+
+      if (message.isSponsored() && adapter.getMessageCount() > 1) {
+        message = adapter.getMessage(i + 1);
+      }
+
       ThreadInfo threadInfo = loader.getMessageThread();
       if (message != null && message.getChatId() != 0) {
         scrollMessageChatId = message.getChatId();
