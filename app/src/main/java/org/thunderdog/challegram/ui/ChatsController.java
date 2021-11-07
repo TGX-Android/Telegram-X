@@ -393,7 +393,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   public TdlibChatListSlice list () {
     if (list == null) {
-      this.list = new TdlibChatListSlice(tdlib, chatList(), filter);
+      this.list = new TdlibChatListSlice(tdlib, chatList(), filter, false);
     }
     return list;
   }
@@ -636,11 +636,11 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   @TdlibThread
-  private void displayChats (List<TdApi.Chat> entries) {
+  private void displayChats (List<TdlibChatListSlice.Entry> entries) {
     int initialLoadCount = chatsView.getInitialLoadCount();
     List<TGChat> parsedChats = new ArrayList<>(entries.size());
-    for (TdApi.Chat chat : entries) {
-      parsedChats.add(new TGChat(this, chatList(), chat, initialLoadCount-- >= 0));
+    for (TdlibChatList.Entry entry : entries) {
+      parsedChats.add(new TGChat(this, chatList(), entry.chat, initialLoadCount-- >= 0));
     }
     runOnUiThreadOptional(() -> {
       initialLoadFinished = true;
