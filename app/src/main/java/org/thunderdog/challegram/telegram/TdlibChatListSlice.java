@@ -32,8 +32,8 @@ public class TdlibChatListSlice {
     private long broughtToTopTime;
     private boolean keepPosition;
 
-    public Entry (TdApi.Chat chat, TdApi.ChatPosition position, boolean keepPosition) {
-      super(chat, position);
+    public Entry (TdApi.Chat chat, TdApi.ChatList chatList, TdApi.ChatPosition position, boolean keepPosition) {
+      super(chat, chatList, position);
       this.keepPosition = keepPosition;
     }
 
@@ -124,7 +124,7 @@ public class TdlibChatListSlice {
           if (!filter.accept(chat))
             return;
         }
-        Entry entry = new Entry(chat, changeInfo.position, keepPositions);
+        Entry entry = new Entry(chat, chatList.chatList(), changeInfo.position, keepPositions);
         if (needSort()) {
           atIndex = findInsertIndex(entry);
         }
@@ -214,7 +214,7 @@ public class TdlibChatListSlice {
           if (filter != null && filter.accept(chat)) { // chat became unfiltered
             TdApi.ChatPosition position = ChatPosition.findPosition(chat, chatList.chatList());
             if (position != null && position.order != 0) {
-              final Entry entry = new Entry(chat, position, keepPositions);
+              final Entry entry = new Entry(chat, chatList.chatList(), position, keepPositions);
               int atIndex = findInsertIndex(entry);
               if (atIndex == filteredList.size()) {
                 filteredList.add(entry);
@@ -244,7 +244,7 @@ public class TdlibChatListSlice {
         ((ArrayList<?>) this.filteredList).ensureCapacity(this.filteredList.size() + moreChats.size());
         for (TdlibChatList.Entry entry : moreChats) {
           if ((filter == null || filter.accept(entry.chat)) && (!haveCustomModifications || indexOfChat(entry.chat.id) == -1)) {
-            this.filteredList.add(new Entry(entry.chat, entry.effectivePosition, keepPositions));
+            this.filteredList.add(new Entry(entry.chat, entry.chatList, entry.effectivePosition, keepPositions));
             addedCount++;
           }
         }
@@ -355,7 +355,7 @@ public class TdlibChatListSlice {
           return;
         haveCustomModifications = true;
         // Force add item to top
-        Entry entry = new Entry(chat, ChatPosition.findPosition(chat, sourceList.chatList()), keepPositions);
+        Entry entry = new Entry(chat, sourceList.chatList(), ChatPosition.findPosition(chat, sourceList.chatList()), keepPositions);
         entry.bringToTop();
         final int atIndex = findInsertIndex(entry);
         filteredList.add(atIndex, entry);

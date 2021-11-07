@@ -24,16 +24,22 @@ import me.vkryl.td.Td;
 public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterChangeListener {
   public static class Entry implements Comparable<Entry> {
     public final TdApi.Chat chat;
+    public final TdApi.ChatList chatList;
     public TdApi.ChatPosition effectivePosition;
 
-    public Entry (TdApi.Chat chat, TdApi.ChatPosition position) {
+    public Entry (TdApi.Chat chat, TdApi.ChatList chatList, TdApi.ChatPosition position) {
       this.chat = chat;
-      this.effectivePosition = new TdApi.ChatPosition(
-        position.list,
-        position.order,
-        position.isPinned,
-        position.source
-      );
+      this.chatList = chatList;
+      if (position != null) {
+        this.effectivePosition = new TdApi.ChatPosition(
+          position.list,
+          position.order,
+          position.isPinned,
+          position.source
+        );
+      } else {
+        this.effectivePosition = new TdApi.ChatPosition(chatList, 0, false, null);
+      }
     }
 
     @Override
@@ -130,7 +136,7 @@ public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterCh
     final List<Entry> copy = new ArrayList<>(list.size());
     for (Entry entry : list) {
       if (filter == null || filter.accept(entry.chat)) {
-        copy.add(new Entry(entry.chat, entry.effectivePosition));
+        copy.add(new Entry(entry.chat, entry.chatList, entry.effectivePosition));
       }
     }
     return copy;
@@ -320,9 +326,9 @@ public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterCh
   @TdlibThread
   void onUpdateNewChat (TdApi.Chat chat) {
     if (chat.positions != null) {
-      TdApi.ChatPosition position = ChatPosition.findPosition(chat, chatList);
+      TdApi.ChatPosition position = ChatPosition.findPosition(chat, chatList());
       if (position != null && position.order != 0) {
-        addChatToList(new Entry(chat, position), new Tdlib.ChatChange(position, 0));
+        addChatToList(new Entry(chat, chatList(), position), new Tdlib.ChatChange(position, 0));
       }
     }
   }
@@ -333,7 +339,7 @@ public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterCh
     int prevIndex = indexOfEntry(chat.id);
     if (prevIndex == -1) {
       if (position.order != 0) {
-        addChatToList(new Entry(chat, position), changeInfo);
+        addChatToList(new Entry(chat, chatList(), position), changeInfo);
       }
     } else if (position.order == 0) {
       removeChatFromList(prevIndex, changeInfo);

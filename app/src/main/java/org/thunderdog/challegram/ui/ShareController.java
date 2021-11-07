@@ -9,7 +9,6 @@ import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.SystemClock;
 import android.text.TextPaint;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -937,7 +936,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
         if (displayCount == 0) {
           TdApi.Chat selfChat = tdlib.selfChat();
           if (selfChat != null && !ChatPosition.isPinned(selfChat, chatList)) {
-            Entry entry = new Entry(selfChat, ChatPosition.findPosition(selfChat, chatList), true);
+            Entry entry = new Entry(selfChat, chatList, ChatPosition.findPosition(selfChat, chatList), true);
             entry.bringToTop();
             slice.add(0, entry);
             return true;
