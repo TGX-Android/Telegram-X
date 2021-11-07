@@ -2102,36 +2102,6 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
   // Data loading
 
-  private static class Entry implements Comparable<Entry> {
-    private final TGFoundChat chat;
-    private TdApi.ChatPosition effectivePosition;
-    private final long time;
-
-    public Entry (TGFoundChat chat, TdApi.ChatPosition position) {
-      this.chat = chat;
-      this.effectivePosition = new TdApi.ChatPosition(
-        position.list,
-        position.order,
-        position.isPinned,
-        position.source
-      );
-      this.time = SystemClock.uptimeMillis();
-    }
-
-    @Override
-    public int compareTo (Entry o) {
-      boolean bringToTop1 = !effectivePosition.isPinned && chat.isSelfChat();
-      boolean bringToTop2 = !o.effectivePosition.isPinned && o.chat.isSelfChat();
-      if (bringToTop1 != bringToTop2) {
-        return bringToTop1 ? -1 : 1;
-      }
-      if (effectivePosition.order != o.effectivePosition.order) {
-        return Long.compare(o.effectivePosition.order, effectivePosition.order);
-      }
-      return Long.compare(o.time, time);
-    }
-  }
-
   private List<TGFoundChat> displayingChats;
 
   private void displayChats (List<TGFoundChat> chats) {
