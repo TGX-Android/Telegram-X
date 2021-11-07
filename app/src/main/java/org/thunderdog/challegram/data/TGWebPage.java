@@ -29,6 +29,7 @@ import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
+import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
@@ -520,7 +521,11 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         break;
       }
       case TYPE_TELEGRAM_AD: {
-
+        if (parent.tdlib.isBotChat(parent.msg.replyInChatId)) {
+          parent.tdlib().ui().openChat(new TdlibContext(parent.context(), parent.tdlib()), parent.msg.replyInChatId, new TdlibUi.ChatOpenParameters().shareItem(new TGBotStart(parent.msg.replyInChatId, webPage.url, false)).keepStack());
+        } else {
+          parent.tdlib().ui().openChat(new TdlibContext(parent.context(), parent.tdlib()), parent.msg.replyInChatId, new TdlibUi.ChatOpenParameters().keepStack());
+        }
         break;
       }
       case TGWebPage.TYPE_PHOTO:

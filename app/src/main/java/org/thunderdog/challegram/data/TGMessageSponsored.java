@@ -16,7 +16,7 @@ public class TGMessageSponsored extends TGMessage {
     TdApi.MessageText fMsgContent = (TdApi.MessageText) sMsg.content;
     fMsgContent.webPage = new TdApi.WebPage();
     fMsgContent.webPage.type = "telegram_adx";
-    fMsgContent.webPage.url = "";
+    fMsgContent.webPage.url = sMsg.startParameter;
 
     TdApi.Message fMsg = new TdApi.Message();
     fMsg.sender = new TdApi.MessageSenderChat(sMsg.sponsorChatId);

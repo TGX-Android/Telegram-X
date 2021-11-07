@@ -140,6 +140,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private static final int MESSAGE_FLAG_HAS_OLDER_MESSAGE = 1 << 2;
   private static final int MESSAGE_FLAG_IS_THREAD_HEADER = 1 << 3;
   private static final int MESSAGE_FLAG_BELOW_HEADER = 1 << 4;
+  private static final int MESSAGE_FLAG_FORCE_AVATAR = 1 << 5;
 
   private static final int FLAG_LAYOUT_BUILT = 1 << 5;
   private static final int FLAG_MERGE_FORWARD = 1 << 6;
@@ -489,6 +490,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return Lang.getDate(getComparingDate(), TimeUnit.SECONDS);
   }
 
+  public final void forceAvatarWhenMerging (boolean value) {
+    flags = BitwiseUtils.setFlag(flags, MESSAGE_FLAG_FORCE_AVATAR, value);
+  }
+
   public final boolean mergeWith (@Nullable TGMessage top, boolean isBottom) {
     if (top != null) {
       top.setNeedExtraPadding(false);
@@ -504,7 +509,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
     setIsBottom(true);
 
-    if (top == null || top.isThreadHeader() != isThreadHeader() || !(isEventLog() ? needHideEventDate() || (DateUtils.isSameHour(top.getComparingDate(), getComparingDate()) /*|| !(msg.content instanceof TdApiExt.MessageChatEvent)*/) : DateUtils.isSameDay(top.getComparingDate(), getComparingDate()))) {
+    if (top == null || top.isThreadHeader() != isThreadHeader() || !(isEventLog() ? needHideEventDate() || (DateUtils.isSameHour(top.getComparingDate(), getComparingDate()) /*|| !(msg.content instanceof TdApiExt.MessageChatEvent)*/) : DateUtils.isSameDay(top.getComparingDate(), getComparingDate())) || BitwiseUtils.getFlag(flags, MESSAGE_FLAG_FORCE_AVATAR)) {
       if (top != null) {
         top.setIsBottom(true);
       }
