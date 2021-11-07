@@ -1415,6 +1415,14 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       }
     }
 
+    if (!U.canReadFile(filePath)) {
+      filePath = uri.toString();
+
+      if (!U.canReadContentUri(uri)) {
+        return false;
+      }
+    }
+
     final int captionLen = rawCaption != null ? rawCaption.trim().length() : 0;
     final TdApi.FormattedText formattedText = captionLen > 0 ? new TdApi.FormattedText(rawCaption, null) : null;
     final TdApi.FormattedText messageCaption = formattedText != null && captionLen <= tdlib.maxCaptionLength() ? formattedText : null;
@@ -1493,14 +1501,6 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         }
 
         return true;
-      }
-    }
-
-    if (!U.canReadFile(filePath)) {
-      filePath = uri.toString();
-
-      if (!U.canReadContentUri(uri)) {
-        return false;
       }
     }
 

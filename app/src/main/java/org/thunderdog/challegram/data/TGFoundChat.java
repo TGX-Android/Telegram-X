@@ -144,11 +144,11 @@ public class TGFoundChat {
   }
 
   public long getChatOrUserId () {
-    return chatId != 0 ? chatId : userId;
+    return chatId != 0 ? chatId : ChatId.fromUserId(userId);
   }
 
   public long getAnyId () {
-    return chatId != 0 ? chatId : createdChatId != 0 ? createdChatId : userId;
+    return chatId != 0 ? chatId : createdChatId != 0 ? createdChatId : ChatId.fromUserId(userId);
   }
 
   private TdApi.Chat chat;

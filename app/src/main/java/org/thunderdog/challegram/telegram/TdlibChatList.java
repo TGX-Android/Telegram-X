@@ -22,7 +22,7 @@ import me.vkryl.td.ChatPosition;
 import me.vkryl.td.Td;
 
 public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterChangeListener {
-  public static class Entry {
+  public static class Entry implements Comparable<Entry> {
     public final TdApi.Chat chat;
     public TdApi.ChatPosition effectivePosition;
 
@@ -34,6 +34,13 @@ public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterCh
         position.isPinned,
         position.source
       );
+    }
+
+    @Override
+    public int compareTo (Entry other) {
+      return this.effectivePosition.order != other.effectivePosition.order ?
+        Long.compare(other.effectivePosition.order, this.effectivePosition.order) :
+        Long.compare(other.chat.id, this.chat.id);
     }
   }
 
@@ -74,10 +81,6 @@ public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterCh
 
   // State API
 
-  public boolean isLoading () {
-    return state == State.LOADING;
-  }
-
   public boolean canLoad () {
     return state == State.END_NOT_REACHED;
   }
@@ -96,6 +99,10 @@ public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterCh
 
   public int totalCount () {
     return Math.max(tdlib.getTotalChatsCount(chatList), count(null));
+  }
+
+  public boolean isEmpty (@Nullable Filter<TdApi.Chat> filter) {
+    return count(filter) == 0;
   }
 
   public int count (@Nullable Filter<TdApi.Chat> filter) {
@@ -294,9 +301,7 @@ public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterCh
 
   @Override
   public int compare (Entry o1, Entry o2) {
-    return o1.effectivePosition.order != o2.effectivePosition.order ?
-      Long.compare(o2.effectivePosition.order, o1.effectivePosition.order) :
-      Long.compare(o2.chat.id, o1.chat.id);
+    return o1.compareTo(o2);
   }
 
   private int indexOfEntry (long chatId) {

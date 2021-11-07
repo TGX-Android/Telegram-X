@@ -2214,11 +2214,30 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public void chat (long chatId, @NonNull RunnableData<TdApi.Chat> callback) {
-    TdApi.Chat chat = chat(chatId);
-    if (chat != null) {
-      callback.runWithData(chat);
+    runOnTdlibThread(() -> {
+      TdApi.Chat chat = chat(chatId);
+      if (chat != null) {
+        callback.runWithData(chat);
+      } else {
+        client().send(new TdApi.GetChat(chatId), result -> callback.runWithData(result.getConstructor() == TdApi.Chat.CONSTRUCTOR ? chat(chatId) : null));
+      }
+    });
+  }
+
+  public void chat (long chatId, Future<TdApi.Function> createFunction, @NonNull RunnableData<TdApi.Chat> callback) {
+    if (createFunction == null) {
+      chat(chatId, callback);
     } else {
-      client().send(new TdApi.GetChat(chatId), result -> callback.runWithData(result.getConstructor() == TdApi.Chat.CONSTRUCTOR ? chat(chatId) : null));
+      chat(chatId, chat -> {
+        if (chat != null) {
+          callback.runWithData(chat);
+        } else {
+          client().send(createFunction.get(), ignored -> {
+            TdApi.Chat createdChat = chat(chatId);
+            callback.runWithData(createdChat);
+          });
+        }
+      });
     }
   }
 
@@ -2394,6 +2413,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public long selfChatId () {
     return ChatId.fromUserId(myUserId());
+  }
+
+  public TdApi.Chat selfChat () {
+    return chat(selfChatId());
   }
 
   public boolean canClearHistory (long chatId) {
@@ -6161,12 +6184,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public static class ChatChange {
-    private static final int ORDER = 1;
-    private static final int SOURCE = 1 << 1;
-    private static final int PIN_STATE = 1 << 2;
+    public static final int ORDER = 1;
+    public static final int SOURCE = 1 << 1;
+    public static final int PIN_STATE = 1 << 2;
+    public static final int ALL = ORDER | SOURCE | PIN_STATE;
 
     public final TdApi.ChatPosition position;
-    private final int flags;
+    public final int flags;
 
     public ChatChange (TdApi.ChatPosition position, int flags) {
       this.position = position;
