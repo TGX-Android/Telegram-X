@@ -104,7 +104,7 @@ public class MessagesLoader implements Client.ResultHandler {
   // TODO: can there be more than 1 sponsored message?
   private List<TdApi.SponsoredMessage> getSponsoredMessages (long chatId) {
     synchronized (sponsoredMessages) {
-      if (sponsoredMessages.containsKey(chatId) && true) {
+      if (sponsoredMessages.containsKey(chatId) && tdlib.account().isDebug()) {
         return Collections.singletonList(TGMessageSponsored.generateSponsoredMessage(tdlib));
       }
 

@@ -4,11 +4,7 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 
-public class TGMessageSponsored extends TGMessage {
-  protected TGMessageSponsored (MessagesManager manager, TdApi.Message msg) {
-    super(manager, msg);
-  }
-
+public class TGMessageSponsored {
   public static TGMessage sponsoredToTgx (MessagesManager manager, long chatId, int date, TdApi.SponsoredMessage sMsg) {
     return new TGMessageText(manager, sponsoredToTd(chatId, date, sMsg), (TdApi.MessageText) sMsg.content);
   }
