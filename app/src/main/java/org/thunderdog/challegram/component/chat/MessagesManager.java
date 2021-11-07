@@ -1667,16 +1667,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     final SplitMsgIds splitMessageIds = Td.splitMessageIds(messageIds);
 
     if (splitMessageIds.hasSponsored()) {
-      if (isFocused && isOpen) {
-        if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
-          Log.i(Log.TAG_MESSAGES_LOADER, "Reading %d sponsored message: %s", messageIds.length, Arrays.toString(messageIds));
-        }
-
-        if (BuildConfig.DEBUG && Settings.instance().dontReadMessages()) {
-
-        } else {
-          tdlib.sendAll(splitMessageIds.getSponsoredQueries(chatId), loader, null);
-        }
+      if (isFocused && isOpen && !(BuildConfig.DEBUG && Settings.instance().dontReadMessages())) {
+        tdlib.sendAll(splitMessageIds.getSponsoredQueries(chatId), loader, null);
         return true;
       }
 
