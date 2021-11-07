@@ -48,6 +48,7 @@
   <item type="id" name="menu_btn_done" />
   <item type="id" name="menu_btn_forward" />
   <item type="id" name="menu_btn_copy" />
+  <item type="id" name="menu_btn_archive" />
   <item type="id" name="menu_btn_help" />
   <item type="id" name="menu_btn_reply" />
   <item type="id" name="menu_btn_report" />
