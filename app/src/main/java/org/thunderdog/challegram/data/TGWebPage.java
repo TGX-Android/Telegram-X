@@ -1131,7 +1131,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     if (rippleButton != null) {
       // c.drawRect(startX + paddingLeft, startY + instantButtonY, startX + width, startY + height, Paints.fillingPaint(0xa0ff0000));
       if (type == TYPE_TELEGRAM_AD) {
-        rippleButton.draw(view, c, (rtl ? startX : startX + paddingLeft) - lineWidth, startY + rippleButtonY);
+        rippleButton.draw(view, c, startX, startY + rippleButtonY);
       } else {
         rippleButton.draw(view, c, rtl ? startX : startX + paddingLeft, startY + rippleButtonY);
       }
