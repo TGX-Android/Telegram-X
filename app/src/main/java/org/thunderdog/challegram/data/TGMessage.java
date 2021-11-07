@@ -385,7 +385,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private String genTime () {
     if (isEventLog()) {
       return Lang.getRelativeTimestampShort(msg.date, TimeUnit.SECONDS);
-    } else if (msg.id < 0) {
+    } else if (isSponsored()) {
       return Lang.getString(R.string.SponsoredSign);
     }
     StringBuilder b = new StringBuilder();
@@ -1121,6 +1121,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (!useBubble() || separateReplyFromBubble()) {
       return false;
     }
+    if (isSponsored() && useBubbles())
+      return true;
     if (isPsa() && forceForwardedInfo())
       return true;
     if (isOutgoing() && sender.isAnonymousGroupAdmin())
@@ -3806,6 +3808,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   public final boolean isPsa () {
     return msg.forwardInfo != null && !StringUtils.isEmpty(msg.forwardInfo.publicServiceAnnouncementType) && !sender.isUser();
+  }
+
+  public final boolean isSponsored () {
+    return msg.id < 0;
   }
 
   public final int getPinnedMessageCount () {
