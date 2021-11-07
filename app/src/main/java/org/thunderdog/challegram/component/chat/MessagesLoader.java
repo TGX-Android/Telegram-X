@@ -38,6 +38,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
@@ -74,7 +75,7 @@ public class MessagesLoader implements Client.ResultHandler {
   private boolean isLoading;
   private int loadingMode;
 
-  private LongSparseArray<TdApi.SponsoredMessage[]> sponsoredMessages = new LongSparseArray<>();
+  private final LongSparseArray<List<TdApi.SponsoredMessage>> sponsoredMessages = new LongSparseArray<>();
   private boolean isLoadingSponsoredMessages;
 
   // private TGMessage edgeMessage;
@@ -99,6 +100,23 @@ public class MessagesLoader implements Client.ResultHandler {
   private @Nullable ThreadInfo messageThread;
 
   private long contextId;
+
+  // TODO: can there be more than 1 sponsored message?
+  private List<TdApi.SponsoredMessage> getSponsoredMessages (long chatId) {
+    synchronized (sponsoredMessages) {
+      return sponsoredMessages.get(chatId);
+    }
+  }
+
+  private synchronized void putSponsoredMessages (long chatId, TdApi.SponsoredMessage[] data) {
+    if (chatId == 0) {
+      return;
+    }
+
+    synchronized (sponsoredMessages) {
+      sponsoredMessages.put(chatId, Arrays.asList(data));
+    }
+  }
 
   public MessagesLoader (MessagesManager manager) {
     this.manager = manager;
@@ -960,14 +978,16 @@ public class MessagesLoader implements Client.ResultHandler {
           boolean finalAllowMoreBottom = allowMoreBottom;
 
           tdlib.client().send(new TdApi.GetChatSponsoredMessages(sourceChatId), object -> {
-            if (object.getConstructor() == TdApi.SponsoredMessages.CONSTRUCTOR) {
-              sponsoredMessages.put(sourceChatId, ((TdApi.SponsoredMessages) object).messages);
-            } else {
-              sponsoredMessages.put(sourceChatId, new TdApi.SponsoredMessage[0]);
-            }
+            UI.post(() -> {
+              if (object.getConstructor() == TdApi.SponsoredMessages.CONSTRUCTOR) {
+                putSponsoredMessages(sourceChatId, ((TdApi.SponsoredMessages) object).messages);
+              } else {
+                putSponsoredMessages(sourceChatId, new TdApi.SponsoredMessage[0]);
+              }
 
-            isLoadingSponsoredMessages = false;
-            UI.post(() -> load(fromMessageId, offset, limit, mode, finalOnlyLocal, finalAllowMoreTop, finalAllowMoreBottom));
+              isLoadingSponsoredMessages = false;
+              load(fromMessageId, offset, limit, mode, finalOnlyLocal, finalAllowMoreTop, finalAllowMoreBottom);
+            });
           });
         }
 
@@ -1389,15 +1409,25 @@ public class MessagesLoader implements Client.ResultHandler {
       }
     }
 
-    if (!items.isEmpty() && sponsoredMessages.get(chatId) != null && sponsoredMessages.get(chatId).length > 0 && !canLoadBottom) {
-      TGMessage tgm = TGMessageSponsored.sponsoredToTgx(manager, chatId, cur.getDate(), sponsoredMessages.get(chatId)[0]);
+    boolean cond1 = !items.isEmpty();
+    List<TdApi.SponsoredMessage> messagess = getSponsoredMessages(chatId);
+    boolean cond3 = messagess != null && !messagess.isEmpty();
+    boolean cond4 = !canLoadBottom;
+    if (cond1 && cond3 && cond4) {
+      TGMessage tgm = TGMessageSponsored.sponsoredToTgx(manager, chatId, cur.getDate(), messagess.get(0));
 
       tgm.setUnread(Long.MAX_VALUE);
       tgm.setShowUnreadBadge(false);
 
-      tgm.mergeWith(cur, true);
-      tgm.prepareLayout();
+      if (manager.useBubbles()) {
+        tgm.forceAvatarWhenMerging(true);
+        tgm.mergeWith(null, true);
+      } else {
+        tgm.forceAvatarWhenMerging(false);
+        tgm.mergeWith(cur, true);
+      }
 
+      tgm.prepareLayout();
       cur.setNeedExtraPadding(false);
 
       items.add(0, tgm);
