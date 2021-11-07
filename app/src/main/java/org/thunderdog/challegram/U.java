@@ -3390,7 +3390,7 @@ public class U {
   private static boolean manageStoragePermissionDeclined = false;
 
   public static boolean canManageStorage () {
-    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q || !Config.MANAGE_STORAGE_PERMISSION_AVAILABLE) {
+    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
       return true; // Q allows for requestExternalStorage
     }
 
@@ -3398,7 +3398,7 @@ public class U {
   }
 
   public static boolean isManageStorageDeclined () {
-    return manageStoragePermissionDeclined;
+    return manageStoragePermissionDeclined || (!Config.MANAGE_STORAGE_PERMISSION_AVAILABLE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R);
   }
 
   public static void setManageStorageDeclined (boolean value) {
