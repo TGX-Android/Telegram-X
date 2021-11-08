@@ -4432,15 +4432,15 @@ public class TD {
         int savedType = -1;
         switch (file.getFileType().getConstructor()) {
           case TdApi.FileTypeAnimation.CONSTRUCTOR: {
-            ok = U.copyToGalleryImpl(file.getPath(), savedType = U.TYPE_GIF);
+            ok = U.copyToGalleryImpl(file.getPath(), savedType = U.TYPE_GIF, null);
             break;
           }
           case TdApi.FileTypeVideo.CONSTRUCTOR: {
-            ok = U.copyToGalleryImpl(file.getPath(), savedType = U.TYPE_VIDEO);
+            ok = U.copyToGalleryImpl(file.getPath(), savedType = U.TYPE_VIDEO, null);
             break;
           }
           case TdApi.FileTypePhoto.CONSTRUCTOR: {
-            ok = U.copyToGalleryImpl(file.getPath(), savedType = U.TYPE_PHOTO);
+            ok = U.copyToGalleryImpl(file.getPath(), savedType = U.TYPE_PHOTO, null);
             break;
           }
           default: {

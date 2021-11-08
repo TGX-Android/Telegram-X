@@ -18,7 +18,7 @@ import android.os.PowerManager;
 import androidx.annotation.Nullable;
 
 import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.audio.AudioAttributes;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -324,7 +324,7 @@ public class ProximityManager implements Settings.RaiseToSpeakListener, SensorEv
     }
   }
 
-  public void modifyExoPlayer (SimpleExoPlayer exoPlayer, @C.AudioContentType int contentType) {
+  public void modifyExoPlayer (ExoPlayer exoPlayer, @C.AudioContentType int contentType) {
     if (needPlayThroughEarpiece()) {
       exoPlayer.setAudioAttributes(new AudioAttributes.Builder().setContentType(C.CONTENT_TYPE_SPEECH).setUsage(C.USAGE_VOICE_COMMUNICATION).build(), false);
     } else {

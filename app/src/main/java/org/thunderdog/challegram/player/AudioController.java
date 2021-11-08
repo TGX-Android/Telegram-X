@@ -90,7 +90,7 @@ public class AudioController extends BasePlaybackController implements TGAudio.P
   private int playFlags;
   private TGAudio legacyAudio;
   @Nullable
-  private SimpleExoPlayer exoPlayer;
+  private ExoPlayer exoPlayer;
   // private ConcatenatingMediaSource mediaList;
   private ArrayList<TdApi.Message> playList;
   private boolean isPlaying;
@@ -367,7 +367,7 @@ public class AudioController extends BasePlaybackController implements TGAudio.P
   }
 
   @Override
-  public void onPlayerError (PlaybackException e) {
+  public void onPlayerError (@NonNull PlaybackException e) {
     displayPlaybackError(e);
     if (playbackMode != PLAYBACK_MODE_UNSET) {
       context.player().playNextMessageInQueue();

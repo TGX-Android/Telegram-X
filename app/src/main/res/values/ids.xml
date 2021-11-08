@@ -952,6 +952,7 @@
   <item type="id" name="btn_messagePin" />
   <item type="id" name="btn_messageUnpin" />
   <item type="id" name="btn_messageShare" />
+  <item type="id" name="btn_messageDiscuss" />
   <item type="id" name="btn_messageSelect" />
   <item type="id" name="btn_messageViewList" />
   <item type="id" name="btn_messageFavoriteContent" />

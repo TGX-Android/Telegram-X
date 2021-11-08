@@ -269,7 +269,11 @@ public abstract class CameraManager <T extends View> {
     }
 
     if (!delegate.usePrivateFolder()) {
-      U.addToGallery(new File(resultFile.getFilePath()));
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        U.copyToGallery(resultFile.getFilePath(), U.TYPE_PHOTO, false, resultFile::trackCopy);
+      } else {
+        U.addToGallery(new File(resultFile.getFilePath()));
+      }
     }
 
     if (isVideo) {
@@ -286,7 +290,7 @@ public abstract class CameraManager <T extends View> {
   }
 
   public final File getOutputFile (boolean isVideo) {
-    final boolean isPrivate = delegate.usePrivateFolder();
+    final boolean isPrivate = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q || delegate.usePrivateFolder();
     if (isVideo) {
       return U.generateVideoPath(isPrivate);
     } else {

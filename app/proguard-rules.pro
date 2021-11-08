@@ -37,30 +37,6 @@
 
 # == THIRDPARTY ==
 
-# ExoPlayer/extensions/ffmpeg/proguard-rules.txt
-# NONE
-
-# ExoPlayer/extensions/flac/proguard-rules.txt
--keep class com.google.android.exoplayer2.ext.flac.FlacDecoderJni {
-  *;
-}
--keep class com.google.android.exoplayer2.extractor.FlacStreamMetadata {
-  *;
-}
--keep class com.google.android.exoplayer2.metadata.flac.PictureFrame {
-  *;
-}
-
-# ExoPlayer/extensions/opus/proguard-rules.txt
--keep class com.google.android.exoplayer2.decoder.SimpleOutputBuffer {
-  *;
-}
-
-# ExoPlayer/extensions/vp9/proguard-rules.txt
--keep class com.google.android.exoplayer2.video.VideoDecoderOutputBuffer {
-  *;
-}
-
 # MP4Parser
 -keep class * implements com.coremedia.iso.boxes.Box { *; }
 

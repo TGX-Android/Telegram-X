@@ -11,6 +11,9 @@ import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.filegen.VideoGenerationInfo;
 import org.thunderdog.challegram.mediaview.crop.CropState;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.MathUtils;
@@ -346,5 +349,17 @@ public class ImageGalleryFile extends ImageFile implements Comparable<ImageGalle
   @Override
   public byte getType () {
     return TYPE_GALLERY;
+  }
+
+  private List<File> copies;
+
+  public void trackCopy (File copy) {
+    if (copies == null)
+      copies = new ArrayList<>();
+    copies.add(copy);
+  }
+
+  public List<File> copies () {
+    return copies;
   }
 }

@@ -915,11 +915,11 @@ public class ShareController extends TelegramViewController<ShareController.Args
   protected View onCreateView (Context context) {
     list = new TdlibChatListSlice(tdlib, chatList, this, true) {
       @Override
-      protected boolean modifySlice (List<Entry> slice, int displayCount) {
+      protected boolean modifySlice (List<Entry> slice, int currentSize) {
         int index = 0;
         for (Entry entry : slice) {
           if (tdlib.isSelfChat(entry.chat)) {
-            if (displayCount > 0) {
+            if (currentSize > 0) {
               slice.remove(index);
               return true;
             } else if (index == 0 || ChatPosition.isPinned(entry.chat, chatList)) {
@@ -933,7 +933,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           }
           index++;
         }
-        if (displayCount == 0) {
+        if (currentSize == 0) {
           TdApi.Chat selfChat = tdlib.selfChat();
           if (selfChat != null && !ChatPosition.isPinned(selfChat, chatList)) {
             Entry entry = new Entry(selfChat, chatList, ChatPosition.findPosition(selfChat, chatList), true);

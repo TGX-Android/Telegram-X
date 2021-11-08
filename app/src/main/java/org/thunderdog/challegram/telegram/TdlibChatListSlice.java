@@ -240,16 +240,19 @@ public class TdlibChatListSlice {
     this.subCallback = subCallback;
     final RunnableData<List<TdlibChatList.Entry>> callback = (moreChats) -> {
       synchronized (filteredList) {
-        int addedCount = 0;
-        ((ArrayList<?>) this.filteredList).ensureCapacity(this.filteredList.size() + moreChats.size());
+        List<Entry> addedEntries = new ArrayList<>(moreChats.size());
         for (TdlibChatList.Entry entry : moreChats) {
           if ((filter == null || filter.accept(entry.chat)) && (!haveCustomModifications || indexOfChat(entry.chat.id) == -1)) {
-            this.filteredList.add(new Entry(entry.chat, entry.chatList, entry.effectivePosition, keepPositions));
-            addedCount++;
+            addedEntries.add(new Entry(entry.chat, entry.chatList, entry.effectivePosition, keepPositions));
           }
         }
-        if (addedCount == 0) {
+        if (addedEntries.isEmpty()) {
           return;
+        }
+        boolean haveCustomModifications = modifySlice(addedEntries, filteredList.size());
+        filteredList.addAll(addedEntries);
+        if (haveCustomModifications) {
+          this.haveCustomModifications = true;
         }
       }
       dispatchChats(0);
@@ -277,9 +280,6 @@ public class TdlibChatListSlice {
       final List<Entry> slice = new ArrayList<>(notifyCount);
       for (int index = 0; index < notifyCount; index++) {
         slice.add(filteredList.get(displayCount + index));
-      }
-      if (modifySlice(slice, displayCount)) {
-        haveCustomModifications = true;
       }
       subCallback.runWithData(slice);
       this.displayCount += slice.size();
@@ -321,7 +321,7 @@ public class TdlibChatListSlice {
     return filter != null || haveCustomModifications;
   }
 
-  protected boolean modifySlice (List<Entry> slice, int displayCount) {
+  protected boolean modifySlice (List<Entry> slice, int currentSize) {
     // Override in children, e.g. additional filtering and ordering
     return false;
   }

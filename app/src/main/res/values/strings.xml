@@ -368,7 +368,7 @@
   <string name="ChatContentTtlMinutes_other">Set the self-destruct timer to %1$s minutes</string>
   <string name="ChatContentTtlHours_one">Set the self-destruct timer to %1$s hour</string>
   <string name="ChatContentTtlHours_other">Set the self-destruct timer to %1$s hours</string>
-  <string name="ChatContentTtlDays_one">Set the self-destruct timer to %1$s days</string>
+  <string name="ChatContentTtlDays_one">Set the self-destruct timer to %1$s day</string>
   <string name="ChatContentTtlDays_other">Set the self-destruct timer to %1$s days</string>
   <string name="ChatContentTtlWeeks_one">Set the self-destruct timer to %1$s week</string>
   <string name="ChatContentTtlWeeks_other">Set the self-destruct timer to %1$s weeks</string>
@@ -3263,6 +3263,7 @@
   <string name="LogInAsOn">Log in as %1$s on %2$s</string>
   <string name="AllowWriteAccess">Allow %1$s to send me messages</string>
   <string name="Discuss">Discuss</string>
+  <string name="DiscussMessage">Discuss</string>
   <string name="LinkedChannel">Linked Channel</string>
   <string name="LinkedGroup">Linked Group</string>
   <string name="LinkChannel">Link a channel</string>
@@ -4011,15 +4012,17 @@
   <string name="part_SignedInXDevices_other">on %1$s devices</string>
 
   <string name="NotificationsErrorBlocked">Notifications are blocked in system settings</string>
-  <string name="NotificationsErrorBlockedCategory">Notification from this account are blocked</string>
+  <string name="NotificationsErrorBlockedCategory">Notifications from this account are blocked</string>
   <string name="NotificationsErrorBlockedMixed">Some notifications are blocked</string>
   <string name="NotificationsErrorBlockedGroup">Notifications from groups are blocked</string>
   <string name="NotificationsErrorBlockedChannel">Notifications from channels are blocked</string>
   <string name="NotificationsErrorBlockedPrivate">Notifications from private chats are blocked</string>
-  <string name="NotificationsErrorBackground">Notification may not work while app is closed</string>
+  <string name="NotificationsErrorBackground">Notifications may not work while app is closed</string>
   <string name="NotificationsErrorUnselected">Notifications from this account are disabled</string>
   <string name="NotificationsErrorError">Couldn\'t display some notifications</string>
   <string name="NotificationsErrorErrorChat">Couldn\'t display notification from %1$s</string>
+
+  <string name="TooManySelectedAccounts">At least one account must remain selected.</string>
 
   <string name="session_Device">Device: %1$s</string>
   <string name="session_App">App: %1$s</string>
