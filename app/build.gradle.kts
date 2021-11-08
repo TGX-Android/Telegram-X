@@ -88,6 +88,18 @@ android {
         }
     }
 
+    buildTypes {
+        getByName("release") {
+            Config.EXOPLAYER_EXTENSIONS.forEach { module ->
+                val proguardFile = file("../thirdparty/ExoPlayer/extensions/${module}/proguard-rules.txt")
+                if (proguardFile.exists()) {
+                    project.logger.lifecycle("Applying thirdparty/ExoPlayer/extensions/${module}/proguard-rules.pro")
+                    proguardFile(proguardFile)
+                }
+            }
+        }
+    }
+
     flavorDimensions.add("abi")
     productFlavors {
         Abi.VARIANTS.forEach { (abi, variant) ->
