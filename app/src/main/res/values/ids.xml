@@ -215,6 +215,7 @@
   <item type="id" name="controller_backgroundGrid" />
   <item type="id" name="controller_chatLinks" />
   <item type="id" name="controller_chatLinkMembers" />
+  <item type="id" name="controller_sponsoredMessagesInfo" />
 
   <item type="id" name="separator" />
 

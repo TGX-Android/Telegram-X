@@ -698,6 +698,10 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
     // unselect all selected shit
   }
 
+  protected ViewGroup createCustomBottomBar () {
+    return null;
+  }
+
   @Override
   public void destroy () {
     super.destroy();
