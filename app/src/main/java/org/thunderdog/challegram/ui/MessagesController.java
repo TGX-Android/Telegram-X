@@ -2815,7 +2815,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (TD.isLeft(status)) {
         showBottomButton(BOTTOM_ACTION_FOLLOW, 0, isUpdate);
       } else {
-        showBottomButton(BOTTOM_ACTION_TOGGLE_MUTE, 0, isUpdate);
+        TdApi.SupergroupFullInfo info = tdlib.cache().supergroupFull(ChatId.toSupergroupId(chat.id));
+        if (info != null && info.linkedChatId != 0) {
+          showBottomButton(BOTTOM_ACTION_DISCUSS, info.linkedChatId, isUpdate);
+        } else {
+          showBottomButton(BOTTOM_ACTION_TOGGLE_MUTE, 0, isUpdate);
+        }
       }
     } else if (tdlib.isRepliesChat(chat.id)) {
       setInputVisible(false, false);
@@ -4003,7 +4008,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
     }
 
-    if (linkedChatId != 0) {
+    if (linkedChatId != 0 && bottomButtonAction != BOTTOM_ACTION_DISCUSS) {
       ids.append(R.id.btn_openLinkedChat);
       strings.append(tdlib.isChannel(getChatId()) ? R.string.LinkedGroup : R.string.LinkedChannel);
     }
@@ -4936,6 +4941,36 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         return true;
       }
+      case R.id.btn_messageDiscuss: {
+        if (selectedMessage != null) {
+          TdApi.Message message = selectedMessage.findMessageWithThread();
+          if (message != null) {
+            tdlib.client().send(new TdApi.GetMessageThread(message.chatId, message.id), result -> {
+              switch (result.getConstructor()) {
+                case TdApi.MessageThreadInfo.CONSTRUCTOR: {
+                  TdApi.MessageThreadInfo info = (TdApi.MessageThreadInfo) result;
+                  runOnUiThreadOptional(() -> {
+                    if (getChatId() == message.chatId && info.messages.length > 0) {
+                      long[] otherMessageIds = info.messages.length > 1 ? new long[info.messages.length - 1] : null;
+                      for (int i = 1; i < info.messages.length; i++) {
+                        otherMessageIds[i] = info.messages[i].id;
+                      }
+                      tdlib.ui().openMessage(this, info.chatId, new MessageId(info.chatId, info.messages[0].id, otherMessageIds), new TdlibUi.UrlOpenParameters().sourceMessage(new MessageId(message.chatId, message.id)).controller(this).fromChat(message.chatId));
+                    }
+                  });
+                  break;
+                }
+                case TdApi.Error.CONSTRUCTOR: {
+                  UI.showError(result);
+                  break;
+                }
+              }
+            });
+          }
+          clearSelectedMessage();
+        }
+        return true;
+      }
       case R.id.btn_messageShare: {
         if (selectedMessage != null) {
           shareMessages(selectedMessage.getChatId(), selectedMessage.getAllMessages());
@@ -5061,8 +5096,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private static final int BOTTOM_ACTION_FOLLOW = 1;
   private static final int BOTTOM_ACTION_TOGGLE_MUTE = 2;
   private static final int BOTTOM_ACTION_UNPIN_ALL = 3;
-  private static final int BOTTOM_ACTION_TEST = 4;
+  private static final int BOTTOM_ACTION_DISCUSS = 4;
   private static final int BOTTOM_ACTION_APPLY_WALLPAPER = 5;
+  private static final int BOTTOM_ACTION_TEST = 100;
 
   private int bottomButtonAction;
   private boolean needBigPadding;
@@ -5087,10 +5123,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
         bottomBar.setAction(R.id.btn_follow, Lang.getString(R.string.Follow),  R.drawable.baseline_group_add_24, animateButtonContent);
         bottomBar.clearPreviewChat();
         break;
+      case BOTTOM_ACTION_DISCUSS:
+        bottomBar.setAction(R.id.btn_openLinkedChat, Lang.getString(R.string.Discuss), R.drawable.baseline_chat_bubble_24, animateButtonContent);
+        bottomBar.setPreviewChatId(null, bottomButtonData, null);
+        break;
       case BOTTOM_ACTION_TOGGLE_MUTE: {
         boolean notificationsEnabled = tdlib.chatNotificationsEnabled(getChatId());
         bottomBar.setAction(R.id.btn_mute, Lang.getString(notificationsEnabled ? R.string.Mute : R.string.Unmute), notificationsEnabled ? R.drawable.baseline_notifications_off_24 : R.drawable.baseline_notifications_active_24, animateButtonContent);
-        bottomBar.setPreviewChatId(null, bottomButtonData, null);
+        bottomBar.clearPreviewChat();
         break;
       }
       case BOTTOM_ACTION_UNPIN_ALL: {

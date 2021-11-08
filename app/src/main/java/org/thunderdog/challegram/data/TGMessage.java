@@ -720,6 +720,19 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return needCommentButton() ? (!useBubble() || useCircleBubble() ? COMMENT_MODE_DETACHED_BUTTON : COMMENT_MODE_BUTTON) : COMMENT_MODE_NONE;
   }
 
+  public final TdApi.Message findMessageWithThread () {
+    synchronized (this) {
+      if (combinedMessages != null && !combinedMessages.isEmpty()) {
+        for (TdApi.Message message : combinedMessages) {
+          if (message.canGetMessageThread) {
+            return message;
+          }
+        }
+      }
+      return msg.canGetMessageThread ? msg : null;
+    }
+  }
+
   protected final boolean needCommentButton () {
     if (!Config.COMMENTS_SUPPORTED || !msg.isChannelPost || isScheduled() || !allowInteraction()) {
       return false;

@@ -3262,6 +3262,7 @@
   <string name="LogInAsOn">Log in as %1$s on %2$s</string>
   <string name="AllowWriteAccess">Allow %1$s to send me messages</string>
   <string name="Discuss">Discuss</string>
+  <string name="DiscussMessage">Discuss</string>
   <string name="LinkedChannel">Linked Channel</string>
   <string name="LinkedGroup">Linked Group</string>
   <string name="LinkChannel">Link a channel</string>

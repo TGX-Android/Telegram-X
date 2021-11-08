@@ -561,10 +561,19 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         icons.append(R.drawable.baseline_reply_24);
       }
 
-      if (Config.COMMENTS_SUPPORTED && msg.getReplyCount() > 0) {
-        ids.append(R.id.btn_messageReplies);
-        strings.append(Lang.plural(msg.getSender().isChannel() ? R.string.ViewXComments : R.string.ViewXReplies, msg.getReplyCount()));
-        icons.append(msg.getSender().isChannel() ? R.drawable.outline_templarian_comment_multiple_24 : R.drawable.baseline_reply_all_24);
+      if (Config.COMMENTS_SUPPORTED) {
+        if (msg.getReplyCount() > 0) {
+          ids.append(R.id.btn_messageReplies);
+          strings.append(Lang.plural(msg.getSender().isChannel() ? R.string.ViewXComments : R.string.ViewXReplies, msg.getReplyCount()));
+          icons.append(msg.getSender().isChannel() ? R.drawable.outline_templarian_comment_multiple_24 : R.drawable.baseline_reply_all_24);
+        }
+      } else {
+        TdApi.Message messageWithThread = msg.findMessageWithThread();
+        if (messageWithThread != null) {
+          ids.append(R.id.btn_messageDiscuss);
+          strings.append(R.string.DiscussMessage);
+          icons.append(R.drawable.outline_templarian_comment_multiple_24);
+        }
       }
 
       if (msg.canBeForwarded() && isSent) {
