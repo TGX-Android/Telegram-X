@@ -724,7 +724,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     synchronized (this) {
       if (combinedMessages != null && !combinedMessages.isEmpty()) {
         for (TdApi.Message message : combinedMessages) {
-          if (message.canGetMessageThread) {
+          if (message.canGetMessageThread && (message.interactionInfo != null && message.interactionInfo.replyInfo != null)) {
             return message;
           }
         }

@@ -569,7 +569,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         }
       } else {
         TdApi.Message messageWithThread = msg.findMessageWithThread();
-        if (messageWithThread != null) {
+        if (messageWithThread != null && messageWithThread.isChannelPost) {
           ids.append(R.id.btn_messageDiscuss);
           strings.append(R.string.DiscussMessage);
           icons.append(R.drawable.outline_templarian_comment_multiple_24);
