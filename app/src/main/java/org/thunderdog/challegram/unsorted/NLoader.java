@@ -8,6 +8,7 @@ import androidx.annotation.Nullable;
 
 import com.getkeepsafe.relinker.ReLinker;
 import com.getkeepsafe.relinker.ReLinkerInstance;
+import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ext.ffmpeg.FfmpegLibrary;
 import com.google.android.exoplayer2.ext.flac.FlacLibrary;
 import com.google.android.exoplayer2.ext.opus.OpusLibrary;
@@ -72,8 +73,8 @@ public class NLoader implements ReLinker.Logger {
           android.util.Log.v("tgx", "Loaded " + library + " in " + (SystemClock.uptimeMillis() - ms) + "ms");
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-          OpusLibrary.setLibraries(null);
-          VpxLibrary.setLibraries(null);
+          OpusLibrary.setLibraries(C.CRYPTO_TYPE_UNSUPPORTED);
+          VpxLibrary.setLibraries(C.CRYPTO_TYPE_UNSUPPORTED);
           FlacLibrary.setLibraries();
           FfmpegLibrary.setLibraries();
           if (BuildConfig.DEBUG) {

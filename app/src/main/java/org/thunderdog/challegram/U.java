@@ -72,10 +72,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.DefaultRenderersFactory;
 import com.google.android.exoplayer2.ExoPlaybackException;
+import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.PlaybackException;
-import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.RenderersFactory;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
+import com.google.android.exoplayer2.source.DefaultMediaSourceFactory;
 import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.MediaSourceFactory;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 import com.google.android.exoplayer2.source.UnrecognizedInputFormatException;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
@@ -690,12 +693,14 @@ public class U {
     return app_installed;
   }
 
-  public static SimpleExoPlayer newExoPlayer (Context context, boolean preferExtensions) {
+  public static ExoPlayer newExoPlayer (Context context, boolean preferExtensions) {
     // new AdaptiveVideoTrackSelection.Factory(new DefaultBandwidthMeter())
     // DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER
     // DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON
-    int extensionMode = preferExtensions || org.thunderdog.challegram.unsorted.Settings.instance().getNewSetting(org.thunderdog.challegram.unsorted.Settings.SETTING_FLAG_FORCE_EXO_PLAYER_EXTENSIONS) ? DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER : DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON;
-    return new SimpleExoPlayer.Builder(context, new DefaultRenderersFactory(context).setExtensionRendererMode(extensionMode), new DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true))
+    final int extensionMode = preferExtensions || org.thunderdog.challegram.unsorted.Settings.instance().getNewSetting(org.thunderdog.challegram.unsorted.Settings.SETTING_FLAG_FORCE_EXO_PLAYER_EXTENSIONS) ? DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER : DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON;
+    final RenderersFactory renderersFactory = new DefaultRenderersFactory(context).setExtensionRendererMode(extensionMode);
+    final MediaSourceFactory mediaSourceFactory = new DefaultMediaSourceFactory(context, new DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true));
+    return new ExoPlayer.Builder(context, renderersFactory, mediaSourceFactory)
       .setTrackSelector(new DefaultTrackSelector(context))
       .setLoadControl(new DefaultLoadControl())
       .build();
