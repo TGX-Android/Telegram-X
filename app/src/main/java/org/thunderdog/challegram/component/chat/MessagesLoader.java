@@ -104,10 +104,6 @@ public class MessagesLoader implements Client.ResultHandler {
   // TODO: can there be more than 1 sponsored message?
   private List<TdApi.SponsoredMessage> getSponsoredMessages (long chatId) {
     synchronized (sponsoredMessages) {
-      if (sponsoredMessages.containsKey(chatId) && tdlib.account().isDebug()) {
-        return Collections.singletonList(TGMessageSponsored.generateSponsoredMessage(tdlib));
-      }
-
       return sponsoredMessages.get(chatId);
     }
   }
@@ -115,6 +111,10 @@ public class MessagesLoader implements Client.ResultHandler {
   private synchronized void putSponsoredMessages (long chatId, TdApi.SponsoredMessage[] data) {
     if (chatId == 0) {
       return;
+    }
+
+    if (tdlib.account().isDebug() && data.length == 0) {
+      data = new TdApi.SponsoredMessage[] { TGMessageSponsored.generateSponsoredMessage(tdlib) };
     }
 
     synchronized (sponsoredMessages) {
