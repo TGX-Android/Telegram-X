@@ -1740,15 +1740,18 @@ public class U {
   }
 
   public static void copyToGallery (final String fromPath, final int type) {
-    copyToGallery(fromPath, type, true);
+    copyToGallery(fromPath, type, true, null);
   }
 
-  public static boolean copyToGalleryImpl (final String fromPath, int type) {
+  public static boolean copyToGalleryImpl (final String fromPath, int type, RunnableData<File> onSaved) {
     File file = generateMediaPath(fromPath, type);
     if (file != null) {
       try {
         if (FileUtils.copy(new File(fromPath), file)) {
           addToGallery(file);
+          if (onSaved != null) {
+            onSaved.runWithData(file);
+          }
           return true;
         } else {
           Log.w("Cannot copy file to gallery");
@@ -1760,18 +1763,18 @@ public class U {
     return false;
   }
 
-  public static void copyToGallery (final String fromPath, final int type, boolean needAlert) {
+  public static void copyToGallery (final String fromPath, final int type, boolean needAlert, RunnableData<File> onSaved) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && needsPermissionRequest(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
       requestPermissions(new String[] {Manifest.permission.WRITE_EXTERNAL_STORAGE}, result -> {
         if (result) {
-          copyToGallery(fromPath, type, needAlert);
+          copyToGallery(fromPath, type, needAlert, onSaved);
         }
       });
       return;
     }
     if (fromPath != null && !fromPath.isEmpty()) {
       Background.instance().post(() -> {
-        if (copyToGalleryImpl(fromPath, type)) {
+        if (copyToGalleryImpl(fromPath, type, onSaved)) {
           if (needAlert) {
             switch (type) {
               case TYPE_GIF:

@@ -758,6 +758,13 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
       }
     }
     U.deleteGalleyFile(new File(sourceGalleryFile.getFilePath()));
+    List<File> extraFiles = sourceGalleryFile.copies();
+    if (extraFiles != null) {
+      for (File file : extraFiles) {
+        U.deleteGalleyFile(file);
+      }
+      extraFiles.clear();
+    }
   }
 
   private ImageFilteredFile filteredFile;
