@@ -83,6 +83,7 @@ public class TGInlineKeyboard {
 
   public interface ClickListener {
     void onClick (View view, TGInlineKeyboard keyboard, Button button);
+    default boolean onLongClick (View view, TGInlineKeyboard keyboard, Button button) { return false; }
   }
 
   public TGInlineKeyboard (@NonNull TGMessage parent, boolean owned) {
@@ -802,6 +803,8 @@ public class TGInlineKeyboard {
                 }
                 break;
             }
+          } else if (isCustom && clickListener != null) {
+            return clickListener.onLongClick(view, context, this);
           }
         }
       }

@@ -29,6 +29,7 @@ import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
+import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -936,6 +937,25 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     } else {
       open(view, false);
     }
+  }
+
+  @Override
+  public boolean onLongClick (View view, TGInlineKeyboard keyboard, TGInlineKeyboard.Button button) {
+    if (type == TYPE_TELEGRAM_AD) {
+      ViewController<?> c = parent.context().navigation().getCurrentStackItem();
+
+      if (c == null) {
+        return false;
+      }
+
+      boolean isBot = parent.tdlib.isBotChat(parent.msg.replyInChatId);
+      String username = parent.tdlib.chatUsername(parent.msg.replyInChatId);
+      String url = isBot ? parent.tdlib.tMeStartUrl(username, webPage.url, false) : parent.tdlib.tMeUrl(username);
+
+      c.showCopyUrlOptions(url, parent.openParameters(), null);
+    }
+
+    return false;
   }
 
   public int getLastLineWidth () {

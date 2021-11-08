@@ -2234,6 +2234,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   @CallSuper
   public boolean performLongPress (View view, float x, float y) {
+    if (isSponsored()) {
+      return false;
+    }
     boolean result = false;
     if (inlineKeyboard != null) {
       result = inlineKeyboard.performLongPress(view);
@@ -3943,7 +3946,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public final boolean canBeSelected () {
-    return (!isNotSent() || canResend()) && (flags & FLAG_UNSUPPORTED) == 0 && !(this instanceof TGMessageChat) && allowInteraction();
+    return (!isNotSent() || canResend()) && (flags & FLAG_UNSUPPORTED) == 0 && !(this instanceof TGMessageChat) && allowInteraction() && !isSponsored();
   }
 
   public boolean canEditText () {
