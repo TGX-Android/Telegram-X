@@ -4020,6 +4020,8 @@
   <string name="NotificationsErrorError">Couldn\'t display some notifications</string>
   <string name="NotificationsErrorErrorChat">Couldn\'t display notification from %1$s</string>
 
+  <string name="TooManySelectedAccounts">At least one account must remain selected.</string>
+
   <string name="session_Device">Device: %1$s</string>
   <string name="session_App">App: %1$s</string>
   <string name="session_System">System: %1$s</string>

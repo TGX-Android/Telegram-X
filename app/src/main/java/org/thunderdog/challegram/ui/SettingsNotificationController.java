@@ -1340,6 +1340,14 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     final int viewId = v.getId();
     if (item.getViewType() == ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR) {
       TdlibAccount selectedAccount = (TdlibAccount) item.getData();
+      if (item.isSelected() && tdlib.context().getNumberOfAccountsWithEnabledNotifications() == 1) {
+        context.tooltipManager()
+          .builder(((SettingView) v).findCheckBox())
+          .show(this, tdlib, R.drawable.baseline_error_24,
+            Lang.getString(R.string.TooManySelectedAccounts)
+          );
+        return;
+      }
       boolean toggleValue = adapter.toggleView(v);
       adapter.processToggle(v, item, toggleValue);
       tdlib.context().setForceEnableNotifications(selectedAccount.id, toggleValue);
