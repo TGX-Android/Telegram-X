@@ -962,10 +962,16 @@ public class MediaLayout extends FrameLayoutFix implements
     hide(true);
   }
 
-  public void sendFilesMixed (ArrayList<String> files, ArrayList<MediaBottomFilesController.MusicEntry> musicFiles, TdApi.MessageSendOptions options) {
+  public void sendFilesMixed (List<String> files, ArrayList<MediaBottomFilesController.MusicEntry> musicFiles, TdApi.MessageSendOptions options, boolean isMultiSend) {
     if ((files == null || files.isEmpty()) && (musicFiles == null || musicFiles.isEmpty()))
       return;
-    Settings.instance().setNeedGroupMedia(needGroupMedia);
+    boolean needGroupMedia;
+    if (isMultiSend) {
+      needGroupMedia = this.needGroupMedia;
+      Settings.instance().setNeedGroupMedia(needGroupMedia);
+    } else {
+      needGroupMedia = !Settings.instance().rememberAlbumSetting() || Settings.instance().needGroupMedia();
+    }
     if (target != null) {
       if (files != null) {
         target.sendFiles(files, needGroupMedia, true, options.disableNotification, options.schedulingState);
@@ -974,7 +980,7 @@ public class MediaLayout extends FrameLayoutFix implements
         target.sendMusic(musicFiles, needGroupMedia, true, options.disableNotification, options.schedulingState);
       }
     }
-    hide(true);
+    hide(isMultiSend);
   }
 
   public void sendFile (String file) {

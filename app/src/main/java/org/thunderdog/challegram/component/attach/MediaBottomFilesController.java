@@ -1,5 +1,9 @@
 package org.thunderdog.challegram.component.attach;
 
+import android.annotation.TargetApi;
+import android.app.Activity;
+import android.content.ActivityNotFoundException;
+import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -11,7 +15,10 @@ import android.os.StatFs;
 import android.provider.MediaStore;
 import android.view.View;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -33,6 +40,7 @@ import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -44,7 +52,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.DateUtils;
@@ -88,19 +98,57 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
     }
   }
 
+  @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
   private void showSystemPicker () {
+    RunnableData<Set<Uri>> callback = uris -> {
+      if (uris != null && !uris.isEmpty()) {
+        List<String> files = new ArrayList<>(uris.size());
+        for (Uri uri : uris) {
+          String filePath = U.tryResolveFilePath(uri);
+          if (!StringUtils.isEmpty(filePath) && U.canReadFile(filePath)) {
+            files.add(filePath);
+          } else {
+            files.add(uri.toString());
+          }
+        }
+        mediaLayout.pickDateOrProceed((forceDisableNotification, schedulingState, disableMarkdown) ->
+          mediaLayout.sendFilesMixed(files, null, new TdApi.MessageSendOptions(forceDisableNotification, false, schedulingState), false)
+        );
+      }
+    };
+    final Intent intent = new Intent(Intent.ACTION_GET_CONTENT)
+      .addCategory(Intent.CATEGORY_OPENABLE)
+      .setType("*/*")
+      .putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+      .putExtra("android.content.extra.SHOW_ADVANCED", true);
+    context.putActivityResultHandler(Intents.ACTIVITY_RESULT_FILES, (requestCode, resultCode, data) -> {
+      if (resultCode == Activity.RESULT_OK) {
+        // Use a LinkedHashSet to maintain any ordering that may be
+        // present in the ClipData
+        LinkedHashSet<Uri> uris = new LinkedHashSet<>();
+        Uri dataUri = data.getData();
+        if (dataUri != null) {
+          uris.add(dataUri);
+        }
+        ClipData clipData = data.getClipData();
+        if (clipData != null) {
+          for (int i = 0; i < clipData.getItemCount(); i++) {
+            Uri uri = clipData.getItemAt(i).getUri();
+            if (uri != null) {
+              uris.add(uri);
+            }
+          }
+        }
+        if (!uris.isEmpty()) {
+          callback.runWithData(uris);
+        }
+      }
+    });
     try {
-      Intent intent;
-
-      intent = new Intent(Intent.ACTION_GET_CONTENT);
-      intent.setType("*/*");
-      intent.putExtra("android.content.extra.SHOW_ADVANCED", true);
-      intent.addCategory(Intent.CATEGORY_OPENABLE);
-
-      UI.startActivityForResult(intent, Intents.ACTIVITY_RESULT_SEND_SAF_FILE);
-      mediaLayout.hide(false);
-    } catch (Throwable t) {
-      Log.w("Cannot open picker intent", t);
+      context.startActivityForResult(intent, Intents.ACTIVITY_RESULT_FILES);
+    } catch (ActivityNotFoundException e) {
+      UI.showToast(R.string.NoFilePicker, Toast.LENGTH_SHORT);
+      Log.i(e);
     }
   }
 
@@ -1102,7 +1150,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
       return;
     }
 
-    mediaLayout.sendFilesMixed(files, musicEntries, options);
+    mediaLayout.sendFilesMixed(files, musicEntries, options, true);
   }
 
   @Override
