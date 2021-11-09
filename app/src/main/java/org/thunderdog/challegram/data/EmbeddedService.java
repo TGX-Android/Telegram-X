@@ -130,7 +130,7 @@ public class EmbeddedService {
   }
 
   public static EmbeddedService parse (TdApi.WebPage webPage) {
-    EmbeddedService service = parse(webPage.url, webPage.embedWidth, webPage.embedHeight, webPage.photo);
+    EmbeddedService service = parse(webPage.url, webPage.embedWidth, webPage.embedHeight, webPage.photo, webPage.embedUrl);
     if (service != null)
       return service;
     if ("iframe".equals(webPage.embedType) && !StringUtils.isEmpty(webPage.embedUrl)) {
@@ -147,10 +147,10 @@ public class EmbeddedService {
   }
 
   public static EmbeddedService parse (TdApi.PageBlockEmbedded embedded) {
-    return parse(embedded.url, embedded.width, embedded.height, embedded.posterPhoto);
+    return parse(embedded.url, embedded.width, embedded.height, embedded.posterPhoto, null);
   }
 
-  private static EmbeddedService parse (String webPageUrl, int width, int height, TdApi.Photo thumbnail) {
+  private static EmbeddedService parse (String webPageUrl, int width, int height, TdApi.Photo thumbnail, @Nullable String embedUrl) {
     if (StringUtils.isEmpty(webPageUrl))
       return null;
     try {
@@ -168,41 +168,19 @@ public class EmbeddedService {
       String viewUrl = null;
       String viewIdentifier = null;
       switch (host) {
+        case "youtu.be":
         case "youtube.com": {
+          // https://youtu.be/zg-HMBwYckc
           // https://www.youtube.com/embed/zg-HMBwYckc
           // https://www.youtube.com/watch?v=zg-HMBwYckc&feature=player_embedded
           viewType = TYPE_YOUTUBE;
-          if (segments.length == 2 && "embed".equals(segments[0]) && !StringUtils.isEmpty(segments[1])) {
-            viewIdentifier = segments[1];
-            String query = uri.getEncodedQuery();
-            viewUrl = "https://youtube.com/watch?v=" + viewIdentifier;
-            if (!StringUtils.isEmpty(query)) {
-              viewUrl += "&" + query;
-            }
-          } else if (segments.length == 1 && "watch".equals(segments[0]) && !StringUtils.isEmpty(viewIdentifier = uri.getQueryParameter("v"))) {
-            viewUrl = webPageUrl;
-          }
-          break;
-        }
-        case "youtu.be": {
-          // https://youtu.be/zg-HMBwYckc
-          viewType = TYPE_YOUTUBE;
-          if (segments.length == 1 && !StringUtils.isEmpty(segments[0])) {
-            viewIdentifier = segments[0];
-            String query = uri.getEncodedQuery();
-            viewUrl = "https://youtube.com/watch?v=" + viewIdentifier;
-            if (!StringUtils.isEmpty(query)) {
-              viewUrl += "&" + query;
-            }
-          }
+          viewUrl = embedUrl;
           break;
         }
         case "coub.com": {
-          if (segments.length == 2 && !StringUtils.isEmpty(segments[1])) {
-            if ("view".equals(segments[0])) {
-              viewType = TYPE_CUSTOM_EMBED;
-              viewUrl = "https://coub.com/embed/" + segments[1] + "?muted=false&autostart=true&originalSize=false&startWithHD=false";
-            }
+          if (segments.length == 2 && !StringUtils.isEmpty(segments[1]) && "view".equals(segments[0])) {
+            viewType = TYPE_CUSTOM_EMBED;
+            viewUrl = "https://coub.com/embed/" + segments[1] + "?muted=false&autostart=true&originalSize=false&startWithHD=false";
           }
           break;
         }
