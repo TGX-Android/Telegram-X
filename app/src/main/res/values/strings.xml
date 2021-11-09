@@ -3989,20 +3989,20 @@
   <string name="SignedInNoOtherSessions">You have no other sessions</string>
   <!-- Just one other session -->
   <string name="SignedInOtherDevice">You are also signed in on %1$s</string>
-  <string name="SignedInOtherSession">You are also signed in %1$s</string>
+  <string name="SignedInOtherSession">You are also signed in on %1$s</string>
   <!-- All sessions from other devices, each device has 1 session, no other sessions on current device -->
   <string name="SignedInXOtherDevices_one">You are signed in on %1$s other device</string>
   <string name="SignedInXOtherDevices_other">You are signed in on %1$s other devices</string>
   <!-- All session from current device, no sessions on other devices -->
-  <string name="SignedInXOtherApps_one">You are signed in %1$s other app</string>
-  <string name="SignedInXOtherApps_other">You are signed in %1$s other apps</string>
+  <string name="SignedInXOtherApps_one">You are signed in on %1$s other app</string>
+  <string name="SignedInXOtherApps_other">You are signed in on %1$s other apps</string>
   <!-- %1$s — SignedInXApp, %1$s — SignedInXOtherDevices or SignedInXDevices -->
   <string name="format_signedInAppsOnDevices">%1$s %2$s</string>
   <!-- All session from other devices -->
-  <string name="part_SignedInXApps_one">You are signed in %1$s app</string>
-  <string name="part_SignedInXApps_other">You are signed in %1$s apps</string>
-  <string name="part_SignedInXOtherApps_one">You are signed in %1$s other app</string>
-  <string name="part_SignedInXOtherApps_other">You are signed in %1$s other apps</string>
+  <string name="part_SignedInXApps_one">You are signed in on %1$s app</string>
+  <string name="part_SignedInXApps_other">You are signed in on %1$s apps</string>
+  <string name="part_SignedInXOtherApps_one">You are signed in on %1$s other app</string>
+  <string name="part_SignedInXOtherApps_other">You are signed in on %1$s other apps</string>
   <!-- Option 1: some devices have more than 1 session, no other session on current devices -->
   <string name="part_SignedInXOtherDevices_one">on %1$s other device</string>
   <string name="part_SignedInXOtherDevices_other">on %1$s other devices</string>
