@@ -13,10 +13,32 @@ import android.widget.ImageView;
 import com.google.android.youtube.player.YouTubeInitializationResult;
 
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.tool.UI;
+
+import me.vkryl.android.DeviceUtils;
 
 public class YouTube {
   public static final float MIN_WIDTH_DP = 200f;
   public static final float MIN_HEIGHT_DP = 110f;
+
+  public static boolean isYoutubeAppInstalled () {
+    return DeviceUtils.isAppInstalled(UI.getContext(), "com.google.android.youtube");
+  }
+
+  public static boolean isUnrecoverableError (YouTubeInitializationResult error) {
+    switch (error) {
+      case CLIENT_LIBRARY_UPDATE_REQUIRED:
+      case DEVELOPER_KEY_INVALID:
+      case INVALID_APPLICATION_SIGNATURE:
+      case SERVICE_INVALID:
+      case SERVICE_MISSING:
+      case SERVICE_VERSION_UPDATE_REQUIRED:
+      case UNKNOWN_ERROR:
+        return true;
+      default:
+        return false;
+    }
+  }
 
   public static String getError (YouTubeInitializationResult error) {
     if (error == null) {
