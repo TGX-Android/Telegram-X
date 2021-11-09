@@ -72,7 +72,6 @@ public class SponsoredMessagesInfoController extends MediaBottomBaseController<V
     sa.setItems(new ListItem[] {
       new ListItem(ListItem.TYPE_SHADOW_TOP),
       new ListItem(ListItem.TYPE_SETTING, R.id.btn_close, R.drawable.baseline_check_circle_24, R.string.Continue).setTextColorId(R.id.theme_color_textNeutral),
-      new ListItem(ListItem.TYPE_SEPARATOR_FULL),
       new ListItem(ListItem.TYPE_SETTING, R.id.btn_openLink, R.drawable.baseline_help_24, R.string.SponsoredInfoAction),
     }, false);
     return rv;
