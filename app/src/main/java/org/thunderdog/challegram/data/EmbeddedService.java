@@ -255,6 +255,26 @@ public class EmbeddedService {
           }
           break;
         }
+        case "tidal.com": {
+          if (segments.length == 3 && segments[0].equals("browse") && !StringUtils.isEmpty(segments[2])) {
+            String dataType = segments[1];
+
+            if (dataType.equals("track") || dataType.equals("album") || dataType.equals("playlist")) {
+              width = height = Screen.dp(250);
+              viewType = TYPE_CUSTOM_EMBED;
+              viewUrl = new Uri.Builder()
+                .scheme("https")
+                .authority("embed.tidal.com")
+                .path("/" + dataType +  "s/" + segments[2])
+                .appendQueryParameter("layout", "gridify")
+                .appendQueryParameter("disableAnalytics", "true")
+                .build()
+                .toString();
+            }
+          }
+
+          break;
+        }
         /*case "coub.com": {
           // https://coub.com/embed/20k5cb?muted=false&autostart=false&originalSize=false&startWithHD=false
           // https://coub.com/view/20k5cb
