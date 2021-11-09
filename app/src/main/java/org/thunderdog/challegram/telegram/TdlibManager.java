@@ -536,9 +536,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   }
 
   public void onUpdateNotifications (@Nullable TdApi.NotificationSettingsScope scope, @Nullable Filter<TdlibAccount> filter) {
-    // FIXME implement without waking up each TDLib instance?
     for (TdlibAccount account : this) {
-      if (filter == null || filter.accept(account)) {
+      if ((filter == null || filter.accept(account)) && account.haveVisibleNotifications()) {
         account.tdlib().notifications().onUpdateNotifications(scope);
       }
     }
@@ -1284,6 +1283,13 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }
   }
 
+  public void setHavePendingNotifications (int accountId, boolean havePendingNotifications) {
+    TdlibAccount account = account(accountId);
+    if (account.setHaveVisibleNotifications(havePendingNotifications)) {
+      saveAccountFlags(account);
+    }
+  }
+
   void setLoggingOut (int accountId, boolean isLoggingOut) {
     TdlibAccount account = account(accountId);
     if (account.setLoggingOut(isLoggingOut)) {
@@ -1618,9 +1624,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   }
 
   public int getNumberOfAccountsWithEnabledNotifications () {
-    List<TdlibAccount> accounts = accountsQueue();
     int selectedCount = 0;
-    for (TdlibAccount account : accounts) {
+    for (TdlibAccount account : this) {
       if (account.forceEnableNotifications()) {
         selectedCount++;
       }
