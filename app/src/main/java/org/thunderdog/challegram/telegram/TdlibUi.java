@@ -34,6 +34,7 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.dialogs.ChatView;
+import org.thunderdog.challegram.component.preview.PreviewLayout;
 import org.thunderdog.challegram.component.sticker.StickerSetWrap;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
@@ -129,7 +130,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.ColorUtils;
@@ -2379,8 +2382,14 @@ public class TdlibUi extends Handler {
   public static final int INSTANT_VIEW_DISABLED = 0;
   public static final int INSTANT_VIEW_ENABLED = 1;
 
+  public static final int EMBED_VIEW_UNSPECIFIED = -1;
+  public static final int EMBED_VIEW_ENABLED = 0;
+  public static final int EMBED_VIEW_DISABLED = 1;
+
   public static class UrlOpenParameters implements TGMessage.MessageIdChangeListener {
     public int instantViewMode = INSTANT_VIEW_UNSPECIFIED;
+    public int embedViewMode = EMBED_VIEW_UNSPECIFIED;
+
     public MessageId messageId;
     public String refererUrl, instantViewFallbackUrl;
     public TooltipOverlayView.TooltipBuilder tooltip;
@@ -2395,6 +2404,7 @@ public class TdlibUi extends Handler {
     public UrlOpenParameters (@Nullable UrlOpenParameters options) {
       if (options != null) {
         this.instantViewMode = options.instantViewMode;
+        this.embedViewMode = options.embedViewMode;
         this.messageId = options.messageId;
         this.refererUrl = options.refererUrl;
         this.instantViewFallbackUrl = options.instantViewFallbackUrl;
@@ -2421,7 +2431,7 @@ public class TdlibUi extends Handler {
       return this;
     }
 
-    public UrlOpenParameters fromChat (long chatId) {
+    public UrlOpenParameters sourceChat (long chatId) {
       if (this.sourceMessage != null) {
         if (this.sourceMessage.getChatId() != chatId)
           throw new IllegalStateException();
@@ -2465,11 +2475,6 @@ public class TdlibUi extends Handler {
       }
     }
 
-    public UrlOpenParameters instantViewMode (int instantViewMode) {
-      this.instantViewMode = instantViewMode;
-      return this;
-    }
-
     public UrlOpenParameters requireOpenPrompt () {
       return requireOpenPrompt(true);
     }
@@ -2484,12 +2489,30 @@ public class TdlibUi extends Handler {
       return this;
     }
 
+    public UrlOpenParameters instantViewMode (int instantViewMode) {
+      this.instantViewMode = instantViewMode;
+      return this;
+    }
+
     public UrlOpenParameters forceInstantView () {
       return instantViewMode(TdlibUi.INSTANT_VIEW_ENABLED);
     }
 
     public UrlOpenParameters disableInstantView () {
       return instantViewMode(TdlibUi.INSTANT_VIEW_DISABLED);
+    }
+
+    public UrlOpenParameters embedViewMode (int embedViewMode) {
+      this.embedViewMode = embedViewMode;
+      return this;
+    }
+
+    public UrlOpenParameters forceEmbedView () {
+      return embedViewMode(TdlibUi.EMBED_VIEW_ENABLED);
+    }
+
+    public UrlOpenParameters disableEmbedView () {
+      return embedViewMode(TdlibUi.EMBED_VIEW_DISABLED);
     }
 
     public UrlOpenParameters referer (String refererUrl) {
@@ -2655,42 +2678,59 @@ public class TdlibUi extends Handler {
       return;
     }
 
-    int instantViewMode = options != null ? options.instantViewMode : INSTANT_VIEW_UNSPECIFIED;
+    final boolean isFromSecretChat = options != null && options.sourceMessage != null && ChatId.isSecret(options.sourceMessage.getChatId());
 
-    if (instantViewMode == INSTANT_VIEW_UNSPECIFIED) {
-      boolean ok = false;
-      try {
-        String host = uri.getHost();
-        String path = uri.getPath();
-        if (!StringUtils.isEmpty(host) && path != null && path.length() > 1) {
-          switch (Settings.instance().getInstantViewMode()) {
-            case Settings.INSTANT_VIEW_MODE_INTERNAL:
-              ok = tdlib.isKnownHost(host, true);
-              break;
-            case Settings.INSTANT_VIEW_MODE_ALL:
-              ok = true;
-              break;
+    final int instantViewMode;
+    final int embedViewMode;
+    if (isFromSecretChat && !Settings.instance().needSecretLinkPreviews()) {
+      instantViewMode = INSTANT_VIEW_DISABLED;
+      embedViewMode = EMBED_VIEW_DISABLED;
+    } else {
+      if (options == null || options.instantViewMode == INSTANT_VIEW_UNSPECIFIED) {
+        boolean ok = false;
+        try {
+          String host = uri.getHost();
+          String path = uri.getPath();
+          if (!StringUtils.isEmpty(host) && path != null && path.length() > 1) {
+            switch (Settings.instance().getInstantViewMode()) {
+              case Settings.INSTANT_VIEW_MODE_INTERNAL:
+                ok = tdlib.isKnownHost(host, true);
+                break;
+              case Settings.INSTANT_VIEW_MODE_ALL:
+                ok = true;
+                break;
+            }
           }
+        } catch (Throwable t) {
+          Log.i(t);
         }
-      } catch (Throwable t) {
-        Log.i(t);
+        instantViewMode = ok ? INSTANT_VIEW_ENABLED : INSTANT_VIEW_DISABLED;
+      } else {
+        instantViewMode = options.instantViewMode;
       }
-      instantViewMode = ok ? INSTANT_VIEW_ENABLED : INSTANT_VIEW_DISABLED;
+      if (options == null || options.embedViewMode == EMBED_VIEW_UNSPECIFIED) {
+        embedViewMode = Settings.instance().getEmbedViewMode() == Settings.EMBED_VIEW_ALWAYS ? EMBED_VIEW_ENABLED : EMBED_VIEW_DISABLED;
+      } else {
+        embedViewMode = options.embedViewMode;
+      }
     }
+
     final Uri uriFinal = uri;
-    if (instantViewMode == INSTANT_VIEW_DISABLED) {
+    if (instantViewMode == INSTANT_VIEW_DISABLED && embedViewMode == EMBED_VIEW_DISABLED) {
       UI.openUrl(url);
       return;
     }
 
-    final boolean[] signal = new boolean[1];
+    final AtomicBoolean signal = new AtomicBoolean();
+    final AtomicReference<TdApi.WebPage> foundWebPage = new AtomicReference<>();
     CancellableRunnable[] runnable = new CancellableRunnable[1];
 
     tdlib.client().send(new TdApi.GetWebPagePreview(new TdApi.FormattedText(url, null)), page -> {
       switch (page.getConstructor()) {
         case TdApi.WebPage.CONSTRUCTOR: {
           TdApi.WebPage webPage = (TdApi.WebPage) page;
-          if (!TD.hasInstantView(webPage.instantViewVersion) || TD.shouldInlineIv(webPage)) {
+          foundWebPage.set(webPage);
+          if (instantViewMode == INSTANT_VIEW_DISABLED || !TD.hasInstantView(webPage.instantViewVersion) || TD.shouldInlineIv(webPage)) {
             post(runnable[0]);
             return;
           }
@@ -2698,11 +2738,12 @@ public class TdlibUi extends Handler {
             switch (preview.getConstructor()) {
               case TdApi.WebPageInstantView.CONSTRUCTOR: {
                 TdApi.WebPageInstantView instantView = (TdApi.WebPageInstantView) preview;
-                if (!TD.hasInstantView(instantView.version))
+                if (!TD.hasInstantView(instantView.version)) {
+                  post(runnable[0]);
                   return;
+                }
                 post(() -> {
-                  if (!signal[0]) {
-                    signal[0] = true;
+                  if (!signal.getAndSet(true)) {
                     runnable[0].cancel();
 
                     InstantViewController controller = new InstantViewController(context.context(), context.tdlib());
@@ -2735,8 +2776,7 @@ public class TdlibUi extends Handler {
     runnable[0] = new CancellableRunnable() {
       @Override
       public void act () {
-        if (!signal[0]) {
-          signal[0] = true;
+        if (!signal.getAndSet(true)) {
           if (tdlib.isKnownHost(uriFinal.getHost(), false)) {
             List<String> segments = uriFinal.getPathSegments();
             if (segments != null && segments.size() == 1 && "iv".equals(segments.get(0))) {
@@ -2745,6 +2785,12 @@ public class TdlibUi extends Handler {
                 openUrl(context, originalUrl, new UrlOpenParameters(options).disableInstantView());
                 return;
               }
+            }
+          }
+          if (embedViewMode == EMBED_VIEW_ENABLED) {
+            TdApi.WebPage webPage = foundWebPage.get();
+            if (context instanceof ViewController<?> && webPage != null && PreviewLayout.show((ViewController<?>) context, webPage, isFromSecretChat)) {
+              return;
             }
           }
           UI.openUrl(url);

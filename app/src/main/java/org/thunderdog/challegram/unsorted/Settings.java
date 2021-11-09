@@ -199,6 +199,7 @@ public class Settings {
   private static final String KEY_CHAT_FONT_SIZE = "settings_font_size";
   private static final String KEY_CHAT_LIST_MODE = "settings_chat_list_mode";
   private static final String KEY_INSTANT_VIEW = "settings_iv_mode";
+  private static final String KEY_EMBED_VIEW = "settings_embed_mode";
   private static final String KEY_RESTRICT_CONTENT = "settings_restrict_content";
   private static final String KEY_CAMERA_ASPECT_RATIO = "settings_camera_ratio";
   private static final String KEY_CAMERA_TYPE = "settings_camera_type";
@@ -692,6 +693,10 @@ public class Settings {
   public static final int INSTANT_VIEW_MODE_NONE = 0;
   public static final int INSTANT_VIEW_MODE_INTERNAL = 1;
   public static final int INSTANT_VIEW_MODE_ALL = 2;
+
+  public static final int EMBED_VIEW_NEVER = 0;
+  public static final int EMBED_VIEW_WITH_LINK_PREVIEW = 1;
+  public static final int EMBED_VIEW_ALWAYS = 2;
 
   @Nullable
   private Float _chatFontSize;
@@ -2343,6 +2348,14 @@ public class Settings {
     } else {
       putInt(KEY_INSTANT_VIEW, mode);
     }
+  }
+
+  public int getEmbedViewMode () {
+    return getInt(KEY_EMBED_VIEW, EMBED_VIEW_ALWAYS);
+  }
+
+  public void setEmbedViewMode (int mode) {
+    putInt(KEY_EMBED_VIEW, mode);
   }
 
   public int getStickerMode () {

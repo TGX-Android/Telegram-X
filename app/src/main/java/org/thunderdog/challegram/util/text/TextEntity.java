@@ -17,6 +17,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.Settings;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -63,6 +64,19 @@ public abstract class TextEntity {
     TooltipOverlayView.TooltipBuilder b = part.newTooltipBuilder(view);
     // TODO highlight the text part & modify color, if needed
     return new TdlibUi.UrlOpenParameters(this.openParameters).tooltip(b);
+  }
+
+  protected TdlibUi.UrlOpenParameters modifyUrlOpenParameters (TdlibUi.UrlOpenParameters parameters, Text.ClickCallback callback, String url) {
+    if (callback == null)
+      return parameters;
+    parameters = new TdlibUi.UrlOpenParameters(parameters);
+    if (callback.forceInstantView(url)) {
+      parameters.forceInstantView();
+    }
+    if (Settings.instance().getEmbedViewMode() == Settings.EMBED_VIEW_WITH_LINK_PREVIEW && callback.hasLinkPreview(url)) {
+      parameters.forceEmbedView();
+    }
+    return parameters;
   }
 
   public abstract int getType ();

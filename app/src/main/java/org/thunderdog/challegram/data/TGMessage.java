@@ -6051,7 +6051,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   private Text.ClickCallback clickCallback;
 
-  protected boolean hasInstantView (String link) {
+  protected final boolean hasInstantView (String link) {
     return false;
   }
 
