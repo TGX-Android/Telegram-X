@@ -257,7 +257,7 @@ public class TextEntityMessage extends TextEntity {
         TdlibUi.UrlOpenParameters openParameters = this.openParameters(view, text, part);
         if (callback == null || !callback.onUrlClick(view, link, false, openParameters)) {
           if (tdlib != null) {
-            tdlib.ui().openUrl(context, link, callback != null && callback.forceInstantView(link) ? new TdlibUi.UrlOpenParameters(openParameters).forceInstantView() : openParameters);
+            tdlib.ui().openUrl(context, link, modifyUrlOpenParameters(openParameters, callback, link));
           }
         }
         break;
@@ -266,7 +266,7 @@ public class TextEntityMessage extends TextEntity {
         String link = ((TdApi.TextEntityTypeTextUrl) clickableEntity.type).url;
         TdlibUi.UrlOpenParameters openParameters = this.openParameters(view, text, part);
         if (callback == null || !callback.onUrlClick(view, link, true, openParameters)) {
-          context.openLinkAlert(link, callback != null && callback.forceInstantView(link) ? new TdlibUi.UrlOpenParameters(openParameters).forceInstantView() : openParameters);
+          context.openLinkAlert(link, modifyUrlOpenParameters(openParameters, callback, link));
         }
         break;
       }

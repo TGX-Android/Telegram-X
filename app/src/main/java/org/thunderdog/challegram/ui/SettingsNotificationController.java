@@ -662,6 +662,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           displayingAccounts = null;
           collapsedAccountsCount = 0;
         }
+        adapter.resetCheckedItems();
       }
 
       return true;
@@ -1512,6 +1513,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
             if (items.size() > 1) {
               adapter.notifyItemRangeInserted(position + 1, items.size() - 1);
             }
+            adapter.resetCheckedItems();
             collapsedAccountsCount = 0;
           }
         }

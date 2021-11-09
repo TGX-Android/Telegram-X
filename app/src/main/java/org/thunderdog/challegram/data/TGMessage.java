@@ -3664,7 +3664,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   @AnyThread
   public final boolean wouldCombineWith (TdApi.Message message) {
-    if (msg.mediaAlbumId == 0 || msg.mediaAlbumId != message.mediaAlbumId || (message.ttl > 0 && !(chat != null && chat.type.getConstructor() != TdApi.ChatTypePrivate.CONSTRUCTOR)) || isHot() || isEventLog()) {
+    if (msg.mediaAlbumId == 0 || msg.mediaAlbumId != message.mediaAlbumId || msg.ttl != message.ttl || isHot() || isEventLog()) {
       return false;
     }
     int combineMode = TD.getCombineMode(msg);
@@ -6067,6 +6067,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   private Text.ClickCallback clickCallback;
 
+  @Nullable
+  protected TdApi.WebPage findLinkPreview (String link) {
+    return null;
+  }
+
   protected boolean hasInstantView (String link) {
     return false;
   }
@@ -6090,6 +6095,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           messagesController().sendCommand(command, user != null && user.type.getConstructor() == TdApi.UserTypeBot.CONSTRUCTOR ? user.username : null);
         }
         return true;
+      }
+
+      @Override
+      public boolean hasLinkPreview (String link) {
+        return findLinkPreview(link) != null;
       }
 
       @Override

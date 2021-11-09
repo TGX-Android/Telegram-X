@@ -57,13 +57,12 @@ public class Intents {
   public static final int ACTIVITY_RESULT_AUDIO = 102;
   public static final int ACTIVITY_RESULT_RESOLUTION = 103;
   public static final int ACTIVITY_RESULT_GALLERY_FILE = 104;
-  public static final int ACTIVITY_RESULT_PUSH_RESOLUTION = 105;
+  public static final int ACTIVITY_RESULT_FILES = 105;
   public static final int ACTIVITY_RESULT_RESOLUTION_INLINE = 106;
   public static final int ACTIVITY_RESULT_RINGTONE = 107;
   public static final int ACTIVITY_RESULT_RINGTONE_NOTIFICATION = 108;
   public static final int ACTIVITY_RESULT_VIDEO_CAPTURE = 109;
   public static final int ACTIVITY_RESULT_MANAGE_STORAGE = 110;
-  public static final int ACTIVITY_RESULT_SEND_SAF_FILE = 111;
 
   private static final String PACKAGE_NAME = BuildConfig.APPLICATION_ID; // UI.getAppContext().getPackageName();
 

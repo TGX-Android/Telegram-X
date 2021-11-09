@@ -2284,7 +2284,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       text = Lang.getString(R.string.Description);
     }
     if (this.aboutWrapper == null || !this.aboutWrapper.getText().equals(text)) {
-      aboutWrapper = new TextWrapper(tdlib, text, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, Text.ENTITY_FLAGS_ALL_NO_COMMANDS, new TdlibUi.UrlOpenParameters().fromChat(getChatId()));
+      aboutWrapper = new TextWrapper(tdlib, text, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, Text.ENTITY_FLAGS_ALL_NO_COMMANDS, new TdlibUi.UrlOpenParameters().sourceChat(getChatId()));
       aboutWrapper.addTextFlags(Text.FLAG_CUSTOM_LONG_PRESS | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0));
       aboutWrapper.prepare(getTextWidth(Screen.currentWidth()));
       return true;

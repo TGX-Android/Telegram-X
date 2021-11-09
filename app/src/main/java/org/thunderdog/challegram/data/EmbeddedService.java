@@ -130,7 +130,7 @@ public class EmbeddedService {
   }
 
   public static EmbeddedService parse (TdApi.WebPage webPage) {
-    EmbeddedService service = parse(webPage.url, webPage.embedWidth, webPage.embedHeight, webPage.photo, webPage.embedUrl, webPage.embedType);
+    EmbeddedService service = parse(webPage.url, webPage.embedWidth, webPage.embedHeight, webPage.photo);
     if (service != null)
       return service;
     if ("iframe".equals(webPage.embedType) && !StringUtils.isEmpty(webPage.embedUrl)) {
@@ -147,10 +147,10 @@ public class EmbeddedService {
   }
 
   public static EmbeddedService parse (TdApi.PageBlockEmbedded embedded) {
-    return parse(embedded.url, embedded.width, embedded.height, embedded.posterPhoto, null, null);
+    return parse(embedded.url, embedded.width, embedded.height, embedded.posterPhoto);
   }
 
-  private static EmbeddedService parse (String webPageUrl, int width, int height, TdApi.Photo thumbnail, @Nullable String embedUrl, @Nullable String embedType) {
+  private static EmbeddedService parse (String webPageUrl, int width, int height, TdApi.Photo thumbnail) {
     if (StringUtils.isEmpty(webPageUrl))
       return null;
     try {
@@ -255,6 +255,26 @@ public class EmbeddedService {
           }
           break;
         }
+        case "tidal.com": {
+          if (segments.length == 3 && segments[0].equals("browse") && !StringUtils.isEmpty(segments[2])) {
+            String dataType = segments[1];
+
+            if (dataType.equals("track") || dataType.equals("album") || dataType.equals("playlist")) {
+              width = height = Screen.dp(250);
+              viewType = TYPE_CUSTOM_EMBED;
+              viewUrl = new Uri.Builder()
+                .scheme("https")
+                .authority("embed.tidal.com")
+                .path("/" + dataType +  "s/" + segments[2])
+                .appendQueryParameter("layout", "gridify")
+                .appendQueryParameter("disableAnalytics", "true")
+                .build()
+                .toString();
+            }
+          }
+
+          break;
+        }
         /*case "coub.com": {
           // https://coub.com/embed/20k5cb?muted=false&autostart=false&originalSize=false&startWithHD=false
           // https://coub.com/view/20k5cb
@@ -319,7 +339,7 @@ public class EmbeddedService {
         }*/
       }
       if (viewType != 0 && !StringUtils.isEmpty(viewUrl)) {
-        return new EmbeddedService(viewType, viewUrl, width, height, thumbnail, viewUrl, embedType);
+        return new EmbeddedService(viewType, webPageUrl, width, height, thumbnail, viewUrl, null);
       }
     } catch (Throwable t) {
       Log.e("Unable to parse embedded service", t);

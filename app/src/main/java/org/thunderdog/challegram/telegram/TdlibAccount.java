@@ -50,6 +50,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   private static final int FLAG_LOGGING_OUT = 1 << 5;
   private static final int FLAG_NO_PRIVATE_DATA = 1 << 6;
   private static final int FLAG_FORCE_DISABLE_NOTIFICATIONS = 1 << 7;
+  private static final int FLAG_NO_PENDING_NOTIFICATIONS = 1 << 8;
 
   final TdlibManager context;
 
@@ -218,6 +219,14 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
       return forceEnableNotifications();
     }
     return true;
+  }
+
+  boolean setHaveVisibleNotifications (boolean havePendingNotifications) {
+    return changeFlag(FLAG_NO_PENDING_NOTIFICATIONS, !havePendingNotifications);
+  }
+
+  public boolean haveVisibleNotifications () {
+    return !BitwiseUtils.getFlag(flags, FLAG_NO_PENDING_NOTIFICATIONS);
   }
 
   // is_debug

@@ -1191,7 +1191,7 @@ public class TD {
   }
 
   public static int getCombineMode (TdApi.Message message) {
-    if (message != null && message.ttl == 0 && message.ttlExpiresIn == 0) {
+    if (message != null && !isSecret(message)) {
       switch (message.content.getConstructor()) {
         case TdApi.MessagePhoto.CONSTRUCTOR:
         case TdApi.MessageVideo.CONSTRUCTOR:

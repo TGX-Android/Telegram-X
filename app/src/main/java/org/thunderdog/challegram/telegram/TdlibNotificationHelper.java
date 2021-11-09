@@ -143,6 +143,7 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
     }
     if (!notifications.isEmpty()) {
       Collections.sort(notifications);
+      tdlib.context().setHavePendingNotifications(tdlib.id(), true);
     }
     if (needRebuild) {
       if (!haveRebuilt || Settings.instance().needNotificationAppVersionUpdate(tdlib.id())) {
@@ -528,6 +529,7 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
     boolean allowPreview = allowNotificationPreview();
     TdlibNotificationSettings settings = needNotification && !group.isHidden() ? new TdlibNotificationSettings(tdlib, notificationSettingsChatId, group) : null;
     style.displayNotificationGroup(context, this, badgeCount, allowPreview, group, settings);
+    tdlib.context().setHavePendingNotifications(tdlib.id(), true);
   }
 
   private void hideNotificationGroup (@NonNull TdlibNotificationGroup group) {
@@ -535,22 +537,18 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
     int badgeCount = tdlib.getUnreadBadgeCount();
     boolean allowPreview = allowNotificationPreview();
     style.hideNotificationGroup(context, this, badgeCount, allowPreview, group);
-  }
-
-  private void hideAllNotifications () {
-    Context context = UI.getAppContext();
-    int badgeCount = tdlib.getUnreadBadgeCount();
-    boolean allowPreview = allowNotificationPreview();
-    style.hideAllNotifications(context, this, badgeCount);
+    tdlib.context().setHavePendingNotifications(tdlib.id(), !isEmpty());
   }
 
   private void rebuild (@Nullable TdApi.NotificationSettingsScope scope, long specificChatId, int specificGroupId) {
-    if (!isEmpty()) {
+    final boolean haveNotifications = !isEmpty();
+    if (haveNotifications) {
       Context context = UI.getAppContext();
       int badgeCount = tdlib.getUnreadBadgeCount();
       boolean allowPreview = allowNotificationPreview();
       style.rebuildNotificationsSilently(context, this, badgeCount, allowPreview, scope, specificChatId, specificGroupId);
     }
+    tdlib.context().setHavePendingNotifications(tdlib.id(), haveNotifications);
   }
 
   public void rebuild () {

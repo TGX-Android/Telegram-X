@@ -4964,7 +4964,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
                       for (int i = 1; i < info.messages.length; i++) {
                         otherMessageIds[i - 1] = info.messages[i].id;
                       }
-                      tdlib.ui().openMessage(this, info.chatId, new MessageId(info.chatId, info.messages[0].id, otherMessageIds), new TdlibUi.UrlOpenParameters().sourceMessage(new MessageId(message.chatId, message.id)).controller(this).fromChat(message.chatId));
+                      tdlib.ui().openMessage(this, info.chatId, new MessageId(info.chatId, info.messages[0].id, otherMessageIds), new TdlibUi.UrlOpenParameters().sourceMessage(new MessageId(message.chatId, message.id)).controller(this).sourceChat(message.chatId));
                     }
                   });
                   break;
@@ -8630,7 +8630,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
         break;
       }
-      case Intents.ACTIVITY_RESULT_SEND_SAF_FILE:
       case Intents.ACTIVITY_RESULT_GALLERY:
       case Intents.ACTIVITY_RESULT_GALLERY_FILE: {
         final Uri path = data != null ? data.getData() : null;
@@ -8649,8 +8648,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
           sendSticker(imagePath, true, false, null);
         } else if (requestCode == Intents.ACTIVITY_RESULT_GALLERY_FILE) {
           sendFiles(Collections.singletonList(imagePath), false, true, false, null);
-        } else if (requestCode == Intents.ACTIVITY_RESULT_SEND_SAF_FILE) {
-          sendFiles(Collections.singletonList(U.canReadFile(imagePath) ? imagePath : path.toString()), false, true, false, null);
         } else {
           sendPhotoCompressed(imagePath, 0, true);
         }

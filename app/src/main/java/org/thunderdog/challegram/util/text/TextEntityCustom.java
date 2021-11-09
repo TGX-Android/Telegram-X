@@ -285,7 +285,7 @@ public class TextEntityCustom extends TextEntity {
         TdlibUi.UrlOpenParameters openParameters = this.openParameters(view, text, part);
         if (callback == null || !callback.onUrlClick(view, link, !StringUtils.equalsOrBothEmpty(text.getText(), link), openParameters)) {
           if (context != null) {
-            context.openLinkAlert(link, callback != null && callback.forceInstantView(link) ? new TdlibUi.UrlOpenParameters(openParameters) : openParameters);
+            context.openLinkAlert(link, modifyUrlOpenParameters(openParameters, callback, link));
           }
         }
         break;
