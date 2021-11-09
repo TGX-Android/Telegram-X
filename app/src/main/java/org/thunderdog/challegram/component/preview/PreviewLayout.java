@@ -191,6 +191,7 @@ public abstract class PreviewLayout extends FrameLayoutFix implements View.OnCli
           }
 
           break;
+        case EmbeddedService.TYPE_SOUNDCLOUD:
         case EmbeddedService.TYPE_DAILYMOTION:
         case EmbeddedService.TYPE_VIMEO:
         case EmbeddedService.TYPE_UNKNOWN:
