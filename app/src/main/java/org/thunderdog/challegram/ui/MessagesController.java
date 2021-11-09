@@ -4955,7 +4955,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
                       for (int i = 1; i < info.messages.length; i++) {
                         otherMessageIds[i - 1] = info.messages[i].id;
                       }
-                      tdlib.ui().openMessage(this, info.chatId, new MessageId(info.chatId, info.messages[0].id, otherMessageIds), new TdlibUi.UrlOpenParameters().sourceMessage(new MessageId(message.chatId, message.id)).controller(this).fromChat(message.chatId));
+                      tdlib.ui().openMessage(this, info.chatId, new MessageId(info.chatId, info.messages[0].id, otherMessageIds), new TdlibUi.UrlOpenParameters().sourceMessage(new MessageId(message.chatId, message.id)).controller(this).sourceChat(message.chatId));
                     }
                   });
                   break;

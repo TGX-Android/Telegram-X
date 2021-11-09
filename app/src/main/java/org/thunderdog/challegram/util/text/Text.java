@@ -2171,6 +2171,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     @Nullable
     default ThemeDelegate getForcedTheme (View view, Text text) { return null; }
     default boolean forceInstantView (String link) { return false; }
+    default boolean hasLinkPreview (String link) { return false; }
     default boolean onCommandClick (View view, Text text, TextPart part, String command, boolean isLongPress) { return false; }
     default boolean onUsernameClick (String username) { return false; }
     default boolean onUserClick (long userId) { return false; }

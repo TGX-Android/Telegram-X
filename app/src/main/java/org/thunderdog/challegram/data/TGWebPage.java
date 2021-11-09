@@ -42,13 +42,11 @@ import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.widget.FileProgressComponent;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
-import me.vkryl.td.TdConstants;
 
 public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWrapper.OnClickListener, TGInlineKeyboard.ClickListener, Client.ResultHandler {
   private static final int MAX_TITLE_LINES = 4;
@@ -526,7 +524,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
           if (mediaWrapper != null && webPage.photo != null) {
             MediaViewController.openFromMessage(parent);
           } else {
-            parent.tdlib().ui().openUrl(parent.controller(), url, rippleButton.firstButton().openParameters(view));
+            parent.tdlib().ui().openUrl(parent.controller(), url, new TdlibUi.UrlOpenParameters(rippleButton.firstButton().openParameters(view)).disableEmbedView());
           }
         }
         break;

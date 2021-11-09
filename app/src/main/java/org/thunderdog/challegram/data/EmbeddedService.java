@@ -130,7 +130,7 @@ public class EmbeddedService {
   }
 
   public static EmbeddedService parse (TdApi.WebPage webPage) {
-    EmbeddedService service = parse(webPage.url, webPage.embedWidth, webPage.embedHeight, webPage.photo, webPage.embedUrl, webPage.embedType);
+    EmbeddedService service = parse(webPage.url, webPage.embedWidth, webPage.embedHeight, webPage.photo);
     if (service != null)
       return service;
     if ("iframe".equals(webPage.embedType) && !StringUtils.isEmpty(webPage.embedUrl)) {
@@ -147,10 +147,10 @@ public class EmbeddedService {
   }
 
   public static EmbeddedService parse (TdApi.PageBlockEmbedded embedded) {
-    return parse(embedded.url, embedded.width, embedded.height, embedded.posterPhoto, null, null);
+    return parse(embedded.url, embedded.width, embedded.height, embedded.posterPhoto);
   }
 
-  private static EmbeddedService parse (String webPageUrl, int width, int height, TdApi.Photo thumbnail, @Nullable String embedUrl, @Nullable String embedType) {
+  private static EmbeddedService parse (String webPageUrl, int width, int height, TdApi.Photo thumbnail) {
     if (StringUtils.isEmpty(webPageUrl))
       return null;
     try {
@@ -339,7 +339,7 @@ public class EmbeddedService {
         }*/
       }
       if (viewType != 0 && !StringUtils.isEmpty(viewUrl)) {
-        return new EmbeddedService(viewType, viewUrl, width, height, thumbnail, viewUrl, embedType);
+        return new EmbeddedService(viewType, webPageUrl, width, height, thumbnail, viewUrl, null);
       }
     } catch (Throwable t) {
       Log.e("Unable to parse embedded service", t);

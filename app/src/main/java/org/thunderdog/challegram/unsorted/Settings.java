@@ -342,6 +342,8 @@ public class Settings {
   public static final long SETTING_FLAG_CAMERA_KEEP_DISCARDED_MEDIA = 1 << 11;
   public static final long SETTING_FLAG_CAMERA_SHOW_GRID = 1 << 12;
 
+  public static final long SETTING_FLAG_NO_EMBEDS = 1 << 13;
+
   private static final @Deprecated int DISABLED_FLAG_OTHER_NEED_RAISE_TO_SPEAK = 1 << 2;
   private static final @Deprecated int DISABLED_FLAG_OTHER_AUTODOWNLOAD_IN_BACKGROUND = 1 << 3;
   private static final @Deprecated int DISABLED_FLAG_OTHER_DEFAULT_CRASH_MANAGER = 1 << 5;
