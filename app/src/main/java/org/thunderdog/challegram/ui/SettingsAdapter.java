@@ -513,31 +513,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     this.items.clear();
     ArrayUtils.ensureCapacity(this.items, items.size());
     this.items.addAll(items);
-    int checkedIndex = -1;
-    boolean moreThanOneChecked = false;
-    if (hasCheckedItems) {
-      int i = 0;
-      for (ListItem item : items) {
-        if (item.getViewType() == ListItem.TYPE_SLIDER) {
-          putCheckedInt(item.getId(), item.getSliderValue());
-        } else if (item.isSelected()) {
-          if (item.getStringCheckResult() != null) {
-            putCheckedString(item.getCheckId(), item.getStringCheckResult());
-          } else {
-            putCheckedInt(item.getCheckId(), item.getId());
-          }
-          if (!moreThanOneChecked) {
-            if (checkedIndex == -1) {
-              checkedIndex = i;
-            } else {
-              checkedIndex = -1;
-              moreThanOneChecked = true;
-            }
-          }
-        }
-        i++;
-      }
-    }
+    int checkedIndex = hasCheckedItems ? resetCheckedItems() : -1;
     U.notifyItemsReplaced(this, oldItemCount);
     return checkedIndex;
   }
@@ -1028,6 +1004,57 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     if (needNotify) {
       notifyItemChanged(position);
     }
+  }
+
+  public int resetCheckedItems () {
+    if (checkIntResults != null) {
+      checkIntResults.clear();
+    }
+    if (checkStringResults != null) {
+      checkStringResults.clear();
+    }
+    int checkedIndex = -1;
+    boolean moreThanOneChecked = false;
+    int i = 0;
+    for (ListItem item : items) {
+      if (item.getViewType() == ListItem.TYPE_SLIDER) {
+        putCheckedInt(item.getId(), item.getSliderValue());
+      } else if (item.isSelected()) {
+        if (item.getStringCheckResult() != null) {
+          putCheckedString(item.getCheckId(), item.getStringCheckResult());
+        } else {
+          putCheckedInt(item.getCheckId(), item.getId());
+        }
+        if (!moreThanOneChecked) {
+          if (checkedIndex == -1) {
+            checkedIndex = i;
+          } else {
+            checkedIndex = -1;
+            moreThanOneChecked = true;
+          }
+        }
+      }
+      i++;
+    }
+    return checkedIndex;
+  }
+
+  private static boolean isSelectableViewType (int viewType) {
+    switch (viewType) {
+      case ListItem.TYPE_RADIO_OPTION:
+      case ListItem.TYPE_RADIO_OPTION_LEFT:
+      case ListItem.TYPE_RADIO_OPTION_WITH_AVATAR:
+      case ListItem.TYPE_CHECKBOX_OPTION:
+      case ListItem.TYPE_CHECKBOX_OPTION_REVERSE:
+      case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE:
+      case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
+      case ListItem.TYPE_CHECKBOX_OPTION_MULTILINE:
+      case ListItem.TYPE_DRAWER_ITEM_WITH_RADIO:
+      case ListItem.TYPE_DRAWER_ITEM_WITH_RADIO_SEPARATED:
+      case ListItem.TYPE_DRAWER_ITEM_WITH_AVATAR:
+        return true;
+    }
+    return false;
   }
 
   public boolean toggleView (View v, ListItem item) {
@@ -1803,20 +1830,30 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
   }
 
   public void addItem (final int index, final ListItem item) {
-    if (isComputingLayout()) {
-      UI.post(() -> addItem(index, item));
-    } else {
-      items.add(index, item);
-      notifyItemInserted(index);
-    }
+    addItems(index, item);
   }
 
   public void addItems (final int index, final ListItem... items) {
     if (isComputingLayout()) {
       UI.post(() -> addItems(index, items));
-    } else {
-      this.items.addAll(index, Arrays.asList(items));
-      notifyItemRangeInserted(index, items.length);
+    } else if (items.length > 0) {
+      boolean needReset = false;
+      for (ListItem item : items) {
+        if (isSelectableViewType(item.getViewType())) {
+          needReset = true;
+          break;
+        }
+      }
+      if (items.length == 1) {
+        this.items.add(index, items[0]);
+        notifyItemInserted(index);
+      } else {
+        this.items.addAll(index, Arrays.asList(items));
+        notifyItemRangeInserted(index, items.length);
+      }
+      if (needReset) {
+        resetCheckedItems();
+      }
     }
   }
 

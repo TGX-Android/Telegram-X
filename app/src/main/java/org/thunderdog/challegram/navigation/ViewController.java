@@ -1913,7 +1913,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         }
       }
     };
-    int checkedIndex = settings.adapter.setItems(items, true);
+    final int checkedIndex = settings.adapter.setItems(items, true);
 
     FrameLayoutFix footerView = null;
     if (!b.disableFooter) {
