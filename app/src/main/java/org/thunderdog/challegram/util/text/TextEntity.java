@@ -17,7 +17,6 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.UI;
-import org.thunderdog.challegram.unsorted.Settings;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,9 +72,9 @@ public abstract class TextEntity {
     if (callback.forceInstantView(url)) {
       parameters.forceInstantView();
     }
-    if (Settings.instance().getEmbedViewMode() == Settings.EMBED_VIEW_WITH_LINK_PREVIEW && callback.hasLinkPreview(url)) {
+    /*if (forceEmbedCondition) {
       parameters.forceEmbedView();
-    }
+    }*/
     return parameters;
   }
 

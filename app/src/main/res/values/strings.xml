@@ -4028,6 +4028,8 @@
   <string name="session_System">System: %1$s</string>
 
   <string name="NoFilePicker">Application to browse files not found</string>
+  <string name="OpenEmbed">Preview external links</string>
+  <string name="OpenEmbedDesc">See in-app preview when opening supported external links</string>
 
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />

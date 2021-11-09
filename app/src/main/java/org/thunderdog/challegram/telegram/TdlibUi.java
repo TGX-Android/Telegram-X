@@ -2709,7 +2709,7 @@ public class TdlibUi extends Handler {
         instantViewMode = options.instantViewMode;
       }
       if (options == null || options.embedViewMode == EMBED_VIEW_UNSPECIFIED) {
-        embedViewMode = Settings.instance().getEmbedViewMode() == Settings.EMBED_VIEW_ALWAYS ? EMBED_VIEW_ENABLED : EMBED_VIEW_DISABLED;
+        embedViewMode = Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_EMBEDS) ? EMBED_VIEW_DISABLED : EMBED_VIEW_ENABLED;
       } else {
         embedViewMode = options.embedViewMode;
       }
