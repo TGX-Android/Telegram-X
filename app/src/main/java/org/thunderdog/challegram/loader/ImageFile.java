@@ -62,6 +62,7 @@ public class ImageFile {
   private static final int FLAG_FORCE_SW_RENDER = 1 << 16;
   private static final int FLAG_NEED_PALETTE = 1 << 17;
   private static final int FLAG_IS_VECTOR = 1 << 18;
+  private static final int FLAG_IS_CONTENT_URI = 1 << 19;
 
   protected TdApi.File file;
 
@@ -180,6 +181,10 @@ public class ImageFile {
     flags |= FLAG_IS_VECTOR;
   }
 
+  public void setIsContentUri () {
+    flags |= FLAG_IS_CONTENT_URI;
+  }
+
   public void setNoReference () {
     flags |= FLAG_NO_REFERENCE;
   }
@@ -202,6 +207,10 @@ public class ImageFile {
 
   public boolean isVector () {
     return (flags & FLAG_IS_VECTOR) != 0;
+  }
+
+  public boolean isContentUri () {
+    return (flags & FLAG_IS_CONTENT_URI) != 0;
   }
 
   public void setBlur (int radius) {
