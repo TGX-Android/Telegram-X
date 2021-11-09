@@ -155,7 +155,13 @@ public abstract class ListManager<T> implements Destroyable, Iterable<T> {
   }
 
   public final int getTotalCount () {
-    return totalCount == COUNT_UNKNOWN ? COUNT_UNKNOWN : Math.max(totalCount, items.size());
+    if (totalCount == COUNT_UNKNOWN) {
+      return COUNT_UNKNOWN;
+    }
+    if (reverseEndReached && endReached) {
+      return items.size();
+    }
+    return Math.max(totalCount, items.size());
   }
 
   public final boolean hasReceivedInitialChunk () {
