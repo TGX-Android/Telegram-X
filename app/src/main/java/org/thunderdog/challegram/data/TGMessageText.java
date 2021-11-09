@@ -129,6 +129,12 @@ public class TGMessageText extends TGMessage {
     return MESSAGE_NOT_CHANGED;
   }
 
+  @Nullable
+  @Override
+  protected TdApi.WebPage findLinkPreview (String link) {
+    return webPage != null && link.equals(webPage.getWebPage().url) ? webPage.getWebPage() : null;
+  }
+
   @Override
   protected boolean hasInstantView (String link) {
     if (webPage == null || !webPage.needInstantView())

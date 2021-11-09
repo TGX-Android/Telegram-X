@@ -6051,7 +6051,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   private Text.ClickCallback clickCallback;
 
-  protected final boolean hasInstantView (String link) {
+  @Nullable
+  protected TdApi.WebPage findLinkPreview (String link) {
+    return null;
+  }
+
+  protected boolean hasInstantView (String link) {
     return false;
   }
 
@@ -6074,6 +6079,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           messagesController().sendCommand(command, user != null && user.type.getConstructor() == TdApi.UserTypeBot.CONSTRUCTOR ? user.username : null);
         }
         return true;
+      }
+
+      @Override
+      public boolean hasLinkPreview (String link) {
+        return findLinkPreview(link) != null;
       }
 
       @Override
