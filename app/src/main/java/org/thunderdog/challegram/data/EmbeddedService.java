@@ -261,10 +261,29 @@ public class EmbeddedService {
 
           break;
         }
+        case "music.yandex.ru": {
+          if (segments.length == 2) {
+            // https://music.yandex.ru/album/8415032
+            viewType = TYPE_CUSTOM_EMBED;
+            width = height = 1;
+            embedUrl = "https://music.yandex.ru/iframe/#" + segments[0] + "/" + segments[1];
+          } else if (segments.length == 4 && (segments[2].equals("playlists") || segments[0].equals("album"))) {
+            // https://music.yandex.ru/album/8415032/track/56685586
+            // https://music.yandex.ru/users/music-blog/playlists/2465
+            viewType = TYPE_CUSTOM_EMBED;
+            width = height = 1;
+            if (segments[0].equals("users")) {
+              embedUrl = "https://music.yandex.ru/iframe/#playlist/" + segments[1] + "/" + segments[3];
+            } else {
+              embedUrl = "https://music.yandex.ru/iframe/#" + segments[0] + "/" + segments[1] + "/" + segments[3];
+            }
+          }
+          break;
+        }
       }
       if (viewType != 0 && !StringUtils.isEmpty(embedUrl)) {
-        if (height == 0) {
-          height = 1;
+        if (width == 0 || height == 0) {
+          width = height = 1;
         }
 
         return new EmbeddedService(viewType, webPageUrl, width, height, thumbnail, embedUrl, null);
