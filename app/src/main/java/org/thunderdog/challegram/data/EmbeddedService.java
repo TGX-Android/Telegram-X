@@ -130,7 +130,7 @@ public class EmbeddedService {
   }
 
   public static EmbeddedService parse (TdApi.WebPage webPage) {
-    EmbeddedService service = parse(webPage.url, webPage.embedWidth, webPage.embedHeight, webPage.photo);
+    EmbeddedService service = parse(webPage.url, webPage.embedWidth, webPage.embedHeight, webPage.photo, webPage.embedUrl);
     if (service != null)
       return service;
     if ("iframe".equals(webPage.embedType) && !StringUtils.isEmpty(webPage.embedUrl)) {
@@ -147,10 +147,10 @@ public class EmbeddedService {
   }
 
   public static EmbeddedService parse (TdApi.PageBlockEmbedded embedded) {
-    return parse(embedded.url, embedded.width, embedded.height, embedded.posterPhoto);
+    return parse(embedded.url, embedded.width, embedded.height, embedded.posterPhoto, null);
   }
 
-  private static EmbeddedService parse (String webPageUrl, int width, int height, TdApi.Photo thumbnail) {
+  private static EmbeddedService parse (String webPageUrl, int width, int height, TdApi.Photo thumbnail, @Nullable String embedUrl) {
     if (StringUtils.isEmpty(webPageUrl))
       return null;
     try {
@@ -165,44 +165,30 @@ public class EmbeddedService {
       if (host.startsWith("www."))
         host = host.substring("www.".length());
       int viewType = 0;
-      String viewUrl = null;
-      String viewIdentifier = null;
+      String viewIdentifier;
       switch (host) {
         case "youtube.com": {
+          // https://youtu.be/zg-HMBwYckc
           // https://www.youtube.com/embed/zg-HMBwYckc
           // https://www.youtube.com/watch?v=zg-HMBwYckc&feature=player_embedded
           viewType = TYPE_YOUTUBE;
-          if (segments.length == 2 && "embed".equals(segments[0]) && !StringUtils.isEmpty(segments[1])) {
-            viewIdentifier = segments[1];
-            String query = uri.getEncodedQuery();
-            viewUrl = "https://youtube.com/watch?v=" + viewIdentifier;
-            if (!StringUtils.isEmpty(query)) {
-              viewUrl += "&" + query;
-            }
-          } else if (segments.length == 1 && "watch".equals(segments[0]) && !StringUtils.isEmpty(viewIdentifier = uri.getQueryParameter("v"))) {
-            viewUrl = webPageUrl;
+          if (segments.length == 1 && "watch".equals(segments[0]) && !StringUtils.isEmpty(viewIdentifier = uri.getQueryParameter("v"))) {
+            embedUrl = "https://www.youtube.com/embed/" + viewIdentifier;
           }
           break;
         }
         case "youtu.be": {
           // https://youtu.be/zg-HMBwYckc
           viewType = TYPE_YOUTUBE;
-          if (segments.length == 1 && !StringUtils.isEmpty(segments[0])) {
-            viewIdentifier = segments[0];
-            String query = uri.getEncodedQuery();
-            viewUrl = "https://youtube.com/watch?v=" + viewIdentifier;
-            if (!StringUtils.isEmpty(query)) {
-              viewUrl += "&" + query;
-            }
+          if (segments.length == 1 && !StringUtils.isEmpty(viewIdentifier = segments[0])) {
+            embedUrl = "https://www.youtube.com/embed/" + viewIdentifier;
           }
           break;
         }
         case "coub.com": {
-          if (segments.length == 2 && !StringUtils.isEmpty(segments[1])) {
-            if ("view".equals(segments[0])) {
-              viewType = TYPE_CUSTOM_EMBED;
-              viewUrl = "https://coub.com/embed/" + segments[1] + "?muted=false&autostart=true&originalSize=false&startWithHD=false";
-            }
+          if (segments.length == 2 && !StringUtils.isEmpty(segments[1]) && "view".equals(segments[0])) {
+            viewType = TYPE_CUSTOM_EMBED;
+            embedUrl = "https://coub.com/embed/" + segments[1] + "?muted=false&autostart=true&originalSize=false&startWithHD=false";
           }
           break;
         }
@@ -222,7 +208,7 @@ public class EmbeddedService {
               width = height = 1;
             }
 
-            viewUrl = "https://open.spotify.com/" + embedVerb + "/" + segments[0] + "/" + segments[1];
+            embedUrl = "https://open.spotify.com/" + embedVerb + "/" + segments[0] + "/" + segments[1];
 
             // Needed if the service is not supported for embedding using TDLib (height will be normal anyway)
             viewType = TYPE_CUSTOM_EMBED;
@@ -240,7 +226,7 @@ public class EmbeddedService {
           // https://podcasts.apple.com/ru/podcast/zavtracast-%D0%B7%D0%B0%D0%B2%D1%82%D1%80%D0%B0%D0%BA%D0%B0%D1%81%D1%82/id1068329384
 
           if (uri.getPath().matches("^(?:/[^/]*)?/(?:podcast|album|playlist)/[^/]+/[^/]+")) {
-            viewUrl = uri.buildUpon()
+            embedUrl = uri.buildUpon()
               .authority(uri.getAuthority().replaceAll("([a-zA-Z0-9\\-]+)(?=\\.apple\\.com$)", "embed.$1"))
               .path(uri.getPath().replaceAll("^/?/([^/]+/[^/]+/[^/]+)$", "/us/$1"))
               .build()
@@ -262,7 +248,7 @@ public class EmbeddedService {
             if (dataType.equals("track") || dataType.equals("album") || dataType.equals("playlist")) {
               width = height = Screen.dp(250);
               viewType = TYPE_CUSTOM_EMBED;
-              viewUrl = new Uri.Builder()
+              embedUrl = new Uri.Builder()
                 .scheme("https")
                 .authority("embed.tidal.com")
                 .path("/" + dataType +  "s/" + segments[2])
@@ -275,75 +261,59 @@ public class EmbeddedService {
 
           break;
         }
-        /*case "coub.com": {
-          // https://coub.com/embed/20k5cb?muted=false&autostart=false&originalSize=false&startWithHD=false
-          // https://coub.com/view/20k5cb
-          // https://coub.com/api/v2/coubs/20k5cb.json
-          viewType = TYPE_COUB;
-          if (segments.length == 2 && !StringUtils.isEmpty(segments[1])) {
-            if ("view".equals(segments[0])) {
-              viewUrl = url;
-              viewIdentifier = segments[1];
-            } else if ("embed".equals(segments[0])) {
-              viewIdentifier = segments[1];
-              viewUrl = "https://coub.com/view/" + viewIdentifier;
-              String query = uri.getEncodedQuery();
-              if (!StringUtils.isEmpty(query)) {
-                viewUrl += "?" + query;
-              }
+        case "music.yandex.ru": {
+          if (segments.length == 2) {
+            // https://music.yandex.ru/album/8415032
+            viewType = TYPE_CUSTOM_EMBED;
+            width = height = 1;
+            embedUrl = "https://music.yandex.ru/iframe/#" + segments[0] + "/" + segments[1];
+          } else if (segments.length == 4 && (segments[2].equals("playlists") || segments[0].equals("album"))) {
+            // https://music.yandex.ru/album/8415032/track/56685586
+            // https://music.yandex.ru/users/music-blog/playlists/2465
+            viewType = TYPE_CUSTOM_EMBED;
+            width = height = 1;
+            if (segments[0].equals("users")) {
+              embedUrl = "https://music.yandex.ru/iframe/#playlist/" + segments[1] + "/" + segments[3];
+            } else {
+              embedUrl = "https://music.yandex.ru/iframe/#" + segments[0] + "/" + segments[1] + "/" + segments[3];
             }
           }
           break;
         }
-        case "vimeo.com": {
-          // https://vimeo.com/360123613
-          viewType = TYPE_VIMEO;
-          if (segments.length == 1 && StringUtils.isNumeric(segments[0])) {
-            viewUrl = url;
-            viewIdentifier = segments[0];
-          }
-          break;
-        }
-        case "player.vimeo.com": {
-          // https://player.vimeo.com/video/360123613
-          viewType = TYPE_VIMEO;
-          if (segments.length == 2 && "video".equals(segments[0]) && StringUtils.isNumeric(segments[1])) {
-            viewUrl = "https://vimeo.com/" + segments[1];
-            viewIdentifier = segments[1];
-          }
-          break;
-        }
-        case "dailymotion.com": {
-          // https://www.dailymotion.com/video/x7gdt1c?playlist=x5v2j4
-          // https://www.dailymotion.com/embed/video/x7gdt1c
-          viewType = TYPE_DAILYMOTION;
-          if (segments.length == 2 && "video".equals(segments[0]) && !StringUtils.isEmpty(segments[1])) {
-            viewUrl = url;
-            viewIdentifier = segments[1];
-          } else if (segments.length == 3 && "embed".equals(segments[0]) && "video".equals(segments[1]) && !StringUtils.isEmpty(segments[2])) {
-            viewIdentifier = segments[2];
-            viewUrl = "https://dailymotion.com/video/" + viewIdentifier;
-            String query = uri.getEncodedQuery();
-            if (!StringUtils.isEmpty(query)) {
-              viewUrl += "?" + query;
-            }
-          }
-          break;
-        }
-        case "soundcloud.com": {
-          // https://soundcloud.com/leagueoflegends/star-guardian-2019-login-theme
-          // https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/680741072&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true
-          viewType = TYPE_SOUNDCLOUD;
-
-          break;
-        }*/
       }
-      if (viewType != 0 && !StringUtils.isEmpty(viewUrl)) {
-        return new EmbeddedService(viewType, webPageUrl, width, height, thumbnail, viewUrl, null);
+      if (viewType != 0 && !StringUtils.isEmpty(embedUrl)) {
+        if (width == 0 || height == 0) {
+          width = height = 1;
+        }
+
+        return new EmbeddedService(viewType, webPageUrl, width, height, thumbnail, embedUrl, null);
       }
     } catch (Throwable t) {
       Log.e("Unable to parse embedded service", t);
     }
     return null;
+  }
+
+  // Creates embed data from a page's URL (if the site is supported by TGX in-app parser)
+  public static EmbeddedService parseUrl (String pageUrl) {
+    return parse(pageUrl, 0, 0, null, null);
+  }
+
+  // If YouTube URL and YouTube app is installed - better wait for Telegram preview to get a webpage
+  public static boolean isYoutubeUrl (String pageUrl) {
+    if (StringUtils.isEmpty(pageUrl))
+      return false;
+
+    try {
+      if (!pageUrl.startsWith("https://") && !pageUrl.startsWith("http://"))
+        pageUrl = "https://" + pageUrl;
+      Uri uri = Uri.parse(pageUrl);
+      String host = uri.getHost();
+      return host.equals("youtube.com") || host.equals("youtu.be");
+    } catch (Throwable t) {
+      Log.e("Unable to parse embedded service", t);
+    }
+
+    return false;
   }
 }

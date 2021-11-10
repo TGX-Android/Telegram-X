@@ -35,11 +35,13 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.component.preview.PreviewLayout;
+import org.thunderdog.challegram.component.preview.YouTube;
 import org.thunderdog.challegram.component.sticker.StickerSetWrap;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.core.LangUtils;
+import org.thunderdog.challegram.data.EmbeddedService;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGBotStart;
 import org.thunderdog.challegram.data.TGMessage;
@@ -2719,6 +2721,12 @@ public class TdlibUi extends Handler {
     if (instantViewMode == INSTANT_VIEW_DISABLED && embedViewMode == EMBED_VIEW_DISABLED) {
       UI.openUrl(url);
       return;
+    }
+
+    if (embedViewMode == EMBED_VIEW_ENABLED && !(EmbeddedService.isYoutubeUrl(url) && YouTube.isYoutubeAppInstalled())) {
+      if (context instanceof ViewController<?> && PreviewLayout.show((ViewController<?>) context, url, isFromSecretChat)) {
+        return;
+      }
     }
 
     final AtomicBoolean signal = new AtomicBoolean();
