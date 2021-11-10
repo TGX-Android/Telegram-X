@@ -4193,6 +4193,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private SessionsInfo sessionsInfo;
 
+  @Nullable
+  public TdApi.Session currentSession () {
+    synchronized (dataLock) {
+      return sessionsInfo.currentSession;
+    }
+  }
+
   public void getSessions (boolean allowCached, RunnableData<SessionsInfo> callback) {
     if (allowCached) {
       runOnTdlibThread(() -> {
@@ -4209,7 +4216,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         switch (result.getConstructor()) {
           case TdApi.Sessions.CONSTRUCTOR: {
             TdApi.Sessions sessions = (TdApi.Sessions) result;
-            this.sessionsInfo = new SessionsInfo(sessions);
+            synchronized (dataLock) {
+              this.sessionsInfo = new SessionsInfo(sessions);
+            }
             if (callback != null) {
               callback.runWithData(this.sessionsInfo);
             }
