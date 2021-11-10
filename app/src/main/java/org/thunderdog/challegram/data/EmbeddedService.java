@@ -173,7 +173,7 @@ public class EmbeddedService {
           // https://www.youtube.com/watch?v=zg-HMBwYckc&feature=player_embedded
           viewType = TYPE_YOUTUBE;
           if (segments.length == 1 && "watch".equals(segments[0]) && !StringUtils.isEmpty(viewIdentifier = uri.getQueryParameter("v"))) {
-            embedUrl = "https://youtube.com/embed/" + viewIdentifier;
+            embedUrl = "https://www.youtube.com/embed/" + viewIdentifier;
           }
           break;
         }
@@ -181,7 +181,7 @@ public class EmbeddedService {
           // https://youtu.be/zg-HMBwYckc
           viewType = TYPE_YOUTUBE;
           if (segments.length == 1 && !StringUtils.isEmpty(viewIdentifier = segments[0])) {
-            embedUrl = "https://youtube.com/embed/" + viewIdentifier;
+            embedUrl = "https://www.youtube.com/embed/" + viewIdentifier;
           }
           break;
         }
