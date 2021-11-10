@@ -133,6 +133,11 @@ public abstract class PreviewLayout extends FrameLayoutFix implements View.OnCli
     return show(parent, service, needConfirmation);
   }
 
+  public static boolean show (ViewController<?> parent, String webPageUrl, boolean needConfirmation) {
+    EmbeddedService service = EmbeddedService.parseUrl(webPageUrl);
+    return show(parent, service, needConfirmation);
+  }
+
   public static boolean show (ViewController<?> parent, EmbeddedService service, boolean needConfirmation) {
     if (service != null) {
       BaseActivity context = parent.context();
