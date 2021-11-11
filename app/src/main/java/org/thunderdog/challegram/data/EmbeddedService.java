@@ -116,8 +116,11 @@ public class EmbeddedService {
 
   private static int resolveTypeForHost (String host) {
     if (!StringUtils.isEmpty(host)) {
-      if (host.startsWith("www."))
+      if (host.startsWith("www.")) {
         host = host.substring("www".length());
+      } else if (host.startsWith("m.")) {
+        host = host.substring("m.".length());
+      }
       int viewType = TYPE_UNKNOWN;
       Pattern[] patterns = new Pattern[] {YOUTUBE_PATTERN, VIMEO_PATTERN, DAILYMOTION_PATTERN, COUB_PATTERN, SOUNDCLOUD_PATTERN};
       for (Pattern pattern : patterns) {
@@ -162,8 +165,11 @@ public class EmbeddedService {
       if (StringUtils.isEmpty(host) || segmentsList == null || segmentsList.isEmpty())
         return null;
       String[] segments = segmentsList.toArray(new String[0]);
-      if (host.startsWith("www."))
+      if (host.startsWith("www.")) {
         host = host.substring("www.".length());
+      } else if (host.startsWith("m.")) {
+        host = host.substring("m.".length());
+      }
       int viewType = 0;
       String viewIdentifier;
       switch (host) {
@@ -309,7 +315,7 @@ public class EmbeddedService {
         pageUrl = "https://" + pageUrl;
       Uri uri = Uri.parse(pageUrl);
       String host = uri.getHost();
-      return host.equals("youtube.com") || host.equals("youtu.be");
+      return host.matches("^(?:www\\.|m\\.)?(?:youtube\\.com|youtu\\.be)$");
     } catch (Throwable t) {
       Log.e("Unable to parse embedded service", t);
     }

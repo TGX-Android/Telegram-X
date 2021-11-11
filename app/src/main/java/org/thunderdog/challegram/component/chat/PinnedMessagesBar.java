@@ -530,6 +530,8 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
 
   @Override
   public void onItemChanged (ListManager<TdApi.Message> list, TdApi.Message item, int index, int cause) {
-    messagesAdapter.notifyItemChanged(index);
+    if (cause == MessageListManager.CAUSE_CONTENT_CHANGED) {
+      messagesAdapter.notifyItemChanged(index);
+    }
   }
 }

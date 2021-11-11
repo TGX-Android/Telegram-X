@@ -2391,6 +2391,7 @@ public class TdlibUi extends Handler {
   public static class UrlOpenParameters implements TGMessage.MessageIdChangeListener {
     public int instantViewMode = INSTANT_VIEW_UNSPECIFIED;
     public int embedViewMode = EMBED_VIEW_UNSPECIFIED;
+    public TdApi.WebPage sourceWebPage;
 
     public MessageId messageId;
     public String refererUrl, instantViewFallbackUrl;
@@ -2515,6 +2516,11 @@ public class TdlibUi extends Handler {
 
     public UrlOpenParameters disableEmbedView () {
       return embedViewMode(TdlibUi.EMBED_VIEW_DISABLED);
+    }
+
+    public UrlOpenParameters sourceWebView (TdApi.WebPage webPage) {
+      this.sourceWebPage = webPage;
+      return this;
     }
 
     public UrlOpenParameters referer (String refererUrl) {
@@ -2723,8 +2729,12 @@ public class TdlibUi extends Handler {
       return;
     }
 
-    if (embedViewMode == EMBED_VIEW_ENABLED && !(EmbeddedService.isYoutubeUrl(url) && YouTube.isYoutubeAppInstalled())) {
-      if (context instanceof ViewController<?> && PreviewLayout.show((ViewController<?>) context, url, isFromSecretChat)) {
+    if (embedViewMode == EMBED_VIEW_ENABLED && context instanceof ViewController<?>) {
+      TdApi.WebPage webPage = options != null ? options.sourceWebPage : null;
+      if (
+        (webPage != null && PreviewLayout.show((ViewController<?>) context, webPage, isFromSecretChat)) ||
+        (webPage == null && !(EmbeddedService.isYoutubeUrl(url) && YouTube.isYoutubeAppInstalled()) && PreviewLayout.show((ViewController<?>) context, url, isFromSecretChat))
+      ) {
         return;
       }
     }

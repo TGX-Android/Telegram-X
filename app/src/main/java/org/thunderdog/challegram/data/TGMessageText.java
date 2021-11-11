@@ -132,7 +132,7 @@ public class TGMessageText extends TGMessage {
   @Nullable
   @Override
   protected TdApi.WebPage findLinkPreview (String link) {
-    return webPage != null && link.equals(webPage.getWebPage().url) ? webPage.getWebPage() : null;
+    return webPage != null && webPage.isPreviewOf(link) ? webPage.getWebPage() : null;
   }
 
   @Override
