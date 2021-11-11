@@ -342,7 +342,7 @@
   <string name="ChatContentGroupTtlMinutes_other">Set messages to auto-delete in %1$s minutes</string>
   <string name="ChatContentGroupTtlHours_one">Set messages to auto-delete in %1$s hour</string>
   <string name="ChatContentGroupTtlHours_other">Set messages to auto-delete in %1$s hours</string>
-  <string name="ChatContentGroupTtlDays_one">Set messages to auto-delete in %1$s days</string>
+  <string name="ChatContentGroupTtlDays_one">Set messages to auto-delete in %1$s day</string>
   <string name="ChatContentGroupTtlDays_other">Set messages to auto-delete in %1$s days</string>
   <string name="ChatContentGroupTtlWeeks_one">Set messages to auto-delete in %1$s week</string>
   <string name="ChatContentGroupTtlWeeks_other">Set messages to auto-delete in %1$s weeks</string>
@@ -355,7 +355,7 @@
   <string name="ChatContentChannelTtlMinutes_other">Set posts to auto-delete in %1$s minutes</string>
   <string name="ChatContentChannelTtlHours_one">Set posts to auto-delete in %1$s hour</string>
   <string name="ChatContentChannelTtlHours_other">Set posts to auto-delete in %1$s hours</string>
-  <string name="ChatContentChannelTtlDays_one">Set posts to auto-delete in %1$s days</string>
+  <string name="ChatContentChannelTtlDays_one">Set posts to auto-delete in %1$s day</string>
   <string name="ChatContentChannelTtlDays_other">Set posts to auto-delete in %1$s days</string>
   <string name="ChatContentChannelTtlWeeks_one">Set posts to auto-delete in %1$s week</string>
   <string name="ChatContentChannelTtlWeeks_other">Set posts to auto-delete in %1$s weeks</string>
@@ -3790,8 +3790,8 @@
   <string name="InstallUpdate">Install an update</string>
   <string name="CheckingForUpdates">Checking for updates…</string>
   <string name="LatestInstalled">Latest version is installed</string>
-  <string name="DownloadUpdateSize">Download an update (%1$s)</string>
-  <string name="DownloadUpdate">Download an update</string>
+  <string name="DownloadUpdateSize">Download update (%1$s)</string>
+  <string name="DownloadUpdate">Download update</string>
   <string name="AppUpdateAvailablePrompt">A new **Telegram X** update is available. Would you like to download? (%1$s)</string>
   <string name="AppUpdateAvailableVersionPrompt">A new **Telegram X** `%2$s` update is available. Would you like to download? (%1$s)</string>
   <string name="AppUpdateAvailablePromptConfirm">Download and install</string>
@@ -3969,7 +3969,7 @@
   <string name="SubscribeToBeta">Subscribe to beta updates</string>
   <string name="url_betaSubscription">https://play.google.com/apps/testing/org.thunderdog.challegram</string>
 
-  <string name="NotificationsMode">Show notifications for</string>
+  <string name="NotificationsMode">Show notifications from</string>
   <string name="NotificationsModeAll">All accounts</string>
   <string name="NotificationsModeActive">Current account</string>
   <string name="NotificationsModeSelected">Selected accounts</string>
@@ -4018,7 +4018,7 @@
   <string name="NotificationsErrorBlockedGroup">Notifications from groups are blocked</string>
   <string name="NotificationsErrorBlockedChannel">Notifications from channels are blocked</string>
   <string name="NotificationsErrorBlockedPrivate">Notifications from private chats are blocked</string>
-  <string name="NotificationsErrorBackground">Notifications may not work while app is closed</string>
+  <string name="NotificationsErrorBackground">Notifications may not work while the app is closed</string>
   <string name="NotificationsErrorUnselected">Notifications from this account are disabled</string>
   <string name="NotificationsErrorError">Couldn\'t display some notifications</string>
   <string name="NotificationsErrorErrorChat">Couldn\'t display notification from %1$s</string>
