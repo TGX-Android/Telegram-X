@@ -4033,6 +4033,9 @@
   <string name="OpenEmbed">Preview external links</string>
   <string name="OpenEmbedDesc">See in-app preview when opening supported external links</string>
 
+  <string name="InAppCameraCache">In-app camera cache</string>
+  <string name="InAppCameraCacheDeleteConfirm">Are you sure you want to clear private in-app camera cache?</string>
+
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
   <string name="suggested_language_code_plural" />

@@ -158,6 +158,10 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
             view.setEnabledAnimated(fastStats != null, isUpdate);
             view.setData(fastStats != null ? Strings.buildSize(fastStats.getPaintsSize()) : Lang.getString(R.string.Calculating));
             break;
+          case R.id.btn_camera:
+            view.setEnabledAnimated(fastStats != null && fastStats.getPrivateCameraMediaSize() > 0, isUpdate);
+            view.setData(fastStats != null ? Strings.buildSize(fastStats.getPrivateCameraMediaSize()) : Lang.getString(R.string.Calculating));
+            break;
           case R.id.btn_emoji:
             view.setEnabledAnimated(fastStats != null && fastStats.getEmojiUnusedSize() > 0, isUpdate);
             view.setData(fastStats != null ? Strings.buildSize(fastStats.getEmojiSize()) : Lang.getString(R.string.Calculating));
@@ -238,6 +242,10 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(VIEW_TYPE, R.id.btn_languageSettings, 0, R.string.LanguageDatabase));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    if (needCameraEntry()) {
+      items.add(new ListItem(VIEW_TYPE, R.id.btn_camera, 0, R.string.InAppCameraCache));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    }
     if (needEmojiEntry()) {
       items.add(new ListItem(VIEW_TYPE, R.id.btn_emoji, 0, R.string.EmojiSets));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -302,6 +310,7 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
     adapter.updateValuedSettingById(R.id.btn_localDatabase);
     adapter.updateValuedSettingById(R.id.btn_settings);
     adapter.updateValuedSettingById(R.id.btn_languageSettings);
+    checkCameraEntry();
     checkEmojiEntry();
     checkLottieEntry();
     checkLogEntry();
@@ -435,6 +444,19 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
             if (id == R.id.btn_deleteFile) {
               if (!fastStats.deleteJunk())
                 Log.w("Failed to delete some junk");
+              reloadFastStats();
+            }
+            return true;
+          });
+        }
+        break;
+      }
+      case R.id.btn_camera: {
+        if (fastStats != null) {
+          showOptions(Lang.getString(R.string.InAppCameraCacheDeleteConfirm), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getPrivateCameraMediaSize())), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+            if (id == R.id.btn_deleteFile) {
+              if (!fastStats.deletePrivateCameraMedia())
+                Log.w("Failed to delete some emoji sets");
               reloadFastStats();
             }
             return true;
@@ -767,6 +789,14 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
 
   private void checkEmojiEntry () {
     checkEntry(R.id.btn_emoji, R.string.EmojiSets, needEmojiEntry());
+  }
+
+  private boolean needCameraEntry () {
+    return fastStats != null && fastStats.getPrivateCameraMediaSize() > 0;
+  }
+
+  private void checkCameraEntry () {
+    checkEntry(R.id.btn_camera, R.string.InAppCameraCache, needCameraEntry());
   }
 
   private boolean needPaintsEntry () {
