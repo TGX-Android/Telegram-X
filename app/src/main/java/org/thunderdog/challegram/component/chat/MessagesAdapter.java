@@ -455,6 +455,12 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
 
     TGMessage bottomMessage = top ? null : getMessage(0);
     TGMessage topMessage = top ? getMessage(getMessageCount() - 1) : null;
+    boolean sponsoredFlag = bottomMessage != null && bottomMessage.isSponsored();
+
+    if (sponsoredFlag) {
+      bottomMessage = getMessage(1);
+    }
+
     if (top) {
       if (topMessage != null) {
         topMessage.mergeWith(message, getMessageCount() == 1);
@@ -486,14 +492,15 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
         notifyItemChanged(items.size() - 2);
       }
     } else {
+      int newIndex = sponsoredFlag ? 1 : 0;
       if (bottomMessage != null) {
-        notifyItemChanged(0);
+        notifyItemChanged(newIndex);
       }
-      items.add(0, message);
+      items.add(newIndex, message);
       if (prevSize == 0) {
         notifyItemChanged(0);
       } else {
-        notifyItemInserted(0);
+        notifyItemInserted(newIndex);
       }
     }
 

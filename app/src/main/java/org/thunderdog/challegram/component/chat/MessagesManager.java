@@ -1264,7 +1264,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         message.onDestroy();
         return;
       }
-      boolean scrollToBottom = message.isSending() || (atBottom && (!message.isOld() || message.isChatMember()));
+      boolean scrollToBottom = (message.isSending() || (atBottom && (!message.isOld() || message.isChatMember()))) && !message.isSponsored();
       // message.mergeWith(bottomMessage, true);
       if (scrollToBottom) {
         boolean hasScrolled = adapter.addMessage(message, false, scrollToBottom);
