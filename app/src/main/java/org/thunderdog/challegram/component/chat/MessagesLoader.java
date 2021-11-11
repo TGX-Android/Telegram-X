@@ -1415,18 +1415,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
     List<TdApi.SponsoredMessage> sponsoredMessages = getSponsoredMessages(chatId);
     if (!items.isEmpty() && sponsoredMessages != null && !sponsoredMessages.isEmpty() && !canLoadBottom && sponsoredMessages.get(0).content.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
-      TGMessage tgm = TGMessageSponsored.sponsoredToTgx(manager, chatId, cur.getDate(), sponsoredMessages.get(0));
-
-      tgm.setUnread(Long.MAX_VALUE);
-      tgm.setShowUnreadBadge(false);
-
-      tgm.forceAvatarWhenMerging(manager.useBubbles());
-      tgm.mergeWith(cur, true);
-
-      tgm.prepareLayout();
-      cur.setNeedExtraPadding(false);
-
-      items.add(0, tgm);
+      items.add(0, createSponsoredTgMessage(cur, chatId, sponsoredMessages));
     }
 
     if (needMeasureSpeed) {
@@ -1512,6 +1501,7 @@ public class MessagesLoader implements Client.ResultHandler {
           });
           return;
         }
+
         if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
           Log.i(Log.TAG_MESSAGES_LOADER, "Received more bottom messages, new startBottom:%s canLoadTop:%b canLoadBottom:%b", getStartBottom(), canLoadTop, canLoadBottom);
         }
@@ -1586,6 +1576,10 @@ public class MessagesLoader implements Client.ResultHandler {
           }
           loadMore(true, chunkSize - count, willTryAgain && loadingLocal);
         }
+      } else {
+        if (!items.isEmpty() && isEndReached(new MessageId(items.get(0).getChatId(), items.get(0).getId())) && (sponsoredMessages != null && !sponsoredMessages.isEmpty())) {
+          manager.addSentMessages(Collections.singletonList(createSponsoredTgMessage(manager.findBottomMessage(), chatId, sponsoredMessages)));
+        }
       }
 
       if (canLoadTop != couldLoadTop && !canLoadTop) {
@@ -1596,6 +1590,21 @@ public class MessagesLoader implements Client.ResultHandler {
       }
       manager.ensureContentHeight();
     });
+  }
+
+  private TGMessage createSponsoredTgMessage (TGMessage cur, long chatId, List<TdApi.SponsoredMessage> sponsoredMessages) {
+    TGMessage tgm = TGMessageSponsored.sponsoredToTgx(manager, chatId, cur.getDate(), sponsoredMessages.get(0));
+
+    tgm.setUnread(Long.MAX_VALUE);
+    tgm.setShowUnreadBadge(false);
+
+    tgm.forceAvatarWhenMerging(manager.useBubbles());
+    tgm.mergeWith(cur, true);
+
+    tgm.prepareLayout();
+    cur.setNeedExtraPadding(false);
+
+    return tgm;
   }
 
   private void fetchAlbum (List<TdApi.Message> album) {

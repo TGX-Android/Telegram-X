@@ -512,7 +512,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         top.setIsBottom(true);
       }
       setHeaderEnabled(!headerDisabled());
-      if (top != null || getDate() != 0 || isScheduled()) {
+      if ((top != null || getDate() != 0 || isScheduled()) && !isSponsored()) {
         flags |= FLAG_SHOW_DATE;
         setDate(genDate());
       } else {
