@@ -147,7 +147,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
   @Override
   public void onClick (View v) {
     if (v.getId() == R.id.btn_inviteLinkDateLimit) {
-      showDateTimePicker(Lang.getString(R.string.InviteLinkExpireHeader), R.string.InviteLinkExpireConfirm, R.string.InviteLinkExpireConfirm, R.string.InviteLinkExpireConfirm, millis -> {
+      showDateTimePicker(Lang.getString(R.string.InviteLinkExpireTitle), R.string.InviteLinkExpireToday, R.string.InviteLinkExpireTomorrow, R.string.InviteLinkExpireFuture, millis -> {
         expireDate = (int) TimeUnit.MILLISECONDS.toSeconds(millis - tdlib.currentTimeMillis());
         updateExpireDateSlider();
         adapter.updateValuedSettingById(R.id.btn_inviteLinkDateLimit);

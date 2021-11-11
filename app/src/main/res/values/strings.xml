@@ -1783,7 +1783,7 @@
   <string name="EventLogFilterVoiceChats">Video chats</string>
   <string name="EventLogSlowModeChanged">%1$s set the slow mode timer to %2$s</string>
   <string name="EventLogSlowModeDisabled">%1$s disabled the slow mode</string>
-  <string name="EventLogSlowModeChangedYou">%1$s set the slow mode timer to %2$s</string>
+  <string name="EventLogSlowModeChangedYou">You set the slow mode timer to %1$s</string>
   <string name="EventLogSlowModeDisabledYou">%1$s disabled the slow mode</string>
   <string name="EventLogLinkedChannelChanged">%1$s linked this group to %2$s</string>
   <string name="EventLogLinkedChannelRemoved">%1$s unlinked this group from %2$s</string>
@@ -3866,8 +3866,10 @@
   <string name="InviteLinkLimitedByUsersAlertHint">0 — no limit</string>
   <string name="InviteLinkLimitedByUsersCustom">Enter custom limit</string>
   <string name="InviteLinkNoLimitSet">no limit</string>
-  <string name="InviteLinkExpireHeader">Expire after</string>
-  <string name="InviteLinkExpireConfirm">Set Expiration Date</string>
+  <string name="InviteLinkExpireTitle">Expiration timer</string>
+  <string name="InviteLinkExpireToday">Expire today at %1$s</string>
+  <string name="InviteLinkExpireTomorrow">Expire tomorrow at %1$s</string>
+  <string name="InviteLinkExpireFuture">Expire %1$s at %2$s</string>
   <string name="InviteLinkExpireInHours_one">Expire in %1$s hour</string>
   <string name="InviteLinkExpireInHours_other">Expire in %1$s hours</string>
   <string name="InviteLinkExpireInDays_one">Expire in %1$s day</string>
