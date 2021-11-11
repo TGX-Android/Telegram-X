@@ -644,6 +644,10 @@
   <item type="id" name="btn_sendScheduled2Hr" />
   <item type="id" name="btn_sendScheduled8Hr" />
   <item type="id" name="btn_sendScheduledCustom" />
+  <item type="id" name="btn_expireIn12h" />
+  <item type="id" name="btn_expireIn2d" />
+  <item type="id" name="btn_expireIn1w" />
+  <item type="id" name="btn_expireIn2w" />
   <item type="id" name="btn_sendScheduled" />
   <item type="id" name="btn_sendAndOpen" />
   <item type="id" name="btn_sendOnceOnline" />

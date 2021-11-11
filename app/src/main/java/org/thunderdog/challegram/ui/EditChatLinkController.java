@@ -14,6 +14,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.widget.SliderWrapView;
 
@@ -24,6 +25,8 @@ import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.collection.IntList;
+import me.vkryl.core.lambda.RunnableLong;
 import me.vkryl.td.TdConstants;
 
 public class EditChatLinkController extends EditBaseController<EditChatLinkController.Args> implements View.OnClickListener {
@@ -147,13 +150,66 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
   @Override
   public void onClick (View v) {
     if (v.getId() == R.id.btn_inviteLinkDateLimit) {
-      showDateTimePicker(Lang.getString(R.string.InviteLinkExpireTitle), R.string.InviteLinkExpireToday, R.string.InviteLinkExpireTomorrow, R.string.InviteLinkExpireFuture, millis -> {
-        expireDate = (int) TimeUnit.MILLISECONDS.toSeconds(millis - tdlib.currentTimeMillis());
+      IntList ids = new IntList(4);
+      StringList strings = new StringList(4);
+      IntList icons = new IntList(4);
+
+      RunnableLong act = (millis) -> {
+        expireDate = (int) TimeUnit.MILLISECONDS.toSeconds(millis);
         updateExpireDateSlider();
         adapter.updateValuedSettingById(R.id.btn_inviteLinkDateLimit);
         adapter.updateItemById(R.id.btn_inviteLinkDateSlider);
         checkDoneButton();
-      }, null);
+      };
+
+      ids.append(R.id.btn_expireIn12h);
+      strings.append(Lang.plural(R.string.InviteLinkExpireInHours, 12));
+      icons.append(R.drawable.baseline_schedule_24);
+
+      ids.append(R.id.btn_expireIn2d);
+      strings.append(Lang.plural(R.string.InviteLinkExpireInDays, 2));
+      icons.append(R.drawable.baseline_schedule_24);
+
+      ids.append(R.id.btn_expireIn1w);
+      strings.append(Lang.plural(R.string.InviteLinkExpireInWeeks, 1));
+      icons.append(R.drawable.baseline_schedule_24);
+
+      ids.append(R.id.btn_expireIn2w);
+      strings.append(Lang.plural(R.string.InviteLinkExpireInWeeks, 2));
+      icons.append(R.drawable.baseline_schedule_24);
+
+      ids.append(R.id.btn_sendScheduledCustom);
+      strings.append(Lang.getString(R.string.InviteLinkExpireInCustomDate));
+      icons.append(R.drawable.baseline_date_range_24);
+
+      showOptions(null, ids.get(), strings.get(), null, icons.get(), new OptionDelegate() {
+        @Override
+        public boolean onOptionItemPressed (View optionItemView, int id) {
+          long millis;
+          switch (id) {
+            case R.id.btn_sendScheduledCustom: {
+              showDateTimePicker(Lang.getString(R.string.InviteLinkExpireTitle), R.string.InviteLinkExpireToday, R.string.InviteLinkExpireTomorrow, R.string.InviteLinkExpireFuture, (currentMillis) -> act.runWithLong(currentMillis - tdlib.currentTimeMillis()), null);
+              return true;
+            }
+            case R.id.btn_expireIn12h:
+              millis = TimeUnit.HOURS.toMillis(12);
+              break;
+            case R.id.btn_expireIn2d:
+              millis = TimeUnit.DAYS.toMillis(2);
+              break;
+            case R.id.btn_expireIn1w:
+              millis = TimeUnit.DAYS.toMillis(7);
+              break;
+            case R.id.btn_expireIn2w:
+              millis = TimeUnit.DAYS.toMillis(14);
+              break;
+            default:
+              return false;
+          }
+          act.runWithLong(millis);
+          return true;
+        }
+      });
     } else if (v.getId() == R.id.btn_inviteLinkUserLimit) {
       openInputAlert(Lang.getString(R.string.InviteLinkLimitedByUsersItem), Lang.getString(R.string.InviteLinkLimitedByUsersAlertHint), R.string.Done, R.string.Cancel, String.valueOf(memberLimit), (inputView, result) -> {
         int data = StringUtils.parseInt(result, -1);
