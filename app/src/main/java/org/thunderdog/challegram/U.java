@@ -1870,7 +1870,7 @@ public class U {
     return new File(getAppDir(true), "media");
   }
 
-  private static File getAlbumDir (boolean isPrivate) {
+  public static File getAlbumDir (boolean isPrivate) {
     File storageDir = null;
     if (!isPrivate) {
       if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
