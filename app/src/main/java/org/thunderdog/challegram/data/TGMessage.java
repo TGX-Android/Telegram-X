@@ -34,7 +34,6 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
-import androidx.collection.SparseArrayCompat;
 
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -126,7 +125,6 @@ import me.vkryl.core.unit.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
-import me.vkryl.td.TdConstants;
 
 public abstract class TGMessage implements MultipleViewProvider.InvalidateContentProvider, TdlibDelegate, FactorAnimator.Target, Comparable<TGMessage>, Counter.Callback {
   private static final int MAXIMUM_CHANNEL_MERGE_TIME_DIFF = 150;
@@ -6082,8 +6080,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       }
 
       @Override
-      public boolean hasLinkPreview (String link) {
-        return findLinkPreview(link) != null;
+      public TdApi.WebPage findWebPage (String link) {
+        return findLinkPreview(link);
       }
 
       @Override

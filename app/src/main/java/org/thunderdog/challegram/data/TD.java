@@ -3889,7 +3889,7 @@ public class TD {
   }
 
   public static TdApi.PhotoSize findClosest (TdApi.Photo photo, int width, int height) {
-    return findClosest(photo.sizes, width, height);
+    return photo != null ? findClosest(photo.sizes, width, height) : null;
   }
 
   public static @Nullable String findOrdinary (Map<String, TdApi.LanguagePackString> strings, String key, Future<String> defaultValue) {
