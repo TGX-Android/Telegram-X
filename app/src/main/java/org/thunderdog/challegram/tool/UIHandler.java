@@ -82,7 +82,7 @@ public class UIHandler extends Handler {
     sendMessage(Message.obtain(this, OPEN_CUSTOM_TOAST, duration, positionY, Lang.getString(resource)));
   }
 
-  public void showCustomToast (String message, int duration, int positionY) {
+  public void showCustomToast (CharSequence message, int duration, int positionY) {
     sendMessage(Message.obtain(this, OPEN_CUSTOM_TOAST, duration, positionY, message));
   }
 
@@ -259,7 +259,7 @@ public class UIHandler extends Handler {
         if (context != null) {
           Toast toast = new Toast(context);
           ToastView toastView = new ToastView(context);
-          toastView.setText((String) msg.obj);
+          toastView.setText((CharSequence) msg.obj);
           toast.setGravity(Gravity.CENTER, 0, msg.arg2);
           toast.setView(toastView);
           toast.show();
