@@ -973,7 +973,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
       final long sourceChatId = fromMessageId.getChatId() != 0 ? fromMessageId.getChatId() : messageThread != null ? messageThread.getChatId() : getChatId();
 
-      if (sponsoredMessages.get(sourceChatId) == null && isChannel() && !manager.controller().isInForceTouchMode()) {
+      if (sponsoredMessages.get(sourceChatId) == null && isChannel() && !manager.controller().isInForceTouchMode() && !manager.controller().inPreviewMode() && !manager.controller().areScheduledOnly() && !manager.controller().arePinnedMessages()) {
         if (!isLoadingSponsoredMessages) {
           isLoadingSponsoredMessages = true;
 
