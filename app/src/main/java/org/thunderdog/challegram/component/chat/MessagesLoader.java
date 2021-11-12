@@ -1415,7 +1415,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
     List<TdApi.SponsoredMessage> sponsoredMessages = getSponsoredMessages(chatId);
     if (!items.isEmpty() && sponsoredMessages != null && !sponsoredMessages.isEmpty() && !canLoadBottom && sponsoredMessages.get(0).content.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
-      items.add(0, createSponsoredTgMessage(cur, chatId, sponsoredMessages));
+      //items.add(0, createSponsoredTgMessage(cur, chatId, sponsoredMessages));
     }
 
     if (needMeasureSpeed) {
@@ -1580,6 +1580,10 @@ public class MessagesLoader implements Client.ResultHandler {
         if (!items.isEmpty() && isEndReached(new MessageId(items.get(0).getChatId(), items.get(0).getId())) && (sponsoredMessages != null && !sponsoredMessages.isEmpty())) {
           manager.addSentMessages(Collections.singletonList(createSponsoredTgMessage(manager.findBottomMessage(), chatId, sponsoredMessages)));
         }
+      }
+
+      if ((loadingMode == MODE_MORE_TOP) && !items.isEmpty() && !canLoadBottom && (sponsoredMessages != null && !sponsoredMessages.isEmpty())) {
+        manager.addSentMessages(Collections.singletonList(createSponsoredTgMessage(items.get(0), chatId, sponsoredMessages)));
       }
 
       if (canLoadTop != couldLoadTop && !canLoadTop) {
