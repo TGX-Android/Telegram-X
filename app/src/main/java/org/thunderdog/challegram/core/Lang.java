@@ -279,6 +279,14 @@ public class Lang {
     }
   }
 
+  public static CharSequence getStringSecure (@StringRes int resource, SpanCreator creator, Object... formatArgs) {
+    if (isTrustedLangauge()) {
+      return getString(resource, creator, formatArgs);
+    } else {
+      return getStringImpl(null, resource, false, 0, creator, formatArgs).toString();
+    }
+  }
+
   public static String getString (@Nullable TdApi.LanguagePackInfo languagePackInfo, @StringRes int resource, Object... formatArgs) {
     return getStringImpl(languagePackInfo, resource, true, 0, null, formatArgs).toString();
   }
