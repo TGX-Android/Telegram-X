@@ -3806,6 +3806,7 @@
   <string name="PrivacyPolicy">Privacy Policy</string>
   <string name="ScanQRLinkHint">Use Settings — Devices — Scan QR to sign in with QR code.</string>
   <string name="ScanQRAuthorizedToast">Authorized %1$s</string>
+  <string name="ScanQRAuthorizedToastPasswordPending">Authorized %1$s. You still have to enter your password there.</string>
   <string name="ScanQRFullTitle">Scan QR Code</string>
   <string name="ScanQRFullSubtitle">Scan the QR code to log into this account on another device.</string>
   <string name="ScanQRFullSubtitleProxy">Scan the QR code to add a proxy server.</string>
