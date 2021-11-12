@@ -1298,7 +1298,7 @@ public class TD {
           String originalExtension = U.getExtension(fileName);
           String originalMimeType = TGMimeType.mimeTypeForExtension(originalExtension);
           String extension = TGMimeType.extensionForMimeType(type);
-          if (!StringUtils.isEmpty(extension) && !extension.equals(originalExtension) && !BuildConfig.THEME_FILE_EXTENSION.equals(originalExtension) && !StringUtils.equalsOrBothEmpty(originalMimeType, type)) {
+          if (!StringUtils.isEmpty(extension) && !extension.equals(originalExtension) && !"bin".equals(extension) && !BuildConfig.THEME_FILE_EXTENSION.equals(originalExtension) && !StringUtils.equalsOrBothEmpty(originalMimeType, type)) {
             fileName = fileName + "." + extension;
           }
         }
