@@ -3785,7 +3785,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private boolean needAdminSign () {
-    return administrator != null || (sender.isAnonymousGroupAdmin() && !StringUtils.isEmpty(msg.authorSignature)) || (sender.isChannelAutoForward() && !isThreadHeader());
+    return administrator != null || ((sender.isAnonymousGroupAdmin() && !StringUtils.isEmpty(msg.authorSignature)) || (sender.isChannelAutoForward() && !isThreadHeader()) && !isSponsored());
   }
 
   public final void setAdministratorSign (@Nullable TdApi.ChatAdministrator administrator) {
