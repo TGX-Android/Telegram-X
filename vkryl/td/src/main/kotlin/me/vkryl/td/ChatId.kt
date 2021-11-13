@@ -82,3 +82,12 @@ fun fromBasicGroupId (basicGroupId: Long): Long = -basicGroupId
 fun fromSupergroupId (supergroupId: Long): Long = ZERO_CHANNEL_ID - supergroupId;
 fun fromSecretChatId (secretChatId: Int): Long = ZERO_SECRET_CHAT_ID + secretChatId
 
+fun toString (chatId: Long): String {
+  return when (getType(chatId, false)) {
+    ChatTypePrivate.CONSTRUCTOR -> "user#${toUserId(chatId)}"
+    ChatTypeSecret.CONSTRUCTOR -> "secret#${toSecretChatId(chatId)}"
+    ChatTypeBasicGroup.CONSTRUCTOR -> "group#${toBasicGroupId(chatId)}"
+    ChatTypeSupergroup.CONSTRUCTOR -> "supergroup#${toSupergroupId(chatId)}"
+    else -> "chat#${chatId}"
+  }
+}
