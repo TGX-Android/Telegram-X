@@ -449,6 +449,7 @@
   <item type="id" name="btn_forcePlainChannels" />
   <item type="id" name="btn_chatFontSize" />
   <item type="id" name="btn_chatFontSizeScale" />
+  <item type="id" name="btn_chatBubbleMergeRadius" />
   <item type="id" name="btn_chatFontSizeReset" />
   <item type="id" name="btn_encryptionKey" />
   <item type="id" name="btn_cancel" />

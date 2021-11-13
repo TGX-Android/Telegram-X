@@ -1346,7 +1346,7 @@
   <string name="CallAgain">Call Again</string>
   <string name="CallBack">Call Back</string>
   <string name="Busy">Busy</string>
-  <string name="TextSize">Message Font Size</string>
+  <string name="TextSizeModern">Font Size &amp; Bubble Radius</string>
   <string name="TextSizeScaleEnable">Enable Size Scaling</string>
   <string name="TextSizeScaleDisable">Disable Size Scaling</string>
   <string name="TextSizeReset">Reset to Default</string>
@@ -4036,6 +4036,9 @@
 
   <string name="InAppCameraCache">In-app camera cache</string>
   <string name="InAppCameraCacheDeleteConfirm">Are you sure you want to clear private in-app camera cache?</string>
+
+  <string name="MergeBubbleCorners">Separate Bubble Corners</string>
+  <string name="MergeBubbleCornersDisable">Unify Bubble Corners</string>
 
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />

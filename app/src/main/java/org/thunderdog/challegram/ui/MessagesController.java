@@ -1088,6 +1088,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
           textWrap.addView(fontSliderView);
 
           bottomWrap.addView(textWrap);
+          createCornersConfiguration(bottomWrap);
+
           break;
         }
         case PREVIEW_MODE_NONE: {
@@ -1279,8 +1281,106 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return contentView;
   }
 
+  private void createCornersConfiguration (ViewGroup bottomWrap) {
+    createSubCornerConfiguration(false, bottomWrap);
+    createSubCornerConfiguration(true, bottomWrap);
+    updateBubbleMergeSliderVisibility();
+  }
+
+  private void createSubCornerConfiguration (boolean mergeCorners, ViewGroup bottomWrap) {
+    FrameLayoutFix textWrap = new FrameLayoutFix(context);
+    textWrap.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(49f)));
+    ViewSupport.setThemedBackground(textWrap, R.id.theme_color_filling, this);
+
+    int pad = Screen.dp(14f);
+
+    ImageView tv1 = new ImageView(context);
+    tv1.setScaleType(ImageView.ScaleType.FIT_CENTER);
+    tv1.setColorFilter(Theme.iconColor());
+    addThemeFilterListener(tv1, R.id.theme_color_icon);
+    tv1.setImageResource(R.drawable.sharp_rounded_corner_24);
+    tv1.setPadding(pad, pad, pad, pad);
+    tv1.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(46f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.LEFT));
+    textWrap.addView(tv1);
+
+    ImageView tv2 = new ImageView(context);
+    tv2.setScaleType(ImageView.ScaleType.FIT_CENTER);
+    tv2.setColorFilter(Theme.iconColor());
+    addThemeFilterListener(tv2, R.id.theme_color_icon);
+    tv2.setImageResource(R.drawable.round_rounded_corner_24);
+    tv2.setPadding(pad, pad, pad, pad);
+    tv2.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(46f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT));
+    textWrap.addView(tv2);
+
+    if (mergeCorners) {
+      tv1.setRotation(180);
+      tv2.setRotation(180);
+    }
+
+    float[] elements = mergeCorners ? Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES : Settings.MSG_BUBBLE_RADIUS_SIZES;
+
+    SliderView cornerSliderView = new SliderView(context);
+    addThemeInvalidateListener(cornerSliderView);
+    cornerSliderView.setSlideEnabled(true, false);
+    cornerSliderView.setValueCount(elements.length);
+    updateBubbleRadiusValue(cornerSliderView, mergeCorners);
+    cornerSliderView.setListener(new SliderView.Listener() {
+      @Override
+      public void onSetStateChanged (SliderView view, boolean isSetting) {
+        if (!isSetting) {
+          int index = Math.round(view.getValue() * (float) (elements.length - 1));
+          view.animateValue((float) index / (float) (elements.length - 1));
+        }
+      }
+
+      @Override
+      public void onValueChanged (SliderView view, float factor) {
+        int index = Math.round(factor * (float) (elements.length - 1));
+        float newValue = factor * (float) (elements[elements.length - 1]);
+        if (mergeCorners) {
+          Settings.instance().setBubbleMergeCornerSize(newValue, elements[index]);
+        } else {
+          Settings.instance().setBubbleCornerSize(newValue, elements[index]);
+          if (!Settings.instance().needMergeCornerRadius()) {
+            float newMerge = (factor * (float) (Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES[Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES.length - 1]));
+            Settings.instance().setBubbleMergeCornerSize(newMerge, getApproxIndexForMergedRadius(newMerge));
+            if (mergeCornerSliderView != null) {
+              updateBubbleRadiusValue(mergeCornerSliderView, true);
+            }
+          }
+        }
+        manager.rebuildLayouts();
+      }
+
+      @Override
+      public boolean allowSliderChanges (SliderView view) {
+        return true;
+      }
+    });
+    cornerSliderView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    cornerSliderView.setForceBackgroundColorId(R.id.theme_color_sliderInactive);
+    cornerSliderView.setPadding(tv2.getLayoutParams().width, 0, tv2.getLayoutParams().width, 0);
+    cornerSliderView.setColorId(R.id.theme_color_sliderActive, false);
+    textWrap.addView(cornerSliderView);
+
+    if (mergeCorners) {
+      this.mergeCornerSliderView = cornerSliderView;
+      this.mergeCornerWrap = textWrap;
+    } else {
+      this.cornerSliderView = cornerSliderView;
+    }
+
+    bottomWrap.addView(textWrap);
+  }
+
+  private void updateBubbleMergeSliderVisibility() {
+    mergeCornerWrap.setVisibility(Settings.instance().needMergeCornerRadius() ? View.VISIBLE : View.GONE);
+  }
+
   private SliderView fontSliderView;
-  private SliderView blurSliderView;
+  private SliderView cornerSliderView;
+  private SliderView mergeCornerSliderView;
+  private ViewGroup mergeCornerWrap;
 
   private static void updateFontSliderValue (SliderView sliderView) {
     boolean found = false;
@@ -1297,19 +1397,34 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  private static void updateWpBlurSliderValue (SliderView sliderView) {
+  private static void updateBubbleRadiusValue (SliderView sliderView, boolean mergeMode) {
     boolean found = false;
     int index = 0;
-    for (float dp : Settings.CHAT_FONT_SIZES) {
-      if (dp == Settings.instance().getChatFontSize()) {
+    float currentDp = (mergeMode ? Settings.instance().getLastKnownBubbleMergeCornerSize() : Settings.instance().getLastKnownBubbleCornerSize());
+    for (float dp : (mergeMode ? Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES : Settings.MSG_BUBBLE_RADIUS_SIZES)) {
+      if (dp == currentDp) {
         found = true;
         break;
       }
       index++;
     }
     if (found) {
-      sliderView.setValue((float) index / (float) (Settings.CHAT_FONT_SIZES.length - 1));
+      sliderView.setValue((float) index / (float) ((mergeMode ? Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES : Settings.MSG_BUBBLE_RADIUS_SIZES).length - 1));
     }
+  }
+
+  private int getApproxIndexForMergedRadius (float currentValue) {
+    int curIndex = 0;
+
+    for (float dp : Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES) {
+      if (dp >= currentValue) {
+        break;
+      }
+
+      curIndex++;
+    }
+
+    return curIndex;
   }
 
   // SELF-CHAT
@@ -1874,9 +1989,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
         manager.rebuildLayouts();
         break;
       }
+      case R.id.btn_chatBubbleMergeRadius: {
+        Settings.instance().toggleNeedMergeCornerRadius();
+        updateBubbleMergeSliderVisibility();
+        break;
+      }
       case R.id.btn_chatFontSizeReset: {
         Settings.instance().resetChatFontSize();
         updateFontSliderValue(fontSliderView);
+        updateBubbleRadiusValue(cornerSliderView, false);
+        updateBubbleRadiusValue(mergeCornerSliderView, false);
+        updateBubbleMergeSliderVisibility();
         manager.rebuildLayouts();
         break;
       }
@@ -3096,7 +3219,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case PREVIEW_MODE_WALLPAPER_OBJECT:
         return Lang.getString(R.string.ChatBackgroundPreview);
       case PREVIEW_MODE_FONT_SIZE:
-        return Lang.getString(R.string.TextSize);
+        return Lang.getString(R.string.TextSizeModern);
       default:
         return Lang.getString(isSelfChat() ? R.string.SavedMessages : R.string.ChatPreview);
     }
@@ -3232,10 +3355,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case R.id.menu_btn_more: {
         if (inPreviewMode) {
           if (previewMode == PREVIEW_MODE_FONT_SIZE) {
-            IntList ids = new IntList(2);
-            StringList strings = new StringList(2);
+            IntList ids = new IntList(3);
+            StringList strings = new StringList(3);
             ids.append(R.id.btn_chatFontSizeScale);
             strings.append(Settings.instance().needChatFontSizeScaling() ? R.string.TextSizeScaleDisable : R.string.TextSizeScaleEnable);
+            ids.append(R.id.btn_chatBubbleMergeRadius);
+            strings.append(Settings.instance().needMergeCornerRadius() ? R.string.MergeBubbleCornersDisable : R.string.MergeBubbleCorners);
             if (Settings.instance().canResetChatFontSize()) {
               ids.append(R.id.btn_chatFontSizeReset);
               strings.append(R.string.TextSizeReset);

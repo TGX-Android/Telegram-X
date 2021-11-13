@@ -877,11 +877,13 @@ public class Theme {
   private static final boolean BUBBLE_BIG_RADIUS_AVAILABLE = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
 
   public static float getBubbleDefaultRadius () {
-    return Theme.getProperty(BUBBLE_BIG_RADIUS_AVAILABLE ? ThemeProperty.BUBBLE_CORNER : ThemeProperty.BUBBLE_CORNER_LEGACY);
+    return Settings.instance().getBubbleCornerSize();
+    //return Theme.getProperty(BUBBLE_BIG_RADIUS_AVAILABLE ? ThemeProperty.BUBBLE_CORNER : ThemeProperty.BUBBLE_CORNER_LEGACY);
   }
 
   public static float getBubbleMergeRadius () {
-    return Theme.getProperty(BUBBLE_BIG_RADIUS_AVAILABLE ? ThemeProperty.BUBBLE_CORNER_MERGED : ThemeProperty.BUBBLE_CORNER_LEGACY);
+    return Settings.instance().getBubbleMergeCornerSize();
+    //return Theme.getProperty(BUBBLE_BIG_RADIUS_AVAILABLE ? ThemeProperty.BUBBLE_CORNER_MERGED : ThemeProperty.BUBBLE_CORNER_LEGACY);
   }
 
   public static boolean isBubbleRadiusBig (float radius) {

@@ -203,6 +203,8 @@ public class Settings {
   private static final String KEY_CAMERA_ASPECT_RATIO = "settings_camera_ratio";
   private static final String KEY_CAMERA_TYPE = "settings_camera_type";
   private static final String KEY_CAMERA_VOLUME_CONTROL = "settings_camera_control";
+  private static final String KEY_BUBBLE_CORNER_SIZE = "settings_bubble_corner_size";
+  private static final String KEY_BUBBLE_MERGE_CORNER_SIZE = "settings_bubble_merge_corner_size";
 
   private static final String KEY_TDLIB_VERBOSITY = "settings_tdlib_verbosity";
   private static final String KEY_TDLIB_DEBUG_PREFIX = "settings_tdlib_allow_debug";
@@ -327,6 +329,7 @@ public class Settings {
   private static final int FLAG_OTHER_START_ROUND_REAR = 1 << 28;
   private static final int FLAG_OTHER_DISABLE_BIG_EMOJI = 1 << 29;
   private static final int FLAG_OTHER_DISABLE_SECRET_LINK_PREVIEWS = 1 << 30;
+  private static final int FLAG_OTHER_ENABLE_BUBBLE_MERGE_CORNER_RADIUS = 1 << 31;
 
   public static final long SETTING_FLAG_BATMAN_POLL_TRANSITIONS = 1 << 1;
   public static final long SETTING_FLAG_EDIT_MARKDOWN = 1 << 2;
@@ -691,12 +694,27 @@ public class Settings {
   private static final float CHAT_FONT_SIZE_MIN = CHAT_FONT_SIZES[0];
   private static final float CHAT_FONT_SIZE_MAX = CHAT_FONT_SIZES[CHAT_FONT_SIZES.length - 1];
 
+  public static final float[] MSG_BUBBLE_RADIUS_SIZES = {0f, 4f, 8f, 10f, 14f, 18f};
+  public static final float MSG_BUBBLE_RADIUS_DEFAULT = 18f;
+
+  public static final float[] MSG_BUBBLE_MERGE_RADIUS_SIZES = {0f, 2f, 4f, 6f};
+  public static final float MSG_BUBBLE_MERGE_RADIUS_DEFAULT = 6f;
+
   public static final int INSTANT_VIEW_MODE_NONE = 0;
   public static final int INSTANT_VIEW_MODE_INTERNAL = 1;
   public static final int INSTANT_VIEW_MODE_ALL = 2;
 
   @Nullable
   private Float _chatFontSize;
+
+  @Nullable
+  private Float _bubbleCornerSize;
+  @Nullable
+  private Float _bubbleLastKnownCornerSize;
+  @Nullable
+  private Float _bubbleMergeCornerSize;
+  @Nullable
+  private Float _bubbleLastKnownMergeCornerSize;
 
   @Nullable
   private Integer _preferredAudioPlaybackMode;
@@ -3071,11 +3089,15 @@ public class Settings {
   }
 
   public boolean canResetChatFontSize () {
-    return getChatFontSize() != CHAT_FONT_SIZE_DEFAULT || needChatFontSizeScaling();
+    return getChatFontSize() != CHAT_FONT_SIZE_DEFAULT || needChatFontSizeScaling() || getLastKnownBubbleCornerSize() != MSG_BUBBLE_RADIUS_DEFAULT || getLastKnownBubbleMergeCornerSize() != MSG_BUBBLE_MERGE_RADIUS_DEFAULT || needMergeCornerRadius();
   }
 
   public boolean needChatFontSizeScaling () {
     return checkSetting(FLAG_OTHER_FONT_SCALING);
+  }
+
+  public boolean needMergeCornerRadius () {
+    return checkSetting(FLAG_OTHER_ENABLE_BUBBLE_MERGE_CORNER_RADIUS);
   }
 
   public void setNeedChatFontSizeScaling (boolean need) {
@@ -3084,13 +3106,24 @@ public class Settings {
     }
   }
 
+  public void setNeedMergeCornerRadius (boolean need) {
+    setSetting(FLAG_OTHER_ENABLE_BUBBLE_MERGE_CORNER_RADIUS, need);
+  }
+
+  public void toggleNeedMergeCornerRadius () {
+    setNeedMergeCornerRadius(!needMergeCornerRadius());
+  }
+
   public void toggleChatFontSizeScaling () {
     setNeedChatFontSizeScaling(!needChatFontSizeScaling());
   }
 
   public void resetChatFontSize () {
     setNeedChatFontSizeScaling(false);
+    setNeedMergeCornerRadius(false);
     setChatFontSize(CHAT_FONT_SIZE_DEFAULT);
+    setBubbleCornerSize(MSG_BUBBLE_RADIUS_DEFAULT, MSG_BUBBLE_RADIUS_DEFAULT);
+    setBubbleMergeCornerSize(MSG_BUBBLE_MERGE_RADIUS_DEFAULT, MSG_BUBBLE_MERGE_RADIUS_DEFAULT);
   }
 
   public static boolean isGoodChatFontSize (float dp) {
@@ -3124,6 +3157,54 @@ public class Settings {
 
   public void addChatFontSizeChangeListener (FontSizeChangeListener listener) {
     ReferenceUtils.addReference(chatFontSizeChangeListeners, listener);
+  }
+
+  public float getBubbleCornerSize () {
+    if (_bubbleCornerSize == null) {
+      _bubbleCornerSize = _bubbleLastKnownCornerSize = pmc.getFloat(KEY_BUBBLE_CORNER_SIZE, MSG_BUBBLE_RADIUS_DEFAULT);
+    }
+
+    return _bubbleCornerSize;
+  }
+
+  public float getLastKnownBubbleCornerSize () {
+    if (_bubbleLastKnownCornerSize == null) {
+      _bubbleCornerSize = _bubbleLastKnownCornerSize = pmc.getFloat(KEY_BUBBLE_CORNER_SIZE, MSG_BUBBLE_RADIUS_DEFAULT);
+    }
+
+    return _bubbleLastKnownCornerSize;
+  }
+
+  public void setBubbleCornerSize (float cornerSize, float finalCornerSize) {
+    this._bubbleCornerSize = cornerSize;
+    if (_bubbleLastKnownCornerSize != finalCornerSize) {
+      this._bubbleLastKnownCornerSize = finalCornerSize;
+      putFloat(KEY_BUBBLE_CORNER_SIZE, finalCornerSize);
+    }
+  }
+
+  public float getBubbleMergeCornerSize () {
+    if (_bubbleMergeCornerSize == null) {
+      _bubbleMergeCornerSize = _bubbleLastKnownMergeCornerSize = pmc.getFloat(KEY_BUBBLE_MERGE_CORNER_SIZE, MSG_BUBBLE_MERGE_RADIUS_DEFAULT);
+    }
+
+    return _bubbleMergeCornerSize;
+  }
+
+  public float getLastKnownBubbleMergeCornerSize () {
+    if (_bubbleLastKnownMergeCornerSize == null) {
+      _bubbleMergeCornerSize = _bubbleLastKnownMergeCornerSize = pmc.getFloat(KEY_BUBBLE_MERGE_CORNER_SIZE, MSG_BUBBLE_MERGE_RADIUS_DEFAULT);
+    }
+
+    return _bubbleLastKnownMergeCornerSize;
+  }
+
+  public void setBubbleMergeCornerSize (float cornerSize, float finalCornerSize) {
+    this._bubbleMergeCornerSize = cornerSize;
+    if (_bubbleLastKnownMergeCornerSize != finalCornerSize) {
+      this._bubbleLastKnownMergeCornerSize = finalCornerSize;
+      putFloat(KEY_BUBBLE_MERGE_CORNER_SIZE, finalCornerSize);
+    }
   }
 
   // Logs
