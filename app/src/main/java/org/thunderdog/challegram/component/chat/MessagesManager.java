@@ -764,7 +764,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private void scrollToBottom (boolean smooth) {
     stopScroll();
     if (!Config.SMOOTH_SCROLL_TO_BOTTOM_ENABLED || !smooth) {
-      manager.scrollToPositionWithOffset(0, 0);
+      if (adapter.getMessage(0) != null && adapter.getMessage(0).isSponsored()) {
+        manager.scrollToPositionWithOffset(1, 0);
+      } else {
+        manager.scrollToPositionWithOffset(0, 0);
+      }
     } else {
       boolean needScrollBy = false;
       if (adapter.getMessage(0) != null) {
