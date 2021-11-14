@@ -1413,11 +1413,6 @@ public class MessagesLoader implements Client.ResultHandler {
       }
     }
 
-    List<TdApi.SponsoredMessage> sponsoredMessages = getSponsoredMessages(chatId);
-    if (!items.isEmpty() && sponsoredMessages != null && !sponsoredMessages.isEmpty() && !canLoadBottom && sponsoredMessages.get(0).content.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
-      //items.add(0, createSponsoredTgMessage(cur, chatId, sponsoredMessages));
-    }
-
     if (needMeasureSpeed) {
       completeMeasure();
     }
@@ -1565,9 +1560,12 @@ public class MessagesLoader implements Client.ResultHandler {
       boolean willTryAgain = (loadingMode == MODE_INITIAL || loadingMode == MODE_REPEAT_INITIAL) && items.size() < chunkSize && items.size() > 0;
       manager.displayMessages(items, loadingMode, scrollPosition, scrollItemView, scrollMessageId, scrollHighlightMode, willTryAgain && loadingLocal);
 
+      List<TdApi.SponsoredMessage> sponsoredMessages = getSponsoredMessages(chatId);
+
       synchronized (lock) {
         isLoading = false;
       }
+
       if (loadingMode == MODE_INITIAL || loadingMode == MODE_REPEAT_INITIAL) {
         int count = items.size();
         if (count > 0 && count < chunkSize) {
@@ -1576,14 +1574,13 @@ public class MessagesLoader implements Client.ResultHandler {
           }
           loadMore(true, chunkSize - count, willTryAgain && loadingLocal);
         }
-      } else {
-        if (!items.isEmpty() && isEndReached(new MessageId(items.get(0).getChatId(), items.get(0).getId())) && (sponsoredMessages != null && !sponsoredMessages.isEmpty())) {
-          manager.addSentMessages(Collections.singletonList(createSponsoredTgMessage(manager.findBottomMessage(), chatId, sponsoredMessages)));
-        }
       }
 
-      if ((loadingMode == MODE_MORE_TOP) && !items.isEmpty() && !canLoadBottom && (sponsoredMessages != null && !sponsoredMessages.isEmpty())) {
+      boolean hasSponsoredMessages = (sponsoredMessages != null && !sponsoredMessages.isEmpty());
+      if (loadingMode == MODE_MORE_TOP && items.size() > 1 && !canLoadBottom && hasSponsoredMessages) {
         manager.addSentMessages(Collections.singletonList(createSponsoredTgMessage(items.get(0), chatId, sponsoredMessages)));
+      } else if (loadingMode == MODE_MORE_BOTTOM && !items.isEmpty() && isEndReached(new MessageId(items.get(0).getChatId(), items.get(0).getId())) && hasSponsoredMessages) {
+        manager.addSentMessages(Collections.singletonList(createSponsoredTgMessage(manager.findBottomMessage(), chatId, sponsoredMessages)));
       }
 
       if (canLoadTop != couldLoadTop && !canLoadTop) {
