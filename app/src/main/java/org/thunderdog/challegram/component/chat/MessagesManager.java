@@ -1287,7 +1287,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           scrollOffsetInPixels = ((View) view.getParent()).getBottom() - view.getBottom();
         }
         if (!adapter.addMessage(message, false, scrollToBottom))
-          manager.scrollToPositionWithOffset(1, scrollOffsetInPixels);
+          manager.scrollToPositionWithOffset(message.isSponsored() ? 1 : 0, scrollOffsetInPixels);
       } else {
         adapter.addMessage(message, false, scrollToBottom);
       }
