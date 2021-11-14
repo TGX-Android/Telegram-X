@@ -1895,8 +1895,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (i != -1 && MessagesHolder.isMessageType(adapter.getItemViewType(i))) {
       TGMessage message = adapter.getMessage(i);
 
-      if (message.isSponsored() && adapter.getMessageCount() > 1) {
-        message = adapter.getMessage(i + 1);
+      if (adapter.getBottomMessage() != null && adapter.getBottomMessage().isSponsored() && adapter.getMessageCount() > 1) {
+        message = adapter.getMessage(++i);
       }
 
       ThreadInfo threadInfo = loader.getMessageThread();
