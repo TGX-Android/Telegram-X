@@ -478,7 +478,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
       }
     }
     message.mergeWith(bottomMessage, !top || this.items == null || this.items.isEmpty());
-    if (bottomMessage != null && message.isSponsored()) {
+    if (bottomMessage != null && message.isSponsored() && bottomMessage.isEventLog()) {
       bottomMessage.setNeedExtraPadding(true);
     }
     message.prepareLayout();
