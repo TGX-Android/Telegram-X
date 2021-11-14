@@ -54,7 +54,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -285,7 +284,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     final boolean onlyScheduled = group.isOnlyScheduled();
     final boolean onlySilent = group.isOnlyInitiallySilent();
     final boolean isChannel = tdlib.isChannelChat(chat);
-    final CharSequence visualChatTitle = Lang.getNotificationTitle(chatTitle, group.getTotalCount(), tdlib.isSelfChat(group.getChatId()), tdlib.isMultiChat(chat), isChannel, group.isMention(), onlyPinned, onlyScheduled, onlySilent);
+    final CharSequence visualChatTitle = Lang.getNotificationTitle(chat.id, chatTitle, group.getTotalCount(), tdlib.isSelfChat(group.getChatId()), tdlib.isMultiChat(chat), isChannel, group.isMention(), onlyPinned, onlyScheduled, onlySilent);
 
     // Content preview download
     List<TdApi.File> cloudReferences = null;
@@ -930,11 +929,11 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
       boolean isGroupConversation = !tdlib.isUserChat(chat) && !tdlib.isChannelChat(chat);
       if (isGroupConversation) {
-        style.setConversationTitle(Lang.getNotificationTitle(tdlib.chatTitle(chat), messageCount, tdlib.isSelfChat(chat), tdlib.isMultiChat(chat), tdlib.isChannelChat(chat), areMentions, arePinned, areOnlyScheduled, areOnlySilent));
+        style.setConversationTitle(Lang.getNotificationTitle(chat.id, tdlib.chatTitle(chat), messageCount, tdlib.isSelfChat(chat), tdlib.isMultiChat(chat), tdlib.isChannelChat(chat), areMentions, arePinned, areOnlyScheduled, areOnlySilent));
       }
       style.setGroupConversation(isGroupConversation);
     } else {
-      style.setConversationTitle(Lang.getNotificationTitle(tdlib.chatTitle(chat), messageCount, tdlib.isSelfChat(chat), tdlib.isMultiChat(chat), tdlib.isChannelChat(chat), areMentions, arePinned, areOnlyScheduled, areOnlySilent));
+      style.setConversationTitle(Lang.getNotificationTitle(chat.id, tdlib.chatTitle(chat), messageCount, tdlib.isSelfChat(chat), tdlib.isMultiChat(chat), tdlib.isChannelChat(chat), areMentions, arePinned, areOnlyScheduled, areOnlySilent));
       style.setGroupConversation(true);
     }
     return style;

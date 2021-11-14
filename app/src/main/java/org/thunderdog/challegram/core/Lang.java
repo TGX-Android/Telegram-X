@@ -64,6 +64,7 @@ import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceList;
+import me.vkryl.td.ChatId;
 
 @SuppressWarnings(value = "SpellCheckingInspection")
 public class Lang {
@@ -915,12 +916,14 @@ public class Lang {
     }
   }
 
-  public static CharSequence getNotificationTitle (String chatTitle, int notificationCount, boolean isSelfChat, boolean isMultiChat, boolean isChannel, boolean areMentions, boolean onlyPinned, boolean areOnlyScheduled, boolean areOnlySilent) {
+  public static CharSequence getNotificationTitle (long chatId, String chatTitle, int notificationCount, boolean isSelfChat, boolean isMultiChat, boolean isChannel, boolean areMentions, boolean onlyPinned, boolean areOnlyScheduled, boolean areOnlySilent) {
     CharSequence result;
     if (areMentions && onlyPinned) {
       result = Lang.getCharSequence(R.string.format_notificationTitlePinned, chatTitle);
     } else if (notificationCount > 1 || areMentions) {
       result = Lang.getCharSequence(R.string.format_notificationTitleShort, chatTitle, Lang.plural(areMentions ? R.string.mentionCount : R.string.messagesCount, notificationCount));
+    } else if (StringUtils.isEmpty(chatTitle)) {
+      result = ChatId.toString(chatId);
     } else {
       result = chatTitle;
     }
