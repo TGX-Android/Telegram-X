@@ -504,6 +504,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
         notifyItemChanged(0);
       } else {
         notifyItemInserted(newIndex);
+        notifyItemRangeChanged(0, items.size());
       }
     }
 
