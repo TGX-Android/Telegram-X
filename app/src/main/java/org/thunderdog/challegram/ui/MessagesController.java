@@ -1343,7 +1343,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           Settings.instance().setBubbleCornerSize(newValue, elements[index]);
           if (!Settings.instance().needMergeCornerRadius()) {
             float newMerge = (factor * (float) (Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES[Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES.length - 1]));
-            Settings.instance().setBubbleMergeCornerSize(newMerge, getApproxIndexForMergedRadius(newMerge));
+            Settings.instance().setBubbleMergeCornerSize(newMerge, Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES[getApproxIndexForMergedRadius(newMerge)]);
             if (mergeCornerSliderView != null) {
               updateBubbleRadiusValue(mergeCornerSliderView, true);
             }
