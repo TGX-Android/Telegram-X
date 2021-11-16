@@ -442,11 +442,9 @@ public class Settings {
   private static final long DEFAULT_LOG_SIZE = ByteUnit.MIB.toBytes(50);
 
   public class TdlibLogSettings {
-    private final boolean isTon;
     private final String settingsKey, maxSizeKey, verbosityKey;
 
-    public TdlibLogSettings (boolean isTon, String settingsKey, String maxSizeKey, String verbosityKey) {
-      this.isTon = isTon;
+    public TdlibLogSettings (String settingsKey, String maxSizeKey, String verbosityKey) {
       this.settingsKey = settingsKey;
       this.maxSizeKey = maxSizeKey;
       this.verbosityKey = verbosityKey;
@@ -527,27 +525,13 @@ public class Settings {
     }
 
     private boolean setLogTagVerbosityLevel (String module, int verbosityLevel) {
-      if (isTon) {
-        /*TODO TON
-        TonApi.Object result = drinkless.org.ton.Client.execute(new TonApi.SetLogTagVerbosityLevel(module, verbosityLevel));
-        return result instanceof TonApi.Ok;*/
-        return false;
-      } else {
-        TdApi.Object result = Client.execute(new TdApi.SetLogTagVerbosityLevel(module, verbosityLevel));
-        return result instanceof TdApi.Ok;
-      }
+      TdApi.Object result = Client.execute(new TdApi.SetLogTagVerbosityLevel(module, verbosityLevel));
+      return result instanceof TdApi.Ok;
     }
 
     private boolean setLogVerbosityLevel (int globalVerbosityLevel) {
-      if (isTon) {
-        /*TODO TON
-        TonApi.Object result = drinkless.org.ton.Client.execute(new TonApi.SetLogVerbosityLevel(globalVerbosityLevel));
-        return result instanceof TonApi.Ok;*/
-        return false;
-      } else {
-        TdApi.Object result = Client.execute(new TdApi.SetLogVerbosityLevel(globalVerbosityLevel));
-        return result instanceof TdApi.Ok;
-      }
+      TdApi.Object result = Client.execute(new TdApi.SetLogVerbosityLevel(globalVerbosityLevel));
+      return result instanceof TdApi.Ok;
     }
 
     public int getVerbosity (@Nullable String module) {
@@ -613,16 +597,9 @@ public class Settings {
     }
 
     private int queryLogVerbosityLevel (@Nullable String module) {
-      if (isTon) {
-        /*TODO TON
-        TonApi.Object object = drinkless.org.ton.Client.execute(Strings.isEmpty(module) ? new TonApi.GetLogVerbosityLevel() : new TonApi.GetLogTagVerbosityLevel(module));
-        if (object instanceof TonApi.LogVerbosityLevel)
-          return ((TonApi.LogVerbosityLevel) object).verbosityLevel;*/
-      } else {
-        TdApi.Object object = Client.execute(StringUtils.isEmpty(module) ? new TdApi.GetLogVerbosityLevel() : new TdApi.GetLogTagVerbosityLevel(module));
-        if (object instanceof TdApi.LogVerbosityLevel)
-          return ((TdApi.LogVerbosityLevel) object).verbosityLevel;
-      }
+      TdApi.Object object = Client.execute(StringUtils.isEmpty(module) ? new TdApi.GetLogVerbosityLevel() : new TdApi.GetLogTagVerbosityLevel(module));
+      if (object instanceof TdApi.LogVerbosityLevel)
+        return ((TdApi.LogVerbosityLevel) object).verbosityLevel;
       return TDLIB_LOG_VERBOSITY_UNKNOWN;
     }
 
@@ -634,7 +611,7 @@ public class Settings {
         _modules = new HashMap<>();
       for (final LevelDB.Entry entry : pmc.find(verbosityKey)) {
         final String key = entry.key();
-        int verbosityLevel = entry.asInt();
+        int verbosityLevel = Math.max(1, entry.asInt()); // At least error
         if (verbosityKey.length() == key.length()) {
           globalVerbosityLevel = verbosityLevel;
         } else if (key.length() > verbosityKey.length() + 1) {
@@ -652,29 +629,15 @@ public class Settings {
       }
       setLogVerbosityLevel(globalVerbosityLevel);
 
-      if (isTon) {
-        /*TODO TON
-        TonApi.LogStream stream;
-        if (needAndroidLog()) {
-          stream = new TonApi.LogStreamDefault();
-        } else {
-          stream = new TonApi.LogStreamFile(TdlibManager.getLogFilePath(isTon, false), getLogMaxFileSize());
-        }
-        TonApi.Object result = drinkless.org.ton.Client.execute(new TonApi.SetLogStream(stream));
-        if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
-          Tracer.onTonFatalError(TonApi.SetLogStream.class, (TonApi.Error) result, new RuntimeException().getStackTrace());
-        }*/
+      TdApi.LogStream stream;
+      if (needAndroidLog()) {
+        stream = new TdApi.LogStreamDefault();
       } else {
-        TdApi.LogStream stream;
-        if (needAndroidLog()) {
-          stream = new TdApi.LogStreamDefault();
-        } else {
-          stream = new TdApi.LogStreamFile(TdlibManager.getLogFilePath(false), getLogMaxFileSize(), true);
-        }
-        TdApi.Object result = Client.execute(new TdApi.SetLogStream(stream));
-        if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
-          Tracer.onTdlibFatalError(TdlibAccount.NO_ID, TdApi.SetLogStream.class, (TdApi.Error) result, new RuntimeException().getStackTrace());
-        }
+        stream = new TdApi.LogStreamFile(TdlibManager.getLogFilePath(false), getLogMaxFileSize(), true);
+      }
+      TdApi.Object result = Client.execute(new TdApi.SetLogStream(stream));
+      if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+        Tracer.onTdlibFatalError(TdlibAccount.NO_ID, TdApi.SetLogStream.class, (TdApi.Error) result, new RuntimeException().getStackTrace());
       }
     }
   }
@@ -683,8 +646,7 @@ public class Settings {
   private static final int FLAG_TDLIB_OTHER_ENABLE_ANDROID_LOG = 1 << 1;
   public static final int TDLIB_LOG_VERBOSITY_UNKNOWN = -1;
 
-  private TdlibLogSettings
-    tdlibLogSettings = new TdlibLogSettings(false, KEY_TDLIB_OTHER, KEY_TDLIB_LOG_SIZE, KEY_TDLIB_VERBOSITY);
+  private final TdlibLogSettings tdlibLogSettings = new TdlibLogSettings(KEY_TDLIB_OTHER, KEY_TDLIB_LOG_SIZE, KEY_TDLIB_VERBOSITY);
 
   public static final float[] CHAT_FONT_SIZES = {12f, 13f, 14f, 15f, 16f, 18f, 20f, 22f, 24f, 26f};
   public static final float CHAT_FONT_SIZE_DEFAULT = 15f;
