@@ -746,7 +746,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   // keep_alive
 
-  private boolean keepAlive, hasUnprocessedPushes, isLoggingOut;
+  private boolean keepAlive, hasUnprocessedPushes, isLoggingOut, ignoreNotificationUpdates;
 
   private void setHasUnprocessedPushes (boolean hasUnprocessedPushes) {
     if (this.hasUnprocessedPushes != hasUnprocessedPushes) {
@@ -769,11 +769,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   // logging_out, logged_out
 
+  @TdlibThread
   private void setLoggingOut (boolean isLoggingOut) {
     if (this.isLoggingOut != isLoggingOut) {
       this.isLoggingOut = isLoggingOut;
+      if (isLoggingOut) {
+        ignoreNotificationUpdates = true;
+      }
       context().setLoggingOut(accountId, isLoggingOut);
       checkPauseTimeout();
+      if (isLoggingOut) {
+        notifications().onDropNotificationData(true);
+      }
     }
   }
 
@@ -1118,7 +1125,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     final int status = getStatus(newAuthState);
 
     if (prevStatus == STATUS_UNKNOWN && status != STATUS_UNKNOWN) {
-      chats.clear();
+      synchronized (dataLock) {
+        resetChatsData();
+      }
     }
 
     switch (status) {
@@ -1183,8 +1192,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           setLoggingOut(true);
         } else {
           synchronized (dataLock) {
-            knownChatIds.clear();
-            chats.clear();
+            resetChatsData();
           }
         }
         break;
@@ -5702,6 +5710,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private void resetState () {
     haveInitializedNotifications = false;
+    ignoreNotificationUpdates = false;
+  }
+
+  private void resetChatsData () {
+    knownChatIds.clear();
+    chats.clear();
   }
 
   private void resetContextualData () {
@@ -5916,20 +5930,26 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   @TdlibThread
   private void onUpdateActiveNotifications (TdApi.UpdateActiveNotifications update) {
-    TDLib.Tag.notifications(0, accountId, "Received updateActiveNotifications");
-    receivedActiveNotificationsTime = SystemClock.uptimeMillis();
-    notificationManager.onUpdateActiveNotifications(update, this::dispatchNotificationsInitialized);
+    TDLib.Tag.notifications(0, accountId, "Received updateActiveNotifications, ignore: %b", ignoreNotificationUpdates);
+    if (!ignoreNotificationUpdates) {
+      receivedActiveNotificationsTime = SystemClock.uptimeMillis();
+      notificationManager.onUpdateActiveNotifications(update, this::dispatchNotificationsInitialized);
+    }
   }
 
   @TdlibThread
   private void onUpdateNotificationGroup (TdApi.UpdateNotificationGroup update) {
-    TDLib.Tag.notifications(0, accountId, "Received updateNotificationGroup, groupId: %d, elapsed: %d", update.notificationGroupId, SystemClock.uptimeMillis() - receivedActiveNotificationsTime);
-    notificationManager.onUpdateNotificationGroup(update);
+    TDLib.Tag.notifications(0, accountId, "Received updateNotificationGroup, groupId: %d, elapsed: %d, ignore: %b", update.notificationGroupId, SystemClock.uptimeMillis() - receivedActiveNotificationsTime, ignoreNotificationUpdates);
+    if (!ignoreNotificationUpdates) {
+      notificationManager.onUpdateNotificationGroup(update);
+    }
   }
 
   @TdlibThread
   private void onUpdateNotification (TdApi.UpdateNotification update) {
-    notificationManager.onUpdateNotification(update);
+    if (!ignoreNotificationUpdates) {
+      notificationManager.onUpdateNotification(update);
+    }
   }
 
   // Updates: MESSAGES

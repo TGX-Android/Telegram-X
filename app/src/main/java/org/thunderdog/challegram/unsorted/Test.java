@@ -265,7 +265,7 @@ public class Test {
     Log.load(null);
 
     File testDb = getTestDBDir();
-    LevelDB db = new LevelDB(testDb.getPath(), true);
+    LevelDB db = new LevelDB(testDb.getPath(), true, null);
     try {
       db.clear();
 
