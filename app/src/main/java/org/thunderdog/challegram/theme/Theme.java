@@ -877,13 +877,27 @@ public class Theme {
   private static final boolean BUBBLE_BIG_RADIUS_AVAILABLE = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
 
   public static float getBubbleDefaultRadius () {
-    return Settings.instance().getBubbleCornerSize();
-    //return Theme.getProperty(BUBBLE_BIG_RADIUS_AVAILABLE ? ThemeProperty.BUBBLE_CORNER : ThemeProperty.BUBBLE_CORNER_LEGACY);
+    return isBubbleRadiusOverridden() ? getThemeBubbleDefaultRadius() : Settings.instance().getBubbleCornerSize();
   }
 
   public static float getBubbleMergeRadius () {
-    return Settings.instance().getBubbleMergeCornerSize();
-    //return Theme.getProperty(BUBBLE_BIG_RADIUS_AVAILABLE ? ThemeProperty.BUBBLE_CORNER_MERGED : ThemeProperty.BUBBLE_CORNER_LEGACY);
+    return isBubbleRadiusOverridden() ? getThemeBubbleMergeRadius() : Settings.instance().getBubbleMergeCornerSize();
+  }
+
+  public static float getThemeBubbleDefaultRadius () {
+    return Theme.getProperty(BUBBLE_BIG_RADIUS_AVAILABLE ? ThemeProperty.BUBBLE_CORNER : ThemeProperty.BUBBLE_CORNER_LEGACY);
+  }
+
+  public static float getThemeBubbleMergeRadius () {
+    return Theme.getProperty(BUBBLE_BIG_RADIUS_AVAILABLE ? ThemeProperty.BUBBLE_CORNER_MERGED : ThemeProperty.BUBBLE_CORNER_LEGACY);
+  }
+
+  public static boolean isPropertyOverridden (@ThemeProperty int property) {
+    return Theme.getProperty(property) != Theme.getProperty(property, ThemeId.BLUE);
+  }
+
+  public static boolean isBubbleRadiusOverridden () {
+    return isPropertyOverridden(BUBBLE_BIG_RADIUS_AVAILABLE ? ThemeProperty.BUBBLE_CORNER : ThemeProperty.BUBBLE_CORNER_LEGACY);
   }
 
   public static boolean isBubbleRadiusBig (float radius) {

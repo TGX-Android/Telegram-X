@@ -1282,6 +1282,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void createCornersConfiguration (ViewGroup bottomWrap) {
+    if (Theme.isBubbleRadiusOverridden())
+      return;
     createSubCornerConfiguration(false, bottomWrap);
     createSubCornerConfiguration(true, bottomWrap);
     updateBubbleMergeSliderVisibility();
@@ -1997,9 +1999,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case R.id.btn_chatFontSizeReset: {
         Settings.instance().resetChatFontSize();
         updateFontSliderValue(fontSliderView);
-        updateBubbleRadiusValue(cornerSliderView, false);
-        updateBubbleRadiusValue(mergeCornerSliderView, false);
-        updateBubbleMergeSliderVisibility();
+
+        if (cornerSliderView != null) {
+          updateBubbleRadiusValue(cornerSliderView, false);
+          updateBubbleRadiusValue(mergeCornerSliderView, false);
+          updateBubbleMergeSliderVisibility();
+        }
+
         manager.rebuildLayouts();
         break;
       }
@@ -3359,8 +3365,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
             StringList strings = new StringList(3);
             ids.append(R.id.btn_chatFontSizeScale);
             strings.append(Settings.instance().needChatFontSizeScaling() ? R.string.TextSizeScaleDisable : R.string.TextSizeScaleEnable);
-            ids.append(R.id.btn_chatBubbleMergeRadius);
-            strings.append(Settings.instance().needMergeCornerRadius() ? R.string.MergeBubbleCornersDisable : R.string.MergeBubbleCorners);
+            if (!Theme.isBubbleRadiusOverridden()) {
+              ids.append(R.id.btn_chatBubbleMergeRadius);
+              strings.append(Settings.instance().needMergeCornerRadius() ? R.string.MergeBubbleCornersDisable : R.string.MergeBubbleCorners);
+            }
             if (Settings.instance().canResetChatFontSize()) {
               ids.append(R.id.btn_chatFontSizeReset);
               strings.append(R.string.TextSizeReset);
