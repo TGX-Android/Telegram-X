@@ -1854,7 +1854,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   @AnyThread
   public void onUpdateNotificationChannels (long accountUserId) {
     if (Thread.currentThread() != queue) {
-      queue.sendMessage(Message.obtain(queue.getHandler(), ON_UPDATE_NOTIFICATION_CHANNELS, BitwiseUtils.splitLongToFirstInt(accountUserId), BitwiseUtils.splitLongToSecondInt(accountUserId), this), 0);
+      sendLockedMessage(Message.obtain(queue.getHandler(), ON_UPDATE_NOTIFICATION_CHANNELS, BitwiseUtils.splitLongToFirstInt(accountUserId), BitwiseUtils.splitLongToSecondInt(accountUserId), this), null);
     } else {
       resetNotificationGroupImpl(accountUserId);
     }
@@ -1894,7 +1894,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   @AnyThread
   private void rebuildNotification () {
     if (Thread.currentThread() != queue) {
-      queue.sendMessage(Message.obtain(queue.getHandler(), REBUILD_NOTIFICATION, this), 0);
+      sendLockedMessage(Message.obtain(queue.getHandler(), REBUILD_NOTIFICATION, this), null);
     } else {
       rebuildNotificationImpl();
     }

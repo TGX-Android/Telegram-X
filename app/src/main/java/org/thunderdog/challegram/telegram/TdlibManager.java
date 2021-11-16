@@ -7,6 +7,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.PowerManager;
 import android.os.SystemClock;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -21,6 +22,7 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
@@ -175,13 +177,21 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     if (StringUtils.isEmpty(text))
       return;
     performSyncTask(context, extras.accountId, "reply", (tdlib, onDone) -> {
-      tdlib.sendMessage(extras.chatId, extras.messageThreadId, extras.needReply ? extras.messageIds[extras.messageIds.length - 1] : 0, false, true, new TdApi.InputMessageText(new TdApi.FormattedText(text.toString(), null), false, false), sendingMessage ->
+      tdlib.sendMessage(extras.chatId, extras.messageThreadId, extras.needReply ? extras.messageIds[extras.messageIds.length - 1] : 0, false, true, new TdApi.InputMessageText(new TdApi.FormattedText(text.toString(), null), false, false), sendingMessage -> {
+        if (sendingMessage == null) {
+          UI.showToast(R.string.NotificationReplyFailed, Toast.LENGTH_SHORT);
+          if (onDone != null) {
+            onDone.run();
+          }
+          return;
+        }
         tdlib.awaitMessageSent(sendingMessage, () -> {
           extras.read(tdlib);
           if (onDone != null) {
             onDone.run();
           }
-        }));
+        });
+      });
     }, null);
   }
 

@@ -4036,6 +4036,7 @@
 
   <string name="InAppCameraCache">In-app camera cache</string>
   <string name="InAppCameraCacheDeleteConfirm">Are you sure you want to clear private in-app camera cache?</string>
+  <string name="NotificationReplyFailed">Failed to send a reply</string>
 
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
