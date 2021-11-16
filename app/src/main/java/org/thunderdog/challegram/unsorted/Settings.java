@@ -735,8 +735,7 @@ public class Settings {
       throw new IllegalStateException("Unable to create working directory");
     }
     long ms = SystemClock.uptimeMillis();
-    pmc = new LevelDB(new File(pmcDir, "db").getPath(), true);
-    pmc.setErrorHandler(new LevelDB.ErrorHandler() {
+    pmc = new LevelDB(new File(pmcDir, "db").getPath(), true, new LevelDB.ErrorHandler() {
       @Override
       public boolean onFatalError (LevelDB levelDB, Throwable error) {
         Tracer.onDatabaseError(error);
