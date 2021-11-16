@@ -207,7 +207,7 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
         first = false;
       } else {
-        items.add(new ListItem(ListItem.TYPE_SEPARATOR, R.id.separator));
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL, R.id.separator));
       }
       items.add(new ListItem(ListItem.TYPE_STATS_MESSAGE_PREVIEW, R.id.btn_messageMore).setData(albumMessage));
     }
