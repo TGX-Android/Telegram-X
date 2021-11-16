@@ -1282,7 +1282,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void createCornersConfiguration (ViewGroup bottomWrap) {
-    if (Theme.isBubbleRadiusOverridden())
+    if (Theme.isBubbleRadiusOverridden() || !manager.useBubbles())
       return;
     createSubCornerConfiguration(false, bottomWrap);
     createSubCornerConfiguration(true, bottomWrap);
@@ -3365,7 +3365,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             StringList strings = new StringList(3);
             ids.append(R.id.btn_chatFontSizeScale);
             strings.append(Settings.instance().needChatFontSizeScaling() ? R.string.TextSizeScaleDisable : R.string.TextSizeScaleEnable);
-            if (!Theme.isBubbleRadiusOverridden()) {
+            if (!Theme.isBubbleRadiusOverridden() && manager.useBubbles()) {
               ids.append(R.id.btn_chatBubbleMergeRadius);
               strings.append(Settings.instance().needMergeCornerRadius() ? R.string.MergeBubbleCornersDisable : R.string.MergeBubbleCorners);
             }
