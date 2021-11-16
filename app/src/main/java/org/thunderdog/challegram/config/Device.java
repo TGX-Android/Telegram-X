@@ -175,7 +175,7 @@ public class Device {
 
   public static final boolean NEED_ADD_KEYBOARD_SIZE = IS_SAMSUNG_SGS_FAMILY;
 
-  public static final boolean ROUND_NOTIFICAITON_IMAGE = MANUFACTURER != XIAOMI;
+  public static final boolean ROUND_NOTIFICAITON_IMAGE = true; //MANUFACTURER != XIAOMI;
 
   public static final boolean FLYME = !StringUtils.isEmpty(Build.DISPLAY) && Build.DISPLAY.toLowerCase().contains("flyme");
 }
