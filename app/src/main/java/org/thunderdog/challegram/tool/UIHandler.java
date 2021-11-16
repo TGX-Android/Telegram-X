@@ -12,6 +12,9 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.StringRes;
+
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
@@ -31,6 +34,7 @@ import java.io.File;
 
 import me.vkryl.android.util.InvalidateDelegate;
 import me.vkryl.android.util.LayoutDelegate;
+import me.vkryl.core.StringUtils;
 
 public class UIHandler extends Handler {
   private static final int SHOW_TOAST = 1;
@@ -70,12 +74,21 @@ public class UIHandler extends Handler {
     super(context.getMainLooper());
   }
 
-  public void showToast (int resource, int duration) {
-    sendMessage(Message.obtain(this, SHOW_TOAST, duration, 0, Lang.getString(resource)));
+  public void showToast (@StringRes int stringRes, int duration) {
+    if (stringRes == 0)
+      throw new IllegalArgumentException();
+    String text = Lang.getString(stringRes);
+    if (!StringUtils.isEmpty(text)) {
+      sendMessage(Message.obtain(this, SHOW_TOAST, duration, 0, text));
+    }
   }
 
-  public void showToast (CharSequence message, int duration) {
-    sendMessage(Message.obtain(this, SHOW_TOAST, duration, 0, message));
+  public void showToast (@NonNull CharSequence message, int duration) {
+    if (message == null)
+      throw new IllegalArgumentException();
+    if (!StringUtils.isEmpty(message)) {
+      sendMessage(Message.obtain(this, SHOW_TOAST, duration, 0, message));
+    }
   }
 
   public void showCustomToast (int resource, int duration, int positionY) {
