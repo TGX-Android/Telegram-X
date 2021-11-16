@@ -1906,7 +1906,10 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   void onUpdateNewMessage (TdApi.UpdateNewMessage update) {
     if (update.message.isOutgoing || update.message.sendingState != null)
       return;
-    ViewController<?> c = UI.getCurrentStackItem();
+    ViewController<?> c = null;
+    try {
+      c = UI.getCurrentStackItem();
+    } catch (ArrayIndexOutOfBoundsException ignored) { }
     if (c instanceof MessagesController && c.isSameTdlib(tdlib)) {
       long activeChatId = ((MessagesController) c).getActiveChatId();
       if (activeChatId != 0 && update.message.chatId == activeChatId && tdlib.chatNotificationsEnabled(activeChatId)) {
@@ -1921,8 +1924,11 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   @TdlibThread
   void onUpdateMessageSendSucceeded (TdApi.UpdateMessageSendSucceeded update) {
     TdApi.Message sentMessage = update.message;
-    ViewController<?> c = UI.getCurrentStackItem();
-    if (c != null && !c.isPaused() && (c instanceof MessagesController && ((MessagesController) c).compareChat(sentMessage.chatId)) || (c instanceof MainController)) {
+    ViewController<?> c = null;
+    try {
+      c = UI.getCurrentStackItem();
+    } catch (ArrayIndexOutOfBoundsException ignored) { }
+    if (((c instanceof MessagesController && ((MessagesController) c).compareChat(sentMessage.chatId)) || (c instanceof MainController)) && !c.isPaused()) {
       switch (sentMessage.content.getConstructor()) {
         case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
         case TdApi.MessageChatSetTtl.CONSTRUCTOR: {
