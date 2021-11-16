@@ -238,7 +238,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   private final TdlibListenersGlobal global = new TdlibListenersGlobal(this);
   private final ManagerHandler handler = new ManagerHandler(this);
   private final LiveLocationManager liveLocationManager = new LiveLocationManager(this);
-  private final TdlibNotificationManager.NotificationQueue notificationQueue = new TdlibNotificationManager.NotificationQueue("NotificationQueue");
+  private final TdlibNotificationManager.NotificationQueue notificationQueue = new TdlibNotificationManager.NotificationQueue("NotificationQueue", this);
   private final CallManager calls = new CallManager(this);
   private final Settings.ProxyChangeListener proxyChangeListener = new Settings.ProxyChangeListener() {
     @Override
