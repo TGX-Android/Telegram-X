@@ -967,6 +967,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private void setCommonFactor (float factor) {
     if (this.commonFactor != factor) {
+      if (Float.isNaN(factor))
+        throw new IllegalArgumentException();
       this.commonFactor = factor;
       updatePhotoRevealFactor();
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && path != null && currentThumb != null && commonFactor > 0f && commonFactor < 1f) {
@@ -2299,6 +2301,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private void setPipFactor (float factor, float fraction) {
     if (this.pipFactor != factor) {
+      if (Float.isNaN(factor))
+        throw new IllegalArgumentException();
+
       this.pipFactor = factor;
 
       updatePipLayout(mediaView.getMeasuredWidth(), mediaView.getMeasuredHeight(), false, false);
