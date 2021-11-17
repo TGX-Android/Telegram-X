@@ -4036,6 +4036,7 @@
 
   <string name="InAppCameraCache">In-app camera cache</string>
   <string name="InAppCameraCacheDeleteConfirm">Are you sure you want to clear private in-app camera cache?</string>
+  <string name="NotificationReplyFailed">Failed to send a reply</string>
 
   <string name="MergeBubbleCorners">Separate Bubble Corners</string>
   <string name="MergeBubbleCornersDisable">Unify Bubble Corners</string>

@@ -91,10 +91,11 @@ fun rgbToHsl (color: Int, hsl: FloatArray) {
 }
 
 fun fromToArgb (fromArgb: Int, toArgb: Int, factor: Float): Int {
+  require(!factor.isNaN())
   return when {
+    fromArgb == toArgb -> toArgb
     factor <= 0f -> fromArgb
     factor >= 1f -> toArgb
-    fromArgb == toArgb -> toArgb
     else -> {
       val alpha = fromTo(Color.alpha(fromArgb), Color.alpha(toArgb), factor)
       val red = fromTo(Color.red(fromArgb), Color.red(toArgb), factor)

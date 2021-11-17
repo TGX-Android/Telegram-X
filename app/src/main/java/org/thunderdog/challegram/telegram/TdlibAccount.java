@@ -212,6 +212,9 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   }
 
   public boolean allowNotifications () {
+    if (isLoggingOut()) {
+      return false;
+    }
     if (Settings.instance().checkNotificationFlag(Settings.NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT)) {
       return context.preferredAccountId() == this.accountId();
     }

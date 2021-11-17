@@ -132,7 +132,7 @@ public class MessagesLoader implements Client.ResultHandler {
   private static final int MERGE_MODE_TOP = 1;
   private static final int MERGE_MODE_BOTTOM = 2;
 
-  private Client.ResultHandler lastHandler;
+  private volatile Client.ResultHandler lastHandler;
   private TdApi.Message[] mergeChunk;
   private int mergeMode;
 
@@ -198,7 +198,9 @@ public class MessagesLoader implements Client.ResultHandler {
             break;
           }
           default: {
-            lastHandler = null;
+            synchronized (lock) {
+              lastHandler = null;
+            }
             Log.unexpectedTdlibResponse(object, TdApi.GetChatHistory.class, TdApi.Messages.class, TdApi.ChatEvents.class, TdApi.Error.class);
             return;
           }
@@ -403,7 +405,9 @@ public class MessagesLoader implements Client.ResultHandler {
 
         mergeMode = MERGE_MODE_NONE;
         mergeChunk = null;
-        lastHandler = null;
+        synchronized (lock) {
+          lastHandler = null;
+        }
 
         processMessages(currentContextId, messages, knownTotalCount, nextSecretSearchOffset, needFindUnrad && object.getConstructor() == TdApi.Messages.CONSTRUCTOR, missingAlbums);
       }
@@ -429,7 +433,10 @@ public class MessagesLoader implements Client.ResultHandler {
     mergeMode = MERGE_MODE_NONE;
     mergeChunk = null;
 
-    lastHandler = null;
+    synchronized (lock) {
+      lastHandler = null;
+      isLoading = false;
+    }
   }
 
   public void loadPreviewMessages () {
@@ -892,7 +899,6 @@ public class MessagesLoader implements Client.ResultHandler {
 
     canLoadTop = true;
     canLoadBottom = false;
-    isLoading = false;
     scrollMessageId = startMessageId;
     scrollHighlightMode = MessagesManager.HIGHLIGHT_MODE_NONE;
 
@@ -903,7 +909,6 @@ public class MessagesLoader implements Client.ResultHandler {
     reuse();
 
     canLoadTop = canLoadBottom = force;
-    isLoading = false;
     scrollMessageId = messageId;
     scrollHighlightMode = highlightMode;
 

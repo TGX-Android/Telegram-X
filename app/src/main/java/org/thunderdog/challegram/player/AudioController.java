@@ -13,13 +13,11 @@ import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 
 import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.IllegalSeekPositionException;
 import com.google.android.exoplayer2.PlaybackException;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.metadata.id3.ApicFrame;
@@ -197,7 +195,8 @@ public class AudioController extends BasePlaybackController implements TGAudio.P
                 finishingExoPlayer.release();
               }
             };
-            finishingExoPlayer.addListener(new Player.EventListener() {
+            finishingExoPlayer.addListener(new Player.Listener() {
+              private boolean isReleased;
               private void releaseExoPlayer () {
                 if (!isReleased) {
                   isReleased = true;
@@ -205,16 +204,21 @@ public class AudioController extends BasePlaybackController implements TGAudio.P
                 }
               }
 
-              private boolean isReleased;
-
               @Override
               public void onPlayerError (@NonNull PlaybackException error) {
                 releaseExoPlayer();
               }
 
               @Override
-              public void onPlayerStateChanged (boolean playWhenReady, int playbackState) {
-                if (playbackState == Player.STATE_IDLE || !playWhenReady) {
+              public void onPlaybackStateChanged (int playbackState) {
+                if (!isReleased && (playbackState == Player.STATE_IDLE || !finishingExoPlayer.getPlayWhenReady())) {
+                  releaseExoPlayer();
+                }
+              }
+
+              @Override
+              public void onPlayWhenReadyChanged (boolean playWhenReady, int reason) {
+                if (!isReleased && (!playWhenReady && finishingExoPlayer.getPlaybackState() == Player.STATE_IDLE)) {
                   releaseExoPlayer();
                 }
               }
@@ -830,7 +834,7 @@ public class AudioController extends BasePlaybackController implements TGAudio.P
   public void onShuffleModeEnabledChanged (boolean shuffleModeEnabled) { }
 
   @Override
-  public void onPositionDiscontinuity (int reason) {
+  public void onPositionDiscontinuity (@NonNull Player.PositionInfo oldPosition, @NonNull Player.PositionInfo newPosition, int reason) {
     if (playbackMode != PLAYBACK_MODE_EXOPLAYER_LIST) {
       return;
     }
@@ -840,13 +844,8 @@ public class AudioController extends BasePlaybackController implements TGAudio.P
   }
 
   @Override
-  public void onPlaybackParametersChanged (PlaybackParameters playbackParameters) {
+  public void onPlaybackParametersChanged (@NonNull PlaybackParameters playbackParameters) {
     Log.d(Log.TAG_PLAYER, "[state] onPlaybackParametersChanged");
-  }
-
-  @Override
-  public void onSeekProcessed () {
-    Log.d(Log.TAG_PLAYER, "[state] onSeekProcessed");
   }
 
   // Progress loop helper

@@ -94,6 +94,7 @@ public class TGCallService extends Service implements
     if (Log.isEnabled(Log.TAG_VOIP)) {
       Log.i(Log.TAG_VOIP, "TGCallService.onStartCommand received, intent: %s", intent);
     }
+    final int oldCallId = callId();
     int accountId, callId;
     if (intent != null) {
       accountId = intent.getIntExtra("account_id", TdlibAccount.NO_ID);
@@ -112,7 +113,12 @@ public class TGCallService extends Service implements
       stopSelf();
       return START_NOT_STICKY;
     }
-    initCall(tdlib, call);
+    if (controller != null) {
+      if (oldCallId != 0 && oldCallId != callId)
+        throw new IllegalStateException();
+    } else {
+      initCall(tdlib, call);
+    }
     updateCall(call);
     return START_NOT_STICKY;
   }
