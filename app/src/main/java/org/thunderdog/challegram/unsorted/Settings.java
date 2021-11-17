@@ -3051,7 +3051,11 @@ public class Settings {
   }
 
   public boolean canResetChatFontSize () {
-    return getChatFontSize() != CHAT_FONT_SIZE_DEFAULT || needChatFontSizeScaling() || getLastKnownBubbleCornerSize() != MSG_BUBBLE_RADIUS_DEFAULT || getLastKnownBubbleMergeCornerSize() != MSG_BUBBLE_MERGE_RADIUS_DEFAULT || needMergeCornerRadius();
+    return getChatFontSize() != CHAT_FONT_SIZE_DEFAULT || needChatFontSizeScaling() || (isCornerRadiusChanged() && !Theme.isBubbleRadiusOverridden());
+  }
+
+  private boolean isCornerRadiusChanged () {
+    return getLastKnownBubbleCornerSize() != MSG_BUBBLE_RADIUS_DEFAULT || getLastKnownBubbleMergeCornerSize() != MSG_BUBBLE_MERGE_RADIUS_DEFAULT || needMergeCornerRadius();
   }
 
   public boolean needChatFontSizeScaling () {
@@ -3082,10 +3086,12 @@ public class Settings {
 
   public void resetChatFontSize () {
     setNeedChatFontSizeScaling(false);
-    setNeedMergeCornerRadius(false);
     setChatFontSize(CHAT_FONT_SIZE_DEFAULT);
-    setBubbleCornerSize(MSG_BUBBLE_RADIUS_DEFAULT, MSG_BUBBLE_RADIUS_DEFAULT);
-    setBubbleMergeCornerSize(MSG_BUBBLE_MERGE_RADIUS_DEFAULT, MSG_BUBBLE_MERGE_RADIUS_DEFAULT);
+    if (!Theme.isBubbleRadiusOverridden()) {
+      setNeedMergeCornerRadius(false);
+      setBubbleCornerSize(MSG_BUBBLE_RADIUS_DEFAULT, MSG_BUBBLE_RADIUS_DEFAULT);
+      setBubbleMergeCornerSize(MSG_BUBBLE_MERGE_RADIUS_DEFAULT, MSG_BUBBLE_MERGE_RADIUS_DEFAULT);
+    }
   }
 
   public static boolean isGoodChatFontSize (float dp) {

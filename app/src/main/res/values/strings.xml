@@ -4040,6 +4040,7 @@
 
   <string name="MergeBubbleCorners">Separate Bubble Corners</string>
   <string name="MergeBubbleCornersDisable">Unify Bubble Corners</string>
+  <string name="MergeBubbleCustomThemeWarn">Global message bubble radius can\'t be changed if a theme with custom radius is applied.</string>
 
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />

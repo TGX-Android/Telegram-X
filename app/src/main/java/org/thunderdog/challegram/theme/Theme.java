@@ -897,7 +897,7 @@ public class Theme {
   }
 
   public static boolean isBubbleRadiusOverridden () {
-    return isPropertyOverridden(BUBBLE_BIG_RADIUS_AVAILABLE ? ThemeProperty.BUBBLE_CORNER : ThemeProperty.BUBBLE_CORNER_LEGACY);
+    return isPropertyOverridden(BUBBLE_BIG_RADIUS_AVAILABLE ? ThemeProperty.BUBBLE_CORNER : ThemeProperty.BUBBLE_CORNER_LEGACY) || isPropertyOverridden(BUBBLE_BIG_RADIUS_AVAILABLE ? ThemeProperty.BUBBLE_CORNER_MERGED : ThemeProperty.BUBBLE_CORNER_LEGACY);
   }
 
   public static boolean isBubbleRadiusBig (float radius) {

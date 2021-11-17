@@ -1282,7 +1282,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void createCornersConfiguration (ViewGroup bottomWrap) {
-    if (Theme.isBubbleRadiusOverridden() || !manager.useBubbles())
+    if (!manager.useBubbles())
       return;
     createSubCornerConfiguration(false, bottomWrap);
     createSubCornerConfiguration(true, bottomWrap);
@@ -1337,15 +1337,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
       @Override
       public void onValueChanged (SliderView view, float factor) {
+        if (Theme.isBubbleRadiusOverridden()) {
+          return;
+        }
+
         int index = Math.round(factor * (float) (elements.length - 1));
-        float newValue = factor * (float) (elements[elements.length - 1]);
+        float newValue = factor * elements[elements.length - 1];
         if (mergeCorners) {
           Settings.instance().setBubbleMergeCornerSize(newValue, elements[index]);
         } else {
           Settings.instance().setBubbleCornerSize(newValue, elements[index]);
           if (!Settings.instance().needMergeCornerRadius()) {
-            float newMerge = (factor * (float) (Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES[Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES.length - 1]));
-            Settings.instance().setBubbleMergeCornerSize(newMerge, Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES[getApproxIndexForMergedRadius(newMerge)]);
+            float newMerge = (factor * Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES[Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES.length - 1]);
+            Settings.instance().setBubbleMergeCornerSize(newMerge, Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES[getApproxIndexForCornerRadius(newMerge, true)]);
             if (mergeCornerSliderView != null) {
               updateBubbleRadiusValue(mergeCornerSliderView, true);
             }
@@ -1370,13 +1374,20 @@ public class MessagesController extends ViewController<MessagesController.Argume
       this.mergeCornerWrap = textWrap;
     } else {
       this.cornerSliderView = cornerSliderView;
+      if (Theme.isBubbleRadiusOverridden()) {
+        cornerSliderView.setValue(((float) getApproxIndexForCornerRadius(Theme.getThemeBubbleDefaultRadius(), false)) / (float) (Settings.MSG_BUBBLE_RADIUS_SIZES.length - 1));
+        cornerSliderView.setSlideEnabled(false, false);
+        cornerSliderView.setSlideDisabledClickListener(() -> {
+          context.tooltipManager().builder(cornerSliderView).anchor(cornerSliderView).controller(this).show(this, tdlib, R.drawable.baseline_info_18, Lang.getString(R.string.MergeBubbleCustomThemeWarn));
+        });
+      }
     }
 
     bottomWrap.addView(textWrap);
   }
 
   private void updateBubbleMergeSliderVisibility() {
-    mergeCornerWrap.setVisibility(Settings.instance().needMergeCornerRadius() ? View.VISIBLE : View.GONE);
+    mergeCornerWrap.setVisibility((Settings.instance().needMergeCornerRadius() && !Theme.isBubbleRadiusOverridden()) ? View.VISIBLE : View.GONE);
   }
 
   private SliderView fontSliderView;
@@ -1415,15 +1426,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  private int getApproxIndexForMergedRadius (float currentValue) {
+  private int getApproxIndexForCornerRadius (float currentValue, boolean mergeMode) {
     int curIndex = 0;
+    float[] values = mergeMode ? Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES : Settings.MSG_BUBBLE_RADIUS_SIZES;
 
-    for (float dp : Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES) {
-      if (dp >= currentValue) {
+    for (int i = 0; i < values.length; i++) {
+      if (values[i] >= currentValue) {
         break;
       }
 
-      curIndex++;
+      curIndex = i;
     }
 
     return curIndex;
@@ -2000,7 +2012,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         Settings.instance().resetChatFontSize();
         updateFontSliderValue(fontSliderView);
 
-        if (cornerSliderView != null) {
+        if (cornerSliderView != null && !Theme.isBubbleRadiusOverridden()) {
           updateBubbleRadiusValue(cornerSliderView, false);
           updateBubbleRadiusValue(mergeCornerSliderView, false);
           updateBubbleMergeSliderVisibility();

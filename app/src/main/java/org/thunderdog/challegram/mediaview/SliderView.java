@@ -16,6 +16,7 @@ import org.thunderdog.challegram.tool.Screen;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.lambda.RunnableData;
 
 /**
  * Date: 10/12/2016
@@ -30,6 +31,7 @@ public class SliderView extends View implements FactorAnimator.Target {
   private int anchorMode;
   private boolean slideEnabled;
   private int valueCount;
+  private Runnable clickDisabled;
 
   public SliderView (Context context) {
     super(context);
@@ -90,6 +92,10 @@ public class SliderView extends View implements FactorAnimator.Target {
 
   public void setForceBackgroundColorId (@ThemeColorId int colorId) {
     this.forceBackgroundColorId = colorId;
+  }
+
+  public void setSlideDisabledClickListener (Runnable listener) {
+    this.clickDisabled = listener;
   }
 
   private FactorAnimator colorAnimator;
@@ -310,6 +316,8 @@ public class SliderView extends View implements FactorAnimator.Target {
           diffX = x - cx;
           setIsUp(true);
           return true;
+        } else if (x >= cx - radius && x <= cx + radius && y >= cy - radius && y <= cy + radius && !slideEnabled && clickDisabled != null) {
+          clickDisabled.run();
         }
 
         return false;
