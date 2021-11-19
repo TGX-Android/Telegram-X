@@ -291,12 +291,12 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   @Override
-  public boolean onBackPressed () {
+  public boolean onBackPressed (boolean fromTop) {
     MediaBottomBaseController<?> c = getCurrentController();
     if (c.isAnimating()) {
       return true;
     }
-    if (c.onBackPressed(false)) {
+    if (c.onBackPressed(fromTop)) {
       return true;
     }
     if (counterView != null && counterView.isEnabled()) {

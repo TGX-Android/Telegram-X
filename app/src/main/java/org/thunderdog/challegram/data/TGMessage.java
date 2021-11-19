@@ -3936,10 +3936,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return msg.canGetViewers;
   }
 
-  public final boolean isNote () {
-    return msg.content.getConstructor() == TdApi.MessageVoiceNote.CONSTRUCTOR || msg.content.getConstructor() == TdApi.MessageVideoNote.CONSTRUCTOR;
-  }
-
   public final boolean canBeDeletedOnlyForSelf () {
     return msg.canBeDeletedOnlyForSelf;
   }

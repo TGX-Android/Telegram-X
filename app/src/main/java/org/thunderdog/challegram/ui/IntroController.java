@@ -290,7 +290,7 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
         }
       }
       popupLayout.setDisableCancelOnTouchDown(true);
-      popupLayout.setBackListener(() -> {
+      popupLayout.setBackListener((fromTop) -> {
         if (loginRequest == request) {
           cancelLoginRequest();
         }
@@ -331,7 +331,7 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
     });
     if (popupLayout != null) {
       popupLayout.setDisableCancelOnTouchDown(true);
-      popupLayout.setBackListener(() -> {
+      popupLayout.setBackListener((fromTop) -> {
         if (loginRequest == request) {
           cancelLoginRequest();
         }

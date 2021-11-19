@@ -81,7 +81,7 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
   }
 
   @Override
-  protected final int getBackButton () {
+  protected int getBackButton () {
     return BackHeaderButton.TYPE_BACK;
   }
 

@@ -76,6 +76,8 @@ public class TripleAvatarView extends View implements Destroyable {
     } else {
       ignoranceFlags = 0;
     }
+
+    invalidate();
   }
 
   private void requestUserFile (long[] users, int index, Tdlib tdlib, ImageReceiver receiver) {

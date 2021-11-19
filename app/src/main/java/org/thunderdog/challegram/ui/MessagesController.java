@@ -4092,7 +4092,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void patchReadReceiptsOptions (PopupLayout layout, TGMessage message, boolean disableViewCounter) {
-    if (!message.canGetViewers() || disableViewCounter || !(layout.getChildAt(1) instanceof OptionsLayout)) {
+    if (!message.canGetViewers() || disableViewCounter || (message.isUnread() && !message.noUnread()) || !(layout.getChildAt(1) instanceof OptionsLayout)) {
       return;
     }
 

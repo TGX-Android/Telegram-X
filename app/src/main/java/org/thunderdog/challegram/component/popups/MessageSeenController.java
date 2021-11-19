@@ -8,6 +8,7 @@ import android.widget.FrameLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.MediaBottomBaseController;
 import org.thunderdog.challegram.component.attach.MediaLayout;
@@ -16,7 +17,7 @@ import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGUser;
-import org.thunderdog.challegram.navigation.HeaderView;
+import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.ui.ListItem;
@@ -25,8 +26,6 @@ import org.thunderdog.challegram.widget.ListInfoView;
 
 import java.util.ArrayList;
 
-import me.vkryl.android.widget.FrameLayoutFix;
-
 public class MessageSeenController extends MediaBottomBaseController<Void> implements View.OnClickListener {
   private SettingsAdapter adapter;
 
@@ -34,7 +33,32 @@ public class MessageSeenController extends MediaBottomBaseController<Void> imple
   private final long[] userIds;
 
   public static CharSequence getViewString (TGMessage msg, int count) {
-    return msg.isNote() ? Lang.getStringBold(R.string.MessageSeenListened, count) : Lang.pluralBold(R.string.xViews, count);
+    switch (msg.getMessage().content.getConstructor()) {
+      case TdApi.MessageVoiceNote.CONSTRUCTOR: {
+        return Lang.getStringBold(R.string.MessageSeenListened, count);
+      }
+      case TdApi.MessageVideoNote.CONSTRUCTOR: {
+        return Lang.getStringBold(R.string.MessageSeenPlayed, count);
+      }
+      default: {
+        return Lang.pluralBold(R.string.xViews, count);
+      }
+    }
+  }
+
+  @Override
+  protected int getBackButton () {
+    return BackHeaderButton.TYPE_CLOSE;
+  }
+
+  @Override
+  public boolean onBackPressed (boolean fromTop) {
+    if (fromTop) {
+      mediaLayout.hide(false);
+      return true;
+    }
+
+    return false;
   }
 
   public MessageSeenController (MediaLayout context, TGMessage msg, long[] users) {
