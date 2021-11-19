@@ -4,6 +4,7 @@ package me.vkryl.core
 
 import android.net.Uri
 import android.os.Build
+import android.text.Spanned
 import java.io.UnsupportedEncodingException
 import java.net.URLDecoder
 import java.nio.charset.Charset
@@ -121,7 +122,58 @@ fun toCamelCase(str: String?): String? {
   }
 }
 
-fun CharSequence?.equalsOrBothEmpty(b: CharSequence?): Boolean = this == b || (isEmpty(this) && isEmpty(b))
+fun CharSequence.equalsTo(other: CharSequence): Boolean {
+  if (this is Spanned || other is Spanned) {
+    try {
+      return this == other
+    } catch (e: Throwable) {
+      if (this.toString() != other.toString())
+        return false
+      val thisSpans = if (this is Spanned) {
+        this.getSpans(0, this.length, Object::class.java)
+      } else {
+        null
+      }
+      val otherSpans = if (other is Spanned) {
+        other.getSpans(0, other.length, Object::class.java)
+      } else {
+        null
+      }
+      if ((thisSpans?.size ?: 0) != (otherSpans?.size ?: 0))
+        return false
+      if (thisSpans?.size ?: 0 == 0)
+        return true
+      require(this is Spanned && thisSpans != null)
+      require(other is Spanned && otherSpans != null)
+      for (i in thisSpans.indices) {
+        val thisSpan = thisSpans[i]
+        val otherSpan = otherSpans[i]
+        try {
+          if (thisSpan != otherSpan)
+            return false
+          val thisStart = this.getSpanStart(thisSpan)
+          val otherStart = other.getSpanStart(otherSpan)
+          if (thisStart != otherStart)
+            return false
+          val thisEnd = this.getSpanEnd(thisSpan)
+          val otherEnd = other.getSpanEnd(otherSpan)
+          if (thisEnd != otherEnd)
+            return false
+        } catch (e: Throwable) {
+          return false
+        }
+      }
+      return true
+    }
+  }
+  return this == other
+}
+
+fun CharSequence?.equalsOrBothEmpty(other: CharSequence?): Boolean {
+  val thisEmpty = isEmpty(this)
+  val otherEmpty = isEmpty(this)
+  return thisEmpty == otherEmpty && (thisEmpty || this!!.equalsTo(other!!))
+}
 @SuppressWarnings("DefaultLocale")
 @kotlin.ExperimentalStdlibApi
 fun equalsOrEmptyIgnoreCase(a: CharSequence?, b: CharSequence?, locale: Locale? = null): Boolean {
