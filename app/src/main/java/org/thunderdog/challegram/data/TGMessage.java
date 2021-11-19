@@ -6441,11 +6441,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           case TdApi.ChatEventMessageTtlSettingChanged.CONSTRUCTOR:
             content = new TdApi.MessageChatSetTtl(((TdApi.ChatEventMessageTtlSettingChanged) event.event.action).newMessageTtlSetting);
             break;
-          case TdApi.ChatEventVoiceChatCreated.CONSTRUCTOR:
-            content = new TdApi.MessageVoiceChatStarted(((TdApi.ChatEventVoiceChatCreated) event.event.action).groupCallId);
+          case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
+            content = new TdApi.MessageVideoChatStarted(((TdApi.ChatEventVideoChatCreated) event.event.action).groupCallId);
             break;
-          case TdApi.ChatEventVoiceChatDiscarded.CONSTRUCTOR:
-            content = new TdApi.MessageVoiceChatEnded(0); // ((TdApi.ChatEventVoiceChatDiscarded) event.event.action).groupCallId
+          case TdApi.ChatEventVideoChatDiscarded.CONSTRUCTOR:
+            content = new TdApi.MessageVideoChatEnded(0); // ((TdApi.ChatEventVoiceChatDiscarded) event.event.action).groupCallId
             break;
           case TdApi.ChatEventTitleChanged.CONSTRUCTOR: {
             TdApi.ChatEventTitleChanged e = (TdApi.ChatEventTitleChanged) event.event.action;
@@ -6841,7 +6841,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                   if (!msg.isChannelPost) {
                     appendRight(b, R.string.EventLogPromotedPinMessages, oldAdmin.canPinMessages, newAdmin.canPinMessages, false);
                   }
-                  appendRight(b, R.string.EventLogPromotedManageVoiceChats, oldAdmin.canManageVoiceChats, newAdmin.canManageVoiceChats, false);
+                  appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedManageLiveStreams : R.string.EventLogPromotedManageVoiceChats, oldAdmin.canManageVideoChats, newAdmin.canManageVideoChats, false);
                   if (!msg.isChannelPost) {
                     appendRight(b, R.string.EventLogPromotedRemainAnonymous, oldAdmin.isAnonymous, newAdmin.isAnonymous, false);
                   }
@@ -7031,14 +7031,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR: {
           return new TGMessageChat(context, msg, (TdApi.MessageProximityAlertTriggered) content);
         }
-        case TdApi.MessageInviteVoiceChatParticipants.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageInviteVoiceChatParticipants) content);
+        case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR: {
+          return new TGMessageChat(context, msg, (TdApi.MessageInviteVideoChatParticipants) content);
         }
-        case TdApi.MessageVoiceChatStarted.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageVoiceChatStarted) content);
+        case TdApi.MessageVideoChatStarted.CONSTRUCTOR: {
+          return new TGMessageChat(context, msg, (TdApi.MessageVideoChatStarted) content);
         }
-        case TdApi.MessageVoiceChatEnded.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageVoiceChatEnded) content);
+        case TdApi.MessageVideoChatEnded.CONSTRUCTOR: {
+          return new TGMessageChat(context, msg, (TdApi.MessageVideoChatEnded) content);
         }
         case TdApi.MessageVenue.CONSTRUCTOR: {
           return new TGMessageLocation(context, msg, ((TdApi.MessageVenue) content).venue);

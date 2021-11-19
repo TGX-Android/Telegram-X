@@ -1637,9 +1637,10 @@ public class TdlibUi extends Handler {
 
     public TdApi.ChatList chatList;
     public String inviteLink;
+    public TdApi.ChatInviteLinkInfo inviteLinkInfo;
     public ThreadInfo threadInfo;
     public TdApi.SearchMessagesFilter filter;
-    public TdApi.InternalLinkTypeVoiceChat voiceChatInvitation;
+    public TdApi.InternalLinkTypeVideoChat videoChatOrLiveStreamInvitation;
 
     private void onDone () {
       if (onDone != null) {
@@ -1692,8 +1693,9 @@ public class TdlibUi extends Handler {
       return this;
     }
 
-    public ChatOpenParameters inviteLink (String inviteLink) {
+    public ChatOpenParameters inviteLink (String inviteLink, TdApi.ChatInviteLinkInfo inviteLinkInfo) {
       this.inviteLink = inviteLink;
+      this.inviteLinkInfo = inviteLinkInfo;
       return this;
     }
 
@@ -1717,8 +1719,8 @@ public class TdlibUi extends Handler {
       return this;
     }
 
-    public ChatOpenParameters voiceChatInvitation (TdApi.InternalLinkTypeVoiceChat voiceChatInvitation) {
-      this.voiceChatInvitation = voiceChatInvitation;
+    public ChatOpenParameters videoChatOrLiveStreamInvitation (TdApi.InternalLinkTypeVideoChat videoChatOrLiveStreamInvitation) {
+      this.videoChatOrLiveStreamInvitation = videoChatOrLiveStreamInvitation;
       return this;
     }
 
@@ -1933,7 +1935,11 @@ public class TdlibUi extends Handler {
 
     int accessState = tdlib.chatAccessState(chat);
     if (accessState < Tdlib.CHAT_ACCESS_OK) {
-      showAccessError(context, urlOpenParameters, accessState, tdlib.isChannel(chat.id));
+      if (params != null && params.inviteLinkInfo != null && params.inviteLinkInfo.createsJoinRequest) {
+        showLinkTooltip(context.tdlib(), R.drawable.baseline_warning_24, Lang.getString(TD.isChannel(params.inviteLinkInfo.type) ? R.string.RequestJoinChannelSent : R.string.RequestJoinGroupSent, params.inviteLinkInfo.title), urlOpenParameters);
+      } else {
+        showAccessError(context, urlOpenParameters, accessState, tdlib.isChannel(chat.id));
+      }
       if (params != null)
         params.onDone();
       return;
@@ -1944,7 +1950,7 @@ public class TdlibUi extends Handler {
     final TdApi.ChatList chatList = params != null ? params.chatList : null;
     final int options = params != null ? params.options : 0;
     final boolean onlyScheduled = (options & CHAT_OPTION_SCHEDULED_MESSAGES) != 0;
-    final TdApi.InternalLinkTypeVoiceChat voiceChatInvitation = params != null ? params.voiceChatInvitation : null;
+    final TdApi.InternalLinkTypeVideoChat voiceChatInvitation = params != null ? params.videoChatOrLiveStreamInvitation : null;
     final ThreadInfo messageThread = params != null ? params.threadInfo : null;
     final TdApi.SearchMessagesFilter filter = params != null ? params.filter : null;
     final MessagesController.Referrer referrer = params != null && !StringUtils.isEmpty(params.inviteLink) ? new MessagesController.Referrer(params.inviteLink) : null;
@@ -2169,8 +2175,8 @@ public class TdlibUi extends Handler {
     openChat(context, 0, new TdApi.SearchPublicChat(username), new ChatOpenParameters().urlOpenParameters(openParameters).keepStack().openProfileInCaseOfPrivateChat());
   }
 
-  public void openVoiceChat (final TdlibDelegate context, final @NonNull TdApi.InternalLinkTypeVoiceChat voiceChatInvitation, final @Nullable UrlOpenParameters openParameters) {
-    openChat(context, 0, new TdApi.SearchPublicChat(voiceChatInvitation.chatUsername), new ChatOpenParameters().urlOpenParameters(openParameters).voiceChatInvitation(voiceChatInvitation).keepStack().openProfileInCaseOfPrivateChat());
+  public void openVideoChatOrLiveStream (final TdlibDelegate context, final @NonNull TdApi.InternalLinkTypeVideoChat videoChatOrLiveStreamInvitation, final @Nullable UrlOpenParameters openParameters) {
+    openChat(context, 0, new TdApi.SearchPublicChat(videoChatOrLiveStreamInvitation.chatUsername), new ChatOpenParameters().urlOpenParameters(openParameters).videoChatOrLiveStreamInvitation(videoChatOrLiveStreamInvitation).keepStack().openProfileInCaseOfPrivateChat());
   }
 
   private static final int BOT_MODE_START = 0;
@@ -2306,17 +2312,26 @@ public class TdlibUi extends Handler {
 
   // Open link
 
-  private void openJoinDialog (final TdlibDelegate context, final String inviteLink, final @Nullable UrlOpenParameters openParameters, TdApi.ChatInviteLinkInfo inviteLinkInfo) {
+  private void openJoinDialog (final TdlibDelegate context, final String inviteLink, TdApi.ChatInviteLinkInfo inviteLinkInfo, final @Nullable UrlOpenParameters openParameters) {
     if (TdlibManager.inBackgroundThread()) {
-      tdlib.runOnUiThread(() -> openJoinDialog(context, inviteLink, openParameters, inviteLinkInfo));
+      tdlib.runOnUiThread(() -> openJoinDialog(context, inviteLink, inviteLinkInfo, openParameters));
       return;
     }
-    final String msg = Lang.getString(TD.isChannel(inviteLinkInfo.type) ? R.string.FollowChannelX : R.string.JoinGroupX, inviteLinkInfo.title);
+    final boolean isChannel = TD.isChannel(inviteLinkInfo.type);
+    CharSequence msg;
+    if (inviteLinkInfo.createsJoinRequest) {
+      msg = Lang.getStringBold(isChannel ? R.string.RequestFollowChannelX : R.string.RequestJoinGroupX, inviteLinkInfo.title);
+    } else {
+      msg = Lang.getStringBold(isChannel ? R.string.FollowChannelX : R.string.JoinGroupX, inviteLinkInfo.title);
+    }
+    if (!StringUtils.isEmpty(inviteLinkInfo.description)) {
+      msg = new SpannableStringBuilder(msg).append("\n\n").append(Lang.getString(R.string.Description)).append(": ").append(Lang.wrap(inviteLinkInfo.description, Lang.italicCreator()));
+    }
     ViewController<?> c = context.context().navigation().getCurrentStackItem();
     if (c != null) {
-      c.showOptions(msg, new int[]{R.id.btn_join, R.id.btn_cancel}, new String[]{Lang.getOK(), Lang.getString(R.string.Cancel)}, null, null, (itemView, id) -> {
+      c.showOptions(msg, new int[] {R.id.btn_join, R.id.btn_cancel}, new String[] {inviteLinkInfo.createsJoinRequest ? Lang.getString(isChannel ? R.string.RequestJoinChannelBtn : R.string.RequestJoinGroupBtn) : Lang.getOK(), Lang.getString(R.string.Cancel)}, null, null, (itemView, id) -> {
         if (id == R.id.btn_join) {
-          joinChatByInviteLink(context, inviteLink, openParameters);
+          joinChatByInviteLink(context, inviteLink, inviteLinkInfo, openParameters);
         }
         return true;
       });
@@ -2332,9 +2347,9 @@ public class TdlibUi extends Handler {
           tdlib.traceInviteLink(inviteLinkInfo);
           int accessState = tdlib.chatAccessState(inviteLinkInfo.chatId);
           if (inviteLinkInfo.chatId == 0 || accessState == Tdlib.CHAT_ACCESS_PRIVATE) {
-            openJoinDialog(context, inviteLink, openParameters, inviteLinkInfo);
+            openJoinDialog(context, inviteLink, inviteLinkInfo, openParameters);
           } else {
-            openChat(context, inviteLinkInfo.chatId, new ChatOpenParameters().urlOpenParameters(openParameters).inviteLink(inviteLink).keepStack().removeDuplicates());
+            openChat(context, inviteLinkInfo.chatId, new ChatOpenParameters().urlOpenParameters(openParameters).inviteLink(inviteLink, inviteLinkInfo).keepStack().removeDuplicates());
           }
           break;
         }
@@ -2376,8 +2391,8 @@ public class TdlibUi extends Handler {
     return true;
   }
 
-  private void joinChatByInviteLink (final TdlibDelegate context, final String inviteLink, final @Nullable UrlOpenParameters urlOpenParameters) {
-    openChat(context, 0, new TdApi.JoinChatByInviteLink(inviteLink), new ChatOpenParameters().urlOpenParameters(urlOpenParameters).keepStack().removeDuplicates());
+  private void joinChatByInviteLink (final TdlibDelegate context, final String inviteLink, TdApi.ChatInviteLinkInfo inviteLinkInfo, final @Nullable UrlOpenParameters urlOpenParameters) {
+    openChat(context, 0, new TdApi.JoinChatByInviteLink(inviteLink), new ChatOpenParameters().urlOpenParameters(urlOpenParameters).inviteLink(inviteLink, inviteLinkInfo).keepStack().removeDuplicates());
   }
 
   public static final int INSTANT_VIEW_UNSPECIFIED = -1;
@@ -3164,9 +3179,9 @@ public class TdlibUi extends Handler {
               }
               break;
             }
-            case TdApi.InternalLinkTypeVoiceChat.CONSTRUCTOR: {
-              TdApi.InternalLinkTypeVoiceChat voiceChatInvitation = (TdApi.InternalLinkTypeVoiceChat) linkType;
-              openVoiceChat(context, voiceChatInvitation, openParameters);
+            case TdApi.InternalLinkTypeVideoChat.CONSTRUCTOR: {
+              TdApi.InternalLinkTypeVideoChat voiceChatInvitation = (TdApi.InternalLinkTypeVideoChat) linkType;
+              openVideoChatOrLiveStream(context, voiceChatInvitation, openParameters);
               break;
             }
             case TdApi.InternalLinkTypeMessage.CONSTRUCTOR: {

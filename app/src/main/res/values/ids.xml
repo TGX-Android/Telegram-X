@@ -586,7 +586,7 @@
   <item type="id" name="btn_filterEditedMessages" />
   <item type="id" name="btn_filterPinnedMessages" />
   <item type="id" name="btn_filterLeavingMembers" />
-  <item type="id" name="btn_filterVoiceChats" />
+  <item type="id" name="btn_filterVideoChats" />
 
   <item type="id" name="btn_earpieceMode" />
   <item type="id" name="btn_earpieceModeVideo" />
@@ -1107,7 +1107,7 @@
   <item type="id" name="right_banUsers" />
   <item type="id" name="right_inviteUsers" />
   <item type="id" name="right_pinMessages" />
-  <item type="id" name="right_manageVoiceChats" />
+  <item type="id" name="right_manageVideoChats" />
   <item type="id" name="right_remainAnonymous" />
   <item type="id" name="right_addNewAdmins" />
 

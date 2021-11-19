@@ -6591,15 +6591,27 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   @TdlibThread
-  private void updateChatVoiceChat (TdApi.UpdateChatVoiceChat update) {
+  private void updateChatVideoChat (TdApi.UpdateChatVideoChat update) {
     synchronized (dataLock) {
       final TdApi.Chat chat = chats.get(update.chatId);
       if (TdlibUtils.assertChat(update.chatId, chat, update)) {
         return;
       }
-      chat.voiceChat = update.voiceChat;
+      chat.videoChat = update.videoChat;
     }
-    listeners.updateChatVoiceChat(update);
+    listeners.updateChatVideoChat(update);
+  }
+
+  @TdlibThread
+  private void updateChatPendingJoinRequests (TdApi.UpdateChatPendingJoinRequests update) {
+    synchronized (dataLock) {
+      final TdApi.Chat chat = chats.get(update.chatId);
+      if (TdlibUtils.assertChat(update.chatId, chat, update)) {
+        return;
+      }
+      chat.pendingJoinRequests = update.pendingJoinRequests;
+    }
+    listeners.updateChatPendingJoinRequests(update);
   }
 
   @TdlibThread
@@ -7438,8 +7450,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
 
       // Voice chats
-      case TdApi.UpdateChatVoiceChat.CONSTRUCTOR: {
-        updateChatVoiceChat((TdApi.UpdateChatVoiceChat) update);
+      case TdApi.UpdateChatVideoChat.CONSTRUCTOR: {
+        updateChatVideoChat((TdApi.UpdateChatVideoChat) update);
+        break;
+      }
+
+      // Join requests
+      case TdApi.UpdateChatPendingJoinRequests.CONSTRUCTOR: {
+        updateChatPendingJoinRequests((TdApi.UpdateChatPendingJoinRequests) update);
         break;
       }
 
@@ -7710,6 +7728,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
 
       // Bots
+      case TdApi.UpdateNewChatJoinRequest.CONSTRUCTOR:
       case TdApi.UpdateNewCustomEvent.CONSTRUCTOR:
       case TdApi.UpdateNewCustomQuery.CONSTRUCTOR:
       case TdApi.UpdateNewInlineQuery.CONSTRUCTOR:

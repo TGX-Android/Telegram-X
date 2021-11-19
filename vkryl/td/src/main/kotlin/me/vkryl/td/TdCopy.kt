@@ -201,7 +201,8 @@ fun Chat?.copyOf (): Chat? {
       this.messageTtlSetting,
       this.themeName,
       this.actionBar,
-      this.voiceChat,
+      this.videoChat,
+      this.pendingJoinRequests,
       this.replyMarkupMessageId,
       this.draftMessage,
       this.clientData
@@ -284,7 +285,7 @@ fun ChatMemberStatus?.copyOf (): ChatMemberStatus? {
         this.canRestrictMembers,
         this.canPinMessages,
         this.canPromoteMembers,
-        this.canManageVoiceChats,
+        this.canManageVideoChats,
         this.isAnonymous
       )
       ChatMemberStatusBanned.CONSTRUCTOR -> ChatMemberStatusBanned((this as ChatMemberStatusBanned).bannedUntilDate)
