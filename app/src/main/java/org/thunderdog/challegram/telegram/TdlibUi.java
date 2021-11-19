@@ -1789,14 +1789,14 @@ public class TdlibUi extends Handler {
       return;
     }
     CharSequence message = TD.toErrorString(error);
-    switch (error.message) {
-      case "USERNAME_NOT_OCCUPIED":
+    if (!StringUtils.isEmpty(message)) {
+      if ("USERNAME_NOT_OCCUPIED".equals(error.message)) {
         if (createRequest.getConstructor() == TdApi.SearchPublicChat.CONSTRUCTOR) {
           message = Lang.getStringBold(R.string.UsernameNotOccupied, ((TdApi.SearchPublicChat) createRequest).username);
         }
-        break;
+      }
+      showLinkTooltip(tdlib, R.drawable.baseline_error_24, message, parameters != null ? parameters.urlOpenParameters : null);
     }
-    showLinkTooltip(tdlib, R.drawable.baseline_error_24, message, parameters != null ? parameters.urlOpenParameters : null);
   }
 
   private static void showLinkTooltip (Tdlib tdlib, int iconRes, CharSequence message, UrlOpenParameters urlOpenParameters) {
