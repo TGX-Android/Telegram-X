@@ -4046,7 +4046,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private TGMessage selectedMessage;
   private Object selectedMessageTag;
 
-  public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, Object selectedMessageTag) {
+  public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, Object selectedMessageTag, boolean disableViewCounter) {
     this.selectedMessage = msg;
     this.selectedMessageTag = selectedMessageTag;
     StringBuilder b = new StringBuilder();
@@ -4087,11 +4087,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
     }
     String text = b.toString().trim();
-    patchReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg);
+    patchReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, disableViewCounter);
   }
 
-  private void patchReadReceiptsOptions (PopupLayout layout, TGMessage message) {
-    if (!message.canGetViewers() || message.isUnread() || !(layout.getChildAt(1) instanceof OptionsLayout)) {
+  private void patchReadReceiptsOptions (PopupLayout layout, TGMessage message, boolean disableViewCounter) {
+    if (!message.canGetViewers() || disableViewCounter || !(layout.getChildAt(1) instanceof OptionsLayout)) {
       return;
     }
 
@@ -4895,7 +4895,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           StringList strings = new StringList(3);
           Object tag = MessageView.fillMessageOptions(this, selectedMessage, ids, icons, strings, true);
           if (!ids.isEmpty()) {
-            showMessageOptions(selectedMessage, ids.get(), strings.get(), icons.get(), tag);
+            showMessageOptions(selectedMessage, ids.get(), strings.get(), icons.get(), tag, true);
           }
         }
         return true;
