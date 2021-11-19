@@ -171,7 +171,7 @@ fun CharSequence.equalsTo(other: CharSequence): Boolean {
 
 fun CharSequence?.equalsOrBothEmpty(other: CharSequence?): Boolean {
   val thisEmpty = isEmpty(this)
-  val otherEmpty = isEmpty(this)
+  val otherEmpty = isEmpty(other)
   return thisEmpty == otherEmpty && (thisEmpty || this!!.equalsTo(other!!))
 }
 @SuppressWarnings("DefaultLocale")
