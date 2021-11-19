@@ -55,9 +55,14 @@ public final class ThemeCustom implements ThemeDelegate {
     return lastChangedColorId == colorId;
   }
 
-  public boolean hasColor (@ThemeColorId int colorId) {
+  public boolean hasColor (@ThemeColorId int colorId, boolean onlyModified) {
     Integer color = colors.get(colorId);
-    return color != null && (parentTheme == null || color != parentTheme.getColor(colorId));
+    return color != null && (!onlyModified || parentTheme == null || color != parentTheme.getColor(colorId));
+  }
+
+  public boolean hasProperty (@ThemeProperty int propertyId, boolean onlyModified) {
+    Float property = properties.get(propertyId);
+    return property != null && (!onlyModified || parentTheme == null || property != parentTheme.getProperty(propertyId));
   }
 
   private void setParentThemeImpl (@ThemeId int id) {
