@@ -191,6 +191,7 @@
   <item type="id" name="controller_editBio" />
   <item type="id" name="controller_editDescription" />
   <item type="id" name="controller_createPoll" />
+  <item type="id" name="controller_messageSeen" />
 
   <item type="id" name="controller_code" />
   <item type="id" name="controller_name" />

@@ -67,6 +67,8 @@ public class MessageSeenController extends MediaBottomBaseController<Void> imple
     for (long userId : userIds) {
       items.add(new ListItem(ListItem.TYPE_USER, R.id.user).setLongId(userId));
     }
+    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, R.id.description, 0, R.string.MessageSeenPrivacy));
     items.add(new ListItem(ListItem.TYPE_LIST_INFO_VIEW));
 
     adapter.setItems(items.toArray(new ListItem[0]), false);

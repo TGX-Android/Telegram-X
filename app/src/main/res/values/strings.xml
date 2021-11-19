@@ -4038,8 +4038,8 @@
   <string name="InAppCameraCacheDeleteConfirm">Are you sure you want to clear private in-app camera cache?</string>
   <string name="NotificationReplyFailed">Failed to send a reply</string>
 
-  <string name="MessageSeen">%1$s Seen</string>
   <string name="LoadingMessageSeen">Loading…</string>
+  <string name="MessageSeenPrivacy">To protect privacy, views are only stored for 7 days.</string>
 
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
