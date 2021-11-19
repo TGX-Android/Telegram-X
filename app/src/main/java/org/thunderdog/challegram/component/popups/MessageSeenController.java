@@ -46,6 +46,20 @@ public class MessageSeenController extends MediaBottomBaseController<Void> imple
     }
   }
 
+  public static String getNobodyString (TGMessage msg) {
+    switch (msg.getMessage().content.getConstructor()) {
+      case TdApi.MessageVoiceNote.CONSTRUCTOR: {
+        return Lang.getString(R.string.MessageSeenNobodyListened);
+      }
+      case TdApi.MessageVideoNote.CONSTRUCTOR: {
+        return Lang.getString(R.string.MessageSeenNobodyPlayed);
+      }
+      default: {
+        return Lang.getString(R.string.MessageSeenNobody);
+      }
+    }
+  }
+
   @Override
   protected int getBackButton () {
     return BackHeaderButton.TYPE_CLOSE;
@@ -53,12 +67,8 @@ public class MessageSeenController extends MediaBottomBaseController<Void> imple
 
   @Override
   public boolean onBackPressed (boolean fromTop) {
-    if (fromTop) {
-      mediaLayout.hide(false);
-      return true;
-    }
-
-    return false;
+    mediaLayout.hide(false);
+    return true;
   }
 
   public MessageSeenController (MediaLayout context, TGMessage msg, long[] users) {

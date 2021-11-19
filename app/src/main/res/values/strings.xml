@@ -4089,6 +4089,8 @@
   <string name="MessageSeenListened">%1$s listened</string>
   <string name="MessageSeenPlayed">%1$s played</string>
   <string name="MessageSeenNobody">Nobody Viewed</string>
+  <string name="MessageSeenNobodyListened">Nobody Listened</string>
+  <string name="MessageSeenNobodyPlayed">Nobody Played</string>
 
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />

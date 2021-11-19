@@ -129,6 +129,7 @@ import org.thunderdog.challegram.data.TGMessageSticker;
 import org.thunderdog.challegram.data.TGRecord;
 import org.thunderdog.challegram.data.TGSwitchInline;
 import org.thunderdog.challegram.data.ThreadInfo;
+import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.filegen.VideoGenerationInfo;
 import org.thunderdog.challegram.helper.BotHelper;
@@ -4122,9 +4123,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (users.userIds.length > 1) {
           receiptText.setText(MessageSeenController.getViewString(message, users.totalCount).toString());
         } else if (users.userIds.length == 1) {
-          receiptText.setText(tdlib.senderName(new TdApi.MessageSenderUser(users.userIds[0])));
+          receiptText.setText(Emoji.instance().replaceEmoji(tdlib.senderName(new TdApi.MessageSenderUser(users.userIds[0]))));
         } else {
-          receiptText.setText(Lang.getString(R.string.MessageSeenNobody));
+          receiptText.setText(MessageSeenController.getNobodyString(message));
         }
 
         tav.setUsers(tdlib, users);
