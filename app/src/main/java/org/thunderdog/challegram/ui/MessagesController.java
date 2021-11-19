@@ -2175,7 +2175,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     public ThreadInfo messageThread;
 
     public Referrer referrer;
-    public TdApi.InternalLinkTypeVoiceChat voiceChatInvitation;
+    public TdApi.InternalLinkTypeVideoChat videoChatOrLiveStreamInvitation;
 
     public long eventLogUserId;
 
@@ -2266,8 +2266,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return this;
     }
 
-    public Arguments voiceChatInvitation (TdApi.InternalLinkTypeVoiceChat voiceChatInvitation) {
-      this.voiceChatInvitation = voiceChatInvitation;
+    public Arguments voiceChatInvitation (TdApi.InternalLinkTypeVideoChat voiceChatInvitation) {
+      this.videoChatOrLiveStreamInvitation = voiceChatInvitation;
       return this;
     }
 
@@ -2297,7 +2297,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private ThreadInfo messageThread;
   private boolean areScheduled;
   private Referrer referrer;
-  private TdApi.InternalLinkTypeVoiceChat voiceChatInvitation;
+  private TdApi.InternalLinkTypeVideoChat voiceChatInvitation;
   private boolean openKeyboard;
 
   public boolean inWallpaperMode () {
@@ -2327,7 +2327,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     this.linkedChatId = 0;
     this.areScheduled = args.areScheduled;
     this.referrer = args.referrer;
-    this.voiceChatInvitation = args.voiceChatInvitation;
+    this.voiceChatInvitation = args.videoChatOrLiveStreamInvitation;
     this.previewSearchQuery = args.searchQuery;
     this.previewSearchSender = args.searchSender;
     this.previewSearchFilter = args.searchFilter;
@@ -3577,7 +3577,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  public void openVoiceChatInvitation (TdApi.InternalLinkTypeVoiceChat invitation) {
+  public void openVoiceChatInvitation (TdApi.InternalLinkTypeVideoChat invitation) {
     // TODO some confirmation screen & join voice chat if agreed
   }
 
@@ -7917,8 +7917,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
         return filters.messagePins;
       case R.id.btn_filterLeavingMembers:
         return filters.memberLeaves;
-      case R.id.btn_filterVoiceChats:
-        return filters.voiceChatChanges;
+      case R.id.btn_filterVideoChats:
+        return filters.videoChatChanges;
     }
     return false;
   }
@@ -7950,7 +7950,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             R.id.btn_filterEditedMessages,
             R.id.btn_filterPinnedMessages,
             R.id.btn_filterLeavingMembers,
-            R.id.btn_filterVoiceChats
+            R.id.btn_filterVideoChats
           };
           strings = new String[] {
             Lang.getString(R.string.EventLogFilterAll),
@@ -7962,7 +7962,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             Lang.getString(R.string.EventLogFilterEditedMessages),
             Lang.getString(R.string.EventLogFilterPinnedMessages),
             Lang.getString(R.string.EventLogFilterLeavingMembers),
-            Lang.getString(R.string.EventLogFilterVoiceChats)
+            Lang.getString(R.string.EventLogFilterLiveStreams)
           };
         } else {
           ids = new int[] {
@@ -7976,7 +7976,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             R.id.btn_filterEditedMessages,
             R.id.btn_filterPinnedMessages,
             R.id.btn_filterLeavingMembers,
-            R.id.btn_filterVoiceChats
+            R.id.btn_filterVideoChats
           };
           strings = new String[] {
             Lang.getString(R.string.EventLogFilterAll),
@@ -8101,8 +8101,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
                     case R.id.btn_filterLeavingMembers:
                       filter.memberLeaves = isSelected;
                       break;
-                    case R.id.btn_filterVoiceChats:
-                      filter.voiceChatChanges = isSelected;
+                    case R.id.btn_filterVideoChats:
+                      filter.videoChatChanges = isSelected;
                       break;
                   }
                   break;

@@ -953,7 +953,7 @@ public class TD {
       filters.infoChanges &&
       filters.settingChanges &&
       filters.inviteLinkChanges &&
-      filters.voiceChatChanges
+      filters.videoChatChanges
     );
   }
 
@@ -1707,7 +1707,7 @@ public class TD {
         return !StringUtils.isEmpty(creator.customTitle) || creator.isAnonymous;
       case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
         TdApi.ChatMemberStatusAdministrator admin = (TdApi.ChatMemberStatusAdministrator) status;
-        return !(admin.canChangeInfo && admin.canDeleteMessages && admin.canInviteUsers && admin.canRestrictMembers && admin.canPinMessages && admin.canManageVoiceChats && !admin.canPromoteMembers && StringUtils.isEmpty(admin.customTitle) && !admin.isAnonymous);
+        return !(admin.canChangeInfo && admin.canDeleteMessages && admin.canInviteUsers && admin.canRestrictMembers && admin.canPinMessages && admin.canManageVideoChats && !admin.canPromoteMembers && StringUtils.isEmpty(admin.customTitle) && !admin.isAnonymous);
       case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR:
       case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
         return true;
@@ -5416,24 +5416,45 @@ public class TD {
           return new ContentPreview(EMOJI_LOCATION, 0, Lang.plural(alert.distance >= 1000 ? R.string.ChatContentProximityKm : R.string.ChatContentProximityM, alert.distance >= 1000 ? alert.distance / 1000 : alert.distance, tdlib.senderName(alert.traveler, true), tdlib.senderName(alert.watcher, true)), true);
         }
       }
-      case TdApi.MessageVoiceChatStarted.CONSTRUCTOR: {
-        return new ContentPreview(EMOJI_CALL, message.isOutgoing ? R.string.ChatContentVoiceChatStarted_outgoing : R.string.ChatContentVoiceChatStarted);
+      case TdApi.MessageVideoChatStarted.CONSTRUCTOR: {
+        if (message.isChannelPost) {
+          return new ContentPreview(EMOJI_CALL, message.isOutgoing ? R.string.ChatContentLiveStreamStarted_outgoing : R.string.ChatContentLiveStreamStarted);
+        } else {
+          return new ContentPreview(EMOJI_CALL, message.isOutgoing ? R.string.ChatContentVoiceChatStarted_outgoing : R.string.ChatContentVoiceChatStarted);
+        }
       }
-      case TdApi.MessageVoiceChatEnded.CONSTRUCTOR: {
-        TdApi.MessageVoiceChatEnded voice = (TdApi.MessageVoiceChatEnded) message.content;
-        return new ContentPreview(EMOJI_CALL_END, 0, Lang.getString(message.isOutgoing ? R.string.ChatContentVoiceChatFinished_outgoing : R.string.ChatContentVoiceChatFinished, Lang.getCallDuration(voice.duration)), true);
+      case TdApi.MessageVideoChatEnded.CONSTRUCTOR: {
+        TdApi.MessageVideoChatEnded videoChatOrLiveStream = (TdApi.MessageVideoChatEnded) message.content;
+        if (message.isChannelPost) {
+          return new ContentPreview(EMOJI_CALL_END, 0, Lang.getString(message.isOutgoing ? R.string.ChatContentLiveStreamFinished_outgoing : R.string.ChatContentLiveStreamFinished, Lang.getCallDuration(videoChatOrLiveStream.duration)), true);
+        } else {
+          return new ContentPreview(EMOJI_CALL_END, 0, Lang.getString(message.isOutgoing ? R.string.ChatContentVoiceChatFinished_outgoing : R.string.ChatContentVoiceChatFinished, Lang.getCallDuration(videoChatOrLiveStream.duration)), true);
+        }
       }
-      case TdApi.MessageInviteVoiceChatParticipants.CONSTRUCTOR: {
-        TdApi.MessageInviteVoiceChatParticipants info = (TdApi.MessageInviteVoiceChatParticipants) message.content;
-        if (info.userIds.length == 1) {
-          long userId = info.userIds[0];
-          if (tdlib.isSelfUserId(userId)) {
-            return new ContentPreview(EMOJI_GROUP_INVITE, R.string.ChatContentVoiceChatInviteYou);
+      case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR: {
+        TdApi.MessageInviteVideoChatParticipants info = (TdApi.MessageInviteVideoChatParticipants) message.content;
+        if (message.isChannelPost) {
+          if (info.userIds.length == 1) {
+            long userId = info.userIds[0];
+            if (tdlib.isSelfUserId(userId)) {
+              return new ContentPreview(EMOJI_GROUP_INVITE, R.string.ChatContentLiveStreamInviteYou);
+            } else {
+              return new ContentPreview(EMOJI_GROUP_INVITE, 0, Lang.getString(message.isOutgoing ? R.string.ChatContentLiveStreamInvite_outgoing : R.string.ChatContentLiveStreamInvite, tdlib.cache().userName(userId)), true);
+            }
           } else {
-            return new ContentPreview(EMOJI_GROUP_INVITE, 0, Lang.getString(message.isOutgoing ? R.string.ChatContentVoiceChatInvite_outgoing : R.string.ChatContentVoiceChatInvite, tdlib.cache().userName(userId)), true);
+            return new ContentPreview(EMOJI_GROUP_INVITE, 0, Lang.plural(message.isOutgoing ? R.string.ChatContentLiveStreamInviteMulti_outgoing : R.string.ChatContentLiveStreamInviteMulti, info.userIds.length), true);
           }
         } else {
-          return new ContentPreview(EMOJI_GROUP_INVITE, 0, Lang.plural(message.isOutgoing ? R.string.ChatContentVoiceChatInviteMulti_outgoing : R.string.ChatContentVoiceChatInviteMulti, info.userIds.length), true);
+          if (info.userIds.length == 1) {
+            long userId = info.userIds[0];
+            if (tdlib.isSelfUserId(userId)) {
+              return new ContentPreview(EMOJI_GROUP_INVITE, R.string.ChatContentVoiceChatInviteYou);
+            } else {
+              return new ContentPreview(EMOJI_GROUP_INVITE, 0, Lang.getString(message.isOutgoing ? R.string.ChatContentVoiceChatInvite_outgoing : R.string.ChatContentVoiceChatInvite, tdlib.cache().userName(userId)), true);
+            }
+          } else {
+            return new ContentPreview(EMOJI_GROUP_INVITE, 0, Lang.plural(message.isOutgoing ? R.string.ChatContentVoiceChatInviteMulti_outgoing : R.string.ChatContentVoiceChatInviteMulti, info.userIds.length), true);
+          }
         }
       }
       case TdApi.MessageChatAddMembers.CONSTRUCTOR: {
@@ -6197,10 +6218,10 @@ public class TD {
       case TdApi.MessageWebsiteConnected.CONSTRUCTOR:
       case TdApi.MessageUnsupported.CONSTRUCTOR:
       case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR:
-      case TdApi.MessageInviteVoiceChatParticipants.CONSTRUCTOR:
-      case TdApi.MessageVoiceChatStarted.CONSTRUCTOR:
-      case TdApi.MessageVoiceChatEnded.CONSTRUCTOR:
-      case TdApi.MessageVoiceChatScheduled.CONSTRUCTOR:
+      case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR:
+      case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
+      case TdApi.MessageVideoChatEnded.CONSTRUCTOR:
+      case TdApi.MessageVideoChatScheduled.CONSTRUCTOR:
         break;
     }
     return null;

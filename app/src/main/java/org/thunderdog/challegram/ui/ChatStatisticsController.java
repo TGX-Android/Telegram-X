@@ -482,8 +482,10 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
 
         if (message.canGetStatistics && (message.mediaAlbumId == 0 || currentMediaAlbumId != message.mediaAlbumId)) {
           currentMediaAlbumId = message.mediaAlbumId;
+          // interactionMessageAlbums should already be loaded at this moment
+          TdApi.Message suitableMessage = message.mediaAlbumId == 0 ? message : sortInteractions(message.mediaAlbumId);
           interactionMessages.add(new MessageInteractionInfoContainer(
-            message,
+            suitableMessage,
             interactions[interactions.length - remaining.get()]
           ));
         }
@@ -497,6 +499,12 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     for (TdApi.ChatStatisticsMessageInteractionInfo interaction : interactions) {
       tdlib.client().send(new TdApi.GetMessageLocally(getArgumentsStrict().chatId, interaction.messageId), handler);
     }
+  }
+
+  private TdApi.Message sortInteractions (long mediaAlbumId) {
+    List<TdApi.Message> messages = Td.sortByViewCount(interactionMessageAlbums.get(mediaAlbumId));
+    if (messages == null) return null;
+    return messages.get(0);
   }
 
   private void setCharts (List<ListItem> items, List<Chart> charts, Runnable onChartsLoaded) {
