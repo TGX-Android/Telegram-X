@@ -222,6 +222,34 @@ public class Screen {
     return navigationBarHeight;
   }
 
+  private static int navigationBarFrameHeight;
+
+  public static int getNavigationBarFrameHeight () {
+    if (navigationBarFrameHeight != 0) {
+      return navigationBarFrameHeight;
+    }
+    int resourceId = UI.getResources().getIdentifier("navigation_bar_frame_height", "dimen", "android");
+    if (resourceId > 0) {
+      navigationBarFrameHeight = UI.getResources().getDimensionPixelSize(resourceId);
+    }
+    return navigationBarFrameHeight;
+  }
+
+  public static boolean isGesturalNavigationEnabled () {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+      return false;
+    }
+
+    try {
+      int resourceId = UI.getResources().getIdentifier("config_navBarInteractionMode", "integer", "android");
+      if (resourceId > 0) {
+        return UI.getResources().getInteger(resourceId) == 2; // 2 is gestural by AOSP docs, SO says some Samsung devices can have values like 17694897, needs further investigation
+      }
+    } catch (android.content.res.Resources.NotFoundException ignored) {}
+
+    return false;
+  }
+
   private static Integer __statusBarHeight;
 
   public static void setStatusBarHeight (int height) {

@@ -179,6 +179,14 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
     this.needRootInsets = true;
   }
 
+  public void setNeedKeyboardPadding (boolean needKeyboardPadding) {
+    if (needKeyboardPadding) {
+      setPadding(0, 0, 0, Screen.getNavigationBarFrameHeight() - Screen.getNavigationBarHeight());
+    } else {
+      setPadding(0, 0, 0, 0);
+    }
+  }
+
   private boolean hideKeyboard;
 
   public void setHideKeyboard () {
