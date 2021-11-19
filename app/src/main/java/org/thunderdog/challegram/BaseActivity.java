@@ -234,7 +234,13 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public void removeFromRoot (View view) {
-    rootView.removeView(view);
+    try {
+      rootView.removeView(view);
+    } catch (NullPointerException e) {
+      // Ignoring, as it's most likely bug in Android SDK 23
+      // at android.view.TextureView.destroySurface (TextureView.java:244)
+      Log.i(e);
+    }
   }
 
   public void addToNavigation (View view) {
