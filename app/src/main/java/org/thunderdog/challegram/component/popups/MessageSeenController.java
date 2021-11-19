@@ -1,0 +1,95 @@
+package org.thunderdog.challegram.component.popups;
+
+import android.content.Context;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.ListView;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.attach.MediaBottomBaseController;
+import org.thunderdog.challegram.component.attach.MediaLayout;
+import org.thunderdog.challegram.component.base.SettingView;
+import org.thunderdog.challegram.component.user.UserView;
+import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TGUser;
+import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.ui.ListItem;
+import org.thunderdog.challegram.ui.SettingsAdapter;
+import org.thunderdog.challegram.widget.ListInfoView;
+import org.thunderdog.challegram.widget.VerticalChatView;
+
+import java.util.ArrayList;
+
+public class MessageSeenController extends MediaBottomBaseController<Void> implements View.OnClickListener {
+  private SettingsAdapter adapter;
+  private final long[] userIds;
+
+  public MessageSeenController (MediaLayout context, long[] users) {
+    super(context, Lang.plural(R.string.xViews, users.length));
+    userIds = users;
+  }
+
+  @Override
+  protected View onCreateView (Context context) {
+    buildContentView(false);
+    setLayoutManager(new LinearLayoutManager(context(), RecyclerView.VERTICAL, false));
+
+    setAdapter(adapter = new SettingsAdapter(this) {
+      @Override
+      protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
+        if (item.getId() == R.id.btn_openLink) {
+          view.setIconColorId(R.id.theme_color_textNeutral);
+        } else {
+          view.setIconColorId(R.id.theme_color_icon);
+        }
+      }
+
+      @Override
+      protected void setInfo (ListItem item, int position, ListInfoView infoView) {
+        infoView.showInfo(Lang.plural(R.string.xViews, userIds.length));
+      }
+
+      @Override
+      protected void setUser (ListItem item, int position, UserView userView, boolean isUpdate) {
+        userView.setUser(TGUser.createWithUsername(tdlib, tdlib.chatUser(item.getLongId())));
+      }
+    });
+
+    ViewSupport.setThemedBackground(recyclerView, R.id.theme_color_background);
+
+    ArrayList<ListItem> items = new ArrayList<>();
+
+    for (long userId : userIds) {
+      items.add(new ListItem(ListItem.TYPE_USER, R.id.user).setLongId(userId));
+    }
+    items.add(new ListItem(ListItem.TYPE_LIST_INFO_VIEW));
+
+    adapter.setItems(items.toArray(new ListItem[0]), false);
+
+    return contentView;
+  }
+
+  @Override
+  protected ViewGroup createCustomBottomBar () {
+    return new FrameLayout(context);
+  }
+
+  @Override
+  public int getId () {
+    return R.id.controller_messageSeen;
+  }
+
+  @Override
+  public void onClick (View v) {
+    mediaLayout.hide(false);
+    if (v.getId() == R.id.user) {
+      tdlib.ui().openPrivateProfile(this, ((ListItem) v.getTag()).getLongId(), new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
+      //Intents.openUriInBrowser(Uri.parse(Lang.getString(R.string.url_promote)));
+    }
+  }
+}

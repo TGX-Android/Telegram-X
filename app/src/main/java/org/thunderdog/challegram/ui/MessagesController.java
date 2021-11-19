@@ -108,6 +108,7 @@ import org.thunderdog.challegram.component.chat.VoiceVideoButtonView;
 import org.thunderdog.challegram.component.chat.WallpaperAdapter;
 import org.thunderdog.challegram.component.chat.WallpaperRecyclerView;
 import org.thunderdog.challegram.component.chat.WallpaperView;
+import org.thunderdog.challegram.component.popups.ModernActionedLayout;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
@@ -4099,7 +4100,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     LinearLayout receiptWrap = new LinearLayout(layout.getContext());
 
     TextView receiptText = OptionsLayout.genOptionView(layout.getContext(), R.id.more_btn_openReadReceipts, Lang.getString(R.string.LoadingMessageSeen), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_visibility_24, null, null, null);
-    // TODO: create combined avatar view
     TripleAvatarView tav = new TripleAvatarView(layout.getContext());
 
     receiptText.setLayoutParams(new LinearLayout.LayoutParams(0, Screen.dp(54f), 1f));
@@ -4110,9 +4110,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     Views.setClickable(receiptWrap);
     RippleSupport.setSimpleWhiteBackground(receiptWrap);
-    receiptWrap.setOnClickListener((v) -> {
-      layout.hideWindow(true);
-    });
 
     optionsLayout.addView(receiptWrap, 2);
 
@@ -4120,8 +4117,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (obj.getConstructor() != TdApi.Users.CONSTRUCTOR) return;
       runOnUiThreadOptional(() -> {
         TdApi.Users users = (TdApi.Users) obj;
-        receiptText.setText(Lang.getString(R.string.MessageSeen, users.totalCount));
+        receiptText.setText(Lang.plural(R.string.xViews, users.totalCount));
         tav.setUsers(tdlib, users);
+        receiptWrap.setOnClickListener((v) -> {
+          layout.hideWindow(true);
+          ModernActionedLayout.showMessageSeen(this, users.userIds);
+        });
       });
     });
   }

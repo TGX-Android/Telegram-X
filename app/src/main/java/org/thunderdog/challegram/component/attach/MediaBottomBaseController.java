@@ -41,10 +41,20 @@ import me.vkryl.android.widget.FrameLayoutFix;
 public abstract class MediaBottomBaseController<T> extends ViewController<T> {
   protected final MediaLayout mediaLayout;
   private final int titleRes;
+  private final String titleString;
 
   protected MediaBottomBaseController (MediaLayout context, int titleResource) {
     super(context.getContext(), context.tdlib());
     this.titleRes = titleResource;
+    this.titleString = "";
+    this.mediaLayout = context;
+    initMetrics();
+  }
+
+  protected MediaBottomBaseController (MediaLayout context, String titleString) {
+    super(context.getContext(), context.tdlib());
+    this.titleRes = 0;
+    this.titleString = titleString;
     this.mediaLayout = context;
     initMetrics();
   }
@@ -55,7 +65,7 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
 
   @Override
   public CharSequence getName () {
-    return titleRes != 0 ? Lang.getString(titleRes) : "";
+    return titleRes != 0 ? Lang.getString(titleRes) : titleString;
   }
 
   // Settings
@@ -696,6 +706,10 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
 
   protected void onCancelMultiSelection () {
     // unselect all selected shit
+  }
+
+  protected ViewGroup createCustomBottomBar () {
+    return null;
   }
 
   @Override
