@@ -328,6 +328,9 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
     try {
       tdlib = new Tdlib(this, isDebug());
     } catch (Throwable t) {
+      if (t instanceof InterruptedException || t.getCause() instanceof InterruptedException) {
+        throw t;
+      }
       error = t;
     } finally {
       locked.set(false);
