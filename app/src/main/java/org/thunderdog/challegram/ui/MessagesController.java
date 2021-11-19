@@ -108,6 +108,7 @@ import org.thunderdog.challegram.component.chat.VoiceVideoButtonView;
 import org.thunderdog.challegram.component.chat.WallpaperAdapter;
 import org.thunderdog.challegram.component.chat.WallpaperRecyclerView;
 import org.thunderdog.challegram.component.chat.WallpaperView;
+import org.thunderdog.challegram.component.popups.MessageSeenController;
 import org.thunderdog.challegram.component.popups.ModernActionedLayout;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
@@ -4117,11 +4118,23 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (obj.getConstructor() != TdApi.Users.CONSTRUCTOR) return;
       runOnUiThreadOptional(() -> {
         TdApi.Users users = (TdApi.Users) obj;
-        receiptText.setText(Lang.plural(R.string.xViews, users.totalCount));
+
+        if (users.userIds.length > 1) {
+          receiptText.setText(MessageSeenController.getViewString(message, users.totalCount).toString());
+        } else if (users.userIds.length == 1) {
+          receiptText.setText(tdlib.senderName(new TdApi.MessageSenderUser(users.userIds[0])));
+        } else {
+          receiptText.setText(Lang.getString(R.string.MessageSeenNobody));
+        }
+
         tav.setUsers(tdlib, users);
         receiptWrap.setOnClickListener((v) -> {
           layout.hideWindow(true);
-          ModernActionedLayout.showMessageSeen(this, users.userIds);
+          if (users.userIds.length > 1) {
+            ModernActionedLayout.showMessageSeen(this, message, users.userIds);
+          } else if (users.userIds.length == 1) {
+            tdlib.ui().openPrivateProfile(this, users.userIds[0], new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
+          }
         });
       });
     });

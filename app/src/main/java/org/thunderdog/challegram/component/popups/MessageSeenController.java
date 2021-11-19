@@ -4,7 +4,6 @@ import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
-import android.widget.ListView;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -15,23 +14,33 @@ import org.thunderdog.challegram.component.attach.MediaLayout;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGUser;
+import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.SettingsAdapter;
 import org.thunderdog.challegram.widget.ListInfoView;
-import org.thunderdog.challegram.widget.VerticalChatView;
 
 import java.util.ArrayList;
 
+import me.vkryl.android.widget.FrameLayoutFix;
+
 public class MessageSeenController extends MediaBottomBaseController<Void> implements View.OnClickListener {
   private SettingsAdapter adapter;
+
+  private final TGMessage msg;
   private final long[] userIds;
 
-  public MessageSeenController (MediaLayout context, long[] users) {
-    super(context, Lang.plural(R.string.xViews, users.length));
-    userIds = users;
+  public static CharSequence getViewString (TGMessage msg, int count) {
+    return msg.isNote() ? Lang.getStringBold(R.string.MessageSeenListened, count) : Lang.pluralBold(R.string.xViews, count);
+  }
+
+  public MessageSeenController (MediaLayout context, TGMessage msg, long[] users) {
+    super(context, getViewString(msg, users.length).toString());
+    this.msg = msg;
+    this.userIds = users;
   }
 
   @Override
@@ -51,7 +60,7 @@ public class MessageSeenController extends MediaBottomBaseController<Void> imple
 
       @Override
       protected void setInfo (ListItem item, int position, ListInfoView infoView) {
-        infoView.showInfo(Lang.plural(R.string.xViews, userIds.length));
+        infoView.showInfo(getViewString(msg, userIds.length));
       }
 
       @Override
@@ -91,7 +100,6 @@ public class MessageSeenController extends MediaBottomBaseController<Void> imple
     mediaLayout.hide(false);
     if (v.getId() == R.id.user) {
       tdlib.ui().openPrivateProfile(this, ((ListItem) v.getTag()).getLongId(), new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
-      //Intents.openUriInBrowser(Uri.parse(Lang.getString(R.string.url_promote)));
     }
   }
 }

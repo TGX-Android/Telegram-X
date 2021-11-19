@@ -71,6 +71,8 @@ public class TripleAvatarView extends View implements Destroyable {
       receivers[2].requestFile(receivers[1].getCurrentFile());
       receivers[1].requestFile(receivers[0].getCurrentFile());
       ignoranceFlags = 2;
+    } else if (users.length == 0) {
+      ignoranceFlags = 3;
     } else {
       ignoranceFlags = 0;
     }
@@ -130,7 +132,7 @@ public class TripleAvatarView extends View implements Destroyable {
   }
 
   private void drawReceiver (Canvas c, int index, ImageReceiver receiver) {
-    if ((index == 0 && ignoranceFlags == 2) || (index != 2 && ignoranceFlags == 1))
+    if ((index == 0 && ignoranceFlags == 2) || (index != 2 && ignoranceFlags == 1) || ignoranceFlags == 3)
       return;
     drawPlaceholder(c, receiver);
     if (placeholders[index] != null) {
