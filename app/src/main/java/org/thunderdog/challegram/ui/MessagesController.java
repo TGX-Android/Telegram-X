@@ -151,6 +151,7 @@ import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.navigation.MoreDelegate;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.NavigationStack;
+import org.thunderdog.challegram.navigation.OptionsLayout;
 import org.thunderdog.challegram.navigation.SelectDelegate;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.StopwatchHeaderButton;
@@ -205,11 +206,13 @@ import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
+import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.RippleRevealView;
 import org.thunderdog.challegram.widget.RtlViewPager;
 import org.thunderdog.challegram.widget.SendButton;
 import org.thunderdog.challegram.widget.SeparatorView;
+import org.thunderdog.challegram.widget.TripleAvatarView;
 import org.thunderdog.challegram.widget.ViewPager;
 import org.thunderdog.challegram.widget.WallpaperParametersView;
 
@@ -4083,7 +4086,44 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
     }
     String text = b.toString().trim();
-    showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
+    patchReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg);
+  }
+
+  private void patchReadReceiptsOptions (PopupLayout layout, TGMessage message) {
+    if (!message.canGetViewers() || message.isUnread() || !(layout.getChildAt(1) instanceof OptionsLayout)) {
+      return;
+    }
+
+    OptionsLayout optionsLayout = (OptionsLayout) layout.getChildAt(1);
+
+    LinearLayout receiptWrap = new LinearLayout(layout.getContext());
+
+    TextView receiptText = OptionsLayout.genOptionView(layout.getContext(), R.id.more_btn_openReadReceipts, Lang.getString(R.string.LoadingMessageSeen), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_visibility_24, null, null, null);
+    // TODO: create combined avatar view
+    TripleAvatarView tav = new TripleAvatarView(layout.getContext());
+
+    receiptText.setLayoutParams(new LinearLayout.LayoutParams(0, Screen.dp(54f), 1f));
+    receiptText.setClickable(false);
+    tav.setLayoutParams(new LinearLayout.LayoutParams(Screen.dp(TripleAvatarView.AVATAR_SIZE * 3 + Screen.dp(6)), Screen.dp(54f)));
+    receiptWrap.addView(receiptText);
+    receiptWrap.addView(tav);
+
+    Views.setClickable(receiptWrap);
+    RippleSupport.setSimpleWhiteBackground(receiptWrap);
+    receiptWrap.setOnClickListener((v) -> {
+      layout.hideWindow(true);
+    });
+
+    optionsLayout.addView(receiptWrap, 2);
+
+    tdlib.client().send(new TdApi.GetMessageViewers(message.getChatId(), message.getId()), (obj) -> {
+      if (obj.getConstructor() != TdApi.Users.CONSTRUCTOR) return;
+      runOnUiThreadOptional(() -> {
+        TdApi.Users users = (TdApi.Users) obj;
+        receiptText.setText(Lang.getString(R.string.MessageSeen, users.totalCount));
+        tav.setUsers(tdlib, users);
+      });
+    });
   }
 
   public boolean onCommandLongPressed (InlineResultCommand command) {

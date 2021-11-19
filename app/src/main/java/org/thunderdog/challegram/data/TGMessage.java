@@ -3932,6 +3932,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return msg.canGetStatistics;
   }
 
+  public final boolean canGetViewers () {
+    return msg.canGetViewers;
+  }
+
   public final boolean canBeDeletedOnlyForSelf () {
     return msg.canBeDeletedOnlyForSelf;
   }

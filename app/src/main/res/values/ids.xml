@@ -99,6 +99,7 @@
   <item type="id" name="more_btn_markAsRead" />
   <item type="id" name="more_btn_report" />
   <item type="id" name="more_btn_markAsUnread" />
+  <item type="id" name="more_btn_openReadReceipts" />
 
   <item type="id" name="login_phone" />
   <item type="id" name="login_code" />
