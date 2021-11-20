@@ -678,6 +678,10 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   }
 
   private String simplifyInviteLink (TdApi.ChatInviteLink link) {
+    if (link.name != null && !link.name.isEmpty()) {
+      return link.name;
+    }
+
     String[] linkSegments = link.inviteLink.split("/");
     return linkSegments[linkSegments.length - 1];
   }
