@@ -256,6 +256,10 @@ public class TGUser implements UserProvider {
   }
 
   public long getId () {
+    if (user == null && chatId != 0) {
+      return chatId;
+    }
+
     return (flags & FLAG_LOCAL) != 0 ? contactId : user == null ? 0 : user.id;
   }
 
