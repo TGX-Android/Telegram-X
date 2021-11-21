@@ -4084,6 +4084,16 @@
   <string name="InAppCameraCacheDeleteConfirm">Are you sure you want to clear private in-app camera cache?</string>
   <string name="NotificationReplyFailed">Failed to send a reply</string>
 
+  <string name="LoadingMessageSeen">Loading…</string>
+  <string name="MessageSeenPrivacy">To protect privacy, views are only stored for 7 days.</string>
+  <string name="MessageSeenXListened_one">%1$s listened</string>
+  <string name="MessageSeenXListened_other">%1$s listened</string>
+  <string name="MessageSeenXPlayed_one">%1$s played</string>
+  <string name="MessageSeenXPlayed_other">%1$s played</string>
+  <string name="MessageSeenNobody">Nobody Viewed</string>
+  <string name="MessageSeenNobodyListened">Nobody Listened</string>
+  <string name="MessageSeenNobodyPlayed">Nobody Played</string>
+
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
   <string name="suggested_language_code_plural" />

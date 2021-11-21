@@ -96,6 +96,7 @@ public class MediaLayout extends FrameLayoutFix implements
   public static final int MODE_DEFAULT = 0;
   public static final int MODE_LOCATION = 1;
   public static final int MODE_GALLERY = 2;
+  public static final int MODE_CUSTOM_POPUP = 3;
 
   private int mode;
   private @Nullable MediaCallback callback;
@@ -109,6 +110,8 @@ public class MediaLayout extends FrameLayoutFix implements
   private @Nullable MediaBottomBar bottomBar;
   private @Nullable ShadowView shadowView;
   private MediaBottomBaseController<?> currentController;
+
+  private ViewGroup customBottomBar;
 
   private final ThemeListenerList themeListeners = new ThemeListenerList();
 
@@ -230,6 +233,26 @@ public class MediaLayout extends FrameLayoutFix implements
     Lang.addLanguageListener(this);
   }
 
+  public void initCustom () {
+    mode = MODE_CUSTOM_POPUP;
+    controllers = new MediaBottomBaseController[1];
+    currentController = getControllerForIndex(0);
+    View controllerView = currentController.get();
+
+    addView(controllerView);
+
+    if (mode == MODE_DEFAULT) {
+      addView(customBottomBar = currentController.createCustomBottomBar());
+      themeListeners.addThemeInvalidateListener(customBottomBar);
+      customBottomBar.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
+      customBottomBar.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.EXACTLY);
+    }
+
+    setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    ThemeManager.instance().addThemeListener(this);
+    Lang.addLanguageListener(this);
+  }
+
   @Override
   public void onLanguagePackEvent (int event, int arg1) {
     if (Lang.hasDirectionChanged(event, arg1)) {
@@ -270,12 +293,12 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   @Override
-  public boolean onBackPressed () {
+  public boolean onBackPressed (boolean fromTop) {
     MediaBottomBaseController<?> c = getCurrentController();
     if (c.isAnimating()) {
       return true;
     }
-    if (c.onBackPressed(false)) {
+    if (c.onBackPressed(fromTop)) {
       return true;
     }
     if (counterView != null && counterView.isEnabled()) {
@@ -328,7 +351,7 @@ public class MediaLayout extends FrameLayoutFix implements
     return c;
   }
 
-  private MediaBottomBaseController<?> createControllerForIndex (int index) {
+  public MediaBottomBaseController<?> createControllerForIndex (int index) {
     switch (mode) {
       case MODE_LOCATION: {
         return new MediaBottomLocationController(this);
@@ -656,17 +679,25 @@ public class MediaLayout extends FrameLayoutFix implements
     }
   }
 
+  private int getBottomBarHeight () {
+    return customBottomBar != null ? customBottomBar.getMeasuredHeight() : MediaBottomBar.getBarHeight();
+  }
+
   public int getCurrentBottomBarHeight () {
-    return (int) ((float) MediaBottomBar.getBarHeight() * Math.max(bottomBarFactor, counterFactor));
+    return (int) ((float) getBottomBarHeight() * Math.max(bottomBarFactor, counterFactor));
   }
 
   private void updateBarPosition () {
-    int height = MediaBottomBar.getBarHeight();
+    int height = getBottomBarHeight();
     float factor = Math.max(bottomBarFactor, counterFactor);
     float y = height - (int) ((float) height * factor);
     if (!inSpecificMode()) {
       if (bottomBar != null) {
         bottomBar.setTranslationY(y);
+        onCurrentColorChanged();
+      }
+      if (customBottomBar != null) {
+        customBottomBar.setTranslationY(y);
         onCurrentColorChanged();
       }
       if (shadowView != null) {
