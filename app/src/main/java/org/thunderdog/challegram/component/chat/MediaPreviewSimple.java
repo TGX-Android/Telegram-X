@@ -5,6 +5,7 @@ import android.graphics.Path;
 import android.view.View;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.data.FileComponent;
 import org.thunderdog.challegram.data.TD;
@@ -18,6 +19,7 @@ import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -25,6 +27,7 @@ import org.thunderdog.challegram.util.DrawableProvider;
 
 import java.io.File;
 
+import me.vkryl.core.ColorUtils;
 import me.vkryl.td.Td;
 
 public class MediaPreviewSimple extends MediaPreview {
@@ -35,6 +38,8 @@ public class MediaPreviewSimple extends MediaPreview {
 
   private ImageFile targetImage;
   private GifFile targetGif;
+
+  private boolean drawColoredFileBackground;
 
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.ProfilePhoto profilePhoto, TdApi.Thumbnail thumbnail) {
     super(size, cornerRadius);
@@ -185,6 +190,16 @@ public class MediaPreviewSimple extends MediaPreview {
     }
   }
 
+  public MediaPreviewSimple (int size, int cornerRadius, ImageFile remoteFile) {
+    super(size, cornerRadius);
+    this.drawColoredFileBackground = true;
+    this.targetImage = remoteFile;
+    this.targetImage.setSize(size);
+    this.targetImage.setScaleType(ImageFile.CENTER_CROP);
+    this.targetImage.setDecodeSquare(true);
+    this.targetImage.setNoBlur();
+  }
+
   @Override
   public void requestFiles (ComplexReceiver receiver, boolean invalidate) {
     GifReceiver gifPreview = receiver.getGifReceiver(0);
@@ -241,7 +256,16 @@ public class MediaPreviewSimple extends MediaPreview {
       }
       preview.draw(c);
     }
+
+    if (drawColoredFileBackground) {
+      target.drawPlaceholderRounded(c, cornerRadius, Theme.getColor(R.id.theme_color_file));
+    }
+
     target.draw(c);
+
+    if (drawColoredFileBackground) {
+      target.drawPlaceholderRounded(c, cornerRadius, ColorUtils.alphaColor(target.getAlpha() * alpha, 0x44000000));
+    }
 
     if (alpha != 1f) {
       preview.restorePaintAlpha();
