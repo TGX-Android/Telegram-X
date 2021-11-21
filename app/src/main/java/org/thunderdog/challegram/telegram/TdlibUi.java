@@ -1819,9 +1819,9 @@ public class TdlibUi extends Handler {
     }
     if (urlOpenParameters != null && urlOpenParameters.tooltip != null && urlOpenParameters.tooltip.hasVisibleTarget()) {
       if (iconRes == 0) {
-        urlOpenParameters.tooltip.show(tdlib, message).hideDelayed();
+        urlOpenParameters.tooltip.show(tdlib, message).hideDelayed(3500, TimeUnit.MILLISECONDS);
       } else {
-        new TooltipOverlayView.TooltipBuilder(urlOpenParameters.tooltip).icon(iconRes).show(tdlib, message).hideDelayed();
+        new TooltipOverlayView.TooltipBuilder(urlOpenParameters.tooltip).icon(iconRes).show(tdlib, message).hideDelayed(3500, TimeUnit.MILLISECONDS);
       }
     } else {
       UI.showToast(message, Toast.LENGTH_SHORT);
