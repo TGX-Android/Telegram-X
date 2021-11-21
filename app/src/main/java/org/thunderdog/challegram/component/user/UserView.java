@@ -199,7 +199,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
   }
 
   public void setUser (@NonNull TGUser user) {
-    if (unregisteredContact != null || !user.compare(this.user)) {
+    if (unregisteredContact != null || !user.equals(this.user)) {
       this.user = user;
       this.unregisteredContact = null;
       buildLayout();

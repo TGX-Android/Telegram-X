@@ -3591,6 +3591,14 @@ public class TD {
           return Lang.getString(R.string.XJoinedByLink, tdlib.senderName(m.sender, true));
         }
       }
+      case TdApi.MessageChatJoinByRequest.CONSTRUCTOR: {
+        U.set(isTranslatable, true);
+        if (TD.isOut(m)) {
+          return Lang.getString(m.isChannelPost ? R.string.YouAcceptedToChannel : R.string.YouAcceptedToGroup);
+        } else {
+          return Lang.getString(m.isChannelPost ? R.string.XAcceptedToChannel : R.string.XAcceptedToGroup, tdlib.senderName(m.sender, true));
+        }
+      }
       // Supergroup migration
       case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR:
       case TdApi.MessageChatUpgradeTo.CONSTRUCTOR: {
@@ -4019,6 +4027,7 @@ public class TD {
   public static boolean canBeEdited (TdApi.MessageContent content) {
     switch (content.getConstructor()) {
       case TdApi.MessageText.CONSTRUCTOR:
+      case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
       case TdApi.MessagePhoto.CONSTRUCTOR:
       case TdApi.MessageVideo.CONSTRUCTOR:
       case TdApi.MessageDocument.CONSTRUCTOR:
@@ -5291,6 +5300,11 @@ public class TD {
         }
         break;
       }
+      case TdApi.MessageAnimatedEmoji.CONSTRUCTOR: {
+        TdApi.MessageAnimatedEmoji animatedEmoji = (TdApi.MessageAnimatedEmoji) message.content;
+        alternativeText = animatedEmoji.emoji;
+        break;
+      }
       case TdApi.MessageDocument.CONSTRUCTOR:
         alternativeText = ((TdApi.MessageDocument) message.content).document.fileName;
         break;
@@ -6047,6 +6061,8 @@ public class TD {
     switch (type) {
       case TdApi.MessageText.CONSTRUCTOR:
         return new ContentPreview(arg1 == ARG_TRUE ? EMOJI_LINK : null, R.string.YouHaveNewMessage, formattedArgument, argumentTranslatable);
+      case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
+        return new ContentPreview(null, R.string.YouHaveNewMessage, formattedArgument, argumentTranslatable);
       case TdApi.MessagePhoto.CONSTRUCTOR:
         return new ContentPreview(EMOJI_PHOTO, R.string.ChatContentPhoto, formattedArgument, argumentTranslatable);
       case TdApi.MessageVideo.CONSTRUCTOR:

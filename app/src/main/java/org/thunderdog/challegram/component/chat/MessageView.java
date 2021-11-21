@@ -430,7 +430,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       if (isSent) {
         return showChatOptions(m, (TGMessageChat) msg);
       } else {
-        m.showMessageOptions(msg, new int[] {R.id.btn_messageDelete}, new String[] {Lang.getString(R.string.Delete)}, new int[] {R.drawable.baseline_delete_24}, null);
+        m.showMessageOptions(msg, new int[] {R.id.btn_messageDelete}, new String[] {Lang.getString(R.string.Delete)}, new int[] {R.drawable.baseline_delete_24}, null, true);
         return true;
       }
     }
@@ -440,7 +440,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     StringList strings = new StringList(6);
     Object tag = fillMessageOptions(m, msg, ids, icons, strings, false);
     if (!ids.isEmpty()) {
-      m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), tag);
+      m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), tag, false);
       return true;
     }
     return false;
@@ -918,7 +918,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       return false;
     }
 
-    m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), null);
+    m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), null, true);
     return true;
   }
 

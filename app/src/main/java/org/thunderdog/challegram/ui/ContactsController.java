@@ -427,7 +427,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
       }
       case MODE_NEW_SECRET_CHAT: {
         hideSoftwareKeyboard();
-        tdlib.ui().startSecretChat(this, u.getId(), false, null);
+        tdlib.ui().startSecretChat(this, u.getUserId(), false, null);
         break;
       }
       case MODE_NEW_CHAT:
@@ -440,9 +440,9 @@ public class ContactsController extends TelegramViewController<ContactsControlle
             navigateBack();
           }
         } else if (mode == MODE_CALL) {
-          tdlib.context().calls().makeCall(this, u.getId(), null);
+          tdlib.context().calls().makeCall(this, u.getUserId(), null);
         } else {
-          tdlib.ui().openPrivateChat(this, u.getId(), null);
+          tdlib.ui().openPrivateChat(this, u.getUserId(), null);
         }
         break;
       }
@@ -600,7 +600,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
 
     long[] userIds = new long[size];
     for (int i = 0; i < size; i++) {
-      userIds[i] = pickedChats.get(i).getId();
+      userIds[i] = pickedChats.get(i).getUserId();
     }
 
     tdlib.client().send(new TdApi.AddChatMembers(chat.id, userIds), object -> {
@@ -682,7 +682,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
     }
     int viewIndex = -1;
     if (v == null) {
-      viewIndex = adapter.indexOfUser(u.getId());
+      viewIndex = adapter.indexOfUser(u.getUserId());
       if (viewIndex != -1) {
         v = (UserView) recyclerView.getLayoutManager().findViewByPosition(viewIndex);
         if (v == null)
@@ -1105,7 +1105,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
       }
       int i = 0;
       for (TGUser user : users) {
-        if (user.getId() == userId) {
+        if (user.getUserId() == userId) {
           return i;
         }
         i++;

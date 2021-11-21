@@ -114,12 +114,40 @@ public class ImageReader {
       return;
     }
 
+    if (file.isContentUri()) {
+      readContentUri(file, listener);
+      return;
+    }
+
     Bitmap bitmap = readImage(file, path);
     listener.onImageLoaded(bitmap != null, bitmap);
   }
 
   private void readTgVectorPattern (ImageFile file, Listener listener) {
     Bitmap bitmap = SvgRender.fromCompressed(file.getSize(), file.needDecodeSquare(), file.getFilePath());
+    listener.onImageLoaded(bitmap != null, bitmap);
+  }
+
+  private void readContentUri (ImageFile file, Listener listener) {
+    Bitmap bitmap;
+
+    try (InputStream is = UI.getAppContext().getContentResolver().openInputStream(Uri.parse(file.getFilePath()))) {
+      bitmap = BitmapFactory.decodeStream(is);
+    } catch (Exception e) {
+      e.printStackTrace();
+      bitmap = null;
+    }
+
+    if (bitmap != null) {
+      boolean inPurgeable = !file.needBlur() && Config.PIN_BITMAP_ENABLED;
+
+      if (!file.isWebp() && file.shouldUseBlur() && file.needBlur()) {
+        U.blurBitmap(bitmap, file.getBlurRadius(), inPurgeable ? 0 : 1);
+      } else if (inPurgeable) {
+        N.pinBitmapIfNeeded(bitmap);
+      }
+    }
+
     listener.onImageLoaded(bitmap != null, bitmap);
   }
 
