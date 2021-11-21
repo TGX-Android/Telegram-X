@@ -100,7 +100,7 @@ public class SimpleUsersAdapter extends RecyclerView.Adapter<SimpleUsersAdapter.
   public void onBindViewHolder (SimpleUserHolder holder, int position) {
     TGUser user = users.get(position);
     if (isSelectable) {
-      holder.setUser(user, selected.get(user.getId()) != null);
+      holder.setUser(user, selected.get(user.getUserId()) != null);
     } else {
       holder.setUser(user);
     }
@@ -142,12 +142,12 @@ public class SimpleUsersAdapter extends RecyclerView.Adapter<SimpleUsersAdapter.
     TGUser user = ((UserView) v).getUser();
 
     boolean inSelectMode = selected.size() > 0;
-    boolean isSelected = selected.get(user.getId()) != null;
+    boolean isSelected = selected.get(user.getUserId()) != null;
 
     if (isSelected) {
-      selected.remove(user.getId());
+      selected.remove(user.getUserId());
     } else if (inSelectMode) {
-      selected.put(user.getId(), user);
+      selected.put(user.getUserId(), user);
     }
 
     if (inSelectMode) {
@@ -166,12 +166,12 @@ public class SimpleUsersAdapter extends RecyclerView.Adapter<SimpleUsersAdapter.
   @Override
   public boolean onLongClick (View v) {
     TGUser user = ((UserView) v).getUser();
-    boolean isSelected = selected.get(user.getId()) != null;
+    boolean isSelected = selected.get(user.getUserId()) != null;
 
     if (isSelected) {
-      selected.remove(user.getId());
+      selected.remove(user.getUserId());
     } else {
-      selected.put(user.getId(), user);
+      selected.put(user.getUserId(), user);
     }
 
     ((UserView) v).setChecked(!isSelected, true);

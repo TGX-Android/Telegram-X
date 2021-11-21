@@ -77,7 +77,7 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
   public void onClick (View v) {
     TGUser user = ((UserView) v).getUser();
     if (user != null) {
-      tdlib.ui().openPrivateProfile(this, user.getId(), new TdlibUi.UrlOpenParameters());
+      tdlib.ui().openPrivateProfile(this, user.getUserId(), new TdlibUi.UrlOpenParameters());
     }
   }
 
@@ -121,7 +121,7 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
                     tdlib.ui().openChat(ChatLinkMembersController.this, user.getChatId(), new TdlibUi.ChatOpenParameters().keepStack());
                     break;
                   case R.id.btn_restrictMember:
-                    openRightsScreen(user.getId());
+                    openRightsScreen(user.getUserId());
                     break;
                 }
               }
@@ -232,7 +232,7 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
     tdlib.ui().post(() -> {
       if (!isDestroyed() && senders != null && !senders.isEmpty()) {
         for (TGUser parsedSender : senders) {
-          if (parsedSender.getId() == user.id) {
+          if (parsedSender.getUserId() == user.id) {
             parsedSender.setUser(user, 0);
             adapter.updateUserViewByLongId(ChatId.fromUserId(user.id), false);
             break;
@@ -278,7 +278,7 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
     List<ListItem> out = adapter.getItems();
     ArrayUtils.ensureCapacity(out, out.size() + newSenders.size());
     for (TGUser user : newSenders) {
-      out.add(new ListItem(ListItem.TYPE_USER, R.id.user, 0, 0).setLongId(user.getId()));
+      out.add(new ListItem(ListItem.TYPE_USER, R.id.user, 0, 0).setLongId(user.getUserId()));
     }
     adapter.notifyItemRangeInserted(startIndex, newSenders.size());
   }

@@ -1319,6 +1319,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
               getAdapter().notifyItemChanged(index);
               break;
             }
+            case TGMessage.MESSAGE_REPLACE_REQUIRED: {
+              TdApi.Message message = msg.getMessage(messageId);
+              replaceMessage(msg, index, messageId, message);
+              break;
+            }
           }
         }
       }
