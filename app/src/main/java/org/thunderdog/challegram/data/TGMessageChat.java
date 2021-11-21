@@ -815,7 +815,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
       case TYPE_JOIN_BY_LINK:
       case TYPE_JOIN_BY_REQUEST: {
         if (inviteLinkValue != null) {
-          if (type == TYPE_JOIN_BY_REQUEST) {
+          if (type == TYPE_JOIN_BY_REQUEST && approvedByUser != null) {
             if (inviteLinkValue.isPrimary) {
               if (msg.isOutgoing) {
                 makeText(msg.isChannelPost ? R.string.LinkJoinChannelPrimaryYouWithApproval : R.string.LinkJoinPrimaryYouWithApproval, new Arg(inviteLinkValue.inviteLink).setIsUrl(true), new Arg(approvedByUser));
@@ -858,10 +858,18 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
           }
         } else {
           if (type == TYPE_JOIN_BY_REQUEST) {
-            if (msg.isOutgoing) {
-              makeText(msg.isChannelPost ? R.string.YouJoinedByLinkWithApproval : R.string.group_user_join_by_link_self_with_approval, new Arg(approvedByUser));
+            if (approvedByUser != null) {
+              if (msg.isOutgoing) {
+                makeText(msg.isChannelPost ? R.string.YouJoinedByLinkWithApproval : R.string.group_user_join_by_link_self_with_approval, new Arg(approvedByUser));
+              } else {
+                makeText(msg.isChannelPost ? R.string.XJoinedByLinkWithApproval : R.string.group_user_join_by_link_with_approval, new Arg(sender), new Arg(approvedByUser));
+              }
             } else {
-              makeText(msg.isChannelPost ? R.string.XJoinedByLinkWithApproval : R.string.group_user_join_by_link_with_approval, new Arg(sender), new Arg(approvedByUser));
+              if (msg.isOutgoing) {
+                makeText(msg.isChannelPost ? R.string.YouAcceptedToChannel : R.string.YouAcceptedToGroup);
+              } else {
+                makeText(msg.isChannelPost ? R.string.XAcceptedToChannel : R.string.XAcceptedToGroup, new Arg(sender), new Arg(approvedByUser));
+              }
             }
           } else {
             if (msg.isOutgoing) {

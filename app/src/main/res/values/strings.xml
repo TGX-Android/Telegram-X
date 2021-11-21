@@ -1320,6 +1320,10 @@
   <string name="YouJoinedByLink">You joined via invite link</string>
   <string name="XJoinedByLinkWithApproval">%1$s joined via invite link, approved by %2$s</string>
   <string name="YouJoinedByLinkWithApproval">You joined via invite link, approved by %1$s</string>
+  <string name="XAcceptedToGroup">%1$s was accepted to the group</string>
+  <string name="XAcceptedToChannel">%1$s was accepted to the channel</string>
+  <string name="YouAcceptedToGroup">You were accepted to the group</string>
+  <string name="YouAcceptedToChannel">You were accepted to the channel</string>
   <string name="LinkJoinOther">%1$s joined via %2$s\'s invite link %3$s</string>
   <string name="LinkJoinOtherYou">You joined via %1$s\'s invite link %2$s</string>
   <string name="LinkJoinTemp">%1$s joined via %2$s\'s temporary invite link %3$s</string>
