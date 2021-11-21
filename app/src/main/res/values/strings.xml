@@ -3935,6 +3935,12 @@
   <string name="CreatedByXOnDate">Created by %1$s %2$s</string>
   <string name="Infinity">∞</string>
   <string name="InviteLinkManage">Manage Invite Links</string>
+  <string name="InviteLinkRequests">Join Requests</string>
+  <string name="InviteLinkRequestSince">Requested since %1$s at %2$s</string>
+  <string name="InviteLinkActionAccept">Add to Group</string>
+  <string name="InviteLinkActionWrite">Send Message</string>
+  <string name="InviteLinkActionDecline">Dismiss</string>
+  <string name="InviteLinkRequestsHint">Some [additional links](%1$s) are set up to generate requests to join your group.</string>
 
   <string name="xActiveLinks_one">%1$s active link</string>
   <string name="xActiveLinks_other">%1$s active links</string>
