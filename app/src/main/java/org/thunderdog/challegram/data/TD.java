@@ -3591,6 +3591,14 @@ public class TD {
           return Lang.getString(R.string.XJoinedByLink, tdlib.senderName(m.sender, true));
         }
       }
+      case TdApi.MessageChatJoinByRequest.CONSTRUCTOR: {
+        U.set(isTranslatable, true);
+        if (TD.isOut(m)) {
+          return Lang.getString(m.isChannelPost ? R.string.YouAcceptedToChannel : R.string.YouAcceptedToGroup);
+        } else {
+          return Lang.getString(m.isChannelPost ? R.string.XAcceptedToChannel : R.string.XAcceptedToGroup, tdlib.senderName(m.sender, true));
+        }
+      }
       // Supergroup migration
       case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR:
       case TdApi.MessageChatUpgradeTo.CONSTRUCTOR: {
