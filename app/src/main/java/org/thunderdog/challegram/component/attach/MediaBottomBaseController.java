@@ -119,7 +119,7 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
   private int lastHeightIncreaseCheck;
   private boolean isHeightIncreasing; // true if it increased
 
-  private void initMetrics () {
+  protected final void initMetrics () { // FIXME make private again and move calling from constructor to some proper place
     contentHeight = getInitialContentHeight();
     resetStartHeights(true);
   }
