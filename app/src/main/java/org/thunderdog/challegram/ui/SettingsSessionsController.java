@@ -75,7 +75,7 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     items.add(new ListItem(ListItem.TYPE_SESSION, R.id.btn_currentSession, 0, 0));
 
-    if (sessions.otherActiveSessions.length == 0) {
+    if (sessions.onlyCurrent) {
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_SESSIONS_EMPTY));
     } else {
@@ -319,7 +319,7 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
       Td.sort(newSessions);
       this.sessions = new Tdlib.SessionsInfo(new TdApi.Sessions(newSessions));
       buildCells();
-      UI.showCustomToast(Lang.getString(R.string.ScanQRAuthorizedToast, session.applicationName), Toast.LENGTH_LONG, 0);
+      UI.showCustomToast(Lang.getStringSecure(session.isPasswordPending ? R.string.ScanQRAuthorizedToastPasswordPending : R.string.ScanQRAuthorizedToast, Lang.boldCreator(), session.applicationName), Toast.LENGTH_LONG, 0);
     });
   }
 

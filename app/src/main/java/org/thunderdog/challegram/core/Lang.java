@@ -64,6 +64,7 @@ import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceList;
+import me.vkryl.td.ChatId;
 
 @SuppressWarnings(value = "SpellCheckingInspection")
 public class Lang {
@@ -279,6 +280,14 @@ public class Lang {
     }
   }
 
+  public static CharSequence getStringSecure (@StringRes int resource, SpanCreator creator, Object... formatArgs) {
+    if (isTrustedLangauge()) {
+      return getString(resource, creator, formatArgs);
+    } else {
+      return getStringImpl(null, resource, false, 0, creator, formatArgs).toString();
+    }
+  }
+
   public static String getString (@Nullable TdApi.LanguagePackInfo languagePackInfo, @StringRes int resource, Object... formatArgs) {
     return getStringImpl(languagePackInfo, resource, true, 0, null, formatArgs).toString();
   }
@@ -385,8 +394,16 @@ public class Lang {
     return TD.toDisplaySpan(new TdApi.TextEntityTypeCode(), null, needFakeBold);
   }
 
+  public static Object newItalicSpan (boolean needFakeBold) {
+    return TD.toDisplaySpan(new TdApi.TextEntityTypeItalic(), null, needFakeBold);
+  }
+
   public static SpanCreator codeCreator () {
     return (target, argStart, argEnd, argIndex, needFakeBold) -> newCodeSpan(needFakeBold);
+  }
+
+  public static SpanCreator italicCreator () {
+    return (target, argStart, argEnd, argIndex, needFakeBold) -> newItalicSpan(needFakeBold);
   }
 
   public static SpanCreator entityCreator (TdApi.TextEntityType entity) {
@@ -907,12 +924,14 @@ public class Lang {
     }
   }
 
-  public static CharSequence getNotificationTitle (String chatTitle, int notificationCount, boolean isSelfChat, boolean isMultiChat, boolean isChannel, boolean areMentions, boolean onlyPinned, boolean areOnlyScheduled, boolean areOnlySilent) {
+  public static CharSequence getNotificationTitle (long chatId, String chatTitle, int notificationCount, boolean isSelfChat, boolean isMultiChat, boolean isChannel, boolean areMentions, boolean onlyPinned, boolean areOnlyScheduled, boolean areOnlySilent) {
     CharSequence result;
     if (areMentions && onlyPinned) {
       result = Lang.getCharSequence(R.string.format_notificationTitlePinned, chatTitle);
     } else if (notificationCount > 1 || areMentions) {
       result = Lang.getCharSequence(R.string.format_notificationTitleShort, chatTitle, Lang.plural(areMentions ? R.string.mentionCount : R.string.messagesCount, notificationCount));
+    } else if (StringUtils.isEmpty(chatTitle)) {
+      result = ChatId.toString(chatId);
     } else {
       result = chatTitle;
     }

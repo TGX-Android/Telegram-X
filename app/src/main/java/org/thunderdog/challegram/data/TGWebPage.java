@@ -6,6 +6,7 @@ package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
 import android.graphics.RectF;
+import android.net.Uri;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -42,6 +43,7 @@ import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.widget.FileProgressComponent;
 
 import java.util.ArrayList;
+import java.util.Locale;
 
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.android.util.ViewProvider;
@@ -535,6 +537,25 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
 
   public TdApi.WebPage getWebPage () {
     return webPage;
+  }
+
+  public boolean isPreviewOf (String url) {
+    if (StringUtils.isEmpty(url))
+      return false;
+    if (!url.contains("://"))
+      url = "https://" + url;
+    try {
+      Uri uri = Uri.parse(url);
+      Uri webPageUri = Uri.parse(webPage.url);
+
+      String host = uri.getHost().toLowerCase(Locale.ROOT).replaceAll("^(?:www\\.|m\\.)", "");
+      String webPageHost = webPageUri.getHost().toLowerCase(Locale.ROOT).replaceAll("^(?:www\\.|m\\.)", "");
+
+      return StringUtils.equalsOrBothEmpty(host, webPageHost) && StringUtils.equalsOrBothEmpty(uri.getPath(), webPageUri.getPath());
+    } catch (Throwable t) {
+      Log.i("Invalid url", t);
+    }
+    return false;
   }
 
   @Override

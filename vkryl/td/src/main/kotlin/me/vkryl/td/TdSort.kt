@@ -37,3 +37,5 @@ fun Array<Session>.sort () {
 fun Array<LanguagePackInfo>.sort (activeLanguagePackId: String) {
   this.sortWith(compareByDescending<LanguagePackInfo> { it.isInstalled() }.thenBy { it.isBeta }.thenByDescending { it.isOfficial }.thenByDescending { !it.isInstalled() && activeLanguagePackId == it.id })
 }
+
+fun MutableList<Message>?.sortByViewCount () = this?.filter { it.interactionInfo != null }?.sortedWith(compareByDescending<Message> { it.interactionInfo!!.viewCount }.thenByDescending { it.interactionInfo!!.forwardCount })

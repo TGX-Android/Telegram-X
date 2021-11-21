@@ -405,7 +405,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private final HashMap<Long, TdApi.Chat> chats = new HashMap<>();
   private final HashMap<String, TdlibChatList> chatLists = new HashMap<>();
   private final StickerSet
-    animatedEmoji = new StickerSet(AnimatedEmojiListener.TYPE_EMOJI, "animatedemojies", false),
     utyan = new StickerSet(AnimatedEmojiListener.TYPE_EMOJI, "utyan", false),
     // animatedTgxEmoji = new StickerSet(AnimatedEmojiListener.TYPE_TGX, "AnimatedTgxEmojies", false),
     animatedDiceExplicit = new StickerSet(AnimatedEmojiListener.TYPE_DICE, "BetterDice", true);
@@ -746,7 +745,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   // keep_alive
 
-  private boolean keepAlive, hasUnprocessedPushes, isLoggingOut;
+  private boolean keepAlive, hasUnprocessedPushes, isLoggingOut, ignoreNotificationUpdates;
 
   private void setHasUnprocessedPushes (boolean hasUnprocessedPushes) {
     if (this.hasUnprocessedPushes != hasUnprocessedPushes) {
@@ -769,11 +768,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   // logging_out, logged_out
 
+  @TdlibThread
   private void setLoggingOut (boolean isLoggingOut) {
     if (this.isLoggingOut != isLoggingOut) {
       this.isLoggingOut = isLoggingOut;
+      if (isLoggingOut) {
+        ignoreNotificationUpdates = true;
+      }
       context().setLoggingOut(accountId, isLoggingOut);
       checkPauseTimeout();
+      if (isLoggingOut) {
+        notifications().onDropNotificationData(true);
+      }
     }
   }
 
@@ -1118,7 +1124,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     final int status = getStatus(newAuthState);
 
     if (prevStatus == STATUS_UNKNOWN && status != STATUS_UNKNOWN) {
-      chats.clear();
+      synchronized (dataLock) {
+        resetChatsData();
+      }
     }
 
     switch (status) {
@@ -1183,8 +1191,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           setLoggingOut(true);
         } else {
           synchronized (dataLock) {
-            knownChatIds.clear();
-            chats.clear();
+            resetChatsData();
           }
         }
         break;
@@ -1339,10 +1346,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         makeUpdateText(0, 22, 4, APP_RELEASE_VERSION_2020_JANUARY, "https://telegra.ph/Telegram-X-01-23-2", functions, updates, false);
       }
       if (checkVersion(prevVersion, APP_RELEASE_VERSION_2020_FEBRUARY, test)) {
-        makeUpdateText(0, 22, 5, APP_RELEASE_VERSION_2020_FEBRUARY, "https://telegra.ph/Telegram-X-02-29", functions, updates, true);
+        makeUpdateText(0, 22, 5, APP_RELEASE_VERSION_2020_FEBRUARY, "https://telegra.ph/Telegram-X-02-29", functions, updates, false);
       }
       if (checkVersion(prevVersion, APP_RELEASE_VERSION_2020_SPRING, test)) {
-        makeUpdateText(0, 22, 8, APP_RELEASE_VERSION_2020_SPRING, "https://telegra.ph/Telegram-X-04-23", functions, updates, true);
+        makeUpdateText(0, 22, 8, APP_RELEASE_VERSION_2020_SPRING, "https://telegra.ph/Telegram-X-04-23", functions, updates, false);
+      }
+      if (checkVersion(prevVersion, APP_RELEASE_VERSION_2021_NOVEMBER, test)) {
+        makeUpdateText(0, 24, 2, APP_RELEASE_VERSION_2021_NOVEMBER, "https://telegra.ph/Telegram-X-11-08", functions, updates, true);
       }
       if (!updates.isEmpty()) {
         incrementReferenceCount(REFERENCE_TYPE_JOB); // starting task
@@ -1391,6 +1401,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private static final int APP_RELEASE_VERSION_2020_JANUARY = 1270; // 23 January, 2020: https://telegra.ph/Telegram-X-01-23-2
   private static final int APP_RELEASE_VERSION_2020_FEBRUARY = 1302; // 3 March, 2020: https://telegra.ph/Telegram-X-02-29 // 6th, Actually. Production version is 1305
   private static final int APP_RELEASE_VERSION_2020_SPRING = 1361; // 15 May, 2020: https://telegra.ph/Telegram-X-04-23
+
+  private static final int APP_RELEASE_VERSION_2021_NOVEMBER = 1470; // 12 November, 2021: https://telegra.ph/Telegram-X-11-08
 
   // Startup
 
@@ -4193,6 +4205,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private SessionsInfo sessionsInfo;
 
+  @Nullable
+  public TdApi.Session currentSession () {
+    synchronized (dataLock) {
+      return sessionsInfo.currentSession;
+    }
+  }
+
   public void getSessions (boolean allowCached, RunnableData<SessionsInfo> callback) {
     if (allowCached) {
       runOnTdlibThread(() -> {
@@ -4209,7 +4228,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         switch (result.getConstructor()) {
           case TdApi.Sessions.CONSTRUCTOR: {
             TdApi.Sessions sessions = (TdApi.Sessions) result;
-            this.sessionsInfo = new SessionsInfo(sessions);
+            synchronized (dataLock) {
+              this.sessionsInfo = new SessionsInfo(sessions);
+            }
             if (callback != null) {
               callback.runWithData(this.sessionsInfo);
             }
@@ -5688,6 +5709,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private void resetState () {
     haveInitializedNotifications = false;
+    ignoreNotificationUpdates = false;
+  }
+
+  private void resetChatsData () {
+    knownChatIds.clear();
+    chats.clear();
   }
 
   private void resetContextualData () {
@@ -5699,7 +5726,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     myProfilePhoto = null;
     pendingMessageTexts.clear();
     pendingMessageCaptions.clear();
-    animatedEmoji.clear();
     utyan.clear();
     animatedDiceExplicit.clear();
     suggestedActions.clear();
@@ -5806,11 +5832,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   @Nullable
-  public TdApi.Sticker findAnimatedEmoji (String emoji) {
-    return animatedEmoji.find(emoji);
-  }
-
-  @Nullable
   public TdApi.Sticker findUtyanEmoji (String emoji) {
     return utyan.find(emoji);
   }
@@ -5902,20 +5923,26 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   @TdlibThread
   private void onUpdateActiveNotifications (TdApi.UpdateActiveNotifications update) {
-    TDLib.Tag.notifications(0, accountId, "Received updateActiveNotifications");
-    receivedActiveNotificationsTime = SystemClock.uptimeMillis();
-    notificationManager.onUpdateActiveNotifications(update, this::dispatchNotificationsInitialized);
+    TDLib.Tag.notifications(0, accountId, "Received updateActiveNotifications, ignore: %b", ignoreNotificationUpdates);
+    if (!ignoreNotificationUpdates) {
+      receivedActiveNotificationsTime = SystemClock.uptimeMillis();
+      notificationManager.onUpdateActiveNotifications(update, this::dispatchNotificationsInitialized);
+    }
   }
 
   @TdlibThread
   private void onUpdateNotificationGroup (TdApi.UpdateNotificationGroup update) {
-    TDLib.Tag.notifications(0, accountId, "Received updateNotificationGroup, groupId: %d, elapsed: %d", update.notificationGroupId, SystemClock.uptimeMillis() - receivedActiveNotificationsTime);
-    notificationManager.onUpdateNotificationGroup(update);
+    TDLib.Tag.notifications(0, accountId, "Received updateNotificationGroup, groupId: %d, elapsed: %d, ignore: %b", update.notificationGroupId, SystemClock.uptimeMillis() - receivedActiveNotificationsTime, ignoreNotificationUpdates);
+    if (!ignoreNotificationUpdates) {
+      notificationManager.onUpdateNotificationGroup(update);
+    }
   }
 
   @TdlibThread
   private void onUpdateNotification (TdApi.UpdateNotification update) {
-    notificationManager.onUpdateNotification(update);
+    if (!ignoreNotificationUpdates) {
+      notificationManager.onUpdateNotification(update);
+    }
   }
 
   // Updates: MESSAGES
@@ -6557,15 +6584,27 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   @TdlibThread
-  private void updateChatVoiceChat (TdApi.UpdateChatVoiceChat update) {
+  private void updateChatVideoChat (TdApi.UpdateChatVideoChat update) {
     synchronized (dataLock) {
       final TdApi.Chat chat = chats.get(update.chatId);
       if (TdlibUtils.assertChat(update.chatId, chat, update)) {
         return;
       }
-      chat.voiceChat = update.voiceChat;
+      chat.videoChat = update.videoChat;
     }
-    listeners.updateChatVoiceChat(update);
+    listeners.updateChatVideoChat(update);
+  }
+
+  @TdlibThread
+  private void updateChatPendingJoinRequests (TdApi.UpdateChatPendingJoinRequests update) {
+    synchronized (dataLock) {
+      final TdApi.Chat chat = chats.get(update.chatId);
+      if (TdlibUtils.assertChat(update.chatId, chat, update)) {
+        return;
+      }
+      chat.pendingJoinRequests = update.pendingJoinRequests;
+    }
+    listeners.updateChatPendingJoinRequests(update);
   }
 
   @TdlibThread
@@ -7125,15 +7164,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           case "photo_search_bot_username":
             this.photoSearchBotUsername = stringValue;
             break;
-          /*FIXME server
-          case "animated_dice_sticker_set_name": {
-            animatedDice.reload(this, stringValue);
-            break;
-          }*/
-          case "animated_emoji_sticker_set_name": {
-            animatedEmoji.reload(this, stringValue);
-            break;
-          }
           case "language_pack_id":
             setLanguagePackIdImpl(stringValue, false);
             break;
@@ -7210,7 +7240,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private void updateStickerSet (TdApi.StickerSet stickerSet) {
-    animatedEmoji.update(this, stickerSet);
     utyan.update(this, stickerSet);
     animatedDiceExplicit.update(this, stickerSet);
     listeners.updateStickerSet(stickerSet);
@@ -7404,8 +7433,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
 
       // Voice chats
-      case TdApi.UpdateChatVoiceChat.CONSTRUCTOR: {
-        updateChatVoiceChat((TdApi.UpdateChatVoiceChat) update);
+      case TdApi.UpdateChatVideoChat.CONSTRUCTOR: {
+        updateChatVideoChat((TdApi.UpdateChatVideoChat) update);
+        break;
+      }
+
+      // Join requests
+      case TdApi.UpdateChatPendingJoinRequests.CONSTRUCTOR: {
+        updateChatPendingJoinRequests((TdApi.UpdateChatPendingJoinRequests) update);
         break;
       }
 
@@ -7676,6 +7711,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
 
       // Bots
+      case TdApi.UpdateNewChatJoinRequest.CONSTRUCTOR:
       case TdApi.UpdateNewCustomEvent.CONSTRUCTOR:
       case TdApi.UpdateNewCustomQuery.CONSTRUCTOR:
       case TdApi.UpdateNewInlineQuery.CONSTRUCTOR:
@@ -7816,7 +7852,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private void runStartupChecks () {
     checkDeviceToken();
     // animatedTgxEmoji.load(this);
-    animatedEmoji.load(this);
     utyan.load(this);
 
     if (Settings.instance().getNewSetting(Settings.SETTING_FLAG_EXPLICIT_DICE) && !isDebugInstance()) {

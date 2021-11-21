@@ -431,7 +431,7 @@ public class TdlibNotificationChannelGroup {
   }
 
   @TargetApi(Build.VERSION_CODES.O)
-  public static void cleanupChannelGroups () {
+  public static void cleanupChannelGroups (TdlibManager context) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
       if (m == null)
@@ -441,7 +441,7 @@ public class TdlibNotificationChannelGroup {
 
         for (int j = 0; j < 2; j++) {
           boolean isDebug = j == 1;
-          long[] userIds = TdlibManager.instance().availableUserIds(isDebug);
+          long[] userIds = context.availableUserIds(isDebug);
           String prefix = isDebug ? ACCOUNT_PREFIX_DEBUG : ACCOUNT_PREFIX;
           for (int i = groups.size() - 1; i >= 0; i--) {
             android.app.NotificationChannelGroup group = groups.get(i);

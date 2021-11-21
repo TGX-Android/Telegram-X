@@ -51,7 +51,7 @@ fun ChatMemberStatus.equalsTo(b: ChatMemberStatus): Boolean {
         this.canPromoteMembers == b.canPromoteMembers &&
         this.isAnonymous == b.isAnonymous &&
         this.canManageChat == b.canManageChat &&
-        this.canManageVoiceChats == b.canManageVoiceChats &&
+        this.canManageVideoChats == b.canManageVideoChats &&
         this.customTitle.equalsOrBothEmpty(b.customTitle)
         // ignored: this.canBeEdited == b.canBeEdited
       }
@@ -336,7 +336,7 @@ fun ChatEventLogFilters?.equalsTo(b: ChatEventLogFilters?): Boolean {
     (this?.infoChanges ?: false) == (b?.infoChanges ?: false) &&
     (this?.settingChanges ?: false) == (b?.settingChanges ?: false) &&
     (this?.inviteLinkChanges ?: false) == (b?.inviteLinkChanges ?: false) &&
-    (this?.voiceChatChanges ?: false) == (b?.voiceChatChanges ?: false)
+    (this?.videoChatChanges ?: false) == (b?.videoChatChanges ?: false)
   )
 }
 

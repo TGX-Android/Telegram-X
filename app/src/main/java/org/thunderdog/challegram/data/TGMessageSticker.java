@@ -29,6 +29,7 @@ import org.thunderdog.challegram.telegram.AnimatedEmojiListener;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.util.ArrayList;
@@ -162,6 +163,30 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     this.specialType = SPECIAL_TYPE_DICE;
     setDice(dice, false);
     tdlib.listeners().subscribeToAnimatedEmojiUpdates(this);
+  }
+
+  public TGMessageSticker (MessagesManager context, TdApi.Message msg, TdApi.MessageAnimatedEmoji emoji) {
+    super(context, msg);
+    this.specialType = SPECIAL_TYPE_ANIMATED_EMOJI;
+    String colorReplacementKey = null;
+    int[] colorReplacement = null;
+    if (emoji.animatedEmoji.colorReplacements != null && emoji.animatedEmoji.colorReplacements.length > 0) {
+      colorReplacement = new int[emoji.animatedEmoji.colorReplacements.length * 2];
+      StringBuilder b = new StringBuilder();
+      int i = 0;
+      for (TdApi.ColorReplacement replacement : emoji.animatedEmoji.colorReplacements) {
+        colorReplacement[i++] = replacement.oldColor;
+        colorReplacement[i++] = replacement.newColor;
+        if (b.length() > 0) {
+          b.append('_');
+        }
+        b.append(Strings.getHexColor(replacement.oldColor, true).substring(1));
+        b.append('-');
+        b.append(Strings.getHexColor(replacement.newColor, true).substring(1));
+      }
+      colorReplacementKey = b.toString();
+    }
+    setSticker(new TdApi.DiceStickersRegular(emoji.animatedEmoji.sticker), colorReplacementKey, colorReplacement, false, true);
   }
 
   private void setDice (TdApi.MessageDice dice, boolean isUpdate) {

@@ -586,7 +586,7 @@
   <item type="id" name="btn_filterEditedMessages" />
   <item type="id" name="btn_filterPinnedMessages" />
   <item type="id" name="btn_filterLeavingMembers" />
-  <item type="id" name="btn_filterVoiceChats" />
+  <item type="id" name="btn_filterVideoChats" />
 
   <item type="id" name="btn_earpieceMode" />
   <item type="id" name="btn_earpieceModeVideo" />
@@ -644,6 +644,10 @@
   <item type="id" name="btn_sendScheduled2Hr" />
   <item type="id" name="btn_sendScheduled8Hr" />
   <item type="id" name="btn_sendScheduledCustom" />
+  <item type="id" name="btn_expireIn12h" />
+  <item type="id" name="btn_expireIn2d" />
+  <item type="id" name="btn_expireIn1w" />
+  <item type="id" name="btn_expireIn2w" />
   <item type="id" name="btn_sendScheduled" />
   <item type="id" name="btn_sendAndOpen" />
   <item type="id" name="btn_sendOnceOnline" />
@@ -1103,7 +1107,7 @@
   <item type="id" name="right_banUsers" />
   <item type="id" name="right_inviteUsers" />
   <item type="id" name="right_pinMessages" />
-  <item type="id" name="right_manageVoiceChats" />
+  <item type="id" name="right_manageVideoChats" />
   <item type="id" name="right_remainAnonymous" />
   <item type="id" name="right_addNewAdmins" />
 

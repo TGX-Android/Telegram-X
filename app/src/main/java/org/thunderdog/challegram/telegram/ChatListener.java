@@ -23,7 +23,8 @@ public interface ChatListener {
   default void onChatBlocked (long chatId, boolean isBlocked) { }
   default void onChatOnlineMemberCountChanged (long chatId, int onlineMemberCount) { }
   default void onChatMessageTtlSettingChanged (long chatId, int messageTtlSetting) { }
-  default void onChatVoiceChatChanged (long chatId, TdApi.VoiceChat voiceChat) { }
+  default void onChatVideoChatChanged (long chatId, TdApi.VideoChat videoChat) { }
+  default void onChatPendingJoinRequestsChanged (long chatId, TdApi.ChatJoinRequestsInfo pendingJoinRequests) { }
   default void onChatReplyMarkupChanged (long chatId, long replyMarkupMessageId) { }
   default void onChatDraftMessageChanged (long chatId, @Nullable TdApi.DraftMessage draftMessage) { }
   default void onChatUnreadMentionCount(long chatId, int unreadMentionCount, boolean availabilityChanged) { }

@@ -166,7 +166,7 @@ public class TGUser implements UserProvider {
   private long chatId;
 
   public long getChatId () {
-    return chatId != 0 ? chatId : ChatId.fromUserId(getId());
+    return chatId != 0 ? chatId : ChatId.fromUserId(getUserId());
   }
 
   public void setChat (long chatId, @Nullable TdApi.Chat chat) {
@@ -255,7 +255,7 @@ public class TGUser implements UserProvider {
     return role;
   }
 
-  public long getId () {
+  public long getUserId () {
     return (flags & FLAG_LOCAL) != 0 ? contactId : user == null ? 0 : user.id;
   }
 
@@ -279,8 +279,13 @@ public class TGUser implements UserProvider {
     return (flags & FLAG_ONLINE) != 0 || ((flags & FLAG_SHOW_PHONE_NUMBER) == 0 && tdlib.isSelfUserId(userId));
   }
 
-  public boolean compare (TGUser user) {
-    return user != null && user.getId() == getId();
+  @Override
+  public boolean equals (@Nullable Object obj) {
+    if (obj instanceof TGUser) {
+      TGUser other = (TGUser) obj;
+      return getUserId() == other.getUserId() && getChatId() == other.getChatId() && this.flags == other.flags && this.role == other.role;
+    }
+    return super.equals(obj);
   }
 
   public @Nullable TdApi.User getUser () {

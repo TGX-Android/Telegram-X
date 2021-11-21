@@ -133,6 +133,11 @@ public abstract class PreviewLayout extends FrameLayoutFix implements View.OnCli
     return show(parent, service, needConfirmation);
   }
 
+  public static boolean show (ViewController<?> parent, String webPageUrl, boolean needConfirmation) {
+    EmbeddedService service = EmbeddedService.parseUrl(webPageUrl);
+    return show(parent, service, needConfirmation);
+  }
+
   public static boolean show (ViewController<?> parent, EmbeddedService service, boolean needConfirmation) {
     if (service != null) {
       BaseActivity context = parent.context();
@@ -184,8 +189,14 @@ public abstract class PreviewLayout extends FrameLayoutFix implements View.OnCli
       PreviewLayout popup = null;
       switch (service.type) {
         case EmbeddedService.TYPE_YOUTUBE:
-          popup = new YouTubePreviewLayout(context, parent);
+          if (YouTube.isYoutubeAppInstalled()) {
+            popup = new YouTubePreviewLayout(context, parent);
+          } else {
+            popup = new WebViewPreviewLayout(context, parent);
+          }
+
           break;
+        case EmbeddedService.TYPE_SOUNDCLOUD:
         case EmbeddedService.TYPE_DAILYMOTION:
         case EmbeddedService.TYPE_VIMEO:
         case EmbeddedService.TYPE_UNKNOWN:

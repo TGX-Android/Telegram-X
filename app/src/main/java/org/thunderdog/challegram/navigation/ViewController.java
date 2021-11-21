@@ -2251,6 +2251,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     final PopupLayout popupLayout = new PopupLayout(context);
     popupLayout.setTag(this);
     popupLayout.init(true);
+    popupLayout.setNeedKeyboardPadding(context.isKeyboardVisible() && Screen.isGesturalNavigationEnabled());
 
     OptionsLayout optionsWrap = new OptionsLayout(context(), this, forcedTheme);
     optionsWrap.setInfo(this, tdlib(), options.info, false);

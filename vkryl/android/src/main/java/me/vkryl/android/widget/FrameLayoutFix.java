@@ -204,7 +204,12 @@ public class FrameLayoutFix extends android.widget.FrameLayout implements Animat
 
   @Override
   protected void onLayout (boolean changed, int left, int top, int right, int bottom) {
-    super.onLayout(changed, left, top, right, bottom);
+    try {
+      super.onLayout(changed, left, top, right, bottom);
+    } catch (NullPointerException e) {
+      // for some reason getChildAt(i) returned null, therefore exception occurred
+      e.printStackTrace();
+    }
     if (pendingAction != null) {
       pendingAction.run();
       pendingAction = null;
