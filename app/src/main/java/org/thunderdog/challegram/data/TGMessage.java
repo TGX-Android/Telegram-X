@@ -6999,6 +6999,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         case TdApi.MessageChatJoinByLink.CONSTRUCTOR: {
           return new TGMessageChat(context, msg, (TdApi.MessageChatJoinByLink) content);
         }
+        case TdApi.MessageChatJoinByRequest.CONSTRUCTOR: {
+          return new TGMessageChat(context, msg, (TdApi.MessageChatJoinByRequest) content);
+        }
         case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR: {
           return new TGMessageChat(context, msg, (TdApi.MessageProximityAlertTriggered) content);
         }

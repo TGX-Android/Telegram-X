@@ -593,6 +593,8 @@
   <string name="group_user_remove_self">You left the group</string>
   <string name="group_user_join_by_link">%1$s joined the group via invite link</string>
   <string name="group_user_join_by_link_self">You joined the group via invite link</string>
+  <string name="group_user_join_by_link_with_approval">%1$s joined the group via invite link, approved by %2$s</string>
+  <string name="group_user_join_by_link_self_with_approval">You joined the group via invite link, approved by %1$s</string>
   <string name="group_created">%1$s created the group «%2$s»</string>
   <string name="group_title_changed">%1$s changed the group name to «%2$s»</string>
   <string name="group_title_changed_you">You changed the group name to «%1$s»</string>
@@ -1316,6 +1318,8 @@
   <string name="XChangedGroupTitle">%1$s changed the group name</string>
   <string name="XJoinedByLink">%1$s joined via invite link</string>
   <string name="YouJoinedByLink">You joined via invite link</string>
+  <string name="XJoinedByLinkWithApproval">%1$s joined via invite link, approved by %2$s</string>
+  <string name="YouJoinedByLinkWithApproval">You joined via invite link, approved by %1$s</string>
   <string name="LinkJoinOther">%1$s joined via %2$s\'s invite link %3$s</string>
   <string name="LinkJoinOtherYou">You joined via %1$s\'s invite link %2$s</string>
   <string name="LinkJoinTemp">%1$s joined via %2$s\'s temporary invite link %3$s</string>
@@ -1328,6 +1332,20 @@
   <string name="LinkJoinChannelPrimary">%1$s subscribed via the primary invite link %2$s</string>
   <string name="LinkJoinPrimaryYou">You joined via the primary invite link %1$s</string>
   <string name="LinkJoinChannelPrimaryYou">You subscribed via the primary invite link %1$s</string>
+
+  <string name="LinkJoinOtherWithApproval">%1$s joined via %2$s\'s invite link %3$s, approved by %4$s</string>
+  <string name="LinkJoinOtherYouWithApproval">You joined via %1$s\'s invite link %2$s, approved by %43s</string>
+  <string name="LinkJoinTempWithApproval">%1$s joined via %2$s\'s temporary invite link %3$s, approved by %4$s</string>
+  <string name="LinkJoinTempYouWithApproval">You joined via %1$s\'s temporary invite link %2$s, approved by %3$s</string>
+  <string name="LinkJoinChannelOtherWithApproval">%1$s subscribed via %2$s\'s invite link %3$s, approved by %4$s</string>
+  <string name="LinkJoinChannelOtherYouWithApproval">You subscribed via %1$s\'s invite link %2$s, approved by %3$s</string>
+  <string name="LinkJoinChannelTempWithApproval">%1$s subscribed via %2$s\'s temporary invite link %3$s, approved by %4$s</string>
+  <string name="LinkJoinChannelTempYouWithApproval">You subscribed via %1$s\'s temporary invite link %2$s, approved by %3$s</string>
+  <string name="LinkJoinPrimaryWithApproval">%1$s joined via the primary invite link %2$s, approved by %3$s</string>
+  <string name="LinkJoinChannelPrimaryWithApproval">%1$s subscribed via the primary invite link %2$s, approved by %3$s</string>
+  <string name="LinkJoinPrimaryYouWithApproval">You joined via the primary invite link %1$s, approved by %2$s</string>
+  <string name="LinkJoinChannelPrimaryYouWithApproval">You subscribed via the primary invite link %1$s, approved by %2$s</string>
+  
   <string name="LinkRevokePrimary">%1$s revoked the primary invite link %2$s</string>
   <string name="LinkRevokePrimaryYou">You revoked the primary invite link %1$s</string>
   <string name="LinkRevokeOther">%1$s revoked %2$s\'s invite link %3$s</string>

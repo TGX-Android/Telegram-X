@@ -1792,9 +1792,18 @@ public class TdlibUi extends Handler {
     }
     CharSequence message = TD.toErrorString(error);
     if (!StringUtils.isEmpty(message)) {
-      if ("USERNAME_NOT_OCCUPIED".equals(error.message)) {
-        if (createRequest.getConstructor() == TdApi.SearchPublicChat.CONSTRUCTOR) {
-          message = Lang.getStringBold(R.string.UsernameNotOccupied, ((TdApi.SearchPublicChat) createRequest).username);
+      switch (error.message) {
+        case "USERNAME_NOT_OCCUPIED": {
+          if (createRequest.getConstructor() == TdApi.SearchPublicChat.CONSTRUCTOR) {
+            message = Lang.getStringBold(R.string.UsernameNotOccupied, ((TdApi.SearchPublicChat) createRequest).username);
+          }
+          break;
+        }
+        case "INVITE_REQUEST_SENT": {
+          if (parameters != null && parameters.inviteLinkInfo != null && parameters.inviteLinkInfo.createsJoinRequest) {
+            message = Lang.getStringBold(TD.isChannel(parameters.inviteLinkInfo.type) ? R.string.RequestJoinChannelSent : R.string.RequestJoinGroupSent, parameters.inviteLinkInfo.title);
+          }
+          break;
         }
       }
       showLinkTooltip(tdlib, R.drawable.baseline_error_24, message, parameters != null ? parameters.urlOpenParameters : null);
@@ -2325,11 +2334,11 @@ public class TdlibUi extends Handler {
       msg = Lang.getStringBold(isChannel ? R.string.FollowChannelX : R.string.JoinGroupX, inviteLinkInfo.title);
     }
     if (!StringUtils.isEmpty(inviteLinkInfo.description)) {
-      msg = new SpannableStringBuilder(msg).append("\n\n").append(Lang.getString(R.string.Description)).append(": ").append(Lang.wrap(inviteLinkInfo.description, Lang.italicCreator()));
+      msg = new SpannableStringBuilder(msg).append("\n\n").append(Lang.wrap(inviteLinkInfo.description, Lang.italicCreator()));
     }
     ViewController<?> c = context.context().navigation().getCurrentStackItem();
     if (c != null) {
-      c.showOptions(msg, new int[] {R.id.btn_join, R.id.btn_cancel}, new String[] {inviteLinkInfo.createsJoinRequest ? Lang.getString(isChannel ? R.string.RequestJoinChannelBtn : R.string.RequestJoinGroupBtn) : Lang.getOK(), Lang.getString(R.string.Cancel)}, null, null, (itemView, id) -> {
+      c.showOptions(msg, new int[] {R.id.btn_join, R.id.btn_cancel}, new String[] {inviteLinkInfo.createsJoinRequest ? Lang.getString(isChannel ? R.string.RequestJoinChannelBtn : R.string.RequestJoinGroupBtn) : Lang.getOK(), Lang.getString(R.string.Cancel)}, null, new int[] {R.drawable.baseline_person_add_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
         if (id == R.id.btn_join) {
           joinChatByInviteLink(context, inviteLink, inviteLinkInfo, openParameters);
         }

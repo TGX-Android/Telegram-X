@@ -65,8 +65,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
   public static final int TYPE_ADD_MEMBERS = 4;
   public static final int TYPE_KICK_MEMBER = 5;
   public static final int TYPE_JOIN_BY_LINK = 6;
-
-  // public static final int TYPE_CREATE_CHANNEL = 7;
+  public static final int TYPE_JOIN_BY_REQUEST = 7;
 
   public static final int TYPE_MIGRATE_TO = 8;
   public static final int TYPE_MIGRATE_FROM = 9;
@@ -124,7 +123,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
   private int type;
 
   private String title;
-  private TdApi.User actionUser;
+  private TdApi.User actionUser, approvedByUser;
   private TdlibSender actionSender;
   private long[] actionUserIds;
   private TdApi.ChatPhoto photo;
@@ -163,6 +162,11 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
   public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageChatJoinByLink joined) {
     super(context, msg);
     this.type = TYPE_JOIN_BY_LINK;
+  }
+
+  public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageChatJoinByRequest joined) {
+    super(context, msg);
+    this.type = TYPE_JOIN_BY_REQUEST;
   }
 
   public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageContactRegistered registered) {
@@ -342,6 +346,14 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
         this.inviteLinkValue = ((TdApi.ChatEventMemberJoinedByInviteLink) chatEvent.action).inviteLink;
         this.actionUser = inviteLinkValue.creatorUserId != 0 ? userForId(inviteLinkValue.creatorUserId) : null;
         break;
+      case TdApi.ChatEventMemberJoinedByRequest.CONSTRUCTOR: {
+        this.type = TYPE_JOIN_BY_REQUEST;
+        TdApi.ChatEventMemberJoinedByRequest request = (TdApi.ChatEventMemberJoinedByRequest) chatEvent.action;
+        this.inviteLinkValue = request.inviteLink;
+        this.actionUser = inviteLinkValue != null && inviteLinkValue.creatorUserId != 0 ? userForId(inviteLinkValue.creatorUserId) : null;
+        this.approvedByUser = request.approverUserId != 0 ? userForId(request.approverUserId) : null;
+        break;
+      }
       case TdApi.ChatEventInviteLinkRevoked.CONSTRUCTOR:
         this.type = TYPE_EVENT_INVITE_LINK_REVOKED;
         this.inviteLinkValue = ((TdApi.ChatEventInviteLinkRevoked) chatEvent.action).inviteLink;
@@ -800,32 +812,63 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
         }
         break;
       }
-      case TYPE_JOIN_BY_LINK: {
+      case TYPE_JOIN_BY_LINK:
+      case TYPE_JOIN_BY_REQUEST: {
         if (inviteLinkValue != null) {
-          if (inviteLinkValue.isPrimary) {
-            if (msg.isOutgoing) {
-              makeText(msg.isChannelPost ? R.string.LinkJoinChannelPrimaryYou : R.string.LinkJoinPrimaryYou, new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
+          if (type == TYPE_JOIN_BY_REQUEST) {
+            if (inviteLinkValue.isPrimary) {
+              if (msg.isOutgoing) {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelPrimaryYouWithApproval : R.string.LinkJoinPrimaryYouWithApproval, new Arg(inviteLinkValue.inviteLink).setIsUrl(true), new Arg(approvedByUser));
+              } else {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelPrimaryWithApproval : R.string.LinkJoinPrimaryWithApproval, new Arg(sender), new Arg(inviteLinkValue.inviteLink).setIsUrl(true), new Arg(approvedByUser));
+              }
+            } else if (Td.isTemporary(inviteLinkValue)) {
+              if (msg.isOutgoing) {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelTempYouWithApproval : R.string.LinkJoinTempYouWithApproval, new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true), new Arg(approvedByUser));
+              } else {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelTempWithApproval : R.string.LinkJoinTempWithApproval, new Arg(sender), new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true), new Arg(approvedByUser));
+              }
             } else {
-              makeText(msg.isChannelPost ? R.string.LinkJoinChannelPrimary : R.string.LinkJoinPrimary, new Arg(sender), new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
-            }
-          } else if (Td.isTemporary(inviteLinkValue)) {
-            if (msg.isOutgoing) {
-              makeText(msg.isChannelPost ? R.string.LinkJoinChannelTempYou : R.string.LinkJoinTempYou, new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
-            } else {
-              makeText(msg.isChannelPost ? R.string.LinkJoinChannelTemp : R.string.LinkJoinTemp, new Arg(sender), new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
+              if (msg.isOutgoing) {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelOtherYouWithApproval : R.string.LinkJoinOtherYouWithApproval, new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true), new Arg(approvedByUser));
+              } else {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelOtherWithApproval : R.string.LinkJoinOtherWithApproval, new Arg(sender), new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true), new Arg(approvedByUser));
+              }
             }
           } else {
-            if (msg.isOutgoing) {
-              makeText(msg.isChannelPost ? R.string.LinkJoinChannelOtherYou : R.string.LinkJoinOtherYou, new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
+            if (inviteLinkValue.isPrimary) {
+              if (msg.isOutgoing) {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelPrimaryYou : R.string.LinkJoinPrimaryYou, new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
+              } else {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelPrimary : R.string.LinkJoinPrimary, new Arg(sender), new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
+              }
+            } else if (Td.isTemporary(inviteLinkValue)) {
+              if (msg.isOutgoing) {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelTempYou : R.string.LinkJoinTempYou, new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
+              } else {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelTemp : R.string.LinkJoinTemp, new Arg(sender), new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
+              }
             } else {
-              makeText(msg.isChannelPost ? R.string.LinkJoinChannelOther : R.string.LinkJoinOther, new Arg(sender), new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
+              if (msg.isOutgoing) {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelOtherYou : R.string.LinkJoinOtherYou, new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
+              } else {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelOther : R.string.LinkJoinOther, new Arg(sender), new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
+              }
             }
           }
         } else {
-          if (msg.isOutgoing) {
-            makeText(msg.isChannelPost ? R.string.YouJoinedByLink : R.string.group_user_join_by_link_self);
+          if (type == TYPE_JOIN_BY_REQUEST) {
+            if (msg.isOutgoing) {
+              makeText(msg.isChannelPost ? R.string.YouJoinedByLinkWithApproval : R.string.group_user_join_by_link_self_with_approval, new Arg(approvedByUser));
+            } else {
+              makeText(msg.isChannelPost ? R.string.XJoinedByLinkWithApproval : R.string.group_user_join_by_link_with_approval, new Arg(sender), new Arg(approvedByUser));
+            }
           } else {
-            makeText(msg.isChannelPost ? R.string.XJoinedByLink : R.string.group_user_join_by_link, new Arg(sender));
+            if (msg.isOutgoing) {
+              makeText(msg.isChannelPost ? R.string.YouJoinedByLink : R.string.group_user_join_by_link_self);
+            } else {
+              makeText(msg.isChannelPost ? R.string.XJoinedByLink : R.string.group_user_join_by_link, new Arg(sender));
+            }
           }
         }
         break;
