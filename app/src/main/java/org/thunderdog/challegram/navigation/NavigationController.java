@@ -558,7 +558,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
   }
 
   public final boolean navigateTo (ViewController<?> controller) {
-    if (!isAnimating && controller != null && !isCurrentControllerAnimating()) {
+    if (!isAnimating && getStackSize() > 0 && controller != null && !isCurrentControllerAnimating()) {
       isAnimating = true;
       processor.navigateTo(controller);
       return true;

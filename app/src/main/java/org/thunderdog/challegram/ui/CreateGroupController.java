@@ -138,7 +138,7 @@ public class CreateGroupController extends ViewController<Void> implements EditH
     long[] userIds = new long[members.size()];
     int i = 0;
     for (TGUser user : members) {
-      userIds[i++] = user.getId();
+      userIds[i++] = user.getUserId();
     }
     return userIds;
   }
@@ -164,7 +164,7 @@ public class CreateGroupController extends ViewController<Void> implements EditH
     }
     int i = 0;
     for (TGUser futureMember : members) {
-      if (futureMember.getId() == userId) {
+      if (futureMember.getUserId() == userId) {
         return i;
       }
       i++;
@@ -331,7 +331,7 @@ public class CreateGroupController extends ViewController<Void> implements EditH
     switch (id) {
       case R.id.btn_deleteMember: {
         if (pickedUser != null) {
-          long userId = pickedUser.getId();
+          long userId = pickedUser.getUserId();
           int index = indexOfUser(userId);
           if (index != -1) {
             tdlib.cache().unsubscribeFromUserUpdates(userId, this);
@@ -410,7 +410,7 @@ public class CreateGroupController extends ViewController<Void> implements EditH
     this.currentMemberIds = new long[members.size()];
     int i = 0;
     for (TGUser member : members) {
-      currentMemberIds[i++] = member.getId();
+      currentMemberIds[i++] = member.getUserId();
     }
 
     currentIsChannel = currentMemberIds.length > tdlib.basicGroupMaxSize();

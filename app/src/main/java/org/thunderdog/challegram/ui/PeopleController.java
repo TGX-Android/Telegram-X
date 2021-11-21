@@ -286,7 +286,7 @@ public class PeopleController extends RecyclerViewController<PeopleController.Ar
         ArrayUtils.ensureCapacity(out, out.size() + 4);
         out.add(1, new ListItem(ListItem.TYPE_HEADER, R.id.btn_contactsRegistered, 0, makeContactCounter(), false));
         out.add(2, new ListItem(ListItem.TYPE_SHADOW_TOP));
-        out.add(3, new ListItem(ListItem.TYPE_USER, R.id.user).setLongId(parsedUser.getId()).setData(parsedUser));
+        out.add(3, new ListItem(ListItem.TYPE_USER, R.id.user).setLongId(parsedUser.getUserId()).setData(parsedUser));
         out.add(4, new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         adapter.notifyItemRangeInserted(1, 4);
       } else {
@@ -307,7 +307,7 @@ public class PeopleController extends RecyclerViewController<PeopleController.Ar
     users.add(newIndex, user);
 
     if (userItem == null) {
-      userItem = new ListItem(ListItem.TYPE_USER, R.id.user).setLongId(user.getId()).setData(user);
+      userItem = new ListItem(ListItem.TYPE_USER, R.id.user).setLongId(user.getUserId()).setData(user);
     }
     if (separator == null) {
       separator = new ListItem(ListItem.TYPE_SEPARATOR);
@@ -335,7 +335,7 @@ public class PeopleController extends RecyclerViewController<PeopleController.Ar
     if (users != null) {
       int i = 0;
       for (TGUser user : users) {
-        if (user.getId() == userId) {
+        if (user.getUserId() == userId) {
           return i;
         }
         i++;
@@ -366,7 +366,7 @@ public class PeopleController extends RecyclerViewController<PeopleController.Ar
     switch (v.getId()) {
       case R.id.user: {
         TGUser user = (TGUser) ((ListItem) v.getTag()).getData();
-        tdlib.ui().openPrivateChat(this, user.getId(), null);
+        tdlib.ui().openPrivateChat(this, user.getUserId(), null);
         break;
       }
       case R.id.chat: {
@@ -459,7 +459,7 @@ public class PeopleController extends RecyclerViewController<PeopleController.Ar
         } else {
           items.add(separator);
         }
-        items.add(new ListItem(ListItem.TYPE_USER, R.id.user).setLongId(user.getId()).setData(user));
+        items.add(new ListItem(ListItem.TYPE_USER, R.id.user).setLongId(user.getUserId()).setData(user));
       }
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     }

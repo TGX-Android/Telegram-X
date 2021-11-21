@@ -107,13 +107,13 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
   public static final int TYPE_EVENT_LOCATION_CHANGED = 37;
   public static final int TYPE_EVENT_LOCATION_REMOVED = 38;
 
-  public static final int TYPE_EVENT_VOICE_CHAT_MUTE_NEW_PARTICIPANTS_TOGGLED = 39;
-  public static final int TYPE_EVENT_VOICE_CHAT_IS_MUTED_TOGGLED = 40;
-  public static final int TYPE_EVENT_VOICE_CHAT_PARTICIPANT_VOLUME_CHANGED = 41;
+  public static final int TYPE_EVENT_VIDEO_CHAT_MUTE_NEW_PARTICIPANTS_TOGGLED = 39;
+  public static final int TYPE_EVENT_VIDEO_CHAT_IS_MUTED_TOGGLED = 40;
+  public static final int TYPE_EVENT_VIDEO_CHAT_PARTICIPANT_VOLUME_CHANGED = 41;
 
-  public static final int TYPE_VOICE_CHAT_STARTED = 49;
-  public static final int TYPE_VOICE_CHAT_ENDED = 50;
-  public static final int TYPE_INVITE_VOICE_CHAT_PARTICIPANTS = 51;
+  public static final int TYPE_VIDEO_CHAT_STARTED = 49;
+  public static final int TYPE_VIDEO_CHAT_ENDED = 50;
+  public static final int TYPE_INVITE_VIDEO_CHAT_PARTICIPANTS = 51;
   public static final int TYPE_PROXIMITY_ALERT = 52;
 
   public static final int TYPE_EVENT_INVITE_LINK_REVOKED = 53;
@@ -281,21 +281,21 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
     }
   }
 
-  public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageVoiceChatStarted voiceChatStarted) {
+  public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageVideoChatStarted voiceChatStarted) {
     super(context, msg);
-    this.type = TYPE_VOICE_CHAT_STARTED;
+    this.type = TYPE_VIDEO_CHAT_STARTED;
   }
 
-  public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageVoiceChatEnded voiceChatEnded) {
+  public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageVideoChatEnded videoChatEnded) {
     super(context, msg);
-    this.type = TYPE_VOICE_CHAT_ENDED;
-    this.longValue = voiceChatEnded.duration;
+    this.type = TYPE_VIDEO_CHAT_ENDED;
+    this.longValue = videoChatEnded.duration;
   }
 
-  public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageInviteVoiceChatParticipants inviteVoiceChatParticipants) {
+  public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageInviteVideoChatParticipants inviteVideoChatParticipants) {
     super(context, msg);
-    this.type = TYPE_INVITE_VOICE_CHAT_PARTICIPANTS;
-    this.actionUserIds = inviteVoiceChatParticipants.userIds;
+    this.type = TYPE_INVITE_VIDEO_CHAT_PARTICIPANTS;
+    this.actionUserIds = inviteVideoChatParticipants.userIds;
   }
 
   public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageProximityAlertTriggered proximityAlert) {
@@ -352,9 +352,9 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
         this.inviteLinkValue = ((TdApi.ChatEventInviteLinkDeleted) chatEvent.action).inviteLink;
         this.actionUser = inviteLinkValue.creatorUserId != 0 ? userForId(inviteLinkValue.creatorUserId) : null;
         break;
-      case TdApi.ChatEventVoiceChatParticipantVolumeLevelChanged.CONSTRUCTOR: {
-        this.type = TYPE_EVENT_VOICE_CHAT_PARTICIPANT_VOLUME_CHANGED;
-        TdApi.ChatEventVoiceChatParticipantVolumeLevelChanged volumeChanged = (TdApi.ChatEventVoiceChatParticipantVolumeLevelChanged) chatEvent.action;
+      case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR: {
+        this.type = TYPE_EVENT_VIDEO_CHAT_PARTICIPANT_VOLUME_CHANGED;
+        TdApi.ChatEventVideoChatParticipantVolumeLevelChanged volumeChanged = (TdApi.ChatEventVideoChatParticipantVolumeLevelChanged) chatEvent.action;
         this.actionSender = new TdlibSender(tdlib, msg.chatId, volumeChanged.participantId);
         this.longValue = volumeChanged.volumeLevel;
         break;
@@ -385,14 +385,14 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
           this.type = TYPE_EVENT_SLOW_MODE_DELAY_DISABLED;
         }
         break;
-      case TdApi.ChatEventVoiceChatMuteNewParticipantsToggled.CONSTRUCTOR:
-        this.type = TYPE_EVENT_VOICE_CHAT_MUTE_NEW_PARTICIPANTS_TOGGLED;
-        this.boolValue = ((TdApi.ChatEventVoiceChatMuteNewParticipantsToggled) chatEvent.action).muteNewParticipants;
+      case TdApi.ChatEventVideoChatMuteNewParticipantsToggled.CONSTRUCTOR:
+        this.type = TYPE_EVENT_VIDEO_CHAT_MUTE_NEW_PARTICIPANTS_TOGGLED;
+        this.boolValue = ((TdApi.ChatEventVideoChatMuteNewParticipantsToggled) chatEvent.action).muteNewParticipants;
         break;
-      case TdApi.ChatEventVoiceChatParticipantIsMutedToggled.CONSTRUCTOR:
-        this.type = TYPE_EVENT_VOICE_CHAT_IS_MUTED_TOGGLED;
-        this.boolValue = ((TdApi.ChatEventVoiceChatParticipantIsMutedToggled) chatEvent.action).isMuted;
-        this.actionSender = new TdlibSender(tdlib, msg.chatId, ((TdApi.ChatEventVoiceChatParticipantIsMutedToggled) chatEvent.action).participantId);
+      case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
+        this.type = TYPE_EVENT_VIDEO_CHAT_IS_MUTED_TOGGLED;
+        this.boolValue = ((TdApi.ChatEventVideoChatParticipantIsMutedToggled) chatEvent.action).isMuted;
+        this.actionSender = new TdlibSender(tdlib, msg.chatId, ((TdApi.ChatEventVideoChatParticipantIsMutedToggled) chatEvent.action).participantId);
         break;
       case TdApi.ChatEventLinkedChatChanged.CONSTRUCTOR: {
         this.type = TYPE_EVENT_LINKED_CHAT_CHANGED;
@@ -927,7 +927,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
       case TYPE_EVENT_LOCATION_SET:
         makeText(R.string.EventLogLocationSet, new Arg(sender), new Arg(stringValue, locationValue));
         break;
-      case TYPE_EVENT_VOICE_CHAT_PARTICIPANT_VOLUME_CHANGED: {
+      case TYPE_EVENT_VIDEO_CHAT_PARTICIPANT_VOLUME_CHANGED: {
         Arg volume = new Arg((longValue / 100) + "%");
         if (msg.isOutgoing) {
           makeText(R.string.EventLogChangedVolumeYou, new Arg(actionSender), volume);
@@ -938,18 +938,34 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
         }
         break;
       }
-      case TYPE_EVENT_VOICE_CHAT_MUTE_NEW_PARTICIPANTS_TOGGLED:
-        if (msg.isOutgoing) {
-          makeText(boolValue ? R.string.EventLogMutedNewParticipantsYou : R.string.EventLogUnmutedNewParticipantsYou);
+      case TYPE_EVENT_VIDEO_CHAT_MUTE_NEW_PARTICIPANTS_TOGGLED:
+        if (msg.isChannelPost) {
+          if (msg.isOutgoing) {
+            makeText(boolValue ? R.string.EventLogChannelMutedNewParticipantsYou : R.string.EventLogChannelUnmutedNewParticipantsYou);
+          } else {
+            makeText(boolValue ? R.string.EventLogChannelMutedNewParticipants : R.string.EventLogChannelUnmutedNewParticipants, new Arg(sender));
+          }
         } else {
-          makeText(boolValue ? R.string.EventLogMutedNewParticipants : R.string.EventLogUnmutedNewParticipants, new Arg(sender));
+          if (msg.isOutgoing) {
+            makeText(boolValue ? R.string.EventLogMutedNewParticipantsYou : R.string.EventLogUnmutedNewParticipantsYou);
+          } else {
+            makeText(boolValue ? R.string.EventLogMutedNewParticipants : R.string.EventLogUnmutedNewParticipants, new Arg(sender));
+          }
         }
         break;
-      case TYPE_EVENT_VOICE_CHAT_IS_MUTED_TOGGLED:
-        if (msg.isOutgoing) {
-          makeText(boolValue ? R.string.EventLogMutedParticipantYou : R.string.EventLogUnmutedParticipantYou, new Arg(actionSender));
+      case TYPE_EVENT_VIDEO_CHAT_IS_MUTED_TOGGLED:
+        if (msg.isChannelPost) {
+          if (msg.isOutgoing) {
+            makeText(boolValue ? R.string.EventLogChannelMutedParticipantYou : R.string.EventLogChannelUnmutedParticipantYou, new Arg(actionSender));
+          } else {
+            makeText(boolValue ? R.string.EventLogChannelMutedParticipant : R.string.EventLogChannelUnmutedParticipant, new Arg(sender), new Arg(actionSender));
+          }
         } else {
-          makeText(boolValue ? R.string.EventLogMutedParticipant : R.string.EventLogUnmutedParticipant, new Arg(sender), new Arg(actionSender));
+          if (msg.isOutgoing) {
+            makeText(boolValue ? R.string.EventLogMutedParticipantYou : R.string.EventLogUnmutedParticipantYou, new Arg(actionSender));
+          } else {
+            makeText(boolValue ? R.string.EventLogMutedParticipant : R.string.EventLogUnmutedParticipant, new Arg(sender), new Arg(actionSender));
+          }
         }
         break;
       case TYPE_EVENT_LOCATION_CHANGED:
@@ -958,31 +974,31 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
       case TYPE_EVENT_LOCATION_REMOVED:
         makeText(R.string.EventLogLocationRemoved, new Arg(sender));
         break;
-      case TYPE_VOICE_CHAT_STARTED:
+      case TYPE_VIDEO_CHAT_STARTED:
         if (msg.isOutgoing) {
-          makeText(R.string.VoiceChatStartedYou);
+          makeText(msg.isChannelPost ? R.string.VoiceChatStartedYou : R.string.VoiceChatStartedYou);
         } else if (!sender.isAnonymousGroupAdmin()) {
-          makeText(R.string.VoiceChatStartedBy, new Arg(sender));
+          makeText(msg.isChannelPost ? R.string.LiveStreamStartedBy : R.string.VoiceChatStartedBy, new Arg(sender));
         } else {
-          makeText(R.string.VoiceChatStarted);
+          makeText(msg.isChannelPost ? R.string.LiveStreamStarted : R.string.VoiceChatStarted);
         }
         break;
-      case TYPE_VOICE_CHAT_ENDED:
+      case TYPE_VIDEO_CHAT_ENDED:
         if (msg.isOutgoing) {
-          makeText(R.string.VoiceChatEndedYou, new Arg(Lang.getCallDuration((int) longValue)));
+          makeText(msg.isChannelPost ? R.string.LiveStreamEndedYou : R.string.VoiceChatEndedYou, new Arg(Lang.getCallDuration((int) longValue)));
         } else if (!sender.isAnonymousGroupAdmin()) {
-          makeText(R.string.VoiceChatEndedBy, new Arg(sender), new Arg(Lang.getCallDuration((int) longValue)));
+          makeText(msg.isChannelPost ? R.string.LiveStreamEndedBy : R.string.VoiceChatEndedBy, new Arg(sender), new Arg(Lang.getCallDuration((int) longValue)));
         } else {
-          makeText(R.string.VoiceChatEnded, new Arg(Lang.getCallDuration((int) longValue)));
+          makeText(msg.isChannelPost ? R.string.LiveStreamEnded : R.string.VoiceChatEnded, new Arg(Lang.getCallDuration((int) longValue)));
         }
         break;
-      case TYPE_INVITE_VOICE_CHAT_PARTICIPANTS: {
+      case TYPE_INVITE_VIDEO_CHAT_PARTICIPANTS: {
         if (sender.isSelf() || msg.isOutgoing) {
-          makeText(R.string.VoiceChatInviteOther, new Arg(this, actionUserIds));
+          makeText(msg.isChannelPost ? R.string.LiveStreamInviteOther : R.string.VoiceChatInviteOther, new Arg(this, actionUserIds));
         } else if (actionUserIds.length == 1 && tdlib.isSelfUserId(actionUserIds[0])) {
-          makeText(R.string.VoiceChatInviteSelf, new Arg(sender));
+          makeText(msg.isChannelPost ? R.string.LiveStreamInviteSelf : R.string.VoiceChatInviteSelf, new Arg(sender));
         } else {
-          makeText(R.string.VoiceChatInvite, new Arg(sender), new Arg(this, actionUserIds));
+          makeText(msg.isChannelPost ? R.string.LiveStreamInvite : R.string.VoiceChatInvite, new Arg(sender), new Arg(this, actionUserIds));
         }
         break;
       }

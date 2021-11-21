@@ -289,7 +289,7 @@ public class SettingsBlockedController extends RecyclerViewController<SettingsPr
     List<ListItem> out = adapter.getItems();
     ArrayUtils.ensureCapacity(out, out.size() + newSenders.size());
     for (TGUser user : newSenders) {
-      out.add(new ListItem(ListItem.TYPE_USER, R.id.user, 0, 0).setLongId(user.getId()));
+      out.add(new ListItem(ListItem.TYPE_USER, R.id.user, 0, 0).setLongId(user.getUserId()));
     }
     adapter.notifyItemRangeInserted(startIndex, newSenders.size());
   }
@@ -299,7 +299,7 @@ public class SettingsBlockedController extends RecyclerViewController<SettingsPr
     tdlib.ui().post(() -> {
       if (!isDestroyed() && senders != null && !senders.isEmpty()) {
         for (TGUser parsedSender : senders) {
-          if (parsedSender.getId() == user.id) {
+          if (parsedSender.getUserId() == user.id) {
             parsedSender.setUser(user, 0);
             adapter.updateUserViewByLongId(ChatId.fromUserId(user.id), false);
             break;
@@ -393,7 +393,7 @@ public class SettingsBlockedController extends RecyclerViewController<SettingsPr
       case R.id.user: {
         TGUser user = ((UserView) v).getUser();
         if (user != null) {
-          tdlib.ui().openPrivateChat(this, user.getId(), new TdlibUi.ChatOpenParameters().keepStack());
+          tdlib.ui().openPrivateChat(this, user.getUserId(), new TdlibUi.ChatOpenParameters().keepStack());
         }
         break;
       }

@@ -394,8 +394,16 @@ public class Lang {
     return TD.toDisplaySpan(new TdApi.TextEntityTypeCode(), null, needFakeBold);
   }
 
+  public static Object newItalicSpan (boolean needFakeBold) {
+    return TD.toDisplaySpan(new TdApi.TextEntityTypeItalic(), null, needFakeBold);
+  }
+
   public static SpanCreator codeCreator () {
     return (target, argStart, argEnd, argIndex, needFakeBold) -> newCodeSpan(needFakeBold);
+  }
+
+  public static SpanCreator italicCreator () {
+    return (target, argStart, argEnd, argIndex, needFakeBold) -> newItalicSpan(needFakeBold);
   }
 
   public static SpanCreator entityCreator (TdApi.TextEntityType entity) {

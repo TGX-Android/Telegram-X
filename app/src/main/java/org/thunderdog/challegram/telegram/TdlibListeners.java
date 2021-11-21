@@ -1078,17 +1078,32 @@ public class TdlibListeners {
 
   // updateChatVoiceChat
 
-  private static void updateChatVoiceChat (long chatId, TdApi.VoiceChat voiceChat, @Nullable Iterator<ChatListener> list) {
+  private static void updateChatVideoChat (long chatId, TdApi.VideoChat voiceChat, @Nullable Iterator<ChatListener> list) {
     if (list != null) {
       while (list.hasNext()) {
-        list.next().onChatVoiceChatChanged(chatId, voiceChat);
+        list.next().onChatVideoChatChanged(chatId, voiceChat);
       }
     }
   }
 
-  void updateChatVoiceChat (TdApi.UpdateChatVoiceChat update) {
-    updateChatVoiceChat(update.chatId, update.voiceChat, chatListeners.iterator());
-    updateChatVoiceChat(update.chatId, update.voiceChat, specificChatListeners.iterator(update.chatId));
+  void updateChatVideoChat (TdApi.UpdateChatVideoChat update) {
+    updateChatVideoChat(update.chatId, update.videoChat, chatListeners.iterator());
+    updateChatVideoChat(update.chatId, update.videoChat, specificChatListeners.iterator(update.chatId));
+  }
+
+  // updateChatPendingJoinRequests
+
+  private static void updateChatPendingJoinRequests (long chatId, TdApi.ChatJoinRequestsInfo pendingJoinRequests, @Nullable Iterator<ChatListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onChatPendingJoinRequestsChanged(chatId, pendingJoinRequests);
+      }
+    }
+  }
+
+  void updateChatPendingJoinRequests (TdApi.UpdateChatPendingJoinRequests update) {
+    updateChatPendingJoinRequests(update.chatId, update.pendingJoinRequests, chatListeners.iterator());
+    updateChatPendingJoinRequests(update.chatId, update.pendingJoinRequests, specificChatListeners.iterator(update.chatId));
   }
 
   // updateUsersNearby

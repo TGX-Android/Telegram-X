@@ -249,9 +249,14 @@ public class WatchDog {
   private void saveRoute (ConnectivityManager manager, Object rawNetwork) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && manager != null && rawNetwork != null) {
       android.net.Network network = (android.net.Network) rawNetwork;
-      android.net.NetworkCapabilities capabilities = manager.getNetworkCapabilities(network);
       if (Log.isEnabled(Log.TAG_NETWORK_STATE)) {
-        Log.i(Log.TAG_NETWORK_STATE, "saveRoute, network: %s, capabilities: %s", network, capabilities);
+        // try/catch for https://issuetracker.google.com/issues/175055271?pli=1
+        try {
+          android.net.NetworkCapabilities capabilities = manager.getNetworkCapabilities(network);
+          Log.i(Log.TAG_NETWORK_STATE, "saveRoute, network: %s, capabilities: %s", network, capabilities);
+        } catch (Throwable t) {
+          Log.i(Log.TAG_NETWORK_STATE, "Unable to get network capabilities: %s", t, network);
+        }
       }
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
         lastNetworkHandle = network.getNetworkHandle();

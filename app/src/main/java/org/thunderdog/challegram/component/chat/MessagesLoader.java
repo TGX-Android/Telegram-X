@@ -1075,9 +1075,9 @@ public class MessagesLoader implements Client.ResultHandler {
         case TdApi.ChatEventMemberRestricted.CONSTRUCTOR:
         case TdApi.ChatEventMemberInvited.CONSTRUCTOR:
         case TdApi.ChatEventPermissionsChanged.CONSTRUCTOR:
-        case TdApi.ChatEventVoiceChatCreated.CONSTRUCTOR:
+        case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
         case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR:
-        case TdApi.ChatEventVoiceChatDiscarded.CONSTRUCTOR: {
+        case TdApi.ChatEventVideoChatDiscarded.CONSTRUCTOR: {
           m = newMessage(chatId, isChannel, event);
           m.content = new TdApiExt.MessageChatEvent(event, true, false); // new TdApi.MessageChatAddMembers(new int[] {event.userId});
           break;
@@ -1131,12 +1131,12 @@ public class MessagesLoader implements Client.ResultHandler {
         case TdApi.ChatEventLinkedChatChanged.CONSTRUCTOR:
         case TdApi.ChatEventSlowModeDelayChanged.CONSTRUCTOR:
         case TdApi.ChatEventLocationChanged.CONSTRUCTOR:
-        case TdApi.ChatEventVoiceChatMuteNewParticipantsToggled.CONSTRUCTOR:
+        case TdApi.ChatEventVideoChatMuteNewParticipantsToggled.CONSTRUCTOR:
         case TdApi.ChatEventMemberJoinedByInviteLink.CONSTRUCTOR:
         case TdApi.ChatEventInviteLinkRevoked.CONSTRUCTOR:
         case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
-        case TdApi.ChatEventVoiceChatParticipantVolumeLevelChanged.CONSTRUCTOR:
-        case TdApi.ChatEventVoiceChatParticipantIsMutedToggled.CONSTRUCTOR: {
+        case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
+        case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR: {
           m = newMessage(chatId, isChannel, event);
           m.content = new TdApiExt.MessageChatEvent(event, false, false);
           break;

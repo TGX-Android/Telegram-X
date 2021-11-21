@@ -375,6 +375,7 @@
   <string name="ChatContentTtlMonths_one">Set the self-destruct timer to %1$s month</string>
   <string name="ChatContentTtlMonths_other">Set the self-destruct timer to %1$s months</string>
   <string name="ChatContentTtlOff">Disabled the self-destruct timer</string>
+
   <string name="ChatContentVoiceChatStarted">Started a video chat</string>
   <string name="ChatContentVoiceChatStarted_outgoing">Started a video chat</string>
   <string name="ChatContentVoiceChatFinished">Ended the video chat (%1$s)</string>
@@ -386,6 +387,19 @@
   <string name="ChatContentVoiceChatInviteMulti_other">Invited %1$s people to the video chat</string>
   <string name="ChatContentVoiceChatInviteMulti_outgoing_one">Invited %1$s person to the video chat</string>
   <string name="ChatContentVoiceChatInviteMulti_outgoing_other">Invited %1$s people to the video chat</string>
+
+  <string name="ChatContentLiveStreamStarted">Started a live stream</string>
+  <string name="ChatContentLiveStreamStarted_outgoing">Started a live stream</string>
+  <string name="ChatContentLiveStreamFinished">Ended the live stream (%1$s)</string>
+  <string name="ChatContentLiveStreamFinished_outgoing">Ended the live stream (%1$s)</string>
+  <string name="ChatContentLiveStreamInviteYou">Invited you to the live stream</string>
+  <string name="ChatContentLiveStreamInvite">Invited %1$s to the live stream</string>
+  <string name="ChatContentLiveStreamInvite_outgoing">Invited %1$s to the live stream</string>
+  <string name="ChatContentLiveStreamInviteMulti_one">Invited %1$s person to the live stream</string>
+  <string name="ChatContentLiveStreamInviteMulti_other">Invited %1$s people to the live stream</string>
+  <string name="ChatContentLiveStreamInviteMulti_outgoing_one">Invited %1$s person to the live stream</string>
+  <string name="ChatContentLiveStreamInviteMulti_outgoing_other">Invited %1$s people to the live stream</string>
+
   <string name="Audio">Audio</string>
   <string name="Voice">Voice</string>
   <string name="Photo">Photo</string>
@@ -541,6 +555,7 @@
   <string name="NothingFound">Nothing found</string>
   <string name="Gallery">Gallery</string>
   <string name="ChatCamera">Camera</string>
+
   <string name="VoiceChatInviteOther">You invited %1$s to the video chat</string>
   <string name="VoiceChatInviteSelf">%1$s invited you to the video chat</string>
   <string name="VoiceChatInvite">%1$s invited %2$s to the video chat</string>
@@ -550,6 +565,17 @@
   <string name="VoiceChatEnded">Video chat ended</string>
   <string name="VoiceChatEndedBy">%1$s ended the video chat</string>
   <string name="VoiceChatEndedYou">You ended the video chat</string>
+
+  <string name="LiveStreamInviteOther">You invited %1$s to the live stream</string>
+  <string name="LiveStreamInviteSelf">%1$s invited you to the live stream</string>
+  <string name="LiveStreamInvite">%1$s invited %2$s to the live stream</string>
+  <string name="LiveStreamStarted">Live stream started</string>
+  <string name="LiveStreamStartedBy">%1$s started a live stream</string>
+  <string name="LiveStreamStartedYou">You started a live stream</string>
+  <string name="LiveStreamEnded">Live stream ended</string>
+  <string name="LiveStreamEndedBy">%1$s ended the live stream</string>
+  <string name="LiveStreamEndedYou">You ended the live stream</string>
+
   <string name="group_create_you">You created the group «%1$s»</string>
   <string name="group_photo_changed">%1$s changed the group photo</string>
   <string name="group_photo_changed_you">You changed the group photo</string>
@@ -1281,6 +1307,12 @@
   <string name="EncryptionKeyDescription">This image and text were derived from the encryption key for this secret chat with %1$s.\n\nIf they look the same on %1$s\'s device, end-to-end encryption is guaranteed.</string>
   <string name="JoinGroupX">Join group %1$s?</string>
   <string name="FollowChannelX">Follow channel %1$s?</string>
+  <string name="RequestJoinGroupX">Request group admins to let you join %1$s?</string>
+  <string name="RequestFollowChannelX">Request channel admins to let you join %1$s?</string>
+  <string name="RequestJoinGroupBtn">Request to join</string>
+  <string name="RequestJoinChannelBtn">Request to follow</string>
+  <string name="RequestJoinGroupSent">Request to join %1$s has been sent</string>
+  <string name="RequestJoinChannelSent">Request to follow %1$s has been sent</string>
   <string name="XChangedGroupTitle">%1$s changed the group name</string>
   <string name="XJoinedByLink">%1$s joined via invite link</string>
   <string name="YouJoinedByLink">You joined via invite link</string>
@@ -1604,6 +1636,7 @@
   <string name="RightAddNewAdmins">Add New Admins</string>
   <string name="RightEditMessages">Edit Messages</string>
   <string name="RightVoiceChats">Manage video chats</string>
+  <string name="RightLiveStreams">Manage live streams</string>
   <string name="RightAnonymous">Remain anonymous</string>
   <string name="NoGroupsToShow">No groups to show</string>
   <string name="GroupsWillBeShownHere">Groups in common will be shown here</string>
@@ -1764,6 +1797,7 @@
   <string name="EventLogPromotedAddAdmins">Add admins</string>
   <string name="EventLogPromotedRemainAnonymous">Remain anonymous</string>
   <string name="EventLogPromotedManageVoiceChats">Manage video chats</string>
+  <string name="EventLogPromotedManageLiveStreams">Manage live streams</string>
   <string name="EventLogPromotedTitle">Title: %1$s</string>
   <string name="EventLogPromotedTitleChange">Title: %1$s → %2$s</string>
   <string name="EventLogPromotedBanUsers">Ban users</string>
@@ -1781,6 +1815,7 @@
   <string name="EventLogFilterPinnedMessages">Pinned messages</string>
   <string name="EventLogFilterLeavingMembers">Leaving members</string>
   <string name="EventLogFilterVoiceChats">Video chats</string>
+  <string name="EventLogFilterLiveStreams">Live streams</string>
   <string name="EventLogSlowModeChanged">%1$s set the slow mode timer to %2$s</string>
   <string name="EventLogSlowModeDisabled">%1$s disabled the slow mode</string>
   <string name="EventLogSlowModeChangedYou">You set the slow mode timer to %1$s</string>
@@ -1792,6 +1827,7 @@
   <string name="EventLogLinkedGroupChanged">%1$s made %2$s the discussion group for this channel</string>
   <string name="EventLogLinkedGroupRemoved">%1$s removed the discussion group %2$s</string>
   <string name="EventLogLocationSet">%1$s set group location to %2$s</string>
+
   <string name="EventLogMutedNewParticipants">%1$s muted new video chat participants</string>
   <string name="EventLogUnmutedNewParticipants">%1$s allowed new video chat participants to speak</string>
   <string name="EventLogMutedNewParticipantsYou">You muted new video chat participants</string>
@@ -1800,6 +1836,16 @@
   <string name="EventLogUnmutedParticipant">%1$s allowed %2$s to speak in the video chat</string>
   <string name="EventLogMutedParticipantYou">You muted %1$s in the video chat</string>
   <string name="EventLogUnmutedParticipantYou">You allowed %1$s to speak in the video chat</string>
+
+  <string name="EventLogChannelMutedNewParticipants">%1$s muted new live stream participants</string>
+  <string name="EventLogChannelUnmutedNewParticipants">%1$s allowed new live stream participants to speak</string>
+  <string name="EventLogChannelMutedNewParticipantsYou">You muted new live stream participants</string>
+  <string name="EventLogChannelUnmutedNewParticipantsYou">You allowed new live stream participants to speak</string>
+  <string name="EventLogChannelMutedParticipant">%1$s muted %2$s in the live stream</string>
+  <string name="EventLogChannelUnmutedParticipant">%1$s allowed %2$s to speak in the live stream</string>
+  <string name="EventLogChannelMutedParticipantYou">You muted %1$s in the live stream</string>
+  <string name="EventLogChannelUnmutedParticipantYou">You allowed %1$s to speak in the live stream</string>
+
   <string name="EventLogChangedVolume">%1$s changed %2$s\'s volume to %3$s</string>
   <string name="EventLogChangedVolumeYou">You changed %1$s\'s volume to %2$s</string>
   <string name="EventLogChangedYourVolume">%1$s changed your volume to %2$s</string>

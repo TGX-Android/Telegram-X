@@ -331,6 +331,7 @@ fun Message?.getSenderId (): Long {
 fun MessageContent?.textOrCaption (): FormattedText? {
   return when (this?.constructor) {
     MessageText.CONSTRUCTOR -> (this as MessageText).text
+    MessageAnimatedEmoji.CONSTRUCTOR -> FormattedText((this as MessageAnimatedEmoji).emoji, arrayOf())
     MessagePhoto.CONSTRUCTOR -> (this as MessagePhoto).caption
     MessageVideo.CONSTRUCTOR -> (this as MessageVideo).caption
     MessageDocument.CONSTRUCTOR -> (this as MessageDocument).caption
