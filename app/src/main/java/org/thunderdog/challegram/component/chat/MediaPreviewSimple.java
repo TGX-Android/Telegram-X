@@ -27,6 +27,7 @@ import org.thunderdog.challegram.util.DrawableProvider;
 
 import java.io.File;
 
+import me.vkryl.core.ColorUtils;
 import me.vkryl.td.Td;
 
 public class MediaPreviewSimple extends MediaPreview {
@@ -262,8 +263,8 @@ public class MediaPreviewSimple extends MediaPreview {
 
     target.draw(c);
 
-    if (drawColoredFileBackground && !target.needPlaceholder()) {
-      target.drawPlaceholderRounded(c, cornerRadius, 0x44000000);
+    if (drawColoredFileBackground) {
+      target.drawPlaceholderRounded(c, cornerRadius, ColorUtils.alphaColor(target.getAlpha() * alpha, 0x44000000));
     }
 
     if (alpha != 1f) {
