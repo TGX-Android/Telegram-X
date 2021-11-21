@@ -259,7 +259,12 @@ public class MediaPreviewSimple extends MediaPreview {
     if (drawColoredFileBackground) {
       target.drawPlaceholderRounded(c, cornerRadius, Theme.getColor(R.id.theme_color_file));
     }
+
     target.draw(c);
+
+    if (drawColoredFileBackground && !target.needPlaceholder()) {
+      target.drawPlaceholderRounded(c, cornerRadius, 0x44000000);
+    }
 
     if (alpha != 1f) {
       preview.restorePaintAlpha();

@@ -1,6 +1,7 @@
 package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.provider.MediaStore;
@@ -402,7 +403,7 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
     this.fileProgress.setIsLocal();
     this.fileProgress.setDownloadedIconRes(FileProgressComponent.PLAY_ICON);
     if (getMediaPreview() != null) {
-      this.fileProgress.setBackgroundColor(0x44000000);
+      this.fileProgress.setBackgroundColor(Color.TRANSPARENT);
     } else {
       this.fileProgress.setBackgroundColorId(R.id.theme_color_file);
     }
