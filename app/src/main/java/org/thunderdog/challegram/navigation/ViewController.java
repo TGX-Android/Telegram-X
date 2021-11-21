@@ -1822,6 +1822,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     recyclerView.setLayoutManager(new LinearLayoutManager(context(), RecyclerView.VERTICAL, false));
 
     final PopupLayout popupLayout = settings.window = new PopupLayout(context);
+    popupLayout.setNeedKeyboardPadding(context.isKeyboardVisible() && Screen.isGesturalNavigationEnabled());
     popupLayout.setPopupHeightProvider(() -> {
       LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
       int firstPosition = manager.findFirstVisibleItemPosition();
@@ -2307,6 +2308,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     final PopupLayout popupLayout = new PopupLayout(context);
     popupLayout.setTag(this);
     popupLayout.init(true);
+    popupLayout.setNeedKeyboardPadding(context.isKeyboardVisible() && Screen.isGesturalNavigationEnabled());
 
     int totalHeight = 0;
 
