@@ -35,10 +35,10 @@ public class MessageSeenController extends MediaBottomBaseController<Void> imple
   public static CharSequence getViewString (TGMessage msg, int count) {
     switch (msg.getMessage().content.getConstructor()) {
       case TdApi.MessageVoiceNote.CONSTRUCTOR: {
-        return Lang.getStringBold(R.string.MessageSeenListened, count);
+        return Lang.pluralBold(R.string.MessageSeenXListened, count);
       }
       case TdApi.MessageVideoNote.CONSTRUCTOR: {
-        return Lang.getStringBold(R.string.MessageSeenPlayed, count);
+        return Lang.pluralBold(R.string.MessageSeenXPlayed, count);
       }
       default: {
         return Lang.pluralBold(R.string.xViews, count);
