@@ -31,6 +31,7 @@ import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Size;
 
 import me.vkryl.android.AnimatorUtils;
@@ -344,7 +345,9 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
 
       for (int i = getChildCount() - 1; i >= 0; i--) {
         View view = getChildAt(i);
-        if (view != null && view instanceof Destroyable) {
+        if (view instanceof ViewGroup) {
+          Views.destroy((ViewGroup) view);
+        } else if (view instanceof Destroyable) {
           ((Destroyable) view).performDestroy();
         }
         removeViewAt(i);
