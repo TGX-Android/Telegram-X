@@ -157,6 +157,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
   private int stickerWidth, stickerHeight;
   private final int specialType;
   private TdApi.MessageDice dice;
+  private TdApi.MessageAnimatedEmoji currentEmoji, animatedEmoji, pendingEmoji;
 
   public TGMessageSticker (MessagesManager context, TdApi.Message msg, TdApi.MessageDice dice) {
     super(context, msg);
@@ -165,28 +166,43 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     tdlib.listeners().subscribeToAnimatedEmojiUpdates(this);
   }
 
-  public TGMessageSticker (MessagesManager context, TdApi.Message msg, TdApi.MessageAnimatedEmoji emoji) {
+  public TGMessageSticker (MessagesManager context, TdApi.Message msg, TdApi.MessageAnimatedEmoji content, TdApi.MessageAnimatedEmoji pendingContent) {
     super(context, msg);
+    this.animatedEmoji = content;
+    this.pendingEmoji = pendingContent;
     this.specialType = SPECIAL_TYPE_ANIMATED_EMOJI;
-    String colorReplacementKey = null;
-    int[] colorReplacement = null;
-    if (emoji.animatedEmoji.colorReplacements != null && emoji.animatedEmoji.colorReplacements.length > 0) {
-      colorReplacement = new int[emoji.animatedEmoji.colorReplacements.length * 2];
-      StringBuilder b = new StringBuilder();
-      int i = 0;
-      for (TdApi.ColorReplacement replacement : emoji.animatedEmoji.colorReplacements) {
-        colorReplacement[i++] = replacement.oldColor;
-        colorReplacement[i++] = replacement.newColor;
-        if (b.length() > 0) {
-          b.append('_');
+    updateAnimatedEmoji();
+  }
+
+  private boolean updateAnimatedEmoji () {
+    TdApi.MessageAnimatedEmoji emoji = pendingEmoji != null  ? (TdApi.MessageAnimatedEmoji) pendingEmoji : animatedEmoji;
+    if (this.currentEmoji != emoji && !(this.currentEmoji != null && emoji == null)) {
+      this.currentEmoji = emoji;
+
+      String colorReplacementKey = null;
+      int[] colorReplacement = null;
+      if (emoji.animatedEmoji.colorReplacements != null && emoji.animatedEmoji.colorReplacements.length > 0) {
+        colorReplacement = new int[emoji.animatedEmoji.colorReplacements.length * 2];
+        StringBuilder b = new StringBuilder();
+        int i = 0;
+        for (TdApi.ColorReplacement replacement : emoji.animatedEmoji.colorReplacements) {
+          colorReplacement[i++] = replacement.oldColor;
+          colorReplacement[i++] = replacement.newColor;
+          if (b.length() > 0) {
+            b.append('_');
+          }
+          b.append(Strings.getHexColor(replacement.oldColor, true).substring(1));
+          b.append('-');
+          b.append(Strings.getHexColor(replacement.newColor, true).substring(1));
         }
-        b.append(Strings.getHexColor(replacement.oldColor, true).substring(1));
-        b.append('-');
-        b.append(Strings.getHexColor(replacement.newColor, true).substring(1));
+        colorReplacementKey = b.toString();
       }
-      colorReplacementKey = b.toString();
+      setSticker(new TdApi.DiceStickersRegular(emoji.animatedEmoji.sticker), colorReplacementKey, colorReplacement, false, true);
+
+      return true;
     }
-    setSticker(new TdApi.DiceStickersRegular(emoji.animatedEmoji.sticker), colorReplacementKey, colorReplacement, false, true);
+
+    return false;
   }
 
   private void setDice (TdApi.MessageDice dice, boolean isUpdate) {
@@ -216,6 +232,23 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     } else if (specialType == SPECIAL_TYPE_ANIMATED_EMOJI && type == AnimatedEmojiListener.TYPE_EMOJI) {
       // TODO
     }
+  }
+
+  @Override
+  protected int onMessagePendingContentChanged (long chatId, long messageId, int oldHeight) {
+    if (specialType == SPECIAL_TYPE_ANIMATED_EMOJI) {
+      TdApi.MessageContent content = tdlib.getPendingMessageText(chatId, messageId);
+      if ((content == null && animatedEmoji == null) || (content != null && content.getConstructor() != TdApi.MessageAnimatedEmoji.CONSTRUCTOR)) {
+        return MESSAGE_REPLACE_REQUIRED;
+      }
+      this.pendingEmoji = (TdApi.MessageAnimatedEmoji) content;
+      if (updateAnimatedEmoji()) {
+        rebuildContent();
+        invalidateContentReceiver();
+        return (getHeight() == oldHeight ? MESSAGE_INVALIDATED : MESSAGE_CHANGED);
+      }
+    }
+    return super.onMessagePendingContentChanged(chatId, messageId, oldHeight);
   }
 
   @Override
@@ -309,6 +342,12 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
       } else {
         invalidateContentReceiver();
       }
+    } else if (specialType == SPECIAL_TYPE_ANIMATED_EMOJI && newContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
+      this.animatedEmoji = (TdApi.MessageAnimatedEmoji) newContent;
+      if (updateAnimatedEmoji()) {
+        invalidateContentReceiver();
+      }
+      return true;
     }
     return false;
   }

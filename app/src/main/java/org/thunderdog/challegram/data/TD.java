@@ -4019,6 +4019,7 @@ public class TD {
   public static boolean canBeEdited (TdApi.MessageContent content) {
     switch (content.getConstructor()) {
       case TdApi.MessageText.CONSTRUCTOR:
+      case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
       case TdApi.MessagePhoto.CONSTRUCTOR:
       case TdApi.MessageVideo.CONSTRUCTOR:
       case TdApi.MessageDocument.CONSTRUCTOR:
@@ -5291,6 +5292,11 @@ public class TD {
         }
         break;
       }
+      case TdApi.MessageAnimatedEmoji.CONSTRUCTOR: {
+        TdApi.MessageAnimatedEmoji animatedEmoji = (TdApi.MessageAnimatedEmoji) message.content;
+        alternativeText = animatedEmoji.emoji;
+        break;
+      }
       case TdApi.MessageDocument.CONSTRUCTOR:
         alternativeText = ((TdApi.MessageDocument) message.content).document.fileName;
         break;
@@ -6047,6 +6053,8 @@ public class TD {
     switch (type) {
       case TdApi.MessageText.CONSTRUCTOR:
         return new ContentPreview(arg1 == ARG_TRUE ? EMOJI_LINK : null, R.string.YouHaveNewMessage, formattedArgument, argumentTranslatable);
+      case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
+        return new ContentPreview(null, R.string.YouHaveNewMessage, formattedArgument, argumentTranslatable);
       case TdApi.MessagePhoto.CONSTRUCTOR:
         return new ContentPreview(EMOJI_PHOTO, R.string.ChatContentPhoto, formattedArgument, argumentTranslatable);
       case TdApi.MessageVideo.CONSTRUCTOR:

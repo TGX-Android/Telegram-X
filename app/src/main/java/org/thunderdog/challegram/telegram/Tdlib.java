@@ -3648,16 +3648,26 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     client().send(new TdApi.ResendMessages(chatId, messageIds), messageHandler());
   }
 
-  private final HashMap<String, TdApi.MessageText> pendingMessageTexts = new HashMap<>();
+  private final HashMap<String, TdApi.MessageContent> pendingMessageTexts = new HashMap<>();
   private final HashMap<String, TdApi.FormattedText> pendingMessageCaptions = new HashMap<>();
 
-  public void editMessageText (long chatId, long messageId, TdApi.InputMessageText content, @Nullable TdApi.WebPage webPage) {
+  public void editMessageText (long chatId, long messageId, TdApi.InputMessageText content, @Nullable TdApi.WebPage webPage, boolean isSingleEmoji) {
     if (content.disableWebPagePreview) {
       webPage = null;
     }
     TD.parseEntities(content.text);
     TdApi.MessageText messageText = new TdApi.MessageText(content.text, webPage);
-    performEdit(chatId, messageId, messageText, new TdApi.EditMessageText(chatId, messageId, null, content), pendingMessageTexts);
+    if ((content.text.entities != null && content.text.entities.length > 0) || !isSingleEmoji) {
+      performEdit(chatId, messageId, messageText, new TdApi.EditMessageText(chatId, messageId, null, content), pendingMessageTexts);
+    } else {
+      client().send(new TdApi.GetAnimatedEmoji(content.text.text), result -> {
+        if (result.getConstructor() == TdApi.AnimatedEmoji.CONSTRUCTOR) {
+          performEdit(chatId, messageId, new TdApi.MessageAnimatedEmoji((TdApi.AnimatedEmoji) result, content.text.text), new TdApi.EditMessageText(chatId, messageId, null, content), pendingMessageTexts);
+        } else {
+          performEdit(chatId, messageId, messageText, new TdApi.EditMessageText(chatId, messageId, null, content), pendingMessageTexts);
+        }
+      });
+    }
   }
 
   public void editMessageCaption (long chatId, long messageId, TdApi.FormattedText caption) {
@@ -3675,13 +3685,20 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public TdApi.FormattedText getPendingFormattedText (long chatId, long messageId) {
-    TdApi.MessageText messageText = getPendingMessageText(chatId, messageId);
-    if (messageText != null)
-      return messageText.text;
+    TdApi.MessageContent messageText = getPendingMessageText(chatId, messageId);
+    if (messageText != null) {
+      switch (messageText.getConstructor()) {
+        case TdApi.MessageText.CONSTRUCTOR:
+          return ((TdApi.MessageText) messageText).text;
+        case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
+          return Td.textOrCaption(messageText);
+      }
+      throw new UnsupportedOperationException(Integer.toString(messageText.getConstructor()));
+    }
     return getPendingMessageCaption(chatId, messageId);
   }
 
-  public TdApi.MessageText getPendingMessageText (long chatId, long messageId) {
+  public TdApi.MessageContent getPendingMessageText (long chatId, long messageId) {
     synchronized (pendingMessageTexts) {
       return pendingMessageTexts.get(chatId + "_" + messageId);
     }

@@ -6471,10 +6471,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                   text = new TdApi.FormattedText("", null);
                 } else {
                   String link = TD.getLink(e.newUsername);
-                  text = new TdApi.FormattedText(link, new TdApi.TextEntity[]{new TdApi.TextEntity(0, link.length(), new TdApi.TextEntityTypeUrl())});
+                  text = new TdApi.FormattedText(link, new TdApi.TextEntity[] {new TdApi.TextEntity(0, link.length(), new TdApi.TextEntityTypeUrl())});
                 }
 
-                TGMessageText parsedMessage = new TGMessageText(context, msg, new TdApi.MessageText(text, null));
+                TGMessageText parsedMessage = new TGMessageText(context, msg, text);
 
                 if (!StringUtils.isEmpty(e.oldUsername)) {
                   String link = TD.getLink(e.oldUsername);
@@ -6494,7 +6494,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                   text = new TdApi.FormattedText(e.newDescription, Text.findEntities(e.newDescription, Text.ENTITY_FLAGS_ALL_NO_COMMANDS));
                 }
 
-                TGMessageText parsedMessage = new TGMessageText(context, msg, new TdApi.MessageText(text, null));
+                TGMessageText parsedMessage = new TGMessageText(context, msg, text);
 
                 if (!StringUtils.isEmpty(e.oldDescription)) {
                   parsedMessage.setFooter(Lang.getString(R.string.EventLogPreviousGroupDescription), e.oldDescription, null);
@@ -6523,9 +6523,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                 entities.toArray(array);
                 TdApi.FormattedText text = new TdApi.FormattedText(b.toString(), array);
 
-                TdApi.MessageText m = new TdApi.MessageText(text, null);
-
-                return new TGMessageText(context, msg, m);
+                return new TGMessageText(context, msg, text);
               }
 
               case TdApi.ChatEventMessageDeleted.CONSTRUCTOR: {
@@ -6614,7 +6612,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                 }
 
                 TdApi.FormattedText formattedText = new TdApi.FormattedText(text, Td.findEntities(text));
-                TGMessageText m = new TGMessageText(context, msg, new TdApi.MessageText(formattedText, null));
+                TGMessageText m = new TGMessageText(context, msg, formattedText);
                 m.setIsEventLog(event, 0);
 
                 return m;
@@ -6637,7 +6635,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                 appendRight(b, R.string.EventLogPermissionChangeInfo, permissions.oldPermissions.canChangeInfo, permissions.newPermissions.canChangeInfo, true);
 
                 TdApi.FormattedText formattedText = new TdApi.FormattedText(b.toString().trim(), new TdApi.TextEntity[]{new TdApi.TextEntity(0, length, new TdApi.TextEntityTypeItalic())});
-                TGMessageText m = new TGMessageText(context, msg, new TdApi.MessageText(formattedText, null));
+                TGMessageText m = new TGMessageText(context, msg, formattedText);
                 m.setIsEventLog(event, 0);
 
                 return m;
@@ -6863,7 +6861,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                   entities.toArray(formattedText.entities);
                 }
 
-                TGMessageText m = new TGMessageText(context, msg, new TdApi.MessageText(formattedText, null));
+                TGMessageText m = new TGMessageText(context, msg, formattedText);
                 m.setIsEventLog(event, 0);
 
                 return m;
@@ -6875,15 +6873,28 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR: {
           TdApi.MessageAnimatedEmoji emoji = nonNull((TdApi.MessageAnimatedEmoji) content);
+          TdApi.MessageContent pendingContent = tdlib.getPendingMessageText(msg.chatId, msg.id);
+          if (pendingContent != null) {
+            if (pendingContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR && !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI)) {
+              return new TGMessageSticker(context, msg, emoji, (TdApi.MessageAnimatedEmoji) pendingContent);
+            } else {
+              return new TGMessageText(context, msg, new TdApi.MessageText(Td.textOrCaption(emoji), null), new TdApi.MessageText(Td.textOrCaption(pendingContent), null));
+            }
+          }
           if (Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI)) {
-            return new TGMessageText(context, msg, new TdApi.FormattedText(emoji.emoji, new TdApi.TextEntity[0]));
+            return new TGMessageText(context, msg, new TdApi.MessageText(Td.textOrCaption(emoji), null), null);
           } else {
-            return new TGMessageSticker(context, msg, emoji);
+            return new TGMessageSticker(context, msg, emoji, null);
           }
         }
 
         case TdApi.MessageText.CONSTRUCTOR: {
-          return new TGMessageText(context, msg, nonNull((TdApi.MessageText) content));
+          TdApi.MessageContent pendingContent = tdlib.getPendingMessageText(msg.chatId, msg.id);
+          if (pendingContent != null && pendingContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
+            TdApi.MessageAnimatedEmoji animatedEmoji = (TdApi.MessageAnimatedEmoji) pendingContent;
+            return new TGMessageSticker(context, msg, null, (TdApi.MessageAnimatedEmoji) animatedEmoji);
+          }
+          return new TGMessageText(context, msg, nonNull((TdApi.MessageText) content), (TdApi.MessageText) pendingContent);
         }
         case TdApi.MessageCall.CONSTRUCTOR: {
           return new TGMessageCall(context, msg, nonNull(((TdApi.MessageCall) content)));

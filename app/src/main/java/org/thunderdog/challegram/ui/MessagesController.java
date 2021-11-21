@@ -127,6 +127,7 @@ import org.thunderdog.challegram.data.TGMessageSticker;
 import org.thunderdog.challegram.data.TGRecord;
 import org.thunderdog.challegram.data.TGSwitchInline;
 import org.thunderdog.challegram.data.ThreadInfo;
+import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.filegen.VideoGenerationInfo;
 import org.thunderdog.challegram.helper.BotHelper;
@@ -6010,15 +6011,22 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
 
     switch (editingMessage.content.getConstructor()) {
-      case TdApi.MessageText.CONSTRUCTOR: {
-        TdApi.MessageText oldMessageText = (TdApi.MessageText) editingMessage.content;
+      case TdApi.MessageText.CONSTRUCTOR:
+      case TdApi.MessageAnimatedEmoji.CONSTRUCTOR: {
+        TdApi.MessageText oldMessageText;
+
+        if (editingMessage.content.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
+          oldMessageText = new TdApi.MessageText(Td.textOrCaption(editingMessage.content), null);
+        } else {
+          oldMessageText = (TdApi.MessageText) editingMessage.content;
+        }
         TdApi.InputMessageText newInputMessageText = new TdApi.InputMessageText(newText, getCurrentAllowLinkPreview(), false);
         if (!Td.equalsTo(newInputMessageText.text, oldMessageText.text) || (newInputMessageText.disableWebPagePreview && oldMessageText.webPage != null) || (!newInputMessageText.disableWebPagePreview && oldMessageText.webPage == null && attachedPreview != null)) {
-          if (newText.text.trim().length() == 0)
+          String newString = newText.text.trim();
+          if (newString.length() == 0)
             return;
-          tdlib.editMessageText(editingMessage.chatId, editingMessage.id, newInputMessageText, attachedPreview);
+          tdlib.editMessageText(editingMessage.chatId, editingMessage.id, newInputMessageText, attachedPreview, Emoji.instance().isSingleEmoji(newString));
         }
-
         break;
       }
       case TdApi.MessagePhoto.CONSTRUCTOR:
@@ -6032,6 +6040,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
           tdlib.editMessageCaption(editingMessage.chatId, editingMessage.id, newText);
         }
         break;
+      }
+      default: {
+        throw new UnsupportedOperationException(Integer.toString(editingMessage.content.getConstructor()));
       }
     }
 
