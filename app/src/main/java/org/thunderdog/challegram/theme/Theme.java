@@ -893,7 +893,12 @@ public class Theme {
   }
 
   public static boolean isPropertyOverridden (@ThemeProperty int property) {
-    return Theme.getProperty(property) != Theme.getProperty(property, ThemeId.BLUE);
+    ThemeDelegate currentTheme = ThemeManager.instance().currentTheme();
+    if (currentTheme instanceof ThemeCustom) {
+      return ((ThemeCustom) currentTheme).hasProperty(property, true);
+    } else {
+      return false;
+    }
   }
 
   public static boolean isBubbleRadiusOverridden () {
