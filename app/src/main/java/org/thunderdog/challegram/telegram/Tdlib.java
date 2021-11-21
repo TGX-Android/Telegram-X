@@ -405,7 +405,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private final HashMap<Long, TdApi.Chat> chats = new HashMap<>();
   private final HashMap<String, TdlibChatList> chatLists = new HashMap<>();
   private final StickerSet
-    animatedEmoji = new StickerSet(AnimatedEmojiListener.TYPE_EMOJI, "animatedemojies", false),
     utyan = new StickerSet(AnimatedEmojiListener.TYPE_EMOJI, "utyan", false),
     // animatedTgxEmoji = new StickerSet(AnimatedEmojiListener.TYPE_TGX, "AnimatedTgxEmojies", false),
     animatedDiceExplicit = new StickerSet(AnimatedEmojiListener.TYPE_DICE, "BetterDice", true);
@@ -5727,7 +5726,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     myProfilePhoto = null;
     pendingMessageTexts.clear();
     pendingMessageCaptions.clear();
-    animatedEmoji.clear();
     utyan.clear();
     animatedDiceExplicit.clear();
     suggestedActions.clear();
@@ -5831,11 +5829,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         }
       }
     }
-  }
-
-  @Nullable
-  public TdApi.Sticker findAnimatedEmoji (String emoji) {
-    return animatedEmoji.find(emoji);
   }
 
   @Nullable
@@ -7171,15 +7164,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           case "photo_search_bot_username":
             this.photoSearchBotUsername = stringValue;
             break;
-          /*FIXME server
-          case "animated_dice_sticker_set_name": {
-            animatedDice.reload(this, stringValue);
-            break;
-          }*/
-          case "animated_emoji_sticker_set_name": {
-            animatedEmoji.reload(this, stringValue);
-            break;
-          }
           case "language_pack_id":
             setLanguagePackIdImpl(stringValue, false);
             break;
@@ -7256,7 +7240,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private void updateStickerSet (TdApi.StickerSet stickerSet) {
-    animatedEmoji.update(this, stickerSet);
     utyan.update(this, stickerSet);
     animatedDiceExplicit.update(this, stickerSet);
     listeners.updateStickerSet(stickerSet);
@@ -7869,7 +7852,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private void runStartupChecks () {
     checkDeviceToken();
     // animatedTgxEmoji.load(this);
-    animatedEmoji.load(this);
     utyan.load(this);
 
     if (Settings.instance().getNewSetting(Settings.SETTING_FLAG_EXPLICIT_DICE) && !isDebugInstance()) {

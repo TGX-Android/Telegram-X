@@ -4152,15 +4152,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   protected boolean isSupportedMessageContent (TdApi.Message message, TdApi.MessageContent messageContent) {
-    if (message.content.getConstructor() == messageContent.getConstructor()) {
-      if (message.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR && !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI)) {
-        boolean nowSticker = preferStickerToText((TdApi.MessageText) messageContent) && needAnimatedEmoji(tdlib, ((TdApi.MessageText) messageContent).text.text);
-        boolean wasSticker = this instanceof TGMessageSticker;
-        return !nowSticker && !wasSticker;
-      }
-      return true;
-    }
-    return false;
+    return message.content.getConstructor() == messageContent.getConstructor();
   }
 
   @MessageChangeType
@@ -6433,7 +6425,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         TdApiExt.MessageChatEvent event = (TdApiExt.MessageChatEvent) content;
         switch (event.event.action.getConstructor()) {
           case TdApi.ChatEventMemberJoined.CONSTRUCTOR:
-            content = new TdApi.MessageChatAddMembers(new long[] {event.event.userId});
+            content = new TdApi.MessageChatAddMembers(new long[]{event.event.userId});
             break;
           case TdApi.ChatEventMemberLeft.CONSTRUCTOR:
             content = new TdApi.MessageChatDeleteMember(event.event.userId);
@@ -6881,53 +6873,17 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           }
           return new TGMessageChat(context, msg, ((TdApiExt.MessageChatEvent) msg.content).event).setIsEventLog((TdApiExt.MessageChatEvent) msg.content, 0);
 
-        case TdApi.MessageText.CONSTRUCTOR: {
-          TdApi.MessageText text = nonNull((TdApi.MessageText) content);
-          if (preferStickerToText(text)) {
-            String emojiText = text.text.text;
-            TdApi.Sticker sticker = tdlib.findAnimatedEmoji(emojiText);
-            if (sticker != null) {
-              return new TGMessageSticker(context, msg, sticker, true, null, null);
-            }
-            String tone = EmojiData.getColor(emojiText);
-            if (!StringUtils.isEmpty(tone)) {
-              emojiText = emojiText.substring(0, emojiText.length() - tone.length());
-              sticker = tdlib.findAnimatedEmoji(emojiText);
-              if (sticker != null) {
-                String colorReplacementKey;
-                int[] colorReplacements;
-                switch (tone) {
-                  case EmojiCodeColored.COLOR_1:
-                    colorReplacementKey = "tone1";
-                    colorReplacements = new int[]{0xf77e41, 0xca907a, 0xffb139, 0xedc5a5, 0xffd140, 0xf7e3c3, 0xffdf79, 0xfbefd6};
-                    break;
-                  case EmojiCodeColored.COLOR_2:
-                    colorReplacementKey = "tone2";
-                    colorReplacements = new int[]{0xf77e41, 0xaa7c60, 0xffb139, 0xc8a987, 0xffd140, 0xddc89f, 0xffdf79, 0xe6d6b2};
-                    break;
-                  case EmojiCodeColored.COLOR_3:
-                    colorReplacementKey = "tone3";
-                    colorReplacements = new int[]{0xf77e41, 0x8c6148, 0xffb139, 0xad8562, 0xffd140, 0xc49e76, 0xffdf79, 0xd4b188};
-                    break;
-                  case EmojiCodeColored.COLOR_4:
-                    colorReplacementKey = "tone4";
-                    colorReplacements = new int[]{0xf77e41, 0x6e3c2c, 0xffb139, 0x925a34, 0xffd140, 0xa16e46, 0xffdf79, 0xac7a52};
-                    break;
-                  case EmojiCodeColored.COLOR_5:
-                    colorReplacementKey = "tone5";
-                    colorReplacements = new int[]{0xf77e41, 0x291c12, 0xffb139, 0x472a22, 0xffd140, 0x573b30, 0xffdf79, 0x68493c};
-                    break;
-                  default:
-                    colorReplacementKey = null;
-                    colorReplacements = null;
-                    break;
-
-                }
-                return new TGMessageSticker(context, msg, sticker, true, colorReplacementKey, colorReplacements);
-              }
-            }
+        case TdApi.MessageAnimatedEmoji.CONSTRUCTOR: {
+          TdApi.MessageAnimatedEmoji emoji = nonNull((TdApi.MessageAnimatedEmoji) content);
+          if (Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI)) {
+            return new TGMessageText(context, msg, new TdApi.FormattedText(emoji.emoji, new TdApi.TextEntity[0]));
+          } else {
+            return new TGMessageSticker(context, msg, emoji);
           }
-          return new TGMessageText(context, msg, (TdApi.MessageText) content);
+        }
+
+        case TdApi.MessageText.CONSTRUCTOR: {
+          return new TGMessageText(context, msg, nonNull((TdApi.MessageText) content));
         }
         case TdApi.MessageCall.CONSTRUCTOR: {
           return new TGMessageCall(context, msg, nonNull(((TdApi.MessageCall) content)));
@@ -7079,22 +7035,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       Log.e("Cannot parse message", t);
       return valueOfError(context, msg, t);
     }
-  }
-
-  private static boolean preferStickerToText (TdApi.MessageText text) {
-    return text.webPage == null && !Td.isEmpty(text.text) && (text.text.entities == null || text.text.entities.length == 0) && !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI) && EmojiData.isEmojiString(text.text.text);
-  }
-
-  private static boolean needAnimatedEmoji (Tdlib tdlib, String emojiText) {
-    TdApi.Sticker sticker = tdlib.findAnimatedEmoji(emojiText);
-    if (sticker != null)
-      return true;
-    String tone = EmojiData.getColor(emojiText);
-    if (StringUtils.isEmpty(tone))
-      return false;
-    emojiText = emojiText.substring(0, emojiText.length() - tone.length());
-    sticker = tdlib.findAnimatedEmoji(emojiText);
-    return sticker != null;
   }
 
   public static TGMessage valueOfError (MessagesManager context, TdApi.Message msg, Throwable error) {
