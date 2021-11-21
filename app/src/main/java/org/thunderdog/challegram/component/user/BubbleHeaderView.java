@@ -166,10 +166,10 @@ public class BubbleHeaderView extends FrameLayoutFix implements RtlCheckListener
   }
 
   public void removeUser (TGUser user) {
-    long userId = user.getId();
+    long userId = user.getUserId();
     int i = 0;
     for (TGUser u : users) {
-      if (u.getId() == userId) {
+      if (u.getUserId() == userId) {
         removeUser(i);
         break;
       }
