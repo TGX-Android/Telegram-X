@@ -249,7 +249,7 @@ public class ChatJoinRequestsController extends RecyclerViewController<ChatJoinR
           canLoadMore = loadOffset <= senders.totalCount;
 
           for (int i = parsedChats.size() - 1; i >= 0; i--) {
-            if (indexOfSender(parsedChats.get(i).getId()) != -1) {
+            if (indexOfSender(parsedChats.get(i).getUserId()) != -1) {
               parsedChats.remove(i);
             }
           }
@@ -264,7 +264,7 @@ public class ChatJoinRequestsController extends RecyclerViewController<ChatJoinR
     if (joinRequests != null) {
       int i = 0;
       for (TGUser sender : joinRequests) {
-        if (sender.getId() == chatId) {
+        if (sender.getUserId() == chatId) {
           return i;
         }
         i++;
@@ -282,7 +282,7 @@ public class ChatJoinRequestsController extends RecyclerViewController<ChatJoinR
     List<ListItem> out = adapter.getItems();
     ArrayUtils.ensureCapacity(out, out.size() + newSenders.size());
     for (TGUser user : newSenders) {
-      out.add(out.size() - 1, new ListItem(ListItem.TYPE_USER, R.id.user, 0, 0).setLongId(user.getId()));
+      out.add(out.size() - 1, new ListItem(ListItem.TYPE_USER, R.id.user, 0, 0).setLongId(user.getUserId()));
     }
     adapter.notifyItemRangeInserted(startIndex, newSenders.size());
   }
