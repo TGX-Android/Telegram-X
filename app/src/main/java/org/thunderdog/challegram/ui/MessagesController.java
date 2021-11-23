@@ -109,6 +109,7 @@ import org.thunderdog.challegram.component.chat.VoiceVideoButtonView;
 import org.thunderdog.challegram.component.chat.WallpaperAdapter;
 import org.thunderdog.challegram.component.chat.WallpaperRecyclerView;
 import org.thunderdog.challegram.component.chat.WallpaperView;
+import org.thunderdog.challegram.component.popups.MessageSeenController;
 import org.thunderdog.challegram.component.popups.ModernActionedLayout;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
@@ -129,6 +130,7 @@ import org.thunderdog.challegram.data.TGMessageSticker;
 import org.thunderdog.challegram.data.TGRecord;
 import org.thunderdog.challegram.data.TGSwitchInline;
 import org.thunderdog.challegram.data.ThreadInfo;
+import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.filegen.VideoGenerationInfo;
 import org.thunderdog.challegram.helper.BotHelper;
@@ -153,6 +155,7 @@ import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.navigation.MoreDelegate;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.NavigationStack;
+import org.thunderdog.challegram.navigation.OptionsLayout;
 import org.thunderdog.challegram.navigation.SelectDelegate;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.StopwatchHeaderButton;
@@ -207,11 +210,13 @@ import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
+import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.RippleRevealView;
 import org.thunderdog.challegram.widget.RtlViewPager;
 import org.thunderdog.challegram.widget.SendButton;
 import org.thunderdog.challegram.widget.SeparatorView;
+import org.thunderdog.challegram.widget.TripleAvatarView;
 import org.thunderdog.challegram.widget.ViewPager;
 import org.thunderdog.challegram.widget.WallpaperParametersView;
 
@@ -2172,7 +2177,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     public ThreadInfo messageThread;
 
     public Referrer referrer;
-    public TdApi.InternalLinkTypeVoiceChat voiceChatInvitation;
+    public TdApi.InternalLinkTypeVideoChat videoChatOrLiveStreamInvitation;
 
     public long eventLogUserId;
 
@@ -2263,8 +2268,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return this;
     }
 
-    public Arguments voiceChatInvitation (TdApi.InternalLinkTypeVoiceChat voiceChatInvitation) {
-      this.voiceChatInvitation = voiceChatInvitation;
+    public Arguments voiceChatInvitation (TdApi.InternalLinkTypeVideoChat voiceChatInvitation) {
+      this.videoChatOrLiveStreamInvitation = voiceChatInvitation;
       return this;
     }
 
@@ -2294,7 +2299,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private ThreadInfo messageThread;
   private boolean areScheduled;
   private Referrer referrer;
-  private TdApi.InternalLinkTypeVoiceChat voiceChatInvitation;
+  private TdApi.InternalLinkTypeVideoChat voiceChatInvitation;
   private boolean openKeyboard;
 
   public boolean inWallpaperMode () {
@@ -2324,7 +2329,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     this.linkedChatId = 0;
     this.areScheduled = args.areScheduled;
     this.referrer = args.referrer;
-    this.voiceChatInvitation = args.voiceChatInvitation;
+    this.voiceChatInvitation = args.videoChatOrLiveStreamInvitation;
     this.previewSearchQuery = args.searchQuery;
     this.previewSearchSender = args.searchSender;
     this.previewSearchFilter = args.searchFilter;
@@ -3574,7 +3579,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  public void openVoiceChatInvitation (TdApi.InternalLinkTypeVoiceChat invitation) {
+  public void openVoiceChatInvitation (TdApi.InternalLinkTypeVideoChat invitation) {
     // TODO some confirmation screen & join voice chat if agreed
   }
 
@@ -4044,7 +4049,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private TGMessage selectedMessage;
   private Object selectedMessageTag;
 
-  public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, Object selectedMessageTag) {
+  public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, Object selectedMessageTag, boolean disableViewCounter) {
     this.selectedMessage = msg;
     this.selectedMessageTag = selectedMessageTag;
     StringBuilder b = new StringBuilder();
@@ -4085,7 +4090,56 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
     }
     String text = b.toString().trim();
-    showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
+    patchReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, disableViewCounter);
+  }
+
+  private void patchReadReceiptsOptions (PopupLayout layout, TGMessage message, boolean disableViewCounter) {
+    if (!message.canGetViewers() || disableViewCounter || (message.isUnread() && !message.noUnread()) || !(layout.getChildAt(1) instanceof OptionsLayout)) {
+      return;
+    }
+
+    OptionsLayout optionsLayout = (OptionsLayout) layout.getChildAt(1);
+
+    LinearLayout receiptWrap = new LinearLayout(layout.getContext());
+
+    TextView receiptText = OptionsLayout.genOptionView(layout.getContext(), R.id.more_btn_openReadReceipts, Lang.getString(R.string.LoadingMessageSeen), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_visibility_24, null, null, null);
+    TripleAvatarView tav = new TripleAvatarView(layout.getContext());
+
+    receiptText.setLayoutParams(new LinearLayout.LayoutParams(0, Screen.dp(54f), 1f));
+    receiptText.setClickable(false);
+    tav.setLayoutParams(new LinearLayout.LayoutParams(Screen.dp(TripleAvatarView.AVATAR_SIZE * 3 + Screen.dp(6)), Screen.dp(54f)));
+    receiptWrap.addView(receiptText);
+    receiptWrap.addView(tav);
+
+    Views.setClickable(receiptWrap);
+    RippleSupport.setSimpleWhiteBackground(receiptWrap);
+
+    optionsLayout.addView(receiptWrap, 2);
+
+    tdlib.client().send(new TdApi.GetMessageViewers(message.getChatId(), message.getId()), (obj) -> {
+      if (obj.getConstructor() != TdApi.Users.CONSTRUCTOR) return;
+      runOnUiThreadOptional(() -> {
+        TdApi.Users users = (TdApi.Users) obj;
+
+        if (users.userIds.length > 1) {
+          receiptText.setText(MessageSeenController.getViewString(message, users.totalCount).toString());
+        } else if (users.userIds.length == 1) {
+          receiptText.setText(Emoji.instance().replaceEmoji(tdlib.senderName(new TdApi.MessageSenderUser(users.userIds[0]))));
+        } else {
+          receiptText.setText(MessageSeenController.getNobodyString(message));
+        }
+
+        tav.setUsers(tdlib, users);
+        receiptWrap.setOnClickListener((v) -> {
+          layout.hideWindow(true);
+          if (users.userIds.length > 1) {
+            ModernActionedLayout.showMessageSeen(this, message, users.userIds);
+          } else if (users.userIds.length == 1) {
+            tdlib.ui().openPrivateProfile(this, users.userIds[0], new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
+          }
+        });
+      });
+    });
   }
 
   public boolean onCommandLongPressed (InlineResultCommand command) {
@@ -4863,7 +4917,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           StringList strings = new StringList(3);
           Object tag = MessageView.fillMessageOptions(this, selectedMessage, ids, icons, strings, true);
           if (!ids.isEmpty()) {
-            showMessageOptions(selectedMessage, ids.get(), strings.get(), icons.get(), tag);
+            showMessageOptions(selectedMessage, ids.get(), strings.get(), icons.get(), tag, true);
           }
         }
         return true;
@@ -6019,15 +6073,22 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
 
     switch (editingMessage.content.getConstructor()) {
-      case TdApi.MessageText.CONSTRUCTOR: {
-        TdApi.MessageText oldMessageText = (TdApi.MessageText) editingMessage.content;
+      case TdApi.MessageText.CONSTRUCTOR:
+      case TdApi.MessageAnimatedEmoji.CONSTRUCTOR: {
+        TdApi.MessageText oldMessageText;
+
+        if (editingMessage.content.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
+          oldMessageText = new TdApi.MessageText(Td.textOrCaption(editingMessage.content), null);
+        } else {
+          oldMessageText = (TdApi.MessageText) editingMessage.content;
+        }
         TdApi.InputMessageText newInputMessageText = new TdApi.InputMessageText(newText, getCurrentAllowLinkPreview(), false);
         if (!Td.equalsTo(newInputMessageText.text, oldMessageText.text) || (newInputMessageText.disableWebPagePreview && oldMessageText.webPage != null) || (!newInputMessageText.disableWebPagePreview && oldMessageText.webPage == null && attachedPreview != null)) {
-          if (newText.text.trim().length() == 0)
+          String newString = newText.text.trim();
+          if (newString.length() == 0)
             return;
-          tdlib.editMessageText(editingMessage.chatId, editingMessage.id, newInputMessageText, attachedPreview);
+          tdlib.editMessageText(editingMessage.chatId, editingMessage.id, newInputMessageText, attachedPreview, Emoji.instance().isSingleEmoji(newString));
         }
-
         break;
       }
       case TdApi.MessagePhoto.CONSTRUCTOR:
@@ -6041,6 +6102,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
           tdlib.editMessageCaption(editingMessage.chatId, editingMessage.id, newText);
         }
         break;
+      }
+      default: {
+        throw new UnsupportedOperationException(Integer.toString(editingMessage.content.getConstructor()));
       }
     }
 
@@ -7872,8 +7936,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
         return filters.messagePins;
       case R.id.btn_filterLeavingMembers:
         return filters.memberLeaves;
-      case R.id.btn_filterVoiceChats:
-        return filters.voiceChatChanges;
+      case R.id.btn_filterVideoChats:
+        return filters.videoChatChanges;
     }
     return false;
   }
@@ -7905,7 +7969,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             R.id.btn_filterEditedMessages,
             R.id.btn_filterPinnedMessages,
             R.id.btn_filterLeavingMembers,
-            R.id.btn_filterVoiceChats
+            R.id.btn_filterVideoChats
           };
           strings = new String[] {
             Lang.getString(R.string.EventLogFilterAll),
@@ -7917,7 +7981,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             Lang.getString(R.string.EventLogFilterEditedMessages),
             Lang.getString(R.string.EventLogFilterPinnedMessages),
             Lang.getString(R.string.EventLogFilterLeavingMembers),
-            Lang.getString(R.string.EventLogFilterVoiceChats)
+            Lang.getString(R.string.EventLogFilterLiveStreams)
           };
         } else {
           ids = new int[] {
@@ -7931,7 +7995,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             R.id.btn_filterEditedMessages,
             R.id.btn_filterPinnedMessages,
             R.id.btn_filterLeavingMembers,
-            R.id.btn_filterVoiceChats
+            R.id.btn_filterVideoChats
           };
           strings = new String[] {
             Lang.getString(R.string.EventLogFilterAll),
@@ -8056,8 +8120,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
                     case R.id.btn_filterLeavingMembers:
                       filter.memberLeaves = isSelected;
                       break;
-                    case R.id.btn_filterVoiceChats:
-                      filter.voiceChatChanges = isSelected;
+                    case R.id.btn_filterVideoChats:
+                      filter.videoChatChanges = isSelected;
                       break;
                   }
                   break;

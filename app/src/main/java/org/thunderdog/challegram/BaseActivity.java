@@ -234,7 +234,13 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public void removeFromRoot (View view) {
-    rootView.removeView(view);
+    try {
+      rootView.removeView(view);
+    } catch (NullPointerException e) {
+      // Ignoring, as it's most likely bug in Android SDK 23
+      // at android.view.TextureView.destroySurface (TextureView.java:244)
+      Log.i(e);
+    }
   }
 
   public void addToNavigation (View view) {
@@ -1129,7 +1135,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (tooltipOverlayView != null && tooltipOverlayView.onBackPressed()) {
       return;
     }
-    if (dismissLastOpenWindow(false, true)) {
+    if (dismissLastOpenWindow(false, true, fromTop)) {
       return;
     }
     if (isCameraOpen) {
@@ -2012,7 +2018,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     return popupLayout != null ? popupLayout.getBoundController() : null;
   }
 
-  public boolean dismissLastOpenWindow (boolean byKeyPress, boolean byBackPress) {
+  public boolean dismissLastOpenWindow (boolean byKeyPress, boolean byBackPress, boolean byHeaderBackPress) {
     final int size = windows.size();
     for (int i = size - 1; i >= 0; i--) {
       PopupLayout window = windows.get(i);
@@ -2020,7 +2026,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         if (byKeyPress && window.canHideKeyboard()) {
           return window.hideSoftwareKeyboard();
         }
-        if (byBackPress && window.onBackPressed()) {
+        if (byBackPress && window.onBackPressed(byHeaderBackPress)) {
           return true;
         }
         window.hideWindow(true);

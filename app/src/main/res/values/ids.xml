@@ -99,6 +99,7 @@
   <item type="id" name="more_btn_markAsRead" />
   <item type="id" name="more_btn_report" />
   <item type="id" name="more_btn_markAsUnread" />
+  <item type="id" name="more_btn_openReadReceipts" />
 
   <item type="id" name="login_phone" />
   <item type="id" name="login_code" />
@@ -190,6 +191,7 @@
   <item type="id" name="controller_editBio" />
   <item type="id" name="controller_editDescription" />
   <item type="id" name="controller_createPoll" />
+  <item type="id" name="controller_messageSeen" />
 
   <item type="id" name="controller_code" />
   <item type="id" name="controller_name" />
@@ -587,7 +589,7 @@
   <item type="id" name="btn_filterEditedMessages" />
   <item type="id" name="btn_filterPinnedMessages" />
   <item type="id" name="btn_filterLeavingMembers" />
-  <item type="id" name="btn_filterVoiceChats" />
+  <item type="id" name="btn_filterVideoChats" />
 
   <item type="id" name="btn_earpieceMode" />
   <item type="id" name="btn_earpieceModeVideo" />
@@ -1109,7 +1111,7 @@
   <item type="id" name="right_banUsers" />
   <item type="id" name="right_inviteUsers" />
   <item type="id" name="right_pinMessages" />
-  <item type="id" name="right_manageVoiceChats" />
+  <item type="id" name="right_manageVideoChats" />
   <item type="id" name="right_remainAnonymous" />
   <item type="id" name="right_addNewAdmins" />
 

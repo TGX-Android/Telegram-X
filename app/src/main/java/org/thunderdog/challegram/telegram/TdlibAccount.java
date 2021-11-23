@@ -212,6 +212,9 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   }
 
   public boolean allowNotifications () {
+    if (isLoggingOut()) {
+      return false;
+    }
     if (Settings.instance().checkNotificationFlag(Settings.NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT)) {
       return context.preferredAccountId() == this.accountId();
     }
@@ -325,6 +328,9 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
     try {
       tdlib = new Tdlib(this, isDebug());
     } catch (Throwable t) {
+      if (t instanceof InterruptedException || t.getCause() instanceof InterruptedException) {
+        throw t;
+      }
       error = t;
     } finally {
       locked.set(false);

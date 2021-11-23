@@ -162,7 +162,7 @@ public class MessagesLoader implements Client.ResultHandler {
   private static final int MERGE_MODE_TOP = 1;
   private static final int MERGE_MODE_BOTTOM = 2;
 
-  private Client.ResultHandler lastHandler;
+  private volatile Client.ResultHandler lastHandler;
   private TdApi.Message[] mergeChunk;
   private int mergeMode;
 
@@ -228,7 +228,9 @@ public class MessagesLoader implements Client.ResultHandler {
             break;
           }
           default: {
-            lastHandler = null;
+            synchronized (lock) {
+              lastHandler = null;
+            }
             Log.unexpectedTdlibResponse(object, TdApi.GetChatHistory.class, TdApi.Messages.class, TdApi.ChatEvents.class, TdApi.Error.class);
             return;
           }
@@ -433,7 +435,9 @@ public class MessagesLoader implements Client.ResultHandler {
 
         mergeMode = MERGE_MODE_NONE;
         mergeChunk = null;
-        lastHandler = null;
+        synchronized (lock) {
+          lastHandler = null;
+        }
 
         processMessages(currentContextId, messages, knownTotalCount, nextSecretSearchOffset, needFindUnrad && object.getConstructor() == TdApi.Messages.CONSTRUCTOR, missingAlbums);
       }
@@ -459,7 +463,10 @@ public class MessagesLoader implements Client.ResultHandler {
     mergeMode = MERGE_MODE_NONE;
     mergeChunk = null;
 
-    lastHandler = null;
+    synchronized (lock) {
+      lastHandler = null;
+      isLoading = false;
+    }
   }
 
   public void loadPreviewMessages () {
@@ -922,7 +929,6 @@ public class MessagesLoader implements Client.ResultHandler {
 
     canLoadTop = true;
     canLoadBottom = false;
-    isLoading = false;
     scrollMessageId = startMessageId;
     scrollHighlightMode = MessagesManager.HIGHLIGHT_MODE_NONE;
 
@@ -933,7 +939,6 @@ public class MessagesLoader implements Client.ResultHandler {
     reuse();
 
     canLoadTop = canLoadBottom = force;
-    isLoading = false;
     scrollMessageId = messageId;
     scrollHighlightMode = highlightMode;
 
@@ -1128,9 +1133,9 @@ public class MessagesLoader implements Client.ResultHandler {
         case TdApi.ChatEventMemberRestricted.CONSTRUCTOR:
         case TdApi.ChatEventMemberInvited.CONSTRUCTOR:
         case TdApi.ChatEventPermissionsChanged.CONSTRUCTOR:
-        case TdApi.ChatEventVoiceChatCreated.CONSTRUCTOR:
+        case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
         case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR:
-        case TdApi.ChatEventVoiceChatDiscarded.CONSTRUCTOR: {
+        case TdApi.ChatEventVideoChatDiscarded.CONSTRUCTOR: {
           m = newMessage(chatId, isChannel, event);
           m.content = new TdApiExt.MessageChatEvent(event, true, false); // new TdApi.MessageChatAddMembers(new int[] {event.userId});
           break;
@@ -1184,12 +1189,13 @@ public class MessagesLoader implements Client.ResultHandler {
         case TdApi.ChatEventLinkedChatChanged.CONSTRUCTOR:
         case TdApi.ChatEventSlowModeDelayChanged.CONSTRUCTOR:
         case TdApi.ChatEventLocationChanged.CONSTRUCTOR:
-        case TdApi.ChatEventVoiceChatMuteNewParticipantsToggled.CONSTRUCTOR:
+        case TdApi.ChatEventVideoChatMuteNewParticipantsToggled.CONSTRUCTOR:
         case TdApi.ChatEventMemberJoinedByInviteLink.CONSTRUCTOR:
+        case TdApi.ChatEventMemberJoinedByRequest.CONSTRUCTOR:
         case TdApi.ChatEventInviteLinkRevoked.CONSTRUCTOR:
         case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
-        case TdApi.ChatEventVoiceChatParticipantVolumeLevelChanged.CONSTRUCTOR:
-        case TdApi.ChatEventVoiceChatParticipantIsMutedToggled.CONSTRUCTOR: {
+        case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
+        case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR: {
           m = newMessage(chatId, isChannel, event);
           m.content = new TdApiExt.MessageChatEvent(event, false, false);
           break;

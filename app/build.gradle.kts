@@ -184,7 +184,7 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.2.1")
     implementation("androidx.viewpager:viewpager:1.0.0")
     implementation("androidx.work:work-runtime:2.7.0")
-    implementation("androidx.browser:browser:1.3.0")
+    implementation("androidx.browser:browser:1.4.0")
     implementation("androidx.exifinterface:exifinterface:1.3.3")
     implementation("androidx.collection:collection:1.1.0")
     implementation("androidx.interpolator:interpolator:1.0.0")
@@ -210,7 +210,7 @@ dependencies {
     // ExoPlayer: https://github.com/google/ExoPlayer/blob/release-v2/RELEASENOTES.md
     implementation("com.google.android.exoplayer:exoplayer-core:2.16.0")
     // The Checker Framework: https://checkerframework.org/CHANGELOG.md
-    compileOnly("org.checkerframework:checker-qual:3.18.1")
+    compileOnly("org.checkerframework:checker-qual:3.19.0")
     // OkHttp: https://github.com/square/okhttp/blob/master/CHANGELOG.md
     implementation("com.squareup.okhttp3:okhttp:4.9.2")
     // ShortcutBadger: https://github.com/leolin310148/ShortcutBadger
@@ -222,7 +222,7 @@ dependencies {
     // Transcoder: https://github.com/natario1/Transcoder/blob/master/docs/_about/changelog.md
     implementation("com.github.natario1:Transcoder:ba8f098c94")
 
-    // ZXing: https://github.com/zxing/zxing/
+    // ZXing: https://github.com/zxing/zxing/blob/master/CHANGES
     implementation("com.google.zxing:core:3.4.1")
 
     // YouTube: https://developers.google.com/youtube/android/player/

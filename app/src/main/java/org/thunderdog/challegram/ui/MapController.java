@@ -667,7 +667,9 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
       destroyMap(mapView);
       mapView = null;
     }
-    locationHelper.destroy();
+    if (locationHelper != null) {
+      locationHelper.destroy();
+    }
     Views.destroyRecyclerView(recyclerView);
   }
 

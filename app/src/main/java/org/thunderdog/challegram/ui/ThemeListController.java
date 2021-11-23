@@ -1323,7 +1323,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
       if (otherModifier != null) {
         otherModifier.afterDraw(view, c);
       }
-      boolean isOverridden = theme.hasColor(colorId);
+      boolean isOverridden = theme.hasColor(colorId, true);
       if (isOverridden || hasHistory) {
         float cx = Screen.dp(8f);
         float cy = view.getMeasuredHeight() / 2 - Screen.dp(9f);

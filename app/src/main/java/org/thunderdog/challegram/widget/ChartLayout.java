@@ -111,14 +111,20 @@ public class ChartLayout extends FrameLayout implements FactorAnimator.Target, A
     int width = MeasureSpec.getSize(widthMeasureSpec);
     int height = MeasureSpec.getSize(heightMeasureSpec);
     super.onMeasure(widthMeasureSpec, height > width ? widthMeasureSpec : MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
+    layoutBounds();
+  }
+
+  private void layoutBounds () {
     if (placeholderSticker != null) {
       int cx = getMeasuredWidth() / 2;
       int cy = getMeasuredHeight() / 2;
-      int stickerWidth = Math.max(Screen.dp(100f), (int) Screen.px(placeholderSticker.width));
-      int stickerHeight = Math.max(Screen.dp(100f), (int) Screen.px(placeholderSticker.height));
-      cx -= stickerWidth / 2;
-      cy -= stickerHeight / 2;
-      progressReceiver.setBounds(cx, cy, cx + stickerWidth, cy + stickerHeight);
+      if (cx != 0 && cy != 0) {
+        int stickerWidth = Math.max(Screen.dp(100f), (int) Screen.px(placeholderSticker.width));
+        int stickerHeight = Math.max(Screen.dp(100f), (int) Screen.px(placeholderSticker.height));
+        cx -= stickerWidth / 2;
+        cy -= stickerHeight / 2;
+        progressReceiver.setBounds(cx, cy, cx + stickerWidth, cy + stickerHeight);
+      }
     }
   }
 
@@ -182,12 +188,18 @@ public class ChartLayout extends FrameLayout implements FactorAnimator.Target, A
     this.chartType = type;
     ViewSupport.setThemedBackground(this, R.id.theme_color_filling, themeProvider);
 
-    placeholderSticker = tdlib.findAnimatedEmoji(TD.EMOJI_ABACUS.textRepresentation);
-    if (placeholderSticker != null) {
-      GifFile file = new GifFile(tdlib, placeholderSticker.sticker, GifFile.TYPE_TG_LOTTIE);
-      file.setScaleType(GifFile.FIT_CENTER);
-      this.progressReceiver.requestFile(file);
-    }
+    tdlib.client().send(new TdApi.GetAnimatedEmoji(TD.EMOJI_ABACUS.textRepresentation), result -> {
+      if (result.getConstructor() == TdApi.AnimatedEmoji.CONSTRUCTOR) {
+        TdApi.AnimatedEmoji emoji = (TdApi.AnimatedEmoji) result;
+        tdlib.runOnUiThread(() -> {
+          placeholderSticker = emoji.sticker;
+          GifFile file = new GifFile(tdlib, emoji.sticker.sticker, GifFile.TYPE_TG_LOTTIE);
+          file.setScaleType(GifFile.FIT_CENTER);
+          this.progressReceiver.requestFile(file);
+          layoutBounds();
+        });
+      }
+    });
 
     switch (type) {
       case ChartDataUtil.TYPE_DOUBLE_LINEAR: {

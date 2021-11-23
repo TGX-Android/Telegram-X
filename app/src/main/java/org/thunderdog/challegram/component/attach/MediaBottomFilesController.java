@@ -4,6 +4,7 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.ClipData;
+import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -448,6 +449,14 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
     public long getAlbumId () {
       return albumId;
     }
+
+    public boolean probablyHasArtwork () {
+      return getAlbumId() != 0;
+    }
+
+    public Uri getArtwork () {
+      return ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), getAlbumId());
+    }
   }
 
   private static abstract class LoadOperation implements Runnable {
@@ -691,7 +700,8 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
           MediaStore.Audio.Media.DATA,
           MediaStore.Audio.Media.DURATION,
           MediaStore.Audio.Media.DATE_ADDED,
-          MediaStore.Audio.Media.MIME_TYPE
+          MediaStore.Audio.Media.MIME_TYPE,
+          MediaStore.Audio.Media.ALBUM_ID,
         };
         try {
           Cursor c = UI.getAppContext().getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, projection, MediaStore.Audio.Media.IS_MUSIC + " != 0", null, MediaStore.Audio.Media.DATE_ADDED + " desc");
@@ -709,9 +719,10 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
             String title = c.getString(2);
             String data = c.getString(3);
             long duration = c.getInt(4);
-            String mime = c.getString(5);
+            String mime = c.getString(6);
+            long albumId = c.getLong(7);
             if (!StringUtils.isEmpty(data)) {
-              entries.add(new MusicEntry(id, artist != null ? artist : "", title != null ? title : "", data, duration, mime, 0));
+              entries.add(new MusicEntry(id, artist != null ? artist : "", title != null ? title : "", data, duration, mime, albumId));
             }
           }
           U.closeCursor(c);

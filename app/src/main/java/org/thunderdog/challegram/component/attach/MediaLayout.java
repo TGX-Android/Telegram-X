@@ -14,7 +14,6 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -97,6 +96,7 @@ public class MediaLayout extends FrameLayoutFix implements
   public static final int MODE_DEFAULT = 0;
   public static final int MODE_LOCATION = 1;
   public static final int MODE_GALLERY = 2;
+  public static final int MODE_CUSTOM_POPUP = 3;
 
   private int mode;
   private @Nullable MediaCallback callback;
@@ -234,6 +234,7 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   public void initCustom () {
+    mode = MODE_CUSTOM_POPUP;
     controllers = new MediaBottomBaseController[1];
     currentController = getControllerForIndex(0);
     View controllerView = currentController.get();
@@ -292,12 +293,12 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   @Override
-  public boolean onBackPressed () {
+  public boolean onBackPressed (boolean fromTop) {
     MediaBottomBaseController<?> c = getCurrentController();
     if (c.isAnimating()) {
       return true;
     }
-    if (c.onBackPressed(false)) {
+    if (c.onBackPressed(fromTop)) {
       return true;
     }
     if (counterView != null && counterView.isEnabled()) {

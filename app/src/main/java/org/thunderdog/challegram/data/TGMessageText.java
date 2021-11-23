@@ -40,10 +40,10 @@ public class TGMessageText extends TGMessage {
   private TGWebPage webPage;
   private TdApi.MessageText currentMessageText, pendingMessageText;
 
-  public TGMessageText (MessagesManager context, TdApi.Message msg, TdApi.MessageText text) {
+  public TGMessageText (MessagesManager context, TdApi.Message msg, TdApi.MessageText text, @Nullable TdApi.MessageText pendingMessageText) {
     super(context, msg);
     this.currentMessageText = text;
-    this.pendingMessageText = tdlib.getPendingMessageText(msg.chatId, msg.id);
+    this.pendingMessageText = pendingMessageText;
     if (this.pendingMessageText != null) {
       setText(this.pendingMessageText.text, false);
       setWebPage(this.pendingMessageText.webPage);
@@ -55,6 +55,7 @@ public class TGMessageText extends TGMessage {
 
   public TGMessageText (MessagesManager context, TdApi.Message msg, TdApi.FormattedText text) {
     super(context, msg);
+    this.currentMessageText = new TdApi.MessageText(text, null);
     setText(text, true);
   }
 
@@ -112,8 +113,11 @@ public class TGMessageText extends TGMessage {
   @Override
   protected int onMessagePendingContentChanged (long chatId, long messageId, int oldHeight) {
     if (currentMessageText != null) {
-      TdApi.MessageText messageText = tdlib.getPendingMessageText(chatId, messageId);
-      if (this.pendingMessageText != messageText) {
+      TdApi.MessageContent messageContent = tdlib.getPendingMessageText(chatId, messageId);
+      if (this.pendingMessageText != messageContent) {
+        if (messageContent != null && messageContent.getConstructor() != TdApi.MessageText.CONSTRUCTOR)
+          return MESSAGE_REPLACE_REQUIRED;
+        TdApi.MessageText messageText = (TdApi.MessageText) messageContent;
         this.pendingMessageText = messageText;
         if (messageText != null) {
           setText(messageText.text, false);

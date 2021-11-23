@@ -280,8 +280,11 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   }
 
   public static class NotificationQueue extends BaseThread {
-    public NotificationQueue (String name) {
+    private final TdlibManager context;
+
+    public NotificationQueue (String name, TdlibManager context) {
       super(name);
+      this.context = context;
     }
 
     public void init () {
@@ -294,7 +297,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     protected void process (Message msg) {
       switch (msg.what) {
         case CLEANUP_CHANNELS: {
-          TdlibNotificationChannelGroup.cleanupChannelGroups();
+          TdlibNotificationChannelGroup.cleanupChannelGroups(context);
           break;
         }
         case PLAY_SOUND: {
@@ -308,7 +311,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
         case ENSURE_CHANNELS: {
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Tdlib tdlib = ((TdlibNotificationManager) msg.obj).tdlib;
-            TdlibNotificationChannelGroup.cleanupChannelGroups();
+            TdlibNotificationChannelGroup.cleanupChannelGroups(context);
             tdlib.notifications().createChannels();
             TdlibNotificationChannelGroup.cleanupChannels(tdlib);
           }
@@ -1851,7 +1854,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   @AnyThread
   public void onUpdateNotificationChannels (long accountUserId) {
     if (Thread.currentThread() != queue) {
-      queue.sendMessage(Message.obtain(queue.getHandler(), ON_UPDATE_NOTIFICATION_CHANNELS, BitwiseUtils.splitLongToFirstInt(accountUserId), BitwiseUtils.splitLongToSecondInt(accountUserId), this), 0);
+      sendLockedMessage(Message.obtain(queue.getHandler(), ON_UPDATE_NOTIFICATION_CHANNELS, BitwiseUtils.splitLongToFirstInt(accountUserId), BitwiseUtils.splitLongToSecondInt(accountUserId), this), null);
     } else {
       resetNotificationGroupImpl(accountUserId);
     }
@@ -1891,7 +1894,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   @AnyThread
   private void rebuildNotification () {
     if (Thread.currentThread() != queue) {
-      queue.sendMessage(Message.obtain(queue.getHandler(), REBUILD_NOTIFICATION, this), 0);
+      sendLockedMessage(Message.obtain(queue.getHandler(), REBUILD_NOTIFICATION, this), null);
     } else {
       rebuildNotificationImpl();
     }
@@ -1903,7 +1906,10 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   void onUpdateNewMessage (TdApi.UpdateNewMessage update) {
     if (update.message.isOutgoing || update.message.sendingState != null)
       return;
-    ViewController<?> c = UI.getCurrentStackItem();
+    ViewController<?> c = null;
+    try {
+      c = UI.getCurrentStackItem();
+    } catch (ArrayIndexOutOfBoundsException ignored) { }
     if (c instanceof MessagesController && c.isSameTdlib(tdlib)) {
       long activeChatId = ((MessagesController) c).getActiveChatId();
       if (activeChatId != 0 && update.message.chatId == activeChatId && tdlib.chatNotificationsEnabled(activeChatId)) {
@@ -1918,8 +1924,11 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   @TdlibThread
   void onUpdateMessageSendSucceeded (TdApi.UpdateMessageSendSucceeded update) {
     TdApi.Message sentMessage = update.message;
-    ViewController<?> c = UI.getCurrentStackItem();
-    if (c != null && !c.isPaused() && (c instanceof MessagesController && ((MessagesController) c).compareChat(sentMessage.chatId)) || (c instanceof MainController)) {
+    ViewController<?> c = null;
+    try {
+      c = UI.getCurrentStackItem();
+    } catch (ArrayIndexOutOfBoundsException ignored) { }
+    if (((c instanceof MessagesController && ((MessagesController) c).compareChat(sentMessage.chatId)) || (c instanceof MainController)) && !c.isPaused()) {
       switch (sentMessage.content.getConstructor()) {
         case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
         case TdApi.MessageChatSetTtl.CONSTRUCTOR: {

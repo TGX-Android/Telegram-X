@@ -237,7 +237,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
     setDoneInProgress(true);
     int actualExpireDate = expireDate == 0 ? 0 : actualTdlibSeconds + expireDate;
     tdlib.client().send(
-      isCreation ? new TdApi.CreateChatInviteLink(getArgumentsStrict().chatId, actualExpireDate, memberLimit) : new TdApi.EditChatInviteLink(getArgumentsStrict().chatId, getArgumentsStrict().existingInviteLink.inviteLink, actualExpireDate, memberLimit), result -> {
+      isCreation ? new TdApi.CreateChatInviteLink(getArgumentsStrict().chatId, "", actualExpireDate, memberLimit, false) : new TdApi.EditChatInviteLink(getArgumentsStrict().chatId, getArgumentsStrict().existingInviteLink.inviteLink, getArgumentsStrict().existingInviteLink.name, actualExpireDate, memberLimit, getArgumentsStrict().existingInviteLink.createsJoinRequest), result -> {
         runOnUiThreadOptional(() -> {
           if (result.getConstructor() == TdApi.ChatInviteLink.CONSTRUCTOR) {
             getArgumentsStrict().controller.onLinkCreated((TdApi.ChatInviteLink) result, getArgumentsStrict().existingInviteLink);

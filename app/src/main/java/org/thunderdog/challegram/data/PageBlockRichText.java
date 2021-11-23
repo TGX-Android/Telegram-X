@@ -37,7 +37,9 @@ import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -135,25 +137,31 @@ public class PageBlockRichText extends PageBlock {
 
   // Author & publication date of the page
 
-  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockAuthorDate authorDate, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public PageBlockRichText (ViewController<?> context, TdApi.PageBlockAuthorDate authorDate, int viewCount, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, authorDate);
     String author = TD.getText(authorDate.author).trim();
     this.paddingTop = this.paddingBottom = 8f;
     if (author.isEmpty() && authorDate.publishDate == 0) {
       return;
     }
-    if (author.isEmpty()) {
-      setText(new TdApi.RichTextPlain(buildAgo(context.tdlib(), authorDate.publishDate)), getAuthorProvider(), TextColorSets.InstantView.AUTHOR, openParameters);
-    } else if (authorDate.publishDate == 0) {
-      setText(authorDate.author, getAuthorProvider(), TextColorSets.InstantView.AUTHOR, openParameters);
-    } else {
-      setText(new TdApi.RichTexts(new TdApi.RichText[] {
-        authorDate.author,
-        new TdApi.RichTextPlain(Lang.getString(R.string.format_ivAuthorDateSeparator)),
-        new TdApi.RichTextPlain(buildAgo(context.tdlib(), authorDate.publishDate))
-      }), getAuthorProvider(), TextColorSets.InstantView.AUTHOR, openParameters);
+    List<TdApi.RichText> richTexts = new ArrayList<>();
+    if (!author.isEmpty()) {
+      richTexts.add(authorDate.author);
     }
-    // setPadding(10f);
+    if (authorDate.publishDate != 0) {
+      if (!richTexts.isEmpty()) {
+        richTexts.add(new TdApi.RichTextPlain(Lang.getString(R.string.format_ivAuthorDateSeparator)));
+      }
+      richTexts.add(new TdApi.RichTextPlain(buildAgo(context.tdlib(), authorDate.publishDate)));
+    }
+    if (viewCount != 0) {
+      if (!richTexts.isEmpty()) {
+        richTexts.add(new TdApi.RichTextPlain(Lang.getString(R.string.format_ivAuthorDateSeparator)));
+      }
+      richTexts.add(new TdApi.RichTextPlain(Lang.plural(R.string.xViews, viewCount)));
+    }
+    TdApi.RichText richText = richTexts.size() == 1 ? richTexts.get(0) : new TdApi.RichTexts(richTexts.toArray(new TdApi.RichText[0]));
+    setText(richText, getAuthorProvider(), TextColorSets.InstantView.AUTHOR, openParameters);
   }
 
   public static long buildAgoUpdateTime (Tdlib tdlib, int publishDate) { // TODO use this to refresh 1 minute -> 2 minutes, today -> yesterday, etc
