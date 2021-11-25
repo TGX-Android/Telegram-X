@@ -99,6 +99,7 @@
   <item type="id" name="more_btn_markAsRead" />
   <item type="id" name="more_btn_report" />
   <item type="id" name="more_btn_markAsUnread" />
+  <item type="id" name="more_btn_openReadReceipts" />
 
   <item type="id" name="login_phone" />
   <item type="id" name="login_code" />
@@ -190,6 +191,7 @@
   <item type="id" name="controller_editBio" />
   <item type="id" name="controller_editDescription" />
   <item type="id" name="controller_createPoll" />
+  <item type="id" name="controller_messageSeen" />
 
   <item type="id" name="controller_code" />
   <item type="id" name="controller_name" />

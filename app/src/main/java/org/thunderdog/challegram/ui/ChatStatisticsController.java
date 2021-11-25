@@ -454,7 +454,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
       adapter.getItems().add(new ListItem(ListItem.TYPE_CHART_HEADER_DETACHED).setData(new MiniChart(header, range)));
 
       for (int i = 0; i < interactionMessages.size(); i++) {
-        adapter.getItems().add(new ListItem(i == 0 ? ListItem.TYPE_SHADOW_TOP : ListItem.TYPE_SEPARATOR, i != 0 ? R.id.separator : 0));
+        adapter.getItems().add(new ListItem(i == 0 ? ListItem.TYPE_SHADOW_TOP : ListItem.TYPE_SEPARATOR_FULL, i != 0 ? R.id.separator : 0));
         adapter.getItems().add(new ListItem(ListItem.TYPE_STATS_MESSAGE_PREVIEW, R.id.btn_messageMore).setData(interactionMessages.get(i)));
       }
 

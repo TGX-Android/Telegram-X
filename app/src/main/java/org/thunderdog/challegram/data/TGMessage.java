@@ -3932,6 +3932,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return msg.canGetStatistics;
   }
 
+  public final boolean canGetViewers () {
+    return msg.canGetViewers;
+  }
+
   public final boolean canBeDeletedOnlyForSelf () {
     return msg.canBeDeletedOnlyForSelf;
   }
@@ -4512,6 +4516,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     dst.canBeForwarded = src.canBeForwarded;
     dst.canBeEdited = src.canBeEdited;
     dst.canGetStatistics = src.canGetStatistics;
+    dst.canGetViewers = src.canGetViewers;
     dst.canGetMediaTimestampLinks = src.canGetMediaTimestampLinks;
     dst.hasTimestampedMedia = src.hasTimestampedMedia;
 
@@ -6994,6 +6999,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         }
         case TdApi.MessageChatJoinByLink.CONSTRUCTOR: {
           return new TGMessageChat(context, msg, (TdApi.MessageChatJoinByLink) content);
+        }
+        case TdApi.MessageChatJoinByRequest.CONSTRUCTOR: {
+          return new TGMessageChat(context, msg, (TdApi.MessageChatJoinByRequest) content);
         }
         case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR: {
           return new TGMessageChat(context, msg, (TdApi.MessageProximityAlertTriggered) content);

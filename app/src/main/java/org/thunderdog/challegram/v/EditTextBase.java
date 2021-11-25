@@ -135,7 +135,7 @@ public class EditTextBase extends android.widget.EditText {
       switch (e.getAction()) {
         case KeyEvent.ACTION_DOWN: {
           BaseActivity context = UI.getContext(getContext());
-          if (context != null && context.dismissLastOpenWindow(true, true)) {
+          if (context != null && context.dismissLastOpenWindow(true, true, false)) {
             return true;
           }
           if (onKeyboardBackPress()) {
