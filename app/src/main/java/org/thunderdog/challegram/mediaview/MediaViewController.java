@@ -3082,6 +3082,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     lastSlideSourceX = sourceX;
 
     float dismissFactor = Math.abs(Math.min(1f, y / (float) Screen.dp(125f)));
+    if (Float.isNaN(dismissFactor)) // TODO: find out why it could become NaN
+      dismissFactor = 0f;
     if (noRotation || dismissFactor > this.dismissFactor || byTouch) {
       setSlideDismissFactor(dismissFactor);
     }

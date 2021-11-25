@@ -140,6 +140,10 @@ public class ImageReader {
 
     if (bitmap != null) {
       boolean inPurgeable = !file.needBlur() && Config.PIN_BITMAP_ENABLED;
+      
+      if (file.needDecodeSquare()) {
+        bitmap = cropSquare(bitmap);
+      }
 
       if (!file.isWebp() && file.shouldUseBlur() && file.needBlur()) {
         U.blurBitmap(bitmap, file.getBlurRadius(), inPurgeable ? 0 : 1);

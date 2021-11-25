@@ -1909,7 +1909,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     ViewController<?> c = null;
     try {
       c = UI.getCurrentStackItem();
-    } catch (ArrayIndexOutOfBoundsException ignored) { }
+    } catch (IndexOutOfBoundsException ignored) { }
     if (c instanceof MessagesController && c.isSameTdlib(tdlib)) {
       long activeChatId = ((MessagesController) c).getActiveChatId();
       if (activeChatId != 0 && update.message.chatId == activeChatId && tdlib.chatNotificationsEnabled(activeChatId)) {
@@ -1927,7 +1927,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     ViewController<?> c = null;
     try {
       c = UI.getCurrentStackItem();
-    } catch (ArrayIndexOutOfBoundsException ignored) { }
+    } catch (IndexOutOfBoundsException ignored) { }
     if (((c instanceof MessagesController && ((MessagesController) c).compareChat(sentMessage.chatId)) || (c instanceof MainController)) && !c.isPaused()) {
       switch (sentMessage.content.getConstructor()) {
         case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
