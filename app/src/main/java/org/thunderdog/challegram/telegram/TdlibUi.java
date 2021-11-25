@@ -1811,6 +1811,8 @@ public class TdlibUi extends Handler {
   }
 
   private static void showLinkTooltip (Tdlib tdlib, int iconRes, CharSequence message, UrlOpenParameters urlOpenParameters) {
+    if (message == null)
+      throw new IllegalArgumentException();
     if (!UI.inUiThread()) {
       tdlib.ui().post(() -> {
         showLinkTooltip(tdlib, iconRes, message, urlOpenParameters);
