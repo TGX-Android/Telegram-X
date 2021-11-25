@@ -40,6 +40,8 @@ public class TGMessageText extends TGMessage {
   private TGWebPage webPage;
   private TdApi.MessageText currentMessageText, pendingMessageText;
 
+  private TdApi.InternalLinkType sponsoredMsgClick;
+
   public TGMessageText (MessagesManager context, TdApi.Message msg, TdApi.MessageText text, @Nullable TdApi.MessageText pendingMessageText) {
     super(context, msg);
     this.currentMessageText = text;
@@ -57,6 +59,13 @@ public class TGMessageText extends TGMessage {
     super(context, msg);
     this.currentMessageText = new TdApi.MessageText(text, null);
     setText(text, true);
+  }
+
+  public TGMessageText (MessagesManager context, TdApi.Message msg, TdApi.SponsoredMessage text) {
+    super(context, msg);
+    this.sponsoredMsgClick = text.link;
+    this.currentMessageText = (TdApi.MessageText) text.content;
+    setText(currentMessageText.text, true);
   }
 
   public TdApi.File getTargetFile () {
@@ -246,9 +255,27 @@ public class TGMessageText extends TGMessage {
     }
   }
 
+  private TdApi.FormattedText safeExtractText (TdApi.MessageContent content) {
+    if (content instanceof TdApi.MessageAnimatedEmoji) {
+      return new TdApi.FormattedText(((TdApi.MessageAnimatedEmoji) content).emoji, null);
+    } else if (content instanceof TdApi.MessageText) {
+      return ((TdApi.MessageText) content).text;
+    } else {
+      return null;
+    }
+  }
+
+  private TdApi.WebPage safeExtractWebPage (TdApi.MessageContent content) {
+    if (content instanceof TdApi.MessageText) {
+      return ((TdApi.MessageText) content).webPage;
+    } else {
+      return null;
+    }
+  }
+
   @Override
   protected boolean onMessageContentChanged (TdApi.Message message, TdApi.MessageContent oldContent, TdApi.MessageContent newContent, boolean isBottomMessage) {
-    if (!Td.equalsTo(((TdApi.MessageText) oldContent).text, ((TdApi.MessageText) newContent).text) || !Td.equalsTo(((TdApi.MessageText) oldContent).webPage, ((TdApi.MessageText) newContent).webPage)) {
+    if (!Td.equalsTo(safeExtractText(oldContent), safeExtractText(newContent)) || !Td.equalsTo(safeExtractWebPage(oldContent), safeExtractWebPage(newContent))) {
       updateMessageContent(msg, newContent, isBottomMessage);
       return true;
     }

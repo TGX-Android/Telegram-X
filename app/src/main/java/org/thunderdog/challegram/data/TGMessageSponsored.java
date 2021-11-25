@@ -8,14 +8,14 @@ import me.vkryl.core.MathUtils;
 
 public class TGMessageSponsored {
   public static TGMessage sponsoredToTgx (MessagesManager manager, long chatId, int date, TdApi.SponsoredMessage sMsg) {
-    return new TGMessageText(manager, sponsoredToTd(chatId, date, sMsg), (TdApi.MessageText) sMsg.content);
+    return new TGMessageText(manager, sponsoredToTd(chatId, date, sMsg), ((TdApi.MessageText) sMsg.content).text);
   }
 
   private static TdApi.Message sponsoredToTd (long chatId, int date, TdApi.SponsoredMessage sMsg) {
     TdApi.MessageText fMsgContent = (TdApi.MessageText) sMsg.content;
     fMsgContent.webPage = new TdApi.WebPage();
     fMsgContent.webPage.type = "telegram_adx";
-    fMsgContent.webPage.url = sMsg.startParameter != null ? sMsg.startParameter : "";
+    fMsgContent.webPage.url = "";
 
     TdApi.Message fMsg = new TdApi.Message();
     fMsg.sender = new TdApi.MessageSenderChat(sMsg.sponsorChatId);
@@ -32,22 +32,13 @@ public class TGMessageSponsored {
   }
 
   public static TdApi.SponsoredMessage generateSponsoredMessage (Tdlib tdlib) {
-    return (MathUtils.random(0, 1) == 1) ? generateBotSponsoredMessage(tdlib) : generateUserSponsoredMessage(tdlib);
+    return generateUserSponsoredMessage(tdlib);
   }
 
   private static TdApi.SponsoredMessage generateUserSponsoredMessage (Tdlib tdlib) {
     TdApi.SponsoredMessage msg = new TdApi.SponsoredMessage();
     msg.sponsorChatId = tdlib.myUserId();
     msg.id = 1;
-    msg.content = new TdApi.MessageText(new TdApi.FormattedText("Test ad message", null), null);
-    return msg;
-  }
-
-  private static TdApi.SponsoredMessage generateBotSponsoredMessage (Tdlib tdlib) {
-    TdApi.SponsoredMessage msg = new TdApi.SponsoredMessage();
-    msg.sponsorChatId = 3593;
-    msg.startParameter = "testParam";
-    msg.id = 2;
     msg.content = new TdApi.MessageText(new TdApi.FormattedText("Test ad message", null), null);
     return msg;
   }
