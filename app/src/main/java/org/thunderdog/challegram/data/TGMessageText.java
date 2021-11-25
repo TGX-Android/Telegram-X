@@ -25,6 +25,7 @@ import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextColorSets;
@@ -114,6 +115,9 @@ public class TGMessageText extends TGMessage {
   protected int onMessagePendingContentChanged (long chatId, long messageId, int oldHeight) {
     if (currentMessageText != null) {
       TdApi.MessageContent messageContent = tdlib.getPendingMessageText(chatId, messageId);
+      if (messageContent != null && messageContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR && Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI)) {
+        messageContent = new TdApi.MessageText(Td.textOrCaption(messageContent), null);
+      }
       if (this.pendingMessageText != messageContent) {
         if (messageContent != null && messageContent.getConstructor() != TdApi.MessageText.CONSTRUCTOR)
           return MESSAGE_REPLACE_REQUIRED;
@@ -247,8 +251,18 @@ public class TGMessageText extends TGMessage {
   }
 
   @Override
+  protected boolean isSupportedMessageContent (TdApi.Message message, TdApi.MessageContent messageContent) {
+    if (messageContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR)
+      return Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI);
+    return super.isSupportedMessageContent(message, messageContent);
+  }
+
+  @Override
   protected boolean onMessageContentChanged (TdApi.Message message, TdApi.MessageContent oldContent, TdApi.MessageContent newContent, boolean isBottomMessage) {
-    if (!Td.equalsTo(((TdApi.MessageText) oldContent).text, ((TdApi.MessageText) newContent).text) || !Td.equalsTo(((TdApi.MessageText) oldContent).webPage, ((TdApi.MessageText) newContent).webPage)) {
+    if (!Td.equalsTo(Td.textOrCaption(oldContent), Td.textOrCaption(newContent)) ||
+        !Td.equalsTo(oldContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR ? ((TdApi.MessageText) oldContent).webPage : null,
+                     newContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR ? ((TdApi.MessageText) newContent).webPage : null)
+    ) {
       updateMessageContent(msg, newContent, isBottomMessage);
       return true;
     }
@@ -257,9 +271,9 @@ public class TGMessageText extends TGMessage {
 
   @Override
   protected boolean updateMessageContent (TdApi.Message message, TdApi.MessageContent newContent, boolean isBottomMessage) {
-    TdApi.WebPage oldWebPage = ((TdApi.MessageText) this.msg.content).webPage;
+    TdApi.WebPage oldWebPage = this.msg.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR ? ((TdApi.MessageText) this.msg.content).webPage : null;
     this.msg.content = newContent;
-    TdApi.MessageText newText = (TdApi.MessageText) newContent;
+    TdApi.MessageText newText = newContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR ? new TdApi.MessageText(Td.textOrCaption(newContent), null) : (TdApi.MessageText) newContent;
     this.currentMessageText = newText;
     if (!isBeingEdited()) {
       setText(newText.text, false);
