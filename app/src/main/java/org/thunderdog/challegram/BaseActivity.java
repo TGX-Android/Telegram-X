@@ -135,7 +135,6 @@ import nl.dionsegijn.konfetti.models.Shape;
 public abstract class BaseActivity extends ComponentActivity implements View.OnTouchListener, FactorAnimator.Target, Keyboard.OnStateChangeListener, ThemeChangeListener, SensorEventListener, TGPlayerController.TrackChangeListener, TGLegacyManager.EmojiLoadListener, Lang.Listener, Handler.Callback {
   public static final long POPUP_SHOW_SLOW_DURATION = 240l;
 
-  private static final int CLEAR_STACK = 0;
   private static final int OPEN_CAMERA_BY_TAP = 1;
   private static final int DISPATCH_ACTIVITY_STATE = 2;
 
@@ -983,6 +982,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       Tracer.onUiError(t);
       throw t;
     }
+    if (navigation != null) {
+      navigation.destroy();
+    }
     Lang.removeLanguageListener(this);
     if (statusBar != null) {
       statusBar.performDestroy();
@@ -1163,7 +1165,6 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         } else if (c.inSelectMode() || c.inSearchMode() || c.inCustomMode()) {
           navigation.onBackPressed(fromTop);
         } else {
-          handler.sendMessageDelayed(Message.obtain(handler, CLEAR_STACK), 150l);
           super.onBackPressed();
         }
       }
@@ -1193,12 +1194,6 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   @Override
   public final boolean handleMessage (Message msg) {
     switch (msg.what) {
-      case CLEAR_STACK: {
-        if (navigation != null) {
-          navigation.destroy();
-        }
-        break;
-      }
       case OPEN_CAMERA_BY_TAP: {
         openCameraByTap((ViewController.CameraOpenOptions) msg.obj);
         break;
