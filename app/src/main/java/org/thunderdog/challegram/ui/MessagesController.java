@@ -91,6 +91,7 @@ import org.thunderdog.challegram.component.chat.EmojiToneHelper;
 import org.thunderdog.challegram.component.chat.InlineResultsWrap;
 import org.thunderdog.challegram.component.chat.InputView;
 import org.thunderdog.challegram.component.chat.InvisibleImageView;
+import org.thunderdog.challegram.component.chat.JoinRequestsView;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessageViewGroup;
 import org.thunderdog.challegram.component.chat.MessagesAdapter;
@@ -697,6 +698,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
     actionView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, actionBarHeight));
     actionView.addThemeListeners(this);
 
+    int requestsViewHeight = Screen.dp(48f);
+    requestsView = new JoinRequestsView(context, tdlib);
+    requestsView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, requestsViewHeight));
+    requestsView.setOnClickListener(v -> {
+      ModernActionedLayout.showJoinRequests(this, chat.id, requestsView.getTotalUserCount());
+    });
+    RippleSupport.setSimpleWhiteBackground(requestsView, this);
+    Views.setClickable(requestsView);
+
+
     toastAlertView = new CustomTextView(context, tdlib);
     toastAlertItem = new CollapseListView.Item() {
       @Override
@@ -768,6 +779,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     topBar.initWithList(new CollapseListView.Item[] {
       // TODO voice chat bar
       pinnedMessagesItem,
+      requestsItem = new CollapseListView.ViewItem(requestsView, requestsViewHeight),
       liveLocationItem = new CollapseListView.ViewItem(liveLocationView, liveLocationHeight),
       actionItem = new CollapseListView.ViewItem(actionView, actionBarHeight),
       toastAlertItem
@@ -2559,6 +2571,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     if (!inPreviewMode && !isInForceTouchMode()) {
       checkActionBar();
+      checkJoinRequests(chat.pendingJoinRequests);
     }
     if (inputView != null) {
       inputView.setChat(chat, messageThread, silentButton != null && silentButton.getIsSilent());
@@ -3902,6 +3915,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     forceHideToast();
 
     pinnedMessagesBar.performDestroy();
+
+    if (requestsView != null) {
+      requestsView.performDestroy();
+    }
 
     // messagesView.clear();
 
@@ -5602,6 +5619,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private PinnedMessagesBar pinnedMessagesBar;
   private CollapseListView.Item pinnedMessagesItem;
 
+  private JoinRequestsView requestsView;
+  private CollapseListView.Item requestsItem;
+
   @Override
   public void onCloseReply (ReplyView view) {
     if (showingLinkPreview()) {
@@ -6914,6 +6934,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
         .setSaveStr(R.string.Done)
         .setSaveColorId(R.id.theme_color_textNegative));
     }).setIsNegative();
+  }
+
+  private void checkJoinRequests (TdApi.ChatJoinRequestsInfo info) {
+    if (!needActionBar())
+      return;
+
+    if (info == null || info.totalCount == 0) {
+      topBar.setItemVisible(requestsItem, false, isFocused());
+    } else {
+      requestsView.setInfo(info, isFocused());
+      topBar.setItemVisible(requestsItem, true, isFocused());
+    }
   }
 
   private void checkActionBar () {
@@ -9156,6 +9188,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
       }
     }
+  }
+
+  @Override
+  public void onChatPendingJoinRequestsChanged (long chatId, TdApi.ChatJoinRequestsInfo pendingJoinRequests) {
+    tdlib.ui().post(() -> {
+      if (getChatId() == chatId) {
+        checkJoinRequests(pendingJoinRequests);
+      }
+    });
   }
 
   @Override

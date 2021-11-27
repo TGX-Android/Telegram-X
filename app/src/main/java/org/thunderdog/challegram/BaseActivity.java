@@ -1163,7 +1163,6 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         } else if (c.inSelectMode() || c.inSearchMode() || c.inCustomMode()) {
           navigation.onBackPressed(fromTop);
         } else {
-          handler.sendMessageDelayed(Message.obtain(handler, CLEAR_STACK), 150l);
           super.onBackPressed();
         }
       }

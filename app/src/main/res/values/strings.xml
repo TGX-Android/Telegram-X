@@ -3969,6 +3969,8 @@
   <string name="xRevokedLinks_one">%1$s revoked link</string>
   <string name="xRevokedLinks_other">%1$s revoked links</string>
   <string name="format_activeAndRevokedLinks">%1$s, %2$s</string>
+  <string name="xJoinRequests_one">%1$s join request</string>
+  <string name="xJoinRequests_other">%1$s join requests</string>
 
   <string name="ChatTtl">Auto-delete messages</string>
   <string name="ChatTtlOff">Off</string>
