@@ -5,93 +5,55 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
+import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.MediaBottomBaseController;
 import org.thunderdog.challegram.component.attach.MediaLayout;
-import org.thunderdog.challegram.component.base.SettingView;
-import org.thunderdog.challegram.component.user.UserView;
-import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.support.ViewSupport;
-import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.ui.ListItem;
-import org.thunderdog.challegram.ui.SettingHolder;
-import org.thunderdog.challegram.ui.SettingsAdapter;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 
 public class JoinRequestsController extends MediaBottomBaseController<Void> implements View.OnClickListener {
-  private SettingsAdapter adapter;
-  private final long chatId;
-  private final int totalRequestCount;
   private boolean allowExpand;
 
-  protected JoinRequestsController (MediaLayout context, long chatId, int totalRequestCount) {
+  private final TdApi.ChatJoinRequestsInfo requestsInfo;
+  private final JoinRequestsComponent component;
+
+  protected JoinRequestsController (MediaLayout context, long chatId, TdApi.ChatJoinRequestsInfo requestsInfo) {
     super(context, "Test");
-    this.chatId = chatId;
-    this.totalRequestCount = totalRequestCount;
+    this.component = new JoinRequestsComponent(this, chatId, null);
+    this.requestsInfo = requestsInfo;
   }
 
   @Override
   public void onClick (View v) {
-
+    component.onClick(v);
   }
 
   @Override
   protected View onCreateView (Context context) {
     buildContentView(false);
-    setLayoutManager(new LinearLayoutManager(context(), RecyclerView.VERTICAL, false));
 
-    adapter = new SettingsAdapter(this) {
-      @Override
-      protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
-        if (item.getId() == R.id.btn_openLink) {
-          view.setIconColorId(R.id.theme_color_textNeutral);
-        } else {
-          view.setIconColorId(R.id.theme_color_icon);
-        }
-      }
-
-      @Override
-      protected void setUser (ListItem item, int position, UserView userView, boolean isUpdate) {
-        userView.setUser(new TGUser(tdlib, tdlib.chatUser(item.getLongId())));
-      }
-
-    };
-
+    this.component.onCreateView(context, recyclerView);
     ViewSupport.setThemedBackground(recyclerView, R.id.theme_color_background);
 
     initMetrics();
     this.allowExpand = getInitialContentHeight() == super.getInitialContentHeight();
-    setAdapter(adapter);
 
-    FrameLayoutFix.LayoutParams params = (FrameLayoutFix.LayoutParams) recyclerView.getLayoutParams();
-    params.height = getInitialContentHeight();
-    recyclerView.setLayoutParams(params);
-
-    adapter.setItems(new ListItem[] {
-      new ListItem(ListItem.TYPE_PROGRESS)
-    }, false);
+    if (!allowExpand) {
+      FrameLayoutFix.LayoutParams params = (FrameLayoutFix.LayoutParams) recyclerView.getLayoutParams();
+      params.height = getInitialContentHeight();
+      recyclerView.setLayoutParams(params);
+    }
 
     return contentView;
   }
 
   @Override
   protected int getInitialContentHeight () {
-    if (totalRequestCount > 0) {
-      int initialContentHeight = SettingHolder.measureHeightForType(ListItem.TYPE_USER) * totalRequestCount;
-      for (int i = totalRequestCount; i < adapter.getItemCount(); i++) {
-        ListItem item = adapter.getItems().get(i);
-        if (item.getViewType() == ListItem.TYPE_DESCRIPTION) {
-          initialContentHeight += Screen.dp(24f);
-        } else {
-          initialContentHeight += SettingHolder.measureHeightForType(item.getViewType());
-        }
-      }
-      return Math.min(super.getInitialContentHeight(), initialContentHeight);
+    if (requestsInfo != null && requestsInfo.totalCount > 0) {
+      return Math.min(super.getInitialContentHeight(), component.getHeight(requestsInfo.totalCount));
     }
 
     return super.getInitialContentHeight();
@@ -121,5 +83,11 @@ public class JoinRequestsController extends MediaBottomBaseController<Void> impl
   public boolean onBackPressed (boolean fromTop) {
     mediaLayout.hide(false);
     return true;
+  }
+
+  @Override
+  public void destroy () {
+    super.destroy();
+    component.destroy();
   }
 }

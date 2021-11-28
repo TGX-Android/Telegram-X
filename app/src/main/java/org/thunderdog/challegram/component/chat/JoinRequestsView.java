@@ -43,7 +43,7 @@ public class JoinRequestsView extends BaseView implements Destroyable {
 
   private ListAnimator<UserEntry> joinRequestEntries;
   private FactorAnimator animator;
-  private int totalUserCount;
+  private TdApi.ChatJoinRequestsInfo info;
 
   private final ImageReceiver[] receivers = new ImageReceiver[3];
 
@@ -60,10 +60,7 @@ public class JoinRequestsView extends BaseView implements Destroyable {
   }
 
   private ImageReceiver createReceiver () {
-    ImageReceiver receiver = new ImageReceiver(this, 1);
-    receiver.setRadius(0);
-    receiver.attach();
-    return receiver;
+    return new ImageReceiver(this, 0);
   }
 
   @Override
@@ -108,7 +105,7 @@ public class JoinRequestsView extends BaseView implements Destroyable {
   public void setInfo (TdApi.ChatJoinRequestsInfo info, boolean animated) {
     long[] ids = info.userIds;
 
-    totalUserCount = info.totalCount;
+    this.info = info;
     title.replace(new Text.Builder(Lang.plural(R.string.xJoinRequests, info.totalCount), Screen.dp(300f), Paints.robotoStyleProvider(16), TextColorSets.Regular.NEUTRAL).allBold().singleLine().build(), animated);
     updateTitleMaxWidth();
 
@@ -126,8 +123,8 @@ public class JoinRequestsView extends BaseView implements Destroyable {
     animator.animateTo(1f);
   }
 
-  public int getTotalUserCount () {
-    return totalUserCount;
+  public TdApi.ChatJoinRequestsInfo getInfo () {
+    return info;
   }
 
   private void setRequestInfo (long[] userIds, boolean animated) {
@@ -147,8 +144,11 @@ public class JoinRequestsView extends BaseView implements Destroyable {
   private void requestAvatars () {
     if (joinRequestEntries != null && joinRequestEntries.size() > 0) {
       for (int i = 0; i < joinRequestEntries.size(); i++) {
+        if (receivers.length == i)
+          break;
         ListAnimator.Entry<UserEntry> entry = joinRequestEntries.getEntry(i);
         receivers[i].setRadius(Screen.dp(AVATAR_RADIUS));
+        receivers[i].attach();
         receivers[i].requestFile(entry.item.avatarFile);
       }
     }

@@ -702,11 +702,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     requestsView = new JoinRequestsView(context, tdlib);
     requestsView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, requestsViewHeight));
     requestsView.setOnClickListener(v -> {
-      ModernActionedLayout.showJoinRequests(this, chat.id, requestsView.getTotalUserCount());
+      ModernActionedLayout.showJoinRequests(this, chat.id, requestsView.getInfo());
     });
     RippleSupport.setSimpleWhiteBackground(requestsView, this);
     Views.setClickable(requestsView);
-
 
     toastAlertView = new CustomTextView(context, tdlib);
     toastAlertItem = new CollapseListView.Item() {
