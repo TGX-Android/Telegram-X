@@ -43,6 +43,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
   private int loadOffset;
   private boolean canLoadMore;
   private boolean isLoadingMore;
+  private boolean isBottomSheet;
 
   private final ViewController<?> controller;
   private final long chatId;
@@ -52,6 +53,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
     this.controller = controller;
     this.chatId = chatId;
     this.inviteLink = inviteLink;
+    this.isBottomSheet = controller instanceof MediaBottomBaseController<?>;
   }
 
   private BaseActivity context() {
@@ -87,7 +89,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
         if (isUpdate) {
           userView.updateSubtext();
         } else {
-          TGUser user = joinRequests.get(isBottomSheet() ? position : position - 3);
+          TGUser user = joinRequests.get(isBottomSheet ? position : position - 3);
           userView.setPreviewChatId(new TdApi.ChatListMain(), user.getChatId(), null);
           userView.setPreviewActionListProvider((v, forceTouchContext, ids, icons, strings, target) -> {
             ids.append(R.id.btn_addToGroup);
@@ -125,7 +127,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
       public void onScrolled (RecyclerView recyclerView, int dx, int dy) {
-        if (controller.isFocused() && canLoadMore && !isLoadingMore && joinRequests != null && !joinRequests.isEmpty() && loadOffset != 0) {
+        if ((isBottomSheet || controller.isFocused()) && canLoadMore && !isLoadingMore && joinRequests != null && !joinRequests.isEmpty() && loadOffset != 0) {
           int lastVisiblePosition = ((LinearLayoutManager) recyclerView.getLayoutManager()).findLastVisibleItemPosition();
           if (lastVisiblePosition + 10 >= joinRequests.size()) {
             loadMore();
@@ -194,10 +196,9 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
   }
 
   private void buildCells () {
-    boolean isSheet = isBottomSheet();
     ArrayList<ListItem> items = new ArrayList<>();
 
-    if (!isSheet) {
+    if (!isBottomSheet) {
       items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
       items.add(new ListItem(ListItem.TYPE_EMBED_STICKER).setData(tdlib().findUtyanEmoji(UTYAN_EMOJI)));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -213,7 +214,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
-    if (isSheet) {
+    if (isBottomSheet && !canLoadMore) {
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, getInvitesDescription(), false));
     }
 
@@ -254,10 +255,6 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
       out.add(out.size() - 1, new ListItem(ListItem.TYPE_USER, R.id.user, 0, 0).setLongId(user.getUserId()));
     }
     adapter.notifyItemRangeInserted(startIndex, newSenders.size());
-  }
-
-  private boolean isBottomSheet () {
-    return controller instanceof MediaBottomBaseController<?>;
   }
 
   // bottomsheet only
