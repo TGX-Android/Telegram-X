@@ -4539,9 +4539,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         break;
       }
       case R.id.btn_manageJoinRequests: {
-        ChatJoinRequestsController cc = new ChatJoinRequestsController(context, tdlib);
-        cc.setArguments(new ChatJoinRequestsController.Args(chat.id, ""));
-        navigateTo(cc);
+        openInviteRequestsManage();
         break;
       }
       case R.id.user: {
@@ -4614,6 +4612,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     navigateTo(c);
   }
 
+  private void openInviteRequestsManage () {
+    ChatJoinRequestsController cc = new ChatJoinRequestsController(context, tdlib);
+    cc.setArguments(new ChatJoinRequestsController.Args(chat.id, ""));
+    navigateTo(cc);
+  }
+
   private void openInviteLinkMenu () {
     TdApi.ChatInviteLink link = getInviteLink();
 
@@ -4622,15 +4626,22 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       return;
     }
 
-    StringList strings = new StringList(4);
-    IntList icons = new IntList(4);
-    IntList ids = new IntList(4);
-    IntList colors = new IntList(4);
+    StringList strings = new StringList(5);
+    IntList icons = new IntList(5);
+    IntList ids = new IntList(5);
+    IntList colors = new IntList(5);
 
     ids.append(R.id.btn_manageInviteLinks);
     strings.append(R.string.InviteLinkManage);
     icons.append(R.drawable.baseline_add_link_24);
     colors.append(OPTION_COLOR_NORMAL);
+
+    if (chat.pendingJoinRequests != null && chat.pendingJoinRequests.totalCount > 0) {
+      ids.append(R.id.btn_manageJoinRequests);
+      strings.append(R.string.InviteLinkRequests);
+      icons.append(R.drawable.baseline_pending_24);
+      colors.append(OPTION_COLOR_NORMAL);
+    }
 
     ids.append(R.id.btn_copyLink);
     strings.append(R.string.InviteLinkCopy);
@@ -4653,6 +4664,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       switch (id) {
         case R.id.btn_copyLink:
           UI.copyText(link.inviteLink, R.string.CopiedLink);
+          break;
+        case R.id.btn_manageJoinRequests:
+          openInviteRequestsManage();
           break;
         case R.id.btn_shareLink:
           String chatName = tdlib.chatTitle(chat.id);
