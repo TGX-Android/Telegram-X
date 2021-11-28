@@ -326,12 +326,6 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         openRightsScreen();
         break;
       }
-      case R.id.btn_manageInviteLinks: {
-        ChatJoinRequestsController cc = new ChatJoinRequestsController(context, tdlib);
-        cc.setArguments(new ChatJoinRequestsController.Args(chatId, ""));
-        navigateTo(cc);
-        break;
-      }
       case R.id.btn_openAdminInviteLinks:
         ChatLinksController cc = new ChatLinksController(context, tdlib);
         cc.setArguments(new ChatLinksController.Args(chatId, (Long) v.getTag(), null, this, false));
@@ -709,7 +703,6 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     } else {
       items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
       items.add(new ListItem(ListItem.TYPE_EMBED_STICKER).setData(tdlib.findUtyanEmoji(UTYAN_EMOJI)));
-      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_manageInviteLinks, 0, "dbg", false));
     }
 
     for (TdApi.ChatInviteLink inviteLink : inviteLinks) {

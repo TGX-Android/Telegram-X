@@ -114,7 +114,9 @@ public class JoinRequestsView extends BaseView implements Destroyable {
 
     if (animator == null) {
       animator = new FactorAnimator(0, (id, factor, fraction, callee) -> {
-        joinRequestEntries.applyAnimation(factor);
+        if (joinRequestEntries != null) {
+          joinRequestEntries.applyAnimation(factor);
+        }
         invalidate();
       }, AnimatorUtils.DECELERATE_INTERPOLATOR, 280l);
     }

@@ -250,11 +250,15 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
     joinRequests.ensureCapacity(joinRequests.size() + newSenders.size());
     joinRequests.addAll(newSenders);
     List<ListItem> out = adapter.getItems();
-    ArrayUtils.ensureCapacity(out, out.size() + newSenders.size());
+    ArrayUtils.ensureCapacity(out, out.size() + newSenders.size() + (!canLoadMore ? 2 : 0));
     for (TGUser user : newSenders) {
       out.add(out.size() - 1, new ListItem(ListItem.TYPE_USER, R.id.user, 0, 0).setLongId(user.getUserId()));
     }
-    adapter.notifyItemRangeInserted(startIndex, newSenders.size());
+    if (!canLoadMore) {
+      out.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      out.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, getInvitesDescription(), false));
+    }
+    adapter.notifyItemRangeInserted(startIndex, newSenders.size() + (!canLoadMore ? 2 : 0));
   }
 
   // bottomsheet only
