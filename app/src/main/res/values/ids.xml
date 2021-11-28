@@ -1002,6 +1002,9 @@
   <item type="id" name="btn_username_share" />
   <item type="id" name="btn_discard_record" />
 
+  <item type="id" name="btn_approveChatRequest" />
+  <item type="id" name="btn_declineChatRequest" />
+
   <item type="id" name="btn_menu_enable" />
   <item type="id" name="btn_menu_1hour" />
   <item type="id" name="btn_menu_8hours" />

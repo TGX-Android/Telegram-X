@@ -9,6 +9,7 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.MediaBottomBaseController;
 import org.thunderdog.challegram.component.attach.MediaLayout;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.support.ViewSupport;
 
@@ -21,7 +22,7 @@ public class JoinRequestsController extends MediaBottomBaseController<Void> impl
   private final JoinRequestsComponent component;
 
   protected JoinRequestsController (MediaLayout context, long chatId, TdApi.ChatJoinRequestsInfo requestsInfo) {
-    super(context, "Test");
+    super(context, Lang.plural(R.string.xJoinRequests, requestsInfo.totalCount));
     this.component = new JoinRequestsComponent(this, chatId, null);
     this.requestsInfo = requestsInfo;
   }
