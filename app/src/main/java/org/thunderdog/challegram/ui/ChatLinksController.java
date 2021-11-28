@@ -414,6 +414,10 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       subtitle.append(" • ");
     }
 
+    if (inviteLink.createsJoinRequest && inviteLink.pendingJoinRequestCount > 0) {
+      subtitle.append(Lang.plural(R.string.xRequests, inviteLink.pendingJoinRequestCount)).append(" • ");
+    }
+
     if (!inviteLink.isRevoked && inviteLink.memberLimit > 0) {
       if (inviteLink.memberCount == inviteLink.memberLimit) {
         subtitle.append(Lang.getString(R.string.InviteLinkMemberLimitReached));
