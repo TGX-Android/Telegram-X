@@ -74,7 +74,7 @@ public class JoinRequestsView extends BaseView implements Destroyable {
       int cx = Screen.dp(AVATAR_RADIUS) + Screen.dp(12f);
       int spacing = Screen.dp(AVATAR_RADIUS) * 2 - Screen.dp(AVATAR_SPACING);
       canvas.saveLayerAlpha(0, 0, getMeasuredWidth(), getMeasuredHeight(), 255, Canvas.ALL_SAVE_FLAG);
-      for (int index = joinRequestEntries.size() - 1; index >= 0; index--) {
+      for (int index = 0; index < joinRequestEntries.size(); index++) {
         ListAnimator.Entry<UserEntry> item = joinRequestEntries.getEntry(index);
         item.item.draw(canvas, receivers[item.getIndex()], cx, cy, item.getVisibility());
         cx += item.getVisibility() == 1f ? spacing : (spacing * item.getVisibility());
