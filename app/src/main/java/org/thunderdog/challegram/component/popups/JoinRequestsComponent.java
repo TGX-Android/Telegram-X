@@ -98,6 +98,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
           userView.updateSubtext();
         } else {
           TGUser user = joinRequests.get((isBottomSheet || isSeparateLink) ? position : position - 3);
+          userView.setPadding(userView.getPaddingLeft(), userView.getPaddingTop(), Screen.dp(18f), userView.getPaddingBottom());
           userView.setPreviewChatId(new TdApi.ChatListMain(), user.getChatId(), null);
           userView.setPreviewActionListProvider((v, forceTouchContext, ids, icons, strings, target) -> {
             ids.append(R.id.btn_approveChatRequest);
@@ -124,21 +125,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
               public void onForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
                 switch (actionId) {
                   case R.id.btn_approveChatRequest:
-                    controller.showOptions(Lang.getString(R.string.AreYouSureAcceptJoinRequest, user.getName(), tdlib().chatTitle(chatId)), new int[]{R.id.btn_approveChatRequest, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkActionAccept), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_person_add_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
-                      if (id2 == R.id.btn_approveChatRequest) {
-                        tdlib().client().send(new TdApi.ApproveChatJoinRequest(chatId, user.getUserId()), obj -> {
-                          controller.runOnUiThreadOptional(() -> {
-                            if (isBottomSheet) {
-                              context().onBackPressed();
-                            } else {
-                              controller.navigateBack();
-                            }
-                          });
-                        });
-                      }
-
-                      return true;
-                    });
+                    acceptRequest(user);
                     break;
                   case R.id.btn_openChat:
                     closeIfAvailable();
@@ -222,28 +209,40 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
     });
   }
 
-  private void declineRequest (TGUser user) {
-    controller.showOptions(Lang.getString(R.string.AreYouSureDeclineJoinRequest, user.getName()), new int[]{R.id.btn_declineChatRequest, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkActionDeclineAction), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
-      if (id2 == R.id.btn_declineChatRequest) {
-        tdlib().client().send(new TdApi.DeclineChatJoinRequest(chatId, user.getUserId()), obj -> {
-          controller.runOnUiThreadOptional(() -> {
-            int itemIdx = joinRequests.indexOf(user);
-            if (itemIdx == -1) return;
-            joinRequests.remove(itemIdx);
-            joinRequestsTdlib.remove(itemIdx);
-            adapter.removeItem(itemIdx);
-          });
-        });
+  private void acceptRequest (TGUser user) {
+    controller.showOptions(Lang.getString(R.string.AreYouSureAcceptJoinRequest, user.getName(), tdlib().chatTitle(chatId)), new int[]{R.id.btn_approveChatRequest, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkActionAccept), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_person_add_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
+      if (id2 == R.id.btn_approveChatRequest) {
+        tdlib().client().send(new TdApi.ApproveChatJoinRequest(chatId, user.getUserId()), obj -> removeSender(user));
       }
 
       return true;
     });
   }
 
+  private void declineRequest (TGUser user) {
+    controller.showOptions(Lang.getString(R.string.AreYouSureDeclineJoinRequest, user.getName()), new int[]{R.id.btn_declineChatRequest, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkActionDeclineAction), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
+      if (id2 == R.id.btn_declineChatRequest) {
+        tdlib().client().send(new TdApi.DeclineChatJoinRequest(chatId, user.getUserId()), obj -> removeSender(user));
+      }
+
+      return true;
+    });
+  }
+
+  private void removeSender (TGUser user) {
+    controller.runOnUiThreadOptional(() -> {
+      int itemIdx = joinRequests.indexOf(user);
+      if (itemIdx == -1) return;
+      joinRequests.remove(itemIdx);
+      joinRequestsTdlib.remove(itemIdx);
+      adapter.removeItem(itemIdx);
+    });
+  }
+
   private static TGUser parseSender (Tdlib tdlib, TdApi.ChatJoinRequest sender, ArrayList<TGUser> senders) {
     TGUser parsedUser = new TGUser(tdlib, tdlib.cache().user(sender.userId));
     parsedUser.setNoBotState();
-    parsedUser.setCustomStatus(!sender.bio.isEmpty() ? sender.bio : Lang.getString(R.string.InviteLinkRequestSince, Lang.getDate(sender.date, TimeUnit.SECONDS), Lang.time(sender.date, TimeUnit.SECONDS)));
+    parsedUser.setCustomStatus(Lang.getString(R.string.InviteLinkRequestSince, Lang.getDate(sender.date, TimeUnit.SECONDS), Lang.time(sender.date, TimeUnit.SECONDS)));
     parsedUser.setBoundList(senders);
     return parsedUser;
   }
