@@ -51,6 +51,10 @@ public class JoinRequestsController extends MediaBottomBaseController<Void> impl
     return contentView;
   }
 
+  public void close () {
+    mediaLayout.hide(false);
+  }
+
   @Override
   protected int getInitialContentHeight () {
     if (requestsInfo != null && requestsInfo.totalCount > 0) {
@@ -82,7 +86,7 @@ public class JoinRequestsController extends MediaBottomBaseController<Void> impl
 
   @Override
   public boolean onBackPressed (boolean fromTop) {
-    mediaLayout.hide(false);
+    close();
     return true;
   }
 

@@ -10,7 +10,6 @@ import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.component.attach.MediaBottomBaseController;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.component.user.UserView;
@@ -22,7 +21,6 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.ui.ChatLinksController;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.ui.SettingsAdapter;
@@ -56,7 +54,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
     this.controller = controller;
     this.chatId = chatId;
     this.inviteLink = inviteLink;
-    this.isBottomSheet = controller instanceof MediaBottomBaseController<?>;
+    this.isBottomSheet = controller instanceof JoinRequestsController;
     this.isSeparateLink = inviteLink != null && !inviteLink.isEmpty();
   }
 
@@ -66,6 +64,12 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
 
   private Tdlib tdlib() {
     return controller.tdlib();
+  }
+
+  private void closeIfAvailable () {
+    if (isBottomSheet) {
+      ((JoinRequestsController) controller).close();
+    }
   }
 
   public boolean needAsynchronousAnimation () {
@@ -108,7 +112,12 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
             icons.append(R.drawable.baseline_remove_circle_24);
             strings.append(R.string.InviteLinkActionDecline);
 
+            final ForceTouchView.MaximizeListener maximizeListener = forceTouchContext.getMaximizeListener();
             forceTouchContext.setExcludeHeader(true);
+            forceTouchContext.setMaximizeListener((t, animateToWhenReady, arg) -> {
+              closeIfAvailable();
+              return maximizeListener.onPerformMaximize(t, animateToWhenReady, arg);
+            });
 
             return new ForceTouchView.ActionListener() {
               @Override
@@ -132,10 +141,11 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
                     });
                     break;
                   case R.id.btn_openChat:
+                    closeIfAvailable();
                     tdlib().ui().openChat(controller, user.getUserId(), new TdlibUi.ChatOpenParameters().keepStack());
                     break;
                   case R.id.btn_declineChatRequest:
-                    declineRequest(user, isBottomSheet);
+                    declineRequest(user);
                     break;
                 }
               }
@@ -180,7 +190,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
 
         @Override
         public void onRemove (RecyclerView.ViewHolder viewHolder) {
-          declineRequest(joinRequests.get(viewHolder.getBindingAdapterPosition() - (isSeparateLink ? 0 : 3)), false);
+          declineRequest(joinRequests.get(viewHolder.getBindingAdapterPosition() - (isSeparateLink ? 0 : 3)));
         }
       });
     }
@@ -212,24 +222,16 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
     });
   }
 
-  private void declineRequest (TGUser user, boolean needsBack) {
+  private void declineRequest (TGUser user) {
     controller.showOptions(Lang.getString(R.string.AreYouSureDeclineJoinRequest, user.getName()), new int[]{R.id.btn_declineChatRequest, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkActionDeclineAction), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
       if (id2 == R.id.btn_declineChatRequest) {
         tdlib().client().send(new TdApi.DeclineChatJoinRequest(chatId, user.getUserId()), obj -> {
           controller.runOnUiThreadOptional(() -> {
-            if (needsBack) {
-              if (isBottomSheet) {
-                context().onBackPressed();
-              } else {
-                controller.navigateBack();
-              }
-            } else {
-              int itemIdx = joinRequests.indexOf(user);
-              if (itemIdx == -1) return;
-              joinRequests.remove(itemIdx);
-              joinRequestsTdlib.remove(itemIdx);
-              adapter.removeItem(itemIdx);
-            }
+            int itemIdx = joinRequests.indexOf(user);
+            if (itemIdx == -1) return;
+            joinRequests.remove(itemIdx);
+            joinRequestsTdlib.remove(itemIdx);
+            adapter.removeItem(itemIdx);
           });
         });
       }
