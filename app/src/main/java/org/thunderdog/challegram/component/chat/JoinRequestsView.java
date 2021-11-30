@@ -13,8 +13,10 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
@@ -36,7 +38,7 @@ import me.vkryl.android.util.SingleViewProvider;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
 
-public class JoinRequestsView extends BaseView implements Destroyable {
+public class JoinRequestsView extends BaseView implements Destroyable, ComplexReceiver.KeyFilter {
   private static final float AVATAR_RADIUS = 12f;
   private static final float AVATAR_OUTLINE = 4f;
   private static final float AVATAR_SPACING = 4f;
@@ -45,7 +47,7 @@ public class JoinRequestsView extends BaseView implements Destroyable {
   private FactorAnimator animator;
   private TdApi.ChatJoinRequestsInfo info;
 
-  private final ImageReceiver[] receivers = new ImageReceiver[3];
+  private final ComplexReceiver megaReceiver = new ComplexReceiver(this);
 
   private final Bitmap closeIcon;
   private final ReplaceAnimator<Text> title = new ReplaceAnimator<>(ignored -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
@@ -54,13 +56,7 @@ public class JoinRequestsView extends BaseView implements Destroyable {
     super(context, tdlib);
     setWillNotDraw(false);
     closeIcon = Drawables.toBitmap(Drawables.get(R.drawable.baseline_close_18));
-    for (int i = 0; i < receivers.length; i++) {
-      receivers[i] = createReceiver();
-    }
-  }
-
-  private ImageReceiver createReceiver () {
-    return new ImageReceiver(this, 0);
+    megaReceiver.attach();
   }
 
   @Override
@@ -71,23 +67,17 @@ public class JoinRequestsView extends BaseView implements Destroyable {
 
     if (joinRequestEntries != null) {
       int cy = getMeasuredHeight() / 2;
-      int cx = Screen.dp(AVATAR_RADIUS) + Screen.dp(12f);
+      int baseCx = Screen.dp(AVATAR_RADIUS) + Screen.dp(12f);
       int spacing = Screen.dp(AVATAR_RADIUS) * 2 - Screen.dp(AVATAR_SPACING);
       canvas.saveLayerAlpha(0, 0, getMeasuredWidth(), getMeasuredHeight(), 255, Canvas.ALL_SAVE_FLAG);
-      for (int index = 0; index < joinRequestEntries.size(); index++) {
+      for (int index = joinRequestEntries.size() - 1; index >= 0; index--) {
         ListAnimator.Entry<UserEntry> item = joinRequestEntries.getEntry(index);
-        item.item.draw(canvas, receivers[item.getIndex()], cx, cy, item.getVisibility());
-        cx += item.getVisibility() == 1f ? spacing : (spacing * item.getVisibility());
+        float cx = baseCx + (item.getPosition() * spacing);
+        item.item.draw(canvas, megaReceiver, cx, cy, item.getVisibility());
         textStartX += item.item.getWidth(item.getVisibility());
       }
       canvas.restore();
     }
-
-    //Paint m = new Paint();
-    //m.setStyle(Paint.Style.STROKE);
-    //m.setStrokeWidth(Screen.dp(2));
-    //m.setColor(Theme.getColor(R.id.theme_color_textNegative));
-    //canvas.drawRect(0, 0, textStartX, getMeasuredHeight(), m);
 
     drawBitmap(canvas, closeIcon, getMeasuredWidth() - Screen.dp(20f), getMeasuredHeight() / 2);
 
@@ -108,9 +98,7 @@ public class JoinRequestsView extends BaseView implements Destroyable {
     this.info = info;
     title.replace(new Text.Builder(Lang.plural(R.string.xJoinRequests, info.totalCount), Screen.dp(300f), Paints.robotoStyleProvider(16), TextColorSets.Regular.NEUTRAL).allBold().singleLine().build(), animated);
     updateTitleMaxWidth();
-
     setRequestInfo(ids, animated);
-    requestAvatars();
 
     if (animator == null) {
       animator = new FactorAnimator(0, (id, factor, fraction, callee) -> {
@@ -133,26 +121,17 @@ public class JoinRequestsView extends BaseView implements Destroyable {
     if (userIds != null && userIds.length > 0) {
       List<UserEntry> entries = new ArrayList<>(userIds.length);
       for (long userId : userIds) {
-        entries.add(new UserEntry(tdlib, userId));
+        UserEntry ue = new UserEntry(tdlib, userId);
+        entries.add(ue);
+        if (ue.avatarFile != null) {
+          megaReceiver.getImageReceiver(userId).requestFile(ue.avatarFile);
+        }
       }
       if (this.joinRequestEntries == null)
         this.joinRequestEntries = new ListAnimator<>(new SingleViewProvider(this));
       joinRequestEntries.reset(entries, animated);
     } else if (joinRequestEntries != null) {
       joinRequestEntries.clear(animated);
-    }
-  }
-
-  private void requestAvatars () {
-    if (joinRequestEntries != null && joinRequestEntries.size() > 0) {
-      for (int i = 0; i < joinRequestEntries.size(); i++) {
-        if (receivers.length == i)
-          break;
-        ListAnimator.Entry<UserEntry> entry = joinRequestEntries.getEntry(i);
-        receivers[i].setRadius(Screen.dp(AVATAR_RADIUS));
-        receivers[i].attach();
-        receivers[i].requestFile(entry.item.avatarFile);
-      }
     }
   }
 
@@ -172,9 +151,19 @@ public class JoinRequestsView extends BaseView implements Destroyable {
 
   @Override
   public void performDestroy () {
-    for (ImageReceiver receiver : receivers) {
-      receiver.detach();
+    megaReceiver.performDestroy();
+  }
+
+  @Override
+  public boolean filterKey (int receiverType, Receiver receiver, long key) {
+    if (joinRequestEntries != null) {
+      for (ListAnimator.Entry<UserEntry> recentVoter : joinRequestEntries) {
+        if (recentVoter.item.userId == key) {
+          return true;
+        }
+      }
     }
+    return false;
   }
 
   private static class UserEntry {
@@ -213,11 +202,11 @@ public class JoinRequestsView extends BaseView implements Destroyable {
       return (Screen.dp(AVATAR_RADIUS) + Screen.dp(AVATAR_OUTLINE)) * alpha;
     }
 
-    public void draw (Canvas c, ImageReceiver iReceiver, float cx, float cy, final float alpha) {
+    public void draw (Canvas c, ComplexReceiver complexReceiver, float cx, float cy, final float alpha) {
       if (alpha == 0f)
         return;
 
-      ImageReceiver receiver = avatarFile != null ? iReceiver : null;
+      ImageReceiver receiver = avatarFile != null ? complexReceiver.getImageReceiver(userId) : null;
       int radius = Screen.dp(AVATAR_RADIUS);
 
       //c.drawRect(cx - radius, cy - radius, cx + radius, cy + radius, Paints.fillingPaint(Theme.getColor(R.id.theme_color_textNegative)));

@@ -1,6 +1,7 @@
 package org.thunderdog.challegram.component.popups;
 
 import android.content.Context;
+import android.text.SpannableStringBuilder;
 import android.view.View;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.StringUtils;
 
 public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener, Client.ResultHandler {
   private static final String UTYAN_EMOJI = "\uD83D\uDE0E";
@@ -77,7 +79,38 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
   }
 
   public void onClick (View v) {
+    if (v.getId() != R.id.user) {
+      return;
+    }
 
+    TGUser user = ((UserView) v).getUser();
+
+    if (user == null) {
+      return;
+    }
+
+    SpannableStringBuilder msg = new SpannableStringBuilder(Lang.wrap(user.getName(), Lang.boldCreator()));
+    int idx = joinRequests.indexOf(user);
+    if (idx != -1 && !joinRequestsTdlib.get(idx).bio.isEmpty()) {
+      msg.append("\n\n").append(Lang.wrap(joinRequestsTdlib.get(joinRequests.indexOf(user)).bio, Lang.italicCreator()));
+    }
+
+    controller.showOptions(msg, new int[]{R.id.btn_approveChatRequest, R.id.btn_declineChatRequest, R.id.btn_openChat, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkActionAccept), Lang.getString(R.string.InviteLinkActionDeclineAction), Lang.getString(R.string.InviteLinkActionWrite), Lang.getString(R.string.Cancel)}, null, new int[]{R.drawable.baseline_person_add_24, R.drawable.baseline_delete_24, R.drawable.baseline_forum_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
+      switch (id2) {
+        case R.id.btn_approveChatRequest:
+          acceptRequest(user);
+          break;
+        case R.id.btn_openChat:
+          closeIfAvailable();
+          tdlib().ui().openChat(controller, user.getUserId(), new TdlibUi.ChatOpenParameters().keepStack());
+          break;
+        case R.id.btn_declineChatRequest:
+          declineRequest(user);
+          break;
+      }
+
+      return true;
+    });
   }
 
   public void destroy () {
@@ -89,7 +122,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
       @Override
       protected void setEmbedSticker (ListItem item, int position, EmbeddableStickerView userView, boolean isUpdate) {
         userView.setSticker(new TGStickerObj(tdlib(), (TdApi.Sticker) item.getData(), UTYAN_EMOJI, false));
-        userView.setCaptionText(getInvitesDescription());
+        userView.setCaptionText(Lang.getString(R.string.InviteLinkRequestsHint));
       }
 
       @Override
@@ -210,7 +243,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
   }
 
   private void acceptRequest (TGUser user) {
-    controller.showOptions(Lang.getString(R.string.AreYouSureAcceptJoinRequest, user.getName(), tdlib().chatTitle(chatId)), new int[]{R.id.btn_approveChatRequest, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkActionAccept), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_person_add_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
+    controller.showOptions(Lang.getStringBold(R.string.AreYouSureAcceptJoinRequest, user.getName(), tdlib().chatTitle(chatId)), new int[]{R.id.btn_approveChatRequest, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkActionAccept), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_BLUE, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_person_add_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
       if (id2 == R.id.btn_approveChatRequest) {
         tdlib().client().send(new TdApi.ApproveChatJoinRequest(chatId, user.getUserId()), obj -> removeSender(user));
       }
@@ -220,7 +253,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
   }
 
   private void declineRequest (TGUser user) {
-    controller.showOptions(Lang.getString(R.string.AreYouSureDeclineJoinRequest, user.getName()), new int[]{R.id.btn_declineChatRequest, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkActionDeclineAction), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
+    controller.showOptions(Lang.getStringBold(R.string.AreYouSureDeclineJoinRequest, user.getName()), new int[]{R.id.btn_declineChatRequest, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkActionDeclineAction), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
       if (id2 == R.id.btn_declineChatRequest) {
         tdlib().client().send(new TdApi.DeclineChatJoinRequest(chatId, user.getUserId()), obj -> removeSender(user));
       }
@@ -247,10 +280,6 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
     return parsedUser;
   }
 
-  private CharSequence getInvitesDescription () {
-    return Lang.getMarkdownStringSecure(new TdlibContext(context(), tdlib()), R.string.InviteLinkRequestsHint, "tgx://invites/" + tdlib().myUserId());
-  }
-
   private void buildCells () {
     ArrayList<ListItem> items = new ArrayList<>();
 
@@ -271,7 +300,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     if (isBottomSheet && !canLoadMore) {
-      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, getInvitesDescription(), false));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.InviteLinkRequestsHint));
     }
 
     adapter.setItems(items, false);
@@ -312,7 +341,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
     }
     if (!canLoadMore) {
       out.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-      out.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, getInvitesDescription(), false));
+      out.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.InviteLinkRequestsHint));
     }
     adapter.notifyItemRangeInserted(startIndex, newSenders.size() + (!canLoadMore ? 2 : 0));
   }

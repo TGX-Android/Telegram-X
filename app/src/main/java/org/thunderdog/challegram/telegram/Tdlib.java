@@ -406,7 +406,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private final HashMap<Long, TdApi.Chat> chats = new HashMap<>();
   private final HashMap<String, TdlibChatList> chatLists = new HashMap<>();
   private final StickerSet
-    utyan = new StickerSet(AnimatedEmojiListener.TYPE_EMOJI, "utyan", false),
+    utyan = new StickerSet(AnimatedEmojiListener.TYPE_EMOJI, "utyanx", false),
     // animatedTgxEmoji = new StickerSet(AnimatedEmojiListener.TYPE_TGX, "AnimatedTgxEmojies", false),
     animatedDiceExplicit = new StickerSet(AnimatedEmojiListener.TYPE_DICE, "BetterDice", true);
   private final HashSet<Long> knownChatIds = new HashSet<>();
