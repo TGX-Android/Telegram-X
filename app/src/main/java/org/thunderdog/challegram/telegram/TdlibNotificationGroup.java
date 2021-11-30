@@ -124,18 +124,18 @@ public class TdlibNotificationGroup implements Iterable<TdlibNotification> {
     return !notifications.isEmpty() ? notifications.get(0).getId() : 0;
   }
 
-  public int[] getAllUserIds () {
-    Set<Integer> ids = new HashSet<>(notifications.size());
+  public long[] getAllUserIds () {
+    Set<Long> userIds = new HashSet<>(notifications.size());
     for (TdlibNotification notification : this) {
       long chatId = notification.findSenderId();
       if (ChatId.isPrivate(chatId)) {
-        ids.add(ChatId.toUserId(chatId));
+        userIds.add(ChatId.toUserId(chatId));
       }
     }
-    if (!ids.isEmpty()) {
-      int[] result = new int[ids.size()];
+    if (!userIds.isEmpty()) {
+      long[] result = new long[userIds.size()];
       int i = 0;
-      for (Integer userId : ids) {
+      for (Long userId : userIds) {
         result[i] = userId;
         i++;
       }

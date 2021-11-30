@@ -25,6 +25,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.charts.BaseChartView;
 import org.thunderdog.challegram.charts.Chart;
+import org.thunderdog.challegram.charts.MiniChart;
 import org.thunderdog.challegram.charts.view_data.ChartHeaderView;
 import org.thunderdog.challegram.component.attach.MeasuredAdapterDelegate;
 import org.thunderdog.challegram.component.attach.MediaLocationPlaceView;
@@ -64,6 +65,7 @@ import org.thunderdog.challegram.widget.ChartLayout;
 import org.thunderdog.challegram.widget.CheckBox;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.DoubleTextView;
+import org.thunderdog.challegram.widget.EmbeddableStickerView;
 import org.thunderdog.challegram.widget.EmptySmartView;
 import org.thunderdog.challegram.widget.FileProgressComponent;
 import org.thunderdog.challegram.widget.JoinedUsersView;
@@ -75,6 +77,7 @@ import org.thunderdog.challegram.widget.PageBlockWrapView;
 import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.RadioView;
 import org.thunderdog.challegram.widget.ScalableTextView;
+import org.thunderdog.challegram.widget.SeparatorView;
 import org.thunderdog.challegram.widget.SettingStupidView;
 import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.SliderWrapView;
@@ -375,6 +378,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     // Override
   }
 
+  protected void setEmbedSticker (ListItem item, int position, EmbeddableStickerView userView, boolean isUpdate) {
+    // Override
+  }
+
   protected void setCustom (ListItem item, SettingHolder holder, int position) {
     // Override
   }
@@ -432,6 +439,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
 
   protected void setColor (ListItem item, int position, ViewGroup contentView, @Nullable View updatedView, ColorToneView toneView, ColorPaletteView paletteView, ColorPaletteView transparencyView, MaterialEditTextGroup hexView, MaterialEditTextGroup redView, MaterialEditTextGroup greenView, MaterialEditTextGroup blueView, MaterialEditTextGroup alphaView, MaterialEditTextGroup defaultView, MaterialEditTextGroup hueView, MaterialEditTextGroup saturationView, MaterialEditTextGroup lightnessView, MaterialEditTextGroup alphaPercentageView, NonMaterialButton clearButton, NonMaterialButton undoButton, NonMaterialButton redoButton, NonMaterialButton copyButton, NonMaterialButton pasteButton, NonMaterialButton opacityButton, NonMaterialButton saveButton) {
     // Override
+  }
+
+  protected void setSeparatorOptions (ListItem item, int position, SeparatorView separatorView) {
+    separatorView.setOffsets(Screen.dp(72f), 0);
   }
 
   protected void setChatData (ListItem item, VerticalChatView chatView) {
@@ -502,31 +513,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     this.items.clear();
     ArrayUtils.ensureCapacity(this.items, items.size());
     this.items.addAll(items);
-    int checkedIndex = -1;
-    boolean moreThanOneChecked = false;
-    if (hasCheckedItems) {
-      int i = 0;
-      for (ListItem item : items) {
-        if (item.getViewType() == ListItem.TYPE_SLIDER) {
-          putCheckedInt(item.getId(), item.getSliderValue());
-        } else if (item.isSelected()) {
-          if (item.getStringCheckResult() != null) {
-            putCheckedString(item.getCheckId(), item.getStringCheckResult());
-          } else {
-            putCheckedInt(item.getCheckId(), item.getId());
-          }
-          if (!moreThanOneChecked) {
-            if (checkedIndex == -1) {
-              checkedIndex = i;
-            } else {
-              checkedIndex = -1;
-              moreThanOneChecked = true;
-            }
-          }
-        }
-        i++;
-      }
-    }
+    int checkedIndex = hasCheckedItems ? resetCheckedItems() : -1;
     U.notifyItemsReplaced(this, oldItemCount);
     return checkedIndex;
   }
@@ -1019,6 +1006,57 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     }
   }
 
+  public int resetCheckedItems () {
+    if (checkIntResults != null) {
+      checkIntResults.clear();
+    }
+    if (checkStringResults != null) {
+      checkStringResults.clear();
+    }
+    int checkedIndex = -1;
+    boolean moreThanOneChecked = false;
+    int i = 0;
+    for (ListItem item : items) {
+      if (item.getViewType() == ListItem.TYPE_SLIDER) {
+        putCheckedInt(item.getId(), item.getSliderValue());
+      } else if (item.isSelected()) {
+        if (item.getStringCheckResult() != null) {
+          putCheckedString(item.getCheckId(), item.getStringCheckResult());
+        } else {
+          putCheckedInt(item.getCheckId(), item.getId());
+        }
+        if (!moreThanOneChecked) {
+          if (checkedIndex == -1) {
+            checkedIndex = i;
+          } else {
+            checkedIndex = -1;
+            moreThanOneChecked = true;
+          }
+        }
+      }
+      i++;
+    }
+    return checkedIndex;
+  }
+
+  private static boolean isSelectableViewType (int viewType) {
+    switch (viewType) {
+      case ListItem.TYPE_RADIO_OPTION:
+      case ListItem.TYPE_RADIO_OPTION_LEFT:
+      case ListItem.TYPE_RADIO_OPTION_WITH_AVATAR:
+      case ListItem.TYPE_CHECKBOX_OPTION:
+      case ListItem.TYPE_CHECKBOX_OPTION_REVERSE:
+      case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE:
+      case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
+      case ListItem.TYPE_CHECKBOX_OPTION_MULTILINE:
+      case ListItem.TYPE_DRAWER_ITEM_WITH_RADIO:
+      case ListItem.TYPE_DRAWER_ITEM_WITH_RADIO_SEPARATED:
+      case ListItem.TYPE_DRAWER_ITEM_WITH_AVATAR:
+        return true;
+    }
+    return false;
+  }
+
   public boolean toggleView (View v, ListItem item) {
     if (v == null) {
       return false;
@@ -1325,7 +1363,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         break;
       }
       case ListItem.TYPE_CHAT_SMALL: {
-        ((SmallChatView) holder.itemView).setChat((DoubleTextWrapper) item.getData());
+        if (item.getData() instanceof DoubleTextWrapper) {
+          ((SmallChatView) holder.itemView).setChat((DoubleTextWrapper) item.getData());
+        }
+
         modifyChatView(item, (SmallChatView) holder.itemView, null, false);
         break;
       }
@@ -1346,7 +1387,8 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         setMembersList(item, position, (RecyclerView) holder.itemView);
         break;
       }
-      case ListItem.TYPE_MESSAGE_PREVIEW: {
+      case ListItem.TYPE_MESSAGE_PREVIEW:
+      case ListItem.TYPE_STATS_MESSAGE_PREVIEW: {
         setMessagePreview(item, position, (MessagePreviewView) holder.itemView);
         break;
       }
@@ -1405,6 +1447,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         setUser(item, position, (UserView) holder.itemView, false);
         break;
       }
+      case ListItem.TYPE_EMBED_STICKER: {
+        setEmbedSticker(item, position, (EmbeddableStickerView) holder.itemView, false);
+        break;
+      }
       case ListItem.TYPE_INFO: {
         ((CustomTextView) holder.itemView).setText(item.getString(), null, false);
         break;
@@ -1413,6 +1459,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         float currentValue = Float.intBitsToFloat(item.getSliderValue());
         float maxValue = Float.intBitsToFloat(item.getIntValue());
         ((SliderWrapView) holder.itemView).setValue(currentValue, maxValue);
+        break;
+      }
+      case ListItem.TYPE_SEPARATOR: {
+        setSeparatorOptions(item, position, (SeparatorView) holder.itemView);
         break;
       }
       case ListItem.TYPE_SLIDER: {
@@ -1489,7 +1539,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
               if (item.getData() instanceof Tdlib) {
                 tdlib = (Tdlib) item.getData();
               }
-              avatarView.setUser(tdlib, item.getIntValue(), false);
+              avatarView.setUser(tdlib, item.getLongValue(), false);
             }
             break;
           }
@@ -1561,20 +1611,16 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER:
       case ListItem.TYPE_INFO_MULTILINE:
-      case ListItem.TYPE_VALUED_SETTING_RED:
       case ListItem.TYPE_INFO_SETTING: {
         SettingView settingView = (SettingView) holder.itemView;
         settingView.setIcon(item.getIconResource());
         settingView.setName(item.getString());
+        settingView.setTextColorId(item.getTextColorId(ThemeColorId.NONE));
         holder.itemView.setEnabled(true);
         switch (viewType) {
           case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_COLOR: {
             View view = ((ViewGroup) (holder.itemView)).getChildAt(0);
             Views.setGravity(view, Gravity.CENTER_VERTICAL | (Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT));
-            break;
-          }
-          case ListItem.TYPE_VALUED_SETTING_RED: {
-            settingView.setTextColorId(item.getTextColorId(R.id.theme_color_textNegative));
             break;
           }
           case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO: {
@@ -1592,6 +1638,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       }
       case ListItem.TYPE_CHART_HEADER: {
         ((ChartHeaderView) holder.itemView).setChart((Chart) item.getData());
+        break;
+      }
+      case ListItem.TYPE_CHART_HEADER_DETACHED: {
+        ((ChartHeaderView) holder.itemView).setChart((MiniChart) item.getData());
         break;
       }
       case ListItem.TYPE_CHART_LINEAR:
@@ -1780,20 +1830,30 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
   }
 
   public void addItem (final int index, final ListItem item) {
-    if (isComputingLayout()) {
-      UI.post(() -> addItem(index, item));
-    } else {
-      items.add(index, item);
-      notifyItemInserted(index);
-    }
+    addItems(index, item);
   }
 
   public void addItems (final int index, final ListItem... items) {
     if (isComputingLayout()) {
       UI.post(() -> addItems(index, items));
-    } else {
-      this.items.addAll(index, Arrays.asList(items));
-      notifyItemRangeInserted(index, items.length);
+    } else if (items.length > 0) {
+      boolean needReset = false;
+      for (ListItem item : items) {
+        if (isSelectableViewType(item.getViewType())) {
+          needReset = true;
+          break;
+        }
+      }
+      if (items.length == 1) {
+        this.items.add(index, items[0]);
+        notifyItemInserted(index);
+      } else {
+        this.items.addAll(index, Arrays.asList(items));
+        notifyItemRangeInserted(index, items.length);
+      }
+      if (needReset) {
+        resetCheckedItems();
+      }
     }
   }
 

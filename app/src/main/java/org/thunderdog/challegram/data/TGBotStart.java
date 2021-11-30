@@ -5,11 +5,11 @@
 package org.thunderdog.challegram.data;
 
 public class TGBotStart { // Used only in MessagesController arguments to add a new participant
-  private final int userId;
+  private final long userId;
   private final String argument;
   private final boolean isGame;
 
-  public TGBotStart (int userId, String argument, boolean isGame) {
+  public TGBotStart (long userId, String argument, boolean isGame) {
     this.userId = userId;
     this.argument = argument;
     this.isGame = isGame;
@@ -19,7 +19,7 @@ public class TGBotStart { // Used only in MessagesController arguments to add a 
     return isGame;
   }
 
-  public int getUserId () {
+  public long getUserId () {
     return userId;
   }
 

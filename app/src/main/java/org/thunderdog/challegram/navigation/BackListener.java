@@ -5,5 +5,5 @@
 package org.thunderdog.challegram.navigation;
 
 public interface BackListener {
-  boolean onBackPressed ();
+  boolean onBackPressed (boolean fromTop);
 }

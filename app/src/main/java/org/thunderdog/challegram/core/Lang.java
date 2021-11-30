@@ -64,6 +64,7 @@ import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceList;
+import me.vkryl.td.ChatId;
 
 @SuppressWarnings(value = "SpellCheckingInspection")
 public class Lang {
@@ -279,6 +280,14 @@ public class Lang {
     }
   }
 
+  public static CharSequence getStringSecure (@StringRes int resource, SpanCreator creator, Object... formatArgs) {
+    if (isTrustedLangauge()) {
+      return getString(resource, creator, formatArgs);
+    } else {
+      return getStringImpl(null, resource, false, 0, creator, formatArgs).toString();
+    }
+  }
+
   public static String getString (@Nullable TdApi.LanguagePackInfo languagePackInfo, @StringRes int resource, Object... formatArgs) {
     return getStringImpl(languagePackInfo, resource, true, 0, null, formatArgs).toString();
   }
@@ -297,6 +306,25 @@ public class Lang {
       return entities != null && entities.length > 0 ? entities : null;
     }
     return null;
+  }
+
+  public static CharSequence boldify (CharSequence text) {
+    return wrap(text, boldCreator());
+  }
+
+  public static CharSequence codify (CharSequence text) {
+    return wrap(text, codeCreator());
+  }
+
+  public static CharSequence wrap (CharSequence text, SpanCreator spanCreator) {
+    return spanCreator != null ? formatString("%s", spanCreator, text) : text;
+    /*Object span = spanCreator.onCreateSpan(text, 0, text.length(), 0, Text.needFakeBold(text));
+    if (span != null) {
+      SpannableStringBuilder str = new SpannableStringBuilder(text);
+      str.setSpan(span, 0, str.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+      return str;
+    }
+    return text;*/
   }
 
   public static CharSequence getStringBold (@StringRes int resource, Object... formatArgs) {
@@ -362,23 +390,31 @@ public class Lang {
     return (target, argStart, argEnd, argIndex, needFakeBold) -> newBoldSpan(needFakeBold);
   }
 
+  public static Object newCodeSpan (boolean needFakeBold) {
+    return TD.toDisplaySpan(new TdApi.TextEntityTypeCode(), null, needFakeBold);
+  }
+
+  public static Object newItalicSpan (boolean needFakeBold) {
+    return TD.toDisplaySpan(new TdApi.TextEntityTypeItalic(), null, needFakeBold);
+  }
+
+  public static SpanCreator codeCreator () {
+    return (target, argStart, argEnd, argIndex, needFakeBold) -> newCodeSpan(needFakeBold);
+  }
+
+  public static SpanCreator italicCreator () {
+    return (target, argStart, argEnd, argIndex, needFakeBold) -> newItalicSpan(needFakeBold);
+  }
+
   public static SpanCreator entityCreator (TdApi.TextEntityType entity) {
     return (target, argStart, argEnd, argIndex, needFakeBold) -> TD.toSpan(entity);
   }
 
-  public static CustomTypefaceSpan newUserSpan (TdlibDelegate context, int userId) {
+  public static CustomTypefaceSpan newUserSpan (TdlibDelegate context, long userId) {
     return TD.toDisplaySpan(new TdApi.TextEntityTypeMentionName(userId)).setOnClickListener((view, span) -> {
       context.tdlib().ui().openPrivateProfile(context, userId, null);
       return true;
     });
-  }
-
-  public static CharSequence wrapBold (String text) {
-    return wrap(text, boldCreator());
-  }
-
-  public static CharSequence wrap (String text, SpanCreator creator) {
-    return formatString("%s", creator, text);
   }
 
   public static CharSequence getString (@StringRes int resId, SpanCreator creator, Object... formatArgs) {
@@ -888,12 +924,14 @@ public class Lang {
     }
   }
 
-  public static CharSequence getNotificationTitle (String chatTitle, int notificationCount, boolean isSelfChat, boolean isMultiChat, boolean isChannel, boolean areMentions, boolean onlyPinned, boolean areOnlyScheduled, boolean areOnlySilent) {
+  public static CharSequence getNotificationTitle (long chatId, String chatTitle, int notificationCount, boolean isSelfChat, boolean isMultiChat, boolean isChannel, boolean areMentions, boolean onlyPinned, boolean areOnlyScheduled, boolean areOnlySilent) {
     CharSequence result;
     if (areMentions && onlyPinned) {
       result = Lang.getCharSequence(R.string.format_notificationTitlePinned, chatTitle);
     } else if (notificationCount > 1 || areMentions) {
       result = Lang.getCharSequence(R.string.format_notificationTitleShort, chatTitle, Lang.plural(areMentions ? R.string.mentionCount : R.string.messagesCount, notificationCount));
+    } else if (StringUtils.isEmpty(chatTitle)) {
+      result = ChatId.toString(chatId);
     } else {
       result = chatTitle;
     }
@@ -1568,25 +1606,6 @@ public class Lang {
 
   // Duration
 
-  public static String pluralDuration (@StringRes int secondsRes, @StringRes int minutesRes, @StringRes int hoursRes, @StringRes int daysRes, @StringRes int weeksRes, final long time, final TimeUnit unit, Object... args) {
-    int days = (int) unit.toDays(time);
-    if (days >= 7) {
-      return plural(weeksRes, days / 7, args);
-    }
-    if (days > 0) {
-      return plural(daysRes, days, args);
-    }
-    int hours = (int) unit.toHours(time);
-    if (hours > 0) {
-      return plural(hoursRes, hours, args);
-    }
-    int minutes = (int) unit.toMinutes(time);
-    if (minutes > 0) {
-      return plural(minutesRes, minutes, args);
-    }
-    return plural(secondsRes, (int) unit.toSeconds(time), args);
-  }
-
   public static boolean preferTimeForDuration (int seconds) {
     return (seconds / 60 / 60 / 24 / 7) > 2 || seconds <= 0;
   }
@@ -1878,6 +1897,38 @@ public class Lang {
     return getRelativeTimestamp(unixTime, unit);
   }
 
+
+  public static CharSequence pluralDuration (long duration, TimeUnit unit,
+                                             @StringRes int secondsRes, @StringRes int minutesRes, @StringRes int hoursRes,
+                                             @StringRes int daysRes, @StringRes int weeksRes, @StringRes int monthsRes,
+                                             Object... args) {
+    final long days = unit.toDays(duration);
+    final long months = days / 30;
+    final long weeks = days / 7;
+    final long hours = unit.toHours(duration);
+    final long minutes = unit.toMinutes(duration);
+    final long seconds = unit.toSeconds(duration);
+    if (monthsRes != 0 && months > 0) {
+      return Lang.pluralBold(monthsRes, months, args);
+    }
+    if (weeksRes != 0 && weeks > 0) {
+      return Lang.pluralBold(weeksRes, weeks, args);
+    }
+    if (daysRes != 0 && days > 0) {
+      return Lang.pluralBold(daysRes, days, args);
+    }
+    if (hoursRes != 0 && hours > 0) {
+      return Lang.pluralBold(hoursRes, hours, args);
+    }
+    if (minutesRes != 0 && minutes > 0) {
+      return Lang.pluralBold(minutesRes, minutes, args);
+    }
+    if (secondsRes != 0) {
+      return Lang.pluralBold(secondsRes, seconds, args);
+    }
+    throw new IllegalArgumentException();
+  }
+
   public static String getModifiedTimestamp (long unixTime, TimeUnit unit) {
     return getRelativeDate(unixTime, unit, System.currentTimeMillis(), TimeUnit.MILLISECONDS, true, 30, R.string.modified, false);
   }
@@ -1896,6 +1947,107 @@ public class Lang {
 
   public static String getRelativeTimestamp (long unixTime, TimeUnit unit, long fromUnixTime, TimeUnit fromUnit, boolean allowDuration, int justNowSeconds) {
     return getRelativeDate(unixTime, unit, fromUnixTime, fromUnit, allowDuration, justNowSeconds, R.string.timestamp, false);
+  }
+
+  public static String getReverseRelativeDate (long futureUnixTime, TimeUnit futureUnit, long fromUnixTime, TimeUnit fromUnit, boolean allowDuration, int justNowSeconds, @StringRes int res, boolean approximate) {
+    if (allowDuration) {
+      long difference = futureUnit.toSeconds(futureUnixTime) - fromUnit.toSeconds(fromUnixTime);
+      if (difference >= -5 * 60) {
+        if (difference < justNowSeconds)
+          return getString(LangUtils.getRelativeDateForm(res, RelativeDateForm.NOW));
+        if (difference < 60)
+          return plural(LangUtils.getRelativeDateForm(res, RelativeDateForm.SECONDS), (int) difference);
+        difference /= 60;
+        if (difference < 60)
+          return plural(LangUtils.getRelativeDateForm(res, RelativeDateForm.MINUTES), (int) difference);
+        difference /= 60;
+        if (difference < 4)
+          return plural(LangUtils.getRelativeDateForm(res, RelativeDateForm.HOURS), (int) difference);
+      }
+    }
+
+    Calendar c;
+    c = DateUtils.calendarInstance(fromUnit.toMillis(fromUnixTime));
+    int fromYear = c.get(Calendar.YEAR);
+    int fromMonth = c.get(Calendar.MONTH);
+    DateUtils.resetToStartOfDay(c);
+    long unixTimeFromStartMs = c.getTimeInMillis();
+
+    c = DateUtils.calendarInstance(futureUnit.toMillis(futureUnixTime));
+    int futureYear = c.get(Calendar.YEAR);
+    int futureMonth = c.get(Calendar.MONTH);
+    long unixTimeFutureStartMs = DateUtils.getStartOfDay(c);
+
+    final String time = time(futureUnixTime, futureUnit);
+    int days = (int) TimeUnit.MILLISECONDS.toDays(unixTimeFutureStartMs - unixTimeFromStartMs);
+    if (days == 0) { // Today
+      return getString(LangUtils.getRelativeDateForm(res, RelativeDateForm.TODAY), time);
+    }
+    if (days == 1) { // Tomorrow
+      return getString(LangUtils.getRelativeDateForm(res, RelativeDateForm.TOMORROW), time);
+    }
+    if (approximate) {
+      if (days < 14) { // Less than 2 weeks
+        return plural(LangUtils.getRelativeDateForm(res, RelativeDateForm.DAYS), days);
+      }
+      if (days < 30) {
+        return plural(LangUtils.getRelativeDateForm(res, RelativeDateForm.WEEKS), days / 7);
+      }
+      int months = (futureYear - fromYear) * 12 + (futureMonth - fromMonth);
+      if (months < 12) {
+        return plural(LangUtils.getRelativeDateForm(res, RelativeDateForm.MONTHS), months);
+      }
+      return plural(LangUtils.getRelativeDateForm(res, RelativeDateForm.YEARS), months / 12);
+    } else {
+      if (days < 7) { // Less than a week
+        return getString(LangUtils.getRelativeDateForm(res, RelativeDateForm.WEEKDAY), weekShort(c), time);
+      }
+      String date;
+      if (fromYear == futureYear) {
+        date = dateShort(c);
+      } else {
+        date = dateYearShort(c);
+      }
+      return getString(LangUtils.getRelativeDateForm(res, RelativeDateForm.DATE), date, time);
+    }
+  }
+
+  public static long getNextReverseRelativeDateUpdateMs (long unixTime, TimeUnit futureUnit, long fromUnixTime, TimeUnit fromUnit, boolean allowDuration, int justNowSeconds) {
+    long fromUnixTimeMs = fromUnit.toMillis(fromUnixTime);
+    long futureUnixTimeMs = futureUnit.toMillis(unixTime);
+    if (allowDuration) {
+      long differenceMs = futureUnixTimeMs - fromUnixTimeMs;
+      long difference = TimeUnit.MILLISECONDS.toSeconds(differenceMs);
+      if (difference >= -5 * 60) {
+        if (difference < justNowSeconds) // just now -> seconds
+          return TimeUnit.SECONDS.toMillis(justNowSeconds) - differenceMs;
+        if (difference < 60) // seconds
+          return 1000 - differenceMs % 1000;
+        difference /= 60;
+        if (difference < 60) // minutes
+          return (difference + 1l) * 60000l - differenceMs;
+        difference /= 60;
+        if (difference < 4) // hours
+          return (difference + 1) * 60l * 60000l - differenceMs;
+      }
+    }
+    Calendar c;
+    c = DateUtils.calendarInstance(futureUnixTimeMs);
+    DateUtils.resetToStartOfDay(c);
+    long unixTimeFutureStartMs = c.getTimeInMillis();
+
+    c = DateUtils.calendarInstance(fromUnixTimeMs);
+    DateUtils.resetToStartOfDay(c);
+    long unixTimeFromStartMs = c.getTimeInMillis();
+
+    int days = (int) TimeUnit.MILLISECONDS.toDays(unixTimeFutureStartMs - unixTimeFromStartMs);
+
+    if (days == 0 || days == 1) {
+      c.add(Calendar.DAY_OF_MONTH, 1);
+      DateUtils.resetToStartOfDay(c);
+      return Math.max(-1, c.getTimeInMillis() - fromUnixTimeMs);
+    }
+    return -1;
   }
 
   public static String getRelativeDate (long unixTime, TimeUnit unit, long fromUnixTime, TimeUnit fromUnit, boolean allowDuration, int justNowSeconds, @StringRes int res, boolean approximate) {
@@ -2221,8 +2373,8 @@ public class Lang {
     RelativeDateForm.HOURS,
 
     RelativeDateForm.TODAY,
-    RelativeDateForm.TOMORROW,
     RelativeDateForm.YESTERDAY,
+    RelativeDateForm.TOMORROW,
 
     RelativeDateForm.WEEKDAY,
     RelativeDateForm.DATE,
@@ -2238,8 +2390,8 @@ public class Lang {
     int MINUTES = 2;
     int HOURS = 3;
     int TODAY = 4;
-    int TOMORROW = 5;
-    int YESTERDAY = 6;
+    int YESTERDAY = 5;
+    int TOMORROW = 6;
     
     int WEEKDAY = 10;
     int DATE = 11;

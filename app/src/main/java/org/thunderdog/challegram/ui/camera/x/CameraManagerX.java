@@ -16,6 +16,7 @@ import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraInfoUnavailableException;
 import androidx.camera.core.CameraSelector;
+import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageCapture;
 import androidx.camera.core.ImageCaptureException;
 import androidx.camera.core.Preview;
@@ -34,6 +35,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.camera.CameraDelegate;
 import org.thunderdog.challegram.ui.camera.CameraFeatures;
 import org.thunderdog.challegram.ui.camera.CameraManager;
+import org.thunderdog.challegram.ui.camera.CameraQrBridge;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.io.File;
@@ -69,6 +71,7 @@ public class CameraManagerX extends CameraManager<PreviewView> {
   private boolean originalFacing;
   private int lastAspectRatio;
   private Rational lastAspectRatioCustom;
+  private CameraQrBridge cameraQrBridge;
 
   @Override
   public void openCamera () {
@@ -178,7 +181,7 @@ public class CameraManagerX extends CameraManager<PreviewView> {
 
     if (REUSE_PREVIEW_DISABLED || preview == null || previewRotation != getSurfaceRotation()) {
       Preview.Builder previewBuilder = new Preview.Builder()
-              .setTargetRotation(previewRotation = getSurfaceRotation());
+        .setTargetRotation(previewRotation = getSurfaceRotation());
       if (aspectRatioCustom != null) {
         previewBuilder.setTargetResolution(toSize(aspectRatioCustom, getSurfaceRotation()));
       } else {
@@ -188,10 +191,10 @@ public class CameraManagerX extends CameraManager<PreviewView> {
     }
 
     if (REUSE_CAPTURE_DISABLED || imageCapture == null) {
-       ImageCapture.Builder imageCaptureBuilder = new ImageCapture.Builder()
-              .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-              .setFlashMode(flashMode)
-              .setTargetRotation(getSurfaceRotation());
+      ImageCapture.Builder imageCaptureBuilder = new ImageCapture.Builder()
+        .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+        .setFlashMode(flashMode)
+        .setTargetRotation(getSurfaceRotation());
       if (aspectRatioCustom != null) {
         imageCaptureBuilder.setTargetResolution(toSize(aspectRatioCustom, getSurfaceRotation()));
       } else {
@@ -204,7 +207,7 @@ public class CameraManagerX extends CameraManager<PreviewView> {
     }
     if (REUSE_CAPTURE_DISABLED || videoCapture == null) {
       VideoCapture.Builder b = new VideoCapture.Builder()
-              .setTargetRotation(getSurfaceRotation());
+        .setTargetRotation(getSurfaceRotation());
       if (aspectRatioCustom != null) {
         b.setTargetResolution(toSize(aspectRatioCustom, getSurfaceRotation()));
       } else {
@@ -214,21 +217,19 @@ public class CameraManagerX extends CameraManager<PreviewView> {
     } else {
       videoCapture.setTargetRotation(getSurfaceRotation());
     }
-    /*ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
-            .setTargetRotation(getSurfaceRotation())
-            .setTargetAspectRatio(aspectRatio)
-            .build();
-    AtomicBoolean reportedFirstFrame = new AtomicBoolean();
-    imageAnalysis.setAnalyzer(backgroundExecutor, proxy -> {
-      proxy.close();
-      if (!reportedFirstFrame.getAndSet(true)) {
-        UI.post(() -> {
-          if (this.contextId == contextId && isOpen && !isPaused) {
-            delegate.onRenderedFirstFrame();
-          }
-        });
+
+    ImageAnalysis imageAnalyzer = new ImageAnalysis.Builder()
+      .setTargetRotation(getSurfaceRotation())
+      .setTargetAspectRatio(aspectRatio)
+      .build();
+
+    if (delegate.useQrScanner()) {
+      if (cameraQrBridge == null) {
+        cameraQrBridge = new CameraQrBridge(this);
       }
-    });*/
+
+      imageAnalyzer.setAnalyzer(cameraQrBridge.backgroundExecutor, proxy -> cameraQrBridge.processImage(proxy));
+    }
 
     lastAspectRatio = aspectRatio;
     lastAspectRatioCustom = aspectRatioCustom;
@@ -236,7 +237,12 @@ public class CameraManagerX extends CameraManager<PreviewView> {
     try {
       // A variable number of use-cases can be passed here -
       // camera provides access to CameraControl & CameraInfo
-      this.camera = cameraProvider.bindToLifecycle((LifecycleOwner) context, cameraSelector, preview, imageCapture, videoCapture);
+      if (delegate.useQrScanner()) {
+        // We probably don't want to take photos or videos while scanning QR codes. (Also, there are 3 use case limit in CameraX)
+        this.camera = cameraProvider.bindToLifecycle((LifecycleOwner) context, cameraSelector, preview, imageAnalyzer);
+      } else {
+        this.camera = cameraProvider.bindToLifecycle((LifecycleOwner) context, cameraSelector, preview, imageCapture, videoCapture);
+      }
     } catch (Exception e) {
       Log.e(Log.TAG_CAMERA, "Use case binding failed", e);
       return;
@@ -514,8 +520,9 @@ public class CameraManagerX extends CameraManager<PreviewView> {
 
   @Override
   public void destroy () {
-    if (cameraProvider != null) {
-      cameraProvider.unbindAll();
+    if (cameraQrBridge != null) {
+      cameraQrBridge.destroy();
+      cameraQrBridge = null;
     }
   }
 

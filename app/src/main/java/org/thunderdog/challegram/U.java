@@ -6,6 +6,8 @@ package org.thunderdog.challegram;
 
 import android.Manifest;
 import android.animation.ValueAnimator;
+import android.annotation.TargetApi;
+import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.Service;
@@ -70,10 +72,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.DefaultRenderersFactory;
 import com.google.android.exoplayer2.ExoPlaybackException;
+import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.PlaybackException;
-import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.RenderersFactory;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
+import com.google.android.exoplayer2.source.DefaultMediaSourceFactory;
 import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.MediaSourceFactory;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 import com.google.android.exoplayer2.source.UnrecognizedInputFormatException;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
@@ -688,12 +693,14 @@ public class U {
     return app_installed;
   }
 
-  public static SimpleExoPlayer newExoPlayer (Context context, boolean preferExtensions) {
+  public static ExoPlayer newExoPlayer (Context context, boolean preferExtensions) {
     // new AdaptiveVideoTrackSelection.Factory(new DefaultBandwidthMeter())
     // DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER
     // DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON
-    int extensionMode = preferExtensions || org.thunderdog.challegram.unsorted.Settings.instance().getNewSetting(org.thunderdog.challegram.unsorted.Settings.SETTING_FLAG_FORCE_EXO_PLAYER_EXTENSIONS) ? DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER : DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON;
-    return new SimpleExoPlayer.Builder(context, new DefaultRenderersFactory(context).setExtensionRendererMode(extensionMode), new DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true))
+    final int extensionMode = preferExtensions || org.thunderdog.challegram.unsorted.Settings.instance().getNewSetting(org.thunderdog.challegram.unsorted.Settings.SETTING_FLAG_FORCE_EXO_PLAYER_EXTENSIONS) ? DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER : DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON;
+    final RenderersFactory renderersFactory = new DefaultRenderersFactory(context).setExtensionRendererMode(extensionMode);
+    final MediaSourceFactory mediaSourceFactory = new DefaultMediaSourceFactory(context, new DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true));
+    return new ExoPlayer.Builder(context, renderersFactory, mediaSourceFactory)
       .setTrackSelector(new DefaultTrackSelector(context))
       .setLoadControl(new DefaultLoadControl())
       .build();
@@ -1707,6 +1714,7 @@ public class U {
   public static final int TYPE_PHOTO = 0;
   public static final int TYPE_VIDEO = 1;
   public static final int TYPE_GIF = 2;
+  public static final int TYPE_FILE = 3;
 
   public static void savePhotoToGallery (final Bitmap bitmap, boolean transparent) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && needsPermissionRequest(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE)) {
@@ -1737,38 +1745,53 @@ public class U {
   }
 
   public static void copyToGallery (final String fromPath, final int type) {
+    copyToGallery(fromPath, type, true, null);
+  }
+
+  public static boolean copyToGalleryImpl (final String fromPath, int type, RunnableData<File> onSaved) {
+    File file = generateMediaPath(fromPath, type);
+    if (file != null) {
+      try {
+        if (FileUtils.copy(new File(fromPath), file)) {
+          addToGallery(file);
+          if (onSaved != null) {
+            onSaved.runWithData(file);
+          }
+          return true;
+        } else {
+          Log.w("Cannot copy file to gallery");
+        }
+      } catch (Throwable t) {
+        Log.w("Cannot save file to gallery", t);
+      }
+    }
+    return false;
+  }
+
+  public static void copyToGallery (final String fromPath, final int type, boolean needAlert, RunnableData<File> onSaved) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && needsPermissionRequest(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
       requestPermissions(new String[] {Manifest.permission.WRITE_EXTERNAL_STORAGE}, result -> {
         if (result) {
-          copyToGallery(fromPath, type);
+          copyToGallery(fromPath, type, needAlert, onSaved);
         }
       });
       return;
     }
-
-    if (fromPath != null && fromPath.length() > 0) {
+    if (fromPath != null && !fromPath.isEmpty()) {
       Background.instance().post(() -> {
-        File file = generateMediaPath(fromPath, type);
-        if (file != null) {
-          try {
-            if (FileUtils.copy(new File(fromPath), file)) {
-              addToGallery(file);
-              switch (type) {
-                case TYPE_GIF:
-                  UI.showToast(R.string.GifHasBeenSavedToGallery, Toast.LENGTH_SHORT);
-                  break;
-                case TYPE_VIDEO:
-                  UI.showToast(R.string.VideoHasBeenSavedToGallery, Toast.LENGTH_SHORT);
-                  break;
-                case TYPE_PHOTO:
-                  UI.showToast(R.string.PhotoHasBeenSavedToGallery, Toast.LENGTH_SHORT);
-                  break;
-              }
-            } else {
-              Log.w("Cannot copy file to gallery");
+        if (copyToGalleryImpl(fromPath, type, onSaved)) {
+          if (needAlert) {
+            switch (type) {
+              case TYPE_GIF:
+                UI.showToast(R.string.GifHasBeenSavedToGallery, Toast.LENGTH_SHORT);
+                break;
+              case TYPE_VIDEO:
+                UI.showToast(R.string.VideoHasBeenSavedToGallery, Toast.LENGTH_SHORT);
+                break;
+              case TYPE_PHOTO:
+                UI.showToast(R.string.PhotoHasBeenSavedToGallery, Toast.LENGTH_SHORT);
+                break;
             }
-          } catch (Throwable t) {
-            Log.w("Cannot save file to gallery", t);
           }
         }
       });
@@ -1847,7 +1870,7 @@ public class U {
     return new File(getAppDir(true), "media");
   }
 
-  private static File getAlbumDir (boolean isPrivate) {
+  public static File getAlbumDir (boolean isPrivate) {
     File storageDir = null;
     if (!isPrivate) {
       if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
@@ -3369,6 +3392,41 @@ public class U {
       return totalBlocks * blockSize;
     } else {
       return -1;
+    }
+  }
+
+  // ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION opened, but the permission is still not granted. Ignore until the app restarts.
+
+  public static boolean canManageStorage () {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      return Environment.isExternalStorageLegacy() || Environment.isExternalStorageManager();
+    }
+    return true; // Q allows for requestExternalStorage
+  }
+
+  @TargetApi(Build.VERSION_CODES.R)
+  public static void requestManageStorage (Context context) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+      intent.setData(Uri.parse("package:" + context.getPackageName()));
+      ((Activity) context).startActivityForResult(intent, Intents.ACTIVITY_RESULT_MANAGE_STORAGE);
+    }
+  }
+
+  public static boolean canReadFile (String url) {
+    try {
+      return new File(url).canRead();
+    } catch (Exception e) {
+      e.printStackTrace();
+      return false;
+    }
+  }
+
+  public static boolean canReadContentUri (Uri uri) {
+    try (InputStream is = openInputStream(uri.toString())) {
+      return true;
+    } catch (Exception e) {
+      return false;
     }
   }
 }

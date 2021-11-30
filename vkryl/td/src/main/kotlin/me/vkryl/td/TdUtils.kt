@@ -266,7 +266,7 @@ fun MessageContent.isSecret (): Boolean {
   }
 }
 
-fun MessageSender?.getSenderUserId (): Int {
+fun MessageSender?.getSenderUserId (): Long {
   return if (this?.constructor == MessageSenderUser.CONSTRUCTOR) {
     (this as MessageSenderUser).userId
   } else {
@@ -274,7 +274,7 @@ fun MessageSender?.getSenderUserId (): Int {
   }
 }
 
-fun Message?.getSenderUserId (): Int {
+fun Message?.getSenderUserId (): Long {
   return this?.sender.getSenderUserId()
 }
 
@@ -285,11 +285,22 @@ fun Message?.getMessageAuthorId(allowForward: Boolean = true): Long {
   if (allowForward) {
     val forwardInfo = this.forwardInfo
     if (forwardInfo != null) {
-      when (forwardInfo.origin.constructor) {
-        MessageForwardOriginUser.CONSTRUCTOR -> return fromUserId((forwardInfo.origin as MessageForwardOriginUser).senderUserId)
-        MessageForwardOriginChannel.CONSTRUCTOR -> return (forwardInfo.origin as MessageForwardOriginChannel).chatId
-        MessageForwardOriginChat.CONSTRUCTOR -> return (forwardInfo.origin as MessageForwardOriginChat).senderChatId
-        MessageForwardOriginHiddenUser.CONSTRUCTOR -> { /*proceed with fallback*/
+      return when (forwardInfo.origin.constructor) {
+        MessageForwardOriginUser.CONSTRUCTOR -> {
+          fromUserId((forwardInfo.origin as MessageForwardOriginUser).senderUserId)
+        }
+        MessageForwardOriginChannel.CONSTRUCTOR -> {
+          (forwardInfo.origin as MessageForwardOriginChannel).chatId
+        }
+        MessageForwardOriginChat.CONSTRUCTOR -> {
+          (forwardInfo.origin as MessageForwardOriginChat).senderChatId
+        }
+        MessageForwardOriginHiddenUser.CONSTRUCTOR,
+        MessageForwardOriginMessageImport.CONSTRUCTOR -> {
+          0
+        }
+        else -> {
+          TODO(forwardInfo.origin.toString())
         }
       }
     }
@@ -320,6 +331,7 @@ fun Message?.getSenderId (): Long {
 fun MessageContent?.textOrCaption (): FormattedText? {
   return when (this?.constructor) {
     MessageText.CONSTRUCTOR -> (this as MessageText).text
+    MessageAnimatedEmoji.CONSTRUCTOR -> FormattedText((this as MessageAnimatedEmoji).emoji, arrayOf())
     MessagePhoto.CONSTRUCTOR -> (this as MessagePhoto).caption
     MessageVideo.CONSTRUCTOR -> (this as MessageVideo).caption
     MessageDocument.CONSTRUCTOR -> (this as MessageDocument).caption
@@ -613,8 +625,8 @@ fun CharSequence.subSequence(entity: TextEntity?): CharSequence? {
 }
 
 @kotlin.ExperimentalStdlibApi
-fun FormattedText.findUrl(lookupUrl: String, returnAny: Boolean): String? {
-  if (this.entities.isNullOrEmpty())
+fun FormattedText?.findUrl(lookupUrl: String, returnAny: Boolean): String? {
+  if (this?.entities?.isNullOrEmpty() ?: return null)
     return null
   val lookupUri = wrapHttps(lookupUrl) ?: return null
   var count = 0

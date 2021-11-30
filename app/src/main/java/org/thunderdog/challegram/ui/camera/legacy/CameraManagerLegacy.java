@@ -3,9 +3,11 @@ package org.thunderdog.challegram.ui.camera.legacy;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.SurfaceTexture;
+import android.hardware.Camera;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.util.Size;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.UiThread;
@@ -17,6 +19,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.camera.CameraDelegate;
 import org.thunderdog.challegram.ui.camera.CameraError;
 import org.thunderdog.challegram.ui.camera.CameraManagerTexture;
+import org.thunderdog.challegram.ui.camera.CameraQrBridge;
 import org.thunderdog.challegram.ui.camera.CameraTextureView;
 
 import me.vkryl.core.MathUtils;
@@ -29,6 +32,7 @@ import me.vkryl.core.MathUtils;
 public class CameraManagerLegacy extends CameraManagerTexture {
 
   private CameraApi api;
+  private CameraQrBridge cameraQrBridge;
 
   private boolean useRoundRender;
 
@@ -38,6 +42,20 @@ public class CameraManagerLegacy extends CameraManagerTexture {
     super(context, delegate);
     api = new CameraApiLegacy(context, this);
     api.setDisplayOrientation(getDisplayRotation());
+
+    if (delegate.useQrScanner() && cameraQrBridge == null) {
+      cameraQrBridge = new CameraQrBridge(this);
+    }
+  }
+
+  public void onPreviewFrame (byte[] data, Camera camera) {
+    if (cameraQrBridge != null && api.isCameraActive) {
+      try {
+        Camera.Size previewSize = camera.getParameters().getPreviewSize();
+        cameraQrBridge.processImage(data, previewSize.width, previewSize.height, (CameraApiLegacy) api);
+      } catch (Exception ignored) {
+      }
+    }
   }
 
   @Override
@@ -185,6 +203,11 @@ public class CameraManagerLegacy extends CameraManagerTexture {
   }
 
   public void destroy () {
+    if (cameraQrBridge != null) {
+      cameraQrBridge.destroy();
+      cameraQrBridge = null;
+    }
+
     destroyedCamera = api;
     checkCameraState();
   }
@@ -253,6 +276,14 @@ public class CameraManagerLegacy extends CameraManagerTexture {
   }
 
   // Semi-internal API
+
+  public int getCurrentCameraRotation () {
+    return api.calculateDisplayOrientation();
+  }
+
+  public int getCurrentCameraSensorOrientation () {
+    return api.getSensorOrientation();
+  }
 
   public void showFatalError (String error) {
     delegate.displayFatalErrorMessage(error);

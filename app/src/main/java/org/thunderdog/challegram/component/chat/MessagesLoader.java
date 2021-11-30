@@ -9,7 +9,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
-import androidx.collection.SparseArrayCompat;
+import androidx.collection.LongSparseArray;
 
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -132,7 +132,7 @@ public class MessagesLoader implements Client.ResultHandler {
   private static final int MERGE_MODE_TOP = 1;
   private static final int MERGE_MODE_BOTTOM = 2;
 
-  private Client.ResultHandler lastHandler;
+  private volatile Client.ResultHandler lastHandler;
   private TdApi.Message[] mergeChunk;
   private int mergeMode;
 
@@ -198,7 +198,9 @@ public class MessagesLoader implements Client.ResultHandler {
             break;
           }
           default: {
-            lastHandler = null;
+            synchronized (lock) {
+              lastHandler = null;
+            }
             Log.unexpectedTdlibResponse(object, TdApi.GetChatHistory.class, TdApi.Messages.class, TdApi.ChatEvents.class, TdApi.Error.class);
             return;
           }
@@ -352,7 +354,7 @@ public class MessagesLoader implements Client.ResultHandler {
               }
             }
           }
-        } else if (messages.length != 0 && (needMoreTop || needMoreBottom)) {
+        } else if (Config.NEED_MEDIA_GROUP_MERGE_REQUESTS && messages.length != 0 && (needMoreTop || needMoreBottom)) {
           // Let's check if we need to load anything more
 
           TdApi.Message oldestMessage = messages[messages.length - 1];
@@ -403,7 +405,9 @@ public class MessagesLoader implements Client.ResultHandler {
 
         mergeMode = MERGE_MODE_NONE;
         mergeChunk = null;
-        lastHandler = null;
+        synchronized (lock) {
+          lastHandler = null;
+        }
 
         processMessages(currentContextId, messages, knownTotalCount, nextSecretSearchOffset, needFindUnrad && object.getConstructor() == TdApi.Messages.CONSTRUCTOR, missingAlbums);
       }
@@ -429,7 +433,10 @@ public class MessagesLoader implements Client.ResultHandler {
     mergeMode = MERGE_MODE_NONE;
     mergeChunk = null;
 
-    lastHandler = null;
+    synchronized (lock) {
+      lastHandler = null;
+      isLoading = false;
+    }
   }
 
   public void loadPreviewMessages () {
@@ -442,7 +449,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
     Background.instance().post(() -> {
       List<TdApi.Message> messages = new ArrayList<>();
-      SparseArrayCompat<TdApi.User> participants = new SparseArrayCompat<>();
+      LongSparseArray<TdApi.User> participants = new LongSparseArray<>();
       boolean isGroupChat = fillPreviewMessages(manager.controller(), messages, participants);
 
       manager.setDemoParticipants(participants, isGroupChat);
@@ -543,10 +550,10 @@ public class MessagesLoader implements Client.ResultHandler {
     }
   }
 
-  private static boolean parsePreviewMessages (TdlibDelegate context, List<TdApi.Message> out, SparseArrayCompat<TdApi.User> participants, String json) throws Throwable {
+  private static boolean parsePreviewMessages (TdlibDelegate context, List<TdApi.Message> out, LongSparseArray<TdApi.User> participants, String json) throws Throwable {
     Tdlib tdlib = context.tdlib();
     boolean isGroupChat = false;
-    final int myUserId = tdlib.myUserId();
+    final long myUserId = tdlib.myUserId();
 
     JSONObject chat = null;
     JSONArray chatsArray = new JSONArray(json.startsWith("[") && json.endsWith("]") ? json : "[" + json + "]");
@@ -865,7 +872,7 @@ public class MessagesLoader implements Client.ResultHandler {
     return false;
   }
 
-  private static boolean fillPreviewMessages (TdlibDelegate context, List<TdApi.Message> out, SparseArrayCompat<TdApi.User> participants) {
+  private static boolean fillPreviewMessages (TdlibDelegate context, List<TdApi.Message> out, LongSparseArray<TdApi.User> participants) {
     String json = Lang.getString(R.string.json_ChatDemo);
     if (!StringUtils.isEmpty(json) && !json.equals("0")) {
       try {
@@ -892,7 +899,6 @@ public class MessagesLoader implements Client.ResultHandler {
 
     canLoadTop = true;
     canLoadBottom = false;
-    isLoading = false;
     scrollMessageId = startMessageId;
     scrollHighlightMode = MessagesManager.HIGHLIGHT_MODE_NONE;
 
@@ -903,7 +909,6 @@ public class MessagesLoader implements Client.ResultHandler {
     reuse();
 
     canLoadTop = canLoadBottom = force;
-    isLoading = false;
     scrollMessageId = messageId;
     scrollHighlightMode = highlightMode;
 
@@ -1037,7 +1042,7 @@ public class MessagesLoader implements Client.ResultHandler {
       false, false,
       false, false,
       false, false,
-      false,
+      false, false,
       false, false,
       isChannel,
       false,
@@ -1070,9 +1075,9 @@ public class MessagesLoader implements Client.ResultHandler {
         case TdApi.ChatEventMemberRestricted.CONSTRUCTOR:
         case TdApi.ChatEventMemberInvited.CONSTRUCTOR:
         case TdApi.ChatEventPermissionsChanged.CONSTRUCTOR:
-        case TdApi.ChatEventVoiceChatCreated.CONSTRUCTOR:
+        case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
         case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR:
-        case TdApi.ChatEventVoiceChatDiscarded.CONSTRUCTOR: {
+        case TdApi.ChatEventVideoChatDiscarded.CONSTRUCTOR: {
           m = newMessage(chatId, isChannel, event);
           m.content = new TdApiExt.MessageChatEvent(event, true, false); // new TdApi.MessageChatAddMembers(new int[] {event.userId});
           break;
@@ -1126,12 +1131,13 @@ public class MessagesLoader implements Client.ResultHandler {
         case TdApi.ChatEventLinkedChatChanged.CONSTRUCTOR:
         case TdApi.ChatEventSlowModeDelayChanged.CONSTRUCTOR:
         case TdApi.ChatEventLocationChanged.CONSTRUCTOR:
-        case TdApi.ChatEventVoiceChatMuteNewParticipantsToggled.CONSTRUCTOR:
+        case TdApi.ChatEventVideoChatMuteNewParticipantsToggled.CONSTRUCTOR:
         case TdApi.ChatEventMemberJoinedByInviteLink.CONSTRUCTOR:
+        case TdApi.ChatEventMemberJoinedByRequest.CONSTRUCTOR:
         case TdApi.ChatEventInviteLinkRevoked.CONSTRUCTOR:
         case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
-        case TdApi.ChatEventVoiceChatParticipantVolumeLevelChanged.CONSTRUCTOR:
-        case TdApi.ChatEventVoiceChatParticipantIsMutedToggled.CONSTRUCTOR: {
+        case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
+        case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR: {
           m = newMessage(chatId, isChannel, event);
           m.content = new TdApiExt.MessageChatEvent(event, false, false);
           break;
@@ -1177,7 +1183,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
     final long chatId, lastReadOutboxMessageId, lastReadInboxMessageId;
     final boolean hasUnreadMessages;
-    final SparseArrayCompat<TdApi.ChatAdministrator> chatAdmins = manager.getChatAdmins();
+    final LongSparseArray<TdApi.ChatAdministrator> chatAdmins = manager.getChatAdmins();
     if (messageThread != null) {
       chatId = messageThread.getChatId();
       lastReadOutboxMessageId = messageThread.getReplyInfo().lastReadOutboxMessageId;
@@ -1202,7 +1208,6 @@ public class MessagesLoader implements Client.ResultHandler {
     boolean isStub = chat == null;
     boolean isSupergroup = chat != null && TD.isSupergroup(chat.type);
     boolean isChannel = chat != null && !isSupergroup && TD.isChannel(chat.type);
-    boolean isBot = chat != null && !isChannel && tdlib.isBotChat(chat);
 
     int scrollItemIndex = -1;
     TGMessage scrollItem = null;
@@ -1214,7 +1219,7 @@ public class MessagesLoader implements Client.ResultHandler {
     final TGMessage topMessage = manager.getAdapter().getTopMessage();
     final long startTop = topMessage != null ? topMessage.getSmallestId() : 0;
 
-    int adminUserId = 0;
+    long adminUserId = 0;
     TdApi.ChatAdministrator administrator = null;
 
     int minIndex = 0;
@@ -1228,17 +1233,23 @@ public class MessagesLoader implements Client.ResultHandler {
     if (messages.length > 0) {
       switch (loadingMode) {
         case MODE_MORE_BOTTOM: {
-          while (maxIndex >= 0 && (messages[maxIndex].id <= startBottom || (bottomMessage != null && bottomMessage.wouldCombineWith(messages[maxIndex])))) {
-            combineWithMessages.add(messages[maxIndex]);
+          while (maxIndex >= 0) {
+            if (messages[maxIndex].id > startBottom) {
+              if (bottomMessage == null || !bottomMessage.wouldCombineWith(messages[maxIndex]))
+                break;
+              combineWithMessages.add(messages[maxIndex]);
+            }
             maxIndex--;
           }
-          // messages[0] - newest (biggest id)
-          // messages[messages.length - 1] - oldest (smallest id)
           break;
         }
         case MODE_MORE_TOP: {
-          while (minIndex < messages.length && (messages[minIndex].id >= startTop || (topMessage != null && topMessage.wouldCombineWith(messages[minIndex])))) {
-            combineWithMessages.add(messages[minIndex]);
+          while (minIndex < messages.length) {
+            if (messages[minIndex].id < startTop) {
+              if (topMessage == null || !topMessage.wouldCombineWith(messages[minIndex]))
+                break;
+              combineWithMessages.add(messages[minIndex]);
+            }
             minIndex++;
           }
           break;
@@ -1249,7 +1260,7 @@ public class MessagesLoader implements Client.ResultHandler {
       endMeasureStep(null, 0, 0);
     }
 
-    if (combineWithMessages != null) {
+    if (!combineWithMessages.isEmpty()) {
       final boolean bottom = loadingMode == MODE_MORE_BOTTOM;
       UI.post(() -> {
         for (TdApi.Message message : combineWithMessages) {
@@ -1301,7 +1312,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
       if (!isChannel) {
         if (cur.isOutgoing()) {
-          if (!isBot && !isStub) {
+          if (!isStub) {
             cur.setUnread(lastReadOutboxMessageId);
           }
         } else if (!isStub) {

@@ -65,6 +65,20 @@ public abstract class TextEntity {
     return new TdlibUi.UrlOpenParameters(this.openParameters).tooltip(b);
   }
 
+  protected TdlibUi.UrlOpenParameters modifyUrlOpenParameters (TdlibUi.UrlOpenParameters parameters, Text.ClickCallback callback, String url) {
+    if (callback == null)
+      return parameters;
+    parameters = new TdlibUi.UrlOpenParameters(parameters);
+    if (callback.forceInstantView(url)) {
+      parameters.forceInstantView();
+    }
+    TdApi.WebPage webPage = callback.findWebPage(url);
+    if (webPage != null) {
+      parameters.sourceWebView(webPage);
+    }
+    return parameters;
+  }
+
   public abstract int getType ();
 
   public final int getStart () {

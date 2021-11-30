@@ -65,8 +65,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
   public static final int TYPE_ADD_MEMBERS = 4;
   public static final int TYPE_KICK_MEMBER = 5;
   public static final int TYPE_JOIN_BY_LINK = 6;
-
-  // public static final int TYPE_CREATE_CHANNEL = 7;
+  public static final int TYPE_JOIN_BY_REQUEST = 7;
 
   public static final int TYPE_MIGRATE_TO = 8;
   public static final int TYPE_MIGRATE_FROM = 9;
@@ -107,13 +106,13 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
   public static final int TYPE_EVENT_LOCATION_CHANGED = 37;
   public static final int TYPE_EVENT_LOCATION_REMOVED = 38;
 
-  public static final int TYPE_EVENT_VOICE_CHAT_MUTE_NEW_PARTICIPANTS_TOGGLED = 39;
-  public static final int TYPE_EVENT_VOICE_CHAT_IS_MUTED_TOGGLED = 40;
-  public static final int TYPE_EVENT_VOICE_CHAT_PARTICIPANT_VOLUME_CHANGED = 41;
+  public static final int TYPE_EVENT_VIDEO_CHAT_MUTE_NEW_PARTICIPANTS_TOGGLED = 39;
+  public static final int TYPE_EVENT_VIDEO_CHAT_IS_MUTED_TOGGLED = 40;
+  public static final int TYPE_EVENT_VIDEO_CHAT_PARTICIPANT_VOLUME_CHANGED = 41;
 
-  public static final int TYPE_VOICE_CHAT_STARTED = 49;
-  public static final int TYPE_VOICE_CHAT_ENDED = 50;
-  public static final int TYPE_INVITE_VOICE_CHAT_PARTICIPANTS = 51;
+  public static final int TYPE_VIDEO_CHAT_STARTED = 49;
+  public static final int TYPE_VIDEO_CHAT_ENDED = 50;
+  public static final int TYPE_INVITE_VIDEO_CHAT_PARTICIPANTS = 51;
   public static final int TYPE_PROXIMITY_ALERT = 52;
 
   public static final int TYPE_EVENT_INVITE_LINK_REVOKED = 53;
@@ -124,9 +123,9 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
   private int type;
 
   private String title;
-  private TdApi.User actionUser;
+  private TdApi.User actionUser, approvedByUser;
   private TdlibSender actionSender;
-  private int[] actionUserIds;
+  private long[] actionUserIds;
   private TdApi.ChatPhoto photo;
   private ImageFile avatar;
 
@@ -165,6 +164,11 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
     this.type = TYPE_JOIN_BY_LINK;
   }
 
+  public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageChatJoinByRequest joined) {
+    super(context, msg);
+    this.type = TYPE_JOIN_BY_REQUEST;
+  }
+
   public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageContactRegistered registered) {
     super(context, msg);
     this.type = TYPE_CONTACT_REGISTERED;
@@ -172,6 +176,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
 
   public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageChatChangePhoto photo) {
     super(context, msg);
+    //noinspection WrongConstant
     if (isEventLog() && msg.content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR) {
       TdApi.ChatEventAction action = ((TdApiExt.MessageChatEvent) msg.content).event.action;
       if (action.getConstructor() == TdApi.ChatEventPhotoChanged.CONSTRUCTOR && ((TdApi.ChatEventPhotoChanged) action).newPhoto == null) {
@@ -280,21 +285,21 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
     }
   }
 
-  public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageVoiceChatStarted voiceChatStarted) {
+  public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageVideoChatStarted voiceChatStarted) {
     super(context, msg);
-    this.type = TYPE_VOICE_CHAT_STARTED;
+    this.type = TYPE_VIDEO_CHAT_STARTED;
   }
 
-  public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageVoiceChatEnded voiceChatEnded) {
+  public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageVideoChatEnded videoChatEnded) {
     super(context, msg);
-    this.type = TYPE_VOICE_CHAT_ENDED;
-    this.longValue = voiceChatEnded.duration;
+    this.type = TYPE_VIDEO_CHAT_ENDED;
+    this.longValue = videoChatEnded.duration;
   }
 
-  public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageInviteVoiceChatParticipants inviteVoiceChatParticipants) {
+  public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageInviteVideoChatParticipants inviteVideoChatParticipants) {
     super(context, msg);
-    this.type = TYPE_INVITE_VOICE_CHAT_PARTICIPANTS;
-    this.actionUserIds = inviteVoiceChatParticipants.userIds;
+    this.type = TYPE_INVITE_VIDEO_CHAT_PARTICIPANTS;
+    this.actionUserIds = inviteVideoChatParticipants.userIds;
   }
 
   public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageProximityAlertTriggered proximityAlert) {
@@ -341,6 +346,14 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
         this.inviteLinkValue = ((TdApi.ChatEventMemberJoinedByInviteLink) chatEvent.action).inviteLink;
         this.actionUser = inviteLinkValue.creatorUserId != 0 ? userForId(inviteLinkValue.creatorUserId) : null;
         break;
+      case TdApi.ChatEventMemberJoinedByRequest.CONSTRUCTOR: {
+        this.type = TYPE_JOIN_BY_REQUEST;
+        TdApi.ChatEventMemberJoinedByRequest request = (TdApi.ChatEventMemberJoinedByRequest) chatEvent.action;
+        this.inviteLinkValue = request.inviteLink;
+        this.actionUser = inviteLinkValue != null && inviteLinkValue.creatorUserId != 0 ? userForId(inviteLinkValue.creatorUserId) : null;
+        this.approvedByUser = request.approverUserId != 0 ? userForId(request.approverUserId) : null;
+        break;
+      }
       case TdApi.ChatEventInviteLinkRevoked.CONSTRUCTOR:
         this.type = TYPE_EVENT_INVITE_LINK_REVOKED;
         this.inviteLinkValue = ((TdApi.ChatEventInviteLinkRevoked) chatEvent.action).inviteLink;
@@ -351,9 +364,9 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
         this.inviteLinkValue = ((TdApi.ChatEventInviteLinkDeleted) chatEvent.action).inviteLink;
         this.actionUser = inviteLinkValue.creatorUserId != 0 ? userForId(inviteLinkValue.creatorUserId) : null;
         break;
-      case TdApi.ChatEventVoiceChatParticipantVolumeLevelChanged.CONSTRUCTOR: {
-        this.type = TYPE_EVENT_VOICE_CHAT_PARTICIPANT_VOLUME_CHANGED;
-        TdApi.ChatEventVoiceChatParticipantVolumeLevelChanged volumeChanged = (TdApi.ChatEventVoiceChatParticipantVolumeLevelChanged) chatEvent.action;
+      case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR: {
+        this.type = TYPE_EVENT_VIDEO_CHAT_PARTICIPANT_VOLUME_CHANGED;
+        TdApi.ChatEventVideoChatParticipantVolumeLevelChanged volumeChanged = (TdApi.ChatEventVideoChatParticipantVolumeLevelChanged) chatEvent.action;
         this.actionSender = new TdlibSender(tdlib, msg.chatId, volumeChanged.participantId);
         this.longValue = volumeChanged.volumeLevel;
         break;
@@ -384,14 +397,14 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
           this.type = TYPE_EVENT_SLOW_MODE_DELAY_DISABLED;
         }
         break;
-      case TdApi.ChatEventVoiceChatMuteNewParticipantsToggled.CONSTRUCTOR:
-        this.type = TYPE_EVENT_VOICE_CHAT_MUTE_NEW_PARTICIPANTS_TOGGLED;
-        this.boolValue = ((TdApi.ChatEventVoiceChatMuteNewParticipantsToggled) chatEvent.action).muteNewParticipants;
+      case TdApi.ChatEventVideoChatMuteNewParticipantsToggled.CONSTRUCTOR:
+        this.type = TYPE_EVENT_VIDEO_CHAT_MUTE_NEW_PARTICIPANTS_TOGGLED;
+        this.boolValue = ((TdApi.ChatEventVideoChatMuteNewParticipantsToggled) chatEvent.action).muteNewParticipants;
         break;
-      case TdApi.ChatEventVoiceChatParticipantIsMutedToggled.CONSTRUCTOR:
-        this.type = TYPE_EVENT_VOICE_CHAT_IS_MUTED_TOGGLED;
-        this.boolValue = ((TdApi.ChatEventVoiceChatParticipantIsMutedToggled) chatEvent.action).isMuted;
-        this.actionSender = new TdlibSender(tdlib, msg.chatId, ((TdApi.ChatEventVoiceChatParticipantIsMutedToggled) chatEvent.action).participantId);
+      case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
+        this.type = TYPE_EVENT_VIDEO_CHAT_IS_MUTED_TOGGLED;
+        this.boolValue = ((TdApi.ChatEventVideoChatParticipantIsMutedToggled) chatEvent.action).isMuted;
+        this.actionSender = new TdlibSender(tdlib, msg.chatId, ((TdApi.ChatEventVideoChatParticipantIsMutedToggled) chatEvent.action).participantId);
         break;
       case TdApi.ChatEventLinkedChatChanged.CONSTRUCTOR: {
         this.type = TYPE_EVENT_LINKED_CHAT_CHANGED;
@@ -722,9 +735,9 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
             }
           } else {
             if (msg.isOutgoing) {
-              makePluralDuration(R.string.YouSetTimerSeconds, R.string.YouSetTimerMinutes, R.string.YouSetTimerHours, R.string.YouSetTimerDays, R.string.YouSetTimerWeeks, ttl, TimeUnit.SECONDS);
+              makePluralDuration(R.string.YouSetTimerSeconds, R.string.YouSetTimerMinutes, R.string.YouSetTimerHours, R.string.YouSetTimerDays, R.string.YouSetTimerWeeks, R.string.YouSetTimerMonths, ttl, TimeUnit.SECONDS);
             } else {
-              makePluralDuration(R.string.XSetTimerSeconds, R.string.XSetTimerMinutes, R.string.XSetTimerHours, R.string.XSetTimerDays, R.string.XSetTimerWeeks, ttl, TimeUnit.SECONDS, new Arg(sender, true));
+              makePluralDuration(R.string.XSetTimerSeconds, R.string.XSetTimerMinutes, R.string.XSetTimerHours, R.string.XSetTimerDays, R.string.XSetTimerWeeks, R.string.XSetTimerMonths, ttl, TimeUnit.SECONDS, new Arg(sender, true));
             }
           }
         } else {
@@ -732,13 +745,19 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
             if (msg.isOutgoing) {
               makeText(R.string.YouDisabledAutoDelete);
             } else {
-              makeText(R.string.XDisabledAutoDelete, new Arg(sender, true));
+              makeText(msg.isChannelPost ? R.string.XDisabledAutoDeletePosts : R.string.XDisabledAutoDelete, new Arg(sender, true));
+            }
+          } else if (msg.isChannelPost) {
+            if (msg.isOutgoing) {
+              makePluralDuration(R.string.YouSetAutoDeletePostsSeconds, R.string.YouSetAutoDeletePostsMinutes, R.string.YouSetAutoDeletePostsHours, R.string.YouSetAutoDeletePostsDays, R.string.YouSetAutoDeletePostsWeeks, R.string.YouSetAutoDeletePostsMonths, ttl, TimeUnit.SECONDS);
+            } else {
+              makePluralDuration(R.string.XSetAutoDeletePostsSeconds, R.string.XSetAutoDeletePostsMinutes, R.string.XSetAutoDeletePostsHours, R.string.XSetAutoDeletePostsDays, R.string.XSetAutoDeletePostsWeeks, R.string.XSetAutoDeletePostsMonths, ttl, TimeUnit.SECONDS, new Arg(sender, true));
             }
           } else {
             if (msg.isOutgoing) {
-              makePluralDuration(R.string.YouSetAutoDeleteSeconds, R.string.YouSetAutoDeleteMinutes, R.string.YouSetAutoDeleteHours, R.string.YouSetAutoDeleteDays, R.string.YouSetAutoDeleteWeeks, ttl, TimeUnit.SECONDS);
+              makePluralDuration(R.string.YouSetAutoDeleteSeconds, R.string.YouSetAutoDeleteMinutes, R.string.YouSetAutoDeleteHours, R.string.YouSetAutoDeleteDays, R.string.YouSetAutoDeleteWeeks, R.string.YouSetAutoDeleteMonths, ttl, TimeUnit.SECONDS);
             } else {
-              makePluralDuration(R.string.XSetAutoDeleteSeconds, R.string.XSetAutoDeleteMinutes, R.string.XSetAutoDeleteHours, R.string.XSetAutoDeleteDays, R.string.XSetAutoDeleteWeeks, ttl, TimeUnit.SECONDS, new Arg(sender, true));
+              makePluralDuration(R.string.XSetAutoDeleteSeconds, R.string.XSetAutoDeleteMinutes, R.string.XSetAutoDeleteHours, R.string.XSetAutoDeleteDays, R.string.XSetAutoDeleteWeeks, R.string.XSetAutoDeleteMonths, ttl, TimeUnit.SECONDS, new Arg(sender, true));
             }
           }
         }
@@ -793,32 +812,71 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
         }
         break;
       }
-      case TYPE_JOIN_BY_LINK: {
+      case TYPE_JOIN_BY_LINK:
+      case TYPE_JOIN_BY_REQUEST: {
         if (inviteLinkValue != null) {
-          if (inviteLinkValue.isPrimary) {
-            if (msg.isOutgoing) {
-              makeText(msg.isChannelPost ? R.string.LinkJoinChannelPrimaryYou : R.string.LinkJoinPrimaryYou, new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
+          if (type == TYPE_JOIN_BY_REQUEST && approvedByUser != null) {
+            if (inviteLinkValue.isPrimary) {
+              if (msg.isOutgoing) {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelPrimaryYouWithApproval : R.string.LinkJoinPrimaryYouWithApproval, new Arg(inviteLinkValue.inviteLink).setIsUrl(true), new Arg(approvedByUser));
+              } else {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelPrimaryWithApproval : R.string.LinkJoinPrimaryWithApproval, new Arg(sender), new Arg(inviteLinkValue.inviteLink).setIsUrl(true), new Arg(approvedByUser));
+              }
+            } else if (Td.isTemporary(inviteLinkValue)) {
+              if (msg.isOutgoing) {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelTempYouWithApproval : R.string.LinkJoinTempYouWithApproval, new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true), new Arg(approvedByUser));
+              } else {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelTempWithApproval : R.string.LinkJoinTempWithApproval, new Arg(sender), new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true), new Arg(approvedByUser));
+              }
             } else {
-              makeText(msg.isChannelPost ? R.string.LinkJoinChannelPrimary : R.string.LinkJoinPrimary, new Arg(sender), new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
-            }
-          } else if (Td.isTemporary(inviteLinkValue)) {
-            if (msg.isOutgoing) {
-              makeText(msg.isChannelPost ? R.string.LinkJoinChannelTempYou : R.string.LinkJoinTempYou, new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
-            } else {
-              makeText(msg.isChannelPost ? R.string.LinkJoinChannelTemp : R.string.LinkJoinTemp, new Arg(sender), new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
+              if (msg.isOutgoing) {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelOtherYouWithApproval : R.string.LinkJoinOtherYouWithApproval, new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true), new Arg(approvedByUser));
+              } else {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelOtherWithApproval : R.string.LinkJoinOtherWithApproval, new Arg(sender), new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true), new Arg(approvedByUser));
+              }
             }
           } else {
-            if (msg.isOutgoing) {
-              makeText(msg.isChannelPost ? R.string.LinkJoinChannelOtherYou : R.string.LinkJoinOtherYou, new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
+            if (inviteLinkValue.isPrimary) {
+              if (msg.isOutgoing) {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelPrimaryYou : R.string.LinkJoinPrimaryYou, new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
+              } else {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelPrimary : R.string.LinkJoinPrimary, new Arg(sender), new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
+              }
+            } else if (Td.isTemporary(inviteLinkValue)) {
+              if (msg.isOutgoing) {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelTempYou : R.string.LinkJoinTempYou, new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
+              } else {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelTemp : R.string.LinkJoinTemp, new Arg(sender), new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
+              }
             } else {
-              makeText(msg.isChannelPost ? R.string.LinkJoinChannelOther : R.string.LinkJoinOther, new Arg(sender), new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
+              if (msg.isOutgoing) {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelOtherYou : R.string.LinkJoinOtherYou, new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
+              } else {
+                makeText(msg.isChannelPost ? R.string.LinkJoinChannelOther : R.string.LinkJoinOther, new Arg(sender), new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
+              }
             }
           }
         } else {
-          if (msg.isOutgoing) {
-            makeText(msg.isChannelPost ? R.string.YouJoinedByLink : R.string.group_user_join_by_link_self);
+          if (type == TYPE_JOIN_BY_REQUEST) {
+            if (approvedByUser != null) {
+              if (msg.isOutgoing) {
+                makeText(msg.isChannelPost ? R.string.YouJoinedByLinkWithApproval : R.string.group_user_join_by_link_self_with_approval, new Arg(approvedByUser));
+              } else {
+                makeText(msg.isChannelPost ? R.string.XJoinedByLinkWithApproval : R.string.group_user_join_by_link_with_approval, new Arg(sender), new Arg(approvedByUser));
+              }
+            } else {
+              if (msg.isOutgoing) {
+                makeText(msg.isChannelPost ? R.string.YouAcceptedToChannel : R.string.YouAcceptedToGroup);
+              } else {
+                makeText(msg.isChannelPost ? R.string.XAcceptedToChannel : R.string.XAcceptedToGroup, new Arg(sender), new Arg(approvedByUser));
+              }
+            }
           } else {
-            makeText(msg.isChannelPost ? R.string.XJoinedByLink : R.string.group_user_join_by_link, new Arg(sender));
+            if (msg.isOutgoing) {
+              makeText(msg.isChannelPost ? R.string.YouJoinedByLink : R.string.group_user_join_by_link_self);
+            } else {
+              makeText(msg.isChannelPost ? R.string.XJoinedByLink : R.string.group_user_join_by_link, new Arg(sender));
+            }
           }
         }
         break;
@@ -892,7 +950,11 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
         makeText(R.string.EventLogRemovedCaption, new Arg(sender));
         break;
       case TYPE_EVENT_SLOW_MODE_DELAY_CHANGED:
-        makeText(R.string.EventLogSlowModeChanged, new Arg(sender), new Arg(Lang.getDuration((int) longValue)));
+        if (msg.isOutgoing) {
+          makeText(R.string.EventLogSlowModeChangedYou, new Arg(Lang.getDuration((int) longValue)));
+        } else {
+          makeText(R.string.EventLogSlowModeChanged, new Arg(sender), new Arg(Lang.getDuration((int) longValue)));
+        }
         break;
       case TYPE_EVENT_SLOW_MODE_DELAY_DISABLED:
         makeText(R.string.EventLogSlowModeDisabled, new Arg(sender));
@@ -916,7 +978,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
       case TYPE_EVENT_LOCATION_SET:
         makeText(R.string.EventLogLocationSet, new Arg(sender), new Arg(stringValue, locationValue));
         break;
-      case TYPE_EVENT_VOICE_CHAT_PARTICIPANT_VOLUME_CHANGED: {
+      case TYPE_EVENT_VIDEO_CHAT_PARTICIPANT_VOLUME_CHANGED: {
         Arg volume = new Arg((longValue / 100) + "%");
         if (msg.isOutgoing) {
           makeText(R.string.EventLogChangedVolumeYou, new Arg(actionSender), volume);
@@ -927,18 +989,34 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
         }
         break;
       }
-      case TYPE_EVENT_VOICE_CHAT_MUTE_NEW_PARTICIPANTS_TOGGLED:
-        if (msg.isOutgoing) {
-          makeText(boolValue ? R.string.EventLogMutedNewParticipantsYou : R.string.EventLogUnmutedNewParticipantsYou);
+      case TYPE_EVENT_VIDEO_CHAT_MUTE_NEW_PARTICIPANTS_TOGGLED:
+        if (msg.isChannelPost) {
+          if (msg.isOutgoing) {
+            makeText(boolValue ? R.string.EventLogChannelMutedNewParticipantsYou : R.string.EventLogChannelUnmutedNewParticipantsYou);
+          } else {
+            makeText(boolValue ? R.string.EventLogChannelMutedNewParticipants : R.string.EventLogChannelUnmutedNewParticipants, new Arg(sender));
+          }
         } else {
-          makeText(boolValue ? R.string.EventLogMutedNewParticipants : R.string.EventLogUnmutedNewParticipants, new Arg(sender));
+          if (msg.isOutgoing) {
+            makeText(boolValue ? R.string.EventLogMutedNewParticipantsYou : R.string.EventLogUnmutedNewParticipantsYou);
+          } else {
+            makeText(boolValue ? R.string.EventLogMutedNewParticipants : R.string.EventLogUnmutedNewParticipants, new Arg(sender));
+          }
         }
         break;
-      case TYPE_EVENT_VOICE_CHAT_IS_MUTED_TOGGLED:
-        if (msg.isOutgoing) {
-          makeText(boolValue ? R.string.EventLogMutedParticipantYou : R.string.EventLogUnmutedParticipantYou, new Arg(actionSender));
+      case TYPE_EVENT_VIDEO_CHAT_IS_MUTED_TOGGLED:
+        if (msg.isChannelPost) {
+          if (msg.isOutgoing) {
+            makeText(boolValue ? R.string.EventLogChannelMutedParticipantYou : R.string.EventLogChannelUnmutedParticipantYou, new Arg(actionSender));
+          } else {
+            makeText(boolValue ? R.string.EventLogChannelMutedParticipant : R.string.EventLogChannelUnmutedParticipant, new Arg(sender), new Arg(actionSender));
+          }
         } else {
-          makeText(boolValue ? R.string.EventLogMutedParticipant : R.string.EventLogUnmutedParticipant, new Arg(sender), new Arg(actionSender));
+          if (msg.isOutgoing) {
+            makeText(boolValue ? R.string.EventLogMutedParticipantYou : R.string.EventLogUnmutedParticipantYou, new Arg(actionSender));
+          } else {
+            makeText(boolValue ? R.string.EventLogMutedParticipant : R.string.EventLogUnmutedParticipant, new Arg(sender), new Arg(actionSender));
+          }
         }
         break;
       case TYPE_EVENT_LOCATION_CHANGED:
@@ -947,31 +1025,31 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
       case TYPE_EVENT_LOCATION_REMOVED:
         makeText(R.string.EventLogLocationRemoved, new Arg(sender));
         break;
-      case TYPE_VOICE_CHAT_STARTED:
+      case TYPE_VIDEO_CHAT_STARTED:
         if (msg.isOutgoing) {
-          makeText(R.string.VoiceChatStartedYou);
+          makeText(msg.isChannelPost ? R.string.VoiceChatStartedYou : R.string.VoiceChatStartedYou);
         } else if (!sender.isAnonymousGroupAdmin()) {
-          makeText(R.string.VoiceChatStartedBy, new Arg(sender));
+          makeText(msg.isChannelPost ? R.string.LiveStreamStartedBy : R.string.VoiceChatStartedBy, new Arg(sender));
         } else {
-          makeText(R.string.VoiceChatStarted);
+          makeText(msg.isChannelPost ? R.string.LiveStreamStarted : R.string.VoiceChatStarted);
         }
         break;
-      case TYPE_VOICE_CHAT_ENDED:
+      case TYPE_VIDEO_CHAT_ENDED:
         if (msg.isOutgoing) {
-          makeText(R.string.VoiceChatEndedYou, new Arg(Lang.getCallDuration((int) longValue)));
+          makeText(msg.isChannelPost ? R.string.LiveStreamEndedYou : R.string.VoiceChatEndedYou, new Arg(Lang.getCallDuration((int) longValue)));
         } else if (!sender.isAnonymousGroupAdmin()) {
-          makeText(R.string.VoiceChatEndedBy, new Arg(sender), new Arg(Lang.getCallDuration((int) longValue)));
+          makeText(msg.isChannelPost ? R.string.LiveStreamEndedBy : R.string.VoiceChatEndedBy, new Arg(sender), new Arg(Lang.getCallDuration((int) longValue)));
         } else {
-          makeText(R.string.VoiceChatEnded, new Arg(Lang.getCallDuration((int) longValue)));
+          makeText(msg.isChannelPost ? R.string.LiveStreamEnded : R.string.VoiceChatEnded, new Arg(Lang.getCallDuration((int) longValue)));
         }
         break;
-      case TYPE_INVITE_VOICE_CHAT_PARTICIPANTS: {
+      case TYPE_INVITE_VIDEO_CHAT_PARTICIPANTS: {
         if (sender.isSelf() || msg.isOutgoing) {
-          makeText(R.string.VoiceChatInviteOther, new Arg(this, actionUserIds));
+          makeText(msg.isChannelPost ? R.string.LiveStreamInviteOther : R.string.VoiceChatInviteOther, new Arg(this, actionUserIds));
         } else if (actionUserIds.length == 1 && tdlib.isSelfUserId(actionUserIds[0])) {
-          makeText(R.string.VoiceChatInviteSelf, new Arg(sender));
+          makeText(msg.isChannelPost ? R.string.LiveStreamInviteSelf : R.string.VoiceChatInviteSelf, new Arg(sender));
         } else {
-          makeText(R.string.VoiceChatInvite, new Arg(sender), new Arg(this, actionUserIds));
+          makeText(msg.isChannelPost ? R.string.LiveStreamInvite : R.string.VoiceChatInvite, new Arg(sender), new Arg(this, actionUserIds));
         }
         break;
       }
@@ -1023,15 +1101,15 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
     private TdApi.Location location;
     private boolean isActive, isUrl;
 
-    private int[] userIds;
+    private long[] userIds;
     private String[] strings;
     private long chatId;
 
-    public Arg (TGMessage context, int[] userIds) {
+    public Arg (TGMessage context, long[] userIds) {
       this.userIds = userIds;
       this.strings = new String[userIds.length];
       int i = 0;
-      for (int userId : userIds) {
+      for (long userId : userIds) {
         strings[i] = wrap(TD.getUserName(userId, context.userForId(userId)));
         i++;
       }
@@ -1130,34 +1208,45 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
     makeTextImpl(resId, false, 0, args);
   }
 
-  private void makePluralDuration (@StringRes int secondsRes, @StringRes int minutesRes, @StringRes int hoursRes, @StringRes int daysRes, @StringRes int weeksRes, final long time, final TimeUnit unit, Arg... args) {
-    int days = (int) unit.toDays(time);
-    if (days >= 7) {
-      makePlural(weeksRes, days / 7, args);
+  private void makePluralDuration (@StringRes int secondsRes, @StringRes int minutesRes, @StringRes int hoursRes, @StringRes int daysRes, @StringRes int weeksRes, @StringRes int monthsRes, final long duration, final TimeUnit unit, Arg... args) {
+    final long days = unit.toDays(duration);
+    final long months = days / 30;
+    final long weeks = days / 7;
+    final long hours = unit.toHours(duration);
+    final long minutes = unit.toMinutes(duration);
+    final long seconds = unit.toSeconds(duration);
+    if (monthsRes != 0 && months > 0) {
+      makePlural(monthsRes, months, args);
       return;
     }
-    if (days > 0) {
+    if (weeksRes != 0 && weeks > 0) {
+      makePlural(weeksRes, weeks, args);
+      return;
+    }
+    if (daysRes != 0 && days > 0) {
       makePlural(daysRes, days, args);
       return;
     }
-    int hours = (int) unit.toHours(time);
-    if (hours > 0) {
+    if (hoursRes != 0 && hours > 0) {
       makePlural(hoursRes, hours, args);
       return;
     }
-    int minutes = (int) unit.toMinutes(time);
-    if (minutes > 0) {
+    if (minutesRes != 0 && minutes > 0) {
       makePlural(minutesRes, minutes, args);
       return;
     }
-    makePlural(secondsRes, (int) unit.toSeconds(time), args);
+    if (secondsRes != 0) {
+      makePlural(secondsRes, seconds, args);
+      return;
+    }
+    throw new IllegalArgumentException();
   }
 
-  private void makePlural (@StringRes int pluralResId, int num, Arg... args) {
+  private void makePlural (@StringRes int pluralResId, long num, Arg... args) {
     makeTextImpl(pluralResId, true, num, args);
   }
 
-  private void makeTextImpl (@StringRes int resId, boolean isPlural, int num, Arg... args) {
+  private void makeTextImpl (@StringRes int resId, boolean isPlural, long num, Arg... args) {
     if ((args == null || args.length == 0) && !isPlural) {
       setText(resId != 0 ? Lang.getString(resId) : customFormat);
       return;
@@ -1226,7 +1315,13 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
             span.setColorId(colorId);
           }
           span.setOnClickListener((view, span1) -> {
-            data.onClick(this);
+            if ((type == TYPE_JOIN_BY_LINK || type == TYPE_EVENT_INVITE_LINK_REVOKED) && inviteLinkValue != null) {
+              tdlib.ui().showInviteLinkOptionsPreload(controller(), inviteLinkValue, getChatId(), true, null, null);
+            } else if (type == TYPE_EVENT_INVITE_LINK_DELETE && inviteLinkValue != null) {
+              tdlib.ui().showInviteLinkOptions(controller(), inviteLinkValue, getChatId(), true, true, null, null);
+            } else {
+              data.onClick(this);
+            }
             return true;
           });
         }
@@ -1274,7 +1369,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
                 String concatSeparator = Lang.getConcatSeparator();
                 String concatSeparatorLast = Lang.getConcatSeparatorLast(true);
                 int index = 0;
-                for (int userId : data.userIds) {
+                for (long userId : data.userIds) {
                   if (index > 0) {
                     if (index == data.userIds.length - 1) {
                       spanned.insert(i, concatSeparatorLast);

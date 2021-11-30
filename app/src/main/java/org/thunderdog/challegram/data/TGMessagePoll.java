@@ -243,11 +243,11 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
   private static final float VOTER_SPACING = 4f;
 
   private static class UserEntry {
-    private final int userId;
+    private final long userId;
     private final ImageFile avatarFile;
     private final AvatarPlaceholder avatarPlaceholder;
 
-    public UserEntry (Tdlib tdlib, int userId) {
+    public UserEntry (Tdlib tdlib, long userId) {
       this.userId = userId;
       this.avatarFile = tdlib.cache().userAvatar(userId);
       if (this.avatarFile != null) {
@@ -263,7 +263,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
 
     @Override
     public int hashCode() {
-      return userId;
+      return (int) (userId ^ (userId >>> 32));
     }
 
     public void draw (Canvas c, TGMessage context, ComplexReceiver complexReceiver, float cx, float cy, final float alpha) {
@@ -424,11 +424,14 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     }
     height += Screen.dp(10f) + Screen.dp(14f);
     height += Screen.dp(12f);
+    if (useBubbles()) {
+      height += Screen.dp(8f);
+    }
     return height;
   }
 
   @Override
-  public boolean filterKey (int receiverType, Receiver receiver, int key) {
+  public boolean filterKey (int receiverType, Receiver receiver, long key) {
     if (recentVoters != null) {
       for (ListAnimator.Entry<UserEntry> recentVoter : recentVoters) {
         if (recentVoter.item.userId == key) {
@@ -737,7 +740,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       for (ListAnimator.Entry<Button> entry : button) {
         maxVisibility = Math.max(entry.getVisibility(), maxVisibility);
         int x = startX + maxWidth / 2 - entry.item.text.getWidth() / 2;
-        int y = startY + Screen.dp(4f);
+        int y = startY + Screen.dp(useBubbles() ? 6f : 4f);
         /*float textVisibility = entry.getVisibility();
         if (textVisibility != 1f) {
           float scale = .9f + .1f * textVisibility;
@@ -766,7 +769,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       decentColor = U.alphaColor(1f - maxVisibility, decentColor);
     }*/
     int textCx = startX + maxWidth / 2 - totalVoterCountStrWidth / 2;
-    int textCy = startY + textOffset - Screen.dp(7f);
+    int textCy = startY + textOffset - Screen.dp(useBubbles() ? 5f : 7f);
     if (!isAnonymous() || isMultiChoicePoll()) {
       decentColor = ColorUtils.alphaColor(1f - maxVisibility, decentColor);
       c.drawText(totalVoterCountStr, textCx, textCy, Paints.getRegularTextPaint(12f, decentColor));
@@ -884,10 +887,10 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     return true;
   }
 
-  private void setRecentVoters (int[] recentVoterUserIds, boolean animated) {
+  private void setRecentVoters (long[] recentVoterUserIds, boolean animated) {
     if (recentVoterUserIds != null && recentVoterUserIds.length > 0) {
       List<UserEntry> entries = new ArrayList<>(recentVoterUserIds.length);
-      for (int userId : recentVoterUserIds) {
+      for (long userId : recentVoterUserIds) {
         entries.add(new UserEntry(tdlib, userId));
       }
       if (this.recentVoters == null)

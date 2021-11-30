@@ -10,20 +10,17 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.ExoPlaybackException;
+import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.PlaybackException;
-import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.source.ClippingMediaSource;
 import com.google.android.exoplayer2.source.LoopingMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
-import com.google.android.exoplayer2.source.TrackGroupArray;
-import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
-import com.google.android.exoplayer2.video.VideoListener;
+import com.google.android.exoplayer2.video.VideoSize;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
@@ -47,7 +44,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
  * Author: default
  */
 
-public class VideoPlayerView implements Player.EventListener, CallManager.CurrentCallListener, Runnable, VideoListener {
+public class VideoPlayerView implements Player.Listener, CallManager.CurrentCallListener, Runnable {
   private static class SeekHandler extends Handler {
     @Override
     public void handleMessage (Message msg) {
@@ -58,7 +55,7 @@ public class VideoPlayerView implements Player.EventListener, CallManager.Curren
   private final SeekHandler seekHandler;
   // private final TrackSelector selector;
   // private final LoadControl loadControl;
-  private @Nullable SimpleExoPlayer player;
+  private @Nullable ExoPlayer player;
   private View targetView;
 
   private boolean noProgressUpdates;
@@ -108,19 +105,6 @@ public class VideoPlayerView implements Player.EventListener, CallManager.Curren
   }
 
   // ExoPlayer stuff
-
-  @Override
-  public void onPlaybackParametersChanged (PlaybackParameters playbackParameters) {
-
-  }
-
-  @Override
-  public void onTracksChanged (TrackGroupArray trackGroups, TrackSelectionArray trackSelections) {
-
-  }
-
-  @Override
-  public void onRepeatModeChanged (int mode) { }
 
   private @Nullable MediaItem currentItem;
 
@@ -187,7 +171,6 @@ public class VideoPlayerView implements Player.EventListener, CallManager.Curren
     if (player == null) {
       this.player = U.newExoPlayer(context, preferExtensions);
       this.player.addListener(this);
-      this.player.addVideoListener(this);
       checkMuted();
       if (targetView instanceof SurfaceView) {
         this.player.setVideoSurfaceView((SurfaceView) targetView);
@@ -256,10 +239,10 @@ public class VideoPlayerView implements Player.EventListener, CallManager.Curren
   }
 
   @Override
-  public void onVideoSizeChanged (int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
-    if (player == null || currentItem == null || width == 0 || height == 0)
+  public void onVideoSizeChanged (@NonNull VideoSize videoSize) {
+    if (player == null || currentItem == null || videoSize.width == 0 || videoSize.height == 0)
       return;
-    if (currentItem.setDimensions(width, height) && targetView != null) {
+    if (currentItem.setDimensions(videoSize.width, videoSize.height) && targetView != null) {
       targetView.requestLayout();
     }
   }
@@ -355,12 +338,7 @@ public class VideoPlayerView implements Player.EventListener, CallManager.Curren
   // ExoPlayer listener
 
   @Override
-  public void onLoadingChanged (boolean isLoading) {
-
-  }
-
-  @Override
-  public void onPlayerStateChanged (boolean playWhenReady, int playbackState) {
+  public void onPlaybackStateChanged (@Player.State int playbackState) {
     if (callback != null && playbackState == Player.STATE_READY) {
       callback.onPlayReady();
     }

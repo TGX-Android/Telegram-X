@@ -16,6 +16,13 @@ fun ChatPermissions.copyTo (dst: ChatPermissions) {
   dst.canChangeInfo = this.canChangeInfo
 }
 
+fun ChatPosition.copyTo (dst: ChatPosition) {
+  dst.list = this.list
+  dst.order = this.order
+  dst.isPinned = this.isPinned
+  dst.source = this.source
+}
+
 fun File.copyTo (dst: File): Boolean {
   val hasChanges = !this.equalsTo(dst, false)
 
@@ -69,6 +76,7 @@ fun Message.copyTo (dst: Message) {
   dst.canBeDeletedForAllUsers = this.canBeDeletedForAllUsers
   dst.canGetStatistics = this.canGetStatistics
   dst.canGetMessageThread = this.canGetMessageThread
+  dst.canGetViewers = this.canGetViewers
   dst.canGetMediaTimestampLinks = this.canGetMediaTimestampLinks
   dst.hasTimestampedMedia = this.hasTimestampedMedia
   dst.isChannelPost = this.isChannelPost
@@ -144,6 +152,7 @@ fun Message?.copyOf (): Message? {
       this.canBeDeletedForAllUsers,
       this.canGetStatistics,
       this.canGetMessageThread,
+      this.canGetViewers,
       this.canGetMediaTimestampLinks,
       this.hasTimestampedMedia,
       this.isChannelPost,
@@ -190,8 +199,10 @@ fun Chat?.copyOf (): Chat? {
       this.unreadMentionCount,
       this.notificationSettings,
       this.messageTtlSetting,
+      this.themeName,
       this.actionBar,
-      this.voiceChat,
+      this.videoChat,
+      this.pendingJoinRequests,
       this.replyMarkupMessageId,
       this.draftMessage,
       this.clientData
@@ -274,7 +285,7 @@ fun ChatMemberStatus?.copyOf (): ChatMemberStatus? {
         this.canRestrictMembers,
         this.canPinMessages,
         this.canPromoteMembers,
-        this.canManageVoiceChats,
+        this.canManageVideoChats,
         this.isAnonymous
       )
       ChatMemberStatusBanned.CONSTRUCTOR -> ChatMemberStatusBanned((this as ChatMemberStatusBanned).bannedUntilDate)

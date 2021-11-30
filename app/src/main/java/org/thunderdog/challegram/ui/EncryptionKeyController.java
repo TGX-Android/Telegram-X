@@ -37,10 +37,10 @@ import me.vkryl.core.StringUtils;
 
 public class EncryptionKeyController extends ViewController<EncryptionKeyController.Args> implements TGLegacyManager.EmojiLoadListener {
   public static class Args {
-    public int userId;
+    public long userId;
     public byte[] keyHash;
 
-    public Args (int userId, byte[] keyHash) {
+    public Args (long userId, byte[] keyHash) {
       this.userId = userId;
       this.keyHash = keyHash;
     }

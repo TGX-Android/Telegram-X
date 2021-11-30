@@ -502,7 +502,7 @@ public abstract class PageBlock implements MultipleViewProvider.InvalidateConten
         break;
       }
       case TdApi.PageBlockAuthorDate.CONSTRUCTOR: {
-        PageBlockRichText text = new PageBlockRichText(parent, (TdApi.PageBlockAuthorDate) block, openParameters);
+        PageBlockRichText text = new PageBlockRichText(parent, (TdApi.PageBlockAuthorDate) block, context.viewCount, openParameters);
         context.process(text, out);
         break;
       }

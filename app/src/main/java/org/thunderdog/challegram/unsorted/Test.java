@@ -10,7 +10,6 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
-import me.vkryl.leveldb.LevelDB;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.StringList;
@@ -25,6 +24,7 @@ import me.vkryl.core.FileUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.util.Blob;
+import me.vkryl.leveldb.LevelDB;
 import me.vkryl.td.Td;
 
 /**
@@ -65,7 +65,7 @@ public class Test {
 
   // public static boolean HIDE_PHONE_NUMBER = false;
 
-  public static final boolean NEED_CLICK = BuildConfig.DEBUG;
+  public static final boolean NEED_CLICK = false;
   public static final String CLICK_NAME = "Run test";
 
   public static TdApi.ChatAction testAction;
@@ -110,9 +110,6 @@ public class Test {
   }
 
   public static boolean onChatClick (Tdlib tdlib, TdApi.Chat chat) {
-    if (true) {
-      return false;
-    }
     if (BuildConfig.DEBUG) {
       /*if (true) {
         if (!tdlib.isChannelChat(chat) || !TD.isAdmin(tdlib.chatStatus(chat.id)))
@@ -123,7 +120,7 @@ public class Test {
         return true;
       }*/
       // Testing typings
-      int userId = tdlib.chatUserId(chat);
+      long userId = tdlib.chatUserId(chat);
       if (userId == 0) {
         userId = Td.getSenderUserId(chat.lastMessage);
       }
@@ -268,7 +265,7 @@ public class Test {
     Log.load(null);
 
     File testDb = getTestDBDir();
-    LevelDB db = new LevelDB(testDb.getPath(), true);
+    LevelDB db = new LevelDB(testDb.getPath(), true, null);
     try {
       db.clear();
 

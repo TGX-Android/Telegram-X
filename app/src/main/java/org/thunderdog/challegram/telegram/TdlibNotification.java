@@ -110,8 +110,11 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
         return ((TdApi.NotificationTypeNewMessage) notification.type).message.isOutgoing;
       case TdApi.NotificationTypeNewPushMessage.CONSTRUCTOR:
         return ((TdApi.NotificationTypeNewPushMessage) notification.type).isOutgoing;
+      case TdApi.NotificationTypeNewCall.CONSTRUCTOR:
+      case TdApi.NotificationTypeNewSecretChat.CONSTRUCTOR:
+        return false;
     }
-    return false;
+    throw new UnsupportedOperationException(notification.type.toString());
   }
 
   public boolean isVisuallySilent () { // Display bell icon
@@ -342,6 +345,8 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
       case TdApi.NotificationTypeNewPushMessage.CONSTRUCTOR: {
         TdApi.NotificationTypeNewPushMessage push = (TdApi.NotificationTypeNewPushMessage) notification.type;
         TD.ContentPreview content = TD.getNotificationPreview(tdlib, getChatId(), push, allowContent);
+        if (content == null)
+          throw new UnsupportedOperationException(Integer.toString(push.content.getConstructor()));
         if (hasCustomText != null && !content.isTranslatable) {
           hasCustomText[0] = true;
         }

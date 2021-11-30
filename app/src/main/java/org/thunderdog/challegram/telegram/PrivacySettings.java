@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import me.vkryl.core.ArrayUtils;
-import me.vkryl.core.collection.IntList;
 import me.vkryl.core.collection.LongList;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
@@ -21,12 +20,12 @@ public class PrivacySettings {
 
   private final List<TdApi.UserPrivacySettingRule> rules;
   private final int mode;
-  private final int[] plusUserIds;
-  private final int[] minusUserIds;
+  private final long[] plusUserIds;
+  private final long[] minusUserIds;
   private final long[] plusChatIds;
   private final long[] minusChatIds;
 
-  public PrivacySettings (TdApi.UserPrivacySettingRules rules, int mode, int[] plusUserIds, int[] minusUserIds, long[] plusChatIds, long[] minusChatIds) {
+  public PrivacySettings (TdApi.UserPrivacySettingRules rules, int mode, long[] plusUserIds, long[] minusUserIds, long[] plusChatIds, long[] minusChatIds) {
     this.rules = Arrays.asList(rules.rules);
     this.mode = mode;
     this.plusUserIds = plusUserIds;
@@ -64,7 +63,7 @@ public class PrivacySettings {
     loop: for (TdApi.UserPrivacySettingRule rule : rules) {
       switch (rule.getConstructor()) {
         case TdApi.UserPrivacySettingRuleAllowUsers.CONSTRUCTOR: {
-          for (int userId : ((TdApi.UserPrivacySettingRuleAllowUsers) rule).userIds) {
+          for (long userId : ((TdApi.UserPrivacySettingRuleAllowUsers) rule).userIds) {
             list.append(ChatId.fromUserId(userId));
           }
           break;
@@ -89,7 +88,7 @@ public class PrivacySettings {
     loop: for (TdApi.UserPrivacySettingRule rule : rules) {
       switch (rule.getConstructor()) {
         case TdApi.UserPrivacySettingRuleRestrictUsers.CONSTRUCTOR: {
-          for (int userId : ((TdApi.UserPrivacySettingRuleRestrictUsers) rule).userIds) {
+          for (long userId : ((TdApi.UserPrivacySettingRuleRestrictUsers) rule).userIds) {
             list.append(ChatId.fromUserId(userId));
           }
           break;
@@ -281,7 +280,7 @@ public class PrivacySettings {
     return new TdApi.UserPrivacySettingRules(newRules.toArray(new TdApi.UserPrivacySettingRule[0]));
   }
 
-  public TdApi.UserPrivacySettingRules toggleUser (int userId, boolean isContact, long[] groupsInCommon, boolean value) {
+  public TdApi.UserPrivacySettingRules toggleUser (long userId, boolean isContact, long[] groupsInCommon, boolean value) {
     List<TdApi.UserPrivacySettingRule> newRules = new ArrayList<>(rules);
     TdApi.UserPrivacySettingRule matchingRule;
     while (isAllow(matchingRule = firstMatchingRule(newRules, userId, isContact, groupsInCommon)) != value) {
@@ -318,7 +317,7 @@ public class PrivacySettings {
           break;
         }
         if (index != -1) {
-          TdApi.UserPrivacySettingRule rule = value ? new TdApi.UserPrivacySettingRuleAllowUsers(new int[] {userId}) : new TdApi.UserPrivacySettingRuleRestrictUsers(new int[] {userId});
+          TdApi.UserPrivacySettingRule rule = value ? new TdApi.UserPrivacySettingRuleAllowUsers(new long[] {userId}) : new TdApi.UserPrivacySettingRuleRestrictUsers(new long[] {userId});
           if (index < newRules.size()) {
             newRules.add(index, rule);
           } else {
@@ -326,7 +325,7 @@ public class PrivacySettings {
           }
         }
       } else {
-        int[] userIds;
+        long[] userIds;
         switch (matchingRule.getConstructor()) {
           case TdApi.UserPrivacySettingRuleRestrictUsers.CONSTRUCTOR:
             userIds = ((TdApi.UserPrivacySettingRuleRestrictUsers) matchingRule).userIds;
@@ -341,7 +340,7 @@ public class PrivacySettings {
         if (i == -1)
           throw new UnsupportedOperationException();
         if (userIds.length > 1) {
-          int[] newUserIds = ArrayUtils.removeElement(userIds, i);
+          long[] newUserIds = ArrayUtils.removeElement(userIds, i);
           switch (matchingRule.getConstructor()) {
             case TdApi.UserPrivacySettingRuleRestrictUsers.CONSTRUCTOR:
               ((TdApi.UserPrivacySettingRuleRestrictUsers) matchingRule).userIds = newUserIds;
@@ -414,11 +413,11 @@ public class PrivacySettings {
     return null;
   }
 
-  public TdApi.UserPrivacySettingRule firstMatchingRule (int userId, boolean isContact, long[] groupsInCommon) {
+  public TdApi.UserPrivacySettingRule firstMatchingRule (long userId, boolean isContact, long[] groupsInCommon) {
     return firstMatchingRule(rules, userId, isContact, groupsInCommon);
   }
 
-  public static TdApi.UserPrivacySettingRule firstMatchingRule (List<TdApi.UserPrivacySettingRule> rules, int userId, boolean isContact, long[] groupsInCommon) {
+  public static TdApi.UserPrivacySettingRule firstMatchingRule (List<TdApi.UserPrivacySettingRule> rules, long userId, boolean isContact, long[] groupsInCommon) {
     for (TdApi.UserPrivacySettingRule rule : rules) {
       switch (rule.getConstructor()) {
         case TdApi.UserPrivacySettingRuleAllowContacts.CONSTRUCTOR:
@@ -508,7 +507,7 @@ public class PrivacySettings {
     throw new UnsupportedOperationException();
   }
 
-  public TdApi.UserPrivacySettingRules allowExceptions (int[] userIds, long[] chatIds) {
+  public TdApi.UserPrivacySettingRules allowExceptions (long[] userIds, long[] chatIds) {
     List<TdApi.UserPrivacySettingRule> newRules = new ArrayList<>(this.rules);
     for (int i = newRules.size() - 1; i >= 0; i--) {
       TdApi.UserPrivacySettingRule rule = newRules.get(i);
@@ -567,7 +566,7 @@ public class PrivacySettings {
     return new TdApi.UserPrivacySettingRules(newRules.toArray(new TdApi.UserPrivacySettingRule[0]));
   }
 
-  public TdApi.UserPrivacySettingRules disallowExceptions (int[] userIds, long[] chatIds) {
+  public TdApi.UserPrivacySettingRules disallowExceptions (long[] userIds, long[] chatIds) {
     List<TdApi.UserPrivacySettingRule> newRules = new ArrayList<>(this.rules);
     for (int i = newRules.size() - 1; i >= 0; i--) {
       TdApi.UserPrivacySettingRule rule = newRules.get(i);
@@ -612,11 +611,11 @@ public class PrivacySettings {
     return new TdApi.UserPrivacySettingRules(newRules.toArray(new TdApi.UserPrivacySettingRule[0]));
   }
 
-  public int[] getPlusUserIds () {
+  public long[] getPlusUserIds () {
     return plusUserIds;
   }
 
-  public int[] getMinusUserIds () {
+  public long[] getMinusUserIds () {
     return minusUserIds;
   }
 
@@ -666,8 +665,8 @@ public class PrivacySettings {
     boolean allowContacts = false;
     boolean allowAll = false;
     boolean contactsHandled = false;
-    IntList plusUserIds = null;
-    IntList minusUserIds = null;
+    LongList plusUserIds = null;
+    LongList minusUserIds = null;
     LongList plusChatIds = null;
     LongList minusChatIds = null;
     loop : for (TdApi.UserPrivacySettingRule rule : rules.rules) {
@@ -699,17 +698,17 @@ public class PrivacySettings {
           break;
         }
         case TdApi.UserPrivacySettingRuleAllowUsers.CONSTRUCTOR: {
-          int[] userIds = ((TdApi.UserPrivacySettingRuleAllowUsers) rule).userIds;
+          long[] userIds = ((TdApi.UserPrivacySettingRuleAllowUsers) rule).userIds;
           if (plusUserIds == null)
-            plusUserIds = new IntList(userIds);
+            plusUserIds = new LongList(userIds);
           else
             plusUserIds.appendAll(userIds);
           break;
         }
         case TdApi.UserPrivacySettingRuleRestrictUsers.CONSTRUCTOR: {
-          int[] userIds = ((TdApi.UserPrivacySettingRuleRestrictUsers) rule).userIds;
+          long[] userIds = ((TdApi.UserPrivacySettingRuleRestrictUsers) rule).userIds;
           if (minusUserIds == null)
-            minusUserIds = new IntList(userIds);
+            minusUserIds = new LongList(userIds);
           else
             minusUserIds.appendAll(userIds);
           break;

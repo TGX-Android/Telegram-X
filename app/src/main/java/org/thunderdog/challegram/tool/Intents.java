@@ -57,11 +57,12 @@ public class Intents {
   public static final int ACTIVITY_RESULT_AUDIO = 102;
   public static final int ACTIVITY_RESULT_RESOLUTION = 103;
   public static final int ACTIVITY_RESULT_GALLERY_FILE = 104;
-  public static final int ACTIVITY_RESULT_PUSH_RESOLUTION = 105;
+  public static final int ACTIVITY_RESULT_FILES = 105;
   public static final int ACTIVITY_RESULT_RESOLUTION_INLINE = 106;
   public static final int ACTIVITY_RESULT_RINGTONE = 107;
   public static final int ACTIVITY_RESULT_RINGTONE_NOTIFICATION = 108;
   public static final int ACTIVITY_RESULT_VIDEO_CAPTURE = 109;
+  public static final int ACTIVITY_RESULT_MANAGE_STORAGE = 110;
 
   private static final String PACKAGE_NAME = BuildConfig.APPLICATION_ID; // UI.getAppContext().getPackageName();
 
@@ -647,12 +648,12 @@ public class Intents {
     return intent;
   }
 
-  public static Intent valueOfChatId (int accountId, long chatId, long specificMessageId) {
+  public static Intent valueOfLocalChatId (int accountId, long localChatId, long specificMessageId) {
     Intent intent = new Intent(UI.getContext(), MainActivity.class);
     secureIntent(intent, true);
-    intent.setAction(Intents.ACTION_OPEN_CHAT + "." + accountId + "." + chatId + "." + Math.random());
+    intent.setAction(Intents.ACTION_OPEN_CHAT + "." + accountId + "." + localChatId + "." + Math.random());
     intent.putExtra("account_id", accountId);
-    intent.putExtra("chat_id", chatId);
+    intent.putExtra("local_id", localChatId);
     intent.putExtra("message_id", specificMessageId);
     // intent.setFlags(32768);
     return intent;

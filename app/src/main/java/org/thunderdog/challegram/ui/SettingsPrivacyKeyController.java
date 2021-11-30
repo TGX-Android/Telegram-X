@@ -27,7 +27,6 @@ import org.thunderdog.challegram.v.CustomRecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
-import me.vkryl.core.collection.IntList;
 import me.vkryl.core.collection.LongList;
 import me.vkryl.td.ChatId;
 
@@ -478,13 +477,13 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
     return null;
   }
 
-  private void setAllowUsers (int[] userIds, long[] chatIds) {
+  private void setAllowUsers (long[] userIds, long[] chatIds) {
     changedPrivacyRules = PrivacySettings.valueOf(currentRules().allowExceptions(userIds, chatIds));
     adapter.updateValuedSettingById(R.id.btn_alwaysAllow);
     adapter.updateValuedSettingById(R.id.btn_neverAllow);
   }
 
-  private void setNeverAllow (int[] userIds, long[] chatIds) {
+  private void setNeverAllow (long[] userIds, long[] chatIds) {
     changedPrivacyRules = PrivacySettings.valueOf(currentRules().disallowExceptions(userIds, chatIds));
     adapter.updateValuedSettingById(R.id.btn_neverAllow);
     adapter.updateValuedSettingById(R.id.btn_alwaysAllow);
@@ -505,7 +504,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
 
   @Override
   public void onAlreadyPickedChatsChanged (List<TGUser> users) {
-    IntList userIds = new IntList(users.size());
+    LongList userIds = new LongList(users.size());
     LongList chatIds = new LongList(users.size());
     for (TGUser user : users) {
       long chatId = user.getChatId();

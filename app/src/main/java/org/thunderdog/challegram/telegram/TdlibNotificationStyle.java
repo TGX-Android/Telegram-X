@@ -15,10 +15,13 @@ import android.util.SparseIntArray;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.Person;
 import androidx.core.app.RemoteInput;
+import androidx.core.content.pm.ShortcutInfoCompat;
+import androidx.core.content.pm.ShortcutManagerCompat;
 import androidx.core.graphics.drawable.IconCompat;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -50,6 +53,7 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -175,7 +179,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
   // Grouped notification
 
-  private static void styleIntent (String action, Intent intent, Tdlib tdlib, TdlibNotificationGroup group, boolean needReply, long[] messageIds, int[] userIds) {
+  private static void styleIntent (String action, Intent intent, Tdlib tdlib, TdlibNotificationGroup group, boolean needReply, long[] messageIds, long[] userIds) {
     Intents.secureIntent(intent, true);
     intent.setAction(action);
     TdlibNotificationExtras.put(intent, tdlib, group, needReply, messageIds, userIds);
@@ -212,7 +216,8 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
   public static final int DISPLAY_STATE_FAIL = 0;
   public static final int DISPLAY_STATE_HIDDEN = 1;
-  public static final int DISPLAY_STATE_OK = 2;
+  public static final int DISPLAY_STATE_POSTPONED = 2;
+  public static final int DISPLAY_STATE_OK = 3;
 
   protected final int displayChildNotification (NotificationManagerCompat manager, Context context, @NonNull TdlibNotificationHelper helper, int badgeCount, boolean allowPreview, @NonNull TdlibNotificationGroup group, TdlibNotificationSettings settings, boolean isRebuild) {
     return displayChildNotification(manager, context, helper, badgeCount, allowPreview, group, settings, helper.getNotificationIdForGroup(group.getId()), false, isRebuild);
@@ -230,6 +235,11 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     if (visualSize == 0) {
       manager.cancel(notificationId);
       return DISPLAY_STATE_HIDDEN;
+    }
+
+    if (!tdlib.account().allowNotifications()) {
+      manager.cancel(notificationId);
+      return DISPLAY_STATE_POSTPONED;
     }
 
     final long chatId = group.getChatId();
@@ -251,6 +261,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     final int category = group.getCategory();
 
     String channelId;
+    String rShortcutId = null;
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       android.app.NotificationChannel channel = (android.app.NotificationChannel) tdlib.notifications().getSystemChannel(group);
       if (channel == null) {
@@ -273,7 +284,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     final boolean onlyScheduled = group.isOnlyScheduled();
     final boolean onlySilent = group.isOnlyInitiallySilent();
     final boolean isChannel = tdlib.isChannelChat(chat);
-    final CharSequence visualChatTitle = Lang.getNotificationTitle(chatTitle, group.getTotalCount(), tdlib.isSelfChat(group.getChatId()), tdlib.isMultiChat(chat), isChannel, group.isMention(), onlyPinned, onlyScheduled, onlySilent);
+    final CharSequence visualChatTitle = Lang.getNotificationTitle(chat.id, chatTitle, group.getTotalCount(), tdlib.isSelfChat(group.getChatId()), tdlib.isMultiChat(chat), isChannel, group.isMention(), onlyPinned, onlyScheduled, onlySilent);
 
     // Content preview download
     List<TdApi.File> cloudReferences = null;
@@ -298,7 +309,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     final boolean needReply = !Passcode.instance().isLocked() && needPreview && (!isSummary || Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) && !isChannel && tdlib.hasWritePermission(chat) && !group.isOnlyScheduled();
     final boolean needReplyToMessage = needReply && canReplyTo(group) && (!ChatId.isPrivate(chatId) || (singleNotification != null && chat.unreadCount > 1));
     final long[] allMessageIds = group.getAllMessageIds();
-    final int[] allUserIds = group.isMention() ? group.getAllUserIds() : null;
+    final long[] allUserIds = group.isMention() ? group.getAllUserIds() : null;
     final boolean[] hasCustomText = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? new boolean[1] : null;
 
     NotificationCompat.CarExtender.UnreadConversation.Builder conversationBuilder = new NotificationCompat.CarExtender.UnreadConversation.Builder(visualChatTitle != null ? visualChatTitle.toString() : null).setLatestTimestamp(TimeUnit.SECONDS.toMillis(lastNotification.getDate()));
@@ -392,7 +403,14 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
         textBuilder.append("\n\n");
       }
 
-      final Person person = buildPerson(this.context, chat, mergedList.get(0), onlyScheduled, onlySilent, !isRebuild);
+      Person p = buildPerson(this.context, chat, mergedList.get(0), onlyScheduled, onlySilent, !isRebuild);
+      final Person person;
+
+      if (p.getKey() != null && chat != null && p.getKey().equals(Long.toString(chat.id))) {
+        person = p.toBuilder().setName(visualChatTitle).build();
+      } else {
+        person = p;
+      }
 
       if (mergedList.size() == 1) {
         TdlibNotification notification = mergedList.get(0);
@@ -508,7 +526,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     final String textContent = textBuilder.toString();
     final CharSequence tickerText = getTickerText(tdlib, helper, allowPreview, chat, lastNotification, true, group.singleSenderId() != 0, hasCustomText);
 
-    final PendingIntent contentIntent = TdlibNotificationUtils.newIntent(tdlib.id(), chatId, group.findTargetMessageId());
+    final PendingIntent contentIntent = TdlibNotificationUtils.newIntent(tdlib.id(), tdlib.settings().getLocalChatId(chatId), group.findTargetMessageId());
 
     NotificationCompat.CarExtender carExtender = new NotificationCompat.CarExtender().setUnreadConversation(conversationBuilder.build());
 
@@ -597,6 +615,10 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       builder.setAllowSystemGeneratedContextualActions(allowPreview && needPreview && hasCustomText[0]);
     }
 
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      rShortcutId = createShortcut(builder, context, group, visualChatTitle, chatId, bitmap);
+    }
+
     int state;
     Notification notification;
     try {
@@ -644,6 +666,10 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     // FIXME 7.0-7.1 android.os.FileUriExposedException:
     // Cleanup
 
+    if (rShortcutId != null) {
+      ShortcutManagerCompat.removeDynamicShortcuts(context, Collections.singletonList(rShortcutId));
+    }
+
     if (cloudReferences != null) {
       for (TdApi.File file : cloudReferences) {
         tdlib.files().removeCloudReference(file, this);
@@ -655,6 +681,36 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
   // Common notification
 
+  @RequiresApi(api = Build.VERSION_CODES.R)
+  protected final String createShortcut (NotificationCompat.Builder builder, Context context, @NonNull TdlibNotificationGroup group, CharSequence visualChatTitle, long chatId, Bitmap icon) {
+    long localChatId = tdlib.settings().getLocalChatId(chatId);
+    String localKey = "tgx_ns_" + tdlib.id() + "_" + localChatId;
+    IconCompat chatIcon = U.isValidBitmap(icon) ? IconCompat.createWithBitmap(icon) : null;
+
+    Person groupPerson = new Person.Builder()
+      .setName(visualChatTitle)
+      .setIcon(chatIcon)
+      .setKey(localKey)
+      .build();
+
+    ShortcutInfoCompat shortcut = new ShortcutInfoCompat.Builder(context, localKey)
+      .setPerson(groupPerson)
+      .setIsConversation()
+      .setLongLived(true)
+      .setShortLabel(visualChatTitle)
+      .setIntent(TdlibNotificationUtils.newCoreIntent(tdlib.id(), localChatId, group.findTargetMessageId()))
+      .setIcon(chatIcon)
+      .build();
+
+    ShortcutManagerCompat.pushDynamicShortcut(context, shortcut);
+    builder.setShortcutInfo(shortcut);
+
+    // TODO: Uncomment to support bubbles. Not usable at the moment.
+    // builder.setBubbleMetadata(new NotificationCompat.BubbleMetadata.Builder(si.getId().build());
+
+    return shortcut.getId();
+  }
+
   protected final void hideExtraSummaryNotifications (NotificationManagerCompat manager, @NonNull TdlibNotificationHelper helper, SparseIntArray displayedCategories) {
     for (int category = TdlibNotificationGroup.CATEGORY_DEFAULT; category <= TdlibNotificationGroup.MAX_CATEGORY; category++) {
       if (displayedCategories.indexOfKey(category) < 0)
@@ -664,7 +720,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
   protected final void displaySummaryNotification (NotificationManagerCompat manager, Context context, @NonNull TdlibNotificationHelper helper, int badgeCount, boolean allowPreview, TdlibNotificationSettings settings, int category, boolean isRebuild) {
     int notificationId = helper.getBaseNotificationId(category);
-    if (helper.isEmpty()) {
+    if (helper.isEmpty() || !tdlib.account().allowNotifications()) {
       manager.cancel(notificationId);
       return;
     }
@@ -733,14 +789,14 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     if (context.isSelfUserId(user.id))
       id = "0";
     else if (id == null)
-      id = Integer.toString(user.id);
+      id = Long.toString(user.id);
     return buildPerson(context, isSelfChat, isGroupChat, isChannel, id, TD.isBot(user), TD.getUserName(user), TD.getLetters(user), TD.getAvatarColorId(user.id, context.myUserId()), user.profilePhoto != null ? user.profilePhoto.small : null, isScheduled, isSilent, allowDownload);
   }
 
   public static Person buildPerson (TdlibNotificationManager context, TdApi.Chat chat, TdlibNotification notification, boolean isScheduled, boolean isSilent, boolean allowDownload) {
     Tdlib tdlib = context.tdlib();
     long senderChatId = notification.findSenderId();
-    int userId = tdlib.chatUserId(chat);
+    long userId = tdlib.chatUserId(chat);
     if (userId == 0 && ChatId.isUserChat(senderChatId) && notification.isSynced()) {
       userId = ChatId.toUserId(senderChatId);
     }
@@ -873,11 +929,11 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
       boolean isGroupConversation = !tdlib.isUserChat(chat) && !tdlib.isChannelChat(chat);
       if (isGroupConversation) {
-        style.setConversationTitle(Lang.getNotificationTitle(tdlib.chatTitle(chat), messageCount, tdlib.isSelfChat(chat), tdlib.isMultiChat(chat), tdlib.isChannelChat(chat), areMentions, arePinned, areOnlyScheduled, areOnlySilent));
+        style.setConversationTitle(Lang.getNotificationTitle(chat.id, tdlib.chatTitle(chat), messageCount, tdlib.isSelfChat(chat), tdlib.isMultiChat(chat), tdlib.isChannelChat(chat), areMentions, arePinned, areOnlyScheduled, areOnlySilent));
       }
       style.setGroupConversation(isGroupConversation);
     } else {
-      style.setConversationTitle(Lang.getNotificationTitle(tdlib.chatTitle(chat), messageCount, tdlib.isSelfChat(chat), tdlib.isMultiChat(chat), tdlib.isChannelChat(chat), areMentions, arePinned, areOnlyScheduled, areOnlySilent));
+      style.setConversationTitle(Lang.getNotificationTitle(chat.id, tdlib.chatTitle(chat), messageCount, tdlib.isSelfChat(chat), tdlib.isMultiChat(chat), tdlib.isChannelChat(chat), areMentions, arePinned, areOnlyScheduled, areOnlySilent));
       style.setGroupConversation(true);
     }
     return style;
@@ -924,7 +980,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       }
       b.setSortKey(makeSortKey(lastNotification, true));
     }
-    b.setContentIntent(TdlibNotificationUtils.newIntent(tdlib.id(), singleChatId, singleTargetMessageId));
+    b.setContentIntent(TdlibNotificationUtils.newIntent(tdlib.id(), tdlib.settings().getLocalChatId(singleChatId), singleTargetMessageId));
 
     styleNotification(tdlib, b, singleChatId, displayingChatsCount == 1 ? chat : null, allowPreview);
 

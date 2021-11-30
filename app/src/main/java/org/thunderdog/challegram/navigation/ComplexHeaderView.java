@@ -882,7 +882,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
           trimmedTitle.draw(c, 0, 0, null, 1f);
         }
 
-        float baseIconLeft = trimmedTitle.getWidth();
+        float baseIconLeft = trimmedTitle.getWidth() + (showLock ? Screen.dp(16f) : 0);
         float toIconLeft = trimmedTitleExpanded != null ? trimmedTitleExpanded.getLastLineWidth() : baseIconLeft;
         float iconLeft = baseIconLeft + (toIconLeft - baseIconLeft) * avatarExpandFactor;
         float iconTop = trimmedTitleExpanded != null ? (trimmedTitleExpanded.getHeight() - trimmedTitle.getHeight()) * avatarExpandFactor : 0;

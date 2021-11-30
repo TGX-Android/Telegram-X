@@ -440,7 +440,7 @@ public class UI {
     getAppHandler().showToast(resource, duration);
   }
 
-  public static void showCustomToast (String message, int duration, int positionY) {
+  public static void showCustomToast (CharSequence message, int duration, int positionY) {
     getAppHandler().showCustomToast(message, duration, positionY);
   }
 

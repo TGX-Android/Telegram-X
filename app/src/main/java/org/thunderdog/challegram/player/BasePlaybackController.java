@@ -17,7 +17,7 @@ import org.thunderdog.challegram.telegram.TdlibManager;
  * Author: default
  */
 
-public abstract class BasePlaybackController implements TGPlayerController.TrackChangeListener, Player.EventListener {
+public abstract class BasePlaybackController implements TGPlayerController.TrackChangeListener, Player.Listener {
   private boolean isDestroyed;
 
   @Override
@@ -98,7 +98,7 @@ public abstract class BasePlaybackController implements TGPlayerController.Track
   protected abstract void displayPlaybackError (PlaybackException e);
 
   @Override
-  public void onPlayerError (PlaybackException e) {
+  public void onPlayerError (@NonNull PlaybackException e) {
     Log.e(Log.TAG_PLAYER, "onPlayerError", e);
     if (object != null) {
       displayPlaybackError(e);

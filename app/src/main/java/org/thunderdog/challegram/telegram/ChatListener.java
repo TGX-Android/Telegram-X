@@ -13,6 +13,7 @@ public interface ChatListener {
   default void onChatPositionChanged (long chatId, TdApi.ChatPosition position, boolean orderChanged, boolean sourceChanged, boolean pinStateChanged) { }
   default void onChatPermissionsChanged (long chatId, TdApi.ChatPermissions permissions) { }
   default void onChatTitleChanged (long chatId, String title) { }
+  default void onChatThemeChanged (long chatId, String themeName) { }
   default void onChatActionBarChanged (long chatId, TdApi.ChatActionBar actionBar) { }
   default void onChatPhotoChanged (long chatId, @Nullable TdApi.ChatPhotoInfo photo) { }
   default void onChatReadInbox (long chatId, long lastReadInboxMessageId, int unreadCount, boolean availabilityChanged) { }
@@ -22,7 +23,8 @@ public interface ChatListener {
   default void onChatBlocked (long chatId, boolean isBlocked) { }
   default void onChatOnlineMemberCountChanged (long chatId, int onlineMemberCount) { }
   default void onChatMessageTtlSettingChanged (long chatId, int messageTtlSetting) { }
-  default void onChatVoiceChatChanged (long chatId, TdApi.VoiceChat voiceChat) { }
+  default void onChatVideoChatChanged (long chatId, TdApi.VideoChat videoChat) { }
+  default void onChatPendingJoinRequestsChanged (long chatId, TdApi.ChatJoinRequestsInfo pendingJoinRequests) { }
   default void onChatReplyMarkupChanged (long chatId, long replyMarkupMessageId) { }
   default void onChatDraftMessageChanged (long chatId, @Nullable TdApi.DraftMessage draftMessage) { }
   default void onChatUnreadMentionCount(long chatId, int unreadMentionCount, boolean availabilityChanged) { }

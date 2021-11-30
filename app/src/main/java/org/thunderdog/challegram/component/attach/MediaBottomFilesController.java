@@ -1,13 +1,25 @@
 package org.thunderdog.challegram.component.attach;
 
+import android.annotation.TargetApi;
+import android.app.Activity;
+import android.content.ActivityNotFoundException;
+import android.content.ClipData;
+import android.content.ContentUris;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.os.Looper;
 import android.os.StatFs;
 import android.provider.MediaStore;
 import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -25,8 +37,12 @@ import org.thunderdog.challegram.data.InlineResult;
 import org.thunderdog.challegram.data.InlineResultCommon;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
+import org.thunderdog.challegram.navigation.HeaderView;
+import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
@@ -37,7 +53,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.DateUtils;
@@ -49,7 +67,7 @@ import me.vkryl.core.lambda.RunnableData;
  * Author: default
  */
 
-public class MediaBottomFilesController extends MediaBottomBaseController<Void> implements View.OnClickListener, View.OnLongClickListener, Comparator<File>, TGPlayerController.PlayListBuilder {
+public class MediaBottomFilesController extends MediaBottomBaseController<Void> implements View.OnClickListener, Menu, View.OnLongClickListener, Comparator<File>, TGPlayerController.PlayListBuilder {
   public MediaBottomFilesController (MediaLayout context) {
     super(context, R.string.File);
   }
@@ -59,11 +77,88 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
     return R.id.controller_media_files;
   }
 
+  @Override
+  protected int getMenuId () {
+    return R.id.menu_more;
+  }
+
+  @Override
+  public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
+    switch (id) {
+      case R.id.menu_more: {
+        header.addMoreButton(menu, this);
+        break;
+      }
+    }
+  }
+
+  @Override
+  public void onMenuItemPressed (int id, View view) {
+    if (id == R.id.menu_btn_more) {
+      showSystemPicker();
+    }
+  }
+
+  @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
+  private void showSystemPicker () {
+    RunnableData<Set<Uri>> callback = uris -> {
+      if (uris != null && !uris.isEmpty()) {
+        List<String> files = new ArrayList<>(uris.size());
+        for (Uri uri : uris) {
+          String filePath = U.tryResolveFilePath(uri);
+          if (!StringUtils.isEmpty(filePath) && U.canReadFile(filePath)) {
+            files.add(filePath);
+          } else {
+            files.add(uri.toString());
+          }
+        }
+        mediaLayout.pickDateOrProceed((forceDisableNotification, schedulingState, disableMarkdown) ->
+          mediaLayout.sendFilesMixed(files, null, new TdApi.MessageSendOptions(forceDisableNotification, false, schedulingState), false)
+        );
+      }
+    };
+    final Intent intent = new Intent(Intent.ACTION_GET_CONTENT)
+      .addCategory(Intent.CATEGORY_OPENABLE)
+      .setType("*/*")
+      .putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+      .putExtra("android.content.extra.SHOW_ADVANCED", true);
+    context.putActivityResultHandler(Intents.ACTIVITY_RESULT_FILES, (requestCode, resultCode, data) -> {
+      if (resultCode == Activity.RESULT_OK) {
+        // Use a LinkedHashSet to maintain any ordering that may be
+        // present in the ClipData
+        LinkedHashSet<Uri> uris = new LinkedHashSet<>();
+        Uri dataUri = data.getData();
+        if (dataUri != null) {
+          uris.add(dataUri);
+        }
+        ClipData clipData = data.getClipData();
+        if (clipData != null) {
+          for (int i = 0; i < clipData.getItemCount(); i++) {
+            Uri uri = clipData.getItemAt(i).getUri();
+            if (uri != null) {
+              uris.add(uri);
+            }
+          }
+        }
+        if (!uris.isEmpty()) {
+          callback.runWithData(uris);
+        }
+      }
+    });
+    try {
+      context.startActivityForResult(intent, Intents.ACTIVITY_RESULT_FILES);
+    } catch (ActivityNotFoundException e) {
+      UI.showToast(R.string.NoFilePicker, Toast.LENGTH_SHORT);
+      Log.i(e);
+    }
+  }
+
   private SettingsAdapter adapter;
 
   private static final String KEY_GALLERY = "gallery";
   private static final String KEY_BUCKET = "bucket";
   private static final String KEY_MUSIC = "music";
+  private static final String KEY_DOWNLOADS = "downloads";
   private static final String KEY_FOLDER = "dir://";
   private static final String KEY_FILE = "file://";
   private static final String KEY_UPPER = "..";
@@ -86,6 +181,8 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
         operation = buildGallery();
       } else if (KEY_MUSIC.equals(currentPath)) {
         operation = buildMusic();
+      } else if (KEY_DOWNLOADS.equals(currentPath)) {
+        operation = buildDownloads();
       } else if (KEY_BUCKET.equals(currentPath)) {
         operation = buildBucket(data);
       } else if (currentPath.startsWith(KEY_FOLDER)) {
@@ -146,17 +243,25 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
     InlineResultCommon musicItem = createItem(context, tdlib, KEY_MUSIC, R.drawable.baseline_music_note_24, Lang.getString(R.string.Music), Lang.getString(R.string.SendMusicHint));
     items.add(createItem(musicItem, R.id.btn_musicFiles));
 
-    try {
-      File file = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-      if (file.exists() && file.isDirectory()) {
-        File[] files = file.listFiles();
-        if (files != null && files.length > 0) {
-          InlineResultCommon common = createItem(context, tdlib, KEY_FOLDER + file.getPath(), R.drawable.baseline_file_download_24, Lang.getString(R.string.Downloads), Lang.plural(R.string.xFiles, files.length));
-          items.add(createItem(common, file.isDirectory() ? R.id.btn_folder : R.id.btn_file));
+    boolean addedDownloads = false;
+    if (U.canManageStorage()) {
+      try {
+        File file = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+        if (file.exists() && file.isDirectory()) {
+          File[] files = file.listFiles();
+          if (files != null && files.length > 0) {
+            InlineResultCommon common = createItem(context, tdlib, KEY_FOLDER + file.getPath(), R.drawable.baseline_file_download_24, Lang.getString(R.string.Downloads), Lang.plural(R.string.xFiles, files.length));
+            items.add(createItem(common, file.isDirectory() ? R.id.btn_folder : R.id.btn_file));
+            addedDownloads = true;
+          }
         }
+      } catch (Throwable t) {
+        Log.e("Cannot add Downloads directory", t);
       }
-    } catch (Throwable t) {
-      Log.e("Cannot add Downloads directory", t);
+    }
+    if (!addedDownloads && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      InlineResultCommon downloadsItem = createItem(context, tdlib, KEY_DOWNLOADS, R.drawable.baseline_file_download_24, Lang.getString(R.string.Downloads), Lang.getString(R.string.Files));
+      items.add(createItem(downloadsItem, R.id.btn_downloads));
     }
 
     boolean hasRoot = false;
@@ -247,6 +352,59 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
     }
   }
 
+  public static class FileEntry {
+    private final Uri uri;
+    private final long _id;
+    private final String displayName;
+    private final long size;
+    private final String data;
+    private final String mimeType;
+    private final long dateAdded, dateModified;
+
+    public FileEntry (Uri uri, long _id, String displayName, long size, String data, String mimeType, long dateAdded, long dateModified) {
+      this.uri = uri;
+      this._id = _id;
+      this.displayName = displayName;
+      this.size = size;
+      this.data = data;
+      this.mimeType = mimeType;
+      this.dateAdded = dateAdded;
+      this.dateModified = dateModified;
+    }
+
+    public Uri getUri () {
+      return uri;
+    }
+
+    public long getId () {
+      return _id;
+    }
+
+    public String getDisplayName () {
+      return displayName;
+    }
+
+    public long getSize () {
+      return size;
+    }
+
+    public String getData () {
+      return data;
+    }
+
+    public String getMimeType () {
+      return mimeType;
+    }
+
+    public long getDateAdded () {
+      return dateAdded;
+    }
+
+    public long getDateModified () {
+      return dateModified;
+    }
+  }
+
   public static class MusicEntry {
     private final long _id;
     private final String artist, title, path;
@@ -290,6 +448,14 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
 
     public long getAlbumId () {
       return albumId;
+    }
+
+    public boolean probablyHasArtwork () {
+      return getAlbumId() != 0;
+    }
+
+    public Uri getArtwork () {
+      return ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), getAlbumId());
     }
   }
 
@@ -455,21 +621,89 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
     };
   }
 
+  private LoadOperation buildDownloads () {
+    return new LoadOperation(this) {
+      @Override
+      public Result act () {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+          return null;
+        }
+        final String[] projection = {
+          MediaStore.Downloads._ID,
+          MediaStore.Downloads.DISPLAY_NAME,
+          MediaStore.Downloads.SIZE,
+          MediaStore.Downloads.DATA,
+          MediaStore.Downloads.RELATIVE_PATH,
+          MediaStore.Downloads.MIME_TYPE,
+          MediaStore.Downloads.DATE_ADDED,
+          MediaStore.Downloads.DATE_MODIFIED,
+          MediaStore.Downloads.IS_PENDING
+        };
+        try {
+          try (Cursor c = UI.getAppContext().getContentResolver().query(MediaStore.Downloads.EXTERNAL_CONTENT_URI, projection, MediaStore.Downloads.IS_PENDING + " != 1", null, MediaStore.Downloads.DATE_MODIFIED + " desc, " + MediaStore.Downloads.DATE_ADDED + " desc")) {
+            if (c == null) {
+              openAlert(this, R.string.AppName, R.string.AccessError);
+              return null;
+            }
+
+            int count = c.getCount();
+            ArrayList<FileEntry> entries = new ArrayList<>(count);
+            while (c.moveToNext()) {
+              long id = c.getLong(0);
+              String displayName = c.getString(1);
+              long size = c.getLong(2);
+              String data = c.getString(3);
+              String relativePath = c.getString(4);
+              String mimeType = c.getString(5);
+              long dateAdded = c.getLong(6);
+              long dateModified = c.getLong(7);
+              if (!StringUtils.isEmpty(data)) {
+                entries.add(new FileEntry(MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL, id), id, displayName, size, data, mimeType, dateAdded, dateModified));
+              }
+            }
+
+            if (entries.isEmpty()) {
+              openAlert(this, R.string.AppName, R.string.NoDownloadFilesFound);
+              return null;
+            }
+
+            ArrayList<ListItem> items = new ArrayList<>(entries.size() + 1);
+            InlineResult<?> result = createItem(context, tdlib, KEY_UPPER, R.drawable.baseline_folder_24, "..", Lang.getString(R.string.AttachFolderHome));
+            items.add(createItem(result, R.id.btn_folder_upper));
+
+            for (FileEntry entry : entries) {
+              final String subtitle = Lang.getFileTimestamp(Math.max(entry.getDateModified(), entry.getDateAdded()), TimeUnit.SECONDS, entry.getSize());
+              InlineResultCommon fileItem = new InlineResultCommon(context, tdlib, new File(entry.getData()), entry.getDisplayName(), subtitle, entry, false);
+              items.add(createItem(fileItem, R.id.btn_file));
+            }
+
+            return new Result(items, true);
+
+          }
+        } catch (Throwable t) {
+          Log.e("Cannot build downloads", t);
+          openAlert(this, R.string.AppName, R.string.AccessError);
+        }
+        return null;
+      }
+    };
+  }
+
   private LoadOperation buildMusic () {
     return new LoadOperation(this) {
       @Override
       public Result act () {
+        final String[] projection = {
+          MediaStore.Audio.Media._ID,
+          MediaStore.Audio.Media.ARTIST,
+          MediaStore.Audio.Media.TITLE,
+          MediaStore.Audio.Media.DATA,
+          MediaStore.Audio.Media.DURATION,
+          MediaStore.Audio.Media.DATE_ADDED,
+          MediaStore.Audio.Media.MIME_TYPE,
+          MediaStore.Audio.Media.ALBUM_ID,
+        };
         try {
-          String[] projection = {
-            MediaStore.Audio.Media._ID,
-            MediaStore.Audio.Media.ARTIST,
-            MediaStore.Audio.Media.TITLE,
-            MediaStore.Audio.Media.DATA,
-            MediaStore.Audio.Media.DURATION,
-            MediaStore.Audio.Media.DATE_ADDED,
-            MediaStore.Audio.Media.MIME_TYPE
-          };
-
           Cursor c = UI.getAppContext().getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, projection, MediaStore.Audio.Media.IS_MUSIC + " != 0", null, MediaStore.Audio.Media.DATE_ADDED + " desc");
           if (c == null) {
             openAlert(this, R.string.AppName, R.string.AccessError);
@@ -485,9 +719,10 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
             String title = c.getString(2);
             String data = c.getString(3);
             long duration = c.getInt(4);
-            String mime = c.getString(5);
+            String mime = c.getString(6);
+            long albumId = c.getLong(7);
             if (!StringUtils.isEmpty(data)) {
-              entries.add(new MusicEntry(id, artist != null ? artist : "", title != null ? title : "", data, duration, mime, 0));
+              entries.add(new MusicEntry(id, artist != null ? artist : "", title != null ? title : "", data, duration, mime, albumId));
             }
           }
           U.closeCursor(c);
@@ -627,11 +862,11 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
       File externalFile = UI.getContext().getExternalFilesDir(null);
       String externalPath = externalFile != null ? externalFile.getPath() : null;
 
-      items.add(createItem(createItem(context, tdlib, KEY_FOLDER + internalPath, R.drawable.baseline_settings_24, Lang.getString(R.string.ApplicationFolder), internalPath), R.id.btn_folder));
       if (externalFile != null && !StringUtils.equalsOrBothEmpty(externalPath, internalPath)) {
         InlineResultCommon external = createItem(context, tdlib, KEY_FOLDER + externalPath, R.drawable.baseline_settings_24, Lang.getString(R.string.ApplicationFolderExternal), externalPath);
         items.add(createItem(external, R.id.btn_folder));
       }
+      items.add(createItem(createItem(context, tdlib, KEY_FOLDER + internalPath, R.drawable.baseline_settings_24, Lang.getString(R.string.ApplicationFolder), internalPath), R.id.btn_folder));
     } catch (Throwable t) {
       Log.e(t);
     }
@@ -796,9 +1031,14 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
           break;
         }
         default: {
+          if (v.getId() == R.id.btn_internalStorage && !U.canManageStorage()) {
+            showSystemPicker();
+            return;
+          }
+
           String path = result.getId();
           if (path != null) {
-            if (KEY_GALLERY.equals(path) || KEY_MUSIC.equals(path) || KEY_BUCKET.equals(path) || path.startsWith(KEY_FOLDER)) {
+            if (KEY_GALLERY.equals(path) || KEY_MUSIC.equals(path) || KEY_DOWNLOADS.equals(path) || KEY_BUCKET.equals(path) || path.startsWith(KEY_FOLDER)) {
               navigateInside(path, result);
             } else if (KEY_UPPER.equals(path)) {
               navigateUpper();
@@ -921,7 +1161,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
       return;
     }
 
-    mediaLayout.sendFilesMixed(files, musicEntries, options);
+    mediaLayout.sendFilesMixed(files, musicEntries, options, true);
   }
 
   @Override

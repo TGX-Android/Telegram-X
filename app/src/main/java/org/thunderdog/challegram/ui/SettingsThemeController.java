@@ -631,18 +631,25 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
       if (U.isAppSideLoaded()) {
-        items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.InAppUpdates));
-        items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER, R.id.btn_updateAutomatically, 0, R.string.AutoUpdate));
+        items.addAll(Arrays.asList(
+          new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.InAppUpdates),
+          new ListItem(ListItem.TYPE_SHADOW_TOP),
+          new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER, R.id.btn_updateAutomatically, 0, R.string.AutoUpdate)
+        ));
         if (Settings.instance().getAutoUpdateMode() != Settings.AUTO_UPDATE_MODE_NEVER) {
-          items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-          items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.InstallBetas).setLongId(Settings.SETTING_FLAG_DOWNLOAD_BETAS));
-          items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_checkUpdates, 0, R.string.CheckForUpdates));
+          items.addAll(newAutoUpdateConfigurationItems());
         }
-        items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-        context().appUpdater().addListener(this);
+      } else {
+        items.addAll(Arrays.asList(
+          new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.AppUpdates),
+          new ListItem(ListItem.TYPE_SHADOW_TOP),
+          new ListItem(ListItem.TYPE_SETTING, R.id.btn_checkUpdates, 0, R.string.CheckForUpdates),
+          new ListItem(ListItem.TYPE_SEPARATOR_FULL),
+          new ListItem(ListItem.TYPE_SETTING, R.id.btn_subscribeToBeta, 0, R.string.SubscribeToBeta)
+        ));
       }
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      context().appUpdater().addListener(this);
 
       items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.Chats));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -682,6 +689,10 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_instantViewMode, 0, R.string.AutoInstantView));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.OpenEmbed).setLongId(Settings.SETTING_FLAG_NO_EMBEDS).setBoolValue(true));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.OpenEmbedDesc), false));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sizeUnit, 0, R.string.SizeUnit));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_mosaic, 0, R.string.RememberAlbumSetting));
@@ -920,6 +931,15 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
     return new ListItem(ListItem.TYPE_SETTING, R.id.btn_autoNightModeScheduled_location);
   }
 
+  private static List<ListItem> newAutoUpdateConfigurationItems () {
+    return Arrays.asList(
+      new ListItem(ListItem.TYPE_SEPARATOR_FULL),
+      new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.InstallBetas).setLongId(Settings.SETTING_FLAG_DOWNLOAD_BETAS),
+      new ListItem(ListItem.TYPE_SEPARATOR_FULL),
+      new ListItem(ListItem.TYPE_SETTING, R.id.btn_checkUpdates, 0, R.string.CheckForUpdates)
+    );
+  }
+
   @Override
   public void onThemeAutoNightModeChanged (int autoNightMode) {
     setCurrentNightMode(autoNightMode, false);
@@ -1096,7 +1116,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         break;
       }
       case R.id.btn_cameraRatio: {
-        showOptions(Lang.wrapBold(Lang.getString(R.string.CameraRatio)), new int[] {
+        showOptions(Lang.boldify(Lang.getString(R.string.CameraRatio)), new int[] {
           R.id.btn_cameraRatio_16_9,
           R.id.btn_cameraRatio_4_3,
           // R.id.btn_cameraRatio_1_1,
@@ -1135,7 +1155,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         break;
       }
       case R.id.btn_cameraVolume: {
-        showOptions(Lang.wrapBold(Lang.getString(R.string.CameraVolume)), new int[] {
+        showOptions(Lang.boldify(Lang.getString(R.string.CameraVolume)), new int[] {
           R.id.btn_cameraVolumeShoot,
           R.id.btn_cameraVolumeZoom,
           R.id.btn_cameraVolumeNone
@@ -1443,6 +1463,10 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         }
         break;
       }
+      case R.id.btn_subscribeToBeta: {
+        tdlib.ui().openUrl(this, Lang.getStringSecure(R.string.url_betaSubscription), null);
+        break;
+      }
       case R.id.btn_checkUpdates: {
         switch (context().appUpdater().state()) {
           case AppUpdater.State.NONE: {
@@ -1600,6 +1624,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
     }).setAllowResize(false).setIntDelegate((id, result) -> {
       int autoUpdateMode1 = Settings.instance().getAutoUpdateMode();
       int autoUpdateResult = result.get(R.id.btn_updateAutomatically);
+      boolean shouldChangeUi = (autoUpdateMode1 == Settings.AUTO_UPDATE_MODE_NEVER && autoUpdateResult != R.id.btn_updateAutomaticallyNever) || (autoUpdateMode1 != Settings.AUTO_UPDATE_MODE_NEVER && autoUpdateResult == R.id.btn_updateAutomaticallyNever);
       switch (autoUpdateResult) {
         case R.id.btn_updateAutomaticallyAlways:
           autoUpdateMode1 = Settings.AUTO_UPDATE_MODE_ALWAYS;
@@ -1616,6 +1641,15 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       }
       Settings.instance().setAutoUpdateMode(autoUpdateMode1);
       adapter.updateValuedSettingById(R.id.btn_updateAutomatically);
+
+      int index = adapter.indexOfViewById(R.id.btn_updateAutomatically);
+      if (shouldChangeUi && index != -1) {
+        if (autoUpdateMode1 == Settings.AUTO_UPDATE_MODE_NEVER) {
+          adapter.removeRange(index + 1, 4);
+        } else {
+          adapter.addItems(index + 1, newAutoUpdateConfigurationItems().toArray(new ListItem[0]));
+        }
+      }
     }));
   }
 

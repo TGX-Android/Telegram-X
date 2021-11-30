@@ -5,21 +5,29 @@ import android.graphics.Path;
 import android.view.View;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.data.FileComponent;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageFileLocal;
 import org.thunderdog.challegram.loader.ImageFileRemote;
+import org.thunderdog.challegram.loader.ImageVideoThumbFile;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.DrawableProvider;
 
+import java.io.File;
+
+import me.vkryl.core.ColorUtils;
 import me.vkryl.td.Td;
 
 public class MediaPreviewSimple extends MediaPreview {
@@ -31,9 +39,28 @@ public class MediaPreviewSimple extends MediaPreview {
   private ImageFile targetImage;
   private GifFile targetGif;
 
+  private boolean drawColoredFileBackground;
+
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.ProfilePhoto profilePhoto, TdApi.Thumbnail thumbnail) {
     super(size, cornerRadius);
     // TODO avatar preview
+  }
+
+  public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.ChatPhotoInfo chatPhotoInfo) {
+    super(size, cornerRadius);
+    if (chatPhotoInfo.minithumbnail != null) {
+      this.previewImage = new ImageFileLocal(chatPhotoInfo.minithumbnail);
+      this.previewImage.setSize(size);
+      this.previewImage.setScaleType(ImageFile.CENTER_CROP);
+      this.previewImage.setDecodeSquare(true);
+    }
+    if (chatPhotoInfo.big != null) {
+      this.targetImage = new ImageFile(tdlib, chatPhotoInfo.big, null);
+      this.targetImage.setSize(size);
+      this.targetImage.setScaleType(ImageFile.CENTER_CROP);
+      this.targetImage.setDecodeSquare(true);
+      this.targetImage.setNoBlur();
+    }
   }
 
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.Venue venue, TdApi.Thumbnail thumbnail) {
@@ -116,6 +143,20 @@ public class MediaPreviewSimple extends MediaPreview {
     }
   }
 
+  public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, File file, String mimeType) {
+    super(size, cornerRadius);
+    if (TGMimeType.isImageMimeType(mimeType)) {
+      this.targetImage = FileComponent.createFullPreview(new ImageFileLocal(file.getPath()), mimeType);
+      this.targetImage.setProbablyRotated();
+      this.targetImage.setDecodeSquare(true);
+    } else if (TGMimeType.isVideoMimeType(mimeType)) {
+      this.targetImage = FileComponent.createFullPreview(new ImageVideoThumbFile(tdlib, TD.newFile(file)), mimeType);
+      this.targetImage.setDecodeSquare(true);
+    } else {
+      throw new UnsupportedOperationException();
+    }
+  }
+
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.Sticker sticker) {
     super(size, cornerRadius);
     this.outline = Td.buildOutline(sticker.outline,
@@ -147,6 +188,16 @@ public class MediaPreviewSimple extends MediaPreview {
       this.targetImage.setSize(size);
       this.targetImage.setScaleType(GifFile.FIT_CENTER);
     }
+  }
+
+  public MediaPreviewSimple (int size, int cornerRadius, ImageFile remoteFile) {
+    super(size, cornerRadius);
+    this.drawColoredFileBackground = true;
+    this.targetImage = remoteFile;
+    this.targetImage.setSize(size);
+    this.targetImage.setScaleType(ImageFile.CENTER_CROP);
+    this.targetImage.setDecodeSquare(true);
+    this.targetImage.setNoBlur();
   }
 
   @Override
@@ -205,7 +256,16 @@ public class MediaPreviewSimple extends MediaPreview {
       }
       preview.draw(c);
     }
+
+    if (drawColoredFileBackground) {
+      target.drawPlaceholderRounded(c, cornerRadius, Theme.getColor(R.id.theme_color_file));
+    }
+
     target.draw(c);
+
+    if (drawColoredFileBackground) {
+      target.drawPlaceholderRounded(c, cornerRadius, ColorUtils.alphaColor(target.getAlpha() * alpha, 0x44000000));
+    }
 
     if (alpha != 1f) {
       preview.restorePaintAlpha();

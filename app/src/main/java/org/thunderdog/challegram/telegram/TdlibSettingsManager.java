@@ -24,6 +24,7 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.collection.LongSparseLongArray;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.unit.BitwiseUtils;
 import me.vkryl.core.util.Blob;
@@ -64,6 +65,10 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   public static final String NOTIFICATION_ERROR_KEY = "notification_error";
   public static final String NOTIFICATION_VERSION_KEY = "notification_version";
 
+  private static final String LOCAL_CHAT_ID_PREFIX = "local_chat_id_"; // remote -> local
+  private static final String REMOTE_CHAT_ID_PREFIX = "remote_chat_id_"; // local -> remote
+  private static final String LOCAL_CHAT_IDS_COUNT = "local_chat_ids";
+
   private @ThemeId Integer _globalTheme, _globalThemeDaylight, _globalThemeNight;
 
   @Nullable
@@ -78,6 +83,11 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   private Long _userPreferences;
 
   private final SparseArrayCompat<TGBackground> wallpapers = new SparseArrayCompat<>();
+
+  private final Object localChatIdsSync = new Object();
+  private Long _localChatIdsCount;
+  private final LongSparseLongArray remoteToLocalChatIds = new LongSparseLongArray();
+  private final LongSparseLongArray localToRemoteChatIds = new LongSparseLongArray();
 
   public static String key (String key, int accountId) {
     return accountId != 0 ? accountId + "_" + key : key;
@@ -130,17 +140,22 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     editor.remove(key(THEME_GLOBAL_THEME_KEY, accountId));
     editor.remove(key(THEME_GLOBAL_THEME_NIGHT_KEY, accountId));
     editor.remove(key(THEME_GLOBAL_THEME_DAYLIGHT_KEY, accountId));
+    editor.remove(key(LOCAL_CHAT_IDS_COUNT, accountId));
     // editor.remove(key(PEER_TO_PEER_KEY, accountId));
     Settings.instance().removeScrollPositions(accountId, editor);
     String dismissPrefix = key(DISMISS_MESSAGE_PREFIX, accountId);
     String notificationGroupDataPrefix = key(NOTIFICATION_GROUP_DATA_PREFIX, accountId);
     String notificationDataPrefix = key(NOTIFICATION_DATA_PREFIX, accountId);
     String conversionPrefix = key(CONVERSION_PREFIX, accountId);
+    String localChatIdPrefix = key(LOCAL_CHAT_ID_PREFIX, accountId);
+    String remoteChatIdPrefix = key(REMOTE_CHAT_ID_PREFIX, accountId);
     Settings.instance().removeByAnyPrefix(new String[] {
       dismissPrefix,
       notificationGroupDataPrefix,
       notificationDataPrefix,
-      conversionPrefix
+      conversionPrefix,
+      localChatIdPrefix,
+      remoteChatIdPrefix
     }, editor);
     editor.apply();
 
@@ -149,6 +164,9 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     _chatStyle = null;
     _forcePlainModeInChannels = null;
     _userPreferences = null;
+    _localChatIdsCount = null;
+    remoteToLocalChatIds.clear();
+    localToRemoteChatIds.clear();
 
     unregisterDevice(tdlib.id());
 
@@ -382,7 +400,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
 
   public void setWallpaper (@NonNull TGBackground wallpaper, boolean force, int usageIdentifier) {
     TGBackground currentWallpaper = getWallpaper(usageIdentifier);
-    if ((currentWallpaper == null && wallpaper != null) || (force && !TGBackground.compare(currentWallpaper, wallpaper))) {
+    if ((currentWallpaper == null && wallpaper != null) || (force && !TGBackground.compare(currentWallpaper, wallpaper, false))) {
       ThemeManager.instance().notifyChatWallpaperChanged(tdlib, wallpaper, 0, usageIdentifier);
       if (wallpaper != null) {
         wallpaper.save(usageIdentifier);
@@ -459,10 +477,6 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     return wallpaper != null && (allowEmpty || !wallpaper.isEmpty()) ? wallpaper : null;
   }
 
-  public void ensureWallpaperAvailability () {
-
-  }
-
   public boolean useBubbles () {
     return chatStyle() == ThemeManager.CHAT_STYLE_BUBBLES;
   }
@@ -515,8 +529,8 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     return Settings.instance().getInt(key, 0);
   }
 
-  private static int getRegisteredDeviceUserId (int accountId) {
-    return Settings.instance().getInt(key(DEVICE_UID_KEY, accountId), 0);
+  private static long getRegisteredDeviceUserId (int accountId) {
+    return Settings.instance().getLong(key(DEVICE_UID_KEY, accountId), 0);
   }
 
   private static int getRegisteredDeviceTdlibVersion (int accountId) {
@@ -527,19 +541,20 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     return Settings.instance().getString(key(DEVICE_TOKEN_KEY, accountId), null);
   }
 
-  private static int[] getRegisteredDeviceOtherUserIds (int accountId) {
-    return Settings.instance().pmc().getIntArray(key(DEVICE_OTHER_UID_KEY, accountId));
+  private static long[] getRegisteredDeviceOtherUserIds (int accountId) {
+    return Settings.instance().pmc().getLongArray(key(DEVICE_OTHER_UID_KEY, accountId));
   }
 
-  public static void setRegisteredDevice (int accountId, int userId, String token, @Nullable int[] otherUserIds) {
+  public static void setRegisteredDevice (int accountId, long userId, String token, @Nullable long[] otherUserIds) {
     if (StringUtils.isEmpty(token)) {
       unregisterDevice(accountId);
     } else {
       LevelDB pmc = Settings.instance().edit();
-      pmc.putString(key(DEVICE_TOKEN_KEY, accountId), token).putInt(key(DEVICE_UID_KEY, accountId), userId);
+      pmc.putString(key(DEVICE_TOKEN_KEY, accountId), token);
+      pmc.putLong(key(DEVICE_UID_KEY, accountId), userId);
       pmc.putInt(key(DEVICE_TDLIB_VERSION_KEY, accountId), BuildConfig.TDLIB_VERSION);
       if (otherUserIds != null && otherUserIds.length > 0) {
-        pmc.putIntArray(key(DEVICE_OTHER_UID_KEY, accountId), otherUserIds);
+        pmc.putLongArray(key(DEVICE_OTHER_UID_KEY, accountId), otherUserIds);
       } else {
         pmc.remove(key(DEVICE_OTHER_UID_KEY, accountId));
       }
@@ -547,7 +562,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     }
   }
 
-  public static boolean checkRegisteredDeviceToken (int accountId, int userId, String token, int[] otherUserIds, boolean skipOtherUserIdsCheck) {
+  public static boolean checkRegisteredDeviceToken (int accountId, long userId, String token, long[] otherUserIds, boolean skipOtherUserIdsCheck) {
     return
       getRegisteredDeviceTdlibVersion(accountId) == BuildConfig.TDLIB_VERSION &&
       getRegisteredDeviceUserId(accountId) == userId &&
@@ -562,6 +577,52 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
       .remove(key(DEVICE_OTHER_UID_KEY, accountId))
       .remove(key(DEVICE_TDLIB_VERSION_KEY, accountId))
       .apply();
+  }
+
+  private long nextLocalChatId () {
+    final String key = key(LOCAL_CHAT_IDS_COUNT, tdlib.id());
+    if (_localChatIdsCount == null) {
+      _localChatIdsCount = Settings.instance().getLong(key, 0);
+    }
+    final long nextLocalChatId = ++_localChatIdsCount;
+    Settings.instance().putLong(key, nextLocalChatId);
+    return nextLocalChatId;
+  }
+
+  public long getLocalChatId (long remoteChatId) {
+    synchronized (localChatIdsSync) {
+      long localChatId = remoteToLocalChatIds.get(remoteChatId);
+      if (localChatId == 0) {
+        final String key = key(LOCAL_CHAT_ID_PREFIX, tdlib.id()) + remoteChatId;
+        localChatId = Settings.instance().getLong(key, 0);
+        if (localChatId == 0) {
+          localChatId = nextLocalChatId();
+          Settings.instance().putLong(key, localChatId);
+          Settings.instance().putLong(key(REMOTE_CHAT_ID_PREFIX, tdlib.id()) + localChatId, remoteChatId);
+        }
+        remoteToLocalChatIds.put(remoteChatId, localChatId);
+        localToRemoteChatIds.put(localChatId, remoteChatId);
+      }
+      return localChatId;
+    }
+  }
+
+  public long getRemoteChatId (long localChatId) {
+    synchronized (localChatIdsSync) {
+      long remoteChatId = localToRemoteChatIds.get(localChatId);
+      if (remoteChatId == 0) {
+        remoteChatId = Settings.instance().getLong(key(REMOTE_CHAT_ID_PREFIX, tdlib.id()) + localChatId, 0);
+        if (remoteChatId != 0) {
+          localToRemoteChatIds.put(localChatId, remoteChatId);
+          remoteToLocalChatIds.put(remoteChatId, localChatId);
+        }
+      }
+      return remoteChatId;
+    }
+  }
+
+  public static long getRemoteChatId (int accountId, long localChatId) {
+    return Settings.instance().getLong(key(REMOTE_CHAT_ID_PREFIX, accountId) + localChatId, 0);
   }
 
   // Preferences

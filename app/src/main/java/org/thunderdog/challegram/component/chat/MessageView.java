@@ -51,6 +51,8 @@ import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
 import org.thunderdog.challegram.widget.SparseDrawableView;
 
+import java.util.List;
+
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.FactorAnimator;
@@ -428,7 +430,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       if (isSent) {
         return showChatOptions(m, (TGMessageChat) msg);
       } else {
-        m.showMessageOptions(msg, new int[] {R.id.btn_messageDelete}, new String[] {Lang.getString(R.string.Delete)}, new int[] {R.drawable.baseline_delete_24}, null);
+        m.showMessageOptions(msg, new int[] {R.id.btn_messageDelete}, new String[] {Lang.getString(R.string.Delete)}, new int[] {R.drawable.baseline_delete_24}, null, true);
         return true;
       }
     }
@@ -438,7 +440,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     StringList strings = new StringList(6);
     Object tag = fillMessageOptions(m, msg, ids, icons, strings, false);
     if (!ids.isEmpty()) {
-      m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), tag);
+      m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), tag, false);
       return true;
     }
     return false;
@@ -559,10 +561,19 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         icons.append(R.drawable.baseline_reply_24);
       }
 
-      if (Config.COMMENTS_SUPPORTED && msg.getReplyCount() > 0) {
-        ids.append(R.id.btn_messageReplies);
-        strings.append(Lang.plural(msg.getSender().isChannel() ? R.string.ViewXComments : R.string.ViewXReplies, msg.getReplyCount()));
-        icons.append(msg.getSender().isChannel() ? R.drawable.outline_templarian_comment_multiple_24 : R.drawable.baseline_reply_all_24);
+      if (Config.COMMENTS_SUPPORTED) {
+        if (msg.getReplyCount() > 0) {
+          ids.append(R.id.btn_messageReplies);
+          strings.append(Lang.plural(msg.getSender().isChannel() ? R.string.ViewXComments : R.string.ViewXReplies, msg.getReplyCount()));
+          icons.append(msg.getSender().isChannel() ? R.drawable.outline_templarian_comment_multiple_24 : R.drawable.baseline_reply_all_24);
+        }
+      } else {
+        TdApi.Message messageWithThread = msg.findMessageWithThread();
+        if (messageWithThread != null && messageWithThread.isChannelPost) {
+          ids.append(R.id.btn_messageDiscuss);
+          strings.append(R.string.DiscussMessage);
+          icons.append(R.drawable.outline_templarian_comment_multiple_24);
+        }
       }
 
       if (msg.canBeForwarded() && isSent) {
@@ -611,6 +622,14 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       }
     }
 
+    // Stats
+
+    if (!isMore && msg.canViewStatistics()) {
+      ids.append(R.id.btn_viewStatistics);
+      strings.append(R.string.ViewStats);
+      icons.append(R.drawable.baseline_bar_chart_24);
+    }
+
     // Edit
 
     if (!isMore && msg.canEditText() && isSent) {
@@ -652,89 +671,96 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           icons.append(R.drawable.deproko_baseline_stickers_24);
         }
       }
-      if (isSent && (!msg.isHot() || TD.isOut(msg.getMessage()))) {
-        int playListAddMode = TdlibManager.instance().player().canAddToPlayList(msg.tdlib(), msg.getMessage());
+    }
+    if (isSent && !isMore && (!msg.isHot() || TD.isOut(msg.getMessage()))) {
+      int playListAddMode = TdlibManager.instance().player().canAddToPlayList(msg.tdlib(), msg.getMessage());
+      TdApi.Message singleMessage = msg.getMessage();
+      TdApi.Message[] allMessages = msg.getAllMessages();
 
-        TdApi.Message message = msg.getMessage();
-        TD.DownloadedFile downloadedFile = TD.getDownloadedFile(message);
-        if (downloadedFile == null && message.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR && msg instanceof TGMessageText) {
-          TGWebPage webPage = ((TGMessageText) msg).getParsedWebPage();
-          if (webPage != null) {
-            downloadedFile = TD.getDownloadedFile(webPage);
+      List<TD.DownloadedFile> downloadedFiles = TD.getDownloadedFiles(allMessages);
+      if (downloadedFiles.isEmpty() && singleMessage.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR && msg instanceof TGMessageText) {
+        TGWebPage webPage = ((TGMessageText) msg).getParsedWebPage();
+        if (webPage != null) {
+          TD.DownloadedFile downloadedFile = TD.getDownloadedFile(webPage);
+          if (downloadedFile != null) {
+            downloadedFiles.add(downloadedFile);
           }
         }
-        if (downloadedFile != null) {
-          tag = downloadedFile;
-          if (downloadedFile.getFileType().getConstructor() == TdApi.FileTypeAnimation.CONSTRUCTOR) {
-            if (!isMore) {
-              ids.append(R.id.btn_saveGif);
-              strings.append(R.string.SaveGif);
-              icons.append(R.drawable.deproko_baseline_gif_24);
-            }
-          }
-          if (TD.canSaveToDownloads(msg)) {
-            switch (downloadedFile.getFileType().getConstructor()) {
-              case TdApi.FileTypeVoiceNote.CONSTRUCTOR:
-              case TdApi.FileTypeVideoNote.CONSTRUCTOR: {
-                break;
-              }
-              case TdApi.FileTypeAnimation.CONSTRUCTOR:
-              case TdApi.FileTypeVideo.CONSTRUCTOR:
-              case TdApi.FileTypePhoto.CONSTRUCTOR: {
-                if (!isMore) {
-                  ids.append(R.id.btn_saveFile);
-                  strings.append(R.string.SaveToGallery);
-                  icons.append(R.drawable.baseline_image_24);
-                }
-                break;
-              }
-              case TdApi.FileTypeAudio.CONSTRUCTOR: {
-                if (!isMore) {
-                  ids.append(R.id.btn_saveFile);
-                  strings.append(R.string.SaveToMusic);
-                  icons.append(R.drawable.baseline_music_note_24);
-                }
-                break;
-              }
-              default: {
-                /*if (!isMore && msg instanceof TGMessageFile && ((TGMessageFile) msg).getFile().needOpenIn()) {
-                  ids.append(R.id.btn_openIn);
-                  strings.append(R.string.OpenInExternalApp);
-                  icons.append(R.drawable.baseline_open_in_browser_24);
-                }*/
-                if (!isMore) {
-                  if (msg.getMessage().content.getConstructor() == TdApi.MessageDocument.CONSTRUCTOR) {
-                    TdApi.Document document = ((TdApi.MessageDocument) msg.getMessage().content).document;
-                    if (TdlibUi.canInstallLanguage(document)) {
-                      ids.append(R.id.btn_messageApplyLocalization);
-                      strings.append(R.string.LanguageInstall);
-                      icons.append(R.drawable.baseline_language_24);
-                    }
-                    if (TdlibUi.canInstallTheme(document)) {
-                      ids.append(R.id.btn_messageInstallTheme);
-                      strings.append(R.string.ThemeInstallDone);
-                      icons.append(R.drawable.baseline_palette_24);
-                    }
-                  }
+      }
+      if (!downloadedFiles.isEmpty()) {
+        tag = downloadedFiles;
 
-                  ids.append(R.id.btn_saveFile);
-                  strings.append(R.string.SaveToDownloads);
-                  icons.append(R.drawable.baseline_file_download_24);
-                }
-                break;
-              }
-            }
-          }
-        }
-        if (!isMore && playListAddMode != TGPlayerController.ADD_MODE_NONE) {
-          ids.append(R.id.btn_addToPlaylist);
-          if (playListAddMode == TGPlayerController.ADD_MODE_MOVE) {
-            strings.append(R.string.PlayListPlayNext);
-            icons.append(R.drawable.baseline_queue_music_24);
+        TD.DownloadedFile baseDownloadedFile = downloadedFiles.get(0);
+        if (baseDownloadedFile.getFileType().getConstructor() == TdApi.FileTypeAnimation.CONSTRUCTOR) {
+          ids.append(R.id.btn_saveGif);
+          if (allMessages.length == 1) {
+            strings.append(R.string.SaveGif);
           } else {
-            strings.append(playListAddMode == TGPlayerController.ADD_MODE_RESTORE ? R.string.PlayListRestore : R.string.PlayListAdd);
-            icons.append(R.drawable.baseline_playlist_add_24);
+            strings.append(Lang.plural(R.string.SaveXGifs, downloadedFiles.size()));
           }
+          icons.append(R.drawable.deproko_baseline_gif_24);
+        }
+        switch (baseDownloadedFile.getFileType().getConstructor()) {
+          case TdApi.FileTypeVoiceNote.CONSTRUCTOR:
+          case TdApi.FileTypeVideoNote.CONSTRUCTOR: {
+            break;
+          }
+          case TdApi.FileTypeAnimation.CONSTRUCTOR:
+          case TdApi.FileTypeVideo.CONSTRUCTOR:
+          case TdApi.FileTypePhoto.CONSTRUCTOR: {
+            ids.append(R.id.btn_saveFile);
+            if (allMessages.length == 1) {
+              strings.append(R.string.SaveToGallery);
+            } else {
+              strings.append(Lang.plural(R.string.SaveXToGallery, downloadedFiles.size()));
+            }
+            icons.append(R.drawable.baseline_image_24);
+            break;
+          }
+          case TdApi.FileTypeAudio.CONSTRUCTOR: {
+            ids.append(R.id.btn_saveFile);
+            if (allMessages.length == 1) {
+              strings.append(R.string.SaveToMusic);
+            } else {
+              strings.append(Lang.plural(R.string.SaveXToMusic, downloadedFiles.size()));
+            }
+            icons.append(R.drawable.baseline_music_note_24);
+            break;
+          }
+          default: {
+            if (allMessages.length == 1 && msg.getMessage().content.getConstructor() == TdApi.MessageDocument.CONSTRUCTOR) {
+              TdApi.Document document = ((TdApi.MessageDocument) msg.getMessage().content).document;
+              if (TdlibUi.canInstallLanguage(document)) {
+                ids.append(R.id.btn_messageApplyLocalization);
+                strings.append(R.string.LanguageInstall);
+                icons.append(R.drawable.baseline_language_24);
+              }
+              if (TdlibUi.canInstallTheme(document)) {
+                ids.append(R.id.btn_messageInstallTheme);
+                strings.append(R.string.ThemeInstallDone);
+                icons.append(R.drawable.baseline_palette_24);
+              }
+            }
+
+            ids.append(R.id.btn_saveFile);
+            if (allMessages.length == 1) {
+              strings.append(R.string.SaveToDownloads);
+            } else {
+              strings.append(Lang.plural(R.string.SaveXToDownloads, downloadedFiles.size()));
+            }
+            icons.append(R.drawable.baseline_file_download_24);
+            break;
+          }
+        }
+      }
+      if (allMessages.length == 1 && playListAddMode != TGPlayerController.ADD_MODE_NONE) {
+        ids.append(R.id.btn_addToPlaylist);
+        if (playListAddMode == TGPlayerController.ADD_MODE_MOVE) {
+          strings.append(R.string.PlayListPlayNext);
+          icons.append(R.drawable.baseline_queue_music_24);
+        } else {
+          strings.append(playListAddMode == TGPlayerController.ADD_MODE_RESTORE ? R.string.PlayListRestore : R.string.PlayListAdd);
+          icons.append(R.drawable.baseline_playlist_add_24);
         }
       }
     }
@@ -841,7 +867,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       if (content != null) {
         switch (content.getConstructor()) {
           case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR: {
-            int basicGroupId = ((TdApi.MessageChatUpgradeFrom) content).basicGroupId;
+            long basicGroupId = ((TdApi.MessageChatUpgradeFrom) content).basicGroupId;
             if (basicGroupId != 0) {
               m.tdlib().ui().openBasicGroupChat(m, basicGroupId, null);
               return true;
@@ -849,7 +875,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
             return false;
           }
           case TdApi.MessageChatUpgradeTo.CONSTRUCTOR: {
-            int supergroupId = ((TdApi.MessageChatUpgradeTo) content).supergroupId;
+            long supergroupId = ((TdApi.MessageChatUpgradeTo) content).supergroupId;
             if (supergroupId != 0) {
               m.tdlib().ui().openSupergroupChat(m, supergroupId, null);
               return true;
@@ -876,6 +902,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       icons.append(R.drawable.baseline_reply_all_24);
     }
 
+    if (m.tdlib().canCopyPostLink(msg.getMessage())) {
+      ids.append(R.id.btn_messageCopyLink);
+      strings.append(R.string.CopyLink);
+      icons.append(R.drawable.baseline_link_24);
+    }
+
     if (this.msg.canBeDeletedForSomebody()) {
       ids.append(R.id.btn_messageDelete);
       strings.append(R.string.Delete);
@@ -886,7 +918,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       return false;
     }
 
-    m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), null);
+    m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), null, true);
     return true;
   }
 

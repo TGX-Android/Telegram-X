@@ -49,7 +49,7 @@ private fun hueToRgb (p: Float, q: Float, t: Float): Float {
 }
 
 fun hslToRgb (hue: Float, saturation: Float, lightness: Float): Int {
-  return if (saturation != 0f) { // achromatic
+  return if (saturation == 0f) { // achromatic
     val color = (255f * lightness).toInt()
     Color.rgb(color, color, color)
   } else {
@@ -91,10 +91,11 @@ fun rgbToHsl (color: Int, hsl: FloatArray) {
 }
 
 fun fromToArgb (fromArgb: Int, toArgb: Int, factor: Float): Int {
+  require(!factor.isNaN())
   return when {
+    fromArgb == toArgb -> toArgb
     factor <= 0f -> fromArgb
     factor >= 1f -> toArgb
-    fromArgb == toArgb -> toArgb
     else -> {
       val alpha = fromTo(Color.alpha(fromArgb), Color.alpha(toArgb), factor)
       val red = fromTo(Color.red(fromArgb), Color.red(toArgb), factor)

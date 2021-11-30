@@ -39,7 +39,7 @@ public class ListItem {
   public static final int TYPE_EMPTY_OFFSET_SMALL = 14;
   public static final int TYPE_PROGRESS = 15;
   public static final int TYPE_SESSION = 16;
-  public static final int TYPE_VALUED_SETTING_RED = 17;
+  // public static final int TYPE_VALUED_SETTING_RED = 17;
   public static final int TYPE_SESSIONS_EMPTY = 18;
   public static final int TYPE_ICONIZED_EMPTY = 19;
   public static final int TYPE_BUTTON = 20;
@@ -121,6 +121,7 @@ public class ListItem {
   public static final int TYPE_CHART_DOUBLE_LINEAR = 103;
   public static final int TYPE_CHART_STACK_BAR = 104;
   public static final int TYPE_CHART_STACK_PIE = 105;
+  public static final int TYPE_CHART_HEADER_DETACHED = 106;
 
   public static final int TYPE_HEADER_MULTILINE = 110;
 
@@ -135,6 +136,9 @@ public class ListItem {
   public static final int TYPE_PAGE_BLOCK_TABLE = 111;
 
   public static final int TYPE_MESSAGE_PREVIEW = 120;
+  public static final int TYPE_STATS_MESSAGE_PREVIEW = 121;
+
+  public static final int TYPE_EMBED_STICKER = 130;
 
   private static final int FLAG_SELECTED = 1;
   private static final int FLAG_BOOL_VALUE = 1 << 1;
@@ -432,7 +436,7 @@ public class ListItem {
 
   public boolean setStringIfChanged (@NonNull CharSequence string) {
     if (!StringUtils.equalsOrBothEmpty(this.string, string)) {
-      boolean changed = stringResource == 0 || StringUtils.equalsOrBothEmpty(getString(), string);
+      boolean changed = stringResource == 0 || !StringUtils.equalsOrBothEmpty(getString(), string);
       this.string = string;
       this.stringResource = 0;
       return changed;

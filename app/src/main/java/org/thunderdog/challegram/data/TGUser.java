@@ -31,9 +31,11 @@ public class TGUser implements UserProvider {
   private static final int FLAG_USERNAME = 0x10;
   private static final int FLAG_NO_BOT_STATE = 0x20;
   private static final int FLAG_SHOW_PHONE_NUMBER = 0x40;
+  private static final int FLAG_CUSTOM_STATUS_TEXT = 0x80;
+  private static final int FLAG_CHAT_TITLE_AS_USER_NAME = 0x160;
 
   private final Tdlib tdlib;
-  private final int userId;
+  private final long userId;
   private @Nullable TdApi.User user;
   private ImageFile imageFile;
   private AvatarPlaceholder.Metadata avatarPlaceholderMetadata;
@@ -144,10 +146,27 @@ public class TGUser implements UserProvider {
     }
   }
 
+  public void setCustomStatus (String statusText) {
+    if (!StringUtils.equalsOrBothEmpty(this.statusText, statusText)) {
+      if (StringUtils.isEmpty(statusText)) {
+        this.flags &= ~FLAG_CUSTOM_STATUS_TEXT;
+        updateStatus();
+      } else {
+        this.statusText = statusText;
+        this.flags |= FLAG_CUSTOM_STATUS_TEXT;
+        this.flags &= ~FLAG_ONLINE;
+      }
+    }
+  }
+
+  public void chatTitleAsUserName () {
+    this.flags |= FLAG_CHAT_TITLE_AS_USER_NAME;
+  }
+
   private long chatId;
 
   public long getChatId () {
-    return chatId != 0 ? chatId : ChatId.fromUserId(getId());
+    return chatId != 0 ? chatId : ChatId.fromUserId(getUserId());
   }
 
   public void setChat (long chatId, @Nullable TdApi.Chat chat) {
@@ -185,6 +204,7 @@ public class TGUser implements UserProvider {
   }
 
   public boolean updateName () {
+    if ((flags & FLAG_CHAT_TITLE_AS_USER_NAME) != 0) return false;
     String nameText = (flags & FLAG_LOCAL) != 0 ? TD.getUserName(firstName, lastName) : TD.getUserName(userId, user);
     if (!StringUtils.equalsOrBothEmpty(this.nameText, nameText)) {
       this.nameText = nameText;
@@ -202,7 +222,9 @@ public class TGUser implements UserProvider {
   public boolean updateStatus () {
     int oldFlags = this.flags;
     String statusText;
-    if (((flags & FLAG_CONTACT) != 0 || (flags & FLAG_SHOW_PHONE_NUMBER) != 0) && user != null) {
+    if ((flags & FLAG_CUSTOM_STATUS_TEXT) != 0) {
+      return true;
+    } else if (((flags & FLAG_CONTACT) != 0 || (flags & FLAG_SHOW_PHONE_NUMBER) != 0) && user != null) {
       statusText = Strings.formatPhone(user.phoneNumber);
     } else if ((flags & FLAG_USERNAME) != 0 && user != null) {
       statusText = "@" + user.username;
@@ -233,7 +255,7 @@ public class TGUser implements UserProvider {
     return role;
   }
 
-  public int getId () {
+  public long getUserId () {
     return (flags & FLAG_LOCAL) != 0 ? contactId : user == null ? 0 : user.id;
   }
 
@@ -257,8 +279,13 @@ public class TGUser implements UserProvider {
     return (flags & FLAG_ONLINE) != 0 || ((flags & FLAG_SHOW_PHONE_NUMBER) == 0 && tdlib.isSelfUserId(userId));
   }
 
-  public boolean compare (TGUser user) {
-    return user != null && user.getId() == getId();
+  @Override
+  public boolean equals (@Nullable Object obj) {
+    if (obj instanceof TGUser) {
+      TGUser other = (TGUser) obj;
+      return getUserId() == other.getUserId() && getChatId() == other.getChatId() && this.flags == other.flags && this.role == other.role;
+    }
+    return super.equals(obj);
   }
 
   public @Nullable TdApi.User getUser () {
@@ -278,7 +305,7 @@ public class TGUser implements UserProvider {
   }
 
   public String getFirstName () {
-    return (flags & FLAG_LOCAL) != 0 ? firstName : user != null ? user.firstName : "User#" + userId;
+    return (flags & FLAG_CHAT_TITLE_AS_USER_NAME) != 0 ? nameText : (flags & FLAG_LOCAL) != 0 ? firstName : user != null ? user.firstName : "User#" + userId;
   }
 
   public String getLastName () {

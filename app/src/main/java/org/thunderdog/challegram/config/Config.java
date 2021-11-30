@@ -91,6 +91,7 @@ public class Config {
   public static final boolean HARDWARE_MEDIA_VIEWER = HARDWARE_CLIP_PATH_FIX;
 
   public static final boolean ALLOW_MORE_CACHED_MESSAGES = false;
+  public static final boolean NEED_MEDIA_GROUP_MERGE_REQUESTS = false;
 
   public static final int CHANNEL_MEMBER_STRING = R.string.xSubscribers;
 
@@ -194,7 +195,7 @@ public class Config {
     return false;
   }
 
-  public static final boolean REQUEST_BACKGROUND_LOCATION = false;
+  public static final boolean REQUEST_BACKGROUND_LOCATION = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
 
   public static final boolean DISABLE_VIEWER_ELEVATION = false;
 
@@ -251,4 +252,9 @@ public class Config {
   public static final boolean DISABLE_PASSWORD_INVISIBILITY = true;
 
   public static final int SUPPORTED_INSTANT_VIEW_VERSION = 2;
+  public static final boolean INSTANT_VIEW_WRONG_LAYOUT = false;
+
+  public static final boolean QR_AVAILABLE = true;
+  public static final boolean QR_FORCE_ZXING = false;
+  public static final boolean MANAGE_STORAGE_PERMISSION_AVAILABLE = false; // Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
 }

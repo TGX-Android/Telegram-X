@@ -334,6 +334,48 @@
   <string name="ChatContentGroupPhotoRemove_outgoing">Removed the group photo</string>
   <string name="ChatContentGroupName">Renamed the group to «%1$s»</string>
   <string name="ChatContentGroupName_outgoing">Renamed the group to «%1$s»</string>
+  <string name="ChatContentThemeSet">Changed the chat theme to %1$s</string>
+  <string name="ChatContentThemeSet_outgoing">Changed the chat theme to %1$s</string>
+  <string name="ChatContentGroupTtlSeconds_one">Set messages to auto-delete in %1$s second</string>
+  <string name="ChatContentGroupTtlSeconds_other">Set messages to auto-delete in %1$s seconds</string>
+  <string name="ChatContentGroupTtlMinutes_one">Set messages to auto-delete in %1$s minute</string>
+  <string name="ChatContentGroupTtlMinutes_other">Set messages to auto-delete in %1$s minutes</string>
+  <string name="ChatContentGroupTtlHours_one">Set messages to auto-delete in %1$s hour</string>
+  <string name="ChatContentGroupTtlHours_other">Set messages to auto-delete in %1$s hours</string>
+  <string name="ChatContentGroupTtlDays_one">Set messages to auto-delete in %1$s day</string>
+  <string name="ChatContentGroupTtlDays_other">Set messages to auto-delete in %1$s days</string>
+  <string name="ChatContentGroupTtlWeeks_one">Set messages to auto-delete in %1$s week</string>
+  <string name="ChatContentGroupTtlWeeks_other">Set messages to auto-delete in %1$s weeks</string>
+  <string name="ChatContentGroupTtlMonths_one">Set messages to auto-delete in %1$s month</string>
+  <string name="ChatContentGroupTtlMonths_other">Set messages to auto-delete in %1$s months</string>
+  <string name="ChatContentGroupTtlOff">Disabled the auto-delete timer</string>
+  <string name="ChatContentChannelTtlSeconds_one">Set posts to auto-delete in %1$s second</string>
+  <string name="ChatContentChannelTtlSeconds_other">Set posts to auto-delete in %1$s seconds</string>
+  <string name="ChatContentChannelTtlMinutes_one">Set posts to auto-delete in %1$s minute</string>
+  <string name="ChatContentChannelTtlMinutes_other">Set posts to auto-delete in %1$s minutes</string>
+  <string name="ChatContentChannelTtlHours_one">Set posts to auto-delete in %1$s hour</string>
+  <string name="ChatContentChannelTtlHours_other">Set posts to auto-delete in %1$s hours</string>
+  <string name="ChatContentChannelTtlDays_one">Set posts to auto-delete in %1$s day</string>
+  <string name="ChatContentChannelTtlDays_other">Set posts to auto-delete in %1$s days</string>
+  <string name="ChatContentChannelTtlWeeks_one">Set posts to auto-delete in %1$s week</string>
+  <string name="ChatContentChannelTtlWeeks_other">Set posts to auto-delete in %1$s weeks</string>
+  <string name="ChatContentChannelTtlMonths_one">Set posts to auto-delete in %1$s month</string>
+  <string name="ChatContentChannelTtlMonths_other">Set posts to auto-delete in %1$s months</string>
+  <string name="ChatContentChannelTtlOff">Disabled the auto-delete timer</string>
+  <string name="ChatContentTtlSeconds_one">Set the self-destruct timer to %1$s second</string>
+  <string name="ChatContentTtlSeconds_other">Set the self-destruct timer to %1$s seconds</string>
+  <string name="ChatContentTtlMinutes_one">Set the self-destruct timer to %1$s minute</string>
+  <string name="ChatContentTtlMinutes_other">Set the self-destruct timer to %1$s minutes</string>
+  <string name="ChatContentTtlHours_one">Set the self-destruct timer to %1$s hour</string>
+  <string name="ChatContentTtlHours_other">Set the self-destruct timer to %1$s hours</string>
+  <string name="ChatContentTtlDays_one">Set the self-destruct timer to %1$s day</string>
+  <string name="ChatContentTtlDays_other">Set the self-destruct timer to %1$s days</string>
+  <string name="ChatContentTtlWeeks_one">Set the self-destruct timer to %1$s week</string>
+  <string name="ChatContentTtlWeeks_other">Set the self-destruct timer to %1$s weeks</string>
+  <string name="ChatContentTtlMonths_one">Set the self-destruct timer to %1$s month</string>
+  <string name="ChatContentTtlMonths_other">Set the self-destruct timer to %1$s months</string>
+  <string name="ChatContentTtlOff">Disabled the self-destruct timer</string>
+
   <string name="ChatContentVoiceChatStarted">Started a video chat</string>
   <string name="ChatContentVoiceChatStarted_outgoing">Started a video chat</string>
   <string name="ChatContentVoiceChatFinished">Ended the video chat (%1$s)</string>
@@ -345,6 +387,19 @@
   <string name="ChatContentVoiceChatInviteMulti_other">Invited %1$s people to the video chat</string>
   <string name="ChatContentVoiceChatInviteMulti_outgoing_one">Invited %1$s person to the video chat</string>
   <string name="ChatContentVoiceChatInviteMulti_outgoing_other">Invited %1$s people to the video chat</string>
+
+  <string name="ChatContentLiveStreamStarted">Started a live stream</string>
+  <string name="ChatContentLiveStreamStarted_outgoing">Started a live stream</string>
+  <string name="ChatContentLiveStreamFinished">Ended the live stream (%1$s)</string>
+  <string name="ChatContentLiveStreamFinished_outgoing">Ended the live stream (%1$s)</string>
+  <string name="ChatContentLiveStreamInviteYou">Invited you to the live stream</string>
+  <string name="ChatContentLiveStreamInvite">Invited %1$s to the live stream</string>
+  <string name="ChatContentLiveStreamInvite_outgoing">Invited %1$s to the live stream</string>
+  <string name="ChatContentLiveStreamInviteMulti_one">Invited %1$s person to the live stream</string>
+  <string name="ChatContentLiveStreamInviteMulti_other">Invited %1$s people to the live stream</string>
+  <string name="ChatContentLiveStreamInviteMulti_outgoing_one">Invited %1$s person to the live stream</string>
+  <string name="ChatContentLiveStreamInviteMulti_outgoing_other">Invited %1$s people to the live stream</string>
+
   <string name="Audio">Audio</string>
   <string name="Voice">Voice</string>
   <string name="Photo">Photo</string>
@@ -413,6 +468,7 @@
   <string name="ClearHistory">Clear history</string>
   <string name="Cancel">Cancel</string>
   <string name="AddMember">Add member</string>
+  <string name="AddMembers">Add members</string>
   <string name="DeleteAndLeave">Delete and exit</string>
   <string name="justAdd">Just add to group</string>
   <string name="KickFromGroup">Remove from group</string>
@@ -499,6 +555,7 @@
   <string name="NothingFound">Nothing found</string>
   <string name="Gallery">Gallery</string>
   <string name="ChatCamera">Camera</string>
+
   <string name="VoiceChatInviteOther">You invited %1$s to the video chat</string>
   <string name="VoiceChatInviteSelf">%1$s invited you to the video chat</string>
   <string name="VoiceChatInvite">%1$s invited %2$s to the video chat</string>
@@ -508,6 +565,17 @@
   <string name="VoiceChatEnded">Video chat ended</string>
   <string name="VoiceChatEndedBy">%1$s ended the video chat</string>
   <string name="VoiceChatEndedYou">You ended the video chat</string>
+
+  <string name="LiveStreamInviteOther">You invited %1$s to the live stream</string>
+  <string name="LiveStreamInviteSelf">%1$s invited you to the live stream</string>
+  <string name="LiveStreamInvite">%1$s invited %2$s to the live stream</string>
+  <string name="LiveStreamStarted">Live stream started</string>
+  <string name="LiveStreamStartedBy">%1$s started a live stream</string>
+  <string name="LiveStreamStartedYou">You started a live stream</string>
+  <string name="LiveStreamEnded">Live stream ended</string>
+  <string name="LiveStreamEndedBy">%1$s ended the live stream</string>
+  <string name="LiveStreamEndedYou">You ended the live stream</string>
+
   <string name="group_create_you">You created the group «%1$s»</string>
   <string name="group_photo_changed">%1$s changed the group photo</string>
   <string name="group_photo_changed_you">You changed the group photo</string>
@@ -525,6 +593,8 @@
   <string name="group_user_remove_self">You left the group</string>
   <string name="group_user_join_by_link">%1$s joined the group via invite link</string>
   <string name="group_user_join_by_link_self">You joined the group via invite link</string>
+  <string name="group_user_join_by_link_with_approval">%1$s joined the group via invite link, approved by %2$s</string>
+  <string name="group_user_join_by_link_self_with_approval">You joined the group via invite link, approved by %1$s</string>
   <string name="group_created">%1$s created the group «%2$s»</string>
   <string name="group_title_changed">%1$s changed the group name to «%2$s»</string>
   <string name="group_title_changed_you">You changed the group name to «%1$s»</string>
@@ -552,7 +622,11 @@
   <string name="LoadingMessages">Loading messages…</string>
   <string name="LoadingMessage">Loading message…</string>
   <string name="SaveGif">Save GIF</string>
+  <string name="SaveXGifs_one">Save %1$s GIF</string>
+  <string name="SaveXGifs_other">Save %1$s GIFs</string>
   <string name="GifSaved">GIF is now available in the media keyboard</string>
+  <string name="XGifSaved_one">%1$s new GIF available in the media keyboard</string>
+  <string name="XGifSaved_other">%1$s new GIFs available in the media keyboard</string>
   <string name="RemoveGifConfirm">Delete saved GIF?</string>
   <string name="NoMediaYet">No photos or videos yet</string>
   <string name="AttachAudio">Voice Message</string>
@@ -565,8 +639,14 @@
   <string name="PublicLinkTooShort">Public link is too short</string>
   <string name="PublicLinkIsInvalid">You can use only a–z, 0–9 and underscores for a Telegram public link.</string>
   <string name="SaveToGallery">Save to Gallery</string>
+  <string name="SaveXToGallery_one">Save %1$s file to Gallery</string>
+  <string name="SaveXToGallery_other">Save %1$s files to Gallery</string>
   <string name="PhotoHasBeenSavedToGallery">Photo saved to Gallery</string>
+  <string name="XPhotoSaved_one">%1$s photo saved to Gallery</string>
+  <string name="XPhotoSaved_other">%1$s photos saved to Gallery</string>
   <string name="VideoHasBeenSavedToGallery">Video saved to Gallery</string>
+  <string name="XVideoSaved_one">%1$s video saved to Gallery</string>
+  <string name="XVideoSaved_other">%1$s videos saved to Gallery</string>
   <string name="ChannelSignMessages">Sign Messages</string>
   <string name="PostNotFound">Post not found</string>
   <string name="OpenSupergroup">Open Supergroup</string>
@@ -778,6 +858,8 @@
   <string name="GroupsAndChannels">Groups and Channels</string>
   <string name="SecurityTitle">Security</string>
   <string name="SessionsTitle">Active Sessions</string>
+  <string name="ActiveDevices">Active Devices</string>
+  <string name="OtherDevices">Other Devices</string>
   <string name="SessionsIncompleteTitle">Incomplete Login Attempts</string>
   <string name="SessionsIncompleteInfo">The devices above have no access to your messages. The code was entered correctly, but no correct password was given.</string>
   <string name="TwoStepVerification">Two-Step Verification</string>
@@ -901,6 +983,8 @@
   <string name="XDisabledTimer">%1$s disabled the self-destruct timer</string>
   <string name="YouDisabledAutoDelete">You disabled the auto-delete timer</string>
   <string name="XDisabledAutoDelete">%1$s disabled the auto-delete timer</string>
+  <string name="YouDisabledAutoDeletePosts">You disabled the auto-delete timer</string>
+  <string name="XDisabledAutoDeletePosts">%1$s disabled the auto-delete timer</string>
 
   <string name="XSetTimerSeconds_one">%2$s set the self-destruct timer to %1$s second</string>
   <string name="XSetTimerSeconds_other">%2$s set the self-destruct timer to %1$s seconds</string>
@@ -927,30 +1011,70 @@
   <string name="YouSetTimerWeeks_one">You set the self-destruct timer to %1$s week</string>
   <string name="YouSetTimerWeeks_other">You set the self-destruct timer to %1$s weeks</string>
 
-  <string name="XSetAutoDeleteSeconds_one">%2$s set the messages to auto-delete in %1$s second</string>
-  <string name="XSetAutoDeleteSeconds_other">%2$s set the messages to auto-delete in %1$s seconds</string>
-  <string name="YouSetAutoDeleteSeconds_one">You set the messages to auto-delete in %1$s second</string>
-  <string name="YouSetAutoDeleteSeconds_other">You set the messages to auto-delete in %1$s seconds</string>
+  <string name="XSetTimerMonths_one">%2$s set the self-destruct timer to %1$s month</string>
+  <string name="XSetTimerMonths_other">%2$s set the self-destruct timer to %1$s months</string>
+  <string name="YouSetTimerMonths_one">You set the self-destruct timer to %1$s month</string>
+  <string name="YouSetTimerMonths_other">You set the self-destruct timer to %1$s months</string>
 
-  <string name="XSetAutoDeleteMinutes_one">%2$s set the messages to auto-delete in %1$s minute</string>
-  <string name="XSetAutoDeleteMinutes_other">%2$s set the messages to auto-delete in %1$s minutes</string>
-  <string name="YouSetAutoDeleteMinutes_one">You set the messages to auto-delete in %1$s minute</string>
-  <string name="YouSetAutoDeleteMinutes_other">You set the messages to auto-delete in %1$s minutes</string>
+  <string name="XSetAutoDeleteSeconds_one">%2$s set messages to auto-delete in %1$s second</string>
+  <string name="XSetAutoDeleteSeconds_other">%2$s set messages to auto-delete in %1$s seconds</string>
+  <string name="YouSetAutoDeleteSeconds_one">You set messages to auto-delete in %1$s second</string>
+  <string name="YouSetAutoDeleteSeconds_other">You set messages to auto-delete in %1$s seconds</string>
 
-  <string name="XSetAutoDeleteHours_one">%2$s set the messages to auto-delete in %1$s hour</string>
-  <string name="XSetAutoDeleteHours_other">%2$s set the messages to auto-delete in %1$s hours</string>
-  <string name="YouSetAutoDeleteHours_one">You set the messages to auto-delete in %1$s hour</string>
-  <string name="YouSetAutoDeleteHours_other">You set the messages to auto-delete in %1$s hours</string>
+  <string name="XSetAutoDeleteMinutes_one">%2$s set messages to auto-delete in %1$s minute</string>
+  <string name="XSetAutoDeleteMinutes_other">%2$s set messages to auto-delete in %1$s minutes</string>
+  <string name="YouSetAutoDeleteMinutes_one">You set messages to auto-delete in %1$s minute</string>
+  <string name="YouSetAutoDeleteMinutes_other">You set messages to auto-delete in %1$s minutes</string>
 
-  <string name="XSetAutoDeleteDays_one">%2$s set the messages to auto-delete in %1$s day</string>
-  <string name="XSetAutoDeleteDays_other">%2$s set the messages to auto-delete in %1$s days</string>
-  <string name="YouSetAutoDeleteDays_one">You set the messages to auto-delete in %1$s day</string>
-  <string name="YouSetAutoDeleteDays_other">You set the messages to auto-delete in %1$s days</string>
+  <string name="XSetAutoDeleteHours_one">%2$s set messages to auto-delete in %1$s hour</string>
+  <string name="XSetAutoDeleteHours_other">%2$s set messages to auto-delete in %1$s hours</string>
+  <string name="YouSetAutoDeleteHours_one">You set messages to auto-delete in %1$s hour</string>
+  <string name="YouSetAutoDeleteHours_other">You set messages to auto-delete in %1$s hours</string>
 
-  <string name="XSetAutoDeleteWeeks_one">%2$s set the messages to auto-delete in %1$s week</string>
-  <string name="XSetAutoDeleteWeeks_other">%2$s set the messages to auto-delete in %1$s weeks</string>
-  <string name="YouSetAutoDeleteWeeks_one">You set the messages to auto-delete in %1$s week</string>
-  <string name="YouSetAutoDeleteWeeks_other">You set the messages to auto-delete in %1$s weeks</string>
+  <string name="XSetAutoDeleteDays_one">%2$s set messages to auto-delete in %1$s day</string>
+  <string name="XSetAutoDeleteDays_other">%2$s set messages to auto-delete in %1$s days</string>
+  <string name="YouSetAutoDeleteDays_one">You set messages to auto-delete in %1$s day</string>
+  <string name="YouSetAutoDeleteDays_other">You set messages to auto-delete in %1$s days</string>
+
+  <string name="XSetAutoDeleteWeeks_one">%2$s set messages to auto-delete in %1$s week</string>
+  <string name="XSetAutoDeleteWeeks_other">%2$s set messages to auto-delete in %1$s weeks</string>
+  <string name="YouSetAutoDeleteWeeks_one">You set messages to auto-delete in %1$s week</string>
+  <string name="YouSetAutoDeleteWeeks_other">You set messages to auto-delete in %1$s weeks</string>
+
+  <string name="XSetAutoDeleteMonths_one">%2$s set messages to auto-delete in %1$s month</string>
+  <string name="XSetAutoDeleteMonths_other">%2$s set messages to auto-delete in %1$s months</string>
+  <string name="YouSetAutoDeleteMonths_one">You set messages to auto-delete in %1$s month</string>
+  <string name="YouSetAutoDeleteMonths_other">You set messages to auto-delete in %1$s months</string>
+
+  <string name="XSetAutoDeletePostsSeconds_one">Admins set posts to auto-delete in %1$s second</string>
+  <string name="XSetAutoDeletePostsSeconds_other">Admins set posts to auto-delete in %1$s seconds</string>
+  <string name="YouSetAutoDeletePostsSeconds_one">You set posts to auto-delete in %1$s second</string>
+  <string name="YouSetAutoDeletePostsSeconds_other">You set posts to auto-delete in %1$s seconds</string>
+
+  <string name="XSetAutoDeletePostsMinutes_one">Admins set posts to auto-delete in %1$s minute</string>
+  <string name="XSetAutoDeletePostsMinutes_other">Admins set posts to auto-delete in %1$s minutes</string>
+  <string name="YouSetAutoDeletePostsMinutes_one">You set posts to auto-delete in %1$s minute</string>
+  <string name="YouSetAutoDeletePostsMinutes_other">You set posts to auto-delete in %1$s minutes</string>
+
+  <string name="XSetAutoDeletePostsHours_one">Admins set posts to auto-delete in %1$s hour</string>
+  <string name="XSetAutoDeletePostsHours_other">Admins set posts to auto-delete in %1$s hours</string>
+  <string name="YouSetAutoDeletePostsHours_one">You set posts to auto-delete in %1$s hour</string>
+  <string name="YouSetAutoDeletePostsHours_other">You set posts to auto-delete in %1$s hours</string>
+
+  <string name="XSetAutoDeletePostsDays_one">Admins set posts to auto-delete in %1$s day</string>
+  <string name="XSetAutoDeletePostsDays_other">Admins set posts to auto-delete in %1$s days</string>
+  <string name="YouSetAutoDeletePostsDays_one">You set posts to auto-delete in %1$s day</string>
+  <string name="YouSetAutoDeletePostsDays_other">You set posts to auto-delete in %1$s days</string>
+
+  <string name="XSetAutoDeletePostsWeeks_one">Admins set posts to auto-delete in %1$s week</string>
+  <string name="XSetAutoDeletePostsWeeks_other">Admins set posts to auto-delete in %1$s weeks</string>
+  <string name="YouSetAutoDeletePostsWeeks_one">You set posts to auto-delete in %1$s week</string>
+  <string name="YouSetAutoDeletePostsWeeks_other">You set posts to auto-delete in %1$s weeks</string>
+
+  <string name="XSetAutoDeletePostsMonths_one">Admins set posts to auto-delete in %1$s month</string>
+  <string name="XSetAutoDeletePostsMonths_other">Admins set posts to auto-delete in %1$s months</string>
+  <string name="YouSetAutoDeletePostsMonths_one">You set posts to auto-delete in %1$s month</string>
+  <string name="YouSetAutoDeletePostsMonths_other">You set posts to auto-delete in %1$s months</string>
 
   <string name="AddCaption">Add a caption…</string>
   <string name="Enhance">Enhance</string>
@@ -1126,6 +1250,7 @@
   <string name="AccessError">Access error</string>
   <string name="FolderDoesNotExist">This folder doesn\'t exist</string>
   <string name="NoMusicFilesFound">No music files found</string>
+  <string name="NoDownloadFilesFound">No downloaded files found</string>
   <string name="FolderEmpty">This folder is empty</string>
   <string name="AttachFolderHome">Home</string>
   <string name="DataSettings">Data and Storage</string>
@@ -1184,9 +1309,21 @@
   <string name="EncryptionKeyDescription">This image and text were derived from the encryption key for this secret chat with %1$s.\n\nIf they look the same on %1$s\'s device, end-to-end encryption is guaranteed.</string>
   <string name="JoinGroupX">Join group %1$s?</string>
   <string name="FollowChannelX">Follow channel %1$s?</string>
+  <string name="RequestJoinGroupX">Request group admins to let you join %1$s?</string>
+  <string name="RequestFollowChannelX">Request channel admins to let you join %1$s?</string>
+  <string name="RequestJoinGroupBtn">Request to join</string>
+  <string name="RequestJoinChannelBtn">Request to follow</string>
+  <string name="RequestJoinGroupSent">Request to join %1$s has been sent</string>
+  <string name="RequestJoinChannelSent">Request to follow %1$s has been sent</string>
   <string name="XChangedGroupTitle">%1$s changed the group name</string>
   <string name="XJoinedByLink">%1$s joined via invite link</string>
   <string name="YouJoinedByLink">You joined via invite link</string>
+  <string name="XJoinedByLinkWithApproval">%1$s joined via invite link, approved by %2$s</string>
+  <string name="YouJoinedByLinkWithApproval">You joined via invite link, approved by %1$s</string>
+  <string name="XAcceptedToGroup">%1$s was accepted to the group</string>
+  <string name="XAcceptedToChannel">%1$s was accepted to the channel</string>
+  <string name="YouAcceptedToGroup">You were accepted to the group</string>
+  <string name="YouAcceptedToChannel">You were accepted to the channel</string>
   <string name="LinkJoinOther">%1$s joined via %2$s\'s invite link %3$s</string>
   <string name="LinkJoinOtherYou">You joined via %1$s\'s invite link %2$s</string>
   <string name="LinkJoinTemp">%1$s joined via %2$s\'s temporary invite link %3$s</string>
@@ -1199,6 +1336,20 @@
   <string name="LinkJoinChannelPrimary">%1$s subscribed via the primary invite link %2$s</string>
   <string name="LinkJoinPrimaryYou">You joined via the primary invite link %1$s</string>
   <string name="LinkJoinChannelPrimaryYou">You subscribed via the primary invite link %1$s</string>
+
+  <string name="LinkJoinOtherWithApproval">%1$s joined via %2$s\'s invite link %3$s, approved by %4$s</string>
+  <string name="LinkJoinOtherYouWithApproval">You joined via %1$s\'s invite link %2$s, approved by %43s</string>
+  <string name="LinkJoinTempWithApproval">%1$s joined via %2$s\'s temporary invite link %3$s, approved by %4$s</string>
+  <string name="LinkJoinTempYouWithApproval">You joined via %1$s\'s temporary invite link %2$s, approved by %3$s</string>
+  <string name="LinkJoinChannelOtherWithApproval">%1$s subscribed via %2$s\'s invite link %3$s, approved by %4$s</string>
+  <string name="LinkJoinChannelOtherYouWithApproval">You subscribed via %1$s\'s invite link %2$s, approved by %3$s</string>
+  <string name="LinkJoinChannelTempWithApproval">%1$s subscribed via %2$s\'s temporary invite link %3$s, approved by %4$s</string>
+  <string name="LinkJoinChannelTempYouWithApproval">You subscribed via %1$s\'s temporary invite link %2$s, approved by %3$s</string>
+  <string name="LinkJoinPrimaryWithApproval">%1$s joined via the primary invite link %2$s, approved by %3$s</string>
+  <string name="LinkJoinChannelPrimaryWithApproval">%1$s subscribed via the primary invite link %2$s, approved by %3$s</string>
+  <string name="LinkJoinPrimaryYouWithApproval">You joined via the primary invite link %1$s, approved by %2$s</string>
+  <string name="LinkJoinChannelPrimaryYouWithApproval">You subscribed via the primary invite link %1$s, approved by %2$s</string>
+  
   <string name="LinkRevokePrimary">%1$s revoked the primary invite link %2$s</string>
   <string name="LinkRevokePrimaryYou">You revoked the primary invite link %1$s</string>
   <string name="LinkRevokeOther">%1$s revoked %2$s\'s invite link %3$s</string>
@@ -1342,8 +1493,16 @@
   <string name="UseProxyUsername">Username</string>
   <string name="UseProxyPassword">Password</string>
   <string name="SaveToDownloads">Save to Downloads</string>
+  <string name="SaveXToDownloads_one">Save %1$s file to Downloads</string>
+  <string name="SaveXToDownloads_other">Save %1$s files to Downloads</string>
   <string name="SaveToMusic">Save to Music</string>
+  <string name="SaveXToMusic_one">Save %1$s file to Music</string>
+  <string name="SaveXToMusic_other">Save %1$s files to Music</string>
   <string name="DownloadedToPath">Successfully downloaded: %1$s</string>
+  <string name="DownloadedXFiles_one">Successfully downloaded %1$s file:\n%2$s</string>
+  <string name="DownloadedXFiles_other">Successfully downloaded %1$s files:\n%2$s</string>
+  <string name="SavedXFiles_one">Saved %1$s file</string>
+  <string name="SavedXFiles_other">Saved %1$s files</string>
   <string name="CallNoLongerActive">This call is no longer active</string>
   <string name="NotificationContactJoined">%1$s joined Telegram!</string>
   <string name="DeleteEntry">Delete Entry</string>
@@ -1376,6 +1535,8 @@
   <string name="SendAsCopy">Send as copy</string>
   <string name="RemoveCaptions">Remove captions in copies</string>
   <string name="GifHasBeenSavedToGallery">GIF saved to Gallery</string>
+  <string name="SavedXGifToGallery_one">%1$s GIF saved to Gallery</string>
+  <string name="SavedXGifToGallery_other">%1$s GIFs saved to Gallery</string>
   <string name="Error">Error</string>
   <string name="UsernameNotOccupied">Username %1$s not found</string>
   <string name="UsernameNotOccupiedUnknown">Chat with specified username not found</string>
@@ -1394,6 +1555,7 @@
   <string name="Report">Report</string>
   <string name="ReportChat">Report %1$s</string>
   <string name="Spam">Spam</string>
+  <string name="Fake">Fake</string>
   <string name="Violence">Violence</string>
   <string name="ChildAbuse">Child Abuse</string>
   <string name="Pornography">Pornography</string>
@@ -1496,6 +1658,7 @@
   <string name="RightAddNewAdmins">Add New Admins</string>
   <string name="RightEditMessages">Edit Messages</string>
   <string name="RightVoiceChats">Manage video chats</string>
+  <string name="RightLiveStreams">Manage live streams</string>
   <string name="RightAnonymous">Remain anonymous</string>
   <string name="NoGroupsToShow">No groups to show</string>
   <string name="GroupsWillBeShownHere">Groups in common will be shown here</string>
@@ -1656,8 +1819,9 @@
   <string name="EventLogPromotedAddAdmins">Add admins</string>
   <string name="EventLogPromotedRemainAnonymous">Remain anonymous</string>
   <string name="EventLogPromotedManageVoiceChats">Manage video chats</string>
+  <string name="EventLogPromotedManageLiveStreams">Manage live streams</string>
   <string name="EventLogPromotedTitle">Title: %1$s</string>
-  <string name="EventLogPromotedTitleChange">Title: %1$s -> %2$s</string>
+  <string name="EventLogPromotedTitleChange">Title: %1$s → %2$s</string>
   <string name="EventLogPromotedBanUsers">Ban users</string>
   <string name="EventLogPromotedAddUsers">Add users</string>
   <string name="EventLogPromotedPinMessages">Pin messages</string>
@@ -1673,8 +1837,11 @@
   <string name="EventLogFilterPinnedMessages">Pinned messages</string>
   <string name="EventLogFilterLeavingMembers">Leaving members</string>
   <string name="EventLogFilterVoiceChats">Video chats</string>
+  <string name="EventLogFilterLiveStreams">Live streams</string>
   <string name="EventLogSlowModeChanged">%1$s set the slow mode timer to %2$s</string>
   <string name="EventLogSlowModeDisabled">%1$s disabled the slow mode</string>
+  <string name="EventLogSlowModeChangedYou">You set the slow mode timer to %1$s</string>
+  <string name="EventLogSlowModeDisabledYou">%1$s disabled the slow mode</string>
   <string name="EventLogLinkedChannelChanged">%1$s linked this group to %2$s</string>
   <string name="EventLogLinkedChannelRemoved">%1$s unlinked this group from %2$s</string>
   <string name="EventLogLinkedChannelChangedUnknown">This group was linked to %1$s</string>
@@ -1682,6 +1849,7 @@
   <string name="EventLogLinkedGroupChanged">%1$s made %2$s the discussion group for this channel</string>
   <string name="EventLogLinkedGroupRemoved">%1$s removed the discussion group %2$s</string>
   <string name="EventLogLocationSet">%1$s set group location to %2$s</string>
+
   <string name="EventLogMutedNewParticipants">%1$s muted new video chat participants</string>
   <string name="EventLogUnmutedNewParticipants">%1$s allowed new video chat participants to speak</string>
   <string name="EventLogMutedNewParticipantsYou">You muted new video chat participants</string>
@@ -1690,6 +1858,16 @@
   <string name="EventLogUnmutedParticipant">%1$s allowed %2$s to speak in the video chat</string>
   <string name="EventLogMutedParticipantYou">You muted %1$s in the video chat</string>
   <string name="EventLogUnmutedParticipantYou">You allowed %1$s to speak in the video chat</string>
+
+  <string name="EventLogChannelMutedNewParticipants">%1$s muted new live stream participants</string>
+  <string name="EventLogChannelUnmutedNewParticipants">%1$s allowed new live stream participants to speak</string>
+  <string name="EventLogChannelMutedNewParticipantsYou">You muted new live stream participants</string>
+  <string name="EventLogChannelUnmutedNewParticipantsYou">You allowed new live stream participants to speak</string>
+  <string name="EventLogChannelMutedParticipant">%1$s muted %2$s in the live stream</string>
+  <string name="EventLogChannelUnmutedParticipant">%1$s allowed %2$s to speak in the live stream</string>
+  <string name="EventLogChannelMutedParticipantYou">You muted %1$s in the live stream</string>
+  <string name="EventLogChannelUnmutedParticipantYou">You allowed %1$s to speak in the live stream</string>
+
   <string name="EventLogChangedVolume">%1$s changed %2$s\'s volume to %3$s</string>
   <string name="EventLogChangedVolumeYou">You changed %1$s\'s volume to %2$s</string>
   <string name="EventLogChangedYourVolume">%1$s changed your volume to %2$s</string>
@@ -2229,6 +2407,7 @@
   <string name="url_faq">https://telegram.org/faq#general-questions</string>
   <string name="url_privacyPolicy">https://telegram.org/privacy</string>
   <string name="url_translationsPrefix">https://translations.telegram.org/en/android_x/unsorted/</string>
+  <string name="url_faqPhoneNumber">https://telegram.org/faq#q-i-have-a-new-phone-number-what-do-i-do</string>
   <string name="xSecondsShort_one">%1$ss</string>
   <string name="xSecondsShort_other">%1$ss</string>
   <string name="xMinutesShort_one">%1$sm</string>
@@ -2487,7 +2666,7 @@
   <string name="c_seekEmpty">Not yet downloaded part of the file.</string>
   <string name="c_seekReady">Downloaded part of the file.</string>
   <string name="c_seekDone">Playback progress of the file.</string>
-  <string name="c_promo">New trending sticker set.</string>
+  <string name="c_promo">New trending sticker set</string>
   <string name="c_statusBarLegacy">Used on **Android&#160;5.x** and lower.</string>
 
   <string name="p_parentTheme">Default values are inherited from this theme when a color or property is not explicitly set.</string>
@@ -2692,6 +2871,8 @@
   <string name="errorPrivacyAddMember">Sorry, the user restricted who can add them to chats in their privacy settings.</string>
   <string name="UserPrivacyRestricted">Sorry, the user restricted this action in their privacy settings.</string>
   <string name="NobodyLikesSpam2">Sorry, you can interact only with mutual contacts at the moment.</string> <!--PEER_FLOOD-->
+  <string name="error_BOTS_TOO_MUCH">Sorry, this group has too many bots. Please remove some of the bots you\'re not using first.</string>
+  <string name="error_ADMINS_TOO_MUCH">Sorry, this group has too many admins. Please remove one of the existing admins first.</string>
 
   <string name="NotificationImportance">Notification Style</string>
   <string name="NotificationImportanceHigh">Sound and pop-up</string>
@@ -3149,6 +3330,7 @@
   <string name="LogInAsOn">Log in as %1$s on %2$s</string>
   <string name="AllowWriteAccess">Allow %1$s to send me messages</string>
   <string name="Discuss">Discuss</string>
+  <string name="DiscussMessage">Discuss</string>
   <string name="LinkedChannel">Linked Channel</string>
   <string name="LinkedGroup">Linked Group</string>
   <string name="LinkChannel">Link a channel</string>
@@ -3462,6 +3644,31 @@
   <string name="StatsChartInteractions">Interactions</string>
   <string name="StatsChartIv">IV Interactions</string>
 
+  <string name="StatsTopMembers">Top members</string>
+  <string name="StatsTopAdmins">Top admins</string>
+  <string name="StatsTopInviters">Top inviters</string>
+  <string name="StatsXCharacters_one">%1$s character per message</string>
+  <string name="StatsXCharacters_other">%1$s characters per message</string>
+  <string name="StatsXDeletions_one">%1$s deletion</string>
+  <string name="StatsXDeletions_other">%1$s deletions</string>
+  <string name="StatsXBans_one">%1$s ban</string>
+  <string name="StatsXBans_other">%1$s bans</string>
+  <string name="StatsXRestrictions_one">%1$s restriction</string>
+  <string name="StatsXRestrictions_other">%1$s restrictions</string>
+  <string name="StatsXInvitations_one">%1$s invitation</string>
+  <string name="StatsXInvitations_other">%1$s invitations</string>
+  <string name="StatsXShowMore_one">Show %1$s more</string>
+  <string name="StatsXShowMore_other">Show %1$s more</string>
+  <string name="StatsRecentPosts">Recent Posts</string>
+  <string name="StatsXShared_one">%1$s share</string>
+  <string name="StatsXShared_other">%1$s shares</string>
+  <string name="StatsMessageInfo">Message Statistics</string>
+  <string name="StatsMessageViewCount">View Count</string>
+  <string name="StatsMessageSharesPrivate">Private Shares</string>
+  <string name="StatsMessageSharesPublic">Public Shares</string>
+  <string name="StatsMessagePublishDate">Publication Date</string>
+  <string name="StatsMessageSignature">Author Signature</string>
+
   <string name="SendDiceAsEmoji">Send as emoji</string>
   <string name="SendDiceHint">Send a %1$s emoji to any chat to get a random number from Telegram.</string>
   <string name="SendDice">Send a dice</string>
@@ -3578,7 +3785,7 @@
   <string name="locationUpdated_yesterday">updated yesterday at %1$s</string>
   <string name="locationUpdated_weekday">updated on %1$s at %2$s</string>
   <string name="locationUpdated_date">updated on %1$s at %2$s</string>
-  
+
   <string name="modified_now">modified just now</string>
   <string name="modified_seconds_one">modified %1$s second ago</string>
   <string name="modified_seconds_other">modified %1$s seconds ago</string>
@@ -3640,6 +3847,7 @@
   <string name="BiometricsError">System biometrics driver failure, see log for details.</string>
 
   <string name="InAppUpdates">In-App Updates</string>
+  <string name="AppUpdates">App Updates</string>
   <string name="AutoUpdate">Update automatically</string>
   <string name="AutoUpdateNever">Never</string>
   <string name="AutoUpdateAlways">Always</string>
@@ -3650,8 +3858,8 @@
   <string name="InstallUpdate">Install an update</string>
   <string name="CheckingForUpdates">Checking for updates…</string>
   <string name="LatestInstalled">Latest version is installed</string>
-  <string name="DownloadUpdateSize">Download an update (%1$s)</string>
-  <string name="DownloadUpdate">Download an update</string>
+  <string name="DownloadUpdateSize">Download update (%1$s)</string>
+  <string name="DownloadUpdate">Download update</string>
   <string name="AppUpdateAvailablePrompt">A new **Telegram X** update is available. Would you like to download? (%1$s)</string>
   <string name="AppUpdateAvailableVersionPrompt">A new **Telegram X** `%2$s` update is available. Would you like to download? (%1$s)</string>
   <string name="AppUpdateAvailablePromptConfirm">Download and install</string>
@@ -3665,6 +3873,11 @@
   <string name="ScanQRLogInInfo">Use camera to sign in on the desktop app.</string>
   <string name="PrivacyPolicy">Privacy Policy</string>
   <string name="ScanQRLinkHint">Use Settings — Devices — Scan QR to sign in with QR code.</string>
+  <string name="ScanQRAuthorizedToast">Authorized %1$s</string>
+  <string name="ScanQRAuthorizedToastPasswordPending">Authorized %1$s. You still have to enter your password there.</string>
+  <string name="ScanQRFullTitle">Scan QR Code</string>
+  <string name="ScanQRFullSubtitle">Scan the QR code to log into this account on another device.</string>
+  <string name="ScanQRFullSubtitleProxy">Scan the QR code to add a proxy server.</string>
 
   <string name="SlowMode">Slow Mode</string>
   <string name="SlowModeDisabled">Choose how long each member must wait before sending their next message.</string>
@@ -3676,6 +3889,86 @@
   <string name="SlowModeHours_other">Members will be able to send only one message every %1$s hours.</string>
   <string name="SlowModeOff">Off</string>
 
+  <string name="InviteLinks">Invite Links</string>
+  <string name="PrimaryInviteLinkMenu">Primary Invite Link</string>
+  <string name="PrimaryInviteLink">Primary Link</string>
+  <string name="AdditionalInviteLinks">Additional Links</string>
+  <string name="AdditionalInviteLinksHint">You can create additional invite links that have a limited time or number of uses.</string>
+  <string name="RevokedInviteLinks">Revoked Links</string>
+  <string name="OtherAdminsInviteLinks">Links created by other admins</string>
+  <string name="InviteLinkNoJoins">no one joined</string>
+  <string name="InviteLinkJoins_one">%1$s joined</string>
+  <string name="InviteLinkJoins_other">%1$s joined</string>
+  <string name="InviteLinkRemains_one">%1$s remaining</string>
+  <string name="InviteLinkRemains_other">%1$s remaining</string>
+  <string name="InviteLinkExpired">expired</string>
+  <string name="InviteLinkRevoked">revoked</string>
+  <string name="InviteLinkMemberLimitReached">member limit reached</string>
+  <string name="InviteLinkExpiredAt">expired at %1$s</string>
+
+  <string name="InviteLinkExpires_now">expires in a moment</string>
+  <string name="InviteLinkExpires_seconds_one">expires in %1$s second</string>
+  <string name="InviteLinkExpires_seconds_other">expires in %1$s seconds</string>
+  <string name="InviteLinkExpires_minutes_one">expires in %1$s minute</string>
+  <string name="InviteLinkExpires_minutes_other">expires in %1$s minutes</string>
+  <string name="InviteLinkExpires_hours_one">expires in %1$s hour</string>
+  <string name="InviteLinkExpires_hours_other">expires in %1$s hours</string>
+  <string name="InviteLinkExpires_today">expires at %1$s</string>
+  <string name="InviteLinkExpires_tomorrow">expires tomorrow at %1$s</string>
+  <string name="InviteLinkExpires_weekday">expires %1$s at %2$s</string>
+  <string name="InviteLinkExpires_date">expires %1$s at %2$s</string>
+
+  <string name="DeleteAllRevokedLinks">Delete All Revoked Links</string>
+  <string name="AreYouSureDeleteAllInviteLinks">Are you sure you want to delete all revoked links?</string>
+  <string name="AreYouSureRevokeInviteLinkGroup">Are you sure you want to revoke this link? Once this is done, nobody will be able to use it to join the group.</string>
+  <string name="AreYouSureRevokeInviteLinkChannel">Are you sure you want to revoke this link? Once this is done, nobody will be able to use it to join the channel.</string>
+  <string name="AreYouSureDeleteInviteLink">Are you sure you want to delete this link?</string>
+  <string name="InviteLinkEdit">Edit Link</string>
+  <string name="InviteLinkDelete">Delete Link</string>
+  <string name="InviteLinkCopy">Copy Link</string>
+  <string name="InviteLinkLimitedByPeriod">Limited by period</string>
+  <string name="InviteLinkLimitedByUsers">Limited by number of users</string>
+  <string name="InviteLinkLimitedByPeriodHint">You can make the link expire after a certain time.</string>
+  <string name="InviteLinkLimitedByUsersHint">You can make the link expire after it has been used for a certain number of times.</string>
+  <string name="InviteLinkLimitedByPeriodItem">Enter custom expire date</string>
+  <string name="InviteLinkLimitedByUsersItem">Number of Users</string>
+  <string name="InviteLinkLimitedByUsersAlertHint">0 — no limit</string>
+  <string name="InviteLinkLimitedByUsersCustom">Enter custom limit</string>
+  <string name="InviteLinkNoLimitSet">no limit</string>
+  <string name="InviteLinkExpireTitle">Expiration timer</string>
+  <string name="InviteLinkExpireToday">Expire today at %1$s</string>
+  <string name="InviteLinkExpireTomorrow">Expire tomorrow at %1$s</string>
+  <string name="InviteLinkExpireFuture">Expire %1$s at %2$s</string>
+  <string name="InviteLinkExpireInHours_one">Expire in %1$s hour</string>
+  <string name="InviteLinkExpireInHours_other">Expire in %1$s hours</string>
+  <string name="InviteLinkExpireInDays_one">Expire in %1$s day</string>
+  <string name="InviteLinkExpireInDays_other">Expire in %1$s days</string>
+  <string name="InviteLinkExpireInWeeks_one">Expire in %1$s week</string>
+  <string name="InviteLinkExpireInWeeks_other">Expire in %1$s weeks</string>
+  <string name="InviteLinkExpireInCustomDate">Expire at specific date…</string>
+  <string name="InviteLinkExpireNone">Do not expire</string>
+  <string name="InviteLinkOtherAdminHint">**%1$s** can see this link and use it to invite new members to **%2$s**.</string>
+  <string name="InviteLinkViewMembers">View joined members</string>
+  <string name="InviteLinkViewMembersTitle">Joined members</string>
+  <string name="CreatedByXOnDate">Created by %1$s %2$s</string>
+  <string name="Infinity">∞</string>
+  <string name="InviteLinkManage">Manage Invite Links</string>
+
+  <string name="xActiveLinks_one">%1$s active link</string>
+  <string name="xActiveLinks_other">%1$s active links</string>
+  <string name="xRevokedLinks_one">%1$s revoked link</string>
+  <string name="xRevokedLinks_other">%1$s revoked links</string>
+  <string name="format_activeAndRevokedLinks">%1$s, %2$s</string>
+
+  <string name="ChatTtl">Auto-delete messages</string>
+  <string name="ChatTtlOff">Off</string>
+  <string name="ChatTtlDisabled">Choose a period of time after which messages will be automatically deleted for members of the group.</string>
+  <string name="ChatTtlEnabled">Automatically delete new messages after %1$s for members of the group.</string>
+  <string name="ChannelTtl">Auto-delete posts</string>
+  <string name="ChannelTtlOff">Off</string>
+  <string name="ChannelTtlDisabled">Choose a certain period of time when posts will be automatically deleted for subscribers of the channel.</string>
+  <string name="ChannelTtlEnabled">Automatically delete new posts after %1$s for subscribers of the channel.</string>
+
   <string name="ChatBackgroundPreview">Chat Background Preview</string>
   <string name="ChatBackgroundNotSupported">Sorry, this type of chat background is not yet supported.</string>
   <string name="ChatBackgroundApply">Apply Chat Background</string>
@@ -3685,6 +3978,7 @@
   <string name="ChatBackgroundTypeSolid">solid color</string>
   <string name="ChatBackgroundTypeGradient">gradient</string>
   <string name="ChatBackgroundTypeMulticolor">multicolor gradient</string>
+  <string name="ChatBackgroundBlur">Blurred</string>
 
   <string name="NoCloudThemeSupport">This theme is not designed for **Telegram X**.\n\nHowever, you may check for user-made themes in @tgx_perfection.</string>
 
@@ -3717,6 +4011,112 @@
   <string name="NoRightDisallowInvite">All members can invite new members in this chat.</string>
   <string name="NoRightDisallowChangeInfo">All members can change info of this chat.</string>
   <string name="NoRightDisallowPin">All members can pin messages in this chat.</string>
+
+  <string name="CopyBankCard">Copy card number</string>
+  <string name="CopiedBankCard">Card number copied to the clipboard</string>
+
+  <string name="ChoosingSticker">choosing a sticker</string>
+  <string name="IsChoosingSticker">%1$s is choosing a sticker</string>
+  <string name="AreChoosingSticker">%1$s are choosing stickers</string>
+
+  <string name="QDeleteCallFromRecent">Delete call from recents?</string>
+
+  <string name="ReminderCheckPhoneNumber">Check your phone number</string>
+  <string name="ReminderCheckPhoneNumberText">Is %1$s still your number?</string>
+  <string name="ReminderCheckPhoneNumberDescription">Keep your number up to date to ensure you can always log into Telegram.</string>
+  <string name="ReminderCheckPhoneNumberHide">Keep %1$s</string>
+  <string name="ReminderCheckTfaPassword">Check your password</string>
+  <string name="ReminderCheckTfaPasswordText">Do you still remember your password?</string>
+  <string name="ReminderCheckTfaPasswordDescription">Check that you still remember your 2-Step Verification password to ensure you can always log into Telegram.</string>
+  <string name="ReminderCheckTfaPasswordHide">Hide Suggestion</string>
+  <string name="ReminderActionLearnMore">Learn More</string>
+  <string name="ReminderActionChangePhoneNumber">Change Phone Number</string>
+  <string name="ReminderActionVerifyPassword">Verify Password</string>
+
+  <string name="OpenPreviewInSecretChatWarning">Are you sure you want to open preview of %1$s with the following URL:\n\n%2$s</string>
+  <string name="OpenPreviewInSecretChatActionOpen">Open as preview</string>
+  <string name="OpenPreviewInSecretChatActionBrowser">Open in browser</string>
+
+  <string name="SubscribeToBeta">Subscribe to beta updates</string>
+  <string name="url_betaSubscription">https://play.google.com/apps/testing/org.thunderdog.challegram</string>
+
+  <string name="NotificationsMode">Show notifications from</string>
+  <string name="NotificationsModeAll">All accounts</string>
+  <string name="NotificationsModeActive">Current account</string>
+  <string name="NotificationsModeSelected">Selected accounts</string>
+  <string name="NotificationsModeSelectedMoreMuted_one">Show %1$s muted account</string>
+  <string name="NotificationsModeSelectedMoreMuted_other">Show %1$s muted accounts</string>
+  <string name="NotificationsModeSelectedMore_one">Show %1$s more account</string>
+  <string name="NotificationsModeSelectedMore_other">Show %1$s more accounts</string>
+  <string name="NotificationsModeAllHint">You will receive notifications from all accounts.</string>
+  <string name="NotificationsModeActiveHint">You will receive notifications only from currently active account.</string>
+  <string name="NotificationsModeSelectedHint_one">You will receive notifications only from %1$s account selected below.</string>
+  <string name="NotificationsModeSelectedHint_other">You will receive notifications only from %1$s accounts selected below.</string>
+  <string name="NotificationsModeSelectedHintExcluded_one">You will receive notifications only from %1$s selected account. Current account is not selected.</string>
+  <string name="NotificationsModeSelectedHintExcluded_other">You will receive notifications only from %1$s selected accounts. Current account is not selected.</string>
+  <string name="NotificationSettings">Notifications for chats</string>
+
+  <string name="XSignInAttempts_one">You have %1$s incomplete login attempt</string>
+  <string name="XSignInAttempts_other">You have %1$s incomplete login attempts</string>
+  <!-- User has only one authorization and it's current -->
+  <string name="SignedInNoOtherSessions">You have no other sessions</string>
+  <!-- Just one other session -->
+  <string name="SignedInOtherDevice">You are also signed in on %1$s</string>
+  <string name="SignedInOtherSession">You are also signed in on %1$s</string>
+  <!-- All sessions from other devices, each device has 1 session, no other sessions on current device -->
+  <string name="SignedInXOtherDevices_one">You are signed in on %1$s other device</string>
+  <string name="SignedInXOtherDevices_other">You are signed in on %1$s other devices</string>
+  <!-- All session from current device, no sessions on other devices -->
+  <string name="SignedInXOtherApps_one">You are signed in on %1$s other app</string>
+  <string name="SignedInXOtherApps_other">You are signed in on %1$s other apps</string>
+  <!-- %1$s — SignedInXApp, %1$s — SignedInXOtherDevices or SignedInXDevices -->
+  <string name="format_signedInAppsOnDevices">%1$s %2$s</string>
+  <!-- All session from other devices -->
+  <string name="part_SignedInXApps_one">You are signed in on %1$s app</string>
+  <string name="part_SignedInXApps_other">You are signed in on %1$s apps</string>
+  <string name="part_SignedInXOtherApps_one">You are signed in on %1$s other app</string>
+  <string name="part_SignedInXOtherApps_other">You are signed in on %1$s other apps</string>
+  <!-- Option 1: some devices have more than 1 session, no other session on current devices -->
+  <string name="part_SignedInXOtherDevices_one">on %1$s other device</string>
+  <string name="part_SignedInXOtherDevices_other">on %1$s other devices</string>
+  <!-- Option 2: multiple sessions on current device, some are from other devices -->
+  <string name="part_SignedInXDevices_one">on %1$s device</string>
+  <string name="part_SignedInXDevices_other">on %1$s devices</string>
+
+  <string name="NotificationsErrorBlocked">Notifications are blocked in system settings</string>
+  <string name="NotificationsErrorBlockedCategory">Notifications from this account are blocked</string>
+  <string name="NotificationsErrorBlockedMixed">Some notifications are blocked</string>
+  <string name="NotificationsErrorBlockedGroup">Notifications from groups are blocked</string>
+  <string name="NotificationsErrorBlockedChannel">Notifications from channels are blocked</string>
+  <string name="NotificationsErrorBlockedPrivate">Notifications from private chats are blocked</string>
+  <string name="NotificationsErrorBackground">Notifications may not work while the app is closed</string>
+  <string name="NotificationsErrorUnselected">Notifications from this account are disabled</string>
+  <string name="NotificationsErrorError">Couldn\'t display some notifications</string>
+  <string name="NotificationsErrorErrorChat">Couldn\'t display notification from %1$s</string>
+
+  <string name="TooManySelectedAccounts">At least one account must remain selected.</string>
+
+  <string name="session_Device">Device: %1$s</string>
+  <string name="session_App">App: %1$s</string>
+  <string name="session_System">System: %1$s</string>
+
+  <string name="NoFilePicker">Application to browse files not found</string>
+  <string name="OpenEmbed">Preview external links</string>
+  <string name="OpenEmbedDesc">See in-app preview when opening supported external links</string>
+
+  <string name="InAppCameraCache">In-app camera cache</string>
+  <string name="InAppCameraCacheDeleteConfirm">Are you sure you want to clear private in-app camera cache?</string>
+  <string name="NotificationReplyFailed">Failed to send a reply</string>
+
+  <string name="LoadingMessageSeen">Loading…</string>
+  <string name="MessageSeenPrivacy">To protect privacy, views are only stored for 7 days.</string>
+  <string name="MessageSeenXListened_one">%1$s listened</string>
+  <string name="MessageSeenXListened_other">%1$s listened</string>
+  <string name="MessageSeenXPlayed_one">%1$s played</string>
+  <string name="MessageSeenXPlayed_other">%1$s played</string>
+  <string name="MessageSeenNobody">Nobody Viewed</string>
+  <string name="MessageSeenNobodyListened">Nobody Listened</string>
+  <string name="MessageSeenNobodyPlayed">Nobody Played</string>
 
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />

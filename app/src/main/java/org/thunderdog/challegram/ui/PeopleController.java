@@ -196,7 +196,7 @@ public class PeopleController extends RecyclerViewController<PeopleController.Ar
   }
 
   @Override
-  public void onUserFullUpdated (int userId, TdApi.UserFullInfo userFull) { }
+  public void onUserFullUpdated (long userId, TdApi.UserFullInfo userFull) { }
 
   @Override
   public boolean needUserStatusUiUpdates () {
@@ -204,7 +204,7 @@ public class PeopleController extends RecyclerViewController<PeopleController.Ar
   }
 
   @Override
-  public void onUserStatusChanged (int userId, TdApi.UserStatus status, boolean uiOnly) {
+  public void onUserStatusChanged (long userId, TdApi.UserStatus status, boolean uiOnly) {
     int oldIndex = indexOfUser(userId);
     if (oldIndex == -1) {
       return;
@@ -244,7 +244,7 @@ public class PeopleController extends RecyclerViewController<PeopleController.Ar
     addUser(newIndex, parsedUser, userItem, separator);
   }
 
-  private void removeUser (int userId) {
+  private void removeUser (long userId) {
     int i = indexOfUser(userId);
     if (i != -1) {
       removeUserByPosition(i);
@@ -286,7 +286,7 @@ public class PeopleController extends RecyclerViewController<PeopleController.Ar
         ArrayUtils.ensureCapacity(out, out.size() + 4);
         out.add(1, new ListItem(ListItem.TYPE_HEADER, R.id.btn_contactsRegistered, 0, makeContactCounter(), false));
         out.add(2, new ListItem(ListItem.TYPE_SHADOW_TOP));
-        out.add(3, new ListItem(ListItem.TYPE_USER, R.id.user).setLongId(parsedUser.getId()).setData(parsedUser));
+        out.add(3, new ListItem(ListItem.TYPE_USER, R.id.user).setLongId(parsedUser.getUserId()).setData(parsedUser));
         out.add(4, new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         adapter.notifyItemRangeInserted(1, 4);
       } else {
@@ -307,7 +307,7 @@ public class PeopleController extends RecyclerViewController<PeopleController.Ar
     users.add(newIndex, user);
 
     if (userItem == null) {
-      userItem = new ListItem(ListItem.TYPE_USER, R.id.user).setLongId(user.getId()).setData(user);
+      userItem = new ListItem(ListItem.TYPE_USER, R.id.user).setLongId(user.getUserId()).setData(user);
     }
     if (separator == null) {
       separator = new ListItem(ListItem.TYPE_SEPARATOR);
@@ -331,11 +331,11 @@ public class PeopleController extends RecyclerViewController<PeopleController.Ar
     }
   }
 
-  private int indexOfUser (int userId) {
+  private int indexOfUser (long userId) {
     if (users != null) {
       int i = 0;
       for (TGUser user : users) {
-        if (user.getId() == userId) {
+        if (user.getUserId() == userId) {
           return i;
         }
         i++;
@@ -366,7 +366,7 @@ public class PeopleController extends RecyclerViewController<PeopleController.Ar
     switch (v.getId()) {
       case R.id.user: {
         TGUser user = (TGUser) ((ListItem) v.getTag()).getData();
-        tdlib.ui().openPrivateChat(this, user.getId(), null);
+        tdlib.ui().openPrivateChat(this, user.getUserId(), null);
         break;
       }
       case R.id.chat: {
@@ -459,7 +459,7 @@ public class PeopleController extends RecyclerViewController<PeopleController.Ar
         } else {
           items.add(separator);
         }
-        items.add(new ListItem(ListItem.TYPE_USER, R.id.user).setLongId(user.getId()).setData(user));
+        items.add(new ListItem(ListItem.TYPE_USER, R.id.user).setLongId(user.getUserId()).setData(user));
       }
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     }
@@ -548,10 +548,10 @@ public class PeopleController extends RecyclerViewController<PeopleController.Ar
     switch (object.getConstructor()) {
       case TdApi.Users.CONSTRUCTOR: {
         TdApi.Users result = (TdApi.Users) object;
-        int[] userIds = result.userIds;
+        long[] userIds = result.userIds;
         ArrayList<TdApi.User> rawUsers = tdlib.cache().users(userIds);
         final ArrayList<TGUser> users = new ArrayList<>(userIds.length);
-        int myUserId = tdlib.myUserId();
+        long myUserId = tdlib.myUserId();
         for (TdApi.User user : rawUsers) {
           if (user.id == myUserId) {
             continue;
@@ -642,7 +642,7 @@ public class PeopleController extends RecyclerViewController<PeopleController.Ar
   // Contacts updates
 
   @Override
-  public void onRegisteredContactsChanged (int[] userIds, int totalCount, boolean newArrival) {
+  public void onRegisteredContactsChanged (long[] userIds, int totalCount, boolean newArrival) {
     if (adapter != null) {
       int i = adapter.indexOfViewById(R.id.btn_contactsRegistered);
       if (i != -1) {

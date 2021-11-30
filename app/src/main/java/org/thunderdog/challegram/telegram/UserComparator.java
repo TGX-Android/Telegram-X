@@ -73,7 +73,7 @@ public class UserComparator implements Comparator<TdApi.User> {
       }
     }
 
-    int myUserId = tdlib.myUserId();
+    long myUserId = tdlib.myUserId();
     int x, y;
     if (left.id == myUserId) {
       x = Integer.MAX_VALUE;

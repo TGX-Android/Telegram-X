@@ -110,10 +110,7 @@ public class NavigationStack {
   }
 
   public @Nullable ViewController<?> getCurrent () {
-    if (currentIndex == -1 || currentIndex >= stack.size())
-      return null;
-    else
-      return stack.get(currentIndex);
+    return get(currentIndex);
   }
 
   public @Nullable ViewController<?> getPrevious () {

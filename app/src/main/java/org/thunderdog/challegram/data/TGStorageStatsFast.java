@@ -6,6 +6,7 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.loader.gif.LottieCache;
@@ -31,9 +32,9 @@ public class TGStorageStatsFast {
   private final long filesSize, databaseSize, languagePackDatabaseSize;
 
   // Application
-  private final long pmcSize, accountsConfigSize, voipConfigSize, paintsSize;
+  private final long pmcSize, accountsConfigSize, voipConfigSize, paintsSize, privateCameraMediaSize;
   private final long debugJunkSize, testJunkSize, oldTdlibLogJunkSize;
-  private final File[] internalJunk, externalJunk;
+  private final File[] internalJunk, externalJunk, privateCameraMedia;
   private final long emojiUnusedSize, emojiUsedSize;
   private final File[] lottieFiles;
   private final long lottieSize;
@@ -97,7 +98,7 @@ public class TGStorageStatsFast {
         externalJunk = null;
       }
     } catch (Throwable t) {
-      Log.e("Unable to obtain external junk");
+      Log.e("Unable to obtain external junk", t);
       externalJunk = null;
     }
     this.externalJunk = externalJunk;
@@ -118,6 +119,17 @@ public class TGStorageStatsFast {
     this.emojiUnusedSize = FileUtils.getSize(emojiFilesUnused);
     this.emojiUsedSize = emojiBuiltIn ? 0 : FileUtils.getSize(new File(emojiDir, inUseEmojiPack));
 
+    File[] internalMediaFiles;
+    try {
+      File internalMedia = U.getAlbumDir(true);
+      internalMediaFiles = internalMedia.listFiles();
+    } catch (Throwable t) {
+      Log.e("Unable to obtain internal media files", t);
+      internalMediaFiles = null;
+    }
+    this.privateCameraMedia = internalMediaFiles;
+    this.privateCameraMediaSize = FileUtils.getSize(internalMediaFiles);
+
     this.debugJunkSize = FileUtils.getSize(internalJunk) + FileUtils.getSize(externalJunk);
     this.testJunkSize = FileUtils.getSize(Test.getTestDBDir());
     this.oldTdlibLogJunkSize = FileUtils.getSize(TdlibManager.getLegacyLogFile(false)) + FileUtils.getSize(TdlibManager.getLegacyLogFile(true));
@@ -135,6 +147,10 @@ public class TGStorageStatsFast {
 
   public boolean deleteLottieFiles () {
     return LottieCache.instance().clear();
+  }
+
+  public boolean deletePrivateCameraMedia () {
+    return FileUtils.delete(privateCameraMedia, true);
   }
 
   public boolean deleteEmoji () {
@@ -171,6 +187,10 @@ public class TGStorageStatsFast {
 
   public long getEmojiSize () {
     return emojiUnusedSize + emojiUsedSize;
+  }
+
+  public long getPrivateCameraMediaSize () {
+    return privateCameraMediaSize;
   }
 
   public long getEmojiUnusedSize () {

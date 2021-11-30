@@ -937,7 +937,7 @@ public class ForceTouchView extends FrameLayoutFix implements
       this.boundArg1 = messageThreadId;
     }
 
-    public void setBoundUserId (int userId) {
+    public void setBoundUserId (long userId) {
       this.needHeader = userId != 0;
       this.needHeaderAvatar = true;
       this.boundDataType = TYPE_USER;
@@ -1157,7 +1157,7 @@ public class ForceTouchView extends FrameLayoutFix implements
 
   @UiThread
   @Override
-  public void onUserStatusChanged (int userId, TdApi.UserStatus status, boolean uiOnly) {
+  public void onUserStatusChanged (long userId, TdApi.UserStatus status, boolean uiOnly) {
     switch (boundDataType) {
       case TYPE_CHAT:
       case TYPE_USER:
@@ -1172,7 +1172,7 @@ public class ForceTouchView extends FrameLayoutFix implements
   }
 
   @Override
-  public void onBasicGroupFullUpdated (int basicGroupId, TdApi.BasicGroupFullInfo basicGroupFull) {
+  public void onBasicGroupFullUpdated (long basicGroupId, TdApi.BasicGroupFullInfo basicGroupFull) {
     tdlib.ui().post(this::setChatSubtitle);
   }
 
@@ -1187,7 +1187,7 @@ public class ForceTouchView extends FrameLayoutFix implements
   }
 
   @Override
-  public void onSupergroupFullUpdated (int supergroupId, TdApi.SupergroupFullInfo newSupergroupFull) {
+  public void onSupergroupFullUpdated (long supergroupId, TdApi.SupergroupFullInfo newSupergroupFull) {
     tdlib.ui().post(this::setChatSubtitle);
   }
 

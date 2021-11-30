@@ -14,6 +14,7 @@ public class CameraTextureView extends TextureView {
   private CameraManagerTexture manager;
 
   private int ratioWidth, ratioHeight;
+  public int scaledImageWidth;
 
   public CameraTextureView (Context context) {
     super(context);
@@ -68,6 +69,7 @@ public class CameraTextureView extends TextureView {
         height *= ratio;
       }
 
+      scaledImageWidth = width;
       setMeasuredDimension(width, height);
     } else {
       setMeasuredDimension(viewWidth, viewHeight);

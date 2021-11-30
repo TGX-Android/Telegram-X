@@ -1705,16 +1705,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public void openLinkAlert (final String url, @Nullable TdlibUi.UrlOpenParameters options) {
-    tdlib.ui().openTelegramUrl(this, url, options, processed -> {
-      if (!processed && !isDestroyed()) {
-        AlertDialog.Builder b = new AlertDialog.Builder(context, Theme.dialogTheme());
-        b.setTitle(Lang.getString(R.string.AppName));
-        b.setMessage(Lang.getString(R.string.OpenThisLink, url));
-        b.setPositiveButton(Lang.getString(R.string.Open), (dialog, which) -> tdlib.ui().openUrl(ViewController.this, url, options));
-        b.setNegativeButton(Lang.getString(R.string.Cancel), (dialog, which) -> dialog.dismiss());
-        showAlert(b);
-      }
-    });
+    tdlib.ui().openUrl(this, url, options == null ? new TdlibUi.UrlOpenParameters().requireOpenPrompt() : options.requireOpenPrompt());
   }
 
   public void openOkAlert (String title, CharSequence message) {
@@ -1837,7 +1828,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       if (firstPosition == 0) {
         View view = manager.findViewByPosition(0);
         if (view != null) {
-          return Math.min(Screen.currentHeight(), Math.min(popupView.getMeasuredHeight() - view.getTop(), settings.adapter.measureHeight(-1)) + Screen.dp(56f));
+          return Math.min(Screen.currentHeight(), Math.min(popupView.getMeasuredHeight() - view.getTop(), settings.adapter.measureHeight(-1)) + Screen.dp(56f) + (Screen.needsKeyboardPadding(context) ? Screen.getNavigationBarFrameHeight() : 0));
         }
       }
       return Screen.currentHeight();
@@ -1922,7 +1913,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         }
       }
     };
-    int checkedIndex = settings.adapter.setItems(items, true);
+    final int checkedIndex = settings.adapter.setItems(items, true);
 
     FrameLayoutFix footerView = null;
     if (!b.disableFooter) {
@@ -1978,17 +1969,59 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       popupView.addView(footerView);
     }
 
+    SeparatorView shadowView = null;
+
     if (footerView != null) {
       params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(1f), Gravity.BOTTOM);
       params.bottomMargin = Screen.dp(56f);
-      SeparatorView shadowView = SeparatorView.simpleSeparator(context, params, true);
+      shadowView = SeparatorView.simpleSeparator(context, params, true);
       shadowView.setAlignBottom();
       addThemeInvalidateListener(shadowView);
       popupView.addView(shadowView);
     }
 
+    int popupAdditionalHeight = 0;
+
+    if (Screen.needsKeyboardPadding(context)) {
+      popupAdditionalHeight = Screen.getNavigationBarFrameHeight();
+
+      View dummyView = new View(context);
+      dummyView.setBackgroundColor(Theme.getColor(R.id.theme_color_filling));
+      addThemeBackgroundColorListener(dummyView, R.id.theme_color_filling);
+
+      FrameLayoutFix.LayoutParams modifiedParams = (FrameLayoutFix.LayoutParams) recyclerView.getLayoutParams();
+      modifiedParams.bottomMargin += popupAdditionalHeight;
+      recyclerView.setLayoutParams(modifiedParams);
+
+      if (footerView != null) {
+        modifiedParams = (FrameLayoutFix.LayoutParams) footerView.getLayoutParams();
+        modifiedParams.bottomMargin += popupAdditionalHeight;
+        footerView.setLayoutParams(modifiedParams);
+      }
+
+      if (shadowView != null) {
+        modifiedParams = (FrameLayoutFix.LayoutParams) shadowView.getLayoutParams();
+        modifiedParams.bottomMargin += popupAdditionalHeight;
+        shadowView.setLayoutParams(modifiedParams);
+      }
+
+      modifiedParams = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, popupAdditionalHeight, Gravity.BOTTOM);
+      dummyView.setLayoutParams(modifiedParams);
+
+      modifiedParams = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(1f), Gravity.BOTTOM);
+      modifiedParams.bottomMargin = popupAdditionalHeight;
+
+      SeparatorView bottomShadowView = SeparatorView.simpleSeparator(context, modifiedParams, true);
+      bottomShadowView.setAlignBottom();
+      addThemeInvalidateListener(bottomShadowView);
+      popupView.addView(bottomShadowView);
+
+      popupView.addView(dummyView);
+      popupLayout.setNeedFullScreen(true);
+    }
+
     final int height = settings.adapter.measureHeight(-1);
-    final int desiredHeight = height + (footerView != null ? Screen.dp(56f) : 0);
+    final int desiredHeight = height + (footerView != null ? Screen.dp(56f) : 0) + popupAdditionalHeight;
     final int popupHeight = Math.min(Screen.currentHeight(), desiredHeight);
 
     if (desiredHeight > Screen.currentActualHeight() && checkedIndex != -1) {
@@ -2057,7 +2090,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   private OptionsLayout optionsWrap;
   private View.OnClickListener onOptionClick;
 
-  public final void showCallOptions (final String phoneNumber, final int userId) {
+  public final void showCallOptions (final String phoneNumber, final long userId) {
     if (userId == 0) {
       Intents.openNumber(phoneNumber);
       return;
@@ -2258,12 +2291,22 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     }
 
     final PopupLayout popupLayout = new PopupLayout(context);
+    int popupAdditionalHeight;
+
     popupLayout.setTag(this);
     popupLayout.init(true);
 
     OptionsLayout optionsWrap = new OptionsLayout(context(), this, forcedTheme);
     optionsWrap.setInfo(this, tdlib(), options.info, false);
     optionsWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
+
+    if (Screen.needsKeyboardPadding(context)) {
+      popupAdditionalHeight = Screen.getNavigationBarFrameHeight();
+      optionsWrap.setPadding(0, 0, 0, popupAdditionalHeight);
+      popupLayout.setNeedFullScreen(true);
+    } else {
+      popupAdditionalHeight = 0;
+    }
 
     ShadowView shadowView = new ShadowView(context);
     shadowView.setSimpleTopShadow(true);
@@ -2302,7 +2345,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
     // Window
 
-    popupLayout.showSimplePopupView(optionsWrap, shadowView.getLayoutParams().height + Screen.dp(54f) * options.items.length + optionsWrap.getTextHeight());
+    popupLayout.showSimplePopupView(optionsWrap, shadowView.getLayoutParams().height + Screen.dp(54f) * options.items.length + optionsWrap.getTextHeight() + popupAdditionalHeight);
 
     return popupLayout;
   }
@@ -2330,6 +2373,13 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     totalHeight += shadowView.getLayoutParams().height;
 
     totalHeight += popUpBuilder.onBuildPopUp(popupLayout, optionsWrap);
+
+    if (Screen.needsKeyboardPadding(context)) {
+      int additionalHeight = Screen.getNavigationBarFrameHeight();
+      totalHeight += additionalHeight;
+      optionsWrap.setPadding(0, 0, 0, additionalHeight);
+      popupLayout.setNeedFullScreen(true);
+    }
 
     popupLayout.showSimplePopupView(optionsWrap, totalHeight);
     return popupLayout;
@@ -3122,9 +3172,13 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     public @Nullable View anchorView;
     public boolean noTrace;
     public boolean allowSystem = true;
+    public boolean optionalMicrophone = false;
     public int mode;
     public boolean ignoreAnchor;
     public CameraController.ReadyListener readyListener;
+    public CameraController.QrCodeListener qrCodeListener;
+    public @StringRes int qrModeSubtitle;
+    public boolean qrModeDebug;
 
     public CameraOpenOptions anchor (View anchorView) {
       this.anchorView = anchorView;
@@ -3133,6 +3187,11 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
     public CameraOpenOptions readyListener (CameraController.ReadyListener readyListener) {
       this.readyListener = readyListener;
+      return this;
+    }
+
+    public CameraOpenOptions qrCodeListener (CameraController.QrCodeListener qrCodeListener) {
+      this.qrCodeListener = qrCodeListener;
       return this;
     }
 
@@ -3151,8 +3210,23 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       return this;
     }
 
+    public CameraOpenOptions qrModeSubtitle (@StringRes int qrModeSubtitle) {
+      this.qrModeSubtitle = qrModeSubtitle;
+      return this;
+    }
+
     public CameraOpenOptions allowSystem (boolean allowSystem) {
       this.allowSystem = allowSystem;
+      return this;
+    }
+
+    public CameraOpenOptions optionalMicrophone (boolean optionalMicrophone) {
+      this.optionalMicrophone = optionalMicrophone;
+      return this;
+    }
+
+    public CameraOpenOptions qrModeDebug (boolean qrModeDebug) {
+      this.qrModeDebug = qrModeDebug;
       return this;
     }
   }
@@ -3161,7 +3235,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     openInAppCamera(new CameraOpenOptions());
   }
 
-  protected final void openInAppCamera (@NonNull CameraOpenOptions options) {
+  public final void openInAppCamera (@NonNull CameraOpenOptions options) {
     if (options.allowSystem && Settings.instance().getCameraType() == Settings.CAMERA_TYPE_SYSTEM) {
       showOptions(null, new int[] {R.id.btn_takePhoto, R.id.btn_takeVideo}, new String[] {Lang.getString(R.string.TakePhoto), Lang.getString(R.string.TakeVideo)}, null, new int[] {R.drawable.baseline_camera_alt_24, R.drawable.baseline_videocam_24}, (itemView, id) -> {
         switch (id) {

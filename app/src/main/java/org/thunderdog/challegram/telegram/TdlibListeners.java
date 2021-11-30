@@ -13,9 +13,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceIntMap;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceLongMap;
+import me.vkryl.core.reference.ReferenceMap;
 import me.vkryl.td.Td;
 
 /**
@@ -29,6 +31,7 @@ public class TdlibListeners {
   final ReferenceList<MessageListener> messageListeners;
   final ReferenceList<MessageEditListener> messageEditListeners;
   final ReferenceList<ChatListener> chatListeners;
+  final ReferenceMap<String, ChatListListener> chatListListeners;
   final ReferenceList<NotificationSettingsListener> settingsListeners;
   final ReferenceList<StickersListener> stickersListeners;
   final ReferenceList<AnimationsListener> animationsListeners;
@@ -41,6 +44,7 @@ public class TdlibListeners {
   final ReferenceList<ChatsNearbyListener> chatsNearbyListeners;
   final ReferenceList<PrivacySettingsListener> privacySettingsListeners;
   final ReferenceList<CallsListener> callsListeners;
+  final ReferenceList<SessionListener> sessionListeners;
 
   final ReferenceList<AnimatedEmojiListener> animatedEmojiListeners;
 
@@ -59,6 +63,7 @@ public class TdlibListeners {
     this.messageListeners = new ReferenceList<>();
     this.messageEditListeners = new ReferenceList<>();
     this.chatListeners = new ReferenceList<>();
+    this.chatListListeners = new ReferenceMap<>(true);
     this.settingsListeners = new ReferenceList<>(true);
     this.stickersListeners = new ReferenceList<>(true);
     this.animationsListeners = new ReferenceList<>();
@@ -71,6 +76,7 @@ public class TdlibListeners {
     this.chatsNearbyListeners = new ReferenceList<>(true);
     this.privacySettingsListeners = new ReferenceList<>();
     this.callsListeners = new ReferenceList<>(true);
+    this.sessionListeners = new ReferenceList<>(true);
 
     this.animatedEmojiListeners = new ReferenceList<>(true);
 
@@ -145,6 +151,9 @@ public class TdlibListeners {
       if (any instanceof CallsListener) {
         callsListeners.add((CallsListener) any);
       }
+      if (any instanceof SessionListener) {
+        sessionListeners.add((SessionListener) any);
+      }
     }
   }
 
@@ -193,6 +202,9 @@ public class TdlibListeners {
       if (any instanceof CallsListener) {
         callsListeners.remove((CallsListener) any);
       }
+      if (any instanceof SessionListener) {
+        sessionListeners.remove((SessionListener) any);
+      }
     }
   }
 
@@ -204,6 +216,40 @@ public class TdlibListeners {
   @AnyThread
   public void removeAuthorizationChangeListener (AuthorizationListener listener) {
     authorizationListeners.remove(listener);
+  }
+
+  @AnyThread
+  public void subscribeToSessionUpdates (SessionListener listener) {
+    sessionListeners.add(listener);
+  }
+
+  @AnyThread
+  public void unsubscribeFromSessionUpdates (SessionListener listener) {
+    sessionListeners.remove(listener);
+  }
+
+  void notifyAllSessionsTerminated (TdApi.Session currentSession) {
+    for (SessionListener listener : sessionListeners) {
+      listener.onAllOtherSessionsTerminated(tdlib, currentSession);
+    }
+  }
+
+  void notifySessionCreatedViaQrCode (TdApi.Session newSession) {
+    for (SessionListener listener : sessionListeners) {
+      listener.onSessionCreatedViaQrCode(tdlib, newSession);
+    }
+  }
+
+  void notifySessionTerminated (TdApi.Session session) {
+    for (SessionListener listener : sessionListeners) {
+      listener.onSessionTerminated(tdlib, session);
+    }
+  }
+
+  void notifySessionListPossiblyChanged (boolean isWeakGuess) {
+    for (SessionListener listener : sessionListeners) {
+      listener.onSessionListChanged(tdlib, isWeakGuess);
+    }
   }
 
   @AnyThread
@@ -309,6 +355,16 @@ public class TdlibListeners {
   @AnyThread
   public void unsubscribeFromChatUpdates (long chatId, ChatListener listener) {
     specificChatListeners.remove(chatId, listener);
+  }
+
+  @AnyThread
+  public void subscribeToChatListUpdates (@NonNull TdApi.ChatList chatList, ChatListListener listener) {
+    chatListListeners.add(TD.makeChatListKey(chatList), listener);
+  }
+
+  @AnyThread
+  public void unsubscribeFromChatListUpdates (@NonNull TdApi.ChatList chatList, ChatListListener listener) {
+    chatListListeners.remove(TD.makeChatListKey(chatList), listener);
   }
 
   @AnyThread
@@ -539,6 +595,21 @@ public class TdlibListeners {
     updateMessageContentOpened(update, messageChatListeners.iterator(update.chatId));
   }
 
+  // updateAnimatedEmojiMessageClicked
+
+  private static void updateAnimatedEmojiMessageClicked (TdApi.UpdateAnimatedEmojiMessageClicked update, @Nullable Iterator<MessageListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onAnimatedEmojiMessageClicked(update.chatId, update.messageId, update.sticker);
+      }
+    }
+  }
+
+  void updateAnimatedEmojiMessageClicked (TdApi.UpdateAnimatedEmojiMessageClicked update) {
+    updateAnimatedEmojiMessageClicked(update, messageListeners.iterator());
+    updateAnimatedEmojiMessageClicked(update, messageChatListeners.iterator(update.chatId));
+  }
+
   // updateMessageIsPinned
 
   private static void updateMessageIsPinned (TdApi.UpdateMessageIsPinned update, @Nullable Iterator<MessageListener> list) {
@@ -676,13 +747,14 @@ public class TdlibListeners {
 
   // updateChatLastMessage
 
-  private static void updateChatLastMessage (long chatId, TdApi.Message lastMessage, @Nullable List<Tdlib.ChatPositionChange> positionChanges, @Nullable Iterator<ChatListener> list) {
+  private static void updateChatLastMessage (long chatId, TdApi.Message lastMessage, @Nullable List<Tdlib.ChatListChange> listChanges, @Nullable Iterator<ChatListener> list) {
     if (list != null) {
       while (list.hasNext()) {
         ChatListener listener = list.next();
         listener.onChatTopMessageChanged(chatId, lastMessage);
-        if (positionChanges != null) {
-          for (Tdlib.ChatPositionChange positionChange : positionChanges) {
+        if (listChanges != null) {
+          for (Tdlib.ChatListChange listChange : listChanges) {
+            Tdlib.ChatChange positionChange = listChange.change;
             listener.onChatPositionChanged(chatId, positionChange.position, positionChange.orderChanged(), positionChange.sourceChanged(), positionChange.pinStateChanged());
           }
         }
@@ -690,9 +762,17 @@ public class TdlibListeners {
     }
   }
 
-  void updateChatLastMessage (TdApi.UpdateChatLastMessage update, @Nullable List<Tdlib.ChatPositionChange> positionChanges) {
-    updateChatLastMessage(update.chatId, update.lastMessage, positionChanges, chatListeners.iterator());
-    updateChatLastMessage(update.chatId, update.lastMessage, positionChanges, specificChatListeners.iterator(update.chatId));
+  void updateChatLastMessage (TdApi.UpdateChatLastMessage update, @Nullable List<Tdlib.ChatListChange> listChanges) {
+    updateChatLastMessage(update.chatId, update.lastMessage, listChanges, chatListeners.iterator());
+    updateChatLastMessage(update.chatId, update.lastMessage, listChanges, specificChatListeners.iterator(update.chatId));
+    if (listChanges != null) {
+      for (Tdlib.ChatListChange listChange : listChanges) {
+        listChange.list.onUpdateChatPosition(listChange.chat, listChange.change);
+        iterateChatListListeners(listChange.list, listener ->
+          listener.onChatListItemChanged(listChange.list, listChange.chat, ChatListListener.ItemChangeType.LAST_MESSAGE)
+        );
+      }
+    }
   }
 
   // updateChatOrder
@@ -705,9 +785,13 @@ public class TdlibListeners {
     }
   }
 
-  void updateChatPosition (TdApi.UpdateChatPosition update, boolean orderChanged, boolean sourceChanged, boolean pinStateChanged) {
+  void updateChatPosition (TdApi.UpdateChatPosition update, Tdlib.ChatListChange listChange) {
+    boolean orderChanged = listChange.change.orderChanged();
+    boolean sourceChanged = listChange.change.sourceChanged();
+    boolean pinStateChanged = listChange.change.pinStateChanged();
     updateChatPosition(update.chatId, update.position, orderChanged, sourceChanged, pinStateChanged, chatListeners.iterator());
     updateChatPosition(update.chatId, update.position, orderChanged, sourceChanged, pinStateChanged, specificChatListeners.iterator(update.chatId));
+    listChange.list.onUpdateChatPosition(listChange.chat, listChange.change);
   }
 
   // updateChatPermissions
@@ -735,9 +819,38 @@ public class TdlibListeners {
     }
   }
 
-  void updateChatTitle (TdApi.UpdateChatTitle update) {
+  void updateChatTitle (TdApi.UpdateChatTitle update, TdApi.Chat chat, TdlibChatList[] chatLists) {
     updateChatTitle(update, chatListeners.iterator());
     updateChatTitle(update, specificChatListeners.iterator(update.chatId));
+    if (chatLists != null) {
+      for (TdlibChatList chatList : chatLists) {
+        iterateChatListListeners(chatList, listener ->
+          listener.onChatListItemChanged(chatList, chat, ChatListListener.ItemChangeType.TITLE)
+        );
+      }
+    }
+  }
+
+  // updateChatTheme
+
+  private static void updateChatTheme (TdApi.UpdateChatTheme update, @Nullable Iterator<ChatListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onChatThemeChanged(update.chatId, update.themeName);
+      }
+    }
+  }
+
+  void updateChatTheme (TdApi.UpdateChatTheme update, TdApi.Chat chat, TdlibChatList[] chatLists) {
+    updateChatTheme(update, chatListeners.iterator());
+    updateChatTheme(update, specificChatListeners.iterator(update.chatId));
+    if (chatLists != null) {
+      for (TdlibChatList chatList : chatLists) {
+        iterateChatListListeners(chatList, listener ->
+          listener.onChatListItemChanged(chatList, chat, ChatListListener.ItemChangeType.THEME)
+        );
+      }
+    }
   }
 
   // updateChatPhoto
@@ -795,9 +908,16 @@ public class TdlibListeners {
     }
   }
 
-  void updateChatReadInbox (TdApi.UpdateChatReadInbox update, boolean availabilityChanged) {
+  void updateChatReadInbox (TdApi.UpdateChatReadInbox update, boolean availabilityChanged, TdApi.Chat chat, TdlibChatList[] chatLists) {
     updateChatReadInbox(update, availabilityChanged, chatListeners.iterator());
     updateChatReadInbox(update, availabilityChanged, specificChatListeners.iterator(update.chatId));
+    if (chatLists != null) {
+      for (TdlibChatList chatList : chatLists) {
+        iterateChatListListeners(chatList, listener ->
+          listener.onChatListItemChanged(chatList, chat, availabilityChanged ? ChatListListener.ItemChangeType.UNREAD_AVAILABILITY_CHANGED : ChatListListener.ItemChangeType.READ_INBOX)
+        );
+      }
+    }
   }
 
   // updateChatReadOutbox
@@ -832,23 +952,36 @@ public class TdlibListeners {
 
   // updateChatDraftMessage
 
-  private static void updateChatDraftMessage (long chatId, @Nullable TdApi.DraftMessage draftMessage, @Nullable List<Tdlib.ChatPositionChange> positionChanges, @Nullable Iterator<ChatListener> list) {
+  private static void updateChatDraftMessage (long chatId, @Nullable TdApi.DraftMessage draftMessage, @Nullable List<Tdlib.ChatListChange> listChanges, @Nullable Iterator<ChatListener> list) {
     if (list != null) {
       while (list.hasNext()) {
         ChatListener listener = list.next();
         listener.onChatDraftMessageChanged(chatId, draftMessage);
-        if (positionChanges != null) {
-          for (Tdlib.ChatPositionChange positionChange : positionChanges) {
-            listener.onChatPositionChanged(chatId, positionChange.position, positionChange.orderChanged(), positionChange.sourceChanged(), positionChange.pinStateChanged());
+        if (listChanges != null) {
+          for (Tdlib.ChatListChange listChange : listChanges) {
+            Tdlib.ChatChange positionChange = listChange.change;
+            listener.onChatPositionChanged(chatId, positionChange.position,
+              positionChange.orderChanged(),
+              positionChange.sourceChanged(),
+              positionChange.pinStateChanged()
+            );
           }
         }
       }
     }
   }
 
-  void updateChatDraftMessage (TdApi.UpdateChatDraftMessage update, List<Tdlib.ChatPositionChange> positionChanges) {
-    updateChatDraftMessage(update.chatId, update.draftMessage, positionChanges, chatListeners.iterator());
-    updateChatDraftMessage(update.chatId, update.draftMessage, positionChanges, specificChatListeners.iterator(update.chatId));
+  void updateChatDraftMessage (TdApi.UpdateChatDraftMessage update, List<Tdlib.ChatListChange> listChanges) {
+    updateChatDraftMessage(update.chatId, update.draftMessage, listChanges, chatListeners.iterator());
+    updateChatDraftMessage(update.chatId, update.draftMessage, listChanges, specificChatListeners.iterator(update.chatId));
+    if (listChanges != null) {
+      for (Tdlib.ChatListChange listChange : listChanges) {
+        listChange.list.onUpdateChatPosition(listChange.chat, listChange.change);
+        iterateChatListListeners(listChange.list, listener ->
+          listener.onChatListItemChanged(listChange.list, listChange.chat, ChatListListener.ItemChangeType.DRAFT)
+        );
+      }
+    }
   }
 
   // updateChatFilters
@@ -945,17 +1078,32 @@ public class TdlibListeners {
 
   // updateChatVoiceChat
 
-  private static void updateChatVoiceChat (long chatId, TdApi.VoiceChat voiceChat, @Nullable Iterator<ChatListener> list) {
+  private static void updateChatVideoChat (long chatId, TdApi.VideoChat voiceChat, @Nullable Iterator<ChatListener> list) {
     if (list != null) {
       while (list.hasNext()) {
-        list.next().onChatVoiceChatChanged(chatId, voiceChat);
+        list.next().onChatVideoChatChanged(chatId, voiceChat);
       }
     }
   }
 
-  void updateChatVoiceChat (TdApi.UpdateChatVoiceChat update) {
-    updateChatVoiceChat(update.chatId, update.voiceChat, chatListeners.iterator());
-    updateChatVoiceChat(update.chatId, update.voiceChat, specificChatListeners.iterator(update.chatId));
+  void updateChatVideoChat (TdApi.UpdateChatVideoChat update) {
+    updateChatVideoChat(update.chatId, update.videoChat, chatListeners.iterator());
+    updateChatVideoChat(update.chatId, update.videoChat, specificChatListeners.iterator(update.chatId));
+  }
+
+  // updateChatPendingJoinRequests
+
+  private static void updateChatPendingJoinRequests (long chatId, TdApi.ChatJoinRequestsInfo pendingJoinRequests, @Nullable Iterator<ChatListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onChatPendingJoinRequestsChanged(chatId, pendingJoinRequests);
+      }
+    }
+  }
+
+  void updateChatPendingJoinRequests (TdApi.UpdateChatPendingJoinRequests update) {
+    updateChatPendingJoinRequests(update.chatId, update.pendingJoinRequests, chatListeners.iterator());
+    updateChatPendingJoinRequests(update.chatId, update.pendingJoinRequests, specificChatListeners.iterator(update.chatId));
   }
 
   // updateUsersNearby
@@ -1092,6 +1240,56 @@ public class TdlibListeners {
     for (CounterChangeListener listener : totalCountersListeners) {
       listener.onMessageCounterChanged(chatList, unreadCount, unreadUnmutedCount);
     }
+  }
+
+  // chat lists
+
+  private void iterateChatListListeners (TdlibChatList chatList, RunnableData<ChatListListener> callback) {
+    Iterator<ChatListListener> list = chatListListeners.iterator(TD.makeChatListKey(chatList.chatList()));
+    if (list != null) {
+      while (list.hasNext()) {
+        callback.runWithData(list.next());
+      }
+    }
+  }
+
+  @TdlibThread
+  void updateChatAdded (TdlibChatList chatList, TdApi.Chat chat, int atIndex, Tdlib.ChatChange changeInfo) {
+    iterateChatListListeners(chatList, listener -> {
+      listener.onChatAdded(chatList, chat, atIndex, changeInfo);
+      listener.onChatListChanged(chatList, ChatListListener.ChangeFlags.ITEM_ADDED);
+    });
+  }
+
+  @TdlibThread
+  void updateChatRemoved (TdlibChatList chatList, TdApi.Chat chat, int fromIndex, Tdlib.ChatChange changeInfo) {
+    iterateChatListListeners(chatList, listener -> {
+      listener.onChatRemoved(chatList, chat, fromIndex, changeInfo);
+      listener.onChatListChanged(chatList, ChatListListener.ChangeFlags.ITEM_REMOVED);
+    });
+  }
+
+  @TdlibThread
+  void updateChatMoved (TdlibChatList chatList, TdApi.Chat chat, int fromIndex, int toIndex, Tdlib.ChatChange changeInfo) {
+    iterateChatListListeners(chatList, listener -> {
+      listener.onChatMoved(chatList, chat, fromIndex, toIndex, changeInfo);
+      listener.onChatListChanged(chatList, ChatListListener.ChangeFlags.ITEM_MOVED);
+    });
+  }
+
+  @TdlibThread
+  void updateChatChanged (TdlibChatList chatList, TdApi.Chat chat, int index, Tdlib.ChatChange changeInfo) {
+    iterateChatListListeners(chatList, listener -> {
+      listener.onChatChanged(chatList, chat, index, changeInfo);
+      listener.onChatListChanged(chatList, ChatListListener.ChangeFlags.ITEM_METADATA_CHANGED);
+    });
+  }
+
+  @TdlibThread
+  void updateChatListStateChanged (TdlibChatList chatList, @TdlibChatList.State int newState, @TdlibChatList.State int oldState) {
+    iterateChatListListeners(chatList, listener ->
+      listener.onChatListStateChanged(chatList, newState, oldState)
+    );
   }
 
   // updatePrivacySettingRules

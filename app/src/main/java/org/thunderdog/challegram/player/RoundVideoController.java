@@ -22,11 +22,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.PlaybackException;
 import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.source.MediaSource;
-import com.google.android.exoplayer2.video.VideoListener;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
@@ -73,7 +72,6 @@ import me.vkryl.td.Td;
 @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
 public class RoundVideoController extends BasePlaybackController implements
   BaseActivity.ActivityListener,
-  VideoListener,
   TdlibFilesManager.FileListener,
   FactorAnimator.Target
 {
@@ -284,7 +282,7 @@ public class RoundVideoController extends BasePlaybackController implements
   private RoundProgressView mainProgressView;
   private ImageReceiverView mainPreviewView;
 
-  private SimpleExoPlayer exoPlayer;
+  private ExoPlayer exoPlayer;
 
   private InterceptPipLayout pipParentView;
   private CircleFrameLayout pipPlayerView;
@@ -384,7 +382,6 @@ public class RoundVideoController extends BasePlaybackController implements
       this.exoPlayer = U.newExoPlayer(context, true);
       setExoPlayerParameters();
       this.exoPlayer.addListener(this);
-      this.exoPlayer.addVideoListener(this);
       this.exoPlayer.setVolume(volume);
       if (mainTextureView instanceof SurfaceView) {
         this.exoPlayer.setVideoSurfaceView((SurfaceView) mainTextureView);
@@ -894,10 +891,10 @@ public class RoundVideoController extends BasePlaybackController implements
   // Video Playback listeners
 
   @Override
-  public void onPlayerStateChanged (boolean playWhenReady, int playbackState) {
+  public void onPlaybackStateChanged (@Player.State int playbackState) {
     switch (playbackState) {
       case Player.STATE_ENDED: {
-        if (isPlaying && source != null && playWhenReady) { // Catch playback end only when we actually play the message
+        if (isPlaying && source != null) { // Catch playback end only when we actually play the message
           TdlibManager.instance().player().playNextMessageInQueue();
         }
         break;

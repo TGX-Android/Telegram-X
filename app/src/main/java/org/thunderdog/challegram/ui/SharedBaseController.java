@@ -619,7 +619,7 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
         break;
       }
       case TdApi.Users.CONSTRUCTOR: {
-        int[] userIds = ((TdApi.Users) object).userIds;
+        long[] userIds = ((TdApi.Users) object).userIds;
         ArrayList<TdApi.User> users = tdlib.cache().users(userIds);
         items = new ArrayList<>(users.size());
         for (TdApi.User user : users) {

@@ -75,6 +75,5 @@ In order to obtain **SHA-256** of the APK:
 
 Then there are three ways to find out the commit for the specific **SHA-256** checksum:
 
-* Checking on GitHub releases page — if you don't have an access to Telegram (e.g. using another device);
 * Sending checksum to [`@tgx_bot`](https://t.me/tgx_bot);
-* Searching for a checksum in [`@tgx_log`](https://t.me/tgx_log).
+* Searching for a checksum in [`@tgx_log`](https://t.me/tgx_log). You can do so without need in installing any Telegram client by using this URL format: [`https://t.me/s/tgx_log?q={checksum}`](https://t.me/s/tgx_log?q=c541ebb0a3ae7bb6e6bd155530f375d567b8aef1761fdd942fb5d69af62e24ae) (click to see in action).

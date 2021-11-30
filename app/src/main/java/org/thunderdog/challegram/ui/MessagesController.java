@@ -91,13 +91,13 @@ import org.thunderdog.challegram.component.chat.EmojiToneHelper;
 import org.thunderdog.challegram.component.chat.InlineResultsWrap;
 import org.thunderdog.challegram.component.chat.InputView;
 import org.thunderdog.challegram.component.chat.InvisibleImageView;
-import org.thunderdog.challegram.component.chat.PinnedMessagesBar;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessageViewGroup;
 import org.thunderdog.challegram.component.chat.MessagesAdapter;
 import org.thunderdog.challegram.component.chat.MessagesHolder;
 import org.thunderdog.challegram.component.chat.MessagesLayout;
 import org.thunderdog.challegram.component.chat.MessagesManager;
+import org.thunderdog.challegram.component.chat.PinnedMessagesBar;
 import org.thunderdog.challegram.component.chat.RaiseHelper;
 import org.thunderdog.challegram.component.chat.ReplyView;
 import org.thunderdog.challegram.component.chat.SilentButton;
@@ -108,6 +108,8 @@ import org.thunderdog.challegram.component.chat.VoiceVideoButtonView;
 import org.thunderdog.challegram.component.chat.WallpaperAdapter;
 import org.thunderdog.challegram.component.chat.WallpaperRecyclerView;
 import org.thunderdog.challegram.component.chat.WallpaperView;
+import org.thunderdog.challegram.component.popups.MessageSeenController;
+import org.thunderdog.challegram.component.popups.ModernActionedLayout;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
@@ -127,6 +129,7 @@ import org.thunderdog.challegram.data.TGMessageSticker;
 import org.thunderdog.challegram.data.TGRecord;
 import org.thunderdog.challegram.data.TGSwitchInline;
 import org.thunderdog.challegram.data.ThreadInfo;
+import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.filegen.VideoGenerationInfo;
 import org.thunderdog.challegram.helper.BotHelper;
@@ -151,6 +154,7 @@ import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.navigation.MoreDelegate;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.NavigationStack;
+import org.thunderdog.challegram.navigation.OptionsLayout;
 import org.thunderdog.challegram.navigation.SelectDelegate;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.StopwatchHeaderButton;
@@ -183,7 +187,6 @@ import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
-import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.camera.CameraAccessImageView;
@@ -195,6 +198,7 @@ import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.Unlockable;
+import org.thunderdog.challegram.util.UserPickerDelegate;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.v.MessagesLayoutManager;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
@@ -205,15 +209,19 @@ import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
+import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.RippleRevealView;
 import org.thunderdog.challegram.widget.RtlViewPager;
 import org.thunderdog.challegram.widget.SendButton;
 import org.thunderdog.challegram.widget.SeparatorView;
+import org.thunderdog.challegram.widget.TripleAvatarView;
 import org.thunderdog.challegram.widget.ViewPager;
+import org.thunderdog.challegram.widget.WallpaperParametersView;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashSet;
@@ -300,6 +308,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private InvisibleImageView cameraButton, scheduleButton;
   private InvisibleImageView commandButton;
   private @Nullable SilentButton silentButton;
+
+  private WallpaperView wallpaperViewBlurPreview;
+  private WallpaperParametersView backgroundParamsView;
 
   private FrameLayoutFix scrollToBottomButtonWrap, mentionButtonWrap;
   private CircleButton scrollToBottomButton, mentionButton;
@@ -1094,6 +1105,59 @@ public class MessagesController extends ViewController<MessagesController.Argume
       bottomWrap.addView(inputView);
     }
 
+    if (inWallpaperMode()) {
+      TdApi.Background currentBackgroundObj = getArgumentsStrict().wallpaperObject;
+      TGBackground currentBackground = tdlib.settings().getWallpaper(Theme.getWallpaperIdentifier());
+      boolean shouldUseParams = !inWallpaperPreviewMode() || currentBackgroundObj != null && currentBackgroundObj.type.getConstructor() == TdApi.BackgroundTypeWallpaper.CONSTRUCTOR;
+
+      if (shouldUseParams) {
+        int height = Screen.dp(49f);
+        backgroundParamsView = new WallpaperParametersView(context);
+        params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, height);
+        params.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
+        backgroundParamsView.setLayoutParams(params);
+
+        wallpaperViewBlurPreview = new WallpaperView(context, manager, tdlib);
+        wallpaperViewBlurPreview.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        wallpaperViewBlurPreview.setAlpha(0f);
+
+        if (inWallpaperPreviewMode() && currentBackgroundObj != null) {
+          backgroundParamsView.initWith(currentBackgroundObj, new WallpaperParametersView.WallpaperParametersListener() {
+            @Override
+            public void onBlurValueAnimated (float factor) {
+              wallpaperViewBlurPreview.setAlpha(MathUtils.clamp(factor));
+            }
+          });
+
+          wallpaperViewBlurPreview.initWithCustomWallpaper(new TGBackground(tdlib, currentBackgroundObj, !backgroundParamsView.isBlurred()));
+          messagesView.setTranslationY(-height);
+        } else {
+          backgroundParamsView.initWith(currentBackground, new WallpaperParametersView.WallpaperParametersListener() {
+            @Override
+            public void onParametersViewScaleChanged (float factor) {
+              float clamped = MathUtils.clamp(factor);
+              backgroundParamsView.setTranslationY(height * (1f - clamped));
+              messagesView.setTranslationY(-(height * clamped));
+            }
+
+            @Override
+            public void onBlurValueAnimated (float factor) {
+              wallpaperViewBlurPreview.setAlpha(MathUtils.clamp(factor));
+            }
+          });
+
+          boolean previewBlurValue = !backgroundParamsView.isBlurred();
+          wallpaperViewBlurPreview.initWithCustomWallpaper(TGBackground.newBlurredWallpaper(tdlib, currentBackground, previewBlurValue));
+          wallpaperViewBlurPreview.setSelfBlur(previewBlurValue);
+          wallpaperView.setSelfBlur(!previewBlurValue);
+          backgroundParamsView.setParametersAvailability(currentBackground != null && currentBackground.isWallpaper(), false);
+          if (currentBackground != null && currentBackground.isWallpaper()) {
+            messagesView.setTranslationY(-height);
+          }
+        }
+      }
+    }
+
     // Bottom bar
 
     params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48f));
@@ -1119,6 +1183,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     // Setup
 
     contentView.addView(wallpaperView);
+    if (wallpaperViewBlurPreview != null) {
+      contentView.addView(wallpaperViewBlurPreview);
+    }
     if (!inPreviewMode) {
       contentView.addView(replyView);
     }
@@ -1140,6 +1207,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       contentView.addView(searchControlsLayout);
 
       addStaticListeners();
+    }
+
+    if (backgroundParamsView != null) {
+      contentView.addView(backgroundParamsView, 2);
     }
 
     updateView();
@@ -1464,7 +1535,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return messageThread != null ? messageThread.getDraft() : chat.draftMessage;
   }
 
-  public int getChatUserId () {
+  public long getChatUserId () {
     return TD.getUserId(chat);
   }
 
@@ -1488,7 +1559,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return tdlib.isChannel(getChatId());
   }
 
-  public boolean comparePrivateUserId (int userId) {
+  public boolean comparePrivateUserId (long userId) {
     return userId != 0 && ChatId.toUserId(getChatId()) == userId;
   }
 
@@ -1515,7 +1586,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return canWriteMessages() ? inputView : null;
   }
 
-  public void removeInlineBot (int userId) {
+  public void removeInlineBot (long userId) {
     if (inputView != null) {
       inputView.getInlineSearchContext().removeInlineBot(userId);
     }
@@ -1651,9 +1722,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
         break;
       }
       case R.id.btn_applyWallpaper: {
+        TdApi.BackgroundType newBackgroundType = getArgumentsStrict().wallpaperObject.type;
+
+        if (newBackgroundType.getConstructor() == TdApi.BackgroundTypeWallpaper.CONSTRUCTOR && backgroundParamsView != null) {
+          ((TdApi.BackgroundTypeWallpaper) newBackgroundType).isBlurred = backgroundParamsView.isBlurred();
+        }
+
         tdlib().client().send(new TdApi.SetBackground(
                 new TdApi.InputBackgroundRemote(getArgumentsStrict().wallpaperObject.id),
-                getArgumentsStrict().wallpaperObject.type,
+                newBackgroundType,
                 Theme.isDark()
         ), result -> {
           if (result.getConstructor() == TdApi.Background.CONSTRUCTOR) {
@@ -1763,14 +1840,22 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
     switch (id) {
+      case R.id.btn_copyLink:
       case R.id.btn_share: {
-        ShareController c = new ShareController(context(), tdlib());
-        c.setArguments(new ShareController.Args(tdlib().tMeBackgroundUrl(getArgumentsStrict().wallpaperObject.name)));
-        c.show();
-        break;
-      }
-      case R.id.btn_copyLink: {
-        UI.copyText(tdlib().tMeBackgroundUrl(getArgumentsStrict().wallpaperObject.name), R.string.CopiedLink);
+        tdlib.client().send(new TdApi.GetBackgroundUrl(getArgumentsStrict().wallpaperObject.name, TGBackground.makeBlurredBackgroundType(getArgumentsStrict().wallpaperObject.type, backgroundParamsView.isBlurred())), result -> {
+          if (result.getConstructor() == TdApi.HttpUrl.CONSTRUCTOR) {
+            TdApi.HttpUrl url = (TdApi.HttpUrl) result;
+            runOnUiThreadOptional(() -> {
+              if (id == R.id.btn_copyLink) {
+                UI.copyText(url.url, R.string.CopiedLink);
+              } else {
+                ShareController c = new ShareController(context(), tdlib());
+                c.setArguments(new ShareController.Args(url.url));
+                c.show();
+              }
+            });
+          }
+        });
         break;
       }
       case R.id.btn_openLinkedChat: {
@@ -2091,7 +2176,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     public ThreadInfo messageThread;
 
     public Referrer referrer;
-    public TdApi.InternalLinkTypeVoiceChat voiceChatInvitation;
+    public TdApi.InternalLinkTypeVideoChat videoChatOrLiveStreamInvitation;
+
+    public long eventLogUserId;
 
     public @Nullable TdApi.Background wallpaperObject;
 
@@ -2180,8 +2267,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return this;
     }
 
-    public Arguments voiceChatInvitation (TdApi.InternalLinkTypeVoiceChat voiceChatInvitation) {
-      this.voiceChatInvitation = voiceChatInvitation;
+    public Arguments voiceChatInvitation (TdApi.InternalLinkTypeVideoChat voiceChatInvitation) {
+      this.videoChatOrLiveStreamInvitation = voiceChatInvitation;
+      return this;
+    }
+
+    public Arguments eventLogUserId (long eventLogUserId) {
+      this.eventLogUserId = eventLogUserId;
       return this;
     }
   }
@@ -2206,7 +2298,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private ThreadInfo messageThread;
   private boolean areScheduled;
   private Referrer referrer;
-  private TdApi.InternalLinkTypeVoiceChat voiceChatInvitation;
+  private TdApi.InternalLinkTypeVideoChat voiceChatInvitation;
   private boolean openKeyboard;
 
   public boolean inWallpaperMode () {
@@ -2236,7 +2328,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     this.linkedChatId = 0;
     this.areScheduled = args.areScheduled;
     this.referrer = args.referrer;
-    this.voiceChatInvitation = args.voiceChatInvitation;
+    this.voiceChatInvitation = args.videoChatOrLiveStreamInvitation;
     this.previewSearchQuery = args.searchQuery;
     this.previewSearchSender = args.searchSender;
     this.previewSearchFilter = args.searchFilter;
@@ -2424,6 +2516,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
           showActionButton(R.string.Settings, ACTION_EVENT_LOG_SETTINGS);
           manager.openEventLog(chat);
           messagesView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 120l));
+          if (getArgumentsStrict().eventLogUserId != 0 && headerCell != null) {
+            manager.applyEventLogFilters(new TdApi.ChatEventLogFilters(true, true, true, true, true, true, true, true, true, true, true, true), new long[] { getArgumentsStrict().eventLogUserId });
+          }
           break;
         case PREVIEW_MODE_SEARCH:
           manager.openSearch(chat, previewSearchQuery, previewSearchSender, previewSearchFilter);
@@ -2726,7 +2821,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (TD.isLeft(status)) {
         showBottomButton(BOTTOM_ACTION_FOLLOW, 0, isUpdate);
       } else {
-        showBottomButton(BOTTOM_ACTION_TOGGLE_MUTE, 0, isUpdate);
+        TdApi.SupergroupFullInfo info = tdlib.cache().supergroupFull(ChatId.toSupergroupId(chat.id));
+        if (info != null && info.linkedChatId != 0) {
+          showBottomButton(BOTTOM_ACTION_DISCUSS, info.linkedChatId, isUpdate);
+        } else {
+          showBottomButton(BOTTOM_ACTION_TOGGLE_MUTE, 0, isUpdate);
+        }
       }
     } else if (tdlib.isRepliesChat(chat.id)) {
       setInputVisible(false, false);
@@ -3100,6 +3200,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         header.addButton(menu, R.id.menu_btn_clearCache, R.drawable.templarian_baseline_broom_24, iconColorId, this, Screen.dp(52f))
         .setVisibility((value = canClearCacheSelectedMessages()) ? View.VISIBLE : View.GONE);
         if (value) totalButtonsCount++;
+        header.addButton(menu, R.id.menu_btn_unpinAll, R.drawable.deproko_baseline_pin_undo_24, iconColorId, this, Screen.dp(52f))
+        .setVisibility((value = canUnpinSelectedMessages()) ? View.VISIBLE : View.GONE);
+        if (value) totalButtonsCount++;
         header.addRetryButton(menu, this, iconColorId)
           .setVisibility((value = canResendSelectedMessages()) ? View.VISIBLE : View.GONE);
         if (value) totalButtonsCount++;
@@ -3333,6 +3436,22 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         break;
       }
+      case R.id.menu_btn_unpinAll: {
+        if (selectedMessageIds != null && selectedMessageIds.size() > 0) {
+          showOptions(Lang.pluralBold(R.string.UnpinXMessages, selectedMessageIds.size()), new int[] {R.id.btn_unpinAll, R.id.btn_cancel}, new String[] {Lang.getString(R.string.Unpin), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.deproko_baseline_pin_undo_24, R.drawable.baseline_cancel_24}, (itemView, viewId) -> {
+            if (viewId == R.id.btn_unpinAll) {
+              final int size = selectedMessageIds.size();
+              for (int i = 0; i < size; i++) {
+                tdlib.client().send(new TdApi.UnpinChatMessage(chat.id, selectedMessageIds.keyAt(i)), tdlib.okHandler());
+              }
+              exitOnTransformFinish = true;
+              finishSelectMode(-1);
+            }
+            return true;
+          });
+        }
+        break;
+      }
       case R.id.menu_btn_delete: {
         if (pagerScrollPosition != 0 && pagerContentAdapter != null) {
           SharedBaseController<?> c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
@@ -3438,7 +3557,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         tutorialFlag = Settings.TUTORIAL_SCHEDULE;
       }
       if (Settings.instance().needTutorial(tutorialFlag)) {
-        int userId = tdlib.chatUserId(getChatId());
+        long userId = tdlib.chatUserId(getChatId());
         boolean canSendOnceOnline = !isSelfChat() && tdlib.cache().userLastSeenAvailable(userId);
         String tutorialKey = tutorialFlag + (isSelfChat() ? "_self" : canSendOnceOnline ? "_online" : isChannel() ? "_channel" : "");
         if (shownTutorials == null || !shownTutorials.contains(tutorialKey)) {
@@ -3459,7 +3578,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  public void openVoiceChatInvitation (TdApi.InternalLinkTypeVoiceChat invitation) {
+  public void openVoiceChatInvitation (TdApi.InternalLinkTypeVideoChat invitation) {
     // TODO some confirmation screen & join voice chat if agreed
   }
 
@@ -3666,7 +3785,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void checkLinkedChat () {
-    int supergroupId = ChatId.toSupergroupId(getChatId());
+    long supergroupId = ChatId.toSupergroupId(getChatId());
     TdApi.SupergroupFullInfo info = supergroupId != 0 ? tdlib.cache().supergroupFull(supergroupId) : null;
     long linkedChatId = info != null ? info.linkedChatId : 0;
     if (this.linkedChatId != linkedChatId) {
@@ -3737,6 +3856,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (emojiLayout != null) {
       emojiLayout.reset();
+    }
+
+    if (wallpaperViewBlurPreview != null) {
+      wallpaperViewBlurPreview.performDestroy();
+    }
+
+    if (backgroundParamsView != null) {
+      backgroundParamsView.performDestroy();
+
+      if (inWallpaperMode() && !inWallpaperPreviewMode()) {
+        TGBackground background = tdlib.settings().getWallpaper(Theme.getWallpaperIdentifier());
+        if (background != null && background.isWallpaper()) {
+          tdlib.settings().setWallpaper(TGBackground.newBlurredWallpaper(tdlib, background, backgroundParamsView.isBlurred()), true, Theme.getWallpaperIdentifier());
+        }
+      }
     }
 
     botStartArgument = null;
@@ -3880,7 +4014,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
     }
 
-    if (linkedChatId != 0) {
+    if (linkedChatId != 0 && bottomButtonAction != BOTTOM_ACTION_DISCUSS) {
       ids.append(R.id.btn_openLinkedChat);
       strings.append(tdlib.isChannel(getChatId()) ? R.string.LinkedGroup : R.string.LinkedChannel);
     }
@@ -3914,7 +4048,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private TGMessage selectedMessage;
   private Object selectedMessageTag;
 
-  public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, Object selectedMessageTag) {
+  public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, Object selectedMessageTag, boolean disableViewCounter) {
     this.selectedMessage = msg;
     this.selectedMessageTag = selectedMessageTag;
     StringBuilder b = new StringBuilder();
@@ -3955,7 +4089,56 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
     }
     String text = b.toString().trim();
-    showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
+    patchReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, disableViewCounter);
+  }
+
+  private void patchReadReceiptsOptions (PopupLayout layout, TGMessage message, boolean disableViewCounter) {
+    if (!message.canGetViewers() || disableViewCounter || (message.isUnread() && !message.noUnread()) || !(layout.getChildAt(1) instanceof OptionsLayout)) {
+      return;
+    }
+
+    OptionsLayout optionsLayout = (OptionsLayout) layout.getChildAt(1);
+
+    LinearLayout receiptWrap = new LinearLayout(layout.getContext());
+
+    TextView receiptText = OptionsLayout.genOptionView(layout.getContext(), R.id.more_btn_openReadReceipts, Lang.getString(R.string.LoadingMessageSeen), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_visibility_24, null, null, null);
+    TripleAvatarView tav = new TripleAvatarView(layout.getContext());
+
+    receiptText.setLayoutParams(new LinearLayout.LayoutParams(0, Screen.dp(54f), 1f));
+    receiptText.setClickable(false);
+    tav.setLayoutParams(new LinearLayout.LayoutParams(Screen.dp(TripleAvatarView.AVATAR_SIZE * 3 + Screen.dp(6)), Screen.dp(54f)));
+    receiptWrap.addView(receiptText);
+    receiptWrap.addView(tav);
+
+    Views.setClickable(receiptWrap);
+    RippleSupport.setSimpleWhiteBackground(receiptWrap);
+
+    optionsLayout.addView(receiptWrap, 2);
+
+    tdlib.client().send(new TdApi.GetMessageViewers(message.getChatId(), message.getId()), (obj) -> {
+      if (obj.getConstructor() != TdApi.Users.CONSTRUCTOR) return;
+      runOnUiThreadOptional(() -> {
+        TdApi.Users users = (TdApi.Users) obj;
+
+        if (users.userIds.length > 1) {
+          receiptText.setText(MessageSeenController.getViewString(message, users.totalCount).toString());
+        } else if (users.userIds.length == 1) {
+          receiptText.setText(Emoji.instance().replaceEmoji(tdlib.senderName(new TdApi.MessageSenderUser(users.userIds[0]))));
+        } else {
+          receiptText.setText(MessageSeenController.getNobodyString(message));
+        }
+
+        tav.setUsers(tdlib, users);
+        receiptWrap.setOnClickListener((v) -> {
+          layout.hideWindow(true);
+          if (users.userIds.length > 1) {
+            ModernActionedLayout.showMessageSeen(this, message, users.userIds);
+          } else if (users.userIds.length == 1) {
+            tdlib.ui().openPrivateProfile(this, users.userIds[0], new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
+          }
+        });
+      });
+    });
   }
 
   public boolean onCommandLongPressed (InlineResultCommand command) {
@@ -3990,7 +4173,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return true;
   }
 
-  public void setInputInlineBot (int userId, String username) {
+  public void setInputInlineBot (long userId, String username) {
     if (canWriteMessages()) {
       // pressed via @NephoBot message
       inputView.setInput(username + " ", true);
@@ -4106,6 +4289,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       headerView.updateButton(R.id.menu_messageActions, R.id.menu_btn_send, (value = canSendSelectedMessages()) ? View.VISIBLE : View.GONE, 0);
       if (value) totalButtonsCount++;
       headerView.updateButton(R.id.menu_messageActions, R.id.menu_btn_clearCache, (value = canClearCacheSelectedMessages()) ? View.VISIBLE : View.GONE, 0);
+      if (value) totalButtonsCount++;
+      headerView.updateButton(R.id.menu_messageActions, R.id.btn_unpinAll, (value = canUnpinSelectedMessages()) ? View.VISIBLE : View.GONE, 0);
       if (value) totalButtonsCount++;
       headerView.updateButton(R.id.menu_messageActions, R.id.menu_btn_report, canReportSelectedMessages(totalButtonsCount) ? View.VISIBLE : View.GONE, 0);
     }
@@ -4291,13 +4476,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return false;
   }
 
+  private boolean canUnpinSelectedMessages () {
+    return arePinnedMessages() && canPinAnyMessage(false);
+  }
+
   private boolean canReplyToSelectedMessages () {
     return pagerScrollPosition == 0 && TD.canReplyTo(getSingleSelectedMessage()) && canWriteMessages();
   }
 
   private boolean canEditSelectedMessages () {
     TdApi.Message msg = getSingleSelectedMessage();
-    return pagerScrollPosition == 0 && msg != null && msg.canBeEdited && TD.canEditText(msg.content);
+    return !arePinnedMessages() && pagerScrollPosition == 0 && msg != null && msg.canBeEdited && TD.canEditText(msg.content);
   }
 
   private boolean canShareSelectedMessages () {
@@ -4720,7 +4909,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           StringList strings = new StringList(3);
           Object tag = MessageView.fillMessageOptions(this, selectedMessage, ids, icons, strings, true);
           if (!ids.isEmpty()) {
-            showMessageOptions(selectedMessage, ids.get(), strings.get(), icons.get(), tag);
+            showMessageOptions(selectedMessage, ids.get(), strings.get(), icons.get(), tag, true);
           }
         }
         return true;
@@ -4807,6 +4996,36 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         return true;
       }
+      case R.id.btn_messageDiscuss: {
+        if (selectedMessage != null) {
+          TdApi.Message message = selectedMessage.findMessageWithThread();
+          if (message != null) {
+            tdlib.client().send(new TdApi.GetMessageThread(message.chatId, message.id), result -> {
+              switch (result.getConstructor()) {
+                case TdApi.MessageThreadInfo.CONSTRUCTOR: {
+                  TdApi.MessageThreadInfo info = (TdApi.MessageThreadInfo) result;
+                  runOnUiThreadOptional(() -> {
+                    if (getChatId() == message.chatId && info.messages.length > 0) {
+                      long[] otherMessageIds = info.messages.length > 1 ? new long[info.messages.length - 1] : null;
+                      for (int i = 1; i < info.messages.length; i++) {
+                        otherMessageIds[i - 1] = info.messages[i].id;
+                      }
+                      tdlib.ui().openMessage(this, info.chatId, new MessageId(info.chatId, info.messages[0].id, otherMessageIds), new TdlibUi.UrlOpenParameters().sourceMessage(new MessageId(message.chatId, message.id)).controller(this).sourceChat(message.chatId));
+                    }
+                  });
+                  break;
+                }
+                case TdApi.Error.CONSTRUCTOR: {
+                  UI.showError(result);
+                  break;
+                }
+              }
+            });
+          }
+          clearSelectedMessage();
+        }
+        return true;
+      }
       case R.id.btn_messageShare: {
         if (selectedMessage != null) {
           shareMessages(selectedMessage.getChatId(), selectedMessage.getAllMessages());
@@ -4816,22 +5035,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_saveGif: {
         if (selectedMessage != null && selectedMessageTag != null) {
-          tdlib.saveGif(((TD.DownloadedFile) selectedMessageTag).getFileId());
-          clearSelectedMessage();
-        }
-        return true;
-      }
-      case R.id.btn_saveToGallery: {
-        if (selectedMessage != null && selectedMessageTag != null) {
-          TD.DownloadedFile file = (TD.DownloadedFile) selectedMessageTag;
-          U.copyToGallery(file.getPath(), TGMimeType.isVideoMimeType(file.getMimeType()) ? U.TYPE_VIDEO : U.TYPE_PHOTO);
+          //noinspection unchecked
+          tdlib.ui().saveGifs(((List<TD.DownloadedFile>) selectedMessageTag));
           clearSelectedMessage();
         }
         return true;
       }
       case R.id.btn_saveFile: {
         if (selectedMessage != null && selectedMessageTag != null) {
-          TD.saveFile((TD.DownloadedFile) selectedMessageTag);
+          //noinspection unchecked
+          TD.saveFiles((List<TD.DownloadedFile>) selectedMessageTag);
           clearSelectedMessage();
         }
         return true;
@@ -4870,10 +5083,27 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         return true;
       }
+      case R.id.btn_viewStatistics: {
+        if (selectedMessage != null) {
+          TdApi.Message[] messages = selectedMessage.getAllMessages();
+          MessageStatisticsController statsController = new MessageStatisticsController(context, tdlib);
+          if (messages.length == 1) {
+            statsController.setArguments(new MessageStatisticsController.Args(messages[0].chatId, messages[0]));
+          } else {
+            statsController.setArguments(new MessageStatisticsController.Args(messages[0].chatId, Arrays.asList(messages)));
+          }
+          navigateTo(statsController);
+          clearSelectedMessage();
+        }
+
+        return true;
+
+      }
       case R.id.btn_deleteFile: {
         if (selectedMessage != null) {
           if (selectedMessageTag != null) {
-            TD.deleteFile(this, ((TD.DownloadedFile) selectedMessageTag).getFile());
+            //noinspection unchecked
+            TD.deleteFiles(this, (List<TD.DownloadedFile>) selectedMessageTag, null);
           } else {
             TdApi.Message[] messages = selectedMessage.getAllMessages();
             final SparseArrayCompat<TdApi.File> files = new SparseArrayCompat<>(messages.length);
@@ -4921,8 +5151,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private static final int BOTTOM_ACTION_FOLLOW = 1;
   private static final int BOTTOM_ACTION_TOGGLE_MUTE = 2;
   private static final int BOTTOM_ACTION_UNPIN_ALL = 3;
-  private static final int BOTTOM_ACTION_TEST = 4;
+  private static final int BOTTOM_ACTION_DISCUSS = 4;
   private static final int BOTTOM_ACTION_APPLY_WALLPAPER = 5;
+  private static final int BOTTOM_ACTION_TEST = 100;
 
   private int bottomButtonAction;
   private boolean needBigPadding;
@@ -4947,10 +5178,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
         bottomBar.setAction(R.id.btn_follow, Lang.getString(R.string.Follow),  R.drawable.baseline_group_add_24, animateButtonContent);
         bottomBar.clearPreviewChat();
         break;
+      case BOTTOM_ACTION_DISCUSS:
+        bottomBar.setAction(R.id.btn_openLinkedChat, Lang.getString(R.string.Discuss), R.drawable.baseline_chat_bubble_24, animateButtonContent);
+        bottomBar.setPreviewChatId(null, bottomButtonData, null);
+        break;
       case BOTTOM_ACTION_TOGGLE_MUTE: {
         boolean notificationsEnabled = tdlib.chatNotificationsEnabled(getChatId());
         bottomBar.setAction(R.id.btn_mute, Lang.getString(notificationsEnabled ? R.string.Mute : R.string.Unmute), notificationsEnabled ? R.drawable.baseline_notifications_off_24 : R.drawable.baseline_notifications_active_24, animateButtonContent);
-        bottomBar.setPreviewChatId(null, bottomButtonData, null);
+        bottomBar.clearPreviewChat();
         break;
       }
       case BOTTOM_ACTION_UNPIN_ALL: {
@@ -5056,7 +5291,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void showActionUnblockButton () {
-    int userId = tdlib.chatUserId(chat);
+    long userId = tdlib.chatUserId(chat);
     if (!tdlib.isRepliesChat(chat.id) && tdlib.isBotChat(chat)) {
       showActionButton(R.string.RestartBot, ACTION_BOT_START);
     } else {
@@ -5830,15 +6065,22 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
 
     switch (editingMessage.content.getConstructor()) {
-      case TdApi.MessageText.CONSTRUCTOR: {
-        TdApi.MessageText oldMessageText = (TdApi.MessageText) editingMessage.content;
+      case TdApi.MessageText.CONSTRUCTOR:
+      case TdApi.MessageAnimatedEmoji.CONSTRUCTOR: {
+        TdApi.MessageText oldMessageText;
+
+        if (editingMessage.content.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
+          oldMessageText = new TdApi.MessageText(Td.textOrCaption(editingMessage.content), null);
+        } else {
+          oldMessageText = (TdApi.MessageText) editingMessage.content;
+        }
         TdApi.InputMessageText newInputMessageText = new TdApi.InputMessageText(newText, getCurrentAllowLinkPreview(), false);
         if (!Td.equalsTo(newInputMessageText.text, oldMessageText.text) || (newInputMessageText.disableWebPagePreview && oldMessageText.webPage != null) || (!newInputMessageText.disableWebPagePreview && oldMessageText.webPage == null && attachedPreview != null)) {
-          if (newText.text.trim().length() == 0)
+          String newString = newText.text.trim();
+          if (newString.length() == 0)
             return;
-          tdlib.editMessageText(editingMessage.chatId, editingMessage.id, newInputMessageText, attachedPreview);
+          tdlib.editMessageText(editingMessage.chatId, editingMessage.id, newInputMessageText, attachedPreview, Emoji.instance().isSingleEmoji(newString));
         }
-
         break;
       }
       case TdApi.MessagePhoto.CONSTRUCTOR:
@@ -5852,6 +6094,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
           tdlib.editMessageCaption(editingMessage.chatId, editingMessage.id, newText);
         }
         break;
+      }
+      default: {
+        throw new UnsupportedOperationException(Integer.toString(editingMessage.content.getConstructor()));
       }
     }
 
@@ -6718,6 +6963,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           }
           break;
         }
+
         case TdApi.ChatActionBarReportAddBlock.CONSTRUCTOR: {
           TdApi.ChatActionBarReportAddBlock reportAddBlock = (TdApi.ChatActionBarReportAddBlock) actionBar;
           items.add(newReportItem(chatId, true));
@@ -6725,6 +6971,45 @@ public class MessagesController extends ViewController<MessagesController.Argume
           if (reportAddBlock.canUnarchive) {
             items.add(newUnarchiveItem(chatId));
           }
+          break;
+        }
+
+        case TdApi.ChatActionBarInviteMembers.CONSTRUCTOR: {
+          items.add(new TopBarView.Item(R.id.btn_invite, R.string.AddMember, v -> {
+            ContactsController c = new ContactsController(context, tdlib);
+            c.initWithMode(ContactsController.MODE_ADD_MEMBER);
+            c.setAllowBots(true);
+            c.setArguments(new ContactsController.Args(new UserPickerDelegate() {
+              @Override
+              public boolean onUserPick (ContactsController context, View view, TdApi.User user) {
+                if (tdlib.isSelfUserId(user.id)) {
+                  return false;
+                }
+
+                tdlib.setChatMemberStatus(chat.id, new TdApi.MessageSenderUser(user.id), new TdApi.ChatMemberStatusMember(), null, (ok, error) -> {
+                  runOnUiThreadOptional(() -> {
+                    if (!ok && error != null) {
+                      context.context()
+                        .tooltipManager()
+                        .builder(view)
+                        .show(context, tdlib, R.drawable.baseline_error_24, TD.toErrorString(error));
+                    } else {
+                      context.navigateBack();
+                    }
+                  });
+                });
+
+                return true;
+              }
+
+              @Override
+              public void onUserConfirm (ContactsController context, TdApi.User user, int option) {
+
+              }
+            }));
+            c.setChatTitle(R.string.AddMember, chat.title);
+            navigateTo(c);
+          }));
           break;
         }
 
@@ -6804,7 +7089,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     inputView.setText("");
   }
 
-  public void openGame (int ownerUserId, TdApi.Game game, final String url, TdApi.Message message) {
+  public void openGame (long ownerUserId, TdApi.Game game, final String url, TdApi.Message message) {
     TdApi.User user = tdlib.cache().user(ownerUserId);
     GameController controller = new GameController(context, tdlib);
     controller.setArguments(new GameController.Args(user != null ? user.id : 0, game, user != null ? "@" + user.username : "Game", url, message, this));
@@ -6814,7 +7099,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     navigateTo(controller);
   }
 
-  public void switchInline (int viaBotUserId, final TdApi.InlineKeyboardButtonTypeSwitchInline switchInline) {
+  public void switchInline (long viaBotUserId, final TdApi.InlineKeyboardButtonTypeSwitchInline switchInline) {
     if (chat == null) {
       return;
     }
@@ -7644,8 +7929,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
         return filters.messagePins;
       case R.id.btn_filterLeavingMembers:
         return filters.memberLeaves;
-      case R.id.btn_filterVoiceChats:
-        return filters.voiceChatChanges;
+      case R.id.btn_filterVideoChats:
+        return filters.videoChatChanges;
     }
     return false;
   }
@@ -7657,7 +7942,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
 
         TdApi.ChatEventLogFilters filters = manager.getEventLogFilters();
-        int[] userIds = manager.getEventLogUserIds();
+        long[] userIds = manager.getEventLogUserIds();
 
         ArrayList<ListItem> items = new ArrayList<>();
 
@@ -7677,7 +7962,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             R.id.btn_filterEditedMessages,
             R.id.btn_filterPinnedMessages,
             R.id.btn_filterLeavingMembers,
-            R.id.btn_filterVoiceChats
+            R.id.btn_filterVideoChats
           };
           strings = new String[] {
             Lang.getString(R.string.EventLogFilterAll),
@@ -7689,7 +7974,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             Lang.getString(R.string.EventLogFilterEditedMessages),
             Lang.getString(R.string.EventLogFilterPinnedMessages),
             Lang.getString(R.string.EventLogFilterLeavingMembers),
-            Lang.getString(R.string.EventLogFilterVoiceChats)
+            Lang.getString(R.string.EventLogFilterLiveStreams)
           };
         } else {
           ids = new int[] {
@@ -7703,7 +7988,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             R.id.btn_filterEditedMessages,
             R.id.btn_filterPinnedMessages,
             R.id.btn_filterLeavingMembers,
-            R.id.btn_filterVoiceChats
+            R.id.btn_filterVideoChats
           };
           strings = new String[] {
             Lang.getString(R.string.EventLogFilterAll),
@@ -7740,7 +8025,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
         for (TdApi.ChatAdministrator admin : chatAdmins.administrators) {
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-          items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR, R.id.user, 0, tdlib.cache().userName(admin.userId), userIds == null || ArrayUtils.indexOf(userIds, admin.userId) != -1).setLongId(admin.userId).setIntValue(admin.userId));
+          items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR, R.id.user, 0, tdlib.cache().userName(admin.userId), userIds == null || ArrayUtils.indexOf(userIds, admin.userId) != -1).setLongId(admin.userId).setLongValue(admin.userId));
         }
 
 
@@ -7774,14 +8059,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
               true,
               true
             );
-            final IntList userIds1;
+            final LongList userIds1;
 
 
             int i12 = wrap.adapter.indexOfViewById(R.id.btn_members);
             if (i12 != -1 && wrap.adapter.getItems().get(i12).isSelected()) {
               userIds1 = null;
             } else {
-              userIds1 = new IntList(chatAdmins != null ? chatAdmins.administrators.length : 10);
+              userIds1 = new LongList(chatAdmins != null ? chatAdmins.administrators.length : 10);
             }
 
             int filterCount = 0;
@@ -7828,8 +8113,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
                     case R.id.btn_filterLeavingMembers:
                       filter.memberLeaves = isSelected;
                       break;
-                    case R.id.btn_filterVoiceChats:
-                      filter.voiceChatChanges = isSelected;
+                    case R.id.btn_filterVideoChats:
+                      filter.videoChatChanges = isSelected;
                       break;
                   }
                   break;
@@ -7837,7 +8122,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
                 case R.id.user: {
                   if (item.isSelected() && userIds1 != null) {
-                    userIds1.append(item.getIntValue());
+                    userIds1.append(item.getLongValue());
                   }
                   break;
                 }
@@ -9018,7 +9303,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onUserUpdated (TdApi.User user) { }
 
   @Override
-  public void onUserFullUpdated (final int userId, final TdApi.UserFullInfo userFull) {
+  public void onUserFullUpdated (final long userId, final TdApi.UserFullInfo userFull) {
     tdlib.ui().post(() -> {
       if (chat != null && TD.getUserId(chat) == userId) {
         updateBottomBar(true);
@@ -9033,7 +9318,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @UiThread
   @Override
-  public void onUserStatusChanged (int userId, TdApi.UserStatus status, boolean uiOnly) {
+  public void onUserStatusChanged (long userId, TdApi.UserStatus status, boolean uiOnly) {
     if (chat != null && headerCell != null && TD.getUserId(chat) == userId) {
       headerCell.updateUserStatus(chat);
     }
@@ -9057,7 +9342,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public void onSupergroupFullUpdated (final int supergroupId, final TdApi.SupergroupFullInfo newSupergroupFull) {
+  public void onSupergroupFullUpdated (final long supergroupId, final TdApi.SupergroupFullInfo newSupergroupFull) {
     tdlib.ui().post(() -> {
       if (ChatId.toSupergroupId(getChatId()) == supergroupId) {
         headerCell.updateUserStatus(chat);
@@ -9086,7 +9371,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public void onBasicGroupFullUpdated (final int basicGroupId, TdApi.BasicGroupFullInfo basicGroupFull) {
+  public void onBasicGroupFullUpdated (final long basicGroupId, TdApi.BasicGroupFullInfo basicGroupFull) {
     tdlib.ui().post(() -> {
       if (chat != null && ChatId.toBasicGroupId(getChatId()) == basicGroupId) {
         headerCell.updateUserStatus(chat);

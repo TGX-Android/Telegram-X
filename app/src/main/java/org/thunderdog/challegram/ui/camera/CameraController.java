@@ -5,6 +5,9 @@ import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.Point;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -25,6 +28,7 @@ import android.widget.TextView;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
@@ -56,6 +60,7 @@ import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.ShadowView;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
@@ -82,11 +87,21 @@ public class CameraController extends ViewController<Void> implements CameraDele
     Manifest.permission.WRITE_EXTERNAL_STORAGE
   };
 
+  public static final String[] VIDEO_ONLY_PERMISSIONS = new String[] {
+    Manifest.permission.CAMERA,
+    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+    Manifest.permission.READ_EXTERNAL_STORAGE
+  };
+
   private static final boolean ALLOW_EARLY_INITIALIZATION = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
 
   public interface ReadyListener {
     void onCameraCompletelyReady (CameraController camera);
     void onCameraSwitched (boolean isForward, boolean toFrontFace);
+  }
+
+  public interface QrCodeListener {
+    void onQrCodeScanned (String qrCode);
   }
 
   public static final int MODE_MAIN = 0;
@@ -96,16 +111,37 @@ public class CameraController extends ViewController<Void> implements CameraDele
   private boolean forceLegacy;
   private int cameraMode;
   private @Nullable ReadyListener readyListener;
+  private @Nullable QrCodeListener qrCodeListener;
+  private String savedQrCodeData;
+  private boolean qrCodeConfirmed;
+  private int qrSubtitleRes;
+  private boolean qrModeDebug;
+
+  public void setQrListener (@Nullable QrCodeListener qrCodeListener, @StringRes int subtitleRes, boolean qrModeDebug) {
+    this.qrCodeListener = qrCodeListener;
+    this.qrSubtitleRes = subtitleRes;
+    this.qrModeDebug = qrModeDebug;
+    if (this.cameraMode == MODE_QR && rootLayout != null) {
+      rootLayout.setQrModeSubtitle(subtitleRes);
+      rootLayout.setQrMode(true, qrModeDebug);
+    }
+  }
 
   public void setMode (int mode, @Nullable ReadyListener readyListener) {
+    this.qrCodeConfirmed = false;
     this.readyListener = readyListener;
     if (this.cameraMode == mode) {
+      if (this.cameraMode == MODE_QR) {
+        rootLayout.setQrMode(true, false);
+      }
+
       return;
     }
-    setForceLegacy(mode == MODE_ROUND_VIDEO);
+    setForceLegacy(mode == MODE_ROUND_VIDEO || mode == MODE_QR);
     this.cameraMode = mode;
     if (contentView != null) {
       updateContentScale();
+      updateQrButtonHide();
       if (cameraOverlayView != null) {
         cameraOverlayView.setGridVisible(cameraMode == MODE_MAIN && Settings.instance().getNewSetting(Settings.SETTING_FLAG_CAMERA_SHOW_GRID), isFocused());
       }
@@ -148,7 +184,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
 
     cameraOverlayView = new CameraOverlayView(context);
     cameraOverlayView.setFlashListener(this);
-    cameraOverlayView.setGridVisible(Settings.instance().getNewSetting(Settings.SETTING_FLAG_CAMERA_SHOW_GRID), false);
+    cameraOverlayView.setGridVisible(cameraMode == MODE_MAIN && Settings.instance().getNewSetting(Settings.SETTING_FLAG_CAMERA_SHOW_GRID), false);
     cameraOverlayView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
     fadeView = new CameraFadeView(context);
@@ -180,7 +216,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
     Views.setSimpleShadow(durationView);
     resetDuration();
 
-    rootLayout = new CameraRootLayout(context);
+    rootLayout = new CameraQrCodeRootLayout(context);
     rootLayout.setController(this);
     rootLayout.setBackgroundColor(0xff000000);
     rootLayout.addView(contentView);
@@ -202,10 +238,12 @@ public class CameraController extends ViewController<Void> implements CameraDele
     } else {
       manager = new CameraManagerX(context, this);
     }
+
     contentView.addView(manager.getView());
     switchCameraButton.setCameraIconRes(manager.preferFrontFacingCamera());
     contentView.addView(cameraOverlayView);
-
+    
+    updateQrButtonHide();
     updateControlMargins();
     updateControlsFactor();
 
@@ -263,6 +301,10 @@ public class CameraController extends ViewController<Void> implements CameraDele
     get();
     Views.moveView(contentView, rootLayout, 0);
     manager.getView().requestLayout();
+  }
+
+  public boolean isInQrScanMode () {
+    return cameraMode == MODE_QR;
   }
 
   public CameraLayout getCameraLayout () {
@@ -513,7 +555,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
     }
 
     boolean visible = availableCameraCount > 1;
-    switchCameraButton.setVisibility(visible ? View.VISIBLE : View.GONE);
+    if (!isInQrScanMode()) switchCameraButton.setVisibility(visible ? View.VISIBLE : View.GONE);
   }
 
   private boolean hasRenderedFrame;
@@ -563,6 +605,10 @@ public class CameraController extends ViewController<Void> implements CameraDele
 
     hasRenderedFrame = false;
     cameraOverlayView.setOverlayVisible(true, !isPaused(), after);
+
+    if (isInQrScanMode()) {
+      rootLayout.onCameraClosed();
+    }
 
     executeScheduledAnimation();
   }
@@ -663,6 +709,21 @@ public class CameraController extends ViewController<Void> implements CameraDele
     float scale = cameraMode == MODE_ROUND_VIDEO ? 1f : (MINIMIZED_SCALE + (1f - MINIMIZED_SCALE) * appearFactor) * contentScale;
     contentView.setScaleX(scale);
     contentView.setScaleY(scale);
+  }
+
+  private void updateQrButtonHide () {
+    if (isInQrScanMode()) {
+      switchCameraButton.setVisibility(View.GONE);
+      flashButton.setVisibility(View.GONE);
+      blurView.setVisibility(View.GONE);
+      rootLayout.setQrMode(true, qrModeDebug);
+      rootLayout.setQrModeSubtitle(qrSubtitleRes);
+    } else {
+      switchCameraButton.setVisibility(View.VISIBLE);
+      flashButton.setVisibility(View.VISIBLE);
+      blurView.setVisibility(View.VISIBLE);
+      rootLayout.setQrMode(false, qrModeDebug);
+    }
   }
 
   /**
@@ -793,6 +854,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
       Settings.instance().markTutorialAsShown(Settings.TUTORIAL_HOLD_VIDEO);
       context().tooltipManager().builder(button).controller(this).show(tdlib, R.string.CameraButtonHint).hideDelayed();
     }
+
     if (inEarlyInitialization) {
       inEarlyInitialization = false;
     } else {
@@ -1087,6 +1149,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
 
   private void updateRotations () {
     float rotation = getTransformedRotation();
+    rootLayout.setComponentRotation(rotation);
     button.setComponentRotation(rotation);
     switchCameraButtonParent.setRotation(rotation);
     flashButton.setComponentRotation(rotation);
@@ -1308,6 +1371,11 @@ public class CameraController extends ViewController<Void> implements CameraDele
     return isSecretChat();
   }
 
+  @Override
+  public boolean useQrScanner () {
+    return isInQrScanMode();
+  }
+
   // Shooting & Recording
 
   private boolean canTakeSnapshot () {
@@ -1472,6 +1540,46 @@ public class CameraController extends ViewController<Void> implements CameraDele
   }
 
   @Override
+  public void onQrCodeFound (String qrCodeData, @Nullable RectF boundingBox, int height, int width, int rotation, boolean isLegacyZxing) {
+    if (qrCodeListener != null && !qrCodeData.isEmpty() && (qrCodeData.startsWith("tg://") || qrCodeData.startsWith(context.currentTdlib().tMeUrl())) && !qrCodeConfirmed) {
+      savedQrCodeData = qrCodeData;
+      rootLayout.setQrCorner(boundingBox, height, width, rotation, isLegacyZxing);
+    }
+  }
+
+  @Override
+  public int getCurrentCameraOrientation () {
+    if (manager instanceof CameraManagerLegacy) {
+      return ((CameraManagerLegacy) manager).getCurrentCameraRotation();
+    } else {
+      return 0; // CameraX impl won't call this anyway
+    }
+  }
+
+  @Override
+  public int getCurrentCameraSensorOrientation () {
+    if (manager instanceof CameraManagerLegacy) {
+      return ((CameraManagerLegacy) manager).getCurrentCameraSensorOrientation();
+    } else {
+      return 0; // CameraX impl won't call this anyway
+    }
+  }
+
+  public void onQrCodeFoundAndWaited () {
+    if (qrCodeListener != null && savedQrCodeData != null) {
+      qrCodeListener.onQrCodeScanned(savedQrCodeData);
+      savedQrCodeData = null;
+      qrCodeConfirmed = true;
+      context.onBackPressed();
+    }
+  }
+
+  @Override
+  public void onQrCodeNotFound () {
+    rootLayout.resetQrCorner();
+  }
+
+  @Override
   public void onVideoCaptureEnded () {
     button.setInRecordMode(false);
   }
@@ -1543,7 +1651,9 @@ public class CameraController extends ViewController<Void> implements CameraDele
       return;
     }
 
-    if (canTakeSnapshot()) {
+    if (isInQrScanMode()) {
+      context.onBackPressed();
+    } else if (canTakeSnapshot()) {
       manager.setTakingPhoto(true);
       if (flashMode == CameraFeatures.FEATURE_FLASH_OFF) {
         takeSnapshotImpl(false);
@@ -1560,12 +1670,14 @@ public class CameraController extends ViewController<Void> implements CameraDele
 
   @Override
   public boolean onStartVideoCapture (CameraButton v) {
+    if (isInQrScanMode()) return false;
     Settings.instance().markTutorialAsComplete(Settings.TUTORIAL_HOLD_VIDEO);
     return manager.startVideoCapture(getOutputRotation());
   }
 
   @Override
   public void onFinishVideoCapture (CameraButton v) {
+    if (isInQrScanMode()) return;
     manager.finishOrCancelVideoCapture();
   }
 
@@ -1594,7 +1706,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
 
   @Override
   public boolean onKeyDown (int keyCode, KeyEvent event) {
-    if (!isCameraOpen || viewController != null) {
+    if (!isCameraOpen || viewController != null || isInQrScanMode()) {
       return super.onKeyDown(keyCode, event);
     }
     switch (keyCode) {
@@ -1635,7 +1747,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
 
   @Override
   public boolean onKeyUp (int keyCode, KeyEvent event) {
-    if (!isCameraOpen || viewController != null) {
+    if (!isCameraOpen || viewController != null || isInQrScanMode()) {
       return super.onKeyDown(keyCode, event);
     }
     switch (keyCode) {

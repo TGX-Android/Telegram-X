@@ -51,7 +51,7 @@ fun ChatMemberStatus.equalsTo(b: ChatMemberStatus): Boolean {
         this.canPromoteMembers == b.canPromoteMembers &&
         this.isAnonymous == b.isAnonymous &&
         this.canManageChat == b.canManageChat &&
-        this.canManageVoiceChats == b.canManageVoiceChats &&
+        this.canManageVideoChats == b.canManageVideoChats &&
         this.customTitle.equalsOrBothEmpty(b.customTitle)
         // ignored: this.canBeEdited == b.canBeEdited
       }
@@ -207,12 +207,17 @@ fun ChatAction.equalsTo(b: ChatAction): Boolean {
       ChatActionRecordingVoiceNote.CONSTRUCTOR,
       ChatActionChoosingLocation.CONSTRUCTOR,
       ChatActionChoosingContact.CONSTRUCTOR,
+      ChatActionChoosingSticker.CONSTRUCTOR,
       ChatActionStartPlayingGame.CONSTRUCTOR,
       ChatActionRecordingVideoNote.CONSTRUCTOR,
       ChatActionCancel.CONSTRUCTOR -> true
       ChatActionUploadingVideo.CONSTRUCTOR -> {
         require(this is ChatActionUploadingVideo && b is ChatActionUploadingVideo)
         this.progress == b.progress
+      }
+      ChatActionWatchingAnimations.CONSTRUCTOR -> {
+        require(this is ChatActionWatchingAnimations && b is ChatActionWatchingAnimations)
+        this.emoji == b.emoji
       }
       ChatActionUploadingVoiceNote.CONSTRUCTOR -> {
         require(this is ChatActionUploadingVoiceNote && b is ChatActionUploadingVoiceNote)
@@ -230,7 +235,7 @@ fun ChatAction.equalsTo(b: ChatAction): Boolean {
         require(this is ChatActionUploadingVideoNote && b is ChatActionUploadingVideoNote)
         this.progress == b.progress
       }
-      else -> error(this.toString())
+      else -> TODO(this.toString())
     }
   }
 }
@@ -331,7 +336,7 @@ fun ChatEventLogFilters?.equalsTo(b: ChatEventLogFilters?): Boolean {
     (this?.infoChanges ?: false) == (b?.infoChanges ?: false) &&
     (this?.settingChanges ?: false) == (b?.settingChanges ?: false) &&
     (this?.inviteLinkChanges ?: false) == (b?.inviteLinkChanges ?: false) &&
-    (this?.voiceChatChanges ?: false) == (b?.voiceChatChanges ?: false)
+    (this?.videoChatChanges ?: false) == (b?.videoChatChanges ?: false)
   )
 }
 
@@ -822,6 +827,54 @@ fun MessageSender?.equalsTo(b: MessageSender?): Boolean {
       when (this.constructor) {
         MessageSenderChat.CONSTRUCTOR -> (this as MessageSenderChat).chatId == (b as MessageSenderChat).chatId
         MessageSenderUser.CONSTRUCTOR -> (this as MessageSenderUser).userId == (b as MessageSenderUser).userId
+        else -> error(this.toString())
+      }
+    }
+  }
+}
+
+fun BackgroundType?.equalsTo(b: BackgroundType?, ignoreSettings: Boolean = true): Boolean {
+  return when {
+    this === b -> true
+    this == null || b == null || this.constructor != b.constructor -> false
+    else -> {
+      when (this.constructor) {
+        BackgroundTypeWallpaper.CONSTRUCTOR -> {
+          require(this is BackgroundTypeWallpaper && b is BackgroundTypeWallpaper)
+          ignoreSettings || (this.isBlurred == b.isBlurred && this.isMoving == b.isMoving)
+        }
+        BackgroundTypeFill.CONSTRUCTOR -> {
+          require(this is BackgroundTypeFill && b is BackgroundTypeFill)
+          this.fill.equalsTo(b.fill)
+        }
+        BackgroundTypePattern.CONSTRUCTOR -> {
+          require(this is BackgroundTypePattern && b is BackgroundTypePattern)
+          this.fill.equalsTo(b.fill) && (ignoreSettings || (this.intensity == b.intensity && this.isMoving == b.isMoving))
+        }
+        else -> error(this.toString())
+      }
+    }
+  }
+}
+
+fun BackgroundFill?.equalsTo(b: BackgroundFill?): Boolean {
+  return when {
+    this === b -> true
+    this == null || b == null || this.constructor != b.constructor -> false
+    else -> {
+      when (this.constructor) {
+        BackgroundFillSolid.CONSTRUCTOR -> {
+          require(this is BackgroundFillSolid && b is BackgroundFillSolid)
+          this.color == b.color
+        }
+        BackgroundFillGradient.CONSTRUCTOR -> {
+          require(this is BackgroundFillGradient && b is BackgroundFillGradient)
+          this.topColor == b.topColor && this.bottomColor == b.bottomColor && this.rotationAngle == b.rotationAngle
+        }
+        BackgroundFillFreeformGradient.CONSTRUCTOR -> {
+          require(this is BackgroundFillFreeformGradient && b is BackgroundFillFreeformGradient)
+          this.colors.contentEquals(b.colors)
+        }
         else -> error(this.toString())
       }
     }

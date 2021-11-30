@@ -135,7 +135,6 @@ import nl.dionsegijn.konfetti.models.Shape;
 public abstract class BaseActivity extends ComponentActivity implements View.OnTouchListener, FactorAnimator.Target, Keyboard.OnStateChangeListener, ThemeChangeListener, SensorEventListener, TGPlayerController.TrackChangeListener, TGLegacyManager.EmojiLoadListener, Lang.Listener, Handler.Callback {
   public static final long POPUP_SHOW_SLOW_DURATION = 240l;
 
-  private static final int CLEAR_STACK = 0;
   private static final int OPEN_CAMERA_BY_TAP = 1;
   private static final int DISPATCH_ACTIVITY_STATE = 2;
 
@@ -174,8 +173,30 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     return gestureController;
   }
 
-  public boolean hasSettingsError () {
-    return hasTdlib() && currentTdlib().notifications().hasLocalNotificationProblem();
+  public int getSettingsErrorIcon () {
+    // It's located here for future display inside header menu button
+    if (hasTdlib()) {
+      Tdlib tdlib = currentTdlib();
+      final boolean haveNotificationsProblem = tdlib.notifications().hasLocalNotificationProblem();
+      final TdApi.SuggestedAction singleAction = tdlib.singleSettingsSuggestion();
+      final boolean haveSuggestions = singleAction != null || tdlib.haveAnySettingsSuggestions();
+      final int totalCount = (singleAction != null ? 1 : haveSuggestions ? 2 : 0) + (haveNotificationsProblem ? 1 : 0);
+      if (totalCount > 1) {
+        return Tdlib.CHAT_FAILED;
+      } else if (haveNotificationsProblem) {
+        return R.drawable.baseline_notification_important_14;
+      } else if (singleAction != null) {
+        switch (singleAction.getConstructor()) {
+          case TdApi.SuggestedActionCheckPassword.CONSTRUCTOR:
+            return R.drawable.baseline_gpp_maybe_14;
+          case TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR:
+            return R.drawable.baseline_sim_card_alert_14;
+          default:
+            throw new UnsupportedOperationException(singleAction.toString());
+        }
+      }
+    }
+    return 0;
   }
 
   public boolean isAnimating (boolean intercept) {
@@ -212,7 +233,13 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public void removeFromRoot (View view) {
-    rootView.removeView(view);
+    try {
+      rootView.removeView(view);
+    } catch (NullPointerException e) {
+      // Ignoring, as it's most likely bug in Android SDK 23
+      // at android.view.TextureView.destroySurface (TextureView.java:244)
+      Log.i(e);
+    }
   }
 
   public void addToNavigation (View view) {
@@ -955,6 +982,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       Tracer.onUiError(t);
       throw t;
     }
+    if (navigation != null) {
+      navigation.destroy();
+    }
     Lang.removeLanguageListener(this);
     if (statusBar != null) {
       statusBar.performDestroy();
@@ -1107,7 +1137,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (tooltipOverlayView != null && tooltipOverlayView.onBackPressed()) {
       return;
     }
-    if (dismissLastOpenWindow(false, true)) {
+    if (dismissLastOpenWindow(false, true, fromTop)) {
       return;
     }
     if (isCameraOpen) {
@@ -1135,7 +1165,6 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         } else if (c.inSelectMode() || c.inSearchMode() || c.inCustomMode()) {
           navigation.onBackPressed(fromTop);
         } else {
-          handler.sendMessageDelayed(Message.obtain(handler, CLEAR_STACK), 150l);
           super.onBackPressed();
         }
       }
@@ -1165,12 +1194,6 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   @Override
   public final boolean handleMessage (Message msg) {
     switch (msg.what) {
-      case CLEAR_STACK: {
-        if (navigation != null) {
-          navigation.destroy();
-        }
-        break;
-      }
       case OPEN_CAMERA_BY_TAP: {
         openCameraByTap((ViewController.CameraOpenOptions) msg.obj);
         break;
@@ -1990,7 +2013,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     return popupLayout != null ? popupLayout.getBoundController() : null;
   }
 
-  public boolean dismissLastOpenWindow (boolean byKeyPress, boolean byBackPress) {
+  public boolean dismissLastOpenWindow (boolean byKeyPress, boolean byBackPress, boolean byHeaderBackPress) {
     final int size = windows.size();
     for (int i = size - 1; i >= 0; i--) {
       PopupLayout window = windows.get(i);
@@ -1998,7 +2021,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         if (byKeyPress && window.canHideKeyboard()) {
           return window.hideSoftwareKeyboard();
         }
-        if (byBackPress && window.onBackPressed()) {
+        if (byBackPress && window.onBackPressed(byHeaderBackPress)) {
           return true;
         }
         window.hideWindow(true);
@@ -2132,7 +2155,10 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   public void requestReadWritePermissions () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      requestPermissions(new String[] {Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_READ_STORAGE);
+      requestPermissions(new String[] {
+        Manifest.permission.READ_EXTERNAL_STORAGE,
+        Manifest.permission.WRITE_EXTERNAL_STORAGE
+      }, REQUEST_READ_STORAGE);
     }
   }
 
@@ -2379,8 +2405,8 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   private boolean openCameraByPermissionRequest (ViewController.CameraOpenOptions options) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      if (U.needsPermissionRequest(CameraController.VIDEO_PERMISSIONS)) {
-        U.requestPermissions(CameraController.VIDEO_PERMISSIONS, result -> {
+      if (U.needsPermissionRequest(options.optionalMicrophone ? CameraController.VIDEO_ONLY_PERMISSIONS : CameraController.VIDEO_PERMISSIONS)) {
+        U.requestPermissions(options.optionalMicrophone ? CameraController.VIDEO_ONLY_PERMISSIONS : CameraController.VIDEO_PERMISSIONS, result -> {
           if (result) {
             openCameraByTap(options);
           }
@@ -2752,10 +2778,12 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (camera == null) {
       camera = new CameraController(this);
       camera.setMode(options.mode, options.readyListener);
+      camera.setQrListener(options.qrCodeListener, options.qrModeSubtitle, options.qrModeDebug);
       camera.get(); // Ensure view creation
       addActivityListener(camera);
     } else {
       camera.setMode(options.mode, options.readyListener);
+      camera.setQrListener(options.qrCodeListener, options.qrModeSubtitle, options.qrModeDebug);
     }
     hideContextualPopups(false);
     closeAllMedia(true);
@@ -3111,6 +3139,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   public static final int SCREEN_FLAG_PLAYING_REGULAR_VIDEO = 1 << 1;
   public static final int SCREEN_FLAG_RECORDING = 1 << 2;
   public static final int SCREEN_FLAG_CAMERA_OPEN = 1 << 3;
+  public static final int SCREEN_FLAG_PLAYING_FULLSCREEN_WEB_VIDEO = 1 << 4;
 
   private int screenFlags;
 

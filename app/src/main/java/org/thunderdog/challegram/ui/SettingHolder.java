@@ -61,6 +61,7 @@ import org.thunderdog.challegram.widget.ChartLayout;
 import org.thunderdog.challegram.widget.CheckBox;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.DoubleTextView;
+import org.thunderdog.challegram.widget.EmbeddableStickerView;
 import org.thunderdog.challegram.widget.EmptySmartView;
 import org.thunderdog.challegram.widget.JoinedUsersView;
 import org.thunderdog.challegram.widget.ListInfoView;
@@ -178,8 +179,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         return Screen.dp(55f);
       }
       case ListItem.TYPE_INFO_MULTILINE:
-      case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE:
-      case ListItem.TYPE_VALUED_SETTING_RED: {
+      case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE: {
         return Screen.dp(76f);
       }
       case ListItem.TYPE_HEADER_PADDED: {
@@ -225,6 +225,9 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_EDITTEXT_WITH_PHOTO: {
         return Screen.dp(86f);
       }
+      case ListItem.TYPE_EMBED_STICKER: {
+        return Screen.dp(96f);
+      }
       case ListItem.TYPE_EDITTEXT_WITH_PHOTO_SMALLER:
         return Screen.dp(82f);
       case ListItem.TYPE_LIVE_LOCATION_PROMO:
@@ -262,6 +265,10 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_DOUBLE_TEXTVIEW:
       case ListItem.TYPE_DOUBLE_TEXTVIEW_ROUNDED: {
         ((DoubleTextView) itemView).attach();
+        break;
+      }
+      case ListItem.TYPE_EMBED_STICKER: {
+        ((EmbeddableStickerView) itemView).attach();
         break;
       }
       case ListItem.TYPE_MEMBERS_LIST: {
@@ -334,6 +341,10 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       }
       case ListItem.TYPE_LIVE_LOCATION_TARGET: {
         ((DrawerItemView) ((FrameLayoutFix) itemView).getChildAt(0)).detach();
+        break;
+      }
+      case ListItem.TYPE_EMBED_STICKER: {
+        ((EmbeddableStickerView) itemView).detach();
         break;
       }
       case ListItem.TYPE_MEMBERS_LIST: {
@@ -423,7 +434,6 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER:
       case ListItem.TYPE_VALUED_SETTING_WITH_RADIO:
       case ListItem.TYPE_INFO_MULTILINE:
-      case ListItem.TYPE_VALUED_SETTING_RED:
       case ListItem.TYPE_INFO_SETTING:
       case ListItem.TYPE_VALUED_SETTING_RED_STUPID:
       case ListItem.TYPE_RADIO_SETTING:
@@ -571,6 +581,16 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       }
       case ListItem.TYPE_MESSAGE_PREVIEW: {
         MessagePreviewView view = new MessagePreviewView(context, tdlib);
+        view.setOnClickListener(onClickListener);
+        if (themeProvider != null) {
+          themeProvider.addThemeInvalidateListener(view);
+        }
+        return new SettingHolder(view);
+      }
+      case ListItem.TYPE_STATS_MESSAGE_PREVIEW: {
+        MessagePreviewView view = new MessagePreviewView(context, tdlib);
+        view.setLinePadding(0);
+        view.setUseAvatarFallback(true);
         view.setOnClickListener(onClickListener);
         if (themeProvider != null) {
           themeProvider.addThemeInvalidateListener(view);
@@ -807,7 +827,6 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_COLOR:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER:
-      case ListItem.TYPE_VALUED_SETTING_RED:
       case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE: {
         SettingView settingView = new SettingView(context, tdlib);
         switch (viewType) {
@@ -825,10 +844,6 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         settingView.setOnClickListener(onClickListener);
         settingView.setOnLongClickListener(onLongClickListener);
         switch (viewType) {
-          case ListItem.TYPE_VALUED_SETTING_RED: {
-            // settingView.setIsRed();
-            break;
-          }
           case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE: {
             CheckBox checkBox = CheckBox.simpleCheckBox(context);
             settingView.addView(checkBox);
@@ -1069,6 +1084,15 @@ public class SettingHolder extends RecyclerView.ViewHolder {
           stupidView.addThemeListeners(themeProvider);
         }
         return new SettingHolder(stupidView);
+      }
+      case ListItem.TYPE_EMBED_STICKER: {
+        EmbeddableStickerView view = new EmbeddableStickerView(context);
+        view.init(tdlib);
+        view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        if (themeProvider != null) {
+          themeProvider.addThemeInvalidateListener(view);
+        }
+        return new SettingHolder(view);
       }
       case ListItem.TYPE_MEMBERS_LIST: {
         RecyclerView recyclerView = new RecyclerView(context) {
@@ -1328,15 +1352,26 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         FrameLayoutFix frameLayout = new FrameLayoutFix(context) {
           @Override
           protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-            final int paddingTop =
-              measureHeightForType(ListItem.TYPE_HEADER) +
-                measureHeightForType(ListItem.TYPE_SHADOW_TOP) +
-                measureHeightForType(ListItem.TYPE_SESSION) +
-                measureHeightForType(ListItem.TYPE_SHADOW_BOTTOM);
             ViewParent parent = this;
             do {
               parent = parent.getParent();
             } while (!(parent instanceof RecyclerView) && parent != null);
+
+            int position = adapter.indexOfViewByType(viewType);
+            int paddingTop = 0;
+
+            for (int i = 0; i < position; i++) {
+              int viewType = adapter.getItems().get(i).getViewType();
+              if (viewType == ListItem.TYPE_SESSION && parent != null) {
+                View view = ((RecyclerView) parent).getLayoutManager().findViewByPosition(i);
+                if (view != null) {
+                  paddingTop += view.getMeasuredHeight();
+                  continue;
+                }
+              }
+              paddingTop += measureHeightForType(viewType);
+            }
+
             int totalHeight = parent != null ? ((RecyclerView) parent).getMeasuredHeight() : 0;
             int availHeight = totalHeight - paddingTop;
 
@@ -2160,11 +2195,12 @@ public class SettingHolder extends RecyclerView.ViewHolder {
 
         return new SettingHolder(contentView);
       }
+      case ListItem.TYPE_CHART_HEADER_DETACHED:
       case ListItem.TYPE_CHART_HEADER: {
         ChartHeaderView headerView = new ChartHeaderView(context);
-        headerView.setPadding(0, Screen.dp(12f), 0, Screen.dp(12f));
+        headerView.setPadding(0, Screen.dp(8f), 0, Screen.dp(4f));
         headerView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        ViewSupport.setThemedBackground(headerView, R.id.theme_color_filling, themeProvider);
+        //ViewSupport.setThemedBackground(headerView, R.id.theme_color_filling, themeProvider);
         if (themeProvider != null) {
           themeProvider.addThemeInvalidateListener(headerView);
         }
@@ -2192,6 +2228,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
             throw new AssertionError();
         }
         ChartLayout chartLayout = new ChartLayout(context);
+        chartLayout.setPadding(chartLayout.getPaddingLeft(), Screen.dp(16f), chartLayout.getPaddingRight(), chartLayout.getPaddingBottom());
         chartLayout.initWithType(tdlib, type, adapter, themeProvider);
         return new SettingHolder(chartLayout);
       }

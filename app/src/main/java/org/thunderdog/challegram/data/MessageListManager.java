@@ -45,20 +45,30 @@ public class MessageListManager extends ListManager<TdApi.Message> implements Me
     this.filter = filter;
     this.messageThreadId = messageThreadId;
     subscribeToUpdates();
+    loadTotalCount(null);
+    addChangeListener(maxMessageIdListener);
+  }
+
+  @Override
+  protected void loadTotalCount (@Nullable Runnable after) {
     fetchMessageCount(true, count -> {
       if (count != -1) {
         if (getTotalCount() == COUNT_UNKNOWN) {
           setTotalCount(count);
         }
+        if (after != null)
+          after.run();
       } else {
         fetchMessageCount(false, serverCount -> {
           if (serverCount != -1 && getTotalCount() == COUNT_UNKNOWN) {
             setTotalCount(serverCount);
           }
+          if (after != null) {
+            after.run();
+          }
         });
       }
     });
-    addChangeListener(maxMessageIdListener);
   }
 
   public long maxMessageId () {

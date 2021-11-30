@@ -61,6 +61,10 @@ public abstract class ListManager<T> implements Destroyable, Iterable<T> {
     subscribeToUpdates();
   }
 
+  protected void loadTotalCount (@Nullable Runnable after) {
+    // Implement in the child if the count may desync from the list size
+  }
+
   @UiThread
   public final void loadInitialChunk (@Nullable Runnable after) {
     if (items.isEmpty()) {
@@ -96,23 +100,18 @@ public abstract class ListManager<T> implements Destroyable, Iterable<T> {
     tdlib.client().send(nextLoadFunction(reverse, items.size(), count), new Client.ResultHandler() {
       @Override
       public void onResult (TdApi.Object object) {
-        switch (object.getConstructor()) {
-          case TdApi.Error.CONSTRUCTOR: {
-            UI.showError(object);
-            break;
-          }
-          default: {
-            Response<T> data = processResponse(object, this, count, reverse);
-            if (data != null) {
-              runOnUiThread(() -> {
-                processData(data, reverse);
-                if (after != null) {
-                  after.run();
-                }
-              });
+        if (object.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+          UI.showError(object);
+          return;
+        }
+        Response<T> data = processResponse(object, this, count, reverse);
+        if (data != null) {
+          runOnUiThread(() -> {
+            processData(data, reverse);
+            if (after != null) {
+              after.run();
             }
-            break;
-          }
+          });
         }
       }
     });
@@ -156,7 +155,13 @@ public abstract class ListManager<T> implements Destroyable, Iterable<T> {
   }
 
   public final int getTotalCount () {
-    return totalCount;
+    if (totalCount == COUNT_UNKNOWN) {
+      return COUNT_UNKNOWN;
+    }
+    if (reverseEndReached && endReached) {
+      return items.size();
+    }
+    return Math.max(totalCount, items.size());
   }
 
   public final boolean hasReceivedInitialChunk () {
@@ -264,8 +269,11 @@ public abstract class ListManager<T> implements Destroyable, Iterable<T> {
 
   protected final boolean changeTotalCount (int delta) {
     if (this.totalCount != COUNT_UNKNOWN && delta != 0) {
-      if (this.totalCount + delta < 0)
-        throw new IllegalStateException(this.totalCount + " + " + delta);
+      if (this.totalCount + delta < 0) {
+        boolean listAvailable = setTotalCount(items.size());
+        loadTotalCount(null);
+        return listAvailable;
+      }
       return setTotalCount(this.totalCount + delta);
     }
     return false;

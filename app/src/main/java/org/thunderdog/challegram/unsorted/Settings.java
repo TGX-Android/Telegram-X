@@ -150,7 +150,9 @@ public class Settings {
   private static final int VERSION_34 = 34; // scrollToMessageId stack
   private static final int VERSION_35 = 35; // clear known conversions
   private static final int VERSION_36 = 36; // removed TON
-  private static final int VERSION = VERSION_36;
+  private static final int VERSION_37 = 37; // removed weird "wallpaper_" + file.remote.id unused legacy cache
+  private static final int VERSION_38 = 38; // int32 -> int64
+  private static final int VERSION = VERSION_38;
 
   private static final AtomicBoolean hasInstance = new AtomicBoolean(false);
   private static volatile Settings instance;
@@ -341,6 +343,8 @@ public class Settings {
   public static final long SETTING_FLAG_CAMERA_KEEP_DISCARDED_MEDIA = 1 << 11;
   public static final long SETTING_FLAG_CAMERA_SHOW_GRID = 1 << 12;
 
+  public static final long SETTING_FLAG_NO_EMBEDS = 1 << 13;
+
   private static final @Deprecated int DISABLED_FLAG_OTHER_NEED_RAISE_TO_SPEAK = 1 << 2;
   private static final @Deprecated int DISABLED_FLAG_OTHER_AUTODOWNLOAD_IN_BACKGROUND = 1 << 3;
   private static final @Deprecated int DISABLED_FLAG_OTHER_DEFAULT_CRASH_MANAGER = 1 << 5;
@@ -414,6 +418,7 @@ public class Settings {
   public static final long TUTORIAL_HOLD_VIDEO = 1 << 15;
   public static final long TUTORIAL_PROXY_SPONSOR = 1 << 16;
   public static final long TUTORIAL_BRUSH_COLOR_TONE = 1 << 17;
+  public static final long TUTORIAL_QR_SCAN = 1 << 18;
 
   @Nullable
   private Long _tutorialFlags;
@@ -428,6 +433,8 @@ public class Settings {
   public static final int NOTIFICATION_FLAG_INCLUDE_PRIVATE = 1;
   public static final int NOTIFICATION_FLAG_INCLUDE_GROUPS = 1 << 1;
   public static final int NOTIFICATION_FLAG_INCLUDE_CHANNELS = 1 << 2;
+  public static final int NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT = 1 << 3;
+  public static final int NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS = 1 << 4;
   public static final int NOTIFICATION_FLAGS_DEFAULT = NOTIFICATION_FLAG_INCLUDE_PRIVATE;
 
   @Nullable
@@ -436,11 +443,9 @@ public class Settings {
   private static final long DEFAULT_LOG_SIZE = ByteUnit.MIB.toBytes(50);
 
   public class TdlibLogSettings {
-    private final boolean isTon;
     private final String settingsKey, maxSizeKey, verbosityKey;
 
-    public TdlibLogSettings (boolean isTon, String settingsKey, String maxSizeKey, String verbosityKey) {
-      this.isTon = isTon;
+    public TdlibLogSettings (String settingsKey, String maxSizeKey, String verbosityKey) {
       this.settingsKey = settingsKey;
       this.maxSizeKey = maxSizeKey;
       this.verbosityKey = verbosityKey;
@@ -521,27 +526,13 @@ public class Settings {
     }
 
     private boolean setLogTagVerbosityLevel (String module, int verbosityLevel) {
-      if (isTon) {
-        /*TODO TON
-        TonApi.Object result = drinkless.org.ton.Client.execute(new TonApi.SetLogTagVerbosityLevel(module, verbosityLevel));
-        return result instanceof TonApi.Ok;*/
-        return false;
-      } else {
-        TdApi.Object result = Client.execute(new TdApi.SetLogTagVerbosityLevel(module, verbosityLevel));
-        return result instanceof TdApi.Ok;
-      }
+      TdApi.Object result = Client.execute(new TdApi.SetLogTagVerbosityLevel(module, verbosityLevel));
+      return result instanceof TdApi.Ok;
     }
 
     private boolean setLogVerbosityLevel (int globalVerbosityLevel) {
-      if (isTon) {
-        /*TODO TON
-        TonApi.Object result = drinkless.org.ton.Client.execute(new TonApi.SetLogVerbosityLevel(globalVerbosityLevel));
-        return result instanceof TonApi.Ok;*/
-        return false;
-      } else {
-        TdApi.Object result = Client.execute(new TdApi.SetLogVerbosityLevel(globalVerbosityLevel));
-        return result instanceof TdApi.Ok;
-      }
+      TdApi.Object result = Client.execute(new TdApi.SetLogVerbosityLevel(globalVerbosityLevel));
+      return result instanceof TdApi.Ok;
     }
 
     public int getVerbosity (@Nullable String module) {
@@ -607,16 +598,9 @@ public class Settings {
     }
 
     private int queryLogVerbosityLevel (@Nullable String module) {
-      if (isTon) {
-        /*TODO TON
-        TonApi.Object object = drinkless.org.ton.Client.execute(Strings.isEmpty(module) ? new TonApi.GetLogVerbosityLevel() : new TonApi.GetLogTagVerbosityLevel(module));
-        if (object instanceof TonApi.LogVerbosityLevel)
-          return ((TonApi.LogVerbosityLevel) object).verbosityLevel;*/
-      } else {
-        TdApi.Object object = Client.execute(StringUtils.isEmpty(module) ? new TdApi.GetLogVerbosityLevel() : new TdApi.GetLogTagVerbosityLevel(module));
-        if (object instanceof TdApi.LogVerbosityLevel)
-          return ((TdApi.LogVerbosityLevel) object).verbosityLevel;
-      }
+      TdApi.Object object = Client.execute(StringUtils.isEmpty(module) ? new TdApi.GetLogVerbosityLevel() : new TdApi.GetLogTagVerbosityLevel(module));
+      if (object instanceof TdApi.LogVerbosityLevel)
+        return ((TdApi.LogVerbosityLevel) object).verbosityLevel;
       return TDLIB_LOG_VERBOSITY_UNKNOWN;
     }
 
@@ -628,7 +612,7 @@ public class Settings {
         _modules = new HashMap<>();
       for (final LevelDB.Entry entry : pmc.find(verbosityKey)) {
         final String key = entry.key();
-        int verbosityLevel = entry.asInt();
+        int verbosityLevel = Math.max(1, entry.asInt()); // At least error
         if (verbosityKey.length() == key.length()) {
           globalVerbosityLevel = verbosityLevel;
         } else if (key.length() > verbosityKey.length() + 1) {
@@ -646,29 +630,15 @@ public class Settings {
       }
       setLogVerbosityLevel(globalVerbosityLevel);
 
-      if (isTon) {
-        /*TODO TON
-        TonApi.LogStream stream;
-        if (needAndroidLog()) {
-          stream = new TonApi.LogStreamDefault();
-        } else {
-          stream = new TonApi.LogStreamFile(TdlibManager.getLogFilePath(isTon, false), getLogMaxFileSize());
-        }
-        TonApi.Object result = drinkless.org.ton.Client.execute(new TonApi.SetLogStream(stream));
-        if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
-          Tracer.onTonFatalError(TonApi.SetLogStream.class, (TonApi.Error) result, new RuntimeException().getStackTrace());
-        }*/
+      TdApi.LogStream stream;
+      if (needAndroidLog()) {
+        stream = new TdApi.LogStreamDefault();
       } else {
-        TdApi.LogStream stream;
-        if (needAndroidLog()) {
-          stream = new TdApi.LogStreamDefault();
-        } else {
-          stream = new TdApi.LogStreamFile(TdlibManager.getLogFilePath(false), getLogMaxFileSize(), true);
-        }
-        TdApi.Object result = Client.execute(new TdApi.SetLogStream(stream));
-        if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
-          Tracer.onTdlibFatalError(TdlibAccount.NO_ID, TdApi.SetLogStream.class, (TdApi.Error) result, new RuntimeException().getStackTrace());
-        }
+        stream = new TdApi.LogStreamFile(TdlibManager.getLogFilePath(false), getLogMaxFileSize(), true);
+      }
+      TdApi.Object result = Client.execute(new TdApi.SetLogStream(stream));
+      if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+        Tracer.onTdlibFatalError(TdlibAccount.NO_ID, TdApi.SetLogStream.class, (TdApi.Error) result, new RuntimeException().getStackTrace());
       }
     }
   }
@@ -677,8 +647,7 @@ public class Settings {
   private static final int FLAG_TDLIB_OTHER_ENABLE_ANDROID_LOG = 1 << 1;
   public static final int TDLIB_LOG_VERBOSITY_UNKNOWN = -1;
 
-  private TdlibLogSettings
-    tdlibLogSettings = new TdlibLogSettings(false, KEY_TDLIB_OTHER, KEY_TDLIB_LOG_SIZE, KEY_TDLIB_VERBOSITY);
+  private final TdlibLogSettings tdlibLogSettings = new TdlibLogSettings(KEY_TDLIB_OTHER, KEY_TDLIB_LOG_SIZE, KEY_TDLIB_VERBOSITY);
 
   public static final float[] CHAT_FONT_SIZES = {12f, 13f, 14f, 15f, 16f, 18f, 20f, 22f, 24f, 26f};
   public static final float CHAT_FONT_SIZE_DEFAULT = 15f;
@@ -729,11 +698,11 @@ public class Settings {
       throw new IllegalStateException("Unable to create working directory");
     }
     long ms = SystemClock.uptimeMillis();
-    pmc = new LevelDB(new File(pmcDir, "db").getPath(), true);
-    pmc.setErrorHandler(new LevelDB.ErrorHandler() {
+    pmc = new LevelDB(new File(pmcDir, "db").getPath(), true, new LevelDB.ErrorHandler() {
       @Override
-      public void onFatalError (LevelDB levelDB, Throwable error) {
+      public boolean onFatalError (LevelDB levelDB, Throwable error) {
         Tracer.onDatabaseError(error);
+        return true;
       }
 
       @Override
@@ -751,6 +720,7 @@ public class Settings {
     }
     if (pmcVersion > VERSION) {
       Log.e("Downgrading database version: %d -> %d", pmcVersion, VERSION);
+      pmc.putInt(KEY_VERSION, VERSION);
     }
     for (int version = pmcVersion + 1; version <= VERSION; version++) {
       SharedPreferences.Editor editor = pmc.edit();
@@ -1697,6 +1667,110 @@ public class Settings {
           .remove(KEY_TON_VERBOSITY);
         break;
       }
+      case VERSION_37: {
+        final boolean needLog = Log.checkLogLevel(Log.LEVEL_VERBOSE);
+
+        final String[] whitelist = {
+          "name",
+          "type",
+          "custom",
+
+          "blurred",
+          "moving",
+          "intensity",
+
+          "empty",
+          "vector",
+
+          "color",
+          "colors",
+          "fill"
+        };
+        // remove: any other key matching "wallpaper_[a-zA-Z0-9]+"
+        for (final LevelDB.Entry entry : pmc.find("wallpaper_")) {
+          final String suffix = entry.key().substring("wallpaper_".length());
+          if (!StringUtils.isNumeric(suffix) &&
+            suffix.matches("^[a-zA-Z0-9]+$") &&
+            !suffix.startsWith("other") &&
+            !ArrayUtils.contains(whitelist, suffix)
+          ) {
+            if (needLog) {
+              Log.v("Removing rudimentary key: %s", entry.key());
+            }
+            editor.remove(entry.key());
+          }
+        }
+        break;
+      }
+      case VERSION_38: {
+        int accountNum = TdlibManager.readAccountNum();
+        for (int accountId = 0; accountId < accountNum; accountId++) {
+          String[] intToLongKeys = {
+            accountInfoPrefix(accountId) + Settings.KEY_ACCOUNT_INFO_SUFFIX_ID,
+            TdlibSettingsManager.key(TdlibSettingsManager.DEVICE_UID_KEY, accountId)
+          };
+          String[] intToLongArrayKeys = {
+            TdlibSettingsManager.key(TdlibSettingsManager.DEVICE_OTHER_UID_KEY, accountId)
+          };
+          for (String key : intToLongKeys) {
+            long int32 = pmc.getIntOrLong(key, 0);
+            if (int32 != 0) {
+              editor.putLong(key, int32);
+            } else {
+              editor.remove(key);
+            }
+          }
+          for (String key : intToLongArrayKeys) {
+            int[] int32Array = null;
+            try {
+              int32Array = pmc.getIntArray(key);
+            } catch (IllegalStateException ignored) {
+              // Since it's just DEVICE_OTHER_UID_KEY, it's not critical
+            }
+            if (int32Array != null) {
+              long[] int64Array = new long[int32Array.length];
+              for (int i = 0; i < int32Array.length; i++) {
+                int64Array[i] = int32Array[i];
+              }
+              pmc.putLongArray(key, int64Array);
+            } else {
+              editor.remove(key);
+            }
+          }
+        }
+
+        File oldConfigFile = TdlibManager.getAccountConfigFile();
+        File backupFile = new File(oldConfigFile.getParentFile(), oldConfigFile.getName() + ".bak." + TdlibAccount.VERSION_1);
+        if (oldConfigFile.exists() && !backupFile.exists()) {
+          TdlibManager.AccountConfig config = null;
+          try (RandomAccessFile r = new RandomAccessFile(oldConfigFile, TdlibManager.MODE_R)) {
+            config = TdlibManager.readAccountConfig(null, r, TdlibAccount.VERSION_1);
+          } catch (IOException e) {
+            Log.e(e);
+          }
+          if (config != null) {
+            File newConfigFile = new File(oldConfigFile.getParentFile(), oldConfigFile.getName() + ".tmp");
+            try {
+              if (newConfigFile.exists() || newConfigFile.createNewFile()) {
+                try (RandomAccessFile r = new RandomAccessFile(newConfigFile, TdlibManager.MODE_RW)) {
+                  TdlibManager.writeAccountConfigFully(r, config);
+                } catch (IOException e) {
+                  Tracer.onLaunchError(e);
+                  throw new RuntimeException(e);
+                }
+              }
+              if (!oldConfigFile.renameTo(backupFile))
+                throw new RuntimeException("Cannot backup old config");
+              if (!newConfigFile.renameTo(oldConfigFile))
+                throw new RuntimeException("Cannot save new config");
+            } catch (Throwable t) {
+              Tracer.onLaunchError(t);
+              throw new RuntimeException(t);
+            }
+          }
+        }
+        break;
+      }
     }
   }
 
@@ -2292,8 +2366,14 @@ public class Settings {
   }
 
   private int getNotificationFlags () {
-    if (_notificationFlags == null)
-      _notificationFlags = pmc.getInt(KEY_NOTIFICATION_FLAGS, NOTIFICATION_FLAGS_DEFAULT);
+    if (_notificationFlags == null) {
+      int flags = pmc.getInt(KEY_NOTIFICATION_FLAGS, NOTIFICATION_FLAGS_DEFAULT);
+      if (BitwiseUtils.getFlag(flags, NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT) && BitwiseUtils.getFlag(flags, NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS)) {
+        flags = BitwiseUtils.setFlag(flags, NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT, false);
+        flags = BitwiseUtils.setFlag(flags, NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS, false);
+      }
+      _notificationFlags = flags;
+    }
     return _notificationFlags;
   }
 
@@ -2302,7 +2382,15 @@ public class Settings {
   }
 
   public boolean setNotificationFlag (int flag, boolean enabled) {
-    return setNotificationFlags(BitwiseUtils.setFlag(getNotificationFlags(), flag, enabled));
+    int flags = getNotificationFlags();
+    if (enabled) {
+      if (flag == NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT) {
+        flags = BitwiseUtils.setFlag(flags, NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS, false);
+      } else if (flag == NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS) {
+        flags = BitwiseUtils.setFlag(flags, NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT, false);
+      }
+    }
+    return setNotificationFlags(BitwiseUtils.setFlag(flags, flag, enabled));
   }
 
   public boolean resetNotificationFlags () {
@@ -2549,7 +2637,7 @@ public class Settings {
     return result;
   }
 
-  public static final int DEFAULT_VIDEO_LIMIT = 640;
+  public static final int DEFAULT_VIDEO_LIMIT = 854;
   public static final int DEFAULT_FRAME_RATE = 29; // DefaultVideoStrategy.DEFAULT_FRAME_RATE;
 
   public static class VideoSize {
@@ -3309,11 +3397,11 @@ public class Settings {
 
   // Bots
 
-  public boolean allowLocationForBot (int userId) {
+  public boolean allowLocationForBot (long userId) {
     return getBoolean("allow_location_" + userId, false);
   }
 
-  public void setAllowLocationForBot (int userId) {
+  public void setAllowLocationForBot (long userId) {
     putBoolean("allow_location_" + userId, true);
   }
 
@@ -5434,6 +5522,9 @@ public class Settings {
   private static final int UTILITY_FEATURE_INSTANT_TDLIB_RESTART = 1 << 3;
   private static final int UTILITY_FEATURE_NO_NETWORK = 1 << 4;
   private static final int UTILITY_FEATURE_TABS = 1 << 5;
+  private static final int UTILITY_FEATURE_NO_QR_PROCESS = 1 << 6;
+  private static final int UTILITY_FEATURE_QR_ZXING = 1 << 7;
+  private static final int UTILITY_FEATURE_QR_REGION_DEBUG = 1 << 8;
 
   private int getUtilityFeatures () {
     return pmc.getInt(KEY_UTILITY_FEATURES, 0);
@@ -5472,6 +5563,30 @@ public class Settings {
 
   public void setHidePhoneNumber (boolean enabled) {
     toggleUtilityFeature(UTILITY_FEATURE_HIDE_NUMBER, enabled);
+  }
+
+  public boolean needDisableQrProcessing () {
+    return checkUtilityFeature(UTILITY_FEATURE_NO_QR_PROCESS);
+  }
+
+  public void setDisableQrProcessing (boolean enabled) {
+    toggleUtilityFeature(UTILITY_FEATURE_NO_QR_PROCESS, enabled);
+  }
+
+  public boolean needShowQrRegions () {
+    return checkUtilityFeature(UTILITY_FEATURE_QR_REGION_DEBUG);
+  }
+
+  public void setShowQrRegions (boolean enabled) {
+    toggleUtilityFeature(UTILITY_FEATURE_QR_REGION_DEBUG, enabled);
+  }
+
+  public boolean needForceZxingQrProcessing () {
+    return checkUtilityFeature(UTILITY_FEATURE_QR_ZXING);
+  }
+
+  public void setForceZxingQrProcessing (boolean enabled) {
+    toggleUtilityFeature(UTILITY_FEATURE_QR_ZXING, enabled);
   }
 
   public void setForceTcpInCalls (boolean enabled) {

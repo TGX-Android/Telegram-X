@@ -35,7 +35,6 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -60,8 +59,11 @@ import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.ChatListListener;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibChatList;
+import org.thunderdog.challegram.telegram.TdlibChatListSlice;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
@@ -103,6 +105,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.collection.LongList;
+import me.vkryl.core.lambda.Filter;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
 import me.vkryl.td.Td;
@@ -112,7 +115,11 @@ import me.vkryl.td.Td;
  * Author: default
  */
 
-public class ShareController extends TelegramViewController<ShareController.Args> implements FactorAnimator.Target, Runnable, PopupLayout.PopupHeightProvider, Client.ResultHandler, View.OnClickListener, Menu, PopupLayout.TouchSectionProvider, EmojiLayout.Listener, BaseView.ActionListProvider, EmojiToneHelper.Delegate, Keyboard.OnHeightChangeListener {
+public class ShareController extends TelegramViewController<ShareController.Args> implements
+  FactorAnimator.Target, Runnable, PopupLayout.PopupHeightProvider,
+  View.OnClickListener, Menu, PopupLayout.TouchSectionProvider,
+  EmojiLayout.Listener, BaseView.ActionListProvider, EmojiToneHelper.Delegate,
+  ChatListListener, Filter<TdApi.Chat> {
   private static final int MODE_MESSAGES = 0;
   private static final int MODE_TEXT = 1;
   private static final int MODE_GAME = 2;
@@ -140,7 +147,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     private String exportText;
 
     private TdApi.Game game;
-    private int botUserId;
+    private long botUserId;
     private TdApi.Message botMessage;
     private boolean withUserScore;
 
@@ -183,7 +190,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       this.text = text;
     }
 
-    public Args (TdApi.Game game, int botUserId, TdApi.Message message, boolean withUserScore) {
+    public Args (TdApi.Game game, long botUserId, TdApi.Message message, boolean withUserScore) {
       this.mode = MODE_GAME;
       this.game = game;
       this.botUserId = botUserId;
@@ -277,6 +284,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
   private int mode;
   private TdApi.ChatList chatList;
+  private TdlibChatListSlice list;
 
   @Override
   public CharSequence getName () {
@@ -848,10 +856,6 @@ public class ShareController extends TelegramViewController<ShareController.Args
     }
   }
 
-  private boolean isLoading;
-  private boolean canLoadMore;
-  private int startLoadCount;
-
   private DoubleHeaderView headerCell;
 
   @Override
@@ -899,7 +903,50 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   @Override
+  public boolean accept (TdApi.Chat chat) {
+    if (tdlib.chatAvailable(chat)) {
+      Tdlib.RestrictionStatus restrictionStatus = tdlib.getRestrictionStatus(chat, R.id.right_sendMessages);
+      return restrictionStatus == null || !restrictionStatus.isGlobal();
+    }
+    return false;
+  }
+
+  @Override
   protected View onCreateView (Context context) {
+    list = new TdlibChatListSlice(tdlib, chatList, this, true) {
+      @Override
+      protected boolean modifySlice (List<Entry> slice, int currentSize) {
+        int index = 0;
+        for (Entry entry : slice) {
+          if (tdlib.isSelfChat(entry.chat)) {
+            if (currentSize > 0) {
+              slice.remove(index);
+              return true;
+            } else if (index == 0 || ChatPosition.isPinned(entry.chat, chatList)) {
+              return false;
+            } else {
+              slice.remove(index);
+              entry.bringToTop();
+              slice.add(0, entry);
+              return true;
+            }
+          }
+          index++;
+        }
+        if (currentSize == 0) {
+          TdApi.Chat selfChat = tdlib.selfChat();
+          if (selfChat != null && !ChatPosition.isPinned(selfChat, chatList)) {
+            Entry entry = new Entry(selfChat, chatList, ChatPosition.findPosition(selfChat, chatList), true);
+            entry.bringToTop();
+            slice.add(0, entry);
+            return true;
+          }
+          list.bringToTop(tdlib.selfChatId(), () -> new TdApi.CreatePrivateChat(tdlib.myUserId(), false), null);
+        }
+        return false;
+      }
+    };
+
     canShareLink = canShareLink();
 
     headerCell = new DoubleHeaderView(context);
@@ -963,7 +1010,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
-      public void onScrollStateChanged (RecyclerView recyclerView, int newState) {
+      public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
         if (newState == RecyclerView.SCROLL_STATE_IDLE) {
           setAutoScrollFinished(true);
         } else if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
@@ -973,13 +1020,13 @@ public class ShareController extends TelegramViewController<ShareController.Args
       }
 
       @Override
-      public void onScrolled (RecyclerView recyclerView, int dx, int dy) {
+      public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
         checkHeaderPosition();
-        if (canLoadMore && !inSearchMode()) {
+        if (list.canLoad() && !inSearchMode()) {
           GridLayoutManager gridManager = (GridLayoutManager) recyclerView.getLayoutManager();
           int i = gridManager.findLastVisibleItemPosition();
           if (i >= adapter.getItemCount() - gridManager.getSpanCount()) {
-            loadMore();
+            list.loadMore(30, null);
           }
         }
       }
@@ -1175,7 +1222,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       }
 
       @Override
-      public int provideInlineSearchChatUserId (InputView v) {
+      public long provideInlineSearchChatUserId (InputView v) {
         return 0;
       }
 
@@ -1310,18 +1357,81 @@ public class ShareController extends TelegramViewController<ShareController.Args
     }
 
     checkCommentPosition();
-    Keyboard.addHeightChangeListener(this);
-    Keyboard.shouldIgnoreKeyboardPadding = true;
 
     // Load chats
 
     tdlib.client().send(new TdApi.CreatePrivateChat(tdlib.myUserId(), true), tdlib.silentHandler());
-    // FIXME replace Math.max with proper fix. Sometimes startLoadCount
-    startLoadCount = Math.max(20, Screen.calculateLoadingItems(Screen.dp(95f), 1) * calculateSpanCount());
-    isLoading = true;
-    tdlib.getChats(chatList, Long.MAX_VALUE, 0, startLoadCount, this);
+    // FIXME replace Math.max with proper fix.
+    int startLoadCount = Math.max(20, Screen.calculateLoadingItems(Screen.dp(95f), 1) * calculateSpanCount());
+    list.initializeList(this, this::processChats, startLoadCount, this::executeScheduledAnimation);
 
     return wrapView;
+  }
+
+  @Override
+  public void onChatAdded (TdlibChatList chatList, TdApi.Chat chat, int atIndex, Tdlib.ChatChange changeInfo) {
+    runOnUiThreadOptional(() -> {
+      if (displayingChats != null) {
+        TGFoundChat parsedChat = newChat(chat);
+        displayingChats.add(atIndex, parsedChat);
+        adapter.addItem(atIndex, valueOfChat(parsedChat));
+        recyclerView.invalidateItemDecorations();
+      }
+    });
+  }
+
+  @Override
+  public void onChatRemoved (TdlibChatList chatList, TdApi.Chat chat, int fromIndex, Tdlib.ChatChange changeInfo) {
+    runOnUiThreadOptional(() -> {
+      if (displayingChats != null) {
+        displayingChats.remove(fromIndex);
+        adapter.removeItem(fromIndex);
+        recyclerView.invalidateItemDecorations();
+      }
+    });
+  }
+
+  @Override
+  public void onChatMoved (TdlibChatList chatList, TdApi.Chat chat, int fromIndex, int toIndex, Tdlib.ChatChange changeInfo) {
+    runOnUiThreadOptional(() -> {
+      if (displayingChats != null) {
+        TGFoundChat entry = displayingChats.remove(fromIndex);
+        displayingChats.add(toIndex, entry);
+        LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
+        int savedPosition, savedOffset;
+        if (manager != null) {
+          savedPosition = manager.findFirstVisibleItemPosition();
+          View view = manager.findViewByPosition(savedPosition);
+          savedOffset = view != null ? manager.getDecoratedTop(view) : 0;
+        } else {
+          savedPosition = RecyclerView.NO_POSITION;
+          savedOffset = 0;
+        }
+
+        adapter.moveItem(fromIndex, toIndex);
+        recyclerView.invalidateItemDecorations(); // TODO detect only first-non-first row changes
+        if (savedPosition != RecyclerView.NO_POSITION) {
+          manager.scrollToPositionWithOffset(savedPosition, savedOffset);
+        }
+      }
+    });
+  }
+
+  private TGFoundChat newChat (TdApi.Chat rawChat) {
+    TGFoundChat chat = new TGFoundChat(tdlib, chatList, rawChat, false, null);
+    chat.setNoUnread();
+    chat.setNoSubscription();
+    return chat;
+  }
+
+  private void processChats (List<TdlibChatListSlice.Entry> entries) {
+    final List<TGFoundChat> result = new ArrayList<>(entries.size());
+    for (TdlibChatList.Entry entry : entries) {
+      result.add(newChat(entry.chat));
+    }
+    runOnUiThreadOptional(() ->
+      displayChats(result)
+    );
   }
 
   @Override
@@ -1412,6 +1522,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       if (!toggleChecked(view, chat))
         return true;
     }
+
     int i = adapter.indexOfViewByLongId(chat.getAnyId());
     if (i != -1) {
       View itemView = recyclerView.getLayoutManager().findViewByPosition(i);
@@ -1420,15 +1531,14 @@ public class ShareController extends TelegramViewController<ShareController.Args
       } else {
         adapter.notifyItemChanged(i);
       }
-      adapter.moveItem(i, 0);
-    } else {
-      displayingChats.add(0, chat);
-      adapter.addItem(0, valueOfChat(chat));
     }
 
-    needPostponeAutoScroll = true;
-    closeSearchMode(null);
-    needPostponeAutoScroll = false;
+    list.bringToTop(chat.getAnyId(), null, () -> runOnUiThreadOptional(() -> {
+      needPostponeAutoScroll = true;
+      closeSearchMode(null);
+      needPostponeAutoScroll = false;
+    }));
+
     return true;
   }
 
@@ -1762,10 +1872,6 @@ public class ShareController extends TelegramViewController<ShareController.Args
     }
   }
 
-  private float lastFactor;
-  private int startTop;
-  private int lastTop;
-
   private int getTopEdge () {
     return Math.max(0, (int) (headerView.getTranslationY() - HeaderView.getTopOffset()));
   }
@@ -1998,7 +2104,6 @@ public class ShareController extends TelegramViewController<ShareController.Args
   private List<TGFoundChat> displayingChats;
 
   private void displayChats (List<TGFoundChat> chats) {
-    isLoading = false;
     boolean areFirst = displayingChats == null;
     if (areFirst) {
       displayingChats = chats;
@@ -2007,11 +2112,11 @@ public class ShareController extends TelegramViewController<ShareController.Args
       displayingChats.addAll(chats);
     }
 
-    if (!inSearchMode()) {
+    // if (!inSearchMode()) {
       final int startIndex = adapter.getItems().size();
       addCells(chats, adapter.getItems());
       adapter.notifyItemRangeInserted(startIndex, adapter.getItems().size() - startIndex);
-    }
+    // }
 
     if (areFirst) {
       recyclerView.setAdapter(adapter);
@@ -2021,95 +2126,18 @@ public class ShareController extends TelegramViewController<ShareController.Args
     }
   }
 
-  private void addCells (List<TGFoundChat> chats, List<ListItem> out) {
-    if (chats.isEmpty()) {
+  private void addCells (List<TGFoundChat> entries, List<ListItem> out) {
+    if (entries.isEmpty()) {
       return;
     }
-    ArrayUtils.ensureCapacity(out, out.size() + chats.size());
-    for (TGFoundChat chat : chats) {
-      out.add(valueOfChat(chat));
+    ArrayUtils.ensureCapacity(out, out.size() + entries.size());
+    for (TGFoundChat entry : entries) {
+      out.add(valueOfChat(entry));
     }
   }
 
   private static ListItem valueOfChat (TGFoundChat chat) {
     return new ListItem(ListItem.TYPE_CHAT_VERTICAL_FULLWIDTH, R.id.chat).setData(chat).setLongId(chat.getAnyId());
-  }
-
-  private int getDisplayingChatCount () {
-    return displayingChats != null ? displayingChats.size() : 0;
-  }
-
-  private static final int LOAD_COUNT = 30;
-  private long nextChatOrder, nextChatId;
-
-  private void loadMore () {
-    if (!isLoading) {
-      TGFoundChat chat = displayingChats.get(displayingChats.size() - 1);
-      if (chat.getChat() != null) {
-        isLoading = true;
-        tdlib.getChats(chatList, nextChatOrder, nextChatId, LOAD_COUNT, this);
-      }
-    }
-  }
-
-  @Override
-  public void onResult (TdApi.Object object) {
-    switch (object.getConstructor()) {
-      case TdApi.Chats.CONSTRUCTOR: {
-        final TdApi.Chats chats = (TdApi.Chats) object;
-        final List<TdApi.Chat> rawChats = tdlib.chats(chats.chatIds);
-        final List<TGFoundChat> foundChats = new ArrayList<>(chats.chatIds.length);
-        TdApi.Chat selfChat = null;
-        boolean needSelfChat = displayingChats == null;
-        for (TdApi.Chat rawChat : rawChats) {
-          if (!tdlib.chatAvailable(rawChat))
-            continue;
-          Tdlib.RestrictionStatus restrictionStatus = tdlib.getRestrictionStatus(rawChat, R.id.right_sendMessages);
-          if (restrictionStatus == null || !restrictionStatus.isGlobal()) {
-            if (tdlib.isSelfChat(rawChat.id)) {
-              selfChat = rawChat;
-              if (ChatPosition.isPinned(rawChat)) {
-                needSelfChat = false;
-              } else {
-                continue;
-              }
-            }
-            TGFoundChat chat = new TGFoundChat(tdlib, chatList, rawChat, false, null);
-            chat.setNoUnread();
-            chat.setNoSubscription();
-            foundChats.add(chat);
-          }
-        }
-        if (needSelfChat) {
-          TGFoundChat chat;
-          if (selfChat != null) {
-            chat = new TGFoundChat(tdlib, chatList, selfChat, false, null);
-          } else {
-            chat = new TGFoundChat(tdlib);
-          }
-          chat.setNoUnread();
-          chat.setNoSubscription();
-          foundChats.add(0, chat);
-        }
-        tdlib.ui().post(() -> {
-          displayChats(foundChats);
-          canLoadMore = chats.chatIds.length > 0;
-          if (canLoadMore) {
-            TdApi.Chat lastChat = rawChats.get(rawChats.size() - 1);
-            nextChatOrder = ChatPosition.getOrder(lastChat);
-            nextChatId = lastChat.id;
-            if (getDisplayingChatCount() < startLoadCount) {
-              loadMore();
-            }
-          }
-        });
-        break;
-      }
-      case TdApi.Error.CONSTRUCTOR: {
-        UI.showError(object);
-        break;
-      }
-    }
   }
 
   // Button
@@ -2369,11 +2397,6 @@ public class ShareController extends TelegramViewController<ShareController.Args
       }
       okButton.setVisibility(isHidden ? View.VISIBLE : View.INVISIBLE);
     }
-  }
-
-  @Override
-  public void onKeyboardHeightChanged (int newSize) {
-    Views.setBottomMargin(bottomWrap, newSize);
   }
 
   @Override
@@ -2867,7 +2890,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
       final TdApi.Chat chat = tdlib.chat(selectedChatIds.get(i));
       if (chat == null) {
-        int myUserId = tdlib.myUserId();
+        long myUserId = tdlib.myUserId();
         if (chatId != myUserId) {
           throw new RuntimeException("Unknown chatId:" + chatId);
         }
@@ -3084,8 +3107,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   @Override
   public void destroy () {
     super.destroy();
-    Keyboard.removeHeightChangeListener(this);
-    Keyboard.shouldIgnoreKeyboardPadding = false;
+    list.unsubscribeFromUpdates(this);
     Views.destroyRecyclerView(recyclerView);
     TGLegacyManager.instance().removeEmojiListener(adapter);
     cancelDownloadingFiles();

@@ -19,6 +19,8 @@ import android.graphics.Shader;
 import android.os.Build;
 import android.view.View;
 
+import androidx.annotation.FloatRange;
+
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
@@ -38,7 +40,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
   private static ImageHandler handler;
 
   private ImageFile file, cachedFile;
-  private WatcherReference reference;
+  private final WatcherReference reference;
 
   private View view;
   private Bitmap bitmap;
@@ -49,13 +51,13 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
 
   private int left, top, right, bottom;
 
-  private Rect drawRegion;
-  private Rect bitmapRect;
+  private final Rect drawRegion, bitmapRect;
 
   private final Paint bitmapPaint;
   private Matrix bitmapMatrix;
 
   private Paint roundPaint; // rounded corners
+  private Paint repeatPaint; // repeat mode
   private BitmapShader bitmapShader;
   private RectF roundRect;
   private RectF bitmapRectF;
@@ -199,7 +201,13 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     if (!this.hasColorFilter || this.colorFilter != colorFilter) {
       this.hasColorFilter = true;
       this.colorFilter = colorFilter;
-      this.bitmapPaint.setColorFilter(new PorterDuffColorFilter(colorFilter, PorterDuff.Mode.SRC_IN));
+
+      PorterDuffColorFilter duffColorFilter = new PorterDuffColorFilter(colorFilter, PorterDuff.Mode.SRC_IN);
+      this.bitmapPaint.setColorFilter(duffColorFilter);
+      if (repeatPaint != null) {
+        this.repeatPaint.setColorFilter(duffColorFilter);
+      }
+
       invalidate();
     }
   }
@@ -209,6 +217,9 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     if (this.hasColorFilter) {
       this.hasColorFilter = false;
       this.bitmapPaint.setColorFilter(null);
+      if (repeatPaint != null) {
+        this.repeatPaint.setColorFilter(null);
+      }
       invalidate();
     }
   }
@@ -225,8 +236,11 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
         this.alpha = 0f;
       }
       if (savedAlpha == 0) {
-        if (radius != 0) {
+        if (roundPaint != null) {
           roundPaint.setAlpha((int) (255f * alpha));
+        }
+        if (repeatPaint != null) {
+          repeatPaint.setAlpha((int) (255f * alpha));
         }
         bitmapPaint.setAlpha((int) (255f * alpha));
       }
@@ -253,6 +267,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
 
       if (roundPaint == null) {
         roundPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
+        roundPaint.setAlpha(bitmapPaint.getAlpha());
         shaderMatrix = new Matrix();
         bitmapRectF = new RectF();
         roundRect = new RectF();
@@ -348,7 +363,12 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
           int resultHeight = (int) (bitmapRect.height() * ratio);
           float cx = roundRect.centerX();
           float cy = roundRect.centerY();
-          roundRect.set(cx - resultWidth / 2, cy - resultHeight / 2, cx + resultWidth / 2, cy + resultHeight / 2);
+          roundRect.set(
+            cx - resultWidth / 2f,
+            cy - resultHeight / 2f,
+            cx + resultWidth / 2f,
+           cy + resultHeight / 2f
+          );
         }
       }
       shaderMatrix.setRectToRect(bitmapRectF, roundRect, Matrix.ScaleToFit.FILL);
@@ -433,11 +453,11 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
         float dx, dy;
 
         if (rotated) {
-          dx = (viewWidth - futureHeight) / 2;
-          dy = (viewHeight - futureWidth) / 2;
+          dx = (viewWidth - futureHeight) / 2f;
+          dy = (viewHeight - futureWidth) / 2f;
         } else {
-          dx = (viewWidth - futureWidth) / 2;
-          dy = (viewHeight - futureHeight) / 2;
+          dx = (viewWidth - futureWidth) / 2f;
+          dy = (viewHeight - futureHeight) / 2f;
         }
 
         matrix.setScale(scale, scale);
@@ -584,12 +604,15 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     return bottom - top;
   }
 
-  public void setAlpha (float alpha) {
+  public void setAlpha (@FloatRange(from = 0.0, to = 1.0) float alpha) {
     if (ANIMATION_ENABLED && !animationDisabled && this.alpha != alpha) {
       this.alpha = alpha;
       if (savedAlpha == 0) {
-        if (radius != 0) {
+        if (roundPaint != null) {
           roundPaint.setAlpha((int) (255f * alpha));
+        }
+        if (repeatPaint != null) {
+          repeatPaint.setAlpha((int) (255f * alpha));
         }
         bitmapPaint.setAlpha((int) (255f * alpha));
       }
@@ -611,8 +634,11 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
         animator.cancel();
       }
       this.alpha = alpha;
-      if (radius != 0) {
+      if (roundPaint != null) {
         roundPaint.setAlpha((int) (255f * alpha));
+      }
+      if (repeatPaint != null) {
+        repeatPaint.setAlpha((int) (255f * alpha));
       }
       bitmapPaint.setAlpha((int) (255f * alpha));
     }
@@ -710,6 +736,9 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
         if (roundPaint != null) {
           roundPaint.setShader(null);
         }
+        if (repeatPaint != null) {
+          repeatPaint.setShader(null);
+        }
       }
     }
     if (U.isValidBitmap(bitmap)) {
@@ -720,7 +749,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
   }
 
   // returns @boolean invalidated
-  
+
   private static boolean sameFiles (ImageFile file1, ImageFile file2) {
     return (file1 == file2) || ((file1 != null ? file1.getType() : 0) == (file2 != null ? file2.getType() : 0) && StringUtils.equalsOrBothEmpty(file1 != null ? file1.toString() : null, file2 != null ? file2.toString() : null));
   }
@@ -808,6 +837,21 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
           layoutRound();
         } else {
           layoutRound();
+          bitmapChanged = true;
+        }
+      } else if (file.getScaleType() == ImageFile.CENTER_REPEAT) {
+        if (bitmapChanged) {
+          if (repeatPaint == null) {
+            repeatPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
+            repeatPaint.setAlpha(bitmapPaint.getAlpha());
+            repeatPaint.setColorFilter(bitmapPaint.getColorFilter());
+          }
+
+          bitmapShader = new BitmapShader(bitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+          repeatPaint.setShader(bitmapShader);
+          layoutRect();
+        } else {
+          layoutRect();
           bitmapChanged = true;
         }
       } else {
@@ -1006,23 +1050,27 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
 
   @Override
   public float getPaintAlpha () {
-    return (float) (roundPaint != null ? roundPaint.getAlpha() : bitmapPaint.getAlpha()) / 255f;
+    return (float) (repeatPaint != null ? repeatPaint.getAlpha() : roundPaint != null ? roundPaint.getAlpha() : bitmapPaint.getAlpha()) / 255f;
   }
 
   @Override
   public void setPaintAlpha (float factor) {
-    savedAlpha = Color.rgb(roundPaint != null ? roundPaint.getAlpha() : 0, bitmapPaint.getAlpha(), 0);
+    savedAlpha = Color.rgb(repeatPaint != null ? repeatPaint.getAlpha() : 0, roundPaint != null ? roundPaint.getAlpha() : 0, bitmapPaint.getAlpha());
     final int alpha = (int) (255f * MathUtils.clamp(factor));
     if (roundPaint != null)
       roundPaint.setAlpha(alpha);
+    if (repeatPaint != null)
+      repeatPaint.setAlpha(alpha);
     bitmapPaint.setAlpha(alpha);
   }
 
   @Override
   public void restorePaintAlpha () {
+    if (repeatPaint != null)
+      repeatPaint.setAlpha(Color.red(savedAlpha));
     if (roundPaint != null)
-      roundPaint.setAlpha(Color.red(savedAlpha));
-    bitmapPaint.setAlpha(Color.green(savedAlpha));
+      roundPaint.setAlpha(Color.green(savedAlpha));
+    bitmapPaint.setAlpha(Color.blue(savedAlpha));
     savedAlpha = 0;
   }
 
@@ -1062,7 +1110,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
           int centerX = (left + right) / 2;
           int centerY = (top + bottom) / 2;
 
-          return x >= centerX - sourceWidth / 2 && x <= centerX + sourceWidth / 2 && y >= centerY - sourceHeight / 2 && y <= centerY + sourceHeight / 2;
+          return x >= centerX - sourceWidth / 2f && x <= centerX + sourceWidth / 2f && y >= centerY - sourceHeight / 2f && y <= centerY + sourceHeight / 2f;
         }
         case ImageFile.CENTER_CROP:
         default: {
@@ -1080,12 +1128,16 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
       if (radius != 0) {
         if (rotation != 0) {
           c.save();
-          c.rotate(rotation, left + (right - left) / 2, top + (bottom - top) / 2);
+          c.rotate(rotation, left + (right - left) / 2f, top + (bottom - top) / 2f);
         }
         drawRoundRect(c, roundRect, radius, radius, roundPaint);
         if (rotation != 0) {
           c.restore();
         }
+      } else if (file.getScaleType() == ImageFile.CENTER_REPEAT) {
+        c.save();
+        c.drawRect(left, top, right, bottom, repeatPaint);
+        c.restore();
       } else {
         PaintState paintState = file.getPaintState();
         float scaleType = file.getScaleType();
@@ -1104,7 +1156,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
             c.translate(left, top);
           }
           if (rotation != 0) {
-            c.rotate(rotation, (right - left) / 2, (bottom - top) / 2);
+            c.rotate(rotation, (right - left) / 2f, (bottom - top) / 2f);
           }
 
           if (hasCrop) {

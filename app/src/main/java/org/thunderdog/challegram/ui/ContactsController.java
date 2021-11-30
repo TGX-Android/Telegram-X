@@ -150,7 +150,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
           pickedChats = new ArrayList<>(chatIds != null ? chatIds.length : 10);
           if (chatIds != null) {
             for (long chatId : chatIds) {
-              int userId = ChatId.toUserId(chatId);
+              long userId = ChatId.toUserId(chatId);
               if (userId != 0) {
                 TdApi.User user = tdlib.cache().user(userId);
                 if (user != null) {
@@ -427,7 +427,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
       }
       case MODE_NEW_SECRET_CHAT: {
         hideSoftwareKeyboard();
-        tdlib.ui().startSecretChat(this, u.getId(), false, null);
+        tdlib.ui().startSecretChat(this, u.getUserId(), false, null);
         break;
       }
       case MODE_NEW_CHAT:
@@ -440,9 +440,9 @@ public class ContactsController extends TelegramViewController<ContactsControlle
             navigateBack();
           }
         } else if (mode == MODE_CALL) {
-          tdlib.context().calls().makeCall(this, u.getId(), null);
+          tdlib.context().calls().makeCall(this, u.getUserId(), null);
         } else {
-          tdlib.ui().openPrivateChat(this, u.getId(), null);
+          tdlib.ui().openPrivateChat(this, u.getUserId(), null);
         }
         break;
       }
@@ -503,7 +503,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
     }
     if (canSelectContacts()) {
       long chatId = chat.getAnyId();
-      int userId = chat.getUserId();
+      long userId = chat.getUserId();
       TGUser user = userId != 0 ? new TGUser(tdlib, tdlib.cache().userStrict(userId)) : new TGUser(tdlib, tdlib.chatStrict(chatId));
       if (isSelected(user) || selectUser(user, null)) {
         headerCell.getSearchInput().setText("");
@@ -598,9 +598,9 @@ public class ContactsController extends TelegramViewController<ContactsControlle
     setStackLocked(true);
     creatingChat = true;
 
-    int[] userIds = new int[size];
+    long[] userIds = new long[size];
     for (int i = 0; i < size; i++) {
-      userIds[i] = pickedChats.get(i).getId();
+      userIds[i] = pickedChats.get(i).getUserId();
     }
 
     tdlib.client().send(new TdApi.AddChatMembers(chat.id, userIds), object -> {
@@ -682,7 +682,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
     }
     int viewIndex = -1;
     if (v == null) {
-      viewIndex = adapter.indexOfUser(u.getId());
+      viewIndex = adapter.indexOfUser(u.getUserId());
       if (viewIndex != -1) {
         v = (UserView) recyclerView.getLayoutManager().findViewByPosition(viewIndex);
         if (v == null)
@@ -1048,7 +1048,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
     }
   }
 
-  private void updateUserStatus (int userId, TdApi.UserStatus status) {
+  private void updateUserStatus (long userId, TdApi.UserStatus status) {
     if (adapter != null) {
       int i = adapter.indexOfUser(userId);
       if (i != -1) {
@@ -1099,13 +1099,13 @@ public class ContactsController extends TelegramViewController<ContactsControlle
       this.controller = controller;
     }
 
-    public int indexOfUser (int userId) {
+    public int indexOfUser (long userId) {
       if (users == null || users.length == 0) {
         return -1;
       }
       int i = 0;
       for (TGUser user : users) {
-        if (user.getId() == userId) {
+        if (user.getUserId() == userId) {
           return i;
         }
         i++;
@@ -1236,7 +1236,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
         tdlib.searchContacts(null, DISPLAY_LIMIT, object -> {
           switch (object.getConstructor()) {
             case TdApi.Users.CONSTRUCTOR: {
-              int[] userIds = ((TdApi.Users) object).userIds;
+              long[] userIds = ((TdApi.Users) object).userIds;
               ArrayList<TdApi.User> rawUsers = tdlib.cache().users(userIds);
               Collections.sort(rawUsers, this);
 
@@ -1315,16 +1315,13 @@ public class ContactsController extends TelegramViewController<ContactsControlle
   }
 
   @Override
-  public void onUserFullUpdated (int userId, TdApi.UserFullInfo userFull) { }
-
-  @Override
   public boolean needUserStatusUiUpdates () {
     return true;
   }
 
   @UiThread
   @Override
-  public void onUserStatusChanged (final int userId, final TdApi.UserStatus status, boolean uiOnly) {
+  public void onUserStatusChanged (final long userId, final TdApi.UserStatus status, boolean uiOnly) {
     updateUserStatus(userId, status);
   }
 

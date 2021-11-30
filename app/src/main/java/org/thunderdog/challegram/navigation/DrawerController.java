@@ -36,10 +36,12 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.GlobalAccountListener;
 import org.thunderdog.challegram.telegram.GlobalCountersListener;
+import org.thunderdog.challegram.telegram.SessionListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibBadgeCounter;
 import org.thunderdog.challegram.telegram.TdlibManager;
+import org.thunderdog.challegram.telegram.TdlibOptionListener;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
@@ -77,7 +79,7 @@ import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.td.ChatId;
 
-public class DrawerController extends ViewController<Void> implements View.OnClickListener, Settings.ProxyChangeListener, GlobalAccountListener, GlobalCountersListener, BaseView.CustomControllerProvider, BaseView.ActionListProvider, View.OnLongClickListener, TdlibSettingsManager.NotificationProblemListener {
+public class DrawerController extends ViewController<Void> implements View.OnClickListener, Settings.ProxyChangeListener, GlobalAccountListener, GlobalCountersListener, BaseView.CustomControllerProvider, BaseView.ActionListProvider, View.OnLongClickListener, TdlibSettingsManager.NotificationProblemListener, TdlibOptionListener, SessionListener {
   private int currentWidth, shadowWidth;
 
   private boolean isVisible;
@@ -104,13 +106,23 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   private RecyclerView recyclerView;
   private ItemTouchHelper touchHelper;
 
-  private ListItem proxyItem = new ListItem(ListItem.TYPE_DRAWER_ITEM_WITH_RADIO_SEPARATED, R.id.btn_proxy, R.drawable.baseline_security_24, R.string.Proxy);
+  private final ListItem proxyItem = new ListItem(ListItem.TYPE_DRAWER_ITEM_WITH_RADIO_SEPARATED, R.id.btn_proxy, R.drawable.baseline_security_24, R.string.Proxy);
 
   private boolean proxyAvailable;
-  private boolean hasSettingsError;
+  private int settingsErrorIcon;
+  private Tdlib.SessionsInfo sessionsInfo; // TODO move to BaseActivity
 
-  private boolean hasSettingsError () {
-    return context.hasSettingsError();
+  private int getSettingsErrorIcon () {
+    int errorIcon = context.getSettingsErrorIcon();
+    boolean haveIncompleteLoginAttempts = sessionsInfo != null && sessionsInfo.incompleteLoginAttempts.length > 0;
+    if (errorIcon != 0 && haveIncompleteLoginAttempts) {
+      return Tdlib.CHAT_FAILED;
+    } else if (errorIcon != 0) {
+      return errorIcon;
+    } else if (haveIncompleteLoginAttempts) {
+      return Tdlib.CHAT_FAILED; // TODO find a good matching icon
+    }
+    return 0;
   }
 
   private Tdlib lastTdlib;
@@ -118,10 +130,41 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   public void onCurrentTdlibChanged (Tdlib tdlib) {
     if (lastTdlib != null) {
       lastTdlib.settings().removeNotificationProblemAvailabilityChangeListener(this);
+      lastTdlib.listeners().removeOptionListener(this);
+      lastTdlib.listeners().unsubscribeFromSessionUpdates(this);
     }
     this.lastTdlib = tdlib;
+    this.sessionsInfo = null;
     tdlib.settings().addNotificationProblemAvailabilityChangeListener(this);
+    tdlib.listeners().addOptionsListener(this);
+    tdlib.listeners().subscribeToSessionUpdates(this);
     checkSettingsError();
+    fetchSessions();
+  }
+
+  private void fetchSessions () {
+    Tdlib tdlib = lastTdlib;
+    if (tdlib != null) {
+      tdlib.getSessions(true, sessionsInfo -> {
+        if (sessionsInfo != null && this.sessionsInfo != sessionsInfo) {
+          runOnUiThreadOptional(() -> {
+            if (this.lastTdlib == tdlib) {
+              this.sessionsInfo = sessionsInfo;
+              checkSettingsError();
+            }
+          });
+        }
+      });
+    }
+  }
+
+  @Override
+  public void onSessionListChanged (Tdlib tdlib, boolean isWeakGuess) {
+    runOnUiThreadOptional(() -> {
+      if (lastTdlib == tdlib) {
+        fetchSessions();
+      }
+    });
   }
 
   @Override
@@ -133,10 +176,19 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     });
   }
 
-  private void checkSettingsError () {
-    boolean hasError = hasSettingsError();
-    if (this.hasSettingsError != hasError) {
-      this.hasSettingsError = hasError;
+  @Override
+  public void onSuggestedActionsChanged (TdApi.SuggestedAction[] addedActions, TdApi.SuggestedAction[] removedActions) {
+    context.currentTdlib().ui().post(() -> {
+      if (!isDestroyed()) {
+        checkSettingsError();
+      }
+    });
+  }
+
+  public void checkSettingsError () {
+    int settingsErrorIcon = getSettingsErrorIcon();
+    if (this.settingsErrorIcon != settingsErrorIcon) {
+      this.settingsErrorIcon = settingsErrorIcon;
       if (adapter != null) {
         int i = adapter.indexOfViewById(R.id.btn_settings);
         if (i != -1) {
@@ -193,7 +245,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
 
     items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_contacts, R.drawable.baseline_perm_contact_calendar_24, R.string.Contacts));
     items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_savedMessages, R.drawable.baseline_bookmark_24, R.string.SavedMessages));
-    this.hasSettingsError = hasSettingsError();
+    this.settingsErrorIcon = getSettingsErrorIcon();
     items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_settings, R.drawable.baseline_settings_24, R.string.Settings));
     items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_invite, R.drawable.baseline_person_add_24, R.string.InviteFriends));
 
@@ -234,8 +286,12 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
             view.setPreviewActionListProvider(DrawerController.this);
             break;
           }
+          case R.id.btn_settings: {
+            view.setError(settingsErrorIcon != 0, settingsErrorIcon != Tdlib.CHAT_FAILED ? settingsErrorIcon : 0, isUpdate);
+            break;
+          }
           default: {
-            view.setError(item.getId() == R.id.btn_settings && hasSettingsError, isUpdate);
+            view.setError(false, 0, isUpdate);
             break;
           }
         }
@@ -578,7 +634,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
 
   private void openSavedMessages () {
     final Tdlib tdlib = context.currentTdlib();
-    final int userId = tdlib.myUserId();
+    final long userId = tdlib.myUserId();
     if (userId == 0) {
       return;
     }

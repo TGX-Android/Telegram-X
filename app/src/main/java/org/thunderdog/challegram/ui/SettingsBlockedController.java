@@ -289,7 +289,7 @@ public class SettingsBlockedController extends RecyclerViewController<SettingsPr
     List<ListItem> out = adapter.getItems();
     ArrayUtils.ensureCapacity(out, out.size() + newSenders.size());
     for (TGUser user : newSenders) {
-      out.add(new ListItem(ListItem.TYPE_USER, R.id.user, 0, 0).setLongId(user.getId()));
+      out.add(new ListItem(ListItem.TYPE_USER, R.id.user, 0, 0).setLongId(user.getUserId()));
     }
     adapter.notifyItemRangeInserted(startIndex, newSenders.size());
   }
@@ -299,7 +299,7 @@ public class SettingsBlockedController extends RecyclerViewController<SettingsPr
     tdlib.ui().post(() -> {
       if (!isDestroyed() && senders != null && !senders.isEmpty()) {
         for (TGUser parsedSender : senders) {
-          if (parsedSender.getId() == user.id) {
+          if (parsedSender.getUserId() == user.id) {
             parsedSender.setUser(user, 0);
             adapter.updateUserViewByLongId(ChatId.fromUserId(user.id), false);
             break;
@@ -362,7 +362,7 @@ public class SettingsBlockedController extends RecyclerViewController<SettingsPr
       if (!isDestroyed() && senders != null) {
         int index = indexOfSender(chatId);
         if (isBlocked && index == -1) {
-          int userId = tdlib.chatUserId(chatId);
+          long userId = tdlib.chatUserId(chatId);
           if (userId != 0) {
             addSender(new TdApi.MessageSenderUser(userId));
           } else {
@@ -381,7 +381,7 @@ public class SettingsBlockedController extends RecyclerViewController<SettingsPr
   }
 
   @Override
-  public void onUserStatusChanged (final int userId, TdApi.UserStatus status, boolean uiOnly) {
+  public void onUserStatusChanged (final long userId, TdApi.UserStatus status, boolean uiOnly) {
     if (!isDestroyed() && senders != null) {
       adapter.updateUserViewByLongId(ChatId.fromUserId(userId), true);
     }
@@ -393,7 +393,7 @@ public class SettingsBlockedController extends RecyclerViewController<SettingsPr
       case R.id.user: {
         TGUser user = ((UserView) v).getUser();
         if (user != null) {
-          tdlib.ui().openPrivateChat(this, user.getId(), new TdlibUi.ChatOpenParameters().keepStack());
+          tdlib.ui().openPrivateChat(this, user.getUserId(), new TdlibUi.ChatOpenParameters().keepStack());
         }
         break;
       }

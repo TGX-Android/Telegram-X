@@ -423,7 +423,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   @Override
-  public int provideInlineSearchChatUserId (InputView v) {
+  public long provideInlineSearchChatUserId (InputView v) {
     TdApi.Chat chat = tdlib.chat(provideInlineSearchChatId(v));
     return chat != null ? TD.getUserId(chat) : 0;
   }
@@ -967,6 +967,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private void setCommonFactor (float factor) {
     if (this.commonFactor != factor) {
+      if (Float.isNaN(factor))
+        throw new IllegalArgumentException();
       this.commonFactor = factor;
       updatePhotoRevealFactor();
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && path != null && currentThumb != null && commonFactor > 0f && commonFactor < 1f) {
@@ -1564,7 +1566,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       case R.id.btn_saveGif: {
         TdApi.File file = item.getTargetFile();
         if (file != null) {
-          tdlib.saveGif(file.id);
+          tdlib.ui().saveGif(file.id);
         }
         break;
       }
@@ -1604,7 +1606,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           CharSequence caption = null, exportCaption = null;
           switch (mode) {
             case MODE_PROFILE: {
-              int userId = Td.getSenderUserId(stack.getCurrent().getSourceSender());
+              long userId = Td.getSenderUserId(stack.getCurrent().getSourceSender());
               String userName = tdlib.cache().userName(userId);
               if (!StringUtils.isEmpty(userName)) {
                 exportCaption = Lang.getString(R.string.ShareTextProfile, userName);
@@ -1951,7 +1953,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         break;
       }
       case MODE_PROFILE: {
-        int userId = Td.getSenderUserId(stack.getCurrent().getSourceSender());
+        long userId = Td.getSenderUserId(stack.getCurrent().getSourceSender());
         if (!loadedInitialChunk || (edgeReached && isEnd) || stack.getCurrentIndex() <= stack.getCurrentSize() - LOAD_THRESHOLD) {
           isLoading = true;
           tdlib.client().send(new TdApi.GetUserProfilePhotos(userId, loadedInitialChunk ? stack.getCurrentSize() : 0, LOAD_COUNT_PROFILE), this);
@@ -1978,7 +1980,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       }
     }
 
-    int sourceUserId = Td.getSenderUserId(stack.getCurrent().getSourceSender());
+    long sourceUserId = Td.getSenderUserId(stack.getCurrent().getSourceSender());
     ArrayList<MediaItem> items = new ArrayList<>(photos.photos.length);
     for (TdApi.ChatPhoto photo : photos.photos) {
       if (skipCount > 0) {
@@ -2299,6 +2301,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private void setPipFactor (float factor, float fraction) {
     if (this.pipFactor != factor) {
+      if (Float.isNaN(factor))
+        throw new IllegalArgumentException();
+
       this.pipFactor = factor;
 
       updatePipLayout(mediaView.getMeasuredWidth(), mediaView.getMeasuredHeight(), false, false);
@@ -3077,6 +3082,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     lastSlideSourceX = sourceX;
 
     float dismissFactor = Math.abs(Math.min(1f, y / (float) Screen.dp(125f)));
+    if (Float.isNaN(dismissFactor)) // TODO: find out why it could become NaN
+      dismissFactor = 0f;
     if (noRotation || dismissFactor > this.dismissFactor || byTouch) {
       setSlideDismissFactor(dismissFactor);
     }

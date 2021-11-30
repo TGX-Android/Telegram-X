@@ -5,11 +5,10 @@ import android.view.TextureView;
 
 import androidx.annotation.Nullable;
 
+import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.source.ClippingMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
-import com.google.android.exoplayer2.video.VideoListener;
 
 import org.thunderdog.challegram.U;
 
@@ -23,13 +22,13 @@ import me.vkryl.core.lambda.Destroyable;
  * Author: default
  */
 
-public class SimpleVideoPlayer extends TextureView implements Destroyable, Player.EventListener, VideoListener {
+public class SimpleVideoPlayer extends TextureView implements Destroyable, Player.Listener {
   public interface Delegate {
     void onVideoRenderStateChanged (boolean hasFrame);
     void onVideoMuteStateChanged (boolean isMuted);
   }
 
-  private @Nullable SimpleExoPlayer player;
+  private @Nullable ExoPlayer player;
   private Delegate delegate;
 
   public SimpleVideoPlayer (Context context) {
@@ -65,7 +64,6 @@ public class SimpleVideoPlayer extends TextureView implements Destroyable, Playe
     if (player == null) {
       player = U.newExoPlayer(getContext(), true);
       player.addListener(this);
-      player.addVideoListener(this);
       player.setVideoTextureView(this);
       updateSettings();
     }
@@ -215,13 +213,14 @@ public class SimpleVideoPlayer extends TextureView implements Destroyable, Playe
   private long videoDuration;
 
   @Override
-  public void onPlayerStateChanged (boolean playWhenReady, int state) {
-    switch (state) {
-      case Player.STATE_READY:
+  public void onPlaybackStateChanged (@Player.State int playbackState) {
+    switch (playbackState) {
+      case Player.STATE_READY: {
         if (videoDuration == 0 && !(mediaSource instanceof ClippingMediaSource)) {
           this.videoDuration = player != null ? player.getDuration() : 0;
         }
         break;
+      }
       case Player.STATE_ENDED: {
         if (isLooping && player != null) {
           player.seekTo(0);

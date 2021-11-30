@@ -18,6 +18,7 @@ import org.thunderdog.challegram.MainActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.base.SettingView;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
@@ -34,6 +35,7 @@ import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.ui.camera.CameraController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Test;
 import org.thunderdog.challegram.util.StringList;
@@ -51,6 +53,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.unit.ByteUnit;
+import me.vkryl.td.ChatPosition;
 
 /**
  * Date: 06/03/2017
@@ -387,6 +390,18 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
             view.getToggler().setRadioEnabled(Settings.instance().needHidePhoneNumber(), isUpdate);
             break;
           }
+          case R.id.btn_secret_disableQrProcess: {
+            view.getToggler().setRadioEnabled(Settings.instance().needDisableQrProcessing(), isUpdate);
+            break;
+          }
+          case R.id.btn_secret_forceQrZxing: {
+            view.getToggler().setRadioEnabled(Settings.instance().needForceZxingQrProcessing(), isUpdate);
+            break;
+          }
+          case R.id.btn_secret_debugQrRegions: {
+            view.getToggler().setRadioEnabled(Settings.instance().needShowQrRegions(), isUpdate);
+            break;
+          }
           case R.id.btn_secret_disableNetwork: {
             view.getToggler().setRadioEnabled(Settings.instance().forceDisableNetwork(), isUpdate);
             break;
@@ -627,7 +642,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_secret_dropSavedScrollPositions, 0, "Drop saved scroll positions", false));
 
-        if (testerLevel >= Tdlib.TESTER_LEVEL_CREATOR) {
+        if (testerLevel >= Tdlib.TESTER_LEVEL_CREATOR || Settings.instance().dontReadMessages()) {
           if (items.size() > initialSize)
             items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_dontReadMessages, 0, "Don't read messages", false));
@@ -663,6 +678,28 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
           if (items.size() > initialSize)
             items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_disableNetwork, 0, "Force disable network", Settings.instance().forceDisableNetwork()));
+        }
+        if (Config.QR_AVAILABLE) {
+          if (testerLevel >= Tdlib.TESTER_LEVEL_ADMIN || Settings.instance().needDisableQrProcessing()) {
+            if (items.size() > initialSize)
+              items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+            items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_disableQrProcess, 0, "Disable QR processing", Settings.instance().needDisableQrProcessing()));
+          }
+          if (testerLevel >= Tdlib.TESTER_LEVEL_ADMIN || Settings.instance().needForceZxingQrProcessing()) {
+            if (items.size() > initialSize)
+              items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+            items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_forceQrZxing, 0, "Force ZXing in QR scanner", Settings.instance().needForceZxingQrProcessing()));
+          }
+          if (testerLevel >= Tdlib.TESTER_LEVEL_ADMIN || Settings.instance().needShowQrRegions()) {
+            if (items.size() > initialSize)
+              items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+            items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_debugQrRegions, 0, "Show QR scanner UI regions", Settings.instance().needForceZxingQrProcessing()));
+          }
+          if (testerLevel >= Tdlib.TESTER_LEVEL_TESTER) {
+            if (items.size() > initialSize)
+              items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+            items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_secret_qrTest, 0, "Test QR scanner", false));
+          }
         }
 
         /*if (Config.RTL_BETA) {
@@ -939,6 +976,22 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         Settings.instance().setHidePhoneNumber(adapter.toggleView(v));
         break;
       }
+      case R.id.btn_secret_disableQrProcess: {
+        Settings.instance().setDisableQrProcessing(adapter.toggleView(v));
+        break;
+      }
+      case R.id.btn_secret_forceQrZxing: {
+        Settings.instance().setForceZxingQrProcessing(adapter.toggleView(v));
+        break;
+      }
+      case R.id.btn_secret_debugQrRegions: {
+        Settings.instance().setShowQrRegions(adapter.toggleView(v));
+        break;
+      }
+      case R.id.btn_secret_qrTest: {
+        openInAppCamera(new ViewController.CameraOpenOptions().ignoreAnchor(true).noTrace(true).allowSystem(false).optionalMicrophone(true).qrModeDebug(true).mode(CameraController.MODE_QR).qrCodeListener((qrCode) -> UI.showToast(qrCode, Toast.LENGTH_LONG)));
+        break;
+      }
       case R.id.btn_secret_disableNetwork: {
         Settings.instance().setDisableNetwork(adapter.toggleView(v));
         TdlibManager.instance().watchDog().letsHelpDoge();
@@ -1158,9 +1211,13 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         break;
       }
       case R.id.btn_secret_readAllChats: {
-        showConfirm(Lang.getString(R.string.ReadAllChatsInfo), null, () -> {
-          tdlib.readAllChats(null, readCount -> UI.showToast(Lang.plural(R.string.ReadAllChatsDone, readCount), Toast.LENGTH_SHORT));
-        });
+        showConfirm(Lang.getString(R.string.ReadAllChatsInfo), null, () ->
+          tdlib.readAllChats(ChatPosition.CHAT_LIST_MAIN, readCount ->
+            tdlib.readAllChats(ChatPosition.CHAT_LIST_ARCHIVE, archiveReadCount ->
+              UI.showToast(Lang.plural(R.string.ReadAllChatsDone, readCount + archiveReadCount), Toast.LENGTH_SHORT)
+            )
+          )
+        );
         break;
       }
       case R.id.btn_tdlib_verbosity: {

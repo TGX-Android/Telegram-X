@@ -320,7 +320,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
       @Override
       protected void setMessagePreview (ListItem item, int position, MessagePreviewView previewView) {
         TdApi.Message message = (TdApi.Message) item.getData();
-        previewView.setMessage(message, new TdApi.SearchMessagesFilterPinned(), item.getStringValue());
+        previewView.setMessage(message, new TdApi.SearchMessagesFilterPinned(), item.getStringValue(), false);
         updateContentInset(previewView, position);
       }
 
@@ -530,6 +530,8 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
 
   @Override
   public void onItemChanged (ListManager<TdApi.Message> list, TdApi.Message item, int index, int cause) {
-    messagesAdapter.notifyItemChanged(index);
+    if (cause == MessageListManager.CAUSE_CONTENT_CHANGED) {
+      messagesAdapter.notifyItemChanged(index);
+    }
   }
 }
