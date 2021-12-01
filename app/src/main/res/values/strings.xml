@@ -3962,10 +3962,12 @@
   <string name="InviteLinkRequests">Join Requests</string>
   <string name="InviteLinkRequestSince">Requested since %1$s at %2$s</string>
   <string name="InviteLinkActionAccept">Add to Group</string>
-  <string name="InviteLinkActionWrite">Send Message</string>
+  <string name="InviteLinkActionAcceptChannel">Add to Channel</string>
+  <string name="InviteLinkActionWrite">Open Profile</string>
   <string name="InviteLinkActionDecline">Decline</string>
   <string name="InviteLinkActionDeclineAction">Decline Request</string>
-  <string name="InviteLinkRequestsHint">Some [additional links](%1$s) are set up to generate requests to join your group.</string>
+  <string name="InviteLinkRequestsHint">Some additional links are set up to generate requests to join your group.</string>
+  <string name="InviteLinkRequestsHintChannel">Some additional links are set up to generate requests to join your channel.</string>
   <string name="AreYouSureAcceptJoinRequest">Are you sure you want to invite %1$s to %2$s?</string>
   <string name="AreYouSureDeclineJoinRequest">Are you sure you want to decline a request from %1$s?</string>
 

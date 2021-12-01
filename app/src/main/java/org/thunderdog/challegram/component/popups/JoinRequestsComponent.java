@@ -23,6 +23,7 @@ import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.ListItem;
+import org.thunderdog.challegram.ui.ProfileController;
 import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.ui.SettingsAdapter;
 import org.thunderdog.challegram.widget.EmbeddableStickerView;
@@ -51,6 +52,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
   private final String inviteLink;
   private final boolean isBottomSheet;
   private final boolean isSeparateLink;
+  private final boolean isChannel;
 
   public JoinRequestsComponent (ViewController<?> controller, long chatId, String inviteLink) {
     this.controller = controller;
@@ -58,6 +60,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
     this.inviteLink = inviteLink;
     this.isBottomSheet = controller instanceof JoinRequestsController;
     this.isSeparateLink = inviteLink != null && !inviteLink.isEmpty();
+    this.isChannel = controller.tdlib().isChannel(chatId);
   }
 
   private BaseActivity context() {
@@ -95,14 +98,13 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
       msg.append("\n\n").append(Lang.wrap(joinRequestsTdlib.get(joinRequests.indexOf(user)).bio, Lang.italicCreator()));
     }
 
-    controller.showOptions(msg, new int[]{R.id.btn_approveChatRequest, R.id.btn_declineChatRequest, R.id.btn_openChat, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkActionAccept), Lang.getString(R.string.InviteLinkActionDeclineAction), Lang.getString(R.string.InviteLinkActionWrite), Lang.getString(R.string.Cancel)}, null, new int[]{R.drawable.baseline_person_add_24, R.drawable.baseline_delete_24, R.drawable.baseline_forum_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
+    controller.showOptions(msg, new int[]{R.id.btn_approveChatRequest, R.id.btn_declineChatRequest, R.id.btn_openChat, R.id.btn_cancel}, new String[]{Lang.getString(isChannel ? R.string.InviteLinkActionAcceptChannel : R.string.InviteLinkActionAccept), Lang.getString(R.string.InviteLinkActionDeclineAction), Lang.getString(R.string.InviteLinkActionWrite), Lang.getString(R.string.Cancel)}, null, new int[]{R.drawable.baseline_person_add_24, R.drawable.baseline_delete_24, R.drawable.baseline_person_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
       switch (id2) {
         case R.id.btn_approveChatRequest:
           acceptRequest(user);
           break;
         case R.id.btn_openChat:
-          closeIfAvailable();
-          tdlib().ui().openChat(controller, user.getUserId(), new TdlibUi.ChatOpenParameters().keepStack());
+          openProfile(user);
           break;
         case R.id.btn_declineChatRequest:
           declineRequest(user);
@@ -122,7 +124,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
       @Override
       protected void setEmbedSticker (ListItem item, int position, EmbeddableStickerView userView, boolean isUpdate) {
         userView.setSticker(new TGStickerObj(tdlib(), (TdApi.Sticker) item.getData(), UTYAN_EMOJI, false));
-        userView.setCaptionText(Lang.getString(R.string.InviteLinkRequestsHint));
+        userView.setCaptionText(Lang.getString(isChannel ? R.string.InviteLinkRequestsHintChannel : R.string.InviteLinkRequestsHint));
       }
 
       @Override
@@ -136,10 +138,10 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
           userView.setPreviewActionListProvider((v, forceTouchContext, ids, icons, strings, target) -> {
             ids.append(R.id.btn_approveChatRequest);
             icons.append(R.drawable.baseline_person_add_24);
-            strings.append(R.string.InviteLinkActionAccept);
+            strings.append(isChannel ? R.string.InviteLinkActionAcceptChannel : R.string.InviteLinkActionAccept);
 
             ids.append(R.id.btn_openChat);
-            icons.append(R.drawable.baseline_forum_24);
+            icons.append(R.drawable.baseline_person_24);
             strings.append(R.string.InviteLinkActionWrite);
 
             ids.append(R.id.btn_declineChatRequest);
@@ -161,8 +163,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
                     acceptRequest(user);
                     break;
                   case R.id.btn_openChat:
-                    closeIfAvailable();
-                    tdlib().ui().openChat(controller, user.getUserId(), new TdlibUi.ChatOpenParameters().keepStack());
+                    openProfile(user);
                     break;
                   case R.id.btn_declineChatRequest:
                     declineRequest(user);
@@ -242,8 +243,13 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
     });
   }
 
+  private void openProfile (TGUser user) {
+    closeIfAvailable();
+    tdlib().ui().openPrivateProfile(new TdlibContext(context(), tdlib()), user.getUserId(), null);
+  }
+
   private void acceptRequest (TGUser user) {
-    controller.showOptions(Lang.getStringBold(R.string.AreYouSureAcceptJoinRequest, user.getName(), tdlib().chatTitle(chatId)), new int[]{R.id.btn_approveChatRequest, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkActionAccept), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_BLUE, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_person_add_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
+    controller.showOptions(Lang.getStringBold(R.string.AreYouSureAcceptJoinRequest, user.getName(), tdlib().chatTitle(chatId)), new int[]{R.id.btn_approveChatRequest, R.id.btn_cancel}, new String[]{Lang.getString(isChannel ? R.string.InviteLinkActionAcceptChannel : R.string.InviteLinkActionAccept), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_BLUE, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_person_add_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
       if (id2 == R.id.btn_approveChatRequest) {
         tdlib().client().send(new TdApi.ApproveChatJoinRequest(chatId, user.getUserId()), obj -> removeSender(user));
       }
@@ -300,7 +306,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     if (isBottomSheet && !canLoadMore) {
-      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.InviteLinkRequestsHint));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, isChannel ? R.string.InviteLinkRequestsHintChannel : R.string.InviteLinkRequestsHint));
     }
 
     adapter.setItems(items, false);
