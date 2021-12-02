@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -47,13 +48,16 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
   private final GifReceiver gifReceiver;
   private @Nullable NonMaterialButton button;
 
+  private boolean ignoreStartOffset;
+  private int currentStartOffset;
+
   @Override
   public void checkRtl () {
     if (titleView.getGravity() != Lang.gravity())
       titleView.setGravity(Lang.gravity());
     if (subtitleView.getGravity() != Lang.gravity())
       subtitleView.setGravity(Lang.gravity());
-    int leftMargin = Screen.dp(72f);
+    int leftMargin = Screen.dp(72f) - (ignoreStartOffset ? currentStartOffset / 2 : 0);
     int rightMargin = Screen.dp(16f);
     updateLayoutParams(titleView, leftMargin, rightMargin, Screen.dp(15f));
     updateLayoutParams(subtitleView, leftMargin, rightMargin, Screen.dp(38f));
@@ -66,6 +70,12 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
       params.addRule(Lang.rtl() ? RelativeLayout.RIGHT_OF : RelativeLayout.LEFT_OF, R.id.btn_double);
       Views.updateLayoutParams(view);
     }
+  }
+
+  public void ignoreStartOffset (boolean value) {
+    this.ignoreStartOffset = value;
+    checkRtl();
+    invalidate();
   }
 
   public DoubleTextView (Context context) {
@@ -123,7 +133,7 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
     TGLegacyManager.instance().addEmojiListener(this);
 
     int imageSize = viewHeight - Screen.dp(12f) * 2;
-    int offset = viewHeight / 2 - imageSize / 2;
+    int offset = currentStartOffset = viewHeight / 2 - imageSize / 2;
 
     imageReceiver = new ImageReceiver(this, 0);
     imageReceiver.setBounds(offset, offset, offset + imageSize, offset + imageSize);
@@ -148,14 +158,15 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
     super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     int viewHeight = Screen.dp(72f);
     int imageSize = viewHeight - Screen.dp(12f) * 2;
-    int offset = viewHeight / 2 - imageSize / 2;
+    int offset = currentStartOffset = viewHeight / 2 - imageSize / 2;
+    int startOffset = ignoreStartOffset ? offset / 2 : offset;
     if (Lang.rtl()) {
-      int x = getMeasuredWidth() - offset - imageSize;
+      int x = getMeasuredWidth() - startOffset - imageSize;
       imageReceiver.setBounds(x, offset, x + imageSize, offset + imageSize);
       gifReceiver.setBounds(x, offset, x + imageSize, offset + imageSize);
     } else {
-      imageReceiver.setBounds(offset, offset, offset + imageSize, offset + imageSize);
-      gifReceiver.setBounds(offset, offset, offset + imageSize, offset + imageSize);
+      imageReceiver.setBounds(startOffset, offset, startOffset + imageSize, offset + imageSize);
+      gifReceiver.setBounds(startOffset, offset, startOffset + imageSize, offset + imageSize);
     }
   }
 
@@ -177,7 +188,7 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
     }
   }
 
-  public void setButton (@StringRes int string, View.OnClickListener onClickListener) {
+  private void checkButton () {
     if (button == null) {
       RelativeLayout.LayoutParams params;
       params = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(28f));
@@ -191,9 +202,19 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
 
       addView(button);
     }
+  }
 
+  public void setButton (@StringRes int string, View.OnClickListener onClickListener) {
+    checkButton();
     button.setText(string);
     button.setOnClickListener(onClickListener);
+  }
+
+  public void setIcon (@DrawableRes int icon, View.OnClickListener onClickListener) {
+    checkButton();
+    button.setIcon(icon);
+    button.setOnClickListener(onClickListener);
+    button.setPadding(Screen.dp(6f), 0, Screen.dp(6f), 0);
   }
 
   public @Nullable NonMaterialButton getButton () {

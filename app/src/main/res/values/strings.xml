@@ -3960,7 +3960,7 @@
   <string name="Infinity">∞</string>
   <string name="InviteLinkManage">Manage Invite Links</string>
   <string name="InviteLinkRequests">Join Requests</string>
-  <string name="InviteLinkRequestSince">Requested since %1$s at %2$s</string>
+  <string name="InviteLinkRequestSince">requested %1$s</string>
   <string name="InviteLinkActionAccept">Add to Group</string>
   <string name="InviteLinkActionAcceptChannel">Add to Channel</string>
   <string name="InviteLinkActionWrite">Open Profile</string>

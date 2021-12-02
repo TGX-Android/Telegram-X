@@ -20,11 +20,13 @@ public class JoinRequestsController extends MediaBottomBaseController<Void> impl
 
   private final TdApi.ChatJoinRequestsInfo requestsInfo;
   private final JoinRequestsComponent component;
+  private int reqCount;
 
   protected JoinRequestsController (MediaLayout context, long chatId, TdApi.ChatJoinRequestsInfo requestsInfo) {
     super(context, Lang.plural(R.string.xJoinRequests, requestsInfo.totalCount));
     this.component = new JoinRequestsComponent(this, chatId, null);
     this.requestsInfo = requestsInfo;
+    this.reqCount = requestsInfo.totalCount;
   }
 
   @Override
@@ -53,6 +55,14 @@ public class JoinRequestsController extends MediaBottomBaseController<Void> impl
 
   public void close () {
     mediaLayout.hide(false);
+  }
+
+  public void onRequestDecided () {
+    reqCount--;
+    setName(Lang.plural(R.string.xJoinRequests, reqCount));
+    if (reqCount == 0) {
+      close();
+    }
   }
 
   @Override

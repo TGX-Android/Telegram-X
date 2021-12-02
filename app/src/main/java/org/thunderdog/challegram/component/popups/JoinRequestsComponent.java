@@ -13,28 +13,24 @@ import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.component.user.RemoveHelper;
-import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
-import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.ListItem;
-import org.thunderdog.challegram.ui.ProfileController;
 import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.ui.SettingsAdapter;
+import org.thunderdog.challegram.widget.DoubleTextViewWithIcon;
 import org.thunderdog.challegram.widget.EmbeddableStickerView;
-import org.thunderdog.challegram.widget.ForceTouchView;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.ArrayUtils;
-import me.vkryl.core.StringUtils;
 
 public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener, Client.ResultHandler {
   private static final String UTYAN_EMOJI = "\uD83D\uDE0E";
@@ -77,6 +73,12 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
     }
   }
 
+  private void onRequestDecided () {
+    if (isBottomSheet) {
+      ((JoinRequestsController) controller).onRequestDecided();
+    }
+  }
+
   public boolean needAsynchronousAnimation () {
     return joinRequests == null;
   }
@@ -86,7 +88,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
       return;
     }
 
-    TGUser user = ((UserView) v).getUser();
+    TGUser user = (TGUser) v.getTag();
 
     if (user == null) {
       return;
@@ -98,7 +100,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
       msg.append("\n\n").append(Lang.wrap(joinRequestsTdlib.get(joinRequests.indexOf(user)).bio, Lang.italicCreator()));
     }
 
-    controller.showOptions(msg, new int[]{R.id.btn_approveChatRequest, R.id.btn_declineChatRequest, R.id.btn_openChat, R.id.btn_cancel}, new String[]{Lang.getString(isChannel ? R.string.InviteLinkActionAcceptChannel : R.string.InviteLinkActionAccept), Lang.getString(R.string.InviteLinkActionDeclineAction), Lang.getString(R.string.InviteLinkActionWrite), Lang.getString(R.string.Cancel)}, null, new int[]{R.drawable.baseline_person_add_24, R.drawable.baseline_delete_24, R.drawable.baseline_person_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
+    controller.showOptions(msg, new int[]{R.id.btn_approveChatRequest, R.id.btn_declineChatRequest, R.id.btn_openChat}, new String[]{Lang.getString(isChannel ? R.string.InviteLinkActionAcceptChannel : R.string.InviteLinkActionAccept), Lang.getString(R.string.InviteLinkActionDeclineAction), Lang.getString(R.string.InviteLinkActionWrite)}, null, new int[]{R.drawable.baseline_person_add_24, R.drawable.baseline_delete_24, R.drawable.baseline_person_24}, (itemView2, id2) -> {
       switch (id2) {
         case R.id.btn_approveChatRequest:
           acceptRequest(user);
@@ -128,58 +130,15 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
       }
 
       @Override
-      protected void setUser (ListItem item, int position, UserView userView, boolean isUpdate) {
-        if (isUpdate) {
-          userView.updateSubtext();
-        } else {
-          TGUser user = joinRequests.get((isBottomSheet || isSeparateLink) ? position : position - 3);
-          userView.setPadding(userView.getPaddingLeft(), userView.getPaddingTop(), Screen.dp(18f), userView.getPaddingBottom());
-          userView.setPreviewChatId(new TdApi.ChatListMain(), user.getChatId(), null);
-          userView.setPreviewActionListProvider((v, forceTouchContext, ids, icons, strings, target) -> {
-            ids.append(R.id.btn_approveChatRequest);
-            icons.append(R.drawable.baseline_person_add_24);
-            strings.append(isChannel ? R.string.InviteLinkActionAcceptChannel : R.string.InviteLinkActionAccept);
-
-            ids.append(R.id.btn_openChat);
-            icons.append(R.drawable.baseline_person_24);
-            strings.append(R.string.InviteLinkActionWrite);
-
-            ids.append(R.id.btn_declineChatRequest);
-            icons.append(R.drawable.baseline_remove_circle_24);
-            strings.append(R.string.InviteLinkActionDecline);
-
-            final ForceTouchView.MaximizeListener maximizeListener = forceTouchContext.getMaximizeListener();
-            forceTouchContext.setExcludeHeader(true);
-            forceTouchContext.setMaximizeListener((t, animateToWhenReady, arg) -> {
-              closeIfAvailable();
-              return maximizeListener.onPerformMaximize(t, animateToWhenReady, arg);
-            });
-
-            return new ForceTouchView.ActionListener() {
-              @Override
-              public void onForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
-                switch (actionId) {
-                  case R.id.btn_approveChatRequest:
-                    acceptRequest(user);
-                    break;
-                  case R.id.btn_openChat:
-                    openProfile(user);
-                    break;
-                  case R.id.btn_declineChatRequest:
-                    declineRequest(user);
-                    break;
-                }
-              }
-
-              @Override
-              public void onAfterForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
-
-              }
-            };
-          });
-
-          userView.setUser(user);
-        }
+      protected void setJoinRequest (ListItem item, int position, DoubleTextViewWithIcon group, boolean isUpdate) {
+        TGUser user = joinRequests.get((isBottomSheet || isSeparateLink) ? position : position - 3);
+        group.setTag(user);
+        group.text().setAvatar(user.getAvatar(), user.getAvatarPlaceholderMetadata());
+        group.text().setText(user.getName(), user.getStatus());
+        group.text().setIcon(R.drawable.baseline_person_add_16, (v) -> acceptRequest(user));
+        group.icon().setImageResource(R.drawable.baseline_close_24);
+        group.setIconClickListener((v) -> declineRequest(user));
+        group.setTextClickListener((v) -> onClick(group));
       }
     };
 
@@ -200,22 +159,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
     recyclerView.setAdapter(this.adapter);
 
     TGLegacyManager.instance().addEmojiListener(this);
-
-    if (!isBottomSheet) {
-      RemoveHelper.attach(recyclerView, new RemoveHelper.Callback() {
-        @Override
-        public boolean canRemove (RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int position) {
-          ListItem item = adapter.getItems().get(position);
-          return item != null && item.getId() == R.id.user;
-        }
-
-        @Override
-        public void onRemove (RecyclerView.ViewHolder viewHolder) {
-          declineRequest(joinRequests.get(viewHolder.getBindingAdapterPosition() - (isSeparateLink ? 0 : 3)));
-        }
-      });
-    }
-
+    
     adapter.setItems(new ListItem[] {
       new ListItem(ListItem.TYPE_PROGRESS)
     }, false);
@@ -275,13 +219,14 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
       joinRequests.remove(itemIdx);
       joinRequestsTdlib.remove(itemIdx);
       adapter.removeItem(itemIdx);
+      onRequestDecided();
     });
   }
 
   private static TGUser parseSender (Tdlib tdlib, TdApi.ChatJoinRequest sender, ArrayList<TGUser> senders) {
     TGUser parsedUser = new TGUser(tdlib, tdlib.cache().user(sender.userId));
     parsedUser.setNoBotState();
-    parsedUser.setCustomStatus(Lang.getString(R.string.InviteLinkRequestSince, Lang.getDate(sender.date, TimeUnit.SECONDS), Lang.time(sender.date, TimeUnit.SECONDS)));
+    parsedUser.setCustomStatus(Lang.getString(R.string.InviteLinkRequestSince, Lang.getMessageTimestamp(sender.date, TimeUnit.SECONDS)));
     parsedUser.setBoundList(senders);
     return parsedUser;
   }
@@ -299,7 +244,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
       items.ensureCapacity(joinRequests.size());
 
       for (TGUser chat : joinRequests) {
-        items.add(new ListItem(ListItem.TYPE_USER, R.id.user, 0, 0).setLongId(chat.getChatId()));
+        items.add(new ListItem(ListItem.TYPE_JOIN_REQUEST, R.id.user, 0, 0).setLongId(chat.getChatId()));
       }
     }
 
@@ -343,7 +288,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
     List<ListItem> out = adapter.getItems();
     ArrayUtils.ensureCapacity(out, out.size() + newSenders.size() + (!canLoadMore ? 2 : 0));
     for (TGUser user : newSenders) {
-      out.add(out.size() - 1, new ListItem(ListItem.TYPE_USER, R.id.user, 0, 0).setLongId(user.getUserId()));
+      out.add(out.size() - 1, new ListItem(ListItem.TYPE_JOIN_REQUEST, R.id.user, 0, 0).setLongId(user.getUserId()));
     }
     if (!canLoadMore) {
       out.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
@@ -354,7 +299,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
 
   // bottomsheet only
   public int getHeight (int predictUserCount) {
-    int initialContentHeight = SettingHolder.measureHeightForType(ListItem.TYPE_USER) * predictUserCount;
+    int initialContentHeight = SettingHolder.measureHeightForType(ListItem.TYPE_JOIN_REQUEST) * predictUserCount;
 
     initialContentHeight += Screen.dp(48f); // TODO
     initialContentHeight += SettingHolder.measureHeightForType(ListItem.TYPE_SHADOW_TOP);
