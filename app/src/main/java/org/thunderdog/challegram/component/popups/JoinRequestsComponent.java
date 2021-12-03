@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.component.user.RemoveHelper;
@@ -20,6 +21,7 @@ import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.ui.ChatJoinRequestsController;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.ui.SettingsAdapter;
@@ -76,6 +78,11 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
   private void onRequestDecided () {
     if (isBottomSheet) {
       ((JoinRequestsController) controller).onRequestDecided();
+    } else if (controller instanceof ChatJoinRequestsController) {
+      ((ChatJoinRequestsController) controller).onRequestDecided();
+      if (adapter.indexOfViewById(R.id.user) == -1) {
+        controller.navigateBack();
+      }
     }
   }
 
@@ -218,7 +225,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
       if (itemIdx == -1) return;
       joinRequests.remove(itemIdx);
       joinRequestsTdlib.remove(itemIdx);
-      adapter.removeItem(itemIdx);
+      adapter.removeItem((isBottomSheet || isSeparateLink) ? itemIdx : itemIdx + 3);
       onRequestDecided();
     });
   }

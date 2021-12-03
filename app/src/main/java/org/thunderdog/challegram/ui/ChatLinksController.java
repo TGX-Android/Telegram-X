@@ -623,6 +623,25 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     updateTotalCount();
   }
 
+  // Makes pendingJoinRequestCount - 1. For seamless UI updates.
+  public void onChatLinkPendingDecisionMade (String linkUrl) {
+    TdApi.ChatInviteLink link = null;
+
+    for (TdApi.ChatInviteLink compare : inviteLinks) {
+      if (compare.inviteLink.equals(linkUrl)) {
+        link = compare;
+        break;
+      }
+    }
+
+    if (link == null) {
+      return;
+    }
+
+    link.pendingJoinRequestCount -= 1;
+    onLinkCreated(link, link);
+  }
+
   // Rebind link cell
   public void smOnLinkEdited (TdApi.ChatInviteLink oldLink, TdApi.ChatInviteLink newLink) {
     int oldLinkIndex = adapter.indexOfViewByData(oldLink);

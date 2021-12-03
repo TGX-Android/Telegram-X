@@ -4367,7 +4367,7 @@ public class TdlibUi extends Handler {
           break;
         case R.id.btn_manageJoinRequests:
           ChatJoinRequestsController c3 = new ChatJoinRequestsController(context.context(), context.tdlib());
-          c3.setArguments(new ChatJoinRequestsController.Args(chatId, link.inviteLink));
+          c3.setArguments(new ChatJoinRequestsController.Args(chatId, link.inviteLink, context));
           context.navigateTo(c3);
           break;
         case R.id.btn_edit:

@@ -76,13 +76,22 @@ public class ChatJoinRequestsController extends RecyclerViewController<ChatJoinR
     return component.needAsynchronousAnimation();
   }
 
+  public void onRequestDecided () {
+    ViewController<?> parent = getArgumentsStrict().parentController;
+    if (parent instanceof ChatLinksController) {
+      ((ChatLinksController) parent).onChatLinkPendingDecisionMade(getArgumentsStrict().inviteLink);
+    }
+  }
+
   public static class Args {
     private final long chatId;
     private final String inviteLink;
+    private final ViewController<?> parentController;
 
-    public Args (long chatId, String inviteLink) {
+    public Args (long chatId, String inviteLink, ViewController<?> parentController) {
       this.chatId = chatId;
       this.inviteLink = inviteLink;
+      this.parentController = parentController;
     }
   }
 }

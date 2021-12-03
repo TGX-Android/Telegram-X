@@ -802,6 +802,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         openInviteLink();
         break;
       }
+      case R.id.btn_manageJoinRequests: {
+        openInviteRequestsManage();
+        break;
+      }
       case R.id.btn_copyUsername: {
         String username = getProfileUsername();
         if (!StringUtils.isEmpty(username)) {
@@ -3683,6 +3687,24 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     baseAdapter.updateValuedSettingById(R.id.btn_manageInviteLinks);
   }
 
+  @Override
+  public void onChatPendingJoinRequestsChanged (long chatId, TdApi.ChatJoinRequestsInfo pendingJoinRequests) {
+    tdlib.ui().post(() -> {
+      if (getChatId() == chatId) {
+        int idxLinks = baseAdapter.indexOfViewById(R.id.btn_manageInviteLinks);
+        int idxRequests = baseAdapter.indexOfViewById(R.id.btn_manageJoinRequests);
+
+        if ((pendingJoinRequests == null || pendingJoinRequests.totalCount == 0) && idxRequests != -1) {
+          baseAdapter.removeRange(idxRequests - 1, 2);
+        } else if (pendingJoinRequests != null && pendingJoinRequests.totalCount > 0 && idxRequests == -1 && idxLinks != -1) {
+          baseAdapter.addItems(idxLinks + 1, new ListItem(ListItem.TYPE_SEPARATOR_FULL), new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_manageJoinRequests, 0, R.string.InviteLinkRequests));
+        } else {
+          baseAdapter.updateValuedSettingById(R.id.btn_manageJoinRequests);
+        }
+      }
+    });
+  }
+
   private static CharSequence getSlowModeDescription (int seconds) {
     if (seconds == 0) {
       return Lang.getString(R.string.SlowModeDisabled);
@@ -4468,6 +4490,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           icons.append(R.drawable.baseline_add_link_24);
         }
 
+        if (canInviteUsers && chat.pendingJoinRequests != null && chat.pendingJoinRequests.totalCount > 0) {
+          ids.append(R.id.btn_manageJoinRequests);
+          strings.append(R.string.InviteLinkRequests);
+          icons.append(R.drawable.baseline_pending_24);
+        }
+
         ids.append(R.id.btn_copyUsername);
         strings.append(R.string.Copy);
         icons.append(R.drawable.baseline_content_copy_24);
@@ -4614,7 +4642,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private void openInviteRequestsManage () {
     ChatJoinRequestsController cc = new ChatJoinRequestsController(context, tdlib);
-    cc.setArguments(new ChatJoinRequestsController.Args(chat.id, ""));
+    cc.setArguments(new ChatJoinRequestsController.Args(chat.id, "", this));
     navigateTo(cc);
   }
 
