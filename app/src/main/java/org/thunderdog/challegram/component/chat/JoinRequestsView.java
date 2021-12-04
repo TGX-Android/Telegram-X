@@ -6,6 +6,8 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
+import android.graphics.RectF;
+import android.view.View;
 
 import androidx.annotation.Nullable;
 
@@ -46,8 +48,10 @@ public class JoinRequestsView extends BaseView implements Destroyable, ComplexRe
   private ListAnimator<UserEntry> joinRequestEntries;
   private FactorAnimator animator;
   private TdApi.ChatJoinRequestsInfo info;
+  private Runnable onDismissRunnable;
 
   private final ComplexReceiver megaReceiver = new ComplexReceiver(this);
+  private final RectF dismissRect = new RectF();
 
   private final Bitmap closeIcon;
   private final ReplaceAnimator<Text> title = new ReplaceAnimator<>(ignored -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
@@ -90,6 +94,10 @@ public class JoinRequestsView extends BaseView implements Destroyable, ComplexRe
     cx -= d.getWidth() / 2;
     cy -= d.getHeight() / 2;
     c.drawBitmap(d, cx, cy, Paints.getIconGrayPorterDuffPaint());
+  }
+
+  public void setOnDismissRunnable (Runnable onDismissRunnable) {
+    this.onDismissRunnable = onDismissRunnable;
   }
 
   public void setInfo (TdApi.ChatJoinRequestsInfo info, boolean animated) {
@@ -139,6 +147,7 @@ public class JoinRequestsView extends BaseView implements Destroyable, ComplexRe
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     updateTitleMaxWidth();
+    dismissRect.set(getMeasuredWidth() - Screen.dp(48f), 0, getMeasuredWidth(), getMeasuredHeight());
   }
 
   private void updateTitleMaxWidth () {
@@ -164,6 +173,20 @@ public class JoinRequestsView extends BaseView implements Destroyable, ComplexRe
       }
     }
     return false;
+  }
+
+  @Override
+  public boolean needClickAt (View view, float x, float y) {
+    return dismissRect.contains(x, y) || super.needClickAt(view, x, y);
+  }
+
+  @Override
+  public void onClickAt (View view, float x, float y) {
+    if (dismissRect.contains(x, y) && onDismissRunnable != null) {
+      onDismissRunnable.run();
+    } else {
+      super.onClickAt(view, x, y);
+    }
   }
 
   private static class UserEntry {

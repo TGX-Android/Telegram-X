@@ -177,6 +177,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibManager;
+import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.TGBackground;
 import org.thunderdog.challegram.theme.Theme;
@@ -268,7 +269,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   RecordAudioVideoController.RecordStateListeners,
   ViewPager.OnPageChangeListener, ViewPagerTopView.OnItemClickListener,
   TGMessage.SelectableDelegate, GlobalAccountListener, EmojiToneHelper.Delegate, ComplexHeaderView.Callback, LiveLocationHelper.Callback, CreatePollController.Callback,
-  HapticMenuHelper.Provider, HapticMenuHelper.OnItemClickListener {
+  HapticMenuHelper.Provider, HapticMenuHelper.OnItemClickListener, TdlibSettingsManager.DismissRequestsListener {
   private boolean reuseEnabled;
   private boolean destroyInstance;
 
@@ -701,9 +702,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     int requestsViewHeight = Screen.dp(48f);
     requestsView = new JoinRequestsView(context, tdlib);
     requestsView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, requestsViewHeight));
-    requestsView.setOnClickListener(v -> {
-      ModernActionedLayout.showJoinRequests(this, chat.id, requestsView.getInfo());
-    });
+    requestsView.setOnClickListener(v -> ModernActionedLayout.showJoinRequests(this, chat.id, requestsView.getInfo()));
+    requestsView.setOnDismissRunnable(() -> tdlib.settings().dismissRequests(chat.id, requestsView.getInfo()));
+    tdlib.settings().addJoinRequestsDismissListener(this);
     RippleSupport.setSimpleWhiteBackground(requestsView, this);
     Views.setClickable(requestsView);
 
@@ -3960,6 +3961,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (wallpapersList != null) {
         ((WallpaperAdapter) wallpapersList.getAdapter()).destroy();
       }
+      tdlib.settings().removeJoinRequestsDismissListener(this);
       TGLegacyManager.instance().removeEmojiListener(this);
       if (emojiLayout != null) {
         emojiLayout.destroy();
@@ -6939,7 +6941,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (!needActionBar())
       return;
 
-    if (info == null || info.totalCount == 0) {
+    if (info == null || info.totalCount == 0 || (chat != null && tdlib.settings().isRequestsDismissed(chat.id, info))) {
       topBar.setItemVisible(requestsItem, false, isFocused());
     } else {
       requestsView.setInfo(info, isFocused());
@@ -9187,6 +9189,24 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
       }
     }
+  }
+
+  @Override
+  public void onJoinRequestsDismissed (long chatId, long hash) {
+    tdlib.ui().post(() -> {
+      if (getChatId() == chatId && chat != null) {
+        checkJoinRequests(chat.pendingJoinRequests);
+      }
+    });
+  }
+
+  @Override
+  public void onJoinRequestsRestore (long chatId) {
+    tdlib.ui().post(() -> {
+      if (getChatId() == chatId && chat != null) {
+        checkJoinRequests(chat.pendingJoinRequests);
+      }
+    });
   }
 
   @Override
