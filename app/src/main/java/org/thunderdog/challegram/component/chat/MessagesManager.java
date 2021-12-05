@@ -43,6 +43,7 @@ import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.theme.ThemeProperty;
+import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
@@ -1104,21 +1105,29 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     checkBotStart();
     onChatAwaitFinish();
     ensureContentHeight();
-    loader.requestSponsoredMessages(loader.getChatId(), msgs -> {
-      if (msgs.length == 0) return;
-      addSentMessages(Collections.singletonList(TGMessageSponsored.sponsoredToTgx(this, loader.getChatId(), findBottomMessage().getDate(), msgs[0])));
-    });
+    requestSponsoredMessages(); // TODO position
     saveScrollPosition();
   }
 
   public void onBottomEndLoaded () {
     onChatAwaitFinish();
     onCanLoadMoreBottomChanged();
-    //
-    loader.requestSponsoredMessages(loader.getChatId(), msgs -> {
-      if (msgs.length == 0) return;
-      addSentMessages(Collections.singletonList(TGMessageSponsored.sponsoredToTgx(this, loader.getChatId(), findBottomMessage().getDate(), msgs[0])));
-    });
+    requestSponsoredMessages();
+  }
+
+  private void requestSponsoredMessages () {
+    synchronized (controller) {
+      if (controller.sponsoredMessagesLoaded) {
+        return;
+      }
+
+      loader.requestSponsoredMessages(loader.getChatId(), messages -> {
+        if (messages.length == 0) return;
+        controller.sponsoredMessagesLoaded = true;
+        addSentMessages(Collections.singletonList(TGMessageSponsored.sponsoredToTgx(this, loader.getChatId(), findBottomMessage().getDate(), messages[0])));
+        saveScrollPosition();
+      });
+    }
   }
 
   private int getActiveMessageCount () {
@@ -1296,8 +1305,13 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (view != null && view.getParent() != null) {
           scrollOffsetInPixels = ((View) view.getParent()).getBottom() - view.getBottom();
         }
-        if (!adapter.addMessage(message, false, scrollToBottom))
-          manager.scrollToPositionWithOffset(message.isSponsored() ? 1 : 0, scrollOffsetInPixels);
+        if (!adapter.addMessage(message, false, scrollToBottom)) {
+          if (message.isSponsored()) {
+            manager.scrollToPositionWithOffset(1, Screen.dp(48f));
+          } else {
+            manager.scrollToPositionWithOffset(0, scrollOffsetInPixels);
+          }
+        }
       } else {
         adapter.addMessage(message, false, scrollToBottom);
       }

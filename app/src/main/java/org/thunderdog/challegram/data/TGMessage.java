@@ -162,6 +162,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private static final int FLAG_UNSUPPORTED = 1 << 29;
   private static final int FLAG_ERROR = 1 << 30;
   private static final int FLAG_BEING_ADDED = 1 << 31;
+  private static final int FLAG_EXTRA_PRESPONSOR_PADDING = 1 << 32;
 
   protected TdApi.Message msg;
   private int flags;
@@ -495,6 +496,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   public final boolean mergeWith (@Nullable TGMessage top, boolean isBottom) {
     if (top != null) {
       top.setNeedExtraPadding(false);
+      top.setNeedExtraPresponsoredPadding(isSponsored());
       flags |= MESSAGE_FLAG_HAS_OLDER_MESSAGE;
     } else {
       flags &= ~MESSAGE_FLAG_HAS_OLDER_MESSAGE;
@@ -1021,6 +1023,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   protected final int getExtraPadding () {
+    if ((flags & FLAG_EXTRA_PRESPONSOR_PADDING) != 0) {
+      return Screen.dp(7f);
+    }
+
     return (flags & FLAG_EXTRA_PADDING) != 0 ? Screen.dp(7f) + (messagesController().needExtraBigPadding() ? Screen.dp(48f) : 0) : 0;
   }
 
@@ -4784,6 +4790,26 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     } else {
       if ((flags & FLAG_EXTRA_PADDING) != 0) {
         flags &= ~FLAG_EXTRA_PADDING;
+        if ((flags & FLAG_LAYOUT_BUILT) != 0) {
+          height = computeHeight();
+        }
+      }
+    }
+    return oldHeight != height;
+  }
+
+  public boolean setNeedExtraPresponsoredPadding (boolean needPadding) {
+    int oldHeight = height;
+    if (needPadding) {
+      if ((flags & FLAG_EXTRA_PRESPONSOR_PADDING) == 0) {
+        flags |= FLAG_EXTRA_PRESPONSOR_PADDING;
+        if ((flags & FLAG_LAYOUT_BUILT) != 0) {
+          height = computeHeight();
+        }
+      }
+    } else {
+      if ((flags & FLAG_EXTRA_PRESPONSOR_PADDING) != 0) {
+        flags &= ~FLAG_EXTRA_PRESPONSOR_PADDING;
         if ((flags & FLAG_LAYOUT_BUILT) != 0) {
           height = computeHeight();
         }
