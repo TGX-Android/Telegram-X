@@ -5,10 +5,12 @@ import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.PopupWindow;
 
 import androidx.annotation.Nullable;
@@ -39,6 +41,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.core.lambda.FutureInt;
 
 /**
  * Date: 06/12/2016
@@ -180,12 +183,10 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
     this.needRootInsets = true;
   }
 
-  public void setNeedKeyboardPadding (boolean needKeyboardPadding) {
-    if (needKeyboardPadding) {
-      setPadding(0, 0, 0, Screen.getNavigationBarFrameHeight() - Screen.getNavigationBarHeight());
-    } else {
-      setPadding(0, 0, 0, 0);
-    }
+  private boolean needFullScreen;
+
+  public void setNeedFullScreen (boolean needFullScreen) {
+    this.needFullScreen = needFullScreen;
   }
 
   private boolean hideKeyboard;
@@ -252,6 +253,15 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
     }
   }
 
+  public static void patchPopupWindow (PopupWindow popupWindow) {
+    View container = popupWindow.getContentView().getRootView();
+    Context context = popupWindow.getContentView().getContext();
+    WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+    WindowManager.LayoutParams p = (WindowManager.LayoutParams) container.getLayoutParams();
+    p.flags |= WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
+    wm.updateViewLayout(container, p);
+  }
+
   private void showSystemWindow (View anchorView) {
     final BaseActivity context = UI.getContext(getContext());
     window = new PopupWindow(this, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
@@ -272,6 +282,9 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
         try {
           window.showAtLocation(windowAnchorView = anchorView, Gravity.NO_GRAVITY, 0, 0);
           window.setBackgroundDrawable(new RootDrawable(UI.getContext(getContext())));
+          if (needFullScreen) {
+            patchPopupWindow(window);
+          }
           return;
         } catch (Throwable t) {
           Log.e("Cannot show window", t);

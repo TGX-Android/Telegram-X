@@ -13,6 +13,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
+import androidx.collection.SparseArrayCompat;
 
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -1139,6 +1140,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           if (isLoggingOut) { // FIXME TDLib: AuthorizationStateLoggedOut
             setLoggingOut(false);
             forceErase = true;
+
+            activeCalls.clear();
+            setHaveActiveCalls(false);
           }
 
           synchronized (clientLock) {
@@ -5738,6 +5742,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     // chats.clear();
     chatLists.clear();
     knownChatIds.clear();
+    activeCalls.clear();
     accessibleChatTimers.clear();
     chatOnlineMemberCount.clear();
     myProfilePhoto = null;
@@ -6661,8 +6666,33 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   // Updates: CALLS
 
+  private final SparseArrayCompat<TdApi.Call> activeCalls = new SparseArrayCompat<>();
+  private boolean haveActiveCalls;
+
+  public boolean haveActiveCalls () {
+    return haveActiveCalls;
+  }
+
+  private void setHaveActiveCalls (boolean haveActiveCalls) {
+    if (this.haveActiveCalls != haveActiveCalls) {
+      this.haveActiveCalls = haveActiveCalls;
+      if (haveActiveCalls) {
+        incrementCallReferenceCount();
+      } else {
+        decrementCallReferenceCount();
+      }
+    }
+  }
+
   @TdlibThread
   private void updateCall (TdApi.UpdateCall update) {
+    if (TD.isActive(update.call)) {
+      activeCalls.put(update.call.id, update.call);
+    } else {
+      activeCalls.remove(update.call.id);
+    }
+    setHaveActiveCalls(!activeCalls.isEmpty());
+
     ui().sendMessage(ui().obtainMessage(MSG_ACTION_UPDATE_CALL, update));
     listeners.updateCall(update);
   }

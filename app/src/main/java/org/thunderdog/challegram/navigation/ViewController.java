@@ -1822,14 +1822,13 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     recyclerView.setLayoutManager(new LinearLayoutManager(context(), RecyclerView.VERTICAL, false));
 
     final PopupLayout popupLayout = settings.window = new PopupLayout(context);
-    popupLayout.setNeedKeyboardPadding(context.isKeyboardVisible() && Screen.isGesturalNavigationEnabled());
     popupLayout.setPopupHeightProvider(() -> {
       LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
       int firstPosition = manager.findFirstVisibleItemPosition();
       if (firstPosition == 0) {
         View view = manager.findViewByPosition(0);
         if (view != null) {
-          return Math.min(Screen.currentHeight(), Math.min(popupView.getMeasuredHeight() - view.getTop(), settings.adapter.measureHeight(-1)) + Screen.dp(56f));
+          return Math.min(Screen.currentHeight(), Math.min(popupView.getMeasuredHeight() - view.getTop(), settings.adapter.measureHeight(-1)) + Screen.dp(56f) + (Screen.needsKeyboardPadding(context) ? Screen.getNavigationBarFrameHeight() : 0));
         }
       }
       return Screen.currentHeight();
@@ -1970,17 +1969,59 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       popupView.addView(footerView);
     }
 
+    SeparatorView shadowView = null;
+
     if (footerView != null) {
       params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(1f), Gravity.BOTTOM);
       params.bottomMargin = Screen.dp(56f);
-      SeparatorView shadowView = SeparatorView.simpleSeparator(context, params, true);
+      shadowView = SeparatorView.simpleSeparator(context, params, true);
       shadowView.setAlignBottom();
       addThemeInvalidateListener(shadowView);
       popupView.addView(shadowView);
     }
 
+    int popupAdditionalHeight = 0;
+
+    if (Screen.needsKeyboardPadding(context)) {
+      popupAdditionalHeight = Screen.getNavigationBarFrameHeight();
+
+      View dummyView = new View(context);
+      dummyView.setBackgroundColor(Theme.getColor(R.id.theme_color_filling));
+      addThemeBackgroundColorListener(dummyView, R.id.theme_color_filling);
+
+      FrameLayoutFix.LayoutParams modifiedParams = (FrameLayoutFix.LayoutParams) recyclerView.getLayoutParams();
+      modifiedParams.bottomMargin += popupAdditionalHeight;
+      recyclerView.setLayoutParams(modifiedParams);
+
+      if (footerView != null) {
+        modifiedParams = (FrameLayoutFix.LayoutParams) footerView.getLayoutParams();
+        modifiedParams.bottomMargin += popupAdditionalHeight;
+        footerView.setLayoutParams(modifiedParams);
+      }
+
+      if (shadowView != null) {
+        modifiedParams = (FrameLayoutFix.LayoutParams) shadowView.getLayoutParams();
+        modifiedParams.bottomMargin += popupAdditionalHeight;
+        shadowView.setLayoutParams(modifiedParams);
+      }
+
+      modifiedParams = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, popupAdditionalHeight, Gravity.BOTTOM);
+      dummyView.setLayoutParams(modifiedParams);
+
+      modifiedParams = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(1f), Gravity.BOTTOM);
+      modifiedParams.bottomMargin = popupAdditionalHeight;
+
+      SeparatorView bottomShadowView = SeparatorView.simpleSeparator(context, modifiedParams, true);
+      bottomShadowView.setAlignBottom();
+      addThemeInvalidateListener(bottomShadowView);
+      popupView.addView(bottomShadowView);
+
+      popupView.addView(dummyView);
+      popupLayout.setNeedFullScreen(true);
+    }
+
     final int height = settings.adapter.measureHeight(-1);
-    final int desiredHeight = height + (footerView != null ? Screen.dp(56f) : 0);
+    final int desiredHeight = height + (footerView != null ? Screen.dp(56f) : 0) + popupAdditionalHeight;
     final int popupHeight = Math.min(Screen.currentHeight(), desiredHeight);
 
     if (desiredHeight > Screen.currentActualHeight() && checkedIndex != -1) {
@@ -2250,13 +2291,22 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     }
 
     final PopupLayout popupLayout = new PopupLayout(context);
+    int popupAdditionalHeight;
+
     popupLayout.setTag(this);
     popupLayout.init(true);
-    popupLayout.setNeedKeyboardPadding(context.isKeyboardVisible() && Screen.isGesturalNavigationEnabled());
 
     OptionsLayout optionsWrap = new OptionsLayout(context(), this, forcedTheme);
     optionsWrap.setInfo(this, tdlib(), options.info, false);
     optionsWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
+
+    if (Screen.needsKeyboardPadding(context)) {
+      popupAdditionalHeight = Screen.getNavigationBarFrameHeight();
+      optionsWrap.setPadding(0, 0, 0, popupAdditionalHeight);
+      popupLayout.setNeedFullScreen(true);
+    } else {
+      popupAdditionalHeight = 0;
+    }
 
     ShadowView shadowView = new ShadowView(context);
     shadowView.setSimpleTopShadow(true);
@@ -2295,7 +2345,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
     // Window
 
-    popupLayout.showSimplePopupView(optionsWrap, shadowView.getLayoutParams().height + Screen.dp(54f) * options.items.length + optionsWrap.getTextHeight());
+    popupLayout.showSimplePopupView(optionsWrap, shadowView.getLayoutParams().height + Screen.dp(54f) * options.items.length + optionsWrap.getTextHeight() + popupAdditionalHeight);
 
     return popupLayout;
   }
@@ -2308,7 +2358,6 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     final PopupLayout popupLayout = new PopupLayout(context);
     popupLayout.setTag(this);
     popupLayout.init(true);
-    popupLayout.setNeedKeyboardPadding(context.isKeyboardVisible() && Screen.isGesturalNavigationEnabled());
 
     int totalHeight = 0;
 
@@ -2324,6 +2373,13 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     totalHeight += shadowView.getLayoutParams().height;
 
     totalHeight += popUpBuilder.onBuildPopUp(popupLayout, optionsWrap);
+
+    if (Screen.needsKeyboardPadding(context)) {
+      int additionalHeight = Screen.getNavigationBarFrameHeight();
+      totalHeight += additionalHeight;
+      optionsWrap.setPadding(0, 0, 0, additionalHeight);
+      popupLayout.setNeedFullScreen(true);
+    }
 
     popupLayout.showSimplePopupView(optionsWrap, totalHeight);
     return popupLayout;

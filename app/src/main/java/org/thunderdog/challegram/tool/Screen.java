@@ -235,6 +235,14 @@ public class Screen {
     return navigationBarFrameHeight;
   }
 
+  public static int getNavigationBarFrameDifference () {
+    return Screen.getNavigationBarFrameHeight() - Screen.getNavigationBarHeight();
+  }
+
+  public static boolean needsKeyboardPadding (BaseActivity context) {
+    return context.isKeyboardVisible() && isGesturalNavigationEnabled() && getNavigationBarHeight() > 0;
+  }
+
   public static boolean isGesturalNavigationEnabled () {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
       return false;

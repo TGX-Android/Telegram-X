@@ -236,7 +236,6 @@ public class WatchDog {
   private boolean hasRouteChanged (ConnectivityManager manager, Object rawNetwork) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && manager != null && rawNetwork != null) {
       android.net.Network network = (android.net.Network) rawNetwork;
-      android.net.NetworkCapabilities capabilities = manager.getNetworkCapabilities(network);
 
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
         return network.getNetworkHandle() != lastNetworkHandle;
