@@ -25,6 +25,7 @@ const val TELEGRAM_BOT_FATHER_USERNAME = "BotFather"
 const val IV_PREVIEW_USERNAME = "iv"
 const val CHAT_PERMISSIONS_COUNT = 8
 const val MAX_CHAT_INVITE_LINK_USER_COUNT = 99999
+const val SPONSORED_CACHE_TIME = 5
 @JvmField val SLOW_MODE_OPTIONS = intArrayOf(0, 10, 30, 60, 300, 900, 3600)
 @JvmField val CHAT_TTL_OPTIONS = intArrayOf(0, 86400, 604800, 2678400)
 @JvmField val TELEGRAM_HOSTS = arrayOf("t.me", "tx.me", "telegram.me", "telegram.dog")

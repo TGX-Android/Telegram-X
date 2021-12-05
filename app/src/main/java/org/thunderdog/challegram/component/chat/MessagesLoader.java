@@ -5,6 +5,7 @@
 package org.thunderdog.challegram.component.chat;
 
 import android.os.SystemClock;
+import android.util.Pair;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -42,10 +43,12 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
@@ -75,7 +78,7 @@ public class MessagesLoader implements Client.ResultHandler {
   private boolean isLoading;
   private int loadingMode;
 
-  private final LongSparseArray<List<TdApi.SponsoredMessage>> sponsoredMessages = new LongSparseArray<>();
+  private final LongSparseArray<Pair<Long, TdApi.SponsoredMessage[]>> sponsoredMessages = new LongSparseArray<>();
   private boolean isLoadingSponsoredMessages;
 
   // private TGMessage edgeMessage;
@@ -101,25 +104,57 @@ public class MessagesLoader implements Client.ResultHandler {
 
   private long contextId;
 
-  // TODO: can there be more than 1 sponsored message?
-  private List<TdApi.SponsoredMessage> getSponsoredMessages (long chatId) {
-    synchronized (sponsoredMessages) {
-      return sponsoredMessages.get(chatId);
-    }
+  private boolean canShowSponsoredMessages (long chatId) {
+    return tdlib.isChannel(chatId) && !manager.controller().isInForceTouchMode() && !manager.controller().inPreviewMode() && !manager.controller().areScheduledOnly() && !manager.controller().arePinnedMessages();
   }
 
-  private synchronized void putSponsoredMessages (long chatId, TdApi.SponsoredMessage[] data) {
-    if (chatId == 0) {
+  // Callback is called only on successful load
+  private void requestSponsoredMessages (long chatId, RunnableData<TdApi.SponsoredMessage[]> callback) {
+    if (!canShowSponsoredMessages(chatId) || isLoadingSponsoredMessages) {
       return;
     }
 
-    if (tdlib.account().isDebug() && data.length == 0) {
-      data = new TdApi.SponsoredMessage[] { TGMessageSponsored.generateSponsoredMessage(tdlib) };
+    Pair<Long, TdApi.SponsoredMessage[]> cachedPair = sponsoredMessages.get(chatId);
+    if (cachedPair != null && cachedPair.first + TimeUnit.MINUTES.toMillis(TdConstants.SPONSORED_CACHE_TIME) >= tdlib.currentTimeMillis()) {
+      callback.runWithData(cachedPair.second);
+      return;
     }
 
-    synchronized (sponsoredMessages) {
-      sponsoredMessages.put(chatId, Arrays.asList(data));
-    }
+    isLoadingSponsoredMessages = true;
+    tdlib.client().send(new TdApi.GetChatSponsoredMessages(chatId), object -> {
+      UI.post(() -> {
+        isLoadingSponsoredMessages = false;
+
+        TdApi.SponsoredMessage[] messages;
+        if (object.getConstructor() == TdApi.SponsoredMessages.CONSTRUCTOR) {
+          messages = ((TdApi.SponsoredMessages) object).messages;
+        } else {
+          messages = new TdApi.SponsoredMessage[0];
+        }
+
+        if (tdlib.account().isDebug() && messages.length == 0) {
+          messages = new TdApi.SponsoredMessage[] { TGMessageSponsored.generateSponsoredMessage(tdlib) };
+        }
+
+        sponsoredMessages.put(chatId, new Pair<>(tdlib.currentTimeMillis(), messages));
+        callback.runWithData(messages);
+      });
+    });
+  }
+
+  private TGMessage createSponsoredTgMessage (TGMessage cur, long chatId, TdApi.SponsoredMessage[] sponsoredMessages) {
+    TGMessage tgm = TGMessageSponsored.sponsoredToTgx(manager, chatId, cur.getDate(), sponsoredMessages[0]);
+
+    tgm.setUnread(Long.MAX_VALUE);
+    tgm.setShowUnreadBadge(false);
+
+    tgm.forceAvatarWhenMerging(manager.useBubbles());
+    tgm.mergeWith(cur, true);
+
+    tgm.prepareLayout();
+    cur.setNeedExtraPadding(false);
+
+    return tgm;
   }
 
   public MessagesLoader (MessagesManager manager) {
@@ -978,30 +1013,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
       final long sourceChatId = fromMessageId.getChatId() != 0 ? fromMessageId.getChatId() : messageThread != null ? messageThread.getChatId() : getChatId();
 
-      if (sponsoredMessages.get(sourceChatId) == null && isChannel() && !manager.controller().isInForceTouchMode() && !manager.controller().inPreviewMode() && !manager.controller().areScheduledOnly() && !manager.controller().arePinnedMessages()) {
-        if (!isLoadingSponsoredMessages) {
-          isLoadingSponsoredMessages = true;
-
-          boolean finalOnlyLocal = onlyLocal;
-          boolean finalAllowMoreTop = allowMoreTop;
-          boolean finalAllowMoreBottom = allowMoreBottom;
-
-          tdlib.client().send(new TdApi.GetChatSponsoredMessages(sourceChatId), object -> {
-            UI.post(() -> {
-              if (object.getConstructor() == TdApi.SponsoredMessages.CONSTRUCTOR) {
-                putSponsoredMessages(sourceChatId, ((TdApi.SponsoredMessages) object).messages);
-              } else {
-                putSponsoredMessages(sourceChatId, new TdApi.SponsoredMessage[0]);
-              }
-
-              isLoadingSponsoredMessages = false;
-              load(fromMessageId, offset, limit, mode, finalOnlyLocal, finalAllowMoreTop, finalAllowMoreBottom);
-            });
-          });
-        }
-
-        return;
-      } else if (sponsoredMessages.get(sourceChatId) != null && fromMessageId.getMessageId() < 0) {
+      if (sponsoredMessages.get(sourceChatId) != null && fromMessageId.getMessageId() < 0) {
         fromMessageId.setMessageId(0);
       }
 
@@ -1566,8 +1578,6 @@ public class MessagesLoader implements Client.ResultHandler {
       boolean willTryAgain = (loadingMode == MODE_INITIAL || loadingMode == MODE_REPEAT_INITIAL) && items.size() < chunkSize && items.size() > 0;
       manager.displayMessages(items, loadingMode, scrollPosition, scrollItemView, scrollMessageId, scrollHighlightMode, willTryAgain && loadingLocal);
 
-      List<TdApi.SponsoredMessage> sponsoredMessages = getSponsoredMessages(chatId);
-
       synchronized (lock) {
         isLoading = false;
       }
@@ -1582,13 +1592,6 @@ public class MessagesLoader implements Client.ResultHandler {
         }
       }
 
-      boolean hasSponsoredMessages = (sponsoredMessages != null && !sponsoredMessages.isEmpty());
-      if (loadingMode == MODE_MORE_TOP && items.size() > 1 && !canLoadBottom && hasSponsoredMessages) {
-        manager.addSentMessages(Collections.singletonList(createSponsoredTgMessage(items.get(0), chatId, sponsoredMessages)));
-      } else if (loadingMode == MODE_MORE_BOTTOM && !items.isEmpty() && isEndReached(new MessageId(items.get(0).getChatId(), items.get(0).getId())) && hasSponsoredMessages) {
-        manager.addSentMessages(Collections.singletonList(createSponsoredTgMessage(manager.findBottomMessage(), chatId, sponsoredMessages)));
-      }
-
       if (canLoadTop != couldLoadTop && !canLoadTop) {
         manager.onTopEndLoaded();
       }
@@ -1597,21 +1600,6 @@ public class MessagesLoader implements Client.ResultHandler {
       }
       manager.ensureContentHeight();
     });
-  }
-
-  private TGMessage createSponsoredTgMessage (TGMessage cur, long chatId, List<TdApi.SponsoredMessage> sponsoredMessages) {
-    TGMessage tgm = TGMessageSponsored.sponsoredToTgx(manager, chatId, cur.getDate(), sponsoredMessages.get(0));
-
-    tgm.setUnread(Long.MAX_VALUE);
-    tgm.setShowUnreadBadge(false);
-
-    tgm.forceAvatarWhenMerging(manager.useBubbles());
-    tgm.mergeWith(cur, true);
-
-    tgm.prepareLayout();
-    cur.setNeedExtraPadding(false);
-
-    return tgm;
   }
 
   private void fetchAlbum (List<TdApi.Message> album) {
