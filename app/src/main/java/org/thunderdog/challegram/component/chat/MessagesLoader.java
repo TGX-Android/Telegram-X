@@ -109,7 +109,7 @@ public class MessagesLoader implements Client.ResultHandler {
   }
 
   // Callback is called only on successful load
-  private void requestSponsoredMessages (long chatId, RunnableData<TdApi.SponsoredMessage[]> callback) {
+  public void requestSponsoredMessages (long chatId, RunnableData<TdApi.SponsoredMessage[]> callback) {
     if (!canShowSponsoredMessages(chatId) || isLoadingSponsoredMessages) {
       return;
     }

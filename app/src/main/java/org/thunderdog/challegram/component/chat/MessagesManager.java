@@ -28,6 +28,7 @@ import org.thunderdog.challegram.data.MessageListManager;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageBotInfo;
+import org.thunderdog.challegram.data.TGMessageSponsored;
 import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.mediaview.data.MediaStack;
@@ -1103,12 +1104,21 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     checkBotStart();
     onChatAwaitFinish();
     ensureContentHeight();
+    loader.requestSponsoredMessages(loader.getChatId(), msgs -> {
+      if (msgs.length == 0) return;
+      addSentMessages(Collections.singletonList(TGMessageSponsored.sponsoredToTgx(this, loader.getChatId(), findBottomMessage().getDate(), msgs[0])));
+    });
     saveScrollPosition();
   }
 
   public void onBottomEndLoaded () {
     onChatAwaitFinish();
     onCanLoadMoreBottomChanged();
+    //
+    loader.requestSponsoredMessages(loader.getChatId(), msgs -> {
+      if (msgs.length == 0) return;
+      addSentMessages(Collections.singletonList(TGMessageSponsored.sponsoredToTgx(this, loader.getChatId(), findBottomMessage().getDate(), msgs[0])));
+    });
   }
 
   private int getActiveMessageCount () {
