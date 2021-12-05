@@ -259,24 +259,6 @@ public class TGMessageText extends TGMessage {
     }
   }
 
-  private TdApi.FormattedText safeExtractText (TdApi.MessageContent content) {
-    if (content instanceof TdApi.MessageAnimatedEmoji) {
-      return new TdApi.FormattedText(((TdApi.MessageAnimatedEmoji) content).emoji, null);
-    } else if (content instanceof TdApi.MessageText) {
-      return ((TdApi.MessageText) content).text;
-    } else {
-      return null;
-    }
-  }
-
-  private TdApi.WebPage safeExtractWebPage (TdApi.MessageContent content) {
-    if (content instanceof TdApi.MessageText) {
-      return ((TdApi.MessageText) content).webPage;
-    } else {
-      return null;
-    }
-  }
-
   @Override
   protected boolean isSupportedMessageContent (TdApi.Message message, TdApi.MessageContent messageContent) {
     if (messageContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR)
