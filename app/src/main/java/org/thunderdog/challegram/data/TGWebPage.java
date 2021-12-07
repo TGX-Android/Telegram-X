@@ -522,11 +522,15 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         break;
       }
       case TYPE_TELEGRAM_AD: {
-        if (parent.tdlib.isBotChat(parent.msg.replyInChatId)) {
-          parent.tdlib().ui().openChat(new TdlibContext(parent.context(), parent.tdlib()), parent.msg.replyInChatId, new TdlibUi.ChatOpenParameters().shareItem(new TGBotStart(parent.msg.replyInChatId, webPage.url, false)).keepStack());
+        long sponsorId = parent.getSponsorChatId();
+
+        if (parent.isBotSponsor()) {
+          TdApi.InternalLinkTypeBotStart link = (TdApi.InternalLinkTypeBotStart) parent.sponsoredMetadata.link;
+          parent.tdlib().ui().openChat(new TdlibContext(parent.context(), parent.tdlib()), sponsorId, new TdlibUi.ChatOpenParameters().shareItem(new TGBotStart(sponsorId, link.startParameter, false)).keepStack());
         } else {
-          parent.tdlib().ui().openChat(new TdlibContext(parent.context(), parent.tdlib()), parent.msg.replyInChatId, new TdlibUi.ChatOpenParameters().keepStack());
+          parent.tdlib().ui().openChat(new TdlibContext(parent.context(), parent.tdlib()), sponsorId, new TdlibUi.ChatOpenParameters().keepStack());
         }
+
         break;
       }
       case TGWebPage.TYPE_PHOTO:
@@ -927,7 +931,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
           message = R.string.OpenBot;
           break;
         case TYPE_TELEGRAM_AD:
-          message = parent.tdlib.isBotChat(parent.msg.replyInChatId) ? R.string.OpenBot : R.string.OpenChannel;
+          message = parent.isBotSponsor() ? R.string.OpenBot : R.string.OpenChannel;
           break;
         case TYPE_TELEGRAM_CHAT:
           message = R.string.OpenChat;
@@ -967,9 +971,16 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         return false;
       }
 
-      boolean isBot = parent.tdlib.isBotChat(parent.msg.replyInChatId);
-      String username = parent.tdlib.chatUsername(parent.msg.replyInChatId);
-      String url = isBot ? parent.tdlib.tMeStartUrl(username, webPage.url, false) : parent.tdlib.tMeUrl(username);
+      boolean isBot = parent.isBotSponsor();
+      String url;
+
+      if (isBot) {
+        TdApi.InternalLinkTypeBotStart link = (TdApi.InternalLinkTypeBotStart) parent.sponsoredMetadata.link;
+        url = parent.tdlib.tMeStartUrl(link.botUsername, link.startParameter, false);
+      } else {
+        String username = parent.tdlib.chatUsername(parent.getSponsorChatId());
+        url = parent.tdlib.tMeUrl(username);
+      }
 
       c.showCopyUrlOptions(url, parent.openParameters(), null);
     }

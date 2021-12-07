@@ -1923,9 +1923,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
     if (i != -1 && MessagesHolder.isMessageType(adapter.getItemViewType(i))) {
       TGMessage message = adapter.getMessage(i);
+      boolean isBottomSponsored = adapter.getBottomMessage() != null && adapter.getBottomMessage().isSponsored() && adapter.getMessageCount() > 1;
 
-      if (adapter.getBottomMessage() != null && adapter.getBottomMessage().isSponsored() && adapter.getMessageCount() > 1) {
-        i += 2;
+      if (isBottomSponsored) {
+        //i += 2;
         message = adapter.getMessage(i);
       }
 
@@ -1948,8 +1949,22 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (readFully && scrollOffsetInPixels == 0) {
           scrollMessageId = scrollMessageChatId = 0;
           scrollMessageOtherIds = null;
+        } else if (isBottomSponsored) {
+          if (message.isSponsored()) {
+            // the bottom VISIBLE message is sponsored - no need to save that data
+            scrollMessageId = scrollMessageChatId = 0;
+            scrollMessageOtherIds = null;
+          } else {
+            message = adapter.getMessage(i + 1);
+            scrollMessageChatId = message.getChatId();
+            scrollMessageId = message.getBiggestId();
+            scrollMessageOtherIds = message.getOtherMessageIds(scrollMessageId);
+            scrollChatId = message.getChatId();
+          }
         }
       }
+
+      //if (adapter.getBottomMessage())
     } else if (isTotallyEmpty()) {
       scrollChatId = loader != null ? loader.getChatId() : 0;
     } else {

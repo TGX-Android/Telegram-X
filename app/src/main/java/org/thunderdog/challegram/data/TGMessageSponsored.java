@@ -8,7 +8,7 @@ import me.vkryl.core.MathUtils;
 
 public class TGMessageSponsored {
   public static TGMessage sponsoredToTgx (MessagesManager manager, long chatId, int date, TdApi.SponsoredMessage sMsg) {
-    return new TGMessageText(manager, sponsoredToTd(chatId, date, sMsg), ((TdApi.MessageText) sMsg.content).text);
+    return new TGMessageText(manager, sponsoredToTd(chatId, date, sMsg), sMsg);
   }
 
   private static TdApi.Message sponsoredToTd (long chatId, int date, TdApi.SponsoredMessage sMsg) {

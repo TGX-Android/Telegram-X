@@ -12,9 +12,6 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.collection.LongSparseArray;
 
-import com.google.common.collect.Lists;
-
-import org.checkerframework.checker.units.qual.A;
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.json.JSONArray;
@@ -28,7 +25,6 @@ import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
-import org.thunderdog.challegram.data.TGMessageChat;
 import org.thunderdog.challegram.data.TGMessageSponsored;
 import org.thunderdog.challegram.data.TdApiExt;
 import org.thunderdog.challegram.data.ThreadInfo;
@@ -39,7 +35,6 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
@@ -140,21 +135,6 @@ public class MessagesLoader implements Client.ResultHandler {
         callback.runWithData(messages);
       });
     });
-  }
-
-  private TGMessage createSponsoredTgMessage (TGMessage cur, long chatId, TdApi.SponsoredMessage[] sponsoredMessages) {
-    TGMessage tgm = TGMessageSponsored.sponsoredToTgx(manager, chatId, cur.getDate(), sponsoredMessages[0]);
-
-    tgm.setUnread(Long.MAX_VALUE);
-    tgm.setShowUnreadBadge(false);
-
-    tgm.forceAvatarWhenMerging(manager.useBubbles());
-    tgm.mergeWith(cur, true);
-
-    tgm.prepareLayout();
-    cur.setNeedExtraPadding(false);
-
-    return tgm;
   }
 
   public MessagesLoader (MessagesManager manager) {
@@ -1588,7 +1568,7 @@ public class MessagesLoader implements Client.ResultHandler {
           if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
             Log.i(Log.TAG_MESSAGES_LOADER, "Loading more messages, because we received too few messages");
           }
-          loadMore(true, chunkSize - count, willTryAgain && loadingLocal);
+          loadMore(true, chunkSize - count, willTryAgain && loadingLocal); // this is called after the first entry
         }
       }
 

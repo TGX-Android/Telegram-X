@@ -3830,7 +3830,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return msg.forwardInfo != null && !StringUtils.isEmpty(msg.forwardInfo.publicServiceAnnouncementType) && !sender.isUser();
   }
 
-  public final boolean isSponsored () {
+  public boolean isSponsored () {
     return msg.id < 0;
   }
 

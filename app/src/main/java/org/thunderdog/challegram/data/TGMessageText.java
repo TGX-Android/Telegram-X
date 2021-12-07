@@ -41,7 +41,7 @@ public class TGMessageText extends TGMessage {
   private TGWebPage webPage;
   private TdApi.MessageText currentMessageText, pendingMessageText;
 
-  private TdApi.InternalLinkType sponsoredMsgClick;
+  public TdApi.SponsoredMessage sponsoredMetadata;
 
   public TGMessageText (MessagesManager context, TdApi.Message msg, TdApi.MessageText text, @Nullable TdApi.MessageText pendingMessageText) {
     super(context, msg);
@@ -64,7 +64,7 @@ public class TGMessageText extends TGMessage {
 
   public TGMessageText (MessagesManager context, TdApi.Message msg, TdApi.SponsoredMessage text) {
     super(context, msg);
-    this.sponsoredMsgClick = text.link;
+    this.sponsoredMetadata = text;
     this.currentMessageText = (TdApi.MessageText) text.content;
     setText(currentMessageText.text, true);
   }
@@ -419,6 +419,19 @@ public class TGMessageText extends TGMessage {
     if (webPage != null) {
       webPage.destroy();
     }
+  }
+
+  @Override
+  public boolean isSponsored () {
+    return sponsoredMetadata != null;
+  }
+
+  public boolean isBotSponsor () {
+    return isSponsored() && sponsoredMetadata.link != null && sponsoredMetadata.link.getConstructor() == TdApi.InternalLinkTypeBotStart.CONSTRUCTOR;
+  }
+
+  public long getSponsorChatId () {
+    return isSponsored() ? sponsoredMetadata.sponsorChatId : 0;
   }
 
   // private int touchX, touchY;
