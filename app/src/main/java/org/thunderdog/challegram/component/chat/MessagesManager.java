@@ -1955,7 +1955,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
             scrollMessageId = message.getBiggestId();
             scrollMessageOtherIds = message.getOtherMessageIds(scrollMessageId);
             scrollChatId = message.getChatId();
-            View view2 = manager.findViewByPosition(i + 1);
+            View view2 = manager.findViewByPosition(i -  1);
             if (view2 != null && view2.getParent() != null) {
               scrollOffsetInPixels = ((View) view2.getParent()).getBottom() - view2.getBottom();
             } else {
