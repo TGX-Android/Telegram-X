@@ -444,7 +444,7 @@ public class TGMessageText extends TGMessage {
   }
 
   public int getSponsorButtonName () {
-    if (!isSponsored()) {
+    if (!isSponsored() || sponsoredMetadata.link == null) {
       return R.string.OpenChannel;
     }
 
@@ -464,6 +464,10 @@ public class TGMessageText extends TGMessage {
   }
 
   public String getSponsoredButtonUrl () {
+    if (!isSponsored() || sponsoredMetadata.link == null) {
+      return tdlib.tMeUrl(tdlib.chatUsername(getSponsorChatId()));
+    }
+
     switch (sponsoredMetadata.link.getConstructor()) {
       case TdApi.InternalLinkTypeMessage.CONSTRUCTOR: {
         TdApi.InternalLinkTypeMessage link = (TdApi.InternalLinkTypeMessage) sponsoredMetadata.link;
@@ -487,6 +491,11 @@ public class TGMessageText extends TGMessage {
     }
 
     long sponsorId = getSponsorChatId();
+
+    if (sponsoredMetadata.link == null) {
+      tdlib.ui().openChat(this, sponsorId, new TdlibUi.ChatOpenParameters().keepStack());
+      return;
+    }
 
     switch (sponsoredMetadata.link.getConstructor()) {
       case TdApi.InternalLinkTypeMessage.CONSTRUCTOR: {
