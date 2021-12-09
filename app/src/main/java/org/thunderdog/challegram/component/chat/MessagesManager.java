@@ -767,7 +767,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     stopScroll();
     if (!Config.SMOOTH_SCROLL_TO_BOTTOM_ENABLED || !smooth) {
       if (adapter.getMessage(0) != null && adapter.getMessage(0).isSponsored()) {
-        manager.scrollToPositionWithOffset(1, 0);
+        manager.scrollToPositionWithOffset(1, Screen.dp(48f));
       } else {
         manager.scrollToPositionWithOffset(0, 0);
       }
@@ -1105,13 +1105,15 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     checkBotStart();
     onChatAwaitFinish();
     ensureContentHeight();
-    requestSponsoredMessages(); // TODO position
     saveScrollPosition();
   }
 
   public void onBottomEndLoaded () {
     onChatAwaitFinish();
     onCanLoadMoreBottomChanged();
+  }
+
+  public void onBottomEndChecked () {
     requestSponsoredMessages();
   }
 
@@ -1123,9 +1125,21 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
       loader.requestSponsoredMessages(loader.getChatId(), messages -> {
         if (messages.length == 0) return;
-        controller.sponsoredMessagesLoaded = true;
-        addSentMessages(Collections.singletonList(TGMessageSponsored.sponsoredToTgx(this, loader.getChatId(), findBottomMessage().getDate(), messages[0])));
-        saveScrollPosition();
+
+        TdApi.SponsoredMessage adMessage = messages[0];
+
+        RunnableData<TGMessage> action = (lastMessage) -> {
+          if (lastMessage == null) return;
+          controller.sponsoredMessagesLoaded = true;
+          addSentMessages(Collections.singletonList(TGMessageSponsored.sponsoredToTgx(this, loader.getChatId(), lastMessage.getDate(), adMessage)));
+        };
+
+        TGMessage bottomMessage = findBottomMessage();
+        if (bottomMessage != null) {
+          action.runWithData(bottomMessage);
+        } else {
+          UI.post(() -> action.runWithData(findBottomMessage()), 1000L);
+        }
       });
     }
   }
@@ -1305,9 +1319,13 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (view != null && view.getParent() != null) {
           scrollOffsetInPixels = ((View) view.getParent()).getBottom() - view.getBottom();
         }
+
+        boolean bottomFullyVisible = manager.findFirstCompletelyVisibleItemPosition() == 0;
         if (!adapter.addMessage(message, false, scrollToBottom)) {
           if (message.isSponsored()) {
-            manager.scrollToPositionWithOffset(1, Screen.dp(48f));
+            if (bottomFullyVisible) {
+              manager.scrollToPositionWithOffset(1, Screen.dp(48f));
+            }
           } else {
             manager.scrollToPositionWithOffset(0, scrollOffsetInPixels);
           }
@@ -1949,18 +1967,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
             // the bottom VISIBLE message is sponsored - no need to save that data
             scrollMessageId = scrollMessageChatId = scrollOffsetInPixels = 0;
             scrollMessageOtherIds = null;
-          } else {
-            message = adapter.getMessage(i + 1);
-            scrollMessageChatId = message.getChatId();
-            scrollMessageId = message.getBiggestId();
-            scrollMessageOtherIds = message.getOtherMessageIds(scrollMessageId);
-            scrollChatId = message.getChatId();
-            View view2 = manager.findViewByPosition(i -  1);
-            if (view2 != null && view2.getParent() != null) {
-              scrollOffsetInPixels = ((View) view2.getParent()).getBottom() - view2.getBottom();
-            } else {
-              scrollOffsetInPixels = 0;
-            }
+            readFully = true;
           }
         }
       }

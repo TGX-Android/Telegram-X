@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.ui.ListItem;
@@ -84,9 +85,20 @@ public class SponsoredMessagesInfoController extends MediaBottomBaseController<V
 
   @Override
   public void onClick (View v) {
-    mediaLayout.hide(false);
     if (v.getId() == R.id.btn_openLink) {
+      mediaLayout.hide(false);
       Intents.openUriInBrowser(Uri.parse(Lang.getString(R.string.url_promote)));
     }
+  }
+
+  @Override
+  protected int getBackButton () {
+    return BackHeaderButton.TYPE_CLOSE;
+  }
+
+  @Override
+  public boolean onBackPressed (boolean fromTop) {
+    mediaLayout.hide(false);
+    return true;
   }
 }

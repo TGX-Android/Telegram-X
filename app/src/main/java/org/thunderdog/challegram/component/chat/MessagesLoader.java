@@ -993,10 +993,6 @@ public class MessagesLoader implements Client.ResultHandler {
 
       final long sourceChatId = fromMessageId.getChatId() != 0 ? fromMessageId.getChatId() : messageThread != null ? messageThread.getChatId() : getChatId();
 
-      if (sponsoredMessages.get(sourceChatId) != null && fromMessageId.getMessageId() < 0) {
-        fromMessageId.setMessageId(0);
-      }
-
       isLoading = true;
 
       loadingMode = mode;
@@ -1491,6 +1487,7 @@ public class MessagesLoader implements Client.ResultHandler {
               isLoading = false;
             }
             manager.onBottomEndLoaded();
+            manager.onBottomEndChecked();
           });
           return;
         }
@@ -1511,6 +1508,9 @@ public class MessagesLoader implements Client.ResultHandler {
               isLoading = false;
             }
             manager.onTopEndLoaded();
+            if (!canLoadBottom) {
+              manager.onBottomEndChecked();
+            }
           });
           return;
         }
@@ -1562,13 +1562,16 @@ public class MessagesLoader implements Client.ResultHandler {
         isLoading = false;
       }
 
+      boolean ignoreEndCheck = false;
+
       if (loadingMode == MODE_INITIAL || loadingMode == MODE_REPEAT_INITIAL) {
         int count = items.size();
         if (count > 0 && count < chunkSize) {
           if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
             Log.i(Log.TAG_MESSAGES_LOADER, "Loading more messages, because we received too few messages");
           }
-          loadMore(true, chunkSize - count, willTryAgain && loadingLocal); // this is called after the first entry
+          ignoreEndCheck = true;
+          loadMore(true, chunkSize - count, willTryAgain && loadingLocal);
         }
       }
 
@@ -1577,6 +1580,9 @@ public class MessagesLoader implements Client.ResultHandler {
       }
       if (canLoadBottom != couldLoadBottom && !canLoadBottom) {
         manager.onBottomEndLoaded();
+      }
+      if (!canLoadBottom && !ignoreEndCheck) {
+        manager.onBottomEndChecked();
       }
       manager.ensureContentHeight();
     });
