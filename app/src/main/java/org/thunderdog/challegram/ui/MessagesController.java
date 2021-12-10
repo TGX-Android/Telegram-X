@@ -5486,7 +5486,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }, AnimatorUtils.DECELERATE_INTERPOLATOR, 120l);
 
-  private void setScrollToBottomVisible (boolean isVisible, boolean isReverse, boolean animated) {
+  public void setScrollToBottomVisible (boolean isVisible, boolean isReverse, boolean animated) {
     if (messagesHidden) {
       isVisible = false;
     }
