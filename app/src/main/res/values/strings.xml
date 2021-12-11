@@ -648,6 +648,9 @@
   <string name="XVideoSaved_one">%1$s video saved to Gallery</string>
   <string name="XVideoSaved_other">%1$s videos saved to Gallery</string>
   <string name="ChannelSignMessages">Sign Messages</string>
+  <string name="RestrictSaving">Restrict Saving Content</string>
+  <string name="RestrictSavingGroupHint">Participants won\'t be able to forward messages from this group or save media files.</string>
+  <string name="RestrictSavingChannelHint">Subscribers won\'t be able to forward messages from this channel or save media files.</string>
   <string name="PostNotFound">Post not found</string>
   <string name="OpenSupergroup">Open Supergroup</string>
   <string name="Call">Call</string>
@@ -1777,6 +1780,8 @@
   <string name="EventLogToggledInvitesOff">%1$s disabled group invites</string>
   <string name="EventLogToggledSignaturesOn">%1$s enabled signatures</string>
   <string name="EventLogToggledSignaturesOff">%1$s disabled signatures</string>
+  <string name="EventLogToggledProtectionOn">%1$s restricted content copying</string>
+  <string name="EventLogToggledProtectionOff">%1$s allowed content copying</string>
   <string name="EventLogEditedInviteLink">Edited invite link %1$s\n\nUsage limit: %2$s → %3$s\nExpires: %4$s</string>
   <string name="LinkExpiresNever">never</string>
   <string name="LinkExpiresToday">today at %1$s</string>

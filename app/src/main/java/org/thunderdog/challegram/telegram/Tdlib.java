@@ -8276,6 +8276,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return isChannelChat(chat) && canChangeInfo(chat, false);
   }
 
+  public boolean canToggleContentProtection (long chatId) {
+    TdApi.ChatMemberStatus status = chatStatus(chatId);
+    return status != null && status.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR;
+  }
+
   public boolean canToggleAllHistory (TdApi.Chat chat) {
     return ((isSupergroupChat(chat) && canChangeInfo(chat, false)) || canUpgradeChat(chat.id)) && StringUtils.isEmpty(chatUsername(chat.id));
   }

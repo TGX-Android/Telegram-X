@@ -1871,6 +1871,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             view.setData(Lang.plural(R.string.xPermissions, Td.count(chat.permissions), TdConstants.CHAT_PERMISSIONS_COUNT));
             break;
           }
+          case R.id.btn_toggleProtection: {
+            view.getToggler().setRadioEnabled(chat.hasProtectedContent, isUpdate);
+            break;
+          }
           case R.id.btn_toggleSignatures: {
             if (mode == MODE_EDIT_CHANNEL) {
               view.getToggler().setRadioEnabled(supergroup.signMessages, isUpdate);
@@ -3017,11 +3021,18 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     return false;
   }
 
-  private void toggleChannelSignatures (View v) {
+  private void toggleChannelSignatures () {
     boolean sign = !supergroup.signMessages;
     supergroup.signMessages = sign;
     tdlib.client().send(new TdApi.ToggleSupergroupSignMessages(supergroup.id, sign), tdlib.okHandler());
     baseAdapter.updateValuedSettingById(R.id.btn_toggleSignatures);
+  }
+
+  private void toggleContentProtection () {
+    boolean enabled = !chat.hasProtectedContent;
+    chat.hasProtectedContent = enabled;
+    tdlib.client().send(new TdApi.ToggleChatHasProtectedContent(chat.id, enabled), tdlib.okHandler());
+    baseAdapter.updateValuedSettingById(R.id.btn_toggleProtection);
   }
 
   private void togglePrehistoryMode () {
@@ -3531,6 +3542,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(newLinkedChatItem());
       itemCount++;
     }
+    if (tdlib.canManageInviteLinks(chat)) {
+      items.add(new ListItem(itemCount > 0 ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_manageInviteLinks, 0, R.string.InviteLinkManage));
+      itemCount++;
+    }
     if (itemCount > 0) {
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     }
@@ -3541,6 +3557,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleSignatures, 0, R.string.ChannelSignMessages, supergroup.signMessages));
       added = true;
     }
+    if (tdlib.canToggleContentProtection(chat.id)) {
+      items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleProtection, 0, R.string.RestrictSaving, supergroup.signMessages));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, mode == MODE_EDIT_CHANNEL ? R.string.RestrictSavingChannelHint : R.string.RestrictSavingGroupHint));
+      added = false;
+    }
     if (tdlib.canToggleAllHistory(chat)) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_prehistoryMode, 0, R.string.ChatHistory));
@@ -3549,11 +3572,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (!isChannel()) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_chatPermissions, 0, R.string.ChatPermissions));
-      added = true;
-    }
-    if (tdlib.canManageInviteLinks(chat)) {
-      items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
-      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_manageInviteLinks, 0, R.string.InviteLinkManage));
       added = true;
     }
     if (supergroupFull != null && supergroupFull.canGetStatistics) {
@@ -3697,6 +3715,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private void processEditContentChanged (TdApi.Supergroup updatedSupergroup) {
     this.supergroup = updatedSupergroup;
+    baseAdapter.updateValuedSettingById(R.id.btn_toggleProtection);
 
     switch (mode) {
       case MODE_EDIT_SUPERGROUP: {
@@ -4564,7 +4583,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         break;
       }
       case R.id.btn_toggleSignatures: {
-        toggleChannelSignatures(v);
+        toggleChannelSignatures();
+        break;
+      }
+      case R.id.btn_toggleProtection: {
+        toggleContentProtection();
         break;
       }
     }
@@ -5971,17 +5994,28 @@ public class ProfileController extends ViewController<ProfileController.Args> im
                     baseAdapter.notifyItemRangeInserted(i + 1, 2);
                     changed = true;
                   } else {
-                    i = baseAdapter.indexOfViewById(R.id.shadowMiddle);
+                    i = baseAdapter.indexOfViewById(R.id.btn_manageInviteLinks);
                     if (i != -1) {
-                      baseAdapter.getItems().add(i + 1, new ListItem(ListItem.TYPE_SHADOW_TOP));
-                      baseAdapter.getItems().add(i + 2, newLinkedChatItem());
-                      baseAdapter.getItems().add(i + 3, new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-                      baseAdapter.notifyItemRangeInserted(i + 1, 3);
+                      baseAdapter.getItems().add(i, new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+                      baseAdapter.getItems().add(i, newLinkedChatItem());
+                      baseAdapter.notifyItemRangeInserted(i, 2);
                       changed = true;
+                    } else {
+                      i = baseAdapter.indexOfViewById(R.id.shadowMiddle);
+                      if (i != -1) {
+                        baseAdapter.getItems().add(i + 1, new ListItem(ListItem.TYPE_SHADOW_TOP));
+                        baseAdapter.getItems().add(i + 2, newLinkedChatItem());
+                        baseAdapter.getItems().add(i + 3, new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+                        baseAdapter.notifyItemRangeInserted(i + 1, 3);
+                        changed = true;
+                      }
                     }
                   }
                 } else if (baseAdapter.indexOfViewById(R.id.btn_channelType) != -1) {
                   baseAdapter.removeRange(i - 1, 2);
+                  changed = true;
+                } else if (baseAdapter.indexOfViewById(R.id.btn_manageInviteLinks) != -1) {
+                  baseAdapter.removeRange(i, 2);
                   changed = true;
                 } else {
                   baseAdapter.removeRange(i - 1, 3);
