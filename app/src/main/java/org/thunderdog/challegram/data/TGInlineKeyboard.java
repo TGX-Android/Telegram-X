@@ -36,7 +36,6 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
-import org.thunderdog.challegram.ui.HashtagChatController;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
@@ -598,14 +597,28 @@ public class TGInlineKeyboard {
         int iconColor = Theme.inlineIconColor(isOutBubble);
         switch (type.getConstructor()) {
           case TdApi.InlineKeyboardButtonTypeSwitchInline.CONSTRUCTOR:
-          case TdApi.InlineKeyboardButtonTypeCallbackWithPassword.CONSTRUCTOR: {
-            boolean isSwitchInline = type.getConstructor() == TdApi.InlineKeyboardButtonTypeSwitchInline.CONSTRUCTOR;
-            Drawable icon = getSparseDrawable(isSwitchInline ?
-              R.drawable.baseline_alternate_email_12 :
-              R.drawable.deproko_baseline_lock_16,
-              ThemeColorId.NONE
-            );
-            int padding = Screen.dp(isSwitchInline ? 4f : 1f);
+          case TdApi.InlineKeyboardButtonTypeCallbackWithPassword.CONSTRUCTOR:
+          case TdApi.InlineKeyboardButtonTypeUser.CONSTRUCTOR: {
+            float paddingDp;
+            int iconRes;
+            switch (type.getConstructor()) {
+              case TdApi.InlineKeyboardButtonTypeSwitchInline.CONSTRUCTOR:
+                iconRes = R.drawable.baseline_alternate_email_12;
+                paddingDp = 4f;
+                break;
+              case TdApi.InlineKeyboardButtonTypeCallbackWithPassword.CONSTRUCTOR:
+                iconRes = R.drawable.deproko_baseline_lock_16;
+                paddingDp = 1f;
+                break;
+              case TdApi.InlineKeyboardButtonTypeUser.CONSTRUCTOR:
+                iconRes = R.drawable.baseline_person_12;
+                paddingDp = 4f;
+                break;
+              default:
+                throw new UnsupportedOperationException();
+            }
+            Drawable icon = getSparseDrawable(iconRes, ThemeColorId.NONE);
+            int padding = Screen.dp(paddingDp);
             Drawables.draw(c, icon, dirtyRect.right - icon.getMinimumWidth() - padding, dirtyRect.top + padding, useBubbleMode ?
               (progressFactor == 0f ? Paints.getInlineBubbleIconPaint(textColor) : Paints.getPorterDuffPaint(ColorUtils.alphaColor(1f - progressFactor, textColor))) :
               textColorFactor == 0f && progressFactor == 0f ? Paints.getInlineIconPorterDuffPaint(isOutBubble) : Paints.getPorterDuffPaint(ColorUtils.alphaColor(1f - progressFactor, ColorUtils.fromToArgb(iconColor, Theme.inlineTextActiveColor(), textColorFactor))));
@@ -1128,6 +1141,11 @@ public class TGInlineKeyboard {
 
           final String data = ((TdApi.MessageGame) parent.getMessage().content).game.shortName;
           context.context.tdlib().client().send(new TdApi.GetCallbackQueryAnswer(parent.getChatId(), context.messageId, new TdApi.CallbackQueryPayloadGame(data)), getAnswerCallback(currentContextId, view, true));
+          break;
+        }
+        case TdApi.InlineKeyboardButtonTypeUser.CONSTRUCTOR: {
+          final TdApi.InlineKeyboardButtonTypeUser user = (TdApi.InlineKeyboardButtonTypeUser) type;
+          context.context.tdlib().ui().openPrivateChat(context.context.controller(), user.userId, new TdlibUi.ChatOpenParameters().keepStack().urlOpenParameters(openParameters(currentContextId, view)));
           break;
         }
         case TdApi.InlineKeyboardButtonTypeSwitchInline.CONSTRUCTOR: {
