@@ -1431,6 +1431,20 @@ public class TdlibListeners {
     }
   }
 
+  // updateChatDefaultMessageSenderId
+
+  void updateChatDefaultMessageSenderId (TdApi.UpdateChatDefaultMessageSenderId update) {
+    for (ChatListener listener : chatListeners) {
+      listener.onChatDefaultMessageSenderIdChanged(update.chatId, update.defaultMessageSenderId);
+    }
+    Iterator<ChatListener> list = specificChatListeners.iterator(update.chatId);
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onChatDefaultMessageSenderIdChanged(update.chatId, update.defaultMessageSenderId);
+      }
+    }
+  }
+
   // updateOption
 
   void updateTopChatsDisabled (boolean areDisabled) {

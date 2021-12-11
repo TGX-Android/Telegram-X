@@ -6182,6 +6182,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   @TdlibThread
+  private void updateChatDefaultMessageSenderId (TdApi.UpdateChatDefaultMessageSenderId update) {
+    synchronized (dataLock) {
+      final TdApi.Chat chat = chats.get(update.chatId);
+      if (TdlibUtils.assertChat(update.chatId, chat, update)) {
+        return;
+      }
+      chat.defaultMessageSenderId = update.defaultMessageSenderId;
+    }
+    listeners.updateChatDefaultMessageSenderId(update);
+  }
+
+  @TdlibThread
   private void updateChatUnreadMentionCount (TdApi.UpdateChatUnreadMentionCount update) {
     final boolean availabilityChanged;
     synchronized (dataLock) {
@@ -7533,6 +7545,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
       case TdApi.UpdateChatDefaultDisableNotification.CONSTRUCTOR: {
         updateChatDefaultDisableNotifications((TdApi.UpdateChatDefaultDisableNotification) update);
+        break;
+      }
+      case TdApi.UpdateChatDefaultMessageSenderId.CONSTRUCTOR: {
+        updateChatDefaultMessageSenderId((TdApi.UpdateChatDefaultMessageSenderId) update);
         break;
       }
       case TdApi.UpdateChatUnreadMentionCount.CONSTRUCTOR: {
