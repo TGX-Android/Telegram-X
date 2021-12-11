@@ -1575,7 +1575,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         if (message != null) {
           TdlibUi.reportChat(this, item.getSourceChatId(), new TdApi.Message[] {message}, null, getForcedTheme());
         } else {
-          final long chatId = item.getSourceChatId();
+          final long chatId = Td.getSenderId(item.getSourceSender());
           final RunnableData<TdApi.PhotoSize> act = (photoSize) -> {
             if (photoSize != null) {
               tdlib.ui().post(() ->

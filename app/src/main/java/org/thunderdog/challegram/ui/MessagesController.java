@@ -4380,9 +4380,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return false;
     }
     if (selectedMessageIds.size() == 1) {
-      return TD.canCopyText(getSingleSelectedMessage());
+      TdApi.Message message = getSingleSelectedMessage();
+      return message.canBeSaved && TD.canCopyText(message);
     }
-    return !isSecretChat();
+    return !(isSecretChat() || chat.hasProtectedContent);
   }
 
   private boolean canDeleteSelectedMessages () {
