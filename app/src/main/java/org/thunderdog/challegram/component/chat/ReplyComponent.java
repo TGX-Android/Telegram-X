@@ -565,7 +565,7 @@ public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyab
   private void setMessage (TdApi.Message msg, boolean forceRequestImage, boolean forceLocal) {
     currentMessage = msg;
     if ((flags & FLAG_USE_COLORIZE) != 0 && !tdlib.isSelfSender(msg)) {
-      nameColorId = TD.getNameColorId(new TdlibSender(tdlib, msg.chatId, msg.sender).getAvatarColorId());
+      nameColorId = TD.getNameColorId(new TdlibSender(tdlib, msg.chatId, msg.senderId).getAvatarColorId());
     } else {
       nameColorId = ThemeColorId.NONE;
     }
@@ -726,7 +726,7 @@ public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyab
         }
       }
     } else {
-      sender = msg.sender;
+      sender = msg.senderId;
       senderName = tdlib.isFromAnonymousGroupAdmin(msg) ? msg.authorSignature : null;
     }
     String title = BitwiseUtils.getFlag(flags, FLAG_FORCE_TITLE) ? this.title :

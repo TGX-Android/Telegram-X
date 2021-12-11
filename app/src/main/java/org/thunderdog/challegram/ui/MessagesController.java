@@ -2067,7 +2067,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       });
       return true;
     });*/
-    TdlibUi.reportChat(this, getChatId(), messages, true, after, null);
+    TdlibUi.reportChat(this, getChatId(), messages, after, null);
   }
 
   public static final int PREVIEW_MODE_NONE = 0;
@@ -3689,7 +3689,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public final boolean shouldDisallowScreenshots () {
-    return chat != null && isSecretChat();
+    return chat != null && (isSecretChat() || chat.hasProtectedContent);
   }
 
   @Override
@@ -4907,7 +4907,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
               }
             });
           } else {
-            viewMessagesFromSender(selectedMessage.getMessage().sender, false);
+            viewMessagesFromSender(selectedMessage.getMessage().senderId, false);
           }
           clearSelectedMessage();
         }
@@ -4977,6 +4977,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_messageCopy: {
         if (selectedMessage != null) {
+          if (!selectedMessage.canBeSaved()) {
+            context().tooltipManager().builder(itemView).show(tdlib, R.string.ChannelNoCopy).hideDelayed();
+            return false;
+          }
           TdApi.Message message = null;
           if (selectedMessage instanceof TGMessageMedia) {
             long messageId = ((TGMessageMedia) selectedMessage).getCaptionMessageId();
@@ -5038,7 +5042,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         return true;
       }
       case R.id.btn_messageShare: {
-        if (selectedMessage != null) {
+        if (selectedMessage != null && selectedMessage.canBeForwarded()) {
           shareMessages(selectedMessage.getChatId(), selectedMessage.getAllMessages());
           clearSelectedMessage();
         }
@@ -5046,6 +5050,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_saveGif: {
         if (selectedMessage != null && selectedMessageTag != null) {
+          if (!selectedMessage.canBeSaved()) {
+            context().tooltipManager().builder(itemView).show(tdlib, R.string.ChannelNoSave).hideDelayed();
+            return false;
+          }
           //noinspection unchecked
           tdlib.ui().saveGifs(((List<TD.DownloadedFile>) selectedMessageTag));
           clearSelectedMessage();
@@ -5054,6 +5062,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_saveFile: {
         if (selectedMessage != null && selectedMessageTag != null) {
+          if (!selectedMessage.canBeSaved()) {
+            context().tooltipManager().builder(itemView).show(tdlib, R.string.ChannelNoSave).hideDelayed();
+            return false;
+          }
           //noinspection unchecked
           TD.saveFiles((List<TD.DownloadedFile>) selectedMessageTag);
           clearSelectedMessage();
@@ -5076,6 +5088,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_downloadFile: {
         if (selectedMessage != null) {
+          if (!selectedMessage.canBeSaved()) {
+            context().tooltipManager().builder(itemView).show(tdlib, R.string.ChannelNoSave).hideDelayed();
+            return false;
+          }
           TdApi.File file = TD.getFile(selectedMessage);
           if (file != null && !file.local.isDownloadingActive && !file.local.isDownloadingCompleted) {
             tdlib.files().downloadFile(file);

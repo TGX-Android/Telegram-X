@@ -1487,16 +1487,16 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           strings.append(R.string.OpenInExternalApp);
         }
 
-        if (item.isLoaded()) {
+        if (item.isLoaded() && item.canBeSaved()) {
           ids.append(R.id.btn_saveToGallery);
           strings.append(R.string.SaveToGallery);
 
-          if (mode != MODE_SECRET && mode != MODE_GALLERY && (item.getMessage() != null || item.getShareFile() != null)) {
+          if (mode != MODE_SECRET && mode != MODE_GALLERY && item.canBeShared()) {
             ids.append(R.id.btn_share);
             strings.append(R.string.Share);
           }
         }
-        if (item.isGifType()) {
+        if (item.isGifType() && item.canBeSaved()) {
           ids.append(R.id.btn_saveGif);
           strings.append(R.string.SaveGif);
         }
@@ -1511,8 +1511,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           strings.append(R.string.ShowInChat);
         }
 
-        TdApi.Message message = item.getMessage();
-        if (message != null && tdlib.canReportMessage(message)) {
+        if (item.canBeReported()) {
           ids.append(R.id.btn_messageReport);
           strings.append(R.string.Report);
         }
@@ -1549,7 +1548,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   @Override
   public boolean shouldDisallowScreenshots () {
-    return mode == MODE_SECRET;
+    return mode == MODE_SECRET || !stack.getCurrent().canBeSaved();
   }
 
   @Override
@@ -1571,7 +1570,12 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         break;
       }
       case R.id.btn_messageReport: {
-        TdlibUi.reportChat(this, item.getSourceChatId(), new TdApi.Message[] {item.getMessage()}, true, null, getForcedTheme());
+        TdApi.Message message = item.getMessage();
+        if (message != null) {
+          TdlibUi.reportChat(this, item.getSourceChatId(), new TdApi.Message[] {message}, null, getForcedTheme());
+        } else {
+          TdlibUi.reportChatPhoto(this, item.getSourceChatId(), item.getBigFileId(), null, getForcedTheme());
+        }
         break;
       }
       case R.id.btn_copyLink: {
@@ -1579,7 +1583,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           UI.copyText(getArgumentsStrict().copyLink, R.string.CopiedLink);
         } else if (item.getSourceChatId() != 0) {
           if (tdlib.canCopyPostLink(item.getMessage())) {
-            tdlib.getMessageLink(item.getMessage(), false, messageThreadId != 0, link -> UI.copyText(link.url, link.isPublic ?R.string.CopiedLink : R.string.CopiedLinkPrivate));
+            tdlib.getMessageLink(item.getMessage(), false, messageThreadId != 0, link -> UI.copyText(link.url, link.isPublic ? R.string.CopiedLink : R.string.CopiedLinkPrivate));
           }
         }
         break;

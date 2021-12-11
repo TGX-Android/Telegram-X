@@ -486,7 +486,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public final boolean shouldDisallowScreenshots () {
-    return ChatId.isSecret(chat.id);
+    return ChatId.isSecret(chat.id) || chat.hasProtectedContent;
   }
 
   @Override
@@ -4069,7 +4069,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         }
 
         EditRightsController c = new EditRightsController(this.context, this.tdlib);
-        c.setArguments(new EditRightsController.Args(chat.id, user.id, false, myStatus, member)
+        c.setArguments(new EditRightsController.Args(chat.id, new TdApi.MessageSenderUser(user.id), false, myStatus, member)
           .forwardLimit(forwardLimit)
         );
         context.preventLeavingSearchMode();
@@ -4101,7 +4101,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           });
         } else {
           EditRightsController c = new EditRightsController(this.context, this.tdlib);
-          c.setArguments(new EditRightsController.Args(chat.id, user.id, true, myStatus, member));
+          c.setArguments(new EditRightsController.Args(chat.id, new TdApi.MessageSenderUser(user.id), true, myStatus, member));
           context.preventLeavingSearchMode();
           context.navigateTo(c);
         }

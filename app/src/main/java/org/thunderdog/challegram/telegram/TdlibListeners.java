@@ -898,6 +898,21 @@ public class TdlibListeners {
     updateChatHasScheduledMessages(update, specificChatListeners.iterator(update.chatId));
   }
 
+  // updateChatHasProtectedContent
+
+  private static void updateChatHasProtectedContent (TdApi.UpdateChatHasProtectedContent update, @Nullable Iterator<ChatListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onChatHasProtectedContentChanged(update.chatId, update.hasProtectedContent);
+      }
+    }
+  }
+
+  void updateChatHasProtectedContent (TdApi.UpdateChatHasProtectedContent update) {
+    updateChatHasProtectedContent(update, chatListeners.iterator());
+    updateChatHasProtectedContent(update, specificChatListeners.iterator(update.chatId));
+  }
+
   // updateChatReadInbox
 
   private static void updateChatReadInbox (TdApi.UpdateChatReadInbox update, boolean availabilityChanged, @Nullable Iterator<ChatListener> list) {
@@ -1412,6 +1427,20 @@ public class TdlibListeners {
     if (list != null) {
       while (list.hasNext()) {
         list.next().onChatDefaultDisableNotifications(update.chatId, update.defaultDisableNotification);
+      }
+    }
+  }
+
+  // updateChatDefaultMessageSenderId
+
+  void updateChatDefaultMessageSenderId (TdApi.UpdateChatDefaultMessageSenderId update) {
+    for (ChatListener listener : chatListeners) {
+      listener.onChatDefaultMessageSenderIdChanged(update.chatId, update.defaultMessageSenderId);
+    }
+    Iterator<ChatListener> list = specificChatListeners.iterator(update.chatId);
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onChatDefaultMessageSenderIdChanged(update.chatId, update.defaultMessageSenderId);
       }
     }
   }

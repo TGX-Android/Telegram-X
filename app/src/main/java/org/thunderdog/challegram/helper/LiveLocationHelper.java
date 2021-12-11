@@ -299,7 +299,7 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
       subtextSubtitle = TdlibManager.instance().liveLocation().buildSubtext(tdlib, locationMessages, chatId, false, location);
       if (subtextSubtitle != null) {
         subtextTitle = locationMessages.size() == 2 ?
-          tdlib.senderName(locationMessages.get(tdlib.isSelfSender(locationMessages.get(0)) ? 1 : 0).sender) :
+          tdlib.senderName(locationMessages.get(tdlib.isSelfSender(locationMessages.get(0)) ? 1 : 0).senderId) :
           Lang.getString(R.string.AttachLiveLocation);
         subtextSubtitle = " " + subtextSubtitle;
       }
@@ -729,7 +729,7 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
     } else {
       int i = 0;
       for (TdApi.Message msg : locationMessages) {
-        if (Td.equalsTo(msg.sender, message.sender)) {
+        if (Td.equalsTo(msg.senderId, message.senderId)) {
           locationMessages.remove(i);
           scheduleRemoval(msg, false);
           break;

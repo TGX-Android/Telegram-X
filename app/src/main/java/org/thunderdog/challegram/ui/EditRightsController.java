@@ -54,25 +54,16 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
 
   public static class Args {
     public long chatId;
-    public final long userId;
+    public final TdApi.MessageSender senderId;
     public final TdApi.ChatMemberStatus myStatus;
     public final TdApi.ChatMember member;
     public final int mode;
     public int forwardLimit;
     public boolean noFocusLock;
 
-    public Args (long chatId, int userId, TdApi.ChatMemberStatus myStatus, TdApi.ChatMember member, int mode, int forwardLimit) {
+    public Args (long chatId, TdApi.MessageSender senderId, boolean isRestrict, @NonNull TdApi.ChatMemberStatus myStatus, @Nullable TdApi.ChatMember member) {
       this.chatId = chatId;
-      this.userId = userId;
-      this.myStatus = myStatus;
-      this.member = member;
-      this.mode = mode;
-      this.forwardLimit = forwardLimit;
-    }
-
-    public Args (long chatId, long userId, boolean isRestrict, @NonNull TdApi.ChatMemberStatus myStatus, @Nullable TdApi.ChatMember member) {
-      this.chatId = chatId;
-      this.userId = userId;
+      this.senderId = senderId;
       this.mode = isRestrict ? MODE_RESTRICTION : MODE_ADMIN_PROMOTION;
       this.myStatus = myStatus;
       this.member = member;
@@ -80,7 +71,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
 
     public Args (long chatId) {
       this.chatId = chatId;
-      this.userId = 0;
+      this.senderId = null;
       this.mode = MODE_CHAT_PERMISSIONS;
       this.myStatus = null;
       this.member = null;
@@ -238,7 +229,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
             targetRestrict.isMember = TD.isMember(args.member.status);
 
             if (targetRestrict.isMember) {
-              showOptions(Lang.getStringBold(R.string.QUnblockX, tdlib.cache().userName(args.userId)), new int[]{R.id.btn_blockUser, R.id.btn_cancel}, new String[]{Lang.getString(R.string.RemoveRestrictions), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+              showOptions(Lang.getStringBold(R.string.QUnblockX, tdlib.senderName(args.senderId)), new int[]{R.id.btn_blockUser, R.id.btn_cancel}, new String[]{Lang.getString(R.string.RemoveRestrictions), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
                 if (id == R.id.btn_blockUser) {
                   unblockRunnable.run();
                 }
@@ -246,7 +237,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
               });
             } else {
               showSettings(new SettingsWrapBuilder(R.id.btn_unblockUser)
-                .setHeaderItem(new ListItem(ListItem.TYPE_INFO, 0, 0, Lang.getString(R.string.QUnblockX, tdlib.cache().userName(args.userId)), false))
+                .setHeaderItem(new ListItem(ListItem.TYPE_INFO, 0, 0, Lang.getString(R.string.QUnblockX, tdlib.senderName(args.senderId)), false))
                 .setIntDelegate((id, result) -> {
                   boolean addBackToGroup = result.get(R.id.right_readMessages) != 0;
                   if (addBackToGroup) {
@@ -389,7 +380,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     Runnable act = () -> {
       setDoneInProgress(true);
       setStackLocked(true);
-      tdlib.setChatMemberStatus(args.chatId, new TdApi.MessageSenderUser(args.userId), newStatus, args.forwardLimit, args.member != null ? args.member.status : null, (success, error) -> tdlib.ui().post(() -> {
+      tdlib.setChatMemberStatus(args.chatId, args.senderId, newStatus, args.forwardLimit, args.member != null ? args.member.status : null, (success, error) -> tdlib.ui().post(() -> {
         if (!isDestroyed()) {
           setStackLocked(false);
           setDoneInProgress(false);
@@ -612,7 +603,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       }
       return null;
     }
-    if (args.mode == MODE_ADMIN_PROMOTION && !tdlib.cache().userBot(args.userId) && (
+    if (args.mode == MODE_ADMIN_PROMOTION && !tdlib.cache().senderBot(args.senderId) && (
         id == R.id.right_inviteUsers ||
         id == R.id.right_changeChatInfo ||
         id == R.id.right_pinMessages
@@ -656,7 +647,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     if (args.mode == MODE_RESTRICTION && TD.isValidRight(id) && !TD.checkRight(tdlib.chatPermissions(args.chatId), id)) {
       return false;
     }
-    if (args.mode == MODE_ADMIN_PROMOTION && !tdlib.cache().userBot(args.userId) && (id == R.id.right_inviteUsers || id == R.id.right_changeChatInfo || id == R.id.right_pinMessages) && TD.checkRight(tdlib.chatPermissions(args.chatId), id)) {
+    if (args.mode == MODE_ADMIN_PROMOTION && !tdlib.cache().senderBot(args.senderId) && (id == R.id.right_inviteUsers || id == R.id.right_changeChatInfo || id == R.id.right_pinMessages) && TD.checkRight(tdlib.chatPermissions(args.chatId), id)) {
       return false;
     }
     if (!isNewRuleSet()) {
@@ -752,7 +743,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
   private void updateDescriptionHint () {
     int i = adapter.indexOfViewById(R.id.description);
     if (i != -1) {
-      adapter.getItems().get(i).setString(Lang.getStringBold(getDescriptionStringRes(), tdlib.cache().userName(getArgumentsStrict().userId)));
+      adapter.getItems().get(i).setString(Lang.getStringBold(getDescriptionStringRes(), tdlib.senderName(getArgumentsStrict().senderId)));
       adapter.notifyItemChanged(i);
     }
   }
@@ -772,22 +763,25 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       return;
 
     long chatId = getArgumentsStrict().chatId;
-    long userId = getArgumentsStrict().userId;
+    TdApi.MessageSender senderId = getArgumentsStrict().senderId;
+    final long senderUserId = Td.getSenderUserId(senderId);
+    if (senderUserId == 0)
+      return;
 
     boolean isChannel = tdlib.isChannel(chatId);
     CharSequence text;
 
     Lang.SpanCreator spanCreator = (target, argStart, argEnd, argIndex, needFakeBold) -> {
       if (argIndex == 1) {
-        return Lang.newUserSpan(this, userId);
+        return Lang.newUserSpan(this, senderUserId);
       }
       return null;
     };
 
     if (isChannel) {
-      text = Lang.getMarkdownString(this, R.string.TransferOwnershipAlertChannel, spanCreator, tdlib.chatTitle(chatId), tdlib.cache().userName(userId));
+      text = Lang.getMarkdownString(this, R.string.TransferOwnershipAlertChannel, spanCreator, tdlib.chatTitle(chatId), tdlib.senderName(senderId));
     } else {
-      text = Lang.getMarkdownString(this, R.string.TransferOwnershipAlertGroup, spanCreator, tdlib.chatTitle(chatId), tdlib.cache().userName(userId));
+      text = Lang.getMarkdownString(this, R.string.TransferOwnershipAlertGroup, spanCreator, tdlib.chatTitle(chatId), tdlib.senderName(senderId));
     }
 
     setDoneInProgress(true);
@@ -806,7 +800,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         if (isDoneInProgress())
           return;
         setDoneInProgress(true);
-        Runnable act = () -> tdlib.transferOwnership(getArgumentsStrict().chatId, userId, password, (success, error) -> runOnUiThreadOptional(() -> {
+        Runnable act = () -> tdlib.transferOwnership(getArgumentsStrict().chatId, senderUserId, password, (success, error) -> runOnUiThreadOptional(() -> {
           if (success) {
             setDoneInProgress(false);
             navigateBack();
@@ -851,7 +845,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
   }
 
   private boolean canTransferOwnership () {
-    if (targetAdmin == null || tdlib.cache().userBot(getArgumentsStrict().userId) || !targetAdmin.canBeEdited || getArgumentsStrict().mode != MODE_ADMIN_PROMOTION || getArgumentsStrict().myStatus.getConstructor() != TdApi.ChatMemberStatusCreator.CONSTRUCTOR)
+    if (targetAdmin == null || tdlib.cache().senderBot(getArgumentsStrict().senderId) || !targetAdmin.canBeEdited || getArgumentsStrict().mode != MODE_ADMIN_PROMOTION || getArgumentsStrict().myStatus.getConstructor() != TdApi.ChatMemberStatusCreator.CONSTRUCTOR)
       return false;
     boolean isChannel = tdlib.isChannel(getArgumentsStrict().chatId);
     if (isChannel) {
@@ -898,11 +892,19 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
 
     ArrayList<ListItem> items = new ArrayList<>();
 
-    if (args.userId != 0) {
-      items.add(new ListItem(ListItem.TYPE_CHAT_BETTER).setData(new TGFoundChat(tdlib, args.userId).setForcedSubtitle(args.member != null && TD.isCreator(args.member.status) ? Lang.getString(R.string.ChannelOwner) : null)));
+    if (args.senderId != null) {
+      TGFoundChat chat;
+      if (args.senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
+        chat = new TGFoundChat(tdlib, Td.getSenderUserId(args.senderId));
+      } else {
+        chat = new TGFoundChat(tdlib, null, Td.getSenderId(args.senderId), true);
+      }
+      chat.setForcedSubtitle(args.member != null && TD.isCreator(args.member.status) ? Lang.getString(R.string.ChannelOwner) : null);
+      
+      items.add(new ListItem(ListItem.TYPE_CHAT_BETTER).setData(chat));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     }
-    items.add(new ListItem(args.userId != 0 ? ListItem.TYPE_HEADER : ListItem.TYPE_HEADER_PADDED, 0, 0, args.mode == MODE_CHAT_PERMISSIONS ? R.string.WhatMembersCanDo : tdlib.cache().userBot(args.userId) ? R.string.WhatThisBotCanDo : args.mode == MODE_RESTRICTION ? R.string.WhatThisUserCanDo : R.string.WhatThisAdminCanDo));
+    items.add(new ListItem(args.senderId != null ? ListItem.TYPE_HEADER : ListItem.TYPE_HEADER_PADDED, 0, 0, args.mode == MODE_CHAT_PERMISSIONS ? R.string.WhatMembersCanDo : tdlib.cache().senderBot(args.senderId) ? R.string.WhatThisBotCanDo : args.mode == MODE_RESTRICTION ? R.string.WhatThisUserCanDo : R.string.WhatThisAdminCanDo));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
 
     boolean isChannel = tdlib.isChannel(args.chatId);
@@ -987,7 +989,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           }
         }
       } else {
-        items.add(new ListItem(ListItem.TYPE_DESCRIPTION, R.id.description, 0, Lang.getStringBold(getDescriptionStringRes(), tdlib.cache().userName(args.userId)), false));
+        items.add(new ListItem(ListItem.TYPE_DESCRIPTION, R.id.description, 0, Lang.getStringBold(getDescriptionStringRes(), tdlib.senderName(args.senderId)), false));
       }
     }
 
@@ -1255,7 +1257,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
   }
 
   private boolean checkDefaultRight (@RightId int id) {
-    return !tdlib.cache().userBot(getArgumentsStrict().userId) && TD.checkRight(tdlib.chatPermissions(getArgumentsStrict().chatId), id);
+    return !tdlib.cache().senderBot(getArgumentsStrict().senderId) && TD.checkRight(tdlib.chatPermissions(getArgumentsStrict().chatId), id);
   }
 
   private boolean getValueForId (@RightId int id) {

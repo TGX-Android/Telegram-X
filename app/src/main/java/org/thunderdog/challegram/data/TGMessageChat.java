@@ -1060,12 +1060,12 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
         if (km) {
           distance /= 1000;
         }
-        if (tdlib.isSelfSender(alert.traveler)) {
-          makePlural(km ? R.string.ProximityAlertYouKM : R.string.ProximityAlertYouM, distance, new Arg(new TdlibSender(tdlib, msg.chatId, alert.watcher)));
-        } else if (tdlib.isSelfSender(alert.watcher)) {
-          makePlural(km ? R.string.ProximityAlertOtherKM : R.string.ProximityAlertOtherM, distance, new Arg(new TdlibSender(tdlib, msg.chatId, alert.traveler)));
+        if (tdlib.isSelfSender(alert.travelerId)) {
+          makePlural(km ? R.string.ProximityAlertYouKM : R.string.ProximityAlertYouM, distance, new Arg(new TdlibSender(tdlib, msg.chatId, alert.watcherId)));
+        } else if (tdlib.isSelfSender(alert.watcherId)) {
+          makePlural(km ? R.string.ProximityAlertOtherKM : R.string.ProximityAlertOtherM, distance, new Arg(new TdlibSender(tdlib, msg.chatId, alert.travelerId)));
         } else {
-          makePlural(km ? R.string.ProximityAlertKM : R.string.ProximityAlertM, distance, new Arg(new TdlibSender(tdlib, msg.chatId, alert.traveler)), new Arg(new TdlibSender(tdlib, msg.chatId, alert.watcher)));
+          makePlural(km ? R.string.ProximityAlertKM : R.string.ProximityAlertM, distance, new Arg(new TdlibSender(tdlib, msg.chatId, alert.travelerId)), new Arg(new TdlibSender(tdlib, msg.chatId, alert.watcherId)));
         }
         break;
       }

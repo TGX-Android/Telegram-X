@@ -124,8 +124,8 @@ public class Test {
       if (userId == 0) {
         userId = Td.getSenderUserId(chat.lastMessage);
       }
-      if (userId != 0) {
-        tdlib.sendFakeUpdate(new TdApi.UpdateUserChatAction(chat.id, 0, userId, tdlib.status().hasStatus(chat.id, 0) ? new TdApi.ChatActionCancel() : testAction != null ? testAction : new TdApi.ChatActionTyping()), false);
+      if (chat.lastMessage != null) {
+        tdlib.sendFakeUpdate(new TdApi.UpdateChatAction(chat.id, 0, chat.lastMessage.senderId, tdlib.status().hasStatus(chat.id, 0) ? new TdApi.ChatActionCancel() : testAction != null ? testAction : new TdApi.ChatActionTyping()), false);
       }
       return true;
     }

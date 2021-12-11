@@ -129,7 +129,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
     if (n != null && notification.type.getConstructor() == TdApi.NotificationTypeNewMessage.CONSTRUCTOR && n.notification.type.getConstructor() == TdApi.NotificationTypeNewMessage.CONSTRUCTOR) {
       TdApi.Message m = ((TdApi.NotificationTypeNewMessage) notification.type).message;
       TdApi.Message other = ((TdApi.NotificationTypeNewMessage) n.notification.type).message;
-      return m.chatId == other.chatId && Td.equalsTo(m.sender, other.sender) && (m.mediaAlbumId != 0 && m.mediaAlbumId == other.mediaAlbumId) || (m.forwardInfo != null && other.forwardInfo != null && m.date == other.date);
+      return m.chatId == other.chatId && Td.equalsTo(m.senderId, other.senderId) && (m.mediaAlbumId != 0 && m.mediaAlbumId == other.mediaAlbumId) || (m.forwardInfo != null && other.forwardInfo != null && m.date == other.date);
     }
     return false;
   }
@@ -206,7 +206,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
         return Td.getSenderId(message);
       }
       case TdApi.NotificationTypeNewPushMessage.CONSTRUCTOR: {
-        return Td.getSenderId(((TdApi.NotificationTypeNewPushMessage) notification.type).sender);
+        return Td.getSenderId(((TdApi.NotificationTypeNewPushMessage) notification.type).senderId);
       }
       case TdApi.NotificationTypeNewSecretChat.CONSTRUCTOR:
         return ChatId.fromUserId(tdlib.chatUserId(getChatId()));
@@ -226,7 +226,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
         TdApi.NotificationTypeNewPushMessage push = (TdApi.NotificationTypeNewPushMessage) notification.type;
         if (!StringUtils.isEmpty(push.senderName))
           return push.senderName;
-        return tdlib.senderName(push.sender);
+        return tdlib.senderName(push.senderId);
       }
       case TdApi.NotificationTypeNewSecretChat.CONSTRUCTOR:
         return tdlib.cache().userName(tdlib.chatUserId(getChatId()));
@@ -327,7 +327,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
               if (pinnedMessage != null)
                 message = pinnedMessage;
             } else {
-              return wrapEdited(Lang.getPinnedMessageText(tdlib, message.sender, pinnedMessage, false));
+              return wrapEdited(Lang.getPinnedMessageText(tdlib, message.senderId, pinnedMessage, false));
             }
             break;
           }

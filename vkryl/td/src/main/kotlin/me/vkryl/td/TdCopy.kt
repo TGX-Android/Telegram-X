@@ -64,7 +64,7 @@ fun User.copyTo (dst: User) {
 
 fun Message.copyTo (dst: Message) {
   dst.id = this.id
-  dst.sender = this.sender
+  dst.senderId = this.senderId
   dst.chatId = this.chatId
   dst.sendingState = this.sendingState
   dst.schedulingState = this.schedulingState
@@ -72,6 +72,7 @@ fun Message.copyTo (dst: Message) {
   dst.isPinned = this.isPinned
   dst.canBeEdited = this.canBeEdited
   dst.canBeForwarded = this.canBeForwarded
+  dst.canBeSaved = this.canBeSaved
   dst.canBeDeletedOnlyForSelf = this.canBeDeletedOnlyForSelf
   dst.canBeDeletedForAllUsers = this.canBeDeletedForAllUsers
   dst.canGetStatistics = this.canGetStatistics
@@ -140,7 +141,7 @@ fun Message?.copyOf (): Message? {
   return this?.let {
     Message(
       this.id,
-      this.sender,
+      this.senderId,
       this.chatId,
       this.sendingState,
       this.schedulingState,
@@ -148,6 +149,7 @@ fun Message?.copyOf (): Message? {
       this.isPinned,
       this.canBeEdited,
       this.canBeForwarded,
+      this.canBeSaved,
       this.canBeDeletedOnlyForSelf,
       this.canBeDeletedForAllUsers,
       this.canGetStatistics,
@@ -186,6 +188,8 @@ fun Chat?.copyOf (): Chat? {
       this.permissions,
       this.lastMessage,
       if (this.positions != null) this.positions.copyOf() else null,
+      this.defaultMessageSenderId,
+      this.hasProtectedContent,
       this.isMarkedAsUnread,
       this.isBlocked,
       this.hasScheduledMessages,

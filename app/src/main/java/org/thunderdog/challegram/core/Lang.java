@@ -410,6 +410,16 @@ public class Lang {
     return (target, argStart, argEnd, argIndex, needFakeBold) -> TD.toSpan(entity);
   }
 
+  public static CustomTypefaceSpan newSenderSpan (TdlibDelegate context, TdApi.MessageSender senderId) {
+    switch (senderId.getConstructor()) {
+      case TdApi.MessageSenderUser.CONSTRUCTOR:
+        return newUserSpan(context, ((TdApi.MessageSenderUser) senderId).userId);
+      case TdApi.MessageSenderChat.CONSTRUCTOR:
+        return null; // TODO
+    }
+    throw new UnsupportedOperationException(senderId.toString());
+  }
+
   public static CustomTypefaceSpan newUserSpan (TdlibDelegate context, long userId) {
     return TD.toDisplaySpan(new TdApi.TextEntityTypeMentionName(userId)).setOnClickListener((view, span) -> {
       context.tdlib().ui().openPrivateProfile(context, userId, null);

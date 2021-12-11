@@ -183,7 +183,7 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
           member = null;
         }
         EditRightsController c = new EditRightsController(context, tdlib);
-        c.setArguments(new EditRightsController.Args(getArgumentsStrict().chatId, userId, true, myStatus, member).noFocusLock());
+        c.setArguments(new EditRightsController.Args(getArgumentsStrict().chatId, new TdApi.MessageSenderUser(userId), true, myStatus, member).noFocusLock());
         navigateTo(c);
       });
     });

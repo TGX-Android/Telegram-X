@@ -561,9 +561,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
         b.append(entity.toString());
         b.append("}");
       }
-      Log.e("Next entity not found (entities not sorted?), startIndex:%d start:%d, end:%d, entities:\n%s", startIndex, start, end, b.toString());
-      if (BuildConfig.DEBUG)
-        throw new UnsupportedOperationException(b.toString());
+      Log.v("Next entity not found (entities not sorted?), startIndex:%d start:%d, end:%d, entities:\n%s", startIndex, start, end, b.toString());
     }
 
     return null;
