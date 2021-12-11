@@ -11,7 +11,7 @@ public class ThreadInfo {
   private final TdApi.MessageThreadInfo threadInfo;
 
   public ThreadInfo (TdApi.Message[] openedFromMessages, TdApi.MessageThreadInfo threadInfo, boolean forceComments) {
-    this.areComments = openedFromMessages[0].isChannelPost || (forceComments && (threadInfo.messages[0].isChannelPost || (threadInfo.messages[0].sender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR && ((TdApi.MessageSenderChat) threadInfo.messages[0].sender).chatId != threadInfo.messages[0].chatId)));
+    this.areComments = openedFromMessages[0].isChannelPost || (forceComments && (threadInfo.messages[0].isChannelPost || (threadInfo.messages[0].senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR && ((TdApi.MessageSenderChat) threadInfo.messages[0].senderId).chatId != threadInfo.messages[0].chatId)));
     this.threadInfo = threadInfo;
     long messageId = threadInfo.draftMessage != null ? threadInfo.draftMessage.replyToMessageId : 0;
     if (messageId != 0) {

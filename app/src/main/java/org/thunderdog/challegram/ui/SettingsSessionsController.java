@@ -152,7 +152,7 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
       adapter.notifyItemRangeInserted(index, 2);
     }
 
-    sessions = new Tdlib.SessionsInfo(new TdApi.Sessions(new TdApi.Session[] {sessions.currentSession}));
+    sessions = new Tdlib.SessionsInfo(new TdApi.Sessions(new TdApi.Session[] {sessions.currentSession}, sessions.inactiveSessionTtlDays));
   }
 
   private static CharSequence getTitle (TdApi.Session session) {
@@ -317,7 +317,7 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
       System.arraycopy(sessions.allSessions, 0, newSessions, 0, sessions.allSessions.length);
       newSessions[sessions.allSessions.length] = session;
       Td.sort(newSessions);
-      this.sessions = new Tdlib.SessionsInfo(new TdApi.Sessions(newSessions));
+      this.sessions = new Tdlib.SessionsInfo(new TdApi.Sessions(newSessions, sessions.inactiveSessionTtlDays));
       buildCells();
       UI.showCustomToast(Lang.getStringSecure(session.isPasswordPending ? R.string.ScanQRAuthorizedToastPasswordPending : R.string.ScanQRAuthorizedToast, Lang.boldCreator(), session.applicationName), Toast.LENGTH_LONG, 0);
     });
@@ -466,7 +466,7 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
     }
 
     TdApi.Session[] newSessions = ArrayUtils.removeElement(sessions.allSessions, index, new TdApi.Session[sessions.allSessions.length - 1]);
-    this.sessions = new Tdlib.SessionsInfo(new TdApi.Sessions(newSessions));
+    this.sessions = new Tdlib.SessionsInfo(new TdApi.Sessions(newSessions, sessions.inactiveSessionTtlDays));
 
     final int itemIndex = adapter.indexOfViewByData(session);
     if (itemIndex == -1)

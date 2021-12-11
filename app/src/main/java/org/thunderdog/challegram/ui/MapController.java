@@ -583,7 +583,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
   }
 
   private void setLocationPlaceView (final MediaLocationPlaceView view, final TdApi.Message msg, long expiresAt, boolean isBase) {
-    TdlibSender sender = new TdlibSender(tdlib, msg.chatId, msg.sender);
+    TdlibSender sender = new TdlibSender(tdlib, msg.chatId, msg.senderId);
     view.setRoundedLocationImage(sender.getAvatar());
 
     TGMessageLocation.TimeResult result = buildLocationSubtitle(msg, isBase);
@@ -1451,7 +1451,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
         if (point.message.id == messageId) {
           return i;
         }
-        if (Td.equalsTo(point.message.sender, sender) && !(i == 0 && hasFocusPoint())) {
+        if (Td.equalsTo(point.message.senderId, sender) && !(i == 0 && hasFocusPoint())) {
           bestGuess = i;
         }
       }
@@ -1579,7 +1579,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
   }
 
   private void addLiveLocation (@NonNull TdApi.Message message) {
-    int i = indexOfLiveLocationBySender(message.sender, message.id);
+    int i = indexOfLiveLocationBySender(message.senderId, message.id);
     if (i != -1) {
       LocationPoint<T> point = pointsOfInterest.get(i);
       point.setSourceMessage(message, true);

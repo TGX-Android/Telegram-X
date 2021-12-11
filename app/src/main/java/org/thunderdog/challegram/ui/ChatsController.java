@@ -1588,7 +1588,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
               simpleActionId = R.id.btn_archiveUnarchiveChat;
               break;
             case R.id.more_btn_report:
-              TdlibUi.reportChat(getParentOrSelf(), selectedChats.keyAt(0), null, false, onDone, null);
+              TdlibUi.reportChat(getParentOrSelf(), selectedChats.keyAt(0), null, onDone, null);
               return;
           }
           if (simpleActionId != 0) {

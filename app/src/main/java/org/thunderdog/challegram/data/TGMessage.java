@@ -71,8 +71,6 @@ import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.theme.ThemeProperty;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
-import org.thunderdog.challegram.tool.EmojiCodeColored;
-import org.thunderdog.challegram.tool.EmojiData;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
@@ -243,7 +241,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     this.currentViews.setContentProvider(this);
     this.msg = msg;
 
-    TdApi.MessageSender sender = msg.sender;
+    TdApi.MessageSender sender = msg.senderId;
     if (tdlib.isSelfChat(msg.chatId)) {
       flags |= FLAG_SELF_CHAT;
       if (msg.forwardInfo != null) {
@@ -3956,6 +3954,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return msg.canBeForwarded && (msg.content.getConstructor() != TdApi.MessageLocation.CONSTRUCTOR || ((TdApi.MessageLocation) msg.content).expiresIn == 0) && !isEventLog();
   }
 
+  public boolean canBeSaved () {
+    return msg.canBeSaved;
+  }
+
   public boolean isUnread () {
     return (flags & MESSAGE_FLAG_READ) == 0 || (msg.sendingState != null);
   }
@@ -4514,6 +4516,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     dst.canBeDeletedForAllUsers = src.canBeDeletedForAllUsers;
     dst.canGetMessageThread = src.canGetMessageThread;
     dst.canBeForwarded = src.canBeForwarded;
+    dst.canBeSaved = src.canBeSaved;
     dst.canBeEdited = src.canBeEdited;
     dst.canGetStatistics = src.canGetStatistics;
     dst.canGetViewers = src.canGetViewers;
@@ -6369,7 +6372,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   // Other
 
   public static TGMessage valueOf (MessagesManager context, TdApi.Message msg, TdApi.Chat chat, @Nullable LongSparseArray<TdApi.ChatAdministrator> chatAdmins) {
-    return valueOf(context, msg, chat, msg.sender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR && chatAdmins != null ? chatAdmins.get(((TdApi.MessageSenderUser) msg.sender).userId) : null);
+    return valueOf(context, msg, chat, msg.senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR && chatAdmins != null ? chatAdmins.get(((TdApi.MessageSenderUser) msg.senderId).userId) : null);
   }
 
   public static TGMessage valueOf (MessagesManager context, TdApi.Message msg, TdApi.Chat chat, @Nullable TdApi.ChatAdministrator admin) {
@@ -6934,7 +6937,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           return new TGMessageSticker(context, msg, nonNull(((TdApi.MessageDice) content)));
         }
         case TdApi.MessageSticker.CONSTRUCTOR: {
-          return new TGMessageSticker(context, msg, nonNull(((TdApi.MessageSticker) content).sticker), false, null, null);
+          return new TGMessageSticker(context, msg, nonNull(((TdApi.MessageSticker) content).sticker), false, 0);
         }
         case TdApi.MessageVoiceNote.CONSTRUCTOR: {
           return new TGMessageFile(context, msg);

@@ -517,7 +517,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
     }
 
     EditRightsController c = new EditRightsController(context, tdlib);
-    c.setArguments(new EditRightsController.Args(chatId, content.getUserId(), restrict, myStatus, member));
+    c.setArguments(new EditRightsController.Args(chatId, new TdApi.MessageSenderUser(content.getUserId()), restrict, myStatus, member));
     parent.navigateTo(c);
   }
 
@@ -690,7 +690,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
       return;
     tdlib.ui().post(() -> {
       if (!isDestroyed()) {
-        bringMemberToTop(message.sender);
+        bringMemberToTop(message.senderId);
       }
     });
   }

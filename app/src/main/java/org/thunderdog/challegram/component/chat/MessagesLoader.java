@@ -860,7 +860,7 @@ public class MessagesLoader implements Client.ResultHandler {
         msg.id = maxId - messages.size() + i;
         msg.date = message.date != 0 ? message.date : (minDate = minDate + message.after);
         msg.isOutgoing = message.out;
-        msg.sender = new TdApi.MessageSenderUser(message.out ? myUserId : message.senderUserId);
+        msg.senderId = new TdApi.MessageSenderUser(message.out ? myUserId : message.senderUserId);
         msg.content = message.content;
         out.add(msg);
         i++;
@@ -1042,7 +1042,7 @@ public class MessagesLoader implements Client.ResultHandler {
       false, false,
       false, false,
       false, false,
-      false, false,
+      false, false, false,
       false, false,
       isChannel,
       false,

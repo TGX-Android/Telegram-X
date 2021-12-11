@@ -685,19 +685,19 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
         break;
       }
       case TdApi.MessagePhoto.CONSTRUCTOR: {
-        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.sender, msg.date, (TdApi.MessagePhoto) msg.content).setMessage(msg);
+        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.senderId, msg.date, (TdApi.MessagePhoto) msg.content).setMessage(msg);
       }
       case TdApi.MessageVideo.CONSTRUCTOR: {
-        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.sender, msg.date, (TdApi.MessageVideo) msg.content, true).setMessage(msg);
+        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.senderId, msg.date, (TdApi.MessageVideo) msg.content, true).setMessage(msg);
       }
       case TdApi.MessageAnimation.CONSTRUCTOR: {
-        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.sender, msg.date, (TdApi.MessageAnimation) msg.content).setMessage(msg);
+        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.senderId, msg.date, (TdApi.MessageAnimation) msg.content).setMessage(msg);
       }
       case TdApi.MessageChatChangePhoto.CONSTRUCTOR: {
         return new MediaItem(context, tdlib, msg.chatId, msg.id, ((TdApi.MessageChatChangePhoto) msg.content).photo).setMessage(msg);
       }
       case TdApi.MessageVideoNote.CONSTRUCTOR: {
-        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.sender, msg.date, (TdApi.MessageVideoNote) msg.content).setMessage(msg);
+        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.senderId, msg.date, (TdApi.MessageVideoNote) msg.content).setMessage(msg);
       }
     }
     return null;
@@ -1235,6 +1235,43 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
 
   public boolean isLoaded () {
     return targetFile == null || TD.isFileLoaded(targetFile) || (fileProgress != null && fileProgress.isLoaded());
+  }
+
+  public boolean canBeSaved () {
+    if (msg != null) {
+      return msg.canBeSaved;
+    }
+    if (type == TYPE_CHAT_PROFILE) {
+      TdApi.Chat chat = tdlib.chat(sourceChatId);
+      return chat != null && !chat.hasProtectedContent;
+    }
+    return getShareFile() != null;
+  }
+
+  public boolean canBeReported () {
+    if (msg != null) {
+      return tdlib.canReportMessage(msg);
+    }
+    switch (type) {
+      case TYPE_CHAT_PROFILE: {
+        return sourceChatId != 0;
+      }
+      case TYPE_USER_PROFILE: {
+        long userId = ((TdApi.MessageSenderUser) sourceSender).userId;
+        long chatId = ChatId.fromUserId(userId);
+        TdApi.Chat chat = tdlib.chat(chatId);
+        if (chat != null && chat.canBeReported)
+          return true;
+        return tdlib.cache().userBot(userId);
+      }
+    }
+    return false;
+  }
+
+  public boolean canBeShared () {
+    if (msg != null)
+      return msg.canBeForwarded;
+    return getShareFile() != null;
   }
 
   public TdApi.File getShareFile () {

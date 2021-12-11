@@ -43,8 +43,7 @@ public class GifFile {
   private long chatId, messageId;
   private boolean isLooped, isFrozen;
   private int vibrationPattern = Emoji.VIBRATION_PATTERN_NONE;
-  private String colorReplacementKey;
-  private int[] colorReplacement;
+  private int fitzpatrickType;
 
   private final long creationTime;
 
@@ -65,17 +64,12 @@ public class GifFile {
       throw new IllegalArgumentException(sticker.toString());
   }
 
-  public int[] getColorReplacement () {
-    return colorReplacement;
+  public int getFitzpatrickType () {
+    return fitzpatrickType;
   }
 
-  public String getColorReplacementKey () {
-    return colorReplacementKey;
-  }
-
-  public void setColorReplacement (String colorReplacementKey, int[] colorReplacement) {
-    this.colorReplacementKey = colorReplacementKey;
-    this.colorReplacement = colorReplacement;
+  public void setFitzpatrickType (int fitzpatrickType) {
+    this.fitzpatrickType = fitzpatrickType;
   }
 
   public interface FrameChangeListener {
@@ -260,6 +254,10 @@ public class GifFile {
     if (flags != 0) {
       b.append(',');
       b.append(flags);
+    }
+    if (fitzpatrickType != 0) {
+      b.append(",f");
+      b.append(fitzpatrickType);
     }
     if (isUnique() || isPlayOnce()) {
       b.append(',');

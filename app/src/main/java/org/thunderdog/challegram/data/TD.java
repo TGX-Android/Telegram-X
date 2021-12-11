@@ -1676,7 +1676,7 @@ public class TD {
 
   public static TdApi.PhoneNumberAuthenticationSettings defaultPhoneNumberAuthenticationSettings () {
     // TODO automatic phone code entry
-    return new TdApi.PhoneNumberAuthenticationSettings(false, false, false);
+    return new TdApi.PhoneNumberAuthenticationSettings(false, false, false, false, null);
   }
 
   public static Letters getLetters (TdApi.User user) {
@@ -1963,10 +1963,10 @@ public class TD {
     return newFakeMessage(0, null, new TdApi.MessageVoiceNote(voiceNote, new TdApi.FormattedText("", null), true));
   }
 
-  public static TdApi.Message newFakeMessage (long chatId, TdApi.MessageSender sender, TdApi.MessageContent content) {
+  public static TdApi.Message newFakeMessage (long chatId, TdApi.MessageSender senderId, TdApi.MessageContent content) {
     TdApi.Message message = new TdApi.Message();
     message.chatId = chatId;
-    message.sender = sender;
+    message.senderId = senderId;
     message.content = content;
     return message;
   }
@@ -2265,9 +2265,9 @@ public class TD {
 
   public static TdApi.MessageSender getSender (TdApi.Message[] messages) {
     if (messages != null && messages.length > 0) {
-      TdApi.MessageSender sender = messages[0].sender;
+      TdApi.MessageSender sender = messages[0].senderId;
       for (TdApi.Message message : messages) {
-        if (!Td.equalsTo(sender, message.sender)) {
+        if (!Td.equalsTo(sender, message.senderId)) {
           return null;
         }
       }
@@ -3493,7 +3493,7 @@ public class TD {
       }
       case TdApi.MessageContactRegistered.CONSTRUCTOR: {
         U.set(isTranslatable, true);
-        return Lang.getString(R.string.NotificationContactJoined, tdlib.senderName(m.sender, true));
+        return Lang.getString(R.string.NotificationContactJoined, tdlib.senderName(m.senderId, true));
       }
       case TdApi.MessagePinMessage.CONSTRUCTOR: {
         U.set(isTranslatable, true);
@@ -3504,7 +3504,7 @@ public class TD {
             return Lang.getString(R.string.NotificationActionPinnedNoTextChannel, m.authorSignature);
           }
         } else {
-          return Lang.getString(R.string.NotificationActionPinnedNoTextChannel, tdlib.senderName(m.sender, true));
+          return Lang.getString(R.string.NotificationActionPinnedNoTextChannel, tdlib.senderName(m.senderId, true));
         }
       }
       case TdApi.MessageGameScore.CONSTRUCTOR: {
@@ -3513,7 +3513,7 @@ public class TD {
         if (tdlib.isSelfSender(m)) {
           return Lang.plural(R.string.game_ActionYouScored, score);
         } else {
-          return Lang.plural(R.string.game_ActionUserScored, score, tdlib.senderName(m.sender, true));
+          return Lang.plural(R.string.game_ActionUserScored, score, tdlib.senderName(m.senderId, true));
         }
       }
       // Secret chats
@@ -3522,7 +3522,7 @@ public class TD {
         if (TD.isOut(m)) {
           return Lang.getString(R.string.YouTookAScreenshot);
         } else {
-          return Lang.getString(R.string.XTookAScreenshot, tdlib.senderName(m.sender, true));
+          return Lang.getString(R.string.XTookAScreenshot, tdlib.senderName(m.senderId, true));
         }
       }
       case TdApi.MessageChatSetTtl.CONSTRUCTOR: {
@@ -3533,13 +3533,13 @@ public class TD {
             if (TD.isOut(m)) {
               return Lang.getString(R.string.YouDisabledTimer);
             } else {
-              return Lang.getString(R.string.XDisabledTimer, tdlib.senderName(m.sender, true));
+              return Lang.getString(R.string.XDisabledTimer, tdlib.senderName(m.senderId, true));
             }
           } else {
             if (TD.isOut(m)) {
               return Lang.pluralDuration(ttl.ttl, TimeUnit.SECONDS, R.string.YouSetTimerSeconds, R.string.YouSetTimerMinutes, R.string.YouSetTimerHours, R.string.YouSetTimerDays, R.string.YouSetTimerWeeks, R.string.YouSetTimerMonths).toString();
             } else {
-              return Lang.pluralDuration(ttl.ttl, TimeUnit.SECONDS, R.string.XSetTimerSeconds, R.string.XSetTimerMinutes, R.string.XSetTimerHours, R.string.XSetTimerDays, R.string.XSetTimerWeeks, R.string.XSetTimerMonths, tdlib.senderName(m.sender, true)).toString();
+              return Lang.pluralDuration(ttl.ttl, TimeUnit.SECONDS, R.string.XSetTimerSeconds, R.string.XSetTimerMinutes, R.string.XSetTimerHours, R.string.XSetTimerDays, R.string.XSetTimerWeeks, R.string.XSetTimerMonths, tdlib.senderName(m.senderId, true)).toString();
             }
           }
         } else {
@@ -3547,19 +3547,19 @@ public class TD {
             if (TD.isOut(m)) {
               return Lang.getString(R.string.YouDisabledAutoDelete);
             } else {
-              return Lang.getString(m.isChannelPost ? R.string.XDisabledAutoDeletePosts : R.string.XDisabledAutoDelete, tdlib.senderName(m.sender, true));
+              return Lang.getString(m.isChannelPost ? R.string.XDisabledAutoDeletePosts : R.string.XDisabledAutoDelete, tdlib.senderName(m.senderId, true));
             }
           } else if (m.isChannelPost) {
             if (TD.isOut(m)) {
               return Lang.pluralDuration(ttl.ttl, TimeUnit.SECONDS, R.string.YouSetAutoDeletePostsSeconds, R.string.YouSetAutoDeletePostsMinutes, R.string.YouSetAutoDeletePostsHours, R.string.YouSetAutoDeletePostsDays, R.string.YouSetAutoDeletePostsWeeks, R.string.YouSetAutoDeletePostsMonths).toString();
             } else {
-              return Lang.pluralDuration(ttl.ttl, TimeUnit.SECONDS, R.string.XSetAutoDeletePostsSeconds, R.string.XSetAutoDeletePostsMinutes, R.string.XSetAutoDeletePostsHours, R.string.XSetAutoDeletePostsDays, R.string.XSetAutoDeletePostsWeeks, R.string.XSetAutoDeletePostsMonths, tdlib.senderName(m.sender, true)).toString();
+              return Lang.pluralDuration(ttl.ttl, TimeUnit.SECONDS, R.string.XSetAutoDeletePostsSeconds, R.string.XSetAutoDeletePostsMinutes, R.string.XSetAutoDeletePostsHours, R.string.XSetAutoDeletePostsDays, R.string.XSetAutoDeletePostsWeeks, R.string.XSetAutoDeletePostsMonths, tdlib.senderName(m.senderId, true)).toString();
             }
           } else {
             if (TD.isOut(m)) {
               return Lang.pluralDuration(ttl.ttl, TimeUnit.SECONDS, R.string.YouSetAutoDeleteSeconds, R.string.YouSetAutoDeleteMinutes, R.string.YouSetAutoDeleteHours, R.string.YouSetAutoDeleteDays, R.string.YouSetAutoDeleteWeeks, R.string.YouSetAutoDeleteMonths).toString();
             } else {
-              return Lang.pluralDuration(ttl.ttl, TimeUnit.SECONDS, R.string.XSetAutoDeleteSeconds, R.string.XSetAutoDeleteMinutes, R.string.XSetAutoDeleteHours, R.string.XSetAutoDeleteDays, R.string.XSetAutoDeleteWeeks, R.string.XSetAutoDeleteMonths, tdlib.senderName(m.sender, true)).toString();
+              return Lang.pluralDuration(ttl.ttl, TimeUnit.SECONDS, R.string.XSetAutoDeleteSeconds, R.string.XSetAutoDeleteMinutes, R.string.XSetAutoDeleteHours, R.string.XSetAutoDeleteDays, R.string.XSetAutoDeleteWeeks, R.string.XSetAutoDeleteMonths, tdlib.senderName(m.senderId, true)).toString();
             }
           }
         }
@@ -3570,7 +3570,7 @@ public class TD {
         if (TD.isOut(m)) {
           return Lang.getString(R.string.YouCreatedGroup);
         } else {
-          return Lang.getString(R.string.XCreatedGroup, tdlib.senderName(m.sender, true));
+          return Lang.getString(R.string.XCreatedGroup, tdlib.senderName(m.senderId, true));
         }
       }
       case TdApi.MessageSupergroupChatCreate.CONSTRUCTOR: {
@@ -3580,7 +3580,7 @@ public class TD {
         } else if (m.isChannelPost) {
           return Lang.getString(R.string.ActionCreateChannel);
         } else {
-          return Lang.getString(R.string.XCreatedGroup, tdlib.senderName(m.sender, true));
+          return Lang.getString(R.string.XCreatedGroup, tdlib.senderName(m.senderId, true));
         }
       }
       case TdApi.MessageChatJoinByLink.CONSTRUCTOR: {
@@ -3588,7 +3588,7 @@ public class TD {
         if (TD.isOut(m)) {
           return Lang.getString(R.string.YouJoinedByLink);
         } else {
-          return Lang.getString(R.string.XJoinedByLink, tdlib.senderName(m.sender, true));
+          return Lang.getString(R.string.XJoinedByLink, tdlib.senderName(m.senderId, true));
         }
       }
       case TdApi.MessageChatJoinByRequest.CONSTRUCTOR: {
@@ -3596,7 +3596,7 @@ public class TD {
         if (TD.isOut(m)) {
           return Lang.getString(m.isChannelPost ? R.string.YouAcceptedToChannel : R.string.YouAcceptedToGroup);
         } else {
-          return Lang.getString(m.isChannelPost ? R.string.XAcceptedToChannel : R.string.XAcceptedToGroup, tdlib.senderName(m.sender, true));
+          return Lang.getString(m.isChannelPost ? R.string.XAcceptedToChannel : R.string.XAcceptedToGroup, tdlib.senderName(m.senderId, true));
         }
       }
       // Supergroup migration
@@ -3611,7 +3611,7 @@ public class TD {
         if (m.isChannelPost)
           return Lang.getString(R.string.ActionChannelChangedTitle);
         else
-          return Lang.getString(R.string.XChangedGroupTitle, tdlib.senderName(m.sender, true));
+          return Lang.getString(R.string.XChangedGroupTitle, tdlib.senderName(m.senderId, true));
       }
 
       case TdApi.MessageChatChangePhoto.CONSTRUCTOR: {
@@ -3621,7 +3621,7 @@ public class TD {
         else if (TD.isOut(m))
           return Lang.getString(R.string.group_photo_changed_you);
         else
-          return Lang.getString(R.string.group_photo_changed, tdlib.senderName(m.sender, true));
+          return Lang.getString(R.string.group_photo_changed, tdlib.senderName(m.senderId, true));
       }
 
       case TdApi.MessageChatDeletePhoto.CONSTRUCTOR: {
@@ -3631,7 +3631,7 @@ public class TD {
         } else if (TD.isOut(m)) {
           return Lang.getString(R.string.group_photo_deleted_you);
         } else {
-          return Lang.getString(R.string.group_photo_deleted, tdlib.senderName(m.sender, true));
+          return Lang.getString(R.string.group_photo_deleted, tdlib.senderName(m.senderId, true));
         }
       }
 
@@ -3653,11 +3653,11 @@ public class TD {
             long joinedUserId = users.memberUserIds[0];
             if (joinedUserId != Td.getSenderUserId(m)) {
               if (tdlib.isSelfUserId(joinedUserId)) {
-                return Lang.getString(R.string.group_user_added_self, tdlib.senderName(m.sender, true));
-              } else if (tdlib.isSelfSender(m.sender)) {
+                return Lang.getString(R.string.group_user_added_self, tdlib.senderName(m.senderId, true));
+              } else if (tdlib.isSelfSender(m.senderId)) {
                 return Lang.getString(R.string.group_user_self_added, tdlib.cache().userFirstName(joinedUserId));
               } else {
-                return Lang.getString(R.string.group_user_added, tdlib.senderName(m.sender, true), tdlib.cache().userFirstName(joinedUserId));
+                return Lang.getString(R.string.group_user_added, tdlib.senderName(m.senderId, true), tdlib.cache().userFirstName(joinedUserId));
               }
             } else {
               if (tdlib.isSelfUserId(joinedUserId)) {
@@ -3692,9 +3692,9 @@ public class TD {
             if (tdlib.isSelfSender(m)) {
               return Lang.getString(R.string.group_user_self_removed, tdlib.cache().userFirstName(deletedUserId));
             } else if (tdlib.isSelfUserId(deletedUserId)) {
-              return Lang.getString(R.string.group_user_removed_self, tdlib.senderName(m.sender, true));
+              return Lang.getString(R.string.group_user_removed_self, tdlib.senderName(m.senderId, true));
             } else {
-              return Lang.getString(R.string.group_user_removed, tdlib.senderName(m.sender, true), tdlib.cache().userFirstName(deletedUserId));
+              return Lang.getString(R.string.group_user_removed, tdlib.senderName(m.senderId, true), tdlib.cache().userFirstName(deletedUserId));
             }
           }
         }
@@ -5422,12 +5422,12 @@ public class TD {
       }
       case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR: {
         TdApi.MessageProximityAlertTriggered alert = (TdApi.MessageProximityAlertTriggered) message.content;
-        if (tdlib.isSelfSender(alert.traveler)) {
-          return new ContentPreview(EMOJI_LOCATION, 0, Lang.plural(alert.distance >= 1000 ? R.string.ChatContentProximityYouKm : R.string.ChatContentProximityYouM, alert.distance >= 1000 ? alert.distance / 1000 : alert.distance, tdlib.senderName(alert.watcher, true)), true);
-        } else if (tdlib.isSelfSender(alert.watcher)) {
-          return new ContentPreview(EMOJI_LOCATION, 0, Lang.plural(alert.distance >= 1000 ? R.string.ChatContentProximityFromYouKm : R.string.ChatContentProximityFromYouM, alert.distance >= 1000 ? alert.distance / 1000 : alert.distance, tdlib.senderName(alert.traveler, true)), true);
+        if (tdlib.isSelfSender(alert.travelerId)) {
+          return new ContentPreview(EMOJI_LOCATION, 0, Lang.plural(alert.distance >= 1000 ? R.string.ChatContentProximityYouKm : R.string.ChatContentProximityYouM, alert.distance >= 1000 ? alert.distance / 1000 : alert.distance, tdlib.senderName(alert.watcherId, true)), true);
+        } else if (tdlib.isSelfSender(alert.watcherId)) {
+          return new ContentPreview(EMOJI_LOCATION, 0, Lang.plural(alert.distance >= 1000 ? R.string.ChatContentProximityFromYouKm : R.string.ChatContentProximityFromYouM, alert.distance >= 1000 ? alert.distance / 1000 : alert.distance, tdlib.senderName(alert.travelerId, true)), true);
         } else {
-          return new ContentPreview(EMOJI_LOCATION, 0, Lang.plural(alert.distance >= 1000 ? R.string.ChatContentProximityKm : R.string.ChatContentProximityM, alert.distance >= 1000 ? alert.distance / 1000 : alert.distance, tdlib.senderName(alert.traveler, true), tdlib.senderName(alert.watcher, true)), true);
+          return new ContentPreview(EMOJI_LOCATION, 0, Lang.plural(alert.distance >= 1000 ? R.string.ChatContentProximityKm : R.string.ChatContentProximityM, alert.distance >= 1000 ? alert.distance / 1000 : alert.distance, tdlib.senderName(alert.travelerId, true), tdlib.senderName(alert.watcherId, true)), true);
         }
       }
       case TdApi.MessageVideoChatStarted.CONSTRUCTOR: {
@@ -5538,7 +5538,7 @@ public class TD {
       argument = formattedText;
       argumentTranslatable = false;
     }
-    ContentPreview preview = getContentPreview(message.content.getConstructor(), tdlib, chatId, message.sender, null, !message.isChannelPost && message.isOutgoing, isChatList, argument, argumentTranslatable, arg1);
+    ContentPreview preview = getContentPreview(message.content.getConstructor(), tdlib, chatId, message.senderId, null, !message.isChannelPost && message.isOutgoing, isChatList, argument, argumentTranslatable, arg1);
     if (preview != null) {
       return preview.setRefresher(refresher, true);
     }
@@ -5646,15 +5646,15 @@ public class TD {
     switch (push.content.getConstructor()) {
       case TdApi.PushMessageContentHidden.CONSTRUCTOR:
         if (((TdApi.PushMessageContentHidden) push.content).isPinned)
-          return getNotificationPinned(R.string.ActionPinnedNoText, TdApi.MessageText.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, null, 0);
+          return getNotificationPinned(R.string.ActionPinnedNoText, TdApi.MessageText.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, 0);
         else
           return new ContentPreview(Lang.plural(R.string.xNewMessages, 1), true);
 
       case TdApi.PushMessageContentText.CONSTRUCTOR:
         if (((TdApi.PushMessageContentText) push.content).isPinned)
-          return getNotificationPinned(R.string.ActionPinnedNoText, TdApi.MessageText.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, ((TdApi.PushMessageContentText) push.content).text, 0);
+          return getNotificationPinned(R.string.ActionPinnedNoText, TdApi.MessageText.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentText) push.content).text, 0);
         else
-          return getNotificationPreview(TdApi.MessageText.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, ((TdApi.PushMessageContentText) push.content).text, 0);
+          return getNotificationPreview(TdApi.MessageText.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentText) push.content).text, 0);
 
       case TdApi.PushMessageContentMessageForwards.CONSTRUCTOR:
         return new ContentPreview(Lang.plural(R.string.xForwards, ((TdApi.PushMessageContentMessageForwards) push.content).totalCount), true);
@@ -5662,29 +5662,29 @@ public class TD {
       case TdApi.PushMessageContentPhoto.CONSTRUCTOR: {
         String caption = ((TdApi.PushMessageContentPhoto) push.content).caption;
         if (((TdApi.PushMessageContentPhoto) push.content).isPinned)
-          return getNotificationPinned(R.string.ActionPinnedPhoto, TdApi.MessagePhoto.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, caption, 0);
+          return getNotificationPinned(R.string.ActionPinnedPhoto, TdApi.MessagePhoto.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, caption, 0);
         else if (((TdApi.PushMessageContentPhoto) push.content).isSecret)
           return new ContentPreview(EMOJI_SECRET_PHOTO, R.string.SelfDestructPhoto, caption, false);
         else
-          return getNotificationPreview(TdApi.MessagePhoto.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, caption, 0);
+          return getNotificationPreview(TdApi.MessagePhoto.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, caption, 0);
       }
 
       case TdApi.PushMessageContentVideo.CONSTRUCTOR: {
         String caption = ((TdApi.PushMessageContentVideo) push.content).caption;
         if (((TdApi.PushMessageContentVideo) push.content).isPinned)
-          return getNotificationPinned(R.string.ActionPinnedVideo, TdApi.MessageVideo.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, caption, 0);
+          return getNotificationPinned(R.string.ActionPinnedVideo, TdApi.MessageVideo.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, caption, 0);
         else if (((TdApi.PushMessageContentVideo) push.content).isSecret)
           return new ContentPreview(EMOJI_SECRET_VIDEO, R.string.SelfDestructVideo, caption);
         else
-          return getNotificationPreview(TdApi.MessageVideo.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, caption, 0);
+          return getNotificationPreview(TdApi.MessageVideo.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, caption, 0);
       }
 
       case TdApi.PushMessageContentAnimation.CONSTRUCTOR: {
         String caption = ((TdApi.PushMessageContentAnimation) push.content).caption;
         if (((TdApi.PushMessageContentAnimation) push.content).isPinned)
-          return getNotificationPinned(R.string.ActionPinnedGif, TdApi.MessageAnimation.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, caption, 0);
+          return getNotificationPinned(R.string.ActionPinnedGif, TdApi.MessageAnimation.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, caption, 0);
         else
-          return getNotificationPreview(TdApi.MessageAnimation.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, caption, 0);
+          return getNotificationPreview(TdApi.MessageAnimation.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, caption, 0);
       }
 
       case TdApi.PushMessageContentDocument.CONSTRUCTOR: {
@@ -5694,37 +5694,37 @@ public class TD {
           caption = media.fileName;
         }
         if (((TdApi.PushMessageContentDocument) push.content).isPinned)
-          return getNotificationPinned(R.string.ActionPinnedFile, TdApi.MessageDocument.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, caption, 0);
+          return getNotificationPinned(R.string.ActionPinnedFile, TdApi.MessageDocument.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, caption, 0);
         else
-          return getNotificationPreview(TdApi.MessageDocument.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, caption, 0);
+          return getNotificationPreview(TdApi.MessageDocument.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, caption, 0);
       }
 
       case TdApi.PushMessageContentSticker.CONSTRUCTOR:
         if (((TdApi.PushMessageContentSticker) push.content).isPinned)
-          return getNotificationPinned(R.string.ActionPinnedSticker, TdApi.MessageSticker.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, ((TdApi.PushMessageContentSticker) push.content).emoji, 0);
+          return getNotificationPinned(R.string.ActionPinnedSticker, TdApi.MessageSticker.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentSticker) push.content).emoji, 0);
         else if (((TdApi.PushMessageContentSticker) push.content).sticker != null && ((TdApi.PushMessageContentSticker) push.content).sticker.isAnimated)
-          return getNotificationPreview(TdApi.MessageSticker.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, "animated" + ((TdApi.PushMessageContentSticker) push.content).emoji, 0);
+          return getNotificationPreview(TdApi.MessageSticker.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, "animated" + ((TdApi.PushMessageContentSticker) push.content).emoji, 0);
         else
-          return getNotificationPreview(TdApi.MessageSticker.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, ((TdApi.PushMessageContentSticker) push.content).emoji, 0);
+          return getNotificationPreview(TdApi.MessageSticker.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentSticker) push.content).emoji, 0);
 
       case TdApi.PushMessageContentLocation.CONSTRUCTOR:
         if (((TdApi.PushMessageContentLocation) push.content).isLive) {
           if (((TdApi.PushMessageContentLocation) push.content).isPinned)
-            return getNotificationPinned(R.string.ActionPinnedGeoLive, TdApi.MessageLocation.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, null, 0);
+            return getNotificationPinned(R.string.ActionPinnedGeoLive, TdApi.MessageLocation.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, 0);
           else
-            return getNotificationPreview(TdApi.MessageLocation.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, "live", 0);
+            return getNotificationPreview(TdApi.MessageLocation.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, "live", 0);
         } else {
           if (((TdApi.PushMessageContentLocation) push.content).isPinned)
-            return getNotificationPinned(R.string.ActionPinnedGeo, TdApi.MessageLocation.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, null, 0);
+            return getNotificationPinned(R.string.ActionPinnedGeo, TdApi.MessageLocation.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, 0);
           else
-            return getNotificationPreview(TdApi.MessageLocation.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, null, 0);
+            return getNotificationPreview(TdApi.MessageLocation.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, 0);
         }
 
       case TdApi.PushMessageContentPoll.CONSTRUCTOR:
         if (((TdApi.PushMessageContentPoll) push.content).isPinned)
-          return getNotificationPinned(((TdApi.PushMessageContentPoll) push.content).isRegular ? R.string.ActionPinnedPoll : R.string.ActionPinnedQuiz, TdApi.MessagePoll.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, ((TdApi.PushMessageContentPoll) push.content).question, ((TdApi.PushMessageContentPoll) push.content).isRegular ? ARG_NONE : ARG_POLL_QUIZ);
+          return getNotificationPinned(((TdApi.PushMessageContentPoll) push.content).isRegular ? R.string.ActionPinnedPoll : R.string.ActionPinnedQuiz, TdApi.MessagePoll.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentPoll) push.content).question, ((TdApi.PushMessageContentPoll) push.content).isRegular ? ARG_NONE : ARG_POLL_QUIZ);
         else
-          return getNotificationPreview(TdApi.MessagePoll.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, ((TdApi.PushMessageContentPoll) push.content).question, ((TdApi.PushMessageContentPoll) push.content).isRegular ? ARG_NONE : ARG_POLL_QUIZ);
+          return getNotificationPreview(TdApi.MessagePoll.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentPoll) push.content).question, ((TdApi.PushMessageContentPoll) push.content).isRegular ? ARG_NONE : ARG_POLL_QUIZ);
 
       case TdApi.PushMessageContentAudio.CONSTRUCTOR: {
         TdApi.Audio audio = ((TdApi.PushMessageContentAudio) push.content).audio;
@@ -5735,9 +5735,9 @@ public class TD {
           translatable = !hasTitle(audio) || !hasSubtitle(audio);
         }
         if (((TdApi.PushMessageContentAudio) push.content).isPinned)
-          return getNotificationPinned(R.string.ActionPinnedMusic, TdApi.MessageAudio.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, caption, translatable, 0);
+          return getNotificationPinned(R.string.ActionPinnedMusic, TdApi.MessageAudio.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, caption, translatable, 0);
         else
-          return getNotificationPreview(TdApi.MessageAudio.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, caption, translatable, 0);
+          return getNotificationPreview(TdApi.MessageAudio.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, caption, translatable, 0);
       }
 
       case TdApi.PushMessageContentVideoNote.CONSTRUCTOR: {
@@ -5749,9 +5749,9 @@ public class TD {
           argumentTranslatable = true;
         }
         if (((TdApi.PushMessageContentVideoNote) push.content).isPinned)
-          return getNotificationPinned(R.string.ActionPinnedRound, TdApi.MessageVideoNote.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, argument, argumentTranslatable, 0);
+          return getNotificationPinned(R.string.ActionPinnedRound, TdApi.MessageVideoNote.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, argument, argumentTranslatable, 0);
         else
-          return getNotificationPreview(TdApi.MessageVideoNote.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, argument, argumentTranslatable, 0);
+          return getNotificationPreview(TdApi.MessageVideoNote.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, argument, argumentTranslatable, 0);
       }
 
       case TdApi.PushMessageContentVoiceNote.CONSTRUCTOR: {
@@ -5765,36 +5765,36 @@ public class TD {
           }
         }
         if (((TdApi.PushMessageContentVoiceNote) push.content).isPinned)
-          return getNotificationPinned(R.string.ActionPinnedVoice, TdApi.MessageVoiceNote.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, argument, argumentTranslatable, 0);
+          return getNotificationPinned(R.string.ActionPinnedVoice, TdApi.MessageVoiceNote.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, argument, argumentTranslatable, 0);
         else
-          return getNotificationPreview(TdApi.MessageVoiceNote.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, argument, argumentTranslatable, 0);
+          return getNotificationPreview(TdApi.MessageVoiceNote.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, argument, argumentTranslatable, 0);
       }
 
       case TdApi.PushMessageContentGame.CONSTRUCTOR:
         if (((TdApi.PushMessageContentGame) push.content).isPinned) {
           String gameTitle = ((TdApi.PushMessageContentGame) push.content).title;
-          return getNotificationPinned(StringUtils.isEmpty(gameTitle) ? R.string.ActionPinnedGameNoName : R.string.ActionPinnedGame, TdApi.MessageGame.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, StringUtils.isEmpty(gameTitle) ? null : gameTitle, 0);
+          return getNotificationPinned(StringUtils.isEmpty(gameTitle) ? R.string.ActionPinnedGameNoName : R.string.ActionPinnedGame, TdApi.MessageGame.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, StringUtils.isEmpty(gameTitle) ? null : gameTitle, 0);
         } else
-          return getNotificationPreview(TdApi.MessageGame.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, ((TdApi.PushMessageContentGame) push.content).title, 0);
+          return getNotificationPreview(TdApi.MessageGame.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentGame) push.content).title, 0);
 
       case TdApi.PushMessageContentContact.CONSTRUCTOR:
         if (((TdApi.PushMessageContentContact) push.content).isPinned)
-          return getNotificationPinned(R.string.ActionPinnedContact, TdApi.MessageContact.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, ((TdApi.PushMessageContentContact) push.content).name, 0);
+          return getNotificationPinned(R.string.ActionPinnedContact, TdApi.MessageContact.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentContact) push.content).name, 0);
         else
-          return getNotificationPreview(TdApi.MessageContact.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, ((TdApi.PushMessageContentContact) push.content).name, 0);
+          return getNotificationPreview(TdApi.MessageContact.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentContact) push.content).name, 0);
 
       case TdApi.PushMessageContentInvoice.CONSTRUCTOR:
         if (((TdApi.PushMessageContentInvoice) push.content).isPinned)
-          return getNotificationPinned(R.string.ActionPinnedNoText, TdApi.MessageInvoice.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, null, 0); // TODO
+          return getNotificationPinned(R.string.ActionPinnedNoText, TdApi.MessageInvoice.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, 0); // TODO
         else
-          return getNotificationPreview(TdApi.MessageInvoice.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, ((TdApi.PushMessageContentInvoice) push.content).price, 0);
+          return getNotificationPreview(TdApi.MessageInvoice.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentInvoice) push.content).price, 0);
 
       case TdApi.PushMessageContentScreenshotTaken.CONSTRUCTOR:
-        return getNotificationPreview(TdApi.MessageScreenshotTaken.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, null, 0);
+        return getNotificationPreview(TdApi.MessageScreenshotTaken.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, 0);
 
       case TdApi.PushMessageContentGameScore.CONSTRUCTOR:
         if (((TdApi.PushMessageContentGameScore) push.content).isPinned)
-          return getNotificationPinned(R.string.ActionPinnedNoText, TdApi.MessageGameScore.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, null, 0); // TODO
+          return getNotificationPinned(R.string.ActionPinnedNoText, TdApi.MessageGameScore.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, 0); // TODO
         else {
           TdApi.PushMessageContentGameScore score = (TdApi.PushMessageContentGameScore) push.content;
           String gameTitle = score.title;
@@ -5805,7 +5805,7 @@ public class TD {
         }
 
       case TdApi.PushMessageContentContactRegistered.CONSTRUCTOR:
-        return getNotificationPreview(TdApi.MessageContactRegistered.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, null, 0);
+        return getNotificationPreview(TdApi.MessageContactRegistered.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, 0);
 
       case TdApi.PushMessageContentMediaAlbum.CONSTRUCTOR: {
         TdApi.PushMessageContentMediaAlbum album = ((TdApi.PushMessageContentMediaAlbum) push.content);
@@ -5832,7 +5832,7 @@ public class TD {
       }
 
       case TdApi.PushMessageContentBasicGroupChatCreate.CONSTRUCTOR:
-        return getNotificationPreview(TdApi.MessageBasicGroupChatCreate.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, null, 0);
+        return getNotificationPreview(TdApi.MessageBasicGroupChatCreate.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, 0);
 
       case TdApi.PushMessageContentChatAddMembers.CONSTRUCTOR: {
         TdApi.PushMessageContentChatAddMembers info = (TdApi.PushMessageContentChatAddMembers) push.content;
@@ -5857,16 +5857,16 @@ public class TD {
       }
 
       case TdApi.PushMessageContentChatJoinByLink.CONSTRUCTOR:
-        return getNotificationPreview(TdApi.MessageChatJoinByLink.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, null, 0);
+        return getNotificationPreview(TdApi.MessageChatJoinByLink.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, 0);
 
       case TdApi.PushMessageContentChatChangePhoto.CONSTRUCTOR:
-        return getNotificationPreview(TdApi.MessageChatChangePhoto.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, null, 0); // FIXME Server: Missing isRemoved
+        return getNotificationPreview(TdApi.MessageChatChangePhoto.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, 0); // FIXME Server: Missing isRemoved
 
       case TdApi.PushMessageContentChatChangeTitle.CONSTRUCTOR:
-        return getNotificationPreview(TdApi.MessageChatChangeTitle.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, ((TdApi.PushMessageContentChatChangeTitle) push.content).title, 0);
+        return getNotificationPreview(TdApi.MessageChatChangeTitle.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentChatChangeTitle) push.content).title, 0);
 
       case TdApi.PushMessageContentChatSetTheme.CONSTRUCTOR:
-        return getNotificationPreview(TdApi.MessageChatSetTheme.CONSTRUCTOR, tdlib, chatId, push.sender, push.senderName, ((TdApi.PushMessageContentChatSetTheme) push.content).themeName, 0);
+        return getNotificationPreview(TdApi.MessageChatSetTheme.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentChatSetTheme) push.content).themeName, 0);
     }
     throw new AssertionError(push.content);
   }

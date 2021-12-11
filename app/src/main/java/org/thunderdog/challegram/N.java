@@ -59,7 +59,7 @@ public final class N {
   // gif.c
   public static native void gifInit ();
   public static native long createDecoder (String path, int[] metadata);
-  public static native long createLottieDecoder (String path, String jsonData, double[] metadata, int[] colorReplacement);
+  public static native long createLottieDecoder (String path, String jsonData, double[] metadata, int fitzpatrickType);
   public static native void getLottieSize (long ptr, int[] size);
   public static native void cancelLottieDecoder (long ptr);
   public static native int createLottieCache (long ptr, String cachePath, Bitmap firstFrame, Bitmap bitmap, boolean allowCreate, boolean limitFps); // 0 = ok, 1 = need create, 2 = error

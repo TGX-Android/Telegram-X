@@ -647,7 +647,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       icons.append(R.drawable.baseline_link_24);
     }
 
-    if (!isMore && TD.canCopyText(newestMessage)) {
+    if (!isMore && msg.canBeSaved() && TD.canCopyText(newestMessage)) {
       ids.append(R.id.btn_messageCopy);
       strings.append(R.string.Copy);
       icons.append(R.drawable.baseline_content_copy_24);
@@ -691,7 +691,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         tag = downloadedFiles;
 
         TD.DownloadedFile baseDownloadedFile = downloadedFiles.get(0);
-        if (baseDownloadedFile.getFileType().getConstructor() == TdApi.FileTypeAnimation.CONSTRUCTOR) {
+        if (msg.canBeSaved() && baseDownloadedFile.getFileType().getConstructor() == TdApi.FileTypeAnimation.CONSTRUCTOR) {
           ids.append(R.id.btn_saveGif);
           if (allMessages.length == 1) {
             strings.append(R.string.SaveGif);
@@ -708,23 +708,27 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           case TdApi.FileTypeAnimation.CONSTRUCTOR:
           case TdApi.FileTypeVideo.CONSTRUCTOR:
           case TdApi.FileTypePhoto.CONSTRUCTOR: {
-            ids.append(R.id.btn_saveFile);
-            if (allMessages.length == 1) {
-              strings.append(R.string.SaveToGallery);
-            } else {
-              strings.append(Lang.plural(R.string.SaveXToGallery, downloadedFiles.size()));
+            if (msg.canBeSaved()) {
+              ids.append(R.id.btn_saveFile);
+              if (allMessages.length == 1) {
+                strings.append(R.string.SaveToGallery);
+              } else {
+                strings.append(Lang.plural(R.string.SaveXToGallery, downloadedFiles.size()));
+              }
+              icons.append(R.drawable.baseline_image_24);
             }
-            icons.append(R.drawable.baseline_image_24);
             break;
           }
           case TdApi.FileTypeAudio.CONSTRUCTOR: {
-            ids.append(R.id.btn_saveFile);
-            if (allMessages.length == 1) {
-              strings.append(R.string.SaveToMusic);
-            } else {
-              strings.append(Lang.plural(R.string.SaveXToMusic, downloadedFiles.size()));
+            if (msg.canBeSaved()) {
+              ids.append(R.id.btn_saveFile);
+              if (allMessages.length == 1) {
+                strings.append(R.string.SaveToMusic);
+              } else {
+                strings.append(Lang.plural(R.string.SaveXToMusic, downloadedFiles.size()));
+              }
+              icons.append(R.drawable.baseline_music_note_24);
             }
-            icons.append(R.drawable.baseline_music_note_24);
             break;
           }
           default: {
@@ -742,13 +746,15 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
               }
             }
 
-            ids.append(R.id.btn_saveFile);
-            if (allMessages.length == 1) {
-              strings.append(R.string.SaveToDownloads);
-            } else {
-              strings.append(Lang.plural(R.string.SaveXToDownloads, downloadedFiles.size()));
+            if (msg.canBeSaved()) {
+              ids.append(R.id.btn_saveFile);
+              if (allMessages.length == 1) {
+                strings.append(R.string.SaveToDownloads);
+              } else {
+                strings.append(Lang.plural(R.string.SaveXToDownloads, downloadedFiles.size()));
+              }
+              icons.append(R.drawable.baseline_file_download_24);
             }
-            icons.append(R.drawable.baseline_file_download_24);
             break;
           }
         }
