@@ -296,7 +296,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       .textSize(useBubbles() ? 11f : 12f)
       .callback(this)
       .colorSet(this::getTimePartTextColor)
-      .drawable(this.sender.isChannel() || this.sender.isChannelAutoForward() ? R.drawable.templarian_baseline_comment_12 : R.drawable.baseline_updirectory_arrow_left_14, 12f, 3f, Gravity.LEFT)
+      .drawable(this.sender.isChannel() ? R.drawable.templarian_baseline_comment_12 : R.drawable.baseline_updirectory_arrow_left_14, 12f, 3f, Gravity.LEFT)
       .build();
     this.shareCounter = new Counter.Builder()
       .noBackground()
@@ -2436,14 +2436,18 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   public final boolean forceForwardedInfo () {
     return msg.forwardInfo != null && !isOutgoing() && (
-      BitwiseUtils.getFlag(flags, FLAG_SELF_CHAT) ||
-      ( sender.isChannelAutoForward() &&
-        msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginChannel.CONSTRUCTOR &&
-        msg.forwardInfo.fromChatId == ((TdApi.MessageForwardOriginChannel) msg.forwardInfo.origin).chatId
-      ) ||
+      BitwiseUtils.getFlag(flags, FLAG_SELF_CHAT) || isChannelAutoForward() ||
       msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginMessageImport.CONSTRUCTOR ||
       (isPsa() && !sender.isUser() && useBubbles()) ||
       isRepliesChat());
+  }
+
+  public final boolean isChannelAutoForward () {
+    return (msg.forwardInfo != null && msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginChannel.CONSTRUCTOR &&
+      msg.forwardInfo.fromChatId == ((TdApi.MessageForwardOriginChannel) msg.forwardInfo.origin).chatId &&
+      msg.senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR &&
+      ((TdApi.MessageSenderChat) msg.senderId).chatId == msg.forwardInfo.fromChatId
+    );
   }
 
   public final boolean isRepliesChat () {
@@ -3753,9 +3757,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       else
         result = Lang.getString(R.string.message_adminSignPlain);
     } else if (sender.isAnonymousGroupAdmin()) {
-      result = !StringUtils.isEmpty(msg.authorSignature) ? msg.authorSignature : null;
-    } else if (sender.isChannelAutoForward()) {
-      result = Lang.getString(R.string.message_channelSign);
+      result = !StringUtils.isEmpty(msg.authorSignature) ? msg.authorSignature : Lang.getString(R.string.message_adminSignPlain);
+    } else {
+      long chatId = sender.getChatId();
+      if (tdlib.isChannel(chatId)) {
+        result = Lang.getString(R.string.message_channelSign);
+      } else if (ChatId.isMultiChat(chatId)) {
+        result = Lang.getString(R.string.message_groupSign);
+      }
     }
     if (result != null) {
       if (useBubbles())
@@ -3771,7 +3780,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private boolean needAdminSign () {
-    return administrator != null || (sender.isAnonymousGroupAdmin() && !StringUtils.isEmpty(msg.authorSignature)) || (sender.isChannelAutoForward() && !isThreadHeader());
+    return administrator != null || (sender.isAnonymousGroupAdmin() ? !StringUtils.isEmpty(msg.authorSignature) : ChatId.isMultiChat(sender.getChatId()));
   }
 
   public final void setAdministratorSign (@Nullable TdApi.ChatAdministrator administrator) {
@@ -4112,7 +4121,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public final boolean needMessageButton () {
-    return ((flags & FLAG_SELF_CHAT) != 0 || sender.isChannelAutoForward() || isRepliesChat()) && msg.forwardInfo != null && msg.forwardInfo.fromChatId != 0 &&  msg.forwardInfo.fromMessageId != 0 &&  msg.forwardInfo.fromChatId != msg.chatId;
+    return ((flags & FLAG_SELF_CHAT) != 0 || isChannelAutoForward() || isRepliesChat()) && msg.forwardInfo != null && msg.forwardInfo.fromChatId != 0 &&  msg.forwardInfo.fromMessageId != 0 &&  msg.forwardInfo.fromChatId != msg.chatId;
   }
 
   public final void openSourceMessage () {

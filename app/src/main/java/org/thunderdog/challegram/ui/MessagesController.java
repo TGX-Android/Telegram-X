@@ -478,18 +478,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (totalCount > 0) {
       if (tdlib.isSelfSender(previewSearchSender)) {
         headerCell.setForcedSubtitle(Lang.pluralBold(R.string.XFoundMessagesFromSelf, totalCount));
-      } else if (Td.getSenderUserId(previewSearchSender) == TdConstants.TELEGRAM_CHANNEL_BOT_ACCOUNT_ID) {
-        headerCell.setForcedSubtitle(Lang.pluralBold(R.string.XFoundMessagesFromAutoPost, totalCount));
       } else {
-        headerCell.setForcedSubtitle(Lang.pluralBold(R.string.XFoundMessagesFromUser, totalCount, tdlib.senderName(previewSearchSender, true)));
+        headerCell.setForcedSubtitle(Lang.pluralBold(previewSearchSender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.XFoundMessagesFromUser : R.string.XFoundMessagesFromChat, totalCount, tdlib.senderName(previewSearchSender, true)));
       }
     } else {
       if (tdlib.isSelfSender(previewSearchSender)) {
         headerCell.setForcedSubtitle(Lang.getString(R.string.FoundMessagesFromSelf));
-      } else if (Td.getSenderUserId(previewSearchSender) == TdConstants.TELEGRAM_CHANNEL_BOT_ACCOUNT_ID) {
-        headerCell.setForcedSubtitle(Lang.getString(R.string.FoundMessagesFromAutoPost));
       } else {
-        headerCell.setForcedSubtitle(Lang.getStringBold(R.string.FoundMessagesFromUser, tdlib.senderName(previewSearchSender, true)));
+        headerCell.setForcedSubtitle(Lang.getStringBold(previewSearchSender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.FoundMessagesFromUser : R.string.FoundMessagesFromChat, tdlib.senderName(previewSearchSender, true)));
       }
     }
   }
@@ -4890,15 +4886,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_messageViewList: {
         if (selectedMessage != null) {
-          if (selectedMessage.getSender().isChannel()) {
-            tdlib.withChannelBotUserId(channelBotUserId -> {
-              if (!isDestroyed()) {
-                viewMessagesFromSender(new TdApi.MessageSenderUser(channelBotUserId), true);
-              }
-            });
-          } else {
-            viewMessagesFromSender(selectedMessage.getMessage().senderId, false);
-          }
+          viewMessagesFromSender(selectedMessage.getMessage().senderId, false);
           clearSelectedMessage();
         }
         return true;

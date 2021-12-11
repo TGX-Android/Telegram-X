@@ -63,6 +63,7 @@ import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.unit.BitwiseUtils;
 import me.vkryl.td.ChatId;
+import me.vkryl.td.Td;
 
 public class MessageView extends SparseDrawableView implements Destroyable, DrawableProvider, MessagesManager.MessageProvider {
   private static final int FLAG_USE_COMMON_RECEIVER = 1;
@@ -844,9 +845,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           icon = R.drawable.baseline_group_24;
         } else if (msg.isOutgoing()) {
           strings.append(R.string.ViewMessagesFromYou);
-        } else if (msg.getSender().isChannelAutoForward()) {
-          strings.append(R.string.ViewMessagesFromAutoPost);
-          icon = R.drawable.baseline_bullhorn_24;
+        } else if (msg.getMessage().senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
+          strings.append(Lang.getString(R.string.ViewMessagesFromChat, msg.getSender().getNameShort()));
+          icon = msg.tdlib().isChannel(Td.getSenderId(msg.getMessage().senderId)) ? R.drawable.baseline_bullhorn_24 : R.drawable.baseline_group_24;
         } else {
           strings.append(Lang.getString(R.string.ViewMessagesFromUser, msg.getSender().getNameShort()));
         }
