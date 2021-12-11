@@ -1071,6 +1071,33 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     return userFull;
   }
 
+  public void userFull (long userId, RunnableData<TdApi.UserFullInfo> callback) {
+    if (userId == 0) {
+      if (callback != null) {
+        callback.runWithData(null);
+      }
+      return;
+    }
+    TdApi.UserFullInfo fullInfo = userFull(userId);
+    if (callback == null)
+      return;
+    if (fullInfo != null) {
+      callback.runWithData(fullInfo);
+      return;
+    }
+    tdlib.client().send(new TdApi.GetUserFullInfo(userId), result -> {
+      switch (result.getConstructor()) {
+        case TdApi.UserFullInfo.CONSTRUCTOR:
+          tdlib.ui().post(() -> callback.runWithData(userFull(userId)));
+          break;
+        case TdApi.Error.CONSTRUCTOR:
+          UI.showError(result);
+          tdlib.ui().post(() -> callback.runWithData(null));
+          break;
+      }
+    });
+  }
+
   public @Nullable TdApi.User searchUser (String username) {
     TdApi.User result = null;
     synchronized (dataLock) {
@@ -1136,6 +1163,33 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
       }
     }
     return groupFull;
+  }
+
+  public void basicGroupFull (long basicGroupId, RunnableData<TdApi.BasicGroupFullInfo> callback) {
+    if (basicGroupId == 0) {
+      if (callback != null) {
+        callback.runWithData(null);
+      }
+      return;
+    }
+    TdApi.BasicGroupFullInfo fullInfo = basicGroupFull(basicGroupId);
+    if (callback == null)
+      return;
+    if (fullInfo != null) {
+      callback.runWithData(fullInfo);
+      return;
+    }
+    tdlib.client().send(new TdApi.GetBasicGroupFullInfo(basicGroupId), result -> {
+      switch (result.getConstructor()) {
+        case TdApi.BasicGroupFullInfo.CONSTRUCTOR:
+          tdlib.ui().post(() -> callback.runWithData(basicGroupFull(basicGroupId)));
+          break;
+        case TdApi.Error.CONSTRUCTOR:
+          UI.showError(result);
+          tdlib.ui().post(() -> callback.runWithData(null));
+          break;
+      }
+    });
   }
 
   @Nullable

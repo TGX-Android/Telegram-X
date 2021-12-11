@@ -154,6 +154,7 @@ import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.unit.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
@@ -1511,7 +1512,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           strings.append(R.string.ShowInChat);
         }
 
-        if (item.canBeReported()) {
+        if (item.canBeReported() && (item.getMessage() != null || stack.getCurrentIndex() == 0)) {
           ids.append(R.id.btn_messageReport);
           strings.append(R.string.Report);
         }
@@ -1574,7 +1575,42 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         if (message != null) {
           TdlibUi.reportChat(this, item.getSourceChatId(), new TdApi.Message[] {message}, null, getForcedTheme());
         } else {
-          TdlibUi.reportChatPhoto(this, item.getSourceChatId(), item.getBigFileId(), null, getForcedTheme());
+          final long chatId = item.getSourceChatId();
+          final RunnableData<TdApi.PhotoSize> act = (photoSize) -> {
+            if (photoSize != null) {
+              tdlib.ui().post(() ->
+                TdlibUi.reportChatPhoto(this, chatId, photoSize.photo.id, null, getForcedTheme())
+              );
+            }
+          };
+          switch (ChatId.getType(chatId)) {
+            case TdApi.ChatTypeBasicGroup.CONSTRUCTOR: {
+              tdlib.cache().basicGroupFull(ChatId.toBasicGroupId(chatId), groupFull -> {
+                if (groupFull != null && groupFull.photo != null) {
+                  act.runWithData(TD.findBiggest(groupFull.photo.sizes));
+                }
+              });
+              break;
+            }
+            case TdApi.ChatTypePrivate.CONSTRUCTOR:
+            case TdApi.ChatTypeSecret.CONSTRUCTOR: {
+              final long userId = tdlib.chatUserId(chatId);
+              tdlib.cache().userFull(userId, userFull -> {
+                if (userFull != null && userFull.photo != null) {
+                  act.runWithData(TD.findBiggest(userFull.photo.sizes));
+                }
+              });
+              break;
+            }
+            case TdApi.ChatTypeSupergroup.CONSTRUCTOR: {
+              tdlib.cache().supergroupFull(ChatId.toSupergroupId(chatId), supergroupFull -> {
+                if (supergroupFull != null && supergroupFull.photo != null) {
+                  act.runWithData(TD.findBiggest(supergroupFull.photo.sizes));
+                }
+              });
+              break;
+            }
+          }
         }
         break;
       }

@@ -1677,9 +1677,9 @@ public class TD {
   public static TdApi.PhoneNumberAuthenticationSettings defaultPhoneNumberAuthenticationSettings () {
     return new TdApi.PhoneNumberAuthenticationSettings(
       false,
-      false, // TODO
+      false, // TODO support to save Telegram money
       false,
-      false, // TODO
+      false, // TODO for faster login when SMS method is chosen
       Settings.instance().getAuthenticationTokens()
     );
   }
