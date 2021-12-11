@@ -1675,8 +1675,13 @@ public class TD {
   }
 
   public static TdApi.PhoneNumberAuthenticationSettings defaultPhoneNumberAuthenticationSettings () {
-    // TODO automatic phone code entry
-    return new TdApi.PhoneNumberAuthenticationSettings(false, false, false, false, null);
+    return new TdApi.PhoneNumberAuthenticationSettings(
+      false,
+      false, // TODO
+      false,
+      false, // TODO
+      Settings.instance().getAuthenticationTokens()
+    );
   }
 
   public static Letters getLetters (TdApi.User user) {

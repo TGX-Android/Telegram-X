@@ -456,6 +456,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private String suggestedLanguagePackId;
   private TdApi.LanguagePackInfo suggestedLanguagePackInfo;
 
+  private String authenticationToken;
+
   private long connectionLossTime = SystemClock.uptimeMillis();
 
   private String tMeUrl;
@@ -7253,6 +7255,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
                     break;
                 }
               });
+            }
+            break;
+          }
+          case "authentication_token": {
+            if (!StringUtils.isEmpty(stringValue) && (this.authenticationToken == null || !this.authenticationToken.equals(stringValue))) {
+              this.authenticationToken = stringValue;
+              Settings.instance().trackAuthenticationToken(stringValue);
             }
             break;
           }

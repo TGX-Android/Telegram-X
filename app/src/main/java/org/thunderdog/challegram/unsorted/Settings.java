@@ -73,6 +73,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -225,6 +226,7 @@ public class Settings {
     return KEY_ACCOUNT_INFO + accountId + "_";
   }
 
+  private static final String KEY_TDLIB_AUTHENTICATION_TOKENS = "settings_authentication_token";
   private static final String KEY_TDLIB_CRASH_PREFIX = "settings_tdlib_crash";
   private static final String KEY_TDLIB_CRASH_SUFFIX_APP_VERSION = "app";
   private static final String KEY_TDLIB_CRASH_SUFFIX_FLAGS = "flags";
@@ -5613,6 +5615,34 @@ public class Settings {
       putBoolean(KEY_IS_EMULATOR, true);
       TdlibManager.instance().setIsEmulator(true);
     }
+  }
+
+  private List<String> authenticationTokens;
+
+  public void trackAuthenticationToken (String token) {
+    List<String> tokens = getAuthenticationTokensList();
+    if (!tokens.contains(token)) {
+      tokens.add(token);
+      while (tokens.size() > 20) {
+        tokens.remove(0);
+      }
+      pmc.putStringArray(KEY_TDLIB_AUTHENTICATION_TOKENS, tokens.toArray(new String[0]));
+    }
+  }
+
+  public List<String> getAuthenticationTokensList () {
+    if (authenticationTokens == null) {
+      authenticationTokens = new ArrayList<>();
+      String[] tokens = pmc.getStringArray(KEY_TDLIB_AUTHENTICATION_TOKENS);
+      if (tokens != null) {
+        Collections.addAll(authenticationTokens, tokens);
+      }
+    }
+    return authenticationTokens;
+  }
+
+  public String[] getAuthenticationTokens () {
+    return getAuthenticationTokensList().toArray(new String[0]);
   }
 
   // Tdlib crash
