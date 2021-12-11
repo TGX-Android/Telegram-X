@@ -2674,18 +2674,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           break;
       }
     }
-    if (message.sender == null)
+    if (message.senderId == null)
       return null;
-    switch (message.sender.getConstructor()) {
-      case TdApi.MessageSenderChat.CONSTRUCTOR: {
-        return chatTitle(((TdApi.MessageSenderChat) message.sender).chatId);
-      }
-      case TdApi.MessageSenderUser.CONSTRUCTOR: {
-        long senderUserId = ((TdApi.MessageSenderUser) message.sender).userId;
-        return shorten ? cache().userFirstName(senderUserId) : cache().userName(senderUserId);
-      }
-    }
-    throw new IllegalArgumentException(message.sender.toString());
+    return senderName(message.senderId, shorten);
   }
 
   public String chatTitle (long chatId) {
@@ -2774,7 +2765,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public boolean isSelfSender (TdApi.Message message) {
-    return message != null && (message.isOutgoing || isSelfChat(Td.getSenderId(message.sender)));
+    return message != null && (message.isOutgoing || isSelfSender(message.senderId));
   }
 
   public @Nullable TdApi.User chatUser (long chatId) {
@@ -3089,7 +3080,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   public boolean isSameSender (TdApi.Message a, TdApi.Message b) {
     String psa1 = a.forwardInfo != null ? a.forwardInfo.publicServiceAnnouncementType : null;
     String psa2 = b.forwardInfo != null ? b.forwardInfo.publicServiceAnnouncementType : null;
-    return Td.equalsTo(a.sender, b.sender) && StringUtils.equalsOrBothEmpty(psa1, psa2);
+    return Td.equalsTo(a.senderId, b.senderId) && StringUtils.equalsOrBothEmpty(psa1, psa2);
   }
 
   public long senderUserId (TdApi.Message msg) {
@@ -4171,7 +4162,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     public final int sessionCountOnCurrentDevice;
     public final int activeSessionCount;
 
+    public final int inactiveSessionTtlDays;
+
     public SessionsInfo (TdApi.Sessions sessions) {
+      this.inactiveSessionTtlDays = sessions.inactiveSessionTtlDays;
+
       Td.sort(sessions.sessions);
 
       TdApi.Session currentSession = null;
@@ -5641,7 +5636,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   // UI handler
 
   private static final int MSG_ACTION_SET_STATUS = 0;
-  private static final int MSG_ACTION_UPDATE_USER_ACTION = 1;
+  private static final int MSG_ACTION_UPDATE_CHAT_ACTION = 1;
   private static final int MSG_ACTION_UPDATE_CALL = 2;
   private static final int MSG_ACTION_DISPATCH_UNREAD_COUNTER = 3;
   private static final int MSG_ACTION_REMOVE_LOCATION_MESSAGE = 4;
@@ -5661,8 +5656,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           BitwiseUtils.mergeLong(msg.arg1, msg.arg2)
         );
         break;
-      case MSG_ACTION_UPDATE_USER_ACTION:
-        statusManager.onUpdateChatUserAction((TdApi.UpdateUserChatAction) msg.obj);
+      case MSG_ACTION_UPDATE_CHAT_ACTION:
+        statusManager.onUpdateChatUserAction((TdApi.UpdateChatAction) msg.obj);
         break;
       case MSG_ACTION_UPDATE_CALL:
         cache.onUpdateCall((TdApi.UpdateCall) msg.obj);
@@ -6658,9 +6653,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   // Updates: CHAT STATUS
 
   @TdlibThread
-  private void updateChatUserAction (final TdApi.UpdateUserChatAction update) {
+  private void updateChatUserAction (final TdApi.UpdateChatAction update) {
     if (update.chatId != myUserId()) {
-      ui().sendMessage(ui().obtainMessage(MSG_ACTION_UPDATE_USER_ACTION, 0, 0, update));
+      ui().sendMessage(ui().obtainMessage(MSG_ACTION_UPDATE_CHAT_ACTION, 0, 0, update));
     }
   }
 
@@ -7402,9 +7397,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
     }
     for (TdApi.Chat chat : chats) {
-      long senderUserId = Td.getSenderUserId(chat.lastMessage);
-      if (senderUserId != 0) {
-        sendFakeUpdate(new TdApi.UpdateUserChatAction(chat.id, 0, senderUserId, action), false);
+      if (chat.lastMessage != null) {
+        sendFakeUpdate(new TdApi.UpdateChatAction(chat.id, 0, chat.lastMessage.senderId, action), false);
       }
     }
   }
@@ -7576,8 +7570,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         updateChatDraftMessage((TdApi.UpdateChatDraftMessage) update);
         break;
       }
-      case TdApi.UpdateUserChatAction.CONSTRUCTOR: {
-        updateChatUserAction((TdApi.UpdateUserChatAction) update);
+      case TdApi.UpdateChatAction.CONSTRUCTOR: {
+        updateChatUserAction((TdApi.UpdateChatAction) update);
         break;
       }
 

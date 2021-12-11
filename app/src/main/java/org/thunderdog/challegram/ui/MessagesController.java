@@ -4896,7 +4896,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
               }
             });
           } else {
-            viewMessagesFromSender(selectedMessage.getMessage().sender, false);
+            viewMessagesFromSender(selectedMessage.getMessage().senderId, false);
           }
           clearSelectedMessage();
         }

@@ -1671,6 +1671,8 @@
   <string name="ViewAdminRights">View Admin Rights</string>
   <string name="EditUserRestrictions">Edit User Restrictions</string>
   <string name="RestrictUser">Restrict user</string>
+  <string name="BanChat">Ban chat</string>
+  <string name="BanChannel">Ban channel</string>
   <string name="ViewRestrictions">View Restrictions</string>
   <string name="EditAdminPostMessages">Post Messages</string>
   <string name="BannedWillBeShownHere">Banned members will be shown here</string>

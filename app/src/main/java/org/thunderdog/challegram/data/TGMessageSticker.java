@@ -29,7 +29,6 @@ import org.thunderdog.challegram.telegram.AnimatedEmojiListener;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.util.ArrayList;
@@ -56,18 +55,20 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     @Nullable
     private GifFile animatedFile;
 
-    public Representation (TdApi.Sticker sticker, @Nullable String colorReplacementKey, @Nullable int[] colorReplacement, boolean allowNoLoop, boolean forcePlayOnce) {
+    public Representation (TdApi.Sticker sticker, int fitzpatrickType, boolean allowNoLoop, boolean forcePlayOnce) {
       this.sticker = sticker;
 
-      this.preview = TD.toImageFile(tdlib, sticker.thumbnail);
-      if (this.preview != null) {
-        this.preview.setScaleType(ImageFile.FIT_CENTER);
+      if (fitzpatrickType == 0 || !sticker.isAnimated) {
+        this.preview = TD.toImageFile(tdlib, sticker.thumbnail);
+        if (this.preview != null) {
+          this.preview.setScaleType(ImageFile.FIT_CENTER);
+        }
       }
 
       if (sticker.isAnimated) {
         this.animatedFile = new GifFile(tdlib, sticker);
         this.animatedFile.setScaleType(GifFile.CENTER_CROP);
-        this.animatedFile.setColorReplacement(colorReplacementKey, colorReplacement);
+        this.animatedFile.setFitzpatrickType(fitzpatrickType);
         if (allowNoLoop) {
           this.animatedFile.setPlayOnce(forcePlayOnce || specialType != SPECIAL_TYPE_NONE || Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP));
           if (specialType == SPECIAL_TYPE_DICE) {
@@ -175,30 +176,10 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
   }
 
   private boolean updateAnimatedEmoji () {
-    TdApi.MessageAnimatedEmoji emoji = pendingEmoji != null  ? (TdApi.MessageAnimatedEmoji) pendingEmoji : animatedEmoji;
+    TdApi.MessageAnimatedEmoji emoji = pendingEmoji != null ? pendingEmoji : animatedEmoji;
     if (this.currentEmoji != emoji && !(this.currentEmoji != null && emoji == null)) {
       this.currentEmoji = emoji;
-
-      String colorReplacementKey = null;
-      int[] colorReplacement = null;
-      if (emoji.animatedEmoji.colorReplacements != null && emoji.animatedEmoji.colorReplacements.length > 0) {
-        colorReplacement = new int[emoji.animatedEmoji.colorReplacements.length * 2];
-        StringBuilder b = new StringBuilder();
-        int i = 0;
-        for (TdApi.ColorReplacement replacement : emoji.animatedEmoji.colorReplacements) {
-          colorReplacement[i++] = replacement.oldColor;
-          colorReplacement[i++] = replacement.newColor;
-          if (b.length() > 0) {
-            b.append('_');
-          }
-          b.append(Strings.getHexColor(replacement.oldColor, true).substring(1));
-          b.append('-');
-          b.append(Strings.getHexColor(replacement.newColor, true).substring(1));
-        }
-        colorReplacementKey = b.toString();
-      }
-      setSticker(new TdApi.DiceStickersRegular(emoji.animatedEmoji.sticker), colorReplacementKey, colorReplacement, false, true);
-
+      setSticker(new TdApi.DiceStickersRegular(emoji.animatedEmoji.sticker), emoji.animatedEmoji.fitzpatrickType, false, true);
       return true;
     }
 
@@ -209,7 +190,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     this.dice = dice;
     TdApi.DiceStickers targetSticker = tdlib.findDiceEmoji(dice.emoji, dice.value, dice.finalState != null ? dice.finalState : dice.initialState);
     if (targetSticker != null) {
-      setSticker(targetSticker, null, null, isUpdate, dice.finalState != null);
+      setSticker(targetSticker, 0, isUpdate, dice.finalState != null);
     }
   }
 
@@ -352,36 +333,36 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     return false;
   }
 
-  public TGMessageSticker (MessagesManager context, TdApi.Message msg, TdApi.Sticker sticker, boolean isAnimatedEmoji, String colorReplacementKey, int[] colorReplacement) {
+  public TGMessageSticker (MessagesManager context, TdApi.Message msg, TdApi.Sticker sticker, boolean isAnimatedEmoji, int fitzpatrickType) {
     super(context, msg);
     this.specialType = isAnimatedEmoji ? SPECIAL_TYPE_ANIMATED_EMOJI : SPECIAL_TYPE_NONE;
-    setSticker(new TdApi.DiceStickersRegular(sticker), colorReplacementKey, colorReplacement, false, true);
+    setSticker(new TdApi.DiceStickersRegular(sticker), fitzpatrickType, false, true);
   }
 
   @Override
   public void markAsBeingAdded (boolean isBeingAdded) {
     super.markAsBeingAdded(isBeingAdded);
     if (dice != null && dice.finalState != null) {
-      setSticker(sticker, null, null, false, true);
+      setSticker(sticker, 0, false, true);
     }
   }
 
-  private void setSticker (TdApi.DiceStickers sticker, String colorReplacementKey, int[] colorReplacement, boolean isUpdate, boolean allowNoLoop) {
+  private void setSticker (TdApi.DiceStickers sticker, int fitzpatrickType, boolean isUpdate, boolean allowNoLoop) {
     this.sticker = sticker;
     final List<Representation> representation = new ArrayList<>();
     switch (sticker.getConstructor()) {
       case TdApi.DiceStickersRegular.CONSTRUCTOR: {
         TdApi.DiceStickersRegular regular = (TdApi.DiceStickersRegular) sticker;
-        representation.add(new Representation(regular.sticker, colorReplacementKey, colorReplacement, allowNoLoop, false));
+        representation.add(new Representation(regular.sticker, fitzpatrickType, allowNoLoop, false));
         break;
       }
       case TdApi.DiceStickersSlotMachine.CONSTRUCTOR: {
         TdApi.DiceStickersSlotMachine slotMachine = (TdApi.DiceStickersSlotMachine) sticker;
-        representation.add(new Representation(slotMachine.background, colorReplacementKey, colorReplacement, allowNoLoop, true));
-        representation.add(new Representation(slotMachine.leftReel, colorReplacementKey, colorReplacement, allowNoLoop, false));
-        representation.add(new Representation(slotMachine.centerReel, colorReplacementKey, colorReplacement, allowNoLoop, false));
-        representation.add(new Representation(slotMachine.rightReel, colorReplacementKey, colorReplacement, allowNoLoop, false));
-        representation.add(new Representation(slotMachine.lever, colorReplacementKey, colorReplacement, allowNoLoop, true));
+        representation.add(new Representation(slotMachine.background, fitzpatrickType, allowNoLoop, true));
+        representation.add(new Representation(slotMachine.leftReel, fitzpatrickType, allowNoLoop, false));
+        representation.add(new Representation(slotMachine.centerReel, fitzpatrickType, allowNoLoop, false));
+        representation.add(new Representation(slotMachine.rightReel, fitzpatrickType, allowNoLoop, false));
+        representation.add(new Representation(slotMachine.lever, fitzpatrickType, allowNoLoop, true));
         break;
       }
       default: {
@@ -539,7 +520,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
   private void checkDice () {
     if (specialType == SPECIAL_TYPE_DICE && hasAnimationEnded() && dice != null && dice.value != 0) {
       super.markAsBeingAdded(false);
-      setSticker(sticker, null, null, false, true);
+      setSticker(sticker, 0, false, true);
     }
   }
 

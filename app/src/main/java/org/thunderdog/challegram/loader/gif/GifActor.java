@@ -286,7 +286,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
           nativePtr = 0;
         }
         if (lottieCacheFile != null) {
-          LottieCache.instance().checkFile(file, lottieCacheFile, file.needOptimize(), lottieCacheFileSize, file.getColorReplacementKey());
+          LottieCache.instance().checkFile(file, lottieCacheFile, file.needOptimize(), lottieCacheFileSize, file.getFitzpatrickType());
         }
       } else {
         N.destroyDecoder(nativePtr);
@@ -308,7 +308,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
       String json = U.gzipFileToString(path);
       if (StringUtils.isEmpty(json))
         return;
-      nativePtr = N.createLottieDecoder(path, json, lottieMetadata, file.getColorReplacement());
+      nativePtr = N.createLottieDecoder(path, json, lottieMetadata, file.getFitzpatrickType());
       totalFrameCount = (long) lottieMetadata[0];
       file.setTotalFrameCount(totalFrameCount);
       frameRate = lottieMetadata[1];
@@ -466,7 +466,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
         // lottieCacheState = LOTTIE_CACHE_ERROR;
         switch (lottieCacheState) {
           case LOTTIE_CACHE_NONE: {
-            lottieCacheFile = LottieCache.getCacheFile(file, file.needOptimize(), lottieCacheFileSize = Math.max(free.getWidth(), free.getHeight()), file.getColorReplacementKey(), TimeUnit.MINUTES.toMillis(15), 8);
+            lottieCacheFile = LottieCache.getCacheFile(file, file.needOptimize(), lottieCacheFileSize = Math.max(free.getWidth(), free.getHeight()), file.getFitzpatrickType(), TimeUnit.MINUTES.toMillis(15), 8);
             int status;
             synchronized (nativeSync) {
               status = nativePtr == 0 ? 3 : lottieCacheFile == null ? 2 : N.createLottieCache(nativePtr, lottieCacheFile.getPath(), gif.getBitmap(false), free.bitmap, false, (file.needOptimize() ? REDUCED_MAX_FRAME_RATE : DEFAULT_MAX_FRAME_RATE) == 30.0);

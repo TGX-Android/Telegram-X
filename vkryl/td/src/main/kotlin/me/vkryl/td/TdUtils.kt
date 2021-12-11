@@ -275,7 +275,7 @@ fun MessageSender?.getSenderUserId (): Long {
 }
 
 fun Message?.getSenderUserId (): Long {
-  return this?.sender.getSenderUserId()
+  return this?.senderId.getSenderUserId()
 }
 
 @JvmOverloads
@@ -305,10 +305,10 @@ fun Message?.getMessageAuthorId(allowForward: Boolean = true): Long {
       }
     }
   }
-  return when (this.sender.constructor) {
-    MessageSenderUser.CONSTRUCTOR -> fromUserId((this.sender as MessageSenderUser).userId)
-    MessageSenderChat.CONSTRUCTOR -> (this.sender as MessageSenderChat).chatId
-    else -> TODO(this.sender.toString())
+  return when (this.senderId.constructor) {
+    MessageSenderUser.CONSTRUCTOR -> fromUserId((this.senderId as MessageSenderUser).userId)
+    MessageSenderChat.CONSTRUCTOR -> (this.senderId as MessageSenderChat).chatId
+    else -> TODO(this.senderId.toString())
   }
 }
 
@@ -325,7 +325,7 @@ fun MessageSender?.getSenderId (): Long {
 }
 
 fun Message?.getSenderId (): Long {
-  return this?.sender.getSenderId()
+  return this?.senderId.getSenderId()
 }
 
 fun MessageContent?.textOrCaption (): FormattedText? {

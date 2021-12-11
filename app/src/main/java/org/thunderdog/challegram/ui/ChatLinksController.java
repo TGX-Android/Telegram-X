@@ -313,7 +313,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       runOnUiThreadOptional(() -> {
         TdApi.ChatMember member = (TdApi.ChatMember) result;
         EditRightsController c = new EditRightsController(context, tdlib);
-        c.setArguments(new EditRightsController.Args(chatId, adminUserId, false, tdlib.chatStatus(chatId), member).noFocusLock());
+        c.setArguments(new EditRightsController.Args(chatId, new TdApi.MessageSenderUser(adminUserId), false, tdlib.chatStatus(chatId), member).noFocusLock());
         navigateTo(c);
       });
     });

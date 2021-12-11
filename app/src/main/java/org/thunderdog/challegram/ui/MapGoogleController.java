@@ -119,23 +119,23 @@ public class MapGoogleController extends MapController<MapView, MapGoogleControl
       int avatarColorId;
       Letters letters;
       TdApi.File avatar;
-      switch (message.sender.getConstructor()) {
+      switch (message.senderId.getConstructor()) {
         case TdApi.MessageSenderChat.CONSTRUCTOR: {
-          TdApi.Chat chat = tdlib.chat(((TdApi.MessageSenderChat) message.sender).chatId);
+          TdApi.Chat chat = tdlib.chat(((TdApi.MessageSenderChat) message.senderId).chatId);
           avatarColorId = tdlib.chatAvatarColorId(chat);
           letters = tdlib.chatLetters(chat);
           avatar = chat != null && chat.photo != null ? chat.photo.small : null;
           break;
         }
         case TdApi.MessageSenderUser.CONSTRUCTOR: {
-          TdApi.User user = tdlib.cache().user(((TdApi.MessageSenderUser) message.sender).userId);
+          TdApi.User user = tdlib.cache().user(((TdApi.MessageSenderUser) message.senderId).userId);
           avatarColorId = tdlib.cache().userAvatarColorId(user);
           letters = tdlib.cache().userLetters(user);
           avatar = user != null && user.profilePhoto != null ? user.profilePhoto.small : null;
           break;
         }
         default:
-          throw new IllegalArgumentException(message.sender.toString());
+          throw new IllegalArgumentException(message.senderId.toString());
       }
       return newBitmap(data, avatarColorId, letters, avatar);
     }

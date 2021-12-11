@@ -80,19 +80,19 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
     this.point = point;
     this.venue = null;
     if (livePeriod != 0) {
-      switch (msg.sender.getConstructor()) {
+      switch (msg.senderId.getConstructor()) {
         case TdApi.MessageSenderUser.CONSTRUCTOR: {
-          long userId = ((TdApi.MessageSenderUser) msg.sender).userId;
+          long userId = ((TdApi.MessageSenderUser) msg.senderId).userId;
           updatePreviewUser(userId, tdlib.cache().user(userId));
           break;
         }
         case TdApi.MessageSenderChat.CONSTRUCTOR: {
-          long chatId = ((TdApi.MessageSenderChat) msg.sender).chatId;
+          long chatId = ((TdApi.MessageSenderChat) msg.senderId).chatId;
           updatePreviewChat(chatId, tdlib.chat(chatId));
           break;
         }
         default:
-          throw new AssertionError(msg.sender.toString());
+          throw new AssertionError(msg.senderId.toString());
       }
       setLivePeriod(livePeriod, expiresInSeconds, true);
     }

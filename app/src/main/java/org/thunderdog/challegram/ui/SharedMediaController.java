@@ -550,7 +550,7 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
       context.setButtons(this, item, ids.get(), icons.get(), strings.get());
 
       if (tdlib.isMultiChat(chatId)) {
-        TdlibSender sender = new TdlibSender(tdlib, message.chatId, message.sender);
+        TdlibSender sender = new TdlibSender(tdlib, message.chatId, message.senderId);
         String title = sender.isSelf() ? Lang.getString(R.string.FromYou) : sender.getName();
         context.setHeader(title, Lang.getRelativeTimestamp(mediaItemCopy.getSourceDate(), TimeUnit.SECONDS));
         context.setHeaderAvatar(sender.getAvatar(), new AvatarPlaceholder(ComplexHeaderView.getBaseAvatarRadiusDp(), sender.getPlaceholderMetadata(), null));

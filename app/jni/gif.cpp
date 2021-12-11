@@ -502,13 +502,13 @@ JNI_FUNC(jboolean, decodeLottieFirstFrame, jstring jPath, jstring jsonData, jobj
   return JNI_TRUE;
 }
 
-JNI_FUNC(jlong, createLottieDecoder, jstring jPath, jstring jsonData, jdoubleArray data, jintArray jColorReplacement) {
+JNI_FUNC(jlong, createLottieDecoder, jstring jPath, jstring jsonData, jdoubleArray data, jint fitzpatrickType) {
   std::string json = jni::from_jstring(env, jsonData);
   std::string path = jni::from_jstring(env, jPath);
 
   int color = 0;
   std::map<int32_t, int32_t> *colorReplacement = nullptr;
-  if (jColorReplacement != nullptr) {
+  /*if (jColorReplacement != nullptr) {
     jsize colorReplacementLength = env->GetArrayLength(jColorReplacement);
     if (colorReplacementLength > 0) {
       jint *elements = jni::array_get<jint>(env, jColorReplacement);
@@ -523,10 +523,30 @@ JNI_FUNC(jlong, createLottieDecoder, jstring jPath, jstring jsonData, jdoubleArr
         jni::array_release<jint,jintArray>(env, jColorReplacement, elements);
       }
     }
+  }*/
+
+  rlottie::FitzModifier modifier = rlottie::FitzModifier::None;
+  switch (fitzpatrickType) {
+    case 2:
+    case 12:
+      modifier = rlottie::FitzModifier::Type12;
+      break;
+    case 3:
+      modifier = rlottie::FitzModifier::Type3;
+      break;
+    case 4:
+      modifier = rlottie::FitzModifier::Type4;
+      break;
+    case 5:
+      modifier = rlottie::FitzModifier::Type5;
+      break;
+    case 6:
+      modifier = rlottie::FitzModifier::Type6;
+      break;
   }
 
   LottieInfo *info = new LottieInfo(path);
-  info->animation = rlottie::Animation::loadFromData(json, path, colorReplacement);
+  info->animation = rlottie::Animation::loadFromData(json, path, nullptr, modifier);
 
   if (info->animation == nullptr) {
     delete info;

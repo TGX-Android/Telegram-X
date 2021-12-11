@@ -685,19 +685,19 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
         break;
       }
       case TdApi.MessagePhoto.CONSTRUCTOR: {
-        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.sender, msg.date, (TdApi.MessagePhoto) msg.content).setMessage(msg);
+        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.senderId, msg.date, (TdApi.MessagePhoto) msg.content).setMessage(msg);
       }
       case TdApi.MessageVideo.CONSTRUCTOR: {
-        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.sender, msg.date, (TdApi.MessageVideo) msg.content, true).setMessage(msg);
+        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.senderId, msg.date, (TdApi.MessageVideo) msg.content, true).setMessage(msg);
       }
       case TdApi.MessageAnimation.CONSTRUCTOR: {
-        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.sender, msg.date, (TdApi.MessageAnimation) msg.content).setMessage(msg);
+        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.senderId, msg.date, (TdApi.MessageAnimation) msg.content).setMessage(msg);
       }
       case TdApi.MessageChatChangePhoto.CONSTRUCTOR: {
         return new MediaItem(context, tdlib, msg.chatId, msg.id, ((TdApi.MessageChatChangePhoto) msg.content).photo).setMessage(msg);
       }
       case TdApi.MessageVideoNote.CONSTRUCTOR: {
-        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.sender, msg.date, (TdApi.MessageVideoNote) msg.content).setMessage(msg);
+        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.senderId, msg.date, (TdApi.MessageVideoNote) msg.content).setMessage(msg);
       }
     }
     return null;

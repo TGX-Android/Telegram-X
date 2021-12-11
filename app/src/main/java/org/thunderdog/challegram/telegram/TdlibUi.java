@@ -258,31 +258,30 @@ public class TdlibUi extends Handler {
     if (chatId == 0 || !context.tdlib().isSupergroup(chatId)) {
       return false;
     }
-    final TdApi.MessageSender sender = TD.getSender(deletingMessages);
-    if (Td.getSenderUserId(sender) == 0 || context.tdlib().isSelfSender(sender)) {
+    final TdApi.MessageSender senderId = TD.getSender(deletingMessages);
+    if (context.tdlib().isSelfSender(senderId)) {
       return false;
     }
 
-    String firstName = tdlib.senderName(sender, true);
-    CharSequence text = Lang.pluralBold(R.string.QDeleteXMessagesFromY, deletingMessages.length, firstName);
+    final String name = tdlib.senderName(senderId, true);
+    final CharSequence text = Lang.pluralBold(R.string.QDeleteXMessagesFromY, deletingMessages.length, name);
 
     SettingsWrap wrap = context.showSettings(new SettingsWrapBuilder(R.id.btn_deleteSupergroupMessages).setHeaderItem(
       new ListItem(ListItem.TYPE_INFO, R.id.text_title, 0, text, false)).setRawItems(
       new ListItem[]{
-        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_banUser, 0, R.string.RestrictUser, false),
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_banUser, 0, senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.RestrictUser : tdlib.isChannel(((TdApi.MessageSenderChat) senderId).chatId) ? R.string.BanChannel : R.string.BanChat, false),
         new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_reportSpam, 0, R.string.ReportSpam, false),
-        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_deleteAll, 0, Lang.getStringBold(R.string.DeleteAllFrom, firstName), false)
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_deleteAll, 0, Lang.getStringBold(R.string.DeleteAllFrom, name), false)
       }).setIntDelegate((id, result) -> {
         if (id == R.id.btn_deleteSupergroupMessages) {
           boolean banUser = result.get(R.id.btn_banUser) != 0;
           boolean reportSpam = result.get(R.id.btn_reportSpam) != 0;
           boolean deleteAll = result.get(R.id.btn_deleteAll) != 0;
 
-          final long senderUserId1 = Td.getSenderUserId(deletingMessages[0]);
           final long[] messageIds = TD.getMessageIds(deletingMessages).valueAt(0);
 
           if (banUser) {
-            tdlib.client().send(new TdApi.GetChatMember(chatId, deletingMessages[0].sender), object -> {
+            tdlib.client().send(new TdApi.GetChatMember(chatId, deletingMessages[0].senderId), object -> {
               switch (object.getConstructor()) {
                 case TdApi.ChatMember.CONSTRUCTOR: {
                   final TdApi.ChatMember member = (TdApi.ChatMember) object;
@@ -291,7 +290,7 @@ public class TdlibUi extends Handler {
                       TdApi.ChatMemberStatus myStatus = tdlib.chatStatus(chatId);
                       if (myStatus != null) {
                         EditRightsController editController = new EditRightsController(context.context(), context.tdlib());
-                        editController.setArguments(new EditRightsController.Args(chatId, senderUserId1, true, myStatus, member));
+                        editController.setArguments(new EditRightsController.Args(chatId, senderId, true, myStatus, member));
                         context.navigateTo(editController);
                       }
                     }
@@ -303,11 +302,11 @@ public class TdlibUi extends Handler {
           }
 
           if (reportSpam) {
-            tdlib.client().send(new TdApi.ReportSupergroupSpam(ChatId.toSupergroupId(chatId), senderUserId1, messageIds), tdlib.okHandler());
+            tdlib.client().send(new TdApi.ReportSupergroupSpam(ChatId.toSupergroupId(chatId), messageIds), tdlib.okHandler());
           }
 
           if (deleteAll) {
-            tdlib.client().send(new TdApi.DeleteChatMessagesFromUser(chatId, senderUserId1), tdlib.okHandler());
+            tdlib.client().send(new TdApi.DeleteChatMessagesBySender(chatId, senderId), tdlib.okHandler());
           } else {
             tdlib.deleteMessages(chatId, messageIds, true);
           }
@@ -318,7 +317,7 @@ public class TdlibUi extends Handler {
         }
       }).setSaveStr(R.string.Delete).setSaveColorId(R.id.theme_color_textNegative));
     if (wrap != null) {
-      tdlib.client().send(new TdApi.GetChatMember(deletingMessages[0].chatId, deletingMessages[0].sender), result -> {
+      tdlib.client().send(new TdApi.GetChatMember(deletingMessages[0].chatId, deletingMessages[0].senderId), result -> {
         if (result.getConstructor() == TdApi.ChatMember.CONSTRUCTOR) {
           TdApi.ChatMember member = (TdApi.ChatMember) result;
           tdlib.ui().post(() -> {
@@ -335,7 +334,7 @@ public class TdlibUi extends Handler {
               return;
             }
             if (newText == null) {
-              newText = Lang.plural(R.string.QDeleteXMessagesFromYRole, deletingMessages.length, (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex < 2 ? Lang.newBoldSpan(needFakeBold) : null, firstName, role);
+              newText = Lang.plural(R.string.QDeleteXMessagesFromYRole, deletingMessages.length, (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex < 2 ? Lang.newBoldSpan(needFakeBold) : null, name, role);
             }
             int i = wrap.adapter.indexOfViewById(R.id.text_title);
             if (i != -1 && wrap.adapter.getItem(i).setStringIfChanged(newText)) {
@@ -345,13 +344,13 @@ public class TdlibUi extends Handler {
         }
       });
       // TODO TDLib / server: ability to get totalCount with limit=0
-      tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, deletingMessages[0].sender, 0, 0, 1, null, 0), result -> {
+      tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, senderId, 0, 0, 1, null, 0), result -> {
         if (result.getConstructor() == TdApi.Messages.CONSTRUCTOR) {
           int moreCount = ((TdApi.Messages) result).totalCount - deletingMessages.length;
           if (moreCount > 0) {
             tdlib.ui().post(() -> {
               int i = wrap.adapter.indexOfViewById(R.id.btn_deleteAll);
-              if (i != -1 && wrap.adapter.getItem(i).setStringIfChanged(Lang.pluralBold(R.string.DeleteXMoreFrom, moreCount, firstName))) {
+              if (i != -1 && wrap.adapter.getItem(i).setStringIfChanged(Lang.pluralBold(R.string.DeleteXMoreFrom, moreCount, name))) {
                 wrap.adapter.notifyItemChanged(i);
               }
             });

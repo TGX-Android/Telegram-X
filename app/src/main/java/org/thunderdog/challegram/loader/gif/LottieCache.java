@@ -3,12 +3,9 @@ package org.thunderdog.challegram.loader.gif;
 import android.content.SharedPreferences;
 import android.os.SystemClock;
 
-import androidx.annotation.Nullable;
-
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.core.BaseThread;
 import org.thunderdog.challegram.data.TD;
-import me.vkryl.leveldb.LevelDB;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.io.File;
@@ -18,6 +15,7 @@ import java.util.List;
 
 import me.vkryl.core.FileUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.leveldb.LevelDB;
 
 /**
  * Date: 2019-08-03
@@ -239,10 +237,11 @@ public class LottieCache {
 
   private static final String LOTTIE_KEY_PREFIX = "lottie_";
 
-  public static File getCacheFile (GifFile file, boolean optimize, int size, @Nullable String colorKey, long keepAliveMs, int maxCount) {
+  public static File getCacheFile (GifFile file, boolean optimize, int size, int fitzpatrickType, long keepAliveMs, int maxCount) {
     if (optimize) {
       keepAliveMs = 0;
     }
+    String colorKey = fitzpatrickType != 0 ? Integer.toString(fitzpatrickType) : null;
     int accountId = file.tdlib().id();
     File cacheDir = getCacheDir(accountId, size, optimize, colorKey);
     if (cacheDir == null)
@@ -264,11 +263,12 @@ public class LottieCache {
     return cacheKey;
   }
 
-  public void checkFile (GifFile file, File cacheFile, boolean optimize, int size, String colorKey) {
+  public void checkFile (GifFile file, File cacheFile, boolean optimize, int size, int fitzpatrickType) {
     generationThread.post(() -> {
       if (optimize) {
         cacheFile.delete();
       } else {
+        String colorKey = fitzpatrickType != 0 ? Integer.toString(fitzpatrickType) : null;
         String key = getCacheFileKey(file.tdlib.accountId(), optimize, size, colorKey, new File(file.getFilePath()).getName());
         long time = Settings.instance().getLong(key, 0);
         if (time == 0 || System.currentTimeMillis() >= time) {
