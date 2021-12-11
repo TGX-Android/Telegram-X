@@ -527,6 +527,7 @@ JNI_FUNC(jlong, createLottieDecoder, jstring jPath, jstring jsonData, jdoubleArr
 
   rlottie::FitzModifier modifier = rlottie::FitzModifier::None;
   switch (fitzpatrickType) {
+    case 1:
     case 2:
     case 12:
       modifier = rlottie::FitzModifier::Type12;

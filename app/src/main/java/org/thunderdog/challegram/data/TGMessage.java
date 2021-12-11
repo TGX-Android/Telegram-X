@@ -3954,6 +3954,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return msg.canBeForwarded && (msg.content.getConstructor() != TdApi.MessageLocation.CONSTRUCTOR || ((TdApi.MessageLocation) msg.content).expiresIn == 0) && !isEventLog();
   }
 
+  public boolean canBeSaved () {
+    return msg.canBeSaved;
+  }
+
   public boolean isUnread () {
     return (flags & MESSAGE_FLAG_READ) == 0 || (msg.sendingState != null);
   }

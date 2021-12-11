@@ -1237,6 +1237,43 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
     return targetFile == null || TD.isFileLoaded(targetFile) || (fileProgress != null && fileProgress.isLoaded());
   }
 
+  public boolean canBeSaved () {
+    if (msg != null) {
+      return msg.canBeSaved;
+    }
+    if (type == TYPE_CHAT_PROFILE) {
+      TdApi.Chat chat = tdlib.chat(sourceChatId);
+      return chat != null && !chat.hasProtectedContent;
+    }
+    return getShareFile() != null;
+  }
+
+  public boolean canBeReported () {
+    if (msg != null) {
+      return tdlib.canReportMessage(msg);
+    }
+    switch (type) {
+      case TYPE_CHAT_PROFILE: {
+        return sourceChatId != 0;
+      }
+      case TYPE_USER_PROFILE: {
+        long userId = ((TdApi.MessageSenderUser) sourceSender).userId;
+        long chatId = ChatId.fromUserId(userId);
+        TdApi.Chat chat = tdlib.chat(chatId);
+        if (chat != null && chat.canBeReported)
+          return true;
+        return tdlib.cache().userBot(userId);
+      }
+    }
+    return false;
+  }
+
+  public boolean canBeShared () {
+    if (msg != null)
+      return msg.canBeForwarded;
+    return getShareFile() != null;
+  }
+
   public TdApi.File getShareFile () {
     if (getShareMimeType() == null)
       return null;

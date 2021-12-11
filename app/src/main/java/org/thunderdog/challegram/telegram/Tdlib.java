@@ -6495,6 +6495,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   @TdlibThread
+  private void updateChatHasProtectedContent (TdApi.UpdateChatHasProtectedContent update) {
+    synchronized (dataLock) {
+      final TdApi.Chat chat = chats.get(update.chatId);
+      if (TdlibUtils.assertChat(update.chatId, chat, update)) {
+        return;
+      }
+      chat.hasProtectedContent = update.hasProtectedContent;
+    }
+
+    listeners.updateChatHasProtectedContent(update);
+  }
+
+  @TdlibThread
   private void updateChatPhoto (TdApi.UpdateChatPhoto update) {
     synchronized (dataLock) {
       final TdApi.Chat chat = chats.get(update.chatId);
@@ -7544,6 +7557,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
       case TdApi.UpdateChatHasScheduledMessages.CONSTRUCTOR: {
         updateChatHasScheduledMessages((TdApi.UpdateChatHasScheduledMessages) update);
+        break;
+      }
+      case TdApi.UpdateChatHasProtectedContent.CONSTRUCTOR: {
+        updateChatHasProtectedContent((TdApi.UpdateChatHasProtectedContent) update);
         break;
       }
       case TdApi.UpdateUsersNearby.CONSTRUCTOR: {

@@ -5480,7 +5480,7 @@ public class TdlibUi extends Handler {
 
     CharSequence title = Lang.pluralBold(R.string.ReportXChats, chatIds.length);
     context.showOptions(title, ids.get(), strings.get(), /*colors.get()*/ null, null, (itemView, id) -> {
-      toReportReasons(context, id, title, 0, null, false, request -> {
+      toReportReasons(context, id, title, new TdApi.ReportChat(), false, request -> {
         AtomicInteger remaining = new AtomicInteger(chatIds.length);
         for (long chatId : chatIds) {
           tdlib.client().send(new TdApi.ReportChat(chatId, null, request.reason, request.text), object -> {
@@ -5536,7 +5536,7 @@ public class TdlibUi extends Handler {
     strings.append(R.string.Other);
   }
 
-  private static void toReportReasons (ViewController<?> context, int reportReasonId, CharSequence title, long chatId, long[] messageIds, boolean forceText, RunnableData<TdApi.ReportChat> reportCallback) {
+  private static <T extends TdApi.Function> void toReportReasons (ViewController<?> context, int reportReasonId, CharSequence title, T request, boolean forceText, RunnableData<T> reportCallback) {
     final TdApi.ChatReportReason reason;
     switch (reportReasonId) {
       case R.id.btn_reportChatSpam:
@@ -5565,7 +5565,16 @@ public class TdlibUi extends Handler {
       default:
         throw new IllegalArgumentException(Lang.getResourceEntryName(reportReasonId));
     }
-    final TdApi.ReportChat request = new TdApi.ReportChat(chatId, messageIds, reason, null);
+    switch (request.getConstructor()) {
+      case TdApi.ReportChat.CONSTRUCTOR:
+        ((TdApi.ReportChat) request).reason = reason;
+        break;
+      case TdApi.ReportChatPhoto.CONSTRUCTOR:
+        ((TdApi.ReportChatPhoto) request).reason = reason;
+        break;
+      default:
+        throw new UnsupportedOperationException(request.toString());
+    }
     if (forceText) {
       RequestController c = new RequestController(context.context(), context.tdlib());
       c.setArguments(new RequestController.Delegate() {
@@ -5585,7 +5594,14 @@ public class TdlibUi extends Handler {
             callback.runWithBool(false);
             return;
           }
-          request.text = input;
+          switch (request.getConstructor()) {
+            case TdApi.ReportChat.CONSTRUCTOR:
+              ((TdApi.ReportChat) request).text = input;
+              break;
+            case TdApi.ReportChatPhoto.CONSTRUCTOR:
+              ((TdApi.ReportChatPhoto) request).text = input;
+              break;
+          }
           callback.runWithBool(true);
           reportCallback.runWithData(request);
         }
@@ -5596,7 +5612,35 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public static void reportChat (ViewController<?> context, long chatId, @Nullable TdApi.Message[] messages, boolean allowOther, Runnable after, ThemeDelegate forcedTheme) {
+  public static void reportChatPhoto (ViewController<?> context, long chatId, int fileId, Runnable after, ThemeDelegate forcedTheme) {
+    Tdlib tdlib = context.tdlib();
+    CharSequence title = Lang.getStringBold(R.string.ReportChatPhoto, tdlib.chatTitle(chatId));
+
+    IntList ids = new IntList(REPORT_REASON_COUNT);
+    StringList strings = new StringList(REPORT_REASON_COUNT);
+    fillReportReasons(ids, strings);
+
+    context.showOptions(title, ids.get(), strings.get(), /*colors.get()*/ null, null, (itemView, id) -> {
+      toReportReasons(context, id, title, new TdApi.ReportChatPhoto(chatId, fileId, null, null), false, request -> {
+        if (after != null) {
+          after.run();
+        }
+        tdlib.client().send(request, object -> {
+          switch (object.getConstructor()) {
+            case TdApi.Ok.CONSTRUCTOR:
+              UI.showToast(R.string.ReportChatSent, Toast.LENGTH_SHORT);
+              break;
+            case TdApi.Error.CONSTRUCTOR:
+              UI.showError(object);
+              break;
+          }
+        });
+      });
+      return true;
+    }, forcedTheme);
+  }
+
+  public static void reportChat (ViewController<?> context, long chatId, @Nullable TdApi.Message[] messages, Runnable after, ThemeDelegate forcedTheme) {
     Tdlib tdlib = context.tdlib();
     final long[] messageIds;
     final CharSequence title;
@@ -5633,7 +5677,7 @@ public class TdlibUi extends Handler {
     fillReportReasons(ids, strings);
 
     context.showOptions(title, ids.get(), strings.get(), /*colors.get()*/ null, null, (itemView, id) -> {
-      toReportReasons(context, id, title, chatId, messageIds, false, request -> {
+      toReportReasons(context, id, title, new TdApi.ReportChat(chatId, messageIds, null, null), false, request -> {
         if (after != null) {
           after.run();
         }

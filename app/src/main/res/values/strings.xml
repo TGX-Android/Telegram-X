@@ -1554,6 +1554,7 @@
   <string name="ReportChatSpam">Are you sure you want to report %1$s for spam?</string>
   <string name="Report">Report</string>
   <string name="ReportChat">Report %1$s</string>
+  <string name="ReportChatPhoto">Report %1$s\'s photo?</string>
   <string name="Spam">Spam</string>
   <string name="Fake">Fake</string>
   <string name="Violence">Violence</string>
@@ -4117,6 +4118,9 @@
   <string name="MessageSeenNobody">Nobody Viewed</string>
   <string name="MessageSeenNobodyListened">Nobody Listened</string>
   <string name="MessageSeenNobodyPlayed">Nobody Played</string>
+
+  <string name="ChannelNoCopy">Sorry, copying from this channel is disabled by admins.</string>
+  <string name="ChannelNoSave">Sorry, saving media from this channel is disabled by admins.</string>
 
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
