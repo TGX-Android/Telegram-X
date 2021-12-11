@@ -5,7 +5,6 @@ import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -41,14 +40,13 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.core.lambda.FutureInt;
 
 /**
  * Date: 06/12/2016
  * Author: default
  */
 
-public class PopupLayout extends RootFrameLayout implements FactorAnimator.Target, BaseActivity.ActivityListener, Keyboard.OnStateChangeListener, ActivityResultHandler {
+public class PopupLayout extends RootFrameLayout implements FactorAnimator.Target, BaseActivity.ActivityListener, Keyboard.OnStateChangeListener, ActivityResultHandler, Destroyable {
   public interface TouchSectionProvider {
     boolean shouldTouchOutside (float x, float y);
   }
@@ -356,19 +354,23 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
         dismissListener.onPopupDismiss(this);
       }
 
-      for (int i = getChildCount() - 1; i >= 0; i--) {
-        View view = getChildAt(i);
-        if (view instanceof ViewGroup) {
-          Views.destroy((ViewGroup) view);
-        } else if (view instanceof Destroyable) {
-          ((Destroyable) view).performDestroy();
-        }
-        removeViewAt(i);
-      }
+      performDestroy();
+    }
+  }
 
-      if (boundController != null) {
-        boundController.destroy();
+  @Override
+  public void performDestroy () {
+    for (int i = getChildCount() - 1; i >= 0; i--) {
+      View view = getChildAt(i);
+      if (view instanceof Destroyable) {
+        ((Destroyable) view).performDestroy();
+      } else if (view instanceof ViewGroup) {
+        Views.destroy((ViewGroup) view);
       }
+      removeViewAt(i);
+    }
+    if (boundController != null) {
+      boundController.destroy();
     }
   }
 
