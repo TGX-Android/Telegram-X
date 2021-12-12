@@ -1675,8 +1675,13 @@ public class TD {
   }
 
   public static TdApi.PhoneNumberAuthenticationSettings defaultPhoneNumberAuthenticationSettings () {
-    // TODO automatic phone code entry
-    return new TdApi.PhoneNumberAuthenticationSettings(false, false, false, false, null);
+    return new TdApi.PhoneNumberAuthenticationSettings(
+      false,
+      false, // TODO support to save Telegram money
+      false,
+      false, // TODO for faster login when SMS method is chosen
+      Settings.instance().getAuthenticationTokens()
+    );
   }
 
   public static Letters getLetters (TdApi.User user) {
@@ -2606,7 +2611,10 @@ public class TD {
             case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
               return RESTRICT_MODE_EDIT;
             case TdApi.ChatMemberStatusMember.CONSTRUCTOR:
+            case TdApi.ChatMemberStatusLeft.CONSTRUCTOR:
               return RESTRICT_MODE_NEW;
+            case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
+              return RESTRICT_MODE_NONE;
           }
         }
         break;

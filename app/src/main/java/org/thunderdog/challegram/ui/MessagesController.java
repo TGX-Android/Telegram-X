@@ -481,18 +481,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (totalCount > 0) {
       if (tdlib.isSelfSender(previewSearchSender)) {
         headerCell.setForcedSubtitle(Lang.pluralBold(R.string.XFoundMessagesFromSelf, totalCount));
-      } else if (Td.getSenderUserId(previewSearchSender) == TdConstants.TELEGRAM_CHANNEL_BOT_ACCOUNT_ID) {
-        headerCell.setForcedSubtitle(Lang.pluralBold(R.string.XFoundMessagesFromAutoPost, totalCount));
       } else {
-        headerCell.setForcedSubtitle(Lang.pluralBold(R.string.XFoundMessagesFromUser, totalCount, tdlib.senderName(previewSearchSender, true)));
+        headerCell.setForcedSubtitle(Lang.pluralBold(previewSearchSender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.XFoundMessagesFromUser : R.string.XFoundMessagesFromChat, totalCount, tdlib.senderName(previewSearchSender, true)));
       }
     } else {
       if (tdlib.isSelfSender(previewSearchSender)) {
         headerCell.setForcedSubtitle(Lang.getString(R.string.FoundMessagesFromSelf));
-      } else if (Td.getSenderUserId(previewSearchSender) == TdConstants.TELEGRAM_CHANNEL_BOT_ACCOUNT_ID) {
-        headerCell.setForcedSubtitle(Lang.getString(R.string.FoundMessagesFromAutoPost));
       } else {
-        headerCell.setForcedSubtitle(Lang.getStringBold(R.string.FoundMessagesFromUser, tdlib.senderName(previewSearchSender, true)));
+        headerCell.setForcedSubtitle(Lang.getStringBold(previewSearchSender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.FoundMessagesFromUser : R.string.FoundMessagesFromChat, tdlib.senderName(previewSearchSender, true)));
       }
     }
   }
@@ -4050,11 +4046,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
   // Message options
 
   private TGMessage selectedMessage;
+  private TdApi.ChatMember selectedMessageSender;
   private Object selectedMessageTag;
 
-  public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, Object selectedMessageTag, boolean disableViewCounter) {
+  @Deprecated
+  public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, Object selectedMessageTag, TdApi.ChatMember selectedMessageSender, boolean disableViewCounter) {
+    // TODO rework into proper style
     this.selectedMessage = msg;
     this.selectedMessageTag = selectedMessageTag;
+    this.selectedMessageSender = selectedMessageSender;
     StringBuilder b = new StringBuilder();
     if (chat != null) {
       final boolean isChannel = tdlib.isChannel(chat.id);
@@ -4384,9 +4384,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return false;
     }
     if (selectedMessageIds.size() == 1) {
-      return TD.canCopyText(getSingleSelectedMessage());
+      TdApi.Message message = getSingleSelectedMessage();
+      return message.canBeSaved && TD.canCopyText(message);
     }
-    return !isSecretChat();
+    return !(isSecretChat() || chat.hasProtectedContent);
   }
 
   private boolean canDeleteSelectedMessages () {
@@ -4900,16 +4901,28 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_messageViewList: {
         if (selectedMessage != null) {
-          if (selectedMessage.getSender().isChannel()) {
-            tdlib.withChannelBotUserId(channelBotUserId -> {
-              if (!isDestroyed()) {
-                viewMessagesFromSender(new TdApi.MessageSenderUser(channelBotUserId), true);
-              }
-            });
-          } else {
-            viewMessagesFromSender(selectedMessage.getMessage().senderId, false);
-          }
+          viewMessagesFromSender(selectedMessage.getMessage().senderId, false);
           clearSelectedMessage();
+        }
+        return true;
+      }
+      case R.id.btn_messageRestrictMember: {
+        if (selectedMessage != null && selectedMessageSender != null) {
+          EditRightsController c = new EditRightsController(context, tdlib);
+          c.setArguments(new EditRightsController.Args(selectedMessage.getChatId(), selectedMessage.getMessage().senderId, true, tdlib.chatStatus(selectedMessage.getChatId()), selectedMessageSender));
+          navigateTo(c);
+        }
+        return true;
+      }
+      case R.id.btn_messageBlockUser: {
+        if (selectedMessage != null && selectedMessageSender != null) {
+          tdlib.ui().kickMember(this, selectedMessage.getChatId(), selectedMessage.getMessage().senderId, selectedMessageSender.status);
+        }
+        break;
+      }
+      case R.id.btn_messageUnblockMember: {
+        if (selectedMessage != null && selectedMessageSender != null) {
+          tdlib.ui().unblockMember(this, selectedMessage.getChatId(), selectedMessage.getMessage().senderId, selectedMessageSender.status);
         }
         return true;
       }
@@ -4918,9 +4931,25 @@ public class MessagesController extends ViewController<MessagesController.Argume
           IntList ids = new IntList(3);
           IntList icons = new IntList(3);
           StringList strings = new StringList(3);
-          Object tag = MessageView.fillMessageOptions(this, selectedMessage, ids, icons, strings, true);
-          if (!ids.isEmpty()) {
-            showMessageOptions(selectedMessage, ids.get(), strings.get(), icons.get(), tag, true);
+          final long chatId = selectedMessage.getChatId();
+          if (ChatId.isMultiChat(chatId) && !tdlib.isChannel(chatId) && TD.isAdmin(tdlib.chatStatus(chatId))) {
+            TGMessage selectedMessage = this.selectedMessage;
+            tdlib.client().send(new TdApi.GetChatMember(chatId, selectedMessage.getMessage().senderId), result -> {
+              TdApi.ChatMember otherMember = result.getConstructor() == TdApi.ChatMember.CONSTRUCTOR ? ((TdApi.ChatMember) result) : null;
+              tdlib.ui().post(() -> {
+                if (!selectedMessage.isDestroyed()) {
+                  Object tag = MessageView.fillMessageOptions(this, selectedMessage, otherMember, ids, icons, strings, true);
+                  if (!ids.isEmpty()) {
+                    showMessageOptions(selectedMessage, ids.get(), strings.get(), icons.get(), tag, otherMember, true);
+                  }
+                }
+              });
+            });
+          } else {
+            Object tag = MessageView.fillMessageOptions(this, selectedMessage, selectedMessageSender, ids, icons, strings, true);
+            if (!ids.isEmpty()) {
+              showMessageOptions(selectedMessage, ids.get(), strings.get(), icons.get(), tag, selectedMessageSender, true);
+            }
           }
         }
         return true;
@@ -8010,6 +8039,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             R.id.btn_filterMembers,
             R.id.btn_filterInviteLinks,
             R.id.btn_filterInfo,
+            R.id.btn_filterSettings,
             R.id.btn_filterDeletedMessages,
             R.id.btn_filterEditedMessages,
             R.id.btn_filterPinnedMessages,
@@ -8023,6 +8053,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             Lang.getString(R.string.EventLogFilterNewMembers),
             Lang.getString(R.string.EventLogFilterInviteLinks),
             Lang.getString(R.string.EventLogFilterGroupInfo),
+            Lang.getString(R.string.EventLogFilterGroupSettings),
             Lang.getString(R.string.EventLogFilterDeletedMessages),
             Lang.getString(R.string.EventLogFilterEditedMessages),
             Lang.getString(R.string.EventLogFilterPinnedMessages),

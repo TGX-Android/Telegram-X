@@ -2282,8 +2282,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       disallowScreenshots = (navigation.shouldDisallowScreenshots() || Passcode.instance().shouldDisallowScreenshots());
       if (!disallowScreenshots) {
         for (PopupLayout popupLayout : windows) {
-          ViewController<?> c = popupLayout.getBoundController();
-          if (c != null && c.shouldDisallowScreenshots()) {
+          if (popupLayout.shouldDisallowScreenshots()) {
             disallowScreenshots = true;
             break;
           }
@@ -2294,8 +2293,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
           PopupLayout popupLayout = forgottenWindows.valueAt(i);
           if (popupLayout == null)
             continue;
-          ViewController<?> c = popupLayout.getBoundController();
-          if (c != null && c.shouldDisallowScreenshots()) {
+          if (popupLayout.shouldDisallowScreenshots()) {
             disallowScreenshots = true;
             break;
           }

@@ -435,6 +435,7 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
     this.type = TYPE_CHAT_PROFILE;
     this.sourceChatId = chatId;
     this.sourceMessageId = messageId;
+    this.sourceSender = ChatId.isUserChat(chatId) ? new TdApi.MessageSenderUser(tdlib.chatUserId(chatId)) : new TdApi.MessageSenderChat(chatId);
     this.sourceDate = photo.addedDate;
     this.chatPhoto = photo;
 
