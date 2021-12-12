@@ -2790,6 +2790,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  @Override
+  public void onChatDefaultMessageSenderIdChanged (long chatId, TdApi.MessageSender senderId) {
+    runOnUiThreadOptional(() -> {
+      if (getChatId() == chatId) {
+        updateInputHint();
+      }
+    });
+  }
+
   public void updateInputHint () {
     if (inputView != null) {
       inputView.updateMessageHint(chat, messageThread, Config.NEED_SILENT_BROADCAST && silentButton != null ? silentButton.getIsSilent() : tdlib.chatDefaultDisableNotifications(getChatId()));

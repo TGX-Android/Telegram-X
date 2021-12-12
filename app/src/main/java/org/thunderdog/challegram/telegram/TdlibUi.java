@@ -259,7 +259,7 @@ public class TdlibUi extends Handler {
       return false;
     }
     final TdApi.MessageSender senderId = TD.getSender(deletingMessages);
-    if (context.tdlib().isSelfSender(senderId) || senderId == null) {
+    if (senderId == null || context.tdlib().isSelfSender(senderId)) {
       return false;
     }
 
@@ -268,7 +268,7 @@ public class TdlibUi extends Handler {
 
     SettingsWrap wrap = context.showSettings(new SettingsWrapBuilder(R.id.btn_deleteSupergroupMessages).setHeaderItem(
       new ListItem(ListItem.TYPE_INFO, R.id.text_title, 0, text, false)).setRawItems(
-      new ListItem[]{
+      new ListItem[] {
         new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_banUser, 0, senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.RestrictUser : tdlib.isChannel(((TdApi.MessageSenderChat) senderId).chatId) ? R.string.BanChannel : R.string.BanChat, false),
         new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_reportSpam, 0, R.string.ReportSpam, false),
         new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_deleteAll, 0, Lang.getStringBold(R.string.DeleteAllFrom, name), false)
