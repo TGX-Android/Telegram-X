@@ -269,9 +269,11 @@
   <string name="MessageAnonymously">Send anonymously</string>
   <string name="MessageAsX">Send as %1$s</string>
   <string name="MessageReply">Reply</string>
+  <string name="MessageReplyAsX">Reply as %1$s</string>
   <string name="MessageReplyAnonymously">Reply anonymously</string>
   <string name="CommentAnonymously">Comment anonymously</string>
   <string name="Comment">Comment</string>
+  <string name="CommentAsX">Comment as %1$s</string>
   <string name="DeletedMessage">Deleted message</string>
   <string name="UnsupportedMessage">Unsupported message</string>
   <string name="UnsupportedMessageType">Unsupported message</string>
