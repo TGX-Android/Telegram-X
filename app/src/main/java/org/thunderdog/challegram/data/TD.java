@@ -2611,7 +2611,10 @@ public class TD {
             case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
               return RESTRICT_MODE_EDIT;
             case TdApi.ChatMemberStatusMember.CONSTRUCTOR:
+            case TdApi.ChatMemberStatusLeft.CONSTRUCTOR:
               return RESTRICT_MODE_NEW;
+            case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
+              return RESTRICT_MODE_NONE;
           }
         }
         break;

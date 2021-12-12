@@ -34,6 +34,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Size;
+import org.thunderdog.challegram.util.SensitiveContentContainer;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
@@ -536,6 +537,17 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
     provider.prepareShowAnimation();
     addView(boundView = view);
     ((BaseActivity) getContext()).showPopupWindow(this);
+  }
+
+  public boolean shouldDisallowScreenshots () {
+    ViewController<?> c = boundController;
+    if (c != null && c.shouldDisallowScreenshots()) {
+      return true;
+    }
+    if (boundView instanceof SensitiveContentContainer) {
+      return ((SensitiveContentContainer) boundView).shouldDisallowScreenshots();
+    }
+    return false;
   }
 
   private boolean isHidden;

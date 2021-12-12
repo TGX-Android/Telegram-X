@@ -11,7 +11,6 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -218,6 +217,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
       }
       case ListItem.TYPE_CHAT_SMALL: {
         // chatView.setEnabled(tdlib.myUserId() != user.getUserId() || !isCreator /*&& (!isCreator || specificFilter.getConstructor() == TdApi.ChannelMembersFilterRecent.CONSTRUCTOR)*/);
+        chatView.clearPreviewChat();
         break;
       }
     }
@@ -295,16 +295,16 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
 
       int restrictMode = TD.canRestrictMember(myStatus, member.status);
       if (restrictMode != TD.RESTRICT_MODE_NONE) {
-        if (!isChannel()) {
+        if (!isChannel() && !(restrictMode == TD.RESTRICT_MODE_EDIT && member.memberId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR)) {
           ids.append(R.id.btn_restrictMember);
           colors.append(OPTION_COLOR_NORMAL);
           icons.append(R.drawable.baseline_block_24);
           switch (restrictMode) {
             case TD.RESTRICT_MODE_EDIT:
-              strings.append(R.string.EditUserRestrictions);
+              strings.append(member.memberId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? tdlib.isChannel(((TdApi.MessageSenderChat) member.memberId).chatId) ? R.string.EditChannelRestrictions : R.string.EditGroupRestrictions : R.string.EditUserRestrictions);
               break;
             case TD.RESTRICT_MODE_NEW:
-              strings.append(R.string.RestrictUser);
+              strings.append(member.memberId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? tdlib.isChannel(((TdApi.MessageSenderChat) member.memberId).chatId) ? R.string.BanChannel : R.string.BanChat : R.string.RestrictUser);
               break;
             case TD.RESTRICT_MODE_VIEW:
               strings.append(R.string.ViewRestrictions);
@@ -330,7 +330,12 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
               }
             }
             if (canUnblock) {
-              strings.append(member.status.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR ? R.string.RemoveRestrictions : tdlib.cache().senderBot(member.memberId) ? R.string.UnbanMemberBot : R.string.UnbanMember);
+              strings.append(
+                member.status.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR ? R.string.RemoveRestrictions :
+                tdlib.cache().senderBot(member.memberId) ? R.string.UnbanMemberBot :
+                  member.memberId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (tdlib.isChannel(Td.getSenderId(member.memberId)) ? R.string.UnbanMemberChannel : R.string.UnbanMemberGroup) :
+                  R.string.UnbanMember
+              );
               ids.append(R.id.btn_unblockUser);
               colors.append(OPTION_COLOR_NORMAL);
               icons.append(R.drawable.baseline_remove_circle_24);
@@ -345,14 +350,14 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
       if (tdlib.isSelfUserId(content.getUserId())) {
         strings.append(R.string.ViewMessagesFromYou);
       } else {
-        strings.append(Lang.getString(R.string.ViewMessagesFromUser, tdlib.cache().userFirstName(content.getUserId())));
+        strings.append(Lang.getString(content.getSender().getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.ViewMessagesFromUser : R.string.ViewMessagesFromChat, tdlib.senderName(content.getSender(), true)));
       }
       icons.append(R.drawable.baseline_person_24);
       colors.append(OPTION_COLOR_NORMAL);
     }
 
     if (!ids.isEmpty()) {
-      String name = TD.getUserName(content.getUser());
+      String name = tdlib.senderName(content.getSender());
       CharSequence info = TD.getMemberDescription(this, member, false);
       CharSequence date = TD.getMemberJoinDate(member);
       CharSequence result;
@@ -413,10 +418,10 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
             editMember(content, true);
             break;
           case R.id.btn_blockUser:
-            kickMember(content);
+            tdlib.ui().kickMember(getParentOrSelf(), chatId, content.getSender(), content.getMember().status);
             break;
           case R.id.btn_unblockUser:
-            unblockMember(content);
+            tdlib.ui().unblockMember(getParentOrSelf(), chatId, content.getSender(), content.getMember().status);
             break;
         }
         return true;
@@ -429,71 +434,6 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
 
   private boolean isChannel () {
     return parent != null && parent.isChannel();
-  }
-
-  private CharSequence getBlockString (DoubleTextWrapper wrapper, boolean willBeBlocked) {
-    if (isChannel()) {
-      return Lang.getStringBold(willBeBlocked ? R.string.MemberCannotJoinChannel : R.string.MemberCanJoinChannel, tdlib.cache().userName(wrapper.getUserId()));
-    } else {
-      return Lang.getStringBold(willBeBlocked ? R.string.MemberCannotJoinGroup : R.string.MemberCanJoinGroup, tdlib.cache().userName(wrapper.getUserId()));
-    }
-  }
-
-  private void kickMember (final DoubleTextWrapper content) {
-    if (groupId != 0) {
-      showOptions(Lang.getStringBold(R.string.MemberCannotJoinRegularGroup, tdlib.cache().userName(content.getUserId())), new int[]{R.id.btn_blockUser, R.id.btn_cancel}, new String[]{Lang.getString(R.string.RemoveFromGroup), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-        if (id == R.id.btn_blockUser) {
-          tdlib.setChatMemberStatus(chatId, content.getSender(), new TdApi.ChatMemberStatusLeft(), content.getMember().status, null);
-        }
-        return true;
-      });
-      return;
-    }
-    final ListItem headerItem = new ListItem(ListItem.TYPE_INFO, 0, 0, getBlockString(content, true), false);
-    showSettings(new SettingsWrapBuilder(R.id.btn_blockUser)
-      .addHeaderItem(headerItem)
-      .setIntDelegate((id, result) -> {
-        boolean blockUser = result.get(R.id.right_readMessages) != 0;
-        if (content.getMember().status.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR && !blockUser) {
-          TdApi.ChatMemberStatusRestricted now = (TdApi.ChatMemberStatusRestricted) content.getMember().status;
-          tdlib.setChatMemberStatus(chatId, content.getSender(), new TdApi.ChatMemberStatusRestricted(false, now.restrictedUntilDate, now.permissions), content.getMember().status, null);
-        } else {
-          tdlib.setChatMemberStatus(chatId, content.getSender(), new TdApi.ChatMemberStatusBanned(), content.getMember().status, null);
-          if (!blockUser) {
-            tdlib.setChatMemberStatus(chatId, content.getSender(), new TdApi.ChatMemberStatusLeft(), content.getMember().status, null);
-          }
-        }
-      })
-      .setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter) -> {
-        headerItem.setString(getBlockString(content, settingsAdapter.getCheckIntResults().get(R.id.right_readMessages) != 0));
-        settingsAdapter.updateValuedSettingByPosition(settingsAdapter.indexOfView(headerItem));
-      })
-      .setRawItems(new ListItem[]{
-        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.right_readMessages, 0, R.string.BanMember, true)
-      }).setSaveStr(R.string.RemoveMember).setSaveColorId(R.id.theme_color_textNegative));
-  }
-
-  private void unblockMember (final DoubleTextWrapper content) {
-    if (content.getMember().status.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR) {
-      tdlib.setChatMemberStatus(chatId, content.getSender(), new TdApi.ChatMemberStatusMember(), content.getMember().status, null);
-      return;
-    }
-
-    showSettings(new SettingsWrapBuilder(R.id.btn_unblockUser)
-    .addHeaderItem(new ListItem(ListItem.TYPE_INFO, 0, 0, Lang.getString(R.string.QUnblockX, TD.getUserName(content.getUser())), false))
-      .setIntDelegate((id, result) -> {
-        boolean addBackToGroup = result.get(R.id.right_readMessages) != 0;
-        tdlib.setChatMemberStatus(chatId, content.getSender(), new TdApi.ChatMemberStatusLeft(), content.getMember().status, null);
-        if (addBackToGroup) {
-          tdlib.client().send(new TdApi.AddChatMembers(chatId, new long[] {content.getUserId()}), tdlib.okHandler());
-        }
-      })
-      .setRawItems(new ListItem[] {
-        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.right_readMessages, 0, isChannel() ? R.string.InviteBackToChannel : R.string.InviteBackToGroup, false)
-      })
-      .setSaveStr(R.string.Unban)
-      .setSaveColorId(R.id.theme_color_textNegative)
-    );
   }
 
   private void editMember (DoubleTextWrapper content, boolean restrict) {
@@ -517,7 +457,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
     }
 
     EditRightsController c = new EditRightsController(context, tdlib);
-    c.setArguments(new EditRightsController.Args(chatId, new TdApi.MessageSenderUser(content.getUserId()), restrict, myStatus, member));
+    c.setArguments(new EditRightsController.Args(chatId, content.getSender(), restrict, myStatus, member));
     parent.navigateTo(c);
   }
 
@@ -646,7 +586,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
         case TdApi.SupergroupMembersFilterAdministrators.CONSTRUCTOR:
           return Lang.getString(R.string.MembersDetailAdmins);
         case TdApi.SupergroupMembersFilterBanned.CONSTRUCTOR:
-          return Lang.getString(R.string.MembersDetailBanned);
+          return Lang.getString(isChannel() ? R.string.MembersDetailBannedChannel : R.string.MembersDetailBannedGroup);
       }
     }
     return Lang.getString(R.string.Recent);

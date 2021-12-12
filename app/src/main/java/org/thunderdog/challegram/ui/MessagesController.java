@@ -4042,11 +4042,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
   // Message options
 
   private TGMessage selectedMessage;
+  private TdApi.ChatMember selectedMessageSender;
   private Object selectedMessageTag;
 
-  public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, Object selectedMessageTag, boolean disableViewCounter) {
+  @Deprecated
+  public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, Object selectedMessageTag, TdApi.ChatMember selectedMessageSender, boolean disableViewCounter) {
+    // TODO rework into proper style
     this.selectedMessage = msg;
     this.selectedMessageTag = selectedMessageTag;
+    this.selectedMessageSender = selectedMessageSender;
     StringBuilder b = new StringBuilder();
     if (chat != null) {
       final boolean isChannel = tdlib.isChannel(chat.id);
@@ -4891,14 +4895,50 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         return true;
       }
+      case R.id.btn_messageRestrictMember: {
+        if (selectedMessage != null && selectedMessageSender != null) {
+          EditRightsController c = new EditRightsController(context, tdlib);
+          c.setArguments(new EditRightsController.Args(selectedMessage.getChatId(), selectedMessage.getMessage().senderId, true, tdlib.chatStatus(selectedMessage.getChatId()), selectedMessageSender));
+          navigateTo(c);
+        }
+        return true;
+      }
+      case R.id.btn_messageBlockUser: {
+        if (selectedMessage != null && selectedMessageSender != null) {
+          tdlib.ui().kickMember(this, selectedMessage.getChatId(), selectedMessage.getMessage().senderId, selectedMessageSender.status);
+        }
+        break;
+      }
+      case R.id.btn_messageUnblockMember: {
+        if (selectedMessage != null && selectedMessageSender != null) {
+          tdlib.ui().unblockMember(this, selectedMessage.getChatId(), selectedMessage.getMessage().senderId, selectedMessageSender.status);
+        }
+        return true;
+      }
       case R.id.btn_messageMore: {
         if (selectedMessage != null) {
           IntList ids = new IntList(3);
           IntList icons = new IntList(3);
           StringList strings = new StringList(3);
-          Object tag = MessageView.fillMessageOptions(this, selectedMessage, ids, icons, strings, true);
-          if (!ids.isEmpty()) {
-            showMessageOptions(selectedMessage, ids.get(), strings.get(), icons.get(), tag, true);
+          final long chatId = selectedMessage.getChatId();
+          if (ChatId.isMultiChat(chatId) && !tdlib.isChannel(chatId) && TD.isAdmin(tdlib.chatStatus(chatId))) {
+            TGMessage selectedMessage = this.selectedMessage;
+            tdlib.client().send(new TdApi.GetChatMember(chatId, selectedMessage.getMessage().senderId), result -> {
+              TdApi.ChatMember otherMember = result.getConstructor() == TdApi.ChatMember.CONSTRUCTOR ? ((TdApi.ChatMember) result) : null;
+              tdlib.ui().post(() -> {
+                if (!selectedMessage.isDestroyed()) {
+                  Object tag = MessageView.fillMessageOptions(this, selectedMessage, otherMember, ids, icons, strings, true);
+                  if (!ids.isEmpty()) {
+                    showMessageOptions(selectedMessage, ids.get(), strings.get(), icons.get(), tag, otherMember, true);
+                  }
+                }
+              });
+            });
+          } else {
+            Object tag = MessageView.fillMessageOptions(this, selectedMessage, selectedMessageSender, ids, icons, strings, true);
+            if (!ids.isEmpty()) {
+              showMessageOptions(selectedMessage, ids.get(), strings.get(), icons.get(), tag, selectedMessageSender, true);
+            }
           }
         }
         return true;

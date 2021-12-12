@@ -618,7 +618,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     }
 
     EditRightsController c = new EditRightsController(context, tdlib);
-    c.setArguments(new EditRightsController.Args(getArgumentsStrict().chatId, new TdApi.MessageSenderUser(content.getUserId()), restrict, myStatus, member).noFocusLock());
+    c.setArguments(new EditRightsController.Args(getArgumentsStrict().chatId, content.getSender(), restrict, myStatus, member).noFocusLock());
     navigateTo(c);
   }
 
@@ -628,7 +628,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     IntList icons = new IntList(4);
     StringList strings = new StringList(4);
 
-    tdlib.client().send(new TdApi.GetChatMember(getArgumentsStrict().chatId, new TdApi.MessageSenderUser(content.getUserId())), result -> {
+    tdlib.client().send(new TdApi.GetChatMember(getArgumentsStrict().chatId, content.getSender()), result -> {
       if (result.getConstructor() != TdApi.ChatMember.CONSTRUCTOR) return;
 
       TdApi.ChatMember member = (TdApi.ChatMember) result;
@@ -672,10 +672,10 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
 
           switch (restrictMode) {
             case TD.RESTRICT_MODE_EDIT:
-              strings.append(R.string.EditUserRestrictions);
+              strings.append(content.getSender().getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (tdlib.isChannel(Td.getSenderId(content.getSender())) ? R.string.EditChannelRestrictions : R.string.EditGroupRestrictions) : R.string.EditUserRestrictions);
               break;
             case TD.RESTRICT_MODE_NEW:
-              strings.append(R.string.RestrictUser);
+              strings.append(content.getSender().getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (tdlib.isChannel(Td.getSenderId(content.getSender())) ? R.string.BanChannel : R.string.BanChat) : R.string.RestrictUser);
               break;
             case TD.RESTRICT_MODE_VIEW:
               strings.append(R.string.ViewRestrictions);

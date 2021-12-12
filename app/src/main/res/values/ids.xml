@@ -1095,6 +1095,10 @@
   <item type="id" name="btn_makePublic" />
   <item type="id" name="btn_restrictMember" />
 
+  <item type="id" name="btn_messageRestrictMember" />
+  <item type="id" name="btn_messageBlockUser" />
+  <item type="id" name="btn_messageUnblockMember" />
+
   <item type="id" name="btn_applyWallpaper" />
 
   <item type="id" name="right_readMessages" />

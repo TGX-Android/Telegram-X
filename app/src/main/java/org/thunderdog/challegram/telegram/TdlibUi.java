@@ -259,7 +259,7 @@ public class TdlibUi extends Handler {
       return false;
     }
     final TdApi.MessageSender senderId = TD.getSender(deletingMessages);
-    if (context.tdlib().isSelfSender(senderId)) {
+    if (context.tdlib().isSelfSender(senderId) || senderId == null) {
       return false;
     }
 
@@ -326,10 +326,12 @@ public class TdlibUi extends Handler {
               role = Lang.getString(R.string.RoleOwner);
             } else if (member.status.getConstructor() == TdApi.ChatMemberStatusBanned.CONSTRUCTOR) {
               role = Lang.getString(R.string.RoleBanned);
-            } else if (!TD.isMember(member.status, false)) {
+            } else if (!TD.isMember(member.status, false) && member.memberId.getConstructor() != TdApi.MessageSenderChat.CONSTRUCTOR) {
               role = Lang.getString(R.string.RoleLeft);
             } else if (member.joinedChatDate != 0) {
               role = Lang.getRelativeDate(member.joinedChatDate, TimeUnit.SECONDS, System.currentTimeMillis(), TimeUnit.MILLISECONDS, true, 60, R.string.RoleMember, true);
+            } else if (member.memberId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
+              role = Lang.getString(tdlib.isChannel(Td.getSenderId(member.memberId)) ? R.string.RoleChannel : R.string.RoleGroup);
             } else {
               return;
             }
@@ -360,6 +362,74 @@ public class TdlibUi extends Handler {
     }
 
     return true;
+  }
+
+  public void unblockMember (ViewController<?> c, long chatId, final TdApi.MessageSender senderId, TdApi.ChatMemberStatus currentStatus) {
+    if (senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
+      tdlib.setChatMemberStatus(chatId, senderId, new TdApi.ChatMemberStatusLeft(), currentStatus, null);
+      return;
+    }
+    if (currentStatus.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR) {
+      tdlib.setChatMemberStatus(chatId, senderId, new TdApi.ChatMemberStatusMember(), currentStatus, null);
+      return;
+    }
+
+    c.showSettings(new SettingsWrapBuilder(R.id.btn_unblockUser)
+      .addHeaderItem(new ListItem(ListItem.TYPE_INFO, 0, 0, Lang.getString(R.string.QUnblockX, tdlib.senderName(senderId)), false))
+      .setIntDelegate((id, result) -> {
+        boolean addBackToGroup = result.get(R.id.right_readMessages) != 0;
+        tdlib.setChatMemberStatus(chatId, senderId, addBackToGroup ? new TdApi.ChatMemberStatusMember() : new TdApi.ChatMemberStatusLeft(), currentStatus, null);
+      })
+      .setRawItems(new ListItem[] {
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.right_readMessages, 0, tdlib.isChannel(chatId) ? R.string.InviteBackToChannel : R.string.InviteBackToGroup, false)
+      })
+      .setSaveStr(R.string.Unban)
+      .setSaveColorId(R.id.theme_color_textNegative)
+    );
+  }
+
+  private CharSequence getBlockString (long chatId, TdApi.MessageSender senderId, boolean willBeBlocked) {
+    if (tdlib.isChannel(chatId)) {
+      return Lang.getStringBold(willBeBlocked ? R.string.MemberCannotJoinChannel : R.string.MemberCanJoinChannel, tdlib.senderName(senderId));
+    } else {
+      return Lang.getStringBold(willBeBlocked ? R.string.MemberCannotJoinGroup : R.string.MemberCanJoinGroup, tdlib.senderName(senderId));
+    }
+  }
+
+  public void kickMember (ViewController<?> c, final long chatId, final TdApi.MessageSender senderId, TdApi.ChatMemberStatus currentStatus) {
+    if (senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR)
+      return;
+    if (ChatId.getType(chatId) == TdApi.ChatTypeBasicGroup.CONSTRUCTOR) {
+      c.showOptions(Lang.getStringBold(R.string.MemberCannotJoinRegularGroup, tdlib.senderName(senderId, true)), new int[]{R.id.btn_blockUser, R.id.btn_cancel}, new String[]{Lang.getString(R.string.RemoveFromGroup), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        if (id == R.id.btn_blockUser) {
+          tdlib.setChatMemberStatus(chatId, senderId, new TdApi.ChatMemberStatusLeft(), currentStatus, null);
+        }
+        return true;
+      });
+      return;
+    }
+    final ListItem headerItem = new ListItem(ListItem.TYPE_INFO, 0, 0, getBlockString(chatId, senderId, true), false);
+    c.showSettings(new SettingsWrapBuilder(R.id.btn_blockUser)
+      .addHeaderItem(headerItem)
+      .setIntDelegate((id, result) -> {
+        boolean blockUser = result.get(R.id.right_readMessages) != 0;
+        if (currentStatus.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR && !blockUser) {
+          TdApi.ChatMemberStatusRestricted now = (TdApi.ChatMemberStatusRestricted) currentStatus;
+          tdlib.setChatMemberStatus(chatId, senderId, new TdApi.ChatMemberStatusRestricted(false, now.restrictedUntilDate, now.permissions), currentStatus, null);
+        } else {
+          tdlib.setChatMemberStatus(chatId, senderId, new TdApi.ChatMemberStatusBanned(), currentStatus, null);
+          if (!blockUser) {
+            tdlib.setChatMemberStatus(chatId, senderId, new TdApi.ChatMemberStatusLeft(), currentStatus, null);
+          }
+        }
+      })
+      .setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter) -> {
+        headerItem.setString(getBlockString(chatId, senderId, settingsAdapter.getCheckIntResults().get(R.id.right_readMessages) != 0));
+        settingsAdapter.updateValuedSettingByPosition(settingsAdapter.indexOfView(headerItem));
+      })
+      .setRawItems(new ListItem[]{
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.right_readMessages, 0, R.string.BanMember, true)
+      }).setSaveStr(R.string.RemoveMember).setSaveColorId(R.id.theme_color_textNegative));
   }
 
   private static boolean deleteWithRevoke (final ViewController<?> context, final TdApi.Message[] deletingMessages, final @Nullable Runnable after) {

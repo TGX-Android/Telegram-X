@@ -4079,14 +4079,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private void setChatMemberStatusImpl (final long chatId, final TdApi.MessageSender sender, final TdApi.ChatMemberStatus newStatus, final int forwardLimit, final @Nullable TdApi.ChatMemberStatus currentStatus, @Nullable final ChatMemberStatusChangeCallback callback) {
-    final boolean needBanAtFirst = !ChatId.isBasicGroup(chatId) && TD.isMember(currentStatus) && !TD.isMember(newStatus) && newStatus.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR;
     final boolean needForward = ChatId.isBasicGroup(chatId) && forwardLimit > 0 && !TD.isMember(currentStatus, false) && TD.isMember(newStatus, false) && sender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR;
-    final AtomicBoolean oneShot = needBanAtFirst || (needForward && TD.isAdmin(newStatus)) ? new AtomicBoolean(false) : null;
+    final AtomicBoolean oneShot = (needForward && TD.isAdmin(newStatus)) ? new AtomicBoolean(false) : null;
 
     TdApi.Function function;
-    if (needBanAtFirst) {
-      function = new TdApi.SetChatMemberStatus(chatId, sender, new TdApi.ChatMemberStatusBanned());
-    } else if (needForward) {
+    if (needForward) {
       function = new TdApi.AddChatMember(chatId, ((TdApi.MessageSenderUser) sender).userId, forwardLimit);
     } else {
       function = new TdApi.SetChatMemberStatus(chatId, sender, newStatus);

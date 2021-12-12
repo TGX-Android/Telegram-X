@@ -267,6 +267,7 @@
   <string name="SelectChat">Select Chat</string>
   <string name="Message">Message</string>
   <string name="MessageAnonymously">Send anonymously</string>
+  <string name="MessageAsX">Send as %1$s</string>
   <string name="MessageReply">Reply</string>
   <string name="MessageReplyAnonymously">Reply anonymously</string>
   <string name="CommentAnonymously">Comment anonymously</string>
@@ -1241,6 +1242,8 @@
   <string name="PinToTop">Pin to top</string>
   <string name="UnpinFromTop">Unpin from top</string>
   <string name="WhatThisBotCanDo">What can this bot do?</string>
+  <string name="WhatThisChannelCanDo">What can admins on behalf of this channel do?</string>
+  <string name="WhatThisGroupCanDo">What can admins on behalf of this group do?</string>
   <string name="InstantView">Instant View</string>
   <string name="InternalStorage">Internal Storage</string>
   <string name="Storage">Storage</string>
@@ -1607,6 +1610,8 @@
   <string name="RoleOwner">chat owner</string>
   <string name="RoleLeft">not a member</string>
   <string name="RoleBanned">banned member</string>
+  <string name="RoleChannel">channel</string>
+  <string name="RoleGroup">group</string>
   <string name="RoleMember_now">joined just now</string>
   <string name="RoleMember_seconds_one">joined %1$s sec ago</string>
   <string name="RoleMember_seconds_other">joined %1$s secs ago</string>
@@ -1644,6 +1649,8 @@
   <string name="EditAdmin">Edit Admin</string>
   <string name="AdminRights">Admin Rights</string>
   <string name="UserRestrictions">User Permissions</string>
+  <string name="GroupRestrictions">Group Permissions</string>
+  <string name="ChannelRestrictions">Channel Permissions</string>
   <string name="SetAsAdmin">Promote to Admin</string>
   <string name="WhatThisAdminCanDo">What can this admin do?</string>
   <string name="WhatThisUserCanDo">What can this user do?</string>
@@ -1674,14 +1681,20 @@
   <string name="EditOwnerPublic">Disclose Owner</string>
   <string name="ViewAdminRights">View Admin Rights</string>
   <string name="EditUserRestrictions">Edit User Restrictions</string>
+  <string name="EditGroupRestrictions">Edit Group Restrictions</string>
+  <string name="EditChannelRestrictions">Edit Channel Restrictions</string>
   <string name="RestrictUser">Restrict user</string>
-  <string name="BanChat">Ban chat</string>
+  <string name="BanChat">Ban group</string>
   <string name="BanChannel">Ban channel</string>
+  <string name="BanChatHint">Granular control over restrictions is not available for groups.</string>
+  <string name="BanChannelHint">Granular control over restrictions is not available for channels.</string>
   <string name="ViewRestrictions">View Restrictions</string>
   <string name="EditAdminPostMessages">Post Messages</string>
   <string name="BannedWillBeShownHere">Banned members will be shown here</string>
   <string name="RestrictedWillBeShownHere">Restricted members will be shown here</string>
   <string name="UnbanMember">Unban user</string>
+  <string name="UnbanMemberChannel">Unban channel</string>
+  <string name="UnbanMemberGroup">Unban group</string>
   <string name="UnbanMemberBot">Unban bot</string>
   <string name="BlockFor">Block for</string>
   <string name="RestrictFor">Restrict for</string>
@@ -2362,7 +2375,8 @@
   <string name="GroupUpgradedTo">Group upgraded to supergroup.</string>
   <string name="MembersDetailRestricted">Members with restrictions</string>
   <string name="MembersDetailAdmins">Administrators</string>
-  <string name="MembersDetailBanned">Banned users</string>
+  <string name="MembersDetailBannedGroup">Banned members</string>
+  <string name="MembersDetailBannedChannel">Banned subscribers</string>
   <string name="ChatSuggestionsDisabled">Bot suggestions are disabled.\nTurn them back on in Settings &gt; Privacy and Security.</string>
   <string name="ChatLinkView">View Chat</string>
   <string name="ChatLinkRemove">Remove Link</string>
@@ -3120,6 +3134,7 @@
 
   <string name="error_CHAT_ADMIN_REQUIRED">You do not have enough privileges to perform this action.</string>
   <string name="ChatPermissions">Chat Permissions</string>
+  <string name="ChatPermissionsRestrictHint">This permission is disabled for all members.</string>
   <string name="WhatMembersCanDo">What can members of this group do?</string>
   <string name="MemberSince">Member since %1$s at %2$s</string>
   <string name="format_statusAndDate">%1$s\n%2$s</string>
