@@ -714,12 +714,12 @@ public class TD {
       case TdApi.SearchMessagesFilterChatPhoto.CONSTRUCTOR:
         type = 9;
         break;
-      case TdApi.SearchMessagesFilterCall.CONSTRUCTOR:
+      /*case TdApi.SearchMessagesFilterCall.CONSTRUCTOR:
         type = 10;
         break;
       case TdApi.SearchMessagesFilterMissedCall.CONSTRUCTOR:
         type = 11;
-        break;
+        break;*/
       case TdApi.SearchMessagesFilterVideoNote.CONSTRUCTOR:
         type = 12;
         break;
@@ -761,8 +761,8 @@ public class TD {
         case 7: return new TdApi.SearchMessagesFilterPhotoAndVideo();
         case 8: return new TdApi.SearchMessagesFilterUrl();
         case 9: return new TdApi.SearchMessagesFilterChatPhoto();
-        case 10: return new TdApi.SearchMessagesFilterCall();
-        case 11: return new TdApi.SearchMessagesFilterMissedCall();
+        /*case 10: return new TdApi.SearchMessagesFilterCall();
+        case 11: return new TdApi.SearchMessagesFilterMissedCall();*/
         case 12: return new TdApi.SearchMessagesFilterVideoNote();
         case 13: return new TdApi.SearchMessagesFilterVoiceAndVideoNote();
         case 14: return new TdApi.SearchMessagesFilterMention();
