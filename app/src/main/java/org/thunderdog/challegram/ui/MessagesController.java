@@ -4097,6 +4097,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
         b.append(Lang.getString(R.string.SendFailureInfo, Strings.join(", ", (Object[]) errors)));
       }
     }
+    if (!msg.canBeSaved()) {
+      if (b.length() > 0) {
+        b.append("\n\n");
+      }
+      b.append(msg.isChannel() ? R.string.RestrictSavingChannelInfo : R.string.RestrictSavingGroupInfo);
+    }
     String text = b.toString().trim();
     patchReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, disableViewCounter);
   }
