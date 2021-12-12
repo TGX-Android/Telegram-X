@@ -4938,7 +4938,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
           final long chatId = selectedMessage.getChatId();
           if (ChatId.isMultiChat(chatId) && !tdlib.isChannel(chatId) && TD.isAdmin(tdlib.chatStatus(chatId))) {
             TGMessage selectedMessage = this.selectedMessage;
-            tdlib.client().send(new TdApi.GetChatMember(chatId, selectedMessage.getMessage().senderId), result -> {
+            TdApi.MessageSender senderId = selectedMessage.getMessage().senderId;
+            tdlib.client().send(new TdApi.GetChatMember(chatId, senderId), result -> {
               TdApi.ChatMember otherMember = result.getConstructor() == TdApi.ChatMember.CONSTRUCTOR ? ((TdApi.ChatMember) result) : null;
               tdlib.ui().post(() -> {
                 if (!selectedMessage.isDestroyed()) {
