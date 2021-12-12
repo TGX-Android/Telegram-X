@@ -1852,6 +1852,7 @@
   <string name="EventLogFilterNewMembers">New members</string>
   <string name="EventLogFilterInviteLinks">Invite links</string>
   <string name="EventLogFilterGroupInfo">Group info</string>
+  <string name="EventLogFilterGroupSettings">Group settings</string>
   <string name="EventLogFilterChannelInfo">Channel info</string>
   <string name="EventLogFilterDeletedMessages">Deleted messages</string>
   <string name="EventLogFilterEditedMessages">Edited messages</string>
