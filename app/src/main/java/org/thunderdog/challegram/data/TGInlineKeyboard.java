@@ -1145,7 +1145,8 @@ public class TGInlineKeyboard {
         }
         case TdApi.InlineKeyboardButtonTypeUser.CONSTRUCTOR: {
           final TdApi.InlineKeyboardButtonTypeUser user = (TdApi.InlineKeyboardButtonTypeUser) type;
-          context.context.tdlib().ui().openPrivateChat(context.context.controller(), user.userId, new TdlibUi.ChatOpenParameters().keepStack().urlOpenParameters(openParameters(currentContextId, view)));
+          // context.context.tdlib().ui().openPrivateChat(context.context.controller(), user.userId, new TdlibUi.ChatOpenParameters().keepStack().urlOpenParameters(openParameters(currentContextId, view)));
+          context.context.tdlib().ui().openPrivateProfile(context.context, user.userId, openParameters(currentContextId, view));
           break;
         }
         case TdApi.InlineKeyboardButtonTypeSwitchInline.CONSTRUCTOR: {
