@@ -3767,7 +3767,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   private String getAdministratorSign () {
     String result = null;
-    if (administrator != null) {
+    if (isSponsored()) {
+      return null;
+    } else if (administrator != null) {
       if (!StringUtils.isEmpty(administrator.customTitle))
         result = administrator.customTitle;
       else if (administrator.isOwner)
@@ -3776,7 +3778,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         result = Lang.getString(R.string.message_adminSignPlain);
     } else if (sender.isAnonymousGroupAdmin()) {
       result = !StringUtils.isEmpty(msg.authorSignature) ? msg.authorSignature : Lang.getString(R.string.message_adminSignPlain);
-    } else {
+    } else if (tdlib.isMultiChat(msg.chatId) && StringUtils.isEmpty(msg.authorSignature)) {
       long chatId = sender.getChatId();
       if (tdlib.isChannel(chatId)) {
         result = Lang.getString(R.string.message_channelSign);
@@ -3798,7 +3800,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private boolean needAdminSign () {
-    return (administrator != null || (sender.isAnonymousGroupAdmin() ? !StringUtils.isEmpty(msg.authorSignature) : ChatId.isMultiChat(sender.getChatId()))) && !isSponsored();
+    return getAdministratorSign() != null;
   }
 
   public final void setAdministratorSign (@Nullable TdApi.ChatAdministrator administrator) {

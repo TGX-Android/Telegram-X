@@ -4101,6 +4101,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
         b.append(Lang.getString(R.string.SendFailureInfo, Strings.join(", ", (Object[]) errors)));
       }
     }
+    if (!msg.canBeSaved()) {
+      if (b.length() > 0) {
+        b.append("\n\n");
+      }
+      b.append(Lang.getString(msg.isChannel() ? R.string.RestrictSavingChannelInfo : R.string.RestrictSavingGroupInfo));
+    }
     String text = b.toString().trim();
     patchReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, disableViewCounter);
   }
@@ -4943,7 +4949,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
           final long chatId = selectedMessage.getChatId();
           if (ChatId.isMultiChat(chatId) && !tdlib.isChannel(chatId) && TD.isAdmin(tdlib.chatStatus(chatId))) {
             TGMessage selectedMessage = this.selectedMessage;
-            tdlib.client().send(new TdApi.GetChatMember(chatId, selectedMessage.getMessage().senderId), result -> {
+            TdApi.MessageSender senderId = selectedMessage.getMessage().senderId;
+            tdlib.client().send(new TdApi.GetChatMember(chatId, senderId), result -> {
               TdApi.ChatMember otherMember = result.getConstructor() == TdApi.ChatMember.CONSTRUCTOR ? ((TdApi.ChatMember) result) : null;
               tdlib.ui().post(() -> {
                 if (!selectedMessage.isDestroyed()) {
@@ -8022,6 +8029,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             R.id.btn_filterMembers,
             R.id.btn_filterInviteLinks,
             R.id.btn_filterInfo,
+            R.id.btn_filterSettings,
             R.id.btn_filterDeletedMessages,
             R.id.btn_filterEditedMessages,
             R.id.btn_filterPinnedMessages,
@@ -8034,6 +8042,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             Lang.getString(R.string.EventLogFilterNewMembers),
             Lang.getString(R.string.EventLogFilterInviteLinks),
             Lang.getString(R.string.EventLogFilterChannelInfo),
+            Lang.getString(R.string.EventLogFilterChannelSettings),
             Lang.getString(R.string.EventLogFilterDeletedMessages),
             Lang.getString(R.string.EventLogFilterEditedMessages),
             Lang.getString(R.string.EventLogFilterPinnedMessages),
