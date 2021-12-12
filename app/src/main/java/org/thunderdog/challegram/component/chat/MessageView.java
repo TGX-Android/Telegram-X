@@ -850,27 +850,6 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       icons.append(R.drawable.baseline_delete_24);
     }
 
-    if (chat != null && msg.tdlib().isMultiChat(chat.id)) {
-      if (isMore) {
-        ids.append(R.id.btn_messageViewList);
-        int icon = R.drawable.baseline_person_24;
-        if (msg.getSender().isAnonymousGroupAdmin()) {
-          strings.append(R.string.ViewMessagesFromAnonymousAdmins);
-          icon = R.drawable.baseline_group_24;
-        } else if (msg.isOutgoing()) {
-          strings.append(R.string.ViewMessagesFromYou);
-        } else if (msg.getMessage().senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
-          strings.append(Lang.getString(R.string.ViewMessagesFromChat, msg.getSender().getNameShort()));
-          icon = msg.tdlib().isChannel(Td.getSenderId(msg.getMessage().senderId)) ? R.drawable.baseline_bullhorn_24 : R.drawable.baseline_group_24;
-        } else {
-          strings.append(Lang.getString(R.string.ViewMessagesFromUser, msg.getSender().getNameShort()));
-        }
-        icons.append(icon);
-      } else {
-        moreOptions++;
-      }
-    }
-
     // Admin tools inside "More"
     final TdApi.ChatMemberStatus myStatus = m.tdlib().chatStatus(msg.getChatId());
     if (myStatus != null && myStatus.getConstructor() == TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR) {
@@ -936,6 +915,28 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         }
       } else if (!isMore) {
         moreOptions += 2;
+      }
+    }
+
+    // Messages from X
+    if (chat != null && msg.tdlib().isMultiChat(chat.id)) {
+      if (isMore) {
+        ids.append(R.id.btn_messageViewList);
+        int icon = R.drawable.baseline_person_24;
+        if (msg.getSender().isAnonymousGroupAdmin()) {
+          strings.append(R.string.ViewMessagesFromAnonymousAdmins);
+          icon = R.drawable.baseline_group_24;
+        } else if (msg.isOutgoing()) {
+          strings.append(R.string.ViewMessagesFromYou);
+        } else if (msg.getMessage().senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
+          strings.append(Lang.getString(R.string.ViewMessagesFromChat, msg.getSender().getNameShort()));
+          icon = msg.tdlib().isChannel(Td.getSenderId(msg.getMessage().senderId)) ? R.drawable.baseline_bullhorn_24 : R.drawable.baseline_group_24;
+        } else {
+          strings.append(Lang.getString(R.string.ViewMessagesFromUser, msg.getSender().getNameShort()));
+        }
+        icons.append(icon);
+      } else {
+        moreOptions++;
       }
     }
 
