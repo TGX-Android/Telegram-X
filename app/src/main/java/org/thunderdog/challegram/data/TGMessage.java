@@ -3758,7 +3758,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         result = Lang.getString(R.string.message_adminSignPlain);
     } else if (sender.isAnonymousGroupAdmin()) {
       result = !StringUtils.isEmpty(msg.authorSignature) ? msg.authorSignature : Lang.getString(R.string.message_adminSignPlain);
-    } else if (tdlib.isMultiChat(msg.chatId) && StringUtils.isEmpty(msg.authorSignature)) {
+    } else if (StringUtils.isEmpty(msg.authorSignature) && msg.chatId != 0 && tdlib.isMultiChat(msg.chatId)) {
       long chatId = sender.getChatId();
       if (tdlib.isChannel(chatId)) {
         result = Lang.getString(R.string.message_channelSign);
