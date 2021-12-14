@@ -1882,6 +1882,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             break;
           }
         }
+        if (item.getViewType() == ListItem.TYPE_RADIO_SETTING) {
+          boolean isLocked = item.getId() == R.id.btn_toggleProtection && !tdlib.canToggleContentProtection(chat.id);
+          view.setIgnoreEnabled(true);
+          view.setVisuallyEnabled(!isLocked, isUpdate);
+          view.getToggler().setShowLock(isLocked);
+        }
       }
     };
     topCellView.getRecyclerView().addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -3028,11 +3034,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     baseAdapter.updateValuedSettingById(R.id.btn_toggleSignatures);
   }
 
-  private void toggleContentProtection () {
-    boolean enabled = !chat.hasProtectedContent;
-    chat.hasProtectedContent = enabled;
-    tdlib.client().send(new TdApi.ToggleChatHasProtectedContent(chat.id, enabled), tdlib.okHandler());
-    baseAdapter.updateValuedSettingById(R.id.btn_toggleProtection);
+  private void toggleContentProtection (View v) {
+    if (tdlib.canToggleContentProtection(chat.id)) {
+      boolean enabled = !chat.hasProtectedContent;
+      chat.hasProtectedContent = enabled;
+      tdlib.client().send(new TdApi.ToggleChatHasProtectedContent(chat.id, enabled), tdlib.okHandler());
+      baseAdapter.updateValuedSettingById(R.id.btn_toggleProtection);
+    } else {
+      context().tooltipManager().builder(((SettingView) v).getToggler()).show(tdlib, isChannel() ? R.string.OnlyOwnerChannel : R.string.OnlyOwnerGroup);
+    }
   }
 
   private void togglePrehistoryMode () {
@@ -3557,9 +3567,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleSignatures, 0, R.string.ChannelSignMessages, supergroup.signMessages));
       added = true;
     }
-    if (tdlib.canToggleContentProtection(chat.id)) {
+    if (tdlib.canToggleContentProtection(chat.id) || TD.isAdmin(supergroup != null ? supergroup.status : group.status)) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
-      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleProtection, 0, R.string.RestrictSaving, supergroup.signMessages));
+      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleProtection, 0, R.string.RestrictSaving, chat.hasProtectedContent));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, mode == MODE_EDIT_CHANNEL ? R.string.RestrictSavingChannelHint : R.string.RestrictSavingGroupHint));
       added = false;
@@ -4580,7 +4590,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         break;
       }
       case R.id.btn_toggleProtection: {
-        toggleContentProtection();
+        toggleContentProtection(v);
         break;
       }
     }

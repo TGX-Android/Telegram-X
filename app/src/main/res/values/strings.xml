@@ -4152,6 +4152,8 @@
 
   <string name="ChannelNoCopy">Sorry, copying from this channel is disabled by admins.</string>
   <string name="ChannelNoSave">Sorry, saving media from this channel is disabled by admins.</string>
+  <string name="OnlyOwnerChannel">This setting can be toggled only by channel owner.</string>
+  <string name="OnlyOwnerGroup">This setting can be toggled only by group owner.</string>
 
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
