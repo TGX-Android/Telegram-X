@@ -118,6 +118,7 @@
   <item type="id" name="controller_logOut" />
   <item type="id" name="controller_editLanguage" />
   <item type="id" name="controller_editChatLink" />
+  <item type="id" name="controller_editSession" />
   <item type="id" name="controller_strings" />
   <item type="id" name="controller_editPhone" />
   <item type="id" name="controller_request" />
@@ -821,6 +822,17 @@
   <item type="id" name="btn_instantViewModeNone" />
   <item type="id" name="btn_restrictSensitiveContent" />
   <item type="id" name="btn_ignoreContentRestrictions" />
+
+  <item type="id" name="btn_sessionApp" />
+  <item type="id" name="btn_sessionPlatform" />
+  <item type="id" name="btn_sessionCountry" />
+  <item type="id" name="btn_sessionIp" />
+  <item type="id" name="btn_sessionDevice" />
+  <item type="id" name="btn_sessionAcceptSecretChats" />
+  <item type="id" name="btn_sessionAcceptCalls" />
+  <item type="id" name="btn_sessionFirstLogin" />
+  <item type="id" name="btn_sessionLastLogin" />
+  <item type="id" name="btn_sessionLogout" />
 
   <item type="id" name="btn_secret_dontReadMessages" />
   <item type="id" name="btn_secret_dropSavedScrollPositions" />

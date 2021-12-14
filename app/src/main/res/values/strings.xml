@@ -4127,6 +4127,45 @@
   <string name="ChannelNoCopy">Sorry, copying from this channel is disabled by admins.</string>
   <string name="ChannelNoSave">Sorry, saving media from this channel is disabled by admins.</string>
 
+  <string name="SessionDetails">Session Details</string>
+  <string name="SessionApp">Application</string>
+  <string name="SessionSystem">System</string>
+  <string name="SessionLocation">Location</string>
+  <string name="SessionDevice">Device</string>
+  <string name="SessionIP">IP Address</string>
+  <string name="SessionFirstLogin">First Login</string>
+  <string name="SessionLastLogin">Last Activity</string>
+  <string name="SessionTerminate">Terminate Session</string>
+  <string name="SessionAccept">Accept</string>
+  <string name="SessionReject">Reject</string>
+
+  <string name="SessionAccepts">What can be received on this device?</string>
+  <string name="SessionSecretChats">Secret Chats</string>
+  <string name="SessionCalls">Incoming Calls</string>
+
+  <string name="session_LastActive_now">last active just now</string>
+  <string name="session_LastActive_today">last active at %1$s</string>
+  <string name="session_LastActive_yesterday">last active yesterday at %1$s</string>
+  <string name="session_LastActive_weekday">last active on %1$s at %2$s</string>
+  <string name="session_LastActive_date">last active on %1$s at %2$s</string>
+  <string name="session_LastActive_seconds_one">last active %1$s second ago</string>
+  <string name="session_LastActive_seconds_other">last active %1$s seconds ago</string>
+  <string name="session_LastActive_minutes_one">last active %1$s minute ago</string>
+  <string name="session_LastActive_minutes_other">last active %1$s minutes ago</string>
+  <string name="session_LastActive_hours_one">last active %1$s hour ago</string>
+  <string name="session_LastActive_hours_other">last active %1$s hours ago</string>
+  <string name="session_WillTerminate_now">auto-terminates just now</string>
+  <string name="session_WillTerminate_today">auto-terminates at %1$s</string>
+  <string name="session_WillTerminate_yesterday">auto-terminated yesterday at %1$s</string>
+  <string name="session_WillTerminate_weekday">auto-terminates on %1$s at %2$s</string>
+  <string name="session_WillTerminate_date">auto-terminates on %1$s at %2$s</string>
+  <string name="session_WillTerminate_seconds_one">auto-terminated %1$s second ago</string>
+  <string name="session_WillTerminate_seconds_other">auto-terminated %1$s seconds ago</string>
+  <string name="session_WillTerminate_minutes_one">auto-terminated %1$s minute ago</string>
+  <string name="session_WillTerminate_minutes_other">auto-terminated %1$s minutes ago</string>
+  <string name="session_WillTerminate_hours_one">auto-terminated %1$s hour ago</string>
+  <string name="session_WillTerminate_hours_other">auto-terminated %1$s hours ago</string>
+
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
   <string name="suggested_language_code_plural" />

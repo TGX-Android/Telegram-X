@@ -3,6 +3,7 @@ package org.thunderdog.challegram.ui;
 import android.content.Context;
 import android.text.SpannableStringBuilder;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -22,6 +23,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.camera.CameraController;
+import org.thunderdog.challegram.unsorted.SessionIconKt;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.AvatarView;
@@ -235,7 +237,7 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
       }
 
       @Override
-      protected void setSession (ListItem item, int position, RelativeLayout parent, boolean isUpdate, TextView timeView, TextView titleView, TextView subtextView, TextView locationView, ProgressComponentView progressView, AvatarView avatarView) {
+      protected void setSession (ListItem item, int position, RelativeLayout parent, boolean isUpdate, TextView timeView, TextView titleView, TextView subtextView, TextView locationView, ProgressComponentView progressView, AvatarView avatarView, ImageView iconView) {
         switch (item.getId()) {
           case R.id.btn_currentSession: {
             parent.setTag(null);
@@ -245,6 +247,7 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
             locationView.setText(Strings.concatIpLocation(sessions.currentSession.ip, sessions.currentSession.country));
             progressView.forceFactor(0f);
             parent.setEnabled(false);
+            iconView.setImageResource(R.drawable.baseline_device_android_x);
             break;
           }
           case R.id.btn_session: {
@@ -266,7 +269,7 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
             } else {
               progressView.forceFactor(inProgress ? 1f : 0f);
             }
-
+            iconView.setImageResource(SessionIconKt.asIcon(session));
             break;
           }
         }
@@ -538,7 +541,9 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
       case R.id.btn_session: {
         Object tag = v.getTag();
         if (tag instanceof TdApi.Session) {
-          killSession((TdApi.Session) tag, true);
+          EditSessionController esc = new EditSessionController(context, tdlib);
+          esc.setArguments(new EditSessionController.Args((TdApi.Session) tag, sessions.inactiveSessionTtlDays));
+          navigateTo(esc);
         }
         break;
       }

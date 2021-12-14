@@ -1236,6 +1236,8 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       }
       case ListItem.TYPE_SESSION:
       case ListItem.TYPE_SESSION_WITH_AVATAR: {
+        boolean isAvatar = viewType == ListItem.TYPE_SESSION_WITH_AVATAR;
+
         RelativeLayout layout = new RelativeSessionLayout(context);
         layout.setOnClickListener(onClickListener);
         layout.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -1267,14 +1269,14 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         if (Lang.rtl()) {
           params.addRule(RelativeLayout.RIGHT_OF, R.id.session_time);
-          if (viewType == ListItem.TYPE_SESSION_WITH_AVATAR) {
-            params.addRule(RelativeLayout.LEFT_OF, R.id.session_icon);
-          }
+          params.addRule(RelativeLayout.LEFT_OF, R.id.session_icon);
         } else {
           params.addRule(RelativeLayout.LEFT_OF, R.id.session_time);
-          if (viewType == ListItem.TYPE_SESSION_WITH_AVATAR) {
-            params.addRule(RelativeLayout.RIGHT_OF, R.id.session_icon);
-          }
+          params.addRule(RelativeLayout.RIGHT_OF, R.id.session_icon);
+        }
+
+        if (!isAvatar) {
+          params.leftMargin = Screen.dp(24f);
         }
 
         TextView titleView = new NoScrollTextView(context);
@@ -1294,6 +1296,13 @@ public class SettingHolder extends RecyclerView.ViewHolder {
 
         params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         params.addRule(RelativeLayout.BELOW, R.id.session_title);
+        if (!isAvatar) {
+          if (Lang.rtl()) {
+            params.addRule(RelativeLayout.ALIGN_RIGHT, R.id.session_title);
+          } else {
+            params.addRule(RelativeLayout.ALIGN_LEFT, R.id.session_title);
+          }
+        }
 
         TextView subtextView = new NoScrollTextView(context);
         subtextView.setId(R.id.session_device);
@@ -1310,6 +1319,13 @@ public class SettingHolder extends RecyclerView.ViewHolder {
 
         params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         params.addRule(RelativeLayout.BELOW, R.id.session_device);
+        if (!isAvatar) {
+          if (Lang.rtl()) {
+            params.addRule(RelativeLayout.ALIGN_RIGHT, R.id.session_title);
+          } else {
+            params.addRule(RelativeLayout.ALIGN_LEFT, R.id.session_title);
+          }
+        }
 
         TextView locationView = new NoScrollTextView(context);
         locationView.setId(R.id.session_location);
@@ -1344,6 +1360,16 @@ public class SettingHolder extends RecyclerView.ViewHolder {
           avatarView.setLettersSizeDp(12f);
           avatarView.setLayoutParams(params);
           layout.addView(avatarView);
+        } else {
+          // Icon
+          params = new RelativeLayout.LayoutParams(Screen.dp(24f), Screen.dp(24f));
+          params.addRule(Lang.rtl() ? RelativeLayout.ALIGN_PARENT_RIGHT : RelativeLayout.ALIGN_PARENT_LEFT);
+          ImageView iconView = new ImageView(context);
+          iconView.setId(R.id.session_icon);
+          iconView.setLayoutParams(params);
+          iconView.setColorFilter(Theme.getColor(R.id.theme_color_icon));
+          iconView.setScaleType(ImageView.ScaleType.CENTER);
+          layout.addView(iconView);
         }
 
         return new SettingHolder(layout);
