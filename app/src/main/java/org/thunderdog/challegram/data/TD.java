@@ -3026,11 +3026,11 @@ public class TD {
         result = Lang.getString(R.string.ChannelOwner);
         break;
       case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR: {
-        result = getMemberDescriptionString(context, member.inviterUserId, member.joinedChatDate, R.string.PromotedByXOnDate, R.string.PromotedByX, R.string.Administrator);
+        result = getMemberDescriptionString(context, member.inviterUserId, 0 /*FIXME server*/, R.string.PromotedByXOnDate, R.string.PromotedByX, R.string.Administrator);
         break;
       }
       case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR: {
-        result = getMemberDescriptionString(context, member.inviterUserId, member.joinedChatDate, R.string.RestrictedByXOnDate, R.string.RestrictedByX, R.string.Restricted);
+        result = getMemberDescriptionString(context, member.inviterUserId, ((TdApi.ChatMemberStatusRestricted) member.status).isMember ? /*FIXME server*/ 0 : member.joinedChatDate, R.string.RestrictedByXOnDate, R.string.RestrictedByX, R.string.Restricted);
         break;
       }
       case TdApi.ChatMemberStatusBanned.CONSTRUCTOR: {
