@@ -329,7 +329,7 @@ public class TdlibUi extends Handler {
             } else if (!TD.isMember(member.status, false) && member.memberId.getConstructor() != TdApi.MessageSenderChat.CONSTRUCTOR) {
               role = Lang.getString(R.string.RoleLeft);
             } else if (member.joinedChatDate != 0) {
-              role = Lang.getRelativeDate(member.joinedChatDate, TimeUnit.SECONDS, System.currentTimeMillis(), TimeUnit.MILLISECONDS, true, 60, R.string.RoleMember, true);
+              role = Lang.getRelativeDate(member.joinedChatDate, TimeUnit.SECONDS, tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS, true, 60, R.string.RoleMember, true);
             } else if (member.memberId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
               role = Lang.getString(tdlib.isChannel(Td.getSenderId(member.memberId)) ? R.string.RoleChannel : R.string.RoleGroup);
             } else {
