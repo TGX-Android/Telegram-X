@@ -238,7 +238,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
           break;
         }
         case TdApi.Error.CONSTRUCTOR: {
-          UI.showError(object);
+          Log.i("dataHandler error: %s", TD.toErrorString(object));
           break;
         }
         default: {

@@ -246,6 +246,12 @@ public class TdlibListeners {
     }
   }
 
+  void notifyInactiveSessionTtlChanged (int ttlDays) {
+    for (SessionListener listener : sessionListeners) {
+      listener.onInactiveSessionTtlChanged(tdlib, ttlDays);
+    }
+  }
+
   void notifySessionListPossiblyChanged (boolean isWeakGuess) {
     for (SessionListener listener : sessionListeners) {
       listener.onSessionListChanged(tdlib, isWeakGuess);

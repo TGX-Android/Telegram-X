@@ -17,8 +17,6 @@ fun constructSearchMessagesFilter (@SearchMessagesFilter.Constructors constructo
     SearchMessagesFilterPhotoAndVideo.CONSTRUCTOR -> SearchMessagesFilterPhotoAndVideo()
     SearchMessagesFilterUrl.CONSTRUCTOR -> SearchMessagesFilterUrl()
     SearchMessagesFilterChatPhoto.CONSTRUCTOR -> SearchMessagesFilterChatPhoto()
-    SearchMessagesFilterCall.CONSTRUCTOR -> SearchMessagesFilterCall()
-    SearchMessagesFilterMissedCall.CONSTRUCTOR -> SearchMessagesFilterMissedCall()
     SearchMessagesFilterVideoNote.CONSTRUCTOR -> SearchMessagesFilterVideoNote()
     SearchMessagesFilterVoiceAndVideoNote.CONSTRUCTOR -> SearchMessagesFilterVoiceAndVideoNote()
     SearchMessagesFilterMention.CONSTRUCTOR -> SearchMessagesFilterMention()

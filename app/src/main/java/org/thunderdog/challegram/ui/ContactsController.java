@@ -53,7 +53,7 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.Unlockable;
-import org.thunderdog.challegram.util.UserPickerDelegate;
+import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.UserPickerMultiDelegate;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.widget.NoScrollTextView;
@@ -87,12 +87,12 @@ public class ContactsController extends TelegramViewController<ContactsControlle
   public static final int SOURCE_TYPE_GMAIL = 2;
 
   public static class Args {
-    UserPickerDelegate delegate;
+    SenderPickerDelegate delegate;
     UserPickerMultiDelegate multiDelegate;
     boolean useGlobalSearch;
     int globalSearchFlags;
 
-    public Args (UserPickerDelegate delegate) {
+    public Args (SenderPickerDelegate delegate) {
       this.delegate = delegate;
     }
 
@@ -116,7 +116,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
   private View spinnerView;
   private TextView emptyView;
 
-  private UserPickerDelegate delegate;
+  private SenderPickerDelegate delegate;
   private UserPickerMultiDelegate multiDelegate;
   private TGUser[] users;
   private ContactsAdapter adapter;
@@ -124,7 +124,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
   private @Nullable BubbleHeaderView headerCell;
   private DoubleHeaderView addMemberHeaderView;
 
-  private TdApi.User pickedUser;
+  private TdApi.MessageSender pickedSenderId;
   private List<TGUser> pickedChats;
 
   private int mode;
@@ -178,10 +178,15 @@ public class ContactsController extends TelegramViewController<ContactsControlle
     this.groupCreationCallback = groupCreationCallback;
   }
 
-  private boolean allowBots;
+  private boolean allowBots, allowChats, allowChannels;
 
   public void setAllowBots (boolean allowBots) {
     this.allowBots = allowBots;
+  }
+
+  public void setAllowChats (boolean allowChats, boolean allowChannels) {
+    this.allowChats = allowChats;
+    this.allowChannels = allowChannels;
   }
 
   public void setChat (TdApi.Chat chat) {
@@ -396,8 +401,8 @@ public class ContactsController extends TelegramViewController<ContactsControlle
 
   @Override
   public boolean onOptionItemPressed (View optionItemView, int id) {
-    if (pickedUser != null && delegate != null && id != R.id.btn_cancel) {
-      delegate.onUserConfirm(this, pickedUser, id);
+    if (pickedSenderId != null && delegate != null && id != R.id.btn_cancel) {
+      delegate.onSenderConfirm(this, pickedSenderId, id);
       navigateBack();
     } else switch (id) {
       case R.id.btn_newContact: {
@@ -436,7 +441,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
       default: {
         hideSoftwareKeyboard();
         if (delegate != null) {
-          if (delegate.onUserPick(this, v, pickedUser = u.getUser())) {
+          if (delegate.onSenderPick(this, v, pickedSenderId = u.getSenderId())) {
             navigateBack();
           }
         } else if (mode == MODE_CALL) {
@@ -498,7 +503,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
   @Override
   protected boolean onFoundChatClick (View view, TGFoundChat chat) {
     if (delegate != null) {
-      delegate.onUserPick(this, view, pickedUser = tdlib.cache().user(chat.getUserId()));
+      delegate.onSenderPick(this, view, pickedSenderId = chat.getSenderId());
       return true;
     }
     if (canSelectContacts()) {
@@ -522,7 +527,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
 
   @Override
   protected int getChatSearchFlags () {
-    return (getArguments() != null && getArguments().useGlobalSearch) ? getArguments().globalSearchFlags : SearchManager.FILTER_INVITE | (allowBots || mode == MODE_CHANNEL_MEMBERS || mode == MODE_NEW_GROUP ? 0 : SearchManager.FLAG_NO_BOTS);
+    return (getArguments() != null && getArguments().useGlobalSearch) ? getArguments().globalSearchFlags : SearchManager.FILTER_INVITE | (allowBots || mode == MODE_CHANNEL_MEMBERS || mode == MODE_NEW_GROUP ? 0 : SearchManager.FLAG_NO_BOTS) | (!allowChats && !allowChannels ? SearchManager.FLAG_ONLY_USERS : allowChats && allowChannels ? 0 : allowChats ? SearchManager.FLAG_NO_CHANNELS : SearchManager.FLAG_NO_GROUPS);
   }
 
   private void createContact () {

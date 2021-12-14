@@ -23,7 +23,7 @@ import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
-import org.thunderdog.challegram.util.UserPickerDelegate;
+import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 
 import java.util.ArrayList;
@@ -37,7 +37,7 @@ import me.vkryl.td.ChatId;
  * Author: default
  */
 
-public class SettingsBlockedController extends RecyclerViewController<SettingsPrivacyController> implements View.OnClickListener, Menu, TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener, UserPickerDelegate, Client.ResultHandler, ChatListener {
+public class SettingsBlockedController extends RecyclerViewController<SettingsPrivacyController> implements View.OnClickListener, Menu, TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener, SenderPickerDelegate, Client.ResultHandler, ChatListener {
   public SettingsBlockedController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
@@ -56,7 +56,7 @@ public class SettingsBlockedController extends RecyclerViewController<SettingsPr
 
   @Override
   public CharSequence getName () {
-    return Lang.getString(R.string.BlockedUsers);
+    return Lang.getString(R.string.BlockedSenders);
   }
 
   @Override
@@ -88,6 +88,7 @@ public class SettingsBlockedController extends RecyclerViewController<SettingsPr
     ContactsController c = new ContactsController(context, tdlib);
     c.setArguments(new ContactsController.Args(this));
     c.setAllowBots(true);
+    c.setAllowChats(true, false);
     navigateTo(c);
   }
 
@@ -98,20 +99,20 @@ public class SettingsBlockedController extends RecyclerViewController<SettingsPr
 
   @Override
   public String getUserPickTitle () {
-    return Lang.getString(R.string.BlockUser);
+    return Lang.getString(R.string.BlockSender);
   }
 
   @Override
-  public boolean onUserPick (ContactsController context, View view, TdApi.User user) {
-    showOptions(Lang.getStringBold(R.string.QBlockX, Strings.wrapRtlLtr(tdlib.cache().userName(user.id))), new int[] {R.id.btn_blockUser, R.id.btn_cancel}, new String[] {Lang.getString(R.string.BlockContact), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL});
+  public boolean onSenderPick (ContactsController context, View view, TdApi.MessageSender senderId) {
+    showOptions(Lang.getStringBold(senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.QBlockUser : R.string.QBlockChat, Strings.wrapRtlLtr(tdlib.senderName(senderId))), new int[] {R.id.btn_blockSender, R.id.btn_cancel}, new String[] {Lang.getString(senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.BlockUserBtn : R.string.BlockChatBtn), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_block_24, R.drawable.baseline_cancel_24});
     return false;
   }
 
   private TdApi.MessageSender senderToBlock;
 
   @Override
-  public void onUserConfirm (ContactsController context, TdApi.User user, int option) {
-    senderToBlock = new TdApi.MessageSenderUser(user.id);
+  public void onSenderConfirm (ContactsController context, TdApi.MessageSender senderId, int option) {
+    senderToBlock = senderId;
   }
 
   @Override
@@ -124,9 +125,9 @@ public class SettingsBlockedController extends RecyclerViewController<SettingsPr
   }
 
   public void unblockSender (TGUser user) {
-    showOptions(Lang.getStringBold(R.string.QUnblockX, user.getName()), new int[]{R.id.btn_unblockUser, R.id.btn_cancel}, new String[]{Lang.getString(R.string.Unblock), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_block_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-      if (id == R.id.btn_unblockUser) {
-        tdlib.blockSender(tdlib.sender(user.getChatId()), false, tdlib.okHandler());
+    showOptions(Lang.getStringBold(R.string.QUnblockX, tdlib.senderName(user.getSenderId())), new int[]{R.id.btn_unblockSender, R.id.btn_cancel}, new String[]{Lang.getString(R.string.Unblock), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_block_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+      if (id == R.id.btn_unblockSender) {
+        tdlib.blockSender(user.getSenderId(), false, tdlib.okHandler());
       }
       return true;
     });
@@ -393,7 +394,7 @@ public class SettingsBlockedController extends RecyclerViewController<SettingsPr
       case R.id.user: {
         TGUser user = ((UserView) v).getUser();
         if (user != null) {
-          tdlib.ui().openPrivateChat(this, user.getUserId(), new TdlibUi.ChatOpenParameters().keepStack());
+          tdlib.ui().openChat(this, user.getSenderId(), new TdlibUi.ChatOpenParameters().keepStack());
         }
         break;
       }
