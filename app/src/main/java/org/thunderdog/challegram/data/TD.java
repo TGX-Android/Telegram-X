@@ -3039,9 +3039,7 @@ public class TD {
       }
       case TdApi.ChatMemberStatusMember.CONSTRUCTOR: {
         if (member.inviterUserId != 0) {
-          result = getMemberDescriptionString(context, member.inviterUserId, member.joinedChatDate, R.string.InvitedByXOnDate, R.string.InvitedByX, 0);
-        } else if (member.joinedChatDate != 0) {
-          result = Lang.getRelativeDate(member.joinedChatDate, TimeUnit.SECONDS, context.tdlib().currentTimeMillis(), TimeUnit.MILLISECONDS, false, 0, R.string.RoleMember, false);
+          result = getMemberDescriptionString(context, member.inviterUserId, 0, R.string.InvitedByXOnDate, R.string.InvitedByX, 0);
         } else {
           result = null;
         }
