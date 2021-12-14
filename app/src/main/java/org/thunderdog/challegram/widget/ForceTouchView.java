@@ -51,6 +51,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.SensitiveContentContainer;
 import org.thunderdog.challegram.util.text.Text;
 
 import me.vkryl.android.AnimatorUtils;
@@ -69,7 +70,7 @@ import me.vkryl.td.ChatId;
 
 public class ForceTouchView extends FrameLayoutFix implements
   PopupLayout.AnimatedPopupProvider, FactorAnimator.Target,
-  ChatListener, NotificationSettingsListener, TdlibCache.UserDataChangeListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, ThemeChangeListener, TdlibCache.UserStatusChangeListener {
+  ChatListener, NotificationSettingsListener, TdlibCache.UserDataChangeListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, ThemeChangeListener, TdlibCache.UserStatusChangeListener, SensitiveContentContainer {
   private ForceTouchContext forceTouchContext;
   private RelativeLayout contentWrap;
   private View backgroundView;
@@ -202,6 +203,19 @@ public class ForceTouchView extends FrameLayoutFix implements
     addView(contentWrap);
 
     themeListenerList.addThemeInvalidateListener(contentWrap);
+  }
+
+  @Override
+  public boolean shouldDisallowScreenshots () {
+    if (forceTouchContext != null) {
+      if (forceTouchContext.boundController != null) {
+        return forceTouchContext.boundController.shouldDisallowScreenshots();
+      }
+      if (forceTouchContext.contentView instanceof SensitiveContentContainer) {
+        return ((SensitiveContentContainer) forceTouchContext.contentView).shouldDisallowScreenshots();
+      }
+    }
+    return false;
   }
 
   @Override

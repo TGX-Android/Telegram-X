@@ -89,34 +89,35 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
   public static final int TYPE_EVENT_CAPTION_REMOVED = 25;
   public static final int TYPE_EVENT_PREHISTORY_TOGGLED = 26;
   public static final int TYPE_EVENT_STICKER_PACK_CHANGED = 27;
+  public static final int TYPE_EVENT_PROTECTION_TOGGLED = 28;
 
-  public static final int TYPE_PAYMENT_SUCCESSFUL = 28;
-  public static final int TYPE_WEBSITE_CONNECTED = 29;
-  public static final int TYPE_CUSTOM = 30;
+  public static final int TYPE_PAYMENT_SUCCESSFUL = 30;
+  public static final int TYPE_WEBSITE_CONNECTED = 31;
+  public static final int TYPE_CUSTOM = 32;
 
-  public static final int TYPE_EVENT_POLL_STOPPED = 31;
+  public static final int TYPE_EVENT_POLL_STOPPED = 40;
 
-  public static final int TYPE_EVENT_SLOW_MODE_DELAY_CHANGED = 32;
-  public static final int TYPE_EVENT_SLOW_MODE_DELAY_DISABLED = 33;
+  public static final int TYPE_EVENT_SLOW_MODE_DELAY_CHANGED = 50;
+  public static final int TYPE_EVENT_SLOW_MODE_DELAY_DISABLED = 51;
 
-  public static final int TYPE_EVENT_LINKED_CHAT_CHANGED = 34;
-  public static final int TYPE_EVENT_LINKED_CHAT_REMOVED = 35;
+  public static final int TYPE_EVENT_LINKED_CHAT_CHANGED = 60;
+  public static final int TYPE_EVENT_LINKED_CHAT_REMOVED = 61;
 
-  public static final int TYPE_EVENT_LOCATION_SET = 36;
-  public static final int TYPE_EVENT_LOCATION_CHANGED = 37;
-  public static final int TYPE_EVENT_LOCATION_REMOVED = 38;
+  public static final int TYPE_EVENT_LOCATION_SET = 70;
+  public static final int TYPE_EVENT_LOCATION_CHANGED = 71;
+  public static final int TYPE_EVENT_LOCATION_REMOVED = 72;
 
-  public static final int TYPE_EVENT_VIDEO_CHAT_MUTE_NEW_PARTICIPANTS_TOGGLED = 39;
-  public static final int TYPE_EVENT_VIDEO_CHAT_IS_MUTED_TOGGLED = 40;
-  public static final int TYPE_EVENT_VIDEO_CHAT_PARTICIPANT_VOLUME_CHANGED = 41;
+  public static final int TYPE_EVENT_VIDEO_CHAT_MUTE_NEW_PARTICIPANTS_TOGGLED = 80;
+  public static final int TYPE_EVENT_VIDEO_CHAT_IS_MUTED_TOGGLED = 81;
+  public static final int TYPE_EVENT_VIDEO_CHAT_PARTICIPANT_VOLUME_CHANGED = 82;
 
-  public static final int TYPE_VIDEO_CHAT_STARTED = 49;
-  public static final int TYPE_VIDEO_CHAT_ENDED = 50;
-  public static final int TYPE_INVITE_VIDEO_CHAT_PARTICIPANTS = 51;
-  public static final int TYPE_PROXIMITY_ALERT = 52;
+  public static final int TYPE_VIDEO_CHAT_STARTED = 90;
+  public static final int TYPE_VIDEO_CHAT_ENDED = 91;
+  public static final int TYPE_INVITE_VIDEO_CHAT_PARTICIPANTS = 92;
+  public static final int TYPE_PROXIMITY_ALERT = 93;
 
-  public static final int TYPE_EVENT_INVITE_LINK_REVOKED = 53;
-  public static final int TYPE_EVENT_INVITE_LINK_DELETE = 54;
+  public static final int TYPE_EVENT_INVITE_LINK_REVOKED = 100;
+  public static final int TYPE_EVENT_INVITE_LINK_DELETE = 101;
 
   // Data
 
@@ -332,6 +333,10 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
       case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
         this.type = TYPE_EVENT_SIGNATURES_TOGGLED;
         this.boolValue = ((TdApi.ChatEventSignMessagesToggled) chatEvent.action).signMessages;
+        break;
+      case TdApi.ChatEventHasProtectedContentToggled.CONSTRUCTOR:
+        this.type = TYPE_EVENT_PROTECTION_TOGGLED;
+        this.boolValue = ((TdApi.ChatEventHasProtectedContentToggled) chatEvent.action).hasProtectedContent;
         break;
       case TdApi.ChatEventUsernameChanged.CONSTRUCTOR:
         this.type = TYPE_EVENT_LINK_CHANGED;
@@ -919,6 +924,9 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
         break;
       case TYPE_EVENT_SIGNATURES_TOGGLED:
         makeText(boolValue ? R.string.EventLogToggledSignaturesOn : R.string.EventLogToggledSignaturesOff, new Arg(sender));
+        break;
+      case TYPE_EVENT_PROTECTION_TOGGLED:
+        makeText(boolValue ? R.string.EventLogToggledProtectionOn : R.string.EventLogToggledProtectionOff, new Arg(sender));
         break;
       case TYPE_EVENT_INVITES_TOGGLED:
         makeText(boolValue ? R.string.EventLogToggledInvitesOn : R.string.EventLogToggledInvitesOff, new Arg(sender));

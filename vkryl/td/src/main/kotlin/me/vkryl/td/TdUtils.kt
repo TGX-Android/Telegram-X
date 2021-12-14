@@ -358,8 +358,6 @@ fun Message?.matchesFilter(filter: SearchMessagesFilter?): Boolean {
     SearchMessagesFilterFailedToSend.CONSTRUCTOR -> this.sendingState?.constructor == MessageSendingStateFailed.CONSTRUCTOR
     SearchMessagesFilterPinned.CONSTRUCTOR -> this.isPinned
     SearchMessagesFilterUnreadMention.CONSTRUCTOR -> this.containsUnreadMention
-    SearchMessagesFilterCall.CONSTRUCTOR -> this.content.constructor == MessageCall.CONSTRUCTOR
-    SearchMessagesFilterMissedCall.CONSTRUCTOR -> !this.isOutgoing && this.content.constructor == MessageCall.CONSTRUCTOR && (this.content as MessageCall).discardReason.constructor == CallDiscardReasonMissed.CONSTRUCTOR
     SearchMessagesFilterPhotoAndVideo.CONSTRUCTOR -> when (this.content.constructor) {
       MessagePhoto.CONSTRUCTOR, MessageVideo.CONSTRUCTOR -> true
       else -> false

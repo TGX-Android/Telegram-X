@@ -86,10 +86,6 @@ public class TdlibSender {
     return sender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR;
   }
 
-  public boolean isChannelAutoForward () {
-    return isChat() && inChatId != getChatId() && tdlib.isChannel(getChatId());
-  }
-
   public boolean isAnonymousGroupAdmin () {
     return isChat() && inChatId == getChatId() && !tdlib.isChannel(getChatId());
   }

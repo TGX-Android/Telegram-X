@@ -13,4 +13,7 @@ public interface SessionListener {
   default void onSessionCreatedViaQrCode (Tdlib tdlib, TdApi.Session session) {
     onSessionListChanged(tdlib, false);
   }
+  default void onInactiveSessionTtlChanged (Tdlib tdlib, int ttlDays) {
+    onSessionListChanged(tdlib, false);
+  }
 }

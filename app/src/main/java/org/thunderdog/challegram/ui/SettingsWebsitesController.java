@@ -230,11 +230,11 @@ public class SettingsWebsitesController extends RecyclerViewController<SettingsP
     if (needConfirm) {
       showSettings(new SettingsWrapBuilder(R.id.btn_terminateSession)
         .setRawItems(new ListItem[] {
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_banUser, 0, Lang.getString(R.string.DisconnectWebsiteBan, tdlib.cache().userName(website.botUserId)), R.id.btn_banUser, banUser)
+          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_banMember, 0, Lang.getString(R.string.DisconnectWebsiteBan, tdlib.cache().userName(website.botUserId)), R.id.btn_banMember, banUser)
         })
         .addHeaderItem(Lang.getString(R.string.TerminateWebSessionQuestion, website.domainName))
         .setIntDelegate((id, result) -> {
-          boolean banUser1 = result.get(R.id.btn_banUser) == R.id.btn_banUser;
+          boolean banUser1 = result.get(R.id.btn_banMember) == R.id.btn_banMember;
           terminateSession(website, banUser1, false);
         })
         .setSaveStr(R.string.DisconnectWebsite)

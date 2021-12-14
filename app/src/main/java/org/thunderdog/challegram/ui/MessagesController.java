@@ -200,7 +200,7 @@ import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.Unlockable;
-import org.thunderdog.challegram.util.UserPickerDelegate;
+import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.v.MessagesLayoutManager;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
@@ -480,18 +480,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (totalCount > 0) {
       if (tdlib.isSelfSender(previewSearchSender)) {
         headerCell.setForcedSubtitle(Lang.pluralBold(R.string.XFoundMessagesFromSelf, totalCount));
-      } else if (Td.getSenderUserId(previewSearchSender) == TdConstants.TELEGRAM_CHANNEL_BOT_ACCOUNT_ID) {
-        headerCell.setForcedSubtitle(Lang.pluralBold(R.string.XFoundMessagesFromAutoPost, totalCount));
       } else {
-        headerCell.setForcedSubtitle(Lang.pluralBold(R.string.XFoundMessagesFromUser, totalCount, tdlib.senderName(previewSearchSender, true)));
+        headerCell.setForcedSubtitle(Lang.pluralBold(previewSearchSender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.XFoundMessagesFromUser : R.string.XFoundMessagesFromChat, totalCount, tdlib.senderName(previewSearchSender, true)));
       }
     } else {
       if (tdlib.isSelfSender(previewSearchSender)) {
         headerCell.setForcedSubtitle(Lang.getString(R.string.FoundMessagesFromSelf));
-      } else if (Td.getSenderUserId(previewSearchSender) == TdConstants.TELEGRAM_CHANNEL_BOT_ACCOUNT_ID) {
-        headerCell.setForcedSubtitle(Lang.getString(R.string.FoundMessagesFromAutoPost));
       } else {
-        headerCell.setForcedSubtitle(Lang.getStringBold(R.string.FoundMessagesFromUser, tdlib.senderName(previewSearchSender, true)));
+        headerCell.setForcedSubtitle(Lang.getStringBold(previewSearchSender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.FoundMessagesFromUser : R.string.FoundMessagesFromChat, tdlib.senderName(previewSearchSender, true)));
       }
     }
   }
@@ -2807,6 +2803,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  @Override
+  public void onChatDefaultMessageSenderIdChanged (long chatId, TdApi.MessageSender senderId) {
+    runOnUiThreadOptional(() -> {
+      if (getChatId() == chatId) {
+        updateInputHint();
+      }
+    });
+  }
+
   public void updateInputHint () {
     if (inputView != null) {
       inputView.updateMessageHint(chat, messageThread, Config.NEED_SILENT_BROADCAST && silentButton != null ? silentButton.getIsSilent() : tdlib.chatDefaultDisableNotifications(getChatId()));
@@ -2850,7 +2855,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       TdApi.SecretChat secretChat = tdlib.chatToSecretChat(chat.id);
       if (secretChat != null && !TD.isSecretChatReady(secretChat)) {
         showSecretChatAction(secretChat);
-      } else if (tdlib.chatBlocked(chat)) {
+      } else if (tdlib.chatBlocked(chat) && tdlib.isUserChat(chat)) {
         showActionUnblockButton();
       } else if (tdlib.chatUserDeleted(chat) || (ChatId.isBasicGroup(chat.id) && (!tdlib.chatBasicGroupActive(chat.id) || TD.isNotInChat(status))) || (tdlib.isSupergroupChat(chat) && TD.isNotInChat(status) && messageThread == null)) {
         if (tdlib.isSupergroupChat(chat) && status != null && TD.canReturnToChat(status)) {
@@ -4064,11 +4069,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
   // Message options
 
   private TGMessage selectedMessage;
+  private TdApi.ChatMember selectedMessageSender;
   private Object selectedMessageTag;
 
-  public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, Object selectedMessageTag, boolean disableViewCounter) {
+  @Deprecated
+  public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, Object selectedMessageTag, TdApi.ChatMember selectedMessageSender, boolean disableViewCounter) {
+    // TODO rework into proper style
     this.selectedMessage = msg;
     this.selectedMessageTag = selectedMessageTag;
+    this.selectedMessageSender = selectedMessageSender;
     StringBuilder b = new StringBuilder();
     if (chat != null) {
       final boolean isChannel = tdlib.isChannel(chat.id);
@@ -4105,6 +4114,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         b.append(Lang.getString(R.string.SendFailureInfo, Strings.join(", ", (Object[]) errors)));
       }
+    }
+    if (!msg.canBeSaved()) {
+      if (b.length() > 0) {
+        b.append("\n\n");
+      }
+      b.append(Lang.getString(msg.isChannel() ? R.string.RestrictSavingChannelInfo : R.string.RestrictSavingGroupInfo));
     }
     String text = b.toString().trim();
     patchReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, disableViewCounter);
@@ -4398,9 +4413,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return false;
     }
     if (selectedMessageIds.size() == 1) {
-      return TD.canCopyText(getSingleSelectedMessage());
+      TdApi.Message message = getSingleSelectedMessage();
+      return message.canBeSaved && TD.canCopyText(message);
     }
-    return !isSecretChat();
+    return !(isSecretChat() || chat.hasProtectedContent);
   }
 
   private boolean canDeleteSelectedMessages () {
@@ -4907,16 +4923,28 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_messageViewList: {
         if (selectedMessage != null) {
-          if (selectedMessage.getSender().isChannel()) {
-            tdlib.withChannelBotUserId(channelBotUserId -> {
-              if (!isDestroyed()) {
-                viewMessagesFromSender(new TdApi.MessageSenderUser(channelBotUserId), true);
-              }
-            });
-          } else {
-            viewMessagesFromSender(selectedMessage.getMessage().senderId, false);
-          }
+          viewMessagesFromSender(selectedMessage.getMessage().senderId, false);
           clearSelectedMessage();
+        }
+        return true;
+      }
+      case R.id.btn_messageRestrictMember: {
+        if (selectedMessage != null && selectedMessageSender != null) {
+          EditRightsController c = new EditRightsController(context, tdlib);
+          c.setArguments(new EditRightsController.Args(selectedMessage.getChatId(), selectedMessage.getMessage().senderId, true, tdlib.chatStatus(selectedMessage.getChatId()), selectedMessageSender));
+          navigateTo(c);
+        }
+        return true;
+      }
+      case R.id.btn_messageBlockUser: {
+        if (selectedMessage != null && selectedMessageSender != null) {
+          tdlib.ui().kickMember(this, selectedMessage.getChatId(), selectedMessage.getMessage().senderId, selectedMessageSender.status);
+        }
+        break;
+      }
+      case R.id.btn_messageUnblockMember: {
+        if (selectedMessage != null && selectedMessageSender != null) {
+          tdlib.ui().unblockMember(this, selectedMessage.getChatId(), selectedMessage.getMessage().senderId, selectedMessageSender.status);
         }
         return true;
       }
@@ -4925,9 +4953,26 @@ public class MessagesController extends ViewController<MessagesController.Argume
           IntList ids = new IntList(3);
           IntList icons = new IntList(3);
           StringList strings = new StringList(3);
-          Object tag = MessageView.fillMessageOptions(this, selectedMessage, ids, icons, strings, true);
-          if (!ids.isEmpty()) {
-            showMessageOptions(selectedMessage, ids.get(), strings.get(), icons.get(), tag, true);
+          final long chatId = selectedMessage.getChatId();
+          if (ChatId.isMultiChat(chatId) && !tdlib.isChannel(chatId) && TD.isAdmin(tdlib.chatStatus(chatId)) && Td.getSenderId(selectedMessage.getMessage().senderId) != chatId) {
+            TGMessage selectedMessage = this.selectedMessage;
+            TdApi.MessageSender senderId = selectedMessage.getMessage().senderId;
+            tdlib.client().send(new TdApi.GetChatMember(chatId, senderId), result -> {
+              TdApi.ChatMember otherMember = result.getConstructor() == TdApi.ChatMember.CONSTRUCTOR ? ((TdApi.ChatMember) result) : null;
+              tdlib.ui().post(() -> {
+                if (!selectedMessage.isDestroyed()) {
+                  Object tag = MessageView.fillMessageOptions(this, selectedMessage, otherMember, ids, icons, strings, true);
+                  if (!ids.isEmpty()) {
+                    showMessageOptions(selectedMessage, ids.get(), strings.get(), icons.get(), tag, otherMember, true);
+                  }
+                }
+              });
+            });
+          } else {
+            Object tag = MessageView.fillMessageOptions(this, selectedMessage, selectedMessageSender, ids, icons, strings, true);
+            if (!ids.isEmpty()) {
+              showMessageOptions(selectedMessage, ids.get(), strings.get(), icons.get(), tag, selectedMessageSender, true);
+            }
           }
         }
         return true;
@@ -6919,7 +6964,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         .setRawItems(getChatUserId() != 0 ? new ListItem[] {
           new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_reportSpam, 0, R.string.ReportSpam, true),
           new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_removeChatFromList, 0, R.string.DeleteChat, true),
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_blockUser, 0, R.string.BlockUser, true),
+          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_blockSender, 0, R.string.BlockUser, true),
         } : new ListItem[] {
           new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_reportSpam, 0, R.string.ReportSpam, true),
           new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_removeChatFromList, 0, R.string.DeleteChat, true)
@@ -6931,13 +6976,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
           boolean reportSpam = result.get(R.id.btn_reportSpam) != 0;
           boolean deleteChat = result.get(R.id.btn_removeChatFromList) != 0;
-          boolean blockUser = result.get(R.id.btn_blockUser) != 0;
+          boolean blockSender = result.get(R.id.btn_blockSender) != 0;
 
-          if (!reportSpam && !deleteChat && !blockUser) {
+          if (!reportSpam && !deleteChat && !blockSender) {
             return;
           }
 
-          if (blockUser) {
+          if (blockSender) {
             tdlib.blockSender(tdlib.sender(chat.id), true, tdlib.okHandler());
           }
 
@@ -7028,14 +7073,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
             ContactsController c = new ContactsController(context, tdlib);
             c.initWithMode(ContactsController.MODE_ADD_MEMBER);
             c.setAllowBots(true);
-            c.setArguments(new ContactsController.Args(new UserPickerDelegate() {
+            c.setArguments(new ContactsController.Args(new SenderPickerDelegate() {
               @Override
-              public boolean onUserPick (ContactsController context, View view, TdApi.User user) {
-                if (tdlib.isSelfUserId(user.id)) {
+              public boolean onSenderPick (ContactsController context, View view, TdApi.MessageSender senderId) {
+                if (tdlib.isSelfSender(senderId)) {
                   return false;
                 }
 
-                tdlib.setChatMemberStatus(chat.id, new TdApi.MessageSenderUser(user.id), new TdApi.ChatMemberStatusMember(), null, (ok, error) -> {
+                tdlib.setChatMemberStatus(chat.id, senderId, new TdApi.ChatMemberStatusMember(), null, (ok, error) -> {
                   runOnUiThreadOptional(() -> {
                     if (!ok && error != null) {
                       context.context()
@@ -7049,11 +7094,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
                 });
 
                 return true;
-              }
-
-              @Override
-              public void onUserConfirm (ContactsController context, TdApi.User user, int option) {
-
               }
             }));
             c.setChatTitle(R.string.AddMember, chat.title);
@@ -8006,6 +8046,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             R.id.btn_filterMembers,
             R.id.btn_filterInviteLinks,
             R.id.btn_filterInfo,
+            R.id.btn_filterSettings,
             R.id.btn_filterDeletedMessages,
             R.id.btn_filterEditedMessages,
             R.id.btn_filterPinnedMessages,
@@ -8018,6 +8059,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             Lang.getString(R.string.EventLogFilterNewMembers),
             Lang.getString(R.string.EventLogFilterInviteLinks),
             Lang.getString(R.string.EventLogFilterChannelInfo),
+            Lang.getString(R.string.EventLogFilterChannelSettings),
             Lang.getString(R.string.EventLogFilterDeletedMessages),
             Lang.getString(R.string.EventLogFilterEditedMessages),
             Lang.getString(R.string.EventLogFilterPinnedMessages),
@@ -8032,6 +8074,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             R.id.btn_filterMembers,
             R.id.btn_filterInviteLinks,
             R.id.btn_filterInfo,
+            R.id.btn_filterSettings,
             R.id.btn_filterDeletedMessages,
             R.id.btn_filterEditedMessages,
             R.id.btn_filterPinnedMessages,
@@ -8045,6 +8088,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             Lang.getString(R.string.EventLogFilterNewMembers),
             Lang.getString(R.string.EventLogFilterInviteLinks),
             Lang.getString(R.string.EventLogFilterGroupInfo),
+            Lang.getString(R.string.EventLogFilterGroupSettings),
             Lang.getString(R.string.EventLogFilterDeletedMessages),
             Lang.getString(R.string.EventLogFilterEditedMessages),
             Lang.getString(R.string.EventLogFilterPinnedMessages),

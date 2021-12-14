@@ -348,6 +348,7 @@
   <item type="id" name="btn_addContact" />
   <item type="id" name="btn_inviteLink" />
   <item type="id" name="btn_toggleSignatures" />
+  <item type="id" name="btn_toggleProtection" />
   <item type="id" name="btn_allMembers" />
   <item type="id" name="btn_onlyAdmins" />
   <item type="id" name="btn_hidden" />
@@ -457,7 +458,7 @@
   <item type="id" name="btn_cancel" />
   <item type="id" name="btn_removeProxy" />
   <item type="id" name="btn_save" />
-  <item type="id" name="btn_blockedUsers" />
+  <item type="id" name="btn_blockedSenders" />
   <item type="id" name="btn_sessions" />
   <item type="id" name="btn_2fa" />
   <item type="id" name="btn_accountTTL" />
@@ -490,8 +491,8 @@
   <item type="id" name="btn_dismissAdmin" />
   <item type="id" name="btn_transferOwnership" />
   <item type="id" name="btn_everybody" />
-  <item type="id" name="btn_blockUser" />
-  <item type="id" name="btn_unblockUser" />
+  <item type="id" name="btn_blockSender" />
+  <item type="id" name="btn_unblockSender" />
   <item type="id" name="btn_nobody" />
   <item type="id" name="btn_hideSecretChats" />
   <item type="id" name="btn_passcode" />
@@ -1071,7 +1072,7 @@
   <item type="id" name="btn_gif" />
   <item type="id" name="btn_bucket" />
 
-  <item type="id" name="btn_banUser" />
+  <item type="id" name="btn_banMember" />
   <item type="id" name="btn_reportSpam" />
   <item type="id" name="btn_reportBug" />
   <item type="id" name="btn_deleteAll" />
@@ -1100,6 +1101,10 @@
   <item type="id" name="btn_makePrivate" />
   <item type="id" name="btn_makePublic" />
   <item type="id" name="btn_restrictMember" />
+
+  <item type="id" name="btn_messageRestrictMember" />
+  <item type="id" name="btn_messageBlockUser" />
+  <item type="id" name="btn_messageUnblockMember" />
 
   <item type="id" name="btn_applyWallpaper" />
 

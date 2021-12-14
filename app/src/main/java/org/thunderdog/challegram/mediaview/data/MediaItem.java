@@ -435,6 +435,7 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
     this.type = TYPE_CHAT_PROFILE;
     this.sourceChatId = chatId;
     this.sourceMessageId = messageId;
+    this.sourceSender = ChatId.isUserChat(chatId) ? new TdApi.MessageSenderUser(tdlib.chatUserId(chatId)) : new TdApi.MessageSenderChat(chatId);
     this.sourceDate = photo.addedDate;
     this.chatPhoto = photo;
 
@@ -1254,15 +1255,12 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
     }
     switch (type) {
       case TYPE_CHAT_PROFILE: {
-        return sourceChatId != 0;
+        return sourceChatId != 0 && tdlib.canReportChatSpam(sourceChatId);
       }
       case TYPE_USER_PROFILE: {
         long userId = ((TdApi.MessageSenderUser) sourceSender).userId;
         long chatId = ChatId.fromUserId(userId);
-        TdApi.Chat chat = tdlib.chat(chatId);
-        if (chat != null && chat.canBeReported)
-          return true;
-        return tdlib.cache().userBot(userId);
+        return tdlib.canReportChatSpam(chatId) || tdlib.cache().userBot(userId);
       }
     }
     return false;

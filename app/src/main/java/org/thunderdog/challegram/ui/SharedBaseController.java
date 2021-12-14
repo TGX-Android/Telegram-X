@@ -1033,7 +1033,7 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
   }
 
   public boolean canCopyMessages () {
-    return selectedMessages != null && selectedMessages.size() == 1 && provideSearchFilter().getConstructor() == TdApi.SearchMessagesFilterUrl.CONSTRUCTOR;
+    return selectedMessages != null && selectedMessages.size() == 1 && selectedMessages.values().iterator().next().canBeSaved && provideSearchFilter().getConstructor() == TdApi.SearchMessagesFilterUrl.CONSTRUCTOR;
   }
 
   public void copyMessages () {

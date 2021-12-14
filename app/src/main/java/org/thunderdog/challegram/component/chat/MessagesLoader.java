@@ -1126,6 +1126,7 @@ public class MessagesLoader implements Client.ResultHandler {
         case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
         case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
         case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
+        case TdApi.ChatEventHasProtectedContentToggled.CONSTRUCTOR:
         case TdApi.ChatEventIsAllHistoryAvailableToggled.CONSTRUCTOR:
         case TdApi.ChatEventStickerSetChanged.CONSTRUCTOR:
         case TdApi.ChatEventLinkedChatChanged.CONSTRUCTOR:

@@ -714,12 +714,12 @@ public class TD {
       case TdApi.SearchMessagesFilterChatPhoto.CONSTRUCTOR:
         type = 9;
         break;
-      case TdApi.SearchMessagesFilterCall.CONSTRUCTOR:
+      /*case TdApi.SearchMessagesFilterCall.CONSTRUCTOR:
         type = 10;
         break;
       case TdApi.SearchMessagesFilterMissedCall.CONSTRUCTOR:
         type = 11;
-        break;
+        break;*/
       case TdApi.SearchMessagesFilterVideoNote.CONSTRUCTOR:
         type = 12;
         break;
@@ -761,8 +761,8 @@ public class TD {
         case 7: return new TdApi.SearchMessagesFilterPhotoAndVideo();
         case 8: return new TdApi.SearchMessagesFilterUrl();
         case 9: return new TdApi.SearchMessagesFilterChatPhoto();
-        case 10: return new TdApi.SearchMessagesFilterCall();
-        case 11: return new TdApi.SearchMessagesFilterMissedCall();
+        /*case 10: return new TdApi.SearchMessagesFilterCall();
+        case 11: return new TdApi.SearchMessagesFilterMissedCall();*/
         case 12: return new TdApi.SearchMessagesFilterVideoNote();
         case 13: return new TdApi.SearchMessagesFilterVoiceAndVideoNote();
         case 14: return new TdApi.SearchMessagesFilterMention();
@@ -1675,8 +1675,13 @@ public class TD {
   }
 
   public static TdApi.PhoneNumberAuthenticationSettings defaultPhoneNumberAuthenticationSettings () {
-    // TODO automatic phone code entry
-    return new TdApi.PhoneNumberAuthenticationSettings(false, false, false, false, null);
+    return new TdApi.PhoneNumberAuthenticationSettings(
+      false,
+      false, // TODO support to save Telegram money
+      false,
+      false, // TODO for faster login when SMS method is chosen
+      Settings.instance().getAuthenticationTokens()
+    );
   }
 
   public static Letters getLetters (TdApi.User user) {
@@ -2606,7 +2611,10 @@ public class TD {
             case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
               return RESTRICT_MODE_EDIT;
             case TdApi.ChatMemberStatusMember.CONSTRUCTOR:
+            case TdApi.ChatMemberStatusLeft.CONSTRUCTOR:
               return RESTRICT_MODE_NEW;
+            case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
+              return RESTRICT_MODE_NONE;
           }
         }
         break;
@@ -3011,28 +3019,27 @@ public class TD {
   }
 
   public static @Nullable CharSequence getMemberDescription (TdlibDelegate context, TdApi.ChatMember member, boolean needFull) {
-    long inviterUserId = member.inviterUserId;
-    int permissionChangeDate = 0;
+    // long inviterUserId = member.inviterUserId;
     CharSequence result;
     switch (member.status.getConstructor()) {
       case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
         result = Lang.getString(R.string.ChannelOwner);
         break;
       case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR: {
-        result = getMemberDescriptionString(context, inviterUserId, permissionChangeDate, R.string.PromotedByXOnDate, R.string.PromotedByX, R.string.Administrator);
+        result = getMemberDescriptionString(context, member.inviterUserId, 0 /*FIXME server*/, R.string.PromotedByXOnDate, R.string.PromotedByX, R.string.Administrator);
         break;
       }
       case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR: {
-        result = getMemberDescriptionString(context, inviterUserId, permissionChangeDate, R.string.RestrictedByXOnDate, R.string.RestrictedByX, R.string.Restricted);
+        result = getMemberDescriptionString(context, member.inviterUserId, ((TdApi.ChatMemberStatusRestricted) member.status).isMember ? /*FIXME server*/ 0 : member.joinedChatDate, R.string.RestrictedByXOnDate, R.string.RestrictedByX, R.string.Restricted);
         break;
       }
       case TdApi.ChatMemberStatusBanned.CONSTRUCTOR: {
-        result = getMemberDescriptionString(context, inviterUserId, permissionChangeDate, R.string.BannedByXOnDate, R.string.BannedByX, R.string.Banned);
+        result = getMemberDescriptionString(context, member.inviterUserId, member.joinedChatDate, R.string.BannedByXOnDate, R.string.BannedByX, R.string.Banned);
         break;
       }
       case TdApi.ChatMemberStatusMember.CONSTRUCTOR: {
-        if (inviterUserId != 0) {
-          result = getMemberDescriptionString(context, inviterUserId, permissionChangeDate, R.string.InvitedByXOnDate, R.string.InvitedByX, 0);
+        if (member.inviterUserId != 0) {
+          result = getMemberDescriptionString(context, member.inviterUserId, 0, R.string.InvitedByXOnDate, R.string.InvitedByX, 0);
         } else {
           result = null;
         }
