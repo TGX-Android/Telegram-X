@@ -202,7 +202,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       case ListItem.TYPE_CHAT_BETTER: {
         TGFoundChat chat = (TGFoundChat) item.getData();
         long userId = chat.getUserId();
-        TdlibUi.UrlOpenParameters urlOpenParameters = new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(view));
+        TdlibUi.UrlOpenParameters urlOpenParameters = new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(view).controller(this));
         if (userId != 0) {
           tdlib.ui().openPrivateProfile(this, userId, urlOpenParameters);
         } else {
