@@ -13,6 +13,8 @@ import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Strings;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.SessionIconKt;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextWrapper;
@@ -22,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.lambda.RunnableData;
 
 public class EditSessionController extends EditBaseController<EditSessionController.Args> implements View.OnClickListener {
   private DoubleHeaderView headerCell;
@@ -71,11 +74,23 @@ public class EditSessionController extends EditBaseController<EditSessionControl
     switch (v.getId()) {
       case R.id.btn_sessionAcceptSecretChats:
         this.allowSecretChats = adapter.toggleView(v);
+        adapter.updateValuedSettingById(R.id.btn_sessionAcceptSecretChats);
         checkDoneButton();
         break;
       case R.id.btn_sessionAcceptCalls:
         this.allowCalls = adapter.toggleView(v);
+        adapter.updateValuedSettingById(R.id.btn_sessionAcceptCalls);
         checkDoneButton();
+        break;
+      case R.id.btn_sessionLogout:
+        showOptions(null, new int[]{R.id.btn_terminateSession, R.id.btn_cancel}, new String[]{Lang.getString(session.isPasswordPending ? R.string.TerminateIncompleteSession : R.string.TerminateSession), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+          if (id == R.id.btn_terminateSession) {
+            navigateBack();
+            getArgumentsStrict().sessionTerminationListener.run();
+          }
+
+          return true;
+        });
         break;
     }
   }
@@ -210,9 +225,8 @@ public class EditSessionController extends EditBaseController<EditSessionControl
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(new ListItem(session.isPasswordPending ? ListItem.TYPE_SETTING : ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionLogout, R.drawable.baseline_dangerous_24, R.string.SessionTerminate).setTextColorId(R.id.theme_color_textNegative));
+    items.add(new ListItem(session.isPasswordPending ? ListItem.TYPE_SETTING : ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionLogout, R.drawable.baseline_dangerous_24, session.isPasswordPending ? R.string.TerminateIncompleteSession : R.string.TerminateSession).setTextColorId(R.id.theme_color_textNegative));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-
 
     adapter.setItems(items, false);
     recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
@@ -223,10 +237,12 @@ public class EditSessionController extends EditBaseController<EditSessionControl
   public static class Args {
     public final TdApi.Session session;
     public final int inactiveSessionTtlDays;
+    public final Runnable sessionTerminationListener;
 
-    public Args (TdApi.Session session, int inactiveSessionTtlDays) {
+    public Args (TdApi.Session session, int inactiveSessionTtlDays, Runnable sessionTerminationListener) {
       this.session = session;
       this.inactiveSessionTtlDays = inactiveSessionTtlDays;
+      this.sessionTerminationListener = sessionTerminationListener;
     }
   }
 

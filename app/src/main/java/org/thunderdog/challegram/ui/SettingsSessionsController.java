@@ -541,8 +541,9 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
       case R.id.btn_session: {
         Object tag = v.getTag();
         if (tag instanceof TdApi.Session) {
+          TdApi.Session session = (TdApi.Session) tag;
           EditSessionController esc = new EditSessionController(context, tdlib);
-          esc.setArguments(new EditSessionController.Args((TdApi.Session) tag, sessions.inactiveSessionTtlDays));
+          esc.setArguments(new EditSessionController.Args(session, sessions.inactiveSessionTtlDays, () -> terminateSession(session)));
           navigateTo(esc);
         }
         break;
