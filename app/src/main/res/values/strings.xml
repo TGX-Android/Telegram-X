@@ -225,6 +225,8 @@
   <string name="xSec_other">%1$s sec</string>
   <string name="xUsers_one">%1$s user</string>
   <string name="xUsers_other">%1$s users</string>
+  <string name="xSenders_one">%1$s sender</string>
+  <string name="xSenders_other">%1$s senders</string>
   <string name="xSessions_one">%1$s session</string>
   <string name="xSessions_other">%1$s sessions</string>
   <string name="xMonths_one">%1$s month</string>
@@ -861,7 +863,7 @@
   <string name="NoRestrictions">No restrictions</string>
   <string name="Save">Save</string>
   <string name="PrivacyTitle">Privacy</string>
-  <string name="BlockedUsers">Blocked Users</string>
+  <string name="BlockedSenders">Blocked Senders</string>
   <string name="LastSeen">Last Seen &amp; Online</string>
   <string name="GroupsAndChannels">Groups and Channels</string>
   <string name="SecurityTitle">Security</string>
@@ -982,7 +984,10 @@
   <string name="Add">Add</string>
   <string name="AddMemberBtn">Add</string>
   <string name="BlockListEmpty">You haven\'t blocked anyone yet</string>
-  <string name="QBlockX">Block %1$s?</string>
+  <string name="QBlockUser">Block %1$s?</string>
+  <string name="QBlockChat">Block %1$s? You will no longer receive replies notifications from their anonymous admins.</string>
+  <string name="BlockUserBtn">Block</string>
+  <string name="BlockChatBtn">Block</string>
   <string name="QUnblockX">Unblock %1$s?</string>
   <string name="YouTookAScreenshot">You took a screenshot</string>
   <string name="XTookAScreenshot">%1$s took a screenshot</string>
@@ -1119,7 +1124,6 @@
   <string name="DeleteXForEveryone_other">Delete %1$s messages for everyone</string>
   <string name="DeleteForMeAndX">Delete for me and %1$s</string>
   <string name="ReportSpam">Report spam</string>
-  <string name="BanUser">Ban user</string>
   <string name="Pin">Pin</string>
   <string name="Unpin">Unpin</string>
   <string name="UnpinMessage">Unpin message</string>
@@ -1605,6 +1609,7 @@
   <string name="UseProxyForCallsInfo">Proxy servers may degrade the quality of your calls.</string>
   <string name="HoldToPreview">Chat Previews</string>
   <string name="BlockUser">Block user</string>
+  <string name="BlockSender">Block sender</string>
   <string name="MessageLifetimePhoto">If you set a timer, the photo will self-destruct after it was viewed.</string>
   <string name="MessageLifetimeVideo">If you set a timer, the video will self-destruct after it was viewed.</string>
   <string name="NoMembersToShow">No members to show</string>
@@ -1690,8 +1695,8 @@
   <string name="RestrictUser">Restrict user</string>
   <string name="BanChat">Ban group</string>
   <string name="BanChannel">Ban channel</string>
-  <string name="BanChatHint">Granular control over restrictions is not available for groups.</string>
-  <string name="BanChannelHint">Granular control over restrictions is not available for channels.</string>
+  <string name="BanChatHint">Granular control over permissions is not available when restricting groups.</string>
+  <string name="BanChannelHint">Granular control over permissions is not available when restricting channels.</string>
   <string name="ViewRestrictions">View Restrictions</string>
   <string name="EditAdminPostMessages">Post Messages</string>
   <string name="BannedWillBeShownHere">Banned members will be shown here</string>
@@ -3140,7 +3145,7 @@
 
   <string name="error_CHAT_ADMIN_REQUIRED">You do not have enough privileges to perform this action.</string>
   <string name="ChatPermissions">Chat Permissions</string>
-  <string name="ChatPermissionsRestrictHint">This permission is disabled for all members.</string>
+  <string name="ChatPermissionsRestrictHint">This permission is disabled for all members without admin privileges.</string>
   <string name="WhatMembersCanDo">What can members of this group do?</string>
   <string name="MemberSince">Member since %1$s at %2$s</string>
   <string name="format_statusAndDate">%1$s\n%2$s</string>

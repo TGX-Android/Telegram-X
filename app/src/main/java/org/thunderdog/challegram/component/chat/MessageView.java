@@ -852,7 +852,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
     // Admin tools inside "More"
     final TdApi.ChatMemberStatus myStatus = m.tdlib().chatStatus(msg.getChatId());
-    if (myStatus != null && TD.isAdmin(myStatus)) {
+    if (myStatus != null && TD.isAdmin(myStatus) && Td.getSenderId(msg.getMessage().senderId) != msg.getChatId()) {
       if (sender != null) {
         final int restrictMode = TD.canRestrictMember(myStatus, sender.status);
         if (restrictMode != TD.RESTRICT_MODE_NONE) {

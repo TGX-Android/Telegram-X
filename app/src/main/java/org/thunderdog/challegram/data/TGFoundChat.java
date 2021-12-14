@@ -196,12 +196,20 @@ public class TGFoundChat {
         }
       }
       if (memberCount != 0) {
-        additionalInfo.append(", ").append(Lang.plural(TD.isChannel(chat.type) ? Config.CHANNEL_MEMBER_STRING : R.string.xMembers, memberCount));
+        additionalInfo.append(Lang.plural(TD.isChannel(chat.type) ? Config.CHANNEL_MEMBER_STRING : R.string.xMembers, memberCount));
       }
     }
 
     fullUsername.append(Strings.highlightWords(rawUsername.toString(), highlight, 1, null));
-    fullUsername.append(additionalInfo.toString());
+    if (additionalInfo.length() > 0) {
+      if (fullUsername.length() > 0) {
+        fullUsername.append(", ");
+      }
+      fullUsername.append(additionalInfo.toString());
+    }
+    if (fullUsername.length() == 0) {
+      fullUsername.append(tdlib.status().chatStatus(chatId));
+    }
     this.username = fullUsername;
   }
 
@@ -234,6 +242,20 @@ public class TGFoundChat {
 
   public long getUserId () {
     return userId;
+  }
+
+  public TdApi.MessageSender getSenderId () {
+    if (userId != 0) {
+      return new TdApi.MessageSenderUser(userId);
+    } else if (chatId != 0) {
+      if (ChatId.isUserChat(chatId)) {
+        return new TdApi.MessageSenderUser(tdlib.chatUserId(chatId));
+      } else {
+        return new TdApi.MessageSenderChat(chatId);
+      }
+    } else {
+      throw new IllegalStateException();
+    }
   }
 
   private boolean needMuteIcon, notificationsEnabled;

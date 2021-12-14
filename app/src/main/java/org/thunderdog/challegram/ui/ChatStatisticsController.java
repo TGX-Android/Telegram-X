@@ -581,17 +581,17 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
   private void kickMember (final DoubleTextWrapper content) {
     final long chatId = getArgumentsStrict().chatId;
     final ListItem headerItem = new ListItem(ListItem.TYPE_INFO, 0, 0, Lang.getStringBold(R.string.MemberCannotJoinGroup, tdlib.cache().userName(content.getUserId())), false);
-    showSettings(new SettingsWrapBuilder(R.id.btn_blockUser)
+    showSettings(new SettingsWrapBuilder(R.id.btn_blockSender)
       .addHeaderItem(headerItem)
       .setIntDelegate((id, result) -> {
         boolean blockUser = result.get(R.id.right_readMessages) != 0;
         if (content.getMember().status.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR && !blockUser) {
           TdApi.ChatMemberStatusRestricted now = (TdApi.ChatMemberStatusRestricted) content.getMember().status;
-          tdlib.setChatMemberStatus(chatId, content.getSender(), new TdApi.ChatMemberStatusRestricted(false, now.restrictedUntilDate, now.permissions), content.getMember().status, null);
+          tdlib.setChatMemberStatus(chatId, content.getSenderId(), new TdApi.ChatMemberStatusRestricted(false, now.restrictedUntilDate, now.permissions), content.getMember().status, null);
         } else {
-          tdlib.setChatMemberStatus(chatId, content.getSender(), new TdApi.ChatMemberStatusBanned(), content.getMember().status, null);
+          tdlib.setChatMemberStatus(chatId, content.getSenderId(), new TdApi.ChatMemberStatusBanned(), content.getMember().status, null);
           if (!blockUser) {
-            tdlib.setChatMemberStatus(chatId, content.getSender(), new TdApi.ChatMemberStatusLeft(), content.getMember().status, null);
+            tdlib.setChatMemberStatus(chatId, content.getSenderId(), new TdApi.ChatMemberStatusLeft(), content.getMember().status, null);
           }
         }
       })
@@ -618,7 +618,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     }
 
     EditRightsController c = new EditRightsController(context, tdlib);
-    c.setArguments(new EditRightsController.Args(getArgumentsStrict().chatId, content.getSender(), restrict, myStatus, member).noFocusLock());
+    c.setArguments(new EditRightsController.Args(getArgumentsStrict().chatId, content.getSenderId(), restrict, myStatus, member).noFocusLock());
     navigateTo(c);
   }
 
@@ -628,7 +628,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     IntList icons = new IntList(4);
     StringList strings = new StringList(4);
 
-    tdlib.client().send(new TdApi.GetChatMember(getArgumentsStrict().chatId, content.getSender()), result -> {
+    tdlib.client().send(new TdApi.GetChatMember(getArgumentsStrict().chatId, content.getSenderId()), result -> {
       if (result.getConstructor() != TdApi.ChatMember.CONSTRUCTOR) return;
 
       TdApi.ChatMember member = (TdApi.ChatMember) result;
@@ -672,10 +672,10 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
 
           switch (restrictMode) {
             case TD.RESTRICT_MODE_EDIT:
-              strings.append(content.getSender().getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (tdlib.isChannel(Td.getSenderId(content.getSender())) ? R.string.EditChannelRestrictions : R.string.EditGroupRestrictions) : R.string.EditUserRestrictions);
+              strings.append(content.getSenderId().getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (tdlib.isChannel(Td.getSenderId(content.getSenderId())) ? R.string.EditChannelRestrictions : R.string.EditGroupRestrictions) : R.string.EditUserRestrictions);
               break;
             case TD.RESTRICT_MODE_NEW:
-              strings.append(content.getSender().getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (tdlib.isChannel(Td.getSenderId(content.getSender())) ? R.string.BanChannel : R.string.BanChat) : R.string.RestrictUser);
+              strings.append(content.getSenderId().getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (tdlib.isChannel(Td.getSenderId(content.getSenderId())) ? R.string.BanChannel : R.string.BanChat) : R.string.RestrictUser);
               break;
             case TD.RESTRICT_MODE_VIEW:
               strings.append(R.string.ViewRestrictions);
@@ -685,7 +685,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
           }
 
           if (restrictMode != TD.RESTRICT_MODE_VIEW && TD.isMember(member.status)) {
-            ids.append(R.id.btn_blockUser);
+            ids.append(R.id.btn_blockSender);
             colors.append(OPTION_COLOR_NORMAL);
             icons.append(R.drawable.baseline_remove_circle_24);
             strings.append(R.string.RemoveFromGroup);
@@ -715,7 +715,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
           case R.id.btn_restrictMember:
             editMember(content, true, myStatus, member);
             break;
-          case R.id.btn_blockUser:
+          case R.id.btn_blockSender:
             kickMember(content);
             break;
         }

@@ -93,7 +93,7 @@ import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.DoneListener;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.StringList;
-import org.thunderdog.challegram.util.UserPickerDelegate;
+import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextWrapper;
@@ -157,7 +157,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   TdlibCache.ChatMemberStatusChangeListener,
   ComplexHeaderView.Callback,
   InviteLinkController.Callback,
-  UserPickerDelegate,
+  SenderPickerDelegate,
   ViewPagerTopView.OnItemClickListener,
   MediaCollectorDelegate,
   FactorAnimator.Target, ActivityResultHandler,
@@ -486,7 +486,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public final boolean shouldDisallowScreenshots () {
-    return ChatId.isSecret(chat.id) || chat.hasProtectedContent;
+    return ChatId.isSecret(chat.id) || (chat.hasProtectedContent && !isEditing());
   }
 
   @Override
@@ -710,8 +710,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
               final boolean needBlock = !tdlib.chatBlocked(chat.id);
               final boolean isBot = tdlib.isBotChat(chat.id);
               if (needBlock) {
-                showOptions(Lang.getStringBold(isBot ? R.string.BlockBotConfirm : R.string.BlockUserConfirm, tdlib.chatTitle(chat.id)), new int[]{R.id.btn_blockUser, R.id.btn_cancel}, new String[]{Lang.getString(isBot ? R.string.BlockBot : R.string.BlockContact), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_block_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
-                  if (!isDestroyed() && id1 == R.id.btn_blockUser) {
+                showOptions(Lang.getStringBold(isBot ? R.string.BlockBotConfirm : R.string.BlockUserConfirm, tdlib.chatTitle(chat.id)), new int[] {R.id.btn_blockSender, R.id.btn_cancel}, new String[]{Lang.getString(isBot ? R.string.BlockBot : R.string.BlockContact), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_block_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
+                  if (!isDestroyed() && id1 == R.id.btn_blockSender) {
                     tdlib.blockSender(tdlib.sender(chat.id), true, result -> {
                       if (TD.isOk(result)) {
                         UI.showToast(Lang.getStringBold(isBot ? R.string.BlockedBot : R.string.BlockedUser, tdlib.chatTitle(chat.id)), Toast.LENGTH_SHORT);
@@ -3824,18 +3824,18 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   @Override
-  public boolean onUserPick (final ContactsController context, final View view, final TdApi.User user) {
-    if (tdlib.isSelfUserId(user.id)) {
+  public boolean onSenderPick (final ContactsController context, final View view, final TdApi.MessageSender senderId) {
+    if (tdlib.isSelfSender(senderId)) {
       // Ignoring current user, as it shouldn't be offered by UI.
       return false;
     }
-    addMember(context, view, user);
+    addMember(context, view, senderId);
     return false;
   }
 
   @Override
-  public void onUserConfirm (ContactsController context, TdApi.User user, int option) {
-    tdlib.client().send(new TdApi.SetChatMemberStatus(chat.id, new TdApi.MessageSenderUser(user.id), new TdApi.ChatMemberStatusMember()), tdlib.okHandler());
+  public void onSenderConfirm (ContactsController context, TdApi.MessageSender senderId, int option) {
+    tdlib.client().send(new TdApi.SetChatMemberStatus(chat.id, senderId, new TdApi.ChatMemberStatusMember()), tdlib.okHandler());
   }
 
   private void addMember (View view) {
@@ -3870,13 +3870,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
 
       if (canBanMembers()) {
-        ids.append(R.id.btn_banUser);
+        ids.append(R.id.btn_banMember);
         if (mode == MODE_SUPERGROUP) {
           icons.append(R.drawable.baseline_block_24);
-          strings.append(R.string.BanUser);
+          strings.append(R.string.BanMember);
         } else {
           icons.append(R.drawable.baseline_remove_circle_24);
-          strings.append(R.string.BanUser);
+          strings.append(R.string.BanMember);
         }
       }
 
@@ -3890,7 +3890,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             addMemberImpl(MODE_MEMBER_ADMIN);
             break;
           }
-          case R.id.btn_banUser: {
+          case R.id.btn_banMember: {
             addMemberImpl(MODE_MEMBER_BAN);
             break;
           }
@@ -3907,20 +3907,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private int currentPickMode;
 
   private void addMemberImpl (int pickMode) {
-    /*if (group != null && group.memberCount >= tdlib.basicGroupMaxSize() - 5) {
-      showConfirm(Lang.getMarkdownString(this, R.string.UpgradeChatPrompt), Lang.getString(R.string.Proceed), () ->
-        tdlib.upgradeToSupergroup(chat.id, newChatId -> {
-          if (newChatId != 0) {
-            tdlib.ui().post(() -> addMemberImpl(pickMode));
-          }
-        })
-      );
-      return;
-    }*/
     this.currentPickMode = pickMode;
     ContactsController c = new ContactsController(context, tdlib);
     c.initWithMode(ContactsController.MODE_ADD_MEMBER);
-    c.setAllowBots(!isChannel() || pickMode == MODE_MEMBER_ADMIN);
+    if (!isChannel()) {
+      c.setAllowBots(pickMode == MODE_MEMBER_ADMIN);
+      c.setAllowChats(pickMode == MODE_MEMBER_BAN, pickMode == MODE_MEMBER_BAN);
+    }
     c.setArguments(new ContactsController.Args(this));
     switch (currentPickMode) {
       case MODE_MEMBER_REGULAR:
@@ -3930,13 +3923,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         c.setChatTitle(R.string.ChannelAddAdmin, chat.title);
         break;
       case MODE_MEMBER_BAN:
-        c.setChatTitle(R.string.BanUser, chat.title);
+        c.setChatTitle(R.string.BanMember, chat.title);
         break;
     }
     navigateTo(c);
   }
 
-  private void addMember (final ContactsController context, final View view, final TdApi.User user) {
+  private void addMember (final ContactsController context, final View view, final TdApi.MessageSender senderId) {
     final int mode = currentPickMode;
     final AtomicReference<TdApi.Object> result = new AtomicReference<>();
     final CancellableRunnable act = new CancellableRunnable() {
@@ -3947,7 +3940,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           TdApi.Object object = result.get();
           switch (object.getConstructor()) {
             case TdApi.ChatMember.CONSTRUCTOR: {
-              addMember(mode, context, view, user, (TdApi.ChatMember) object, -1, true);
+              addMember(mode, context, view, (TdApi.ChatMember) object, -1, true);
               break;
             }
             case TdApi.Error.CONSTRUCTOR: {
@@ -3962,7 +3955,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
     };
     if (membersAdapter != null) {
-      TdApi.ChatMember member = membersAdapter.getChatMember(user.id);
+      TdApi.ChatMember member = membersAdapter.getChatMember(senderId);
       if (member != null) {
         result.set(member);
         act.run();
@@ -3971,14 +3964,14 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
     context().showProgressDelayed(Lang.getString(R.string.LoadingInformation), act::cancel, 1000l);
     hideSoftwareKeyboard();
-    tdlib.client().send(new TdApi.GetChatMember(chat.id, new TdApi.MessageSenderUser(user.id)), object -> {
+    tdlib.client().send(new TdApi.GetChatMember(chat.id, senderId), object -> {
       result.set(object);
       tdlib.ui().post(act);
     });
   }
 
   private void addMember (final int mode, final ContactsController context, final View view,
-                          final TdApi.User user, final TdApi.ChatMember member, final int forwardLimit,
+                          final TdApi.ChatMember member, final int forwardLimit,
                           final boolean needConfirm) {
     final Tdlib.ChatMemberStatusChangeCallback callback = (success, error) -> tdlib.ui().post(() -> {
       if (success) {
@@ -4028,7 +4021,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
               }
             }
           }
-          addMember(mode, context, view, user, member, chosenForwardCount, false);
+          addMember(mode, context, view, member, chosenForwardCount, false);
         }).setSaveStr(R.string.AddMemberBtn));
       return;
     }
@@ -4052,7 +4045,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
               .build(),
             (itemView, id) -> {
               if (id == R.id.btn_addMember) {
-                addMember(mode, context, view, user, member, forwardLimit, false);
+                addMember(mode, context, view, member, forwardLimit, false);
               }
               return true;
             }
@@ -4060,7 +4053,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           return;
         }
 
-        tdlib.setChatMemberStatus(chat.id, new TdApi.MessageSenderUser(user.id), new TdApi.ChatMemberStatusMember(), forwardLimit, member.status, callback);
+        tdlib.setChatMemberStatus(chat.id, member.memberId, new TdApi.ChatMemberStatusMember(), forwardLimit, member.status, callback);
         break;
       }
       case MODE_MEMBER_ADMIN: {
@@ -4069,7 +4062,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             .tooltipManager()
             .builder(view)
             .show(context, tdlib, R.drawable.baseline_info_24,
-              Lang.getString(R.string.XIsAlreadyAdmin, tdlib.cache().userName(user.id))
+              Lang.getString(R.string.XIsAlreadyAdmin, tdlib.senderName(member.memberId))
             );
           return;
         }
@@ -4088,7 +4081,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         }
 
         EditRightsController c = new EditRightsController(this.context, this.tdlib);
-        c.setArguments(new EditRightsController.Args(chat.id, new TdApi.MessageSenderUser(user.id), false, myStatus, member)
+        c.setArguments(new EditRightsController.Args(chat.id, member.memberId, false, myStatus, member)
           .forwardLimit(forwardLimit)
         );
         context.preventLeavingSearchMode();
@@ -4104,8 +4097,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           return;
         }
         if (isBasicGroup() || isChannel()) {
-          showOptions(Lang.getStringBold(isBasicGroup() ? R.string.MemberCannotJoinGroup : R.string.MemberCannotJoinChannel, memberName), new int[]{R.id.btn_blockUser, R.id.btn_cancel}, new String[]{Lang.getString(R.string.BlockUser), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-            if (id == R.id.btn_blockUser) {
+          showOptions(Lang.getStringBold(isBasicGroup() ? R.string.MemberCannotJoinGroup : R.string.MemberCannotJoinChannel, memberName), new int[] {R.id.btn_blockSender, R.id.btn_cancel}, new String[]{Lang.getString(R.string.BlockUser), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+            if (id == R.id.btn_blockSender) {
               tdlib.setChatMemberStatus(chat.id, member.memberId, new TdApi.ChatMemberStatusBanned(), member.status, (success, error) -> {
                 if (success) {
                   context.navigateBack();
@@ -4120,7 +4113,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           });
         } else {
           EditRightsController c = new EditRightsController(this.context, this.tdlib);
-          c.setArguments(new EditRightsController.Args(chat.id, new TdApi.MessageSenderUser(user.id), true, myStatus, member));
+          c.setArguments(new EditRightsController.Args(chat.id, member.memberId, true, myStatus, member));
           context.preventLeavingSearchMode();
           context.navigateTo(c);
         }

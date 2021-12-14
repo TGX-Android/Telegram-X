@@ -269,12 +269,12 @@ public class TdlibUi extends Handler {
     SettingsWrap wrap = context.showSettings(new SettingsWrapBuilder(R.id.btn_deleteSupergroupMessages).setHeaderItem(
       new ListItem(ListItem.TYPE_INFO, R.id.text_title, 0, text, false)).setRawItems(
       new ListItem[] {
-        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_banUser, 0, senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.RestrictUser : tdlib.isChannel(((TdApi.MessageSenderChat) senderId).chatId) ? R.string.BanChannel : R.string.BanChat, false),
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_banMember, 0, senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.RestrictUser : tdlib.isChannel(((TdApi.MessageSenderChat) senderId).chatId) ? R.string.BanChannel : R.string.BanChat, false),
         new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_reportSpam, 0, R.string.ReportSpam, false),
         new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_deleteAll, 0, Lang.getStringBold(R.string.DeleteAllFrom, name), false)
       }).setIntDelegate((id, result) -> {
         if (id == R.id.btn_deleteSupergroupMessages) {
-          boolean banUser = result.get(R.id.btn_banUser) != 0;
+          boolean banUser = result.get(R.id.btn_banMember) != 0;
           boolean reportSpam = result.get(R.id.btn_reportSpam) != 0;
           boolean deleteAll = result.get(R.id.btn_deleteAll) != 0;
 
@@ -374,7 +374,7 @@ public class TdlibUi extends Handler {
       return;
     }
 
-    c.showSettings(new SettingsWrapBuilder(R.id.btn_unblockUser)
+    c.showSettings(new SettingsWrapBuilder(R.id.btn_unblockSender)
       .addHeaderItem(new ListItem(ListItem.TYPE_INFO, 0, 0, Lang.getString(R.string.QUnblockX, tdlib.senderName(senderId)), false))
       .setIntDelegate((id, result) -> {
         boolean addBackToGroup = result.get(R.id.right_readMessages) != 0;
@@ -400,8 +400,8 @@ public class TdlibUi extends Handler {
     if (senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR)
       return;
     if (ChatId.getType(chatId) == TdApi.ChatTypeBasicGroup.CONSTRUCTOR) {
-      c.showOptions(Lang.getStringBold(R.string.MemberCannotJoinRegularGroup, tdlib.senderName(senderId, true)), new int[]{R.id.btn_blockUser, R.id.btn_cancel}, new String[]{Lang.getString(R.string.RemoveFromGroup), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-        if (id == R.id.btn_blockUser) {
+      c.showOptions(Lang.getStringBold(R.string.MemberCannotJoinRegularGroup, tdlib.senderName(senderId, true)), new int[] {R.id.btn_blockSender, R.id.btn_cancel}, new String[]{Lang.getString(R.string.RemoveFromGroup), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        if (id == R.id.btn_blockSender) {
           tdlib.setChatMemberStatus(chatId, senderId, new TdApi.ChatMemberStatusLeft(), currentStatus, null);
         }
         return true;
@@ -409,7 +409,7 @@ public class TdlibUi extends Handler {
       return;
     }
     final ListItem headerItem = new ListItem(ListItem.TYPE_INFO, 0, 0, getBlockString(chatId, senderId, true), false);
-    c.showSettings(new SettingsWrapBuilder(R.id.btn_blockUser)
+    c.showSettings(new SettingsWrapBuilder(R.id.btn_blockSender)
       .addHeaderItem(headerItem)
       .setIntDelegate((id, result) -> {
         boolean blockUser = result.get(R.id.right_readMessages) != 0;
@@ -1896,6 +1896,21 @@ public class TdlibUi extends Handler {
       }
     } else {
       UI.showToast(message, Toast.LENGTH_SHORT);
+    }
+  }
+
+  public void openChat (final TdlibDelegate context, final TdApi.MessageSender senderId, final @Nullable ChatOpenParameters params) {
+    switch (senderId.getConstructor()) {
+      case TdApi.MessageSenderUser.CONSTRUCTOR: {
+        openPrivateChat(context, ((TdApi.MessageSenderUser) senderId).userId, new TdlibUi.ChatOpenParameters().keepStack());
+        break;
+      }
+      case TdApi.MessageSenderChat.CONSTRUCTOR: {
+        openPrivateChat(context, ((TdApi.MessageSenderChat) senderId).chatId, new TdlibUi.ChatOpenParameters().keepStack());
+        break;
+      }
+      default:
+        throw new UnsupportedOperationException(senderId.toString());
     }
   }
 

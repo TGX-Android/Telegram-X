@@ -198,7 +198,7 @@ import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.Unlockable;
-import org.thunderdog.challegram.util.UserPickerDelegate;
+import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.v.MessagesLayoutManager;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
@@ -2842,7 +2842,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       TdApi.SecretChat secretChat = tdlib.chatToSecretChat(chat.id);
       if (secretChat != null && !TD.isSecretChatReady(secretChat)) {
         showSecretChatAction(secretChat);
-      } else if (tdlib.chatBlocked(chat)) {
+      } else if (tdlib.chatBlocked(chat) && tdlib.isUserChat(chat)) {
         showActionUnblockButton();
       } else if (tdlib.chatUserDeleted(chat) || (ChatId.isBasicGroup(chat.id) && (!tdlib.chatBasicGroupActive(chat.id) || TD.isNotInChat(status))) || (tdlib.isSupergroupChat(chat) && TD.isNotInChat(status) && messageThread == null)) {
         if (tdlib.isSupergroupChat(chat) && status != null && TD.canReturnToChat(status)) {
@@ -4936,7 +4936,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           IntList icons = new IntList(3);
           StringList strings = new StringList(3);
           final long chatId = selectedMessage.getChatId();
-          if (ChatId.isMultiChat(chatId) && !tdlib.isChannel(chatId) && TD.isAdmin(tdlib.chatStatus(chatId))) {
+          if (ChatId.isMultiChat(chatId) && !tdlib.isChannel(chatId) && TD.isAdmin(tdlib.chatStatus(chatId)) && Td.getSenderId(selectedMessage.getMessage().senderId) != chatId) {
             TGMessage selectedMessage = this.selectedMessage;
             TdApi.MessageSender senderId = selectedMessage.getMessage().senderId;
             tdlib.client().send(new TdApi.GetChatMember(chatId, senderId), result -> {
@@ -6943,7 +6943,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         .setRawItems(getChatUserId() != 0 ? new ListItem[] {
           new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_reportSpam, 0, R.string.ReportSpam, true),
           new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_removeChatFromList, 0, R.string.DeleteChat, true),
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_blockUser, 0, R.string.BlockUser, true),
+          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_blockSender, 0, R.string.BlockUser, true),
         } : new ListItem[] {
           new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_reportSpam, 0, R.string.ReportSpam, true),
           new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_removeChatFromList, 0, R.string.DeleteChat, true)
@@ -6955,13 +6955,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
           boolean reportSpam = result.get(R.id.btn_reportSpam) != 0;
           boolean deleteChat = result.get(R.id.btn_removeChatFromList) != 0;
-          boolean blockUser = result.get(R.id.btn_blockUser) != 0;
+          boolean blockSender = result.get(R.id.btn_blockSender) != 0;
 
-          if (!reportSpam && !deleteChat && !blockUser) {
+          if (!reportSpam && !deleteChat && !blockSender) {
             return;
           }
 
-          if (blockUser) {
+          if (blockSender) {
             tdlib.blockSender(tdlib.sender(chat.id), true, tdlib.okHandler());
           }
 
@@ -7040,14 +7040,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
             ContactsController c = new ContactsController(context, tdlib);
             c.initWithMode(ContactsController.MODE_ADD_MEMBER);
             c.setAllowBots(true);
-            c.setArguments(new ContactsController.Args(new UserPickerDelegate() {
+            c.setArguments(new ContactsController.Args(new SenderPickerDelegate() {
               @Override
-              public boolean onUserPick (ContactsController context, View view, TdApi.User user) {
-                if (tdlib.isSelfUserId(user.id)) {
+              public boolean onSenderPick (ContactsController context, View view, TdApi.MessageSender senderId) {
+                if (tdlib.isSelfSender(senderId)) {
                   return false;
                 }
 
-                tdlib.setChatMemberStatus(chat.id, new TdApi.MessageSenderUser(user.id), new TdApi.ChatMemberStatusMember(), null, (ok, error) -> {
+                tdlib.setChatMemberStatus(chat.id, senderId, new TdApi.ChatMemberStatusMember(), null, (ok, error) -> {
                   runOnUiThreadOptional(() -> {
                     if (!ok && error != null) {
                       context.context()
@@ -7061,11 +7061,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
                 });
 
                 return true;
-              }
-
-              @Override
-              public void onUserConfirm (ContactsController context, TdApi.User user, int option) {
-
               }
             }));
             c.setChatTitle(R.string.AddMember, chat.title);

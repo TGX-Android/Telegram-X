@@ -220,7 +220,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
             }
             break;
           }
-          case R.id.btn_unblockUser: {
+          case R.id.btn_unblockSender: {
 
             final Runnable unblockRunnable = () -> {
               setCanViewMessages(true);
@@ -236,14 +236,14 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
             targetRestrict.isMember = TD.isMember(args.member.status);
 
             if (targetRestrict.isMember || args.senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
-              showOptions(Lang.getStringBold(R.string.QUnblockX, tdlib.senderName(args.senderId)), new int[] {R.id.btn_blockUser, R.id.btn_cancel}, new String[] {Lang.getString(R.string.RemoveRestrictions), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-                if (id == R.id.btn_blockUser) {
+              showOptions(Lang.getStringBold(R.string.QUnblockX, tdlib.senderName(args.senderId)), new int[] {R.id.btn_blockSender, R.id.btn_cancel}, new String[] {Lang.getString(R.string.RemoveRestrictions), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+                if (id == R.id.btn_blockSender) {
                   unblockRunnable.run();
                 }
                 return true;
               });
             } else {
-              showSettings(new SettingsWrapBuilder(R.id.btn_unblockUser)
+              showSettings(new SettingsWrapBuilder(R.id.btn_unblockSender)
                 .setHeaderItem(new ListItem(ListItem.TYPE_INFO, 0, 0, Lang.getStringBold(R.string.QUnblockX, tdlib.senderName(args.senderId)), false))
                 .setIntDelegate((id, result) -> {
                   boolean addBackToGroup = result.get(R.id.right_readMessages) != 0;
@@ -949,17 +949,30 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         R.id.right_changeChatInfo,
       };
     } else if (args.mode == MODE_RESTRICTION) {
-      rightIds = new int[] {
-        R.id.right_readMessages,
-        R.id.right_sendMessages,
-        R.id.right_sendMedia,
-        R.id.right_sendStickersAndGifs,
-        R.id.right_sendPolls,
-        R.id.right_embedLinks,
-        R.id.right_inviteUsers,
-        R.id.right_pinMessages,
-        R.id.right_changeChatInfo,
-      };
+      if (args.senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
+        rightIds = new int[] {
+          R.id.right_sendMessages,
+          R.id.right_sendMedia,
+          R.id.right_sendStickersAndGifs,
+          R.id.right_sendPolls,
+          R.id.right_embedLinks,
+          R.id.right_inviteUsers,
+          R.id.right_pinMessages,
+          R.id.right_changeChatInfo,
+        };
+      } else {
+        rightIds = new int[] {
+          R.id.right_readMessages,
+          R.id.right_sendMessages,
+          R.id.right_sendMedia,
+          R.id.right_sendStickersAndGifs,
+          R.id.right_sendPolls,
+          R.id.right_embedLinks,
+          R.id.right_inviteUsers,
+          R.id.right_pinMessages,
+          R.id.right_changeChatInfo,
+        };
+      }
     } else if (isChannel) {
       rightIds = new int[] {
         R.id.right_changeChatInfo,
@@ -1045,7 +1058,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
 
     if (canUnbanUser()) {
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_unblockUser, 0, args.member.status.getConstructor() == TdApi.ChatMemberStatusBanned.CONSTRUCTOR ?
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_unblockSender, 0, args.member.status.getConstructor() == TdApi.ChatMemberStatusBanned.CONSTRUCTOR ?
           tdlib.cache().senderBot(args.member.memberId) ? R.string.UnbanMemberBot :
           args.member.memberId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (tdlib.isChannel(Td.getSenderId(args.member.memberId)) ? R.string.UnbanMemberChannel : R.string.UnbanMemberGroup) :
           R.string.UnbanMember :
