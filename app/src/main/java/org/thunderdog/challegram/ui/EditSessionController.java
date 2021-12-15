@@ -98,15 +98,19 @@ public class EditSessionController extends EditBaseController<EditSessionControl
         checkDoneButton();
         break;
       case R.id.btn_sessionLogout:
-        showOptions(null, new int[]{R.id.btn_terminateSession, R.id.btn_cancel}, new String[]{Lang.getString(session.isPasswordPending ? R.string.TerminateIncompleteSession : R.string.TerminateSession), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_dangerous_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-          if (id == R.id.btn_terminateSession) {
-            navigateBack();
-            getArgumentsStrict().sessionTerminationListener.run();
-          }
+        if (session.isCurrent) {
+          navigateTo(new SettingsLogOutController(context, tdlib));
+        } else {
+          showOptions(null, new int[]{R.id.btn_terminateSession, R.id.btn_cancel}, new String[]{Lang.getString(session.isPasswordPending ? R.string.TerminateIncompleteSession : R.string.TerminateSession), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_dangerous_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+            if (id == R.id.btn_terminateSession) {
+              navigateBack();
+              getArgumentsStrict().sessionTerminationListener.run();
+            }
 
-          return true;
-        });
-        break;
+            return true;
+          });
+          break;
+        }
     }
   }
 
@@ -195,7 +199,7 @@ public class EditSessionController extends EditBaseController<EditSessionControl
             view.setData(R.string.SessionLastLogin);
             break;
           case R.id.btn_sessionLogout:
-            view.setData(session.isPasswordPending ? null : Lang.getReverseRelativeDate(
+            view.setData((session.isCurrent || session.isPasswordPending) ? null : Lang.getReverseRelativeDate(
               session.lastActiveDate + TimeUnit.DAYS.toSeconds(getArgumentsStrict().inactiveSessionTtlDays), TimeUnit.SECONDS,
               tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS,
               true, 0, R.string.session_WillTerminate, false
@@ -225,7 +229,7 @@ public class EditSessionController extends EditBaseController<EditSessionControl
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionCountry, R.drawable.baseline_location_on_24, session.country, false));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionIp, R.drawable.baseline_language_24, session.ip, false));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionIp, R.drawable.baseline_router_24, session.ip, false));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     if (!session.isPasswordPending) {
@@ -245,11 +249,9 @@ public class EditSessionController extends EditBaseController<EditSessionControl
     }
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
-    if (!session.isCurrent) {
-      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-      items.add(new ListItem(session.isPasswordPending ? ListItem.TYPE_SETTING : ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionLogout, R.drawable.baseline_dangerous_24, session.isPasswordPending ? R.string.TerminateIncompleteSession : R.string.TerminateSession).setTextColorId(R.id.theme_color_textNegative));
-      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-    }
+    items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+    items.add(new ListItem((session.isPasswordPending || session.isCurrent) ? ListItem.TYPE_SETTING : ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionLogout, R.drawable.baseline_dangerous_24, session.isCurrent ? R.string.LogOut : (session.isPasswordPending ? R.string.TerminateIncompleteSession : R.string.TerminateSession)).setTextColorId(R.id.theme_color_textNegative));
+    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     adapter.setItems(items, false);
     recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
