@@ -240,13 +240,12 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
       protected void setSession (ListItem item, int position, RelativeLayout parent, boolean isUpdate, TextView timeView, TextView titleView, TextView subtextView, TextView locationView, ProgressComponentView progressView, AvatarView avatarView, ImageView iconView) {
         switch (item.getId()) {
           case R.id.btn_currentSession: {
-            parent.setTag(null);
+            parent.setTag(sessions.currentSession);
             timeView.setText("");
             titleView.setText(getTitle(sessions.currentSession));
             subtextView.setText(getSubtext(sessions.currentSession, false));
             locationView.setText(Strings.concatIpLocation(sessions.currentSession.ip, sessions.currentSession.country));
             progressView.forceFactor(0f);
-            parent.setEnabled(false);
             iconView.setImageResource(R.drawable.baseline_device_android_x);
             break;
           }
@@ -538,12 +537,22 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
         openInAppCamera(new CameraOpenOptions().anchor(v).noTrace(true).allowSystem(false).optionalMicrophone(true).mode(CameraController.MODE_QR).qrCodeListener(this));
         break;
       }
+      case R.id.btn_currentSession:
       case R.id.btn_session: {
         Object tag = v.getTag();
         if (tag instanceof TdApi.Session) {
           TdApi.Session session = (TdApi.Session) tag;
           EditSessionController esc = new EditSessionController(context, tdlib);
-          esc.setArguments(new EditSessionController.Args(session, sessions.inactiveSessionTtlDays, () -> terminateSession(session)));
+          esc.setArguments(new EditSessionController.Args(session, sessions.inactiveSessionTtlDays, () -> terminateSession(session), (newSession) -> {
+            if (newSession.isCurrent) {
+              sessions.currentSession.canAcceptSecretChats = newSession.canAcceptSecretChats;
+              sessions.currentSession.canAcceptCalls = newSession.canAcceptCalls;
+              adapter.updateValuedSettingById(R.id.btn_currentSession);
+            } else {
+              sessions.allSessions[indexOfSession(newSession.id)] = newSession;
+              updateSessionById(newSession.id);
+            }
+          }));
           navigateTo(esc);
         }
         break;

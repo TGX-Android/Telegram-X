@@ -1,5 +1,6 @@
 package org.thunderdog.challegram.ui;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.view.View;
 
@@ -26,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.RunnableData;
 
+@SuppressLint("NonConstantResourceId")
 public class EditSessionController extends EditBaseController<EditSessionController.Args> implements View.OnClickListener {
   private DoubleHeaderView headerCell;
   private SettingsAdapter adapter;
@@ -72,6 +74,19 @@ public class EditSessionController extends EditBaseController<EditSessionControl
   @Override
   public void onClick (View v) {
     switch (v.getId()) {
+      case R.id.btn_sessionPlatform:
+      case R.id.btn_sessionCountry:
+      case R.id.btn_sessionIp:
+      case R.id.btn_sessionFirstLogin:
+      case R.id.btn_sessionLastLogin:
+        UI.copyText((CharSequence) v.getTag(), R.string.CopiedText);
+        break;
+      case R.id.btn_sessionDevice:
+        UI.copyText(session.deviceModel, R.string.CopiedText);
+        break;
+      case R.id.btn_sessionApp:
+        UI.copyText(session.applicationName + " " + session.applicationVersion, R.string.CopiedText);
+        break;
       case R.id.btn_sessionAcceptSecretChats:
         this.allowSecretChats = adapter.toggleView(v);
         adapter.updateValuedSettingById(R.id.btn_sessionAcceptSecretChats);
@@ -83,7 +98,7 @@ public class EditSessionController extends EditBaseController<EditSessionControl
         checkDoneButton();
         break;
       case R.id.btn_sessionLogout:
-        showOptions(null, new int[]{R.id.btn_terminateSession, R.id.btn_cancel}, new String[]{Lang.getString(session.isPasswordPending ? R.string.TerminateIncompleteSession : R.string.TerminateSession), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        showOptions(null, new int[]{R.id.btn_terminateSession, R.id.btn_cancel}, new String[]{Lang.getString(session.isPasswordPending ? R.string.TerminateIncompleteSession : R.string.TerminateSession), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_dangerous_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
           if (id == R.id.btn_terminateSession) {
             navigateBack();
             getArgumentsStrict().sessionTerminationListener.run();
@@ -117,7 +132,12 @@ public class EditSessionController extends EditBaseController<EditSessionControl
     tdlib.sendAll(functions.toArray(new TdApi.Function[0]), (obj) -> {
 
     }, () -> {
-      runOnUiThreadOptional(this::navigateBack);
+      runOnUiThreadOptional(() -> {
+        session.canAcceptSecretChats = allowSecretChats;
+        session.canAcceptCalls = allowCalls;
+        getArgumentsStrict().sessionChangeListener.runWithData(session);
+        navigateBack();
+      });
     });
 
     return true;
@@ -166,7 +186,6 @@ public class EditSessionController extends EditBaseController<EditSessionControl
             view.setData(R.string.SessionLocation);
             break;
           case R.id.btn_sessionIp:
-            view.setName("127.0.0.1");
             view.setData(R.string.SessionIP);
             break;
           case R.id.btn_sessionFirstLogin:
@@ -191,6 +210,8 @@ public class EditSessionController extends EditBaseController<EditSessionControl
             view.setData(allowCalls ? R.string.SessionAccept : R.string.SessionReject);
             break;
         }
+
+        view.setTag(item.getString());
       }
     };
 
@@ -218,15 +239,17 @@ public class EditSessionController extends EditBaseController<EditSessionControl
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionFirstLogin, R.drawable.baseline_exit_to_app_24, Lang.getTimestamp(session.logInDate, TimeUnit.SECONDS), false));
-    if (!session.isPasswordPending) {
+    if (!session.isPasswordPending && !session.isCurrent) {
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionLastLogin, R.drawable.baseline_history_24, Lang.getTimestamp(session.lastActiveDate, TimeUnit.SECONDS), false));
     }
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
-    items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(new ListItem(session.isPasswordPending ? ListItem.TYPE_SETTING : ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionLogout, R.drawable.baseline_dangerous_24, session.isPasswordPending ? R.string.TerminateIncompleteSession : R.string.TerminateSession).setTextColorId(R.id.theme_color_textNegative));
-    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    if (!session.isCurrent) {
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(session.isPasswordPending ? ListItem.TYPE_SETTING : ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionLogout, R.drawable.baseline_dangerous_24, session.isPasswordPending ? R.string.TerminateIncompleteSession : R.string.TerminateSession).setTextColorId(R.id.theme_color_textNegative));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    }
 
     adapter.setItems(items, false);
     recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
@@ -238,11 +261,13 @@ public class EditSessionController extends EditBaseController<EditSessionControl
     public final TdApi.Session session;
     public final int inactiveSessionTtlDays;
     public final Runnable sessionTerminationListener;
+    public final RunnableData<TdApi.Session> sessionChangeListener;
 
-    public Args (TdApi.Session session, int inactiveSessionTtlDays, Runnable sessionTerminationListener) {
+    public Args (TdApi.Session session, int inactiveSessionTtlDays, Runnable sessionTerminationListener, RunnableData<TdApi.Session> sessionChangeListener) {
       this.session = session;
       this.inactiveSessionTtlDays = inactiveSessionTtlDays;
       this.sessionTerminationListener = sessionTerminationListener;
+      this.sessionChangeListener = sessionChangeListener;
     }
   }
 
