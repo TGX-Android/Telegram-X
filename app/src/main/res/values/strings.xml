@@ -4193,6 +4193,12 @@
   <string name="session_WillTerminate_hours_one">auto-terminated %1$s hour ago</string>
   <string name="session_WillTerminate_hours_other">auto-terminated %1$s hours ago</string>
 
+  <string name="SessionTerminateTtl">Terminate old sessions if inactive for</string>
+  <string name="SessionTerminatesInWeeks_one">Terminate in %1$s week</string>
+  <string name="SessionTerminatesInWeeks_other">Terminate in %1$s weeks</string>
+  <string name="SessionTerminatesInMonths_one">Terminate in %1$s month</string>
+  <string name="SessionTerminatesInMonths_other">Terminate in %1$s months</string>
+
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
   <string name="suggested_language_code_plural" />

@@ -370,6 +370,8 @@
   <item type="id" name="session_device" />
   <item type="id" name="session_location" />
   <item type="id" name="session_title" />
+  <item type="id" name="session_calls" />
+  <item type="id" name="session_secret" />
   <item type="id" name="btn_done" />
   <item type="id" name="btn_forgotPassword" />
   <item type="id" name="btn_direction" />
@@ -386,6 +388,7 @@
   <item type="id" name="btn_sessionsEmpty_title" />
   <item type="id" name="btn_currentSession" />
   <item type="id" name="btn_qrLogin" />
+  <item type="id" name="btn_sessionTtl" />
   <item type="id" name="btn_selectChat" />
   <item type="id" name="btn_selectUnread" />
   <item type="id" name="btn_selectAll" />
@@ -652,6 +655,10 @@
   <item type="id" name="btn_expireIn2d" />
   <item type="id" name="btn_expireIn1w" />
   <item type="id" name="btn_expireIn2w" />
+  <item type="id" name="btn_terminateIn1w" />
+  <item type="id" name="btn_terminateIn1m" />
+  <item type="id" name="btn_terminateIn3m" />
+  <item type="id" name="btn_terminateIn6m" />
   <item type="id" name="btn_sendScheduled" />
   <item type="id" name="btn_sendAndOpen" />
   <item type="id" name="btn_sendOnceOnline" />

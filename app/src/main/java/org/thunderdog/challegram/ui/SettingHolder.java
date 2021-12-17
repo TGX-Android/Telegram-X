@@ -3,6 +3,7 @@ package org.thunderdog.challegram.ui;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.InputFilter;
 import android.text.InputType;
@@ -49,7 +50,9 @@ import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Size;
@@ -1314,6 +1317,10 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         if (themeProvider != null) {
           themeProvider.addThemeTextAccentColorListener(subtextView);
         }
+        if (!isAvatar) {
+          subtextView.setMaxLines(1);
+          subtextView.setEllipsize(TextUtils.TruncateAt.END);
+        }
         subtextView.setLayoutParams(params);
         layout.addView(subtextView);
 
@@ -1370,6 +1377,54 @@ public class SettingHolder extends RecyclerView.ViewHolder {
           iconView.setColorFilter(Theme.getColor(R.id.theme_color_icon));
           iconView.setScaleType(ImageView.ScaleType.CENTER);
           layout.addView(iconView);
+
+          // State Icons
+          Drawable callIcon = Drawables.get(context.getResources(), R.drawable.baseline_call_16);
+          callIcon.setColorFilter(Paints.getColorFilter(Theme.getColor(R.id.theme_color_textNeutral)));
+          Drawable secretIcon = Drawables.get(context.getResources(), R.drawable.baseline_lock_16);
+          secretIcon.setColorFilter(Paints.getColorFilter(Theme.getColor(R.id.theme_color_textSecure)));
+
+          params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+          params.addRule(RelativeLayout.BELOW, R.id.session_location);
+          params.addRule(Lang.rtl() ? RelativeLayout.ALIGN_RIGHT : RelativeLayout.ALIGN_LEFT, R.id.session_title);
+          params.topMargin = Screen.dp(6);
+          params.rightMargin = Screen.dp(12);
+
+          TextView secretState = new TextView(context);
+          secretState.setId(R.id.session_secret);
+          secretState.setLayoutParams(params);
+          secretState.setCompoundDrawablesWithIntrinsicBounds(secretIcon, null, null, null);
+          secretState.setCompoundDrawablePadding(Screen.dp(8));
+          secretState.setText(R.string.SessionSecretChats);
+          secretState.setTextColor(Theme.getColor(R.id.theme_color_textSecure));
+          secretState.setAllCaps(true);
+          secretState.setGravity(Gravity.CENTER_VERTICAL);
+          secretState.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12f);
+          layout.addView(secretState);
+
+          params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+          params.addRule(RelativeLayout.BELOW, R.id.session_location);
+          params.addRule(Lang.rtl() ? RelativeLayout.LEFT_OF : RelativeLayout.RIGHT_OF, R.id.session_secret);
+          params.topMargin = Screen.dp(6);
+
+          TextView callsState = new TextView(context);
+          callsState.setId(R.id.session_calls);
+          callsState.setLayoutParams(params);
+          callsState.setCompoundDrawablesWithIntrinsicBounds(callIcon, null, null, null);
+          callsState.setCompoundDrawablePadding(Screen.dp(8));
+          callsState.setText("Calls");
+          callsState.setTextColor(Theme.getColor(R.id.theme_color_textNeutral));
+          callsState.setAllCaps(true);
+          callsState.setGravity(Gravity.CENTER_VERTICAL);
+          callsState.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12f);
+          layout.addView(callsState);
+
+          if (themeProvider != null) {
+            themeProvider.addThemeFilterListener(callIcon, R.id.theme_color_textNeutral);
+            themeProvider.addThemeFilterListener(secretIcon, R.id.theme_color_textSecure);
+            themeProvider.addThemeTextColorListener(callsState, R.id.theme_color_textNeutral);
+            themeProvider.addThemeTextColorListener(secretState, R.id.theme_color_textSecure);
+          }
         }
 
         return new SettingHolder(layout);
