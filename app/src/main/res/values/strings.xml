@@ -4198,6 +4198,7 @@
   <string name="SessionTerminatesInWeeks_other">Terminate in %1$s weeks</string>
   <string name="SessionTerminatesInMonths_one">Terminate in %1$s month</string>
   <string name="SessionTerminatesInMonths_other">Terminate in %1$s months</string>
+  <string name="SessionTerminatesCustom">Set termination interval</string>
 
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />

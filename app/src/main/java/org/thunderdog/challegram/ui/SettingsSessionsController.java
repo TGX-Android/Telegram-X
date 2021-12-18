@@ -1,6 +1,7 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.text.InputType;
 import android.text.SpannableStringBuilder;
 import android.view.View;
 import android.widget.ImageView;
@@ -41,6 +42,7 @@ import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.RunnableInt;
 import me.vkryl.core.lambda.RunnableLong;
 import me.vkryl.td.Td;
+import me.vkryl.td.TdConstants;
 
 /**
  * Date: 17/11/2016
@@ -582,21 +584,20 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
 
         ids.append(R.id.btn_terminateIn1w);
         strings.append(Lang.plural(R.string.SessionTerminatesInWeeks, 1));
-        icons.append(R.drawable.baseline_schedule_24);
 
         ids.append(R.id.btn_terminateIn1m);
         strings.append(Lang.plural(R.string.SessionTerminatesInMonths, 1));
-        icons.append(R.drawable.baseline_schedule_24);
 
         ids.append(R.id.btn_terminateIn3m);
         strings.append(Lang.plural(R.string.SessionTerminatesInMonths, 3));
-        icons.append(R.drawable.baseline_schedule_24);
 
         ids.append(R.id.btn_terminateIn6m);
         strings.append(Lang.plural(R.string.SessionTerminatesInMonths, 6));
-        icons.append(R.drawable.baseline_schedule_24);
 
-        showOptions(null, ids.get(), strings.get(), null, icons.get(), (optionItemView, id) -> {
+        ids.append(R.id.btn_terminateInCustom);
+        strings.append(Lang.getString(R.string.SessionTerminatesCustom));
+
+        showOptions(null, ids.get(), strings.get(), null, null, (optionItemView, id) -> {
           int days = 0;
           
           switch (id) {
@@ -612,6 +613,16 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
             case R.id.btn_terminateIn6m:
               days = 30 * 6;
               break;
+            case R.id.btn_terminateInCustom:
+              openInputAlert(Lang.getString(R.string.InviteLinkLimitedByUsersItem), Lang.getString(R.string.InviteLinkLimitedByUsersAlertHint), R.string.Done, R.string.Cancel, String.valueOf(inactiveSessionTtlDays), (inputView, result) -> {
+                int data = StringUtils.parseInt(result, -1);
+                if (data < 1 || data > 366)
+                  return false;
+
+                act.runWithInt(data);
+                return true;
+              }, true).getEditText().setInputType(InputType.TYPE_CLASS_NUMBER);
+              return true;
           }
 
           act.runWithInt(days);

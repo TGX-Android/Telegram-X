@@ -659,6 +659,7 @@
   <item type="id" name="btn_terminateIn1m" />
   <item type="id" name="btn_terminateIn3m" />
   <item type="id" name="btn_terminateIn6m" />
+  <item type="id" name="btn_terminateInCustom" />
   <item type="id" name="btn_sendScheduled" />
   <item type="id" name="btn_sendAndOpen" />
   <item type="id" name="btn_sendOnceOnline" />
