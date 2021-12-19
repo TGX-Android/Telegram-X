@@ -4398,7 +4398,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
       TdApi.Message message = getSingleSelectedMessage();
       return message.canBeSaved && TD.canCopyText(message);
     }
-    return !(isSecretChat() || chat.hasProtectedContent);
+    for (int i = 0; i < selectedMessageIds.size(); i++) {
+      TdApi.Message message = selectedMessageIds.valueAt(i).getMessage(selectedMessageIds.keyAt(i));
+      if (!message.canBeSaved) {
+        return false;
+      }
+    }
+    return !isSecretChat();
   }
 
   private boolean canDeleteSelectedMessages () {
