@@ -575,7 +575,6 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
       case R.id.btn_sessionTtl: {
         IntList ids = new IntList(4);
         StringList strings = new StringList(4);
-        IntList icons = new IntList(4);
 
         RunnableInt act = (days) -> {
           if (days == 0) return;
@@ -605,16 +604,16 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
               days = 7;
               break;
             case R.id.btn_terminateIn1m:
-              days = 30;
+              days = 31;
               break;
             case R.id.btn_terminateIn3m:
-              days = 30 * 3;
+              days = 31 * 3;
               break;
             case R.id.btn_terminateIn6m:
-              days = 30 * 6;
+              days = 31 * 6;
               break;
             case R.id.btn_terminateInCustom:
-              openInputAlert(Lang.getString(R.string.InviteLinkLimitedByUsersItem), Lang.getString(R.string.InviteLinkLimitedByUsersAlertHint), R.string.Done, R.string.Cancel, String.valueOf(inactiveSessionTtlDays), (inputView, result) -> {
+              openInputAlert(Lang.getString(R.string.SessionTerminatesCustomAlertTitle), Lang.getString(R.string.SessionTerminatesCustomAlertHint), R.string.Done, R.string.Cancel, String.valueOf(inactiveSessionTtlDays), (inputView, result) -> {
                 int data = StringUtils.parseInt(result, -1);
                 if (data < 1 || data > 366)
                   return false;
