@@ -218,7 +218,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   // Dismiss join requests
 
   public interface DismissRequestsListener {
-    void onJoinRequestsDismissed (long chatId, long hash);
+    void onJoinRequestsDismissed (long chatId);
     void onJoinRequestsRestore (long chatId);
   }
 
@@ -233,10 +233,9 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   }
 
   public void dismissRequests (long chatId, TdApi.ChatJoinRequestsInfo pendingInfo) {
-    long hash = Arrays.hashCode(pendingInfo.userIds);
-    Settings.instance().putLong(key(DISMISS_REQUESTS_PREFIX, tdlib.id()) + chatId, hash);
+    Settings.instance().putLongArray(key(DISMISS_REQUESTS_PREFIX, tdlib.id()) + chatId, pendingInfo.userIds);
     for (DismissRequestsListener listener : dismissRequestsListeners) {
-      listener.onJoinRequestsDismissed(chatId, hash);
+      listener.onJoinRequestsDismissed(chatId);
     }
   }
 
@@ -248,7 +247,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   }
 
   public boolean isRequestsDismissed (long chatId, TdApi.ChatJoinRequestsInfo pendingInfo) {
-    return pendingInfo == null || Settings.instance().getLong(key(DISMISS_REQUESTS_PREFIX, tdlib.id()) + chatId, 0) == Arrays.hashCode(pendingInfo.userIds);
+    return pendingInfo == null || Settings.instance().getLongArray(key(DISMISS_REQUESTS_PREFIX, tdlib.id()) + chatId) == pendingInfo.userIds;
   }
 
   public boolean forcePlainModeInChannels () {

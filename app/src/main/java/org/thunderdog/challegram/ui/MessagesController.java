@@ -9258,7 +9258,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public void onJoinRequestsDismissed (long chatId, long hash) {
+  public void onJoinRequestsDismissed (long chatId) {
     tdlib.ui().post(() -> {
       if (getChatId() == chatId && chat != null) {
         checkJoinRequests(chat.pendingJoinRequests);
