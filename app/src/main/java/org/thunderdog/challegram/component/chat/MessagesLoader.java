@@ -73,7 +73,6 @@ public class MessagesLoader implements Client.ResultHandler {
   private boolean isLoading;
   private int loadingMode;
 
-  private final LongSparseArray<Pair<Long, TdApi.SponsoredMessage[]>> sponsoredMessages = new LongSparseArray<>();
   private boolean isLoadingSponsoredMessages;
 
   // private TGMessage edgeMessage;
@@ -109,12 +108,6 @@ public class MessagesLoader implements Client.ResultHandler {
       return;
     }
 
-    Pair<Long, TdApi.SponsoredMessage[]> cachedPair = sponsoredMessages.get(chatId);
-    if (cachedPair != null && cachedPair.first + TimeUnit.MINUTES.toMillis(TdConstants.SPONSORED_CACHE_TIME) >= tdlib.currentTimeMillis()) {
-      callback.runWithData(cachedPair.second);
-      return;
-    }
-
     isLoadingSponsoredMessages = true;
     tdlib.client().send(new TdApi.GetChatSponsoredMessages(chatId), object -> {
       UI.post(() -> {
@@ -131,7 +124,6 @@ public class MessagesLoader implements Client.ResultHandler {
           messages = new TdApi.SponsoredMessage[] { TGMessageSponsored.generateSponsoredMessage(tdlib) };
         }
 
-        sponsoredMessages.put(chatId, new Pair<>(tdlib.currentTimeMillis(), messages));
         callback.runWithData(messages);
       });
     });

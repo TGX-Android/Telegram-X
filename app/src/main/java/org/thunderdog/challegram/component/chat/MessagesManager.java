@@ -768,7 +768,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (!Config.SMOOTH_SCROLL_TO_BOTTOM_ENABLED || !smooth) {
       if (adapter.getMessage(0) != null && adapter.getMessage(0).isSponsored()) {
         controller.setScrollToBottomVisible(false, false, false);
-        manager.scrollToPositionWithOffset(1, Screen.dp(48f));
+        manager.scrollToPositionWithOffset(getHighestSponsoredMessageIndex(), Screen.dp(48f));
       } else {
         manager.scrollToPositionWithOffset(0, 0);
       }
@@ -1325,7 +1325,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (!adapter.addMessage(message, false, scrollToBottom)) {
           if (message.isSponsored()) {
             if (bottomFullyVisible) {
-              manager.scrollToPositionWithOffset(1, Screen.dp(48f));
+              manager.scrollToPositionWithOffset(getHighestSponsoredMessageIndex(), Screen.dp(48f));
             }
           } else {
             manager.scrollToPositionWithOffset(0, scrollOffsetInPixels);
@@ -1337,6 +1337,20 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     } else if (message.isSending()) {
       loadFromStart();
     }
+  }
+
+  private int getHighestSponsoredMessageIndex () {
+    if (adapter.getItems() == null) {
+      return 0;
+    }
+
+    for (int i = 0; i < adapter.getItems().size(); i++) {
+      if (!adapter.getItem(i).isSponsored()) {
+        return i;
+      }
+    }
+
+    return 0;
   }
 
   @Override
