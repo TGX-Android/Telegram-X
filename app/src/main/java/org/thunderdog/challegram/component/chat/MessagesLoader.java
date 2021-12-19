@@ -1467,7 +1467,12 @@ public class MessagesLoader implements Client.ResultHandler {
         TGMessage suitableMessage = null;
 
         if (!items.isEmpty()) {
-          suitableMessage = items.get(0).isSponsored() ? items.get(1) : items.get(0);
+          for (TGMessage message : items) {
+            if (!message.isSponsored()) {
+              suitableMessage = message;
+              break;
+            }
+          }
         }
 
         canLoadTop = specialMode != SPECIAL_MODE_SCHEDULED && (loadingLocal || (totalCount != 0 && getChatId() != 0));

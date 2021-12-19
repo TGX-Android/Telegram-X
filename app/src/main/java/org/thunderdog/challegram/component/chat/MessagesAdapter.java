@@ -457,8 +457,13 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
     TGMessage topMessage = top ? getMessage(getMessageCount() - 1) : null;
     boolean sponsoredFlag = bottomMessage != null && bottomMessage.isSponsored();
 
-    if (sponsoredFlag) {
-      bottomMessage = getMessage(1);
+    if (sponsoredFlag && items != null) {
+      for (TGMessage msg : items) {
+        if (!msg.isSponsored()) {
+          bottomMessage = msg;
+          break;
+        }
+      }
     }
 
     if (top) {
