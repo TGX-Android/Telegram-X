@@ -103,8 +103,8 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
     }
   }
 
-  public TdApi.MessageSender getSender () {
-    return userId != 0 ? new TdApi.MessageSenderUser(userId) : chatId != 0 ? new TdApi.MessageSenderChat(chatId) : null;
+  public TdApi.MessageSender getSenderId () {
+    return userId != 0 ? new TdApi.MessageSenderUser(userId) : chatId != 0 ? (ChatId.isUserChat(chatId) ? new TdApi.MessageSenderUser(tdlib.chatUserId(chatId)) : new TdApi.MessageSenderChat(chatId)) : null;
   }
 
   private static final float AVATAR_PLACEHOLDER_RADIUS = 25f;

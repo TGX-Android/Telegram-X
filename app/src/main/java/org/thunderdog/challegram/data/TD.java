@@ -3019,28 +3019,27 @@ public class TD {
   }
 
   public static @Nullable CharSequence getMemberDescription (TdlibDelegate context, TdApi.ChatMember member, boolean needFull) {
-    long inviterUserId = member.inviterUserId;
-    int permissionChangeDate = 0;
+    // long inviterUserId = member.inviterUserId;
     CharSequence result;
     switch (member.status.getConstructor()) {
       case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
         result = Lang.getString(R.string.ChannelOwner);
         break;
       case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR: {
-        result = getMemberDescriptionString(context, inviterUserId, permissionChangeDate, R.string.PromotedByXOnDate, R.string.PromotedByX, R.string.Administrator);
+        result = getMemberDescriptionString(context, member.inviterUserId, 0 /*FIXME server*/, R.string.PromotedByXOnDate, R.string.PromotedByX, R.string.Administrator);
         break;
       }
       case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR: {
-        result = getMemberDescriptionString(context, inviterUserId, permissionChangeDate, R.string.RestrictedByXOnDate, R.string.RestrictedByX, R.string.Restricted);
+        result = getMemberDescriptionString(context, member.inviterUserId, ((TdApi.ChatMemberStatusRestricted) member.status).isMember ? /*FIXME server*/ 0 : member.joinedChatDate, R.string.RestrictedByXOnDate, R.string.RestrictedByX, R.string.Restricted);
         break;
       }
       case TdApi.ChatMemberStatusBanned.CONSTRUCTOR: {
-        result = getMemberDescriptionString(context, inviterUserId, permissionChangeDate, R.string.BannedByXOnDate, R.string.BannedByX, R.string.Banned);
+        result = getMemberDescriptionString(context, member.inviterUserId, member.joinedChatDate, R.string.BannedByXOnDate, R.string.BannedByX, R.string.Banned);
         break;
       }
       case TdApi.ChatMemberStatusMember.CONSTRUCTOR: {
-        if (inviterUserId != 0) {
-          result = getMemberDescriptionString(context, inviterUserId, permissionChangeDate, R.string.InvitedByXOnDate, R.string.InvitedByX, 0);
+        if (member.inviterUserId != 0) {
+          result = getMemberDescriptionString(context, member.inviterUserId, 0, R.string.InvitedByXOnDate, R.string.InvitedByX, 0);
         } else {
           result = null;
         }

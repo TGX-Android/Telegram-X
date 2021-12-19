@@ -316,7 +316,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
 
         if (restrictMode != TD.RESTRICT_MODE_VIEW) {
           if (TD.isMember(member.status)) {
-            ids.append(R.id.btn_blockUser);
+            ids.append(R.id.btn_blockSender);
             colors.append(OPTION_COLOR_NORMAL);
             icons.append(R.drawable.baseline_remove_circle_24);
             strings.append(isChannel() ? R.string.ChannelRemoveUser : R.string.RemoveFromGroup);
@@ -336,7 +336,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
                   member.memberId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (tdlib.isChannel(Td.getSenderId(member.memberId)) ? R.string.UnbanMemberChannel : R.string.UnbanMemberGroup) :
                   R.string.UnbanMember
               );
-              ids.append(R.id.btn_unblockUser);
+              ids.append(R.id.btn_unblockSender);
               colors.append(OPTION_COLOR_NORMAL);
               icons.append(R.drawable.baseline_remove_circle_24);
             }
@@ -350,14 +350,14 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
       if (tdlib.isSelfUserId(content.getUserId())) {
         strings.append(R.string.ViewMessagesFromYou);
       } else {
-        strings.append(Lang.getString(content.getSender().getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.ViewMessagesFromUser : R.string.ViewMessagesFromChat, tdlib.senderName(content.getSender(), true)));
+        strings.append(Lang.getString(content.getSenderId().getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.ViewMessagesFromUser : R.string.ViewMessagesFromChat, tdlib.senderName(content.getSenderId(), true)));
       }
       icons.append(R.drawable.baseline_person_24);
       colors.append(OPTION_COLOR_NORMAL);
     }
 
     if (!ids.isEmpty()) {
-      String name = tdlib.senderName(content.getSender());
+      String name = tdlib.senderName(content.getSenderId());
       CharSequence info = TD.getMemberDescription(this, member, false);
       CharSequence date = TD.getMemberJoinDate(member);
       CharSequence result;
@@ -400,7 +400,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
                   return;
               }
 
-              tdlib.setChatMemberStatus(chatId, content.getSender(), newStatus, content.getMember().status, null);
+              tdlib.setChatMemberStatus(chatId, content.getSenderId(), newStatus, content.getMember().status, null);
             };
 
             if (ChatId.isBasicGroup(chatId)) {
@@ -417,11 +417,11 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
           case R.id.btn_restrictMember:
             editMember(content, true);
             break;
-          case R.id.btn_blockUser:
-            tdlib.ui().kickMember(getParentOrSelf(), chatId, content.getSender(), content.getMember().status);
+          case R.id.btn_blockSender:
+            tdlib.ui().kickMember(getParentOrSelf(), chatId, content.getSenderId(), content.getMember().status);
             break;
-          case R.id.btn_unblockUser:
-            tdlib.ui().unblockMember(getParentOrSelf(), chatId, content.getSender(), content.getMember().status);
+          case R.id.btn_unblockSender:
+            tdlib.ui().unblockMember(getParentOrSelf(), chatId, content.getSenderId(), content.getMember().status);
             break;
         }
         return true;
@@ -457,7 +457,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
     }
 
     EditRightsController c = new EditRightsController(context, tdlib);
-    c.setArguments(new EditRightsController.Args(chatId, content.getSender(), restrict, myStatus, member));
+    c.setArguments(new EditRightsController.Args(chatId, content.getSenderId(), restrict, myStatus, member));
     parent.navigateTo(c);
   }
 
@@ -553,8 +553,8 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
       final int size = data.size(); // First, remove users
       for (int i = size - 1; i >= 0; i--) {
         DoubleTextWrapper member = data.get(i);
-        if (indexOfMember(groupFull.members, member.getSender()) == -1 || (specificFilter != null && !TD.matchesFilter(specificFilter, member.getMember().status))) {
-          removeMember(member.getSender());
+        if (indexOfMember(groupFull.members, member.getSenderId()) == -1 || (specificFilter != null && !TD.matchesFilter(specificFilter, member.getMember().status))) {
+          removeMember(member.getSenderId());
         }
       }
 
@@ -660,7 +660,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
     }
     int i = 0;
     for (DoubleTextWrapper wrapper : array) {
-      if (Td.equalsTo(wrapper.getSender(), memberId)) {
+      if (Td.equalsTo(wrapper.getSenderId(), memberId)) {
         return i;
       }
       i++;

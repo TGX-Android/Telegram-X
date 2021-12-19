@@ -3778,7 +3778,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         result = Lang.getString(R.string.message_adminSignPlain);
     } else if (sender.isAnonymousGroupAdmin()) {
       result = !StringUtils.isEmpty(msg.authorSignature) ? msg.authorSignature : Lang.getString(R.string.message_adminSignPlain);
-    } else if (tdlib.isMultiChat(msg.chatId) && StringUtils.isEmpty(msg.authorSignature)) {
+    } else if (StringUtils.isEmpty(msg.authorSignature) && msg.chatId != 0 && tdlib.isMultiChat(msg.chatId)) {
       long chatId = sender.getChatId();
       if (tdlib.isChannel(chatId)) {
         result = Lang.getString(R.string.message_channelSign);
@@ -6905,7 +6905,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                   final TdApi.ChatMemberStatusRestricted oldBan = oldStatus.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR ? (TdApi.ChatMemberStatusRestricted) oldStatus : null;
                   final TdApi.ChatMemberStatusRestricted newBan = newStatus.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR ? (TdApi.ChatMemberStatusRestricted) newStatus : null;
 
-                  appendRight(b, R.string.EventLogRestrictedReadMessages, oldCanReadMessages, newCanReadMessages, false);
+                  if (memberId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
+                    appendRight(b, R.string.EventLogRestrictedReadMessages, oldCanReadMessages, newCanReadMessages, false);
+                  }
                   appendRight(b, R.string.EventLogRestrictedSendMessages, oldBan != null ? oldBan.permissions.canSendMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendMessages : newCanReadMessages, false);
                   appendRight(b, R.string.EventLogRestrictedSendMedia, oldBan != null ? oldBan.permissions.canSendMediaMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendMediaMessages : newCanReadMessages, false);
                   appendRight(b, R.string.EventLogRestrictedSendStickers, oldBan != null ? oldBan.permissions.canSendOtherMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendOtherMessages : newCanReadMessages, false);

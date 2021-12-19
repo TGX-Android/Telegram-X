@@ -8,9 +8,11 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.component.user.UserView;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Paints;
@@ -21,6 +23,7 @@ import org.thunderdog.challegram.util.text.Text;
 import java.util.ArrayList;
 
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.unit.BitwiseUtils;
 import me.vkryl.td.ChatId;
 
 public class TGUser implements UserProvider {
@@ -169,6 +172,20 @@ public class TGUser implements UserProvider {
     return chatId != 0 ? chatId : ChatId.fromUserId(getUserId());
   }
 
+  public TdApi.MessageSender getSenderId () {
+    if (userId != 0) {
+      return new TdApi.MessageSenderUser(userId);
+    } else if (chatId != 0) {
+      if (ChatId.isUserChat(chatId)) {
+        return new TdApi.MessageSenderUser(tdlib.chatUserId(chatId));
+      } else {
+        return new TdApi.MessageSenderChat(chatId);
+      }
+    } else {
+      throw new IllegalStateException();
+    }
+  }
+
   public void setChat (long chatId, @Nullable TdApi.Chat chat) {
     this.user = null;
     this.chatId = chatId;
@@ -177,6 +194,7 @@ public class TGUser implements UserProvider {
     this.nameText = tdlib.chatTitle(chat);
     this.nameFake = Text.needFakeBold(nameText);
     this.nameWidth = U.measureText(nameText, Paints.getTitleBigPaint());
+    updateStatus();
   }
 
   public void setUser (@Nullable TdApi.User user, int creatorId) {
@@ -234,12 +252,12 @@ public class TGUser implements UserProvider {
     if ((flags & FLAG_LOCAL) != 0) {
       statusText = Strings.formatPhone(phoneNumber, false, true);
     } else if (statusText == null) {
-      if (tdlib.cache().isOnline(userId)) {
-        flags |= FLAG_ONLINE;
+      if (userId != 0) {
+        flags = BitwiseUtils.setFlag(flags, FLAG_ONLINE, tdlib.cache().isOnline(userId));
+        statusText = TD.getChatMemberSubtitle(tdlib, userId, user, (flags & FLAG_NO_BOT_STATE) == 0);
       } else {
-        flags &= ~FLAG_ONLINE;
+        statusText = tdlib.isMultiChat(chatId) ? Lang.lowercase(Lang.getString(R.string.Group)) : tdlib.status().chatStatus(chatId).toString();
       }
-      statusText = TD.getChatMemberSubtitle(tdlib, userId, user, (flags & FLAG_NO_BOT_STATE) == 0);
     } else {
       flags &= ~FLAG_ONLINE;
     }

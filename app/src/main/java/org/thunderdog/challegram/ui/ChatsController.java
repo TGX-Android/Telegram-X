@@ -1646,15 +1646,15 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
             } else {
               showOptions(
                 Lang.pluralBold(botCount == count ? R.string.BlockXBots : R.string.BlockXUsers, count),
-                new int[]{R.id.btn_blockUser, R.id.btn_cancel},
-                new String[]{Lang.getString(R.string.BlockContact), Lang.getString(R.string.Cancel)},
+                new int[]{R.id.btn_blockSender, R.id.btn_cancel},
+                new String[] {Lang.getString(R.string.BlockContact), Lang.getString(R.string.Cancel)},
                 new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL},
                 new int[]{R.drawable.baseline_block_24, R.drawable.baseline_cancel_24},
                 (v, optionId) -> {
-                  if (optionId == R.id.btn_unblockUser || optionId == R.id.btn_blockUser) {
+                  if (optionId == R.id.btn_unblockSender || optionId == R.id.btn_blockSender) {
                     for (int i = selectedChats.size() - 1; i >= 0; i--) {
                       long chatId = selectedChats.keyAt(i);
-                      tdlib.blockSender(tdlib.sender(chatId), optionId == R.id.btn_blockUser, tdlib.okHandler(after));
+                      tdlib.blockSender(tdlib.sender(chatId), optionId == R.id.btn_blockSender, tdlib.okHandler(after));
                     }
                   }
                   return true;
