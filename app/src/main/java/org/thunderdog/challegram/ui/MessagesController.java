@@ -7011,6 +7011,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (info == null || info.totalCount == 0 || (chat != null && tdlib.settings().isRequestsDismissed(chat.id, info))) {
       topBar.setItemVisible(requestsItem, false, isFocused());
     } else {
+      if (info.totalCount > 0) {
+        tdlib.settings().restoreRequests(chat.id, true);
+      }
+
       requestsView.setInfo(info, isFocused());
       topBar.setItemVisible(requestsItem, true, isFocused());
     }

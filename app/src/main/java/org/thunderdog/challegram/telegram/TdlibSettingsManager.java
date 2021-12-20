@@ -239,15 +239,17 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     }
   }
 
-  public void restoreRequests (long chatId) {
+  public void restoreRequests (long chatId, boolean silent) {
     Settings.instance().remove(key(DISMISS_REQUESTS_PREFIX, tdlib.id()) + chatId);
-    for (DismissRequestsListener listener : dismissRequestsListeners) {
-      listener.onJoinRequestsRestore(chatId);
+    if (!silent) {
+      for (DismissRequestsListener listener : dismissRequestsListeners) {
+        listener.onJoinRequestsRestore(chatId);
+      }
     }
   }
 
   public boolean isRequestsDismissed (long chatId, TdApi.ChatJoinRequestsInfo pendingInfo) {
-    return pendingInfo == null || Settings.instance().getLongArray(key(DISMISS_REQUESTS_PREFIX, tdlib.id()) + chatId) == pendingInfo.userIds;
+    return pendingInfo == null || Arrays.equals(Settings.instance().getLongArray(key(DISMISS_REQUESTS_PREFIX, tdlib.id()) + chatId), pendingInfo.userIds);
   }
 
   public boolean forcePlainModeInChannels () {
