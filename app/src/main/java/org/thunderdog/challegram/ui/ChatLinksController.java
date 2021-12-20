@@ -698,7 +698,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     } else {
       items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
-      items.add(new ListItem(ListItem.TYPE_EMBED_STICKER).setData(tdlib.findUtyanEmoji(UTYAN_EMOJI)));
+      items.add(new ListItem(ListItem.TYPE_EMBED_STICKER).setData(tdlib.findTgxEmoji(UTYAN_EMOJI)));
     }
 
     for (TdApi.ChatInviteLink inviteLink : inviteLinks) {

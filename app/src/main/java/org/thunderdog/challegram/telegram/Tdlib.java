@@ -406,8 +406,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private final HashMap<Long, TdApi.Chat> chats = new HashMap<>();
   private final HashMap<String, TdlibChatList> chatLists = new HashMap<>();
   private final StickerSet
-    utyan = new StickerSet(AnimatedEmojiListener.TYPE_EMOJI, "utyan", false),
-    // animatedTgxEmoji = new StickerSet(AnimatedEmojiListener.TYPE_TGX, "AnimatedTgxEmojies", false),
+    animatedTgxEmoji = new StickerSet(AnimatedEmojiListener.TYPE_TGX, "AnimatedTgxEmojies", false),
     animatedDiceExplicit = new StickerSet(AnimatedEmojiListener.TYPE_DICE, "BetterDice", true);
   private final HashSet<Long> knownChatIds = new HashSet<>();
   private final HashMap<Long, Integer> chatOnlineMemberCount = new HashMap<>();
@@ -614,7 +613,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   synchronized void checkDeviceTokenImpl (@Nullable Runnable onDone) {
     final String deviceToken = context.getToken();
-    if (StringUtils.isEmpty(deviceToken) || status != STATUS_READY)
+    if (StringUtils.isEmpty(deviceToken) || authorizationStatus() != STATUS_READY)
       return;
     long myUserId = myUserId();
     if (myUserId == 0)
@@ -883,9 +882,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private boolean shouldPause () {
     if (instancePaused)
       return false; // Instance already paused
-    if (status == STATUS_UNKNOWN)
+    if (authorizationStatus() == STATUS_UNKNOWN)
       return false; // TDLib takes too long to launch. Give it a chance to initialize
-    if ((status == STATUS_UNAUTHORIZED && authorizationState != null && authorizationState.getConstructor() != TdApi.AuthorizationStateWaitPhoneNumber.CONSTRUCTOR))
+    if ((authorizationState != null && authorizationState.getConstructor() != TdApi.AuthorizationStateWaitPhoneNumber.CONSTRUCTOR))
       return false; // User has started authorization process. Give them a chance to complete it.
     /*if (context().hasUi()) {
         // TODO limit couple most recent used accounts?
@@ -1052,7 +1051,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   // Base
 
-  private int status;
   private TdApi.AuthorizationState authorizationState;
 
   public TdApi.AuthorizationState authorizationState () {
@@ -1113,26 +1111,28 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public int authorizationStatus () {
-    return status;
+    synchronized (dataLock) {
+      return getStatus(authorizationState);
+    }
   }
-
-  private TdApi.AuthorizationState currentAuthState;
 
   @TdlibThread
   private void updateAuthState (ClientHolder context, TdApi.AuthorizationState newAuthState) {
-    final int prevStatus = getStatus(currentAuthState);
-    this.currentAuthState = newAuthState;
+    final int prevStatus = authorizationStatus();
+    synchronized (dataLock) {
+      this.authorizationState = newAuthState;
+    }
+    final int newStatus = authorizationStatus();
+
     closeListeners.trigger(true);
 
-    final int status = getStatus(newAuthState);
-
-    if (prevStatus == STATUS_UNKNOWN && status != STATUS_UNKNOWN) {
+    if (prevStatus == STATUS_UNKNOWN && newStatus != STATUS_UNKNOWN) {
       synchronized (dataLock) {
         resetChatsData();
       }
     }
 
-    switch (status) {
+    switch (newStatus) {
       case STATUS_UNKNOWN: {
         if (newAuthState.getConstructor() == TdApi.AuthorizationStateClosed.CONSTRUCTOR) {
           RunnableBool eraseActor;
@@ -1207,27 +1207,42 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         break;
       }
       default:
-        throw new IllegalStateException(Integer.toString(status));
+        throw new IllegalStateException(Integer.toString(newStatus));
     }
-    if (status != STATUS_UNKNOWN && Log.needMeasureLaunchSpeed() && !context.hasLogged()) {
+    if (newStatus != STATUS_UNKNOWN && Log.needMeasureLaunchSpeed() && !context.hasLogged()) {
       long timeSinceInitialization = context.timeSinceInitializationMs();
       long timeWasted = context.timeWasted();
       Log.v("INITIALIZATION: TDLIB FINISHED INITIALIZATION & SENT VALID AUTH STATE IN %dMS, WASTED: %dMS", timeSinceInitialization - timeWasted, timeWasted);
     }
     Log.i(Log.TAG_ACCOUNTS, "updateAuthState accountId:%d %s", accountId, newAuthState.getClass().getSimpleName());
-    long myUserId = myUserId();
-    ui().sendMessage(ui().obtainMessage(MSG_ACTION_SET_STATUS,
-      BitwiseUtils.splitLongToFirstInt(myUserId),
-      BitwiseUtils.splitLongToSecondInt(myUserId),
-      newAuthState
-    ));
-    if (status == STATUS_READY) {
+    if (newStatus == STATUS_READY) {
       setNeedPeriodicSync(true);
-    } else if (status == STATUS_UNAUTHORIZED) {
+    } else if (newStatus == STATUS_UNAUTHORIZED) {
       setNeedPeriodicSync(false);
     }
 
-    if (status == STATUS_READY && stressTest > 0) {
+    final long myUserId = myUserId();
+    context().onAuthStateChanged(this, newAuthState, newStatus, myUserId);
+    listeners().updateAuthorizationState(newAuthState);
+    if (newStatus != STATUS_READY) {
+      startupPerformed = false;
+    }
+    if (prevStatus == STATUS_UNKNOWN && newStatus != prevStatus) {
+      onInitialized();
+    }
+    if (prevStatus != STATUS_READY && newStatus == STATUS_READY) {
+      runStartupChecks();
+    }
+    if (prevStatus != STATUS_UNAUTHORIZED && newStatus == STATUS_UNAUTHORIZED) {
+      Log.i("Performing account cleanup for accountId:%d", accountId);
+      listeners().performCleanup();
+    } else if (newStatus == STATUS_READY) {
+      onPerformStartup();
+    }
+    if (newStatus == STATUS_UNAUTHORIZED)
+      checkChangeLogs(false, false);
+
+    if (newStatus == STATUS_READY && stressTest > 0) {
       clientHolder().sendClose();
     }
   }
@@ -1292,35 +1307,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     throw new IllegalArgumentException(state.toString());
   }
 
-  @UiThread
-  private void processAuthState (TdApi.AuthorizationState newAuthState, long userId) {
-    int status = getStatus(newAuthState);
-    int oldStatus = this.status;
-    this.status = status;
-    this.authorizationState = newAuthState;
-
-    context.onAuthStateChanged(this, newAuthState, status, userId);
-    listeners().updateAuthorizationState(newAuthState);
-    if (this.status != STATUS_READY) {
-      startupPerformed = false;
-    }
-    if (oldStatus == STATUS_UNKNOWN && status != oldStatus) {
-      onInitialized();
-    }
-    if (oldStatus != STATUS_READY && status == STATUS_READY) {
-      runStartupChecks();
-    }
-    if (oldStatus != STATUS_UNAUTHORIZED && status == STATUS_UNAUTHORIZED) {
-      Log.i("Performing account cleanup for accountId:%d", accountId);
-      listeners().performCleanup();
-    } else if (status == STATUS_READY) {
-      onPerformStartup();
-    }
-    if (status == STATUS_UNAUTHORIZED)
-      checkChangeLogs(false, false);
-  }
-
   public boolean checkChangeLogs (boolean alreadySent, boolean test) {
+    final int status = authorizationStatus();
     if (status != STATUS_READY && status != STATUS_UNAUTHORIZED) {
       return false;
     }
@@ -1541,7 +1529,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
     if (Settings.instance().forceTdlibRestart()) {
       if (!U.awaitLatch(latch, 10, TimeUnit.SECONDS)) {
-        RuntimeException e = new RuntimeException("Long close detected. authState: " + currentAuthState + ", closeState: " + (client != null ? client.closeState : -1));
+        RuntimeException e = new RuntimeException("Long close detected. authState: " + authorizationState + ", closeState: " + (client != null ? client.closeState : -1));
         Tracer.onOtherError(e);
         throw e;
       }
@@ -5204,7 +5192,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public void sync (long pushId, @Nullable Runnable after, boolean needNotifications, boolean needNetworkRequest) {
-    TDLib.Tag.notifications(pushId, accountId, "Performing sync needNotification: %b, needNetworkRequest: %b, hasAfter: %b. Awaiting connection. Connection state: %d, status: %d", needNotifications, needNetworkRequest, after != null, connectionState, status);
+    TDLib.Tag.notifications(pushId, accountId, "Performing sync needNotification: %b, needNetworkRequest: %b, hasAfter: %b. Awaiting connection. Connection state: %d, status: %d", needNotifications, needNetworkRequest, after != null, connectionState, authorizationStatus());
     incrementReferenceCount(REFERENCE_TYPE_SYNC);
     Runnable onDone = () -> {
       if (after != null) {
@@ -5259,7 +5247,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
       switch (result.getConstructor()) {
         case TdApi.Ok.CONSTRUCTOR: {
-          TDLib.Tag.notifications(pushId, accountId, "Ensuring updateActiveNotifications was sent.");
+          TDLib.Tag.notifications(pushId, accountId, "Ensuring updateActiveNotifications was sent. ignoreNotificationUpdates:%b, receivedActiveNotificationsTime:%d, receivedActiveNotificationsIgnored: %b", ignoreNotificationUpdates, receivedActiveNotificationsTime, receivedActiveNotificationsIgnored);
           awaitNotificationInitialization(notificationChecker);
           break;
         }
@@ -5644,7 +5632,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   // UI handler
 
-  private static final int MSG_ACTION_SET_STATUS = 0;
   private static final int MSG_ACTION_UPDATE_CHAT_ACTION = 1;
   private static final int MSG_ACTION_UPDATE_CALL = 2;
   private static final int MSG_ACTION_DISPATCH_UNREAD_COUNTER = 3;
@@ -5659,12 +5646,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   void handleUiMessage (Message msg) {
     switch (msg.what) {
-      case MSG_ACTION_SET_STATUS:
-        processAuthState(
-          (TdApi.AuthorizationState) msg.obj,
-          BitwiseUtils.mergeLong(msg.arg1, msg.arg2)
-        );
-        break;
       case MSG_ACTION_UPDATE_CHAT_ACTION:
         statusManager.onUpdateChatUserAction((TdApi.UpdateChatAction) msg.obj);
         break;
@@ -5752,13 +5733,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     myProfilePhoto = null;
     pendingMessageTexts.clear();
     pendingMessageCaptions.clear();
-    utyan.clear();
     animatedDiceExplicit.clear();
     suggestedActions.clear();
     telegramServiceNotificationsChatId = TdConstants.TELEGRAM_ACCOUNT_ID;
     repliesBotChatId = TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID;
     sessionsInfo = null;
-    // animatedTgxEmoji.clear();
+    animatedTgxEmoji.clear();
   }
 
   public static class RtcServer {
@@ -5857,11 +5837,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
-  @Nullable
-  public TdApi.Sticker findUtyanEmoji (String emoji) {
-    return utyan.find(emoji);
-  }
-
   private TdApi.Sticker findExplicitDiceEmoji (int value) {
     if (!Settings.instance().getNewSetting(Settings.SETTING_FLAG_EXPLICIT_DICE))
       return null;
@@ -5925,10 +5900,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return defaultValue;
   }
 
-  /*@Nullable
+  @Nullable
   public TdApi.Sticker findTgxEmoji (String emoji) {
     return animatedTgxEmoji.find(emoji);
-  }*/
+  }
 
   @TdlibThread
   private void onUpdateHavePendingNotifications (TdApi.UpdateHavePendingNotifications update) {
@@ -5946,14 +5921,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private long receivedActiveNotificationsTime;
+  private boolean receivedActiveNotificationsIgnored;
 
   @TdlibThread
   private void onUpdateActiveNotifications (TdApi.UpdateActiveNotifications update) {
     TDLib.Tag.notifications(0, accountId, "Received updateActiveNotifications, ignore: %b", ignoreNotificationUpdates);
-    if (!ignoreNotificationUpdates) {
-      receivedActiveNotificationsTime = SystemClock.uptimeMillis();
-      notificationManager.onUpdateActiveNotifications(update, this::dispatchNotificationsInitialized);
+    if (ignoreNotificationUpdates && update.groups.length > 0) {
+      update = new TdApi.UpdateActiveNotifications(new TdApi.NotificationGroup[0]);
+      receivedActiveNotificationsIgnored = true;
+    } else {
+      receivedActiveNotificationsIgnored = false;
     }
+    receivedActiveNotificationsTime = SystemClock.uptimeMillis();
+    notificationManager.onUpdateActiveNotifications(update, this::dispatchNotificationsInitialized);
   }
 
   @TdlibThread
@@ -7323,7 +7303,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private void updateStickerSet (TdApi.StickerSet stickerSet) {
-    utyan.update(this, stickerSet);
+    animatedTgxEmoji.update(this, stickerSet);
     animatedDiceExplicit.update(this, stickerSet);
     listeners.updateStickerSet(stickerSet);
   }
@@ -7900,23 +7880,28 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private final JobList
-    initializationListeners = new JobList(() -> status != STATUS_UNKNOWN).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once received authorization state
-    connectionListeners = new JobList(() -> status != STATUS_UNKNOWN && connectionState == STATE_CONNECTED).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once connected
-    notificationInitListeners = new JobList(() -> status != STATUS_UNKNOWN && (status == STATUS_UNAUTHORIZED || haveInitializedNotifications)).onAddRemove(this::onJobAdded, this::onJobRemoved),
+    initializationListeners = new JobList(() -> authorizationStatus() != STATUS_UNKNOWN).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once received authorization state
+    connectionListeners = new JobList(() -> authorizationStatus() != STATUS_UNKNOWN && connectionState == STATE_CONNECTED).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once connected
+    notificationInitListeners = new JobList(() -> {
+      final int status = authorizationStatus();
+      return status == STATUS_UNAUTHORIZED || (status == STATUS_READY && haveInitializedNotifications);
+    }).onAddRemove(this::onJobAdded, this::onJobRemoved),
     notificationListeners = new JobList(() -> !havePendingNotifications).onAddRemove(this::onJobAdded, this::onJobRemoved),
     notificationConsistencyListeners = new JobList(() -> false),
-    closeListeners = new JobList(() -> currentAuthState != null && currentAuthState.getConstructor() == TdApi.AuthorizationStateClosed.CONSTRUCTOR); // Executed once no pending notifications remaining
+    closeListeners = new JobList(() -> authorizationState != null && authorizationState.getConstructor() == TdApi.AuthorizationStateClosed.CONSTRUCTOR); // Executed once no pending notifications remaining
 
+  @AnyThread
   public void awaitInitialization (@NonNull Runnable after) {
     initializationListeners.add(after);
   }
 
+  @AnyThread
   public void awaitNotificationInitialization (@NonNull Runnable after) {
     notificationInitListeners.add(after);
   }
 
   public void awaitClose (@NonNull Runnable after, boolean force) {
-    if (force || (currentAuthState != null && currentAuthState.getConstructor() == TdApi.AuthorizationStateLoggingOut.CONSTRUCTOR)) {
+    if (force || (authorizationState != null && authorizationState.getConstructor() == TdApi.AuthorizationStateLoggingOut.CONSTRUCTOR)) {
       closeListeners.add(after);
     } else {
       after.run();
@@ -7933,17 +7918,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   // Events
 
+  @TdlibThread
   private void onInitialized () {
     initializationListeners.trigger();
     notificationInitListeners.trigger();
     connectionListeners.trigger();
   }
 
+  @TdlibThread
   private void runStartupChecks () {
     checkDeviceToken();
-    // animatedTgxEmoji.load(this);
-    utyan.load(this);
-
+    animatedTgxEmoji.load(this);
     if (Settings.instance().getNewSetting(Settings.SETTING_FLAG_EXPLICIT_DICE) && !isDebugInstance()) {
       animatedDiceExplicit.load(this);
     }

@@ -1159,10 +1159,12 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return TdlibAccount.NO_ID;
   }
 
+  @UiThread
   public void changePreferredAccountId (int accountId, @AccountSwitchReason int reason) {
     changePreferredAccountId(accountId, reason, null);
   }
 
+  @UiThread
   public void changePreferredAccountId (int accountId, @AccountSwitchReason int reason, @Nullable RunnableBool after) {
     if (this.preferredAccountId == accountId) {
       if (after != null) after.runWithBool(false);
@@ -1180,12 +1182,14 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
         if (after != null) after.runWithBool(false);
         return;
       }
-      Log.i(Log.TAG_ACCOUNTS, "Switching preferred account %d -> %d, reason:%d", this.preferredAccountId, accountId, reason);
-      int oldAccountId = this.preferredAccountId;
-      this.preferredAccountId = accountId;
-      onAccountSwitched(accounts.get(accountId), reason, oldAccountId >= 0 && oldAccountId < accounts.size() ? accounts.get(oldAccountId) : null);
-      savePreferredAccountId(accountId);
-      if (after != null) after.runWithBool(true);
+      runOnUiThread(() -> {
+        Log.i(Log.TAG_ACCOUNTS, "Switching preferred account %d -> %d, reason:%d", this.preferredAccountId, accountId, reason);
+        int oldAccountId = this.preferredAccountId;
+        this.preferredAccountId = accountId;
+        onAccountSwitched(accounts.get(accountId), reason, oldAccountId >= 0 && oldAccountId < accounts.size() ? accounts.get(oldAccountId) : null);
+        savePreferredAccountId(accountId);
+        if (after != null) after.runWithBool(true);
+      });
     });
   }
 
@@ -1755,7 +1759,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     /*handler.sendMessage(Message.obtain(handler, ACTION_DISPATCH_KNOWN_USER_ID, accountId, userId));*/
   }
 
-  @UiThread
+  @TdlibThread
   void onAuthStateChanged (Tdlib tdlib, TdApi.AuthorizationState authState, int status, long userId) {
     if (status == Tdlib.STATUS_UNKNOWN) {
       return;
@@ -2121,6 +2125,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     boolean isUi = inUiThread();
     CountDownLatch latch = isUi ? null : new CountDownLatch(1);
     runWithWakeLock(manager -> runnable.runWithData(latch));
+  }
+
+  public void runOnUiThread (Runnable runnable) {
+    UI.post(runnable); // TODO special handler
   }
 
   // Language
