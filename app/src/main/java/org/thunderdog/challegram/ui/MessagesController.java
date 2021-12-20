@@ -4101,7 +4101,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (b.length() > 0) {
         b.append("\n\n");
       }
-      b.append(Lang.getString(msg.isChannel() ? R.string.RestrictSavingChannelInfo : R.string.RestrictSavingGroupInfo));
+      TdApi.MessageSender senderId = msg.getMessage().senderId;
+      int resId;
+      if (tdlib.cache().senderBot(senderId)) {
+        resId = R.string.RestrictSavingBotInfo;
+      } else if (tdlib.isChannel(senderId)) {
+        resId = R.string.RestrictSavingChannelInfo;
+      } else if (tdlib.isUser(senderId)) {
+        resId = R.string.RestrictSavingUserInfo;
+      } else {
+        resId = R.string.RestrictSavingGroupInfo;
+      }
+      b.append(Lang.getString(resId));
     }
     String text = b.toString().trim();
     patchReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, disableViewCounter);
