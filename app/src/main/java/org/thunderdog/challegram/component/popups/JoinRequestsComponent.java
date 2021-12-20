@@ -243,7 +243,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
 
     if (!isBottomSheet && !isSeparateLink) {
       items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
-      items.add(new ListItem(ListItem.TYPE_EMBED_STICKER).setData(tdlib().findUtyanEmoji(UTYAN_EMOJI)));
+      items.add(new ListItem(ListItem.TYPE_EMBED_STICKER).setData(tdlib().findTgxEmoji(UTYAN_EMOJI)));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     }
 
