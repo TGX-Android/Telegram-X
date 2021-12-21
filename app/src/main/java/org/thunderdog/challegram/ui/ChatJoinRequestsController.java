@@ -2,37 +2,19 @@ package org.thunderdog.challegram.ui;
 
 import android.content.Context;
 import android.view.View;
+import android.widget.LinearLayout;
 
-import androidx.annotation.Nullable;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.popups.JoinRequestsComponent;
-import org.thunderdog.challegram.component.sticker.TGStickerObj;
-import org.thunderdog.challegram.component.user.RemoveHelper;
-import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.TGUser;
+import org.thunderdog.challegram.navigation.HeaderView;
+import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.telegram.TdlibContext;
-import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.v.CustomRecyclerView;
-import org.thunderdog.challegram.widget.BaseView;
-import org.thunderdog.challegram.widget.EmbeddableStickerView;
-import org.thunderdog.challegram.widget.ForceTouchView;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import me.vkryl.core.ArrayUtils;
-
-public class ChatJoinRequestsController extends RecyclerViewController<ChatJoinRequestsController.Args> implements View.OnClickListener {
+public class ChatJoinRequestsController extends RecyclerViewController<ChatJoinRequestsController.Args> implements View.OnClickListener, Menu {
   private JoinRequestsComponent component;
 
   public ChatJoinRequestsController (Context context, Tdlib tdlib) {
@@ -93,5 +75,58 @@ public class ChatJoinRequestsController extends RecyclerViewController<ChatJoinR
       this.inviteLink = inviteLink;
       this.parentController = parentController;
     }
+  }
+
+  // Search
+
+  @Override
+  protected int getMenuId () {
+    return R.id.menu_search;
+  }
+
+  @Override
+  protected int getSearchMenuId () {
+    return R.id.menu_clear;
+  }
+
+  @Override
+  public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
+    switch (id) {
+      case R.id.menu_search: {
+        header.addSearchButton(menu, this);
+        break;
+      }
+      case R.id.menu_clear: {
+        header.addClearButton(menu, this);
+        break;
+      }
+    }
+  }
+
+  @Override
+  public void onMenuItemPressed (int id, View view) {
+    switch (id) {
+      case R.id.menu_btn_search: {
+        if (headerView != null) {
+          headerView.openSearchMode();
+        }
+        break;
+      }
+      case R.id.menu_btn_clear: {
+        clearSearchInput();
+        break;
+      }
+    }
+  }
+
+  @Override
+  protected void onLeaveSearchMode () {
+    component.search(null);
+  }
+
+  @Override
+  protected void onSearchInputChanged (final String query) {
+    super.onSearchInputChanged(query);
+    component.search(Strings.clean(query.trim()));
   }
 }

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
@@ -11,11 +12,14 @@ import org.thunderdog.challegram.component.attach.MediaBottomBaseController;
 import org.thunderdog.challegram.component.attach.MediaLayout;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
+import org.thunderdog.challegram.navigation.HeaderView;
+import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.tool.Strings;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 
-public class JoinRequestsController extends MediaBottomBaseController<Void> implements View.OnClickListener {
+public class JoinRequestsController extends MediaBottomBaseController<Void> implements View.OnClickListener, Menu {
   private boolean allowExpand;
 
   private final TdApi.ChatJoinRequestsInfo requestsInfo;
@@ -104,5 +108,58 @@ public class JoinRequestsController extends MediaBottomBaseController<Void> impl
   public void destroy () {
     super.destroy();
     component.destroy();
+  }
+
+  // Search
+
+  @Override
+  protected int getMenuId () {
+    return R.id.menu_search;
+  }
+
+  @Override
+  protected int getSearchMenuId () {
+    return R.id.menu_clear;
+  }
+
+  @Override
+  public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
+    switch (id) {
+      case R.id.menu_search: {
+        header.addSearchButton(menu, this);
+        break;
+      }
+      case R.id.menu_clear: {
+        header.addClearButton(menu, this);
+        break;
+      }
+    }
+  }
+
+  @Override
+  public void onMenuItemPressed (int id, View view) {
+    switch (id) {
+      case R.id.menu_btn_search: {
+        //if (users != null && !users.isEmpty()) {
+          mediaLayout.getHeaderView().openSearchMode();
+          headerView = mediaLayout.getHeaderView();
+        //}
+        break;
+      }
+      case R.id.menu_btn_clear: {
+        clearSearchInput();
+        break;
+      }
+    }
+  }
+
+  @Override
+  protected void onLeaveSearchMode () {
+    component.search(null);
+  }
+
+  @Override
+  protected void onSearchInputChanged (final String query) {
+    component.search(Strings.clean(query.trim()));
   }
 }

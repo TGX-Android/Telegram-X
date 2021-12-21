@@ -30,6 +30,7 @@ import org.thunderdog.challegram.widget.EmbeddableStickerView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.ArrayUtils;
@@ -44,6 +45,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
   private int loadOffset;
   private boolean canLoadMore;
   private boolean isLoadingMore;
+  private String currentQuery;
 
   private final ViewController<?> controller;
   private final long chatId;
@@ -88,6 +90,10 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
 
   public boolean needAsynchronousAnimation () {
     return joinRequests == null;
+  }
+
+  public boolean inSearchMode () {
+    return currentQuery != null && !currentQuery.isEmpty();
   }
 
   public void onClick (View v) {
@@ -138,7 +144,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
 
       @Override
       protected void setJoinRequest (ListItem item, int position, DoubleTextViewWithIcon group, boolean isUpdate) {
-        TGUser user = joinRequests.get((isBottomSheet || isSeparateLink) ? position : position - 3);
+        TGUser user = joinRequests.get((isBottomSheet || isSeparateLink || inSearchMode()) ? position : position - 3);
         group.setTag(user);
         group.text().setAvatar(user.getAvatar(), user.getAvatarPlaceholderMetadata());
         group.text().setText(user.getName(), user.getStatus());
@@ -171,8 +177,14 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
       new ListItem(ListItem.TYPE_PROGRESS)
     }, false);
 
-    tdlib().client().send(new TdApi.GetChatJoinRequests(chatId, inviteLink, null,  null, 20), result -> {
+    loadInitial();
+  }
+
+  private void loadInitial () {
+    tdlib().client().send(new TdApi.GetChatJoinRequests(chatId, inviteLink, currentQuery,null, 20), result -> {
       if (result.getConstructor() == TdApi.ChatJoinRequests.CONSTRUCTOR) {
+        joinRequestsTdlib.clear();
+
         TdApi.ChatJoinRequests senders = (TdApi.ChatJoinRequests) result;
         ArrayList<TGUser> list = new ArrayList<>(senders.requests.length);
 
@@ -225,7 +237,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
       if (itemIdx == -1) return;
       joinRequests.remove(itemIdx);
       joinRequestsTdlib.remove(itemIdx);
-      adapter.removeItem((isBottomSheet || isSeparateLink) ? itemIdx : itemIdx + 3);
+      adapter.removeItem((isBottomSheet || isSeparateLink || inSearchMode()) ? itemIdx : itemIdx + 3);
       onRequestDecided();
     });
   }
@@ -241,7 +253,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
   private void buildCells () {
     ArrayList<ListItem> items = new ArrayList<>();
 
-    if (!isBottomSheet && !isSeparateLink) {
+    if (!isBottomSheet && !isSeparateLink && !inSearchMode()) {
       items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
       items.add(new ListItem(ListItem.TYPE_EMBED_STICKER).setData(tdlib().findTgxEmoji(UTYAN_EMOJI)));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -257,7 +269,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
-    if (isBottomSheet && !canLoadMore) {
+    if (isBottomSheet && !canLoadMore && !inSearchMode()) {
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, isChannel ? R.string.InviteLinkRequestsHintChannel : R.string.InviteLinkRequestsHint));
     }
 
@@ -270,7 +282,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
     }
 
     isLoadingMore = true;
-    tdlib().client().send(new TdApi.GetChatJoinRequests(chatId, inviteLink, null, joinRequestsTdlib.get(joinRequestsTdlib.size() - 1), 20), this);
+    tdlib().client().send(new TdApi.GetChatJoinRequests(chatId, inviteLink, currentQuery, joinRequestsTdlib.get(joinRequestsTdlib.size() - 1), 20), this);
   }
 
   private int indexOfSender (long chatId) {
@@ -289,7 +301,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
   private void addSenders (ArrayList<TGUser> newSenders) {
     if (newSenders.isEmpty())
       return;
-    final int startIndex = joinRequests.size() - 1;
+    final int startIndex = joinRequests.size();
     joinRequests.ensureCapacity(joinRequests.size() + newSenders.size());
     joinRequests.addAll(newSenders);
     List<ListItem> out = adapter.getItems();
@@ -299,7 +311,9 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
     }
     if (!canLoadMore) {
       out.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-      out.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.InviteLinkRequestsHint));
+      if (!inSearchMode()) {
+        out.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.InviteLinkRequestsHint));
+      }
     }
     adapter.notifyItemRangeInserted(startIndex, newSenders.size() + (!canLoadMore ? 2 : 0));
   }
@@ -312,6 +326,17 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
     initialContentHeight += SettingHolder.measureHeightForType(ListItem.TYPE_SHADOW_TOP);
 
     return initialContentHeight;
+  }
+
+  public void search (String query) {
+    if (Objects.equals(currentQuery, query)) {
+      return;
+    }
+
+    isLoadingMore = false;
+    loadOffset = 0;
+    currentQuery = query;
+    loadInitial();
   }
 
   @Override
