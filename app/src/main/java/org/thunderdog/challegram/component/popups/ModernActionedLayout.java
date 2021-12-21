@@ -18,9 +18,10 @@ public class ModernActionedLayout extends MediaLayout {
 
   public static void showJoinRequests (ViewController<?> context, long chatId, TdApi.ChatJoinRequestsInfo requestsInfo) {
     ModernActionedLayout mal = new ModernActionedLayout(context);
-    mal.setController(new JoinRequestsController(mal, chatId, requestsInfo));
+    JoinRequestsController jrc = new JoinRequestsController(mal, chatId, requestsInfo);
+    jrc.postOnAnimationExecute(mal::show);
+    mal.setController(jrc);
     mal.initCustom();
-    mal.show();
   }
 
   public ModernActionedLayout (ViewController<?> context) {
