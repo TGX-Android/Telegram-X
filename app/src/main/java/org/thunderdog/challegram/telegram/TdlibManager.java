@@ -1776,13 +1776,17 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
         checkPauseTimeouts(null);
       }
       if (isUnauthorized && accountId == preferredAccountId) {
-        int newAccountId = findNextAccountId(accountId);
-        if (newAccountId != TdlibAccount.NO_ID) {
-          changePreferredAccountId(newAccountId, SWITCH_REASON_UNAUTHORIZED);
-        }
+        runOnUiThread(() -> {
+          int newAccountId = findNextAccountId(accountId);
+          if (newAccountId != TdlibAccount.NO_ID) {
+            changePreferredAccountId(newAccountId, SWITCH_REASON_UNAUTHORIZED);
+          }
+        });
       }
     }
-    global().notifyAuthorizationStateChanged(accounts.get(accountId), authState, status);
+    runOnUiThread(() -> {
+      global().notifyAuthorizationStateChanged(accounts.get(accountId), authState, status);
+    });
   }
 
   // Config

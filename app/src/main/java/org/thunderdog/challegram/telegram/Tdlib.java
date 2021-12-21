@@ -3280,6 +3280,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return supergroupId != 0 && channels.contains(supergroupId);
   }
 
+  public boolean isChannel (TdApi.MessageSender senderId) {
+    long chatId = Td.getSenderId(senderId);
+    return chatId != 0 && isChannel(senderId);
+  }
+
+  public boolean isUser (TdApi.MessageSender senderId) {
+    long chatId = Td.getSenderId(senderId);
+    return chatUserId(chatId) != 0;
+  }
+
   public boolean isChannel (long chatId) {
     TdApi.Supergroup supergroup = chatToSupergroup(chatId);
     return supergroup != null && supergroup.isChannel;
