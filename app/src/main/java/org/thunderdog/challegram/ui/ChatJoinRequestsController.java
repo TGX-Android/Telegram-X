@@ -93,7 +93,9 @@ public class ChatJoinRequestsController extends RecyclerViewController<ChatJoinR
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
     switch (id) {
       case R.id.menu_search: {
-        header.addSearchButton(menu, this);
+        if (getArgumentsStrict().inviteLink == null || getArgumentsStrict().inviteLink.isEmpty()) {
+          header.addSearchButton(menu, this);
+        }
         break;
       }
       case R.id.menu_clear: {

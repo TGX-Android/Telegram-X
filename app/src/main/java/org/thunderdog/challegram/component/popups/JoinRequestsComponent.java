@@ -3,7 +3,9 @@ package org.thunderdog.challegram.component.popups;
 import android.content.Context;
 import android.text.SpannableStringBuilder;
 import android.view.View;
+import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -23,10 +25,14 @@ import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Strings;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.ChatJoinRequestsController;
+import org.thunderdog.challegram.ui.ChatLinksController;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.ui.SettingsAdapter;
+import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.widget.DoubleTextViewWithIcon;
 import org.thunderdog.challegram.widget.EmbeddableStickerView;
 
@@ -144,7 +150,12 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
       @Override
       protected void setEmbedSticker (ListItem item, int position, EmbeddableStickerView userView, boolean isUpdate) {
         userView.setSticker(new TGStickerObj(tdlib(), (TdApi.Sticker) item.getData(), UTYAN_EMOJI, false));
-        userView.setCaptionText(Lang.getString(isChannel ? R.string.InviteLinkRequestsHintChannel : R.string.InviteLinkRequestsHint));
+        userView.setCaptionText(Strings.buildMarkdown(controller, Lang.getString(isChannel ? R.string.InviteLinkRequestsHintChannel : R.string.InviteLinkRequestsHint, "tg://need_update_for_some_feature"), (view, span) -> {
+          ChatLinksController linksController = new ChatLinksController(context(), tdlib());
+          linksController.setArguments(new ChatLinksController.Args(chatId, tdlib().myUserId(), null, null, tdlib().chatStatus(chatId).getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR));
+          controller.navigateTo(linksController);
+          return true;
+        }));
       }
 
       @Override

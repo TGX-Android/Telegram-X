@@ -63,7 +63,11 @@ public class JoinRequestsController extends MediaBottomBaseController<Void> impl
 
   public void onRequestDecided () {
     reqCount--;
-    setName(Lang.plural(R.string.xJoinRequests, reqCount));
+
+    if (!mediaLayout.getHeaderView().inSearchMode()) {
+      setName(Lang.plural(R.string.xJoinRequests, reqCount));
+    }
+
     if (reqCount == 0) {
       close();
     }
@@ -160,6 +164,11 @@ public class JoinRequestsController extends MediaBottomBaseController<Void> impl
   @Override
   protected void onLeaveSearchMode () {
     component.search(null);
+  }
+
+  @Override
+  protected void onAfterLeaveSearchMode () {
+    runOnUiThread(() -> setName(Lang.plural(R.string.xJoinRequests, reqCount)), 100);
   }
 
   @Override
