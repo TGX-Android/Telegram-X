@@ -129,4 +129,14 @@ public class ChatJoinRequestsController extends RecyclerViewController<ChatJoinR
     super.onSearchInputChanged(query);
     component.search(Strings.clean(query.trim()));
   }
+
+  @Override
+  public boolean onBackPressed (boolean fromTop) {
+    if (inSearchMode()) {
+      closeSearchMode(null);
+      return true;
+    }
+
+    return super.onBackPressed(fromTop);
+  }
 }

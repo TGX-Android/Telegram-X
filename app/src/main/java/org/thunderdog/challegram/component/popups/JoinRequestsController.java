@@ -100,8 +100,14 @@ public class JoinRequestsController extends MediaBottomBaseController<Void> impl
 
   @Override
   public boolean onBackPressed (boolean fromTop) {
+    if (mediaLayout.getHeaderView().inSearchMode()) {
+      mediaLayout.getHeaderView().closeSearchMode(true, null);
+      headerView = mediaLayout.getHeaderView();
+      return true;
+    }
+
     close();
-    return true;
+    return false;
   }
 
   @Override
@@ -140,10 +146,8 @@ public class JoinRequestsController extends MediaBottomBaseController<Void> impl
   public void onMenuItemPressed (int id, View view) {
     switch (id) {
       case R.id.menu_btn_search: {
-        //if (users != null && !users.isEmpty()) {
-          mediaLayout.getHeaderView().openSearchMode();
-          headerView = mediaLayout.getHeaderView();
-        //}
+        mediaLayout.getHeaderView().openSearchMode();
+        headerView = mediaLayout.getHeaderView();
         break;
       }
       case R.id.menu_btn_clear: {

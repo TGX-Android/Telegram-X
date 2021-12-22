@@ -4,6 +4,7 @@ import android.content.Context;
 import android.text.SpannableStringBuilder;
 import android.view.View;
 
+import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -12,6 +13,7 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.core.Lang;
@@ -33,6 +35,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import me.vkryl.android.AnimatorUtils;
 import me.vkryl.core.ArrayUtils;
 
 public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener, Client.ResultHandler {
@@ -41,7 +44,6 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
   private ArrayList<TGUser> joinRequests;
   private final ArrayList<TdApi.ChatJoinRequest> joinRequestsTdlib = new ArrayList<>();
 
-  private SettingsAdapter adapter;
   private int loadOffset;
   private boolean canLoadMore;
   private boolean isLoadingMore;
@@ -53,6 +55,9 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
   private final boolean isBottomSheet;
   private final boolean isSeparateLink;
   private final boolean isChannel;
+
+  private RecyclerView recyclerView;
+  private SettingsAdapter adapter;
 
   public JoinRequestsComponent (ViewController<?> controller, long chatId, String inviteLink) {
     this.controller = controller;
@@ -171,8 +176,11 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
     recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
     recyclerView.setAdapter(this.adapter);
 
+    this.recyclerView = recyclerView;
+    toggleItemAnimator(true);
+
     TGLegacyManager.instance().addEmojiListener(this);
-    
+
     adapter.setItems(new ListItem[] {
       new ListItem(ListItem.TYPE_PROGRESS)
     }, false);
@@ -200,10 +208,15 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
             this.canLoadMore = loadOffset <= senders.totalCount;
             buildCells();
             controller.executeScheduledAnimation();
+            toggleItemAnimator(false);
           }
         });
       }
     });
+  }
+
+  private void toggleItemAnimator (boolean enabled) {
+    recyclerView.setItemAnimator(enabled ? new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180l) : null);
   }
 
   private void openProfile (TGUser user) {
@@ -235,10 +248,12 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
     controller.runOnUiThreadOptional(() -> {
       int itemIdx = joinRequests.indexOf(user);
       if (itemIdx == -1) return;
+      toggleItemAnimator(true);
       joinRequests.remove(itemIdx);
       joinRequestsTdlib.remove(itemIdx);
       adapter.removeItem((isBottomSheet || isSeparateLink || inSearchMode()) ? itemIdx : itemIdx + 3);
       onRequestDecided();
+      tdlib().ui().postDelayed(() -> toggleItemAnimator(false), 500L);
     });
   }
 
@@ -331,6 +346,10 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
   public void search (String query) {
     if (Objects.equals(currentQuery, query)) {
       return;
+    }
+
+    if (query != null && query.isEmpty()) {
+      query = null;
     }
 
     isLoadingMore = false;
