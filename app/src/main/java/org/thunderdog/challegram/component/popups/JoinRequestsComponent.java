@@ -120,11 +120,17 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
 
     SpannableStringBuilder msg = new SpannableStringBuilder(Lang.wrap(user.getName(), Lang.boldCreator()));
     int idx = joinRequests.indexOf(user);
-    if (idx != -1 && !joinRequestsTdlib.get(idx).bio.isEmpty()) {
-      msg.append("\n\n").append(Lang.wrap(joinRequestsTdlib.get(joinRequests.indexOf(user)).bio, Lang.italicCreator()));
+    if (idx != -1) {
+      TdApi.ChatJoinRequest request = joinRequestsTdlib.get(idx);
+
+      if (!request.bio.isEmpty()) {
+        msg.append("\n\n").append(Lang.wrap(joinRequestsTdlib.get(joinRequests.indexOf(user)).bio, Lang.italicCreator()));
+      }
+
+      msg.append("\n").append(Lang.wrap(Lang.getString(R.string.InviteLinkRequestSince, Lang.getMessageTimestamp(request.date, TimeUnit.SECONDS)), Lang.italicCreator()));
     }
 
-    controller.showOptions(msg, new int[]{R.id.btn_approveChatRequest, R.id.btn_declineChatRequest, R.id.btn_openChat}, new String[]{Lang.getString(isChannel ? R.string.InviteLinkActionAcceptChannel : R.string.InviteLinkActionAccept), Lang.getString(R.string.InviteLinkActionDeclineAction), Lang.getString(R.string.InviteLinkActionWrite)}, null, new int[]{R.drawable.baseline_person_add_24, R.drawable.baseline_delete_24, R.drawable.baseline_person_24}, (itemView2, id2) -> {
+    controller.showOptions(msg, new int[]{R.id.btn_approveChatRequest, R.id.btn_declineChatRequest, R.id.btn_openChat}, new String[]{Lang.getString(isChannel ? R.string.InviteLinkActionAcceptChannel : R.string.InviteLinkActionAccept), Lang.getString(R.string.InviteLinkActionDeclineAction), Lang.getString(R.string.InviteLinkActionWrite)}, new int[] { ViewController.OPTION_COLOR_BLUE, ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL }, new int[]{R.drawable.baseline_person_add_24, R.drawable.baseline_delete_24, R.drawable.baseline_person_24}, (itemView2, id2) -> {
       switch (id2) {
         case R.id.btn_approveChatRequest:
           acceptRequest(user);
