@@ -221,7 +221,7 @@ public class AudioRecordJNI {
 		}
 	}
 
-	private static boolean isGoodAudioEffect(AudioEffect effect){
+	public static boolean isGoodAudioEffect(AudioEffect effect){
 		Pattern globalImpl=makeNonEmptyRegex("adsp_good_impls"), globalName=makeNonEmptyRegex("adsp_good_names");
 		AudioEffect.Descriptor desc=effect.getDescriptor();
 		VLog.d(effect.getClass().getSimpleName()+": implementor="+desc.implementor+", name="+desc.name);
