@@ -507,6 +507,10 @@ public class PhoneController extends EditBaseController<Void> implements Setting
           setLockFocusView(codeText.isEmpty() ? codeView.getEditText() : numberView.getEditText());
         }
 
+        if (UI.inTestMode() && isFocused()) {
+          makeTestRequest();
+        }
+
         return new SettingHolder(numberWrap);
       }
 
@@ -1061,6 +1065,24 @@ public class PhoneController extends EditBaseController<Void> implements Setting
     }
   }
 
+  private void makeTestRequest () {
+    if (codeView != null && numberView != null) {
+      final String phoneCode = "99";
+      final StringBuilder b = new StringBuilder(4).append("966").append(Config.ROBOT_DC_ID);
+      if (UI.TEST_MODE == UI.TEST_MODE_USER) {
+        for (int i = 0; i < 4; i++) {
+          b.append(MathUtils.random(0, 9));
+        }
+      } else {
+        b.append("73").append(Config.ROBOT_ID_PREFIX + MathUtils.random(1, Config.MAX_ROBOT_ID));
+      }
+      final String phoneNumber = b.toString();
+      codeView.setText(phoneCode);
+      numberView.setText(phoneNumber);
+      makeRequest();
+    }
+  }
+
   @Override
   public void onFocus () {
     super.onFocus();
@@ -1078,19 +1100,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
           destroyStackItemById(R.id.controller_intro);
         }
         if (UI.inTestMode()) {
-          final String phoneCode = "99";
-          final StringBuilder b = new StringBuilder(4).append("966").append(Config.ROBOT_DC_ID);
-          if (UI.TEST_MODE == UI.TEST_MODE_USER) {
-            for (int i = 0; i < 4; i++) {
-              b.append(MathUtils.random(0, 9));
-            }
-          } else {
-            b.append("73").append(Config.ROBOT_ID_PREFIX + MathUtils.random(1, Config.MAX_ROBOT_ID));
-          }
-          final String phoneNumber = b.toString();
-          codeView.setText(phoneCode);
-          numberView.setText(phoneNumber);
-          makeRequest();
+          makeTestRequest();
         }
         break;
       }

@@ -654,6 +654,8 @@
   <string name="XVideoSaved_other">%1$s videos saved to Gallery</string>
   <string name="ChannelSignMessages">Sign Messages</string>
   <string name="RestrictSaving">Restrict Saving Content</string>
+  <string name="RestrictSavingBotInfo">Copying and forwarding of this message is restricted by the bot.</string>
+  <string name="RestrictSavingUserInfo">Copying and forwarding of this message is restricted.</string>
   <string name="RestrictSavingGroupInfo">Copying and forwarding is restricted by group admins</string>
   <string name="RestrictSavingChannelInfo">Copying and forwarding is restricted by channel admins</string>
   <string name="RestrictSavingGroupHint">Participants won\'t be able to forward messages from this group or save media files.</string>
