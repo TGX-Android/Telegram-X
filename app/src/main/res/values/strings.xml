@@ -3154,6 +3154,7 @@
   <string name="format_nameAndDate">%1$s\n%2$s</string>
   <string name="format_nameAndStatus">%1$s\n%2$s</string>
   <string name="format_nameStatusDate">%1$s\n%2$s\n%3$s</string>
+  <string name="format_nameAndSubtitleAndStatus">%1$s (%2$s)\n%3$s</string>
 
   <string name="xPermissions_one">%1$s of %2$s</string>
   <string name="xPermissions_other">%1$s of %2$s</string>
@@ -3986,15 +3987,35 @@
   <string name="InviteLinkOtherAdminHint">**%1$s** can see this link and use it to invite new members to **%2$s**.</string>
   <string name="InviteLinkViewMembers">View joined members</string>
   <string name="InviteLinkViewMembersTitle">Joined members</string>
+  <string name="InviteLinkAdminApproval">Request Admin Approval</string>
+  <string name="InviteLinkAdminApprovalHint">Turn this on if you want users to join only after they are approved by an admin.</string>
+  <string name="InviteLinkAdminName">Link Name (optional)</string>
+  <string name="InviteLinkAdminNameHint">Only admins will see this name.</string>
+  <string name="InviteLinkViewRequests">View join requests</string>
   <string name="CreatedByXOnDate">Created by %1$s %2$s</string>
   <string name="Infinity">∞</string>
   <string name="InviteLinkManage">Manage Invite Links</string>
+  <string name="InviteLinkRequests">Join Requests</string>
+  <string name="InviteLinkRequestSince">requested %1$s</string>
+  <string name="InviteLinkActionAccept">Add to Group</string>
+  <string name="InviteLinkActionAcceptChannel">Add to Channel</string>
+  <string name="InviteLinkActionWrite">Open Profile</string>
+  <string name="InviteLinkActionDecline">Decline</string>
+  <string name="InviteLinkActionDeclineAction">Decline Request</string>
+  <string name="InviteLinkRequestsHint">Some [additional links](%1$s) are set up to generate requests to join your group.</string>
+  <string name="InviteLinkRequestsHintChannel">Some [additional links](%1$s) are set up to generate requests to join your channel.</string>
+  <string name="AreYouSureAcceptJoinRequest">Are you sure you want to invite %1$s to %2$s?</string>
+  <string name="AreYouSureDeclineJoinRequest">Are you sure you want to decline a request from %1$s?</string>
 
   <string name="xActiveLinks_one">%1$s active link</string>
   <string name="xActiveLinks_other">%1$s active links</string>
   <string name="xRevokedLinks_one">%1$s revoked link</string>
   <string name="xRevokedLinks_other">%1$s revoked links</string>
   <string name="format_activeAndRevokedLinks">%1$s, %2$s</string>
+  <string name="xJoinRequests_one">%1$s join request</string>
+  <string name="xJoinRequests_other">%1$s join requests</string>
+  <string name="xRequests_one">%1$s request</string>
+  <string name="xRequests_other">%1$s requests</string>
 
   <string name="ChatTtl">Auto-delete messages</string>
   <string name="ChatTtlOff">Off</string>

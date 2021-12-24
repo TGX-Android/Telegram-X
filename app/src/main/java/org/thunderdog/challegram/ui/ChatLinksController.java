@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.text.SpannableStringBuilder;
 import android.view.View;
 import android.widget.TextView;
 
@@ -396,14 +397,14 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     }
   }
 
-  private String generateLinkSubtitle (TdApi.ChatInviteLink inviteLink) {
-    StringBuilder subtitle = new StringBuilder();
+  private CharSequence generateLinkSubtitle (TdApi.ChatInviteLink inviteLink) {
+    SpannableStringBuilder subtitle = new SpannableStringBuilder();
 
     long nowMs = tdlib.currentTimeMillis();
     long expiresInMs = TimeUnit.SECONDS.toMillis(inviteLink.expireDate) - nowMs;
 
     if (inviteLink.memberCount > 0) {
-      subtitle.append(Lang.plural(R.string.InviteLinkJoins, inviteLink.memberCount));
+      subtitle.append(Lang.pluralBold(R.string.InviteLinkJoins, inviteLink.memberCount));
     } else if (inviteLink.isPrimary || inviteLink.memberLimit == 0 || (inviteLink.memberCount == 0 && inviteLink.isRevoked)) {
       subtitle.append(Lang.getString(R.string.InviteLinkNoJoins));
     }
@@ -414,11 +415,15 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       subtitle.append(" • ");
     }
 
+    if (inviteLink.createsJoinRequest && inviteLink.pendingJoinRequestCount > 0) {
+      subtitle.append(Lang.pluralBold(R.string.xRequests, inviteLink.pendingJoinRequestCount)).append(" • ");
+    }
+
     if (!inviteLink.isRevoked && inviteLink.memberLimit > 0) {
       if (inviteLink.memberCount == inviteLink.memberLimit) {
         subtitle.append(Lang.getString(R.string.InviteLinkMemberLimitReached));
       } else {
-        subtitle.append(Lang.plural(R.string.InviteLinkRemains, inviteLink.memberLimit - inviteLink.memberCount));
+        subtitle.append(Lang.pluralBold(R.string.InviteLinkRemains, inviteLink.memberLimit - inviteLink.memberCount));
       }
 
       subtitle.append(inviteLink.expireDate != 0 ? " • " : "");
@@ -427,13 +432,13 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     if (inviteLink.isRevoked || inviteLink.expireDate == 0) {
       // add nothing (no expire date or the link is revoked)
     } else if (expiresInMs > 0) {
-      subtitle.append(Lang.getReverseRelativeDate(
+      subtitle.append(Lang.getReverseRelativeDateBold(
         inviteLink.expireDate, TimeUnit.SECONDS,
         nowMs, TimeUnit.MILLISECONDS,
         true, 0, R.string.InviteLinkExpires, false
       ));
     } else {
-      subtitle.append(Lang.getString(R.string.InviteLinkExpiredAt, Lang.getTimestamp(inviteLink.expireDate, TimeUnit.SECONDS)));
+      subtitle.append(Lang.getStringBold(R.string.InviteLinkExpiredAt, Lang.getTimestamp(inviteLink.expireDate, TimeUnit.SECONDS)));
     }
 
     if (subtitle.charAt(subtitle.length() - 2) == '•') {
@@ -444,7 +449,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       subtitle.delete(0, 3);
     }
 
-    return subtitle.toString();
+    return subtitle;
   }
 
   private void loadMoreLinks (boolean revoked) {
@@ -618,6 +623,25 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     updateTotalCount();
   }
 
+  // Makes pendingJoinRequestCount - 1. For seamless UI updates.
+  public void onChatLinkPendingDecisionMade (String linkUrl) {
+    TdApi.ChatInviteLink link = null;
+
+    for (TdApi.ChatInviteLink compare : inviteLinks) {
+      if (compare.inviteLink.equals(linkUrl)) {
+        link = compare;
+        break;
+      }
+    }
+
+    if (link == null) {
+      return;
+    }
+
+    link.pendingJoinRequestCount -= 1;
+    onLinkCreated(link, link);
+  }
+
   // Rebind link cell
   public void smOnLinkEdited (TdApi.ChatInviteLink oldLink, TdApi.ChatInviteLink newLink) {
     int oldLinkIndex = adapter.indexOfViewByData(oldLink);
@@ -678,6 +702,10 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   }
 
   private String simplifyInviteLink (TdApi.ChatInviteLink link) {
+    if (link.name != null && !link.name.isEmpty()) {
+      return link.name;
+    }
+
     String[] linkSegments = link.inviteLink.split("/");
     return linkSegments[linkSegments.length - 1];
   }

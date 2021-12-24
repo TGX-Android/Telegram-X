@@ -191,6 +191,7 @@
   <item type="id" name="controller_editBio" />
   <item type="id" name="controller_editDescription" />
   <item type="id" name="controller_createPoll" />
+  <item type="id" name="controller_chatJoinRequests" />
   <item type="id" name="controller_messageSeen" />
 
   <item type="id" name="controller_code" />
@@ -728,10 +729,13 @@
   <item type="id" name="btn_viewInviteLinkMembers" />
   <item type="id" name="btn_openAdminInviteLinks" />
   <item type="id" name="btn_manageInviteLinks" />
+  <item type="id" name="btn_manageJoinRequests" />
   <item type="id" name="btn_inviteLinkUserLimit" />
   <item type="id" name="btn_inviteLinkUserSlider" />
   <item type="id" name="btn_inviteLinkDateLimit" />
   <item type="id" name="btn_inviteLinkDateSlider" />
+  <item type="id" name="btn_inviteLinkAdminApproval" />
+  <item type="id" name="btn_inviteLinkName" />
   <item type="id" name="btn_saveGif" />
   <item type="id" name="btn_stickers" />
   <item type="id" name="btn_stickerSetInfo" />
@@ -998,6 +1002,9 @@
   <item type="id" name="btn_username_copy_link" />
   <item type="id" name="btn_username_share" />
   <item type="id" name="btn_discard_record" />
+
+  <item type="id" name="btn_approveChatRequest" />
+  <item type="id" name="btn_declineChatRequest" />
 
   <item type="id" name="btn_menu_enable" />
   <item type="id" name="btn_menu_1hour" />

@@ -802,6 +802,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         openInviteLink();
         break;
       }
+      case R.id.btn_manageJoinRequests: {
+        openInviteRequestsManage();
+        break;
+      }
       case R.id.btn_copyUsername: {
         String username = getProfileUsername();
         if (!StringUtils.isEmpty(username)) {
@@ -1758,6 +1762,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
               view.setData(Lang.pluralBold(R.string.xActiveLinks, inviteLinksCount));
             }
 
+            break;
+          }
+          case R.id.btn_manageJoinRequests: {
+            view.setData(Lang.pluralBold(R.string.xJoinRequests, chat.pendingJoinRequests != null ? chat.pendingJoinRequests.totalCount : 0));
             break;
           }
           case R.id.btn_inviteLink: {
@@ -3555,6 +3563,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (tdlib.canManageInviteLinks(chat)) {
       items.add(new ListItem(itemCount > 0 ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_manageInviteLinks, 0, R.string.InviteLinkManage));
+      if (chat.pendingJoinRequests != null && chat.pendingJoinRequests.totalCount > 0) {
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_manageJoinRequests, 0, R.string.InviteLinkRequests));
+      }
       itemCount++;
     }
     if (itemCount > 0) {
@@ -3701,6 +3713,24 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     inviteLinksCount = totalActive;
     inviteLinksRevokedCount = totalRevoked;
     baseAdapter.updateValuedSettingById(R.id.btn_manageInviteLinks);
+  }
+
+  @Override
+  public void onChatPendingJoinRequestsChanged (long chatId, TdApi.ChatJoinRequestsInfo pendingJoinRequests) {
+    tdlib.ui().post(() -> {
+      if (getChatId() == chatId) {
+        int idxLinks = baseAdapter.indexOfViewById(R.id.btn_manageInviteLinks);
+        int idxRequests = baseAdapter.indexOfViewById(R.id.btn_manageJoinRequests);
+
+        if ((pendingJoinRequests == null || pendingJoinRequests.totalCount == 0) && idxRequests != -1) {
+          baseAdapter.removeRange(idxRequests - 1, 2);
+        } else if (pendingJoinRequests != null && pendingJoinRequests.totalCount > 0 && idxRequests == -1 && idxLinks != -1) {
+          baseAdapter.addItems(idxLinks + 1, new ListItem(ListItem.TYPE_SEPARATOR_FULL), new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_manageJoinRequests, 0, R.string.InviteLinkRequests));
+        } else {
+          baseAdapter.updateValuedSettingById(R.id.btn_manageJoinRequests);
+        }
+      }
+    });
   }
 
   private static CharSequence getSlowModeDescription (int seconds) {
@@ -4482,6 +4512,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           icons.append(R.drawable.baseline_add_link_24);
         }
 
+        if (canInviteUsers && chat.pendingJoinRequests != null && chat.pendingJoinRequests.totalCount > 0) {
+          ids.append(R.id.btn_manageJoinRequests);
+          strings.append(R.string.InviteLinkRequests);
+          icons.append(R.drawable.baseline_pending_24);
+        }
+
         ids.append(R.id.btn_copyUsername);
         strings.append(R.string.Copy);
         icons.append(R.drawable.baseline_content_copy_24);
@@ -4550,6 +4586,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
       case R.id.btn_manageInviteLinks: {
         openInviteLink();
+        break;
+      }
+      case R.id.btn_manageJoinRequests: {
+        openInviteRequestsManage();
         break;
       }
       case R.id.user: {
@@ -4626,6 +4666,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     navigateTo(c);
   }
 
+  private void openInviteRequestsManage () {
+    ChatJoinRequestsController cc = new ChatJoinRequestsController(context, tdlib);
+    cc.setArguments(new ChatJoinRequestsController.Args(chat.id, "", this));
+    navigateTo(cc);
+  }
+
   private void openInviteLinkMenu () {
     TdApi.ChatInviteLink link = getInviteLink();
 
@@ -4634,15 +4680,22 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       return;
     }
 
-    StringList strings = new StringList(4);
-    IntList icons = new IntList(4);
-    IntList ids = new IntList(4);
-    IntList colors = new IntList(4);
+    StringList strings = new StringList(5);
+    IntList icons = new IntList(5);
+    IntList ids = new IntList(5);
+    IntList colors = new IntList(5);
 
     ids.append(R.id.btn_manageInviteLinks);
     strings.append(R.string.InviteLinkManage);
     icons.append(R.drawable.baseline_add_link_24);
     colors.append(OPTION_COLOR_NORMAL);
+
+    if (chat.pendingJoinRequests != null && chat.pendingJoinRequests.totalCount > 0) {
+      ids.append(R.id.btn_manageJoinRequests);
+      strings.append(R.string.InviteLinkRequests);
+      icons.append(R.drawable.baseline_pending_24);
+      colors.append(OPTION_COLOR_NORMAL);
+    }
 
     ids.append(R.id.btn_copyLink);
     strings.append(R.string.InviteLinkCopy);
@@ -4665,6 +4718,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       switch (id) {
         case R.id.btn_copyLink:
           UI.copyText(link.inviteLink, R.string.CopiedLink);
+          break;
+        case R.id.btn_manageJoinRequests:
+          openInviteRequestsManage();
           break;
         case R.id.btn_shareLink:
           String chatName = tdlib.chatTitle(chat.id);
