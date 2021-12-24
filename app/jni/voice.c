@@ -234,14 +234,14 @@ static int writeOggPage(ogg_page *page, FILE *os) {
     return written;
 }
 
-const opus_int32 bitrate = 16000;
-const opus_int32 rate = 16000;
+const opus_int32 bitrate = 32000;
+const opus_int32 rate = 48000;
 const opus_int32 frame_size = 960;
 const int with_cvbr = 1;
 const int max_ogg_delay = 0;
 const int comment_padding = 512;
 
-opus_int32 coding_rate = 16000;
+opus_int32 coding_rate = 48000;
 ogg_int32_t _packetId;
 OpusEncoder *_encoder = 0;
 uint8_t *_packet = 0;
@@ -345,7 +345,7 @@ int initRecorder(const char *path) {
     header.nb_streams = 1;
 
     int result = OPUS_OK;
-    _encoder = opus_encoder_create(coding_rate, 1, OPUS_APPLICATION_AUDIO, &result);
+    _encoder = opus_encoder_create(coding_rate, 1, OPUS_APPLICATION_VOIP, &result);
     if (result != OPUS_OK) {
         loge(TAG_VOICE, "Error cannot create encoder: %s", opus_strerror(result));
         return 0;
