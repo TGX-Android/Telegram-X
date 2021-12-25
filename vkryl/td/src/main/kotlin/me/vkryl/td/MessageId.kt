@@ -6,7 +6,7 @@ import me.vkryl.core.addElement
 import me.vkryl.core.removeElement
 import kotlin.math.min
 
-class MessageId @JvmOverloads constructor (val chatId: Long, var messageId: Long, val otherMessageIds: LongArray? = null) {
+class MessageId @JvmOverloads constructor (val chatId: Long, val messageId: Long, val otherMessageIds: LongArray? = null) {
   fun toServerMessageId () = toServerMessageId(messageId)
 
   fun isHistoryStart () = messageId == MIN_VALID_ID
