@@ -65,6 +65,7 @@ import org.thunderdog.challegram.widget.ChartLayout;
 import org.thunderdog.challegram.widget.CheckBox;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.DoubleTextView;
+import org.thunderdog.challegram.widget.DoubleTextViewWithIcon;
 import org.thunderdog.challegram.widget.EmbeddableStickerView;
 import org.thunderdog.challegram.widget.EmptySmartView;
 import org.thunderdog.challegram.widget.FileProgressComponent;
@@ -399,6 +400,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
   }*/
 
   protected void setInfo (ListItem item, int position, ListInfoView infoView) {
+    // Override
+  }
+
+  protected void setJoinRequest (ListItem item, int position, DoubleTextViewWithIcon group, boolean isUpdate) {
     // Override
   }
 
@@ -1445,6 +1450,12 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       }
       case ListItem.TYPE_USER: {
         setUser(item, position, (UserView) holder.itemView, false);
+        break;
+      }
+      case ListItem.TYPE_JOIN_REQUEST: {
+        DoubleTextViewWithIcon viewGroup = (DoubleTextViewWithIcon) holder.itemView;
+        viewGroup.checkRtl();
+        setJoinRequest(item, position, viewGroup,false);
         break;
       }
       case ListItem.TYPE_EMBED_STICKER: {

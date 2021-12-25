@@ -1,6 +1,7 @@
 package org.thunderdog.challegram.widget;
 
 import android.content.Context;
+import android.text.method.LinkMovementMethod;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -46,6 +47,8 @@ public class EmbeddableStickerView extends LinearLayout implements ThemeInvalida
     captionTextView = new TextView(context);
     captionTextView.setGravity(Gravity.CENTER_HORIZONTAL);
     captionTextView.setTextSize(14);
+    captionTextView.setMovementMethod(LinkMovementMethod.getInstance());
+    captionTextView.setHighlightColor(Theme.textLinkHighlightColor());
     addView(captionTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 16, 16, 8, 16, 8));
 
     recolor();
@@ -53,6 +56,7 @@ public class EmbeddableStickerView extends LinearLayout implements ThemeInvalida
 
   public void recolor () {
     captionTextView.setTextColor(Theme.textDecentColor());
+    captionTextView.setHighlightColor(Theme.textLinkHighlightColor());
   }
 
   public void attach () {
@@ -63,7 +67,7 @@ public class EmbeddableStickerView extends LinearLayout implements ThemeInvalida
     stickerSmallView.detach();
   }
 
-  public void setCaptionText (String text) {
+  public void setCaptionText (CharSequence text) {
     captionTextView.setText(text);
   }
 

@@ -41,7 +41,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 public abstract class MediaBottomBaseController<T> extends ViewController<T> {
   protected final MediaLayout mediaLayout;
   private final int titleRes;
-  private final String titleString;
+  private String titleString;
 
   protected MediaBottomBaseController (MediaLayout context, int titleResource) {
     super(context.getContext(), context.tdlib());
@@ -66,6 +66,11 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
   @Override
   public CharSequence getName () {
     return titleRes != 0 ? Lang.getString(titleRes) : titleString;
+  }
+
+  public void setName (String name) {
+    titleString = name;
+    mediaLayout.getHeaderView().setTitle(this);
   }
 
   // Settings

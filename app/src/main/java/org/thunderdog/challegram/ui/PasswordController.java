@@ -444,8 +444,10 @@ public class PasswordController extends ViewController<PasswordController.Args> 
 
   @Override
   public void onAuthorizationStateChanged (TdApi.AuthorizationState authorizationState) {
-    authState = authorizationState;
-    updateAuthState();
+    runOnUiThreadOptional(() -> {
+      this.authState = authorizationState;
+      updateAuthState();
+    });
   }
 
   @Override

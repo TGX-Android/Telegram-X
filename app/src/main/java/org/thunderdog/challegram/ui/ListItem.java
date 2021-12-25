@@ -139,6 +139,7 @@ public class ListItem {
   public static final int TYPE_STATS_MESSAGE_PREVIEW = 121;
 
   public static final int TYPE_EMBED_STICKER = 130;
+  public static final int TYPE_JOIN_REQUEST = 131;
 
   private static final int FLAG_SELECTED = 1;
   private static final int FLAG_BOOL_VALUE = 1 << 1;

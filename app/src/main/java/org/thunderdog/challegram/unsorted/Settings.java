@@ -789,6 +789,9 @@ public class Settings {
   public long[] getLongArray (String key) {
     return pmc.getLongArray(key);
   }
+  public void putLongArray (String key, long[] value) {
+    pmc.putLongArray(key, value);
+  }
   public void putInt (String key, int value) {
     pmc.putInt(key, value);
   }
