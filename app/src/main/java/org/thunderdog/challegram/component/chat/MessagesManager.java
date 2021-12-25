@@ -1115,24 +1115,22 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void onBottomEndChecked () {
-    requestSponsoredMessages();
+    requestSponsoredMessage();
   }
 
-  private void requestSponsoredMessages () {
+  private void requestSponsoredMessage () {
     synchronized (controller) {
-      if (controller.sponsoredMessagesLoaded) {
+      if (controller.sponsoredMessageLoaded) {
         return;
       }
 
-      loader.requestSponsoredMessages(loader.getChatId(), messages -> {
-        if (messages.length == 0) return;
-
-        TdApi.SponsoredMessage adMessage = messages[0];
+      loader.requestSponsoredMessage(loader.getChatId(), message -> {
+        if (message == null) return;
 
         RunnableData<TGMessage> action = (lastMessage) -> {
           if (lastMessage == null) return;
-          controller.sponsoredMessagesLoaded = true;
-          addSentMessages(Collections.singletonList(TGMessageSponsored.sponsoredToTgx(this, loader.getChatId(), lastMessage.getDate(), adMessage)));
+          controller.sponsoredMessageLoaded = true;
+          addSentMessages(Collections.singletonList(TGMessageSponsored.sponsoredToTgx(this, loader.getChatId(), lastMessage.getDate(), message)));
         };
 
         TGMessage bottomMessage = findBottomMessage();

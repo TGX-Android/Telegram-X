@@ -73,7 +73,7 @@ public class MessagesLoader implements Client.ResultHandler {
   private boolean isLoading;
   private int loadingMode;
 
-  private boolean isLoadingSponsoredMessages;
+  private boolean isLoadingSponsoredMessage;
 
   // private TGMessage edgeMessage;
 
@@ -98,33 +98,32 @@ public class MessagesLoader implements Client.ResultHandler {
 
   private long contextId;
 
-  private boolean canShowSponsoredMessages (long chatId) {
+  private boolean canShowSponsoredMessage (long chatId) {
     return tdlib.isChannel(chatId) && !manager.controller().isInForceTouchMode() && !manager.controller().inPreviewMode() && !manager.controller().areScheduledOnly() && !manager.controller().arePinnedMessages();
   }
 
   // Callback is called only on successful load
-  public void requestSponsoredMessages (long chatId, RunnableData<TdApi.SponsoredMessage[]> callback) {
-    if (!canShowSponsoredMessages(chatId) || isLoadingSponsoredMessages) {
+  public void requestSponsoredMessage (long chatId, RunnableData<TdApi.SponsoredMessage> callback) {
+    if (!canShowSponsoredMessage(chatId) || isLoadingSponsoredMessage) {
       return;
     }
 
-    isLoadingSponsoredMessages = true;
-    tdlib.client().send(new TdApi.GetChatSponsoredMessages(chatId), object -> {
+    isLoadingSponsoredMessage = true;
+    tdlib.client().send(new TdApi.GetChatSponsoredMessage(chatId), object -> {
       UI.post(() -> {
-        isLoadingSponsoredMessages = false;
+        isLoadingSponsoredMessage = false;
 
-        TdApi.SponsoredMessage[] messages;
-        if (object.getConstructor() == TdApi.SponsoredMessages.CONSTRUCTOR) {
-          messages = ((TdApi.SponsoredMessages) object).messages;
+        TdApi.SponsoredMessage message;
+
+        if (object.getConstructor() == TdApi.SponsoredMessage.CONSTRUCTOR) {
+          message = ((TdApi.SponsoredMessage) object);
+        } else if (tdlib.account().isDebug()) {
+          message = TGMessageSponsored.generateSponsoredMessage(tdlib);
         } else {
-          messages = new TdApi.SponsoredMessage[0];
+          message = null;
         }
 
-        if (tdlib.account().isDebug() && messages.length == 0) {
-          messages = new TdApi.SponsoredMessage[] { TGMessageSponsored.generateSponsoredMessage(tdlib) };
-        }
-
-        callback.runWithData(messages);
+        callback.runWithData(message);
       });
     });
   }
