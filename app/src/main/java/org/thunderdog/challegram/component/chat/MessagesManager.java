@@ -30,6 +30,7 @@ import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageBotInfo;
 import org.thunderdog.challegram.data.TGMessageSponsored;
 import org.thunderdog.challegram.data.ThreadInfo;
+import org.thunderdog.challegram.helper.SplitMsgIds;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.mediaview.data.MediaStack;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -68,7 +69,6 @@ import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
-import me.vkryl.td.SplitMsgIds;
 import me.vkryl.td.Td;
 
 public class MessagesManager implements Client.ResultHandler, MessagesSearchManager.Delegate,
@@ -1727,17 +1727,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
 
     final boolean isOpen = tdlib.isChatOpen(chatId);
-    final long[] messageIds = viewed.toArray();
-    final SplitMsgIds splitMessageIds = Td.splitMessageIds(messageIds);
-
-    if (splitMessageIds.hasSponsored()) {
-      if (isFocused && isOpen && !(BuildConfig.DEBUG && Settings.instance().dontReadMessages())) {
-        tdlib.sendAll(splitMessageIds.getSponsoredQueries(chatId), loader, null);
-        return true;
-      }
-
-      return false;
-    }
+    final SplitMsgIds splitMessageIds = SplitMsgIds.fromArray(viewed.toArray());
+    final long[] messageIds = splitMessageIds.getMessageIds();
 
     if (isFocused && isOpen) {
       if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
@@ -1751,6 +1742,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
       } else {
         tdlib.client().send(new TdApi.ViewMessages(chatId, messageThreadId, messageIds, true), loader);
+        if (splitMessageIds.hasSponsoredMessages()) {
+          tdlib.sendAll(splitMessageIds.getSponsoredQueries(chatId), loader, null);
+        }
       }
       return true;
     }
@@ -1883,9 +1877,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           for (int i = 0; i < refreshMessageIds.size(); i++) {
             long chatId = refreshMessageIds.keyAt(i);
             long[] messageIds = refreshMessageIds.valueAt(i);
-            SplitMsgIds splitIds = Td.splitMessageIds(messageIds);
+            SplitMsgIds splitIds = SplitMsgIds.fromArray(messageIds);
             functions.add(new TdApi.ViewMessages(chatId, chatId == refreshChatId ? refreshMessageThreadId : 0, splitIds.getMessageIds(), false));
-            if (splitIds.hasSponsored()) {
+            if (splitIds.hasSponsoredMessages()) {
               functions.addAll(Arrays.asList(splitIds.getSponsoredQueries(chatId)));
             }
           }
