@@ -1034,11 +1034,11 @@ public class MessagesLoader implements Client.ResultHandler {
   private TdApi.Message newMessage (final long chatId, final boolean isChannel, final TdApi.ChatEvent event) {
     return new TdApi.Message(
       event.id,
-      new TdApi.MessageSenderUser(event.userId),
+      event.memberId,
       chatId,
       null,
       null,
-      tdlib.isSelfUserId(event.userId),
+      tdlib.isSelfSender(event.memberId),
       false, false,
       false, false,
       false, false,
@@ -1067,7 +1067,7 @@ public class MessagesLoader implements Client.ResultHandler {
       TdApi.Message m = null;
       switch (event.action.getConstructor()) {
         case TdApi.ChatEventMemberJoined.CONSTRUCTOR:
-        case TdApi.ChatEventMessageTtlSettingChanged.CONSTRUCTOR:
+        case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
         case TdApi.ChatEventMemberLeft.CONSTRUCTOR:
         case TdApi.ChatEventTitleChanged.CONSTRUCTOR:
         case TdApi.ChatEventPhotoChanged.CONSTRUCTOR:
@@ -1077,7 +1077,7 @@ public class MessagesLoader implements Client.ResultHandler {
         case TdApi.ChatEventPermissionsChanged.CONSTRUCTOR:
         case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
         case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR:
-        case TdApi.ChatEventVideoChatDiscarded.CONSTRUCTOR: {
+        case TdApi.ChatEventVideoChatEnded.CONSTRUCTOR: {
           m = newMessage(chatId, isChannel, event);
           m.content = new TdApiExt.MessageChatEvent(event, true, false); // new TdApi.MessageChatAddMembers(new int[] {event.userId});
           break;

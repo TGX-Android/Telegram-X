@@ -682,7 +682,7 @@ fun ChatPermissions.count (): Int {
   return count
 }
 
-fun ChatInviteLink.isTemporary (): Boolean = this.expireDate != 0 || this.memberCount != 0 || this.memberLimit != 0
+fun ChatInviteLink.isTemporary (): Boolean = this.expirationDate != 0 || this.memberCount != 0 || this.memberLimit != 0
 
 fun InlineKeyboardButtonTypeCallbackWithPassword.isBotOwnershipTransfer (): Boolean = try {
   String(this.data, UTF_8).matches(Regex("^bots/[0-9]+/trsf/.+$"))

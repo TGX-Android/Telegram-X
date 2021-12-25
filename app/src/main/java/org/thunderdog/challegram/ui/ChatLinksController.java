@@ -72,13 +72,13 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   private void requestUpdateLinkCell (TdApi.ChatInviteLink linkObj, boolean ignoreUpdate) {
     if (!ignoreUpdate) adapter.updateValuedSettingByData(linkObj);
 
-    if (linkObj.isRevoked || TimeUnit.SECONDS.toMillis(linkObj.expireDate) < tdlib.currentTimeMillis()) {
+    if (linkObj.isRevoked || TimeUnit.SECONDS.toMillis(linkObj.expirationDate) < tdlib.currentTimeMillis()) {
       cellUpdateHandler.removeMessages(0, linkObj);
       pendingRefreshLinks.remove(linkObj);
       return;
     }
 
-    long relativeUpd = Lang.getNextReverseRelativeDateUpdateMs(linkObj.expireDate, TimeUnit.SECONDS, tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS, true, 0);
+    long relativeUpd = Lang.getNextReverseRelativeDateUpdateMs(linkObj.expirationDate, TimeUnit.SECONDS, tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS, true, 0);
     if (relativeUpd != -1) {
       pendingRefreshLinks.add(linkObj);
       cellUpdateHandler.sendMessageDelayed(Message.obtain(cellUpdateHandler, 0, linkObj), relativeUpd);
@@ -401,7 +401,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     SpannableStringBuilder subtitle = new SpannableStringBuilder();
 
     long nowMs = tdlib.currentTimeMillis();
-    long expiresInMs = TimeUnit.SECONDS.toMillis(inviteLink.expireDate) - nowMs;
+    long expiresInMs = TimeUnit.SECONDS.toMillis(inviteLink.expirationDate) - nowMs;
 
     if (inviteLink.memberCount > 0) {
       subtitle.append(Lang.pluralBold(R.string.InviteLinkJoins, inviteLink.memberCount));
@@ -426,19 +426,19 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         subtitle.append(Lang.pluralBold(R.string.InviteLinkRemains, inviteLink.memberLimit - inviteLink.memberCount));
       }
 
-      subtitle.append(inviteLink.expireDate != 0 ? " • " : "");
+      subtitle.append(inviteLink.expirationDate != 0 ? " • " : "");
     }
 
-    if (inviteLink.isRevoked || inviteLink.expireDate == 0) {
+    if (inviteLink.isRevoked || inviteLink.expirationDate == 0) {
       // add nothing (no expire date or the link is revoked)
     } else if (expiresInMs > 0) {
       subtitle.append(Lang.getReverseRelativeDateBold(
-        inviteLink.expireDate, TimeUnit.SECONDS,
+        inviteLink.expirationDate, TimeUnit.SECONDS,
         nowMs, TimeUnit.MILLISECONDS,
         true, 0, R.string.InviteLinkExpires, false
       ));
     } else {
-      subtitle.append(Lang.getStringBold(R.string.InviteLinkExpiredAt, Lang.getTimestamp(inviteLink.expireDate, TimeUnit.SECONDS)));
+      subtitle.append(Lang.getStringBold(R.string.InviteLinkExpiredAt, Lang.getTimestamp(inviteLink.expirationDate, TimeUnit.SECONDS)));
     }
 
     if (subtitle.charAt(subtitle.length() - 2) == '•') {

@@ -3019,7 +3019,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public int chatTTL (long chatId) {
     TdApi.Chat chat = chat(chatId);
-    return chat != null ? chat.messageTtlSetting : 0;
+    return chat != null ? chat.messageTtl : 0;
   }
 
   public boolean chatSupportsRoundVideos (long chatId) {
@@ -3835,7 +3835,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public void setChatMessageTtlSetting (long chatId, int ttl) {
-    client().send(new TdApi.SetChatMessageTtlSetting(chatId, ttl), okHandler());
+    client().send(new TdApi.SetChatMessageTtl(chatId, ttl), okHandler());
   }
 
   public void getPrimaryChatInviteLink (long chatId, Client.ResultHandler handler) {
@@ -6181,13 +6181,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   @TdlibThread
-  private void updateChatDefaultMessageSenderId (TdApi.UpdateChatDefaultMessageSenderId update) {
+  private void updateChatDefaultMessageSenderId (TdApi.UpdateChatMessageSender update) {
     synchronized (dataLock) {
       final TdApi.Chat chat = chats.get(update.chatId);
       if (TdlibUtils.assertChat(update.chatId, chat, update)) {
         return;
       }
-      chat.defaultMessageSenderId = update.defaultMessageSenderId;
+      chat.messageSenderId = update.messageSenderId;
     }
     listeners.updateChatDefaultMessageSenderId(update);
   }
@@ -6613,13 +6613,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   @TdlibThread
-  private void updateChatMessageTtlSetting (TdApi.UpdateChatMessageTtlSetting update) {
+  private void updateChatMessageTtlSetting (TdApi.UpdateChatMessageTtl update) {
     synchronized (dataLock) {
       final TdApi.Chat chat = chats.get(update.chatId);
       if (TdlibUtils.assertChat(update.chatId, chat, update)) {
         return;
       }
-      chat.messageTtlSetting = update.messageTtlSetting;
+      chat.messageTtl = update.messageTtl;
     }
     listeners.updateChatMessageTtlSetting(update);
   }
@@ -7529,8 +7529,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         updateChatOnlineMemberCount((TdApi.UpdateChatOnlineMemberCount) update);
         break;
       }
-      case TdApi.UpdateChatMessageTtlSetting.CONSTRUCTOR: {
-        updateChatMessageTtlSetting((TdApi.UpdateChatMessageTtlSetting) update);
+      case TdApi.UpdateChatMessageTtl.CONSTRUCTOR: {
+        updateChatMessageTtlSetting((TdApi.UpdateChatMessageTtl) update);
         break;
       }
       case TdApi.UpdateChatFilters.CONSTRUCTOR: {
@@ -7553,8 +7553,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         updateChatDefaultDisableNotifications((TdApi.UpdateChatDefaultDisableNotification) update);
         break;
       }
-      case TdApi.UpdateChatDefaultMessageSenderId.CONSTRUCTOR: {
-        updateChatDefaultMessageSenderId((TdApi.UpdateChatDefaultMessageSenderId) update);
+      case TdApi.UpdateChatMessageSender.CONSTRUCTOR: {
+        updateChatDefaultMessageSenderId((TdApi.UpdateChatMessageSender) update);
         break;
       }
       case TdApi.UpdateChatUnreadMentionCount.CONSTRUCTOR: {

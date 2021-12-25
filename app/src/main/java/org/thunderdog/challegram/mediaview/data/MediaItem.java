@@ -45,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.ChatId;
+import me.vkryl.td.Td;
 
 /**
  * Date: 09/12/2016
@@ -678,7 +679,7 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
             case TdApi.ChatEventPhotoChanged.CONSTRUCTOR: {
               TdApi.ChatEventPhotoChanged changedPhoto = (TdApi.ChatEventPhotoChanged) event.event.action;
               if (changedPhoto.oldPhoto != null || changedPhoto.newPhoto != null) {
-                return new MediaItem(context, tdlib, msg.chatId, 0, changedPhoto.newPhoto != null ? changedPhoto.newPhoto : changedPhoto.oldPhoto).setSourceSender(new TdApi.MessageSenderUser(event.event.userId)).setSourceDate(event.event.date);
+                return new MediaItem(context, tdlib, msg.chatId, 0, changedPhoto.newPhoto != null ? changedPhoto.newPhoto : changedPhoto.oldPhoto).setSourceSender(new TdApi.MessageSenderUser(Td.getSenderUserId(event.event.memberId))).setSourceDate(event.event.date);
               }
             }
           }

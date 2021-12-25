@@ -6441,20 +6441,24 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       if (content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR) {
         TdApiExt.MessageChatEvent event = (TdApiExt.MessageChatEvent) content;
         switch (event.event.action.getConstructor()) {
-          case TdApi.ChatEventMemberJoined.CONSTRUCTOR:
-            content = new TdApi.MessageChatAddMembers(new long[]{event.event.userId});
+          case TdApi.ChatEventMemberJoined.CONSTRUCTOR: {
+            final long userId = Td.getSenderUserId(event.event.memberId);
+            content = new TdApi.MessageChatAddMembers(new long[]{userId});
             break;
-          case TdApi.ChatEventMemberLeft.CONSTRUCTOR:
-            content = new TdApi.MessageChatDeleteMember(event.event.userId);
+          }
+          case TdApi.ChatEventMemberLeft.CONSTRUCTOR: {
+            final long userId = Td.getSenderUserId(event.event.memberId);
+            content = new TdApi.MessageChatDeleteMember(userId);
             break;
-          case TdApi.ChatEventMessageTtlSettingChanged.CONSTRUCTOR:
-            content = new TdApi.MessageChatSetTtl(((TdApi.ChatEventMessageTtlSettingChanged) event.event.action).newMessageTtlSetting);
+          }
+          case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
+            content = new TdApi.MessageChatSetTtl(((TdApi.ChatEventMessageTtlChanged) event.event.action).newMessageTtl);
             break;
           case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
             content = new TdApi.MessageVideoChatStarted(((TdApi.ChatEventVideoChatCreated) event.event.action).groupCallId);
             break;
-          case TdApi.ChatEventVideoChatDiscarded.CONSTRUCTOR:
-            content = new TdApi.MessageVideoChatEnded(0); // ((TdApi.ChatEventVoiceChatDiscarded) event.event.action).groupCallId
+          case TdApi.ChatEventVideoChatEnded.CONSTRUCTOR:
+            content = new TdApi.MessageVideoChatEnded(0); // ((TdApi.ChatEventVideoChatEnded) event.event.action).groupCallId
             break;
           case TdApi.ChatEventTitleChanged.CONSTRUCTOR: {
             TdApi.ChatEventTitleChanged e = (TdApi.ChatEventTitleChanged) event.event.action;
@@ -6595,7 +6599,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                 TdApi.ChatEventInviteLinkEdited e = (TdApi.ChatEventInviteLinkEdited) event.event.action;
 
                 boolean changedLimit = e.oldInviteLink.memberLimit != e.newInviteLink.memberLimit;
-                boolean changedExpires = e.oldInviteLink.expireDate != e.newInviteLink.expireDate;
+                boolean changedExpires = e.oldInviteLink.expirationDate != e.newInviteLink.expirationDate;
 
                 String link = StringUtils.urlWithoutProtocol(e.newInviteLink.inviteLink);
                 String prevLimit = e.oldInviteLink.memberLimit != 0 ? Strings.buildCounter(e.oldInviteLink.memberLimit) : Lang.getString(R.string.EventLogEditedInviteLinkNoLimit);
@@ -6604,27 +6608,27 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                 String text;
                 if (changedLimit && changedExpires) {
                   String expires;
-                  if (e.newInviteLink.expireDate == 0) {
+                  if (e.newInviteLink.expirationDate == 0) {
                     expires = Lang.getString(R.string.LinkExpiresNever);
-                  } else if (DateUtils.isToday(e.newInviteLink.expireDate, TimeUnit.SECONDS)) {
-                    expires = Lang.getString(R.string.LinkExpiresTomorrow, Lang.time(e.newInviteLink.expireDate, TimeUnit.SECONDS));
-                  } else if (DateUtils.isTomorrow(e.newInviteLink.expireDate, TimeUnit.SECONDS)) {
-                    expires = Lang.getString(R.string.LinkExpiresTomorrow, Lang.time(e.newInviteLink.expireDate, TimeUnit.SECONDS));
+                  } else if (DateUtils.isToday(e.newInviteLink.expirationDate, TimeUnit.SECONDS)) {
+                    expires = Lang.getString(R.string.LinkExpiresTomorrow, Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
+                  } else if (DateUtils.isTomorrow(e.newInviteLink.expirationDate, TimeUnit.SECONDS)) {
+                    expires = Lang.getString(R.string.LinkExpiresTomorrow, Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
                   } else {
-                    expires = Lang.getString(R.string.LinkExpiresFuture, Lang.getDate(e.newInviteLink.expireDate, TimeUnit.SECONDS), Lang.time(e.newInviteLink.expireDate, TimeUnit.SECONDS));
+                    expires = Lang.getString(R.string.LinkExpiresFuture, Lang.getDate(e.newInviteLink.expirationDate, TimeUnit.SECONDS), Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
                   }
                   text = Lang.getString(R.string.EventLogEditedInviteLink, link, prevLimit, newLimit, expires);
                 } else if (changedLimit) {
                   text = Lang.getString(R.string.EventLogEditedInviteLinkLimit, link, prevLimit, newLimit);
                 } else {
-                  if (e.newInviteLink.expireDate == 0) {
+                  if (e.newInviteLink.expirationDate == 0) {
                     text = Lang.getString(R.string.EventLogEditedInviteLinkExpireNever, link);
-                  } else if (DateUtils.isToday(e.newInviteLink.expireDate, TimeUnit.SECONDS)) {
-                    text = Lang.getString(R.string.EventLogEditedInviteLinkExpireToday, link, Lang.time(e.newInviteLink.expireDate, TimeUnit.SECONDS));
-                  } else if (DateUtils.isTomorrow(e.newInviteLink.expireDate, TimeUnit.SECONDS)) {
-                    text = Lang.getString(R.string.EventLogEditedInviteLinkExpireTomorrow, link, Lang.time(e.newInviteLink.expireDate, TimeUnit.SECONDS));
+                  } else if (DateUtils.isToday(e.newInviteLink.expirationDate, TimeUnit.SECONDS)) {
+                    text = Lang.getString(R.string.EventLogEditedInviteLinkExpireToday, link, Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
+                  } else if (DateUtils.isTomorrow(e.newInviteLink.expirationDate, TimeUnit.SECONDS)) {
+                    text = Lang.getString(R.string.EventLogEditedInviteLinkExpireTomorrow, link, Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
                   } else {
-                    text = Lang.getString(R.string.EventLogEditedInviteLinkExpireFuture, link, Lang.getDate(e.newInviteLink.expireDate, TimeUnit.SECONDS), Lang.time(e.newInviteLink.expireDate, TimeUnit.SECONDS));
+                    text = Lang.getString(R.string.EventLogEditedInviteLinkExpireFuture, link, Lang.getDate(e.newInviteLink.expirationDate, TimeUnit.SECONDS), Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
                   }
                 }
 

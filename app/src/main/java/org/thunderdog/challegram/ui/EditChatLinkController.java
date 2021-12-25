@@ -135,7 +135,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
       return true;
     }
 
-    return memberLimit != existingInviteLink.memberLimit || expireDate != (existingInviteLink.expireDate == 0 ? 0 : existingInviteLink.expireDate - actualTdlibSeconds) || !linkName.equals(existingInviteLink.name) || createsJoinRequest != existingInviteLink.createsJoinRequest;
+    return memberLimit != existingInviteLink.memberLimit || expireDate != (existingInviteLink.expirationDate == 0 ? 0 : existingInviteLink.expirationDate - actualTdlibSeconds) || !linkName.equals(existingInviteLink.name) || createsJoinRequest != existingInviteLink.createsJoinRequest;
   }
 
   @Override
@@ -152,7 +152,7 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
     isCreation = args.existingInviteLink == null;
     if (args.existingInviteLink != null) {
       existingInviteLink = args.existingInviteLink;
-      expireDate = Math.max(0, (int) (args.existingInviteLink.expireDate - tdlib.currentTime(TimeUnit.SECONDS)));
+      expireDate = Math.max(0, (int) (args.existingInviteLink.expirationDate - tdlib.currentTime(TimeUnit.SECONDS)));
       memberLimit = args.existingInviteLink.memberLimit;
       createsJoinRequest = args.existingInviteLink.createsJoinRequest;
       linkName = args.existingInviteLink.name;

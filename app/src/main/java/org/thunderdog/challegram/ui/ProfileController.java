@@ -3329,7 +3329,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private boolean hasTtlChanges () {
-    int originalSlowMode = chat != null ? chat.messageTtlSetting : 0;
+    int originalSlowMode = chat != null ? chat.messageTtl : 0;
     return ttlItem != null && originalSlowMode != TdConstants.CHAT_TTL_OPTIONS[ttlItem.getSliderValue()];
   }
 
@@ -3404,7 +3404,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     if (hasTtlChanges) {
-      changes.add(new TdApi.SetChatMessageTtlSetting(chat.id, TdConstants.CHAT_TTL_OPTIONS[ttlItem.getSliderValue()]));
+      changes.add(new TdApi.SetChatMessageTtl(chat.id, TdConstants.CHAT_TTL_OPTIONS[ttlItem.getSliderValue()]));
     }
 
     if (changes.isEmpty()) {
@@ -3640,7 +3640,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     if (tdlib.canDeleteMessages(chat.id) && !ChatId.isSecret(chat.id)) {
-      final int ttlValue = chat != null ? chat.messageTtlSetting : 0;
+      final int ttlValue = chat != null ? chat.messageTtl : 0;
       final boolean isChannel = isChannel();
       items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, isChannel ? R.string.ChannelTtl : R.string.ChatTtl));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
