@@ -3282,7 +3282,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public boolean isChannel (TdApi.MessageSender senderId) {
     long chatId = Td.getSenderId(senderId);
-    return chatId != 0 && isChannel(senderId);
+    return chatId != 0 && isChannel(chatId);
   }
 
   public boolean isUser (TdApi.MessageSender senderId) {
