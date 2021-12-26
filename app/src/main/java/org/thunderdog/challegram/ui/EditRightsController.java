@@ -479,7 +479,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
               case R.id.btn_date: {
                 boolean canEdit = hasAccessToEditRight(item.getId());
                 view.setIgnoreEnabled(true);
-                view.setEnabled(canEdit || getHintForToggleUnavailability(item.getId(), false) != null);
+                view.setEnabled(canEdit);
                 view.setVisuallyEnabled(canEdit, isUpdate);
                 boolean isDate;
                 if (targetRestrict.restrictedUntilDate == 0) {
