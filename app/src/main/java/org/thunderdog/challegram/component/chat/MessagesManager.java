@@ -25,12 +25,11 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.MessageListManager;
+import org.thunderdog.challegram.data.SponsoredMessageUtils;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageBotInfo;
-import org.thunderdog.challegram.data.SponsoredMessageUtils;
 import org.thunderdog.challegram.data.ThreadInfo;
-import org.thunderdog.challegram.helper.SplitMsgIds;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.mediaview.data.MediaStack;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -267,6 +266,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     LongSparseArray<LongSet> refreshMap = null;
     int maxDate = 0;
     boolean headerVisible = false;
+    int sponsoredMessageId = 0;
 
     for (int viewIndex = first; viewIndex <= last; viewIndex++) {
       View view = manager.findViewByPosition(viewIndex);
@@ -275,6 +275,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       }
       TGMessage msg = view instanceof MessageProvider ? ((MessageProvider) view).getMessage() : null;
       if (msg != null) {
+        if (msg.isSponsored()) {
+          sponsoredMessageId = (int) msg.getId(); // safe until TDLib starts returning long ad messages ID's
+          continue; // we don't need reading sponsored messages by using ViewMessages
+        }
+
         if (msg == headerMessage) {
           headerVisible = true;
         }
@@ -329,7 +334,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     setHeaderVisible(headerVisible);
 
     if (list != null) {
-      viewMessagesInternal(loader.getChatId(), loader.getMessageThreadId(), list, true);
+      viewMessagesInternal(loader.getChatId(), loader.getMessageThreadId(), list, sponsoredMessageId, true);
     }
   }
 
@@ -1718,17 +1723,16 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   boolean viewMessageInternal (final long chatId, final long messageThreadId, final long messageId) {
     LongSet set = new LongSet(1);
     set.add(messageId);
-    return viewMessagesInternal(chatId, messageThreadId, set, true);
+    return viewMessagesInternal(chatId, messageThreadId, set, 0,true);
   }
 
-  boolean viewMessagesInternal (final long chatId, final long messageThreadId, final LongSet viewed, boolean append) {
+  boolean viewMessagesInternal (final long chatId, final long messageThreadId, final LongSet viewed, int sponsoredMessageId, boolean append) {
     if (controller.isInForceTouchMode()) {
       return false;
     }
 
     final boolean isOpen = tdlib.isChatOpen(chatId);
-    final SplitMsgIds splitMessageIds = SplitMsgIds.fromArray(viewed.toArray());
-    final long[] messageIds = splitMessageIds.getMessageIds();
+    final long[] messageIds = viewed.toArray();
 
     if (isFocused && isOpen) {
       if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
@@ -1742,8 +1746,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
       } else {
         tdlib.client().send(new TdApi.ViewMessages(chatId, messageThreadId, messageIds, true), loader);
-        if (splitMessageIds.hasSponsoredMessages()) {
-          tdlib.sendAll(splitMessageIds.getSponsoredQueries(chatId), loader, null);
+        if (sponsoredMessageId != 0) {
+          tdlib.client().send(new TdApi.ViewSponsoredMessage(chatId, sponsoredMessageId), (obj) -> {});
         }
       }
       return true;
@@ -1877,11 +1881,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           for (int i = 0; i < refreshMessageIds.size(); i++) {
             long chatId = refreshMessageIds.keyAt(i);
             long[] messageIds = refreshMessageIds.valueAt(i);
-            SplitMsgIds splitIds = SplitMsgIds.fromArray(messageIds);
-            functions.add(new TdApi.ViewMessages(chatId, chatId == refreshChatId ? refreshMessageThreadId : 0, splitIds.getMessageIds(), false));
-            if (splitIds.hasSponsoredMessages()) {
-              functions.addAll(Arrays.asList(splitIds.getSponsoredQueries(chatId)));
-            }
+            functions.add(new TdApi.ViewMessages(chatId, chatId == refreshChatId ? refreshMessageThreadId : 0, messageIds, false));
           }
           tdlib.sendAll(functions.toArray(new TdApi.Function[0]), tdlib.okHandler(), () -> tdlib.ui().post(MessagesManager.this::scheduleRefresh));
         }
@@ -2018,7 +2018,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   private void onFocus () {
-    if (Config.READ_MESSAGES_BEFORE_FOCUS && viewedChatId != 0l && viewMessagesInternal(viewedChatId, viewedMessageThreadId, viewedMessages, false)) {
+    if (Config.READ_MESSAGES_BEFORE_FOCUS && viewedChatId != 0l && viewMessagesInternal(viewedChatId, viewedMessageThreadId, viewedMessages, 0, false)) {
       viewedChatId = 0l;
       viewedMessageThreadId = 0l;
       viewedMessages = null;

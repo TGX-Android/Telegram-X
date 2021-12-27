@@ -27,8 +27,6 @@ public class SponsoredMessageUtils {
     fMsg.date = date;
     fMsg.isOutgoing = false;
     fMsg.chatId = chatId;
-    fMsg.isChannelPost = true;
-    fMsg.replyInChatId = sMsg.sponsorChatId;
 
     return fMsg;
   }
@@ -41,7 +39,7 @@ public class SponsoredMessageUtils {
     TdApi.SponsoredMessage msg = new TdApi.SponsoredMessage();
     msg.sponsorChatId = tdlib.myUserId();
     msg.id = 1;
-    msg.content = new TdApi.MessageText(new TdApi.FormattedText("Test ad message", null), null);
+    msg.content = new TdApi.MessageText(new TdApi.FormattedText("Test ad message (from user/channel)", null), null);
     return msg;
   }
 }
