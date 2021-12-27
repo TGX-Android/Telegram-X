@@ -161,6 +161,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private static final int FLAG_ERROR = 1 << 30;
   private static final int FLAG_BEING_ADDED = 1 << 31;
   private static final int FLAG_EXTRA_PRESPONSOR_PADDING = 1 << 32;
+  protected static final int FLAG_SPONSORED = 1 << 33;
 
   protected TdApi.Message msg;
   private int flags;
@@ -3840,7 +3841,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public boolean isSponsored () {
-    return msg.id < 0;
+    return BitwiseUtils.getFlag(flags, FLAG_SPONSORED);
   }
 
   public final int getPinnedMessageCount () {

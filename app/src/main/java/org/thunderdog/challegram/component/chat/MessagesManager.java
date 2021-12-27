@@ -28,7 +28,7 @@ import org.thunderdog.challegram.data.MessageListManager;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageBotInfo;
-import org.thunderdog.challegram.data.TGMessageSponsored;
+import org.thunderdog.challegram.data.SponsoredMessageUtils;
 import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.helper.SplitMsgIds;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
@@ -1130,7 +1130,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         RunnableData<TGMessage> action = (lastMessage) -> {
           if (lastMessage == null) return;
           controller.sponsoredMessageLoaded = true;
-          addSentMessages(Collections.singletonList(TGMessageSponsored.sponsoredToTgx(this, loader.getChatId(), lastMessage.getDate(), message)));
+          addSentMessages(Collections.singletonList(SponsoredMessageUtils.sponsoredToTgx(this, loader.getChatId(), lastMessage.getDate(), message)));
         };
 
         TGMessage bottomMessage = findBottomMessage();

@@ -24,7 +24,7 @@ import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
-import org.thunderdog.challegram.data.TGMessageSponsored;
+import org.thunderdog.challegram.data.SponsoredMessageUtils;
 import org.thunderdog.challegram.data.TdApiExt;
 import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -37,7 +37,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
@@ -117,7 +116,7 @@ public class MessagesLoader implements Client.ResultHandler {
         if (object.getConstructor() == TdApi.SponsoredMessage.CONSTRUCTOR) {
           message = ((TdApi.SponsoredMessage) object);
         } else if (tdlib.account().isDebug()) {
-          message = TGMessageSponsored.generateSponsoredMessage(tdlib);
+          message = SponsoredMessageUtils.generateSponsoredMessage(tdlib);
         } else {
           message = null;
         }
