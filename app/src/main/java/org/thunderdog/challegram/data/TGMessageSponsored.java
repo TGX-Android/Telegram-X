@@ -18,7 +18,7 @@ public class TGMessageSponsored {
     fMsgContent.webPage.url = "";
 
     TdApi.Message fMsg = new TdApi.Message();
-    fMsg.senderId = new TdApi.MessageSenderChat(sMsg.sponsorChatId);
+    fMsg.senderId = tdlib.sender(sMsg.sponsorChatId);
     fMsg.content = fMsgContent;
     fMsg.authorSignature = "sponsored";
     fMsg.id = -sMsg.id;

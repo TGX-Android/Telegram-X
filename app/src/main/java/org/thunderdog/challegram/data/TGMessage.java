@@ -3670,7 +3670,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   @AnyThread
   public final boolean wouldCombineWith (TdApi.Message message) {
-    if (msg.mediaAlbumId == 0 || msg.mediaAlbumId != message.mediaAlbumId || msg.ttl != message.ttl || isHot() || isEventLog() || message.id < 0) {
+    if (msg.mediaAlbumId == 0 || msg.mediaAlbumId != message.mediaAlbumId || msg.ttl != message.ttl || isHot() || isEventLog() || isSponsored()) {
       return false;
     }
     int combineMode = TD.getCombineMode(msg);

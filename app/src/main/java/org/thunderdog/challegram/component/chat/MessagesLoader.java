@@ -5,7 +5,6 @@
 package org.thunderdog.challegram.component.chat;
 
 import android.os.SystemClock;
-import android.util.Pair;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;

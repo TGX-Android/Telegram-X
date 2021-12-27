@@ -957,7 +957,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   @Override
   public boolean onLongClick (View view, TGInlineKeyboard keyboard, TGInlineKeyboard.Button button) {
     if (type == TYPE_TELEGRAM_AD) {
-      ViewController<?> c = parent.context().navigation().getCurrentStackItem();
+      ViewController<?> c = parent.controller().getParentOrSelf();
 
       if (c == null) {
         return false;
