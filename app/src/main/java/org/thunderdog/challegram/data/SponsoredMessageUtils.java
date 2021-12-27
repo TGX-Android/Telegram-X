@@ -26,6 +26,7 @@ public class SponsoredMessageUtils {
     fMsg.id = sMsg.id;
     fMsg.date = date;
     fMsg.isOutgoing = false;
+    fMsg.canBeSaved = true;
     fMsg.chatId = chatId;
 
     return fMsg;
