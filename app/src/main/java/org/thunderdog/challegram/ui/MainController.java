@@ -1518,7 +1518,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (contents.isEmpty()) {
       throw new IllegalArgumentException("Unsupported content type: " + type);
     }
-    tdlib.ui().post(() -> tdlib.awaitInitialization(() -> {
+    tdlib.ui().post(() -> tdlib.awaitInitialization(() -> tdlib.ui().post(() -> {
       ShareController c = new ShareController(context, tdlib);
 
       ShareController.ShareProviderDelegate shareDelegate = new ShareController.ShareProviderDelegate() {
@@ -1561,7 +1561,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
       c.setArguments(new ShareController.Args(shareDelegate).setNeedOpenChat(true));
       c.show();
-    }));
+    })));
   }
 
   // Sync alert

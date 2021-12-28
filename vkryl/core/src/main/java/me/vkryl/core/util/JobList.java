@@ -13,14 +13,13 @@ import me.vkryl.core.lambda.FutureBool;
  */
 public final class JobList {
   private final FutureBool canExecute;
-  private final List<Runnable> list, pending;
+  private final List<Runnable> list;
 
   private volatile boolean value;
 
   public JobList (FutureBool state) {
     this.canExecute = state;
     this.list = new ArrayList<>();
-    this.pending = new ArrayList<>(0);
     synchronized (list) {
       this.value = state.get();
     }
@@ -89,16 +88,14 @@ public final class JobList {
   }
 
   private int execute () {
-    int count = list.size();
+    final int count = list.size();
     if (count == 0)
       return 0;
-    pending.clear();
-    pending.addAll(list);
+    List<Runnable> pending = new ArrayList<>(list);
     list.clear();
     for (int i = count - 1; i >= 0; i--) {
       pending.get(i).run();
     }
-    pending.clear();
     return count;
   }
 }

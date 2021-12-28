@@ -571,6 +571,10 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (view instanceof TextView)
       ((TextView) view).setTextColor(textColor);
 
+    view = dialog.findViewById(android.R.id.message);
+    if (view instanceof TextView)
+      ((TextView) view).setTextColor(textColor);
+    
     view = Views.tryFindAndroidView(context, dialog, "alertTitle");
     Views.makeFakeBold(view);
     if (view instanceof TextView)

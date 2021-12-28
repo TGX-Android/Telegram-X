@@ -52,6 +52,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   public static final String __PEER_TO_PEER_KEY = "settings_peer_to_peer";
 
   private static final String DISMISS_MESSAGE_PREFIX = "dismiss_pinned_";
+  private static final String DISMISS_REQUESTS_PREFIX = "dismiss_requests_";
 
   private static final String NOTIFICATION_GROUP_DATA_PREFIX = "notification_gdata_";
   private static final String NOTIFICATION_DATA_PREFIX = "notification_data_";
@@ -144,6 +145,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     // editor.remove(key(PEER_TO_PEER_KEY, accountId));
     Settings.instance().removeScrollPositions(accountId, editor);
     String dismissPrefix = key(DISMISS_MESSAGE_PREFIX, accountId);
+    String dismissReqPrefix = key(DISMISS_REQUESTS_PREFIX, accountId);
     String notificationGroupDataPrefix = key(NOTIFICATION_GROUP_DATA_PREFIX, accountId);
     String notificationDataPrefix = key(NOTIFICATION_DATA_PREFIX, accountId);
     String conversionPrefix = key(CONVERSION_PREFIX, accountId);
@@ -151,6 +153,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     String remoteChatIdPrefix = key(REMOTE_CHAT_ID_PREFIX, accountId);
     Settings.instance().removeByAnyPrefix(new String[] {
       dismissPrefix,
+      dismissReqPrefix,
       notificationGroupDataPrefix,
       notificationDataPrefix,
       conversionPrefix,
@@ -172,6 +175,8 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
 
     load();
   }
+
+  // Dismiss pinned messages
 
   public interface DismissMessageListener {
     void onPinnedMessageDismissed (long chatId, long messageId);
@@ -208,6 +213,43 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
 
   public boolean hasDismissedMessages (long chatId) {
     return Settings.instance().getLong(key(DISMISS_MESSAGE_PREFIX, tdlib.id()) + chatId, 0) > 0;
+  }
+
+  // Dismiss join requests
+
+  public interface DismissRequestsListener {
+    void onJoinRequestsDismissed (long chatId);
+    void onJoinRequestsRestore (long chatId);
+  }
+
+  private final ReferenceList<DismissRequestsListener> dismissRequestsListeners = new ReferenceList<>();
+
+  public void addJoinRequestsDismissListener (DismissRequestsListener listener) {
+    dismissRequestsListeners.add(listener);
+  }
+
+  public void removeJoinRequestsDismissListener (DismissRequestsListener listener) {
+    dismissRequestsListeners.remove(listener);
+  }
+
+  public void dismissRequests (long chatId, TdApi.ChatJoinRequestsInfo pendingInfo) {
+    Settings.instance().putLongArray(key(DISMISS_REQUESTS_PREFIX, tdlib.id()) + chatId, pendingInfo.userIds);
+    for (DismissRequestsListener listener : dismissRequestsListeners) {
+      listener.onJoinRequestsDismissed(chatId);
+    }
+  }
+
+  public void restoreRequests (long chatId, boolean silent) {
+    Settings.instance().remove(key(DISMISS_REQUESTS_PREFIX, tdlib.id()) + chatId);
+    if (!silent) {
+      for (DismissRequestsListener listener : dismissRequestsListeners) {
+        listener.onJoinRequestsRestore(chatId);
+      }
+    }
+  }
+
+  public boolean isRequestsDismissed (long chatId, TdApi.ChatJoinRequestsInfo pendingInfo) {
+    return pendingInfo == null || Arrays.equals(Settings.instance().getLongArray(key(DISMISS_REQUESTS_PREFIX, tdlib.id()) + chatId), pendingInfo.userIds);
   }
 
   public boolean forcePlainModeInChannels () {

@@ -1092,9 +1092,9 @@ public class TdlibListeners {
     }
   }
 
-  void updateChatMessageTtlSetting (TdApi.UpdateChatMessageTtlSetting update) {
-    updateChatMessageTtlSetting(update.chatId, update.messageTtlSetting, chatListeners.iterator());
-    updateChatMessageTtlSetting(update.chatId, update.messageTtlSetting, specificChatListeners.iterator(update.chatId));
+  void updateChatMessageTtlSetting (TdApi.UpdateChatMessageTtl update) {
+    updateChatMessageTtlSetting(update.chatId, update.messageTtl, chatListeners.iterator());
+    updateChatMessageTtlSetting(update.chatId, update.messageTtl, specificChatListeners.iterator(update.chatId));
   }
 
   // updateChatVoiceChat
@@ -1439,14 +1439,14 @@ public class TdlibListeners {
 
   // updateChatDefaultMessageSenderId
 
-  void updateChatDefaultMessageSenderId (TdApi.UpdateChatDefaultMessageSenderId update) {
+  void updateChatDefaultMessageSenderId (TdApi.UpdateChatMessageSender update) {
     for (ChatListener listener : chatListeners) {
-      listener.onChatDefaultMessageSenderIdChanged(update.chatId, update.defaultMessageSenderId);
+      listener.onChatDefaultMessageSenderIdChanged(update.chatId, update.messageSenderId);
     }
     Iterator<ChatListener> list = specificChatListeners.iterator(update.chatId);
     if (list != null) {
       while (list.hasNext()) {
-        list.next().onChatDefaultMessageSenderIdChanged(update.chatId, update.defaultMessageSenderId);
+        list.next().onChatDefaultMessageSenderIdChanged(update.chatId, update.messageSenderId);
       }
     }
   }

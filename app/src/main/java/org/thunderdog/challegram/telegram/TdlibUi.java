@@ -73,6 +73,7 @@ import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.ui.ChatJoinRequestsController;
 import org.thunderdog.challegram.ui.ChatLinkMembersController;
 import org.thunderdog.challegram.ui.ChatLinksController;
 import org.thunderdog.challegram.ui.ChatsController;
@@ -4381,6 +4382,13 @@ public class TdlibUi extends Handler {
       colors.append(ViewController.OPTION_COLOR_NORMAL);
     }
 
+    if (!deleted && link.createsJoinRequest && link.pendingJoinRequestCount > 0) {
+      ids.append(R.id.btn_manageJoinRequests);
+      strings.append(R.string.InviteLinkViewRequests);
+      icons.append(R.drawable.baseline_pending_24);
+      colors.append(ViewController.OPTION_COLOR_NORMAL);
+    }
+
     if (showNavigatingToLinks && tdlib.canManageInviteLinks(chat)) {
       ids.append(R.id.btn_manageInviteLinks);
       strings.append(R.string.InviteLinkManage);
@@ -4426,12 +4434,25 @@ public class TdlibUi extends Handler {
 
     CharSequence info = TD.makeClickable(Lang.getString(R.string.CreatedByXOnDate, ((target, argStart, argEnd, spanIndex, needFakeBold) -> spanIndex == 0 ? Lang.newUserSpan(new TdlibContext(context.context(), context.tdlib()), link.creatorUserId) : null), context.tdlib().cache().userName(link.creatorUserId), Lang.getRelativeTimestamp(link.date, TimeUnit.SECONDS)));
     Lang.SpanCreator firstBoldCreator = (target, argStart, argEnd, spanIndex, needFakeBold) -> spanIndex == 0 ? Lang.newBoldSpan(needFakeBold) : null;
-    context.showOptions(Lang.getString(R.string.format_nameAndStatus, firstBoldCreator, link.inviteLink, info), ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
+    CharSequence desc;
+
+    if (link.name != null && !link.name.isEmpty()) {
+      desc = Lang.getString(R.string.format_nameAndSubtitleAndStatus, firstBoldCreator, link.inviteLink, link.name, info);
+    } else {
+      desc = Lang.getString(R.string.format_nameAndStatus, firstBoldCreator, link.inviteLink, info);
+    }
+
+    context.showOptions(desc, ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
       switch (id) {
         case R.id.btn_viewInviteLinkMembers:
           ChatLinkMembersController c2 = new ChatLinkMembersController(context.context(), context.tdlib());
           c2.setArguments(new ChatLinkMembersController.Args(chatId, link.inviteLink));
           context.navigateTo(c2);
+          break;
+        case R.id.btn_manageJoinRequests:
+          ChatJoinRequestsController c3 = new ChatJoinRequestsController(context.context(), context.tdlib());
+          c3.setArguments(new ChatJoinRequestsController.Args(chatId, link.inviteLink, context));
+          context.navigateTo(c3);
           break;
         case R.id.btn_edit:
           EditChatLinkController c = new EditChatLinkController(context.context(), context.tdlib());

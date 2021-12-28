@@ -343,9 +343,11 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
           setShowOptimizing(true);
         } else {
           tdlib.awaitInitialization(() -> {
-            if (currentTdlib() == tdlib && !tdlib.isOptimizing()) {
-              setShowOptimizing(false);
-            }
+            handler.post(() -> {
+              if (currentTdlib() == tdlib && !tdlib.isOptimizing()) {
+                setShowOptimizing(false);
+              }
+            });
           });
         }
       }
@@ -928,7 +930,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
       return;
     }
 
-    performAs(accounts, null, null, account -> account.tdlib().awaitInitialization(() -> new LiveLocationHelper(MainActivity.this, account.tdlib(), 0, 0, null, false, null).init().openLiveLocationList(true).destroy()));
+    performAs(accounts, null, null, account -> account.tdlib().awaitInitialization(() -> handler.post(() -> new LiveLocationHelper(MainActivity.this, account.tdlib(), 0, 0, null, false, null).init().openLiveLocationList(true).destroy())));
   }
 
   private void resolveLiveLocationError (boolean force) {

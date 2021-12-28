@@ -702,9 +702,6 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   }
 
   @Override
-  public void onAuthorizationStateChanged (TdlibAccount account, TdApi.AuthorizationState authorizationState, int status) { }
-
-  @Override
   public void onActiveAccountRemoved (TdlibAccount account, int position) {
     if (showingAccounts) {
       adapter.removeItem(1 + position);

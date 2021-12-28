@@ -64,6 +64,7 @@ import org.thunderdog.challegram.widget.ChartLayout;
 import org.thunderdog.challegram.widget.CheckBox;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.DoubleTextView;
+import org.thunderdog.challegram.widget.DoubleTextViewWithIcon;
 import org.thunderdog.challegram.widget.EmbeddableStickerView;
 import org.thunderdog.challegram.widget.EmptySmartView;
 import org.thunderdog.challegram.widget.JoinedUsersView;
@@ -231,6 +232,9 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_EMBED_STICKER: {
         return Screen.dp(96f);
       }
+      case ListItem.TYPE_JOIN_REQUEST: {
+        return Screen.dp(72f);
+      }
       case ListItem.TYPE_EDITTEXT_WITH_PHOTO_SMALLER:
         return Screen.dp(82f);
       case ListItem.TYPE_LIVE_LOCATION_PROMO:
@@ -261,6 +265,10 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         if (viewType == ListItem.TYPE_SESSION_WITH_AVATAR) {
           ((AttachDelegate) ((RelativeLayout) itemView).getChildAt(5)).attach();
         }
+        break;
+      }
+      case ListItem.TYPE_JOIN_REQUEST: {
+        ((DoubleTextViewWithIcon) itemView).attach();
         break;
       }
       case ListItem.TYPE_STICKER_SET:
@@ -333,6 +341,10 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         if (viewType == ListItem.TYPE_SESSION_WITH_AVATAR) {
           ((AttachDelegate) ((RelativeLayout) itemView).getChildAt(5)).detach();
         }
+        break;
+      }
+      case ListItem.TYPE_JOIN_REQUEST: {
+        ((DoubleTextViewWithIcon) itemView).detach();
         break;
       }
       case ListItem.TYPE_STICKER_SET:
@@ -802,6 +814,13 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         View view = new View(context);
         view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0));
         return new SettingHolder(view);
+      }
+      case ListItem.TYPE_JOIN_REQUEST: {
+        DoubleTextViewWithIcon viewGroup = new DoubleTextViewWithIcon(context);
+        viewGroup.setOnClickListener(onClickListener);
+        viewGroup.addThemeListeners(themeProvider);
+        viewGroup.text().setIsRounded(true);
+        return new SettingHolder(viewGroup);
       }
       case ListItem.TYPE_STICKER_SET:
       case ListItem.TYPE_ARCHIVED_STICKER_SET:
