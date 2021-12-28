@@ -158,7 +158,7 @@ public class EditSessionController extends EditBaseController<EditSessionControl
     headerCell.setThemedTextColor(this);
     headerCell.initWithMargin(Screen.dp(49f), true);
     headerCell.setTitle(R.string.SessionDetails);
-    headerCell.setSubtitle(Lang.getReverseRelativeDate(
+    headerCell.setSubtitle(Lang.getReverseRelativeDateBold(
       session.lastActiveDate, TimeUnit.SECONDS,
       tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS,
       true, 0, R.string.session_LastActive, false
@@ -193,13 +193,13 @@ public class EditSessionController extends EditBaseController<EditSessionControl
             view.setData(R.string.SessionIP);
             break;
           case R.id.btn_sessionFirstLogin:
-            view.setData(R.string.SessionFirstLogin);
+            view.setData(session.isPasswordPending ? R.string.SessionAttempt : R.string.SessionFirstLogin);
             break;
           case R.id.btn_sessionLastLogin:
             view.setData(R.string.SessionLastLogin);
             break;
           case R.id.btn_sessionLogout:
-            view.setData((session.isCurrent || session.isPasswordPending) ? null : Lang.getReverseRelativeDate(
+            view.setData((session.isCurrent || session.isPasswordPending) ? null : Lang.getReverseRelativeDateBold(
               session.lastActiveDate + TimeUnit.DAYS.toSeconds(getArgumentsStrict().inactiveSessionTtlDays), TimeUnit.SECONDS,
               tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS,
               true, 0, R.string.session_WillTerminate, false

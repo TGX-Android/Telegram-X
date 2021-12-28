@@ -4185,6 +4185,7 @@
   <string name="SessionDevice">Device</string>
   <string name="SessionIP">IP Address</string>
   <string name="SessionFirstLogin">First Login</string>
+  <string name="SessionAttempt">Login Attempt</string>
   <string name="SessionLastLogin">Last Activity</string>
   <string name="SessionAccept">Accept</string>
   <string name="SessionReject">Reject</string>
