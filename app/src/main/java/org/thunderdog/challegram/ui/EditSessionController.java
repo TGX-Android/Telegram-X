@@ -115,11 +115,6 @@ public class EditSessionController extends EditBaseController<EditSessionControl
   }
 
   @Override
-  public CharSequence getName () {
-    return Lang.getString(R.string.InviteLinkEdit);
-  }
-
-  @Override
   protected boolean onDoneClick () {
     setDoneInProgress(true);
 
@@ -154,15 +149,17 @@ public class EditSessionController extends EditBaseController<EditSessionControl
 
   @Override
   protected void onCreateView (Context context, FrameLayoutFix contentView, RecyclerView recyclerView) {
-    headerCell = new DoubleHeaderView(context());
-    headerCell.setThemedTextColor(this);
-    headerCell.initWithMargin(Screen.dp(49f), true);
-    headerCell.setTitle(R.string.SessionDetails);
-    headerCell.setSubtitle(Lang.getReverseRelativeDateBold(
-      session.lastActiveDate, TimeUnit.SECONDS,
-      tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS,
-      true, 0, R.string.session_LastActive, false
-    ));
+    if (!session.isPasswordPending) {
+      headerCell = new DoubleHeaderView(context());
+      headerCell.setThemedTextColor(this);
+      headerCell.initWithMargin(Screen.dp(49f), true);
+      headerCell.setTitle(R.string.SessionDetails);
+      headerCell.setSubtitle(Lang.getReverseRelativeDateBold(
+        session.lastActiveDate, TimeUnit.SECONDS,
+        tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS,
+        true, 0, R.string.session_LastActive, false
+      ));
+    }
 
     setDoneIcon(R.drawable.baseline_check_24);
     setInstantDoneVisible(true);
@@ -281,5 +278,10 @@ public class EditSessionController extends EditBaseController<EditSessionControl
   @Override
   public View getCustomHeaderCell () {
     return headerCell;
+  }
+
+  @Override
+  public CharSequence getName () {
+    return Lang.getString(session.isPasswordPending ? R.string.SessionAttemptDetails : R.string.SessionDetails);
   }
 }
