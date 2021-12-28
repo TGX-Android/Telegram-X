@@ -740,7 +740,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   protected final boolean needCommentButton () {
-    if (!Config.COMMENTS_SUPPORTED || !msg.isChannelPost || isScheduled() || !allowInteraction()) {
+    if (!Config.COMMENTS_SUPPORTED || !msg.isChannelPost || isScheduled() || !allowInteraction() || isSponsored()) {
       return false;
     }
     TdApi.Message msg = this.msg;
