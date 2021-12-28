@@ -266,7 +266,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     LongSparseArray<LongSet> refreshMap = null;
     int maxDate = 0;
     boolean headerVisible = false;
-    int sponsoredMessageId = 0;
 
     for (int viewIndex = first; viewIndex <= last; viewIndex++) {
       View view = manager.findViewByPosition(viewIndex);
@@ -275,11 +274,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       }
       TGMessage msg = view instanceof MessageProvider ? ((MessageProvider) view).getMessage() : null;
       if (msg != null) {
-        if (msg.isSponsored()) {
-          sponsoredMessageId = (int) msg.getId(); // safe until TDLib starts returning long ad messages ID's
-          continue; // we don't need reading sponsored messages by using ViewMessages
-        }
-
         if (msg == headerMessage) {
           headerVisible = true;
         }
@@ -334,7 +328,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     setHeaderVisible(headerVisible);
 
     if (list != null) {
-      viewMessagesInternal(loader.getChatId(), loader.getMessageThreadId(), list, sponsoredMessageId, true);
+      viewMessagesInternal(loader.getChatId(), loader.getMessageThreadId(), list, true);
     }
   }
 
@@ -1723,10 +1717,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   boolean viewMessageInternal (final long chatId, final long messageThreadId, final long messageId) {
     LongSet set = new LongSet(1);
     set.add(messageId);
-    return viewMessagesInternal(chatId, messageThreadId, set, 0,true);
+    return viewMessagesInternal(chatId, messageThreadId, set, true);
   }
 
-  boolean viewMessagesInternal (final long chatId, final long messageThreadId, final LongSet viewed, int sponsoredMessageId, boolean append) {
+  boolean viewMessagesInternal (final long chatId, final long messageThreadId, final LongSet viewed, boolean append) {
     if (controller.isInForceTouchMode()) {
       return false;
     }
@@ -1746,9 +1740,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
       } else {
         tdlib.client().send(new TdApi.ViewMessages(chatId, messageThreadId, messageIds, true), loader);
-        if (sponsoredMessageId != 0) {
-          tdlib.client().send(new TdApi.ViewSponsoredMessage(chatId, sponsoredMessageId), (obj) -> {});
-        }
       }
       return true;
     }
@@ -2018,7 +2009,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   private void onFocus () {
-    if (Config.READ_MESSAGES_BEFORE_FOCUS && viewedChatId != 0l && viewMessagesInternal(viewedChatId, viewedMessageThreadId, viewedMessages, 0, false)) {
+    if (Config.READ_MESSAGES_BEFORE_FOCUS && viewedChatId != 0l && viewMessagesInternal(viewedChatId, viewedMessageThreadId, viewedMessages, false)) {
       viewedChatId = 0l;
       viewedMessageThreadId = 0l;
       viewedMessages = null;
