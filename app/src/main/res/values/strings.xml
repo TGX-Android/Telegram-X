@@ -4179,6 +4179,7 @@
   <string name="OnlyOwnerGroup">This setting can be toggled only by group owner.</string>
 
   <string name="SessionDetails">Session Details</string>
+  <string name="SessionAttemptDetails">Login Attempt Details</string>
   <string name="SessionApp">Application</string>
   <string name="SessionSystem">System</string>
   <string name="SessionLocation">Location</string>
