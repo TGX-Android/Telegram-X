@@ -154,10 +154,10 @@ public class EditSessionController extends EditBaseController<EditSessionControl
       headerCell.setThemedTextColor(this);
       headerCell.initWithMargin(Screen.dp(49f), true);
       headerCell.setTitle(R.string.SessionDetails);
-      headerCell.setSubtitle(Lang.getReverseRelativeDateBold(
+      headerCell.setSubtitle(Lang.getRelativeDate(
         session.lastActiveDate, TimeUnit.SECONDS,
         tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS,
-        true, 0, R.string.session_LastActive, false
+        true, 60, R.string.session_LastActive, false
       ));
     }
 
