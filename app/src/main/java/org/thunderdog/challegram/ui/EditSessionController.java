@@ -149,7 +149,7 @@ public class EditSessionController extends EditBaseController<EditSessionControl
 
   @Override
   protected void onCreateView (Context context, FrameLayoutFix contentView, RecyclerView recyclerView) {
-    if (!session.isPasswordPending) {
+    if (!session.isPasswordPending && !session.isCurrent) {
       headerCell = new DoubleHeaderView(context());
       headerCell.setThemedTextColor(this);
       headerCell.initWithMargin(Screen.dp(49f), true);
