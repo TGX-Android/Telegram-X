@@ -70,7 +70,6 @@ public class TGMessageText extends TGMessage {
     this.sponsoredMetadata = text;
     this.currentMessageText = (TdApi.MessageText) text.content;
     setText(currentMessageText.text, true);
-    addMessageFlags(FLAG_SPONSORED);
   }
 
   public TdApi.File getTargetFile () {
