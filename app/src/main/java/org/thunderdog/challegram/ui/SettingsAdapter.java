@@ -357,7 +357,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     // Override
   }
 
-  protected void setSession (ListItem item, int position, RelativeLayout parent, boolean isUpdate, TextView timeView, TextView titleView, TextView subtextView, TextView locationView, ProgressComponentView progressView, @Nullable AvatarView avatarView) {
+  protected void setSession (ListItem item, int position, RelativeLayout parent, boolean isUpdate, TextView timeView, TextView titleView, TextView subtextView, TextView locationView, ProgressComponentView progressView, @Nullable AvatarView avatarView, ImageView iconView, @Nullable TextView secretStateView, @Nullable TextView callsStateView) {
     // Override
   }
 
@@ -368,7 +368,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     TextView locationView = (TextView) parent.getChildAt(3);
     ProgressComponentView progressView = (ProgressComponentView) parent.getChildAt(4);
     AvatarView avatarView = item.getViewType() == ListItem.TYPE_SESSION_WITH_AVATAR ? (AvatarView) parent.getChildAt(5) : null;
-    setSession(item, position, parent, isUpdate, timeView, titleView, subtextView, locationView, progressView, avatarView);
+    ImageView iconView = item.getViewType() == ListItem.TYPE_SESSION ? (ImageView) parent.getChildAt(5) : null;
+    TextView secretStateView = item.getViewType() == ListItem.TYPE_SESSION ? (TextView) parent.getChildAt(6) : null;
+    TextView callStateView = item.getViewType() == ListItem.TYPE_SESSION ? (TextView) parent.getChildAt(7) : null;
+    setSession(item, position, parent, isUpdate, timeView, titleView, subtextView, locationView, progressView, avatarView, iconView, secretStateView, callStateView);
   }
 
   protected void setStickerSet (ListItem item, int position, DoubleTextView group, boolean isArchived, boolean isUpdate) {

@@ -118,6 +118,7 @@
   <item type="id" name="controller_logOut" />
   <item type="id" name="controller_editLanguage" />
   <item type="id" name="controller_editChatLink" />
+  <item type="id" name="controller_editSession" />
   <item type="id" name="controller_strings" />
   <item type="id" name="controller_editPhone" />
   <item type="id" name="controller_request" />
@@ -371,6 +372,8 @@
   <item type="id" name="session_device" />
   <item type="id" name="session_location" />
   <item type="id" name="session_title" />
+  <item type="id" name="session_calls" />
+  <item type="id" name="session_secret" />
   <item type="id" name="btn_done" />
   <item type="id" name="btn_forgotPassword" />
   <item type="id" name="btn_direction" />
@@ -387,6 +390,7 @@
   <item type="id" name="btn_sessionsEmpty_title" />
   <item type="id" name="btn_currentSession" />
   <item type="id" name="btn_qrLogin" />
+  <item type="id" name="btn_sessionTtl" />
   <item type="id" name="btn_selectChat" />
   <item type="id" name="btn_selectUnread" />
   <item type="id" name="btn_selectAll" />
@@ -653,6 +657,11 @@
   <item type="id" name="btn_expireIn2d" />
   <item type="id" name="btn_expireIn1w" />
   <item type="id" name="btn_expireIn2w" />
+  <item type="id" name="btn_terminateIn1w" />
+  <item type="id" name="btn_terminateIn1m" />
+  <item type="id" name="btn_terminateIn3m" />
+  <item type="id" name="btn_terminateIn6m" />
+  <item type="id" name="btn_terminateInCustom" />
   <item type="id" name="btn_sendScheduled" />
   <item type="id" name="btn_sendAndOpen" />
   <item type="id" name="btn_sendOnceOnline" />
@@ -826,6 +835,17 @@
   <item type="id" name="btn_instantViewModeNone" />
   <item type="id" name="btn_restrictSensitiveContent" />
   <item type="id" name="btn_ignoreContentRestrictions" />
+
+  <item type="id" name="btn_sessionApp" />
+  <item type="id" name="btn_sessionPlatform" />
+  <item type="id" name="btn_sessionCountry" />
+  <item type="id" name="btn_sessionIp" />
+  <item type="id" name="btn_sessionDevice" />
+  <item type="id" name="btn_sessionAcceptSecretChats" />
+  <item type="id" name="btn_sessionAcceptCalls" />
+  <item type="id" name="btn_sessionFirstLogin" />
+  <item type="id" name="btn_sessionLastLogin" />
+  <item type="id" name="btn_sessionLogout" />
 
   <item type="id" name="btn_secret_dontReadMessages" />
   <item type="id" name="btn_secret_dropSavedScrollPositions" />

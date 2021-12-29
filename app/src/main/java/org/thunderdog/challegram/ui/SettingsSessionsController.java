@@ -1,8 +1,10 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.text.InputType;
 import android.text.SpannableStringBuilder;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -22,7 +24,9 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.camera.CameraController;
+import org.thunderdog.challegram.unsorted.SessionIconKt;
 import org.thunderdog.challegram.util.OptionDelegate;
+import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.AvatarView;
 import org.thunderdog.challegram.widget.ProgressComponentView;
@@ -34,7 +38,11 @@ import java.util.concurrent.TimeUnit;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.collection.IntList;
+import me.vkryl.core.lambda.RunnableInt;
+import me.vkryl.core.lambda.RunnableLong;
 import me.vkryl.td.Td;
+import me.vkryl.td.TdConstants;
 
 /**
  * Date: 17/11/2016
@@ -52,9 +60,11 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
   }
 
   private Tdlib.SessionsInfo sessions;
+  private int inactiveSessionTtlDays;
 
   private void setSessions (Tdlib.SessionsInfo sessions) {
     this.sessions = sessions;
+    this.inactiveSessionTtlDays = sessions.inactiveSessionTtlDays;
   }
 
   private SettingsAdapter adapter;
@@ -68,8 +78,11 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
 
     if (tdlib.allowQrLoginCamera()) {
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_qrLogin, R.drawable.xt3000_baseline_qrcode_scan_24, R.string.ScanQR).setTextColorId(R.id.theme_color_textNeutral));
-      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     }
+
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_sessionTtl, 0, R.string.SessionTerminateTtl));
+    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     items.add(new ListItem(items.isEmpty() ? ListItem.TYPE_HEADER_PADDED : ListItem.TYPE_HEADER, 0, 0, R.string.ThisDevice));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -155,8 +168,25 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
     sessions = new Tdlib.SessionsInfo(new TdApi.Sessions(new TdApi.Session[] {sessions.currentSession}, sessions.inactiveSessionTtlDays));
   }
 
+  @Override
+  public void onInactiveSessionTtlChanged (Tdlib tdlib, int ttlDays) {
+    inactiveSessionTtlDays = ttlDays;
+    adapter.updateValuedSettingById(R.id.btn_sessionTtl);
+  }
+
   private static CharSequence getTitle (TdApi.Session session) {
     return session.deviceModel;
+  }
+
+  private static CharSequence getAppName (TdApi.Session session) {
+    return getAppName(session, null, null, null);
+  }
+
+  private static CharSequence getAppName (TdApi.Session session, Lang.SpanCreator commonCreator, Lang.SpanCreator mainCreator, Lang.SpanCreator versionCreator) {
+    return Lang.wrap(Strings.concat(" ",
+      Lang.wrap(!StringUtils.isEmpty(session.applicationName) ? session.applicationName : "App #" + session.apiId, mainCreator),
+      Lang.wrap(session.applicationVersion, versionCreator)
+    ), commonCreator);
   }
 
   private static CharSequence getSubtext (TdApi.Session session, boolean isFull) {
@@ -173,10 +203,7 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
     if (b.length() > 0) {
       b.append('\n');
     }
-    CharSequence appNameAndVersion = Lang.wrap(Strings.concat(" ",
-      Lang.wrap(!StringUtils.isEmpty(session.applicationName) ? session.applicationName : "App #" + session.apiId, mainCreator),
-      Lang.wrap(session.applicationVersion, versionCreator)
-    ), commonCreator);
+    CharSequence appNameAndVersion = getAppName(session, commonCreator, mainCreator, versionCreator);
     if (isFull) {
       b.append(Lang.getCharSequence(R.string.session_App, appNameAndVersion));
     } else {
@@ -231,20 +258,27 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
             view.setData(Lang.getStringSecure(R.string.ScanQRLogInInfo));
             break;
           }
+          case R.id.btn_sessionTtl: {
+            view.setData(Lang.getDuration((int) TimeUnit.DAYS.toSeconds(inactiveSessionTtlDays)));
+            break;
+          }
         }
       }
 
       @Override
-      protected void setSession (ListItem item, int position, RelativeLayout parent, boolean isUpdate, TextView timeView, TextView titleView, TextView subtextView, TextView locationView, ProgressComponentView progressView, AvatarView avatarView) {
+      protected void setSession (ListItem item, int position, RelativeLayout parent, boolean isUpdate, TextView timeView, TextView titleView, TextView subtextView, TextView locationView, ProgressComponentView progressView, AvatarView avatarView, ImageView iconView, TextView secretStateView, TextView callsStateView) {
         switch (item.getId()) {
           case R.id.btn_currentSession: {
-            parent.setTag(null);
+            parent.setTag(sessions.currentSession);
             timeView.setText("");
             titleView.setText(getTitle(sessions.currentSession));
-            subtextView.setText(getSubtext(sessions.currentSession, false));
+            subtextView.setText(getAppName(sessions.currentSession));
             locationView.setText(Strings.concatIpLocation(sessions.currentSession.ip, sessions.currentSession.country));
             progressView.forceFactor(0f);
-            parent.setEnabled(false);
+            iconView.setImageResource(R.drawable.baseline_device_android_x);
+            secretStateView.setVisibility(sessions.currentSession.canAcceptSecretChats ? View.VISIBLE : View.GONE);
+            callsStateView.setVisibility(sessions.currentSession.canAcceptCalls ? View.VISIBLE : View.GONE);
+            callsStateView.setPadding(sessions.currentSession.canAcceptSecretChats ? 0 : Screen.dp(48f), 0, 0, 0);
             break;
           }
           case R.id.btn_session: {
@@ -256,7 +290,7 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
             }
             timeView.setText(date);
             titleView.setText(getTitle(session));
-            subtextView.setText(getSubtext(session, false));
+            subtextView.setText(getAppName(session));
             locationView.setText(Strings.concatIpLocation(session.ip, session.country));
 
             final boolean inProgress = terminatingSessions != null && terminatingSessions.get(session.id) != null;
@@ -266,7 +300,10 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
             } else {
               progressView.forceFactor(inProgress ? 1f : 0f);
             }
-
+            iconView.setImageResource(SessionIconKt.asIcon(session));
+            secretStateView.setVisibility((session.canAcceptSecretChats && !session.isPasswordPending) ? View.VISIBLE : View.GONE);
+            callsStateView.setVisibility((session.canAcceptCalls && !session.isPasswordPending) ? View.VISIBLE : View.GONE);
+            callsStateView.setPadding(session.canAcceptSecretChats ? 0 : Screen.dp(48f), 0, 0, 0);
             break;
           }
         }
@@ -535,10 +572,80 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
         openInAppCamera(new CameraOpenOptions().anchor(v).noTrace(true).allowSystem(false).optionalMicrophone(true).mode(CameraController.MODE_QR).qrCodeListener(this));
         break;
       }
+      case R.id.btn_sessionTtl: {
+        IntList ids = new IntList(4);
+        StringList strings = new StringList(4);
+
+        RunnableInt act = (days) -> {
+          if (days == 0) return;
+          tdlib.setInactiveSessionTtl(days, err -> {});
+        };
+
+        ids.append(R.id.btn_terminateIn1w);
+        strings.append(Lang.plural(R.string.SessionTerminatesInWeeks, 1));
+
+        ids.append(R.id.btn_terminateIn1m);
+        strings.append(Lang.plural(R.string.SessionTerminatesInMonths, 1));
+
+        ids.append(R.id.btn_terminateIn3m);
+        strings.append(Lang.plural(R.string.SessionTerminatesInMonths, 3));
+
+        ids.append(R.id.btn_terminateIn6m);
+        strings.append(Lang.plural(R.string.SessionTerminatesInMonths, 6));
+
+        ids.append(R.id.btn_terminateInCustom);
+        strings.append(Lang.getString(R.string.SessionTerminatesCustom));
+
+        showOptions(null, ids.get(), strings.get(), null, null, (optionItemView, id) -> {
+          int days = 0;
+          
+          switch (id) {
+            case R.id.btn_terminateIn1w:
+              days = 7;
+              break;
+            case R.id.btn_terminateIn1m:
+              days = 31;
+              break;
+            case R.id.btn_terminateIn3m:
+              days = 31 * 3;
+              break;
+            case R.id.btn_terminateIn6m:
+              days = 31 * 6;
+              break;
+            case R.id.btn_terminateInCustom:
+              openInputAlert(Lang.getString(R.string.SessionTerminatesCustomAlertTitle), Lang.getString(R.string.SessionTerminatesCustomAlertHint), R.string.Done, R.string.Cancel, String.valueOf(inactiveSessionTtlDays), (inputView, result) -> {
+                int data = StringUtils.parseInt(result, -1);
+                if (data < 1 || data > 366)
+                  return false;
+
+                act.runWithInt(data);
+                return true;
+              }, true).getEditText().setInputType(InputType.TYPE_CLASS_NUMBER);
+              return true;
+          }
+
+          act.runWithInt(days);
+          return true;
+        });
+        break;
+      }
+      case R.id.btn_currentSession:
       case R.id.btn_session: {
         Object tag = v.getTag();
         if (tag instanceof TdApi.Session) {
-          killSession((TdApi.Session) tag, true);
+          TdApi.Session session = (TdApi.Session) tag;
+          EditSessionController esc = new EditSessionController(context, tdlib);
+          esc.setArguments(new EditSessionController.Args(session, sessions.inactiveSessionTtlDays, () -> terminateSession(session), (newSession) -> {
+            if (newSession.isCurrent) {
+              sessions.currentSession.canAcceptSecretChats = newSession.canAcceptSecretChats;
+              sessions.currentSession.canAcceptCalls = newSession.canAcceptCalls;
+              adapter.updateValuedSettingById(R.id.btn_currentSession);
+            } else {
+              sessions.allSessions[indexOfSession(newSession.id)] = newSession;
+              updateSessionById(newSession.id);
+            }
+          }));
+          context.navigation().navigateTo(esc);
         }
         break;
       }

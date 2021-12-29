@@ -1677,7 +1677,7 @@ public class Lang {
     if (months < 12) {
       return plural(R.string.xMonths, months);
     }
-    int years = days / 365;
+    int years = Math.max(1, days / 365);
     return plural(R.string.xYears, years);
   }
 

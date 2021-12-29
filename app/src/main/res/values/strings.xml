@@ -4185,6 +4185,55 @@
   <string name="OnlyOwnerChannel">This setting can be toggled only by channel owner.</string>
   <string name="OnlyOwnerGroup">This setting can be toggled only by group owner.</string>
 
+  <string name="SessionDetails">Session Details</string>
+  <string name="SessionAttemptDetails">Login Attempt Details</string>
+  <string name="SessionApp">Application</string>
+  <string name="SessionSystem">System</string>
+  <string name="SessionLocation">Location</string>
+  <string name="SessionDevice">Device</string>
+  <string name="SessionIP">IP Address</string>
+  <string name="SessionFirstLogin">First Login</string>
+  <string name="SessionAttempt">Login Attempt</string>
+  <string name="SessionLastLogin">Last Activity</string>
+  <string name="SessionAccept">Accept</string>
+  <string name="SessionReject">Reject</string>
+
+  <string name="SessionAccepts">What can be received on this device?</string>
+  <string name="SessionSecretChats">Secret Chats</string>
+  <string name="SessionCalls">Incoming Calls</string>
+
+  <string name="session_LastActive_now">last active just now</string>
+  <string name="session_LastActive_today">last active at %1$s</string>
+  <string name="session_LastActive_yesterday">last active yesterday at %1$s</string>
+  <string name="session_LastActive_weekday">last active on %1$s at %2$s</string>
+  <string name="session_LastActive_date">last active on %1$s at %2$s</string>
+  <string name="session_LastActive_seconds_one">last active %1$s second ago</string>
+  <string name="session_LastActive_seconds_other">last active %1$s seconds ago</string>
+  <string name="session_LastActive_minutes_one">last active %1$s minute ago</string>
+  <string name="session_LastActive_minutes_other">last active %1$s minutes ago</string>
+  <string name="session_LastActive_hours_one">last active %1$s hour ago</string>
+  <string name="session_LastActive_hours_other">last active %1$s hours ago</string>
+  <string name="session_WillTerminate_now">auto-terminates just now</string>
+  <string name="session_WillTerminate_today">auto-terminates at %1$s</string>
+  <string name="session_WillTerminate_yesterday">auto-terminated yesterday at %1$s</string>
+  <string name="session_WillTerminate_weekday">auto-terminates on %1$s at %2$s</string>
+  <string name="session_WillTerminate_date">auto-terminates on %1$s at %2$s</string>
+  <string name="session_WillTerminate_seconds_one">auto-terminated %1$s second ago</string>
+  <string name="session_WillTerminate_seconds_other">auto-terminated %1$s seconds ago</string>
+  <string name="session_WillTerminate_minutes_one">auto-terminated %1$s minute ago</string>
+  <string name="session_WillTerminate_minutes_other">auto-terminated %1$s minutes ago</string>
+  <string name="session_WillTerminate_hours_one">auto-terminated %1$s hour ago</string>
+  <string name="session_WillTerminate_hours_other">auto-terminated %1$s hours ago</string>
+
+  <string name="SessionTerminateTtl">Terminate old sessions if inactive for</string>
+  <string name="SessionTerminatesInWeeks_one">Terminate in %1$s week</string>
+  <string name="SessionTerminatesInWeeks_other">Terminate in %1$s weeks</string>
+  <string name="SessionTerminatesInMonths_one">Terminate in %1$s month</string>
+  <string name="SessionTerminatesInMonths_other">Terminate in %1$s months</string>
+  <string name="SessionTerminatesCustom">Enter custom value</string>
+  <string name="SessionTerminatesCustomAlertTitle">Number of Days</string>
+  <string name="SessionTerminatesCustomAlertHint">Accepted from 1 to 366</string>
+
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
   <string name="suggested_language_code_plural" />
