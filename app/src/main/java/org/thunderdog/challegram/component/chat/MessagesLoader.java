@@ -24,6 +24,7 @@ import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
+import org.thunderdog.challegram.data.SponsoredMessageUtils;
 import org.thunderdog.challegram.data.TdApiExt;
 import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -40,6 +41,7 @@ import java.util.List;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
@@ -69,6 +71,8 @@ public class MessagesLoader implements Client.ResultHandler {
   private boolean isLoading;
   private int loadingMode;
 
+  private boolean isLoadingSponsoredMessage;
+
   // private TGMessage edgeMessage;
 
   private int knownTotalMessageCount = -1;
@@ -91,6 +95,36 @@ public class MessagesLoader implements Client.ResultHandler {
   private @Nullable ThreadInfo messageThread;
 
   private long contextId;
+
+  private boolean canShowSponsoredMessage (long chatId) {
+    return tdlib.isChannel(chatId) && !manager.controller().isInForceTouchMode() && !manager.controller().inPreviewMode() && !manager.controller().areScheduledOnly() && !manager.controller().arePinnedMessages();
+  }
+
+  // Callback is called only on successful load
+  public void requestSponsoredMessage (long chatId, RunnableData<TdApi.SponsoredMessage> callback) {
+    if (!canShowSponsoredMessage(chatId) || isLoadingSponsoredMessage) {
+      return;
+    }
+
+    isLoadingSponsoredMessage = true;
+    tdlib.client().send(new TdApi.GetChatSponsoredMessage(chatId), object -> {
+      UI.post(() -> {
+        isLoadingSponsoredMessage = false;
+
+        TdApi.SponsoredMessage message;
+
+        if (object.getConstructor() == TdApi.SponsoredMessage.CONSTRUCTOR) {
+          message = ((TdApi.SponsoredMessage) object);
+        } else if (tdlib.account().isDebug()) {
+          message = SponsoredMessageUtils.generateSponsoredMessage(tdlib);
+        } else {
+          message = null;
+        }
+
+        callback.runWithData(message);
+      });
+    });
+  }
 
   public MessagesLoader (MessagesManager manager) {
     this.manager = manager;
@@ -945,14 +979,15 @@ public class MessagesLoader implements Client.ResultHandler {
         });
         return;
       }
+
+      final long sourceChatId = fromMessageId.getChatId() != 0 ? fromMessageId.getChatId() : messageThread != null ? messageThread.getChatId() : getChatId();
+
       isLoading = true;
 
       loadingMode = mode;
       loadingLocal = onlyLocal;
       loadingAllowMoreTop = allowMoreTop;
       loadingAllowMoreBottom = allowMoreBottom;
-
-      final long sourceChatId = fromMessageId.getChatId() != 0 ? fromMessageId.getChatId() : messageThread != null ? messageThread.getChatId() : getChatId();
 
       TdApi.Function function;
 
@@ -1418,8 +1453,19 @@ public class MessagesLoader implements Client.ResultHandler {
     switch (loadingMode) {
       case MODE_INITIAL:
       case MODE_REPEAT_INITIAL: {
+        TGMessage suitableMessage = null;
+
+        if (!items.isEmpty()) {
+          for (TGMessage message : items) {
+            if (!message.isSponsored()) {
+              suitableMessage = message;
+              break;
+            }
+          }
+        }
+
         canLoadTop = specialMode != SPECIAL_MODE_SCHEDULED && (loadingLocal || (totalCount != 0 && getChatId() != 0));
-        canLoadBottom = specialMode != SPECIAL_MODE_SCHEDULED && (scrollMessageId == null || !scrollMessageId.isHistoryEnd()) && canLoadTop && !items.isEmpty() && !isEndReached(new MessageId(items.get(0).getChatId(), items.get(0).getId()));
+        canLoadBottom = specialMode != SPECIAL_MODE_SCHEDULED && (scrollMessageId == null || !scrollMessageId.isHistoryEnd()) && canLoadTop && !items.isEmpty() && !isEndReached(new MessageId(suitableMessage.getChatId(), suitableMessage.getId()));
         if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
           Log.i(Log.TAG_MESSAGES_LOADER, "Received initial chunk, startTop:%s startBottom:%s canLoadTop:%b canLoadBottom:%b", getStartTop(), getStartBottom(), canLoadTop, canLoadBottom);
         }
@@ -1436,9 +1482,11 @@ public class MessagesLoader implements Client.ResultHandler {
               isLoading = false;
             }
             manager.onBottomEndLoaded();
+            manager.onBottomEndChecked();
           });
           return;
         }
+
         if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
           Log.i(Log.TAG_MESSAGES_LOADER, "Received more bottom messages, new startBottom:%s canLoadTop:%b canLoadBottom:%b", getStartBottom(), canLoadTop, canLoadBottom);
         }
@@ -1455,6 +1503,9 @@ public class MessagesLoader implements Client.ResultHandler {
               isLoading = false;
             }
             manager.onTopEndLoaded();
+            if (!canLoadBottom) {
+              manager.onBottomEndChecked();
+            }
           });
           return;
         }
@@ -1505,12 +1556,16 @@ public class MessagesLoader implements Client.ResultHandler {
       synchronized (lock) {
         isLoading = false;
       }
+
+      boolean ignoreEndCheck = false;
+
       if (loadingMode == MODE_INITIAL || loadingMode == MODE_REPEAT_INITIAL) {
         int count = items.size();
         if (count > 0 && count < chunkSize) {
           if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
             Log.i(Log.TAG_MESSAGES_LOADER, "Loading more messages, because we received too few messages");
           }
+          ignoreEndCheck = true;
           loadMore(true, chunkSize - count, willTryAgain && loadingLocal);
         }
       }
@@ -1520,6 +1575,9 @@ public class MessagesLoader implements Client.ResultHandler {
       }
       if (canLoadBottom != couldLoadBottom && !canLoadBottom) {
         manager.onBottomEndLoaded();
+      }
+      if (!canLoadBottom && !ignoreEndCheck) {
+        manager.onBottomEndChecked();
       }
       manager.ensureContentHeight();
     });

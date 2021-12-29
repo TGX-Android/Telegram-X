@@ -82,6 +82,7 @@ public class TGInlineKeyboard {
 
   public interface ClickListener {
     void onClick (View view, TGInlineKeyboard keyboard, Button button);
+    default boolean onLongClick (View view, TGInlineKeyboard keyboard, Button button) { return false; }
   }
 
   public TGInlineKeyboard (@NonNull TGMessage parent, boolean owned) {
@@ -110,11 +111,12 @@ public class TGInlineKeyboard {
     buildLayout(maxWidth, contentMaxWidth);
   }
 
-  private boolean isCustom;
+  private boolean isCustom, disableCustomPadding;
 
-  public void setCustom (int iconRes, String text, int maxWidth, ClickListener listener) {
+  public void setCustom (int iconRes, String text, int maxWidth, boolean disableCustomPadding, ClickListener listener) {
     this.maxWidth = maxWidth;
     this.isCustom = true;
+    this.disableCustomPadding = disableCustomPadding;
 
     Button button = new Button(this, parent, text.toUpperCase(), iconRes, maxWidth - getButtonPadding() * 2);
     button.setClickListener(listener);
@@ -254,7 +256,7 @@ public class TGInlineKeyboard {
     final int strokePadding = getStrokePadding();
 
     if (isCustom) {
-      buttons.get(0).draw(view, c, startX, startY, maxWidth, buttonHeight, strokePadding, rounder, 0, 0);
+      buttons.get(0).draw(view, c, startX, startY, maxWidth, buttonHeight, disableCustomPadding ? 0 : strokePadding, rounder, 0, 0);
       return;
     }
 
@@ -814,6 +816,8 @@ public class TGInlineKeyboard {
                 }
                 break;
             }
+          } else if (isCustom && clickListener != null) {
+            return clickListener.onLongClick(view, context, this);
           }
         }
       }

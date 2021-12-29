@@ -218,6 +218,7 @@
   <item type="id" name="controller_backgroundGrid" />
   <item type="id" name="controller_chatLinks" />
   <item type="id" name="controller_chatLinkMembers" />
+  <item type="id" name="controller_sponsoredMessagesInfo" />
 
   <item type="id" name="separator" />
 
@@ -981,6 +982,7 @@
   <item type="id" name="btn_messageAddContact" />
   <item type="id" name="btn_messageReschedule" />
   <item type="id" name="btn_messageSendNow" />
+  <item type="id" name="btn_messageSponsorInfo" />
 
   <item type="id" name="btn_unpinMessage" />
   <item type="id" name="btn_dismissForSelf" />

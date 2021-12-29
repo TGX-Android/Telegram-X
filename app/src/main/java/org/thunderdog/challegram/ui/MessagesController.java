@@ -80,6 +80,7 @@ import org.thunderdog.challegram.component.MediaCollectorDelegate;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.attach.MediaBottomFilesController;
 import org.thunderdog.challegram.component.attach.MediaLayout;
+import org.thunderdog.challegram.component.attach.SponsoredMessagesInfoController;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.chat.AttachLinearLayout;
 import org.thunderdog.challegram.component.chat.AudioFile;
@@ -317,6 +318,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private FrameLayoutFix scrollToBottomButtonWrap, mentionButtonWrap;
   private CircleButton scrollToBottomButton, mentionButton;
   private CounterBadgeView unreadCountView, mentionCountView;
+
+  public boolean sponsoredMessageLoaded = false;
 
   public MessagesController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -3892,6 +3895,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     botStartArgument = null;
+    sponsoredMessageLoaded = false;
 
     // switch pm state
     clearSwitchPmButton();
@@ -4800,6 +4804,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         return true;
       }
+      case R.id.btn_messageSponsorInfo: {
+        ModernActionedLayout mal = new ModernActionedLayout(this);
+        mal.setController(new SponsoredMessagesInfoController(mal, R.string.SponsoredInfoMenu));
+        mal.initCustom();
+        mal.show();
+        return true;
+      }
       case R.id.btn_messageCopyLink: {
         if (selectedMessage != null) {
           tdlib.getMessageLink(selectedMessage.getNewestMessage(), selectedMessage.getMessageCount() > 1, messageThread != null, link -> UI.copyText(link.url, link.isPublic ? R.string.CopiedLink : R.string.CopiedLinkPrivate));
@@ -5571,7 +5582,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }, AnimatorUtils.DECELERATE_INTERPOLATOR, 120l);
 
-  private void setScrollToBottomVisible (boolean isVisible, boolean isReverse, boolean animated) {
+  public void setScrollToBottomVisible (boolean isVisible, boolean isReverse, boolean animated) {
     if (messagesHidden) {
       isVisible = false;
     }

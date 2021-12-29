@@ -30,6 +30,8 @@ import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
+import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
@@ -71,6 +73,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   public static final int TYPE_TELEGRAM_ALBUM = 16;
   public static final int TYPE_TELEGRAM_THEME = 17;
   public static final int TYPE_TELEGRAM_BACKGROUND = 18;
+  public static final int TYPE_TELEGRAM_AD = 19;
 
   private static boolean isTelegramType (int type) {
     switch (type) {
@@ -83,6 +86,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       case TYPE_TELEGRAM_ALBUM:
       case TYPE_TELEGRAM_THEME:
       case TYPE_TELEGRAM_BACKGROUND:
+      case TYPE_TELEGRAM_AD:
         return true;
     }
     return false;
@@ -234,6 +238,10 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
           this.type = TYPE_TELEGRAM_BACKGROUND;
           break;
         }
+        case "telegram_adx": {
+          this.type = TYPE_TELEGRAM_AD;
+          break;
+        }
         default: {
           Log.w("Unsupported WebPage content, type: %s", webPage.type);
           break;
@@ -259,6 +267,9 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       }
     } else {
       switch (this.type) {
+        case TYPE_TELEGRAM_AD: {
+          break;
+        }
         case TYPE_VIDEO: {
           buildVideo(webPage, maxWidth);
           break;
@@ -508,6 +519,10 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       case TYPE_TELEGRAM_MESSAGE:
       case TYPE_TELEGRAM_ALBUM: {
         parent.tdlib().ui().openUrl(parent.controller(), url, rippleButton.firstButton().openParameters(view).disableInstantView());
+        break;
+      }
+      case TYPE_TELEGRAM_AD: {
+        parent.callSponsorButton();
         break;
       }
       case TGWebPage.TYPE_PHOTO:
@@ -907,6 +922,9 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         case TYPE_TELEGRAM_BOT:
           message = R.string.OpenBot;
           break;
+        case TYPE_TELEGRAM_AD:
+          message = parent.getSponsorButtonName();
+          break;
         case TYPE_TELEGRAM_CHAT:
           message = R.string.OpenChat;
           break;
@@ -920,7 +938,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       rippleButtonY = height + Screen.dp(6f);
       height = rippleButtonY + TGInlineKeyboard.getButtonHeight();
       rippleButton = new TGInlineKeyboard(parent, false);
-      rippleButton.setCustom(icon, Lang.getString(message), availWidth - paddingLeft, this);
+      rippleButton.setCustom(icon, Lang.getString(message), availWidth - paddingLeft, type != TYPE_TELEGRAM_AD, this);
     }
   }
 
@@ -934,6 +952,30 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     } else {
       open(view, false);
     }
+  }
+
+  @Override
+  public boolean onLongClick (View view, TGInlineKeyboard keyboard, TGInlineKeyboard.Button button) {
+    if (type == TYPE_TELEGRAM_AD) {
+      ViewController<?> c = parent.controller().getParentOrSelf();
+
+      if (c == null) {
+        return false;
+      }
+
+      String url;
+
+      if (parent.isSponsored()) {
+        url = parent.getSponsoredButtonUrl();
+      } else {
+        String username = parent.tdlib.chatUsername(parent.getSponsorChatId());
+        url = parent.tdlib.tMeUrl(username);
+      }
+
+      c.showCopyUrlOptions(url, parent.openParameters(), null);
+    }
+
+    return false;
   }
 
   public int getLastLineWidth () {
@@ -999,11 +1041,11 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   }
 
   public boolean needInstantView () {
-    return TD.hasInstantView(webPage) && !needsSpecialProcessing();
+    return type != TYPE_TELEGRAM_AD && TD.hasInstantView(webPage) && !needsSpecialProcessing();
   }
 
   protected boolean needsSpecialProcessing () {
-    return type == TYPE_TELEGRAM_ALBUM || TD.shouldInlineIv(webPage.displayUrl); //  && !Strings.isEmpty(webPage.author)
+    return type != TYPE_TELEGRAM_AD && (type == TYPE_TELEGRAM_ALBUM || TD.shouldInlineIv(webPage.displayUrl)); //  && !Strings.isEmpty(webPage.author)
   }
 
   protected boolean isTgWallpaper() {
@@ -1091,7 +1133,9 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   public void draw (MessageView view, Canvas c, int startX, int startY, Receiver preview, Receiver receiver, float alpha) {
     int previewWidth = getWidth();
     boolean rtl = Lang.rtl();
-    drawHeader(c, startX, startY, previewWidth, rtl);
+    if (type != TYPE_TELEGRAM_AD) {
+      drawHeader(c, startX, startY, previewWidth, rtl);
+    }
     if (component != null) {
       component.draw(view, c, rtl ? startX : startX + paddingLeft, startY + componentY, preview, receiver, parent != null ? parent.getContentBackgroundColor() : 0, parent != null ? parent.getContentReplaceColor() : 0, alpha, 0f);
     } else if (mediaWrapper != null) {
@@ -1126,7 +1170,11 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     }
     if (rippleButton != null) {
       // c.drawRect(startX + paddingLeft, startY + instantButtonY, startX + width, startY + height, Paints.fillingPaint(0xa0ff0000));
-      rippleButton.draw(view, c, rtl ? startX : startX + paddingLeft, startY + rippleButtonY);
+      if (type == TYPE_TELEGRAM_AD) {
+        rippleButton.draw(view, c, startX, startY + rippleButtonY);
+      } else {
+        rippleButton.draw(view, c, rtl ? startX : startX + paddingLeft, startY + rippleButtonY);
+      }
     }
   }
 

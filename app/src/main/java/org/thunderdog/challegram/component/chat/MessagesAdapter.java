@@ -455,6 +455,17 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
 
     TGMessage bottomMessage = top ? null : getMessage(0);
     TGMessage topMessage = top ? getMessage(getMessageCount() - 1) : null;
+    boolean sponsoredFlag = bottomMessage != null && bottomMessage.isSponsored();
+
+    if (sponsoredFlag && items != null) {
+      for (TGMessage msg : items) {
+        if (!msg.isSponsored()) {
+          bottomMessage = msg;
+          break;
+        }
+      }
+    }
+
     if (top) {
       if (topMessage != null) {
         topMessage.mergeWith(message, getMessageCount() == 1);
@@ -472,6 +483,11 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
       }
     }
     message.mergeWith(bottomMessage, !top || this.items == null || this.items.isEmpty());
+    if (bottomMessage != null && getBottomMessage().isSponsored() && !message.isSponsored()) {
+      bottomMessage.setNeedExtraPresponsoredPadding(false);
+      bottomMessage.setNeedExtraPadding(false);
+      message.setNeedExtraPresponsoredPadding(true);
+    }
     message.prepareLayout();
     if (items == null) {
       items = new ArrayList<>(INITIAL_CAPACITY);
@@ -486,14 +502,16 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
         notifyItemChanged(items.size() - 2);
       }
     } else {
+      int newIndex = sponsoredFlag ? 1 : 0;
       if (bottomMessage != null) {
-        notifyItemChanged(0);
+        notifyItemChanged(newIndex);
       }
-      items.add(0, message);
+      items.add(newIndex, message);
       if (prevSize == 0) {
         notifyItemChanged(0);
       } else {
-        notifyItemInserted(0);
+        notifyItemInserted(newIndex);
+        notifyItemRangeChanged(0, items.size());
       }
     }
 

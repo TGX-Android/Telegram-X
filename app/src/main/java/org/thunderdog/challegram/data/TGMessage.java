@@ -136,6 +136,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private static final int MESSAGE_FLAG_HAS_OLDER_MESSAGE = 1 << 2;
   private static final int MESSAGE_FLAG_IS_THREAD_HEADER = 1 << 3;
   private static final int MESSAGE_FLAG_BELOW_HEADER = 1 << 4;
+  private static final int MESSAGE_FLAG_FORCE_AVATAR = 1 << 5;
 
   private static final int FLAG_LAYOUT_BUILT = 1 << 5;
   private static final int FLAG_MERGE_FORWARD = 1 << 6;
@@ -159,6 +160,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private static final int FLAG_UNSUPPORTED = 1 << 29;
   private static final int FLAG_ERROR = 1 << 30;
   private static final int FLAG_BEING_ADDED = 1 << 31;
+  private static final int FLAG_EXTRA_PRESPONSOR_PADDING = 1 << 32;
+  protected static final int FLAG_SPONSORED = 1 << 33;
 
   protected TdApi.Message msg;
   private int flags;
@@ -380,6 +383,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private String genTime () {
     if (isEventLog()) {
       return Lang.getRelativeTimestampShort(msg.date, TimeUnit.SECONDS);
+    } else if (isSponsored()) {
+      return Lang.getString(R.string.SponsoredSign);
     }
     StringBuilder b = new StringBuilder();
     String signature;
@@ -483,9 +488,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return Lang.getDate(getComparingDate(), TimeUnit.SECONDS);
   }
 
+  public final void forceAvatarWhenMerging (boolean value) {
+    flags = BitwiseUtils.setFlag(flags, MESSAGE_FLAG_FORCE_AVATAR, value);
+  }
+
   public final boolean mergeWith (@Nullable TGMessage top, boolean isBottom) {
     if (top != null) {
       top.setNeedExtraPadding(false);
+      top.setNeedExtraPresponsoredPadding(isSponsored());
       flags |= MESSAGE_FLAG_HAS_OLDER_MESSAGE;
     } else {
       flags &= ~MESSAGE_FLAG_HAS_OLDER_MESSAGE;
@@ -503,7 +513,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         top.setIsBottom(true);
       }
       setHeaderEnabled(!headerDisabled());
-      if (top != null || getDate() != 0 || isScheduled()) {
+      if ((top != null || getDate() != 0 || isScheduled()) && !isSponsored()) {
         flags |= FLAG_SHOW_DATE;
         setDate(genDate());
       } else {
@@ -730,7 +740,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   protected final boolean needCommentButton () {
-    if (!Config.COMMENTS_SUPPORTED || !msg.isChannelPost || isScheduled() || !allowInteraction()) {
+    if (!Config.COMMENTS_SUPPORTED || !msg.isChannelPost || isScheduled() || !allowInteraction() || isSponsored()) {
       return false;
     }
     TdApi.Message msg = this.msg;
@@ -1012,6 +1022,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   protected final int getExtraPadding () {
+    if ((flags & FLAG_EXTRA_PRESPONSOR_PADDING) != 0) {
+      return Screen.dp(7f);
+    }
+
     return (flags & FLAG_EXTRA_PADDING) != 0 ? Screen.dp(7f) + (messagesController().needExtraBigPadding() ? Screen.dp(48f) : 0) : 0;
   }
 
@@ -1123,6 +1137,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (!useBubble() || separateReplyFromBubble()) {
       return false;
     }
+    if (isSponsored() && useBubbles())
+      return true;
     if (isPsa() && forceForwardedInfo())
       return true;
     if (isOutgoing() && sender.isAnonymousGroupAdmin())
@@ -2234,6 +2250,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   @CallSuper
   public boolean performLongPress (View view, float x, float y) {
+    if (isSponsored()) {
+      return false;
+    }
     boolean result = false;
     if (inlineKeyboard != null) {
       result = inlineKeyboard.performLongPress(view);
@@ -3652,7 +3671,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   @AnyThread
   public final boolean wouldCombineWith (TdApi.Message message) {
-    if (msg.mediaAlbumId == 0 || msg.mediaAlbumId != message.mediaAlbumId || msg.ttl != message.ttl || isHot() || isEventLog()) {
+    if (msg.mediaAlbumId == 0 || msg.mediaAlbumId != message.mediaAlbumId || msg.ttl != message.ttl || isHot() || isEventLog() || isSponsored()) {
       return false;
     }
     int combineMode = TD.getCombineMode(msg);
@@ -3749,7 +3768,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   private String getAdministratorSign () {
     String result = null;
-    if (administrator != null) {
+    if (isSponsored()) {
+      return null;
+    } else if (administrator != null) {
       if (!StringUtils.isEmpty(administrator.customTitle))
         result = administrator.customTitle;
       else if (administrator.isOwner)
@@ -3817,6 +3838,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   public final boolean isPsa () {
     return msg.forwardInfo != null && !StringUtils.isEmpty(msg.forwardInfo.publicServiceAnnouncementType) && !sender.isUser();
+  }
+
+  public boolean isSponsored () {
+    return BitwiseUtils.getFlag(flags, FLAG_SPONSORED);
   }
 
   public final int getPinnedMessageCount () {
@@ -3952,7 +3977,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public final boolean canBeSelected () {
-    return (!isNotSent() || canResend()) && (flags & FLAG_UNSUPPORTED) == 0 && !(this instanceof TGMessageChat) && allowInteraction();
+    return (!isNotSent() || canResend()) && (flags & FLAG_UNSUPPORTED) == 0 && !(this instanceof TGMessageChat) && allowInteraction() && !isSponsored();
   }
 
   public boolean canEditText () {
@@ -4780,6 +4805,26 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     } else {
       if ((flags & FLAG_EXTRA_PADDING) != 0) {
         flags &= ~FLAG_EXTRA_PADDING;
+        if ((flags & FLAG_LAYOUT_BUILT) != 0) {
+          height = computeHeight();
+        }
+      }
+    }
+    return oldHeight != height;
+  }
+
+  public boolean setNeedExtraPresponsoredPadding (boolean needPadding) {
+    int oldHeight = height;
+    if (needPadding) {
+      if ((flags & FLAG_EXTRA_PRESPONSOR_PADDING) == 0) {
+        flags |= FLAG_EXTRA_PRESPONSOR_PADDING;
+        if ((flags & FLAG_LAYOUT_BUILT) != 0) {
+          height = computeHeight();
+        }
+      }
+    } else {
+      if ((flags & FLAG_EXTRA_PRESPONSOR_PADDING) != 0) {
+        flags &= ~FLAG_EXTRA_PRESPONSOR_PADDING;
         if ((flags & FLAG_LAYOUT_BUILT) != 0) {
           height = computeHeight();
         }
