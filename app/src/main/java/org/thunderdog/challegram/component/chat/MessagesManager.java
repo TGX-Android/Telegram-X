@@ -1129,7 +1129,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       }
 
       loader.requestSponsoredMessage(loader.getChatId(), message -> {
-        if (message == null) return;
+        if (message == null) {
+          controller.sponsoredMessageLoaded = true;
+          return;
+        }
 
         RunnableData<TGMessage> action = (lastMessage) -> {
           if (lastMessage == null) return;
