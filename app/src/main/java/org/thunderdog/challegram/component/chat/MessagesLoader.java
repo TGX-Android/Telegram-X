@@ -1494,6 +1494,10 @@ public class MessagesLoader implements Client.ResultHandler {
           return;
         }
 
+        if (messages.length > 0 && chat.lastMessage != null && chat.lastMessage.id == messages[0].id) {
+          UI.post(manager::onBottomEndChecked);
+        }
+
         if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
           Log.i(Log.TAG_MESSAGES_LOADER, "Received more bottom messages, new startBottom:%s canLoadTop:%b canLoadBottom:%b", getStartBottom(), canLoadTop, canLoadBottom);
         }
