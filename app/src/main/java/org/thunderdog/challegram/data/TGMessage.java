@@ -160,8 +160,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private static final int FLAG_UNSUPPORTED = 1 << 29;
   private static final int FLAG_ERROR = 1 << 30;
   private static final int FLAG_BEING_ADDED = 1 << 31;
-  private static final int FLAG_EXTRA_PRESPONSOR_PADDING = 1 << 32;
-  protected static final int FLAG_SPONSORED = 1 << 33;
 
   protected TdApi.Message msg;
   private int flags;
@@ -216,6 +214,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private final Path bubblePath, bubbleClipPath;
   private float topRightRadius, topLeftRadius, bottomLeftRadius, bottomRightRadius;
   private final RectF bubblePathRect, bubbleClipPathRect;
+
+  private boolean needSponsorSmallPadding;
 
   protected final MessagesManager manager;
   protected final Tdlib tdlib;
@@ -1022,7 +1022,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   protected final int getExtraPadding () {
-    if ((flags & FLAG_EXTRA_PRESPONSOR_PADDING) != 0) {
+    if (needSponsorSmallPadding) {
       return Screen.dp(7f);
     }
 
@@ -3841,7 +3841,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public boolean isSponsored () {
-    return BitwiseUtils.getFlag(flags, FLAG_SPONSORED);
+    return false;
   }
 
   public final int getPinnedMessageCount () {
@@ -4816,15 +4816,15 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   public boolean setNeedExtraPresponsoredPadding (boolean needPadding) {
     int oldHeight = height;
     if (needPadding) {
-      if ((flags & FLAG_EXTRA_PRESPONSOR_PADDING) == 0) {
-        flags |= FLAG_EXTRA_PRESPONSOR_PADDING;
+      if (!needSponsorSmallPadding) {
+        needSponsorSmallPadding = true;
         if ((flags & FLAG_LAYOUT_BUILT) != 0) {
           height = computeHeight();
         }
       }
     } else {
-      if ((flags & FLAG_EXTRA_PRESPONSOR_PADDING) != 0) {
-        flags &= ~FLAG_EXTRA_PRESPONSOR_PADDING;
+      if (needSponsorSmallPadding) {
+        needSponsorSmallPadding = false;
         if ((flags & FLAG_LAYOUT_BUILT) != 0) {
           height = computeHeight();
         }
