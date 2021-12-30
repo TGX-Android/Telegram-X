@@ -94,6 +94,8 @@ public class MessagesLoader implements Client.ResultHandler {
   private @Nullable TdApi.Chat chat;
   private @Nullable ThreadInfo messageThread;
 
+  private RunnableData<TdApi.SponsoredMessage> sponsoredCallback;
+
   private long contextId;
 
   private boolean canShowSponsoredMessage (long chatId) {
@@ -107,6 +109,8 @@ public class MessagesLoader implements Client.ResultHandler {
     }
 
     isLoadingSponsoredMessage = true;
+    this.sponsoredCallback = callback;
+
     tdlib.client().send(new TdApi.GetChatSponsoredMessage(chatId), object -> {
       UI.post(() -> {
         isLoadingSponsoredMessage = false;
@@ -121,7 +125,9 @@ public class MessagesLoader implements Client.ResultHandler {
           message = null;
         }
 
-        callback.runWithData(message);
+        if (sponsoredCallback != null) {
+          sponsoredCallback.runWithData(message);
+        }
       });
     });
   }
@@ -468,6 +474,7 @@ public class MessagesLoader implements Client.ResultHandler {
     mergeChunk = null;
 
     synchronized (lock) {
+      sponsoredCallback = null;
       lastHandler = null;
       isLoading = false;
     }
