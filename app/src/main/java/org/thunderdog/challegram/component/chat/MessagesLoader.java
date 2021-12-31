@@ -124,7 +124,7 @@ public class MessagesLoader implements Client.ResultHandler {
           } else if (tdlib.account().isDebug()) {
             message = SponsoredMessageUtils.generateSponsoredMessage(tdlib);
           } else {
-            message = SponsoredMessageUtils.generateSponsoredMessage(tdlib);
+            message = null;
           }
 
           if (chatId == getChatId()) {
