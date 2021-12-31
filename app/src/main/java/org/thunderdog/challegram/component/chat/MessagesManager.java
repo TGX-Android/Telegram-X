@@ -1137,7 +1137,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         RunnableData<TGMessage> action = (lastMessage) -> {
           if (lastMessage == null) return;
           controller.sponsoredMessageLoaded = true;
-          addSentMessages(Collections.singletonList(SponsoredMessageUtils.sponsoredToTgx(this, loader.getChatId(), lastMessage.getDate(), message)));
+          adapter.addMessage(SponsoredMessageUtils.sponsoredToTgx(this, loader.getChatId(), lastMessage.getDate(), message), false, false);
+          if (manager.findFirstCompletelyVisibleItemPosition() == 0 && !isScrolling) {
+            manager.scrollToPositionWithOffset(getHighestSponsoredMessageIndex(), Screen.dp(48f));
+          }
         };
 
         TGMessage bottomMessage = findBottomMessage();
