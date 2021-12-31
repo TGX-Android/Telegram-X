@@ -32,6 +32,7 @@ import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.CancellableResultHandler;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -94,7 +95,7 @@ public class MessagesLoader implements Client.ResultHandler {
   private @Nullable TdApi.Chat chat;
   private @Nullable ThreadInfo messageThread;
 
-  private RunnableData<TdApi.SponsoredMessage> sponsoredCallback;
+  private CancellableResultHandler sponsoredResultHandler;
 
   private long contextId;
 
@@ -109,27 +110,29 @@ public class MessagesLoader implements Client.ResultHandler {
     }
 
     isLoadingSponsoredMessage = true;
-    this.sponsoredCallback = callback;
+    sponsoredResultHandler = new CancellableResultHandler() {
+      @Override
+      public void processResult (TdApi.Object object) {
+        UI.post(() -> {
+          isLoadingSponsoredMessage = false;
+          sponsoredResultHandler = null;
 
-    tdlib.client().send(new TdApi.GetChatSponsoredMessage(chatId), object -> {
-      UI.post(() -> {
-        isLoadingSponsoredMessage = false;
+          TdApi.SponsoredMessage message;
 
-        TdApi.SponsoredMessage message;
+          if (object.getConstructor() == TdApi.SponsoredMessage.CONSTRUCTOR) {
+            message = ((TdApi.SponsoredMessage) object);
+          } else if (tdlib.account().isDebug()) {
+            message = SponsoredMessageUtils.generateSponsoredMessage(tdlib);
+          } else {
+            message = SponsoredMessageUtils.generateSponsoredMessage(tdlib);
+          }
 
-        if (object.getConstructor() == TdApi.SponsoredMessage.CONSTRUCTOR) {
-          message = ((TdApi.SponsoredMessage) object);
-        } else if (tdlib.account().isDebug()) {
-          message = SponsoredMessageUtils.generateSponsoredMessage(tdlib);
-        } else {
-          message = null;
-        }
+          callback.runWithData(message);
+        });
+      }
+    };
 
-        if (sponsoredCallback != null) {
-          sponsoredCallback.runWithData(message);
-        }
-      });
-    });
+    tdlib.client().send(new TdApi.GetChatSponsoredMessage(chatId), sponsoredResultHandler);
   }
 
   public MessagesLoader (MessagesManager manager) {
@@ -473,8 +476,11 @@ public class MessagesLoader implements Client.ResultHandler {
     mergeMode = MERGE_MODE_NONE;
     mergeChunk = null;
 
+    if (sponsoredResultHandler != null) {
+      sponsoredResultHandler.cancel();
+    }
+
     synchronized (lock) {
-      sponsoredCallback = null;
       lastHandler = null;
       isLoading = false;
     }
