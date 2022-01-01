@@ -1137,8 +1137,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         RunnableData<TGMessage> action = (lastMessage) -> {
           if (lastMessage == null) return;
           controller.sponsoredMessageLoaded = true;
+          boolean isFirstItemVisible = manager.findFirstCompletelyVisibleItemPosition() == 0;
           adapter.addMessage(SponsoredMessageUtils.sponsoredToTgx(this, loader.getChatId(), lastMessage.getDate(), message), false, false);
-          if (manager.findFirstCompletelyVisibleItemPosition() == 0 && !isScrolling) {
+          if (isFirstItemVisible && !isScrolling && !controller.canWriteMessages()) {
             manager.scrollToPositionWithOffset(getHighestSponsoredMessageIndex(), Screen.dp(48f));
           }
         };
