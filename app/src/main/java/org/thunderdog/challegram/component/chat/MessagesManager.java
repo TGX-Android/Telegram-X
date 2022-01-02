@@ -772,7 +772,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (!Config.SMOOTH_SCROLL_TO_BOTTOM_ENABLED || !smooth) {
       if (adapter.getBottomMessage() != null && adapter.getBottomMessage().isSponsored()) {
         controller.setScrollToBottomVisible(false, false, false);
-        manager.scrollToPositionWithOffset(getHighestSponsoredMessageIndex(), Screen.dp(48f));
+        if (controller.canWriteMessages()) {
+          manager.scrollToPosition(1);
+        } else {
+          manager.scrollToPositionWithOffset(0, Screen.dp(48f));
+        }
       } else {
         manager.scrollToPositionWithOffset(0, 0);
       }
@@ -1137,9 +1141,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         RunnableData<TGMessage> action = (lastMessage) -> {
           if (lastMessage == null) return;
           controller.sponsoredMessageLoaded = true;
+          boolean isFirstItemVisible = manager.findFirstCompletelyVisibleItemPosition() == 0;
           adapter.addMessage(SponsoredMessageUtils.sponsoredToTgx(this, loader.getChatId(), lastMessage.getDate(), message), false, false);
-          if (manager.findFirstCompletelyVisibleItemPosition() == 0 && !isScrolling) {
-            manager.scrollToPositionWithOffset(getHighestSponsoredMessageIndex(), Screen.dp(48f));
+          if (isFirstItemVisible && !isScrolling && !controller.canWriteMessages()) {
+            manager.scrollToPositionWithOffset(0, Screen.dp(48f));
           }
         };
 
@@ -1331,9 +1336,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
         boolean bottomFullyVisible = manager.findFirstCompletelyVisibleItemPosition() == 0;
         if (!adapter.addMessage(message, false, scrollToBottom)) {
-          if (message.isSponsored()) {
-            if (bottomFullyVisible) {
-              manager.scrollToPositionWithOffset(getHighestSponsoredMessageIndex(), Screen.dp(48f));
+          if (message.isSponsored() && bottomFullyVisible) {
+            if (controller.canWriteMessages()) {
+              manager.scrollToPosition(1);
+            } else {
+              manager.scrollToPositionWithOffset(0, Screen.dp(48f));
             }
           } else {
             manager.scrollToPositionWithOffset(0, scrollOffsetInPixels);
@@ -1345,20 +1352,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     } else if (message.isSending()) {
       loadFromStart();
     }
-  }
-
-  private int getHighestSponsoredMessageIndex () {
-    if (adapter.getItems() == null) {
-      return 0;
-    }
-
-    for (int i = 0; i < adapter.getItems().size(); i++) {
-      if (!adapter.getItem(i).isSponsored()) {
-        return i;
-      }
-    }
-
-    return 0;
   }
 
   @Override
