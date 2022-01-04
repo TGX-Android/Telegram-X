@@ -3707,7 +3707,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public final boolean shouldDisallowScreenshots () {
-    return chat != null && (isSecretChat() || chat.hasProtectedContent);
+    return chat != null && (isSecretChat() || chat.hasProtectedContent || manager.hasVisibleProtectedContent());
   }
 
   @Override
