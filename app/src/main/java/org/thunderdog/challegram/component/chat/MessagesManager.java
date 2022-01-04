@@ -775,7 +775,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (controller.canWriteMessages()) {
           manager.scrollToPosition(1);
         } else {
-          manager.scrollToPositionWithOffset(0, Screen.dp(48f));
+          manager.scrollToPositionWithOffset(1, Screen.dp(48f));
         }
       } else {
         manager.scrollToPositionWithOffset(0, 0);
@@ -1144,7 +1144,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           boolean isFirstItemVisible = manager.findFirstCompletelyVisibleItemPosition() == 0;
           adapter.addMessage(SponsoredMessageUtils.sponsoredToTgx(this, loader.getChatId(), lastMessage.getDate(), message), false, false);
           if (isFirstItemVisible && !isScrolling && !controller.canWriteMessages()) {
-            manager.scrollToPositionWithOffset(0, Screen.dp(48f));
+            manager.scrollToPositionWithOffset(1, Screen.dp(48f));
           }
         };
 
@@ -1340,7 +1340,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
             if (controller.canWriteMessages()) {
               manager.scrollToPosition(1);
             } else {
-              manager.scrollToPositionWithOffset(0, Screen.dp(48f));
+              manager.scrollToPositionWithOffset(1, Screen.dp(48f));
             }
           } else {
             manager.scrollToPositionWithOffset(0, scrollOffsetInPixels);
