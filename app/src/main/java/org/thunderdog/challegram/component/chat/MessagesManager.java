@@ -266,6 +266,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     LongSparseArray<LongSet> refreshMap = null;
     int maxDate = 0;
     boolean headerVisible = false;
+    boolean hasProtectedContent = false;
 
     for (int viewIndex = first; viewIndex <= last; viewIndex++) {
       View view = manager.findViewByPosition(viewIndex);
@@ -274,6 +275,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       }
       TGMessage msg = view instanceof MessageProvider ? ((MessageProvider) view).getMessage() : null;
       if (msg != null) {
+        if (!msg.canBeSaved() && !msg.isSponsored()) {
+          hasProtectedContent = true;
+        }
         if (msg == headerMessage) {
           headerVisible = true;
         }
@@ -324,6 +328,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       lastCheckedTopId = lastCheckedBottomId = lastCheckedCount = 0;
     }
 
+    setHasVisibleProtectedContent(hasProtectedContent);
     setRefreshMessages(loader.getChatId(), loader.getMessageThreadId(), viewedMap, maxDate);
     setHeaderVisible(headerVisible);
 
@@ -442,6 +447,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       pinnedMessages = null;
     }
     pinnedMessagesAvailable = false;
+    hasVisibleProtectedContent = false;
     unsubscribeFromUpdates();
     mentionsHandler = null;
     closestMentions = null;
@@ -775,7 +781,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (controller.canWriteMessages()) {
           manager.scrollToPosition(1);
         } else {
-          manager.scrollToPositionWithOffset(0, Screen.dp(48f));
+          manager.scrollToPositionWithOffset(1, Screen.dp(48f));
         }
       } else {
         manager.scrollToPositionWithOffset(0, 0);
@@ -1144,7 +1150,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           boolean isFirstItemVisible = manager.findFirstCompletelyVisibleItemPosition() == 0;
           adapter.addMessage(SponsoredMessageUtils.sponsoredToTgx(this, loader.getChatId(), lastMessage.getDate(), message), false, false);
           if (isFirstItemVisible && !isScrolling && !controller.canWriteMessages()) {
-            manager.scrollToPositionWithOffset(0, Screen.dp(48f));
+            manager.scrollToPositionWithOffset(1, Screen.dp(48f));
           }
         };
 
@@ -1340,7 +1346,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
             if (controller.canWriteMessages()) {
               manager.scrollToPosition(1);
             } else {
-              manager.scrollToPositionWithOffset(0, Screen.dp(48f));
+              manager.scrollToPositionWithOffset(1, Screen.dp(48f));
             }
           } else {
             manager.scrollToPositionWithOffset(0, scrollOffsetInPixels);
@@ -1893,6 +1899,19 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       this.refreshMessageIds = messageIds;
       this.refreshMaxDate = maxDate;
       scheduleRefresh();
+    }
+  }
+
+  private boolean hasVisibleProtectedContent;
+
+  public boolean hasVisibleProtectedContent () {
+    return hasVisibleProtectedContent;
+  }
+
+  private void setHasVisibleProtectedContent (boolean hasProtectedContent) {
+    if (this.hasVisibleProtectedContent != hasProtectedContent) {
+      this.hasVisibleProtectedContent = hasProtectedContent;
+      controller.context().checkDisallowScreenshots();
     }
   }
 

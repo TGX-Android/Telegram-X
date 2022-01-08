@@ -21,14 +21,15 @@ other cases - Other is used
 
 fun TdApi.Session.asIcon () = when {
   apiId == 21724 -> R.drawable.baseline_device_android_x
+  containsModel("firefox") -> R.drawable.templarian_device_web_firefox
+  containsModel("opera") -> R.drawable.baseline_device_web_opera
+  containsModel("edg") -> R.drawable.templarian_device_web_edge // Chrome-based Edge names itself as "Edg", while EdgeHTML one is "Edge"
+  containsModel("chrome") -> R.drawable.templarian_device_web_chrome
+  containsModel("safari") -> R.drawable.templarian_device_web_safari
   containsPlatform("android") -> R.drawable.baseline_device_android
   containsPlatform("windows") -> R.drawable.baseline_device_windows
   containsPlatform("mac") -> if (containsModel("macbook")) R.drawable.baseline_device_macbook else R.drawable.baseline_device_imac
   containsPlatform("ios") -> if (containsModel("ipad")) R.drawable.baseline_device_ipad else R.drawable.baseline_device_iphone
-  containsModel("edg") -> R.drawable.templarian_device_web_edge // Chrome-based Edge names itself as "Edg", while EdgeHTML one is "Edge"
-  containsModel("chrome") -> R.drawable.templarian_device_web_chrome
-  containsModel("firefox") -> R.drawable.templarian_device_web_firefox
-  containsModel("safari") -> R.drawable.templarian_device_web_safari
   else -> R.drawable.baseline_device_other
 }
 
