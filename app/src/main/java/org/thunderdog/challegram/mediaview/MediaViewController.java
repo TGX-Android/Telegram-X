@@ -1308,7 +1308,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private void updateVideoState (boolean animated) {
     MediaItem item = stack.getCurrent();
-    setVideoVisible(item.isVideo(), item.isLoaded(), item.getVideoDuration(true, TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS, animated);
+    setVideoVisible(item.isVideo(), Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE || item.isLoaded(), item.getVideoDuration(true, TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS, animated);
     if (mode == MODE_GALLERY) {
       boolean isVideo = item.isVideo();
       if (isVideo) {
@@ -2997,6 +2997,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   @Override
+  public void onSeekSecondaryProgress (MediaItem item, float progress) {
+    if (stack.getCurrent() == item && videoSliderView != null) {
+      videoSliderView.updateSecondarySeek(progress);
+    }
+  }
+
+  @Override
   public void onPlayPause (MediaItem item, boolean isPlaying) {
     if (stack.getCurrent() != item) {
       return;
@@ -3998,7 +4005,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     @Override
     public void invalidateContent () {
-      if (this.item != null && this.item.getPreviewImageFile() == null && this.item.isLoaded()) {
+      if (this.item != null && this.item.getPreviewImageFile() == null && (Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE || this.item.isLoaded())) {
         this.preview.getImageReceiver().requestFile(item.getThumbImageFile(Screen.dp(THUMBS_HEIGHT) + Screen.dp(THUMBS_PADDING) * 2, false));
       }
     }
@@ -5324,7 +5331,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   @Override
   public boolean allowSliderChanges (SliderView view) {
-    return stack.getCurrent().isVideo() && stack.getCurrent().isLoaded();
+    return stack.getCurrent().isVideo() && (Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE || stack.getCurrent().isLoaded());
   }
 
   private int getSelectedMediaCount () {
