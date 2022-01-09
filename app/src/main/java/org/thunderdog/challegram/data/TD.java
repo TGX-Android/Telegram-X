@@ -6123,6 +6123,7 @@ public class TD {
       case TdApi.MessageBasicGroupChatCreate.CONSTRUCTOR:
         return new ContentPreview(EMOJI_GROUP, isOutgoing ? R.string.ChatContentGroupCreate_outgoing : R.string.ChatContentGroupCreate);
       case TdApi.MessageChatJoinByLink.CONSTRUCTOR:
+      case TdApi.MessageChatJoinByRequest.CONSTRUCTOR:
         return new ContentPreview(EMOJI_GROUP, isOutgoing ? R.string.ChatContentGroupJoin_outgoing : R.string.ChatContentGroupJoin);
       case TdApi.MessageChatChangePhoto.CONSTRUCTOR:
         if (tdlib.isChannel(chatId))
