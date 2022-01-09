@@ -207,7 +207,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     if (Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
       this.fileProgress.setIgnoreLoaderClicks(true);
       this.fileProgress.setVideoStreaming(true);
-      this.fileProgress.setDownloadedIconRes(R.drawable.baseline_play_arrow_36_white);
+      this.fileProgress.setDownloadedIconRes(FileProgressComponent.PLAY_ICON);
       this.fileProgress.setPausedIconRes(R.drawable.baseline_cloud_download_24);
     }
 
@@ -795,7 +795,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       this.cellWidth = width;
       this.cellHeight = height;
       this.lastLeft = this.lastTop = -1;
-      if (widthChanged && !StringUtils.isEmpty(duration) && !isVideo()) {
+      if (widthChanged && !StringUtils.isEmpty(duration) && !(isVideo() && !getFileProgress().isLoaded() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE)) {
         trimDuration();
       }
     }
@@ -889,8 +889,8 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       int pDurationCorners = Screen.dp(isStreamingUI ? 12f : 4f);
       int pDurationTop = cellTop + Screen.dp(8f);
       int pDurationLeft = cellLeft + Screen.dp(12f);
-      int pDurationRight = pDurationLeft + durationWidth + (fpRadius / 4) + ((!isLoaded && !isVideo()) ? Screen.dp(4f) : 0);
-      int pDurationBottom = pDurationTop + (isVideo() ? (fpRadius * 2) + Screen.dp(8f) : durationHeight());
+      int pDurationRight = pDurationLeft + durationWidth + (fpRadius * 2) + (isStreamingUI ? Screen.dp(16f) : Screen.dp(4f));
+      int pDurationBottom = pDurationTop + (isStreamingUI ? (fpRadius * 2) + Screen.dp(8f) : durationHeight());
 
       RectF rectF = Paints.getRectF();
       rectF.set(pDurationLeft - Screen.dp(4f), pDurationTop, pDurationRight, pDurationBottom);
@@ -909,7 +909,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       if (isStreamingUI) {
         int textBaseline = pDurationLeft + (fpRadius * 2) + Screen.dp(6f);
         int textYBaseline = pDurationTop + ((pDurationBottom - pDurationTop) / 2);
-        //c.drawLine(textBaseline, textYBaseline, pDurationRight, textYBaseline, Paints.fillingPaint(Color.WHITE));
+
         c.drawText(durationShort, textBaseline, textYBaseline - Screen.dp(4f), paint);
         c.drawText(duration, textBaseline, textYBaseline + Screen.dp(13f), paint);
       } else {
@@ -1123,8 +1123,8 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       this.duration = twLineHeader;
       this.durationShort = twLineSubheader;
       TextPaint paint = Paints.getRegularTextPaint(13f);
-      this.durationWidthFull = (int) U.measureText(text, paint);
-      this.durationWidthShort = (int) U.measureText(textShort, paint);
+      this.durationWidthFull = (int) U.measureText(twLineHeader, paint);
+      this.durationWidthShort = (int) U.measureText(twLineSubheader, paint);
       this.durationWidth = Math.max(this.durationWidthFull, this.durationWidthShort);
       this.durationTrimmed = this.duration;
       return true;

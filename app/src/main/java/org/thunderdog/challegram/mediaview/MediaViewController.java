@@ -1491,12 +1491,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         if (item.isLoaded() && item.canBeSaved()) {
           ids.append(R.id.btn_saveToGallery);
           strings.append(R.string.SaveToGallery);
-
-          if (mode != MODE_SECRET && mode != MODE_GALLERY && item.canBeShared()) {
-            ids.append(R.id.btn_share);
-            strings.append(R.string.Share);
-          }
         }
+
+        if (mode != MODE_SECRET && mode != MODE_GALLERY && item.canBeSaved() && item.canBeShared()) {
+          ids.append(R.id.btn_share);
+          strings.append(R.string.Share);
+        }
+
         if (item.isGifType() && item.canBeSaved()) {
           ids.append(R.id.btn_saveGif);
           strings.append(R.string.SaveGif);

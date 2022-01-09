@@ -159,7 +159,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     this.isVideoStreaming = isVideoStreaming;
     this.playPausePath = new Path();
     setIsPlaying(false, false);
-    DrawAlgorithms.buildPlayPause(playPausePath, Screen.dp(13f), -1f, playPauseDrawFactor = this.playPauseFactor);
+    DrawAlgorithms.buildPlayPause(playPausePath, Screen.dp(18f), -1f, playPauseDrawFactor = this.playPauseFactor);
   }
 
   private boolean isVideoStreaming () {
