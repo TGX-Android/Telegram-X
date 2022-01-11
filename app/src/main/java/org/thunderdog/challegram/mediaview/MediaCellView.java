@@ -10,6 +10,7 @@ import android.graphics.Rect;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 
 import androidx.annotation.Nullable;
 
@@ -35,6 +36,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.widget.FileProgressComponent;
 import org.thunderdog.challegram.widget.ForceTouchView;
+import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.SparseDrawableView;
 
 import me.vkryl.android.AnimatorUtils;
@@ -73,6 +75,7 @@ public class MediaCellView extends ViewGroup implements
   private @Nullable VideoPlayerView playerView;
   private CellButtonView buttonView;
   private CellVideoView videoParentView;
+  private BufferingProgressBarWrap bufferingProgressView;
 
   private class ForegroundView extends View {
     public ForegroundView (Context context) {
@@ -127,6 +130,15 @@ public class MediaCellView extends ViewGroup implements
     this.buttonView = new CellButtonView(context);
     this.buttonView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
     addView(buttonView);
+
+    this.bufferingProgressView = new BufferingProgressBarWrap(context);
+    this.bufferingProgressView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+    addView(bufferingProgressView);
+  }
+
+  @Override
+  public void onBufferingStateChanged (boolean isBuffering) {
+    bufferingProgressView.setProgressVisible(isBuffering);
   }
 
   @Override
@@ -461,6 +473,7 @@ public class MediaCellView extends ViewGroup implements
 
   public void destroy () {
     setMedia(null);
+    bufferingProgressView.performDestroy();
     imageReceiver.destroy();
     gifReceiver.destroy();
     imagePreviewReceiver.destroy();

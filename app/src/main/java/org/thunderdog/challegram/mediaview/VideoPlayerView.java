@@ -339,9 +339,14 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
 
   @Override
   public void onPlaybackStateChanged (@Player.State int playbackState) {
-    if (callback != null && playbackState == Player.STATE_READY) {
-      callback.onPlayReady();
+    if (callback != null) {
+      if (playbackState == Player.STATE_READY) {
+        callback.onPlayReady();
+      }
+
+      callback.onBufferingStateChanged(playbackState == Player.STATE_BUFFERING);
     }
+
     switch (playbackState) {
       case Player.STATE_ENDED: {
         if (isLooping && player != null) {
@@ -387,6 +392,7 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
     void onPlayReady ();
     void onPlayPause (boolean isPlaying);
     void onPlayProgress (long totalDuration, long now);
+    void onBufferingStateChanged (boolean isBuffering);
   }
 
   private Callback callback;
