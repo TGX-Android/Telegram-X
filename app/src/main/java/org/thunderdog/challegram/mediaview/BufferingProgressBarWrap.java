@@ -3,18 +3,11 @@ package org.thunderdog.challegram.mediaview;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.animation.DecelerateInterpolator;
-import android.widget.FrameLayout;
-import android.widget.ProgressBar;
 
 import androidx.annotation.NonNull;
 
-import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
@@ -22,7 +15,6 @@ import org.thunderdog.challegram.widget.ProgressComponent;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
-import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.SingleViewProvider;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
@@ -73,7 +65,7 @@ public class BufferingProgressBarWrap extends View implements Destroyable {
   protected void onDraw (Canvas canvas) {
     super.onDraw(canvas);
 
-    final int color = 0x60000000;
+    final int color = 0x4c000000;
     final int bgColor = ColorUtils.color((int) ((float) Color.alpha(color) * progressVisible.getFloatValue()), color);
 
     canvas.drawRoundRect(fakeDialogFrame, Screen.dp(8f), Screen.dp(8f), Paints.getPorterDuffPaint(bgColor));
