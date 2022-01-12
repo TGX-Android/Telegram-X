@@ -1037,7 +1037,7 @@ public class MediaCellView extends ViewGroup implements
       cancelDelayedLoad();
       this.media.detachFromView(buttonView);
       this.media.detachFromView(imageView);
-      if (delayed && !this.media.isLoaded() && !this.media.isVideo()) {
+      if ((forceTouchMode && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE && this.media.isVideo()) || (delayed && !this.media.isLoaded() && !this.media.isVideo())) {
         this.media.pauseAbandonedDownload();
       }
     }
