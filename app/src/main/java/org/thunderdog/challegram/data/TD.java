@@ -1677,7 +1677,7 @@ public class TD {
   public static TdApi.PhoneNumberAuthenticationSettings defaultPhoneNumberAuthenticationSettings () {
     return new TdApi.PhoneNumberAuthenticationSettings(
       false,
-      false, // TODO support to save Telegram money
+      true,
       false,
       false, // TODO for faster login when SMS method is chosen
       Settings.instance().getAuthenticationTokens()
@@ -2018,6 +2018,8 @@ public class TD {
         return ((TdApi.AuthenticationCodeTypeSms) info).length;
       case TdApi.AuthenticationCodeTypeTelegramMessage.CONSTRUCTOR:
         return ((TdApi.AuthenticationCodeTypeTelegramMessage) info).length;
+      case TdApi.AuthenticationCodeTypeMissedCall.CONSTRUCTOR:
+        return ((TdApi.AuthenticationCodeTypeMissedCall) info).length;
       /*case TdApi.AuthenticationCodeTypeFlashCall.CONSTRUCTOR:
         return ((TdApi.AuthenticationCodeTypeFlashCall) info).pattern;*/
     }
