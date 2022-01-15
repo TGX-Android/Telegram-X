@@ -98,6 +98,7 @@
   <string name="login_PhoneNumber">Phone number</string>
   <string name="login_error">Error: %1$s. __Contact us__, if you need help.</string>
   <string name="login_Code">Code</string>
+  <string name="login_LastDigits">Last %1$s digits</string>
   <string name="login_Password">Password</string>
   <string name="Country">Country</string>
   <string name="login_SmsHint">We will send an SMS with a confirmation code to your phone number.</string>
@@ -1188,6 +1189,7 @@
   <string name="SentAppCode">We\'ve sent the code to the **Telegram** app on your other device.</string>
   <string name="SentCallOnly">We\'ve sent an activation call to your phone **%1$s**.\n\nDon\'t accept the call, Telegram will process everything automatically.</string>
   <string name="SentCallCode">Calling your phone **%1$s** to dictate the code.</string>
+  <string name="SentMissedCall">Within next few seconds you should receive a short call from a phone number which starts with **%1$s**.\n\nPlease enter the last **%2$s digits** of the missed call.</string>
   <string name="DidNotGetTheCode">Haven\'t received the code?</string>
   <string name="SuccessfullyChangedNumber">Successfully changed number to %1$s.</string>
   <string name="YourPhone">Your Phone</string>
