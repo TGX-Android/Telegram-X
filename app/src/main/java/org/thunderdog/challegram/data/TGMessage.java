@@ -3267,7 +3267,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   public boolean onMessageClick (MessageView v, MessagesController c) {
     // TODO
-    return isEventLog();
+    return /* isEventLog() */ false;
   }
 
   public int getWidth () {
