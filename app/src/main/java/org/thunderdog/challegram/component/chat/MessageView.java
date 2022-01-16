@@ -1064,7 +1064,16 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
             showEventLogRestrict(m, false, sender, myStatus, member);
             break;
           case R.id.btn_messageCopy:
-            TdApi.FormattedText text = ((TGMessageText) msg).getText();
+            TdApi.FormattedText text;
+
+            if (TD.canCopyText(msg.getMessage())) {
+              text = Td.textOrCaption(msg.getMessage().content);
+            } else if (msg instanceof TGMessageText) {
+              text = ((TGMessageText) msg).getText();
+            } else {
+              text = null;
+            }
+
             if (text != null)
               UI.copyText(TD.toCopyText(text), R.string.CopiedText);
             break;
@@ -1100,7 +1109,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
         TdApi.ChatMember member = (TdApi.ChatMember) result;
 
-        if ((msg instanceof TGMessageText && ((TGMessageText) msg).getText().text.trim().length() > 0)) {
+        if (TD.canCopyText(msg.getMessage()) || (msg instanceof TGMessageText && ((TGMessageText) msg).getText().text.trim().length() > 0)) {
           ids.append(R.id.btn_messageCopy);
           strings.append(R.string.Copy);
           icons.append(R.drawable.baseline_content_copy_24);
