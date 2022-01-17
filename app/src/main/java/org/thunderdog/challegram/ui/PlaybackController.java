@@ -2286,6 +2286,7 @@ public class PlaybackController extends ViewController<Void> implements Menu, Mo
       case R.id.menu_btn_more: {
         IntList ids = new IntList(3);
         StringList strings = new StringList(3);
+        IntList icons = new IntList(3);
 
         TdApi.Message message = currentItem.getMessage();
 
@@ -2293,27 +2294,32 @@ public class PlaybackController extends ViewController<Void> implements Menu, Mo
         if (TD.isFileLoaded(file)) {
           ids.append(R.id.btn_saveFile);
           strings.append(R.string.SaveToMusic);
+          icons.append(R.drawable.baseline_music_note_24);
         }
 
         if (message.chatId != 0) {
           ids.append(R.id.btn_share);
           strings.append(R.string.Share);
+          icons.append(R.drawable.baseline_share_arrow_24);
 
           ids.append(R.id.btn_showInChat);
           strings.append(R.string.ShowInChat);
+          icons.append(R.drawable.baseline_chat_bubble_24);
         }
 
         if (tracks.size() > 5 && isScrollUnlocked) {
           ids.append(R.id.btn_showInPlaylist);
           strings.append(R.string.PlayListHighlight);
+          icons.append(R.drawable.baseline_visibility_24);
         }
 
         if (tdlib.context().player().canReverseOrder()) {
           ids.append(R.id.btn_reverseOrder);
           strings.append(R.string.PlayListReverse);
+          icons.append(R.drawable.baseline_swap_vert_24);
         }
 
-        showMore(ids.get(), strings.get(), 0);
+        showMore(ids.get(), strings.get(), icons.get(), 0);
         break;
       }
     }

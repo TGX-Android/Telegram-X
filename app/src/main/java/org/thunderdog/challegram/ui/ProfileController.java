@@ -624,20 +624,25 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private void showCommonMore () {
     IntList ids = new IntList(4);
     StringList strings = new StringList(4);
+    IntList icons = new IntList(4);
 
     if (BuildConfig.DEBUG) {
       ids.append(R.id.btn_recentActions);
       strings.append(R.string.EventLog);
+      icons.append(R.drawable.baseline_assignment_24);
     }
 
     if (canAddAnyKindOfMembers()) {
       ids.append(R.id.more_btn_addMember);
       strings.append(Lang.getString(R.string.AddMember));
+      icons.append(R.drawable.baseline_person_add_24);
     }
+
     if (mode == MODE_CHANNEL || mode == MODE_SUPERGROUP) {
       if (supergroup.username.length() > 0) {
         ids.append(R.id.more_btn_share);
         strings.append(R.string.Share);
+        icons.append(R.drawable.baseline_share_arrow_24);
       }
     }
 
@@ -645,22 +650,26 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       if (!canManageChat()) {
         ids.append(R.id.more_btn_viewAdmins);
         strings.append(R.string.ViewAdmins);
+        icons.append(R.drawable.baseline_stars_24);
       }
+
       if (!tdlib.chatBlocked(getChatId())) {
         ids.append(R.id.more_btn_privacy);
         strings.append(R.string.EditPrivacy);
+        icons.append(R.drawable.baseline_security_24);
       }
     }
 
     if (supergroupFull != null && supergroupFull.canGetStatistics) {
       ids.append(R.id.more_btn_viewStats);
       strings.append(R.string.Stats);
+      icons.append(R.drawable.baseline_bar_chart_24);
     }
 
-    tdlib.ui().addDeleteChatOptions(getChatId(), ids, strings, false, true);
+    tdlib.ui().addDeleteChatOptions(getChatId(), ids, strings, icons, false, true);
 
     if (ids.size() > 0) {
-      showMore(ids.get(), strings.get(), 0);
+      showMore(ids.get(), strings.get(), icons.get(), 0);
     }
   }
 

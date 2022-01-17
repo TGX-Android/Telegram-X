@@ -3703,7 +3703,7 @@ public class TdlibUi extends Handler {
     return false;
   }
 
-  public void addDeleteChatOptions (long chatId, IntList ids, StringList strings, boolean allowClearHistory, boolean forceJoin) {
+  public void addDeleteChatOptions (long chatId, IntList ids, StringList strings, IntList icons, boolean allowClearHistory, boolean forceJoin) {
     TdApi.Chat chat = tdlib.chat(chatId);
     if (chat == null)
       return;
@@ -3713,6 +3713,7 @@ public class TdlibUi extends Handler {
         if (allowClearHistory && tdlib.canClearHistory(chatId)) {
           ids.append(R.id.btn_clearChatHistory);
           strings.append(R.string.ClearHistory);
+          icons.append(R.drawable.templarian_baseline_broom_24);
         }
 
         if (tdlib.suggestStopBot(chat)) {
@@ -3722,12 +3723,15 @@ public class TdlibUi extends Handler {
           ids.append(R.id.btn_removeChatFromList);
           strings.append(R.string.DeleteChat);
         }
+
+        icons.append(R.drawable.baseline_delete_24);
         break;
       }
       case TdApi.ChatTypeBasicGroup.CONSTRUCTOR: {
         if (allowClearHistory && tdlib.canClearHistory(chat)) {
           ids.append(R.id.btn_clearChatHistory);
           strings.append(R.string.ClearHistory);
+          icons.append(R.drawable.templarian_baseline_broom_24);
         }
         TdApi.BasicGroup basicGroup = tdlib.chatToBasicGroup(chatId);
         TdApi.ChatMemberStatus status = tdlib.chatStatus(chatId);
@@ -3739,9 +3743,13 @@ public class TdlibUi extends Handler {
             ids.append(R.id.btn_removeChatFromList);
             strings.append(R.string.DeleteChat);
           }
+
+          icons.append(R.drawable.baseline_delete_24);
+
           if (TD.canReturnToChat(status) && (basicGroup == null || basicGroup.isActive)) {
             ids.append(R.id.btn_returnToChat);
             strings.append(R.string.returnToGroup);
+            icons.append(R.drawable.baseline_person_add_24);
           }
         }
         break;
@@ -3750,20 +3758,24 @@ public class TdlibUi extends Handler {
         if (allowClearHistory && tdlib.canClearHistory(chat)) {
           ids.append(R.id.btn_clearChatHistory);
           strings.append(R.string.ClearHistory);
+          icons.append(R.drawable.templarian_baseline_broom_24);
         }
         TdApi.ChatMemberStatus status = tdlib.chatStatus(chatId);
         if (tdlib.chatAvailable(chat)) {
           ids.append(R.id.btn_removeChatFromList);
           strings.append(tdlib.isChannel(chatId) ? R.string.LeaveChannel : R.string.LeaveMegaMenu);
+          icons.append(R.drawable.baseline_delete_24);
         } else if (TD.canReturnToChat(status)) {
           if (status.getConstructor() == TdApi.ChatMemberStatusLeft.CONSTRUCTOR && (tdlib.isPublicChat(chatId) || tdlib.isTemporaryAccessible(chatId))) {
             if (forceJoin) {
               ids.append(R.id.btn_returnToChat);
               strings.append(tdlib.isChannel(chatId) ? R.string.JoinChannel : R.string.JoinChat);
+              icons.append(R.drawable.baseline_person_add_24);
             }
           } else {
             ids.append(R.id.btn_returnToChat);
             strings.append(tdlib.isChannel(chatId) ? R.string.returnToChannel : R.string.returnToGroup);
+            icons.append(R.drawable.baseline_person_add_24);
           }
         }
         break;

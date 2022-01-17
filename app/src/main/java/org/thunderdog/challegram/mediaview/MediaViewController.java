@@ -1478,6 +1478,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       case R.id.menu_btn_more: {
         IntList ids = new IntList(4);
         StringList strings = new StringList(4);
+        IntList icons = new IntList(4);
 
         MediaItem item = stack.getCurrent();
 
@@ -1486,35 +1487,43 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         if (item.isVideo() && !item.isGifType() && item.isLoaded()) {
           ids.append(R.id.btn_open);
           strings.append(R.string.OpenInExternalApp);
+          icons.append(R.drawable.baseline_exit_to_app_24);
         }
 
         if (item.isLoaded() && item.canBeSaved()) {
           ids.append(R.id.btn_saveToGallery);
           strings.append(R.string.SaveToGallery);
+          icons.append(R.drawable.baseline_image_24);
 
           if (mode != MODE_SECRET && mode != MODE_GALLERY && item.canBeShared()) {
             ids.append(R.id.btn_share);
             strings.append(R.string.Share);
+            icons.append(R.drawable.baseline_share_arrow_24);
           }
         }
+
         if (item.isGifType() && item.canBeSaved()) {
           ids.append(R.id.btn_saveGif);
           strings.append(R.string.SaveGif);
+          icons.append(R.drawable.deproko_baseline_gif_24);
         }
 
         if (!StringUtils.isEmpty(getArgumentsStrict().copyLink) || (chat != null && tdlib.canCopyPostLink(item.getMessage()))) {
           ids.append(R.id.btn_copyLink);
           strings.append(R.string.CopyLink);
+          icons.append(R.drawable.baseline_content_copy_24);
         }
 
         if (item.getSourceChatId() != 0 && item.getSourceMessageId() != 0 && mode == MODE_MESSAGES) {
           ids.append(R.id.btn_showInChat);
           strings.append(R.string.ShowInChat);
+          icons.append(R.drawable.baseline_chat_bubble_24);
         }
 
         if (item.canBeReported() && (item.getMessage() != null || stack.getCurrentIndex() == 0)) {
           ids.append(R.id.btn_messageReport);
           strings.append(R.string.Report);
+          icons.append(R.drawable.baseline_report_24);
         }
 
         boolean isSelfProfile = mode == MODE_PROFILE && tdlib.isSelfSender(item.getSourceSender());
@@ -1525,14 +1534,16 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         if (isSelfProfile && stack.getCurrentIndex() != 0) {
           ids.append(R.id.btn_setProfilePhoto);
           strings.append(R.string.SetAsCurrent);
+          icons.append(R.drawable.baseline_emoticon_outline_24);
         }
         if (canDelete) {
           ids.append(R.id.btn_deleteProfilePhoto);
           strings.append(R.string.Delete);
+          icons.append(R.drawable.baseline_delete_24);
         }
 
         if (!ids.isEmpty()) {
-          showMore(ids.get(), strings.get(), 0);
+          showMore(ids.get(), strings.get(), icons.get(), 0);
         }
 
         break;

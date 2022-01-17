@@ -48,6 +48,9 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
   public static final int ANCHOR_MODE_RIGHT = 0;
   public static final int ANCHOR_MODE_HEADER = 1;
 
+  // Minimum item width if it includes an icon
+  private static final int MINIMUM_ICON_ITEM_WIDTH = 200;
+
   // private int currentWidth;
   private int anchorMode;
 
@@ -140,7 +143,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     }
 
     menuItem.measure(MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
-    menuItem.setTag(menuItem.getMeasuredWidth());
+    menuItem.setTag(Math.max(Screen.dp(MINIMUM_ICON_ITEM_WIDTH), menuItem.getMeasuredWidth()));
   }
 
   public TextView addItem (int id, CharSequence title, int iconRes, Drawable icon, OnClickListener listener) {
@@ -187,7 +190,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     RippleSupport.setTransparentSelector(menuItem);
     addView(menuItem);
     menuItem.measure(MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
-    menuItem.setTag(menuItem.getMeasuredWidth());
+    menuItem.setTag(Math.max(Screen.dp(MINIMUM_ICON_ITEM_WIDTH), menuItem.getMeasuredWidth()));
     return menuItem;
   }
 

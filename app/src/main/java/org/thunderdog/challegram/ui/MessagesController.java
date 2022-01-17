@@ -3992,29 +3992,36 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     IntList ids = new IntList(4);
     StringList strings = new StringList(4);
+    IntList icons = new IntList(4);
 
     if (!manager.isTotallyEmpty() && (Config.USE_SECRET_SEARCH || !isSecretChat()) && !messagesHidden) {
       ids.append(R.id.btn_search);
       strings.append(R.string.Search);
+      icons.append(R.drawable.baseline_search_24);
     }
 
     TdApi.ChatMemberStatus status = tdlib.chatStatus(chat.id);
 
     if ((!tdlib.isChannel(chat.id) || (status != null && !TD.isLeft(status))) && !tdlib.isSelfChat(chat.id)) {
+      boolean notificationsEnabled = tdlib.chatNotificationsEnabled(chat.id);
       ids.append(R.id.btn_mute);
-      strings.append(tdlib.chatNotificationsEnabled(chat.id) ? R.string.Mute : R.string.Unmute);
+      strings.append(notificationsEnabled ? R.string.Mute : R.string.Unmute);
+      icons.append(notificationsEnabled ? R.drawable.baseline_notifications_off_24 : R.drawable.baseline_notifications_24);
     }
 
     if (tdlib.canReportChatSpam(chat.id)) {
       ids.append(R.id.btn_reportChat);
       strings.append(R.string.Report);
+      icons.append(R.drawable.baseline_report_24);
     }
 
     if (tdlib.canSetPasscode(chat)) {
       ids.append(R.id.btn_setPasscode);
       strings.append(R.string.PasscodeTitle);
+      icons.append(R.drawable.baseline_lock_24);
     }
-    tdlib.ui().addDeleteChatOptions(getChatId(), ids, strings, true, false);
+
+    tdlib.ui().addDeleteChatOptions(getChatId(), ids, strings, icons,true, false);
 
     if (!messagesHidden) {
       if (ChatId.isUserChat(chat.id)) {
@@ -4022,21 +4029,25 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (TD.suggestSharingContact(user)) {
           ids.append(R.id.btn_shareMyContact);
           strings.append(R.string.ShareMyContactInfo);
+          icons.append(R.drawable.baseline_person_24);
         }
       }
       if (manager.canRestorePinnedMessage()) {
         ids.append(R.id.btn_showPinnedMessage);
         strings.append(R.string.PinnedMessage);
+        icons.append(R.drawable.deproko_baseline_pin_24);
       }
 
       if (tdlib.isBotChat(chat) && botHelper != null) {
         if (botHelper.findHelpCommand() != null) {
           ids.append(R.id.btn_botHelp);
           strings.append(R.string.BotHelp);
+          icons.append(R.drawable.baseline_help_24);
         }
         if (botHelper.findSettingsCommand() != null) {
           ids.append(R.id.btn_botSettings);
           strings.append(R.string.BotSettings);
+          icons.append(R.drawable.baseline_settings_24);
         }
       }
     }
@@ -4044,20 +4055,23 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (linkedChatId != 0 && bottomButtonAction != BOTTOM_ACTION_DISCUSS) {
       ids.append(R.id.btn_openLinkedChat);
       strings.append(tdlib.isChannel(getChatId()) ? R.string.LinkedGroup : R.string.LinkedChannel);
+      icons.append(R.drawable.baseline_link_24);
     }
 
     if (BuildConfig.DEBUG) {
       if (TD.isSecretChat(chat.type)) {
         ids.append(R.id.btn_sendScreenshotNotification);
         strings.append("Send screenshot notification");
+        icons.append(R.drawable.baseline_warning_24);
       }
       if (!hasWritePermission()) {
         ids.append(R.id.btn_debugShowHideBottomBar);
         strings.append("Show/hide bottom bar");
+        icons.append(R.drawable.baseline_warning_24);
       }
     }
 
-    showMore(ids.get(), strings.get(), 0);
+    showMore(ids.get(), strings.get(), icons.get(), 0);
   }
 
   // Clear history
