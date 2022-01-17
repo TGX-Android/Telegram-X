@@ -1131,7 +1131,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         }
 
         int restrictMode = TD.canRestrictMember(myStatus, member.status);
-        if (restrictMode != TD.RESTRICT_MODE_NONE) {
+        if (restrictMode != TD.RESTRICT_MODE_NONE && !(sender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR && Td.getSenderId(sender) == m.getChatId())) {
           ids.append(R.id.btn_restrictMember);
           colors.append(restrictMode == TD.RESTRICT_MODE_NEW ? ViewController.OPTION_COLOR_RED : ViewController.OPTION_COLOR_NORMAL);
           icons.append(R.drawable.baseline_block_24);
