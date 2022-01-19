@@ -2296,6 +2296,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     popupLayout.setTag(this);
     popupLayout.init(true);
 
+    if (delegate != null) {
+      popupLayout.setDisableCancelOnTouchDown(delegate.disableCancelOnTouchdown());
+    }
+
     OptionsLayout optionsWrap = new OptionsLayout(context(), this, forcedTheme);
     optionsWrap.setInfo(this, tdlib(), options.info, false);
     optionsWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));

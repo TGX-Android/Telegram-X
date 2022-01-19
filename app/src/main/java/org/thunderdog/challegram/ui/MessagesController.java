@@ -6519,7 +6519,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     currentShareLocationChatId = getChatId();
 
     if (context().checkLocationPermissions(false) != PackageManager.PERMISSION_GRANTED) {
-      context().requestLocationPermission(false, null);
+      context().requestLocationPermission(false, false, null);
       return;
     }
 

@@ -98,16 +98,20 @@ public class LocationHelper implements ActivityResultHandler {
     if (this.lastSignal != null) {
       this.lastSignal[0] = true;
     }
-    receiveLocationInternal(activity != null ? activity : UI.getContext(context), true, true);
+    receiveLocationInternal(activity != null ? activity : UI.getContext(context), true, true, false);
   }
 
   public void receiveLocation (@NonNull String arg, @Nullable BaseActivity activity, long timeout, boolean allowResolution) {
+    receiveLocation(arg, activity, timeout, allowResolution, false);
+  }
+
+  public void receiveLocation (@NonNull String arg, @Nullable BaseActivity activity, long timeout, boolean allowResolution, boolean skipPermissionAlert) {
     this.arg = arg;
     this.timeout = timeout;
     if (this.lastSignal != null) {
       this.lastSignal[0] = true;
     }
-    receiveLocationInternal(activity != null ? activity : UI.getContext(context), allowResolution, false);
+    receiveLocationInternal(activity != null ? activity : UI.getContext(context), allowResolution, false, skipPermissionAlert);
   }
 
   public void cancel () {
@@ -126,6 +130,7 @@ public class LocationHelper implements ActivityResultHandler {
   public static final int ERROR_CODE_RESOLUTION = -2;
   public static final int ERROR_CODE_TIMEOUT = -3;
   public static final int ERROR_CODE_UNKNOWN = -4;
+  public static final int ERROR_CODE_PERMISSION_CANCEL = -5;
 
   private static int checkLocationPermissions (Context context, boolean needBackground) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -144,7 +149,7 @@ public class LocationHelper implements ActivityResultHandler {
     return PackageManager.PERMISSION_GRANTED;
   }
 
-  private void receiveLocationInternal (final BaseActivity activity, final boolean allowResolution, final boolean onlyCheck) {
+  private void receiveLocationInternal (final BaseActivity activity, final boolean allowResolution, final boolean onlyCheck, final boolean skipAlert) {
     final boolean[] sendStatus = new boolean[1];
     lastSignal = sendStatus;
     final Context context = activity != null ? activity : this.context;
@@ -152,12 +157,14 @@ public class LocationHelper implements ActivityResultHandler {
       if (checkLocationPermissions(context, needBackground) != PackageManager.PERMISSION_GRANTED) {
         if (allowResolution) {
           if (activity != null) {
-            activity.requestLocationPermission(needBackground, (code, granted) -> {
+            activity.requestLocationPermission(needBackground, skipAlert, () -> {
+              onReceiveLocationFailure(ERROR_CODE_PERMISSION_CANCEL);
+            }, (code, granted) -> {
               if (sendStatus[0]) {
                 return;
               }
               if (granted) {
-                receiveLocationInternal(activity, true, onlyCheck);
+                receiveLocationInternal(activity, true, onlyCheck, skipAlert);
               } else {
                 onReceiveLocationFailure(ERROR_CODE_PERMISSION);
               }

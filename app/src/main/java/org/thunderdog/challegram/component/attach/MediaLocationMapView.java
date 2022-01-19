@@ -572,7 +572,7 @@ public class MediaLocationMapView extends FrameLayoutFix implements OnMapReadyCa
     if (UI.getContext(getContext()).checkLocationPermissions(false) != PackageManager.PERMISSION_GRANTED) {
       locationPointView.setShowProgress(false);
       if (requestedByUser && !disablePrompts) {
-        ((BaseActivity) getContext()).requestLocationPermission(false, this);
+        ((BaseActivity) getContext()).requestLocationPermission(false, false, this);
       } else {
         setShowMyLocationButton(true);
       }
