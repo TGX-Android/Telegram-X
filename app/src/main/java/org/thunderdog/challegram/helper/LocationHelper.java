@@ -37,8 +37,10 @@ import org.thunderdog.challegram.navigation.ActivityResultHandler;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.ActivityPermissionResult;
 
 import me.vkryl.core.lambda.CancellableRunnable;
+import me.vkryl.core.lambda.RunnableData;
 
 /**
  * Date: 01/12/2016
@@ -50,6 +52,10 @@ public class LocationHelper implements ActivityResultHandler {
 
   public interface LocationCallback {
     void onLocationResult (int errorCode, @Nullable Location location);
+  }
+
+  public interface LocationPermissionRequester {
+    void requestPermissions (boolean skipAlert, Runnable onCancel, ActivityPermissionResult handler);
   }
 
   public static LocationHelper requestLocation (BaseActivity context, long timeout, boolean allowResolution, boolean needBackground, final @NonNull LocationCallback callback) {
@@ -80,6 +86,7 @@ public class LocationHelper implements ActivityResultHandler {
   private final Context context;
   private final LocationChangeListener listener;
   private final boolean allowCached, needBackground;
+  private LocationPermissionRequester permissionRequester;
 
   public LocationHelper (Context context, LocationChangeListener listener, boolean allowCached, boolean needBackground) {
     this.context = context;
@@ -91,6 +98,10 @@ public class LocationHelper implements ActivityResultHandler {
   private String arg;
   private long timeout;
   private boolean[] lastSignal;
+
+  public void setPermissionRequester(LocationPermissionRequester permissionRequester) {
+    this.permissionRequester = permissionRequester;
+  }
 
   public void checkLocationPermission (@NonNull String arg, @Nullable BaseActivity activity) {
     this.arg = arg;
@@ -157,9 +168,9 @@ public class LocationHelper implements ActivityResultHandler {
       if (checkLocationPermissions(context, needBackground) != PackageManager.PERMISSION_GRANTED) {
         if (allowResolution) {
           if (activity != null) {
-            activity.requestLocationPermission(needBackground, skipAlert, () -> {
-              onReceiveLocationFailure(ERROR_CODE_PERMISSION_CANCEL);
-            }, (code, granted) -> {
+            Runnable onCancel = () -> onReceiveLocationFailure(ERROR_CODE_PERMISSION_CANCEL);
+
+            ActivityPermissionResult callback = (code, granted) -> {
               if (sendStatus[0]) {
                 return;
               }
@@ -168,7 +179,13 @@ public class LocationHelper implements ActivityResultHandler {
               } else {
                 onReceiveLocationFailure(ERROR_CODE_PERMISSION);
               }
-            });
+            };
+
+            if (permissionRequester != null) {
+              permissionRequester.requestPermissions(skipAlert, onCancel, callback);
+            } else {
+              activity.requestLocationPermission(needBackground, skipAlert, onCancel, callback);
+            }
           }
         } else {
           onReceiveLocationFailure(ERROR_CODE_PERMISSION);

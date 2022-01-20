@@ -40,6 +40,7 @@ import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.EmojiData;
+import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -126,6 +127,15 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
   public InlineSearchContext (BaseActivity context, Tdlib tdlib, @NonNull Callback callback) {
     this.context = context;
     this.locationTracker = new LocationHelper(context, this, true, false);
+    this.locationTracker.setPermissionRequester((skipAlert, onCancel, handler) -> {
+      if (skipAlert) {
+        context.requestLocationPermission(false, true, handler);
+      } else {
+        ModernOptions.showLocationAlert(context, getInlineUsername(), onCancel, () -> {
+          context.requestLocationPermission(false, true, handler);
+        });
+      }
+    });
     this.changeListener = InlineSearchContext.this::onQueryResultsChanged;
     this.tdlib = tdlib;
     this.callback = callback;
@@ -581,6 +591,11 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
 
   @Override
   public void onLocationRequestFailed (LocationHelper context, int errorCode, @NonNull String arg, @Nullable Location savedLocation) {
+    if (errorCode == LocationHelper.ERROR_CODE_PERMISSION) {
+      Intents.openPermissionSettings();
+      return;
+    }
+
     if (currentText.equals(arg)) {
       searchInlineResults(inlineBot.username, getInlineQuery(), savedLocation, false);
     }
