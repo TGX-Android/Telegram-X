@@ -6714,6 +6714,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                 ArrayList<TdApi.TextEntity> entities = new ArrayList<>();
                 final TdApi.ChatMemberStatus oldStatus, newStatus;
                 final boolean isPromote, isTransferOwnership;
+                boolean isAnonymous = false;
 
                 final int stringRes;
                 int restrictedUntil = 0;
@@ -6740,13 +6741,22 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                   } else {
                     isTransferOwnership = false;
 
+                    if (e.oldStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR && e.newStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
+                      type = 5;
+                      isAnonymous = ((TdApi.ChatMemberStatusCreator) e.oldStatus).isAnonymous != ((TdApi.ChatMemberStatusCreator) e.newStatus).isAnonymous;
+                    }
+
                     switch (e.oldStatus.getConstructor()) {
                       case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
                         oldStatus = e.oldStatus;
                         break;
                       default:
-                        type = 1;
-                        oldStatus = new TdApi.ChatMemberStatusAdministrator();
+                        if (!isAnonymous) {
+                          type = 1;
+                          oldStatus = new TdApi.ChatMemberStatusAdministrator();
+                        } else {
+                          oldStatus = e.oldStatus;
+                        }
                         break;
                     }
 
@@ -6755,8 +6765,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                         newStatus = e.newStatus;
                         break;
                       default:
-                        type = 2;
-                        newStatus = new TdApi.ChatMemberStatusAdministrator();
+                        if (!isAnonymous) {
+                          type = 2;
+                          newStatus = new TdApi.ChatMemberStatusAdministrator();
+                        } else {
+                          newStatus = e.newStatus;
+                        }
                         break;
                     }
                   }
@@ -6818,7 +6832,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                         break;
                     }
 
-                    if (newState == 1 && prevState == 0) {
+                    if (e.oldStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR && e.newStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
+                      isAnonymous = ((TdApi.ChatMemberStatusCreator) e.oldStatus).isAnonymous != ((TdApi.ChatMemberStatusCreator) e.newStatus).isAnonymous;
+                      stringRes = R.string.EventLogPromoted;
+                    } else if (newState == 1 && prevState == 0) {
                       stringRes = R.string.EventLogGroupBanned;
                       restrictedUntil = ((TdApi.ChatMemberStatusBanned) newStatus).bannedUntilDate;
                     } else if (newState != 0) {
@@ -6827,6 +6844,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                     } else {
                       stringRes = R.string.EventLogRestrictedDeleted;
                     }
+
                     /* else {
                       throw new IllegalArgumentException("server bug: " + event.event.action);
                     }*/
@@ -6882,6 +6900,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
                 if (isTransferOwnership) {
                   // no need to show anything
+                } else if (isAnonymous) {
+                  appendRight(b, R.string.EventLogPromotedRemainAnonymous, ((TdApi.ChatMemberStatusCreator) oldStatus).isAnonymous, ((TdApi.ChatMemberStatusCreator) newStatus).isAnonymous, false);
                 } else if (isPromote) {
                   final TdApi.ChatMemberStatusAdministrator oldAdmin = (TdApi.ChatMemberStatusAdministrator) oldStatus;
                   final TdApi.ChatMemberStatusAdministrator newAdmin = (TdApi.ChatMemberStatusAdministrator) newStatus;
