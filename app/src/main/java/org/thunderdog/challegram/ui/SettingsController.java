@@ -167,7 +167,7 @@ public class SettingsController extends ViewController<Void> implements
   public void onMenuItemPressed (int id, View view) {
     switch (id) {
       case R.id.menu_btn_more: {
-        showMore(new int[] {R.id.more_btn_logout}, new String[] { Lang.getString(R.string.LogOut) }, 0);
+        showMore(new int[] {R.id.more_btn_logout}, new String[] { Lang.getString(R.string.LogOut) }, new int[] {R.drawable.baseline_logout_24}, 0);
         break;
       }
     }

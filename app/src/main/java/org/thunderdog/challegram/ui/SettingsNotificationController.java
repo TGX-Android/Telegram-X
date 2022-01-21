@@ -120,11 +120,13 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   protected void openMoreMenu () {
     IntList ids = new IntList(1);
     StringList strings = new StringList(1);
+    IntList icons = new IntList(1);
 
     ids.append(R.id.btn_resetNotifications);
     strings.append(R.string.ResetNotifications);
+    icons.append(R.drawable.baseline_restart_alt_24);
 
-    showMore(ids.get(), strings.get(), 0);
+    showMore(ids.get(), strings.get(), icons.get(), 0);
   }
 
   @Override

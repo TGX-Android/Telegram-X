@@ -3736,7 +3736,9 @@ public class TdlibUi extends Handler {
         TdApi.BasicGroup basicGroup = tdlib.chatToBasicGroup(chatId);
         TdApi.ChatMemberStatus status = tdlib.chatStatus(chatId);
         if (tdlib.chatAvailable(chat) && status != null) {
-          if (TD.isMember(status, false) || (basicGroup != null && !basicGroup.isActive)) {
+          boolean canLeave = TD.isMember(status, false) || (basicGroup != null && !basicGroup.isActive);
+
+          if (canLeave) {
             ids.append(R.id.btn_removeChatFromList);
             strings.append(R.string.LeaveMegaMenu);
           } else {
@@ -3744,7 +3746,7 @@ public class TdlibUi extends Handler {
             strings.append(R.string.DeleteChat);
           }
 
-          icons.append(R.drawable.baseline_delete_24);
+          icons.append(canLeave ? R.drawable.baseline_logout_24 : R.drawable.baseline_delete_24);
 
           if (TD.canReturnToChat(status) && (basicGroup == null || basicGroup.isActive)) {
             ids.append(R.id.btn_returnToChat);
@@ -3764,7 +3766,7 @@ public class TdlibUi extends Handler {
         if (tdlib.chatAvailable(chat)) {
           ids.append(R.id.btn_removeChatFromList);
           strings.append(tdlib.isChannel(chatId) ? R.string.LeaveChannel : R.string.LeaveMegaMenu);
-          icons.append(R.drawable.baseline_delete_24);
+          icons.append(R.drawable.baseline_logout_24);
         } else if (TD.canReturnToChat(status)) {
           if (status.getConstructor() == TdApi.ChatMemberStatusLeft.CONSTRUCTOR && (tdlib.isPublicChat(chatId) || tdlib.isTemporaryAccessible(chatId))) {
             if (forceJoin) {

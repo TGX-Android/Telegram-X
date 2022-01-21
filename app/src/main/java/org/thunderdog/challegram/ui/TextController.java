@@ -136,6 +136,7 @@ public class TextController extends ViewController<TextController.Arguments> imp
   private void showMore () {
     IntList ids = new IntList(2);
     StringList strings = new StringList(2);
+    IntList icons = new IntList(2);
 
     /* TODO
     ids.append(R.id.btn_search);
@@ -144,19 +145,22 @@ public class TextController extends ViewController<TextController.Arguments> imp
     if (filePath != null && U.canOpenFile(new File(filePath), mimeType)) {
       ids.append(R.id.btn_openLink);
       strings.append(R.string.OpenInExternalApp);
+      icons.append(R.drawable.baseline_open_in_new_24);
     }
 
     if (canCopyText()) {
       ids.append(R.id.btn_copyText);
       strings.append(R.string.CopyText);
+      icons.append(R.drawable.baseline_content_copy_24);
 
       if (getArgumentsStrict().mode == MODE_RAW_TEXT) {
         ids.append(R.id.btn_share);
         strings.append(R.string.Share);
+        icons.append(R.drawable.baseline_share_24);
       }
     }
 
-    showMore(ids.get(), strings.get(), 0);
+    showMore(ids.get(), strings.get(), icons.get(), 0);
   }
 
   @Override

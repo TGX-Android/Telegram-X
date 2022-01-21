@@ -538,11 +538,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         if (count > 0) {
           IntList ids = new IntList(count);
           StringList strings = new StringList(count);
+          IntList icons = new IntList(count);
           if (canDestroyChat()) {
             ids.append(R.id.btn_destroyChat);
             strings.append(supergroup.isChannel ? R.string.DestroyChannel : R.string.DestroyGroup);
+            icons.append(R.drawable.baseline_delete_forever_24);
           }
-          showMore(ids.get(), strings.get(), 0);
+          showMore(ids.get(), strings.get(), icons.get(), 0);
         }
         break;
       }
@@ -558,7 +560,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     final long myUserId = tdlib.myUserId();
 
     if (!isBot && user.id == myUserId && user.id != 0) {
-      showMore(new int[]{R.id.more_btn_edit}, new String[]{Lang.getString(R.string.EditName)}, 0);
+      showMore(new int[]{R.id.more_btn_edit}, new String[]{Lang.getString(R.string.EditName)}, new int[]{R.drawable.baseline_edit_24}, 0);
       return;
     }
 
@@ -626,7 +628,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     StringList strings = new StringList(4);
     IntList icons = new IntList(4);
 
-    if (BuildConfig.DEBUG) {
+    if (canManageChat()) {
       ids.append(R.id.btn_recentActions);
       strings.append(R.string.EventLog);
       icons.append(R.drawable.baseline_assignment_24);

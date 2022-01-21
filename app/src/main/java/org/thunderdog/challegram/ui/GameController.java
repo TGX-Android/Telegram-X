@@ -104,7 +104,7 @@ public class GameController extends WebkitController<GameController.Args> implem
   public void onMenuItemPressed (int id, View view) {
     switch (id) {
       case R.id.menu_btn_more: {
-        showMore(new int[] {R.id.btn_openLink}, new String[] {Lang.getString(R.string.OpenInExternalApp)}, 0);
+        showMore(new int[] {R.id.btn_openLink}, new String[] {Lang.getString(R.string.OpenInExternalApp)}, new int[] {R.drawable.baseline_open_in_new_24}, 0);
         break;
       }
       case R.id.menu_btn_forward: {

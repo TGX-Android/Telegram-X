@@ -3261,21 +3261,27 @@ public class MessagesController extends ViewController<MessagesController.Argume
           if (previewMode == PREVIEW_MODE_FONT_SIZE) {
             IntList ids = new IntList(2);
             StringList strings = new StringList(2);
+            IntList icons = new IntList(2);
             ids.append(R.id.btn_chatFontSizeScale);
+            icons.append(R.drawable.baseline_format_size_24);
             strings.append(Settings.instance().needChatFontSizeScaling() ? R.string.TextSizeScaleDisable : R.string.TextSizeScaleEnable);
             if (Settings.instance().canResetChatFontSize()) {
               ids.append(R.id.btn_chatFontSizeReset);
               strings.append(R.string.TextSizeReset);
+              icons.append(R.drawable.baseline_restart_alt_24);
             }
-            showMore(ids.get(), strings.get(), 0);
+            showMore(ids.get(), strings.get(), icons.get(), 0);
           } else if (previewMode == PREVIEW_MODE_WALLPAPER_OBJECT) {
             IntList ids = new IntList(2);
             StringList strings = new StringList(2);
+            IntList icons = new IntList(2);
             ids.append(R.id.btn_share);
             strings.append(R.string.Share);
+            icons.append(R.drawable.baseline_share_arrow_24);
             ids.append(R.id.btn_copyLink);
             strings.append(R.string.CopyLink);
-            showMore(ids.get(), strings.get(), 0);
+            icons.append(R.drawable.baseline_content_copy_24);
+            showMore(ids.get(), strings.get(), icons.get(), 0);
           }
         } else {
           if (inputView != null && inputView.canFormatText()) {

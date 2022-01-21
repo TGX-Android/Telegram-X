@@ -955,7 +955,7 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
   @Override
   protected void openMoreMenu () {
     if (canEraseAllData()) {
-      showMore(new int[]{R.id.btn_resetLocalData}, new String[] {Lang.getString(R.string.EraseDatabase)}, 0);
+      showMore(new int[]{R.id.btn_resetLocalData}, new String[] {Lang.getString(R.string.EraseDatabase)}, new int[]{R.drawable.baseline_delete_24}, 0);
     } else {
       UI.showToast(R.string.EraseDatabaseWait, Toast.LENGTH_SHORT);
     }
