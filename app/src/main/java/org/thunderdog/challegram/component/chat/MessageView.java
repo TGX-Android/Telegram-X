@@ -1095,6 +1095,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       if (result.getConstructor() != TdApi.ChatMember.CONSTRUCTOR) return;
 
       TdApi.ChatMember member = (TdApi.ChatMember) result;
+      boolean isChannel = m.tdlib().isChannel(m.getChatId());
 
       if (TD.canCopyText(msg.getMessage()) || (msg instanceof TGMessageText && ((TGMessageText) msg).getText().text.trim().length() > 0)) {
         ids.append(R.id.btn_messageCopy);
@@ -1103,14 +1104,16 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         colors.append(ViewController.OPTION_COLOR_NORMAL);
       }
 
-      ids.append(R.id.btn_messageViewList);
-      if (m.tdlib().isSelfUserId(Td.getSenderUserId(sender))) {
-        strings.append(R.string.ViewMessagesFromYou);
-      } else {
-        strings.append(Lang.getString(R.string.ViewMessagesFromUser, m.tdlib().senderName(sender, true)));
+      if (!isChannel) {
+        ids.append(R.id.btn_messageViewList);
+        if (m.tdlib().isSelfUserId(Td.getSenderUserId(sender))) {
+          strings.append(R.string.ViewMessagesFromYou);
+        } else {
+          strings.append(Lang.getString(R.string.ViewMessagesFromUser, m.tdlib().senderName(sender, true)));
+        }
+        icons.append(R.drawable.baseline_person_24);
+        colors.append(ViewController.OPTION_COLOR_NORMAL);
       }
-      icons.append(R.drawable.baseline_person_24);
-      colors.append(ViewController.OPTION_COLOR_NORMAL);
 
       if (myStatus != null && !(TD.isCreator(member.status) && TD.isCreator(myStatus))) {
         int promoteMode = TD.canPromoteAdmin(myStatus, member.status);
@@ -1132,28 +1135,30 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
         int restrictMode = TD.canRestrictMember(myStatus, member.status);
         if (restrictMode != TD.RESTRICT_MODE_NONE && !(sender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR && Td.getSenderId(sender) == m.getChatId())) {
-          ids.append(R.id.btn_restrictMember);
-          colors.append(restrictMode == TD.RESTRICT_MODE_NEW ? ViewController.OPTION_COLOR_RED : ViewController.OPTION_COLOR_NORMAL);
-          icons.append(R.drawable.baseline_block_24);
+          if (!isChannel || (isChannel && restrictMode == TD.RESTRICT_MODE_EDIT)) {
+            ids.append(R.id.btn_restrictMember);
+            colors.append(restrictMode == TD.RESTRICT_MODE_NEW ? ViewController.OPTION_COLOR_RED : ViewController.OPTION_COLOR_NORMAL);
+            icons.append(R.drawable.baseline_block_24);
 
-          switch (restrictMode) {
-            case TD.RESTRICT_MODE_EDIT:
-              strings.append(sender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (m.tdlib().isChannel(Td.getSenderId(sender)) ? R.string.EditChannelRestrictions : R.string.EditGroupRestrictions) : R.string.EditUserRestrictions);
-              break;
-            case TD.RESTRICT_MODE_NEW:
-              strings.append(sender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (m.tdlib().isChannel(Td.getSenderId(sender)) ? R.string.BanChannel : R.string.BanChat) : R.string.RestrictUser);
-              break;
-            case TD.RESTRICT_MODE_VIEW:
-              strings.append(R.string.ViewRestrictions);
-              break;
-            default:
-              throw new IllegalStateException();
+            switch (restrictMode) {
+              case TD.RESTRICT_MODE_EDIT:
+                strings.append(sender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (m.tdlib().isChannel(Td.getSenderId(sender)) ? R.string.EditChannelRestrictions : R.string.EditGroupRestrictions) : R.string.EditUserRestrictions);
+                break;
+              case TD.RESTRICT_MODE_NEW:
+                strings.append(sender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (m.tdlib().isChannel(Td.getSenderId(sender)) ? R.string.BanChannel : R.string.BanChat) : R.string.RestrictUser);
+                break;
+              case TD.RESTRICT_MODE_VIEW:
+                strings.append(R.string.ViewRestrictions);
+                break;
+              default:
+                throw new IllegalStateException();
+            }
           }
 
           if (sender.getConstructor() != TdApi.MessageSenderChat.CONSTRUCTOR) {
             ids.append(R.id.btn_blockSender);
             icons.append(R.drawable.baseline_remove_circle_24);
-            strings.append(R.string.RemoveFromGroup);
+            strings.append(isChannel ? R.string.ChannelRemoveUser : R.string.RemoveFromGroup);
             colors.append(ViewController.OPTION_COLOR_RED);
           }
         }
