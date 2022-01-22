@@ -591,13 +591,14 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
 
   @Override
   public void onLocationRequestFailed (LocationHelper context, int errorCode, @NonNull String arg, @Nullable Location savedLocation) {
-    if (errorCode == LocationHelper.ERROR_CODE_PERMISSION) {
+    String inlineQuery = getInlineQuery();
+
+    if (errorCode == LocationHelper.ERROR_CODE_PERMISSION && (inlineQuery == null || inlineQuery.isEmpty())) {
       Intents.openPermissionSettings();
-      return;
     }
 
     if (currentText.equals(arg)) {
-      searchInlineResults(inlineBot.username, getInlineQuery(), savedLocation, false);
+      searchInlineResults(inlineBot.username, inlineQuery, savedLocation, false);
     }
   }
 

@@ -78,11 +78,11 @@ public class ModernOptions {
               onAgree.run();
               break;
             case R.id.btn_privacyPolicy:
-              onCancel.run();
+              //onCancel.run();
               currentController.tdlib().ui().openUrl(currentController, Lang.getStringSecure(R.string.url_privacyPolicy), new TdlibUi.UrlOpenParameters().forceInstantView());
               break;
             case R.id.btn_cancel:
-              onCancel.run();
+              //onCancel.run();
               break;
           }
 
