@@ -1246,6 +1246,8 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
     if (type == TYPE_CHAT_PROFILE) {
       TdApi.Chat chat = tdlib.chat(sourceChatId);
       return chat != null && !chat.hasProtectedContent;
+    } else if (type == TYPE_GALLERY_PHOTO || type == TYPE_GALLERY_VIDEO || type == TYPE_GALLERY_GIF) {
+      return true;
     }
     return getShareFile() != null;
   }
