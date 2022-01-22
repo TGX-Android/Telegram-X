@@ -1487,7 +1487,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         if (item.isVideo() && !item.isGifType() && item.isLoaded()) {
           ids.append(R.id.btn_open);
           strings.append(R.string.OpenInExternalApp);
-          icons.append(R.drawable.baseline_exit_to_app_24);
+          icons.append(R.drawable.baseline_open_in_browser_24);
         }
 
         if (item.isLoaded() && item.canBeSaved()) {

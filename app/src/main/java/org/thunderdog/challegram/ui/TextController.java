@@ -145,7 +145,7 @@ public class TextController extends ViewController<TextController.Arguments> imp
     if (filePath != null && U.canOpenFile(new File(filePath), mimeType)) {
       ids.append(R.id.btn_openLink);
       strings.append(R.string.OpenInExternalApp);
-      icons.append(R.drawable.baseline_open_in_new_24);
+      icons.append(R.drawable.baseline_open_in_browser_24);
     }
 
     if (canCopyText()) {

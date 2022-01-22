@@ -610,7 +610,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (!tdlib.chatBlocked(chatId)) {
       ids.append(R.id.more_btn_privacy);
       strings.append(R.string.EditPrivacy);
-      icons.append(R.drawable.baseline_security_24);
+      icons.append(R.drawable.baseline_privacy_tip_24);
     }
 
     if (TD.isContact(user)) {
@@ -670,7 +670,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       if (!tdlib.chatBlocked(getChatId())) {
         ids.append(R.id.more_btn_privacy);
         strings.append(R.string.EditPrivacy);
-        icons.append(R.drawable.baseline_security_24);
+        icons.append(R.drawable.baseline_privacy_tip_24);
       }
     }
 
