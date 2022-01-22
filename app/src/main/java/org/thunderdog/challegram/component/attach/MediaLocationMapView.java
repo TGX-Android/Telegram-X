@@ -34,6 +34,7 @@ import com.google.android.gms.maps.model.LatLng;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -561,6 +562,8 @@ public class MediaLocationMapView extends FrameLayoutFix implements OnMapReadyCa
   public void onPermissionResult (int code, boolean granted) {
     if (granted) {
       checkLocationSettings(true, false);
+    } else if (!U.shouldShowPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
+      Intents.openPermissionSettings();
     }
   }
 
@@ -572,7 +575,7 @@ public class MediaLocationMapView extends FrameLayoutFix implements OnMapReadyCa
     if (UI.getContext(getContext()).checkLocationPermissions(false) != PackageManager.PERMISSION_GRANTED) {
       locationPointView.setShowProgress(false);
       if (requestedByUser && !disablePrompts) {
-        ((BaseActivity) getContext()).requestLocationPermission(false, this);
+        ((BaseActivity) getContext()).requestLocationPermission(false, false, this);
       } else {
         setShowMyLocationButton(true);
       }
