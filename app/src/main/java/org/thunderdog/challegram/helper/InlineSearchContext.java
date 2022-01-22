@@ -508,7 +508,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
 
     if (inlineBot != null) {
       if (allowInlineLocation) {
-        searchInlineResultsLocated(inlineQuery, false, false);
+        searchInlineResultsLocated(inlineQuery, inlineQuery != null && inlineQuery.isEmpty(), false);
       } else {
         searchInlineResults(inlineBot.username, inlineQuery, null, false);
       }
