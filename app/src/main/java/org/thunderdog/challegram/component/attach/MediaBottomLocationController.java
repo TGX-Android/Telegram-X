@@ -369,7 +369,10 @@ public class MediaBottomLocationController extends MediaBottomBaseController<Voi
             sendingLiveLocation = false;
             settingsAdapter.updateValuedSettingById(R.id.btn_shareLiveLocation);
             switch (errorCode) {
-              case LocationHelper.ERROR_CODE_PERMISSION:
+              case LocationHelper.ERROR_CODE_PERMISSION: {
+                Intents.openPermissionSettings();
+                break;
+              }
               case LocationHelper.ERROR_CODE_RESOLUTION: {
                 ViewController<?> c = context.navigation().getCurrentStackItem();
                 if (c != null) {
@@ -385,6 +388,9 @@ public class MediaBottomLocationController extends MediaBottomBaseController<Voi
                   lastKnownLocation.set(location);
                 }
                 openLiveLocationAlert();
+                break;
+              }
+              case LocationHelper.ERROR_CODE_PERMISSION_CANCEL: {
                 break;
               }
               default: {

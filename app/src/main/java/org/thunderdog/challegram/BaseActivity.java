@@ -58,6 +58,7 @@ import org.drinkmore.Tracer;
 import org.thunderdog.challegram.component.attach.MediaLayout;
 import org.thunderdog.challegram.component.base.ProgressWrap;
 import org.thunderdog.challegram.component.chat.InlineResultsWrap;
+import org.thunderdog.challegram.component.popups.ModernOptions;
 import org.thunderdog.challegram.component.preview.PreviewLayout;
 import org.thunderdog.challegram.component.sticker.StickerPreviewView;
 import org.thunderdog.challegram.component.sticker.StickerSetWrap;
@@ -2169,13 +2170,31 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   private final SparseArrayCompat<ActivityResultHandler> activityResultHandlers = new SparseArrayCompat<>();
   private final SparseArrayCompat<ActivityPermissionResult> permissionsResultHandlers = new SparseArrayCompat<>();
 
-  public void requestLocationPermission (boolean needBackground, ActivityPermissionResult handler) {
+  public void requestLocationPermission (boolean needBackground, boolean skipAlert, ActivityPermissionResult handler) {
+    requestLocationPermission(needBackground, skipAlert, () -> {
+      handler.onPermissionResult(REQUEST_FINE_LOCATION, false);
+    }, handler);
+  }
+
+  public void requestLocationPermission (boolean needBackground, boolean skipAlert, Runnable onCancel, ActivityPermissionResult handler) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      if (skipAlert) {
+        requestLocationPermissionImpl(needBackground, handler);
+      } else {
+        ModernOptions.showLocationAlert(this, needBackground, onCancel, () -> {
+          requestLocationPermissionImpl(needBackground, handler);
+        });
+      }
+    }
+  }
+
+  private void requestLocationPermissionImpl (boolean needBackground, ActivityPermissionResult handler) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       String[] permissions;
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && Config.REQUEST_BACKGROUND_LOCATION && needBackground) {
-        permissions = new String[] {Manifest.permission.ACCESS_BACKGROUND_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
+        permissions = new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
       } else {
-        permissions = new String[] {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
+        permissions = new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
       }
       if (handler != null) {
         permissionsResultHandlers.put(REQUEST_FINE_LOCATION, handler);

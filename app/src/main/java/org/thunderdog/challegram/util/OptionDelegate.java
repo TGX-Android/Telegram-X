@@ -13,4 +13,5 @@ public interface OptionDelegate {
   default Object getTagForItem (int position) {
     return null;
   }
+  default boolean disableCancelOnTouchdown () { return false; }
 }

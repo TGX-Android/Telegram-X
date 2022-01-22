@@ -18,8 +18,6 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -41,7 +39,6 @@ import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -113,7 +110,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
           }
         }
         mediaLayout.pickDateOrProceed((forceDisableNotification, schedulingState, disableMarkdown) ->
-          mediaLayout.sendFilesMixed(files, null, new TdApi.MessageSendOptions(forceDisableNotification, false, schedulingState), false)
+          mediaLayout.sendFilesMixed(files, null, new TdApi.MessageSendOptions(forceDisableNotification, false, false, schedulingState), false)
         );
       }
     };

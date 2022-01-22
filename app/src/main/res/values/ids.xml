@@ -683,6 +683,7 @@
 
   <item type="id" name="btn_bold" />
   <item type="id" name="btn_italic" />
+  <item type="id" name="btn_spoiler" />
   <item type="id" name="btn_strikethrough" />
   <item type="id" name="btn_underline" />
   <item type="id" name="btn_monospace" />

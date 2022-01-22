@@ -3310,6 +3310,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
             strings.append(R.string.TextFormatMonospace);
             icons.append(R.drawable.baseline_code_24);
 
+            ids.append(R.id.btn_spoiler);
+            strings.append(R.string.TextFormatSpoiler);
+            icons.append(R.drawable.baseline_eye_off_24);
+
             ids.append(R.id.btn_link);
             strings.append(R.string.TextFormatLink);
             icons.append(R.drawable.baseline_link_24);
@@ -6539,7 +6543,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     currentShareLocationChatId = getChatId();
 
     if (context().checkLocationPermissions(false) != PackageManager.PERMISSION_GRANTED) {
-      context().requestLocationPermission(false, null);
+      context().requestLocationPermission(false, false, null);
       return;
     }
 
@@ -7966,7 +7970,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return false;
     if (hasWritePermission()) {
       pickDateOrProceed(forceDisableNotification, schedulingState, (forceDisableNotification1, schedulingState1, disableMarkdown) -> {
-        tdlib.sendMessage(chat.id, getMessageThreadId(), replyToMessageId != null ? replyToMessageId.get() : 0, new TdApi.MessageSendOptions(forceDisableNotification1 || obtainSilentMode(), false, schedulingState1), content.get(), null);
+        tdlib.sendMessage(chat.id, getMessageThreadId(), replyToMessageId != null ? replyToMessageId.get() : 0, new TdApi.MessageSendOptions(forceDisableNotification1 || obtainSilentMode(), false, false, schedulingState1), content.get(), null);
       });
       return true;
     }
@@ -8531,7 +8535,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       content = new TdApi.InputMessageText(msg, !allowLinkPreview, clearInput);
     }
 
-    List<TdApi.SendMessage> functions = TD.sendTextMessage(chatId, messageThreadId, replyToMessageId, new TdApi.MessageSendOptions(disableNotification, false, schedule), content, tdlib.maxMessageTextLength());
+    List<TdApi.SendMessage> functions = TD.sendTextMessage(chatId, messageThreadId, replyToMessageId, new TdApi.MessageSendOptions(disableNotification, false, false, schedule), content, tdlib.maxMessageTextLength());
 
     if (clearInput) {
       final int expectedCount = functions.size();
@@ -8625,7 +8629,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void sendContact (TdApi.User user, boolean allowReply, TdApi.MessageSendOptions options) {
     if (hasWritePermission()) {
       pickDateOrProceed(options.disableNotification, options.schedulingState, (forceDisableNotification, schedulingState, disableMarkdown) -> {
-        tdlib.sendMessage(chat.id, getMessageThreadId(), allowReply ? obtainReplyId() : 0, new TdApi.MessageSendOptions(forceDisableNotification || obtainSilentMode(), false, schedulingState), new TdApi.InputMessageContact(new TdApi.Contact(user.phoneNumber, user.firstName, user.lastName, null, user.id)), null);
+        tdlib.sendMessage(chat.id, getMessageThreadId(), allowReply ? obtainReplyId() : 0, new TdApi.MessageSendOptions(forceDisableNotification || obtainSilentMode(), false, false, schedulingState), new TdApi.InputMessageContact(new TdApi.Contact(user.phoneNumber, user.firstName, user.lastName, null, user.id)), null);
       });
     }
   }
@@ -8639,7 +8643,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       TdApi.User user = tdlib.myUser();
       if (user != null) {
         pickDateOrProceed(false, null, (forceDisableNotification, schedulingState, disableMarkdown) -> {
-          tdlib.sendMessage(chat.id, getMessageThreadId(), forceReplyMessageId, new TdApi.MessageSendOptions(forceDisableNotification || obtainSilentMode(), false, schedulingState), new TdApi.InputMessageContact(new TdApi.Contact(user.phoneNumber, user.firstName, user.lastName, null, user.id)), null);
+          tdlib.sendMessage(chat.id, getMessageThreadId(), forceReplyMessageId, new TdApi.MessageSendOptions(forceDisableNotification || obtainSilentMode(), false, false, schedulingState), new TdApi.InputMessageContact(new TdApi.Contact(user.phoneNumber, user.firstName, user.lastName, null, user.id)), null);
         });
       }
     }
@@ -8648,7 +8652,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void send (TdApi.InputMessageContent content, boolean allowReply, boolean forceDisableNotification, @Nullable TdApi.MessageSchedulingState schedulingState, RunnableData<TdApi.Message> after) {
     if (hasWritePermission()) {
       pickDateOrProceed(forceDisableNotification, schedulingState, (forceDisableNotification1, schedulingState1, disableMarkdown) -> {
-        tdlib.sendMessage(chat.id, getMessageThreadId(), allowReply ? obtainReplyId() : 0, new TdApi.MessageSendOptions(forceDisableNotification1 || obtainSilentMode(), false, schedulingState1), content, after);
+        tdlib.sendMessage(chat.id, getMessageThreadId(), allowReply ? obtainReplyId() : 0, new TdApi.MessageSendOptions(forceDisableNotification1 || obtainSilentMode(), false, false, schedulingState1), content, after);
       });
     }
   }
@@ -8656,7 +8660,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void sendInlineQueryResult (long inlineQueryId, String id, boolean allowReply, boolean clearInput, boolean forceDisableNotification, @Nullable TdApi.MessageSchedulingState schedulingState) {
     if (hasWritePermission()) {
       pickDateOrProceed(forceDisableNotification, schedulingState, (forceDisableNotification1, schedulingState1, disableMarkdown) -> {
-        tdlib.sendInlineQueryResult(chat.id, getMessageThreadId(), allowReply ? obtainReplyId() : 0, new TdApi.MessageSendOptions(forceDisableNotification1 || obtainSilentMode(), false, schedulingState1), inlineQueryId, id);
+        tdlib.sendInlineQueryResult(chat.id, getMessageThreadId(), allowReply ? obtainReplyId() : 0, new TdApi.MessageSendOptions(forceDisableNotification1 || obtainSilentMode(), false, false, schedulingState1), inlineQueryId, id);
         if (clearInput) {
           inputView.setInput("", false);
           inputView.getInlineSearchContext().resetInlineBotsCache();
@@ -8668,7 +8672,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void sendAudio (TdApi.Audio audio, boolean allowReply) {
     if (hasWritePermission()) {
       pickDateOrProceed(false, null, (forceDisableNotification, schedulingState, disableMarkdown) -> {
-        tdlib.sendMessage(chat.id, getMessageThreadId(), allowReply ? obtainReplyId() : 0, new TdApi.MessageSendOptions(forceDisableNotification || obtainSilentMode(), false, schedulingState), TD.toInputMessageContent(audio), null);
+        tdlib.sendMessage(chat.id, getMessageThreadId(), allowReply ? obtainReplyId() : 0, new TdApi.MessageSendOptions(forceDisableNotification || obtainSilentMode(), false, false, schedulingState), TD.toInputMessageContent(audio), null);
       });
     }
   }
@@ -8680,7 +8684,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         MediaBottomFilesController.MusicEntry musicFile = musicFiles.get(i);
         content[i] = tdlib.filegen().createThumbnail(new TdApi.InputMessageAudio(TD.createInputFile(musicFile.getPath(), musicFile.getMimeType()), null, (int) (musicFile.getDuration() / 1000l), musicFile.getTitle(), musicFile.getArtist(), null), isSecretChat());
       }
-      List<TdApi.Function> functions = TD.toFunctions(chat.id, getMessageThreadId(), allowReply ? obtainReplyId() : 0, new TdApi.MessageSendOptions(forceDisableNotification || obtainSilentMode(), false, schedulingState), content, needGroupMedia);
+      List<TdApi.Function> functions = TD.toFunctions(chat.id, getMessageThreadId(), allowReply ? obtainReplyId() : 0, new TdApi.MessageSendOptions(forceDisableNotification || obtainSilentMode(), false, false, schedulingState), content, needGroupMedia);
       for (TdApi.Function function : functions) {
         tdlib.client().send(function, tdlib.messageHandler());
       }
@@ -8697,10 +8701,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (record.getWaveform() == null) {
       Background.instance().post(() -> {
         byte[] waveform = N.getWaveform(record.getPath());
-        tdlib.sendMessage(chatId, getMessageThreadId(), replyMessageId, new TdApi.MessageSendOptions(disableNotification, false, schedulingState), new TdApi.InputMessageVoiceNote(record.toInputFile(), record.getDuration(), waveform, null), null);
+        tdlib.sendMessage(chatId, getMessageThreadId(), replyMessageId, new TdApi.MessageSendOptions(disableNotification, false, false, schedulingState), new TdApi.InputMessageVoiceNote(record.toInputFile(), record.getDuration(), waveform, null), null);
       });
     } else {
-      tdlib.sendMessage(chatId, getMessageThreadId(), replyMessageId, new TdApi.MessageSendOptions(disableNotification, false, schedulingState), new TdApi.InputMessageVoiceNote(record.toInputFile(), record.getDuration(), record.getWaveform(), null), null);
+      tdlib.sendMessage(chatId, getMessageThreadId(), replyMessageId, new TdApi.MessageSendOptions(disableNotification, false, false, schedulingState), new TdApi.InputMessageVoiceNote(record.toInputFile(), record.getDuration(), record.getWaveform(), null), null);
     }
   }
 
@@ -8891,7 +8895,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           TdApi.InputMessageContent inputMessageContent = tdlib.filegen().createThumbnail(TD.toInputMessageContent(path, inputFile, info, null), isSecretChat);
           content.add(inputMessageContent);
         }
-        List<TdApi.Function> functions = TD.toFunctions(chatId, getMessageThreadId(), replyMessageId, new TdApi.MessageSendOptions(silentMode, false, schedulingState), content.toArray(new TdApi.InputMessageContent[0]), needGroupMedia);
+        List<TdApi.Function> functions = TD.toFunctions(chatId, getMessageThreadId(), replyMessageId, new TdApi.MessageSendOptions(silentMode, false, false, schedulingState), content.toArray(new TdApi.InputMessageContent[0]), needGroupMedia);
         for (TdApi.Function function : functions) {
           tdlib.client().send(function, tdlib.messageHandler());
         }

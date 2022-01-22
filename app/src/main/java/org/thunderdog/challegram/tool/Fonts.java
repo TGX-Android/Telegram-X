@@ -15,6 +15,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import me.vkryl.core.lambda.Future;
@@ -61,7 +62,10 @@ public class Fonts {
       firstFont = true;
     }
     if (needSystemFonts) {
-      return fallback.get();
+      Typeface typeface = fallback.get();
+      if (typeface != null) {
+        return typeface;
+      }
     }
     try {
       return loadBuiltinFont(path);
@@ -85,6 +89,8 @@ public class Fonts {
   }
 
   private static final boolean LOAD_SANS = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
+  private static final boolean LOAD_MONO = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S;
+  public static final boolean FORCE_BUILTIN_MONO = LOAD_MONO && Device.IS_SAMSUNG;
 
   public static Typeface getRobotoRegular () {
     return robotoRegular != null ? robotoRegular : (robotoRegular = loadFont("fonts/Roboto-Regular.ttf", () ->
@@ -95,7 +101,6 @@ public class Fonts {
   public static Typeface getRobotoBold () {
     return robotoBold != null ? robotoBold : (robotoBold = loadFont("fonts/Roboto-Bold.ttf", () -> {
       if (LOAD_SANS) {
-        // return loadSystemFont("sans-serif-black", Typeface.BOLD, Typeface.DEFAULT_BOLD);
         return loadSystemFont("sans-serif", Typeface.BOLD, Typeface.DEFAULT_BOLD);
       } else {
         return Typeface.DEFAULT_BOLD;
@@ -121,9 +126,18 @@ public class Fonts {
   }
 
   public static Typeface getRobotoMono () {
-    return robotoMono != null ? robotoMono : (robotoMono = loadFont("fonts/RobotoMono-Regular.ttf", () ->
-      Typeface.MONOSPACE
-    ));
+    return robotoMono != null ? robotoMono : (robotoMono = loadFont("fonts/RobotoMono-Regular.ttf", () -> {
+      if (FORCE_BUILTIN_MONO) {
+        // Samsung does not have monospace font family in Android 12
+        // as of the G973F-XXUE/OXME-GULB build (1st December security patch)
+        return null;
+      }
+      Typeface monospace = LOAD_MONO ? loadSystemFont("monospace", Typeface.NORMAL, Typeface.MONOSPACE) : Typeface.MONOSPACE;
+      if (monospace != null && monospace.equals(getRobotoRegular())) {
+        return null;
+      }
+      return monospace;
+    }));
   }
 
   public static final float TEXT_SKEW_ITALIC = -.2f;

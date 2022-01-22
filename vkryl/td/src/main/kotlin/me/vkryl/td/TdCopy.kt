@@ -202,6 +202,7 @@ fun Chat?.copyOf (): Chat? {
       this.lastReadOutboxMessageId,
       this.unreadMentionCount,
       this.notificationSettings,
+      this.availableReactions,
       this.messageTtl,
       this.themeName,
       this.actionBar,

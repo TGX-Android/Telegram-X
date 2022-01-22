@@ -3629,7 +3629,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public void sendMessage (long chatId, long messageThreadId, long replyToMessageId, boolean disableNotification, boolean fromBackground, TdApi.InputMessageContent inputMessageContent, @Nullable RunnableData<TdApi.Message> after) {
-    sendMessage(chatId, messageThreadId, replyToMessageId, new TdApi.MessageSendOptions(disableNotification, fromBackground, null), inputMessageContent, after);
+    sendMessage(chatId, messageThreadId, replyToMessageId, new TdApi.MessageSendOptions(disableNotification, fromBackground, false, null), inputMessageContent, after);
   }
 
   public void sendMessage (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions options, TdApi.InputMessageContent inputMessageContent, @Nullable RunnableData<TdApi.Message> after) {
@@ -3823,7 +3823,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public void forwardMessage (long chatId, long fromChatId, long messageId, boolean disableNotification, boolean fromBackground) {
-    client().send(new TdApi.ForwardMessages(chatId, fromChatId, new long[] {messageId}, new TdApi.MessageSendOptions(disableNotification, fromBackground, null), false, false, false), messageHandler());
+    client().send(new TdApi.ForwardMessages(chatId, fromChatId, new long[] {messageId}, new TdApi.MessageSendOptions(disableNotification, fromBackground, false, null), false, false, false), messageHandler());
   }
 
   public void sendInlineQueryResult (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions options, long queryId, String resultId) {
@@ -6418,6 +6418,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  @TdlibThread
+  private void updateChatAvailableReactions (TdApi.UpdateChatAvailableReactions update) {
+    synchronized (dataLock) {
+      final TdApi.Chat chat = chats.get(update.chatId);
+      if (TdlibUtils.assertChat(update.chatId, chat, update)) {
+        return;
+      }
+      chat.availableReactions = update.availableReactions;
+    }
+    listeners.updateChatAvailableReactions(update);
+  }
+
   private TdApi.ChatFilterInfo[] chatFilters;
 
   @TdlibThread
@@ -7539,6 +7551,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
       case TdApi.UpdateChatPosition.CONSTRUCTOR: {
         updateChatPosition((TdApi.UpdateChatPosition) update);
+        break;
+      }
+      case TdApi.UpdateChatAvailableReactions.CONSTRUCTOR: {
+        updateChatAvailableReactions((TdApi.UpdateChatAvailableReactions) update);
         break;
       }
       case TdApi.UpdateChatIsMarkedAsUnread.CONSTRUCTOR: {
