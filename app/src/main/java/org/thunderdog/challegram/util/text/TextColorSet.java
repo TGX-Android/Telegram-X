@@ -27,6 +27,15 @@ public interface TextColorSet {
     return 0;
   }
 
+  @ColorInt
+  default int overlayColor (boolean isPressed) {
+    return 0;
+  }
+  @ColorInt
+  default int overlayOutlineColor (boolean isPressed) {
+    return 0;
+  }
+
   default int backgroundColorId (boolean isPressed) {
     return backgroundColor(isPressed);
   }
@@ -35,6 +44,16 @@ public interface TextColorSet {
   }
   default long backgroundId (boolean isPressed) {
     return BitwiseUtils.mergeLong(backgroundColorId(isPressed), outlineColorId(isPressed));
+  }
+
+  default int overlayColorId (boolean isPressed) {
+    return overlayColor(isPressed);
+  }
+  default int overlayOutlineColorId (boolean isPressed) {
+    return overlayOutlineColor(isPressed);
+  }
+  default long overlayId (boolean isPressed) {
+    return BitwiseUtils.mergeLong(overlayColorId(isPressed), overlayOutlineColorId(isPressed));
   }
 
   default int backgroundPadding () {

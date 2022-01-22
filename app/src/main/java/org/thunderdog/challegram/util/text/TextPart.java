@@ -13,6 +13,7 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.emoji.Emoji;
@@ -25,6 +26,7 @@ import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 
 import me.vkryl.core.ColorUtils;
@@ -59,7 +61,7 @@ public class TextPart {
   public TooltipOverlayView.TooltipBuilder newTooltipBuilder (View view) {
     return UI.getContext(view.getContext()).tooltipManager()
       .builder(view, source.getViewProvider())
-      .locate((targetView, outRect) -> source.locatePart(outRect, this, false));
+      .locate((targetView, outRect) -> source.locatePart(outRect, this, TextEntity.COMPARE_MODE_NORMAL));
   }
 
   public void setLine (String line, int start, int end) {
@@ -105,10 +107,6 @@ public class TextPart {
     return height;
   }
 
-  /*public float lastLineWidth () {
-    return emojiLayout.getLineCount() <= 1 ? width : emojiLayout.getLineWidth(emojiLayout.getLineCount() - 1);
-  }*/
-
   public int getX () {
     return x;
   }
@@ -116,21 +114,6 @@ public class TextPart {
   public int getY () {
     return y;
   }
-
-  public @Nullable TextEntity getClickableEntity () {
-    return entity != null && isClickable() ? entity : null;
-  }
-
-  /*public void setNeedHighlight (boolean highlight) {
-    if (highlight) {
-      flags |= FLAG_HIGHLIGHT;
-      if (highlightRect == null) {
-        highlightRect = new RectF();
-      }
-    } else {
-      flags &= ~FLAG_HIGHLIGHT;
-    }
-  }*/
 
   public String getLine () {
     return line;
@@ -157,11 +140,19 @@ public class TextPart {
   }
 
   public boolean isSameEntity (@Nullable TextEntity entity) {
-    return TextEntity.equals(this.entity, entity, false);
+    return TextEntity.equals(this.entity, entity, TextEntity.COMPARE_MODE_NORMAL, null);
   }
 
   public boolean isSamePressHighlight (@NonNull TextEntity entity) {
-    return TextEntity.equals(this.entity, entity, true);
+    return TextEntity.equals(this.entity, entity, TextEntity.COMPARE_MODE_CLICK_HIGHLIGHT, null);
+  }
+
+  public boolean isSameSpoiler (@NonNull TextEntity entity) {
+    return TextEntity.equals(this.entity, entity, TextEntity.COMPARE_MODE_SPOILER, source.getText());
+  }
+
+  public boolean isWhitespace () {
+    return entity == null && (this.end - this.start) == Strings.countCharacters(line, start, end, (c) -> c == ' ');
   }
 
   public boolean isEssential () {
@@ -228,6 +219,18 @@ public class TextPart {
 
   public boolean isClickable () {
     return entity != null && entity.isClickable();
+  }
+
+  public TdApi.TextEntity getSpoiler () {
+    return entity != null ? entity.getSpoiler() : null;
+  }
+
+  public @Nullable TextEntity getClickableEntity () {
+    return isClickable() ? entity : null;
+  }
+
+  public @Nullable TextEntity getSpoilerEntity () {
+    return getSpoiler() != null ? entity : null;
   }
 
   private EmojiInfo emojiInfo;

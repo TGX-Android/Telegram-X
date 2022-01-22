@@ -7,6 +7,10 @@ public class TextColorSetOverride implements TextColorSet {
     this.colorSet = colorSet;
   }
 
+  public TextColorSet originalColorSet () {
+    return colorSet;
+  }
+
   @Override
   public int defaultTextColor () {
     return colorSet.defaultTextColor();

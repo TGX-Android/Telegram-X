@@ -693,7 +693,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_markdown, 0, R.string.EditMarkdown));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.EditMarkdownHint), false));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.EditMarkdownHint2), false));
 
       items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.VoiceMessages));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));

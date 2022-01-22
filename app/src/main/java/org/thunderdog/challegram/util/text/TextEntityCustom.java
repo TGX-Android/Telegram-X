@@ -133,7 +133,7 @@ public class TextEntityCustom extends TextEntity {
     return this;
   }
 
-  private TextColorSet cachedLinkSet, lastDefaultColorSet;
+  private TextColorSetOverride cachedLinkSet;
 
   @Override
   public TextColorSet getSpecialColorSet (@NonNull TextColorSet defaultColorSet) {
@@ -152,8 +152,7 @@ public class TextEntityCustom extends TextEntity {
     if (linkCached) {
       int backgroundColorId = (colorSet != null ? colorSet : defaultColorSet).backgroundColorId(false);
       if (backgroundColorId == 0) {
-        if (cachedLinkSet == null || lastDefaultColorSet != defaultColorSet) {
-          lastDefaultColorSet = defaultColorSet;
+        if (cachedLinkSet == null || cachedLinkSet.originalColorSet() != defaultColorSet) {
           cachedLinkSet = new TextColorSetOverride(defaultColorSet) {
             @Override
             public int backgroundColor (boolean isPressed) {
@@ -224,6 +223,11 @@ public class TextEntityCustom extends TextEntity {
   @Override
   public boolean isClickable () {
     return (flags & FLAG_CLICKABLE) != 0 || isMonospace();
+  }
+
+  @Override
+  public TdApi.TextEntity getSpoiler () {
+    return null;
   }
 
   @Override
@@ -394,12 +398,12 @@ public class TextEntityCustom extends TextEntity {
   }
 
   @Override
-  public boolean equals (TextEntity bRaw, boolean forPressHighlight) {
+  public boolean equals (TextEntity bRaw, int compareMode, @Nullable String originalText) {
     TextEntityCustom b = (TextEntityCustom) bRaw;
     return
       b.isClickable() == isClickable() &&
-        (!isClickable() || (b.linkType == linkType && b.linkLength == linkLength && b.linkOffset == linkOffset && StringUtils.equalsOrBothEmpty(b.link, link))) &&
-        (forPressHighlight || (this.flags == b.flags && this.customColorSet == b.customColorSet));
+      (!isClickable() || (b.linkType == linkType && b.linkLength == linkLength && b.linkOffset == linkOffset && StringUtils.equalsOrBothEmpty(b.link, link))) &&
+      (compareMode == COMPARE_MODE_CLICK_HIGHLIGHT || (this.flags == b.flags && this.customColorSet == b.customColorSet));
   }
 
 }

@@ -32,4 +32,5 @@ public interface ChatListener {
   default void onChatDefaultDisableNotifications (long chatId, boolean defaultDisableNotifications) { }
   default void onChatDefaultMessageSenderIdChanged (long chatId, TdApi.MessageSender senderId) { }
   default void onChatClientDataChanged (long chatId, @Nullable String clientData) { }
+  default void onChatAvailableReactionsUpdated (long chatId, String[] availableReactions) { }
 }

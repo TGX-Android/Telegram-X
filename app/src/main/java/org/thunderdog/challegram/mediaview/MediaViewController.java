@@ -7888,7 +7888,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       imageFiles.add(stack.getCurrent().getSourceGalleryFile());
     }
 
-    sendDelegate.sendSelectedItems(imageFiles, new TdApi.MessageSendOptions(forceDisableNotification, false, schedulingState), disableMarkdown, asFiles);
+    sendDelegate.sendSelectedItems(imageFiles, new TdApi.MessageSendOptions(forceDisableNotification, false, false, schedulingState), disableMarkdown, asFiles);
     setUIBlocked(true);
     popupView.hideWindow(true);
   }

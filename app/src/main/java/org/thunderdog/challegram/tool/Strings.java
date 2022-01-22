@@ -78,6 +78,20 @@ public class Strings {
     return false;
   }
 
+  public interface CharacterCounter {
+    boolean accept (char c);
+  }
+
+  public static int countCharacters (String text, int startIndex, int endIndex, CharacterCounter counter) {
+    int count = 0;
+    for (int i = startIndex; i < endIndex; i++) {
+      if (counter.accept(text.charAt(i))) {
+        count++;
+      }
+    }
+    return count;
+  }
+
   public static String toString (float x) {
     StringBuilder b = new StringBuilder();
     b.append((int) x);

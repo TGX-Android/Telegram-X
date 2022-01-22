@@ -30,6 +30,7 @@ public class CustomTypefaceSpan extends MetricAffectingSpan {
   private static final int FLAG_NO_BACKGROUND_TRANSPARENCY = 1 << 2;
   private static final int FLAG_NEED_UNDERLINE = 1 << 3;
   private static final int FLAG_NEED_STRIKETHROUGH = 1 << 4;
+  private static final int FLAG_NEED_REVEAL_ON_TAP = 1 << 5;
 
   private @Nullable Typeface typeface;
   private @ThemeColorId int colorId;
@@ -80,6 +81,11 @@ public class CustomTypefaceSpan extends MetricAffectingSpan {
     return this;
   }
 
+  public CustomTypefaceSpan setNeedRevealOnTap (boolean needRevealOnTap) {
+    this.flags = BitwiseUtils.setFlag(flags, FLAG_NEED_REVEAL_ON_TAP, needRevealOnTap);
+    return this;
+  }
+
   public CustomTypefaceSpan setNeedStrikethrough (boolean needStrikethrough) {
     this.flags = BitwiseUtils.setFlag(flags, FLAG_NEED_STRIKETHROUGH, needStrikethrough);
     return this;
@@ -112,8 +118,15 @@ public class CustomTypefaceSpan extends MetricAffectingSpan {
 
   public CustomTypefaceSpan setEntityType (TdApi.TextEntityType type) {
     this.type = type;
-    setNeedUnderline(type != null && type.getConstructor() == TdApi.TextEntityTypeUnderline.CONSTRUCTOR);
-    setNeedStrikethrough(type != null && type.getConstructor() == TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR);
+    if (type != null) {
+      setNeedUnderline(type.getConstructor() == TdApi.TextEntityTypeUnderline.CONSTRUCTOR);
+      setNeedStrikethrough(type.getConstructor() == TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR);
+      setNeedRevealOnTap(type.getConstructor() == TdApi.TextEntityTypeSpoiler.CONSTRUCTOR);
+    } else {
+      setNeedUnderline(false);
+      setNeedStrikethrough(false);
+      setNeedRevealOnTap(false);
+    }
     return this;
   }
 
@@ -179,6 +192,9 @@ public class CustomTypefaceSpan extends MetricAffectingSpan {
 
   private void apply (final TextPaint paint) {
     paint.setFakeBoldText((flags & FLAG_FAKE_BOLD) != 0);
+    if (BitwiseUtils.getFlag(flags, FLAG_NEED_REVEAL_ON_TAP)) {
+      // TODO paint.bgColor = ...;
+    }
     if (backgroundColorId != 0) {
       int color = forcedTheme != null ? forcedTheme.getColor(backgroundColorId) : Theme.getColor(backgroundColorId);
       if ((flags & FLAG_NO_BACKGROUND_TRANSPARENCY) != 0 && Color.alpha(color) < 255) {

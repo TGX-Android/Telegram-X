@@ -2880,8 +2880,8 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
     final Args args = getArgumentsStrict();
 
-    TdApi.MessageSendOptions cloudSendOptions = new TdApi.MessageSendOptions(forceDisableNotification || forceSendWithoutSound, false, schedulingState);
-    TdApi.MessageSendOptions secretSendOptions = cloudSendOptions.disableNotification ? new TdApi.MessageSendOptions(true, cloudSendOptions.fromBackground, cloudSendOptions.schedulingState) : cloudSendOptions;
+    TdApi.MessageSendOptions cloudSendOptions = new TdApi.MessageSendOptions(forceDisableNotification || forceSendWithoutSound, false, false, schedulingState);
+    TdApi.MessageSendOptions secretSendOptions = cloudSendOptions.disableNotification ? new TdApi.MessageSendOptions(true, cloudSendOptions.fromBackground, false, cloudSendOptions.schedulingState) : cloudSendOptions;
 
     for (int i = 0; i < selectedChatIds.size(); i++) {
       final long chatId = selectedChatIds.get(i);

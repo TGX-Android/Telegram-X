@@ -180,6 +180,7 @@ fun TextEntityType?.equalsTo(b: TextEntityType?): Boolean {
       }
       TextEntityTypeBankCardNumber.CONSTRUCTOR,
       TextEntityTypeBold.CONSTRUCTOR,
+      TextEntityTypeSpoiler.CONSTRUCTOR,
       TextEntityTypeBotCommand.CONSTRUCTOR,
       TextEntityTypeCashtag.CONSTRUCTOR,
       TextEntityTypeCode.CONSTRUCTOR,
@@ -192,7 +193,7 @@ fun TextEntityType?.equalsTo(b: TextEntityType?): Boolean {
       TextEntityTypeStrikethrough.CONSTRUCTOR,
       TextEntityTypeUnderline.CONSTRUCTOR,
       TextEntityTypeUrl.CONSTRUCTOR -> true
-      else -> error(this.toString())
+      else -> TODO(this.toString())
     }
   }
 }

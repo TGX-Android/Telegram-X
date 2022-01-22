@@ -9,6 +9,8 @@ import android.app.DownloadManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
@@ -16,12 +18,16 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.style.BackgroundColorSpan;
 import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.ReplacementSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.TypefaceSpan;
@@ -485,6 +491,7 @@ public class TD {
         return false;
 
       case TdApi.TextEntityTypeBold.CONSTRUCTOR:
+      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
       case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
       case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
       case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
@@ -1912,7 +1919,7 @@ public class TD {
   }
 
   public static TdApi.MessageSendOptions defaultSendOptions () {
-    return new TdApi.MessageSendOptions(false, false, null);
+    return new TdApi.MessageSendOptions(false, false, false, null);
   }
 
   public static TdApi.InputMessageAnimation toInputMessageContent (TdApi.Animation animation) {
@@ -4861,7 +4868,7 @@ public class TD {
       Log.w("getMarkdownText: %s", result);
       return text.text;
     }
-    return toCharSequence((TdApi.FormattedText) result, true);
+    return toCharSequence((TdApi.FormattedText) result, true, true);
   }
 
   public static CharSequence toCopyText (TdApi.FormattedText text) {
@@ -4869,21 +4876,45 @@ public class TD {
   }
 
   public static CharSequence toCharSequence (TdApi.FormattedText text) {
-    return toCharSequence(text, true);
+    return toCharSequence(text, true, true);
   }
 
-  public static CharSequence toCharSequence (TdApi.FormattedText text, boolean allowInternal) {
+  public static CharSequence toCharSequence (TdApi.FormattedText text, boolean allowInternal, boolean allowSpoilerContent) {
     if (text == null)
       return null;
     if (text.entities == null || text.entities.length == 0)
       return text.text;
     SpannableStringBuilder b = null;
+    boolean hasSpoilers = false;
     for (TdApi.TextEntity entity : text.entities) {
-      Object span = toSpan(entity.type, allowInternal);
+      boolean isSpoiler = entity.type.getConstructor() == TdApi.TextEntityTypeSpoiler.CONSTRUCTOR;
+      if (isSpoiler) {
+        hasSpoilers = true;
+      }
+      Object span = isSpoiler && !allowSpoilerContent ? null : toSpan(entity.type, allowInternal);
       if (span != null) {
         if (b == null)
           b = new SpannableStringBuilder(text.text);
         b.setSpan(span, entity.offset, entity.offset + entity.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+      }
+    }
+    if (!allowSpoilerContent && hasSpoilers) {
+      StringBuilder builder = b != null ? null : new StringBuilder(text.text);
+      for (int i = text.entities.length - 1; i >= 0; i--) {
+        TdApi.TextEntity entity = text.entities[i];
+        if (entity.type.getConstructor() == TdApi.TextEntityTypeSpoiler.CONSTRUCTOR) {
+          String replacement = StringUtils.multiply(SPOILER_REPLACEMENT_CHAR, entity.length);
+          if (b != null) {
+            b.delete(entity.offset, entity.offset + entity.length);
+            b.insert(entity.offset, replacement);
+          } else {
+            builder.delete(entity.offset, entity.offset + entity.length);
+            builder.insert(entity.offset, replacement);
+          }
+        }
+      }
+      if (builder != null) {
+        return builder.toString();
       }
     }
     return b != null ? SpannableString.valueOf(b) : text.text;
@@ -4917,10 +4948,10 @@ public class TD {
         span = new CustomTypefaceSpan(Fonts.getRobotoMono(), 0);
         break;
       case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
-        span = new CustomTypefaceSpan(defaultTypeface, 0).setNeedUnderline(true);
-        break;
       case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
-        span = new CustomTypefaceSpan(defaultTypeface, 0).setNeedStrikethrough(true);
+      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
+        // proper flags are set inside setEntityType
+        span = new CustomTypefaceSpan(defaultTypeface, 0);
         break;
       default:
         return null;
@@ -4933,6 +4964,9 @@ public class TD {
     return toSpan(type, true);
   }
 
+  private static final String SPOILER_REPLACEMENT_CHAR = "▒";
+  private static final int SPOILER_BACKGROUND_COLOR = 0xffa9a9a9;
+
   public static CharacterStyle toSpan (TdApi.TextEntityType type, boolean allowInternal) {
     if (type == null)
       return null;
@@ -4944,13 +4978,15 @@ public class TD {
       case TdApi.TextEntityTypeCode.CONSTRUCTOR:
       case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
       case TdApi.TextEntityTypePre.CONSTRUCTOR:
-        return new TypefaceSpan("monospace");
+        return Fonts.FORCE_BUILTIN_MONO ? new TypefaceSpan(Fonts.getRobotoMono()) : new TypefaceSpan("monospace");
       case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
         return new URLSpan(((TdApi.TextEntityTypeTextUrl) type).url);
       case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
         return new StrikethroughSpan();
       case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
         return Config.SUPPORT_SYSTEM_UNDERLINE_SPAN ? new UnderlineSpan() : toDisplaySpan(type);
+      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
+        return new BackgroundColorSpan(SPOILER_BACKGROUND_COLOR);
       case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
         return allowInternal ? new CustomTypefaceSpan(null, R.id.theme_color_textLink).setEntityType(type) : null;
     }
@@ -4981,6 +5017,12 @@ public class TD {
       }
     } else if (span instanceof TypefaceSpan && "monospace".equals(((TypefaceSpan) span).getFamily())) {
       return new TdApi.TextEntityType[] {new TdApi.TextEntityTypeCode()};
+    } else if (span instanceof BackgroundColorSpan) {
+      final int color = ((BackgroundColorSpan) span).getBackgroundColor();
+      if (color == SPOILER_BACKGROUND_COLOR) {
+        return new TdApi.TextEntityType[] {new TdApi.TextEntityTypeSpoiler()};
+      }
+      return null;
     } else if (span instanceof StrikethroughSpan) {
       return new TdApi.TextEntityType[] {new TdApi.TextEntityTypeStrikethrough()};
     } else if (Config.SUPPORT_SYSTEM_UNDERLINE_SPAN && span instanceof UnderlineSpan) {
@@ -5006,6 +5048,12 @@ public class TD {
     }
     if (span instanceof TypefaceSpan)
       return "monospace".equals(((TypefaceSpan) span).getFamily());
+    if (span instanceof BackgroundColorSpan) {
+      final int backgroundColor = ((BackgroundColorSpan) span).getBackgroundColor();
+      if (backgroundColor == SPOILER_BACKGROUND_COLOR) {
+        return true;
+      }
+    }
     return span instanceof StrikethroughSpan || (Config.SUPPORT_SYSTEM_UNDERLINE_SPAN && span instanceof UnderlineSpan);
   }
 

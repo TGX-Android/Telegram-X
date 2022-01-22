@@ -506,6 +506,11 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
                   type = new TdApi.TextEntityTypeItalic();
                   break;
                 }
+                case R.id.btn_spoiler: {
+                  overrideResId = R.string.TextFormatSpoiler;
+                  type = new TdApi.TextEntityTypeSpoiler();
+                  break;
+                }
                 case R.id.btn_underline: {
                   overrideResId = R.string.TextFormatUnderline;
                   type = new TdApi.TextEntityTypeUnderline();
@@ -610,6 +615,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         break;
       case R.id.btn_italic:
         type = new TdApi.TextEntityTypeItalic();
+        break;
+      case R.id.btn_spoiler:
+        type = new TdApi.TextEntityTypeSpoiler();
         break;
       case R.id.btn_strikethrough:
         type = new TdApi.TextEntityTypeStrikethrough();
@@ -1032,7 +1040,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           }
           if (needMenu) {
             tdlib.ui().post(() -> {
-              tdlib.ui().showScheduleOptions(controller, chatId, false, (forceDisableNotification, schedulingState, disableMarkdown) -> tdlib.sendMessage(chatId, messageThreadId, replyToMessageId, new TdApi.MessageSendOptions(forceDisableNotification || silent, false, schedulingState), content, null), null);
+              tdlib.ui().showScheduleOptions(controller, chatId, false, (forceDisableNotification, schedulingState, disableMarkdown) -> tdlib.sendMessage(chatId, messageThreadId, replyToMessageId, new TdApi.MessageSendOptions(forceDisableNotification || silent, false, false, schedulingState), content, null), null);
             });
           } else {
             tdlib.sendMessage(chatId, messageThreadId, replyToMessageId, silent, false, content);

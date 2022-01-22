@@ -14,6 +14,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Intents;
+import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.HashtagChatController;
 import org.thunderdog.challegram.ui.HashtagController;
@@ -21,6 +22,7 @@ import org.thunderdog.challegram.util.StringList;
 
 import java.util.List;
 
+import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.unit.BitwiseUtils;
 import me.vkryl.td.ChatId;
@@ -40,9 +42,10 @@ public class TextEntityMessage extends TextEntity {
   private static final int FLAG_UNDERLINE = 1 << 5;
   private static final int FLAG_STRIKETHROUGH = 1 << 6;
   private static final int FLAG_FULL_WIDTH = 1 << 7;
+  private static final int FLAG_SPOILER = 1 << 8;
 
   private final int flags;
-  private final TdApi.TextEntity clickableEntity;
+  private final TdApi.TextEntity clickableEntity, spoilerEntity;
 
   private static boolean hasEntityType (List<TdApi.TextEntity> entities, @TdApi.TextEntityType.Constructors int typeConstructor) {
     if (entities != null) {
@@ -89,30 +92,36 @@ public class TextEntityMessage extends TextEntity {
   public TextEntityMessage (@Nullable Tdlib tdlib, String in, int offset, int end, TdApi.TextEntity entity, @Nullable List<TdApi.TextEntity> parentEntities, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(tdlib, offset, end, (entity.type.getConstructor() == TdApi.TextEntityTypeBold.CONSTRUCTOR || hasEntityType(parentEntities, TdApi.TextEntityTypeBold.CONSTRUCTOR)) && Text.needFakeBold(in, offset, end), openParameters);
     TdApi.TextEntity clickableEntity = isClickable(entity.type) ? entity : null;
+    TdApi.TextEntity spoilerEntity = entity.type.getConstructor() == TdApi.TextEntityTypeSpoiler.CONSTRUCTOR ? entity : null;
     int flags = addFlags(entity.type);
     if (parentEntities != null) {
       for (int i = parentEntities.size() - 1; i >= 0; i--) {
-        TdApi.TextEntity parentEntity =  parentEntities.get(i);
+        TdApi.TextEntity parentEntity = parentEntities.get(i);
         flags |= addFlags(parentEntity.type);
         if (clickableEntity == null && isClickable(parentEntity.type)) {
           clickableEntity = parentEntity;
+        } else if (spoilerEntity == null && parentEntity.type.getConstructor() == TdApi.TextEntityTypeSpoiler.CONSTRUCTOR) {
+          spoilerEntity = parentEntity;
         }
       }
     }
+    this.clickableEntity = clickableEntity;
     if (clickableEntity != null) {
       flags |= FLAG_CLICKABLE;
     }
+    this.spoilerEntity = spoilerEntity;
+    if (spoilerEntity != null) {
+      flags |= FLAG_SPOILER;
+    }
     this.flags = flags;
-    this.clickableEntity = clickableEntity;
   }
 
-  private TextColorSet lastColorSet, monospaceColorSet;
+  private TextColorSetOverride monospaceColorSet;
 
   @Override
   public TextColorSet getSpecialColorSet (@NonNull TextColorSet defaultColorSet) {
     if (isMonospace()) {
-      if (lastColorSet != defaultColorSet || monospaceColorSet == null) {
-        lastColorSet = defaultColorSet;
+      if (monospaceColorSet == null || monospaceColorSet.originalColorSet() != defaultColorSet) {
         monospaceColorSet = new TextColorSetOverride(defaultColorSet) {
           @Override
           public int clickableTextColor (boolean isPressed) {
@@ -198,9 +207,48 @@ public class TextEntityMessage extends TextEntity {
   }
 
   @Override
-  public boolean equals (TextEntity bRaw, boolean forPressHighlight) {
+  public boolean equals (TextEntity bRaw, int compareMode, @Nullable String originalText) {
     TextEntityMessage b = (TextEntityMessage) bRaw;
-    return forPressHighlight ? Td.equalsTo(this.clickableEntity, b.clickableEntity) : this.flags == b.flags;
+    switch (compareMode) {
+      case COMPARE_MODE_NORMAL:
+        return this.flags == b.flags;
+      case COMPARE_MODE_CLICK_HIGHLIGHT:
+        return Td.equalsTo(this.clickableEntity, b.clickableEntity);
+      case COMPARE_MODE_SPOILER: {
+        if (Td.equalsTo(this.spoilerEntity, b.spoilerEntity)) {
+          return true;
+        }
+        if (this.spoilerEntity != null && b.spoilerEntity != null) {
+          if (
+            this.spoilerEntity.offset == b.spoilerEntity.offset + b.spoilerEntity.length ||
+            b.spoilerEntity.offset == this.spoilerEntity.offset + this.spoilerEntity.length
+          ) {
+            return true;
+          }
+          if (!StringUtils.isEmpty(originalText)) {
+            Strings.CharacterCounter counter = (c) -> c == ' ';
+            if (this.spoilerEntity.offset > b.spoilerEntity.offset + b.spoilerEntity.length) {
+              int count = this.spoilerEntity.offset - (b.spoilerEntity.offset + b.spoilerEntity.length);
+              if (count == Strings.countCharacters(originalText, b.spoilerEntity.offset + b.spoilerEntity.length, this.spoilerEntity.offset, counter)) {
+                return true;
+              }
+            } else if (b.spoilerEntity.offset > this.spoilerEntity.offset + this.spoilerEntity.length) {
+              int count = b.spoilerEntity.offset - (this.spoilerEntity.offset + this.spoilerEntity.length);
+              if (count == Strings.countCharacters(originalText, this.spoilerEntity.offset + this.spoilerEntity.length, b.spoilerEntity.offset, counter)) {
+                return true;
+              }
+            }
+          }
+        }
+        return false;
+      }
+    }
+    throw new UnsupportedOperationException(Integer.toString(compareMode));
+  }
+
+  @Override
+  public TdApi.TextEntity getSpoiler () {
+    return spoilerEntity;
   }
 
   @Override

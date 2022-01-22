@@ -1011,6 +1011,21 @@ public class TdlibListeners {
     // TODO?
   }
 
+  // updateChatAvailableReactions
+
+  private static void updateChatAvailableReactions (TdApi.UpdateChatAvailableReactions update, @Nullable Iterator<ChatListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onChatAvailableReactionsUpdated(update.chatId, update.availableReactions);
+      }
+    }
+  }
+
+  void updateChatAvailableReactions (TdApi.UpdateChatAvailableReactions update) {
+    updateChatAvailableReactions(update, chatListeners.iterator());
+    updateChatAvailableReactions(update, specificChatListeners.iterator(update.chatId));
+  }
+
   // updateCall
 
   private static void updateCall (TdApi.Call call, @Nullable Iterator<CallsListener> list) {

@@ -1967,7 +1967,7 @@
   <string name="EditMarkdown">Edit Markdown</string>
   <string name="ForceBuiltinDecoding">Force built-in media decoding</string>
   <string name="CompressAudio">Compress audio in videos</string>
-  <string name="EditMarkdownHint">Edit text in messages using the old-school way: `**`**bold**`**`, `__`__italic__`__`, `~~`~~strikethrough~~`~~`,``` `monospace`,``` [text](url)</string>
+  <string name="EditMarkdownHint2">Edit text in messages using the old-school way: `**`**bold**`**`, `__`__italic__`__`, `~~`~~strikethrough~~`~~`,``` `monospace`, `||`||spoiler||`||`,``` [text](url)</string>
   <string name="MessageNotFound">Message not found</string>
   <string name="SyncHintTitle">Find Contacts</string>
   <string name="SyncHint">To help you connect with friends and family, allow %1$s access to your contacts.</string>
@@ -2313,6 +2313,7 @@
   <string name="TextFormatBold">Bold</string>
   <string name="TextFormatItalic">Italic</string>
   <string name="TextFormatMonospace">Monospace</string>
+  <string name="TextFormatSpoiler">Spoiler</string>
   <string name="TextFormatStrikethrough">Strikethrough</string>
   <string name="TextFormatUnderline">Underline</string>
   <string name="TextFormatLink">Create Link</string>
