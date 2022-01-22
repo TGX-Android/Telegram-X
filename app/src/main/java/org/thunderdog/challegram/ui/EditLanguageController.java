@@ -523,21 +523,26 @@ public class EditLanguageController extends EditBaseController<EditLanguageContr
       case R.id.menu_btn_more: {
         IntList ids = new IntList(3);
         StringList strings = new StringList(3);
+        IntList icons = new IntList(3);
 
         ids.append(R.id.btn_copyLink);
         strings.append(R.string.CopyLink);
+        icons.append(R.drawable.baseline_link_24);
 
         if (getArgumentsStrict().string.string.value.getConstructor() == TdApi.LanguagePackStringValueOrdinary.CONSTRUCTOR) {
           ids.append(R.id.btn_copyText);
           strings.append(R.string.LocalizationCopy);
+          icons.append(R.drawable.baseline_content_copy_24);
           if (focusedEditText != null && StringUtils.isEmpty(value.value)) {
             ids.append(R.id.btn_pasteText);
             strings.append(R.string.LocalizationPaste);
+            icons.append(R.drawable.baseline_content_paste_24);
           }
         }
         if (!swipeNavigationEnabled()) {
           ids.append(R.id.btn_close);
           strings.append(R.string.LocalizationExit);
+          icons.append(R.drawable.baseline_save_24);
         }
 
         showMore(ids.get(), strings.get(), 0);

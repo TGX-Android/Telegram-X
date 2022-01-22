@@ -567,60 +567,72 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     final long chatId = ChatId.fromUserId(user.id);
     IntList ids = new IntList(4);
     StringList strings = new StringList(4);
+    IntList icons = new IntList(4);
 
     if (isBot && ((TdApi.UserTypeBot) user.type).canJoinGroups) {
       ids.append(R.id.more_btn_addToGroup);
       strings.append(R.string.BotInvite);
+      icons.append(R.drawable.baseline_person_add_24);
     }
 
     if (mode == MODE_USER && user.id != myUserId && !TD.isBot(user)) {
       ids.append(R.id.btn_newSecretChat);
       strings.append(R.string.StartEncryptedChat);
+      icons.append(R.drawable.baseline_lock_24);
     }
 
     if (isBot) {
       if (!StringUtils.isEmpty(user.username)) {
         ids.append(R.id.more_btn_share);
         strings.append(R.string.Share);
+        icons.append(R.drawable.baseline_share_arrow_24);
       }
     } else if (TD.hasPhoneNumber(user)) {
       ids.append(R.id.more_btn_share);
       strings.append(R.string.ShareContact);
+      icons.append(R.drawable.baseline_forward_24);
     }
 
     //if (!isBot || !((TdApi.UserTypeBot) user.type).isInline) {
     if (!user.isSupport || tdlib.chatBlocked(chatId)) {
       ids.append(R.id.more_btn_block);
       strings.append(tdlib.chatBlocked(chatId) ? isBot ? R.string.UnblockBot : R.string.Unblock : isBot ? R.string.BlockBot : R.string.BlockContact);
+      icons.append(R.drawable.baseline_block_24);
     }
     //}
 
     if (tdlib.canSetPasscode(chat)) {
       ids.append(R.id.btn_setPasscode);
       strings.append(R.string.PasscodeTitle);
+      icons.append(R.drawable.vkryl_baseline_lock_pin_24);
     }
 
     if (!tdlib.chatBlocked(chatId)) {
       ids.append(R.id.more_btn_privacy);
       strings.append(R.string.EditPrivacy);
+      icons.append(R.drawable.baseline_security_24);
     }
 
     if (TD.isContact(user)) {
       ids.append(R.id.more_btn_edit);
       strings.append(R.string.RenameContact);
+      icons.append(R.drawable.baseline_edit_24);
       ids.append(R.id.more_btn_delete);
       strings.append(R.string.DeleteContact);
+      icons.append(R.drawable.baseline_delete_24);
     } else if (TD.canAddContact(user)) {
       ids.append(R.id.more_btn_addToContacts);
       strings.append(R.string.AddContact);
+      icons.append(R.drawable.baseline_person_add_24);
     }
 
     if (mode == MODE_SECRET) {
       ids.append(R.id.more_btn_cloudChat);
       strings.append(R.string.OpenCloudChat);
+      icons.append(R.drawable.baseline_person_24);
     }
 
-    showMore(ids.get(), strings.get(), 0);
+    showMore(ids.get(), strings.get(), icons.get(), 0);
   }
 
   private void showCommonMore () {

@@ -179,33 +179,41 @@ public class ThemeController extends ViewPagerController<ThemeController.Args> i
 
         IntList ids = new IntList(size);
         StringList strings = new StringList(size);
+        IntList icons = new IntList(size);
 
         if (!openOverlayOnClose) {
           ids.append(R.id.btn_edit);
           strings.append(R.string.ThemeEditName);
+          icons.append(R.drawable.baseline_edit_24);
 
           ids.append(R.id.btn_wallpaper);
           strings.append(R.string.Wallpaper);
+          icons.append(R.drawable.baseline_image_24);
         }
 
         ids.append(R.id.btn_showAdvanced);
         strings.append(R.string.ThemeAdvanced);
+        icons.append(R.drawable.baseline_extension_24);
 
         ids.append(R.id.btn_color);
         strings.append(R.string.ThemeColorFormat);
+        icons.append(R.drawable.baseline_palette_24);
 
         ids.append(R.id.btn_share);
         strings.append(Settings.instance().canEditAuthor(ThemeManager.resolveCustomThemeId(getArgumentsStrict().theme.getId())) ? R.string.ThemeExport : R.string.Share);
+        icons.append(R.drawable.baseline_share_arrow_24);
 
         if (!openOverlayOnClose) {
           ids.append(R.id.btn_delete);
           strings.append(R.string.ThemeRemove);
+          icons.append(R.drawable.baseline_delete_24);
         }
 
         ids.append(R.id.btn_close);
         strings.append(openOverlayOnClose ? R.string.ThemeClose : R.string.ThemeMinimize);
+        icons.append(R.drawable.baseline_picture_in_picture_24);
 
-        showMore(ids.get(), strings.get(), 0);
+        showMore(ids.get(), strings.get(), icons.get(), 0);
         break;
       }
     }

@@ -67,8 +67,11 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
   protected void openMoreMenu () {
     IntList ids = new IntList(2);
     StringList strings = new StringList(2);
+    IntList icons = new IntList(2);
+
     ids.append(R.id.btn_toggleErrors);
     strings.append(Settings.instance().checkProxySetting(Settings.PROXY_FLAG_SHOW_ERRORS) ? R.string.ProxyHideErrors : R.string.ProxyShowErrors);
+    icons.append(R.drawable.baseline_error_24);
 
     if (proxies.size() > 1 && calculatePongs() == proxies.size()) {
       List<Settings.Proxy> sorted = new ArrayList<>(proxies);
@@ -76,10 +79,11 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
       if (!sorted.equals(proxies)) {
         ids.append(R.id.btn_sortByPing);
         strings.append(R.string.ProxyReorderByPing);
+        icons.append(R.drawable.baseline_sort_24);
       }
     }
 
-    showMore(ids.get(), strings.get(), 0);
+    showMore(ids.get(), strings.get(), icons.get(), 0);
   }
 
   private static void sortProxies (List<Settings.Proxy> proxies) {
