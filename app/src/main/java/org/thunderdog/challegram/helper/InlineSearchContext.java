@@ -1,5 +1,6 @@
 package org.thunderdog.challegram.helper;
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.res.Resources;
@@ -593,7 +594,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
   public void onLocationRequestFailed (LocationHelper context, int errorCode, @NonNull String arg, @Nullable Location savedLocation) {
     String inlineQuery = getInlineQuery();
 
-    if (errorCode == LocationHelper.ERROR_CODE_PERMISSION && (inlineQuery == null || inlineQuery.isEmpty())) {
+    if (errorCode == LocationHelper.ERROR_CODE_PERMISSION && (inlineQuery == null || inlineQuery.isEmpty()) && !U.shouldShowPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
       Intents.openPermissionSettings();
     }
 
