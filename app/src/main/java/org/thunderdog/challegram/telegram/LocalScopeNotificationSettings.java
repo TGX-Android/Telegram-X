@@ -28,8 +28,8 @@ public class LocalScopeNotificationSettings {
   private Boolean _vibrateOnlyIfSilent;
 
   @Nullable
-  private String _sound, _soundName;
-  private boolean soundLoaded, soundNameLoaded;
+  private String _sound, _soundName, _soundPath;
+  private boolean soundLoaded, soundNameLoaded, soundPathLoaded;
 
   @Nullable
   private Boolean _contentPreview;
@@ -59,8 +59,8 @@ public class LocalScopeNotificationSettings {
     _channelVersion = null;
     _vibrateMode = null;
     _vibrateOnlyIfSilent = null;
-    _soundName = null; _sound = null;
-    soundLoaded = false; soundNameLoaded = false;
+    _soundPath = null; _soundName = null; _sound = null;
+    soundPathLoaded = false; soundNameLoaded = false; soundLoaded = false;
     _ledColor = null;
   }
 
@@ -132,11 +132,23 @@ public class LocalScopeNotificationSettings {
     return _soundName;
   }
 
-  void setSound (String sound, String soundName) {
+  @Nullable
+  String getSoundPath () {
+    if (!soundPathLoaded) {
+      String sound = getSound();
+      _soundPath = StringUtils.isEmpty(sound) ? sound : Settings.instance().getString(suffix(TdlibNotificationManager.KEY_SUFFIX_SOUND_PATH), null);
+      soundPathLoaded = true;
+    }
+    return _soundPath;
+  }
+
+  void setSound (String sound, String soundName, String soundPath) {
     this._sound = sound;
     this.soundLoaded = true;
     this._soundName = soundName;
     this.soundNameLoaded = true;
+    this._soundPath = soundPath;
+    this.soundPathLoaded = true;
   }
 
   void setNeedContentPreview (boolean needContentPreview) {
