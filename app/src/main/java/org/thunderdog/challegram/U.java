@@ -150,9 +150,13 @@ import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.unit.ByteUnit;
 import me.vkryl.core.util.LocalVar;
+import okio.BufferedSink;
 import okio.BufferedSource;
 import okio.Okio;
+import okio.Sink;
+import okio.Source;
 
 @SuppressWarnings ("JniMissingFunction")
 public class U {
@@ -238,10 +242,13 @@ public class U {
   public static String getRingtoneName (@Nullable String ringtoneUri, @Nullable String fallbackName) {
     if (StringUtils.isEmpty(ringtoneUri))
       return ringtoneUri;
-    Uri uri = Uri.parse(ringtoneUri);
+    return getRingtoneName(Uri.parse(ringtoneUri), fallbackName);
+  }
+
+  public static String getRingtoneName (@Nullable Uri ringtoneUri, @Nullable String fallbackName) {
     String[] projection = {MediaStore.MediaColumns.TITLE};
     try {
-      try (Cursor cur = UI.getContext().getContentResolver().query(uri, projection, null, null, null)) {
+      try (Cursor cur = UI.getContext().getContentResolver().query(ringtoneUri, projection, null, null, null)) {
         if (cur != null && cur.moveToFirst()) {
           String title = cur.getString(0);
           Log.i("Success: %s -> %s", ringtoneUri, title);
@@ -1804,6 +1811,41 @@ public class U {
       file = UI.getContext().getExternalFilesDir(null);
     }
     return file != null ? file : UI.getContext().getFilesDir();
+  }
+
+  public static File getRingtonesDir () {
+    File ringtonesDir = new File(getAppDir(false), "ringtones");
+    if (!ringtonesDir.exists() && !ringtonesDir.mkdir())
+      throw new IllegalStateException();
+    return ringtonesDir;
+  }
+
+  public static boolean copyFile (Context context, Uri src, File dst) {
+    switch (src.getScheme()) {
+      case "file":
+        return FileUtils.copy(new File(src.getPath()), dst);
+      case "content": {
+        long totalDone = 0;
+        try (InputStream inputStream = context.getContentResolver().openInputStream(src)) {
+          try (Source in = Okio.source(inputStream);
+               Sink sink = Okio.sink(dst);
+               BufferedSink out = Okio.buffer(sink)) {
+            long done;
+            while ((done = in.read(out.getBuffer(), 20480)) != -1) {
+              totalDone += done;
+            }
+            out.flush();
+          }
+          Log.i("Copied %d bytes: %s to %s", totalDone, src, dst);
+          return true;
+        } catch (Throwable t) {
+          Log.e("Unable to copy file", t);
+          return false;
+        }
+      }
+      default:
+        throw new UnsupportedOperationException(src.getScheme());
+    }
   }
 
   public static boolean isPrivateFile (File file) {

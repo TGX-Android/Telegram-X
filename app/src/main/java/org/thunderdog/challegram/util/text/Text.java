@@ -2291,7 +2291,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       if (spoilers == null) {
         spoilers = new LongSparseArray<>();
         int partsCount = parts.size();
-        for (int i = 0; i < partsCount; i++) {
+        for (int i = 0; i < partsCount;) {
           TextPart part = parts.get(i);
           TextEntity spoilerEntity = part.getSpoilerEntity();
           if (spoilerEntity != null) {
