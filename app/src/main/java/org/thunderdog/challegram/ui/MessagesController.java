@@ -4028,7 +4028,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (tdlib.canSetPasscode(chat)) {
       ids.append(R.id.btn_setPasscode);
       strings.append(R.string.PasscodeTitle);
-      icons.append(R.drawable.baseline_lock_24);
+      icons.append(R.drawable.vkryl_baseline_lock_pin_24);
     }
 
     tdlib.ui().addDeleteChatOptions(getChatId(), ids, strings, icons,true, false);

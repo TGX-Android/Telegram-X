@@ -221,6 +221,7 @@ public class Drawables {
       case R.drawable.templarian_baseline_gamepad_variant_16:
         return "templarian";
 
+      case R.drawable.mrgrigri_baseline_pistol_24:
       case R.drawable.mrgrigri_baseline_textbox_password_24:
         return "mrgrigri";
 

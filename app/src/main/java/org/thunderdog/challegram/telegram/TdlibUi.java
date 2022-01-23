@@ -5596,10 +5596,11 @@ public class TdlibUi extends Handler {
 
     IntList ids = new IntList(REPORT_REASON_COUNT);
     StringList strings = new StringList(REPORT_REASON_COUNT);
-    fillReportReasons(ids, strings);
+    IntList icons = new IntList(REPORT_REASON_COUNT);
+    fillReportReasons(ids, strings, icons);
 
     CharSequence title = Lang.pluralBold(R.string.ReportXChats, chatIds.length);
-    context.showOptions(title, ids.get(), strings.get(), /*colors.get()*/ null, null, (itemView, id) -> {
+    context.showOptions(title, ids.get(), strings.get(), /*colors.get()*/ null, icons.get(), (itemView, id) -> {
       toReportReasons(context, id, title, new TdApi.ReportChat(), false, request -> {
         AtomicInteger remaining = new AtomicInteger(chatIds.length);
         for (long chatId : chatIds) {
@@ -5626,34 +5627,41 @@ public class TdlibUi extends Handler {
 
   private static final int REPORT_REASON_COUNT = 7;
 
-  private static void fillReportReasons (IntList ids, StringList strings) {
+  private static void fillReportReasons (IntList ids, StringList strings, IntList icons) {
     ids.append(R.id.btn_reportChatSpam);
     // colors.append(ViewController.OPTION_COLOR_NORMAL);
     strings.append(R.string.Spam);
+    icons.append(R.drawable.baseline_dangerous_24);
 
     ids.append(R.id.btn_reportChatFake);
     // colors.append(ViewController.OPTION_COLOR_RED);
     strings.append(R.string.Fake);
+    icons.append(R.drawable.baseline_feedback_24);
 
     ids.append(R.id.btn_reportChatViolence);
     // colors.append(ViewController.OPTION_COLOR_NORMAL);
     strings.append(R.string.Violence);
+    icons.append(R.drawable.mrgrigri_baseline_pistol_24);
 
     ids.append(R.id.btn_reportChatPornography);
     // colors.append(ViewController.OPTION_COLOR_NORMAL);
     strings.append(R.string.Pornography);
+    icons.append(R.drawable.baseline_explicit_24);
 
     ids.append(R.id.btn_reportChatChildAbuse);
     // colors.append(ViewController.OPTION_COLOR_RED);
     strings.append(R.string.ChildAbuse);
+    icons.append(R.drawable.baseline_back_hand_24);
 
     ids.append(R.id.btn_reportChatCopyright);
     // colors.append(ViewController.OPTION_COLOR_NORMAL);
     strings.append(R.string.Copyright);
+    icons.append(R.drawable.baseline_copyright_24);
 
     ids.append(R.id.btn_reportChatOther);
     // colors.append(ViewController.OPTION_COLOR_NORMAL);
     strings.append(R.string.Other);
+    icons.append(R.drawable.baseline_help_24);
   }
 
   private static <T extends TdApi.Function> void toReportReasons (ViewController<?> context, int reportReasonId, CharSequence title, T request, boolean forceText, RunnableData<T> reportCallback) {
@@ -5738,9 +5746,10 @@ public class TdlibUi extends Handler {
 
     IntList ids = new IntList(REPORT_REASON_COUNT);
     StringList strings = new StringList(REPORT_REASON_COUNT);
-    fillReportReasons(ids, strings);
+    IntList icons = new IntList(REPORT_REASON_COUNT);
+    fillReportReasons(ids, strings, icons);
 
-    context.showOptions(title, ids.get(), strings.get(), /*colors.get()*/ null, null, (itemView, id) -> {
+    context.showOptions(title, ids.get(), strings.get(), /*colors.get()*/ null, icons.get(), (itemView, id) -> {
       toReportReasons(context, id, title, new TdApi.ReportChatPhoto(chatId, fileId, null, null), false, request -> {
         if (after != null) {
           after.run();
@@ -5794,9 +5803,10 @@ public class TdlibUi extends Handler {
 
     IntList ids = new IntList(REPORT_REASON_COUNT);
     StringList strings = new StringList(REPORT_REASON_COUNT);
-    fillReportReasons(ids, strings);
+    IntList icons = new IntList(REPORT_REASON_COUNT);
+    fillReportReasons(ids, strings, icons);
 
-    context.showOptions(title, ids.get(), strings.get(), /*colors.get()*/ null, null, (itemView, id) -> {
+    context.showOptions(title, ids.get(), strings.get(), /*colors.get()*/ null, icons.get(), (itemView, id) -> {
       toReportReasons(context, id, title, new TdApi.ReportChat(chatId, messageIds, null, null), false, request -> {
         if (after != null) {
           after.run();
