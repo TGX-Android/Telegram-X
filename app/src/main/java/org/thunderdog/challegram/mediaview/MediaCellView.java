@@ -139,11 +139,6 @@ public class MediaCellView extends ViewGroup implements
   }
 
   @Override
-  public void onBufferingStateChanged (boolean isBuffering) {
-    bufferingProgressView.setProgressVisible(isBuffering);
-  }
-
-  @Override
   protected void onLayout (boolean changed, int left, int top, int right, int bottom) {
     final int childCount = getChildCount();
 
@@ -1760,6 +1755,16 @@ public class MediaCellView extends ViewGroup implements
     if (state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED && (forceTouchMode || (media != null && media.isAutoplay()))) {
       autoplayIfNeeded(false);
     }
+  }
+
+  @Override
+  public void onBufferingStateChanged (boolean isBuffering) {
+    bufferingProgressView.setProgressVisible(isBuffering, media != null && media.getFileProgress().isDownloaded());
+  }
+
+  @Override
+  public void onPlayError () {
+    bufferingProgressView.setProgressVisible(false, false);
   }
 
   @Override

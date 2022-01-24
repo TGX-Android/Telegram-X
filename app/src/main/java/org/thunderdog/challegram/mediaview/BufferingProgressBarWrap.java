@@ -59,15 +59,19 @@ public class BufferingProgressBarWrap extends View implements Destroyable {
     progressComponent.performDestroy();
   }
 
-  public void setProgressVisible (boolean value) {
-    if (value && progressDelayRunnable == null) {
-      progressDelayRunnable = () -> {
+  public void setProgressVisible (boolean value, boolean delay) {
+    if (value) {
+      if (!delay) {
         progressVisible.setValue(true, true);
-        progressDelayRunnable = null;
-      };
+      } else if (progressDelayRunnable == null) {
+        progressDelayRunnable = () -> {
+          progressVisible.setValue(true, true);
+          progressDelayRunnable = null;
+        };
 
-      postDelayed(progressDelayRunnable, 350L);
-    } else if (!value) {
+        postDelayed(progressDelayRunnable, 350L);
+      }
+    } else {
       if (progressDelayRunnable != null) {
         removeCallbacks(progressDelayRunnable);
         progressDelayRunnable = null;

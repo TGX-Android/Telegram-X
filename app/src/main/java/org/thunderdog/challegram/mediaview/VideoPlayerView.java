@@ -376,6 +376,9 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
       boolean isGif = currentItem != null && currentItem.isGifType();
       UI.showToast(U.isUnsupportedFormat(error) ? (isGif ? R.string.GifPlaybackUnsupported : R.string.VideoPlaybackUnsupported) : (isGif ? R.string.GifPlaybackError : R.string.VideoPlaybackError), Toast.LENGTH_SHORT);
       setVideo(null);
+      if (callback != null) {
+        callback.onPlayError();
+      }
     }
   }
 
@@ -392,7 +395,8 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
     void onPlayReady ();
     void onPlayPause (boolean isPlaying);
     void onPlayProgress (long totalDuration, long now);
-    void onBufferingStateChanged (boolean isBuffering);
+    default void onBufferingStateChanged (boolean isBuffering) {}
+    default void onPlayError() {}
   }
 
   private Callback callback;
