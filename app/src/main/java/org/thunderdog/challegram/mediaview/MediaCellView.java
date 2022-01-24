@@ -140,11 +140,7 @@ public class MediaCellView extends ViewGroup implements
 
   @Override
   public void onBufferingStateChanged (boolean isBuffering) {
-    if (media != null && media.getFileProgress() != null && media.getFileProgress().isDownloaded()) {
-      bufferingProgressView.setProgressVisible(false);
-    } else {
-      bufferingProgressView.setProgressVisible(isBuffering);
-    }
+    bufferingProgressView.setProgressVisible(isBuffering);
   }
 
   @Override
