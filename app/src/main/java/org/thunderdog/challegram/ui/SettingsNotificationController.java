@@ -64,6 +64,7 @@ import org.thunderdog.challegram.widget.InfiniteRecyclerView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.RadioView;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1792,26 +1793,41 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         final ArrayList<RingtoneItem> ringtoneItems = isRingtone(v.getId()) ? getCallRingtones() : getNotificationSounds();
         int ringtoneType;
 
-        String currentRingtoneUri;
+        String uri, savedUri, originalUri;
         switch (v.getId()) {
           case R.id.btn_notifications_sound:
             ringtoneType = RingtoneManager.TYPE_NOTIFICATION;
-            currentRingtoneUri = tdlib.notifications().getDefaultSound(getScope(item));
+            TdApi.NotificationSettingsScope scope = getScope(item);
+            uri = tdlib.notifications().getDefaultSound(scope);
+            savedUri = tdlib.notifications().getSavedDefaultSound(scope);
+            originalUri = tdlib.notifications().getDefaultSoundPath(scope);
             break;
           case R.id.btn_calls_ringtone:
             ringtoneType = RingtoneManager.TYPE_RINGTONE;
-            currentRingtoneUri = tdlib.notifications().getCallRingtone();
+            uri = savedUri = tdlib.notifications().getCallRingtone();
+            originalUri = tdlib.notifications().getCallRingtonePath();
             break;
           case R.id.btn_customChat_sound:
             ringtoneType = RingtoneManager.TYPE_NOTIFICATION;
-            currentRingtoneUri = tdlib.notifications().getCustomSound(customChatId, null);
+            uri = tdlib.notifications().getCustomSound(customChatId, null);
+            savedUri = tdlib.notifications().getSavedCustomSound(customChatId, null);
+            originalUri = tdlib.notifications().getCustomSoundPath(customChatId);
             break;
           case R.id.btn_customChat_calls_ringtone:
             ringtoneType = RingtoneManager.TYPE_RINGTONE;
-            currentRingtoneUri = tdlib.notifications().getCustomCallRingtone(callChatId);
+            uri = savedUri = tdlib.notifications().getCustomCallRingtone(callChatId);
+            originalUri = tdlib.notifications().getCustomCallRingtonePath(callChatId);
             break;
           default: {
             throw new IllegalStateException("Stub");
+          }
+        }
+
+        // check against user changes through system channel
+        if (savedUri != null && !savedUri.isEmpty() && savedUri.equals(uri)) {
+          if (originalUri != null) {
+            // if it's the one user picked, use original uri to highlight selected ringtone
+            uri = originalUri;
           }
         }
 
@@ -1835,7 +1851,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
             intent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true);
             intent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true);
             intent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, ringtoneType);
-            intent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, currentRingtoneUri != null ? (currentRingtoneUri.isEmpty() ? null : Uri.parse(currentRingtoneUri)) : systemDefaultRingtone);
+            intent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, uri != null ? (uri.isEmpty() ? null : Uri.parse(uri)) : systemDefaultRingtone);
             context.startActivityForResult(intent, requestCode);
             return;
           } catch (Throwable t) {
@@ -1846,7 +1862,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         ListItem[] items = new ListItem[ringtoneItems.size()];
         int i = 0;
         for (RingtoneItem ringtoneItem : ringtoneItems) {
-          boolean isCurrent = currentRingtoneUri == null ? ringtoneItem.isDefault() : currentRingtoneUri.equals(ringtoneItem.getUri().toString());
+          boolean isCurrent = uri == null ? ringtoneItem.isDefault() : uri.equals(ringtoneItem.getUri().toString());
           items[i++] = new ListItem(ListItem.TYPE_RADIO_OPTION, 0, 0, ringtoneItem.isDefault() ? Lang.getString(R.string.IsDefault, ringtoneItem.getName()) : ringtoneItem.getName(), v.getId(), isCurrent).setStringKey(ringtoneItem.getUri().toString());
         }
 
@@ -2028,15 +2044,23 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   @Override
   public void onActivityResult (int requestCode, int resultCode, Intent data) {
     if (resultCode == Activity.RESULT_OK && (requestCode == Intents.ACTIVITY_RESULT_RINGTONE || requestCode == Intents.ACTIVITY_RESULT_RINGTONE_NOTIFICATION)) {
-      Uri uri = data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI);
+      final Uri originalUri = data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI);
+
       String ringtoneUri;
-      if (uri == null) {
+      String name;
+      if (originalUri == null) {
         ringtoneUri = ""; // disabled
+        name = null;
       } else {
-        uri = TdlibNotificationManager.fixSoundUri(uri);
+        name = U.getRingtoneName(originalUri, null);
+        Uri uri = TdlibNotificationManager.fixSoundUri(originalUri, true, customChatId != 0 ? null : requestCode == Intents.ACTIVITY_RESULT_RINGTONE ? "ringtone.ogg" : "notification.ogg");
         ringtoneUri = uri != null ? uri.toString() : null;
+        if (name == null && uri != null) {
+          name = uri.getLastPathSegment();
+        } else if (StringUtils.isEmpty(ringtoneUri)) {
+          name = null;
+        }
       }
-      String name = U.getRingtoneName(ringtoneUri, null);
       int viewId;
       switch (requestCode) {
         case Intents.ACTIVITY_RESULT_RINGTONE:
@@ -2048,7 +2072,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           default:
             throw new RuntimeException();
       }
-      setRingtone(viewId, ringtoneUri, name);
+      setRingtone(viewId, ringtoneUri, name, !StringUtils.isEmpty(ringtoneUri) && originalUri != null && !originalUri.toString().equals(ringtoneUri) ? originalUri.toString() : null);
     }
   }
 
@@ -2240,7 +2264,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
               boolean isDefault = item.isDefault();
               String ringtone = isDefault ? null : item.getUri().toString();
               String name = isDefault ? null : item.getName();
-              setRingtone(id, ringtone, name);
+              setRingtone(id, ringtone, name, null);
               break;
             }
           }
@@ -2250,21 +2274,21 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     }
   }
 
-  private void setRingtone (int id, @Nullable String ringtone, @Nullable String name) {
+  private void setRingtone (int id, @Nullable String ringtone, @Nullable String name, @Nullable String path) {
     boolean ok;
     switch (id) {
       case R.id.btn_notifications_sound:
-        ok = tdlib.notifications().setDefaultSound(scope, ringtone, name);
+        ok = tdlib.notifications().setDefaultSound(scope, ringtone, name, path);
         break;
       case R.id.btn_calls_ringtone:
-        ok = tdlib.notifications().setCallRingtone(ringtone, name);
+        ok = tdlib.notifications().setCallRingtone(ringtone, name, path);
         break;
       case R.id.btn_customChat_sound:
-        tdlib.notifications().setCustomSound(customChatId, ringtone, name);
+        tdlib.notifications().setCustomSound(customChatId, ringtone, name, path);
         ok = true;
         break;
       case R.id.btn_customChat_calls_ringtone:
-        tdlib.notifications().setCustomCallRingtone(callChatId, ringtone, name);
+        tdlib.notifications().setCustomCallRingtone(callChatId, ringtone, name, path);
         ok = true;
         break;
       default:

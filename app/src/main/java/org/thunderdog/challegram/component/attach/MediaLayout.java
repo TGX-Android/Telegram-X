@@ -972,7 +972,7 @@ public class MediaLayout extends FrameLayoutFix implements
   public void sendContact (TGUser user) {
     pickDateOrProceed((forceDisableNotification, schedulingState, disableMarkdown) -> {
       if (target != null) {
-        target.sendContact(user.getUser(), true, new TdApi.MessageSendOptions(forceDisableNotification, false, schedulingState));
+        target.sendContact(user.getUser(), true, new TdApi.MessageSendOptions(forceDisableNotification, false, false, schedulingState));
       }
       hide(false);
     });
@@ -1152,7 +1152,7 @@ public class MediaLayout extends FrameLayoutFix implements
   public void onClick (View v) {
     switch (v.getId()) {
       case R.id.btn_send: {
-        pickDateOrProceed((forceDisableNotification, schedulingState, disableMarkdown) -> getCurrentController().onMultiSendPress(new TdApi.MessageSendOptions(forceDisableNotification, false, schedulingState), false));
+        pickDateOrProceed((forceDisableNotification, schedulingState, disableMarkdown) -> getCurrentController().onMultiSendPress(new TdApi.MessageSendOptions(forceDisableNotification, false, false, schedulingState), false));
         break;
       }
       case R.id.btn_mosaic: {
@@ -1273,20 +1273,20 @@ public class MediaLayout extends FrameLayoutFix implements
         switch (menuItem.getId()) {
           case R.id.btn_sendNoMarkdown:
             pickDateOrProceed((forceDisableNotification, schedulingState, disableMarkdown) ->
-                    getCurrentController().onMultiSendPress(new TdApi.MessageSendOptions(false, false, schedulingState), true)
+                    getCurrentController().onMultiSendPress(new TdApi.MessageSendOptions(false, false, false, schedulingState), true)
             );
             break;
           case R.id.btn_sendNoSound:
             pickDateOrProceed((forceDisableNotification, schedulingState, disableMarkdown) ->
-                    getCurrentController().onMultiSendPress(new TdApi.MessageSendOptions(true, false, schedulingState), false)
+                    getCurrentController().onMultiSendPress(new TdApi.MessageSendOptions(true, false, false, schedulingState), false)
             );
             break;
           case R.id.btn_sendOnceOnline:
-            getCurrentController().onMultiSendPress(new TdApi.MessageSendOptions(false, false, new TdApi.MessageSchedulingStateSendWhenOnline()), false);
+            getCurrentController().onMultiSendPress(new TdApi.MessageSendOptions(false, false, false, new TdApi.MessageSchedulingStateSendWhenOnline()), false);
             break;
           case R.id.btn_sendScheduled:
             if (target != null) {
-              tdlib().ui().pickSchedulingState(target, schedule -> getCurrentController().onMultiSendPress(new TdApi.MessageSendOptions(false, false, schedule), false), getTargetChatId(), false, false, null);
+              tdlib().ui().pickSchedulingState(target, schedule -> getCurrentController().onMultiSendPress(new TdApi.MessageSendOptions(false, false, false, schedule), false), getTargetChatId(), false, false, null);
             }
             break;
         }

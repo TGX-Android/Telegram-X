@@ -1,5 +1,6 @@
 package org.thunderdog.challegram.helper;
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.res.Resources;
@@ -23,6 +24,7 @@ import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.chat.InlineResultsWrap;
+import org.thunderdog.challegram.component.popups.ModernOptions;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
@@ -39,6 +41,7 @@ import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.EmojiData;
+import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -125,6 +128,15 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
   public InlineSearchContext (BaseActivity context, Tdlib tdlib, @NonNull Callback callback) {
     this.context = context;
     this.locationTracker = new LocationHelper(context, this, true, false);
+    this.locationTracker.setPermissionRequester((skipAlert, onCancel, handler) -> {
+      if (skipAlert) {
+        context.requestLocationPermission(false, true, handler);
+      } else {
+        ModernOptions.showLocationAlert(context, getInlineUsername(), onCancel, () -> {
+          context.requestLocationPermission(false, true, handler);
+        });
+      }
+    });
     this.changeListener = InlineSearchContext.this::onQueryResultsChanged;
     this.tdlib = tdlib;
     this.callback = callback;
@@ -496,7 +508,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
 
     if (inlineBot != null) {
       if (allowInlineLocation) {
-        searchInlineResultsLocated(inlineQuery, false);
+        searchInlineResultsLocated(inlineQuery, inlineQuery != null && inlineQuery.isEmpty(), false);
       } else {
         searchInlineResults(inlineBot.username, inlineQuery, null, false);
       }
@@ -530,10 +542,11 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
   private void requestLocationForInlineBot (final String inlineQuery, final boolean firstQuery) {
     if (((TdApi.UserTypeBot) inlineBot.type).needLocation) {
       if (allowInlineLocation) {
-        searchInlineResultsLocated(inlineQuery, true);
+        searchInlineResultsLocated(inlineQuery, true, false);
       } else {
         final boolean [] requested = new boolean[1];
         final String currentInlineUsername = getInlineUsername();
+
         final Runnable onCancel = () -> {
           if (!requested[0]) {
             requested[0] = true;
@@ -542,25 +555,19 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
             }
           }
         };
-        final AlertDialog.Builder b = new AlertDialog.Builder(UI.getContext(), Theme.dialogTheme());
-        b.setTitle(Lang.getString(R.string.ShareYourLocation));
-        b.setMessage(Lang.getString(R.string.ShareYouLocationInline));
-        b.setOnCancelListener(dialog -> onCancel.run());
-        b.setNegativeButton(Lang.getString(R.string.Cancel), (dialog, which) -> {
-          dialog.dismiss();
-          onCancel.run();
-        });
-        b.setPositiveButton(Lang.getOK(), (dialog, which) -> {
+
+        final Runnable onConfirm = () -> {
           if (!requested[0]) {
             requested[0] = true;
             if (currentInlineUsername != null && currentInlineUsername.equals(getInlineUsername())) {
               allowInlineLocation = true;
               Settings.instance().setAllowLocationForBot(inlineBot.id);
-              searchInlineResultsLocated(currentText.substring(currentInlineUsername.length() + 2), true);
+              searchInlineResultsLocated(currentText.substring(currentInlineUsername.length() + 2), true, true);
             }
           }
-        });
-        context.showAlert(b);
+        };
+
+        ModernOptions.showLocationAlert(context, currentInlineUsername, onCancel, onConfirm);
       }
     } else {
       searchInlineResults(inlineBot.username, inlineQuery, null, firstQuery);
@@ -571,9 +578,9 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     locationTracker.cancel();
   }
 
-  private void searchInlineResultsLocated (final String inlineQuery, boolean allowResolution) {
+  private void searchInlineResultsLocated (final String inlineQuery, boolean allowResolution, boolean skipAlert) {
     setInProgress(true);
-    locationTracker.receiveLocation(currentText, null, 7000, allowResolution);
+    locationTracker.receiveLocation(currentText, null, 7000, allowResolution, skipAlert);
   }
 
   @Override
@@ -585,8 +592,14 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
 
   @Override
   public void onLocationRequestFailed (LocationHelper context, int errorCode, @NonNull String arg, @Nullable Location savedLocation) {
+    String inlineQuery = getInlineQuery();
+
+    if (errorCode == LocationHelper.ERROR_CODE_PERMISSION && (inlineQuery == null || inlineQuery.isEmpty()) && !U.shouldShowPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
+      Intents.openPermissionSettings();
+    }
+
     if (currentText.equals(arg)) {
-      searchInlineResults(inlineBot.username, getInlineQuery(), savedLocation, false);
+      searchInlineResults(inlineBot.username, inlineQuery, savedLocation, false);
     }
   }
 

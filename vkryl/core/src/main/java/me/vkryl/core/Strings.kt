@@ -328,3 +328,15 @@ fun String?.secureFileName (): String? {
   }
   return b?.toString() ?: this
 }
+
+fun String.multiply(num: Int): String {
+  if (num == 0 || this.isEmpty())
+    return "";
+  if (num == 1)
+    return this;
+  val b = StringBuilder(this.length * num)
+  for (x in 0 .. num) {
+    b.append(this)
+  }
+  return b.toString()
+}

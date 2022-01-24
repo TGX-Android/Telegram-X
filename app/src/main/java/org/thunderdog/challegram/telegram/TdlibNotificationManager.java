@@ -38,6 +38,8 @@ import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
 
+import java.io.File;
+import java.io.InputStream;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -45,10 +47,13 @@ import java.lang.annotation.Target;
 import java.util.Arrays;
 import java.util.List;
 
+import me.vkryl.core.FileUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.unit.BitwiseUtils;
 import me.vkryl.leveldb.LevelDB;
 import me.vkryl.td.ChatId;
+import okio.Okio;
+import okio.Source;
 
 /**
  * Date: 20/11/2016
@@ -108,6 +113,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
 
   public static final String _CUSTOM_SOUND_KEY = "custom_sound_";
   public static final String _CUSTOM_SOUND_NAME_KEY = "custom_sound_name_";
+  public static final String _CUSTOM_SOUND_PATH_KEY = "custom_sound_path_";
   public static final String _CUSTOM_VIBRATE_KEY = "custom_vibrate_";
   public static final String _CUSTOM_VIBRATE_ONLYSILENT_KEY = "custom_vibrate_onlysilent_";
   public static final String _CUSTOM_PRIORITY_KEY = "custom_priority_";
@@ -122,6 +128,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
 
   private static final String _CUSTOM_CALL_RINGTONE_KEY = "custom_call_ringtone_";
   private static final String _CUSTOM_CALL_RINGTONE_NAME_KEY = "custom_call_ringtone_name_";
+  private static final String _CUSTOM_CALL_RINGTONE_PATH_KEY = "custom_call_ringtone_path_";
   private static final String _CUSTOM_CALL_VIBRATE_KEY = "custom_call_vibrate_";
   private static final String _CUSTOM_CALL_VIBRATE_ONLYSILENT_KEY = "custom_call_vibrate_onlysilent_";
 
@@ -145,6 +152,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
 
   static final String KEY_SUFFIX_SOUND = "_sounds";
   static final String KEY_SUFFIX_SOUND_NAME = "_sounds_name";
+  static final String KEY_SUFFIX_SOUND_PATH = "_sounds_path";
   static final String KEY_SUFFIX_VIBRATE = "_vibrate";
   static final String KEY_SUFFIX_VIBRATE_ONLYSILENT = "_vibrate_onlysilent";
   static final String KEY_SUFFIX_LED = "_led";
@@ -193,6 +201,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
 
   private static final String _CALL_RINGTONE_KEY = "voice_ringtone";
   private static final String _CALL_RINGTONE_NAME_KEY = "voice_ringtone_name";
+  private static final String _CALL_RINGTONE_PATH_KEY = "voice_ringtone_path";
   private static final String _CALL_VIBRATE_KEY = "voice_vibrate";
   private static final String _CALL_VIBRATE_ONLYSILENT_KEY = "voice_vibrate_onlysilent";
 
@@ -269,8 +278,8 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
 
   private Integer _callVibrate;
   private Boolean _callVibrateOnlyIfSilent;
-  private boolean callRingtoneLoaded, callRingtoneNameLoaded;
-  private @Nullable String _callRingtone, _callRingtoneName;
+  private boolean callRingtoneLoaded, callRingtoneNameLoaded, callRingtonePathLoaded;
+  private @Nullable String _callRingtone, _callRingtoneName, _callRingtonePath;
 
   @Nullable
   private Integer _repeatNotificationMinutes;
@@ -890,14 +899,46 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     if (StringUtils.isEmpty(soundUri))
       return soundUri;
     try {
-      Uri uri = fixSoundUri(Uri.parse(soundUri));
+      Uri uri = fixSoundUri(Uri.parse(soundUri), false, null);
       return uri == null ? null : uri.toString();
     } catch (Throwable ignored) { }
     return soundUri;
   }
 
-  public static Uri fixSoundUri (@NonNull Uri uri) {
-    return uri.equals(android.provider.Settings.System.DEFAULT_RINGTONE_URI) || uri.equals(android.provider.Settings.System.DEFAULT_NOTIFICATION_URI) ? null : uri;
+  public static Uri fixSoundUri (@NonNull Uri uri, boolean allowCopy, @Nullable String forceFileName) {
+    if (uri.equals(android.provider.Settings.System.DEFAULT_RINGTONE_URI) || uri.equals(android.provider.Settings.System.DEFAULT_NOTIFICATION_URI))
+      return null;
+    if ("content".equals(uri.getScheme())) {
+      String filePath = U.tryResolveFilePath(uri);
+      if (filePath != null) {
+        try {
+          File file = new File(filePath);
+          if (file.exists() && file.length() > 0) {
+            return Uri.fromFile(new File(filePath));
+          }
+        } catch (Throwable ignored) {}
+      }
+      if (allowCopy) {
+        File outputFile;
+
+        if (!StringUtils.isEmpty(forceFileName)) {
+          outputFile = new File(U.getRingtonesDir(), forceFileName);
+          if (outputFile.exists() && !outputFile.delete())
+            return null;
+        } else {
+          String name = U.getRingtoneName(uri, "other.ogg");
+          String fileExtension = U.getExtension(name);
+          String fileName = fileExtension != null ? name.substring(0, name.length() - fileExtension.length() - 1) : name;
+          outputFile = U.newFile(U.getRingtonesDir(), fileName, fileExtension);
+        }
+
+        if (U.copyFile(UI.getAppContext(), uri, outputFile)) {
+          return Uri.fromFile(outputFile);
+        }
+      }
+      return null;
+    }
+    return uri;
   }
 
   public boolean isDefaultSoundEnabled (TdApi.NotificationSettingsScope scope) {
@@ -905,7 +946,11 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   }
 
   public String getDefaultSound (TdApi.NotificationSettingsScope scope) {
-    return fixSoundUri(getChannelSound(scope, 0, getLocalNotificationSettings(scope).getSound()));
+    return getChannelSound(scope, 0, getSavedDefaultSound(scope));
+  }
+
+  public String getSavedDefaultSound (TdApi.NotificationSettingsScope scope) {
+    return fixSoundUri(getLocalNotificationSettings(scope).getSound());
   }
 
   public String getDefaultSoundName (TdApi.NotificationSettingsScope scope) {
@@ -913,11 +958,16 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     return getChannelSoundName(settings.getSound(), settings.getSoundName(), getDefaultSound(scope));
   }
 
-  public boolean setDefaultSound (TdApi.NotificationSettingsScope scope, @Nullable String newSound, @Nullable String newSoundName) {
+  public String getDefaultSoundPath (TdApi.NotificationSettingsScope scope) {
+    LocalScopeNotificationSettings settings = getLocalNotificationSettings(scope);
+    return settings.getSoundPath();
+  }
+
+  public boolean setDefaultSound (TdApi.NotificationSettingsScope scope, @Nullable String newSound, @Nullable String newSoundName, @Nullable String newSoundPath) {
     newSound = fixSoundUri(newSound);
     LocalScopeNotificationSettings settings = getLocalNotificationSettings(scope);
-    if (!compareSounds(settings.getSound(), newSound) || !StringUtils.equalsOrBothEmpty(settings.getSoundName(), newSoundName)) {
-      settings.setSound(newSound, newSoundName);
+    if (!compareSounds(settings.getSound(), newSound) || !StringUtils.equalsOrBothEmpty(settings.getSoundName(), newSoundName) || !StringUtils.equalsOrBothEmpty(settings.getSoundPath(), newSoundPath)) {
+      settings.setSound(newSound, newSoundName, newSoundPath);
       LevelDB editor = Settings.instance().edit();
       if (newSound != null)
         editor.putString(settings.suffix(KEY_SUFFIX_SOUND), newSound);
@@ -927,6 +977,10 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
         editor.putString(settings.suffix(KEY_SUFFIX_SOUND_NAME), newSoundName);
       else
         editor.remove(settings.suffix(KEY_SUFFIX_SOUND_NAME));
+      if (!StringUtils.isEmpty(newSound) && newSoundPath != null)
+        editor.putString(settings.suffix(KEY_SUFFIX_SOUND_PATH), newSoundPath);
+      else
+        editor.remove(settings.suffix(KEY_SUFFIX_SOUND_PATH));
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         incrementChannelVersion(scope, 0, editor);
       } else {
@@ -938,7 +992,11 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   }
 
   public String getCustomSound (long chatId, String defaultSound) {
-    return fixSoundUri(getChannelSound(null, chatId, Settings.instance().getString(key(_CUSTOM_SOUND_KEY + chatId), defaultSound)));
+    return getChannelSound(null, chatId, getSavedCustomSound(chatId, defaultSound));
+  }
+
+  public String getSavedCustomSound (long chatId, String defaultSound) {
+    return fixSoundUri(Settings.instance().getString(key(_CUSTOM_SOUND_KEY + chatId), defaultSound));
   }
 
   public boolean hasCustomSound (long chatId) {
@@ -960,7 +1018,15 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     return getChannelSoundName(sound, soundName, actualSound);
   }
 
-  public void setCustomSound (long chatId, @Nullable String customSound, @Nullable String customSoundName) {
+  public String getCustomSoundPath (long chatId) {
+    String actualSound = getCustomSound(chatId, null);
+    if (StringUtils.isEmpty(actualSound)) {
+      return actualSound;
+    }
+    return Settings.instance().getString(key(_CUSTOM_SOUND_PATH_KEY + chatId), null);
+  }
+
+  public void setCustomSound (long chatId, @Nullable String customSound, @Nullable String customSoundName, @Nullable String customSoundPath) {
     customSound = fixSoundUri(customSound);
     String oldSound = getCustomSound(chatId, null);
     LevelDB editor = Settings.instance().edit();
@@ -973,6 +1039,11 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       editor.remove(key(_CUSTOM_SOUND_NAME_KEY + chatId));
     } else {
       editor.putString(key(_CUSTOM_SOUND_NAME_KEY + chatId), customSoundName);
+    }
+    if (StringUtils.isEmpty(customSoundPath)) {
+      editor.remove(key(_CUSTOM_SOUND_PATH_KEY + chatId));
+    } else {
+      editor.putString(key(_CUSTOM_SOUND_PATH_KEY + chatId), customSoundPath);
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !compareSounds(customSound, oldSound)) {
       incrementChannelVersion(null, chatId, editor);
@@ -1146,7 +1217,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     } else if (compareSounds(actualSound, sound)) {
       return U.getRingtoneName(sound, soundName);
     } else {
-      return U.getRingtoneName(sound, Lang.getString(R.string.RingtoneCustom));
+      return U.getRingtoneName(actualSound, Lang.getString(R.string.RingtoneCustom));
     }
   }
 
@@ -1249,11 +1320,31 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     return Settings.instance().getString(key(_CUSTOM_CALL_RINGTONE_NAME_KEY + chatId), null);
   }
 
-  public void setCustomCallRingtone (long chatId, @Nullable String customRingtone, @Nullable String customRingtoneName) {
+  public @Nullable String getCustomCallRingtonePath (long chatId) {
+    return Settings.instance().getString(key(_CUSTOM_CALL_RINGTONE_PATH_KEY + chatId), null);
+  }
+
+  public void setCustomCallRingtone (long chatId, @Nullable String customRingtone, @Nullable String customRingtoneName, @Nullable String customRingtonePath) {
     if (customRingtone == null) {
-      Settings.instance().edit().remove(key(_CUSTOM_CALL_RINGTONE_KEY + chatId)).remove(key(_CUSTOM_CALL_RINGTONE_NAME_KEY + chatId)).apply();
+      Settings.instance().edit()
+        .remove(key(_CUSTOM_CALL_RINGTONE_KEY + chatId))
+        .remove(key(_CUSTOM_CALL_RINGTONE_NAME_KEY + chatId))
+        .remove(key(_CUSTOM_CALL_RINGTONE_PATH_KEY + chatId))
+        .apply();
     } else {
-      Settings.instance().edit().putString(key(_CUSTOM_CALL_RINGTONE_KEY + chatId), customRingtone).putString(key(_CUSTOM_CALL_RINGTONE_NAME_KEY + chatId), customRingtoneName).apply();
+      LevelDB.Editor editor = Settings.instance().edit();
+      editor.putString(key(_CUSTOM_CALL_RINGTONE_KEY + chatId), customRingtone);
+      if (StringUtils.isEmpty(customRingtoneName)) {
+        editor.remove(key(_CUSTOM_CALL_RINGTONE_NAME_KEY + chatId));
+      } else {
+        editor.putString(key(_CUSTOM_CALL_RINGTONE_NAME_KEY + chatId), customRingtoneName);
+      }
+      if (StringUtils.isEmpty(customRingtonePath)) {
+        editor.remove(key(_CUSTOM_CALL_RINGTONE_PATH_KEY + chatId));
+      } else {
+        editor.putString(key(_CUSTOM_CALL_RINGTONE_PATH_KEY + chatId), customRingtonePath);
+      }
+      editor.apply();
     }
   }
 
@@ -1320,15 +1411,38 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     return _callRingtoneName;
   }
 
-  public boolean setCallRingtone (@Nullable String voiceRingtone, @Nullable String voiceRingtoneName) {
-    if (!StringUtils.equalsOrBothEmpty(voiceRingtone, getCallRingtone()) || !StringUtils.equalsOrBothEmpty(voiceRingtoneName, getCallRingtoneName())) {
+  public @Nullable String getCallRingtonePath () {
+    if (!callRingtonePathLoaded) {
+      _callRingtonePath = Settings.instance().getString(key(_CALL_RINGTONE_PATH_KEY, tdlib.id()), null);
+      callRingtonePathLoaded = true;
+    }
+    return _callRingtonePath;
+  }
+
+  public boolean setCallRingtone (@Nullable String voiceRingtone, @Nullable String voiceRingtoneName, @Nullable String voiceRingtonePath) {
+    if (!StringUtils.equalsOrBothEmpty(voiceRingtone, getCallRingtone()) ||
+        !StringUtils.equalsOrBothEmpty(voiceRingtoneName, getCallRingtoneName()) ||
+        !StringUtils.equalsOrBothEmpty(voiceRingtonePath, getCallRingtonePath())) {
       this._callRingtone = voiceRingtone; this.callRingtoneLoaded = true;
       this._callRingtoneName = voiceRingtoneName; this.callRingtoneNameLoaded = true;
+      this._callRingtonePath = voiceRingtonePath; this.callRingtonePathLoaded = true;
       SharedPreferences.Editor editor = Settings.instance().edit();
       if (voiceRingtone == null) {
-        editor.remove(key(_CALL_RINGTONE_KEY)).remove(key(_CALL_RINGTONE_NAME_KEY)).apply();
+        editor.remove(key(_CALL_RINGTONE_KEY));
+        editor.remove(key(_CALL_RINGTONE_NAME_KEY));
+        editor.remove(key(_CALL_RINGTONE_PATH_KEY));
       } else {
-        editor.putString(key(_CALL_RINGTONE_KEY), voiceRingtone).putString(key(_CALL_RINGTONE_NAME_KEY), voiceRingtoneName).apply();
+        editor.putString(key(_CALL_RINGTONE_KEY), voiceRingtone);
+        if (StringUtils.isEmpty(voiceRingtoneName)) {
+          editor.remove(key(_CALL_RINGTONE_NAME_KEY));
+        } else {
+          editor.putString(key(_CALL_RINGTONE_NAME_KEY), voiceRingtoneName);
+        }
+        if (StringUtils.isEmpty(voiceRingtonePath)) {
+          editor.remove(key(_CALL_RINGTONE_PATH_KEY));
+        } else {
+          editor.putString(key(_CALL_RINGTONE_PATH_KEY), voiceRingtonePath);
+        }
       }
       editor.apply();
       return true;
@@ -1370,6 +1484,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
 
       .remove(key(_CALL_RINGTONE_KEY, accountId))
       .remove(key(_CALL_RINGTONE_NAME_KEY, accountId))
+      .remove(key(_CALL_RINGTONE_PATH_KEY, accountId))
       .remove(key(_CALL_VIBRATE_KEY, accountId))
       .remove(key(_CALL_VIBRATE_ONLYSILENT_KEY, accountId));
 
@@ -1380,6 +1495,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
 
     String customSoundKey = key(_CUSTOM_SOUND_KEY, accountId);
     String customSoundNameKey = key(_CUSTOM_SOUND_NAME_KEY, accountId);
+    String customSoundPathKey = key(_CUSTOM_SOUND_PATH_KEY, accountId);
     String customLedKey = key(_CUSTOM_LED_KEY, accountId);
     String customVibrateKey = key(_CUSTOM_VIBRATE_KEY, accountId);
     String customVibrateOnlySilentKey = key(_CUSTOM_VIBRATE_ONLYSILENT_KEY, accountId);
@@ -1390,7 +1506,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     String customCallPriorityKey = key(_CUSTOM_PRIORITY_OR_IMPORTANCE_KEY, accountId);
     String channelVersionCustomKey = key(_CHANNEL_VERSION_CUSTOM_KEY, accountId);
     Settings.instance().removeByAnyPrefix(new String[] {
-      customSoundKey, customSoundNameKey, customLedKey, customVibrateKey, customVibrateOnlySilentKey,
+      customSoundKey, customSoundNameKey, customSoundPathKey, customLedKey, customVibrateKey, customVibrateOnlySilentKey,
       customCallRingtoneKey, customCallRingtoneNameKey, customCallVibrateKey, customCallVibrateOnlySilentKey, customCallPriorityKey,
       channelVersionCustomKey
     }, editor);

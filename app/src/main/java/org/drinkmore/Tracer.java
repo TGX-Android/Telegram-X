@@ -6,7 +6,6 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.data.TD;
@@ -24,32 +23,8 @@ import java.util.Locale;
 public class Tracer {
   private static final String PREFIX = "Client fatal error (%d): [ 0][t 1][%d][Tracer.cpp:15][!Td]\t%s\n";
 
-  private static String format (String message) {
+  static String format (String message) {
     return String.format(Locale.US, PREFIX, Client.getClientCount(), System.currentTimeMillis(), message);
-  }
-
-  private static class ClientException_1492 extends RuntimeException {
-    private ClientException_1492 (String message) {
-      super(format(message));
-    }
-  }
-
-  private static class DatabaseError extends ClientException_1492 {
-    private DatabaseError (String message) {
-      super(message + ", versionCode: " + BuildConfig.VERSION_CODE);
-    }
-  }
-
-  private static class TdlibLaunchError extends ClientException_1492 {
-    private TdlibLaunchError (String message) {
-      super(message);
-    }
-  }
-
-  private static class TdlibLostPromiseError extends ClientException_1492 {
-    private TdlibLostPromiseError (String message) {
-      super(message);
-    }
   }
 
   private static void throwError (Throwable throwable) {
@@ -60,8 +35,8 @@ public class Tracer {
       newElements[0] = new StackTraceElement("org.drinkmore.Tracer", "throwError", "Tracer.java", 49);
       throwable.setStackTrace(newElements);
     }
-    if (throwable instanceof ClientException_1492)
-      throw (ClientException_1492) throwable;
+    if (throwable instanceof ClientException)
+      throw (ClientException) throwable;
     RuntimeException exception = new RuntimeException(format(throwable.getClass().getSimpleName() + ": " + throwable.getMessage()), throwable.getCause());
     exception.setStackTrace(throwable.getStackTrace());
     throw exception;
@@ -110,20 +85,20 @@ public class Tracer {
       public void run() {
         switch (cause) {
           case Cause.FATAL_ERROR:
-            throwAssertionError(error);
+            ClientException.throwAssertionError(error);
             break;
           case Cause.DATABASE_ERROR:
-            throw new DatabaseError(error.getClass().getSimpleName() + ": " + error.getMessage());
+            throw new ClientException.DatabaseError(error.getClass().getSimpleName() + ": " + error.getMessage());
           case Cause.LAUNCH_ERROR:
             throwLaunchError(error);
             break;
           case Cause.TDLIB_LAUNCH_ERROR:
-            throw new TdlibLaunchError(error.getMessage());
+            throw new ClientException.TdlibLaunchError(error.getMessage());
           case Cause.TDLIB_HANDLER_ERROR:
             throwTdlibHandlerError(error);
             break;
           case Cause.TDLIB_LOST_PROMISE_ERROR:
-            throw new TdlibLostPromiseError(error.getMessage());
+            throw new ClientException.TdlibLostPromiseError(error.getMessage());
           case Cause.NOTIFICATION_ERROR:
             throwNotificationError(error);
             break;
@@ -135,22 +110,12 @@ public class Tracer {
             break;
 
           case Cause.TEST_INDIRECT:
-            throwTestError(error);
+            ClientException.throwTestError(error);
             break;
           case Cause.TEST_DIRECT:
             throwError(error);
             break;
         }
-      }
-
-      // message only
-
-      private void throwTestError (Throwable error) {
-        throw new ClientException_1492(error.getMessage());
-      }
-
-      private void throwAssertionError (Throwable error) {
-        throw new ClientException_1492(error.getMessage());
       }
 
       // Full trace
@@ -207,11 +172,11 @@ public class Tracer {
     String message = (function != null ? function.getSimpleName() : "unknown") + ": " + TD.toErrorString(error);
     Settings.instance().storeCrash(accountId, message, Settings.CRASH_FLAG_SOURCE_TDLIB_PARAMETERS);
     if (stackTrace != null) {
-      Throwable t = new TdlibLaunchError(message);
+      Throwable t = new ClientException.TdlibLaunchError(message);
       t.setStackTrace(stackTrace);
       onFatalError(t, Cause.TDLIB_HANDLER_ERROR);
     } else {
-      onFatalError(new TdlibLaunchError(message), Cause.TDLIB_HANDLER_ERROR);
+      onFatalError(new ClientException.TdlibLaunchError(message), Cause.TDLIB_HANDLER_ERROR);
     }
   }
 

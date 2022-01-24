@@ -35,7 +35,7 @@ public class TGSourceHidden extends TGSource {
     msg.context()
       .tooltipManager()
       .builder(view, msg.currentViews)
-      .locate(text != null ? (targetView, outRect) -> text.locatePart(outRect, part, false) : receiver != null ? (targetView, outRect) -> receiver.toRect(outRect) : null)
+      .locate(text != null ? (targetView, outRect) -> text.locatePart(outRect, part) : receiver != null ? (targetView, outRect) -> receiver.toRect(outRect) : null)
       .controller(msg.controller())
       .show(msg.tdlib(), isImported ? R.string.ForwardAuthorImported : R.string.ForwardAuthorHidden)
       .hideDelayed();

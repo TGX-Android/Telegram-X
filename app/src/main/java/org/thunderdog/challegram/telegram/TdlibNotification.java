@@ -357,7 +357,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
   }
 
   private CharSequence getPreview (TD.ContentPreview content) {
-    CharSequence text = TD.toCharSequence(content.buildFormattedText(false), false);
+    CharSequence text = TD.toCharSequence(content.buildFormattedText(false), false, false);
     if (text instanceof Spanned) {
       Spanned spanned = (Spanned) text;
       URLSpan[] spans = spanned.getSpans(0, text.length(), URLSpan.class);

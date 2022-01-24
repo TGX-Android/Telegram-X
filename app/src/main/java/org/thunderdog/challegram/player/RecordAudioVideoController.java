@@ -1478,7 +1478,7 @@ public class RecordAudioVideoController implements
         long chatId = targetController.getChatId();
         long messageThreadId = targetController.getMessageThreadId();
         long replyToMessageId = targetController.obtainReplyId();
-        TdApi.MessageSendOptions opts = new TdApi.MessageSendOptions(forceDisableNotification, false, schedulingState);
+        TdApi.MessageSendOptions opts = new TdApi.MessageSendOptions(forceDisableNotification, false, false, schedulingState);
         if (newVideoNote.thumbnail == null && helperFile != null) {
           tdlib.client().send(new TdApi.DownloadFile(helperFile.id, 1, 0, 0, true), result -> {
             tdlib.sendMessage(chatId, messageThreadId, replyToMessageId, opts, result.getConstructor() == TdApi.File.CONSTRUCTOR ? tdlib.filegen().createThumbnail(videoNote, isSecretChat, (TdApi.File) result) : newVideoNote, null);
@@ -1606,7 +1606,7 @@ public class RecordAudioVideoController implements
 
   private void sendVideo (boolean forceDisableNotification, TdApi.MessageSchedulingState schedulingState) {
     if (recordMode == RECORD_MODE_VIDEO_EDIT) {
-      closeVideoEditMode(new TdApi.MessageSendOptions(forceDisableNotification, false, schedulingState));
+      closeVideoEditMode(new TdApi.MessageSendOptions(forceDisableNotification, false, false, schedulingState));
     }
   }
 
@@ -1622,7 +1622,7 @@ public class RecordAudioVideoController implements
     }
 
     if (sendOptions != null && sendOptions.schedulingState == null && targetController != null && targetController.areScheduledOnly()) {
-      targetController.pickDateOrProceed(sendOptions.disableNotification, sendOptions.schedulingState, (forceDisableNotification, schedulingState, disableMarkdown) -> closeVideoEditMode(new TdApi.MessageSendOptions(forceDisableNotification, false, schedulingState)));
+      targetController.pickDateOrProceed(sendOptions.disableNotification, sendOptions.schedulingState, (forceDisableNotification, schedulingState, disableMarkdown) -> closeVideoEditMode(new TdApi.MessageSendOptions(forceDisableNotification, false, false, schedulingState)));
       return;
     }
 

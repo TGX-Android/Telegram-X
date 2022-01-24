@@ -465,6 +465,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     if (mode == MODE_CODE_PHONE_CONFIRM) {
       return Strings.replaceBoldTokens(Lang.getString(R.string.CancelAccountResetInfo, formattedPhone));
     }
+    editText.setHint(Lang.getString(R.string.login_Code));
     switch (type.getConstructor()) {
       case TdApi.AuthenticationCodeTypeCall.CONSTRUCTOR: {
         return Strings.replaceBoldTokens(Lang.getString(R.string.SentCallCode, formattedPhone), R.id.theme_color_textLight);
@@ -477,6 +478,11 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       }
       case TdApi.AuthenticationCodeTypeSms.CONSTRUCTOR: {
         return Strings.replaceBoldTokens(Lang.getString(R.string.SentSmsCode, formattedPhone), R.id.theme_color_textLight);
+      }
+      case TdApi.AuthenticationCodeTypeMissedCall.CONSTRUCTOR: {
+        TdApi.AuthenticationCodeTypeMissedCall missedCall = (TdApi.AuthenticationCodeTypeMissedCall) type;
+        editText.setHint(Lang.getString(R.string.login_LastDigits, missedCall.length));
+        return Strings.replaceBoldTokens(Lang.getString(R.string.SentMissedCall, Strings.formatPhone(missedCall.phoneNumberPrefix), missedCall.length), R.id.theme_color_textLight);
       }
     }
     return Strings.replaceBoldTokens(Lang.getString(R.string.SentSmsCode), R.id.theme_color_textLight);
