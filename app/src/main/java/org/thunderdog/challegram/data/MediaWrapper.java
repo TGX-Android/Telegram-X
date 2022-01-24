@@ -884,16 +884,18 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     if (!StringUtils.isEmpty(durationTrimmed) && selectionFactor < 1f) {
       boolean isLoaded = getFileProgress().isLoaded();
       boolean isStreamingUI = isVideo() && !isLoaded;
+      boolean needTopOffset = source != null && (!source.useBubbles() && source.hasHeader());
 
       int fpRadius = (isLoaded || !isVideo()) ? 0 : getFileProgress().getRadius();
       int pDurationCorners = Screen.dp(isStreamingUI ? 12f : 4f);
-      int pDurationTop = cellTop + Screen.dp(8f);
+      int pDurationTop = cellTop + Screen.dp(8f) + (needTopOffset ? Screen.dp(16f) : 0);
       int pDurationLeft = cellLeft + Screen.dp(12f);
       int pDurationRight = pDurationLeft + durationWidth + (fpRadius * 2) + (isStreamingUI ? Screen.dp(16f) : Screen.dp(4f));
       int pDurationBottom = pDurationTop + (isStreamingUI ? (fpRadius * 2) + Screen.dp(8f) : durationHeight());
 
       RectF rectF = Paints.getRectF();
       rectF.set(pDurationLeft - Screen.dp(4f), pDurationTop, pDurationRight, pDurationBottom);
+      getFileProgress().setVideoStreamingClickRect(needTopOffset, rectF);
       c.drawRoundRect(rectF, pDurationCorners, pDurationCorners, Paints.fillingPaint(ColorUtils.alphaColor(alpha * (1f - selectionFactor), 0x4c000000)));
 
       Paint paint;

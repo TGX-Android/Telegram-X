@@ -5,6 +5,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Looper;
@@ -116,8 +117,11 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
 
   private boolean ignoreLoaderClicks;
   private boolean noCloud;
-  private boolean isVideoStreaming;
+
   private final Rect vsDownloadRect = new Rect();
+  private final Rect vsDownloadClickRect = new Rect();
+  private boolean isVideoStreaming;
+  private boolean isVideoStreamingOffsetNeeded;
 
   private float requestedAlpha;
 
@@ -160,6 +164,12 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     this.playPausePath = new Path();
     setIsPlaying(false, false);
     DrawAlgorithms.buildPlayPause(playPausePath, Screen.dp(18f), -1f, playPauseDrawFactor = this.playPauseFactor);
+  }
+
+  public void setVideoStreamingClickRect (boolean topOffsetNeeded, RectF videoStreamingRect) {
+    isVideoStreamingOffsetNeeded = topOffsetNeeded;
+    videoStreamingRect.round(this.vsDownloadClickRect);
+    updateVsRect();
   }
 
   private boolean isVideoStreaming () {
@@ -614,7 +624,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   }
 
   public boolean performClick (View view, boolean ignoreListener) {
-    if (ignoreLoaderClicks && !(isVideoStreaming() && vsDownloadRect.contains(startX, startY))) {
+    if (ignoreLoaderClicks && !(isVideoStreaming() && vsDownloadClickRect.contains(startX, startY))) {
       return !ignoreListener && listener != null && listener.onClick(this, view, file, messageId);
     }
     if (!isTrack && file != null && playPauseFile != null && ((Config.useCloudPlayback(playPauseFile) && !noCloud) || currentState == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED)) {
@@ -921,7 +931,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
       }
       case TdlibFilesManager.STATE_IN_PROGRESS: {
         completeCloud(false);
-        setIcon(isVideoStreaming() ? R.drawable.baseline_close_18 : R.drawable.deproko_baseline_close_24, animated);
+        setIcon(isVideoStreaming() ? R.drawable.deproko_baseline_close_18 : R.drawable.deproko_baseline_close_24, animated);
         setInProgress(true, animated);
         setAlpha(1f, animated);
         break;
@@ -1339,7 +1349,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
 
   private void updateVsRect () {
     int startX = left + Screen.dp(14f);
-    int startY = top + Screen.dp(12f);
+    int startY = top + Screen.dp(12f) + (isVideoStreamingOffsetNeeded ? Screen.dp(16f) : 0);
     vsDownloadRect.set(
       startX, startY, startX + (getRadius() * 2), startY + (getRadius() * 2)
     );

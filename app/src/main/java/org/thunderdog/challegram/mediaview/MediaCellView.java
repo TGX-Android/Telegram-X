@@ -16,9 +16,11 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageLoader;
 import org.thunderdog.challegram.loader.ImageReceiver;
@@ -1763,7 +1765,8 @@ public class MediaCellView extends ViewGroup implements
   @Override
   public void onProgress (TdApi.File file, float progress) {
     if (callback != null) {
-      callback.onSeekSecondaryProgress(media, progress);
+      float bufferingProgress = file.expectedSize != 0 ? (float) (file.local.downloadOffset + file.local.downloadedPrefixSize) / (float) file.expectedSize : 0f;
+      callback.onSeekSecondaryProgress(media, bufferingProgress);
     }
   }
 }

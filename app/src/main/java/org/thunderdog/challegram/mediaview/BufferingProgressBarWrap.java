@@ -27,6 +27,8 @@ public class BufferingProgressBarWrap extends View implements Destroyable {
     progressComponent.setAlpha(factor);
   }, AnimatorUtils.ACCELERATE_DECELERATE_INTERPOLATOR, 210L);
 
+  private Runnable progressDelayRunnable;
+
   public BufferingProgressBarWrap (@NonNull Context context) {
     super(context);
     setWillNotDraw(false);
@@ -58,7 +60,21 @@ public class BufferingProgressBarWrap extends View implements Destroyable {
   }
 
   public void setProgressVisible (boolean value) {
-    progressVisible.setValue(value, true);
+    if (value && progressDelayRunnable == null) {
+      progressDelayRunnable = () -> {
+        progressVisible.setValue(true, true);
+        progressDelayRunnable = null;
+      };
+
+      postDelayed(progressDelayRunnable, 350L);
+    } else if (!value) {
+      if (progressDelayRunnable != null) {
+        removeCallbacks(progressDelayRunnable);
+        progressDelayRunnable = null;
+      }
+
+      progressVisible.setValue(false, true);
+    }
   }
 
   @Override
