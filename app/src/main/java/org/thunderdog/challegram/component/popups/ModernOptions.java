@@ -42,7 +42,7 @@ public class ModernOptions {
     }
 
     if (shouldShowAlert) {
-      showLocationAlert(context, Lang.getString(isBackground ? R.string.LocationAlertLiveLocation : R.string.LocationAlertLocation), Lang.getString(R.string.LocationAlertLocationDisclaimer), onCancel, onAgree);
+      showLocationAlert(context, Lang.getString(isBackground ? R.string.LocationAlertLiveLocation : R.string.LocationAlertLocation), Lang.getString(R.string.LocationAlertLocationDisclaimer), isBackground ? onCancel : () -> {}, onAgree);
     } else {
       onAgree.run();
     }
@@ -78,11 +78,11 @@ public class ModernOptions {
               onAgree.run();
               break;
             case R.id.btn_privacyPolicy:
-              //onCancel.run();
+              onCancel.run();
               currentController.tdlib().ui().openUrl(currentController, Lang.getStringSecure(R.string.url_privacyPolicy), new TdlibUi.UrlOpenParameters().forceInstantView());
               break;
             case R.id.btn_cancel:
-              //onCancel.run();
+              onCancel.run();
               break;
           }
 
