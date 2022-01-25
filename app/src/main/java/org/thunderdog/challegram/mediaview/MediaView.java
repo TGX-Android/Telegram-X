@@ -135,6 +135,10 @@ public class MediaView extends FrameLayoutFix {
     baseCell.autoplayIfNeeded(isSwitch);
   }
 
+  public void prepareStreamingUiIfNeeded () {
+    baseCell.prepareStreamingUiIfNeeded();
+  }
+
   public void setSeekProgress (float progress) {
     baseCell.setSeekProgress(progress);
     if (previewCell != null) {

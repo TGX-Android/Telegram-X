@@ -1612,6 +1612,7 @@ public class MediaCellView extends ViewGroup implements
         }
       } else {
         invalidateImageComponents();
+        bufferingProgressView.setProgressVisible(false, false);
         if (delayed) {
           UI.post(() -> {
             if (playerView != null) {
@@ -1716,6 +1717,13 @@ public class MediaCellView extends ViewGroup implements
       } else {
         U.openFile(UI.getContext(getContext()).navigation().getCurrentStackItem(), media.getSourceVideo());
       }
+    }
+  }
+
+  public void prepareStreamingUiIfNeeded () {
+    if (media != null && media.isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE && media.isRemoteVideo() && !destroyed && Config.VIDEO_PLAYER_AVAILABLE) {
+      setHideStaticView(true, true);
+      media.setComponentsAlpha(1f);
     }
   }
 
