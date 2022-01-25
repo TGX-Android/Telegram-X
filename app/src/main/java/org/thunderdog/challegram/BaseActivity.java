@@ -2088,6 +2088,25 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
   }
 
+  public void closeFilePip (TdApi.File[] targetFiles) {
+    final int size = forgottenWindows.size();
+    for (int i = 0; i < size; i++) {
+      PopupLayout popupLayout = forgottenWindows.valueAt(i);
+      if (popupLayout != null && popupLayout.getBoundController() instanceof MediaViewController) {
+        MediaViewController mvc = ((MediaViewController) popupLayout.getBoundController());
+        TdApi.File currentFile = mvc.getCurrentFile();
+        if (currentFile != null) {
+          for (TdApi.File file : targetFiles) {
+            if (currentFile.id == file.id) {
+              mvc.close();
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+
   public boolean completelyForgetThisWindow (PopupLayout window) {
     final int size = forgottenWindows.size();
     for (int i = size - 1; i >= 0; i--) {

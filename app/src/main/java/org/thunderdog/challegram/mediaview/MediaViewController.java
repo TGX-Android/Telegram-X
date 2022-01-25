@@ -5343,6 +5343,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     return selectDelegate != null && selectDelegate.isMediaItemSelected(stack.getCurrentIndex(), stack.getCurrent());
   }
 
+  public TdApi.File getCurrentFile () {
+    return stack.getCurrent().getTargetFile();
+  }
+
   // Clicks
 
   private boolean showOtherMedias;
