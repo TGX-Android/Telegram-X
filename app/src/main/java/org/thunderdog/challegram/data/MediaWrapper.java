@@ -1086,7 +1086,6 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       textShort = Strings.buildSize(fileProgress.getTotalSize());
       if (fileProgress.isLoading() || !fileProgress.isUploadFinished()) {
         if (fileProgress.isProcessing()) {
-          shouldHaveTwoLines = false;
           text = Lang.getString(R.string.ProcessingMedia, textShort);
         } else {
           int progressSize = fileProgress.getProgressSize();
