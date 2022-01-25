@@ -19,6 +19,7 @@ import org.thunderdog.challegram.component.chat.MessagesAdapter;
 import org.thunderdog.challegram.component.chat.MessagesHolder;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.chat.MessagesTouchHelperCallback;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.tool.Screen;
@@ -82,7 +83,7 @@ public class MessagesRecyclerView extends RecyclerView implements FactorAnimator
   private MessagesItemDecoration itemDecoration;
 
   private void init () {
-    setOverScrollMode(OVER_SCROLL_NEVER);
+    setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? OVER_SCROLL_IF_CONTENT_SCROLLS : OVER_SCROLL_NEVER);
     itemAnimator = new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 140l);
     itemAnimator.setSupportsChangeAnimations(false);
     setItemAnimator(null);

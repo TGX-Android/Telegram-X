@@ -1280,7 +1280,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
       };
       pagerContentView.setOffscreenPageLimit(1);
-      pagerContentView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+      pagerContentView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS : View.OVER_SCROLL_NEVER);
       pagerContentView.addOnPageChangeListener(this);
       pagerContentView.setAdapter(pagerContentAdapter);
       pagerContentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -7413,7 +7413,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
       };
       stickerSuggestionsView.setItemAnimator(null);
-      stickerSuggestionsView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+      stickerSuggestionsView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS : View.OVER_SCROLL_NEVER);
       stickerSuggestionsView.setAdapter(stickerSuggestionAdapter);
       stickerSuggestionsView.setLayoutManager(manager);
       stickerSuggestionsView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, stickersListTotalHeight));

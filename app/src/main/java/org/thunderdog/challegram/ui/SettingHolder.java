@@ -38,6 +38,7 @@ import org.thunderdog.challegram.component.chat.MessagePreviewView;
 import org.thunderdog.challegram.component.inline.CustomResultView;
 import org.thunderdog.challegram.component.sharedmedia.MediaSmallView;
 import org.thunderdog.challegram.component.user.UserView;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.InlineResult;
 import org.thunderdog.challegram.mediaview.paint.ColorPaletteView;
@@ -1158,7 +1159,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
           }
         });
         ViewSupport.setThemedBackground(recyclerView, R.id.theme_color_filling, themeProvider);
-        recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS : View.OVER_SCROLL_NEVER);
         recyclerView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180l));
         recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false));
         recyclerView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(95f)));

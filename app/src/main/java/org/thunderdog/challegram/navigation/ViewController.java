@@ -1817,7 +1817,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         }
       });
     }
-    recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+    recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS : View.OVER_SCROLL_NEVER);
     recyclerView.setItemAnimator(null);
     recyclerView.setLayoutManager(new LinearLayoutManager(context(), RecyclerView.VERTICAL, false));
 

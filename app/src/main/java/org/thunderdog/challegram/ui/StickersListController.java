@@ -19,6 +19,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
@@ -290,7 +291,7 @@ public class StickersListController extends ViewController<StickersListControlle
     };
     addThemeInvalidateListener(recyclerView);
     recyclerView.setItemAnimator(null);
-    recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+    recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS : View.OVER_SCROLL_NEVER);
     recyclerView.setLayoutManager(manager = new RtlGridLayoutManager(context, spanCount).setAlignOnly(true));
     recyclerView.setAdapter(adapter = new StickersAdapter(this, recyclerView, this, offsetProvider));
     recyclerView.setLayoutParams(params);
