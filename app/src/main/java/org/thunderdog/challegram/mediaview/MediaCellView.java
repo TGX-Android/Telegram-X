@@ -1101,7 +1101,13 @@ public class MediaCellView extends ViewGroup implements
 
   @Override
   public void onClick (float x, float y) {
-    if (receiver.isInsideContent(x, y, media != null ? media.getWidth() : 0, media != null ? media.getHeight() : 0)) {
+    Receiver tReceiver = receiver;
+
+    if (tReceiver instanceof ImageReceiver && !((ImageReceiver) tReceiver).isLoaded()) {
+      tReceiver = imagePreviewReceiver;
+    }
+
+    if (tReceiver.isInsideContent(x, y, media != null ? media.getWidth() : 0, media != null ? media.getHeight() : 0)) {
       if (canTouch(false)) {
         ((MediaView) getParent()).onMediaClick(x, y);
       }
