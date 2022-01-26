@@ -216,7 +216,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       stickersView.setAdapter(stickersAdapter);
       // stickersView.setItemAnimator(null);
       stickersView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180));
-      stickersView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+      stickersView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS :View.OVER_SCROLL_NEVER);
       stickersView.addOnScrollListener(new RecyclerView.OnScrollListener() {
         @Override
         public void onScrollStateChanged (RecyclerView recyclerView, int newState) {
@@ -290,7 +290,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       gifsView.setItemAnimator(null);
       gifsView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
       gifsView.setHasFixedSize(true);
-      gifsView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+      gifsView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS :View.OVER_SCROLL_NEVER);
       gifsView.setAdapter(gifsAdapter);
       gifsView.addOnScrollListener(new RecyclerView.OnScrollListener() {
         @Override
@@ -601,7 +601,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       hotView = (RecyclerView) Views.inflate(context(), R.layout.recycler, contentView);
       hotView.setHasFixedSize(true);
       hotView.setAdapter(trendingAdapter);
-      hotView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+      hotView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS :View.OVER_SCROLL_NEVER);
       hotView.setLayoutManager(manager);
       hotView.addOnScrollListener(new RecyclerView.OnScrollListener() {
         @Override

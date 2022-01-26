@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.MessageListManager;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
@@ -82,7 +83,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
 
     recyclerView = (CustomRecyclerView) Views.inflate(context, R.layout.recycler_custom, null);
     recyclerView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180l));
-    recyclerView.setOverScrollMode(RecyclerView.OVER_SCROLL_NEVER);
+    recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? RecyclerView.OVER_SCROLL_IF_CONTENT_SCROLLS : RecyclerView.OVER_SCROLL_NEVER);
     recyclerView.setVerticalScrollBarEnabled(false);
     Views.setScrollBarPosition(recyclerView);
     recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, true));

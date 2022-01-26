@@ -16,6 +16,7 @@ import androidx.collection.SparseArrayCompat;
 import androidx.viewpager.widget.PagerAdapter;
 
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
@@ -186,7 +187,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     adapter = new ViewPagerAdapter(context, this);
     pager = new RtlViewPager(context);
     pager.setLayoutParams(params);
-    pager.setOverScrollMode(View.OVER_SCROLL_NEVER);
+    pager.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS : View.OVER_SCROLL_NEVER);
     pager.addOnPageChangeListener(this);
     pager.setAdapter(adapter);
     if (!overridePagerParent()) {
