@@ -1271,6 +1271,21 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     DrawAlgorithms.drawPlayPause(c, cx, cy, Screen.dp(13f), playPausePath, drawFactor, factor, progressFactor, ColorUtils.alphaColor(alpha, 0xffffffff));
   }
 
+  public void drawStreamingPlay (final Canvas c) {
+    if (file != null && alpha != 0f && !isTrack) {
+      final float alpha = this.alpha * requestedAlpha;
+      final int fillingColor;
+      if (alpha == 1f) {
+        fillingColor = backgroundColorIsId ? Theme.getColor(backgroundColor) : backgroundColor;
+      } else {
+        fillingColor = ColorUtils.alphaColor(alpha, backgroundColorIsId ? Theme.getColor(backgroundColor) : backgroundColor);
+      }
+
+      c.drawCircle(centerX(), centerY(), Screen.dp(DEFAULT_RADIUS), Paints.fillingPaint(fillingColor));
+      drawPlayPause(c, centerX(), centerY(), alpha, true);
+    }
+  }
+
   public <T extends View & DrawableProvider> void draw (T view, final Canvas c) {
     final boolean cloudPlayback = Config.useCloudPlayback(playPauseFile) && !noCloud;
     final float alpha = this.alpha * requestedAlpha;

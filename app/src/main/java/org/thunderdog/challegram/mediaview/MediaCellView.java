@@ -1040,6 +1040,7 @@ public class MediaCellView extends ViewGroup implements
     }
 
     this.media = media;
+    this.bufferingProgressView.setProgressVisibleInstant(false);
 
     boolean needLock = needLock();
     if (needLock) {
