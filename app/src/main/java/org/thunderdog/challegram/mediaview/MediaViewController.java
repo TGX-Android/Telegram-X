@@ -4646,7 +4646,6 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     mediaView.setCellCallback(this);
     mediaView.setBoundController(this);
     mediaView.initWithStack(stack);
-    mediaView.prepareStreamingUiIfNeeded();
     stack.setCallback(this);
     mediaView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     contentView.addView(mediaView);

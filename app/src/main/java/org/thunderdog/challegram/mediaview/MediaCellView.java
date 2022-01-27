@@ -1720,13 +1720,6 @@ public class MediaCellView extends ViewGroup implements
     }
   }
 
-  public void prepareStreamingUiIfNeeded () {
-    if (media != null && media.isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE && media.isRemoteVideo() && !destroyed && Config.VIDEO_PLAYER_AVAILABLE) {
-      setHideStaticView(true, true);
-      media.setComponentsAlpha(1f);
-    }
-  }
-
   public void updateMute () {
     if (playerView != null && media != null && media.isVideo() && (media.isLoaded() || Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) && media.getType() == MediaItem.TYPE_GALLERY_VIDEO) {
       playerView.setMuted(media.needMute());
