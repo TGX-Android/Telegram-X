@@ -326,6 +326,7 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
     if (Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
       this.fileProgress.setIgnoreLoaderClicks(true);
       this.fileProgress.setPausedIconRes(FileProgressComponent.PLAY_ICON);
+      this.fileProgress.setVideoStreamingProgressIgnore(true);
     }
 
     this.fileProgress.setFile(targetFile);

@@ -122,6 +122,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   private final Rect vsDownloadClickRect = new Rect();
   private boolean isVideoStreaming;
   private boolean isVideoStreamingOffsetNeeded;
+  private boolean isVideoStreamingProgressIgnore;
 
   private float requestedAlpha;
 
@@ -170,6 +171,10 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     isVideoStreamingOffsetNeeded = topOffsetNeeded;
     videoStreamingRect.round(this.vsDownloadClickRect);
     updateVsRect();
+  }
+
+  public void setVideoStreamingProgressIgnore (boolean progressIgnore) {
+    this.isVideoStreamingProgressIgnore = progressIgnore;
   }
 
   private boolean isVideoStreaming () {
@@ -931,7 +936,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
       }
       case TdlibFilesManager.STATE_IN_PROGRESS: {
         completeCloud(false);
-        setIcon(isVideoStreaming() ? R.drawable.deproko_baseline_close_18 : R.drawable.deproko_baseline_close_24, animated);
+        setIcon(isVideoStreamingProgressIgnore ? pausedIconRes : isVideoStreaming() ? R.drawable.deproko_baseline_close_18 : R.drawable.deproko_baseline_close_24, animated);
         setInProgress(true, animated);
         setAlpha(1f, animated);
         break;
@@ -1354,7 +1359,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     if (cloudPlayback) {
       drawCloudState(c, alpha);
     }
-    if (progress != null) {
+    if (progress != null && !isVideoStreamingProgressIgnore) {
       progress.forceColor(getProgressColor());
       progress.draw(c);
     }
