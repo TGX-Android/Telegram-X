@@ -9,9 +9,11 @@ import androidx.annotation.Nullable;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.component.sharedmedia.MediaSmallView;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.MediaWrapper;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
@@ -316,9 +318,17 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
 
     this.fileProgress = new FileProgressComponent(context, tdlib, TdlibFilesManager.DOWNLOAD_FLAG_VIDEO, true, sourceChatId, sourceMessageId);
     this.fileProgress.setUseStupidInvalidate();
+
     if (allowIcon) {
       this.fileProgress.setDownloadedIconRes(FileProgressComponent.PLAY_ICON);
     }
+
+    if (Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
+      this.fileProgress.setIgnoreLoaderClicks(true);
+      this.fileProgress.setPausedIconRes(FileProgressComponent.PLAY_ICON);
+      this.fileProgress.setVideoStreamingProgressIgnore(true);
+    }
+
     this.fileProgress.setFile(targetFile);
   }
 

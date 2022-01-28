@@ -339,9 +339,14 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
 
   @Override
   public void onPlaybackStateChanged (@Player.State int playbackState) {
-    if (callback != null && playbackState == Player.STATE_READY) {
-      callback.onPlayReady();
+    if (callback != null) {
+      if (playbackState == Player.STATE_READY) {
+        callback.onPlayReady();
+      }
+
+      callback.onBufferingStateChanged(playbackState == Player.STATE_BUFFERING);
     }
+
     switch (playbackState) {
       case Player.STATE_ENDED: {
         if (isLooping && player != null) {
@@ -371,6 +376,9 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
       boolean isGif = currentItem != null && currentItem.isGifType();
       UI.showToast(U.isUnsupportedFormat(error) ? (isGif ? R.string.GifPlaybackUnsupported : R.string.VideoPlaybackUnsupported) : (isGif ? R.string.GifPlaybackError : R.string.VideoPlaybackError), Toast.LENGTH_SHORT);
       setVideo(null);
+      if (callback != null) {
+        callback.onPlayError();
+      }
     }
   }
 
@@ -387,6 +395,8 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
     void onPlayReady ();
     void onPlayPause (boolean isPlaying);
     void onPlayProgress (long totalDuration, long now);
+    default void onBufferingStateChanged (boolean isBuffering) {}
+    default void onPlayError() {}
   }
 
   private Callback callback;

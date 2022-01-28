@@ -460,7 +460,7 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
       }
 
       MediaItem mediaItem = (MediaItem) item.getData();
-      if (mediaItem.isVideo() && !mediaItem.isLoaded()) {
+      if (mediaItem.isVideo() && (!mediaItem.isLoaded() && !Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE)) {
         mediaItem.performClick(v);
       } else if (mediaItem.getType() == MediaItem.TYPE_VIDEO_MESSAGE) {
         if (mediaItem.isLoaded()) {

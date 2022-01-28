@@ -1,6 +1,7 @@
 package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
@@ -18,6 +19,7 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -200,6 +202,13 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
     if (source != null && source.isHotTimerStarted() && !source.isOutgoing()) {
       fileProgress.setHideDownloadedIcon(true);
+    }
+
+    if (Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
+      this.fileProgress.setIgnoreLoaderClicks(true);
+      this.fileProgress.setVideoStreaming(true);
+      this.fileProgress.setDownloadedIconRes(FileProgressComponent.PLAY_ICON);
+      this.fileProgress.setPausedIconRes(R.drawable.baseline_cloud_download_24);
     }
 
     this.fileProgress.setFile(video.video, source != null ? source.getMessage(messageId) : null);
@@ -787,7 +796,11 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       this.cellHeight = height;
       this.lastLeft = this.lastTop = -1;
       if (widthChanged && !StringUtils.isEmpty(duration)) {
-        trimDuration();
+        if (!(isVideo() && !getFileProgress().isLoaded() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE)) {
+          trimDuration();
+        } else {
+          trimDoubleDuration();
+        }
       }
     }
   }
@@ -837,10 +850,6 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
     DrawAlgorithms.drawReceiver(c, preview, receiver, false, true, cellLeft, cellTop, cellRight, cellBottom);
 
-    if (!hideLoader) {
-      fileProgress.draw(view, c);
-    }
-
     if (selectionPadding > 0) {
       cellLeft -= selectionPadding;
       cellTop -= selectionPadding;
@@ -876,19 +885,54 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       }
     }
 
-    if (!StringUtils.isEmpty(durationTrimmed) && selectionFactor < 1f) {
-      int pDurationTop = cellTop + Screen.dp(4f);
-      int pDurationRight = cellRight - Screen.dp(4f);
-      int pDurationLeft = pDurationRight - durationWidth - Screen.dp(4f);
+    boolean isLoaded = getFileProgress().isLoaded();
+    boolean isStreamingUI = isVideo() && !isLoaded;
+    boolean showDuration = !StringUtils.isEmpty(durationTrimmed) && selectionFactor < 1f;
+    boolean isDoubleLine = isStreamingUI && duration != null && durationShort != null;
+
+    if (showDuration) {
+      // Only if: channel + single item in stack + bubble-less mode
+      boolean needTopOffset = source != null && !source.useBubbles() && source.hasHeader() && source.isChannel() && source.getCombinedMessageCount() == 0;
+
+      int fpRadius = (isLoaded || !isVideo()) ? 0 : getFileProgress().getRadius();
+      int pDurationCorners = Screen.dp(isDoubleLine ? 12f : 4f);
+      int pDurationTop = cellTop + Screen.dp(8f) + (needTopOffset ? Screen.dp(16f) : 0);
+      int pDurationLeft = cellLeft + Screen.dp(12f);
+      int pDurationRight = pDurationLeft + durationWidth + (fpRadius * 2) + (isDoubleLine ? Screen.dp(16f) : Screen.dp(4f));
+      int pDurationBottom = pDurationTop + (isDoubleLine ? (fpRadius * 2) + Screen.dp(8f) : durationHeight());
 
       RectF rectF = Paints.getRectF();
-      rectF.set(pDurationLeft - Screen.dp(4f), pDurationTop, pDurationRight, pDurationTop + durationHeight());
+      rectF.set(pDurationLeft - Screen.dp(4f), pDurationTop, pDurationRight, pDurationBottom);
+      getFileProgress().setVideoStreamingClickRect(needTopOffset, rectF);
+      c.drawRoundRect(rectF, pDurationCorners, pDurationCorners, Paints.fillingPaint(ColorUtils.alphaColor(alpha * (1f - selectionFactor), 0x4c000000)));
 
-      c.drawRoundRect(rectF, Screen.dp(4f), Screen.dp(4f), Paints.fillingPaint(ColorUtils.alphaColor(alpha * (1f - selectionFactor), 0x4c000000)));
-      Paint paint = Paints.whiteMediumPaint(13f, false, false);
+      Paint paint;
+
+      if (isDoubleLine) {
+        paint = Paints.getRegularTextPaint(13f, Color.WHITE);
+      } else {
+        paint = Paints.whiteMediumPaint(13f, false, false);
+      }
+
       paint.setAlpha((int) (255f * alpha * (1f - selectionFactor)));
-      c.drawText(durationTrimmed, pDurationLeft, pDurationTop - Screen.dp(4f) + durationOffset(), paint);
+      
+      if (isDoubleLine) {
+        int textBaseline = pDurationLeft + (fpRadius * 2) + Screen.dp(6f);
+        int textYBaseline = pDurationTop + ((pDurationBottom - pDurationTop) / 2);
+
+        c.drawText(durationShort, textBaseline, textYBaseline - Screen.dp(4f), paint);
+        c.drawText(duration, textBaseline, textYBaseline + Screen.dp(13f), paint);
+      } else {
+        c.drawText(durationTrimmed, pDurationLeft, pDurationTop - Screen.dp(4f) + durationOffset(), paint);
+      }
+
       paint.setAlpha(255);
+    }
+
+    if (isStreamingUI && (!showDuration || !isDoubleLine)) {
+      fileProgress.drawStreamingPlay(c);
+    } else if (!hideLoader) {
+      fileProgress.draw(view, c);
     }
 
     if (nativeEmbed != null && embedIcon != null) {
@@ -1033,6 +1077,22 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     }
   }
 
+  private void trimDoubleDuration () {
+    int width = cellWidth - Screen.dp(4f) * 3 - (Screen.dp(FileProgressComponent.DEFAULT_STREAMING_RADIUS) * 2);
+    if (width > 0 && (durationWidthFull > width || durationWidthShort > width)) {
+      durationTrimmed = durationShort;
+      durationWidth = durationWidthShort;
+
+      if (durationShort == null || durationWidthShort > cellWidth) {
+        durationTrimmed = null;
+        durationWidth = 0;
+      }
+
+      duration = null;
+      durationShort = null;
+    }
+  }
+
   private boolean updateDuration () {
     if (video == null && animation == null) {
       return false;
@@ -1040,9 +1100,15 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
     String textShort = null;
     String text = "";
+
+    String twLineHeader = null;
+    String twLineSubheader = null;
+    boolean shouldHaveTwoLines = false;
+
     if (fileProgress.isFailed()) {
       text = textShort = Lang.getString(R.string.failed);
     } else if (!(fileProgress.isUploadFinished() || (source != null && !source.isSending())) || !fileProgress.isLoaded()) {
+      shouldHaveTwoLines = true;
       textShort = Strings.buildSize(fileProgress.getTotalSize());
       if (fileProgress.isLoading() || !fileProgress.isUploadFinished()) {
         if (fileProgress.isProcessing()) {
@@ -1067,6 +1133,12 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
     if (video != null) {
       textShort = Strings.buildDuration(video.duration);
+
+      if (shouldHaveTwoLines) {
+        twLineHeader = text;
+        twLineSubheader = textShort;
+      }
+
       if (!text.isEmpty()) {
         text = text + ", " + textShort;
       } else {
@@ -1074,7 +1146,19 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       }
     }
 
-    if (!StringUtils.equalsOrBothEmpty(this.duration, text)) {
+    if (twLineHeader != null && (!StringUtils.equalsOrBothEmpty(this.duration, twLineHeader) || !StringUtils.equalsOrBothEmpty(this.durationShort, twLineSubheader))) {
+      this.duration = twLineHeader;
+      this.durationShort = twLineSubheader;
+      TextPaint paint = Paints.getRegularTextPaint(13f);
+      this.durationWidthFull = (int) U.measureText(twLineHeader, paint);
+      this.durationWidthShort = (int) U.measureText(twLineSubheader, paint);
+      this.durationWidth = Math.max(this.durationWidthFull, this.durationWidthShort);
+      this.durationTrimmed = this.duration;
+      trimDoubleDuration();
+      return true;
+    }
+
+    if (twLineHeader == null && !StringUtils.equalsOrBothEmpty(this.duration, text)) {
       this.duration = text;
       this.durationShort = textShort;
       TextPaint paint = Paints.whiteMediumPaint(13f, false, true);
