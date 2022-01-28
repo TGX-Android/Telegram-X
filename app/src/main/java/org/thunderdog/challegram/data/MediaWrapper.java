@@ -931,7 +931,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
     if (isStreamingUI && (!showDuration || !isDoubleLine)) {
       fileProgress.drawStreamingPlay(c);
-    } else if (!hideLoader && showDuration) {
+    } else if (!hideLoader) {
       fileProgress.draw(view, c);
     }
 
