@@ -1078,10 +1078,10 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   }
 
   private void trimDoubleDuration () {
-    int width = cellWidth - Screen.dp(4f) * 3 - (Screen.dp(FileProgressComponent.DEFAULT_STREAMING_RADIUS) * 2);
+    int width = cellWidth - Screen.dp(8f) * 3 - (Screen.dp(FileProgressComponent.DEFAULT_STREAMING_RADIUS) * 2);
     if (width > 0 && (durationWidthFull > width || durationWidthShort > width)) {
-      durationTrimmed = durationShort;
-      durationWidth = durationWidthShort;
+      durationTrimmed = duration;
+      durationWidth = durationWidthFull;
 
       if (durationShort == null || durationWidthShort > cellWidth) {
         durationTrimmed = null;
