@@ -3615,6 +3615,15 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return msg.id;
   }
 
+  public final TdApi.Message getOldestMessage () {
+    synchronized (this) {
+      if (combinedMessages != null && !combinedMessages.isEmpty()) {
+        return combinedMessages.get(0);
+      }
+    }
+    return msg;
+  }
+
   public final TdApi.Message getNewestMessage () {
     synchronized (this) {
       if (combinedMessages != null && !combinedMessages.isEmpty()) {

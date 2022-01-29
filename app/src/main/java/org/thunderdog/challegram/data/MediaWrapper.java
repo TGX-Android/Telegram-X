@@ -50,6 +50,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.td.Td;
 
 /**
  * Date: 28/01/2017
@@ -888,13 +889,16 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     boolean isLoaded = getFileProgress().isLoaded();
     boolean isStreamingUI = isVideo() && !isLoaded;
     boolean showDuration = !StringUtils.isEmpty(durationTrimmed) && selectionFactor < 1f;
-    boolean isDoubleLine = isStreamingUI && duration != null && durationShort != null;
+    boolean isDoubleLine = isStreamingUI && duration != null && durationShort != null && (source == null || source.getCombinedMessageCount() == 0);
 
     if (showDuration) {
       // Only if: channel + single item in stack + bubble-less mode
-      boolean needTopOffset = source != null && !source.useBubbles() && source.hasHeader() && source.isChannel() && source.getCombinedMessageCount() == 0;
+      // TODO: detect when media is not full-width
+      int a = cellWidth;
+      int b = Screen.currentWidth();
+      boolean needTopOffset = source != null && !source.useBubbles() && source.hasHeader() && source.isChannel() && isVideo() && Td.getMediaId(source.getOldestMessage().content) == video.video.id;
 
-      int fpRadius = (isLoaded || !isVideo()) ? 0 : getFileProgress().getRadius();
+      int fpRadius = (isLoaded || !isVideo() || !isDoubleLine) ? 0 : getFileProgress().getRadius();
       int pDurationCorners = Screen.dp(isDoubleLine ? 12f : 4f);
       int pDurationTop = cellTop + Screen.dp(8f) + (needTopOffset ? Screen.dp(16f) : 0);
       int pDurationLeft = cellLeft + Screen.dp(12f);
@@ -1078,7 +1082,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   }
 
   private void trimDoubleDuration () {
-    int width = cellWidth - Screen.dp(8f) * 3 - (Screen.dp(FileProgressComponent.DEFAULT_STREAMING_RADIUS) * 2);
+    /*int width = cellWidth - Screen.dp(8f) * 3 - (Screen.dp(FileProgressComponent.DEFAULT_STREAMING_RADIUS) * 2);
     if (width > 0 && (durationWidthFull > width || durationWidthShort > width)) {
       durationTrimmed = duration;
       durationWidth = durationWidthFull;
@@ -1090,7 +1094,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
       duration = null;
       durationShort = null;
-    }
+    }*/
   }
 
   private boolean updateDuration () {
