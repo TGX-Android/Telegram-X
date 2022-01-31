@@ -1,4 +1,4 @@
-#!/bin/bash
+g#!/bin/bash
 set -e
 # shellcheck source=set-env.sh
 source "$(dirname "$0")"/set-env.sh "$1"
