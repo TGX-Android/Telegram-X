@@ -8,6 +8,9 @@ function validate_dir {
   test -d "$1" || (echo "Directory not found: $1" && false)
 }
 function build_one {
+  OPTIMIZE_CFLAGS="-I$THIRDPARTY_LIBRARIES/libvpx/build/$CPU/include/"
+  LIBS="-L$THIRDPARTY_LIBRARIES/libvpx/build/$CPU/lib/"
+
   AR="${CROSS_PREFIX}-ar"
   NM="${CROSS_PREFIX}-nm"
   STRIP="${CROSS_PREFIX}-strip"
@@ -51,7 +54,7 @@ function build_one {
   --cross-prefix="$CROSS_PREFIX"- \
   --sysroot="$SYSROOT" \
   --extra-cflags="-w -Werror -Wl,-Bsymbolic -Os -DCONFIG_LINUX_PERF=0 -DANDROID $OPTIMIZE_CFLAGS --static -fPIC" \
-  --extra-ldflags="-Wl,-Bsymbolic -nostdlib -lc -lm -ldl -fPIC" \
+  --extra-ldflags="$LIBS -Wl,-Bsymbolic -nostdlib -lc -lm -ldl -fPIC" \
   \
   --enable-version3 \
   --enable-gpl \
@@ -144,7 +147,6 @@ LD=${PREBUILT}/x86_64-linux-android/bin/ld.gold
 AS=$CC
 ARCH=x86_64
 CPU=x86_64
-OPTIMIZE_CFLAGS="-I$THIRDPARTY_LIBRARIES/libvpx/build/x86_64/include/"
 PREFIX=./build/$CPU
 ADDITIONAL_CONFIGURE_FLAG="--disable-asm"
 build_one
@@ -159,7 +161,6 @@ LD=${PREBUILT}/aarch64-linux-android/bin/ld.gold
 AS=$CC
 ARCH=arm64
 CPU=arm64-v8a
-OPTIMIZE_CFLAGS="-I$THIRDPARTY_LIBRARIES/libvpx/build/arm64-v8a/include/"
 PREFIX=./build/$CPU
 ADDITIONAL_CONFIGURE_FLAG="--disable-asm --enable-optimizations"
 # FIXME ADDITIONAL_CONFIGURE_FLAG="--enable-neon --enable-optimizations"
@@ -175,7 +176,6 @@ LD=${PREBUILT}/arm-linux-androideabi/bin/ld.gold
 AS=$CC
 ARCH=arm
 CPU=armv7-a
-OPTIMIZE_CFLAGS="-I$THIRDPARTY_LIBRARIES/libvpx/build/armeabi-v7a/include/ -marm -march=$CPU"
 PREFIX=./build/$CPU
 ADDITIONAL_CONFIGURE_FLAG="--enable-neon"
 build_one
@@ -190,7 +190,6 @@ LD=${PREBUILT}/i686-linux-android/bin/ld.gold
 AS=$CC
 ARCH=x86
 CPU=i686
-OPTIMIZE_CFLAGS="-I$THIRDPARTY_LIBRARIES/libvpx/build/i686/include/ -march=$CPU"
 PREFIX=./build/$CPU
 ADDITIONAL_CONFIGURE_FLAG="--disable-x86asm --disable-inline-asm --disable-asm"
 build_one
