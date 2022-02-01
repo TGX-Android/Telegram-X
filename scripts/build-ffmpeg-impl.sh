@@ -94,7 +94,6 @@ function build_one {
   \
   --enable-decoder=libvpx_vp9 \
   --enable-libvpx \
-  --logfile=vpxtest.txt \
   \
   --enable-demuxer=mov \
   --enable-demuxer=matroska \
