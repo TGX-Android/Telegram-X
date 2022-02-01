@@ -87,7 +87,10 @@ function build_one {
   --enable-decoder=gif \
   --enable-decoder=alac \
   --enable-decoder=aac \
-  --enable-decoder=vp9 \
+  \
+  --enable-decoder=libvpx_vp9 \
+  --enable-libvpx \
+  --logfile=vpxtest.txt \
   \
   --enable-demuxer=mov \
   --enable-demuxer=matroska \
@@ -141,7 +144,7 @@ LD=${PREBUILT}/x86_64-linux-android/bin/ld.gold
 AS=$CC
 ARCH=x86_64
 CPU=x86_64
-OPTIMIZE_CFLAGS="-I$THIRDPARTY_LIBRARIES/libvpx/libvpx_android_configs/x86_64"
+OPTIMIZE_CFLAGS="-I$THIRDPARTY_LIBRARIES/libvpx/build/x86_64/include/"
 PREFIX=./build/$CPU
 ADDITIONAL_CONFIGURE_FLAG="--disable-asm"
 build_one
@@ -156,7 +159,7 @@ LD=${PREBUILT}/aarch64-linux-android/bin/ld.gold
 AS=$CC
 ARCH=arm64
 CPU=arm64-v8a
-OPTIMIZE_CFLAGS="-I$THIRDPARTY_LIBRARIES/libvpx/libvpx_android_configs/arm64-v8a"
+OPTIMIZE_CFLAGS="-I$THIRDPARTY_LIBRARIES/libvpx/build/arm64-v8a/include/"
 PREFIX=./build/$CPU
 ADDITIONAL_CONFIGURE_FLAG="--disable-asm --enable-optimizations"
 # FIXME ADDITIONAL_CONFIGURE_FLAG="--enable-neon --enable-optimizations"
@@ -172,7 +175,7 @@ LD=${PREBUILT}/arm-linux-androideabi/bin/ld.gold
 AS=$CC
 ARCH=arm
 CPU=armv7-a
-OPTIMIZE_CFLAGS="-I$THIRDPARTY_LIBRARIES/libvpx/libvpx_android_configs/armeabi-v7a -marm -march=$CPU"
+OPTIMIZE_CFLAGS="-I$THIRDPARTY_LIBRARIES/libvpx/build/armeabi-v7a/include/ -marm -march=$CPU"
 PREFIX=./build/$CPU
 ADDITIONAL_CONFIGURE_FLAG="--enable-neon"
 build_one
@@ -187,7 +190,7 @@ LD=${PREBUILT}/i686-linux-android/bin/ld.gold
 AS=$CC
 ARCH=x86
 CPU=i686
-OPTIMIZE_CFLAGS="-I$THIRDPARTY_LIBRARIES/libvpx/libvpx_android_configs/x86 -march=$CPU"
+OPTIMIZE_CFLAGS="-I$THIRDPARTY_LIBRARIES/libvpx/build/i686/include/ -march=$CPU"
 PREFIX=./build/$CPU
 ADDITIONAL_CONFIGURE_FLAG="--disable-x86asm --disable-inline-asm --disable-asm"
 build_one
