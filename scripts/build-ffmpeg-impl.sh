@@ -55,6 +55,7 @@ function build_one {
   --sysroot="$SYSROOT" \
   --extra-cflags="-w -Werror -Wl,-Bsymbolic -Os -DCONFIG_LINUX_PERF=0 -DANDROID $OPTIMIZE_CFLAGS --static -fPIC" \
   --extra-ldflags="$LIBS -Wl,-Bsymbolic -nostdlib -lc -lm -ldl -fPIC" \
+  --extra-libs="-lgcc" \
   \
   --enable-version3 \
   --enable-gpl \
