@@ -622,7 +622,7 @@ target_compile_options(yuv PRIVATE
 
 add_library(vpx STATIC IMPORTED)
 set_target_properties(vpx PROPERTIES IMPORTED_LOCATION ${LIBVPX_DIR}/lib/libvpx.a)
-target_include_directories(vpx PUBLIC ${LIBVPX_DIR}/include/vpx)
+target_include_directories(vpx INTERFACE ${LIBVPX_DIR}/include/vpx)
 
 # opus
 
