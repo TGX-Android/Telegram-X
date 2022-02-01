@@ -603,6 +603,14 @@ fun ChatMemberStatus?.isAnonymous (): Boolean {
   }
 }
 
+fun StickerType?.isAnimated (): Boolean {
+  return when (this?.constructor) {
+    StickerTypeAnimated.CONSTRUCTOR,
+    StickerTypeVideo.CONSTRUCTOR -> true
+    else -> false
+  }
+}
+
 fun MessageReplyInfo?.hasUnread (): Boolean {
   if (this == null)
     return false

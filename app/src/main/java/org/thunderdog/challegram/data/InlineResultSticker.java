@@ -17,7 +17,7 @@ public class InlineResultSticker extends InlineResult<TdApi.InlineQueryResultSti
 
   public InlineResultSticker (BaseActivity context, Tdlib tdlib, String emoji, TdApi.InlineQueryResultSticker data) {
     super(context, tdlib, TYPE_STICKER, data.id, data);
-    this.sticker = new TGStickerObj(tdlib, data.sticker, emoji, false);
+    this.sticker = new TGStickerObj(tdlib, data.sticker, emoji, data.sticker.type);
   }
 
   public @NonNull TGStickerObj getSticker () {

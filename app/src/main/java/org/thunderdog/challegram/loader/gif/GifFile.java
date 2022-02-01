@@ -23,6 +23,7 @@ import me.vkryl.core.unit.BitwiseUtils;
 public class GifFile {
   public static final int TYPE_GIF = 1;
   public static final int TYPE_MPEG4 = 2;
+  public static final int TYPE_WEBM = 2;
   public static final int TYPE_TG_LOTTIE = 3;
 
   public static final int FIT_CENTER = 1;
@@ -59,9 +60,24 @@ public class GifFile {
   }
 
   public GifFile (Tdlib tdlib, TdApi.Sticker sticker) {
-    this(tdlib, sticker.sticker, TYPE_TG_LOTTIE);
-    if (!sticker.isAnimated)
-      throw new IllegalArgumentException(sticker.toString());
+    this(tdlib, sticker.sticker, sticker.type);
+  }
+
+  public GifFile (Tdlib tdlib, TdApi.File file, TdApi.StickerType type) {
+    this(tdlib, file, toFileType(type));
+  }
+
+  private static int toFileType (TdApi.StickerType type) {
+    switch (type.getConstructor()) {
+      case TdApi.StickerTypeAnimated.CONSTRUCTOR:
+        return TYPE_TG_LOTTIE;
+      case TdApi.StickerTypeVideo.CONSTRUCTOR:
+        return TYPE_MPEG4;
+      case TdApi.StickerTypeMask.CONSTRUCTOR:
+      case TdApi.StickerTypeStatic.CONSTRUCTOR:
+        break;
+    }
+    throw new IllegalArgumentException(type.toString());
   }
 
   public int getFitzpatrickType () {

@@ -843,7 +843,7 @@ public class MessagesLoader implements Client.ResultHandler {
         TdApi.File file = tdlib.getRemoteFile(fileId, new TdApi.FileTypeSticker(), 0);
         if (thumbFile == null || file == null)
           throw new JSONException("sticker.thumbFile == null || sticker.file == null");
-        sticker = new TdApi.Sticker(setId, width, height, null, false, false, null, null, new TdApi.Thumbnail(new TdApi.ThumbnailFormatWebp(), width, height, thumbFile), file);
+        sticker = new TdApi.Sticker(setId, width, height, null, new TdApi.StickerTypeStatic(), null, new TdApi.Thumbnail(new TdApi.ThumbnailFormatWebp(), width, height, thumbFile), file);
       }
 
       if (data.has("left")) {
@@ -1091,13 +1091,13 @@ public class MessagesLoader implements Client.ResultHandler {
       tdlib.isSelfSender(event.memberId),
       false, false,
       false, false,
-      false, false,
+      false, false, false,
       false, false, false,
       false, false,
       isChannel,
       false,
       event.date, 0,
-      null, null,
+      null, null, null,
       0, 0, 0,
       0, 0,
       0, null,

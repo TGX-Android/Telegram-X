@@ -142,13 +142,13 @@ int open_codec_context (int *stream_idx, AVFormatContext *fmt_ctx, enum AVMediaT
     dec_ctx = st->codec;
     dec = avcodec_find_decoder(dec_ctx->codec_id);
     if (!dec) {
-      loge(TAG_GIF_LOADER, "failed to find %s codec", av_get_media_type_string(type));
+      loge(TAG_GIF_LOADER, "failed to find %s decoder for %s", av_get_media_type_string(type), avcodec_get_name(dec_ctx->codec_id));
       return -1;
     }
 
     av_dict_set(&opts, "refcounted_frames", "1", 0);
     if ((ret = avcodec_open2(dec_ctx, dec, &opts)) < 0) {
-      loge(TAG_GIF_LOADER, "failed to open %s codec\n", av_get_media_type_string(type));
+      loge(TAG_GIF_LOADER, "failed to open %s decoder for %s", av_get_media_type_string(type), avcodec_get_name(dec_ctx->codec_id));
       return -1;
     }
   }

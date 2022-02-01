@@ -436,6 +436,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private boolean youtubePipDisabled, qrLoginCamera, dialogFiltersTooltip, dialogFiltersEnabled;
   private String qrLoginCode;
   private String[] diceEmoji;
+  private TdApi.Reaction[] supportedReactions;
   private boolean callsEnabled = true, expectBlocking, isLocationVisible;
   private boolean canIgnoreSensitiveContentRestrictions, ignoreSensitiveContentRestrictions;
   private boolean canArchiveAndMuteNewChatsFromUnknownUsers, archiveAndMuteNewChatsFromUnknownUsers;
@@ -6118,6 +6119,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   @TdlibThread
+  private void updateMessageUnreadReactions (TdApi.UpdateMessageUnreadReactions update) {
+    listeners.updateMessageUnreadReactions(update);
+  }
+
+  @TdlibThread
   private void updateMessagesDeleted (TdApi.UpdateDeleteMessages update) {
     if (update.fromCache) {
       return;
@@ -6204,6 +6210,20 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       chat.unreadMentionCount = update.unreadMentionCount;
     }
     listeners.updateChatUnreadMentionCount(update, availabilityChanged);
+  }
+
+  @TdlibThread
+  private void updateChatUnreadReactionCount (TdApi.UpdateChatUnreadReactionCount update) {
+    final boolean availabilityChanged;
+    synchronized (dataLock) {
+      final TdApi.Chat chat = chats.get(update.chatId);
+      if (TdlibUtils.assertChat(update.chatId, chat, update)) {
+        return;
+      }
+      availabilityChanged = (chat.unreadReactionCount > 0) != (update.unreadReactionCount > 0);
+      chat.unreadReactionCount = update.unreadReactionCount;
+    }
+    listeners.updateChatUnreadReactionCount(update, availabilityChanged);
   }
 
   @TdlibThread
@@ -7324,6 +7344,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  private void updateReactions (TdApi.UpdateReactions update) {
+    synchronized (dataLock) {
+      this.supportedReactions = update.reactions;
+    }
+  }
+
   private void updateStickerSet (TdApi.StickerSet stickerSet) {
     animatedTgxEmoji.update(this, stickerSet);
     animatedDiceExplicit.update(this, stickerSet);
@@ -7528,6 +7554,24 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         break;
       }
 
+      // Reactions
+      case TdApi.UpdateReactions.CONSTRUCTOR: {
+        updateReactions((TdApi.UpdateReactions) update);
+        break;
+      }
+      case TdApi.UpdateMessageUnreadReactions.CONSTRUCTOR: {
+        updateMessageUnreadReactions((TdApi.UpdateMessageUnreadReactions) update);
+        break;
+      }
+      case TdApi.UpdateChatUnreadReactionCount.CONSTRUCTOR: {
+        updateChatUnreadReactionCount((TdApi.UpdateChatUnreadReactionCount) update);
+        break;
+      }
+      case TdApi.UpdateChatAvailableReactions.CONSTRUCTOR: {
+        updateChatAvailableReactions((TdApi.UpdateChatAvailableReactions) update);
+        break;
+      }
+
       // Chats
       case TdApi.UpdateNewChat.CONSTRUCTOR: {
         updateNewChat((TdApi.UpdateNewChat) update);
@@ -7551,10 +7595,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
       case TdApi.UpdateChatPosition.CONSTRUCTOR: {
         updateChatPosition((TdApi.UpdateChatPosition) update);
-        break;
-      }
-      case TdApi.UpdateChatAvailableReactions.CONSTRUCTOR: {
-        updateChatAvailableReactions((TdApi.UpdateChatAvailableReactions) update);
         break;
       }
       case TdApi.UpdateChatIsMarkedAsUnread.CONSTRUCTOR: {

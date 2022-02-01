@@ -38,7 +38,7 @@ patch-exoplayer.sh
 
 # Build and configure ffmpeg
 pushd app/jni/thirdparty
-build-ffmpeg.sh
+build-ffmpeg-impl.sh
 popd
 
 # == Copy local.properties ===

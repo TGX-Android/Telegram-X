@@ -721,6 +721,27 @@ public class TdlibListeners {
     updateMessageInteractionInfo(update, messageChatListeners.iterator(update.chatId));
   }
 
+  // updateMessageUnreadReactions
+
+  private static void updateMessageUnreadReactions (TdApi.UpdateMessageUnreadReactions update, @Nullable Iterator<MessageListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onMessageUnreadReactionsChanged(update.chatId, update.messageId, update.unreadReactions, update.unreadReactionCount);
+      }
+    }
+  }
+
+  void updateMessageUnreadReactions (TdApi.UpdateMessageUnreadReactions update) {
+    List<TdApi.Message> messages = pendingMessages.get(update.chatId + "_" + update.messageId);
+    if (messages != null) {
+      for (TdApi.Message message : messages) {
+        message.unreadReactions = update.unreadReactions;
+      }
+    }
+    updateMessageUnreadReactions(update, messageListeners.iterator());
+    updateMessageUnreadReactions(update, messageChatListeners.iterator(update.chatId));
+  }
+
   // updateDeleteMessages
 
   private static void updateMessagesDeleted (TdApi.UpdateDeleteMessages update, @Nullable Iterator<MessageListener> list) {
@@ -749,6 +770,21 @@ public class TdlibListeners {
   void updateChatUnreadMentionCount (TdApi.UpdateChatUnreadMentionCount update, boolean availabilityChanged) {
     updateChatUnreadMentionCount(update.chatId, update.unreadMentionCount, availabilityChanged, chatListeners.iterator());
     updateChatUnreadMentionCount(update.chatId, update.unreadMentionCount, availabilityChanged, specificChatListeners.iterator(update.chatId));
+  }
+
+  // updateChatUnreadReactionCount
+
+  private static void updateChatUnreadReactionCount (long chatId, int unreadReactionCount, boolean availabilityChanged, @Nullable Iterator<ChatListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onChatUnreadReactionCount(chatId, unreadReactionCount, availabilityChanged);
+      }
+    }
+  }
+
+  void updateChatUnreadReactionCount (TdApi.UpdateChatUnreadReactionCount update, boolean availabilityChanged) {
+    updateChatUnreadReactionCount(update.chatId, update.unreadReactionCount, availabilityChanged, chatListeners.iterator());
+    updateChatUnreadReactionCount(update.chatId, update.unreadReactionCount, availabilityChanged, specificChatListeners.iterator(update.chatId));
   }
 
   // updateChatLastMessage

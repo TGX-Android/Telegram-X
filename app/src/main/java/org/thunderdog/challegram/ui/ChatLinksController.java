@@ -184,7 +184,8 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
       @Override
       protected void setEmbedSticker (ListItem item, int position, EmbeddableStickerView userView, boolean isUpdate) {
-        userView.setSticker(new TGStickerObj(tdlib, (TdApi.Sticker) item.getData(), UTYAN_EMOJI, false));
+        TdApi.Sticker sticker = (TdApi.Sticker) item.getData();
+        userView.setSticker(new TGStickerObj(tdlib, sticker, UTYAN_EMOJI, sticker.type));
         userView.setCaptionText(Lang.getString(isChannel ? R.string.ChannelLinkInfo : R.string.LinkInfo));
       }
 

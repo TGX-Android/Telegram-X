@@ -404,7 +404,7 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
   }
 
   private void updateButton (boolean animated) {
-    if (info.isMasks) {
+    if (info.stickerType.getConstructor() == TdApi.StickerTypeMask.CONSTRUCTOR) {
       updateButton(Lang.plural(info.isInstalled && !info.isArchived ? R.string.RemoveXMasks : R.string.AddXMasks, info.size), !info.isInstalled || info.isArchived, animated);
     } else {
       updateButton(Lang.plural(info.isInstalled && !info.isArchived ? R.string.RemoveXStickers : R.string.AddXStickers, info.size), !info.isInstalled || info.isArchived, animated);
@@ -450,10 +450,10 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
   }
 
   public void initWithSet (TdApi.StickerSet set) {
-    this.info = new TdApi.StickerSetInfo(set.id, set.title, set.name, set.thumbnail, set.thumbnailOutline, set.isInstalled, set.isArchived, set.isOfficial, set.isAnimated, set.isMasks, false, set.stickers.length, null);
+    this.info = new TdApi.StickerSetInfo(set.id, set.title, set.name, set.thumbnail, set.thumbnailOutline, set.isInstalled, set.isArchived, set.isOfficial, set.stickerType, false, set.stickers.length, null);
     updateButton(false);
     stickersController.setStickerSetInfo(info);
-    stickersController.setStickers(set.stickers, info.isMasks, set.emojis);
+    stickersController.setStickers(set.stickers, info.stickerType, set.emojis);
     addViews();
   }
 

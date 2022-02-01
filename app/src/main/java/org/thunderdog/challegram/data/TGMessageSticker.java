@@ -58,14 +58,14 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     public Representation (TdApi.Sticker sticker, int fitzpatrickType, boolean allowNoLoop, boolean forcePlayOnce) {
       this.sticker = sticker;
 
-      if (fitzpatrickType == 0 || !sticker.isAnimated) {
+      if (fitzpatrickType == 0 || !Td.isAnimated(sticker.type)) {
         this.preview = TD.toImageFile(tdlib, sticker.thumbnail);
         if (this.preview != null) {
           this.preview.setScaleType(ImageFile.FIT_CENTER);
         }
       }
 
-      if (sticker.isAnimated) {
+      if (Td.isAnimated(sticker.type)) {
         this.animatedFile = new GifFile(tdlib, sticker);
         this.animatedFile.setScaleType(GifFile.CENTER_CROP);
         this.animatedFile.setFitzpatrickType(fitzpatrickType);
@@ -109,7 +109,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     }
 
     public boolean isAnimated () {
-      return sticker.isAnimated;
+      return Td.isAnimated(sticker.type);
     }
 
     public TdApi.ClosedVectorPath[] getOutline () {
@@ -117,7 +117,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     }
 
     public boolean hasAnimationEnded () {
-      return (sticker.isAnimated && animatedFile != null && animatedFile.isPlayOnce() && animatedFile.hasLooped() && !animatedFile.needDecodeLastFrame());
+      return (isAnimated() && animatedFile != null && animatedFile.isPlayOnce() && animatedFile.hasLooped() && !animatedFile.needDecodeLastFrame());
     }
 
     public void requestFiles (int key, ComplexReceiver receiver, boolean invalidate) {
@@ -565,7 +565,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
   }
 
   public boolean needSuggestOpenStickerPack () {
-    return getStickerSetId() != 0 && getBaseSticker().isAnimated && Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP) && getStickerSetId() != 0;
+    return getStickerSetId() != 0 && Td.isAnimated(getBaseSticker().type) && Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP) && getStickerSetId() != 0;
   }
 
   public void openStickerSet () {
@@ -617,7 +617,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
               tapProcessed = true;
               ImageFile imageFile;
               GifFile gifFile;
-              if (sticker != null && sticker.isAnimated && this.sticker != null && this.sticker.getConstructor() != TdApi.DiceStickersSlotMachine.CONSTRUCTOR) {
+              if (sticker != null && Td.isAnimated(sticker.type) && this.sticker != null && this.sticker.getConstructor() != TdApi.DiceStickersSlotMachine.CONSTRUCTOR) {
                 gifFile = new GifFile(tdlib, sticker);
                 gifFile.setOptimize(true);
                 gifFile.setScaleType(GifFile.CENTER_CROP);

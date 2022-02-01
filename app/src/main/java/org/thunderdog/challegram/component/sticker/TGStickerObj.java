@@ -22,6 +22,7 @@ import me.vkryl.td.Td;
 public class TGStickerObj {
   private Tdlib tdlib;
   private @Nullable TdApi.Sticker sticker;
+  private TdApi.StickerType stickerType;
   private ImageFile preview;
   private ImageFile fullImage;
   private GifFile previewAnimation, fullAnimation;
@@ -29,41 +30,36 @@ public class TGStickerObj {
 
   private int flags;
 
-  private static final int FLAG_MASKS = 1;
   private static final int FLAG_RECENT = 1 << 1;
   private static final int FLAG_TRENDING = 1 << 2;
   private static final int FLAG_FAVORITE = 1 << 3;
   private static final int FLAG_NO_VIEW_PACK = 1 << 4;
 
-  public TGStickerObj (Tdlib tdlib, @Nullable TdApi.Sticker sticker, @Nullable String foundByEmoji, boolean isMask) {
-    set(tdlib, sticker, isMask, null);
+  public TGStickerObj (Tdlib tdlib, @Nullable TdApi.Sticker sticker, @Nullable String foundByEmoji, TdApi.StickerType stickerType) {
+    set(tdlib, sticker, stickerType, null);
     this.foundByEmoji = foundByEmoji;
     if (preview != null) {
       preview.setNeedCancellation(true);
     }
   }
 
-  public TGStickerObj (Tdlib tdlib, @Nullable TdApi.Sticker sticker, boolean isMask, String[] emojis) {
-    set(tdlib, sticker, isMask, emojis);
+  public TGStickerObj (Tdlib tdlib, @Nullable TdApi.Sticker sticker, TdApi.StickerType stickerType, String[] emojis) {
+    set(tdlib, sticker, stickerType, emojis);
   }
 
-  public boolean set (Tdlib tdlib, @Nullable TdApi.Sticker sticker, boolean isMask, String[] emojis) {
+  public boolean set (Tdlib tdlib, @Nullable TdApi.Sticker sticker, TdApi.StickerType stickerType, String[] emojis) {
     if (this.sticker == null && sticker == null) {
       return false;
     }
     setEmojiImpl(emojis);
-    if (this.sticker == null || sticker == null || this.tdlib != tdlib || this.sticker.sticker.id != sticker.sticker.id || isMasks() != isMask || this.sticker.isAnimated != sticker.isAnimated) {
+    if (this.sticker == null || sticker == null || this.tdlib != tdlib || this.sticker.sticker.id != sticker.sticker.id || !Td.equalsTo(this.sticker.type, sticker.type)) {
       this.tdlib = tdlib;
       this.sticker = sticker;
       this.fullImage = null;
       this.previewAnimation = null;
       this.fullAnimation = null;
-      if (isMask) {
-        flags |= FLAG_MASKS;
-      } else {
-        flags &= ~FLAG_MASKS;
-      }
-      if (sticker != null && (sticker.thumbnail != null || !sticker.isAnimated)) {
+      this.stickerType = stickerType;
+      if (sticker != null && (sticker.thumbnail != null || !Td.isAnimated(sticker.type))) {
         this.preview = TD.toImageFile(tdlib, sticker.thumbnail);
         if (this.preview != null) {
           this.preview.setSize(Screen.dp(82f));
@@ -102,7 +98,7 @@ public class TGStickerObj {
            (b.sticker != null && sticker != null && b.flags == flags &&
              b.sticker.setId == sticker.setId &&
              b.sticker.sticker.id == sticker.sticker.id &&
-             b.sticker.isAnimated == sticker.isAnimated
+             Td.equalsTo(b.sticker.type, sticker.type)
            );
   }
 
@@ -131,11 +127,11 @@ public class TGStickerObj {
   }
 
   public boolean isAnimated () {
-    return sticker != null && sticker.isAnimated;
+    return sticker != null && Td.isAnimated(sticker.type);
   }
 
   public ImageFile getFullImage () {
-    if (fullImage == null && sticker != null && !sticker.isAnimated && tdlib != null) {
+    if (fullImage == null && sticker != null && !Td.isAnimated(sticker.type) && tdlib != null) {
       this.fullImage = new ImageFile(tdlib, sticker.sticker);
       this.fullImage.setScaleType(ImageFile.FIT_CENTER);
       this.fullImage.setSize(Screen.dp(190f));
@@ -145,7 +141,7 @@ public class TGStickerObj {
   }
 
   public GifFile getPreviewAnimation () {
-    if (previewAnimation == null && sticker != null && sticker.isAnimated && tdlib != null) {
+    if (previewAnimation == null && sticker != null && Td.isAnimated(sticker.type) && tdlib != null) {
       this.previewAnimation = new GifFile(tdlib, sticker);
       this.previewAnimation.setPlayOnce();
       this.previewAnimation.setScaleType(ImageFile.FIT_CENTER);
@@ -155,7 +151,7 @@ public class TGStickerObj {
   }
 
   public GifFile getFullAnimation () {
-    if (fullAnimation == null && sticker != null && sticker.isAnimated && tdlib != null) {
+    if (fullAnimation == null && sticker != null && Td.isAnimated(sticker.type) && tdlib != null) {
       this.fullAnimation = new GifFile(tdlib, sticker);
       this.fullAnimation.setScaleType(ImageFile.FIT_CENTER);
       this.fullAnimation.setUnique(true);
@@ -188,7 +184,7 @@ public class TGStickerObj {
   }
 
   public boolean isMasks () {
-    return (flags & FLAG_MASKS) != 0;
+    return stickerType.getConstructor() == TdApi.StickerTypeMask.CONSTRUCTOR;
   }
 
   public int getId () {
