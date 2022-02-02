@@ -209,12 +209,13 @@ uint32_t premultiply_channel_value(const uint32_t pixel, const uint8_t offset, c
 void premultiply_bitmap_alpha(const int bitmapHeight, const int bitmapWidth, const int bitmapStride, uint32_t* bitmapBuffer) {
   const uint32_t pixels = bitmapHeight * (bitmapStride / 4);
   for (uint32_t i = 0; i < pixels; i++) {
-    const uint8_t alpha = (uint8_t)((bitmapBuffer[i] >> 24) & 0xFF);
+    const auto alpha = (uint8_t)((bitmapBuffer[i] >> 24) & 0xFF);
     const float normalizedAlpha = alpha / 255.0f;
-    bitmapBuffer[i] = (bitmapBuffer[i] & 0xFF000000)  |
-                      premultiply_channel_value(bitmapBuffer[i], 16, normalizedAlpha) |
-                      premultiply_channel_value(bitmapBuffer[i], 8, normalizedAlpha) |
-                      premultiply_channel_value(bitmapBuffer[i], 0, normalizedAlpha);
+    auto pixel = bitmapBuffer[i];
+    bitmapBuffer[i] = (pixel & 0xFF000000)  |
+                      premultiply_channel_value(pixel, 16, normalizedAlpha) |
+                      premultiply_channel_value(pixel, 8, normalizedAlpha) |
+                      premultiply_channel_value(pixel, 0, normalizedAlpha);
 
   }
 }
