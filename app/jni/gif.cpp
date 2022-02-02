@@ -191,6 +191,34 @@ AVFrame *alloc_picture (AVPixelFormat pix_fmt, int width, int height) {
   return f;
 }
 
+// The following two functions were taken from this nice article: https://pspdfkit.com/blog/2016/a-curious-case-of-android-alpha/
+/**
+* Multiplies a single channel value with passed alpha. Values are already shifted
+* and can be directly ORed back into uint32_t structure.
+*/
+uint32_t premultiply_channel_value(const uint32_t pixel, const uint8_t offset, const float normalizedAlpha) {
+  auto multipliedValue = ((pixel >> offset) & 0xFF) * normalizedAlpha;
+  return ((uint32_t)std::min(multipliedValue, 255.0f)) << offset;
+}
+
+/**
+* This premultiplies alpha value in the bitmap. Android expects its bitmaps to have alpha premultiplied for optimization -
+* this means that instead of ARGB values of (128, 255, 255, 255) the bitmap needs to store (128, 128, 128, 128). Color channels
+* are multiplied with alpha value (0.0 .. 1.0).
+*/
+void premultiply_bitmap_alpha(const int bitmapHeight, const int bitmapWidth, const int bitmapStride, uint32_t* bitmapBuffer) {
+  const uint32_t pixels = bitmapHeight * (bitmapStride / 4);
+  for (uint32_t i = 0; i < pixels; i++) {
+    const uint8_t alpha = (uint8_t)((bitmapBuffer[i] >> 24) & 0xFF);
+    const float normalizedAlpha = alpha / 255.0f;
+    bitmapBuffer[i] = (bitmapBuffer[i] & 0xFF000000)  |
+                      premultiply_channel_value(bitmapBuffer[i], 16, normalizedAlpha) |
+                      premultiply_channel_value(bitmapBuffer[i], 8, normalizedAlpha) |
+                      premultiply_channel_value(bitmapBuffer[i], 0, normalizedAlpha);
+
+  }
+}
+
 JNI_FUNC(jlong, createDecoder, jstring src, jintArray data) {
 
   VideoInfo *info = new VideoInfo(jni::from_jstring(env, src));
@@ -429,6 +457,10 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jintArray data) {
                                 dst_data, info->dst_linesize
             );
             // TODO: find out why sws_scale doesn't support transparency (AV_PIX_FMT_YUVA420P) properly
+            // For now, premultiply_bitmap_alpha is called to fix transparency after scaling
+            if (fmt == AV_PIX_FMT_YUVA420P) {
+              premultiply_bitmap_alpha(frameHeight, frameWidth, frameWidth * 4, (uint32_t *) pixels);
+            }
           } else {
             // TODO: find out why libyuv damages the color palette
             switch (fmt) {
