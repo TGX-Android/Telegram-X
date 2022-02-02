@@ -8,8 +8,8 @@ function validate_dir {
   test -d "$1" || (echo "Directory not found: $1" && false)
 }
 function build_one {
-  OPTIMIZE_CFLAGS="-I$THIRDPARTY_LIBRARIES/libvpx/build/$CPU/include/"
-  LIBS="-L$THIRDPARTY_LIBRARIES/libvpx/build/$CPU/lib/"
+  LIBVPX_INCLUDE="-I$THIRDPARTY_LIBRARIES/libvpx/build/$CPU/include/"
+  LIBVPX_LIB="-L$THIRDPARTY_LIBRARIES/libvpx/build/$CPU/lib/"
 
   AR="${CROSS_PREFIX}-ar"
   NM="${CROSS_PREFIX}-nm"
@@ -53,8 +53,8 @@ function build_one {
   --enable-x86asm \
   --cross-prefix="$CROSS_PREFIX"- \
   --sysroot="$SYSROOT" \
-  --extra-cflags="-w -Werror -Wl,-Bsymbolic -Os -DCONFIG_LINUX_PERF=0 -DANDROID $OPTIMIZE_CFLAGS --static -fPIC" \
-  --extra-ldflags="$LIBS -Wl,-Bsymbolic -nostdlib -lc -lm -ldl -fPIC" \
+  --extra-cflags="-w -Werror -Wl,-Bsymbolic -Os -DCONFIG_LINUX_PERF=0 -DANDROID $OPTIMIZE_CFLAGS $LIBVPX_INCLUDE --static -fPIC" \
+  --extra-ldflags="$LIBVPX_LIB -Wl,-Bsymbolic -nostdlib -lc -lm -ldl -fPIC" \
   --extra-libs="-lgcc" \
   \
   --enable-version3 \
@@ -92,8 +92,8 @@ function build_one {
   --enable-decoder=alac \
   --enable-decoder=aac \
   \
-  --enable-decoder=libvpx_vp9 \
   --enable-libvpx \
+  --enable-decoder=libvpx_vp9 \
   \
   --enable-demuxer=mov \
   --enable-demuxer=matroska \
@@ -149,6 +149,7 @@ ARCH=x86_64
 CPU=x86_64
 PREFIX=./build/$CPU
 ADDITIONAL_CONFIGURE_FLAG="--disable-asm"
+OPTIMIZE_CFLAGS=""
 build_one
 
 #arm64-v8a
@@ -163,6 +164,7 @@ ARCH=arm64
 CPU=arm64-v8a
 PREFIX=./build/$CPU
 ADDITIONAL_CONFIGURE_FLAG="--disable-asm --enable-optimizations"
+OPTIMIZE_CFLAGS=""
 # FIXME ADDITIONAL_CONFIGURE_FLAG="--enable-neon --enable-optimizations"
 build_one
 
@@ -178,6 +180,7 @@ ARCH=arm
 CPU=armv7-a
 PREFIX=./build/$CPU
 ADDITIONAL_CONFIGURE_FLAG="--enable-neon"
+OPTIMIZE_CFLAGS="-marm -march=$CPU"
 build_one
 
 #x86 platform
@@ -192,6 +195,7 @@ ARCH=x86
 CPU=i686
 PREFIX=./build/$CPU
 ADDITIONAL_CONFIGURE_FLAG="--disable-x86asm --disable-inline-asm --disable-asm"
+OPTIMIZE_CFLAGS="-march=$CPU"
 build_one
 
 # Copy headers to all platform-specific folders
