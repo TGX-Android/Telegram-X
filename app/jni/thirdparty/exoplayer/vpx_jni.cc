@@ -31,8 +31,8 @@
 #include <new>
 
 #define VPX_CODEC_DISABLE_COMPAT 1
-#include <vp8dx.h>
-#include <vpx_decoder.h>
+#include "vpx/vp8dx.h"
+#include "vpx/vpx_decoder.h"
 
 #define LOGE(...) \
   ((void)loge(TAG_NDK, __VA_ARGS__))
