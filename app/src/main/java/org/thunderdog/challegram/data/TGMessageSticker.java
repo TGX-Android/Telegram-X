@@ -642,10 +642,10 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
               break;
             }
             case SPECIAL_TYPE_ANIMATED_EMOJI: {
-              GifFile lottieFile = view.getComplexReceiver() != null ? view.getComplexReceiver().getGifReceiver(0).getCurrentFile() : null;
-              if (lottieFile != null) {
-                tapProcessed = lottieFile.setVibrationPattern(Emoji.instance().getVibrationPatternType(sticker.emoji));
-                if (lottieFile.setLooped(false)) {
+              GifFile animatedFile = view.getComplexReceiver() != null ? view.getComplexReceiver().getGifReceiver(0).getCurrentFile() : null;
+              if (animatedFile != null) {
+                tapProcessed = animatedFile.setVibrationPattern(Emoji.instance().getVibrationPatternType(sticker.emoji));
+                if (animatedFile.setLooped(false)) {
                   tapProcessed = true;
                   invalidate();
                 }
@@ -653,8 +653,8 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
               break;
             }
             default: {
-              GifFile lottieFile = view.getComplexReceiver().getGifReceiver(0).getCurrentFile();
-              if (lottieFile != null && Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP) && lottieFile.setLooped(false)) {
+              GifFile animatedFile = view.getComplexReceiver().getGifReceiver(0).getCurrentFile();
+              if (animatedFile != null && Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP) && animatedFile.setLooped(false)) {
                 tapProcessed = true;
                 invalidate();
               }

@@ -67,6 +67,10 @@ public class GifFile {
     this(tdlib, file, toFileType(type));
   }
 
+  public boolean isLottie () {
+    return type == TYPE_TG_LOTTIE;
+  }
+
   private static int toFileType (TdApi.StickerType type) {
     switch (type.getConstructor()) {
       case TdApi.StickerTypeAnimated.CONSTRUCTOR:

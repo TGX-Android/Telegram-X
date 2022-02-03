@@ -198,7 +198,7 @@ AVFrame *alloc_picture (AVPixelFormat pix_fmt, int width, int height) {
 */
 uint32_t premultiply_channel_value(const uint32_t pixel, const uint8_t offset, const float normalizedAlpha) {
   auto multipliedValue = ((pixel >> offset) & 0xFF) * normalizedAlpha;
-  return ((uint32_t)std::min(multipliedValue, 255.0f)) << offset;
+  return ((uint32_t) std::min(multipliedValue, 255.0f)) << offset;
 }
 
 /**
@@ -212,11 +212,13 @@ void premultiply_bitmap_alpha(const int bitmapHeight, const int bitmapWidth, con
     auto pixel = bitmapBuffer[i];
     const auto alpha = (uint8_t) ((pixel >> 24) & 0xff);
     const float normalizedAlpha = alpha / 255.0f;
-    bitmapBuffer[i] = (pixel & 0xFF000000)  |
-                      premultiply_channel_value(pixel, 16, normalizedAlpha) |
-                      premultiply_channel_value(pixel, 8, normalizedAlpha) |
-                      premultiply_channel_value(pixel, 0, normalizedAlpha);
-
+    auto premultiplied = (pixel & 0xFF000000)  |
+                         premultiply_channel_value(pixel, 16, normalizedAlpha) |
+                         premultiply_channel_value(pixel, 8, normalizedAlpha) |
+                         premultiply_channel_value(pixel, 0, normalizedAlpha);
+    if (premultiplied != pixel) {
+      bitmapBuffer[i] = premultiplied;
+    }
   }
 }
 
@@ -377,6 +379,7 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jintArray data) {
 
   int ret = 0;
   int got_frame = 0;
+  bool looped = false;
 
   while (true) {
     if (info->pkt.size == 0) {
@@ -425,6 +428,7 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jintArray data) {
           } else {
             avcodec_flush_buffers(info->video_dec_ctx);
           }
+          looped = true;
         }
       }
     }
@@ -460,7 +464,7 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jintArray data) {
             // TODO: find out why sws_scale doesn't support transparency (AV_PIX_FMT_YUVA420P) properly
             // For now, premultiply_bitmap_alpha is called to fix transparency after scaling
             if (fmt == AV_PIX_FMT_YUVA420P) {
-              premultiply_bitmap_alpha(frameHeight, frameWidth, frameWidth * 4, (uint32_t *) pixels);
+              // premultiply_bitmap_alpha(frameHeight, frameWidth, frameWidth * 4, (uint32_t *) pixels);
             }
           } else {
             // TODO: find out why libyuv damages the color palette
@@ -503,7 +507,7 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jintArray data) {
 
       info->has_decoded_frames = true;
       av_frame_unref(info->frame);
-      return 1;
+      return looped ? 2 : 1;
     }
   }
 }

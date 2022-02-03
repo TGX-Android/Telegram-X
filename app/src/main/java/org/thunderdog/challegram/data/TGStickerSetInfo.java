@@ -60,8 +60,26 @@ public class TGStickerSetInfo {
       this.previewOutline = info.thumbnailOutline;
       this.previewWidth = info.thumbnail.width;
       this.previewHeight = info.thumbnail.height;
-      if (Td.isAnimated(info.stickerType) && info.thumbnail.format.getConstructor() == TdApi.ThumbnailFormatTgs.CONSTRUCTOR) {
-        this.previewAnimation = new GifFile(tdlib, info.thumbnail.file, info.stickerType);
+      final int gifType;
+      switch (info.thumbnail.format.getConstructor()) {
+        case TdApi.ThumbnailFormatTgs.CONSTRUCTOR:
+          gifType = GifFile.TYPE_TG_LOTTIE;
+          break;
+        case TdApi.ThumbnailFormatMpeg4.CONSTRUCTOR:
+          gifType = GifFile.TYPE_MPEG4;
+          break;
+        case TdApi.ThumbnailFormatWebm.CONSTRUCTOR:
+          gifType = GifFile.TYPE_WEBM;
+          break;
+        case TdApi.ThumbnailFormatGif.CONSTRUCTOR:
+          gifType = GifFile.TYPE_GIF;
+          break;
+        default:
+          gifType = -1;
+          break;
+      }
+      if (gifType != -1) {
+        this.previewAnimation = new GifFile(tdlib, info.thumbnail.file, gifType);
         this.previewImage = null;
       } else {
         this.previewImage = TD.toImageFile(tdlib, info.thumbnail);
