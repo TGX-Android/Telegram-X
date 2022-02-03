@@ -21,7 +21,7 @@ extern "C" {
 #include "bridge.h"
 
 #define MAX_GIF_SIZE 920
-#define GIF_SCALE_FORMAT AV_PIX_FMT_RGBA
+#define BITMAP_TARGET_FORMAT AV_PIX_FMT_RGBA
 #define LOTTIE_CACHE_MAGIC 0xf0ebaef1
 #define LOTTIE_CACHE_MAGIC_REDUCED 0xf0ebaef2
 
@@ -90,10 +90,6 @@ typedef struct VideoInfo {
       av_frame_free(&frame);
       frame = nullptr;
     }
-    if (scaled_frame) {
-      av_frame_free(&scaled_frame);
-      scaled_frame = nullptr;
-    }
     if (scale_ctx) {
       sws_freeContext(scale_ctx);
       scale_ctx = nullptr;
@@ -109,10 +105,10 @@ typedef struct VideoInfo {
   AVStream *video_stream = nullptr;
   AVCodecContext *video_dec_ctx = nullptr;
   SwsContext *scale_ctx = nullptr;
-  AVFrame *scaled_frame = nullptr;
+  int32_t dst_linesize[1];
   AVFrame *frame = nullptr;
   int srcWidth = -1, srcHeight = -1;
-  int outWidth = -1, outHeight = -1;
+  int dstWidth = -1, dstHeight = -1;
   bool has_decoded_frames = false;
   bool is_broken = false;
   AVPacket pkt;
@@ -124,10 +120,9 @@ JNI_FUNC(void, gifInit) {
   avcodec_register_all();
 }
 
-int open_codec_context (int *stream_idx, AVFormatContext *fmt_ctx, enum AVMediaType type) {
+int open_codec_context (int *stream_idx, AVCodecContext **dec_ctx, AVFormatContext *fmt_ctx, enum AVMediaType type) {
   int ret;
   AVStream *st;
-  AVCodecContext *dec_ctx = nullptr;
   AVCodec *dec = nullptr;
   AVDictionary *opts = nullptr;
 
@@ -139,16 +134,26 @@ int open_codec_context (int *stream_idx, AVFormatContext *fmt_ctx, enum AVMediaT
     *stream_idx = ret;
     st = fmt_ctx->streams[*stream_idx];
 
-    dec_ctx = st->codec;
-    dec = avcodec_find_decoder(dec_ctx->codec_id);
+    dec = avcodec_find_decoder(st->codecpar->codec_id);
     if (!dec) {
-      loge(TAG_GIF_LOADER, "failed to find %s decoder for %s", av_get_media_type_string(type), avcodec_get_name(dec_ctx->codec_id));
+      loge(TAG_GIF_LOADER, "failed to find %s decoder for %s", av_get_media_type_string(type), avcodec_get_name(st->codecpar->codec_id));
       return -1;
     }
 
+    *dec_ctx = avcodec_alloc_context3(dec);
+    if (!*dec_ctx) {
+      loge(TAG_GIF_LOADER, "Failed to allocate the %s codec context for %s", av_get_media_type_string(type), avcodec_get_name(st->codecpar->codec_id));
+      return AVERROR(ENOMEM);
+    }
+
+    if ((ret = avcodec_parameters_to_context(*dec_ctx, st->codecpar)) < 0) {
+      loge(TAG_GIF_LOADER, "Failed to copy %s codec parameters to decoder context for %s", av_get_media_type_string(type), avcodec_get_name(st->codecpar->codec_id));
+      return ret;
+    }
+
     av_dict_set(&opts, "refcounted_frames", "1", 0);
-    if ((ret = avcodec_open2(dec_ctx, dec, &opts)) < 0) {
-      loge(TAG_GIF_LOADER, "failed to open %s decoder for %s", av_get_media_type_string(type), avcodec_get_name(dec_ctx->codec_id));
+    if ((ret = avcodec_open2(*dec_ctx, dec, &opts)) < 0) {
+      loge(TAG_GIF_LOADER, "failed to open %s decoder for %s", av_get_media_type_string(type), avcodec_get_name(st->codecpar->codec_id));
       return -1;
     }
   }
@@ -186,6 +191,35 @@ AVFrame *alloc_picture (AVPixelFormat pix_fmt, int width, int height) {
   return f;
 }
 
+// The following two functions were taken from this nice article: https://pspdfkit.com/blog/2016/a-curious-case-of-android-alpha/
+/**
+* Multiplies a single channel value with passed alpha. Values are already shifted
+* and can be directly ORed back into uint32_t structure.
+*/
+uint32_t premultiply_channel_value(const uint32_t pixel, const uint8_t offset, const float normalizedAlpha) {
+  auto multipliedValue = ((pixel >> offset) & 0xFF) * normalizedAlpha;
+  return ((uint32_t)std::min(multipliedValue, 255.0f)) << offset;
+}
+
+/**
+* This premultiplies alpha value in the bitmap. Android expects its bitmaps to have alpha premultiplied for optimization -
+* this means that instead of ARGB values of (128, 255, 255, 255) the bitmap needs to store (128, 128, 128, 128). Color channels
+* are multiplied with alpha value (0.0 .. 1.0).
+*/
+void premultiply_bitmap_alpha(const int bitmapHeight, const int bitmapWidth, const int bitmapStride, uint32_t* bitmapBuffer) {
+  const uint32_t pixels = bitmapHeight * (bitmapStride / 4);
+  for (uint32_t i = 0; i < pixels; i++) {
+    auto pixel = bitmapBuffer[i];
+    const auto alpha = (uint8_t) ((pixel >> 24) & 0xff);
+    const float normalizedAlpha = alpha / 255.0f;
+    bitmapBuffer[i] = (pixel & 0xFF000000)  |
+                      premultiply_channel_value(pixel, 16, normalizedAlpha) |
+                      premultiply_channel_value(pixel, 8, normalizedAlpha) |
+                      premultiply_channel_value(pixel, 0, normalizedAlpha);
+
+  }
+}
+
 JNI_FUNC(jlong, createDecoder, jstring src, jintArray data) {
 
   VideoInfo *info = new VideoInfo(jni::from_jstring(env, src));
@@ -204,9 +238,8 @@ JNI_FUNC(jlong, createDecoder, jstring src, jintArray data) {
     return 0;
   }
 
-  if (open_codec_context(&info->video_stream_idx, info->fmt_ctx, AVMEDIA_TYPE_VIDEO) >= 0) {
+  if (open_codec_context(&info->video_stream_idx, &info->video_dec_ctx, info->fmt_ctx, AVMEDIA_TYPE_VIDEO) >= 0) {
     info->video_stream = info->fmt_ctx->streams[info->video_stream_idx];
-    info->video_dec_ctx = info->video_stream->codec;
   }
 
   if (info->video_stream == nullptr) {
@@ -226,60 +259,50 @@ JNI_FUNC(jlong, createDecoder, jstring src, jintArray data) {
   info->pkt.data = nullptr;
   info->pkt.size = 0;
 
-  int outWidth = info->srcWidth = info->video_dec_ctx->width;
-  int outHeight = info->srcHeight = info->video_dec_ctx->height;
+  const int srcWidth = info->srcWidth = info->video_dec_ctx->width;
+  const int srcHeight = info->srcHeight = info->video_dec_ctx->height;
 
-  jint *dataArr = env->GetIntArrayElements(data, 0);
+  int dstWidth = srcWidth;
+  int dstHeight = srcHeight;
 
-  if ((outWidth > MAX_GIF_SIZE || outHeight > MAX_GIF_SIZE) && (outWidth > 0 && outHeight > 0)) {
-    float scaleW = (float) MAX_GIF_SIZE / (float) outWidth;
-    float scaleH = (float) MAX_GIF_SIZE / (float) outHeight;
-    float scale = scaleW < scaleH ? scaleW : scaleH;
+  if (dstWidth > 0 && dstHeight > 0) {
+    int newWidth, newHeight;
+    if (std::max(dstWidth, dstHeight) > MAX_GIF_SIZE) {
+      float scaleW = (float) MAX_GIF_SIZE / (float) dstWidth;
+      float scaleH = (float) MAX_GIF_SIZE / (float) dstHeight;
+      float scale = scaleW < scaleH ? scaleW : scaleH;
+      newWidth = (int) ((float) dstWidth * scale);
+      newHeight = (int) ((float) dstHeight * scale);
 
-    int newWidth = (int) ((float) outWidth * scale);
-    int newHeight = (int) ((float) outHeight * scale);
+      newWidth -= newWidth % 2;
+      newHeight -= newHeight % 2;
+    } else {
+      newWidth = dstWidth;
+      newHeight = dstHeight;
+    }
 
-    newWidth -= newWidth % 2;
-    newHeight -= newHeight % 2;
-
-    if ((newWidth != outWidth || newHeight != outHeight) && newWidth > 0 && newHeight > 0) {
+    if (newWidth > 0 && newHeight > 0) {
       AVPixelFormat fmt = info->video_dec_ctx->pix_fmt;
-
-      info->scale_ctx =
-        fmt != AV_PIX_FMT_NONE ? sws_getContext(outWidth, outHeight, fmt, newWidth, newHeight,
-                                                GIF_SCALE_FORMAT, SWS_FAST_BILINEAR, nullptr, nullptr,
-                                                nullptr) : nullptr;
-      bool ok = false;
-      if (info->scale_ctx != nullptr) {
-        info->scaled_frame = alloc_picture(GIF_SCALE_FORMAT, newWidth, newHeight);
-        if (info->scaled_frame != nullptr) {
-          logi(TAG_GIF_LOADER, "Created scale context %dx%d -> %dx%d, format: %d", outWidth,
-               outHeight, newWidth, newHeight, GIF_SCALE_FORMAT);
-
-          outWidth = newWidth;
-          outHeight = newHeight;
-          ok = true;
-        }
-      }
-      if (!ok) {
-        if (info->scaled_frame != nullptr) {
-          av_frame_free(&info->scaled_frame);
-          info->scaled_frame = nullptr;
-        }
+      if (fmt != AV_PIX_FMT_NONE && (fmt != BITMAP_TARGET_FORMAT || newWidth != srcWidth || newHeight != srcHeight)) {
+        info->scale_ctx = sws_getContext(srcWidth, srcHeight, fmt, newWidth, newHeight,
+                                         BITMAP_TARGET_FORMAT, newWidth == srcWidth && newHeight == srcHeight ? SWS_FAST_BILINEAR : SWS_BILINEAR, nullptr, nullptr,
+                                         nullptr);
         if (info->scale_ctx != nullptr) {
-          sws_freeContext(info->scale_ctx);
-          info->scale_ctx = nullptr;
+          dstWidth = newWidth;
+          dstHeight = newHeight;
+          logi(TAG_GIF_LOADER, "Created scale context %dx%d -> %dx%d, format: %d", srcWidth, srcHeight, dstWidth, dstHeight, BITMAP_TARGET_FORMAT);
         }
       }
     }
   }
 
-  info->outWidth = outWidth;
-  info->outHeight = outHeight;
+  info->dstWidth = dstWidth;
+  info->dstHeight = dstHeight;
 
+  jint *dataArr = env->GetIntArrayElements(data, 0);
   if (dataArr != nullptr) {
-    dataArr[0] = outWidth;
-    dataArr[1] = outHeight;
+    dataArr[0] = dstWidth;
+    dataArr[1] = dstHeight;
     AVDictionaryEntry *rotate_tag = av_dict_get(info->video_stream->metadata, "rotate", nullptr, 0);
     if (rotate_tag && *rotate_tag->value && strcmp(rotate_tag->value, "0") != 0) {
       char *tail;
@@ -409,66 +432,75 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jintArray data) {
       return 0;
     }
     if (got_frame) {
-      // logi(TAG_GIF_LOADER, "decoded frame with w = %d, h = %d, format = %d", info->frame->width, info->frame->height, info->frame->format);
-      if (info->frame->format == AV_PIX_FMT_YUV420P || info->frame->format == AV_PIX_FMT_BGRA ||
-          info->frame->format == AV_PIX_FMT_YUVJ420P) {
+      auto fmt = (AVPixelFormat) info->frame->format;
+
+      AndroidBitmapInfo bitmapInfo;
+      AndroidBitmap_getInfo(env, bitmap, &bitmapInfo);
+
+      if (bitmapInfo.width == info->dstWidth && bitmapInfo.height == info->dstHeight) {
         jint *dataArr = env->GetIntArrayElements(data, 0);
-        int wantedWidth;
-        int wantedHeight;
         if (dataArr != nullptr) {
-          wantedWidth = info->outWidth;
-          wantedHeight = info->outHeight;
-          dataArr[3] = (int) (1000 * info->frame->pkt_pts * av_q2d(info->video_stream->time_base));
+          dataArr[3] = (int) (1000 * info->frame->pts * av_q2d(info->video_stream->time_base));
           env->ReleaseIntArrayElements(data, dataArr, 0);
-        } else {
-          AndroidBitmapInfo bitmapInfo;
-          AndroidBitmap_getInfo(env, bitmap, &bitmapInfo);
-          wantedWidth = bitmapInfo.width;
-          wantedHeight = bitmapInfo.height;
         }
 
         AVFrame *frame = info->frame;
         int frameWidth = frame->width;
         int frameHeight = frame->height;
-        auto fmt = (AVPixelFormat) frame->format;
 
-        if (info->scale_ctx != nullptr && info->scaled_frame != nullptr) {
-          AVFrame *dst_frame = info->scaled_frame;
-          int res = sws_scale(info->scale_ctx, static_cast<const uint8_t *const *>(frame->data),
-                              frame->linesize, 0, frame->height, dst_frame->data,
-                              dst_frame->linesize);
-          frame = info->scaled_frame;
-          frameWidth = wantedWidth;
-          frameHeight = wantedHeight;
-          fmt = GIF_SCALE_FORMAT;
-
-          // logi(TAG_GIF_LOADER, "scaled %dx%d to %dx%d, result:%d", info->frame->width, info->frame->height, frameWidth, frameHeight, res);
-        }
-
-        if ((wantedWidth == frameWidth && wantedHeight == frameHeight) ||
-            (wantedWidth == frameHeight && wantedHeight == frameWidth)) {
-          void *pixels;
-          if (AndroidBitmap_lockPixels(env, bitmap, &pixels) == ANDROID_BITMAP_RESULT_SUCCESS) {
-            if (fmt == GIF_SCALE_FORMAT) {
-              memcpy((uint8_t *) pixels, frame->data[0],
-                     avpicture_get_size(fmt, frameWidth, frameHeight));
-            } else if (fmt == AV_PIX_FMT_YUV420P || fmt == AV_PIX_FMT_YUVJ420P) {
-              libyuv::I420ToARGB(frame->data[0], frame->linesize[0], frame->data[2],
-                                 frame->linesize[2], frame->data[1], frame->linesize[1],
-                                 (uint8_t *) pixels, frameWidth * 4, frameWidth, frameHeight);
-            } else if (fmt == AV_PIX_FMT_BGRA) {
-              libyuv::ABGRToARGB(frame->data[0], frame->linesize[0], (uint8_t *) pixels,
-                                 frameWidth * 4, frameWidth, frameHeight);
-            } else {
-              logw(TAG_GIF_LOADER, "unsupported pixel format: %d", fmt);
+        void *pixels;
+        if (AndroidBitmap_lockPixels(env, bitmap, &pixels) == ANDROID_BITMAP_RESULT_SUCCESS) {
+          if (info->scale_ctx != nullptr) {
+            uint8_t *dst_data[1];
+            dst_data[0] = (uint8_t *) pixels;
+            info->dst_linesize[0] = bitmapInfo.stride;
+            int res = sws_scale(info->scale_ctx, frame->data, frame->linesize, 0, frame->height,
+                                dst_data, info->dst_linesize
+            );
+            // TODO: find out why sws_scale doesn't support transparency (AV_PIX_FMT_YUVA420P) properly
+            // For now, premultiply_bitmap_alpha is called to fix transparency after scaling
+            if (fmt == AV_PIX_FMT_YUVA420P) {
+              premultiply_bitmap_alpha(frameHeight, frameWidth, frameWidth * 4, (uint32_t *) pixels);
             }
-            AndroidBitmap_unlockPixels(env, bitmap);
+          } else {
+            // TODO: find out why libyuv damages the color palette
+            switch (fmt) {
+              case BITMAP_TARGET_FORMAT:
+                memcpy((uint8_t *) pixels, frame->data[0], avpicture_get_size(fmt, frameWidth, frameHeight));
+                break;
+              case AV_PIX_FMT_YUV420P:
+              case AV_PIX_FMT_YUVJ420P:
+                if (frame->colorspace == AVColorSpace::AVCOL_SPC_BT709) {
+                  libyuv::H420ToARGB(frame->data[0], frame->linesize[0], frame->data[2],
+                                     frame->linesize[2], frame->data[1], frame->linesize[1],
+                                     (uint8_t *) pixels, frameWidth * 4, frameWidth, frameHeight);
+                } else {
+                  libyuv::I420ToARGB(frame->data[0], frame->linesize[0], frame->data[2],
+                                     frame->linesize[2], frame->data[1], frame->linesize[1],
+                                     (uint8_t *) pixels, frameWidth * 4, frameWidth, frameHeight);
+                }
+                break;
+              case AV_PIX_FMT_YUVA420P:
+                libyuv::I420AlphaToARGB(frame->data[0], frame->linesize[0], frame->data[2],
+                                        frame->linesize[2], frame->data[1], frame->linesize[1],
+                                        frame->data[3], frame->linesize[3],
+                                        (uint8_t *) pixels, frameWidth * 4, frameWidth, frameHeight,
+                                        50);
+                break;
+              case AV_PIX_FMT_BGRA:
+                libyuv::ABGRToARGB(frame->data[0], frame->linesize[0], (uint8_t *) pixels,
+                                   frameWidth * 4, frameWidth, frameHeight);
+                break;
+              default:
+                // TODO more libyuv cases?
+                logw(TAG_GIF_LOADER, "unsupported pixel format: %d", fmt);
+                break;
+            }
           }
-        } else {
-          logi(TAG_GIF_LOADER, "%dx%d != %dx%d", frameWidth, frameHeight, wantedWidth,
-               wantedHeight);
+          AndroidBitmap_unlockPixels(env, bitmap);
         }
       }
+
       info->has_decoded_frames = true;
       av_frame_unref(info->frame);
       return 1;
@@ -771,7 +803,7 @@ JNI_FUNC(jboolean, getLottieFrame, jlong ptr, jobject bitmap, jlong jFrameNo) {
 
   void *pixels;
   if (AndroidBitmap_lockPixels(env, bitmap, &pixels) != ANDROID_BITMAP_RESULT_SUCCESS)
-   return JNI_FALSE;
+    return JNI_FALSE;
 
   bool success = false;
 

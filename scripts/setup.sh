@@ -18,9 +18,10 @@ fi
 # == Setup thirdparty libraries ==
 
 # Configure libvpx
-pushd app/jni/thirdparty/libvpx
-configure-libvpx.sh
-popd
+#pushd app/jni/thirdparty/libvpx
+#configure-libvpx.sh
+#popd
+# UPD: No longer needed after switching to unified libvpx
 
 # Patch opus
 pushd app/jni/thirdparty/opus
@@ -35,6 +36,11 @@ popd
 
 # Patch ExoPlayer sources
 patch-exoplayer.sh
+
+# Build and configure libvpx
+pushd app/jni/thirdparty
+build-libvpx-impl.sh
+popd
 
 # Build and configure ffmpeg
 pushd app/jni/thirdparty
