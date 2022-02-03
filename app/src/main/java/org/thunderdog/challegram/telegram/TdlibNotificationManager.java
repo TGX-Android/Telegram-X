@@ -22,6 +22,7 @@ import androidx.annotation.RawRes;
 import androidx.core.app.NotificationManagerCompat;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.FileProvider;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
@@ -39,7 +40,6 @@ import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.io.File;
-import java.io.InputStream;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -52,8 +52,6 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.unit.BitwiseUtils;
 import me.vkryl.leveldb.LevelDB;
 import me.vkryl.td.ChatId;
-import okio.Okio;
-import okio.Source;
 
 /**
  * Date: 20/11/2016
@@ -909,12 +907,16 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     if (uri.equals(android.provider.Settings.System.DEFAULT_RINGTONE_URI) || uri.equals(android.provider.Settings.System.DEFAULT_NOTIFICATION_URI))
       return null;
     if ("content".equals(uri.getScheme())) {
+      if (Config.FILE_PROVIDER_AUTHORITY.equals(uri.getAuthority()) && uri.getPath().matches("^/ringtones/(?!\\.\\.)[^/]+$")) {
+        return uri;
+      }
       String filePath = U.tryResolveFilePath(uri);
-      if (filePath != null) {
+      boolean fileAccessible = false;
+      if (filePath != null && !filePath.equals(uri.toString())) {
         try {
           File file = new File(filePath);
           if (file.exists() && file.length() > 0) {
-            return Uri.fromFile(new File(filePath));
+            fileAccessible = true;
           }
         } catch (Throwable ignored) {}
       }
@@ -932,8 +934,8 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
           outputFile = U.newFile(U.getRingtonesDir(), fileName, fileExtension);
         }
 
-        if (U.copyFile(UI.getAppContext(), uri, outputFile)) {
-          return Uri.fromFile(outputFile);
+        if ((fileAccessible && FileUtils.copy(new File(filePath), outputFile)) || U.copyFile(UI.getAppContext(), uri, outputFile)) {
+          return FileProvider.getUriForFile(UI.getAppContext(), Config.FILE_PROVIDER_AUTHORITY, outputFile);
         }
       }
       return null;

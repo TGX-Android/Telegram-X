@@ -2053,7 +2053,27 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         name = null;
       } else {
         name = U.getRingtoneName(originalUri, null);
-        Uri uri = TdlibNotificationManager.fixSoundUri(originalUri, true, customChatId != 0 ? null : requestCode == Intents.ACTIVITY_RESULT_RINGTONE ? "ringtone.ogg" : "notification.ogg");
+        String forcedFileName;
+        if (customChatId != 0) {
+          forcedFileName = null;
+        } else if (requestCode == Intents.ACTIVITY_RESULT_RINGTONE) {
+          forcedFileName = tdlib.id() + "_ringtone.ogg";
+        } else {
+          switch (scope.getConstructor()) {
+            case TdApi.NotificationSettingsScopePrivateChats.CONSTRUCTOR:
+              forcedFileName = tdlib.id() + "_private.ogg";
+              break;
+            case TdApi.NotificationSettingsScopeGroupChats.CONSTRUCTOR:
+              forcedFileName = tdlib.id() + "_group.ogg";
+              break;
+            case TdApi.NotificationSettingsScopeChannelChats.CONSTRUCTOR:
+              forcedFileName = tdlib.id() + "_channel.ogg";
+              break;
+            default:
+              throw new UnsupportedOperationException(scope.toString());
+          }
+        }
+        Uri uri = TdlibNotificationManager.fixSoundUri(originalUri, true, forcedFileName);
         ringtoneUri = uri != null ? uri.toString() : null;
         if (name == null && uri != null) {
           name = uri.getLastPathSegment();
