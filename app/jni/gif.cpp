@@ -191,37 +191,6 @@ AVFrame *alloc_picture (AVPixelFormat pix_fmt, int width, int height) {
   return f;
 }
 
-// The following two functions were taken from this nice article: https://pspdfkit.com/blog/2016/a-curious-case-of-android-alpha/
-/**
-* Multiplies a single channel value with passed alpha. Values are already shifted
-* and can be directly ORed back into uint32_t structure.
-*/
-uint32_t premultiply_channel_value(const uint32_t pixel, const uint8_t offset, const float normalizedAlpha) {
-  auto multipliedValue = ((pixel >> offset) & 0xFF) * normalizedAlpha;
-  return ((uint32_t) std::min(multipliedValue, 255.0f)) << offset;
-}
-
-/**
-* This premultiplies alpha value in the bitmap. Android expects its bitmaps to have alpha premultiplied for optimization -
-* this means that instead of ARGB values of (128, 255, 255, 255) the bitmap needs to store (128, 128, 128, 128). Color channels
-* are multiplied with alpha value (0.0 .. 1.0).
-*/
-void premultiply_bitmap_alpha(const int bitmapHeight, const int bitmapWidth, const int bitmapStride, uint32_t* bitmapBuffer) {
-  const uint32_t pixels = bitmapHeight * (bitmapStride / 4);
-  for (uint32_t i = 0; i < pixels; i++) {
-    auto pixel = bitmapBuffer[i];
-    const auto alpha = (uint8_t) ((pixel >> 24) & 0xff);
-    const float normalizedAlpha = alpha / 255.0f;
-    auto premultiplied = (pixel & 0xFF000000)  |
-                         premultiply_channel_value(pixel, 16, normalizedAlpha) |
-                         premultiply_channel_value(pixel, 8, normalizedAlpha) |
-                         premultiply_channel_value(pixel, 0, normalizedAlpha);
-    if (premultiplied != pixel) {
-      bitmapBuffer[i] = premultiplied;
-    }
-  }
-}
-
 JNI_FUNC(jlong, createDecoder, jstring src, jintArray data) {
 
   VideoInfo *info = new VideoInfo(jni::from_jstring(env, src));
@@ -285,7 +254,7 @@ JNI_FUNC(jlong, createDecoder, jstring src, jintArray data) {
 
     if (newWidth > 0 && newHeight > 0) {
       AVPixelFormat fmt = info->video_dec_ctx->pix_fmt;
-      if (fmt != AV_PIX_FMT_NONE && (fmt != BITMAP_TARGET_FORMAT || newWidth != srcWidth || newHeight != srcHeight)) {
+      if (fmt != AV_PIX_FMT_NONE && fmt != AV_PIX_FMT_YUVA420P && (fmt != BITMAP_TARGET_FORMAT || newWidth != srcWidth || newHeight != srcHeight)) {
         info->scale_ctx = sws_getContext(srcWidth, srcHeight, fmt, newWidth, newHeight,
                                          BITMAP_TARGET_FORMAT, newWidth == srcWidth && newHeight == srcHeight ? SWS_FAST_BILINEAR : SWS_BILINEAR, nullptr, nullptr,
                                          nullptr);
@@ -458,14 +427,9 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jintArray data) {
             uint8_t *dst_data[1];
             dst_data[0] = (uint8_t *) pixels;
             info->dst_linesize[0] = bitmapInfo.stride;
-            int res = sws_scale(info->scale_ctx, frame->data, frame->linesize, 0, frame->height,
-                                dst_data, info->dst_linesize
-            );
             // TODO: find out why sws_scale doesn't support transparency (AV_PIX_FMT_YUVA420P) properly
-            // For now, premultiply_bitmap_alpha is called to fix transparency after scaling
-            if (fmt == AV_PIX_FMT_YUVA420P) {
-              // premultiply_bitmap_alpha(frameHeight, frameWidth, frameWidth * 4, (uint32_t *) pixels);
-            }
+            // note: for now, updated libyuv + kYvuI601Constants in I420AlphaToARGBMatrix fixes AV_PIX_FMT_YUVA420P issue - but still needs to be researched
+            int res = sws_scale(info->scale_ctx, frame->data, frame->linesize, 0, frame->height, dst_data, info->dst_linesize);
           } else {
             // TODO: find out why libyuv damages the color palette
             switch (fmt) {
@@ -485,11 +449,12 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jintArray data) {
                 }
                 break;
               case AV_PIX_FMT_YUVA420P:
-                libyuv::I420AlphaToARGB(frame->data[0], frame->linesize[0], frame->data[2],
-                                        frame->linesize[2], frame->data[1], frame->linesize[1],
-                                        frame->data[3], frame->linesize[3],
-                                        (uint8_t *) pixels, frameWidth * 4, frameWidth, frameHeight,
-                                        50);
+                libyuv::I420AlphaToARGBMatrix(frame->data[0], frame->linesize[0], frame->data[2],
+                                              frame->linesize[2], frame->data[1], frame->linesize[1],
+                                              frame->data[3], frame->linesize[3],
+                                              (uint8_t *) pixels, frameWidth * 4,
+                                              &libyuv::kYvuI601Constants, frameWidth, frameHeight,
+                                              50);
                 break;
               case AV_PIX_FMT_BGRA:
                 libyuv::ABGRToARGB(frame->data[0], frame->linesize[0], (uint8_t *) pixels,
