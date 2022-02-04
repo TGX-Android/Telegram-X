@@ -196,12 +196,12 @@ public class StickersListController extends ViewController<StickersListControlle
     this.info = info;
   }
 
-  public void setStickers (TdApi.Sticker[] stickers, boolean areMasks, TdApi.Emojis[] emojis) {
+  public void setStickers (TdApi.Sticker[] stickers, TdApi.StickerType stickerType, TdApi.Emojis[] emojis) {
     this.stickers = new ArrayList<>(stickers.length);
     int i = 0;
     boolean canViewPack = getArguments() == null || getArguments().canViewPack();
     for (TdApi.Sticker sticker : stickers) {
-      TGStickerObj obj = new TGStickerObj(tdlib, sticker, areMasks, emojis[i].emojis);
+      TGStickerObj obj = new TGStickerObj(tdlib, sticker, stickerType, emojis[i].emojis);
       if (!canViewPack) {
         obj.setNoViewPack();
       }
@@ -377,7 +377,7 @@ public class StickersListController extends ViewController<StickersListControlle
   public void onStickerSetUpdated (TdApi.StickerSet stickerSet) {
     tdlib.ui().post(() -> {
       if (!isDestroyed() && info.id == stickerSet.id) {
-        setStickers(stickerSet.stickers, stickerSet.isMasks, stickerSet.emojis);
+        setStickers(stickerSet.stickers, stickerSet.stickerType, stickerSet.emojis);
         buildCells();
       }
     });
@@ -388,7 +388,7 @@ public class StickersListController extends ViewController<StickersListControlle
     switch (object.getConstructor()) {
       case TdApi.StickerSet.CONSTRUCTOR: {
         TdApi.StickerSet stickerSet = (TdApi.StickerSet) object;
-        setStickers(stickerSet.stickers, stickerSet.isMasks, stickerSet.emojis);
+        setStickers(stickerSet.stickers, stickerSet.stickerType, stickerSet.emojis);
 
         tdlib.ui().post(() -> {
           if (!isDestroyed()) {

@@ -60,8 +60,26 @@ public class TGStickerSetInfo {
       this.previewOutline = info.thumbnailOutline;
       this.previewWidth = info.thumbnail.width;
       this.previewHeight = info.thumbnail.height;
-      if (info.isAnimated && info.thumbnail.format.getConstructor() == TdApi.ThumbnailFormatTgs.CONSTRUCTOR) {
-        this.previewAnimation = new GifFile(tdlib, info.thumbnail.file, GifFile.TYPE_TG_LOTTIE);
+      final int gifType;
+      switch (info.thumbnail.format.getConstructor()) {
+        case TdApi.ThumbnailFormatTgs.CONSTRUCTOR:
+          gifType = GifFile.TYPE_TG_LOTTIE;
+          break;
+        case TdApi.ThumbnailFormatMpeg4.CONSTRUCTOR:
+          gifType = GifFile.TYPE_MPEG4;
+          break;
+        case TdApi.ThumbnailFormatWebm.CONSTRUCTOR:
+          gifType = GifFile.TYPE_WEBM;
+          break;
+        case TdApi.ThumbnailFormatGif.CONSTRUCTOR:
+          gifType = GifFile.TYPE_GIF;
+          break;
+        default:
+          gifType = -1;
+          break;
+      }
+      if (gifType != -1) {
+        this.previewAnimation = new GifFile(tdlib, info.thumbnail.file, gifType);
         this.previewImage = null;
       } else {
         this.previewImage = TD.toImageFile(tdlib, info.thumbnail);
@@ -71,9 +89,9 @@ public class TGStickerSetInfo {
       this.previewOutline = info.covers[0].outline;
       this.previewWidth = info.covers[0].width;
       this.previewHeight = info.covers[0].height;
-      if (info.covers[0].isAnimated) {
+      if (Td.isAnimated(info.covers[0].type)) {
         this.previewImage = null;
-        this.previewAnimation = new GifFile(tdlib, info.covers[0].sticker, GifFile.TYPE_TG_LOTTIE);
+        this.previewAnimation = new GifFile(tdlib, info.covers[0].sticker, info.covers[0].type);
         this.previewAnimation.setOptimize(true);
       } else if (info.covers[0].thumbnail != null) {
         this.previewImage = TD.toImageFile(tdlib, info.covers[0].thumbnail);
@@ -100,7 +118,7 @@ public class TGStickerSetInfo {
   }
 
   public TGStickerSetInfo (Tdlib tdlib, TdApi.StickerSet info) {
-    this(tdlib, new TdApi.StickerSetInfo(info.id, info.title, info.name, info.thumbnail, info.thumbnailOutline, info.isInstalled, info.isArchived, info.isOfficial, info.isAnimated, info.isMasks, info.isViewed, info.stickers.length, info.stickers));
+    this(tdlib, new TdApi.StickerSetInfo(info.id, info.title, info.name, info.thumbnail, info.thumbnailOutline, info.isInstalled, info.isArchived, info.isOfficial, info.stickerType, info.isViewed, info.stickers.length, info.stickers));
   }
 
   public void setBoundList (@Nullable ArrayList<TGStickerSetInfo> list) {
@@ -149,7 +167,7 @@ public class TGStickerSetInfo {
       stickerSet.isInstalled = info.isInstalled;
       stickerSet.isArchived = info.isArchived;
       stickerSet.isViewed = info.isViewed;
-      stickerSet.isMasks = info.isMasks;
+      stickerSet.stickerType = info.stickerType;
       wrap = StickerSetWrap.showStickerSet(context, stickerSet);
     } else if (info != null && info.id != 0) {
       wrap = StickerSetWrap.showStickerSet(context, info);
@@ -274,7 +292,7 @@ public class TGStickerSetInfo {
   }
 
   public boolean isMasks () {
-    return info != null && info.isMasks;
+    return info != null && info.stickerType.getConstructor() == TdApi.StickerTypeMask.CONSTRUCTOR;
   }
 
   public long getId () {
@@ -298,7 +316,7 @@ public class TGStickerSetInfo {
   }
 
   public boolean isAnimated () {
-    return info != null && info.isAnimated;
+    return info != null && Td.isAnimated(info.stickerType);
   }
 
   public int getSize () {

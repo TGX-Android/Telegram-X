@@ -261,4 +261,6 @@ public class Config {
   public static final boolean MANAGE_STORAGE_PERMISSION_AVAILABLE = false; // Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
 
   public static final boolean VIDEO_CLOUD_PLAYBACK_AVAILABLE = true;
+
+  public static final String FILE_PROVIDER_AUTHORITY = BuildConfig.APPLICATION_ID + ".provider";
 }

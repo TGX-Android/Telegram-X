@@ -9,8 +9,6 @@ import android.app.DownloadManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
@@ -18,7 +16,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -26,8 +23,6 @@ import android.text.Spanned;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
-import android.text.style.ForegroundColorSpan;
-import android.text.style.ReplacementSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.TypefaceSpan;
@@ -517,12 +512,17 @@ public class TD {
       case TdApi.ThumbnailFormatGif.CONSTRUCTOR:
       case TdApi.ThumbnailFormatWebp.CONSTRUCTOR:
         return null;
-      case TdApi.ThumbnailFormatTgs.CONSTRUCTOR:
+      case TdApi.ThumbnailFormatTgs.CONSTRUCTOR: {
+        GifFile gifFile = new GifFile(tdlib, thumbnail.file, GifFile.TYPE_TG_LOTTIE);
+        gifFile.setOptimize(true);
+        return gifFile;
+      }
+      case TdApi.ThumbnailFormatWebm.CONSTRUCTOR:
       case TdApi.ThumbnailFormatMpeg4.CONSTRUCTOR: {
         GifFile gifFile = new GifFile(tdlib, thumbnail.file,
-          thumbnail.format.getConstructor() == TdApi.ThumbnailFormatMpeg4.CONSTRUCTOR ?
-            GifFile.TYPE_MPEG4 :
-            GifFile.TYPE_TG_LOTTIE
+          thumbnail.format.getConstructor() == TdApi.ThumbnailFormatWebm.CONSTRUCTOR ?
+            GifFile.TYPE_WEBM :
+            GifFile.TYPE_MPEG4
         );
         gifFile.setOptimize(true);
         return gifFile;
@@ -545,6 +545,7 @@ public class TD {
         return file;
       case TdApi.ThumbnailFormatTgs.CONSTRUCTOR: // TODO 1-frame
       case TdApi.ThumbnailFormatMpeg4.CONSTRUCTOR:
+      case TdApi.ThumbnailFormatWebm.CONSTRUCTOR:
         return null;
 
     }
@@ -557,7 +558,7 @@ public class TD {
     }
     if (sticker.thumbnail != null)
       return sticker.thumbnail;
-    if (sticker.isAnimated)
+    if (Td.isAnimated(sticker.type))
       return null;
     return new TdApi.Thumbnail(new TdApi.ThumbnailFormatWebp(), sticker.width, sticker.height, sticker.sticker);
   }
@@ -5426,7 +5427,7 @@ public class TD {
         break;
       case TdApi.MessageSticker.CONSTRUCTOR:
         TdApi.Sticker sticker = ((TdApi.MessageSticker) message.content).sticker;
-        alternativeText = sticker.isAnimated ? "animated" + sticker.emoji : sticker.emoji;
+        alternativeText = Td.isAnimated(sticker.type) ? "animated" + sticker.emoji : sticker.emoji;
         break;
       case TdApi.MessageInvoice.CONSTRUCTOR: {
         TdApi.MessageInvoice invoice = (TdApi.MessageInvoice) message.content;
@@ -5760,7 +5761,7 @@ public class TD {
       case TdApi.PushMessageContentSticker.CONSTRUCTOR:
         if (((TdApi.PushMessageContentSticker) push.content).isPinned)
           return getNotificationPinned(R.string.ActionPinnedSticker, TdApi.MessageSticker.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentSticker) push.content).emoji, 0);
-        else if (((TdApi.PushMessageContentSticker) push.content).sticker != null && ((TdApi.PushMessageContentSticker) push.content).sticker.isAnimated)
+        else if (((TdApi.PushMessageContentSticker) push.content).sticker != null && Td.isAnimated(((TdApi.PushMessageContentSticker) push.content).sticker.type))
           return getNotificationPreview(TdApi.MessageSticker.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, "animated" + ((TdApi.PushMessageContentSticker) push.content).emoji, 0);
         else
           return getNotificationPreview(TdApi.MessageSticker.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentSticker) push.content).emoji, 0);

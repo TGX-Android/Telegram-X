@@ -4,5 +4,5 @@ set -e
 source "$(dirname "$0")"/set-env.sh
 
 pushd app/jni/thirdparty
-build-ffmpeg-impl.sh || echo "Build failed"
+build-libvpx-impl.sh || echo "libvpx build failed"
 popd

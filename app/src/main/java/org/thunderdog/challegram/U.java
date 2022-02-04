@@ -1097,7 +1097,7 @@ public class U {
   public static Uri contentUriFromFile (File file) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
       try {
-        return FileProvider.getUriForFile(UI.getAppContext(), BuildConfig.APPLICATION_ID + ".provider", file);
+        return FileProvider.getUriForFile(UI.getAppContext(), Config.FILE_PROVIDER_AUTHORITY, file);
       } catch (Throwable t) {
         Log.e("Can't create content uri for path", t);
         // UI.showToast("Could not open path: " + file.getPath() + ", reason: " + t.getMessage(), Toast.LENGTH_LONG);

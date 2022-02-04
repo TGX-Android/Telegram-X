@@ -356,9 +356,9 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
           }
           return false;
         } else {
-          N.getVideoFrame(nativePtr, frame.bitmap, metadata);
+          int ret = N.getVideoFrame(nativePtr, frame.bitmap, metadata);
           frame.no = lastTimeStamp = metadata[3];
-          return !N.isVideoBroken(nativePtr);
+          return ret == 1 && !N.isVideoBroken(nativePtr);
         }
       }, 1, Bitmap.Config.ARGB_8888);
     } catch (OutOfMemoryError e) {
@@ -454,11 +454,13 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
       } else {
         desiredNextFrameNo = 0;
       }
+      boolean gifRestarted = false;
       if (seekToStart && !isLottie) {
         gif.clearBusy();
         seekToStart = false;
         N.seekVideoToStart(nativePtr);
         desiredNextFrameNo = 0;
+        gifRestarted = true;
       }
       final long nextFrameNo = desiredNextFrameNo;
 
@@ -530,9 +532,12 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
           }
         }
       } else {
-        N.getVideoFrame(nativePtr, free.bitmap, metadata);
+        int ret = N.getVideoFrame(nativePtr, free.bitmap, metadata);
         free.no = metadata[3];
         success = true;
+        if (ret == 2 && isPlayOnce) {
+          file.setLooped(true);
+        }
       }
       if (!async) {
         if (success) {
@@ -792,7 +797,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
   }
 
   public static void restartGif (@NonNull GifFile gifFile) {
-    if (gifFile.isStill() || gifFile.isRoundVideo()) {
+    if (gifFile.isStill() || gifFile.isRoundVideo() || gifFile.isLottie()) {
       return;
     }
     if (activeActors == null) {

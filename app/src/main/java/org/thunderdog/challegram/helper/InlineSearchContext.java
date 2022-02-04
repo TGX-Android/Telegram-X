@@ -1,7 +1,6 @@
 package org.thunderdog.challegram.helper;
 
 import android.Manifest;
-import android.app.AlertDialog;
 import android.content.Context;
 import android.content.res.Resources;
 import android.location.Location;
@@ -39,7 +38,6 @@ import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.EmojiData;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Strings;
@@ -447,7 +445,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
   private void displayStickers (TdApi.Sticker[] stickers, String foundByEmoji, boolean isMore) {
     ArrayList<TGStickerObj> list = new ArrayList<>(stickers.length);
     for (TdApi.Sticker sticker : stickers) {
-      list.add(new TGStickerObj(tdlib, sticker, foundByEmoji, false));
+      list.add(new TGStickerObj(tdlib, sticker, foundByEmoji, sticker.type));
     }
     callback.showInlineStickers(list, isMore);
   }

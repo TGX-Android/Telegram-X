@@ -535,7 +535,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_HEADER_TRENDING, stickerSet));
       int itemCount = 5;
       for (int i = 0; i < itemCount; i++) {
-        TGStickerObj stickerObj = new TGStickerObj(tdlib, i < stickerSetInfo.covers.length ? stickerSetInfo.covers[i] : null, null, false);
+        TGStickerObj stickerObj = new TGStickerObj(tdlib, i < stickerSetInfo.covers.length ? stickerSetInfo.covers[i] : null, null, stickerSetInfo.stickerType);
         stickerObj.setStickerSetId(stickerSetInfo.id, null);
         stickerObj.setDataProvider(dataProvider);
         stickerObj.setIsTrending();
@@ -1054,7 +1054,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       }
       stickers = new ArrayList<>(rawStickers.length);
       for (TdApi.Sticker rawSticker : rawStickers) {
-        TGStickerObj sticker = new TGStickerObj(tdlib, rawSticker, null, false);
+        TGStickerObj sticker = new TGStickerObj(tdlib, rawSticker, null, rawSticker.type);
         if (areFavorite) {
           sticker.setIsFavorite();
         } else {
@@ -1245,7 +1245,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
 
             int i = 0;
             for (TdApi.Sticker sticker : stickers) {
-              TGStickerObj parsed = new TGStickerObj(tdlib, sticker, false, rawStickerSet.emojis[i].emojis);
+              TGStickerObj parsed = new TGStickerObj(tdlib, sticker, sticker.type, rawStickerSet.emojis[i].emojis);
               items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, parsed));
               i++;
             }
@@ -1709,7 +1709,8 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
           for (int stickerIndex = oldStickerSet.getCoverCount(), j = oldStickerSet.getStartIndex() + 1 + oldStickerSet.getCoverCount(); stickerIndex < Math.min(stickerSet.stickers.length - oldStickerSet.getCoverCount(), oldStickerSet.getCoverCount() + 4); stickerIndex++, j++) {
             MediaStickersAdapter.StickerItem item = trendingAdapter.getItem(j);
             if (item.sticker != null) {
-              item.sticker.set(tdlib, stickerSet.stickers[stickerIndex], false, stickerSet.emojis[stickerIndex].emojis);
+              TdApi.Sticker sticker = stickerSet.stickers[stickerIndex];
+              item.sticker.set(tdlib, sticker, sticker.type, stickerSet.emojis[stickerIndex].emojis);
             }
 
             View view = hotView != null ? hotView.getLayoutManager().findViewByPosition(j) : null;
@@ -1784,7 +1785,8 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
               } else {
                 ArrayList<MediaStickersAdapter.StickerItem> items = new ArrayList<>(actualSize - oldSize);
                 for (int j = oldSize; j < actualSize; j++) {
-                  TGStickerObj obj = new TGStickerObj(tdlib, stickerSet.stickers[j], false, stickerSet.emojis[j].emojis);
+                  TdApi.Sticker sticker = stickerSet.stickers[j];
+                  TGStickerObj obj = new TGStickerObj(tdlib, sticker, sticker.type, stickerSet.emojis[j].emojis);
                   obj.setStickerSetId(stickerSet.id, stickerSet.emojis[j].emojis);
                   obj.setDataProvider(this);
                   items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, obj));
@@ -1800,7 +1802,8 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
 
           for (int stickerIndex = oldStickerSet.getCoverCount(), j = oldStickerSet.getStartIndex() + 1 + oldStickerSet.getCoverCount(); stickerIndex < stickerSet.stickers.length; stickerIndex++, j++) {
             MediaStickersAdapter.StickerItem item = stickersAdapter.getItem(j);
-            item.sticker.set(tdlib, stickerSet.stickers[stickerIndex], false, stickerSet.emojis[stickerIndex].emojis);
+            TdApi.Sticker sticker = stickerSet.stickers[stickerIndex];
+            item.sticker.set(tdlib, sticker, sticker.type, stickerSet.emojis[stickerIndex].emojis);
 
             View view = stickersView != null ? stickersView.getLayoutManager().findViewByPosition(j) : null;
             if (view != null && view instanceof StickerSmallView) {
@@ -1877,7 +1880,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
             info.setStartIndex(startIndex);
             stickerSets.add(info);
             for (TdApi.Sticker favoriteSticker : favoriteStickers) {
-              TGStickerObj sticker = new TGStickerObj(tdlib, favoriteSticker, null, false);
+              TGStickerObj sticker = new TGStickerObj(tdlib, favoriteSticker, null, favoriteSticker.type);
               sticker.setIsFavorite();
               items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
             }
@@ -1893,7 +1896,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
               items.add(new MediaStickersAdapter.StickerItem(favoriteStickers.length > 0 ? MediaStickersAdapter.StickerHolder.TYPE_HEADER : MediaStickersAdapter.StickerHolder.TYPE_EMPTY, info));
             }
             for (TdApi.Sticker recentSticker : recentStickers) {
-              TGStickerObj sticker = new TGStickerObj(tdlib, recentSticker, null, false);
+              TGStickerObj sticker = new TGStickerObj(tdlib, recentSticker, null, recentSticker.type);
               sticker.setIsRecent();
               items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
             }
@@ -1913,7 +1916,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
             info.setStartIndex(startIndex);
             items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_HEADER, info));
             for (int i = 0; i < rawInfo.size; i++) {
-              TGStickerObj sticker = new TGStickerObj(tdlib, i < rawInfo.covers.length ? rawInfo.covers[i] : null, null, false);
+              TGStickerObj sticker = new TGStickerObj(tdlib, i < rawInfo.covers.length ? rawInfo.covers[i] : null, null, rawInfo.stickerType);
               sticker.setStickerSetId(rawInfo.id, null);
               sticker.setDataProvider(this);
               items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));

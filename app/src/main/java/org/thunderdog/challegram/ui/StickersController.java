@@ -275,9 +275,13 @@ public class StickersController extends RecyclerViewController<StickersControlle
     }
   }
 
+  private static boolean isMasks (TdApi.StickerType type) {
+    return type.getConstructor() == TdApi.StickerTypeMask.CONSTRUCTOR;
+  }
+
   @Override
   public void onStickerSetArchived (final TdApi.StickerSetInfo stickerSet) {
-    if ((mode == MODE_MASKS && stickerSet.isMasks) || (mode == MODE_STICKERS_ARCHIVED && !stickerSet.isMasks)) {
+    if ((mode == MODE_MASKS && isMasks(stickerSet.stickerType)) || (mode == MODE_STICKERS_ARCHIVED && !isMasks(stickerSet.stickerType))) {
       tdlib.ui().post(() -> {
         if (!isDestroyed() && !isLoading && stickerSets != null) {
           if (mode == MODE_MASKS) {
@@ -292,7 +296,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
 
   @Override
   public void onStickerSetRemoved (TdApi.StickerSetInfo stickerSet) {
-    if ((mode == MODE_MASKS && stickerSet.isMasks) || (mode == MODE_STICKERS_ARCHIVED && !stickerSet.isMasks)) {
+    if ((mode == MODE_MASKS && isMasks(stickerSet.stickerType)) || (mode == MODE_STICKERS_ARCHIVED && !isMasks(stickerSet.stickerType))) {
       tdlib.ui().post(() -> {
         if (!isDestroyed() && !isLoading && stickerSets != null) {
           if (mode == MODE_MASKS) {
@@ -307,7 +311,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
 
   @Override
   public void onStickerSetInstalled (TdApi.StickerSetInfo stickerSet) {
-    if ((mode == MODE_MASKS && stickerSet.isMasks) || (mode == MODE_STICKERS_ARCHIVED && !stickerSet.isMasks)) {
+    if ((mode == MODE_MASKS && isMasks(stickerSet.stickerType)) || (mode == MODE_STICKERS_ARCHIVED && !isMasks(stickerSet.stickerType))) {
       tdlib.ui().post(() -> {
         if (!isDestroyed() && !isLoading && stickerSets != null) {
           if (mode == MODE_MASKS) {
@@ -543,7 +547,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
     if (stickerSets == null) {
       return;
     }
-    TdApi.StickerSetInfo newRawInfo = new TdApi.StickerSetInfo(rawInfo.id, rawInfo.title, rawInfo.title, rawInfo.thumbnail, rawInfo.thumbnailOutline, rawInfo.isInstalled, true, rawInfo.isOfficial, rawInfo.isAnimated, rawInfo.isMasks, rawInfo.isViewed, rawInfo.size, rawInfo.covers);
+    TdApi.StickerSetInfo newRawInfo = new TdApi.StickerSetInfo(rawInfo.id, rawInfo.title, rawInfo.title, rawInfo.thumbnail, rawInfo.thumbnailOutline, rawInfo.isInstalled, true, rawInfo.isOfficial, rawInfo.stickerType, rawInfo.isViewed, rawInfo.size, rawInfo.covers);
     TGStickerSetInfo info = new TGStickerSetInfo(tdlib, newRawInfo);
     info.setBoundList(stickerSets);
     stickerSets.add(0, info);
@@ -567,7 +571,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
       }
     }
 
-    TdApi.StickerSetInfo newRawInfo = new TdApi.StickerSetInfo(rawInfo.id, rawInfo.title, rawInfo.title, rawInfo.thumbnail, rawInfo.thumbnailOutline, true, true, rawInfo.isOfficial, rawInfo.isAnimated, rawInfo.isMasks, rawInfo.isViewed, rawInfo.size, rawInfo.covers);
+    TdApi.StickerSetInfo newRawInfo = new TdApi.StickerSetInfo(rawInfo.id, rawInfo.title, rawInfo.title, rawInfo.thumbnail, rawInfo.thumbnailOutline, true, true, rawInfo.isOfficial, rawInfo.stickerType, rawInfo.isViewed, rawInfo.size, rawInfo.covers);
     TGStickerSetInfo info = new TGStickerSetInfo(tdlib, newRawInfo);
     info.setBoundList(archivedSets);
 

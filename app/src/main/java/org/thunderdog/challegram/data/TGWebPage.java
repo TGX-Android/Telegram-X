@@ -31,7 +31,6 @@ import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
@@ -767,14 +766,14 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     int maxHeight = parent.getSmallestMaxContentHeight();
     int contentWidth, contentHeight;
 
-    if (webPage.sticker != null && (Math.max(webPage.sticker.width, webPage.sticker.height) <= STICKER_SIZE_LIMIT || webPage.sticker.isAnimated)) {
+    if (webPage.sticker != null && (Math.max(webPage.sticker.width, webPage.sticker.height) <= STICKER_SIZE_LIMIT || Td.isAnimated(webPage.sticker.type))) {
       float max = Screen.dp(TGMessageSticker.MAX_STICKER_SIZE);
       float ratio = Math.min(max / (float) webPage.sticker.width, max / (float) webPage.sticker.height);
 
       contentWidth = (int) (webPage.sticker.width * ratio);
       contentHeight = (int) (webPage.sticker.height * ratio);
 
-      if (webPage.sticker.isAnimated) {
+      if (Td.isAnimated(webPage.sticker.type)) {
         this.simpleGifFile = new GifFile(parent.tdlib(), webPage.sticker);
         this.simpleGifFile.setScaleType(ImageFile.FIT_CENTER);
       } else {

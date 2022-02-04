@@ -6,7 +6,6 @@ package me.vkryl.td
 import me.vkryl.core.equalsOrBothEmpty
 import org.drinkless.td.libcore.telegram.TdApi.*
 import java.util.*
-import kotlin.collections.HashMap
 import kotlin.contracts.ExperimentalContracts
 
 fun ChatList?.equalsTo(b: ChatList?): Boolean {
@@ -670,14 +669,27 @@ fun Sticker?.equalsTo(b: Sticker?): Boolean {
     else -> {
       this.width == b.width &&
       this.height == b.height &&
-      this.isMask == b.isMask &&
+      this.type.equalsTo(b.type) &&
       this.setId == b.setId &&
-      this.isAnimated == b.isAnimated &&
       this.emoji.equalsOrBothEmpty(b.emoji) &&
       this.sticker.equalsTo(b.sticker) &&
       this.outline.equalsTo(b.outline) &&
-      this.thumbnail.equalsTo(b.thumbnail) &&
-      this.maskPosition.equalsTo(b.maskPosition)
+      this.thumbnail.equalsTo(b.thumbnail)
+    }
+  }
+}
+
+fun StickerType?.equalsTo(b: StickerType?): Boolean {
+  return when {
+    this === b -> true
+    this == null || b == null || this.constructor != b.constructor -> false
+    else -> when (this.constructor) {
+      StickerTypeStatic.CONSTRUCTOR, StickerTypeAnimated.CONSTRUCTOR, StickerTypeVideo.CONSTRUCTOR -> true
+      StickerTypeMask.CONSTRUCTOR -> {
+        require(this is StickerTypeMask && b is StickerTypeMask)
+        this.maskPosition.equalsTo(b.maskPosition)
+      }
+      else -> TODO(this.toString())
     }
   }
 }

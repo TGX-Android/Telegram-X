@@ -305,7 +305,8 @@ public class StickersTrendingController extends ViewController<Void> implements 
         for (int stickerIndex = oldStickerSet.getCoverCount(), j = oldStickerSet.getStartIndex() + 1 + oldStickerSet.getCoverCount(); stickerIndex < Math.min(stickerSet.stickers.length - oldStickerSet.getCoverCount(), oldStickerSet.getCoverCount() + 4); stickerIndex++, j++) {
           MediaStickersAdapter.StickerItem item = adapter.getItem(j);
           if (item.sticker != null) {
-            item.sticker.set(tdlib, stickerSet.stickers[stickerIndex], false, stickerSet.emojis[stickerIndex].emojis);
+            TdApi.Sticker sticker = stickerSet.stickers[stickerIndex];
+            item.sticker.set(tdlib, sticker, sticker.type, stickerSet.emojis[stickerIndex].emojis);
           }
 
           View view = recyclerView != null ? recyclerView.getLayoutManager().findViewByPosition(j) : null;
