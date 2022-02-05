@@ -116,7 +116,7 @@ public class LocalScopeNotificationSettings {
   @Nullable
   public String getSound () {
     if (!soundLoaded) {
-      _sound = TdlibNotificationManager.fixSoundUri(Settings.instance().getString(suffix(TdlibNotificationManager.KEY_SUFFIX_SOUND), null));
+      _sound = Settings.instance().getString(suffix(TdlibNotificationManager.KEY_SUFFIX_SOUND), null);
       soundLoaded = true;
     }
     return _sound;
