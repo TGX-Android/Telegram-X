@@ -342,6 +342,15 @@ fun MessageContent?.textOrCaption (): FormattedText? {
   }
 }
 
+fun MessageContent?.getMediaId (): Int {
+  return when (this?.constructor) {
+    MessageVideo.CONSTRUCTOR -> (this as MessageVideo).video.video.id
+    MessageDocument.CONSTRUCTOR -> (this as MessageDocument).document.document.id
+    MessageAnimation.CONSTRUCTOR -> (this as MessageAnimation).animation.animation.id
+    else -> 0
+  }
+}
+
 fun Message?.matchesFilter(filter: SearchMessagesFilter?): Boolean {
   if (this == null || filter == null) {
     return true

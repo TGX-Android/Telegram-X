@@ -94,10 +94,10 @@ public class BufferingProgressBarWrap extends View implements Destroyable {
   protected void onDraw (Canvas canvas) {
     super.onDraw(canvas);
 
-    final int color = 0x8c000000;
+    final int color = 0x4c000000;
     final int bgColor = ColorUtils.color((int) ((float) Color.alpha(color) * progressVisible.getFloatValue()), color);
 
-    canvas.drawRoundRect(fakeDialogFrame, Screen.dp(8f), Screen.dp(8f), Paints.getPorterDuffPaint(bgColor));
+    canvas.drawRoundRect(fakeDialogFrame, Screen.dp(12f), Screen.dp(12f), Paints.getPorterDuffPaint(bgColor));
     progressComponent.draw(canvas);
   }
 }

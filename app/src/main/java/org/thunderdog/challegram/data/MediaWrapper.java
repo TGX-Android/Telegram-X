@@ -50,6 +50,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.td.Td;
 
 /**
  * Date: 28/01/2017
@@ -888,22 +889,32 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     boolean isLoaded = getFileProgress().isLoaded();
     boolean isStreamingUI = isVideo() && !isLoaded;
     boolean showDuration = !StringUtils.isEmpty(durationTrimmed) && selectionFactor < 1f;
-    boolean isDoubleLine = isStreamingUI && duration != null && durationShort != null;
+    boolean isDoubleLine = isStreamingUI && duration != null && durationShort != null && (source == null || source.getCombinedMessageCount() == 0);
+    boolean isSmallStreamingUI = isStreamingUI && !isDoubleLine;
 
     if (showDuration) {
       // Only if: channel + single item in stack + bubble-less mode
-      boolean needTopOffset = source != null && !source.useBubbles() && source.hasHeader() && source.isChannel() && source.getCombinedMessageCount() == 0;
+      boolean needTopOffset = source != null && !source.useBubbles() && source.hasHeader() && source.isChannel() && isVideo() && Td.getMediaId(source.getOldestMessage().content) == video.video.id;
 
-      int fpRadius = (isLoaded || !isVideo()) ? 0 : getFileProgress().getRadius();
+      int fpRadius = (isLoaded || !isVideo() || !isDoubleLine) ? 0 : getFileProgress().getRadius();
       int pDurationCorners = Screen.dp(isDoubleLine ? 12f : 4f);
       int pDurationTop = cellTop + Screen.dp(8f) + (needTopOffset ? Screen.dp(16f) : 0);
       int pDurationLeft = cellLeft + Screen.dp(12f);
-      int pDurationRight = pDurationLeft + durationWidth + (fpRadius * 2) + (isDoubleLine ? Screen.dp(16f) : Screen.dp(4f));
+      int pDurationRight = pDurationLeft + durationWidth + (fpRadius * 2) + (isStreamingUI ? Screen.dp(isSmallStreamingUI ? 26f : 16f) : Screen.dp(4f));
       int pDurationBottom = pDurationTop + (isDoubleLine ? (fpRadius * 2) + Screen.dp(8f) : durationHeight());
 
       RectF rectF = Paints.getRectF();
       rectF.set(pDurationLeft - Screen.dp(4f), pDurationTop, pDurationRight, pDurationBottom);
-      getFileProgress().setVideoStreamingClickRect(needTopOffset, rectF);
+
+      getFileProgress().setVideoStreamingClickRect(needTopOffset, isSmallStreamingUI, rectF);
+
+      if (isSmallStreamingUI) {
+        getFileProgress().setVideoStreamingProgressIgnore(true);
+        getFileProgress().setPausedIconRes(R.drawable.baseline_cloud_download_16);
+      } else {
+        getFileProgress().setVideoStreamingProgressIgnore(false);
+      }
+
       c.drawRoundRect(rectF, pDurationCorners, pDurationCorners, Paints.fillingPaint(ColorUtils.alphaColor(alpha * (1f - selectionFactor), 0x4c000000)));
 
       Paint paint;
@@ -923,15 +934,13 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
         c.drawText(durationShort, textBaseline, textYBaseline - Screen.dp(4f), paint);
         c.drawText(duration, textBaseline, textYBaseline + Screen.dp(13f), paint);
       } else {
-        c.drawText(durationTrimmed, pDurationLeft, pDurationTop - Screen.dp(4f) + durationOffset(), paint);
+        c.drawText(durationTrimmed, pDurationLeft + (isStreamingUI ? Screen.dp(20f) : 0), pDurationTop - Screen.dp(4f) + durationOffset(), paint);
       }
 
       paint.setAlpha(255);
     }
 
-    if (isStreamingUI && (!showDuration || !isDoubleLine)) {
-      fileProgress.drawStreamingPlay(c);
-    } else if (!hideLoader) {
+    if (!hideLoader) {
       fileProgress.draw(view, c);
     }
 
@@ -1078,12 +1087,15 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   }
 
   private void trimDoubleDuration () {
-    int width = cellWidth - Screen.dp(4f) * 3 - (Screen.dp(FileProgressComponent.DEFAULT_STREAMING_RADIUS) * 2);
+    int width = cellWidth - Screen.dp(8f) * 2 - (Screen.dp(FileProgressComponent.DEFAULT_STREAMING_RADIUS) * 2);
     if (width > 0 && (durationWidthFull > width || durationWidthShort > width)) {
-      durationTrimmed = durationShort;
-      durationWidth = durationWidthShort;
+      durationTrimmed = duration;
+      durationWidth = durationWidthFull;
 
-      if (durationShort == null || durationWidthShort > cellWidth) {
+      if (durationWidthFull > width && (durationShort != null && durationWidthShort < width)) {
+        durationTrimmed = durationShort;
+        durationWidth = durationWidthShort;
+      } else if (durationShort == null || durationWidthShort > cellWidth) {
         durationTrimmed = null;
         durationWidth = 0;
       }
