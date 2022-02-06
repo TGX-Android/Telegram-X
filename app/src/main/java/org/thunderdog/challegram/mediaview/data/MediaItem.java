@@ -1011,6 +1011,10 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
     return fileProgress != null && fileProgress.performClick(view);
   }
 
+  public boolean performClick (View view, float x, float y) {
+    return fileProgress != null && fileProgress.performClick(view, x, y);
+  }
+
   public boolean onClick (View view, float x, float y) {
     if (fileProgress != null) {
       if (isLoaded()) {
@@ -1018,10 +1022,10 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
         int centerY = fileProgress.centerY();
         int bound = Screen.dp(FileProgressComponent.DEFAULT_RADIUS);
         if (x >= centerX - bound && x <= centerX + bound && y >= centerY - bound && y <= centerY + bound) {
-          return fileProgress.performClick(view);
+          return fileProgress.performClick(view, x, y);
         }
       } else {
-        return fileProgress.performClick(view);
+        return fileProgress.performClick(view, x, y);
       }
     }
     return false;
