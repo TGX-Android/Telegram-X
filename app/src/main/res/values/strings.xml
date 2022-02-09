@@ -4241,6 +4241,7 @@
   <string name="LocationAlertBot">To make a location-based search via %1$s, allow Telegram X access to your location.</string>
   <string name="LocationAlertBotDisclaimer">Note that Telegram X does not have any control over how the location data is processed by %1$s.</string>
   <string name="LocationAlertLiveLocation">To send a Live Location, allow Telegram X access to your location in the background. This feature will send a message with your location that will be updated in real time for the duration you choose even if you\'re not using the app. You can stop Live Location at any time.</string>
+  <string name="LocationAlertSunriseSunset">To calculate sunrise and sunset times, allow Telegram X access to your location.</string>
   <string name="LocationAlertLocation">To send a nearby place or your location, allow Telegram X access to your location.</string>
   <string name="LocationAlertLocationDisclaimer">Telegram X does not use location data for any hidden purposes, and accesses it only by your explicit request.</string>
 

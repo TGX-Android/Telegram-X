@@ -6,7 +6,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 
 import me.vkryl.android.ViewUtils;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 
 /**
  * Date: 28/11/2016

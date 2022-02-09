@@ -43,7 +43,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import me.vkryl.core.StringUtils;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 
 public class Media {
   public static final String DATE_COLUMN = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? MediaStore.Images.Media.DATE_MODIFIED : MediaStore.Images.Media.DATE_TAKEN;

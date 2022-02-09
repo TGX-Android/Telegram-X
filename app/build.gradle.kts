@@ -221,6 +221,8 @@ dependencies {
     implementation("nl.dionsegijn:konfetti:1.2.6")
     // Transcoder: https://github.com/natario1/Transcoder/blob/master/docs/_about/changelog.md
     implementation("com.github.natario1:Transcoder:ba8f098c94")
+    // https://github.com/mikereedell/sunrisesunsetlib-java
+    implementation("com.luckycatlabs:SunriseSunsetCalculator:1.2")
 
     // ZXing: https://github.com/zxing/zxing/blob/master/CHANGES
     implementation("com.google.zxing:core:3.4.1")

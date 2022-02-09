@@ -11,7 +11,7 @@ import org.thunderdog.challegram.U;
 import java.util.ArrayDeque;
 import java.util.Queue;
 
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 
 public class GifState {
   static final int DEFAULT_QUEUE_SIZE = 3;

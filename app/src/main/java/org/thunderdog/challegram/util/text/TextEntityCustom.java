@@ -25,7 +25,7 @@ import org.thunderdog.challegram.util.StringList;
 
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 
 /**
  * Date: 23/02/2017

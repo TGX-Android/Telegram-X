@@ -23,7 +23,7 @@ import org.thunderdog.challegram.util.text.Text;
 import java.util.ArrayList;
 
 import me.vkryl.core.StringUtils;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 
 public class TGUser implements UserProvider {

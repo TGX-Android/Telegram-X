@@ -17,6 +17,8 @@ import androidx.annotation.IdRes;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.luckycatlabs.sunrisesunset.SunriseSunsetCalculator;
+
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -57,12 +59,13 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.TimeZone;
 
+import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
-import me.vkryl.core.solar.SunriseSunsetCalculator;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 
 /**
  * Date: 14/01/2017
@@ -1274,16 +1277,17 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
             if (errorCode != LocationHelper.ERROR_CODE_NONE) {
               UI.showToast(R.string.DetectLocationError, Toast.LENGTH_SHORT);
             } else {
-              Calendar[] result = SunriseSunsetCalculator.getSunriseSunset(location.getLatitude(), location.getLongitude());
+              Calendar sunrise = SunriseSunsetCalculator.getSunrise(location.getLatitude(), location.getLongitude(), TimeZone.getDefault(), DateUtils.getNowCalendar(), 0);
+              Calendar sunset = SunriseSunsetCalculator.getSunset(location.getLatitude(), location.getLongitude(), TimeZone.getDefault(), DateUtils.getNowCalendar(), 0);
               /*if (result == null || result[0] == -1 || result[1] == -1) {
                 UI.showToast(R.string.AutoNightModeScheduledByLocationError, Toast.LENGTH_SHORT);
                 return;
               }*/
-              int startHour = result[1].get(Calendar.HOUR_OF_DAY);
-              int startMinute = result[1].get(Calendar.MINUTE);
+              int startHour = sunset.get(Calendar.HOUR_OF_DAY);
+              int startMinute = sunset.get(Calendar.MINUTE);
 
-              int endHour = result[0].get(Calendar.HOUR_OF_DAY);
-              int endMinute = result[0].get(Calendar.MINUTE);
+              int endHour = sunrise.get(Calendar.HOUR_OF_DAY);
+              int endMinute = sunrise.get(Calendar.MINUTE);
 
               UI.showToast(R.string.Done, Toast.LENGTH_SHORT);
 

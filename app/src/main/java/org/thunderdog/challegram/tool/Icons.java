@@ -11,7 +11,7 @@ import androidx.collection.LongSparseArray;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.theme.ThemeColorId;
 
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 
 /**
  * Date: 02/11/2016

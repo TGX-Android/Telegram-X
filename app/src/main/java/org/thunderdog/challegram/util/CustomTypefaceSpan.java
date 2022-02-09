@@ -22,7 +22,7 @@ import org.thunderdog.challegram.theme.ThemeSet;
 import org.thunderdog.challegram.tool.Screen;
 
 import me.vkryl.core.ColorUtils;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 
 public class CustomTypefaceSpan extends MetricAffectingSpan {
   private static final int FLAG_FAKE_BOLD = 1;

@@ -49,7 +49,7 @@ import java.util.List;
 
 import me.vkryl.core.FileUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.leveldb.LevelDB;
 import me.vkryl.td.ChatId;
 

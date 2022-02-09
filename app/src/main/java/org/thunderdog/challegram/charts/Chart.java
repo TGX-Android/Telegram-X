@@ -16,7 +16,7 @@ import org.thunderdog.challegram.ui.ListItem;
 
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 
 public class Chart implements BaseChartView.DateChangeListener {
   public interface Listener {

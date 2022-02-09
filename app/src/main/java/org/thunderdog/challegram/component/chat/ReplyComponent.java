@@ -46,7 +46,7 @@ import me.vkryl.android.util.SingleViewProvider;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.Td;
 
 public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyable {

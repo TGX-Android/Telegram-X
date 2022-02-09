@@ -18,7 +18,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 import java.util.ArrayList;
 import java.util.List;
 
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 
 public class GifFile {
   public static final int TYPE_GIF = 1;

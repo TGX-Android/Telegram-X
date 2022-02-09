@@ -60,7 +60,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 
 public class ComplexHeaderView extends BaseView implements RtlCheckListener, StretchyHeaderView, TextChangeDelegate, Destroyable, ColorSwitchPreparator, MediaCollectorDelegate, BaseView.CustomControllerProvider, TdlibStatusManager.HelperTarget, TGLegacyManager.EmojiLoadListener, HeaderView.OffsetChangeListener {
   private static final int FLAG_SHOW_LOCK = 1;

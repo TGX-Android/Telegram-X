@@ -4,7 +4,7 @@ import androidx.annotation.ColorInt;
 
 import org.thunderdog.challegram.tool.Screen;
 
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 
 public interface TextColorSet {
   @ColorInt

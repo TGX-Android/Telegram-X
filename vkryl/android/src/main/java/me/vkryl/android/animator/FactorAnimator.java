@@ -12,7 +12,7 @@ import androidx.annotation.FloatRange;
 import androidx.annotation.Nullable;
 
 import me.vkryl.android.AnimatorUtils;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 
 /**
  * Date: 26/10/2016
