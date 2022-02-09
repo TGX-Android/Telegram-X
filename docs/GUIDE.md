@@ -4,11 +4,7 @@ This guide is intended for future contributors and potential maintainers. It inc
 
 ## 1: Fresh start
 
-1. Clone this repository with all submodules;
-2. Run `./update_dependencies.sh` and make sure it's successfully complete;
-3. Update `app/config/app.properties` with your Telegram API identifier and hash, if needed;
-4. **Read the guide below**;
-5. Done. You are ready to add new features, animations and redesigns.
+Refer to [README](/README.md) for the project setup and build instructions.
 
 ## 2: Translations
 
@@ -98,11 +94,11 @@ This will return currently effective color: either from the effective theme, or 
 
 ##### Adding new colors
 
-Defined theme colors and properties are located 
+Defined theme colors and properties are located in [colors-and-properties.xml](/app/src/main/other/themes/colors-and-properties.xml) file and built-in themes can be found in the [same folder](/app/src/main/other/themes).
 
 ##### Subscribing to the updates
 
-
+-- TODO
 
 ## 4: Animating things
 

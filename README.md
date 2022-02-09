@@ -62,7 +62,6 @@ In future build reproduction will be made easier. Here's a list of related TODOs
 * It might be a good idea to use `--build-id=0x<commit>` instead of `--build-id=none`;
 * Checksums of cold APK builds always differ, even though the same keystore applied and generated inner APK contents do not differ. Real cause must be investigated and fixed, if possible.<br/>To generate cold build, invoke `$ scripts/./reset.sh` and `$ scripts/./setup.sh --skip-sdk-setup`.<br/>**Warning**: this will also reset changes inside some of the submodules ([ffmpeg](/app/jni/thirdparty/ffmpeg), [libvpx](/app/jni/thirdparty/libvpx), [webp](/app/jni/thirdparty/webp), [opus](/app/jni/thirdparty/opus) and [ExoPlayer](/app/jni/thirdparty/exoplayer));
 
-
 <i>PS: [Docker](/Dockerfile) is not considered an option, as it just hides away these tasks, and requires that all published APKs must be built using it.</i>
 
 ## Verifying side-loaded APKs
