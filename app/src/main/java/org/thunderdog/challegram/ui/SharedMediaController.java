@@ -295,6 +295,10 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
     }
     MediaItem item = MediaItem.valueOf(context(), tdlib, message);
     if (item != null) {
+      if (item.isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
+        item.getFileProgress().setVideoStreaming(true);
+      }
+
       item.setScaleType(ImageFile.CENTER_CROP);
       item.setSize(Screen.dp(124f, 3f));
       item.setNeedSquare(true);
@@ -460,8 +464,14 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
       }
 
       MediaItem mediaItem = (MediaItem) item.getData();
-      if (mediaItem.isVideo() && (!mediaItem.isLoaded() && !Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE)) {
-        mediaItem.performClick(v);
+      if (mediaItem.isVideo()) {
+        if (mediaItem.isLoaded()) {
+          MediaViewController.openFromMedia(this, mediaItem);
+        } else {
+          if (!mediaItem.performClick(v, x, y)) {
+            MediaViewController.openFromMedia(this, mediaItem);
+          }
+        }
       } else if (mediaItem.getType() == MediaItem.TYPE_VIDEO_MESSAGE) {
         if (mediaItem.isLoaded()) {
           tdlib.context().player().playPauseMessage(tdlib, mediaItem.getMessage(), null);

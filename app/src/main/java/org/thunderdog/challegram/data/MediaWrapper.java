@@ -906,7 +906,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       RectF rectF = Paints.getRectF();
       rectF.set(pDurationLeft - Screen.dp(4f), pDurationTop, pDurationRight, pDurationBottom);
 
-      getFileProgress().setVideoStreamingClickRect(needTopOffset, isSmallStreamingUI, rectF);
+      getFileProgress().setVideoStreamingClickRect(needTopOffset, isSmallStreamingUI ? FileProgressComponent.STREAMING_UI_MODE_SMALL : FileProgressComponent.STREAMING_UI_MODE_LARGE, rectF);
 
       if (isSmallStreamingUI) {
         getFileProgress().setVideoStreamingProgressIgnore(true);
@@ -938,6 +938,10 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       }
 
       paint.setAlpha(255);
+    }
+
+    if (showDuration && isDoubleLine) {
+
     }
 
     if (!hideLoader) {

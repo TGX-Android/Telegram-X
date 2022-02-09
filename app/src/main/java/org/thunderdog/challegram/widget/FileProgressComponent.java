@@ -65,6 +65,10 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   public static final float DEFAULT_SMALL_STREAMING_RADIUS = 12f;
   public static final float DEFAULT_FILE_RADIUS = 25f;
 
+  public static final int STREAMING_UI_MODE_LARGE = 0;
+  public static final int STREAMING_UI_MODE_SMALL = 1;
+  public static final int STREAMING_UI_MODE_EXTRA_SMALL = 2;
+
   private static final int INVALIDATE_CONTENT_RECEIVER = 0;
   private static final int CHANGE_CURRENT_STATE = 1;
   private static final int SET_PROGRESS = 2;
@@ -124,7 +128,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   private boolean isVideoStreaming;
   private boolean isVideoStreamingOffsetNeeded;
   private boolean isVideoStreamingProgressIgnore;
-  private boolean isVideoStreamingSmallUi;
+  private int videoStreamingUiMode;
 
   private float requestedAlpha;
 
@@ -169,9 +173,9 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     DrawAlgorithms.buildPlayPause(playPausePath, Screen.dp(18f), -1f, playPauseDrawFactor = this.playPauseFactor);
   }
 
-  public void setVideoStreamingClickRect (boolean topOffsetNeeded, boolean smallUi, RectF videoStreamingRect) {
+  public void setVideoStreamingClickRect (boolean topOffsetNeeded, int uiMode, RectF videoStreamingRect) {
     isVideoStreamingOffsetNeeded = topOffsetNeeded;
-    isVideoStreamingSmallUi = smallUi;
+    videoStreamingUiMode = uiMode;
     videoStreamingRect.round(this.vsDownloadClickRect);
     updateVsRect();
   }
@@ -182,6 +186,10 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
 
   private boolean isVideoStreaming () {
     return isVideoStreaming && !isLoaded();
+  }
+
+  private boolean isVideoStreamingSmallUi () {
+    return videoStreamingUiMode != STREAMING_UI_MODE_LARGE;
   }
 
   public TdApi.File getFile () {
@@ -555,7 +563,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
 
   public int getRadius () {
     if (isVideoStreaming()) {
-      return Math.min(Screen.dp(isVideoStreamingSmallUi ? DEFAULT_SMALL_STREAMING_RADIUS : DEFAULT_STREAMING_RADIUS), Math.min(right - left, bottom - top) / 2);
+      return Math.min(Screen.dp(videoStreamingUiMode == STREAMING_UI_MODE_LARGE ? DEFAULT_STREAMING_RADIUS : DEFAULT_SMALL_STREAMING_RADIUS), Math.min(right - left, bottom - top) / 2);
     }
 
     return Math.min(Screen.dp(fileType == TdlibFilesManager.DOWNLOAD_FLAG_FILE || fileType == TdlibFilesManager.DOWNLOAD_FLAG_MUSIC || fileType == TdlibFilesManager.DOWNLOAD_FLAG_VOICE ? DEFAULT_FILE_RADIUS : DEFAULT_RADIUS), Math.min(right - left, bottom - top) / 2);
@@ -634,6 +642,12 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   }
 
   public boolean performClick (View view) {
+    return performClick(view, false);
+  }
+
+  public boolean performClick (View view, float x, float y) {
+    this.startX = (int) x;
+    this.startY = (int) y;
     return performClick(view, false);
   }
 
@@ -945,7 +959,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
       }
       case TdlibFilesManager.STATE_IN_PROGRESS: {
         completeCloud(false);
-        setIcon((isVideoStreamingProgressIgnore && !isVideoStreamingSmallUi) ? pausedIconRes : isVideoStreaming() ? isVideoStreamingSmallUi ? R.drawable.deproko_baseline_close_16 : R.drawable.deproko_baseline_close_18 : R.drawable.deproko_baseline_close_24, animated);
+        setIcon((isVideoStreamingProgressIgnore && !isVideoStreamingSmallUi()) ? pausedIconRes : isVideoStreaming() ? isVideoStreamingSmallUi() ? R.drawable.deproko_baseline_close_16 : R.drawable.deproko_baseline_close_18 : R.drawable.deproko_baseline_close_24, animated);
         setInProgress(true, animated);
         setAlpha(1f, animated);
         break;
@@ -1285,21 +1299,6 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     DrawAlgorithms.drawPlayPause(c, cx, cy, Screen.dp(13f), playPausePath, drawFactor, factor, progressFactor, ColorUtils.alphaColor(alpha, 0xffffffff));
   }
 
-  public void drawStreamingPlay (final Canvas c) {
-    if (file != null && alpha != 0f && !isTrack) {
-      final float alpha = this.alpha * requestedAlpha;
-      final int fillingColor;
-      if (alpha == 1f) {
-        fillingColor = backgroundColorIsId ? Theme.getColor(backgroundColor) : backgroundColor;
-      } else {
-        fillingColor = ColorUtils.alphaColor(alpha, backgroundColorIsId ? Theme.getColor(backgroundColor) : backgroundColor);
-      }
-
-      c.drawCircle(centerX(), centerY(), Screen.dp(DEFAULT_RADIUS), Paints.fillingPaint(fillingColor));
-      drawPlayPause(c, centerX(), centerY(), alpha, true);
-    }
-  }
-
   public <T extends View & DrawableProvider> void draw (T view, final Canvas c) {
     final boolean cloudPlayback = Config.useCloudPlayback(playPauseFile) && !noCloud;
     final float alpha = this.alpha * requestedAlpha;
@@ -1377,8 +1376,8 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   // Video streaming UI stuff
 
   private void updateVsRect () {
-    int startX = left + Screen.dp(isVideoStreamingSmallUi ? 8f : 14f);
-    int startY = top + Screen.dp(isVideoStreamingSmallUi ? 6f : 12f) + (isVideoStreamingOffsetNeeded ? Screen.dp(16f) : 0);
+    int startX = left + Screen.dp(videoStreamingUiMode == STREAMING_UI_MODE_EXTRA_SMALL ? 4f : videoStreamingUiMode == STREAMING_UI_MODE_SMALL ? 8f : 14f);
+    int startY = top + Screen.dp(videoStreamingUiMode == STREAMING_UI_MODE_EXTRA_SMALL ? 3f : videoStreamingUiMode == STREAMING_UI_MODE_SMALL ? 6f : 12f) + (isVideoStreamingOffsetNeeded ? Screen.dp(16f) : 0);
     vsDownloadRect.set(
       startX, startY, startX + (getRadius() * 2), startY + (getRadius() * 2)
     );

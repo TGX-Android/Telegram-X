@@ -7,6 +7,7 @@ import android.view.MotionEvent;
 
 import androidx.annotation.Nullable;
 
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
@@ -254,17 +255,29 @@ public class MediaSmallView extends SparseDrawableView implements Destroyable, F
     if (scaled) {
       c.restore();
     }
-    if (item.isVideo() || item.isGif() || item.getType() == MediaItem.TYPE_VIDEO_MESSAGE) {
-      item.drawComponents(this, c, 0, 0, getMeasuredWidth(), getMeasuredHeight());
-    }
+
+    boolean isStreamingUI = item.isVideo() && !item.isLoaded();
+
+    int textLeft = receiver.getLeft() + Screen.dp(7f);
+    int textTop = receiver.getTop() + Screen.dp(5f);
 
     if (text != null) {
-      int textLeft = receiver.getLeft() + Screen.dp(7f);
-      int textTop = receiver.getTop() + Screen.dp(5f);
       RectF rectF = Paints.getRectF();
-      rectF.set(textLeft - Screen.dp(3f), textTop - Screen.dp(2f), textLeft + textWidth + Screen.dp(3f), textTop + Screen.dp(15f));
+      rectF.set(textLeft - Screen.dp(3f), textTop - Screen.dp(2f), textLeft + textWidth + Screen.dp(3f) + (isStreamingUI ? Screen.dp(22f) : 0), textTop + Screen.dp(isStreamingUI ? 21f : 15f));
+
       c.drawRoundRect(rectF, Screen.dp(4f), Screen.dp(4f), Paints.fillingPaint(0x4c000000));
-      c.drawText(text, textLeft, textTop + Screen.dp(11f), Paints.whiteMediumPaint(12f, false, false));
+      c.drawText(text, textLeft + (isStreamingUI ? Screen.dp(22f) : 0), textTop + Screen.dp(11f) + (isStreamingUI ? Screen.dp(3.5f) : 0), Paints.whiteMediumPaint(12f, false, false)); // TODO
+
+      item.getFileProgress().setDownloadedIconRes(FileProgressComponent.PLAY_ICON);
+      item.getFileProgress().setPausedIconRes(R.drawable.baseline_cloud_download_16);
+
+      if (isStreamingUI) {
+        item.getFileProgress().setVideoStreamingClickRect(false, FileProgressComponent.STREAMING_UI_MODE_EXTRA_SMALL, rectF);
+      }
+    }
+
+    if (item.isVideo() || item.isGif() || item.getType() == MediaItem.TYPE_VIDEO_MESSAGE) {
+      item.drawComponents(this, c, 0, 0, getMeasuredWidth(), getMeasuredHeight());
     }
 
     if (saved) {
