@@ -67,13 +67,14 @@ In future build reproduction will be made easier. Here's a list of related TODOs
 
 ## Verifying side-loaded APKs
 
-If you downloaded **Telegram X** APK from somewhere and would like to simply verify whether it's an original APK without any injected malicious source code, you need to get `SHA-256` checksum of the downloaded APK file and find whether it corresponds to any known **Telegram X** version.
+If you downloaded **Telegram X** APK from somewhere and would like to simply verify whether it's an original APK without any injected malicious source code, you need to get checksum (`SHA-256`, `SHA-1` or `MD5`) of the downloaded APK file and find whether it corresponds to any known **Telegram X** version.
 
 In order to obtain **SHA-256** of the APK:
+
 * `$ sha256sum <path-to-apk>` on **Ubuntu**
 * `$ shasum -a 256 <path-to-apk>` on **macOS**
 
-Then there are three ways to find out the commit for the specific **SHA-256** checksum:
+Once obtained, there are three ways to find out the commit for the specific checksum:
 
 * Sending checksum to [`@tgx_bot`](https://t.me/tgx_bot);
-* Searching for a checksum in [`@tgx_log`](https://t.me/tgx_log). You can do so without need in installing any Telegram client by using this URL format: [`https://t.me/s/tgx_log?q={checksum}`](https://t.me/s/tgx_log?q=c541ebb0a3ae7bb6e6bd155530f375d567b8aef1761fdd942fb5d69af62e24ae) (click to see in action).
+* Searching for a checksum in [`@tgx_log`](https://t.me/tgx_log). You can do so without need in installing any Telegram client by using this URL format: [`https://t.me/s/tgx_log?q={checksum}`](https://t.me/s/tgx_log?q=c541ebb0a3ae7bb6e6bd155530f375d567b8aef1761fdd942fb5d69af62e24ae) (click to see in action). Note: unpublished builds cannot be verified this way.
