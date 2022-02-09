@@ -342,11 +342,53 @@ fun MessageContent?.textOrCaption (): FormattedText? {
   }
 }
 
-fun MessageContent?.getMediaId (): Int {
+fun Array<PhotoSize>.findSmallest (): PhotoSize? {
+  return if (this.isNotEmpty()) {
+    var photoSize: PhotoSize = this[0]
+    for (i in 1 until this.size) {
+      val it = this[i]
+      if (it.width < photoSize.width || it.height < photoSize.height) {
+        photoSize = it
+      }
+    }
+    photoSize
+  } else {
+    null
+  }
+}
+
+fun Photo?.findSmallest (): PhotoSize? = this?.sizes?.findSmallest()
+
+fun Array<PhotoSize>.findBiggest (): PhotoSize? {
+  return if (this.isNotEmpty()) {
+    var photoSize: PhotoSize = this[0]
+    for (i in 1 until this.size) {
+      val it = this[i]
+      if (it.width > photoSize.width || it.height > photoSize.height) {
+        photoSize = it
+      }
+    }
+    photoSize
+  } else {
+    null
+  }
+}
+
+fun Photo?.findBiggest (): PhotoSize? = this?.sizes?.findBiggest()
+
+fun MessageContent?.getTargetFileId (): Int {
   return when (this?.constructor) {
     MessageVideo.CONSTRUCTOR -> (this as MessageVideo).video.video.id
     MessageDocument.CONSTRUCTOR -> (this as MessageDocument).document.document.id
     MessageAnimation.CONSTRUCTOR -> (this as MessageAnimation).animation.animation.id
+    MessageSticker.CONSTRUCTOR -> (this as MessageSticker).sticker.sticker.id
+    MessageAudio.CONSTRUCTOR -> (this as MessageAudio).audio.audio.id
+    MessageVideoNote.CONSTRUCTOR -> (this as MessageVideoNote).videoNote.video.id
+    MessageVoiceNote.CONSTRUCTOR -> (this as MessageVoiceNote).voiceNote.voice.id
+    MessagePhoto.CONSTRUCTOR -> {
+      require(this is MessagePhoto)
+      this.photo.sizes.findBiggest()?.photo?.id ?: 0
+    }
     else -> 0
   }
 }

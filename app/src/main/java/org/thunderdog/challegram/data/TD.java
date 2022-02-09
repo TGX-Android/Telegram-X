@@ -496,7 +496,7 @@ public class TD {
       case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
         return true;
 
-        case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
+      case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
         return allowInternal;
     }
 
@@ -3758,19 +3758,6 @@ public class TD {
     }
   }
 
-  public static void updateUser (TdApi.User y, TdApi.User x) {
-    x.firstName = y.firstName;
-    x.lastName = y.lastName;
-    x.isContact = y.isContact;
-    x.isVerified = y.isVerified;
-    x.isSupport = y.isSupport;
-    x.profilePhoto = y.profilePhoto;
-    x.restrictionReason = y.restrictionReason;
-    x.isMutualContact = y.isMutualContact;
-    x.haveAccess = y.haveAccess;
-    x.username = y.username;
-  }
-
   public static String getIconUrl (TdApi.Venue venue) {
     if ("foursquare".equals(venue.provider)) {
       if (!StringUtils.isEmpty(venue.type)) {
@@ -3818,50 +3805,6 @@ public class TD {
         continue;
       }
       if (first || size.width < w || size.height < h) {
-        first = false;
-        res = size;
-        w = size.width;
-        h = size.height;
-      }
-    }
-    return res;
-  }
-
-  public static TdApi.PhotoSize findSmallest (TdApi.Photo photo) {
-    return photo != null ? findSmallest(photo.sizes) : null;
-  }
-
-  public static TdApi.PhotoSize findSmallest (TdApi.PhotoSize[] sizes) {
-    if (sizes.length == 1) {
-      return sizes[0];
-    }
-    TdApi.PhotoSize res = null;
-    int w = 0, h = 0;
-    boolean first = true;
-    for (TdApi.PhotoSize size : sizes) {
-      if (first || size.width < w || size.height < h) {
-        first = false;
-        res = size;
-        w = size.width;
-        h = size.height;
-      }
-    }
-    return res;
-  }
-
-  public static TdApi.PhotoSize findBiggest (TdApi.Photo photo) {
-    return findBiggest(photo.sizes);
-  }
-
-  public static TdApi.PhotoSize findBiggest (TdApi.PhotoSize[] sizes) {
-    if (sizes.length == 1) {
-      return sizes[0];
-    }
-    TdApi.PhotoSize res = null;
-    int w = 0, h = 0;
-    boolean first = true;
-    for (TdApi.PhotoSize size : sizes) {
-      if (first || size.width > w || size.height > h) {
         first = false;
         res = size;
         w = size.width;
@@ -4360,7 +4303,7 @@ public class TD {
         return ((TdApi.MessageAudio) msg.content).audio.audio;
       }
       case TdApi.MessageChatChangePhoto.CONSTRUCTOR: {
-        return TD.findBiggest(((TdApi.MessageChatChangePhoto) msg.content).photo.sizes).photo;
+        return Td.findBiggest(((TdApi.MessageChatChangePhoto) msg.content).photo.sizes).photo;
       }
       case TdApi.MessageText.CONSTRUCTOR: {
         return getFile(((TdApi.MessageText) msg.content).webPage);

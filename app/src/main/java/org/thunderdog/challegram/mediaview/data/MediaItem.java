@@ -9,7 +9,6 @@ import androidx.annotation.Nullable;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.component.sharedmedia.MediaSmallView;
@@ -452,8 +451,8 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
 
     setMiniThumbnail(photo.minithumbnail);
 
-    TdApi.PhotoSize small = TD.findSmallest(photo.sizes);
-    TdApi.PhotoSize big = TD.findBiggest(photo.sizes);
+    TdApi.PhotoSize small = Td.findSmallest(photo.sizes);
+    TdApi.PhotoSize big = Td.findBiggest(photo.sizes);
 
     if (small != null) {
       this.previewImageFile = new ImageFile(tdlib, small.photo);
@@ -591,7 +590,7 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
 
           return noScale ? thumbImageFileNoScale : thumbImageFile;
         }
-        TdApi.PhotoSize smallestSize = sourcePhoto != null ? TD.findSmallest(sourcePhoto) : null;
+        TdApi.PhotoSize smallestSize = sourcePhoto != null ? Td.findSmallest(sourcePhoto) : null;
         file = smallestSize != null ? smallestSize.photo : targetImage != null ? targetImage.getFile() : null;
       }
       if (file == null)

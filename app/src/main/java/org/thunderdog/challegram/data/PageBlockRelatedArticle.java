@@ -25,6 +25,7 @@ import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
 import me.vkryl.core.StringUtils;
+import me.vkryl.td.Td;
 
 public class PageBlockRelatedArticle extends PageBlock {
   private final TdApi.PageBlockRelatedArticle article;
@@ -64,7 +65,7 @@ public class PageBlockRelatedArticle extends PageBlock {
         miniThumbnail.setScaleType(ImageFile.CENTER_CROP);
         miniThumbnail.setDecodeSquare(true);
       }
-      TdApi.PhotoSize size = TD.findSmallest(article.photo.sizes);
+      TdApi.PhotoSize size = Td.findSmallest(article.photo.sizes);
       if (size != null) {
         preview = new ImageFile(context.tdlib(), size.photo);
         preview.setScaleType(ImageFile.CENTER_CROP);

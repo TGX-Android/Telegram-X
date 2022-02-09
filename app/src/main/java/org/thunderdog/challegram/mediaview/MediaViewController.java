@@ -1588,7 +1588,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
             case TdApi.ChatTypeBasicGroup.CONSTRUCTOR: {
               tdlib.cache().basicGroupFull(ChatId.toBasicGroupId(chatId), groupFull -> {
                 if (groupFull != null && groupFull.photo != null) {
-                  act.runWithData(TD.findBiggest(groupFull.photo.sizes));
+                  act.runWithData(Td.findBiggest(groupFull.photo.sizes));
                 }
               });
               break;
@@ -1598,7 +1598,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
               final long userId = tdlib.chatUserId(chatId);
               tdlib.cache().userFull(userId, userFull -> {
                 if (userFull != null && userFull.photo != null) {
-                  act.runWithData(TD.findBiggest(userFull.photo.sizes));
+                  act.runWithData(Td.findBiggest(userFull.photo.sizes));
                 }
               });
               break;
@@ -1606,7 +1606,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
             case TdApi.ChatTypeSupergroup.CONSTRUCTOR: {
               tdlib.cache().supergroupFull(ChatId.toSupergroupId(chatId), supergroupFull -> {
                 if (supergroupFull != null && supergroupFull.photo != null) {
-                  act.runWithData(TD.findBiggest(supergroupFull.photo.sizes));
+                  act.runWithData(Td.findBiggest(supergroupFull.photo.sizes));
                 }
               });
               break;

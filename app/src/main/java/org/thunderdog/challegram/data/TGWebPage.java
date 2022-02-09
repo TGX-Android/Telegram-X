@@ -451,7 +451,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   private static boolean needInstantPreview (TdApi.WebPage webPage) {
     if (webPage != null && TD.hasInstantView(webPage)) {
       if (webPage.photo != null && !TD.isPhotoEmpty(webPage.photo)) {
-        TdApi.PhotoSize size = TD.findBiggest(webPage.photo);
+        TdApi.PhotoSize size = Td.findBiggest(webPage.photo);
         return size != null && Math.max(size.width, size.height) >= 400;
       }
       return webPage.video != null && Math.max(webPage.video.width, webPage.video.height) >= 400;
@@ -465,7 +465,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   private Text siteName, title, description;
 
   private void setSmallPhoto (TdApi.Photo photo) {
-    TdApi.PhotoSize small = TD.findSmallest(photo);
+    TdApi.PhotoSize small = Td.findSmallest(photo);
 
     if (small == null) {
       return;

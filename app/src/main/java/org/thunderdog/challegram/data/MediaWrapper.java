@@ -400,7 +400,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   public static int getWidth (TdApi.Photo photo, TdApi.PhotoSize targetSize) {
     if (targetSize != null)
       return targetSize.width;
-    TdApi.PhotoSize biggestSize = TD.findBiggest(photo);
+    TdApi.PhotoSize biggestSize = Td.findBiggest(photo);
     if (biggestSize != null)
       return biggestSize.width;
     return 0;
@@ -409,7 +409,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   public static int getHeight (TdApi.Photo photo, TdApi.PhotoSize targetSize) {
     if (targetSize != null)
       return targetSize.height;
-    TdApi.PhotoSize biggestSize = TD.findBiggest(photo);
+    TdApi.PhotoSize biggestSize = Td.findBiggest(photo);
     if (biggestSize != null)
       return biggestSize.height;
     return 0;
@@ -438,7 +438,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       if (TD.isFileLoadedAndExists(photoSize.photo))
         biggestLoadedSize = photoSize;
     }
-    if (biggestLoadedSize != null && TD.findSmallest(sizes).photo.id != biggestLoadedSize.photo.id)
+    if (biggestLoadedSize != null && Td.findSmallest(sizes).photo.id != biggestLoadedSize.photo.id)
       return biggestLoadedSize;
     int maxWidth = TGMessage.getEstimatedContentMaxWidth();
     int maxHeight = (int) ((float) maxWidth * MAX_HEIGHT_FACTOR);
@@ -894,7 +894,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
     if (showDuration) {
       // Only if: channel + single item in stack + bubble-less mode
-      boolean needTopOffset = source != null && !source.useBubbles() && source.hasHeader() && source.isChannel() && isVideo() && Td.getMediaId(source.getOldestMessage().content) == video.video.id;
+      boolean needTopOffset = source != null && !source.useBubbles() && source.hasHeader() && source.isChannel() && isVideo() && Td.getTargetFileId(source.getOldestMessage().content) == video.video.id;
 
       int fpRadius = (isLoaded || !isVideo() || !isDoubleLine) ? 0 : getFileProgress().getRadius();
       int pDurationCorners = Screen.dp(isDoubleLine ? 12f : 4f);
