@@ -909,10 +909,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       getFileProgress().setVideoStreamingClickRect(needTopOffset, isSmallStreamingUI ? FileProgressComponent.STREAMING_UI_MODE_SMALL : FileProgressComponent.STREAMING_UI_MODE_LARGE, rectF);
 
       if (isSmallStreamingUI) {
-        getFileProgress().setVideoStreamingProgressIgnore(true);
         getFileProgress().setPausedIconRes(R.drawable.baseline_cloud_download_16);
-      } else {
-        getFileProgress().setVideoStreamingProgressIgnore(false);
       }
 
       c.drawRoundRect(rectF, pDurationCorners, pDurationCorners, Paints.fillingPaint(ColorUtils.alphaColor(alpha * (1f - selectionFactor), 0x4c000000)));

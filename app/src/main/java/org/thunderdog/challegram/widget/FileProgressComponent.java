@@ -126,7 +126,6 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   private final Rect vsDownloadClickRect = new Rect();
   private boolean isVideoStreaming;
   private boolean isVideoStreamingOffsetNeeded;
-  private boolean isVideoStreamingProgressIgnore;
   private int videoStreamingUiMode;
 
   private float requestedAlpha;
@@ -173,14 +172,13 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   }
 
   public void setVideoStreamingClickRect (boolean topOffsetNeeded, int uiMode, RectF videoStreamingRect) {
-    isVideoStreamingOffsetNeeded = topOffsetNeeded;
     videoStreamingUiMode = uiMode;
     videoStreamingRect.round(this.vsDownloadClickRect);
     updateVsRect();
-  }
-
-  public void setVideoStreamingProgressIgnore (boolean progressIgnore) {
-    this.isVideoStreamingProgressIgnore = progressIgnore;
+    if (isVideoStreamingOffsetNeeded != topOffsetNeeded) {
+      isVideoStreamingOffsetNeeded = topOffsetNeeded;
+      layoutProgress();
+    }
   }
 
   private boolean isVideoStreaming () {
@@ -499,7 +497,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   private void checkProgressStyles () {
     if (progress != null) {
       boolean isCloud = Config.useCloudPlayback(playPauseFile) && !noCloud;
-      progress.setUseLargerPaint(!isSendingMessage && isCloud ? Screen.dp(isTrack ? 2f : 1.5f) : Screen.dp(3f));
+      progress.setUseLargerPaint((isVideoStreaming() && isVideoStreamingSmallUi()) ? Screen.dp(1.5f) : !isSendingMessage && isCloud ? Screen.dp(isTrack ? 2f : 1.5f) : Screen.dp(3f));
     }
   }
 
@@ -958,7 +956,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
       }
       case TdlibFilesManager.STATE_IN_PROGRESS: {
         completeCloud(false);
-        setIcon((isVideoStreamingProgressIgnore && !isVideoStreamingSmallUi()) ? pausedIconRes : isVideoStreaming() ? isVideoStreamingSmallUi() ? R.drawable.deproko_baseline_close_16 : R.drawable.deproko_baseline_close_18 : R.drawable.deproko_baseline_close_24, animated);
+        setIcon(getCancelIcon(), animated);
         setInProgress(true, animated);
         setAlpha(1f, animated);
         break;
@@ -979,6 +977,18 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
       if (newFile != null) {
         setFile(newFile);
       }
+    }
+  }
+
+  private int getCancelIcon() {
+    if (isVideoStreaming()) {
+      if (isVideoStreamingSmallUi()) {
+        return R.drawable.deproko_baseline_close_10;
+      } else {
+        return R.drawable.deproko_baseline_close_18;
+      }
+    } else {
+      return R.drawable.deproko_baseline_close_24;
     }
   }
 
@@ -1366,7 +1376,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     if (cloudPlayback) {
       drawCloudState(c, alpha);
     }
-    if (progress != null && !isVideoStreamingProgressIgnore) {
+    if (progress != null) {
       progress.forceColor(getProgressColor());
       progress.draw(c);
     }
