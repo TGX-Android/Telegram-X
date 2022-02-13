@@ -46,6 +46,7 @@ import org.thunderdog.challegram.util.DrawableProvider;
 import java.io.File;
 
 import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.ColorUtils;
@@ -127,6 +128,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   private boolean isVideoStreaming;
   private boolean isVideoStreamingOffsetNeeded;
   private int videoStreamingUiMode;
+  private BoolAnimator vsOnDownloadedAnimator;
 
   private float requestedAlpha;
 
@@ -171,7 +173,8 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     DrawAlgorithms.buildPlayPause(playPausePath, Screen.dp(18f), -1f, playPauseDrawFactor = this.playPauseFactor);
   }
 
-  public void setVideoStreamingClickRect (boolean topOffsetNeeded, int uiMode, RectF videoStreamingRect) {
+  public void setVideoStreamingOptions (boolean topOffsetNeeded, int uiMode, RectF videoStreamingRect, BoolAnimator onDownloadedAnimator) {
+    vsOnDownloadedAnimator = onDownloadedAnimator;
     videoStreamingUiMode = uiMode;
     videoStreamingRect.round(this.vsDownloadClickRect);
     updateVsRect();
@@ -913,6 +916,9 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
 
   public void setCurrentState (@TdlibFilesManager.FileDownloadState int state, boolean animated) {
     boolean needResetFile = false;
+    if (isVideoStreaming() && vsOnDownloadedAnimator != null) {
+      vsOnDownloadedAnimator.setValue(state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED, animated);
+    }
     if (this.currentState == TdlibFilesManager.STATE_IN_PROGRESS && state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED) {
       setProgress(1f, 1f);
     } else if (
@@ -981,7 +987,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   }
 
   private int getCancelIcon() {
-    if (isVideoStreaming()) {
+    if (isVideoStreaming() && !isLoaded()) {
       if (isVideoStreamingSmallUi()) {
         return R.drawable.deproko_baseline_close_10;
       } else {
