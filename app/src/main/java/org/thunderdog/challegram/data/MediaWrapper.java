@@ -914,7 +914,6 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
     if (showDuration) {
       float dlFactor = isSmallStreamingUI ? 1f - downloadedAnimator.getFloatValue() : 1f;
-      Log.e("[%s] dlFactor: %s <%s + %s>", video.video.id, dlFactor, downloadedAnimator.getFloatValue(), isSmallStreamingUI);
 
       // Only if: channel + single item in stack + bubble-less mode
       boolean needTopOffset = source != null && source.useFullWidth() && source.hasHeader() && source.isChannel() && isVideo() && (source instanceof TGMessageMedia && ((TGMessageMedia) source).isVideoFirstInMosaic(video.video.id)) && source.replyData == null;
