@@ -124,7 +124,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   private boolean noCloud;
 
   private final Rect vsDownloadRect = new Rect();
-  private final Rect vsDownloadClickRect = new Rect();
+  private final RectF vsDownloadClickRect = new RectF();
   private boolean isVideoStreaming;
   private boolean isVideoStreamingOffsetNeeded;
   private int videoStreamingUiMode;
@@ -175,17 +175,22 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
 
   public void setVideoStreamingOptions (boolean topOffsetNeeded, int uiMode, RectF videoStreamingRect, BoolAnimator onDownloadedAnimator) {
     int prevUiMode = videoStreamingUiMode;
+    boolean needProgressLayout = isVideoStreamingOffsetNeeded != topOffsetNeeded || !vsDownloadClickRect.equals(videoStreamingRect);
+
+    isVideoStreamingOffsetNeeded = topOffsetNeeded;
     vsOnDownloadedAnimator = onDownloadedAnimator;
     videoStreamingUiMode = uiMode;
-    videoStreamingRect.round(this.vsDownloadClickRect);
+    vsDownloadClickRect.set(videoStreamingRect);
     updateVsRect();
 
     if (prevUiMode != videoStreamingUiMode) {
       checkProgressStyles();
+      if (currentState == TdlibFilesManager.STATE_IN_PROGRESS) {
+        setIcon(getCancelIcon(), false);
+      }
     }
 
-    if (isVideoStreamingOffsetNeeded != topOffsetNeeded) {
-      isVideoStreamingOffsetNeeded = topOffsetNeeded;
+    if (needProgressLayout) {
       layoutProgress();
     }
   }
@@ -993,7 +998,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   }
 
   private int getCancelIcon() {
-    if (isVideoStreaming() && !isLoaded()) {
+    if (isVideoStreaming()) {
       if (isVideoStreamingSmallUi()) {
         return R.drawable.deproko_baseline_close_10;
       } else {

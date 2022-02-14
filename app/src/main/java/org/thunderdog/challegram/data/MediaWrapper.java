@@ -909,7 +909,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     boolean isLoaded = getFileProgress().isLoaded();
     boolean isStreamingUI = isVideo();
     boolean showDuration = !StringUtils.isEmpty(durationTrimmed) && selectionFactor < 1f;
-    boolean isDoubleLine = isStreamingUI && duration != null && durationShort != null && (source == null || source.getCombinedMessageCount() == 0) && !isLoaded && false;
+    boolean isDoubleLine = isStreamingUI && duration != null && durationShort != null && (source == null || source.getCombinedMessageCount() == 0) && !isLoaded;
     boolean isSmallStreamingUI = isStreamingUI && !isDoubleLine;
 
     if (showDuration) {
@@ -917,7 +917,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       Log.e("[%s] dlFactor: %s <%s + %s>", video.video.id, dlFactor, downloadedAnimator.getFloatValue(), isSmallStreamingUI);
 
       // Only if: channel + single item in stack + bubble-less mode
-      boolean needTopOffset = source != null && source.useFullWidth() && source.hasHeader() && source.isChannel() && isVideo() && Td.getTargetFileId(source.getOldestMessage().content) == video.video.id && source.replyData == null;
+      boolean needTopOffset = source != null && source.useFullWidth() && source.hasHeader() && source.isChannel() && isVideo() && (source instanceof TGMessageMedia && ((TGMessageMedia) source).isVideoFirstInMosaic(video.video.id)) && source.replyData == null;
 
       int fpRadius = (isLoaded || !isVideo() || !isDoubleLine) ? 0 : getFileProgress().getRadius();
       int pDurationCorners = Screen.dp(isDoubleLine ? 12f : 4f);
