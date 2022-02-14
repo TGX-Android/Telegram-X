@@ -29,7 +29,6 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.core.ColorUtils;
-import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.Destroyable;
 
 /**
@@ -43,7 +42,7 @@ public class MediaSmallView extends SparseDrawableView implements Destroyable, F
   private final GifReceiver gifReceiver;
 
   private FileProgressComponent.SimpleListener listener;
-  private final BoolAnimator downloadedAnimator = new BoolAnimator(1, this, AnimatorUtils.ACCELERATE_DECELERATE_INTERPOLATOR, 250L);
+  private final BoolAnimator downloadedAnimator = new BoolAnimator(1, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
 
   public MediaSmallView (Context context) {
     super(context);
@@ -226,6 +225,7 @@ public class MediaSmallView extends SparseDrawableView implements Destroyable, F
 
   private static final float SCALE = .24f;
 
+  // TODO: move this to core module
   private float interpolate (float x1, float x2, float f) {
     return x1 + (x2 - x1) * f;
   }

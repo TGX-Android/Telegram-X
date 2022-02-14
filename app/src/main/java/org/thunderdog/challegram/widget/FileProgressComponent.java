@@ -174,10 +174,16 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   }
 
   public void setVideoStreamingOptions (boolean topOffsetNeeded, int uiMode, RectF videoStreamingRect, BoolAnimator onDownloadedAnimator) {
+    int prevUiMode = videoStreamingUiMode;
     vsOnDownloadedAnimator = onDownloadedAnimator;
     videoStreamingUiMode = uiMode;
     videoStreamingRect.round(this.vsDownloadClickRect);
     updateVsRect();
+
+    if (prevUiMode != videoStreamingUiMode) {
+      checkProgressStyles();
+    }
+
     if (isVideoStreamingOffsetNeeded != topOffsetNeeded) {
       isVideoStreamingOffsetNeeded = topOffsetNeeded;
       layoutProgress();
@@ -185,7 +191,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   }
 
   private boolean isVideoStreaming () {
-    return isVideoStreaming && !isLoaded();
+    return isVideoStreaming; //&& !isLoaded();
   }
 
   private boolean isVideoStreamingSmallUi () {

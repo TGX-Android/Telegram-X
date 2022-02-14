@@ -296,6 +296,7 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
     MediaItem item = MediaItem.valueOf(context(), tdlib, message);
     if (item != null) {
       if (item.isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
+        item.getFileProgress().setHideDownloadedIcon(true);
         item.getFileProgress().setVideoStreaming(true);
       }
 
