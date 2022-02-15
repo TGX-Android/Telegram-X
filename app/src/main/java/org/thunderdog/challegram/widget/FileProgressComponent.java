@@ -127,6 +127,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   private final RectF vsDownloadClickRect = new RectF();
   private boolean isVideoStreaming;
   private boolean isVideoStreamingOffsetNeeded;
+  private boolean isVideoStreamingProgressHidden;
   private int videoStreamingUiMode;
   private BoolAnimator vsOnDownloadedAnimator;
 
@@ -171,6 +172,10 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     this.playPausePath = new Path();
     setIsPlaying(false, false);
     DrawAlgorithms.buildPlayPause(playPausePath, Screen.dp(18f), -1f, playPauseDrawFactor = this.playPauseFactor);
+  }
+
+  public void setVideoStreamingProgressHidden (boolean isVideoStreamingProgressHidden) {
+    this.isVideoStreamingProgressHidden = isVideoStreamingProgressHidden;
   }
 
   public void setVideoStreamingOptions (boolean topOffsetNeeded, int uiMode, RectF videoStreamingRect, BoolAnimator onDownloadedAnimator) {
@@ -927,7 +932,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
 
   public void setCurrentState (@TdlibFilesManager.FileDownloadState int state, boolean animated) {
     boolean needResetFile = false;
-    if (isVideoStreaming() && vsOnDownloadedAnimator != null) {
+    if (isVideoStreaming() && vsOnDownloadedAnimator != null && (state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED || state == TdlibFilesManager.STATE_PAUSED)) {
       vsOnDownloadedAnimator.setValue(state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED, animated);
     }
     if (this.currentState == TdlibFilesManager.STATE_IN_PROGRESS && state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED) {
@@ -1391,9 +1396,9 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
       }
     }
     if (cloudPlayback) {
-      drawCloudState(c, alpha);
+      drawCloudState(c, alpha); 
     }
-    if (progress != null) {
+    if (progress != null && !isVideoStreamingProgressHidden) {
       progress.forceColor(getProgressColor());
       progress.draw(c);
     }

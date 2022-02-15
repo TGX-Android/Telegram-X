@@ -928,7 +928,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       RectF rectF = Paints.getRectF();
       rectF.set(pDurationLeft - Screen.dp(4f), pDurationTop, pDurationRight, pDurationBottom);
 
-      getFileProgress().setVideoStreamingOptions(needTopOffset, isSmallStreamingUI ? FileProgressComponent.STREAMING_UI_MODE_SMALL : FileProgressComponent.STREAMING_UI_MODE_LARGE, rectF, isSmallStreamingUI ? downloadedAnimator : null);
+      getFileProgress().setVideoStreamingOptions(needTopOffset, isSmallStreamingUI ? FileProgressComponent.STREAMING_UI_MODE_SMALL : FileProgressComponent.STREAMING_UI_MODE_LARGE, rectF, downloadedAnimator);
 
       if (isSmallStreamingUI) {
         getFileProgress().setPausedIconRes(R.drawable.baseline_cloud_download_16);
