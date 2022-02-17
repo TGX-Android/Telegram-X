@@ -969,11 +969,11 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     }
 
     if (!hideLoader) {
-      c.save();
-      c.clipRect(durationRect);
-      if (isDoubleLine) c.translate((-durationDx) * downloadedAnimator.getFloatValue(), 0);
-      fileProgress.draw(view, c);
-      c.restore();
+      if (isDoubleLine) {
+        fileProgress.drawClipped(view, c, durationRect, (-durationDx) * downloadedAnimator.getFloatValue());
+      } else {
+        fileProgress.draw(view, c);
+      }
     }
 
     if (nativeEmbed != null && embedIcon != null) {

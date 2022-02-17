@@ -125,6 +125,8 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
 
   private final Rect vsDownloadRect = new Rect();
   private final RectF vsDownloadClickRect = new RectF();
+  private final RectF vsClipRect = new RectF();
+  private float vsTranslateDx;
   private boolean isVideoStreaming;
   private boolean isVideoStreamingOffsetNeeded;
   private boolean isVideoStreamingProgressHidden;
@@ -1330,10 +1332,18 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     DrawAlgorithms.drawPlayPause(c, cx, cy, Screen.dp(13f), playPausePath, drawFactor, factor, progressFactor, ColorUtils.alphaColor(alpha, 0xffffffff));
   }
 
+  public <T extends View & DrawableProvider> void drawClipped (T view, final Canvas c, RectF clipRect, float translateDx) {
+    vsTranslateDx = translateDx;
+    vsClipRect.set(clipRect);
+    draw(view, c);
+  }
+
   public <T extends View & DrawableProvider> void draw (T view, final Canvas c) {
     final boolean cloudPlayback = Config.useCloudPlayback(playPauseFile) && !noCloud;
     final float alpha = this.alpha * requestedAlpha;
-    if (file != null && alpha != 0f && !isTrack) {
+    final boolean drawContent = file != null && alpha != 0f && !isTrack;
+    boolean isCanvasAltered = false;
+    if (drawContent) {
       int cx = centerX();
       int cy = centerY();
 
@@ -1356,6 +1366,13 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
       if (isVideoStreaming()) {
         c.drawCircle(centerX(), centerY(), Screen.dp(DEFAULT_RADIUS), Paints.fillingPaint(fillingColor));
         drawPlayPause(c, centerX(), centerY(), alpha, true);
+
+        if (!vsClipRect.isEmpty()) {
+          c.save();
+          c.clipRect(vsClipRect);
+          c.translate(vsTranslateDx, 0);
+          isCanvasAltered = true;
+        }
       } else {
         c.drawCircle(cx, cy, getRadius(), Paints.fillingPaint(fillingColor));
       }
@@ -1401,6 +1418,9 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     if (progress != null && !isVideoStreamingProgressHidden) {
       progress.forceColor(getProgressColor());
       progress.draw(c);
+    }
+    if (isCanvasAltered) {
+      c.restore();
     }
   }
 
