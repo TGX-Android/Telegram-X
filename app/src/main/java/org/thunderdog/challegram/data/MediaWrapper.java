@@ -107,7 +107,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     if (source != null) {
       source.postInvalidate();
     }
-  }, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
+  }, AnimatorUtils.DECELERATE_INTERPOLATOR, 230l);
 
   public MediaWrapper (BaseActivity context, Tdlib tdlib, @NonNull TdApi.Photo photo, long chatId, long messageId, @Nullable TGMessage source, boolean useHotStuff) {
     this(context, tdlib, photo, chatId, messageId, source, useHotStuff, false);
@@ -906,29 +906,30 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       }
     }
 
-    boolean isLoaded = getFileProgress().isLoaded();
+    float dlFactor = 1f - downloadedAnimator.getFloatValue();
+    float durationDx = 0f;
     boolean isStreamingUI = isVideo();
     boolean showDuration = !StringUtils.isEmpty(durationTrimmed) && selectionFactor < 1f;
-    boolean isDoubleLine = isStreamingUI && duration != null && durationShort != null && (source == null || source.getCombinedMessageCount() == 0) && !isLoaded;
+    boolean isDoubleLine = isStreamingUI && duration != null && durationShort != null && (source == null || source.getCombinedMessageCount() == 0);
     boolean isSmallStreamingUI = isStreamingUI && !isDoubleLine;
+    RectF durationRect = Paints.getRectF();
 
     if (showDuration) {
-      float dlFactor = isSmallStreamingUI ? 1f - downloadedAnimator.getFloatValue() : 1f;
-
       // Only if: channel + single item in stack + bubble-less mode
       boolean needTopOffset = source != null && source.useFullWidth() && source.hasHeader() && source.isChannel() && isVideo() && (source instanceof TGMessageMedia && ((TGMessageMedia) source).isVideoFirstInMosaic(video.video.id)) && source.replyData == null;
 
-      int fpRadius = (isLoaded || !isVideo() || !isDoubleLine) ? 0 : getFileProgress().getRadius();
-      int pDurationCorners = Screen.dp(isDoubleLine ? 12f : 4f);
+      int fpRadius = !isVideo() || !isDoubleLine ? 0 : downloadedAnimator.isAnimating() ? Screen.dp(FileProgressComponent.DEFAULT_STREAMING_RADIUS) : getFileProgress().getRadius();
+      int doubleFpRadius = fpRadius * 2;
+
+      int pDurationCorners = isDoubleLine ? (int) interpolate(Screen.dp(4f), Screen.dp(12f), dlFactor) : Screen.dp(4f);
       int pDurationTop = cellTop + Screen.dp(8f) + (needTopOffset ? Screen.dp(16f) : 0);
       int pDurationLeft = cellLeft + Screen.dp(12f);
-      int pDurationRight = pDurationLeft + durationWidth + (fpRadius * 2) + (int) ((isStreamingUI) ? interpolate(Screen.dp(4f), Screen.dp(isSmallStreamingUI ? 26f : 16f), dlFactor) : Screen.dp(4f));
-      int pDurationBottom = pDurationTop + (isDoubleLine ? (fpRadius * 2) + Screen.dp(8f) : durationHeight());
+      int pDurationRight = (int) (pDurationLeft + (isDoubleLine ? interpolate(durationWidthShort, durationWidth, dlFactor) : durationWidth) + ((doubleFpRadius) * (isStreamingUI ? dlFactor : 1f)) + ((isStreamingUI) ? interpolate(Screen.dp(4f), Screen.dp(isSmallStreamingUI ? 26f : 16f), dlFactor) : Screen.dp(4f)));
+      int pDurationBottom = pDurationTop + (isDoubleLine ? (int) interpolate(durationHeight(), (doubleFpRadius) + Screen.dp(8f), dlFactor) : durationHeight());
 
-      RectF rectF = Paints.getRectF();
-      rectF.set(pDurationLeft - Screen.dp(4f), pDurationTop, pDurationRight, pDurationBottom);
+      durationRect.set(pDurationLeft - Screen.dp(4f), pDurationTop, pDurationRight, pDurationBottom);
 
-      getFileProgress().setVideoStreamingOptions(needTopOffset, isSmallStreamingUI ? FileProgressComponent.STREAMING_UI_MODE_SMALL : FileProgressComponent.STREAMING_UI_MODE_LARGE, rectF, downloadedAnimator);
+      getFileProgress().setVideoStreamingOptions(needTopOffset, isSmallStreamingUI ? FileProgressComponent.STREAMING_UI_MODE_SMALL : FileProgressComponent.STREAMING_UI_MODE_LARGE, durationRect, downloadedAnimator);
 
       if (isSmallStreamingUI) {
         getFileProgress().setPausedIconRes(R.drawable.baseline_cloud_download_16);
@@ -936,7 +937,10 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
         getFileProgress().setPausedIconRes(R.drawable.baseline_cloud_download_24);
       }
 
-      c.drawRoundRect(rectF, pDurationCorners, pDurationCorners, Paints.fillingPaint(ColorUtils.alphaColor(alpha * (1f - selectionFactor), 0x4c000000)));
+      c.drawRoundRect(durationRect, pDurationCorners, pDurationCorners, Paints.fillingPaint(ColorUtils.alphaColor(alpha * (1f - selectionFactor), 0x4c000000)));
+
+      // This is set to fix text visible outside the rounded rect during the animation
+      durationRect.right -= pDurationCorners / 2f;
 
       Paint paint;
 
@@ -947,13 +951,16 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       }
 
       paint.setAlpha((int) (255f * alpha * (1f - selectionFactor)));
-      
-      if (isDoubleLine) {
-        int textBaseline = pDurationLeft + (fpRadius * 2) + Screen.dp(6f);
-        int textYBaseline = pDurationTop + ((pDurationBottom - pDurationTop) / 2);
 
+      if (isDoubleLine) {
+        c.save();
+        c.clipRect(durationRect);
+        int textBaseline = pDurationLeft + (int) interpolate(0, (durationDx = doubleFpRadius + Screen.dp(6f)), dlFactor);
+        int textYBaseline = (int) interpolate(pDurationTop + durationOffset(), pDurationTop + (((pDurationTop + doubleFpRadius + Screen.dp(8f)) - pDurationTop) / 2f), dlFactor);
         c.drawText(durationShort, textBaseline, textYBaseline - Screen.dp(4f), paint);
+        paint.setAlpha((int) (paint.getAlpha() * dlFactor));
         c.drawText(duration, textBaseline, textYBaseline + Screen.dp(13f), paint);
+        c.restore();
       } else {
         c.drawText(durationTrimmed, pDurationLeft + (isStreamingUI ? Screen.dp(20f) * dlFactor : 0), pDurationTop - Screen.dp(4f) + durationOffset(), paint);
       }
@@ -961,12 +968,12 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       paint.setAlpha(255);
     }
 
-    if (showDuration && isDoubleLine) {
-
-    }
-
     if (!hideLoader) {
+      c.save();
+      c.clipRect(durationRect);
+      if (isDoubleLine) c.translate((-durationDx) * downloadedAnimator.getFloatValue(), 0);
       fileProgress.draw(view, c);
+      c.restore();
     }
 
     if (nativeEmbed != null && embedIcon != null) {
@@ -1179,7 +1186,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       if (!text.isEmpty()) {
         text = text + ", " + textShort;
       } else {
-        text = textShort;
+        text = fileProgress.isVideoStreaming() ? Strings.buildSize(fileProgress.getTotalSize()) : textShort;
       }
     }
 

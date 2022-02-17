@@ -200,7 +200,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     }
   }
 
-  private boolean isVideoStreaming () {
+  public boolean isVideoStreaming () {
     return isVideoStreaming; //&& !isLoaded();
   }
 

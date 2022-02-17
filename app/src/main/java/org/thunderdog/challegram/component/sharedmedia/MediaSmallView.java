@@ -42,7 +42,7 @@ public class MediaSmallView extends SparseDrawableView implements Destroyable, F
   private final GifReceiver gifReceiver;
 
   private FileProgressComponent.SimpleListener listener;
-  private final BoolAnimator downloadedAnimator = new BoolAnimator(1, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
+  private final BoolAnimator downloadedAnimator = new BoolAnimator(1, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 230l);
 
   public MediaSmallView (Context context) {
     super(context);
