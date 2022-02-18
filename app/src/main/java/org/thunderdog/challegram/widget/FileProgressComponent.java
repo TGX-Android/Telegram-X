@@ -1380,9 +1380,12 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
       if (cloudPlayback) {
         drawPlayPause(c, cx, cy, alpha, true);
       } else if (currentBitmapRes != 0 && (currentBitmapRes != downloadedIconRes || !hideDownloadedIcon)) {
+        boolean ignoreScale = isVideoStreaming() && !isVideoStreamingSmallUi() && vsOnDownloadedAnimator != null && vsOnDownloadedAnimator.isAnimating();
         Paint bitmapPaint = Paints.getPorterDuffPaint(0xffffffff);
-        final float scaleFactor = bitmapChangeFactor <= .5f ? (bitmapChangeFactor / .5f) : (1f - (bitmapChangeFactor - .5f) / .5f);
-        final float bitmapAlpha = alpha * (1f - scaleFactor);
+
+        final float initScaleFactor = bitmapChangeFactor <= .5f ? (bitmapChangeFactor / .5f) : (1f - (bitmapChangeFactor - .5f) / .5f);
+        final float scaleFactor = (ignoreScale) ? 0f : initScaleFactor;
+        final float bitmapAlpha = alpha * (1f - initScaleFactor);
 
         if (bitmapAlpha != 1f) {
           bitmapPaint.setAlpha((int) (255f * bitmapAlpha));
