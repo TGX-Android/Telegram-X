@@ -587,58 +587,64 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
 
   private CharSequence getHintForToggleUnavailability (@RightId int id, boolean currentValue) {
     Args args = getArgumentsStrict();
-    if (args.mode == MODE_CHAT_PERMISSIONS) {
-      if (!tdlib.canRestrictMembers(args.chatId)) {
-        return null; // No need to explain
-      }
-      if (currentValue)
-        return null;
-      TdApi.Chat chat = tdlib.chatStrict(args.chatId);
-      switch (id) {
-        case R.id.right_changeChatInfo: {
-          if (!tdlib.canChangeInfo(chat)) {
-            return Lang.getMarkdownString(this, R.string.NoRightAllowChangeInfo);
-          }
-          if (tdlib.chatPublic(args.chatId)) {
-            return Lang.getMarkdownString(this, R.string.NoRightAllowChangeInfoPublic);
-          }
-          break;
+    switch (args.mode) {
+      case MODE_CHAT_PERMISSIONS: {
+        if (!tdlib.canRestrictMembers(args.chatId)) {
+          return null; // No need to explain
         }
-        case R.id.right_pinMessages: {
-          if (!tdlib.canPinMessages(chat)) {
-            return Lang.getMarkdownString(this, R.string.NoRightAllowPin);
+        if (currentValue)
+          return null;
+        TdApi.Chat chat = tdlib.chatStrict(args.chatId);
+        switch (id) {
+          case R.id.right_changeChatInfo: {
+            if (!tdlib.canChangeInfo(chat)) {
+              return Lang.getMarkdownString(this, R.string.NoRightAllowChangeInfo);
+            }
+            if (tdlib.chatPublic(args.chatId)) {
+              return Lang.getMarkdownString(this, R.string.NoRightAllowChangeInfoPublic);
+            }
+            break;
           }
-          if (tdlib.chatPublic(args.chatId)) {
-            return Lang.getMarkdownString(this, R.string.NoRightAllowPinPublic);
+          case R.id.right_pinMessages: {
+            if (!tdlib.canPinMessages(chat)) {
+              return Lang.getMarkdownString(this, R.string.NoRightAllowPin);
+            }
+            if (tdlib.chatPublic(args.chatId)) {
+              return Lang.getMarkdownString(this, R.string.NoRightAllowPinPublic);
+            }
+            break;
           }
-          break;
         }
+        break;
       }
-      return null;
-    }
-    if (args.mode == MODE_ADMIN_PROMOTION && !tdlib.cache().senderBot(args.senderId) && (
-        id == R.id.right_inviteUsers ||
-        id == R.id.right_changeChatInfo ||
-        id == R.id.right_pinMessages
-      ) && TD.checkRight(tdlib.chatPermissions(args.chatId), id) && currentValue) {
-      int promoteMode = args.member == null ? TD.PROMOTE_MODE_NEW : TD.canPromoteAdmin(args.myStatus, args.member.status);
-      if (promoteMode != TD.PROMOTE_MODE_NEW && promoteMode != TD.PROMOTE_MODE_EDIT)
-        return null;
-      switch (id) {
-        case R.id.right_inviteUsers:
-          return Lang.getMarkdownString(this, R.string.NoRightDisallowInvite);
-        case R.id.right_changeChatInfo:
-          return Lang.getMarkdownString(this, R.string.NoRightDisallowChangeInfo);
-        case R.id.right_pinMessages:
-          return Lang.getMarkdownString(this, R.string.NoRightDisallowPin);
+      case MODE_ADMIN_PROMOTION: {
+        if (!tdlib.cache().senderBot(args.senderId) && (
+          id == R.id.right_inviteUsers ||
+            id == R.id.right_changeChatInfo ||
+            id == R.id.right_pinMessages
+        ) && TD.checkRight(tdlib.chatPermissions(args.chatId), id) && currentValue) {
+          int promoteMode = args.member == null ? TD.PROMOTE_MODE_NEW : TD.canPromoteAdmin(args.myStatus, args.member.status);
+          if (promoteMode != TD.PROMOTE_MODE_NEW && promoteMode != TD.PROMOTE_MODE_EDIT)
+            return null;
+          switch (id) {
+            case R.id.right_inviteUsers:
+              return Lang.getMarkdownString(this, R.string.NoRightDisallowInvite);
+            case R.id.right_changeChatInfo:
+              return Lang.getMarkdownString(this, R.string.NoRightDisallowChangeInfo);
+            case R.id.right_pinMessages:
+              return Lang.getMarkdownString(this, R.string.NoRightDisallowPin);
+          }
+        }
+        break;
       }
-    }
-    if (args.mode == MODE_RESTRICTION) {
-      if (args.senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
-        return Lang.getString(tdlib.isChannel(Td.getSenderId(args.senderId)) ? R.string.BanChannelHint : R.string.BanChatHint);
-      }
-      if (!TD.checkRight(tdlib.chatPermissions(args.chatId), id)) {
-        return Lang.getString(R.string.ChatPermissionsRestrictHint);
+      case MODE_RESTRICTION: {
+        if (args.senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
+          return Lang.getString(tdlib.isChannel(Td.getSenderId(args.senderId)) ? R.string.BanChannelHint : R.string.BanChatHint);
+        }
+        if (id != R.id.btn_date && !TD.checkRight(tdlib.chatPermissions(args.chatId), id)) {
+          return Lang.getString(R.string.ChatPermissionsRestrictHint);
+        }
+        break;
       }
     }
     return null;

@@ -2718,7 +2718,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private void buildForward () {
-    if (!useForward()) {
+    if (!useForward() || forwardInfo == null) {
       return;
     }
 
