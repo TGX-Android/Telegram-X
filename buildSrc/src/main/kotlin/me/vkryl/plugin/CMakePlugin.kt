@@ -26,7 +26,7 @@ open class CMakePlugin : Plugin<Project> {
                 "-DCMAKE_SKIP_RPATH=ON",
                 "-DCMAKE_C_VISIBILITY_PRESET=hidden",
                 "-DCMAKE_CXX_VISIBILITY_PRESET=hidden",
-                "--jobs=${Runtime.getRuntime().availableProcessors()}"
+                "-DCMAKE_BUILD_PARALLEL_LEVEL=${Runtime.getRuntime().availableProcessors()}"
               )
             }
           }

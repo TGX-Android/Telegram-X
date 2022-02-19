@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-package me.vkryl.core;
+package org.thunderdog.challegram.core;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -35,6 +35,7 @@ import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import me.vkryl.core.StringUtils;
 
 /*
  * Functions for diff, match and patch.

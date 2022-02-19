@@ -119,7 +119,7 @@ import me.vkryl.core.collection.LongList;
 import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
@@ -2718,7 +2718,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private void buildForward () {
-    if (!useForward()) {
+    if (!useForward() || forwardInfo == null) {
       return;
     }
 
@@ -3613,6 +3613,15 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       }
     }
     return msg.id;
+  }
+
+  public final TdApi.Message getOldestMessage () {
+    synchronized (this) {
+      if (combinedMessages != null && !combinedMessages.isEmpty()) {
+        return combinedMessages.get(0);
+      }
+    }
+    return msg;
   }
 
   public final TdApi.Message getNewestMessage () {

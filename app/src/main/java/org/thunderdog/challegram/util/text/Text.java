@@ -58,10 +58,10 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.ColorUtils;
-import me.vkryl.core.DiffMatchPatch;
+import org.thunderdog.challegram.core.DiffMatchPatch;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.Td;
 
 public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextDrawable, ListAnimator.Measurable {

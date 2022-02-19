@@ -8,6 +8,14 @@ source "$(dirname "$0")"/force-clean.sh
 echo "Executing ./gradlew clean..."
 ./gradlew clean --console=plain --parallel --configure-on-demand --max-workers="$CPU_COUNT" || true
 
+echo "Resetting libvpx..."
+pushd app/jni/thirdparty/libvpx
+make distclean || true
+rm -rf build
+git clean -f -d
+git reset --hard
+popd
+
 echo "Resetting FFMpeg..."
 pushd app/jni/thirdparty/ffmpeg
 make clean || true
@@ -18,12 +26,6 @@ rm -rf build
 git clean -f -d
 git reset --hard
 popd
-
-echo "Resetting libvpx..."
-pushd app/jni/thirdparty/libvpx > /dev/null
-git clean -f -d
-git reset --hard
-popd > /dev/null
 
 echo "Resetting opus..."
 pushd app/jni/thirdparty/opus > /dev/null

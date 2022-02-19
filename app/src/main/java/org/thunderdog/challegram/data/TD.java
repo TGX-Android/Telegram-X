@@ -9,8 +9,6 @@ import android.app.DownloadManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
@@ -18,7 +16,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -26,8 +23,6 @@ import android.text.Spanned;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
-import android.text.style.ForegroundColorSpan;
-import android.text.style.ReplacementSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.TypefaceSpan;
@@ -501,7 +496,7 @@ public class TD {
       case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
         return true;
 
-        case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
+      case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
         return allowInternal;
     }
 
@@ -517,12 +512,17 @@ public class TD {
       case TdApi.ThumbnailFormatGif.CONSTRUCTOR:
       case TdApi.ThumbnailFormatWebp.CONSTRUCTOR:
         return null;
-      case TdApi.ThumbnailFormatTgs.CONSTRUCTOR:
+      case TdApi.ThumbnailFormatTgs.CONSTRUCTOR: {
+        GifFile gifFile = new GifFile(tdlib, thumbnail.file, GifFile.TYPE_TG_LOTTIE);
+        gifFile.setOptimize(true);
+        return gifFile;
+      }
+      case TdApi.ThumbnailFormatWebm.CONSTRUCTOR:
       case TdApi.ThumbnailFormatMpeg4.CONSTRUCTOR: {
         GifFile gifFile = new GifFile(tdlib, thumbnail.file,
-          thumbnail.format.getConstructor() == TdApi.ThumbnailFormatMpeg4.CONSTRUCTOR ?
-            GifFile.TYPE_MPEG4 :
-            GifFile.TYPE_TG_LOTTIE
+          thumbnail.format.getConstructor() == TdApi.ThumbnailFormatWebm.CONSTRUCTOR ?
+            GifFile.TYPE_WEBM :
+            GifFile.TYPE_MPEG4
         );
         gifFile.setOptimize(true);
         return gifFile;
@@ -545,6 +545,7 @@ public class TD {
         return file;
       case TdApi.ThumbnailFormatTgs.CONSTRUCTOR: // TODO 1-frame
       case TdApi.ThumbnailFormatMpeg4.CONSTRUCTOR:
+      case TdApi.ThumbnailFormatWebm.CONSTRUCTOR:
         return null;
 
     }
@@ -557,7 +558,7 @@ public class TD {
     }
     if (sticker.thumbnail != null)
       return sticker.thumbnail;
-    if (sticker.isAnimated)
+    if (Td.isAnimated(sticker.type))
       return null;
     return new TdApi.Thumbnail(new TdApi.ThumbnailFormatWebp(), sticker.width, sticker.height, sticker.sticker);
   }
@@ -3757,19 +3758,6 @@ public class TD {
     }
   }
 
-  public static void updateUser (TdApi.User y, TdApi.User x) {
-    x.firstName = y.firstName;
-    x.lastName = y.lastName;
-    x.isContact = y.isContact;
-    x.isVerified = y.isVerified;
-    x.isSupport = y.isSupport;
-    x.profilePhoto = y.profilePhoto;
-    x.restrictionReason = y.restrictionReason;
-    x.isMutualContact = y.isMutualContact;
-    x.haveAccess = y.haveAccess;
-    x.username = y.username;
-  }
-
   public static String getIconUrl (TdApi.Venue venue) {
     if ("foursquare".equals(venue.provider)) {
       if (!StringUtils.isEmpty(venue.type)) {
@@ -3817,50 +3805,6 @@ public class TD {
         continue;
       }
       if (first || size.width < w || size.height < h) {
-        first = false;
-        res = size;
-        w = size.width;
-        h = size.height;
-      }
-    }
-    return res;
-  }
-
-  public static TdApi.PhotoSize findSmallest (TdApi.Photo photo) {
-    return photo != null ? findSmallest(photo.sizes) : null;
-  }
-
-  public static TdApi.PhotoSize findSmallest (TdApi.PhotoSize[] sizes) {
-    if (sizes.length == 1) {
-      return sizes[0];
-    }
-    TdApi.PhotoSize res = null;
-    int w = 0, h = 0;
-    boolean first = true;
-    for (TdApi.PhotoSize size : sizes) {
-      if (first || size.width < w || size.height < h) {
-        first = false;
-        res = size;
-        w = size.width;
-        h = size.height;
-      }
-    }
-    return res;
-  }
-
-  public static TdApi.PhotoSize findBiggest (TdApi.Photo photo) {
-    return findBiggest(photo.sizes);
-  }
-
-  public static TdApi.PhotoSize findBiggest (TdApi.PhotoSize[] sizes) {
-    if (sizes.length == 1) {
-      return sizes[0];
-    }
-    TdApi.PhotoSize res = null;
-    int w = 0, h = 0;
-    boolean first = true;
-    for (TdApi.PhotoSize size : sizes) {
-      if (first || size.width > w || size.height > h) {
         first = false;
         res = size;
         w = size.width;
@@ -4359,7 +4303,7 @@ public class TD {
         return ((TdApi.MessageAudio) msg.content).audio.audio;
       }
       case TdApi.MessageChatChangePhoto.CONSTRUCTOR: {
-        return TD.findBiggest(((TdApi.MessageChatChangePhoto) msg.content).photo.sizes).photo;
+        return Td.findBiggest(((TdApi.MessageChatChangePhoto) msg.content).photo.sizes).photo;
       }
       case TdApi.MessageText.CONSTRUCTOR: {
         return getFile(((TdApi.MessageText) msg.content).webPage);
@@ -4410,6 +4354,7 @@ public class TD {
     context.showOptions(Lang.getString(files.length == 1 ? R.string.DeleteFileHint : R.string.DeleteMultipleFilesHint), new int[]{R.id.btn_deleteFile, R.id.btn_cancel}, new String[]{Lang.getString(R.string.ClearX, size), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_deleteFile) {
         TdlibManager.instance().player().stopPlaybackIfPlayingAnyOf(files);
+        context.context().closeFilePip(files);
         for (TdApi.File file : files) {
           final int[] signal = new int[1];
           context.tdlib().client().send(new TdApi.DeleteFile(file.id), object -> {
@@ -5425,7 +5370,7 @@ public class TD {
         break;
       case TdApi.MessageSticker.CONSTRUCTOR:
         TdApi.Sticker sticker = ((TdApi.MessageSticker) message.content).sticker;
-        alternativeText = sticker.isAnimated ? "animated" + sticker.emoji : sticker.emoji;
+        alternativeText = Td.isAnimated(sticker.type) ? "animated" + sticker.emoji : sticker.emoji;
         break;
       case TdApi.MessageInvoice.CONSTRUCTOR: {
         TdApi.MessageInvoice invoice = (TdApi.MessageInvoice) message.content;
@@ -5759,7 +5704,7 @@ public class TD {
       case TdApi.PushMessageContentSticker.CONSTRUCTOR:
         if (((TdApi.PushMessageContentSticker) push.content).isPinned)
           return getNotificationPinned(R.string.ActionPinnedSticker, TdApi.MessageSticker.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentSticker) push.content).emoji, 0);
-        else if (((TdApi.PushMessageContentSticker) push.content).sticker != null && ((TdApi.PushMessageContentSticker) push.content).sticker.isAnimated)
+        else if (((TdApi.PushMessageContentSticker) push.content).sticker != null && Td.isAnimated(((TdApi.PushMessageContentSticker) push.content).sticker.type))
           return getNotificationPreview(TdApi.MessageSticker.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, "animated" + ((TdApi.PushMessageContentSticker) push.content).emoji, 0);
         else
           return getNotificationPreview(TdApi.MessageSticker.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentSticker) push.content).emoji, 0);

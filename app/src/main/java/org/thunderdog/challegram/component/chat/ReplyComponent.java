@@ -46,7 +46,7 @@ import me.vkryl.android.util.SingleViewProvider;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.Td;
 
 public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyable {
@@ -579,7 +579,7 @@ public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyab
       case TdApi.MessagePhoto.CONSTRUCTOR: {
         TdApi.Photo photo = ((TdApi.MessagePhoto) msg.content).photo;
         photoSize = MediaWrapper.pickDisplaySize(tdlib, photo.sizes, msg.chatId);
-        TdApi.PhotoSize smallest = TD.findSmallest(photo);
+        TdApi.PhotoSize smallest = Td.findSmallest(photo);
         if (smallest != null && smallest != photoSize) {
           thumbnail = TD.toThumbnail(photoSize);
         }
@@ -589,7 +589,7 @@ public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyab
       case TdApi.MessageChatChangePhoto.CONSTRUCTOR: {
         TdApi.ChatPhoto photo = ((TdApi.MessageChatChangePhoto) msg.content).photo;
         photoSize = MediaWrapper.pickDisplaySize(tdlib, photo.sizes, msg.chatId);
-        TdApi.PhotoSize smallest = TD.findSmallest(photo.sizes);
+        TdApi.PhotoSize smallest = Td.findSmallest(photo.sizes);
         if (smallest != null && smallest != photoSize) {
           thumbnail = TD.toThumbnail(photoSize);
         }

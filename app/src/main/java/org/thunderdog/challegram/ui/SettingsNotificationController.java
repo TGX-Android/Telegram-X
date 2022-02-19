@@ -64,7 +64,6 @@ import org.thunderdog.challegram.widget.InfiniteRecyclerView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.RadioView;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -74,7 +73,7 @@ import java.util.List;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 
 /**
@@ -2055,7 +2054,27 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         name = null;
       } else {
         name = U.getRingtoneName(originalUri, null);
-        Uri uri = TdlibNotificationManager.fixSoundUri(originalUri, true, customChatId != 0 ? null : requestCode == Intents.ACTIVITY_RESULT_RINGTONE ? "ringtone.ogg" : "notification.ogg");
+        String forcedFileName;
+        if (customChatId != 0) {
+          forcedFileName = null;
+        } else if (requestCode == Intents.ACTIVITY_RESULT_RINGTONE) {
+          forcedFileName = tdlib.id() + "_ringtone.ogg";
+        } else {
+          switch (scope.getConstructor()) {
+            case TdApi.NotificationSettingsScopePrivateChats.CONSTRUCTOR:
+              forcedFileName = tdlib.id() + "_private.ogg";
+              break;
+            case TdApi.NotificationSettingsScopeGroupChats.CONSTRUCTOR:
+              forcedFileName = tdlib.id() + "_group.ogg";
+              break;
+            case TdApi.NotificationSettingsScopeChannelChats.CONSTRUCTOR:
+              forcedFileName = tdlib.id() + "_channel.ogg";
+              break;
+            default:
+              throw new UnsupportedOperationException(scope.toString());
+          }
+        }
+        Uri uri = TdlibNotificationManager.fixSoundUri(originalUri, true, forcedFileName);
         ringtoneUri = uri != null ? uri.toString() : null;
         if (name == null && uri != null) {
           name = uri.getLastPathSegment();

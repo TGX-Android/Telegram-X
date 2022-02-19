@@ -54,6 +54,10 @@
 	path = vkryl/leveldb
 	url = https://github.com/TGX-Android/leveldb
 	shallow = true
+[submodule "vkryl/core"]
+	path = vkryl/core
+	url = https://github.com/TGX-Android/X-Core.git
+  shallow = true
 [submodule "app/jni/thirdparty/rlottie"]
 	path = app/jni/thirdparty/rlottie
 	url = https://github.com/TGX-Android/rlottie

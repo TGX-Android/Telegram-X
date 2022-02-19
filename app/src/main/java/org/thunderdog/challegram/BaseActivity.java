@@ -129,7 +129,7 @@ import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.FutureInt;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceUtils;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 import nl.dionsegijn.konfetti.KonfettiView;
 import nl.dionsegijn.konfetti.models.Shape;
 
@@ -2083,6 +2083,25 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
           ((MediaViewController) popupLayout.getBoundController()).close();
         } else if (popupLayout.getBoundView() instanceof PreviewLayout) {
           ((PreviewLayout) popupLayout.getBoundView()).forceClose(true);
+        }
+      }
+    }
+  }
+
+  public void closeFilePip (TdApi.File[] targetFiles) {
+    final int size = forgottenWindows.size();
+    for (int i = 0; i < size; i++) {
+      PopupLayout popupLayout = forgottenWindows.valueAt(i);
+      if (popupLayout != null && popupLayout.getBoundController() instanceof MediaViewController) {
+        MediaViewController mvc = ((MediaViewController) popupLayout.getBoundController());
+        TdApi.File currentFile = mvc.getCurrentFile();
+        if (currentFile != null) {
+          for (TdApi.File file : targetFiles) {
+            if (currentFile.id == file.id) {
+              mvc.close();
+              break;
+            }
+          }
         }
       }
     }

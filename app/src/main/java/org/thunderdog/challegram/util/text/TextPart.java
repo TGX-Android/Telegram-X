@@ -30,7 +30,7 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 
 import me.vkryl.core.ColorUtils;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 
 public class TextPart {
   private static final int FLAG_LINE_RTL = 1;

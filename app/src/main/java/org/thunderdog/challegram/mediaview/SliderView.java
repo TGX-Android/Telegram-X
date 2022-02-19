@@ -47,6 +47,7 @@ public class SliderView extends View implements FactorAnimator.Target {
   }
 
   private float value; // -1f..0f -- left to center, 0..1f -- center to right
+  private float secondaryValue; // -1f..0f -- left to center, 0..1f -- center to right
 
   public void setValue (float value) {
     if (this.value != value) {
@@ -55,8 +56,19 @@ public class SliderView extends View implements FactorAnimator.Target {
     }
   }
 
+  public void setSecondaryValue (float secondaryValue) {
+    if (this.secondaryValue != secondaryValue) {
+      this.secondaryValue = secondaryValue;
+      invalidate();
+    }
+  }
+
   public float getValue () {
     return value;
+  }
+
+  public float getSecondaryValue () {
+    return secondaryValue;
   }
 
   private void changeValue (float value) {
@@ -87,9 +99,14 @@ public class SliderView extends View implements FactorAnimator.Target {
   }
 
   private @ThemeColorId int forceBackgroundColorId;
+  private @ThemeColorId int forceSecondaryColorId;
 
   public void setForceBackgroundColorId (@ThemeColorId int colorId) {
     this.forceBackgroundColorId = colorId;
+  }
+
+  public void setForceSecondaryColorId (@ThemeColorId int colorId) {
+    this.forceSecondaryColorId = colorId;
   }
 
   private FactorAnimator colorAnimator;
@@ -402,6 +419,7 @@ public class SliderView extends View implements FactorAnimator.Target {
     final int origColor = colorAnimator == null || !colorAnimator.isAnimating() ? Theme.getColor(colorId) : ColorUtils.fromToArgb(Theme.getColor(fromColorId), Theme.getColor(toColorId), colorAnimator.getFactor());
     final int color = overlayAlpha > 0f ? ColorUtils.compositeColor(origColor, ColorUtils.color((int) (255f * overlayAlpha), 0)) : origColor;
     int inactiveColor = forceBackgroundColorId != 0 ? Theme.getColor(forceBackgroundColorId) : ColorUtils.color(0x44, color);
+    int secondaryColor = forceSecondaryColorId != 0 ? Theme.getColor(forceSecondaryColorId) : ColorUtils.color(0x88, color);
 
     final int gapRadius = Screen.dp(4.5f);
     final int circleRadius = Screen.dp(2.5f);
@@ -418,6 +436,12 @@ public class SliderView extends View implements FactorAnimator.Target {
       }
     } else {
       c.drawRoundRect(rectF, height, height, Paints.fillingPaint(inactiveColor));
+    }
+
+    if (secondaryValue > 0f && anchorMode == ANCHOR_MODE_START) {
+      int cx = left + (int) ((float) width * secondaryValue);
+      rectF.set(left, top, cx, bottom);
+      c.drawRoundRect(rectF, height, height, Paints.fillingPaint(secondaryColor));
     }
 
     int cx;

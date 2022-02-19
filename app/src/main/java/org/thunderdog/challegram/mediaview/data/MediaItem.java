@@ -12,6 +12,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.component.sharedmedia.MediaSmallView;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.MediaWrapper;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
@@ -316,9 +317,17 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
 
     this.fileProgress = new FileProgressComponent(context, tdlib, TdlibFilesManager.DOWNLOAD_FLAG_VIDEO, true, sourceChatId, sourceMessageId);
     this.fileProgress.setUseStupidInvalidate();
+
     if (allowIcon) {
       this.fileProgress.setDownloadedIconRes(FileProgressComponent.PLAY_ICON);
     }
+
+    if (Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
+      this.fileProgress.setIgnoreLoaderClicks(true);
+      this.fileProgress.setPausedIconRes(FileProgressComponent.PLAY_ICON);
+      this.fileProgress.setVideoStreamingProgressIgnore(true);
+    }
+
     this.fileProgress.setFile(targetFile);
   }
 
@@ -442,8 +451,8 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
 
     setMiniThumbnail(photo.minithumbnail);
 
-    TdApi.PhotoSize small = TD.findSmallest(photo.sizes);
-    TdApi.PhotoSize big = TD.findBiggest(photo.sizes);
+    TdApi.PhotoSize small = Td.findSmallest(photo.sizes);
+    TdApi.PhotoSize big = Td.findBiggest(photo.sizes);
 
     if (small != null) {
       this.previewImageFile = new ImageFile(tdlib, small.photo);
@@ -581,7 +590,7 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
 
           return noScale ? thumbImageFileNoScale : thumbImageFile;
         }
-        TdApi.PhotoSize smallestSize = sourcePhoto != null ? TD.findSmallest(sourcePhoto) : null;
+        TdApi.PhotoSize smallestSize = sourcePhoto != null ? Td.findSmallest(sourcePhoto) : null;
         file = smallestSize != null ? smallestSize.photo : targetImage != null ? targetImage.getFile() : null;
       }
       if (file == null)
@@ -1001,6 +1010,10 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
     return fileProgress != null && fileProgress.performClick(view);
   }
 
+  public boolean performClick (View view, float x, float y) {
+    return fileProgress != null && fileProgress.performClick(view, x, y);
+  }
+
   public boolean onClick (View view, float x, float y) {
     if (fileProgress != null) {
       if (isLoaded()) {
@@ -1008,10 +1021,10 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
         int centerY = fileProgress.centerY();
         int bound = Screen.dp(FileProgressComponent.DEFAULT_RADIUS);
         if (x >= centerX - bound && x <= centerX + bound && y >= centerY - bound && y <= centerY + bound) {
-          return fileProgress.performClick(view);
+          return fileProgress.performClick(view, x, y);
         }
       } else {
-        return fileProgress.performClick(view);
+        return fileProgress.performClick(view, x, y);
       }
     }
     return false;

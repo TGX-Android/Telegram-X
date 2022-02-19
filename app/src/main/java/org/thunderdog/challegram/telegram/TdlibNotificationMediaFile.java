@@ -6,6 +6,8 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.data.MediaWrapper;
 import org.thunderdog.challegram.data.TD;
 
+import me.vkryl.td.Td;
+
 /**
  * Date: 04/01/2019
  * Author: default
@@ -60,7 +62,7 @@ public class TdlibNotificationMediaFile {
           case TdApi.MessageSticker.CONSTRUCTOR: {
             TdApi.MessageSticker sticker = (TdApi.MessageSticker) message.content;
             photoFile = sticker.sticker.sticker;
-            type = sticker.sticker.isAnimated ? TYPE_ANIMATED_STICKER : TYPE_STICKER;
+            type = Td.isAnimated(sticker.sticker.type) ? TYPE_ANIMATED_STICKER : TYPE_STICKER;
             width = sticker.sticker.width;
             height = sticker.sticker.height;
             break;
@@ -90,7 +92,7 @@ public class TdlibNotificationMediaFile {
             TdApi.PushMessageContentSticker sticker = (TdApi.PushMessageContentSticker) push;
             if (sticker.sticker != null) {
               photoFile = sticker.sticker.sticker;
-              type = sticker.sticker.isAnimated ? TYPE_ANIMATED_STICKER : TYPE_STICKER;
+              type = Td.isAnimated(sticker.sticker.type) ? TYPE_ANIMATED_STICKER : TYPE_STICKER;
               width = sticker.sticker.width;
               height = sticker.sticker.height;
             }
