@@ -29,6 +29,7 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.Destroyable;
 
 /**
@@ -225,11 +226,6 @@ public class MediaSmallView extends SparseDrawableView implements Destroyable, F
 
   private static final float SCALE = .24f;
 
-  // TODO: move this to core module
-  private float interpolate (float x1, float x2, float f) {
-    return x1 + (x2 - x1) * f;
-  }
-
   @Override
   protected void onDraw (Canvas c) {
     if (item == null) {
@@ -281,7 +277,7 @@ public class MediaSmallView extends SparseDrawableView implements Destroyable, F
         textLeft - Screen.dp(3f),
         textTop - Screen.dp(2f),
         textLeft + textWidth + Screen.dp(3f) + (isStreamingUI ? Screen.dp(22f) * dlFactor : 0),
-        textTop + (isStreamingUI ? interpolate(Screen.dp(15f), Screen.dp(21f), dlFactor) : Screen.dp(15f))
+        textTop + (isStreamingUI ? MathUtils.fromTo(Screen.dp(15f), Screen.dp(21f), dlFactor) : Screen.dp(15f))
       );
 
       c.drawRoundRect(rectF, Screen.dp(4f), Screen.dp(4f), Paints.fillingPaint(0x4c000000));

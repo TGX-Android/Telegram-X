@@ -52,6 +52,7 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
 
@@ -830,11 +831,6 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     return false;
   }
 
-  // TODO: move this to core module
-  private float interpolate (float x1, float x2, float f) {
-    return x1 + (x2 - x1) * f;
-  }
-
   public <T extends View & DrawableProvider> void draw (T view, Canvas c, int startX, int startY, Receiver preview, Receiver receiver, float alpha) {
     final float selectionFactor = selectionAnimator != null && source != null ? source.getSelectionFactor(selectionAnimator) : 0f;
     final boolean clipped = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && path != null && !(source != null && source.useFullWidth());
@@ -921,11 +917,11 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       int fpRadius = !isVideo() || !isDoubleLine ? 0 : downloadedAnimator.isAnimating() ? Screen.dp(FileProgressComponent.DEFAULT_STREAMING_RADIUS) : getFileProgress().getRadius();
       int doubleFpRadius = fpRadius * 2;
 
-      int pDurationCorners = isDoubleLine ? (int) interpolate(Screen.dp(4f), Screen.dp(12f), dlFactor) : Screen.dp(4f);
+      int pDurationCorners = isDoubleLine ? (int) MathUtils.fromTo(Screen.dp(4f), Screen.dp(12f), dlFactor) : Screen.dp(4f);
       int pDurationTop = cellTop + Screen.dp(8f) + (needTopOffset ? Screen.dp(16f) : 0);
       int pDurationLeft = cellLeft + Screen.dp(12f);
-      int pDurationRight = (int) (pDurationLeft + (isDoubleLine ? interpolate(durationWidthShort, durationWidth, dlFactor) : durationWidth) + ((doubleFpRadius) * (isStreamingUI ? dlFactor : 1f)) + ((isStreamingUI) ? interpolate(Screen.dp(4f), Screen.dp(isSmallStreamingUI ? 26f : 16f), dlFactor) : Screen.dp(4f)));
-      int pDurationBottom = pDurationTop + (isDoubleLine ? (int) interpolate(durationHeight(), (doubleFpRadius) + Screen.dp(8f), dlFactor) : durationHeight());
+      int pDurationRight = (int) (pDurationLeft + (isDoubleLine ? MathUtils.fromTo(durationWidthShort, durationWidth, dlFactor) : durationWidth) + ((doubleFpRadius) * (isStreamingUI ? dlFactor : 1f)) + ((isStreamingUI) ? MathUtils.fromTo(Screen.dp(4f), Screen.dp(isSmallStreamingUI ? 26f : 16f), dlFactor) : Screen.dp(4f)));
+      int pDurationBottom = pDurationTop + (isDoubleLine ? (int) MathUtils.fromTo(durationHeight(), (doubleFpRadius) + Screen.dp(8f), dlFactor) : durationHeight());
 
       durationRect.set(pDurationLeft - Screen.dp(4f), pDurationTop, pDurationRight, pDurationBottom);
 
@@ -955,8 +951,8 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       if (isDoubleLine) {
         c.save();
         c.clipRect(durationRect);
-        int textBaseline = pDurationLeft + (int) interpolate(0, (durationDx = doubleFpRadius + Screen.dp(6f)), dlFactor);
-        int textYBaseline = (int) interpolate(pDurationTop + durationOffset(), pDurationTop + (((pDurationTop + doubleFpRadius + Screen.dp(8f)) - pDurationTop) / 2f), dlFactor);
+        int textBaseline = pDurationLeft + (int) MathUtils.fromTo(0, (durationDx = doubleFpRadius + Screen.dp(6f)), dlFactor);
+        int textYBaseline = (int) MathUtils.fromTo(pDurationTop + durationOffset(), pDurationTop + (((pDurationTop + doubleFpRadius + Screen.dp(8f)) - pDurationTop) / 2f), dlFactor);
         c.drawText(durationShort, textBaseline, textYBaseline - Screen.dp(4f), paint);
         paint.setAlpha((int) (paint.getAlpha() * dlFactor));
         c.drawText(duration, textBaseline, textYBaseline + Screen.dp(13f), paint);
