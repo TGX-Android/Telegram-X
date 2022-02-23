@@ -25,9 +25,11 @@ import org.thunderdog.challegram.widget.SparseDrawableView;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.Destroyable;
 
 /**
@@ -41,6 +43,7 @@ public class MediaSmallView extends SparseDrawableView implements Destroyable, F
   private final GifReceiver gifReceiver;
 
   private FileProgressComponent.SimpleListener listener;
+  private final BoolAnimator downloadedAnimator = new BoolAnimator(1, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 230l);
 
   public MediaSmallView (Context context) {
     super(context);
@@ -92,6 +95,7 @@ public class MediaSmallView extends SparseDrawableView implements Destroyable, F
       preview.requestFile(item.isLoaded() && item.getTargetGifFile() == null ? null : item.getPreviewImageFile());
       imageReceiver.requestFile(item.isLoaded() ? item.getTargetImageFile(false) : null);
       gifReceiver.requestFile(item.isLoaded() ? item.getTargetGifFile() : null);
+      downloadedAnimator.setValue(item.isLoaded(), false);
       item.attachToView(this);
       item.setSimpleListener(listener);
       item.download(false);
@@ -159,7 +163,11 @@ public class MediaSmallView extends SparseDrawableView implements Destroyable, F
 
   @Override
   public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
-    setSelectionFactor(factor);
+    if (id == 1) {
+      invalidate();
+    } else {
+      setSelectionFactor(factor);
+    }
   }
 
   @Override
@@ -256,23 +264,31 @@ public class MediaSmallView extends SparseDrawableView implements Destroyable, F
       c.restore();
     }
 
-    boolean isStreamingUI = item.isVideo() && !item.isLoaded();
+    boolean isStreamingUI = item.isVideo();
 
     int textLeft = receiver.getLeft() + Screen.dp(7f);
     int textTop = receiver.getTop() + Screen.dp(5f);
 
     if (text != null) {
+      float dlFactor = 1f - downloadedAnimator.getFloatValue();
+
       RectF rectF = Paints.getRectF();
-      rectF.set(textLeft - Screen.dp(3f), textTop - Screen.dp(2f), textLeft + textWidth + Screen.dp(3f) + (isStreamingUI ? Screen.dp(22f) : 0), textTop + Screen.dp(isStreamingUI ? 21f : 15f));
+      rectF.set(
+        textLeft - Screen.dp(3f),
+        textTop - Screen.dp(2f),
+        textLeft + textWidth + Screen.dp(3f) + (isStreamingUI ? Screen.dp(22f) * dlFactor : 0),
+        textTop + (isStreamingUI ? MathUtils.fromTo(Screen.dp(15f), Screen.dp(21f), dlFactor) : Screen.dp(15f))
+      );
 
       c.drawRoundRect(rectF, Screen.dp(4f), Screen.dp(4f), Paints.fillingPaint(0x4c000000));
-      c.drawText(text, textLeft + (isStreamingUI ? Screen.dp(22f) : 0), textTop + Screen.dp(11f) + (isStreamingUI ? Screen.dp(3.5f) : 0), Paints.whiteMediumPaint(12f, false, false)); // TODO
+      c.drawText(text, textLeft + (isStreamingUI ? Screen.dp(22f) * dlFactor : 0), textTop + Screen.dp(11f) + (isStreamingUI ? Screen.dp(3.5f) * dlFactor : 0), Paints.whiteMediumPaint(12f, false, false)); // TODO
 
       item.getFileProgress().setDownloadedIconRes(FileProgressComponent.PLAY_ICON);
       item.getFileProgress().setPausedIconRes(R.drawable.baseline_cloud_download_16);
 
       if (isStreamingUI) {
-        item.getFileProgress().setVideoStreamingClickRect(false, FileProgressComponent.STREAMING_UI_MODE_EXTRA_SMALL, rectF);
+        item.getFileProgress().setVideoStreamingProgressHidden(false);
+        item.getFileProgress().setVideoStreamingOptions(false, FileProgressComponent.STREAMING_UI_MODE_EXTRA_SMALL, rectF, downloadedAnimator);
       }
     }
 
