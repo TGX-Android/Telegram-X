@@ -288,7 +288,7 @@ public class MediaSmallView extends SparseDrawableView implements Destroyable, F
 
       if (isStreamingUI) {
         item.getFileProgress().setVideoStreamingProgressHidden(false);
-        item.getFileProgress().setVideoStreamingOptions(false, FileProgressComponent.STREAMING_UI_MODE_EXTRA_SMALL, rectF, downloadedAnimator);
+        item.getFileProgress().setVideoStreamingOptions(false, false, FileProgressComponent.STREAMING_UI_MODE_EXTRA_SMALL, rectF, downloadedAnimator);
       }
     }
 
