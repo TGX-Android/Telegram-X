@@ -937,7 +937,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   public void setCurrentState (@TdlibFilesManager.FileDownloadState int state, boolean animated) {
     boolean needResetFile = false;
     if (isVideoStreaming() && vsOnDownloadedAnimator != null && (state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED || state == TdlibFilesManager.STATE_PAUSED)) {
-      vsOnDownloadedAnimator.setValue(state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED, animated);
+      vsOnDownloadedAnimator.setValue(state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED, animated && !isVideoStreamingCloudNeeded);
     }
     if (this.currentState == TdlibFilesManager.STATE_IN_PROGRESS && state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED) {
       setProgress(1f, 1f);
@@ -1376,7 +1376,9 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
           isCanvasAltered = true;
         }
 
-        drawCloudState(c, alpha);
+        if (isVideoStreamingCloudNeeded) {
+          drawCloudState(c, alpha);
+        }
       } else {
         c.drawCircle(cx, cy, getRadius(), Paints.fillingPaint(fillingColor));
       }

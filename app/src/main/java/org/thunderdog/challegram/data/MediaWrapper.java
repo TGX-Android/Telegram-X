@@ -962,8 +962,8 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       }
 
       paint.setAlpha(255);
-    } else {
-      getFileProgress().setVideoStreamingOptions(needTopOffset, true, isSmallStreamingUI ? FileProgressComponent.STREAMING_UI_MODE_SMALL : FileProgressComponent.STREAMING_UI_MODE_LARGE, durationRect, null);
+    } else if (isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
+      getFileProgress().setVideoStreamingOptions(needTopOffset, true, isSmallStreamingUI ? FileProgressComponent.STREAMING_UI_MODE_SMALL : FileProgressComponent.STREAMING_UI_MODE_LARGE, durationRect, downloadedAnimator);
 
       if (isSmallStreamingUI) {
         getFileProgress().setPausedIconRes(R.drawable.baseline_cloud_download_16);
@@ -1189,8 +1189,10 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
       if (!text.isEmpty()) {
         text = text + ", " + textShort;
+      } else if (fileProgress.isVideoStreaming()) {
+        text = twLineHeader = Strings.buildSize(fileProgress.getTotalSize());
       } else {
-        text = fileProgress.isVideoStreaming() ? Strings.buildSize(fileProgress.getTotalSize()) : textShort;
+        text = textShort;
       }
     }
 
