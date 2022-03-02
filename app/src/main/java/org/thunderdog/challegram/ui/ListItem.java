@@ -140,6 +140,8 @@ public class ListItem {
 
   public static final int TYPE_EMBED_STICKER = 130;
   public static final int TYPE_JOIN_REQUEST = 131;
+  public static final int TYPE_CHAT_HEADER_SMALL = 132;
+  public static final int TYPE_CHAT_HEADER_LARGE = 133;
 
   private static final int FLAG_SELECTED = 1;
   private static final int FLAG_BOOL_VALUE = 1 << 1;

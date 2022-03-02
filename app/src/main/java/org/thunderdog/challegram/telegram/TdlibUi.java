@@ -34,6 +34,7 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.dialogs.ChatView;
+import org.thunderdog.challegram.component.popups.ModernActionedLayout;
 import org.thunderdog.challegram.component.preview.PreviewLayout;
 import org.thunderdog.challegram.component.preview.YouTube;
 import org.thunderdog.challegram.component.sticker.StickerSetWrap;
@@ -2409,6 +2410,19 @@ public class TdlibUi extends Handler {
   // Open link
 
   private void openJoinDialog (final TdlibDelegate context, final String inviteLink, TdApi.ChatInviteLinkInfo inviteLinkInfo, final @Nullable UrlOpenParameters openParameters) {
+    if (true) {
+      if (TdlibManager.inBackgroundThread()) {
+        tdlib.runOnUiThread(() -> openJoinDialog(context, inviteLink, inviteLinkInfo, openParameters));
+        return;
+      }
+      ViewController<?> c = context.context().navigation().getCurrentStackItem();
+      if (c != null) {
+        // joinChatByInviteLink(context, inviteLink, inviteLinkInfo, openParameters);
+        ModernActionedLayout.showJoinDialog(c, inviteLink, inviteLinkInfo, openParameters);
+      }
+      return;
+    }
+
     if (TdlibManager.inBackgroundThread()) {
       tdlib.runOnUiThread(() -> openJoinDialog(context, inviteLink, inviteLinkInfo, openParameters));
       return;
