@@ -22,8 +22,8 @@ public class ModernActionedLayout extends MediaLayout {
     showDeferredMal(context, (mal) -> new JoinRequestsController(mal, chatId, requestsInfo));
   }
 
-  public static void showJoinDialog (ViewController<?> context, String inviteLink, TdApi.ChatInviteLinkInfo inviteLinkInfo, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    showMal(context, (mal) -> new JoinDialogController(mal, inviteLink, inviteLinkInfo, openParameters));
+  public static void showJoinDialog (ViewController<?> context, TdApi.ChatInviteLinkInfo inviteLinkInfo, Runnable onJoinClicked) {
+    showMal(context, (mal) -> new JoinDialogController(mal, inviteLinkInfo, onJoinClicked));
   }
 
   public ModernActionedLayout (ViewController<?> context) {

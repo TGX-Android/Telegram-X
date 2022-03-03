@@ -31,6 +31,7 @@ import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.ui.SettingsAdapter;
@@ -38,9 +39,11 @@ import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.ListInfoView;
+import org.thunderdog.challegram.widget.VerticalChatView;
 
 import java.util.ArrayList;
 
+import me.vkryl.android.ViewUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.td.Td;
 
@@ -48,11 +51,11 @@ public class JoinDialogController extends MediaBottomBaseController<Void> implem
   private final int DESCRIPTION_PADDING = Screen.dp(16f);
 
   private SettingsAdapter adapter;
+  private SettingsAdapter adapterMembers;
 
-  private final @Nullable TdlibUi.UrlOpenParameters openParameters;
-  private final String inviteLink;
+  private final Runnable onJoinClicked;
   private final TdApi.ChatInviteLinkInfo inviteLinkInfo;
-  private final int measuredTextSize;
+  private int measuredRecyclerHeight;
 
   @Override
   protected int getBackButton () {
@@ -65,18 +68,23 @@ public class JoinDialogController extends MediaBottomBaseController<Void> implem
     return true;
   }
 
-  public JoinDialogController (MediaLayout context, String inviteLink, TdApi.ChatInviteLinkInfo inviteLinkInfo, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public JoinDialogController (MediaLayout context, TdApi.ChatInviteLinkInfo inviteLinkInfo, Runnable onJoinClicked) {
     super(context, "");
-    this.inviteLink = inviteLink;
     this.inviteLinkInfo = inviteLinkInfo;
-    this.openParameters = openParameters;
-    this.measuredTextSize = U.getTextHeight(inviteLinkInfo.description, Screen.currentWidth() - (DESCRIPTION_PADDING * 2), Paints.getRegularTextPaint(15f)) + DESCRIPTION_PADDING;
+    this.onJoinClicked = onJoinClicked;
   }
 
   @Override
   protected View onCreateView (Context context) {
     buildContentView(false);
     setLayoutManager(new LinearLayoutManager(context(), RecyclerView.VERTICAL, false));
+
+    adapterMembers = new SettingsAdapter(this) {
+      @Override
+      protected void setChatData (ListItem item, VerticalChatView chatView) {
+        chatView.setChat((TGFoundChat) item.getData());
+      }
+    };
 
     adapter = new SettingsAdapter(this) {
       @Override
@@ -101,8 +109,16 @@ public class JoinDialogController extends MediaBottomBaseController<Void> implem
       }
 
       @Override
-      protected void setChatHeader (ListItem item, int position, DetachedChatHeaderView headerView, boolean isLarge) {
+      protected void setChatHeader (ListItem item, int position, DetachedChatHeaderView headerView) {
         headerView.bindWith(tdlib, inviteLinkInfo);
+      }
+
+      @Override
+      protected void setMembersList (ListItem item, int position, RecyclerView recyclerView) {
+        recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false));
+        recyclerView.setAdapter(adapterMembers);
+        recyclerView.setPadding(Screen.dp(8f), 0, Screen.dp(8f), 0);
+        recyclerView.setClipToPadding(false);
       }
     };
 
@@ -112,18 +128,20 @@ public class JoinDialogController extends MediaBottomBaseController<Void> implem
 
     ArrayList<ListItem> items = new ArrayList<>();
 
-    if (inviteLinkInfo.photo != null) {
-      items.add(new ListItem(ListItem.TYPE_CHAT_HEADER_LARGE));
-    } else {
-      //items.add(new ListItem(ListItem.TYPE_CHAT_HEADER_SMALL));
-    }
+    items.add(new ListItem(ListItem.TYPE_CHAT_HEADER_LARGE));
 
     if (inviteLinkInfo.description != null && inviteLinkInfo.description.length() > 0) {
       items.add(new ListItem(ListItem.TYPE_TEXT_VIEW, R.id.description, 0, inviteLinkInfo.description, false));
     }
 
     if (inviteLinkInfo.memberUserIds != null && inviteLinkInfo.memberUserIds.length > 0) {
+      items.add(new ListItem(ListItem.TYPE_MEMBERS_LIST));
 
+      ArrayList<ListItem> itemsMembers = new ArrayList<>();
+      for (int i = 0; i < inviteLinkInfo.memberUserIds.length; i++) {
+        itemsMembers.add(new ListItem(ListItem.TYPE_CHAT_VERTICAL).setData(new TGFoundChat(tdlib, inviteLinkInfo.memberUserIds[i]).setNoUnread()));
+      }
+      adapterMembers.setItems(itemsMembers.toArray(new ListItem[0]), false);
     }
 
     if (inviteLinkInfo.createsJoinRequest) {
@@ -142,6 +160,15 @@ public class JoinDialogController extends MediaBottomBaseController<Void> implem
     adapter.setItems(items.toArray(new ListItem[0]), false);
     initMetrics();
 
+    recyclerView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+      @Override
+      public void onLayoutChange (View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+        recyclerView.removeOnLayoutChangeListener(this);
+        measuredRecyclerHeight = recyclerView.getMeasuredHeight();
+        initMetrics();
+      }
+    });
+
     setAdapter(adapter);
 
     return contentView;
@@ -149,21 +176,16 @@ public class JoinDialogController extends MediaBottomBaseController<Void> implem
 
   @Override
   protected int getInitialContentHeight () {
-    if (adapter != null) {
-      int initialContentHeight = 0;
-      for (int i = 0; i < adapter.getItemCount(); i++) {
-        ListItem item = adapter.getItems().get(i);
-        if (item.getViewType() == ListItem.TYPE_TEXT_VIEW) {
-          initialContentHeight += item.getId() == R.id.description ? measuredTextSize : Screen.dp(24f);
-        } else if (item.getViewType() == ListItem.TYPE_DESCRIPTION) {
-          initialContentHeight += Screen.dp(24f);
-        } else {
-          initialContentHeight += SettingHolder.measureHeightForType(item.getViewType());
-        }
-      }
-      return Math.min(super.getInitialContentHeight(), initialContentHeight);
+    if (measuredRecyclerHeight != 0) {
+      return measuredRecyclerHeight;
     }
+
     return super.getInitialContentHeight();
+  }
+  
+  @Override
+  public boolean ignoreStartHeightLimits () {
+    return true;
   }
 
   @Override
@@ -178,14 +200,14 @@ public class JoinDialogController extends MediaBottomBaseController<Void> implem
 
   @Override
   public int getId () {
-    return R.id.controller_messageSeen;
+    return R.id.controller_joinDialog;
   }
 
   @Override
   public void onClick (View v) {
-    if (v.getId() == R.id.user) {
+    if (v.getId() == R.id.btn_join) {
       mediaLayout.hide(false);
-      tdlib.ui().openPrivateProfile(this, ((ListItem) v.getTag()).getLongId(), new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
+      onJoinClicked.run();
     } else if (v.getId() == R.id.btn_cancel) {
       mediaLayout.hide(false);
     }

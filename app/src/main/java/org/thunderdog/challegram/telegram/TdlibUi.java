@@ -2410,42 +2410,15 @@ public class TdlibUi extends Handler {
   // Open link
 
   private void openJoinDialog (final TdlibDelegate context, final String inviteLink, TdApi.ChatInviteLinkInfo inviteLinkInfo, final @Nullable UrlOpenParameters openParameters) {
-    if (true) {
-      if (TdlibManager.inBackgroundThread()) {
-        tdlib.runOnUiThread(() -> openJoinDialog(context, inviteLink, inviteLinkInfo, openParameters));
-        return;
-      }
-      ViewController<?> c = context.context().navigation().getCurrentStackItem();
-      if (c != null) {
-        // joinChatByInviteLink(context, inviteLink, inviteLinkInfo, openParameters);
-        ModernActionedLayout.showJoinDialog(c, inviteLink, inviteLinkInfo, openParameters);
-      }
-      return;
-    }
-
     if (TdlibManager.inBackgroundThread()) {
       tdlib.runOnUiThread(() -> openJoinDialog(context, inviteLink, inviteLinkInfo, openParameters));
       return;
     }
-    final boolean isChannel = TD.isChannel(inviteLinkInfo.type);
-    CharSequence msg;
-    if (inviteLinkInfo.createsJoinRequest) {
-      msg = Lang.getStringBold(isChannel ? R.string.RequestFollowChannelX : R.string.RequestJoinGroupX, inviteLinkInfo.title);
-    } else {
-      msg = Lang.getStringBold(isChannel ? R.string.FollowChannelX : R.string.JoinGroupX, inviteLinkInfo.title);
-    }
-    if (!StringUtils.isEmpty(inviteLinkInfo.description)) {
-      msg = new SpannableStringBuilder(msg).append("\n\n").append(Lang.wrap(inviteLinkInfo.description, Lang.italicCreator()));
-    }
     ViewController<?> c = context.context().navigation().getCurrentStackItem();
     if (c != null) {
-      c.showOptions(msg, new int[] {R.id.btn_join, R.id.btn_cancel}, new String[] {inviteLinkInfo.createsJoinRequest ? Lang.getString(isChannel ? R.string.RequestJoinChannelBtn : R.string.RequestJoinGroupBtn) : Lang.getOK(), Lang.getString(R.string.Cancel)}, null, new int[] {R.drawable.baseline_person_add_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-        if (id == R.id.btn_join) {
-          joinChatByInviteLink(context, inviteLink, inviteLinkInfo, openParameters);
-        }
-        return true;
-      });
+      ModernActionedLayout.showJoinDialog(c, inviteLinkInfo, () -> joinChatByInviteLink(context, inviteLink, inviteLinkInfo, openParameters));
     }
+    return;
   }
 
   private void checkInviteLink (final TdlibDelegate context, final String inviteLink, final @Nullable UrlOpenParameters openParameters) {

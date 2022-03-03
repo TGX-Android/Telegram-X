@@ -237,11 +237,8 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_JOIN_REQUEST: {
         return Screen.dp(72f);
       }
-      case ListItem.TYPE_CHAT_HEADER_SMALL: {
-        return DetachedChatHeaderView.getHeight(false);
-      }
       case ListItem.TYPE_CHAT_HEADER_LARGE: {
-        return DetachedChatHeaderView.getHeight(true);
+        return DetachedChatHeaderView.getViewHeight();
       }
       case ListItem.TYPE_EDITTEXT_WITH_PHOTO_SMALLER:
         return Screen.dp(82f);
@@ -279,7 +276,6 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         ((DoubleTextViewWithIcon) itemView).attach();
         break;
       }
-      case ListItem.TYPE_CHAT_HEADER_SMALL:
       case ListItem.TYPE_CHAT_HEADER_LARGE: {
         ((DetachedChatHeaderView) itemView).attach();
         break;
@@ -360,7 +356,6 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         ((DoubleTextViewWithIcon) itemView).detach();
         break;
       }
-      case ListItem.TYPE_CHAT_HEADER_SMALL:
       case ListItem.TYPE_CHAT_HEADER_LARGE: {
         ((DetachedChatHeaderView) itemView).detach();
         break;
@@ -833,11 +828,9 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0));
         return new SettingHolder(view);
       }
-      case ListItem.TYPE_CHAT_HEADER_SMALL:
       case ListItem.TYPE_CHAT_HEADER_LARGE: {
-        boolean large = viewType == ListItem.TYPE_CHAT_HEADER_LARGE;
-        DetachedChatHeaderView view = new DetachedChatHeaderView(context, large);
-        view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, DetachedChatHeaderView.getHeight(large)));
+        DetachedChatHeaderView view = new DetachedChatHeaderView(context);
+        view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, DetachedChatHeaderView.getViewHeight()));
         return new SettingHolder(view);
       }
       case ListItem.TYPE_JOIN_REQUEST: {

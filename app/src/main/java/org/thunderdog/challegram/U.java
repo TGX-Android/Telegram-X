@@ -3470,9 +3470,4 @@ public class U {
       return false;
     }
   }
-
-  public static int getTextHeight (CharSequence text, int width, TextPaint paint) {
-    if (text == null || text.length() == 0) return 0;
-    return createLayout(text, width, paint).getHeight();
-  }
 }

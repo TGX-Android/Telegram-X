@@ -387,7 +387,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     // Override
   }
 
-  protected void setChatHeader (ListItem item, int position, DetachedChatHeaderView headerView, boolean isLarge) {
+  protected void setChatHeader (ListItem item, int position, DetachedChatHeaderView headerView) {
     // Override
   }
 
@@ -1470,9 +1470,8 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         setEmbedSticker(item, position, (EmbeddableStickerView) holder.itemView, false);
         break;
       }
-      case ListItem.TYPE_CHAT_HEADER_SMALL:
       case ListItem.TYPE_CHAT_HEADER_LARGE: {
-        setChatHeader(item, position, (DetachedChatHeaderView) holder.itemView, viewType == ListItem.TYPE_CHAT_HEADER_LARGE);
+        setChatHeader(item, position, (DetachedChatHeaderView) holder.itemView);
         break;
       }
       case ListItem.TYPE_INFO: {
