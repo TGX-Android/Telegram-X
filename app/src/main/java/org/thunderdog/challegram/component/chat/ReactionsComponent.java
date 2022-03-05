@@ -250,7 +250,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
     }
 
     public int getChosenColor () {
-      return isOutgoing ? Color.WHITE : Theme.getColor(R.id.theme_color_fillingPositive);
+      return Theme.getColor(R.id.theme_color_fillingPositive);
     }
 
     public float getHeight (boolean animated) {
