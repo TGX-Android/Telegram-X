@@ -8663,6 +8663,26 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  public int getActiveReactionCount () {
+    synchronized (dataLock) {
+      return getActiveReactions().length;
+    }
+  }
+
+  public TdApi.Reaction[] getActiveReactions () {
+    synchronized (dataLock) {
+      ArrayList<TdApi.Reaction> reactions = new ArrayList<>();
+
+      for (TdApi.Reaction supportedReaction : supportedReactions) {
+        if (supportedReaction.isActive) {
+          reactions.add(supportedReaction);
+        }
+      }
+
+      return reactions.toArray(new TdApi.Reaction[0]);
+    }
+  }
+
   public TdApi.Reaction getReaction (String reactionStr) {
     synchronized (dataLock) {
       for (TdApi.Reaction supportedReaction : supportedReactions) {

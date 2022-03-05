@@ -1879,6 +1879,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             view.setData(Lang.plural(R.string.xPermissions, Td.count(chat.permissions), TdConstants.CHAT_PERMISSIONS_COUNT));
             break;
           }
+          case R.id.btn_manageReactions: {
+            view.setData(Lang.plural(R.string.xPermissions, chat.availableReactions.length, tdlib.getActiveReactionCount()));
+            break;
+          }
           case R.id.btn_toggleProtection: {
             view.getToggler().setRadioEnabled(chat.hasProtectedContent, isUpdate);
             break;
@@ -3137,6 +3141,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     navigateTo(c);
   }
 
+  private void openManageReactions () {
+    EditChatReactionsController c = new EditChatReactionsController(context, tdlib);
+    c.setArguments(new EditChatReactionsController.Args(chat.id, chat.availableReactions));
+    navigateTo(c);
+  }
+
   private void editLinkedChat () {
     TdApi.Chat linkedChat = supergroupFull != null && supergroupFull.linkedChatId != 0 ? tdlib.chat(supergroupFull.linkedChatId) : null;
     Lang.SpanCreator linkedChatCreator = (target, argStart, argEnd, argIndex, needFakeBold) ->
@@ -3594,6 +3604,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (!isChannel()) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_chatPermissions, 0, R.string.ChatPermissions));
+      added = true;
+    }
+    if (tdlib.canChangeInfo(chat, false)) {
+      items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_manageReactions, 0, R.string.Reactions));
       added = true;
     }
     if (supergroupFull != null && supergroupFull.canGetStatistics) {
@@ -4607,6 +4622,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
       case R.id.btn_chatPermissions: {
         openChatPermissions();
+        break;
+      }
+      case R.id.btn_manageReactions: {
+        openManageReactions();
         break;
       }
       case R.id.btn_recentActions: {
@@ -6171,6 +6190,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     tdlib.ui().post(() -> {
       if (!isDestroyed() && chat.id == chatId && baseAdapter != null) {
         updateValuedItem(R.id.btn_chatPermissions);
+      }
+    });
+  }
+
+  @Override
+  public void onChatAvailableReactionsUpdated (long chatId, String[] availableReactions) {
+    tdlib.ui().post(() -> {
+      if (!isDestroyed() && chat.id == chatId && baseAdapter != null) {
+        updateValuedItem(R.id.btn_manageReactions);
       }
     });
   }

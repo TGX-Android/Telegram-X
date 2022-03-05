@@ -127,6 +127,7 @@
   <item type="id" name="controller_hashtag" />
   <item type="id" name="controller_camera" />
   <item type="id" name="controller_memberRights" />
+  <item type="id" name="controller_manageReactions" />
   <item type="id" name="controller_linkChat" />
 
   <item type="id" name="controller_bug_killer" />
@@ -555,6 +556,9 @@
   <item type="id" name="btn_statsPublicShares" />
   <item type="id" name="btn_statsPublishDate" />
   <item type="id" name="btn_statsSignature" />
+  <item type="id" name="btn_manageReactions" />
+  <item type="id" name="btn_manageReactionsGlobal" />
+  <item type="id" name="btn_manageReactionsEntry" />
 
   <item type="id" name="stats_memberCount" />
   <item type="id" name="stats_join" />

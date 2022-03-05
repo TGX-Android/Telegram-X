@@ -4245,6 +4245,11 @@
   <string name="LocationAlertLocation">To send a nearby place or your location, allow Telegram X access to your location.</string>
   <string name="LocationAlertLocationDisclaimer">Telegram X does not use location data for any hidden purposes, and accesses it only by your explicit request.</string>
 
+  <string name="Reactions">Reactions</string>
+  <string name="ReactionManageEnable">Enable Reactions</string>
+  <string name="ReactionManageEnableHintGroup">Allow members to react to group messages.</string>
+  <string name="ReactionManageEnableHintChannel">Allow subscribers to react to channel posts.</string>
+
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
   <string name="suggested_language_code_plural" />
