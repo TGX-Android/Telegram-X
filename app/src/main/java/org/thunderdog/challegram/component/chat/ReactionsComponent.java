@@ -282,7 +282,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
     }
 
     public void draw (Canvas c, ComplexReceiver reactionsReceiver, int startX, int startY) {
-      final boolean clipped = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && chooseAnimator.isAnimating();
+      final boolean clipped = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
       final float width = getWidth(true); // false for indexes starting from 1 TODO
       final float height = getHeight(true); // false for indexes starting from 1 TODO
 
@@ -307,7 +307,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
       }
 
       c.drawRoundRect(bubbleRect, REACTION_RADIUS, REACTION_RADIUS, Paints.fillingPaint(getBackgroundColor()));
-      if (clipped) c.drawCircle(startX + Screen.dp(19f), startY + (height / 2f), width * chooseAnimator.getFloatValue(), Paints.fillingPaint(getChosenColor()));
+      if (clipped && chooseAnimator.isAnimating()) c.drawCircle(startX + Screen.dp(16f), startY + (height / 2f), width * chooseAnimator.getFloatValue(), Paints.fillingPaint(getChosenColor()));
 
       r.setBounds(startX + Screen.dp(8f), startY, startX + Screen.dp(16f) + REACTION_ICON_SIZE, startY + REACTION_HEIGHT);
 
