@@ -47,6 +47,7 @@ import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessageViewGroup;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.chat.MessagesTouchHelperCallback;
+import org.thunderdog.challegram.component.chat.ReactionsComponent;
 import org.thunderdog.challegram.component.chat.ReplyComponent;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
@@ -177,6 +178,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   protected TGSource forwardInfo;
   protected ReplyComponent replyData;
   protected TGInlineKeyboard inlineKeyboard;
+  protected final ReactionsComponent reactionsComponent;
 
   // header values
 
@@ -338,6 +340,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (msg.replyToMessageId != 0 && (msg.replyToMessageId != msg.messageThreadId || msg.messageThreadId != messagesController().getMessageThreadId())) {
       loadReply();
     }
+
+    reactionsComponent = new ReactionsComponent(this, currentViews);
 
     if (isHot() && needHotTimer() && msg.ttlExpiresIn < msg.ttl) {
       startHotTimer(false);
@@ -672,6 +676,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       }
     }
 
+    if (reactionsComponent != null) {
+      width = Math.max(width, reactionsComponent.getWidth() + getBubbleTimePartWidth());
+    }
+
     return width; //  + getBubblePaddingLeft() + getBubblePaddingRight();
   }
 
@@ -805,6 +813,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
     if (hasFooter()) {
       height += getFooterHeight() + getFooterPaddingTop() + getFooterPaddingBottom();
+    }
+    if (reactionsComponent != null) {
+      height += reactionsComponent.getHeight();
     }
     height += getBubbleReduceHeight();
 
@@ -1918,6 +1929,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       }
 
       replyData.draw(c, startX, top, endX, width, replyReceiver, Lang.rtl());
+    }
+
+    if (reactionsComponent != null) {
+      reactionsComponent.draw(view, c, pContentX, pContentY + getContentHeight() + xBadgePadding);
     }
 
     if (contentOffset != 0) {
@@ -3233,8 +3248,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
   }
 
-
-
   // public static final float IMAGE_CONTENT_DEFAULT_RADIUS = 3f;
   // public static final float BUBBLE_MERGE_RADIUS = 6f;
   // public static final float BUBBLE_DEFAULT_RADIUS = BUBBLE_BIG_RADIUS_AVAILABLE ? 18f : BUBBLE_MERGE_RADIUS;
@@ -4548,6 +4561,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     hasCommentButton.setValue(commentMode == COMMENT_MODE_BUTTON, animated);
     shareCounter.setCount(interactionInfo != null ? interactionInfo.forwardCount : 0, animated);
     isPinned.showHide(isPinned(), animated);
+    if (reactionsComponent != null) {
+      reactionsComponent.update(interactionInfo != null ? interactionInfo.reactions : new TdApi.MessageReaction[0], animated);
+    }
   }
 
   private static void copyFlags (TdApi.Message src, TdApi.Message dst) {

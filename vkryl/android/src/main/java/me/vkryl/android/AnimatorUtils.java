@@ -18,7 +18,7 @@ public final class AnimatorUtils {
   public static final DecelerateInterpolator DECELERATE_INTERPOLATOR = new DecelerateInterpolator();
   public static final AccelerateInterpolator ACCELERATE_INTERPOLATOR = new AccelerateInterpolator();
   public static final DecelerateInterpolator NAVIGATION_INTERPOLATOR = new DecelerateInterpolator(1.78f);
-  // public static final DecelerateInterpolator SLOW_DECELERATE_INTERPOLATOR = new DecelerateInterpolator(.72f);
+  public static final DecelerateInterpolator SLOW_DECELERATE_INTERPOLATOR = new DecelerateInterpolator(.72f);
   public static final LinearInterpolator LINEAR_INTERPOLATOR = new LinearInterpolator();
   public static final OvershootInterpolator OVERSHOOT_INTERPOLATOR = new OvershootInterpolator(3.2f);
   public static final AccelerateDecelerateInterpolator ACCELERATE_DECELERATE_INTERPOLATOR = new AccelerateDecelerateInterpolator();

@@ -86,7 +86,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private ImageReceiver contentReceiver;
   private DoubleImageReceiver previewReceiver, replyReceiver;
   private GifReceiver gifReceiver;
-  private ComplexReceiver complexReceiver;
+  private ComplexReceiver complexReceiver, reactionsReceiver;
   private MessageViewGroup parentMessageViewGroup;
   private MessagesManager manager;
 
@@ -94,6 +94,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     super(context);
     avatarReceiver = new ImageReceiver(this, Screen.dp(20.5f));
     gifReceiver = new GifReceiver(this);
+    reactionsReceiver = new ComplexReceiver(this);
     setUseReplyReceiver();
     setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     if (Config.HARDWARE_MESSAGE_LAYER) {
@@ -140,6 +141,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     }
     if (complexReceiver != null) {
       complexReceiver.performDestroy();
+    }
+    if (reactionsReceiver != null) {
+      reactionsReceiver.performDestroy();
     }
     if (msg != null) {
       msg.onDestroy();
@@ -343,6 +347,10 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     return complexReceiver;
   }
 
+  public ComplexReceiver getReactionsReceiver () {
+    return reactionsReceiver;
+  }
+
   public DoubleImageReceiver getPreviewReceiver () {
     return previewReceiver;
   }
@@ -364,6 +372,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       if ((flags & FLAG_USE_COMPLEX_RECEIVER) != 0) {
         complexReceiver.attach();
       }
+      if (reactionsReceiver != null) {
+        reactionsReceiver.attach();
+      }
     }
   }
 
@@ -381,6 +392,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       }
       if ((flags & FLAG_USE_COMPLEX_RECEIVER) != 0) {
         complexReceiver.detach();
+      }
+      if (reactionsReceiver != null) {
+        reactionsReceiver.detach();
       }
     }
   }

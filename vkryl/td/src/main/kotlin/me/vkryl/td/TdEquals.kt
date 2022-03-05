@@ -3,6 +3,7 @@
 
 package me.vkryl.td
 
+import android.util.Log
 import me.vkryl.core.equalsOrBothEmpty
 import org.drinkless.td.libcore.telegram.TdApi.*
 import java.util.*
@@ -890,6 +891,32 @@ fun BackgroundFill?.equalsTo(b: BackgroundFill?): Boolean {
         }
         else -> error(this.toString())
       }
+    }
+  }
+}
+
+
+fun MessageReaction?.equalsTo(b: MessageReaction?): Boolean {
+  return when {
+    this === b -> true
+    this == null || b == null || this.constructor != b.constructor -> false
+    else -> {
+      isChosen == b.isChosen && totalCount == b.totalCount && reaction.equals(b.reaction) && recentSenderIds.equalsTo(b.recentSenderIds)
+    }
+  }
+}
+
+fun Array<MessageSender>?.equalsTo(b: Array<MessageSender>?): Boolean {
+  return when {
+    this === b -> true
+    this == null || b == null || this.size != b.size -> false
+    else -> {
+      this.forEachIndexed { index, sender ->
+        if (!sender.equalsTo(b[index])) {
+          return false
+        }
+      }
+      true
     }
   }
 }

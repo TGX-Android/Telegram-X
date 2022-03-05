@@ -8662,4 +8662,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       return suggestedAction;
     }
   }
+
+  public TdApi.Reaction getReaction (String reactionStr) {
+    synchronized (dataLock) {
+      for (TdApi.Reaction supportedReaction : supportedReactions) {
+        if (supportedReaction.reaction.equals(reactionStr)) {
+          return supportedReaction;
+        }
+      }
+
+      return null;
+    }
+  }
 }
