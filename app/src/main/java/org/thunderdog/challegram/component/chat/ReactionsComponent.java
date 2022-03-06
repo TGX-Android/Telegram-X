@@ -213,7 +213,8 @@ public class ReactionsComponent implements FactorAnimator.Target {
       Td.buildOutline(reactionObj.staticIcon.outline, REACTION_ICON_SIZE, staticIconContour);
       staticIconFile = new ImageFile(tdlib, reactionObj.staticIcon.sticker);
       staticIconFile.setScaleType(ImageFile.FIT_CENTER);
-      staticIconFile.setSize(REACTION_ICON_SIZE * 8);
+      staticIconFile.setSize(REACTION_ICON_SIZE * 2);
+      staticIconFile.setNoBlur();
       chooseAnimator.setValue(reaction.isChosen, false);
 
       textCounter = new Counter.Builder()
