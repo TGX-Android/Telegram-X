@@ -166,8 +166,9 @@ public class EditChatReactionsController extends EditBaseController<EditChatReac
     items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_manageReactionsGlobal, 0, R.string.ReactionManageEnable, args.availableReactions.length > 0));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, tdlib.isChannel(args.chatId) ? R.string.ReactionManageEnableHintChannel : R.string.ReactionManageEnableHintGroup));
-    items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
 
+    items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.ReactionManageList));
+    items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     for (TdApi.Reaction supportedReaction : tdlib.getActiveReactions()) {
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_manageReactionsEntry, 0, supportedReaction.reaction + " / " +supportedReaction.title, false));
     }

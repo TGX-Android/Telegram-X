@@ -4246,6 +4246,7 @@
   <string name="LocationAlertLocationDisclaimer">Telegram X does not use location data for any hidden purposes, and accesses it only by your explicit request.</string>
 
   <string name="Reactions">Reactions</string>
+  <string name="ReactionManageList">Available Reactions</string>
   <string name="ReactionManageEnable">Enable Reactions</string>
   <string name="ReactionManageEnableHintGroup">Allow members to react to group messages.</string>
   <string name="ReactionManageEnableHintChannel">Allow subscribers to react to channel posts.</string>
