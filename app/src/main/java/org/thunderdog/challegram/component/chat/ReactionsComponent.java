@@ -7,13 +7,9 @@ import android.graphics.RectF;
 import android.os.Build;
 import android.view.Gravity;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.recyclerview.widget.DiffUtil;
-import androidx.recyclerview.widget.ListUpdateCallback;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.loader.ComplexReceiver;
@@ -25,9 +21,11 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.text.Counter;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
@@ -38,36 +36,26 @@ import me.vkryl.td.Td;
 
 public class ReactionsComponent implements FactorAnimator.Target {
   // Sizes
-  private static final int REACTION_ROW_HEIGHT = Screen.dp(36f);
+  private static final int REACTION_ROW_HEIGHT = Screen.dp(48f);
   private static final int REACTION_HEIGHT = Screen.dp(28f);
   private static final int REACTION_ITEM_SEPARATOR = Screen.dp(8f);
   private static final int REACTION_RADIUS = Screen.dp(32f);
   private static final int REACTION_CONTAINER_DELTA = Screen.dp(6f);
-  private static final int REACTION_ICON_SIZE = Screen.dp(8f);
+  private static final int REACTION_ICON_SIZE = Screen.dp(16f);
   private static final int REACTION_BASE_WIDTH = REACTION_ICON_SIZE + Screen.dp(12f);
   // Animation IDs
   private static final int ANIMATOR_VISIBLE = 0;
   private static final int ANIMATOR_CHOOSE = 1;
-
-  // Diff
-  private final DiffUtil.ItemCallback<Reaction> reactionDiffer = new DiffUtil.ItemCallback<>() {
-    @Override
-    public boolean areItemsTheSame (@NonNull Reaction oldItem, @NonNull Reaction newItem) {
-      return oldItem.reaction.reaction.equals(newItem.reaction.reaction);
-    }
-
-    @Override
-    public boolean areContentsTheSame (@NonNull Reaction oldItem, @NonNull Reaction newItem) {
-      return Td.equalsTo(oldItem.reaction, newItem.reaction);
-    }
-  };
+  private static final int ANIMATOR_COORDINATE = 2;
 
   private final TGMessage source;
 
   private ViewProvider viewProvider;
-
   private TdApi.MessageReaction[] reactions;
   private ArrayList<Reaction> clientReactions = new ArrayList<>();
+
+  private int reactionsWidth;
+  private int reactionsHeight;
 
   private final BoolAnimator componentVisibleAnimator = new BoolAnimator(ANIMATOR_VISIBLE, this, AnimatorUtils.SLOW_DECELERATE_INTERPOLATOR, 230l);
 
@@ -78,6 +66,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
   }
 
   public void update (TdApi.MessageReaction[] messageReactions, boolean animated) {
+    if (clientReactions.isEmpty() && messageReactions.length == 0) return;
     this.reactions = messageReactions;
 
     /**
@@ -89,85 +78,69 @@ public class ReactionsComponent implements FactorAnimator.Target {
      * - Sort?
      */
 
-    ArrayList<Reaction> newReactions = new ArrayList<>();
-    for (int i = 0; i < messageReactions.length; i++) {
-      newReactions.add(i, new Reaction(source.tdlib(), messageReactions[i], viewProvider, source.isOutgoing() && !source.isChannel()));
+    ArrayList<String> emojiList = new ArrayList<>();
+    HashMap<String, Reaction> existingHash = new HashMap<>();
+
+    for (int i = 0; i < clientReactions.size(); i++) {
+      Reaction existingReaction = clientReactions.get(i);
+      existingHash.put(existingReaction.reaction.reaction, existingReaction);
     }
 
-    DiffUtil.DiffResult diff = DiffUtil.calculateDiff(new DiffUtil.Callback() {
-      @Override
-      public int getOldListSize () {
-        return clientReactions.size();
-      }
+    for (int i = 0; i < messageReactions.length; i++) {
+      TdApi.MessageReaction reaction = messageReactions[i];
+      emojiList.add(reaction.reaction);
 
-      @Override
-      public int getNewListSize () {
-        return newReactions.size();
+      if (existingHash.containsKey(reaction.reaction)) {
+        // reaction exists, update it
+        existingHash.get(reaction.reaction).update(messageReactions[i], i, animated);
+      } else {
+        // reaction does not exist, add it
+        // note that previous index is already added, so we can be assured in list changes
+        Reaction newReaction = new Reaction(source.tdlib(), reaction, viewProvider, source.isOutgoing() && !source.isChannel());
+        clientReactions.add(i, newReaction);
+        newReaction.update(messageReactions[i], i, animated);
+        newReaction.show(true);
       }
+    }
 
-      @Override
-      public boolean areItemsTheSame (int oldItemPosition, int newItemPosition) {
-        return reactionDiffer.areItemsTheSame(clientReactions.get(oldItemPosition), newReactions.get(newItemPosition));
+    for (Reaction existingReaction : existingHash.values()) {
+      if (!emojiList.contains(existingReaction.reaction.reaction)) {
+        // reaction is not existing anymore, remove it
+        existingReaction.hide(animated, () -> clientReactions.remove(existingReaction));
       }
+    }
 
-      @Override
-      public boolean areContentsTheSame (int oldItemPosition, int newItemPosition) {
-        return reactionDiffer.areContentsTheSame(clientReactions.get(oldItemPosition), newReactions.get(newItemPosition));
-      }
-    });
-
-    diff.dispatchUpdatesTo(new ListUpdateCallback() {
-      @Override
-      public void onInserted (int position, int count) {
-        // Inserted - show bubble
-        Log.e("RC onInserted %s %s", position, count);
-        clientReactions.addAll(position, newReactions.subList(position, position + count));
-        for (int i = position; i < position + count; i++) {
-          clientReactions.get(i).show(animated);
-        }
-      }
-
-      @Override
-      public void onRemoved (int position, int count) {
-        // Removed - hide bubble
-        Log.e("RC onRemoved %s %s", position, count);
-        //clientReactions.addAll(position, newReactions.subList(position, position + count));
-        for (int i = position; i < position + count; i++) {
-          int finalI = i;
-          clientReactions.get(i).hide(animated, () -> clientReactions.remove(finalI));
-        }
-      }
-
-      @Override
-      public void onMoved (int fromPosition, int toPosition) {
-        Log.e("RC onMoved %s %s", fromPosition, fromPosition);
-      }
-
-      @Override
-      public void onChanged (int position, int count, @Nullable Object payload) {
-        // Changed - update content
-        Log.e("RC onChanged %s %s", position, count);
-        for (int i = position; i < position + count; i++) {
-          clientReactions.get(i).update(newReactions.get(position).reaction, animated);
-        }
-      }
-    });
-
+    measure(messageReactions, animated);
     componentVisibleAnimator.setValue(reactions.length > 0, animated);
   }
 
+  private void measure (TdApi.MessageReaction[] order, boolean animated) {
+    HashMap<String, Reaction> existingHash = new HashMap<>();
+
+    for (int i = 0; i < clientReactions.size(); i++) {
+      Reaction existingReaction = clientReactions.get(i);
+      existingHash.put(existingReaction.reaction.reaction, existingReaction);
+    }
+
+    int currentX = 0;
+    int currentY = 0;
+
+    for (int i = 0; i < order.length; i++) {
+      Reaction reaction = existingHash.get(order[i].reaction);
+      reaction.setCoordinates(currentX, currentY, animated);
+      currentX += reaction.getStaticWidth() + ((i != order.length - 1) ? REACTION_ITEM_SEPARATOR : 0);
+    }
+
+    reactionsWidth = currentX;
+    reactionsHeight = REACTION_ROW_HEIGHT;
+  }
+
   public int getHeight () {
-    return (int) ((REACTION_ROW_HEIGHT - REACTION_CONTAINER_DELTA) * componentVisibleAnimator.getFloatValue());
+    return (int) ((REACTION_ROW_HEIGHT - (source.isChannel() ? REACTION_CONTAINER_DELTA : 0)) * componentVisibleAnimator.getFloatValue());
   }
 
   public int getWidth () {
-    int totalWidth = 0;
-
-    for (int i = 0; i < clientReactions.size(); i++) {
-      totalWidth += clientReactions.get(i).getWidth(i != 0) + REACTION_ITEM_SEPARATOR;
-    }
-
-    return (int) (totalWidth * componentVisibleAnimator.getFloatValue());
+    return (int) (reactionsWidth * componentVisibleAnimator.getFloatValue());
   }
 
   @Override
@@ -177,9 +150,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
   public void draw (MessageView view, Canvas c, int startX, int startY) {
     for (int i = 0; i < clientReactions.size(); i++) {
-      Reaction reaction = clientReactions.get(i);
-      reaction.draw(c, view.getReactionsReceiver(), startX, startY);
-      startX += reaction.getWidth(true) + REACTION_ITEM_SEPARATOR;
+      clientReactions.get(i).draw(c, view.getReactionsReceiver(), startX, startY);
     }
   }
 
@@ -196,13 +167,14 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
     private final BoolAnimator appearAnimator = new BoolAnimator(ANIMATOR_VISIBLE, this, AnimatorUtils.SLOW_DECELERATE_INTERPOLATOR, 230l);
     private final BoolAnimator chooseAnimator = new BoolAnimator(ANIMATOR_CHOOSE, this, AnimatorUtils.SLOW_DECELERATE_INTERPOLATOR, 230l);
+    private final FactorAnimator xCoordinate = new FactorAnimator(ANIMATOR_COORDINATE, this, AnimatorUtils.SLOW_DECELERATE_INTERPOLATOR, 230l);
+    private final FactorAnimator yCoordinate = new FactorAnimator(ANIMATOR_COORDINATE, this, AnimatorUtils.SLOW_DECELERATE_INTERPOLATOR, 230l);
 
     private Runnable onHideAnimationEnd;
 
     private final RectF bubbleRect = new RectF();
     private final Path bubblePath = new Path();
     private float bubblePathWidth;
-    private int bubbleStartX, bubbleStartY;
 
     public Reaction (Tdlib tdlib, TdApi.MessageReaction reaction, ViewProvider viewProvider, boolean isOutgoing) {
       this.reaction = reaction;
@@ -210,10 +182,10 @@ public class ReactionsComponent implements FactorAnimator.Target {
       this.isOutgoing = isOutgoing;
       this.viewProvider = viewProvider;
 
-      Td.buildOutline(reactionObj.staticIcon.outline, REACTION_ICON_SIZE, staticIconContour);
+      Td.buildOutline(reactionObj.staticIcon.outline, (float) REACTION_ICON_SIZE / reactionObj.staticIcon.height, staticIconContour);
       staticIconFile = new ImageFile(tdlib, reactionObj.staticIcon.sticker);
-      staticIconFile.setScaleType(ImageFile.FIT_CENTER);
-      staticIconFile.setSize(REACTION_ICON_SIZE * 2);
+      //staticIconFile.setScaleType(ImageFile.FIT_CENTER);
+      staticIconFile.setSize(REACTION_ICON_SIZE);
       staticIconFile.setNoBlur();
       chooseAnimator.setValue(reaction.isChosen, false);
 
@@ -228,13 +200,27 @@ public class ReactionsComponent implements FactorAnimator.Target {
       textCounter.setCount(reaction.totalCount, false);
     }
 
+    public void setCoordinates (float x, float y, boolean animated) {
+      UI.post(() -> {
+        if (animated) {
+          xCoordinate.animateTo(x);
+          //yCoordinate.animateTo(y);
+        } else {
+          xCoordinate.forceFactor(x);
+          //yCoordinate.forceFactor(y);
+        }
+      });
+    }
+
     public void show (boolean animated) {
-      appearAnimator.setValue(true, animated);
+      UI.post(() -> appearAnimator.setValue(true, animated));
     }
 
     public void hide (boolean animated, @Nullable Runnable onEnd) {
-      onHideAnimationEnd = onEnd;
-      appearAnimator.setValue(false, animated);
+      UI.post(() -> {
+        onHideAnimationEnd = onEnd;
+        appearAnimator.setValue(false, animated);
+      });
     }
 
     public int getBackgroundColor () {
@@ -254,18 +240,23 @@ public class ReactionsComponent implements FactorAnimator.Target {
       return Theme.getColor(R.id.theme_color_fillingPositive);
     }
 
-    public float getHeight (boolean animated) {
-      return REACTION_HEIGHT * appearAnimator.getFloatValue();
+    public float getHeight () {
+      return REACTION_HEIGHT;
     }
 
-    public float getWidth (boolean animated) {
-      float bubbleWidth = REACTION_BASE_WIDTH + textCounter.getScaledWidth(0) + Screen.dp(18f);
-      return bubbleWidth * (animated ? appearAnimator.getFloatValue() : 1f);
+    public float getWidth () {
+      return REACTION_BASE_WIDTH + textCounter.getScaledWidth(0) + Screen.dp(12f);
+    }
+
+    public float getStaticWidth () {
+      return REACTION_BASE_WIDTH + Paints.getRegularTextPaint(12f).measureText(String.valueOf(reaction.totalCount)) + Screen.dp(12f);
     }
 
     @Override
     public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
-      viewProvider.invalidate();
+      if (id == ANIMATOR_CHOOSE) {
+        viewProvider.invalidate();
+      }
     }
 
     @Override
@@ -276,25 +267,30 @@ public class ReactionsComponent implements FactorAnimator.Target {
       }
     }
 
-    public void update (TdApi.MessageReaction reaction, boolean animated) {
+    public void update (TdApi.MessageReaction reaction, int index, boolean animated) {
+      if (this.reaction.totalCount != reaction.totalCount) textCounter.setCount(reaction.totalCount, animated);
       this.reaction = reaction;
       chooseAnimator.setValue(reaction.isChosen, animated);
-      textCounter.setCount(reaction.totalCount, animated);
+      setCoordinates((REACTION_BASE_WIDTH * 4) * index, 0, animated);
     }
 
-    public void draw (Canvas c, ComplexReceiver reactionsReceiver, int startX, int startY) {
+    public void draw (Canvas c, ComplexReceiver reactionsReceiver, int sx, int sy) {
+      final int startX = sx + (int) xCoordinate.getFactor();
+      final int startY = sy + (int) yCoordinate.getFactor();
+
+      c.save();
+      c.translate(startX, startY);
+
       final boolean clipped = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
-      final float width = getWidth(true); // false for indexes starting from 1 TODO
-      final float height = getHeight(true); // false for indexes starting from 1 TODO
+      final float width = getWidth();
+      final float height = getHeight();
 
       ImageReceiver r = reactionsReceiver.getImageReceiver(reaction.reaction.hashCode());
 
-      if (bubblePathWidth != width || bubbleStartX != startX || bubbleStartY != startY) {
-        bubbleStartX = startX;
-        bubbleStartY = startY;
-        bubblePath.reset();
+      if (bubblePathWidth != width) {
         bubblePathWidth = width;
-        bubbleRect.set(startX, startY, startX + width, startY + height);
+        bubbleRect.set(0, 0, width, height);
+        bubblePath.reset();
         DrawAlgorithms.buildPath(bubblePath, bubbleRect, REACTION_RADIUS, REACTION_RADIUS, REACTION_RADIUS, REACTION_RADIUS);
       }
 
@@ -308,9 +304,10 @@ public class ReactionsComponent implements FactorAnimator.Target {
       }
 
       c.drawRoundRect(bubbleRect, REACTION_RADIUS, REACTION_RADIUS, Paints.fillingPaint(getBackgroundColor()));
-      if (clipped && chooseAnimator.isAnimating()) c.drawCircle(startX + Screen.dp(16f), startY + (height / 2f), width * chooseAnimator.getFloatValue(), Paints.fillingPaint(getChosenColor()));
+      if (clipped && chooseAnimator.isAnimating()) c.drawCircle(Screen.dp(16f), (height / 2f), width * chooseAnimator.getFloatValue(), Paints.fillingPaint(getChosenColor()));
 
-      r.setBounds(startX + Screen.dp(8f), startY, startX + Screen.dp(16f) + REACTION_ICON_SIZE, startY + REACTION_HEIGHT);
+      int izPad = (REACTION_HEIGHT - REACTION_ICON_SIZE) / 2;
+      r.setBounds(Screen.dp(8f), izPad, Screen.dp(8f) + REACTION_ICON_SIZE, REACTION_HEIGHT - izPad);
 
       if (r.isEmpty()) {
         r.requestFile(staticIconFile);
@@ -322,13 +319,15 @@ public class ReactionsComponent implements FactorAnimator.Target {
         r.draw(c);
       }
 
-      textCounter.draw(c, r.getRight() + Screen.dp(4f), r.centerY(), Gravity.LEFT, 1f);
+      textCounter.draw(c, r.getRight() + Screen.dp(6f), r.centerY(), Gravity.LEFT, 1f);
 
       if (clipped) {
         ViewSupport.restoreClipPath(c, saveCount);
       } else {
         c.restore();
       }
+
+      c.restore();
     }
   }
 }

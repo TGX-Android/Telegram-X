@@ -677,7 +677,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     if (reactionsComponent != null) {
-      width = Math.max(width, reactionsComponent.getWidth() + getBubbleTimePartWidth());
+      width = Math.max(width, reactionsComponent.getWidth());
     }
 
     return width; //  + getBubblePaddingLeft() + getBubblePaddingRight();
