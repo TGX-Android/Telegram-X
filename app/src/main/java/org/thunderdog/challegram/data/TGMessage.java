@@ -612,7 +612,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return !headerDisabled() && (flags & FLAG_HEADER_ENABLED) != 0;
   }
 
-  protected int getSmallestMaxContentWidth () {
+  public int getSmallestMaxContentWidth () {
     return Math.min(pRealContentMaxWidth, Screen.smallestSide() - xPaddingRight - pRealContentX);
   }
 
@@ -620,7 +620,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return (int) ((float) getSmallestMaxContentWidth() * 1.24f);
   }
 
-  protected static int getEstimatedContentMaxWidth () {
+  public static int getEstimatedContentMaxWidth () {
     return Screen.smallestSide() - xPaddingRight - xContentLeft;
   }
 
@@ -4839,6 +4839,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       }
     }
     return oldHeight != height;
+  }
+
+  public boolean needExtraPadding () {
+    return (flags & FLAG_EXTRA_PADDING) != 0;
   }
 
   public boolean setNeedExtraPresponsoredPadding (boolean needPadding) {
