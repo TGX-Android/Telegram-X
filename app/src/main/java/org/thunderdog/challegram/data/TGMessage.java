@@ -1055,6 +1055,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       if (hasFooter()) {
         height += getFooterHeight() + getFooterPaddingTop() + getFooterPaddingBottom();
       }
+      if (reactionsComponent != null) {
+        height += reactionsComponent.getFlatHeight();
+      }
       return height;
     }
   }

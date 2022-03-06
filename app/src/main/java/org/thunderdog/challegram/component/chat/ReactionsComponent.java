@@ -39,6 +39,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
   private static final int REACTION_ROW_HEIGHT = Screen.dp(48f);
   private static final int REACTION_HEIGHT = Screen.dp(28f);
   private static final int REACTION_ITEM_SEPARATOR = Screen.dp(8f);
+  private static final int REACTION_ITEM_HALF_SEPARATOR = Screen.dp(4f);
   private static final int REACTION_RADIUS = Screen.dp(32f);
   private static final int REACTION_CONTAINER_DELTA = Screen.dp(6f);
   private static final int REACTION_ICON_SIZE = Screen.dp(16f);
@@ -132,11 +133,15 @@ public class ReactionsComponent implements FactorAnimator.Target {
     }
 
     reactionsWidth = currentX;
-    reactionsHeight = REACTION_ROW_HEIGHT;
+    reactionsHeight = REACTION_HEIGHT;
   }
 
   public int getHeight () {
     return (int) ((REACTION_ROW_HEIGHT - (source.isChannel() ? REACTION_CONTAINER_DELTA : 0)) * componentVisibleAnimator.getFloatValue());
+  }
+
+  public int getFlatHeight () {
+    return (int) ((reactionsHeight + REACTION_ITEM_HALF_SEPARATOR) * componentVisibleAnimator.getFloatValue());
   }
 
   public int getWidth () {
