@@ -481,8 +481,8 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       }
       case TdApi.AuthenticationCodeTypeMissedCall.CONSTRUCTOR: {
         TdApi.AuthenticationCodeTypeMissedCall missedCall = (TdApi.AuthenticationCodeTypeMissedCall) type;
-        editText.setHint(Lang.getString(R.string.login_LastDigits, missedCall.length));
-        return Strings.replaceBoldTokens(Lang.getString(R.string.SentMissedCall, Strings.formatPhone(missedCall.phoneNumberPrefix), missedCall.length), R.id.theme_color_textLight);
+        editText.setHint(Lang.pluralBold(R.string.login_LastDigits, missedCall.length));
+        return Strings.replaceBoldTokens(Lang.getString(R.string.format_doubleLines, Lang.getString(R.string.SentMissedCall, Strings.formatPhone(missedCall.phoneNumberPrefix)), Lang.plural(R.string.SentMissedCallXDigits, missedCall.length)), R.id.theme_color_textLight);
       }
     }
     return Strings.replaceBoldTokens(Lang.getString(R.string.SentSmsCode), R.id.theme_color_textLight);
