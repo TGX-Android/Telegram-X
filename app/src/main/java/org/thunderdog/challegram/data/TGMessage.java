@@ -677,7 +677,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     if (reactionsComponent != null) {
-      width = Math.max(width, reactionsComponent.getWidth());
+      width = Math.max(width, reactionsComponent.getWidth() + getBubbleTimePartWidth());
     }
 
     return width; //  + getBubblePaddingLeft() + getBubblePaddingRight();
@@ -2962,7 +2962,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
   }
 
-  private void notifyBubbleChanged () {
+  public void notifyBubbleChanged () {
     int oldHeight = height;
     height = computeHeight();
     onBubbleHasChanged();

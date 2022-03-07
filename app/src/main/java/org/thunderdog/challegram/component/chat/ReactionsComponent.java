@@ -7,6 +7,7 @@ import android.graphics.Path;
 import android.graphics.RectF;
 import android.os.Build;
 import android.view.Gravity;
+import android.view.animation.Interpolator;
 
 import androidx.annotation.Nullable;
 
@@ -47,10 +48,22 @@ public class ReactionsComponent implements FactorAnimator.Target {
   private static final int REACTION_CONTAINER_DELTA = Screen.dp(6f);
   private static final int REACTION_ICON_SIZE = Screen.dp(16f);
   private static final int REACTION_BASE_WIDTH = REACTION_ICON_SIZE + Screen.dp(12f);
-  // Animation IDs
+
+  // Animator Settings
+  private static final Interpolator RC_INTERPOLATOR = AnimatorUtils.SLOW_DECELERATE_INTERPOLATOR;
+  private static final long RC_DURATION = 230L;
+
+  // Animator IDs
   private static final int ANIMATOR_VISIBLE = 0;
   private static final int ANIMATOR_CHOOSE = 1;
   private static final int ANIMATOR_COORDINATE = 2;
+  private static final int ANIMATOR_CONTAINER_PARAMS_H = 3;
+  private static final int ANIMATOR_CONTAINER_PARAMS_W = 4;
+
+  // Animators
+  private final BoolAnimator componentVisibleAnimator = new BoolAnimator(ANIMATOR_VISIBLE, this, RC_INTERPOLATOR, RC_DURATION);
+  private final FactorAnimator rcWidthAnimator = new FactorAnimator(ANIMATOR_CONTAINER_PARAMS_W, this, RC_INTERPOLATOR, RC_DURATION);
+  private final FactorAnimator rcHeightAnimator = new FactorAnimator(ANIMATOR_CONTAINER_PARAMS_H, this, RC_INTERPOLATOR, RC_DURATION);
 
   private final TGMessage source;
 
@@ -61,8 +74,6 @@ public class ReactionsComponent implements FactorAnimator.Target {
   private int reactionsWidth;
   private int reactionsHeight;
   private RectF rcRect = new RectF();
-
-  private final BoolAnimator componentVisibleAnimator = new BoolAnimator(ANIMATOR_VISIBLE, this, AnimatorUtils.SLOW_DECELERATE_INTERPOLATOR, 230l);
 
   public ReactionsComponent (TGMessage source, ViewProvider viewProvider) {
     this.source = source;
@@ -136,28 +147,39 @@ public class ReactionsComponent implements FactorAnimator.Target {
       currentX += reaction.getStaticWidth() + ((i != order.length - 1) ? REACTION_ITEM_SEPARATOR : 0);
     }
 
-    Log.e("RC Measure %s / %s / %s / %s", source.getSmallestMaxContentWidth(), TGMessage.getEstimatedContentMaxWidth(), source.getRealContentMaxWidth(), currentX);
-    // TODO: Multiline
+    //Log.e("RC Measure %s / %s / %s / %s", source.getSmallestMaxContentWidth(), TGMessage.getEstimatedContentMaxWidth(), source.getRealContentMaxWidth(), currentX);
 
     reactionsWidth = width == 0 ? currentX : width;
     reactionsHeight = currentY == 0 ? REACTION_HEIGHT : currentY + REACTION_HEIGHT;
+
+    if (animated) {
+      rcWidthAnimator.animateTo(reactionsWidth);
+      rcHeightAnimator.animateTo(reactionsHeight);
+    } else {
+      rcWidthAnimator.forceFactor(reactionsWidth);
+      rcHeightAnimator.forceFactor(reactionsHeight);
+    }
   }
 
   public int getHeight () {
-    return (int) (((reactionsHeight - (source.isChannel() ? REACTION_CONTAINER_DELTA : 0)) + Screen.dp(4f)) * componentVisibleAnimator.getFloatValue());
+    return (int) (((rcHeightAnimator.getFactor() - (source.isChannel() ? REACTION_CONTAINER_DELTA : 0)) + Screen.dp(4f)) * componentVisibleAnimator.getFloatValue());
   }
 
   public int getFlatHeight () {
-    return (int) ((reactionsHeight + REACTION_ITEM_HALF_SEPARATOR) * componentVisibleAnimator.getFloatValue());
+    return (int) ((rcHeightAnimator.getFactor() + REACTION_ITEM_HALF_SEPARATOR) * componentVisibleAnimator.getFloatValue());
   }
 
   public int getWidth () {
-    return (int) (reactionsWidth * componentVisibleAnimator.getFloatValue());
+    return (int) (rcWidthAnimator.getFactor() * componentVisibleAnimator.getFloatValue());
   }
 
   @Override
   public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
-    viewProvider.invalidate();
+    if ((id == ANIMATOR_VISIBLE || id == ANIMATOR_CONTAINER_PARAMS_H) && !source.useBubbles()) {
+      source.notifyBubbleChanged();
+    } else {
+      viewProvider.invalidate();
+    }
   }
 
   public void draw (MessageView view, Canvas c, int startX, int startY) {
@@ -181,10 +203,10 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
     private TdApi.MessageReaction reaction;
 
-    private final BoolAnimator appearAnimator = new BoolAnimator(ANIMATOR_VISIBLE, this, AnimatorUtils.SLOW_DECELERATE_INTERPOLATOR, 230l);
-    private final BoolAnimator chooseAnimator = new BoolAnimator(ANIMATOR_CHOOSE, this, AnimatorUtils.SLOW_DECELERATE_INTERPOLATOR, 230l);
-    private final FactorAnimator xCoordinate = new FactorAnimator(ANIMATOR_COORDINATE, this, AnimatorUtils.SLOW_DECELERATE_INTERPOLATOR, 230l);
-    private final FactorAnimator yCoordinate = new FactorAnimator(ANIMATOR_COORDINATE, this, AnimatorUtils.SLOW_DECELERATE_INTERPOLATOR, 230l);
+    private final BoolAnimator appearAnimator = new BoolAnimator(ANIMATOR_VISIBLE, this, RC_INTERPOLATOR, RC_DURATION);
+    private final BoolAnimator chooseAnimator = new BoolAnimator(ANIMATOR_CHOOSE, this, RC_INTERPOLATOR, RC_DURATION);
+    private final FactorAnimator xCoordinate = new FactorAnimator(ANIMATOR_COORDINATE, this, RC_INTERPOLATOR, RC_DURATION);
+    private final FactorAnimator yCoordinate = new FactorAnimator(ANIMATOR_COORDINATE, this, RC_INTERPOLATOR, RC_DURATION);
 
     private Runnable onHideAnimationEnd;
 
@@ -332,16 +354,10 @@ public class ReactionsComponent implements FactorAnimator.Target {
       int izPad = (REACTION_HEIGHT - REACTION_ICON_SIZE) / 2;
       r.setBounds(Screen.dp(8f), izPad, Screen.dp(8f) + REACTION_ICON_SIZE, REACTION_HEIGHT - izPad);
 
-      if (r.isEmpty()) {
-        r.requestFile(staticIconFile);
-      }
-
+      if (r.isEmpty()) r.requestFile(staticIconFile);
+      if (r.needPlaceholder()) r.drawPlaceholderContour(c, staticIconContour, alpha);
       r.setAlpha(alpha);
-      if (r.needPlaceholder()) {
-        r.drawPlaceholderContour(c, staticIconContour, alpha);
-      } else {
-        r.draw(c);
-      }
+      r.draw(c);
       r.setAlpha(1f);
 
       textCounter.draw(c, r.getRight() + Screen.dp(6f), r.centerY(), Gravity.LEFT, alpha);
