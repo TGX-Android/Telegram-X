@@ -4781,6 +4781,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return chat != null && tdlib.isSelfChat(chat.id);
   }
 
+  public boolean isUserChat () {
+    return chat != null && tdlib.isUserChat(chat.id);
+  }
+
   public boolean hasWritePermission () {
     return chat != null && tdlib.hasWritePermission(chat) && !isEventLog();
   }

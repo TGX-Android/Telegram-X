@@ -815,7 +815,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (hasFooter()) {
       height += getFooterHeight() + getFooterPaddingTop() + getFooterPaddingBottom();
     }
-    if (reactionsComponent != null && !reactionsComponent.shouldRenderUnderBubble()) {
+    if (reactionsComponent != null && !reactionsComponent.shouldRenderUnderBubble() && !reactionsComponent.shouldRenderSmall()) {
       height += reactionsComponent.getHeight(isBubbleTimeExpanded);
     }
     height += getBubbleReduceHeight();
@@ -1047,7 +1047,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       if (inlineKeyboard != null && !inlineKeyboard.isEmpty()) {
         height += inlineKeyboard.getHeight() + TGInlineKeyboard.getButtonSpacing();
       }
-      if (reactionsComponent != null && reactionsComponent.shouldRenderUnderBubble()) {
+      if (reactionsComponent != null && reactionsComponent.shouldRenderUnderBubble() && !reactionsComponent.shouldRenderSmall()) {
         height += reactionsComponent.getFlatHeight();
       }
       return height;
@@ -1059,7 +1059,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       if (hasFooter()) {
         height += getFooterHeight() + getFooterPaddingTop() + getFooterPaddingBottom();
       }
-      if (reactionsComponent != null) {
+      if (reactionsComponent != null && !reactionsComponent.shouldRenderSmall()) {
         height += reactionsComponent.getFlatHeight();
       }
       return height;
@@ -1769,6 +1769,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           right -= viewCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
         }
       }
+
+      if (reactionsComponent != null && reactionsComponent.shouldRenderSmall()) {
+        reactionsComponent.draw(view, c, (int) (right - (reactionsComponent.getWidth() / 1.25f)), getHeaderPadding() + Screen.dp(1f));
+      }
     }
 
     // Check box
@@ -1938,7 +1942,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       replyData.draw(c, startX, top, endX, width, replyReceiver, Lang.rtl());
     }
 
-    if (reactionsComponent != null) {
+    if (reactionsComponent != null && !reactionsComponent.shouldRenderSmall()) {
       reactionsComponent.draw(view, c, pContentX, pContentY + getContentHeight() + xBadgePadding);
     }
 
@@ -2668,6 +2672,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       max -= Screen.dp(5f) + Icons.getEditedIconWidth();
     }
 
+    if (reactionsComponent != null && reactionsComponent.shouldRenderSmall()) {
+      max -= reactionsComponent.getWidth();
+    }
+
     String authorName;
     if (forceForwardedInfo()) {
       authorName = forwardInfo.getAuthorName();
@@ -2979,11 +2987,15 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public void notifyMessageHeightChanged () {
-    int oldHeight = height;
-    height = computeHeight();
-    if (height != oldHeight) {
-      // FIXME?
-      requestLayout();
+    try {
+      int oldHeight = height;
+      height = computeHeight();
+      if (height != oldHeight) {
+        // FIXME?
+        requestLayout();
+      }
+    } catch (Exception e) {
+      // workaround
     }
   }
 
@@ -3096,6 +3108,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       startY -= Screen.dp(1f);
     }
 
+    if (reactionsComponent != null && reactionsComponent.shouldRenderSmall()) {
+      reactionsComponent.draw(view, c, startX, startY);
+      startX += reactionsComponent.getWidth();
+    }
+
     int counterY = startY + Screen.dp(11.5f);
     if (getViewCountMode() == VIEW_COUNT_MAIN) {
       if (isSending) {
@@ -3193,6 +3210,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
     if (includePadding) {
       width += Screen.dp(8f);
+    }
+    if (reactionsComponent != null && reactionsComponent.shouldRenderSmall()) {
+      width += reactionsComponent.getWidth();
     }
     return width;
   }

@@ -4,6 +4,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Build;
 import android.view.Gravity;
@@ -12,6 +13,7 @@ import android.view.animation.Interpolator;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.charts.CubicBezierInterpolator;
 import org.thunderdog.challegram.data.TGMessage;
@@ -43,9 +45,11 @@ public class ReactionsComponent implements FactorAnimator.Target {
   // Sizes
   private static final int REACTION_HEIGHT = Screen.dp(28f);
   private static final int REACTION_ITEM_SEPARATOR = Screen.dp(8f);
+  private static final int REACTION_ITEM_SEPARATOR_SMALL = Screen.dp(2f);
   private static final int REACTION_ITEM_HALF_SEPARATOR = Screen.dp(4f);
   private static final int REACTION_RADIUS = Screen.dp(32f);
   private static final int REACTION_ICON_SIZE = Screen.dp(16f);
+  private static final int REACTION_ICON_SIZE_SMALL = Screen.dp(12f);
   private static final int REACTION_BASE_WIDTH = REACTION_ICON_SIZE + Screen.dp(12f);
 
   // Animator Settings
@@ -58,6 +62,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
   private static final int ANIMATOR_COORDINATE = 2;
   private static final int ANIMATOR_CONTAINER_PARAMS_H = 3;
   private static final int ANIMATOR_CONTAINER_PARAMS_W = 4;
+  private static final int ANIMATOR_TEXT_VISIBLE = 5;
 
   // Animators
   private final BoolAnimator componentVisibleAnimator = new BoolAnimator(ANIMATOR_VISIBLE, this, RC_INTERPOLATOR, RC_DURATION);
@@ -94,13 +99,13 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
       if (existingHash.containsKey(reaction.reaction)) {
         // reaction exists, update it
-        existingHash.get(reaction.reaction).update(messageReactions[i], i, animated);
+        existingHash.get(reaction.reaction).update(messageReactions[i], i, animated, shouldRenderSmall());
       } else {
         // reaction does not exist, add it
         // note that previous index is already added, so we can be assured in list changes
-        Reaction newReaction = new Reaction(source.tdlib(), reaction, viewProvider, source.isOutgoing() && !source.isChannel());
+        Reaction newReaction = new Reaction(source.tdlib(), reaction, viewProvider, source.isOutgoing() && !source.isChannel(), shouldRenderSmall());
         clientReactions.add(i, newReaction);
-        newReaction.update(messageReactions[i], i, false);
+        newReaction.update(messageReactions[i], i, false, shouldRenderSmall());
         newReaction.show(animated);
       }
     }
@@ -139,7 +144,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
       }
 
       reaction.setCoordinates(currentX, currentY, animated);
-      currentX += reaction.getStaticWidth() + ((i != order.length - 1) ? REACTION_ITEM_SEPARATOR : 0);
+      currentX += (shouldRenderSmall() ? reaction.getSmallWidth() : reaction.getStaticWidth()) + ((i != order.length - 1) ? (shouldRenderSmall() ? REACTION_ITEM_SEPARATOR_SMALL : REACTION_ITEM_SEPARATOR) : 0);
     }
 
     int reactionsWidth = width == 0 ? currentX : width;
@@ -177,7 +182,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
   }
 
   public boolean shouldRenderSmall () {
-    return source.messagesController().isSelfChat()
+    return source.messagesController().isUserChat();
   }
 
   @Override
@@ -194,7 +199,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
     c.save();
     c.clipRect(rcRect);
     for (int i = 0; i < clientReactions.size(); i++) {
-      clientReactions.get(i).draw(c, view.getReactionsReceiver(), startX, startY, clientReactions.size() == 1);
+      clientReactions.get(i).draw(c, view.getReactionsReceiver(), startX, startY, clientReactions.size() == 1, shouldRenderSmall());
     }
     c.restore();
   }
@@ -214,6 +219,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
     private final BoolAnimator chooseAnimator = new BoolAnimator(ANIMATOR_CHOOSE, this, RC_INTERPOLATOR, RC_DURATION);
     private final FactorAnimator xCoordinate = new FactorAnimator(ANIMATOR_COORDINATE, this, RC_INTERPOLATOR, RC_DURATION);
     private final FactorAnimator yCoordinate = new FactorAnimator(ANIMATOR_COORDINATE, this, RC_INTERPOLATOR, RC_DURATION);
+    private final BoolAnimator counterAppearAnimator = new BoolAnimator(ANIMATOR_TEXT_VISIBLE, this, RC_INTERPOLATOR, RC_DURATION);
 
     private Runnable onHideAnimationEnd;
 
@@ -221,23 +227,22 @@ public class ReactionsComponent implements FactorAnimator.Target {
     private final Path bubblePath = new Path();
     private float bubblePathWidth;
 
-    public Reaction (Tdlib tdlib, TdApi.MessageReaction reaction, ViewProvider viewProvider, boolean isOutgoing) {
+    public Reaction (Tdlib tdlib, TdApi.MessageReaction reaction, ViewProvider viewProvider, boolean isOutgoing, boolean small) {
       this.reaction = reaction;
       this.reactionObj = tdlib.getReaction(reaction.reaction);
       this.isOutgoing = isOutgoing;
       this.viewProvider = viewProvider;
 
-      Td.buildOutline(reactionObj.staticIcon.outline, (float) REACTION_ICON_SIZE / reactionObj.staticIcon.height, staticIconContour);
+      Td.buildOutline(reactionObj.staticIcon.outline, (float) (small ? REACTION_ICON_SIZE_SMALL : REACTION_ICON_SIZE) / reactionObj.staticIcon.height, staticIconContour);
       staticIconFile = new ImageFile(tdlib, reactionObj.staticIcon.sticker);
-      //staticIconFile.setScaleType(ImageFile.FIT_CENTER);
-      staticIconFile.setSize(REACTION_ICON_SIZE);
+      staticIconFile.setSize(small ? REACTION_ICON_SIZE_SMALL : REACTION_ICON_SIZE);
       staticIconFile.setNoBlur();
       chooseAnimator.setValue(reaction.isChosen, false);
 
       textCounter = new Counter.Builder()
         .noBackground()
         .allBold(false)
-        .textSize(12f)
+        .textSize(small ? 10f : 12f)
         .callback((counter, sizeChanged) -> viewProvider.invalidate())
         .colorSet(this::getTextColor)
         .build();
@@ -297,6 +302,10 @@ public class ReactionsComponent implements FactorAnimator.Target {
       return REACTION_BASE_WIDTH + Paints.getRegularTextPaint(12f).measureText(String.valueOf(reaction.totalCount)) + Screen.dp(12f);
     }
 
+    public float getSmallWidth () {
+      return REACTION_ICON_SIZE_SMALL + REACTION_ITEM_HALF_SEPARATOR + (reaction.totalCount == 1 ? 0 : Screen.dp(4f) + Paints.getRegularTextPaint(10f).measureText(String.valueOf(reaction.totalCount)));
+    }
+
     @Override
     public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
       viewProvider.invalidate();
@@ -310,19 +319,69 @@ public class ReactionsComponent implements FactorAnimator.Target {
       }
     }
 
-    public void update (TdApi.MessageReaction reaction, int index, boolean animated) {
-      if (this.reaction.totalCount != reaction.totalCount) textCounter.setCount(reaction.totalCount, animated);
+    public void update (TdApi.MessageReaction reaction, int index, boolean animated, boolean small) {
+      if (small) {
+        counterAppearAnimator.setValue(reaction.totalCount > 1, animated);
+        if (reaction.totalCount > 1) {
+          textCounter.setCount(reaction.totalCount, animated);
+        } else {
+          textCounter.hide(animated);
+        }
+      } else if (this.reaction.totalCount != reaction.totalCount) {
+        textCounter.setCount(reaction.totalCount, animated);
+      }
+
       this.reaction = reaction;
       chooseAnimator.setValue(reaction.isChosen, animated);
+
       setCoordinates((REACTION_BASE_WIDTH * 4) * index, 0, animated);
     }
 
-    public void draw (Canvas c, ComplexReceiver reactionsReceiver, int sx, int sy, boolean isSingle) {
+    public void draw (Canvas c, ComplexReceiver reactionsReceiver, int sx, int sy, boolean isSingle, boolean isSmall) {
+      if (isSmall) {
+        drawSmall(c, reactionsReceiver, sx, sy);
+      } else {
+        drawLarge(c, reactionsReceiver, sx, sy, isSingle);
+      }
+    }
+
+    public void drawSmall (Canvas c, ComplexReceiver reactionsReceiver, int sx, int sy) {
+      //Log.e("%s %s %s", sx, xCoordinate.getFactor(), getSmallWidth());
+      final float alpha = appearAnimator.getFloatValue();
+      final float width = getSmallWidth();
+      final float height = Screen.dp(16f);
+      final float animationScale = MathUtils.fromTo(0.5f, 1f, alpha);
+
+      final int startX = (int) (sx + xCoordinate.getFactor());
+      final int startY = (int) (sy + yCoordinate.getFactor());
+      final int vertPad = (int) (height - REACTION_ICON_SIZE_SMALL) / 2;
+      final int tcWidth = (int) textCounter.getScaledWidth(Screen.dp(4f));
+
+      c.save();
+      c.translate(startX, startY);
+      c.scale(animationScale, animationScale, width / 2, height / 2);
+
+      ImageReceiver r = reactionsReceiver.getImageReceiver(reaction.reaction.hashCode());
+      r.setBounds(tcWidth, vertPad, REACTION_ICON_SIZE_SMALL + tcWidth, (int) (height - vertPad));
+      if (r.isEmpty()) r.requestFile(staticIconFile);
+      if (r.needPlaceholder()) r.drawPlaceholderContour(c, staticIconContour, alpha);
+      r.setAlpha(alpha);
+      r.draw(c);
+      r.setAlpha(1f);
+
+      c.save();
+      textCounter.draw(c, 0, r.centerY(), Gravity.LEFT, 1f);
+      c.restore();
+
+      c.restore();
+    }
+
+    public void drawLarge (Canvas c, ComplexReceiver reactionsReceiver, int sx, int sy, boolean isSingle) {
       final boolean clipped = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
+
       final float width = getWidth();
       final float height = getHeight();
       final float alpha = appearAnimator.getFloatValue();
-
       final float animationDelta = (Screen.dp(50f) * (1f - alpha));
       final float animationScale = MathUtils.fromTo(0.5f, 1f, alpha);
 
@@ -356,7 +415,8 @@ public class ReactionsComponent implements FactorAnimator.Target {
       rectPaint.setAlpha((int) (Color.alpha(bgColor) * alpha));
       c.drawRoundRect(bubbleRect, REACTION_RADIUS, REACTION_RADIUS, rectPaint);
 
-      if (clipped && chooseAnimator.isAnimating()) c.drawCircle(Screen.dp(16f), (height / 2f), width * chooseAnimator.getFloatValue(), Paints.fillingPaint(getChosenColor()));
+      if (clipped && chooseAnimator.isAnimating())
+        c.drawCircle(Screen.dp(16f), (height / 2f), width * chooseAnimator.getFloatValue(), Paints.fillingPaint(getChosenColor()));
 
       int izPad = (REACTION_HEIGHT - REACTION_ICON_SIZE) / 2;
       r.setBounds(Screen.dp(8f), izPad, Screen.dp(8f) + REACTION_ICON_SIZE, REACTION_HEIGHT - izPad);
