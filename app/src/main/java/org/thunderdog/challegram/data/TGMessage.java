@@ -218,6 +218,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private final RectF bubblePathRect, bubbleClipPathRect;
 
   private boolean needSponsorSmallPadding;
+  private boolean isBubbleTimeExpanded;
 
   protected final MessagesManager manager;
   protected final Tdlib tdlib;
@@ -814,8 +815,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (hasFooter()) {
       height += getFooterHeight() + getFooterPaddingTop() + getFooterPaddingBottom();
     }
-    if (reactionsComponent != null) {
-      height += reactionsComponent.getHeight();
+    if (reactionsComponent != null && !reactionsComponent.shouldRenderUnderBubble()) {
+      height += reactionsComponent.getHeight(isBubbleTimeExpanded);
     }
     height += getBubbleReduceHeight();
 
@@ -1045,6 +1046,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       int height = bottomContentEdge + getPaddingBottom() + getExtraPadding();
       if (inlineKeyboard != null && !inlineKeyboard.isEmpty()) {
         height += inlineKeyboard.getHeight() + TGInlineKeyboard.getButtonSpacing();
+      }
+      if (reactionsComponent != null && reactionsComponent.shouldRenderUnderBubble()) {
+        height += reactionsComponent.getFlatHeight();
       }
       return height;
     } else {
@@ -2845,6 +2849,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       int bubbleWidth = computeBubbleWidth();
       int bubbleHeight = computeBubbleHeight();
 
+      this.isBubbleTimeExpanded = false;
       if (!headerDisabled() && !(drawBubbleTimeOverContent() && !useForward()) && useBubbleTime()) {
         final int bubbleTimePartWidth = computeBubbleTimePartWidth(true);
         final int bottomLineContentWidth = useForward() ? BOTTOM_LINE_EXPAND_HEIGHT : hasFooter() ? footerText.getLastLineWidth() + Screen.dp(10f) : getBottomLineContentWidth();
@@ -2869,6 +2874,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
             if (bottomLineContentWidth == BOTTOM_LINE_EXPAND_HEIGHT || extendedWidth > maxLineWidth) {
               bubbleWidth = expandedBubbleWidth;
               bubbleHeight = expandedBubbleHeight;
+              this.isBubbleTimeExpanded = true;
             } else {
               bubbleWidth = fitBubbleWidth;
             }
@@ -2962,10 +2968,19 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
   }
 
-  public void notifyBubbleChanged () {
+  private void notifyBubbleChanged () {
     int oldHeight = height;
     height = computeHeight();
     onBubbleHasChanged();
+    if (height != oldHeight) {
+      // FIXME?
+      requestLayout();
+    }
+  }
+
+  public void notifyMessageHeightChanged () {
+    int oldHeight = height;
+    height = computeHeight();
     if (height != oldHeight) {
       // FIXME?
       requestLayout();

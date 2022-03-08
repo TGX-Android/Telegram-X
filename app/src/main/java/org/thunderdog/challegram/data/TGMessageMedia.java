@@ -256,6 +256,10 @@ public class TGMessageMedia extends TGMessage {
     return false;
   }
 
+  public boolean isEmptyCaption () {
+    return Td.isEmpty(caption);
+  }
+
   @Override
   protected boolean needBubbleCornerFix () {
     return true;
