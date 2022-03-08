@@ -101,6 +101,7 @@ import org.thunderdog.challegram.component.chat.MessagesLayout;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.chat.PinnedMessagesBar;
 import org.thunderdog.challegram.component.chat.RaiseHelper;
+import org.thunderdog.challegram.component.chat.ReactionsMenuComponent;
 import org.thunderdog.challegram.component.chat.ReplyView;
 import org.thunderdog.challegram.component.chat.SilentButton;
 import org.thunderdog.challegram.component.chat.StickerSuggestionAdapter;
@@ -4141,12 +4142,33 @@ public class MessagesController extends ViewController<MessagesController.Argume
       b.append(Lang.getString(resId));
     }
     String text = b.toString().trim();
-    patchReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, disableViewCounter);
+    patchReactions(patchReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, disableViewCounter), msg);
   }
 
-  private void patchReadReceiptsOptions (PopupLayout layout, TGMessage message, boolean disableViewCounter) {
+  private PopupLayout patchReactions (PopupLayout layout, TGMessage message) {
+    if (chat == null || chat.availableReactions.length == 0 || !(layout.getChildAt(1) instanceof OptionsLayout)) {
+      return layout;
+    }
+
+    OptionsLayout optionsLayout = (OptionsLayout) layout.getChildAt(1);
+    LinearLayout reactionWrap = new LinearLayout(layout.getContext());
+
+    RecyclerView rvWrap = new RecyclerView(layout.getContext());
+    rvWrap.setLayoutManager(new LinearLayoutManager(layout.getContext(), LinearLayoutManager.HORIZONTAL, false));
+    rvWrap.setAdapter(new ReactionsMenuComponent(message, chat, layout));
+    rvWrap.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f)));
+    rvWrap.setPadding(0, 0, Screen.dp(16f), 0);
+    rvWrap.setClipToPadding(false);
+    ViewSupport.setThemedBackground(rvWrap, R.id.theme_color_background);
+
+    reactionWrap.addView(rvWrap);
+    optionsLayout.addView(reactionWrap, 2);
+    return layout;
+  }
+
+  private PopupLayout patchReadReceiptsOptions (PopupLayout layout, TGMessage message, boolean disableViewCounter) {
     if (!message.canGetViewers() || disableViewCounter || (message.isUnread() && !message.noUnread()) || !(layout.getChildAt(1) instanceof OptionsLayout)) {
-      return;
+      return layout;
     }
 
     OptionsLayout optionsLayout = (OptionsLayout) layout.getChildAt(1);
@@ -4191,6 +4213,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
         });
       });
     });
+
+    return layout;
   }
 
   public boolean onCommandLongPressed (InlineResultCommand command) {

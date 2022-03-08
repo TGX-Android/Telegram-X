@@ -3316,6 +3316,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   // Getters
 
+  public boolean onReactionClick (float x, float y) {
+    if (reactionsComponent != null) {
+      return reactionsComponent.handleClick(x, y);
+    }
+
+    return false;
+  }
+
   public boolean onMessageClick (MessageView v, MessagesController c) {
     // TODO
     return /* isEventLog() */ false;
@@ -7288,4 +7296,18 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   /*public static boolean useBubbles () {
     return ThemeManager.getChatStyle() == ThemeManager.CHAT_STYLE_BUBBLES;
   }*/
+
+  // Extra reaction stuff
+
+  public final String getChosenReaction () {
+    if (getMessage().interactionInfo == null) return null;
+
+    for (TdApi.MessageReaction reaction : getMessage().interactionInfo.reactions) {
+      if (reaction.isChosen) {
+        return reaction.reaction;
+      }
+    }
+
+    return null;
+  }
 }

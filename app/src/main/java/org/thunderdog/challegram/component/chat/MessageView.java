@@ -438,6 +438,10 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       return true;
     }
 
+    if (msg.onReactionClick(x, y)) {
+      return true;
+    }
+
     if (msg.onMessageClick(this, m)) {
       return true;
     }

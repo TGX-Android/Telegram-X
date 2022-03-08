@@ -69,12 +69,12 @@ public class ReactionsComponent implements FactorAnimator.Target {
   private final FactorAnimator rcWidthAnimator = new FactorAnimator(ANIMATOR_CONTAINER_PARAMS_W, this, RC_INTERPOLATOR, RC_DURATION);
   private final FactorAnimator rcHeightAnimator = new FactorAnimator(ANIMATOR_CONTAINER_PARAMS_H, this, RC_INTERPOLATOR, RC_DURATION);
 
-  private final TGMessage source;
-
-  private final ViewProvider viewProvider;
   private final ArrayList<Reaction> clientReactions = new ArrayList<>();
+  private final TGMessage source;
+  private final ViewProvider viewProvider;
 
   private final RectF rcRect = new RectF();
+  private RectF[] rcClickListeners;
 
   public ReactionsComponent (TGMessage source, ViewProvider viewProvider) {
     this.source = source;
@@ -117,8 +117,17 @@ public class ReactionsComponent implements FactorAnimator.Target {
       }
     }
 
+    rcClickListeners = new RectF[clientReactions.size()];
+    initializeClickArray();
+
     measure(messageReactions, animated);
     componentVisibleAnimator.setValue(messageReactions.length > 0, animated);
+  }
+
+  private void initializeClickArray () {
+    for (int i = 0; i < rcClickListeners.length; i++) {
+      rcClickListeners[i] = new RectF();
+    }
   }
 
   private void measure (TdApi.MessageReaction[] order, boolean animated) {
@@ -199,9 +208,28 @@ public class ReactionsComponent implements FactorAnimator.Target {
     c.save();
     c.clipRect(rcRect);
     for (int i = 0; i < clientReactions.size(); i++) {
-      clientReactions.get(i).draw(c, view.getReactionsReceiver(), startX, startY, clientReactions.size() == 1, shouldRenderSmall());
+      Reaction reaction = clientReactions.get(i);
+
+      float sx = startX + reaction.getStartXRelative();
+      float sy = startY + reaction.getStartYRelative();
+      rcClickListeners[i].set(sx, sy, sx + reaction.getStaticWidth(), sy + reaction.getHeight());
+
+      reaction.draw(c, view.getReactionsReceiver(), startX, startY, clientReactions.size() == 1, shouldRenderSmall());
     }
     c.restore();
+  }
+
+  public boolean handleClick (float x, float y) {
+    if (shouldRenderSmall() || rcClickListeners.length == 0) return false; // should be not handled
+
+    for (int i = 0; i < rcClickListeners.length; i++) {
+      if (rcClickListeners[i].contains(x, y)) {
+        source.tdlib().send(new TdApi.SetMessageReaction(source.getChatId(), source.getId(), clientReactions.get(i).reaction.reaction, false), (r) -> {});
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private static class Reaction implements FactorAnimator.Target {
@@ -304,6 +332,14 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
     public float getSmallWidth () {
       return REACTION_ICON_SIZE_SMALL + REACTION_ITEM_HALF_SEPARATOR + (reaction.totalCount == 1 ? 0 : Screen.dp(4f) + Paints.getRegularTextPaint(10f).measureText(String.valueOf(reaction.totalCount)));
+    }
+
+    public float getStartXRelative () {
+      return xCoordinate.getToFactor();
+    }
+
+    public float getStartYRelative () {
+      return yCoordinate.getToFactor();
     }
 
     @Override
