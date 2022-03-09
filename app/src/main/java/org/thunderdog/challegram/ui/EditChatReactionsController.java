@@ -1,6 +1,7 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.text.InputType;
 import android.view.View;
@@ -19,6 +20,8 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGFoundChat;
+import org.thunderdog.challegram.loader.ImageFile;
+import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
@@ -28,6 +31,7 @@ import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.util.DrawModifier;
 import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 
@@ -47,7 +51,9 @@ import me.vkryl.td.TdConstants;
  * Author: default
  */
 
-public class EditChatReactionsController extends EditBaseController<EditChatReactionsController.Args> implements View.OnClickListener, TdlibCache.BasicGroupDataChangeListener {
+public class EditChatReactionsController extends EditBaseController<EditChatReactionsController.Args> implements View.OnClickListener {
+  private final ArrayList<String> selectedReactions = new ArrayList<>();
+
   public static class Args {
     public long chatId;
     public String[] availableReactions;
@@ -65,6 +71,8 @@ public class EditChatReactionsController extends EditBaseController<EditChatReac
   @Override
   public void setArguments (Args args) {
     super.setArguments(args);
+    selectedReactions.clear();
+    selectedReactions.addAll(Arrays.asList(args.availableReactions));
   }
 
   @Override
@@ -83,7 +91,13 @@ public class EditChatReactionsController extends EditBaseController<EditChatReac
       return;
     }
 
-
+    if (view.getId() == R.id.btn_manageReactionsEntry) {
+      if (selectedReactions.contains(item.getStringValue())) {
+        selectedReactions.remove(item.getStringValue());
+      } else {
+        selectedReactions.add(item.getStringValue());
+      }
+    }
   }
 
   @Override
@@ -128,7 +142,14 @@ public class EditChatReactionsController extends EditBaseController<EditChatReac
       @Override
       @SuppressWarnings("WrongConstant")
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
-
+        view.setDrawModifier(item.getDrawModifier());
+        if (item.getId() == R.id.btn_manageReactionsEntry) {
+          ImageFile staticIconFile = new ImageFile(tdlib, tdlib.getReaction(item.getStringValue()).staticIcon.sticker);
+          staticIconFile.setSize(Screen.dp(18f));
+          staticIconFile.setNoBlur();
+          view.getReceiver().requestFile(staticIconFile);
+          view.findRadioView().setChecked(selectedReactions.contains(item.getStringValue()), isUpdate);
+        }
       }
     };
 
@@ -144,10 +165,6 @@ public class EditChatReactionsController extends EditBaseController<EditChatReac
 
     setDoneVisible(false);
     setDoneIcon(R.drawable.baseline_check_24);
-
-    if (ChatId.isBasicGroup(getArgumentsStrict().chatId)) {
-      tdlib.cache().subscribeToGroupUpdates(ChatId.toBasicGroupId(getArgumentsStrict().chatId), this);
-    }
   }
 
   @Override
@@ -169,8 +186,18 @@ public class EditChatReactionsController extends EditBaseController<EditChatReac
 
     items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.ReactionManageList));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+
     for (TdApi.Reaction supportedReaction : tdlib.getActiveReactions()) {
-      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_manageReactionsEntry, 0, supportedReaction.reaction + " / " +supportedReaction.title, false));
+      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_manageReactionsEntry, 0, supportedReaction.title, false).setStringValue(supportedReaction.reaction).setDrawModifier(new DrawModifier() {
+        @Override
+        public void afterDraw (View view, Canvas c) {
+          ImageReceiver receiver = ((SettingView) view).getReceiver();
+          int right = Screen.dp(18f);
+          int size = Screen.dp(64f) - Screen.dp(12f) * 2;
+          receiver.setBounds(view.getMeasuredWidth() - right - size, view.getMeasuredHeight() / 2 - size / 2, view.getMeasuredWidth() - right, view.getMeasuredHeight() / 2 + size / 2);
+          receiver.draw(c);
+        }
+      }));
     }
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
