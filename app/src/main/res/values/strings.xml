@@ -98,7 +98,8 @@
   <string name="login_PhoneNumber">Phone number</string>
   <string name="login_error">Error: %1$s. __Contact us__, if you need help.</string>
   <string name="login_Code">Code</string>
-  <string name="login_LastDigits">Last %1$s digits</string>
+  <string name="login_LastDigits_one">Last %1$s digit</string>
+  <string name="login_LastDigits_other">Last %1$s digits</string>
   <string name="login_Password">Password</string>
   <string name="Country">Country</string>
   <string name="login_SmsHint">We will send an SMS with a confirmation code to your phone number.</string>
@@ -659,7 +660,7 @@
   <string name="RestrictSavingUserInfo">Copying and forwarding of this message is restricted.</string>
   <string name="RestrictSavingGroupInfo">Copying and forwarding is restricted by group admins</string>
   <string name="RestrictSavingChannelInfo">Copying and forwarding is restricted by channel admins</string>
-  <string name="RestrictSavingGroupHint">Participants won\'t be able to forward messages from this group or save media files.</string>
+  <string name="RestrictSavingGroupHint">Members won\'t be able to forward messages from this group or save media files.</string>
   <string name="RestrictSavingChannelHint">Subscribers won\'t be able to forward messages from this channel or save media files.</string>
   <string name="PostNotFound">Post not found</string>
   <string name="OpenSupergroup">Open Supergroup</string>
@@ -1189,7 +1190,9 @@
   <string name="SentAppCode">We\'ve sent the code to the **Telegram** app on your other device.</string>
   <string name="SentCallOnly">We\'ve sent an activation call to your phone **%1$s**.\n\nDon\'t accept the call, Telegram will process everything automatically.</string>
   <string name="SentCallCode">Calling your phone **%1$s** to dictate the code.</string>
-  <string name="SentMissedCall">Within next few seconds you should receive a short call from a phone number which starts with **%1$s**.\n\nPlease enter the last **%2$s digits** of the missed call.</string>
+  <string name="SentMissedCall">Within next few seconds you should receive a short call from a phone number which starts with **%1$s**.</string>
+  <string name="SentMissedCallXDigits_one">Please enter the last **%1$s digit** of the missed call.</string>
+  <string name="SentMissedCallXDigits_other">Please enter the last **%1$s digits** of the missed call.</string>
   <string name="DidNotGetTheCode">Haven\'t received the code?</string>
   <string name="SuccessfullyChangedNumber">Successfully changed number to %1$s.</string>
   <string name="YourPhone">Your Phone</string>
@@ -1254,8 +1257,8 @@
   <string name="PinToTop">Pin to top</string>
   <string name="UnpinFromTop">Unpin from top</string>
   <string name="WhatThisBotCanDo">What can this bot do?</string>
-  <string name="WhatThisChannelCanDo">What can admins on behalf of this channel do?</string>
-  <string name="WhatThisGroupCanDo">What can admins on behalf of this group do?</string>
+  <string name="WhatThisChannelCanDo">What can admins do on behalf of this channel?</string>
+  <string name="WhatThisGroupCanDo">What can admins do on behalf of this group?</string>
   <string name="InstantView">Instant View</string>
   <string name="InternalStorage">Internal Storage</string>
   <string name="Storage">Storage</string>
@@ -1356,7 +1359,7 @@
   <string name="LinkJoinChannelPrimaryYou">You subscribed via the primary invite link %1$s</string>
 
   <string name="LinkJoinOtherWithApproval">%1$s joined via %2$s\'s invite link %3$s, approved by %4$s</string>
-  <string name="LinkJoinOtherYouWithApproval">You joined via %1$s\'s invite link %2$s, approved by %43s</string>
+  <string name="LinkJoinOtherYouWithApproval">You joined via %1$s\'s invite link %2$s, approved by %3s</string>
   <string name="LinkJoinTempWithApproval">%1$s joined via %2$s\'s temporary invite link %3$s, approved by %4$s</string>
   <string name="LinkJoinTempYouWithApproval">You joined via %1$s\'s temporary invite link %2$s, approved by %3$s</string>
   <string name="LinkJoinChannelOtherWithApproval">%1$s subscribed via %2$s\'s invite link %3$s, approved by %4$s</string>
@@ -1771,8 +1774,8 @@
   <string name="EventLogSelectedEvents">Selected actions</string>
   <string name="EventLogAllAdmins">All admins</string>
   <string name="EventLogEmptyFilter">Please specify at least one filter</string>
-  <string name="EventLogEmpty">**No actions here yet**\n\nThe group\'s members and admins\nhave not taken any service actions\nin the last 48 hours.</string>
-  <string name="EventLogEmptyChannel">**No actions here yet**\n\nThe channel\'s admins\nhave not taken any service actions\nin the last 48 hours.</string>
+  <string name="EventLogEmpty">**No recent actions**\n\nNo notable actions taken by the members and admins of this group in the last 48 hours.</string>
+  <string name="EventLogEmptyChannel">**No recent actions**\n\nThe channel\'s admins\nhave not taken any service actions\nin the last 48 hours.</string>
   <string name="EventLogEmptySearch">**No actions found**\n\nNo recent actions that match your query\nwere found.</string>
   <string name="EventLogEmptyTextSearch">No recent actions that contain \'%1$s\' have been found.</string>
   <string name="EventLogInfoTitle">What is the Recent Actions?</string>
