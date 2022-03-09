@@ -220,7 +220,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
   }
 
   public boolean handleClick (float x, float y) {
-    if (shouldRenderSmall() || rcClickListeners.length == 0) return false; // should be not handled
+    if (shouldRenderSmall() || rcClickListeners == null || rcClickListeners.length == 0) return false; // should be not handled
 
     for (int i = 0; i < rcClickListeners.length; i++) {
       if (rcClickListeners[i].contains(x, y)) {
