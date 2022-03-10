@@ -97,6 +97,11 @@ public class EditChatReactionsController extends EditBaseController<EditChatReac
       } else {
         selectedReactions.add(item.getStringValue());
       }
+
+      item.setSelected(selectedReactions.contains(item.getStringValue()));
+      ((SettingView) view).findCheckBox().setChecked(item.isSelected(), true);
+    } else if (view.getId() == R.id.btn_manageReactionsGlobal) {
+
     }
   }
 
@@ -145,10 +150,11 @@ public class EditChatReactionsController extends EditBaseController<EditChatReac
         view.setDrawModifier(item.getDrawModifier());
         if (item.getId() == R.id.btn_manageReactionsEntry) {
           ImageFile staticIconFile = new ImageFile(tdlib, tdlib.getReaction(item.getStringValue()).staticIcon.sticker);
-          staticIconFile.setSize(Screen.dp(18f));
+          staticIconFile.setSize(Screen.dp(32f));
           staticIconFile.setNoBlur();
           view.getReceiver().requestFile(staticIconFile);
-          view.findRadioView().setChecked(selectedReactions.contains(item.getStringValue()), isUpdate);
+          view.forcePadding(Screen.dp(56f), 0);
+          item.setSelected(selectedReactions.contains(item.getStringValue()));
         }
       }
     };
@@ -188,18 +194,21 @@ public class EditChatReactionsController extends EditBaseController<EditChatReac
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
 
     for (TdApi.Reaction supportedReaction : tdlib.getActiveReactions()) {
-      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_manageReactionsEntry, 0, supportedReaction.title, false).setStringValue(supportedReaction.reaction).setDrawModifier(new DrawModifier() {
+      items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_manageReactionsEntry, 0, supportedReaction.title, false).setStringValue(supportedReaction.reaction).setDrawModifier(new DrawModifier() {
         @Override
         public void afterDraw (View view, Canvas c) {
           ImageReceiver receiver = ((SettingView) view).getReceiver();
-          int right = Screen.dp(18f);
-          int size = Screen.dp(64f) - Screen.dp(12f) * 2;
-          receiver.setBounds(view.getMeasuredWidth() - right - size, view.getMeasuredHeight() / 2 - size / 2, view.getMeasuredWidth() - right, view.getMeasuredHeight() / 2 + size / 2);
+          int left = Screen.dp(18f);
+          int size = Screen.dp(24f);
+          receiver.setBounds(left, view.getMeasuredHeight() / 2 - size / 2, left + size, view.getMeasuredHeight() / 2 + size / 2);
           receiver.draw(c);
         }
       }));
+
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     }
 
+    items.remove(items.size() - 1);
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     adapter.setItems(items, false);
   }
