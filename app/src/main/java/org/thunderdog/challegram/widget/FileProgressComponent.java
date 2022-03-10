@@ -130,6 +130,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   private boolean isVideoStreaming;
   private boolean isVideoStreamingOffsetNeeded;
   private boolean isVideoStreamingProgressHidden;
+  private boolean isVideoStreamingCloudNeeded;
   private int videoStreamingUiMode;
   private BoolAnimator vsOnDownloadedAnimator;
 
@@ -180,11 +181,12 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     this.isVideoStreamingProgressHidden = isVideoStreamingProgressHidden;
   }
 
-  public void setVideoStreamingOptions (boolean topOffsetNeeded, int uiMode, RectF videoStreamingRect, BoolAnimator onDownloadedAnimator) {
+  public void setVideoStreamingOptions (boolean topOffsetNeeded, boolean cloudNeeded, int uiMode, RectF videoStreamingRect, BoolAnimator onDownloadedAnimator) {
     int prevUiMode = videoStreamingUiMode;
     boolean needProgressLayout = isVideoStreamingOffsetNeeded != topOffsetNeeded || !vsDownloadClickRect.equals(videoStreamingRect);
 
     isVideoStreamingOffsetNeeded = topOffsetNeeded;
+    isVideoStreamingCloudNeeded = cloudNeeded;
     vsOnDownloadedAnimator = onDownloadedAnimator;
     videoStreamingUiMode = uiMode;
     vsDownloadClickRect.set(videoStreamingRect);
@@ -517,14 +519,14 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
 
   private void checkProgressStyles () {
     if (progress != null) {
-      boolean isCloud = Config.useCloudPlayback(playPauseFile) && !noCloud;
+      boolean isCloud = (Config.useCloudPlayback(playPauseFile) && !noCloud) || (isVideoStreaming() && isVideoStreamingCloudNeeded);
       progress.setUseLargerPaint((isVideoStreaming() && isVideoStreamingSmallUi()) ? Screen.dp(1.5f) : !isSendingMessage && isCloud ? Screen.dp(isTrack ? 2f : 1.5f) : Screen.dp(3f));
     }
   }
 
   private void layoutProgress () {
     if (progress != null) {
-      if (playPauseFile != null && Config.useCloudPlayback(playPauseFile) && !noCloud) {
+      if ((playPauseFile != null && Config.useCloudPlayback(playPauseFile) && !noCloud) || (isVideoStreaming() && isVideoStreamingCloudNeeded)) {
         int centerX = centerX();
         int centerY = centerY();
 
@@ -935,7 +937,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   public void setCurrentState (@TdlibFilesManager.FileDownloadState int state, boolean animated) {
     boolean needResetFile = false;
     if (isVideoStreaming() && vsOnDownloadedAnimator != null && (state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED || state == TdlibFilesManager.STATE_PAUSED)) {
-      vsOnDownloadedAnimator.setValue(state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED, animated);
+      vsOnDownloadedAnimator.setValue(state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED, animated && !isVideoStreamingCloudNeeded);
     }
     if (this.currentState == TdlibFilesManager.STATE_IN_PROGRESS && state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED) {
       setProgress(1f, 1f);
@@ -1373,13 +1375,17 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
           c.translate(vsTranslateDx, 0);
           isCanvasAltered = true;
         }
+
+        if (isVideoStreamingCloudNeeded) {
+          drawCloudState(c, alpha);
+        }
       } else {
         c.drawCircle(cx, cy, getRadius(), Paints.fillingPaint(fillingColor));
       }
 
       if (cloudPlayback) {
         drawPlayPause(c, cx, cy, alpha, true);
-      } else if (currentBitmapRes != 0 && (currentBitmapRes != downloadedIconRes || !hideDownloadedIcon)) {
+      } else if (currentBitmapRes != 0 && (currentBitmapRes != downloadedIconRes || !hideDownloadedIcon) && !(isVideoStreaming() && isVideoStreamingCloudNeeded)) {
         boolean ignoreScale = isVideoStreaming() && !isVideoStreamingSmallUi() && vsOnDownloadedAnimator != null && vsOnDownloadedAnimator.isAnimating();
         Paint bitmapPaint = Paints.getPorterDuffPaint(0xffffffff);
 

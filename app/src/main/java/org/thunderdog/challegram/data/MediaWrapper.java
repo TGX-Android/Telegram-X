@@ -904,15 +904,15 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
     float dlFactor = 1f - downloadedAnimator.getFloatValue();
     float durationDx = 0f;
-    boolean isStreamingUI = isVideo();
+    boolean isStreamingUI = isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE;
     boolean showDuration = !StringUtils.isEmpty(durationTrimmed) && selectionFactor < 1f;
     boolean isDoubleLine = isStreamingUI && duration != null && durationShort != null && (source == null || source.getCombinedMessageCount() == 0);
     boolean isSmallStreamingUI = isStreamingUI && !isDoubleLine;
+    boolean needTopOffset = source != null && source.useFullWidth() && source.hasHeader() && source.isChannel() && isVideo() && (source instanceof TGMessageMedia && ((TGMessageMedia) source).isVideoFirstInMosaic(video.video.id)) && source.replyData == null;
     RectF durationRect = Paints.getRectF();
 
     if (showDuration) {
       // Only if: channel + single item in stack + bubble-less mode
-      boolean needTopOffset = source != null && source.useFullWidth() && source.hasHeader() && source.isChannel() && isVideo() && (source instanceof TGMessageMedia && ((TGMessageMedia) source).isVideoFirstInMosaic(video.video.id)) && source.replyData == null;
 
       int fpRadius = !isVideo() || !isDoubleLine ? 0 : downloadedAnimator.isAnimating() ? Screen.dp(FileProgressComponent.DEFAULT_STREAMING_RADIUS) : getFileProgress().getRadius();
       int doubleFpRadius = fpRadius * 2;
@@ -925,7 +925,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
       durationRect.set(pDurationLeft - Screen.dp(4f), pDurationTop, pDurationRight, pDurationBottom);
 
-      getFileProgress().setVideoStreamingOptions(needTopOffset, isSmallStreamingUI ? FileProgressComponent.STREAMING_UI_MODE_SMALL : FileProgressComponent.STREAMING_UI_MODE_LARGE, durationRect, downloadedAnimator);
+      getFileProgress().setVideoStreamingOptions(needTopOffset, false, isSmallStreamingUI ? FileProgressComponent.STREAMING_UI_MODE_SMALL : FileProgressComponent.STREAMING_UI_MODE_LARGE, durationRect, downloadedAnimator);
 
       if (isSmallStreamingUI) {
         getFileProgress().setPausedIconRes(R.drawable.baseline_cloud_download_16);
@@ -962,6 +962,14 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       }
 
       paint.setAlpha(255);
+    } else if (isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
+      getFileProgress().setVideoStreamingOptions(needTopOffset, true, isSmallStreamingUI ? FileProgressComponent.STREAMING_UI_MODE_SMALL : FileProgressComponent.STREAMING_UI_MODE_LARGE, durationRect, downloadedAnimator);
+
+      if (isSmallStreamingUI) {
+        getFileProgress().setPausedIconRes(R.drawable.baseline_cloud_download_16);
+      } else if (isStreamingUI) {
+        getFileProgress().setPausedIconRes(R.drawable.baseline_cloud_download_24);
+      }
     }
 
     if (!hideLoader) {
@@ -1123,7 +1131,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       if (durationWidthFull > width && (durationShort != null && durationWidthShort < width)) {
         durationTrimmed = durationShort;
         durationWidth = durationWidthShort;
-      } else if (durationShort == null || durationWidthShort > cellWidth) {
+      } else if (durationShort == null || durationWidthShort > width) {
         durationTrimmed = null;
         durationWidth = 0;
       }
@@ -1181,8 +1189,10 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
       if (!text.isEmpty()) {
         text = text + ", " + textShort;
+      } else if (fileProgress.isVideoStreaming()) {
+        text = twLineHeader = Strings.buildSize(fileProgress.getTotalSize());
       } else {
-        text = fileProgress.isVideoStreaming() ? Strings.buildSize(fileProgress.getTotalSize()) : textShort;
+        text = textShort;
       }
     }
 
