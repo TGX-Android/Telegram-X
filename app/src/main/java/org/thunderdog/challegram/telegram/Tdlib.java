@@ -6884,6 +6884,26 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  @TdlibThread
+  private void updateFileAddedToDownloads (TdApi.UpdateFileAddedToDownloads update) {
+    listeners.updateFileAddedToDownloads(update);
+  }
+
+  @TdlibThread
+  private void updateFileDownload (TdApi.UpdateFileDownload update) {
+    listeners.updateFileDownload(update);
+  }
+
+  @TdlibThread
+  private void updateFileDownloads (TdApi.UpdateFileDownloads update) {
+    listeners.updateFileDownloads(update);
+  }
+
+  @TdlibThread
+  private void updateFileRemovedFromDownloads (TdApi.UpdateFileRemovedFromDownloads update) {
+    listeners.updateFileRemovedFromDownloads(update);
+  }
+
   // Updates: CONFIG
 
   @TdlibThread
@@ -7761,6 +7781,22 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           Log.i(Log.TAG_TDLIB_FILES, "updateFile id=%d size=%d expectedSize=%d remote=%s local=%s", updateFile.file.id, updateFile.file.size, updateFile.file.expectedSize, updateFile.file.remote.toString(), updateFile.file.local.toString());
         }
         updateFile(updateFile);
+        break;
+      }
+      case TdApi.UpdateFileAddedToDownloads.CONSTRUCTOR: {
+        updateFileAddedToDownloads((TdApi.UpdateFileAddedToDownloads) update);
+        break;
+      }
+      case TdApi.UpdateFileDownload.CONSTRUCTOR: {
+        updateFileDownload((TdApi.UpdateFileDownload) update);
+        break;
+      }
+      case TdApi.UpdateFileDownloads.CONSTRUCTOR: {
+        updateFileDownloads((TdApi.UpdateFileDownloads) update);
+        break;
+      }
+      case TdApi.UpdateFileRemovedFromDownloads.CONSTRUCTOR: {
+        updateFileRemovedFromDownloads((TdApi.UpdateFileRemovedFromDownloads) update);
         break;
       }
 

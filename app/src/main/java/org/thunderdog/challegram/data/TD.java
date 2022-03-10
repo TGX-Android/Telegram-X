@@ -2664,7 +2664,7 @@ public class TD {
     } else {
       TdApi.InputMessageContent[] array = new TdApi.InputMessageContent[album.size()];
       album.toArray(array);
-      functions.add(new TdApi.SendMessageAlbum(chatId, 0, 0, options, array));
+      functions.add(new TdApi.SendMessageAlbum(chatId, 0, 0, options, array, false));
     }
     album.clear();
   }
@@ -2706,7 +2706,7 @@ public class TD {
       if (sliceSize == 1) {
         functions.add(new TdApi.SendMessage(chatId, messageThreadId, functions.isEmpty() ? replyToMessageId : 0, options, null, slice[0]));
       } else {
-        functions.add(new TdApi.SendMessageAlbum(chatId, messageThreadId, functions.isEmpty() ? replyToMessageId : 0, options, slice));
+        functions.add(new TdApi.SendMessageAlbum(chatId, messageThreadId, functions.isEmpty() ? replyToMessageId : 0, options, slice, false));
       }
 
       remaining -= sliceSize;
