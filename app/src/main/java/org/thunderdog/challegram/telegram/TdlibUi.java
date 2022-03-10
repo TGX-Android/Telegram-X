@@ -2252,6 +2252,11 @@ public class TdlibUi extends Handler {
         case TdApi.Chat.CONSTRUCTOR:
           openChatProfile(context, tdlib.objectToChat(object), messageThread, openParameters);
           break;
+        case TdApi.User.CONSTRUCTOR: {
+          final long userId = ((TdApi.User) object).id;
+          openChatProfile(context, ChatId.fromUserId(userId), messageThread, new TdApi.CreatePrivateChat(userId, false), openParameters);
+          break;
+        }
         case TdApi.Error.CONSTRUCTOR:
           UI.showError(object);
           break;
@@ -3264,6 +3269,15 @@ public class TdlibUi extends Handler {
             case TdApi.InternalLinkTypeProxy.CONSTRUCTOR: {
               TdApi.InternalLinkTypeProxy proxy = (TdApi.InternalLinkTypeProxy) linkType;
               openProxyAlert(context, proxy.server, proxy.port, proxy.type, newProxyDescription(proxy.server, Integer.toString(proxy.port)).toString());
+              break;
+            }
+            case TdApi.InternalLinkTypeUnsupportedProxy.CONSTRUCTOR: {
+              showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.ProxyLinkUnsupported), openParameters);
+              break;
+            }
+            case TdApi.InternalLinkTypeUserPhoneNumber.CONSTRUCTOR: {
+              final String phoneNumber = ((TdApi.InternalLinkTypeUserPhoneNumber) linkType).phoneNumber;
+              openChatProfile(context, 0, null, new TdApi.SearchUserByPhoneNumber(phoneNumber), null);
               break;
             }
             case TdApi.InternalLinkTypePublicChat.CONSTRUCTOR: {

@@ -4253,6 +4253,7 @@
   <string name="ReactionManageEnable">Enable Reactions</string>
   <string name="ReactionManageEnableHintGroup">Allow members to react to group messages.</string>
   <string name="ReactionManageEnableHintChannel">Allow subscribers to react to channel posts.</string>
+  <string name="ProxyLinkUnsupported">Proxy is unsupported or link is invalid.</string>
 
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
