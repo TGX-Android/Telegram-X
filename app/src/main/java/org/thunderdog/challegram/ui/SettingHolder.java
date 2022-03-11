@@ -34,6 +34,7 @@ import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.attach.MediaLocationPlaceView;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.base.TogglerView;
+import org.thunderdog.challegram.component.chat.DetachedChatHeaderView;
 import org.thunderdog.challegram.component.chat.MessagePreviewView;
 import org.thunderdog.challegram.component.inline.CustomResultView;
 import org.thunderdog.challegram.component.sharedmedia.MediaSmallView;
@@ -236,6 +237,9 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_JOIN_REQUEST: {
         return Screen.dp(72f);
       }
+      case ListItem.TYPE_CHAT_HEADER_LARGE: {
+        return DetachedChatHeaderView.getViewHeight();
+      }
       case ListItem.TYPE_EDITTEXT_WITH_PHOTO_SMALLER:
         return Screen.dp(82f);
       case ListItem.TYPE_LIVE_LOCATION_PROMO:
@@ -270,6 +274,10 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       }
       case ListItem.TYPE_JOIN_REQUEST: {
         ((DoubleTextViewWithIcon) itemView).attach();
+        break;
+      }
+      case ListItem.TYPE_CHAT_HEADER_LARGE: {
+        ((DetachedChatHeaderView) itemView).attach();
         break;
       }
       case ListItem.TYPE_STICKER_SET:
@@ -346,6 +354,10 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       }
       case ListItem.TYPE_JOIN_REQUEST: {
         ((DoubleTextViewWithIcon) itemView).detach();
+        break;
+      }
+      case ListItem.TYPE_CHAT_HEADER_LARGE: {
+        ((DetachedChatHeaderView) itemView).detach();
         break;
       }
       case ListItem.TYPE_STICKER_SET:
@@ -814,6 +826,11 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_ZERO_VIEW: {
         View view = new View(context);
         view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0));
+        return new SettingHolder(view);
+      }
+      case ListItem.TYPE_CHAT_HEADER_LARGE: {
+        DetachedChatHeaderView view = new DetachedChatHeaderView(context);
+        view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, DetachedChatHeaderView.getViewHeight()));
         return new SettingHolder(view);
       }
       case ListItem.TYPE_JOIN_REQUEST: {

@@ -4248,6 +4248,8 @@
   <string name="LocationAlertLocation">To send a nearby place or your location, allow Telegram X access to your location.</string>
   <string name="LocationAlertLocationDisclaimer">Telegram X does not use location data for any hidden purposes, and accesses it only by your explicit request.</string>
 
+  <string name="RequestToJoinGroupInfo">This group accepts new members only after they are being accepted by admins.</string>
+  <string name="RequestToJoinChannelInfo">This channel accepts new members only after they are being accepted by admins.</string>
   <string name="ProxyLinkUnsupported">Proxy is unsupported or link is invalid.</string>
 
   <string name="suggested_language_code" />
