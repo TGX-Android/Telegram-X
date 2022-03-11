@@ -167,6 +167,11 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     fileProgress.setIgnoreLoaderClicks(hideLoader);
   }
 
+  private boolean isSafeToStream (TGMessage source) {
+    if (source == null) return false; // TODO: PageBlockMedia support&rendering
+    return !source.isSecretChat() && !source.isHot();
+  }
+
   public MediaWrapper (BaseActivity context, Tdlib tdlib, @NonNull TdApi.Document document, long chatId, long messageId, @Nullable TGMessage source, boolean useHotStuff) {
     this(context, tdlib, new TdApi.Video(0, document.thumbnail.width, document.thumbnail.height, document.fileName, document.mimeType, false, true, document.minithumbnail, document.thumbnail, document.document), chatId, messageId, source, useHotStuff);
   }
@@ -215,7 +220,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       fileProgress.setHideDownloadedIcon(true);
     }
 
-    if (source != null && !source.isSecretChat() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
+    if (isSafeToStream(source) && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
       this.fileProgress.setHideDownloadedIcon(true);
       this.fileProgress.setIgnoreLoaderClicks(true);
       this.fileProgress.setVideoStreaming(true);
@@ -905,9 +910,9 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
     float dlFactor = 1f - downloadedAnimator.getFloatValue();
     float durationDx = 0f;
-    boolean isStreamingUI = isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE;
+    boolean isStreamingUI = fileProgress.isVideoStreaming() && isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE;
     boolean showDuration = !StringUtils.isEmpty(durationTrimmed) && selectionFactor < 1f;
-    boolean isDoubleLine = isStreamingUI && duration != null && durationShort != null && (source == null || source.getCombinedMessageCount() == 0);
+    boolean isDoubleLine = isStreamingUI && duration != null && durationShort != null && (source == null || source.getCombinedMessageCount() == 0 || fileProgress.isProcessing() || (fileProgress.getFile() != null && fileProgress.getFile().remote.isUploadingActive));
     boolean isSmallStreamingUI = isStreamingUI && !isDoubleLine;
     boolean needTopOffset = source != null && source.useFullWidth() && source.hasHeader() && source.isChannel() && isVideo() && (source instanceof TGMessageMedia && ((TGMessageMedia) source).isVideoFirstInMosaic(video.video.id)) && source.replyData == null;
     RectF durationRect = Paints.getRectF();

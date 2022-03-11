@@ -135,6 +135,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   private int vsPadding;
   private BoolAnimator vsOnDownloadedAnimator;
   private Drawable vsUniqueIconRef;
+  private int vsUniqueIconRefId;
 
   private float requestedAlpha;
 
@@ -1418,13 +1419,16 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
 
           // need unique icon ref because of mutate() workaround
           if (bitmapAlpha != 1f) {
-            if (vsUniqueIconRef != null) {
+            if (vsUniqueIconRef != null && vsUniqueIconRefId == currentBitmapRes) {
               drawable = vsUniqueIconRef;
             } else {
+              vsUniqueIconRefId = currentBitmapRes;
               drawable = vsUniqueIconRef = Drawables.get(currentBitmapRes);
             }
           } else {
-            vsUniqueIconRef = null; // clear ref
+            // clear ref
+            vsUniqueIconRefId = 0;
+            vsUniqueIconRef = null;
             drawable = view.getSparseDrawable(currentBitmapRes, 0);
           }
 
