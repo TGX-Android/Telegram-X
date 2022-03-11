@@ -132,6 +132,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   private boolean isVideoStreamingProgressHidden;
   private boolean isVideoStreamingCloudNeeded;
   private int videoStreamingUiMode;
+  private int vsPadding;
   private BoolAnimator vsOnDownloadedAnimator;
 
   private float requestedAlpha;
@@ -1171,13 +1172,13 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     if (backgroundColorProvider != null) {
       fillingColor = backgroundColorProvider.getContentReplaceColor();
     } else {
-      fillingColor = Theme.fillingColor();
+      fillingColor = ColorUtils.alphaColor(alpha, Theme.fillingColor());
     }
 
     if (!isTrack || progressFactor <= 1f) {
       float circleFactor = 1f - (alpha * (1f - hideFactor)) * (isTrack ? 1f - progressFactor : 1f);
       int radius = (int) (originRadius * (1f - hideFactor));
-      DrawAlgorithms.drawCloud(c, x, y, radius, circleFactor, cloudColor, fillingPadding, fillingColor);
+      DrawAlgorithms.drawCloud(c, x, y, radius, circleFactor, ColorUtils.alphaColor(alpha, cloudColor), fillingPadding, fillingColor);
 
       if (isTrack) {
         int color = Theme.fillingColor();
@@ -1340,6 +1341,10 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     draw(view, c);
   }
 
+  public void setPaddingCompensation (int selectionPadding) {
+    vsPadding = selectionPadding;
+  }
+
   public <T extends View & DrawableProvider> void draw (T view, final Canvas c) {
     final boolean cloudPlayback = Config.useCloudPlayback(playPauseFile) && !noCloud;
     final float alpha = this.alpha * requestedAlpha;
@@ -1408,6 +1413,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
         if (currentBitmapRes == FileProgressComponent.PLAY_ICON && playPauseFile != null) {
           DrawAlgorithms.drawPlayPause(c, cx, cy, Screen.dp(13f), playPausePath, playPauseDrawFactor, playPauseDrawFactor = this.playPauseFactor, progressFactor, ColorUtils.alphaColor(bitmapAlpha, 0xffffffff));
         } else {
+          Log.e(String.valueOf(bitmapAlpha));
           Drawable drawable = view.getSparseDrawable(currentBitmapRes, 0);
           Drawables.draw(c, drawable, cx - drawable.getMinimumWidth() / 2, cy - drawable.getMinimumHeight() / 2, bitmapPaint);
         }
@@ -1436,8 +1442,8 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   // Video streaming UI stuff
 
   private void updateVsRect () {
-    int startX = left + Screen.dp(videoStreamingUiMode == STREAMING_UI_MODE_EXTRA_SMALL ? 4f : videoStreamingUiMode == STREAMING_UI_MODE_SMALL ? 8f : 14f);
-    int startY = top + Screen.dp(videoStreamingUiMode == STREAMING_UI_MODE_EXTRA_SMALL ? 3f : videoStreamingUiMode == STREAMING_UI_MODE_SMALL ? 6f : 12f) + (isVideoStreamingOffsetNeeded ? Screen.dp(16f) : 0);
+    int startX = left + Screen.dp(videoStreamingUiMode == STREAMING_UI_MODE_EXTRA_SMALL ? 4f : videoStreamingUiMode == STREAMING_UI_MODE_SMALL ? 8f : 14f) - vsPadding;
+    int startY = top + Screen.dp(videoStreamingUiMode == STREAMING_UI_MODE_EXTRA_SMALL ? 3f : videoStreamingUiMode == STREAMING_UI_MODE_SMALL ? 6f : 12f) + (isVideoStreamingOffsetNeeded ? Screen.dp(16f) : 0) - vsPadding;
     vsDownloadRect.set(
       startX, startY, startX + (getRadius() * 2), startY + (getRadius() * 2)
     );

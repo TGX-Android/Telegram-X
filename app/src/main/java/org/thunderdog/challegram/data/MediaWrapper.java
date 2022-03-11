@@ -863,6 +863,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       cellBottom -= selectionPadding;
     }
 
+    fileProgress.setPaddingCompensation(selectionPadding);
     fileProgress.setBounds(cellLeft, cellTop, cellRight, cellBottom);
 
     DrawAlgorithms.drawReceiver(c, preview, receiver, false, true, cellLeft, cellTop, cellRight, cellBottom);
@@ -973,6 +974,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     }
 
     if (!hideLoader) {
+      getFileProgress().setRequestedAlpha(alpha * (1f - selectionFactor));
       if (isDoubleLine) {
         fileProgress.drawClipped(view, c, durationRect, (-durationDx) * downloadedAnimator.getFloatValue());
       } else {
