@@ -3,56 +3,30 @@ package org.thunderdog.challegram.ui;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
-import android.text.InputType;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.StringRes;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
-import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
-import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.support.ViewSupport;
-import org.thunderdog.challegram.telegram.RightId;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.telegram.TdlibCache;
-import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.DrawModifier;
-import org.thunderdog.challegram.widget.BetterChatView;
-import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.widget.FrameLayoutFix;
-import me.vkryl.core.StringUtils;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
-import me.vkryl.td.TdConstants;
-
-/**
- * Date: 8/19/17
- * Author: default
- */
 
 public class EditChatReactionsController extends EditBaseController<EditChatReactionsController.Args> implements View.OnClickListener {
   private final ArrayList<String> selectedReactions = new ArrayList<>();
+  private boolean hasAnyChanges;
 
   public static class Args {
     public long chatId;
@@ -83,7 +57,6 @@ public class EditChatReactionsController extends EditBaseController<EditChatReac
   private SettingsAdapter adapter;
 
   @Override
-  @SuppressWarnings("WrongConstant")
   public void onClick (View view) {
     ListItem item = (ListItem) view.getTag();
 
@@ -100,40 +73,56 @@ public class EditChatReactionsController extends EditBaseController<EditChatReac
 
       item.setSelected(selectedReactions.contains(item.getStringValue()));
       ((SettingView) view).findCheckBox().setChecked(item.isSelected(), true);
-    } else if (view.getId() == R.id.btn_manageReactionsGlobal) {
 
+      adapter.updateValuedSettingById(R.id.btn_manageReactionsGlobal);
+      checkDoneButton();
+    } else if (view.getId() == R.id.btn_manageReactionsGlobal) {
+      boolean selectAll = ((SettingView) view).getToggler().toggle(true);
+
+      selectedReactions.clear();
+      if (selectAll) {
+        selectedReactions.addAll(Arrays.asList(tdlib.getActiveReactionsEmoji()));
+      }
+
+      adapter.updateAllValuedSettingsById(R.id.btn_manageReactionsEntry);
+      checkDoneButton();
     }
   }
 
   @Override
   protected boolean onDoneClick () {
-    performRequest(false);
+    performRequest();
     return true;
   }
 
-  private void performRequest (boolean force) {
-    if (isDoneInProgress() && !force) {
+  private void performRequest () {
+    if (isDoneInProgress()) {
       return;
     }
 
-    /**
-     * if (!isDestroyed()) {
-     *           setStackLocked(false);
-     *           setDoneInProgress(false);
-     *           if (success) {
-     *             ViewController<?> c = previousStackItem();
-     *             if (c instanceof ContactsController) {
-     *               destroyStackItemAt(stackSize() - 2);
-     *             }
-     *             onSaveCompleted();
-     *           } else {
-     *             showError(error != null && TD.ERROR_USER_PRIVACY.equals(error.message) ?
-     *               Lang.getString(R.string.errorPrivacyAddMember) :
-     *               TD.toErrorString(error)
-     *             );
-     *           }
-     *         }
-     */
+    setDoneInProgress(true);
+    setStackLocked(true);
+    tdlib.client().send(new TdApi.SetChatAvailableReactions(getArgumentsStrict().chatId, selectedReactions.toArray(new String[0])), (result) -> tdlib.ui().post(() -> {
+      if (!isDestroyed()) {
+        setStackLocked(false);
+        setDoneInProgress(false);
+        if (result.getConstructor() == TdApi.Ok.CONSTRUCTOR) {
+          navigateBack();
+        } else {
+          showError(TD.toErrorString(result));
+        }
+      }
+    }));
+  }
+
+  private void showError (CharSequence text) {
+    context.tooltipManager()
+      .builder(getDoneButton())
+      .show(EditChatReactionsController.this,
+        tdlib,
+        R.drawable.baseline_error_24,
+        text
+      );
   }
 
   @Override
@@ -145,7 +134,6 @@ public class EditChatReactionsController extends EditBaseController<EditChatReac
   protected void onCreateView (Context context, FrameLayoutFix contentView, RecyclerView recyclerView) {
     adapter = new SettingsAdapter(this) {
       @Override
-      @SuppressWarnings("WrongConstant")
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         view.setDrawModifier(item.getDrawModifier());
         if (item.getId() == R.id.btn_manageReactionsEntry) {
@@ -155,6 +143,10 @@ public class EditChatReactionsController extends EditBaseController<EditChatReac
           view.getReceiver().requestFile(staticIconFile);
           view.forcePadding(Screen.dp(56f), 0);
           item.setSelected(selectedReactions.contains(item.getStringValue()));
+          view.findCheckBox().setChecked(item.isSelected(), isUpdate);
+        } else if (item.getId() == R.id.btn_manageReactionsGlobal) {
+          item.setSelected(!selectedReactions.isEmpty());
+          view.getToggler().setRadioEnabled(item.isSelected(), isUpdate);
         }
       }
     };
@@ -218,23 +210,41 @@ public class EditChatReactionsController extends EditBaseController<EditChatReac
     return false;
   }
 
+  private String[] asArray () {
+    return selectedReactions.toArray(new String[0]);
+  }
+
   private boolean hasAnyChanges () {
-    return false;
+    if (selectedReactions.isEmpty() && getArgumentsStrict().availableReactions.length == 0) {
+      return false;
+    }
+
+    String[] selected = asArray();
+    String[] goldenMaster = getArgumentsStrict().availableReactions;
+    Arrays.sort(selected, String::compareTo);
+    Arrays.sort(goldenMaster, String::compareTo);
+
+    return !Arrays.equals(selected, goldenMaster);
   }
 
   @Override
   public boolean onBackPressed (boolean fromTop) {
-    if (hasAnyChanges()) {
+    if (hasAnyChanges) {
       showUnsavedChangesPromptBeforeLeaving(null);
       return true;
     }
+
     return false;
   }
 
   private void checkDoneButton () {
-    //if (!isNewRuleSet()) {
-      setDoneVisible(hasAnyChanges());
-    //}
+    hasAnyChanges = hasAnyChanges();
+    setDoneVisible(hasAnyChanges);
+  }
+
+  @Override
+  protected boolean swipeNavigationEnabled () {
+    return !hasAnyChanges;
   }
 
   @Override

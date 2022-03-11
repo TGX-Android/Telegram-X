@@ -8657,6 +8657,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return getRestrictionStatus(chat, R.id.right_sendMedia) == null;
   }
 
+  // Settings Suggestions
+
   public boolean isSettingSuggestion (TdApi.SuggestedAction action) {
     return action.getConstructor() == TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR || action.getConstructor() == TdApi.SuggestedActionCheckPassword.CONSTRUCTOR;
   }
@@ -8699,6 +8701,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  // Reactions
+
   public int getActiveReactionCount () {
     synchronized (dataLock) {
       return getActiveReactions().length;
@@ -8716,6 +8720,20 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
 
       return reactions.toArray(new TdApi.Reaction[0]);
+    }
+  }
+
+  public String[] getActiveReactionsEmoji () {
+    synchronized (dataLock) {
+      ArrayList<String> reactions = new ArrayList<>();
+
+      for (TdApi.Reaction supportedReaction : supportedReactions) {
+        if (supportedReaction.isActive) {
+          reactions.add(supportedReaction.reaction);
+        }
+      }
+
+      return reactions.toArray(new String[0]);
     }
   }
 
