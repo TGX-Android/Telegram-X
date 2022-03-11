@@ -117,6 +117,10 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
     return false;
   }
 
+  public boolean ignoreStartHeightLimits() {
+    return false;
+  }
+
   // Metrics
 
   private int contentHeight, startHeight, currentHeight;
@@ -165,10 +169,12 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
   }
 
   private int getMaxStartHeight () {
+    if (ignoreStartHeightLimits()) return Integer.MAX_VALUE;
     return Math.min(getContentHeight() + getBarHeightIfAvailable() + HeaderView.getSize(false), Math.min(getCurrentWidth() + getBarHeightIfAvailable(), getMaxStartHeightLimit()));
   }
 
   protected int getMaxStartHeightLimit () {
+    if (ignoreStartHeightLimits()) return Integer.MAX_VALUE;
     return getMaxHeight() - MediaBottomBar.getBarHeight() / 4;
   }
 

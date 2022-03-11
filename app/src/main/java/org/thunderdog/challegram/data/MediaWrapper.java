@@ -1191,6 +1191,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
         text = text + ", " + textShort;
       } else if (fileProgress.isVideoStreaming()) {
         text = twLineHeader = Strings.buildSize(fileProgress.getTotalSize());
+        twLineSubheader = textShort;
       } else {
         text = textShort;
       }

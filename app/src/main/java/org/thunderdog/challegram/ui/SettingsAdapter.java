@@ -31,6 +31,7 @@ import org.thunderdog.challegram.component.attach.MeasuredAdapterDelegate;
 import org.thunderdog.challegram.component.attach.MediaLocationPlaceView;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.base.TogglerView;
+import org.thunderdog.challegram.component.chat.DetachedChatHeaderView;
 import org.thunderdog.challegram.component.chat.MessagePreviewView;
 import org.thunderdog.challegram.component.inline.CustomResultView;
 import org.thunderdog.challegram.component.sharedmedia.MediaSmallView;
@@ -383,6 +384,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
   }
 
   protected void setEmbedSticker (ListItem item, int position, EmbeddableStickerView userView, boolean isUpdate) {
+    // Override
+  }
+
+  protected void setChatHeader (ListItem item, int position, DetachedChatHeaderView headerView) {
     // Override
   }
 
@@ -1463,6 +1468,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       }
       case ListItem.TYPE_EMBED_STICKER: {
         setEmbedSticker(item, position, (EmbeddableStickerView) holder.itemView, false);
+        break;
+      }
+      case ListItem.TYPE_CHAT_HEADER_LARGE: {
+        setChatHeader(item, position, (DetachedChatHeaderView) holder.itemView);
         break;
       }
       case ListItem.TYPE_INFO: {
