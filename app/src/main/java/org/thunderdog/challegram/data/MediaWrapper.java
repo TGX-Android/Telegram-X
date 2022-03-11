@@ -927,13 +927,6 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       durationRect.set(pDurationLeft - Screen.dp(4f), pDurationTop, pDurationRight, pDurationBottom);
 
       getFileProgress().setVideoStreamingOptions(needTopOffset, false, isSmallStreamingUI ? FileProgressComponent.STREAMING_UI_MODE_SMALL : FileProgressComponent.STREAMING_UI_MODE_LARGE, durationRect, downloadedAnimator);
-
-      if (isSmallStreamingUI) {
-        getFileProgress().setPausedIconRes(R.drawable.baseline_cloud_download_16);
-      } else if (isStreamingUI) {
-        getFileProgress().setPausedIconRes(R.drawable.baseline_cloud_download_24);
-      }
-
       c.drawRoundRect(durationRect, pDurationCorners, pDurationCorners, Paints.fillingPaint(ColorUtils.alphaColor(alpha * (1f - selectionFactor), 0x4c000000)));
 
       // This is set to fix text visible outside the rounded rect during the animation
@@ -965,12 +958,12 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       paint.setAlpha(255);
     } else if (isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
       getFileProgress().setVideoStreamingOptions(needTopOffset, true, isSmallStreamingUI ? FileProgressComponent.STREAMING_UI_MODE_SMALL : FileProgressComponent.STREAMING_UI_MODE_LARGE, durationRect, downloadedAnimator);
+    }
 
-      if (isSmallStreamingUI) {
-        getFileProgress().setPausedIconRes(R.drawable.baseline_cloud_download_16);
-      } else if (isStreamingUI) {
-        getFileProgress().setPausedIconRes(R.drawable.baseline_cloud_download_24);
-      }
+    if (isSmallStreamingUI) {
+      getFileProgress().setPausedIconRes(R.drawable.baseline_cloud_download_16);
+    } else if (isStreamingUI) {
+      getFileProgress().setPausedIconRes(R.drawable.baseline_cloud_download_24);
     }
 
     if (!hideLoader) {

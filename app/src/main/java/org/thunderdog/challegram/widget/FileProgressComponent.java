@@ -49,9 +49,9 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.ViewProvider;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.Td;
 
 /**
@@ -134,6 +134,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   private int videoStreamingUiMode;
   private int vsPadding;
   private BoolAnimator vsOnDownloadedAnimator;
+  private Drawable vsUniqueIconRef;
 
   private float requestedAlpha;
 
@@ -1413,9 +1414,21 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
         if (currentBitmapRes == FileProgressComponent.PLAY_ICON && playPauseFile != null) {
           DrawAlgorithms.drawPlayPause(c, cx, cy, Screen.dp(13f), playPausePath, playPauseDrawFactor, playPauseDrawFactor = this.playPauseFactor, progressFactor, ColorUtils.alphaColor(bitmapAlpha, 0xffffffff));
         } else {
-          Log.e(String.valueOf(bitmapAlpha));
-          Drawable drawable = view.getSparseDrawable(currentBitmapRes, 0);
-          Drawables.draw(c, drawable, cx - drawable.getMinimumWidth() / 2, cy - drawable.getMinimumHeight() / 2, bitmapPaint);
+          Drawable drawable;
+
+          // need unique icon ref because of mutate() workaround
+          if (bitmapAlpha != 1f) {
+            if (vsUniqueIconRef != null) {
+              drawable = vsUniqueIconRef;
+            } else {
+              drawable = vsUniqueIconRef = Drawables.get(currentBitmapRes);
+            }
+          } else {
+            vsUniqueIconRef = null; // clear ref
+            drawable = view.getSparseDrawable(currentBitmapRes, 0);
+          }
+
+          Drawables.draw(c, drawable, cx - drawable.getMinimumWidth() / 2f, cy - drawable.getMinimumHeight() / 2f, bitmapPaint);
         }
 
         if (bitmapAlpha != 1f) {
