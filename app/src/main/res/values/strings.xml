@@ -1359,7 +1359,7 @@
   <string name="LinkJoinChannelPrimaryYou">You subscribed via the primary invite link %1$s</string>
 
   <string name="LinkJoinOtherWithApproval">%1$s joined via %2$s\'s invite link %3$s, approved by %4$s</string>
-  <string name="LinkJoinOtherYouWithApproval">You joined via %1$s\'s invite link %2$s, approved by %3s</string>
+  <string name="LinkJoinOtherYouWithApproval">You joined via %1$s\'s invite link %2$s, approved by %3$s</string>
   <string name="LinkJoinTempWithApproval">%1$s joined via %2$s\'s temporary invite link %3$s, approved by %4$s</string>
   <string name="LinkJoinTempYouWithApproval">You joined via %1$s\'s temporary invite link %2$s, approved by %3$s</string>
   <string name="LinkJoinChannelOtherWithApproval">%1$s subscribed via %2$s\'s invite link %3$s, approved by %4$s</string>
@@ -1775,12 +1775,12 @@
   <string name="EventLogAllAdmins">All admins</string>
   <string name="EventLogEmptyFilter">Please specify at least one filter</string>
   <string name="EventLogEmpty">**No recent actions**\n\nNo notable actions taken by the members and admins of this group in the last 48 hours.</string>
-  <string name="EventLogEmptyChannel">**No recent actions**\n\nThe channel\'s admins\nhave not taken any service actions\nin the last 48 hours.</string>
+  <string name="EventLogEmptyChannel">**No recent actions**\n\nNo notable actions taken\nby the admins of this channel\nin the last 48 hours.</string>
   <string name="EventLogEmptySearch">**No actions found**\n\nNo recent actions that match your query\nwere found.</string>
   <string name="EventLogEmptyTextSearch">No recent actions that contain \'%1$s\' have been found.</string>
   <string name="EventLogInfoTitle">What is the Recent Actions?</string>
-  <string name="EventLogInfoDetail">This is a list of all service actions taken by the group\'s members and admins in the last 48 hours.</string>
-  <string name="EventLogInfoDetailChannel">This is a list of all service actions taken by the channel\'s admins in the last 48 hours.</string>
+  <string name="EventLogInfoDetail">This is a list of all notable actions by group members and admins in the last 48 hours.</string>
+  <string name="EventLogInfoDetailChannel">This is a list of all notable actions by channel admins in the last 48 hours.</string>
   <string name="EventLogChannelRestricted">banned %1$s</string>
   <string name="EventLogChannelUnrestricted">unbanned %1$s</string>
   <string name="EventLogGroupBanned">banned %1$s\n\nDuration: %2$s</string>
@@ -1809,8 +1809,8 @@
   <string name="EventLogToggledInvitesOff">%1$s disabled group invites</string>
   <string name="EventLogToggledSignaturesOn">%1$s enabled signatures</string>
   <string name="EventLogToggledSignaturesOff">%1$s disabled signatures</string>
-  <string name="EventLogToggledProtectionOn">%1$s restricted content copying</string>
-  <string name="EventLogToggledProtectionOff">%1$s allowed content copying</string>
+  <string name="EventLogToggledProtectionOn">%1$s enabled content protection</string>
+  <string name="EventLogToggledProtectionOff">%1$s disabled content protection</string>
   <string name="EventLogEditedInviteLink">Edited invite link %1$s\n\nUsage limit: %2$s → %3$s\nExpires: %4$s</string>
   <string name="LinkExpiresNever">never</string>
   <string name="LinkExpiresToday">today at %1$s</string>
@@ -2899,7 +2899,7 @@
   <string name="format_pinned">Pinned: %1$s</string>
   <string name="format_notificationTitlePinned">%1$s (pinned message)</string>
 
-  <string name="error_USER_NOT_MUTUAL_CONTACT">Sorry, if a person is no longer part of a group, you need to be in their Telegram contacts in order to add them back.\n\nNote that they can still join via the group\'s invite link as long as they are not in the Removed Users list.</string>
+  <string name="error_USER_NOT_MUTUAL_CONTACT">Sorry, if a person is no longer part of a group, you need to add each other to your respective contact lists to be able to add them back.\n\nNote that they could still join via the group\'s invite link as long as they are not in the removed users list.</string>
   <string name="error_CHAT_SEND_POLL_FORBIDDEN">Chat admins have restricted posting polls</string>
   <string name="error_LANG_CODE_NOT_SUPPORTED">Sorry, this language pack doesn\'t exist</string>
   <string name="error_APP_UPGRADE_NEEDED">This feature is not available. Please make sure the app is up-to-date, or wait for new updates.</string>
@@ -4013,7 +4013,7 @@
   <string name="InviteLinkRequestsHint">Some [additional links](%1$s) are set up to generate requests to join your group.</string>
   <string name="InviteLinkRequestsHintChannel">Some [additional links](%1$s) are set up to generate requests to join your channel.</string>
   <string name="AreYouSureAcceptJoinRequest">Are you sure you want to invite %1$s to %2$s?</string>
-  <string name="AreYouSureDeclineJoinRequest">Are you sure you want to decline a request from %1$s?</string>
+  <string name="AreYouSureDeclineJoinRequest">Are you sure you want to decline the request from %1$s?</string>
 
   <string name="xActiveLinks_one">%1$s active link</string>
   <string name="xActiveLinks_other">%1$s active links</string>
@@ -4031,7 +4031,7 @@
   <string name="ChatTtlEnabled">Automatically delete new messages after %1$s for members of the group.</string>
   <string name="ChannelTtl">Auto-delete posts</string>
   <string name="ChannelTtlOff">Off</string>
-  <string name="ChannelTtlDisabled">Choose a certain period of time when posts will be automatically deleted for subscribers of the channel.</string>
+  <string name="ChannelTtlDisabled">Choose a period of time after which posts will be automatically deleted for subscribers of the channel.</string>
   <string name="ChannelTtlEnabled">Automatically delete new posts after %1$s for subscribers of the channel.</string>
 
   <string name="ChatBackgroundPreview">Chat Background Preview</string>
@@ -4189,8 +4189,8 @@
 
   <string name="ChannelNoCopy">Sorry, copying from this channel is disabled by admins.</string>
   <string name="ChannelNoSave">Sorry, saving media from this channel is disabled by admins.</string>
-  <string name="OnlyOwnerChannel">This setting can be toggled only by channel owner.</string>
-  <string name="OnlyOwnerGroup">This setting can be toggled only by group owner.</string>
+  <string name="OnlyOwnerChannel">Only the channel owner can toggle this setting.</string>
+  <string name="OnlyOwnerGroup">Only the group owner can toggle this setting.</string>
 
   <string name="SessionDetails">Session Details</string>
   <string name="SessionAttemptDetails">Login Attempt Details</string>
