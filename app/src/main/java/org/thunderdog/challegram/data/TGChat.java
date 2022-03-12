@@ -106,7 +106,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
   private final MultipleViewProvider currentViews = new MultipleViewProvider();
 
   private final BounceAnimator scheduleAnimator;
-  private final Counter counter, mentionCounter, viewCounter;
+  private final Counter counter, mentionCounter, reactionCounter, viewCounter;
 
   public TGChat (ViewController<?> context, TdApi.ChatList chatList, TdApi.Chat chat, boolean makeMeasures) {
     this.context = context;
@@ -144,6 +144,10 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
       .drawable(R.drawable.baseline_at_16, 16f, 0f, Gravity.CENTER)
       .callback(this)
       .build();
+    this.reactionCounter = new Counter.Builder()
+      .drawable(R.drawable.baseline_favorite_16, 16f, 0f, Gravity.CENTER)
+      .callback(this)
+      .build();
     this.viewCounter = new Counter.Builder()
       .textSize(11f)
       .callback(this)
@@ -173,6 +177,10 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     this.counter = new Counter.Builder().callback(this).build();
     this.mentionCounter = new Counter.Builder()
       .drawable(R.drawable.baseline_at_16, 16f, 0f, Gravity.CENTER)
+      .callback(this)
+      .build();
+    this.reactionCounter = new Counter.Builder()
+      .drawable(R.drawable.baseline_favorite_16, 16f, 0f, Gravity.CENTER)
       .callback(this)
       .build();
     this.viewCounter = null;
@@ -569,6 +577,19 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     return false;
   }
 
+  public boolean updateChatUnreadReactionCount (long chatId, int unreadReactionCount) {
+    if (chat.id == chatId) {
+      boolean hadBadge = chat.unreadReactionCount > 0;
+      chat.unreadReactionCount = unreadReactionCount;
+      boolean hasBadge = unreadReactionCount > 0;
+      if (hasBadge != hadBadge) {
+        setCounter(needAnimateChanges());
+        return true;
+      }
+    }
+    return false;
+  }
+
   public boolean updateChatHasScheduledMessages (long chatId, boolean hasScheduledMessages) {
     if (chat.id == chatId && chat.hasScheduledMessages != hasScheduledMessages) {
       chat.hasScheduledMessages = hasScheduledMessages;
@@ -739,9 +760,11 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
   }
 
   private void setCounter (boolean allowAnimation) {
+    boolean hasReactions = hasUnreadReactions();
     boolean hasMentions = hasUnreadMentions();
     int unreadCount = getUnreadCount();
     mentionCounter.setCount(hasMentions ? Tdlib.CHAT_MARKED_AS_UNREAD : 0, false, allowAnimation && needAnimateChanges());
+    reactionCounter.setCount(hasReactions ? Tdlib.CHAT_MARKED_AS_UNREAD : 0, false, allowAnimation && needAnimateChanges());
     counter.setCount(hasMentions && unreadCount == 1 ? 0 : unreadCount, !notificationsEnabled(), allowAnimation && needAnimateChanges());
   }
 
@@ -768,6 +791,14 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
       return archive.hasUnreadMentions();
     } else {
       return chat.unreadMentionCount > 0;
+    }
+  }
+
+  public boolean hasUnreadReactions () {
+    if (isArchive()) {
+      return archive.hasUnreadReactions();
+    } else {
+      return chat.unreadReactionCount > 0;
     }
   }
 
@@ -965,7 +996,8 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
   private int getCounterAddWidth () {
     return Math.round(
       counter.getScaledWidth(ChatView.getTimePaddingLeft()) +
-      mentionCounter.getScaledWidth(ChatView.getTimePaddingLeft())
+      mentionCounter.getScaledWidth(ChatView.getTimePaddingLeft()) +
+      reactionCounter.getScaledWidth(ChatView.getTimePaddingLeft())
     );
   }
 
@@ -975,6 +1007,10 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
   public Counter getMentionCounter () {
     return mentionCounter;
+  }
+
+  public Counter getReactionCounter () {
+    return reactionCounter;
   }
 
   public BounceAnimator getScheduleAnimator () {

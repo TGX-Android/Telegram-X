@@ -346,6 +346,7 @@
   <item type="id" name="btn_routingSpeaker" />
   <item type="id" name="btn_scroll" />
   <item type="id" name="btn_mention" />
+  <item type="id" name="btn_reaction" />
   <item type="id" name="btn_deleteProfilePhoto" />
   <item type="id" name="btn_setProfilePhoto" />
   <item type="id" name="btn_addToGroup" />

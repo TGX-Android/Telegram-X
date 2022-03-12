@@ -316,9 +316,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private WallpaperView wallpaperViewBlurPreview;
   private WallpaperParametersView backgroundParamsView;
 
-  private FrameLayoutFix scrollToBottomButtonWrap, mentionButtonWrap;
-  private CircleButton scrollToBottomButton, mentionButton;
-  private CounterBadgeView unreadCountView, mentionCountView;
+  private FrameLayoutFix scrollToBottomButtonWrap, mentionButtonWrap, reactionButtonWrap;
+  private CircleButton scrollToBottomButton, mentionButton, reactionButton;
+  private CounterBadgeView unreadCountView, mentionCountView, reactionCountView;
 
   public boolean sponsoredMessageLoaded = false;
 
@@ -785,6 +785,47 @@ public class MessagesController extends ViewController<MessagesController.Argume
       toastAlertItem
     }, this);
 
+    // Reaction button
+
+    params = new RelativeLayout.LayoutParams(Screen.dp(118f), Screen.dp(74f));
+    params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+    params.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
+
+    reactionButtonWrap = new FrameLayoutFix(context);
+    reactionButtonWrap.setLayoutParams(params);
+    setReactionButtonFactor(0f);
+
+    final int padding = Screen.dp(4);
+    FrameLayoutFix.LayoutParams fparams = FrameLayoutFix.newParams(Screen.dp(24f) * 2 + padding * 2, Screen.dp(24f) * 2 + padding * 2, Gravity.RIGHT | Gravity.BOTTOM);
+    params.rightMargin = params.bottomMargin = Screen.dp(16f) - padding;
+
+    reactionButton = new CircleButton(context);
+    reactionButton.setId(R.id.btn_reaction);
+    reactionButton.setOnClickListener(this);
+    reactionButton.setOnLongClickListener(v -> {
+      long chatId = getChatId();
+      if (chatId != 0 && !isDestroyed()) {
+        tdlib.client().send(new TdApi.ReadAllChatReactions(chatId), tdlib.okHandler());
+        return true;
+      }
+      return false;
+    });
+    addThemeInvalidateListener(reactionButton);
+    reactionButton.init(R.drawable.baseline_favorite_24, 48f, 4f, R.id.theme_color_circleButtonChat, R.id.theme_color_circleButtonChatIcon);
+    reactionButton.setLayoutParams(fparams);
+    reactionButtonWrap.addView(reactionButton);
+
+    int buttonPadding = Screen.dp(24f);
+    fparams = FrameLayoutFix.newParams(buttonPadding + fparams.width, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.RIGHT | Gravity.BOTTOM);
+    fparams.bottomMargin = Screen.dp(24f) * 2 - Screen.dp(28f) / 2;
+
+    reactionCountView = new CounterBadgeView(context);
+    reactionCountView.setLayoutParams(fparams);
+    reactionCountView.setPadding(buttonPadding, 0, 0, 0);
+    addThemeInvalidateListener(reactionCountView);
+    reactionButtonWrap.addView(reactionCountView);
+    reactionButton.setTag(reactionCountView);
+
     // Mention button
 
     params = new RelativeLayout.LayoutParams(Screen.dp(118f), Screen.dp(74f));
@@ -795,8 +836,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     mentionButtonWrap.setLayoutParams(params);
     setMentionButtonFactor(0f);
 
-    final int padding = Screen.dp(4);
-    FrameLayoutFix.LayoutParams fparams = FrameLayoutFix.newParams(Screen.dp(24f) * 2 + padding * 2, Screen.dp(24f) * 2 + padding * 2, Gravity.RIGHT | Gravity.BOTTOM);
+    fparams = FrameLayoutFix.newParams(Screen.dp(24f) * 2 + padding * 2, Screen.dp(24f) * 2 + padding * 2, Gravity.RIGHT | Gravity.BOTTOM);
     params.rightMargin = params.bottomMargin = Screen.dp(16f) - padding;
 
     mentionButton = new CircleButton(context);
@@ -815,7 +855,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     mentionButton.setLayoutParams(fparams);
     mentionButtonWrap.addView(mentionButton);
 
-    int buttonPadding = Screen.dp(24f);
     fparams = FrameLayoutFix.newParams(buttonPadding + fparams.width, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.RIGHT | Gravity.BOTTOM);
     fparams.bottomMargin = Screen.dp(24f) * 2 - Screen.dp(28f) / 2;
 
@@ -2683,6 +2722,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       } else {
         setUnreadCountBadge(chat.unreadCount, true);
         setMentionCountBadge(chat.unreadMentionCount);
+        setReactionCountBadge(chat.unreadReactionCount);
       }
       if (bottomButtonAction == BOTTOM_ACTION_TOGGLE_MUTE) {
         showBottomButton(bottomButtonAction, 0, animated);
@@ -5681,6 +5721,54 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  // Reactions
+
+  private static final int ANIMATOR_REACTION_BUTTON = 8;
+  private FactorAnimator reactionButtonAnimator;
+  private boolean reactionButtonVisible;
+  private float reactionButtonFactor = 1f;
+  private int reactionCountBadge;
+
+  private void setReactionButtonVisible (boolean visible, boolean animated) {
+    if (this.reactionButtonVisible != visible) {
+      this.reactionButtonVisible = visible;
+      final float toFactor = visible ? 1f : 0f;
+      if (animated) {
+        if (reactionButtonAnimator == null) {
+          reactionButtonAnimator = new FactorAnimator(ANIMATOR_REACTION_BUTTON, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l, this.reactionButtonFactor);
+        }
+        reactionButtonAnimator.animateTo(toFactor);
+      } else {
+        if (reactionButtonAnimator != null) {
+          reactionButtonAnimator.forceFactor(toFactor);
+        }
+        setReactionButtonFactor(toFactor);
+      }
+    }
+  }
+
+  private void setReactionCountBadge (int reactionCount) {
+    if (reactionCount > 0 && (inPreviewMode || isInForceTouchMode() || areScheduledOnly())) {
+      return;
+    }
+    if (reactionCountBadge != reactionCount) {
+      reactionCountBadge = reactionCount;
+      boolean visible = reactionCount > 0;
+      boolean animate = isFocused();
+      reactionCountView.setCounter(reactionCount, false, animate && reactionButtonFactor > 0f);
+      setReactionButtonVisible(visible, animate);
+    }
+  }
+
+  private void setReactionButtonFactor (float factor) {
+    if (this.mentionButtonFactor != factor) {
+      this.reactionButtonFactor = factor;
+      float range = MathUtils.clamp(factor);
+      reactionButtonWrap.setAlpha(range);
+      updateBottomBarStyle();
+    }
+  }
+
   // Etc
 
   public void startSwipe (View view) {
@@ -7302,6 +7390,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case ANIMATOR_MENTION_BUTTON: {
         setMentionButtonFactor(factor);
+        break;
+      }
+      case ANIMATOR_REACTION_BUTTON: {
+        setReactionButtonFactor(factor);
         break;
       }
       /*case ANIMATOR_BOTTOM_HINT: {
@@ -9413,6 +9505,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public void onChatUnreadMentionCount(final long chatId, final int unreadMentionCount, boolean availabilityChanged) {
+    tdlib.ui().post(() -> {
+      if (getChatId() == chatId) {
+        updateCounters(true);
+      }
+    });
+  }
+
+  @Override
+  public void onChatUnreadReactionCount (long chatId, int unreadReactionCount, boolean availabilityChanged) {
     tdlib.ui().post(() -> {
       if (getChatId() == chatId) {
         updateCounters(true);
