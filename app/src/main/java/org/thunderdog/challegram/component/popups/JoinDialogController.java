@@ -1,7 +1,6 @@
 package org.thunderdog.challegram.component.popups;
 
 import android.content.Context;
-import android.text.SpannableString;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -13,37 +12,28 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.attach.MediaBottomBaseController;
 import org.thunderdog.challegram.component.attach.MediaLayout;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.chat.DetachedChatHeaderView;
-import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.CallItem;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGFoundChat;
-import org.thunderdog.challegram.data.TGMessage;
-import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
+import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.TdlibUi;
-import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.ListItem;
-import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.ui.SettingsAdapter;
 import org.thunderdog.challegram.util.text.TextEntity;
-import org.thunderdog.challegram.widget.BetterChatView;
+import org.thunderdog.challegram.widget.BaseView;
 import org.thunderdog.challegram.widget.CustomTextView;
-import org.thunderdog.challegram.widget.ListInfoView;
 import org.thunderdog.challegram.widget.VerticalChatView;
 
 import java.util.ArrayList;
 
-import me.vkryl.android.ViewUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.td.Td;
 
@@ -83,6 +73,7 @@ public class JoinDialogController extends MediaBottomBaseController<Void> implem
       @Override
       protected void setChatData (ListItem item, VerticalChatView chatView) {
         chatView.setChat((TGFoundChat) item.getData());
+        chatView.clearPreviewChat();
       }
     };
 
@@ -114,11 +105,8 @@ public class JoinDialogController extends MediaBottomBaseController<Void> implem
       }
 
       @Override
-      protected void setMembersList (ListItem item, int position, RecyclerView recyclerView) {
-        recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false));
+      protected void setRecyclerViewData (ListItem item, RecyclerView recyclerView, boolean isInitialization) {
         recyclerView.setAdapter(adapterMembers);
-        recyclerView.setPadding(Screen.dp(8f), 0, Screen.dp(8f), 0);
-        recyclerView.setClipToPadding(false);
       }
     };
 
@@ -135,11 +123,11 @@ public class JoinDialogController extends MediaBottomBaseController<Void> implem
     }
 
     if (inviteLinkInfo.memberUserIds != null && inviteLinkInfo.memberUserIds.length > 0) {
-      items.add(new ListItem(ListItem.TYPE_MEMBERS_LIST));
+      items.add(new ListItem(ListItem.TYPE_RECYCLER_HORIZONTAL));
 
       ArrayList<ListItem> itemsMembers = new ArrayList<>();
       for (int i = 0; i < inviteLinkInfo.memberUserIds.length; i++) {
-        itemsMembers.add(new ListItem(ListItem.TYPE_CHAT_VERTICAL).setData(new TGFoundChat(tdlib, inviteLinkInfo.memberUserIds[i]).setNoUnread()));
+        itemsMembers.add(new ListItem(ListItem.TYPE_CHAT_VERTICAL, R.id.user).setLongId(inviteLinkInfo.memberUserIds[i]).setData(new TGFoundChat(tdlib, inviteLinkInfo.memberUserIds[i]).setNoUnread()));
       }
       adapterMembers.setItems(itemsMembers.toArray(new ListItem[0]), false);
     }
@@ -210,6 +198,9 @@ public class JoinDialogController extends MediaBottomBaseController<Void> implem
       onJoinClicked.run();
     } else if (v.getId() == R.id.btn_cancel) {
       mediaLayout.hide(false);
+    } else if (v.getId() == R.id.user) {
+      mediaLayout.hide(false);
+      tdlib.ui().openPrivateProfile(this, ((ListItem) v.getTag()).getLongId(), new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
     }
   }
 }
