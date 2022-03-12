@@ -4,6 +4,12 @@
     <item name="android:windowContentOverlay">@null</item>
     <item name="android:windowActionBarOverlay">true</item>
   </style>
+
+  <style name="AppTheme.Dark" parent="android:Theme.Holo.NoActionBar">
+    <item name="android:windowContentOverlay">@null</item>
+    <item name="android:windowActionBarOverlay">true</item>
+  </style>
+
   <style name="DialogTheme" parent="@android:style/Theme.Holo.Light.Dialog">
     <item name="android:textColorLink">#ff039be5</item>
     <item name="android:windowBackground">@drawable/transparent</item>

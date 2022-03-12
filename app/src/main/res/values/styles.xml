@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <style name="AppTheme" parent="@android:style/Theme.Light.NoTitleBar" />
+  <style name="AppTheme.Dark" parent="@android:style/Theme.NoTitleBar" />
   <style name="DialogTheme" parent="@android:style/Theme.Dialog" />
   <style name="DialogThemeDark" parent="@android:style/Theme.Dialog" />
 
