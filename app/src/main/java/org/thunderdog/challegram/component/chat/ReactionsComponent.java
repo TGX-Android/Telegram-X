@@ -8,6 +8,7 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Build;
 import android.view.Gravity;
+import android.view.View;
 import android.view.animation.Interpolator;
 
 import androidx.annotation.Nullable;
@@ -22,6 +23,7 @@ import org.thunderdog.challegram.data.TGMessageSticker;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
@@ -29,10 +31,12 @@ import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.Counter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
@@ -99,7 +103,9 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
       if (existingHash.containsKey(reaction.reaction)) {
         // reaction exists, update it
-        existingHash.get(reaction.reaction).update(messageReactions[i], i, animated, shouldRenderSmall());
+        Reaction existingReaction = existingHash.get(reaction.reaction);
+        existingReaction.update(messageReactions[i], i, animated, shouldRenderSmall());
+        if (!animated) existingReaction.requestOverlay = false;
       } else {
         // reaction does not exist, add it
         // note that previous index is already added, so we can be assured in list changes
@@ -107,6 +113,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
         clientReactions.add(i, newReaction);
         newReaction.update(messageReactions[i], i, false, shouldRenderSmall());
         newReaction.show(animated);
+        if (!animated) newReaction.requestOverlay = false;
       }
     }
 
@@ -207,6 +214,10 @@ public class ReactionsComponent implements FactorAnimator.Target {
     rcRect.set(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight() - Screen.dp(source.needExtraPadding() ? 10f : 4f));
     c.save();
     c.clipRect(rcRect);
+
+    View cv = source.findCurrentView();
+    int[] loc = cv != null ? Views.getLocationInWindow(source.findCurrentView()) : null;
+
     for (int i = 0; i < clientReactions.size(); i++) {
       Reaction reaction = clientReactions.get(i);
 
@@ -215,7 +226,16 @@ public class ReactionsComponent implements FactorAnimator.Target {
       rcClickListeners[i].set(sx, sy, sx + reaction.getStaticWidth(), sy + reaction.getHeight());
 
       reaction.draw(c, view.getReactionsReceiver(), startX, startY, clientReactions.size() == 1, shouldRenderSmall());
+
+      if (reaction.requestOverlay) {
+        if (loc != null) {
+          source.messagesController().addReactionToOverlay(sx + Screen.dp(16), loc[1] + rcClickListeners[i].centerY() - (Screen.getStatusBarHeight() + HeaderView.getHeaderHeight(null)), reaction.reactionObj);
+        }
+
+        reaction.requestOverlay = false;
+      }
     }
+
     c.restore();
   }
 
@@ -241,19 +261,19 @@ public class ReactionsComponent implements FactorAnimator.Target {
     private final ImageFile staticIconFile;
     private final Path staticIconContour = new Path();
 
-    private TdApi.MessageReaction reaction;
-
     private final BoolAnimator appearAnimator = new BoolAnimator(ANIMATOR_VISIBLE, this, RC_INTERPOLATOR, RC_DURATION);
     private final BoolAnimator chooseAnimator = new BoolAnimator(ANIMATOR_CHOOSE, this, RC_INTERPOLATOR, RC_DURATION);
     private final FactorAnimator xCoordinate = new FactorAnimator(ANIMATOR_COORDINATE, this, RC_INTERPOLATOR, RC_DURATION);
     private final FactorAnimator yCoordinate = new FactorAnimator(ANIMATOR_COORDINATE, this, RC_INTERPOLATOR, RC_DURATION);
     private final BoolAnimator counterAppearAnimator = new BoolAnimator(ANIMATOR_TEXT_VISIBLE, this, RC_INTERPOLATOR, RC_DURATION);
 
-    private Runnable onHideAnimationEnd;
-
     private final RectF bubbleRect = new RectF();
     private final Path bubblePath = new Path();
+
+    private TdApi.MessageReaction reaction;
+    private Runnable onHideAnimationEnd;
     private float bubblePathWidth;
+    private boolean requestOverlay;
 
     public Reaction (Tdlib tdlib, TdApi.MessageReaction reaction, ViewProvider viewProvider, boolean isOutgoing, boolean small) {
       this.reaction = reaction;
@@ -276,6 +296,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
         .build();
 
       textCounter.setCount(reaction.totalCount, false);
+      requestOverlay = reaction.isChosen;
     }
 
     public void setCoordinates (float x, float y, boolean animated) {
@@ -342,6 +363,10 @@ public class ReactionsComponent implements FactorAnimator.Target {
       return yCoordinate.getToFactor();
     }
 
+    public boolean isChosen () {
+      return reaction.isChosen;
+    }
+
     @Override
     public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
       viewProvider.invalidate();
@@ -356,6 +381,10 @@ public class ReactionsComponent implements FactorAnimator.Target {
     }
 
     public void update (TdApi.MessageReaction reaction, int index, boolean animated, boolean small) {
+      if (reaction.isChosen && !this.reaction.isChosen) {
+        requestOverlay = true;
+      }
+
       if (small) {
         counterAppearAnimator.setValue(reaction.totalCount > 1, animated);
         if (reaction.totalCount > 1) {

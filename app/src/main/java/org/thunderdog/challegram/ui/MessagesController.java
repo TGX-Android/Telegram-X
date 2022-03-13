@@ -102,6 +102,7 @@ import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.chat.PinnedMessagesBar;
 import org.thunderdog.challegram.component.chat.RaiseHelper;
 import org.thunderdog.challegram.component.chat.ReactionsMenuComponent;
+import org.thunderdog.challegram.component.chat.ReactionsOverlayComponent;
 import org.thunderdog.challegram.component.chat.ReplyView;
 import org.thunderdog.challegram.component.chat.SilentButton;
 import org.thunderdog.challegram.component.chat.StickerSuggestionAdapter;
@@ -598,6 +599,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     manager.modifyRecycler(context, messagesView, messagesManager);
+    messagesView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+      @Override
+      public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
+        overlayComponent.onScrolled(dy);
+      }
+    });
 
     params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
     params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
@@ -1231,6 +1238,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
       bottomShadowView.setVisibility(View.GONE);
     }
 
+    // Reactions
+
+    params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+    overlayComponent = new ReactionsOverlayComponent(context);
+    overlayComponent.setLayoutParams(params);
+
     // Setup
 
     contentView.addView(wallpaperView);
@@ -1264,6 +1277,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (backgroundParamsView != null) {
       contentView.addView(backgroundParamsView, 2);
     }
+
+    contentView.addView(overlayComponent);
 
     updateView();
 
@@ -10450,5 +10465,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
     c.postOnAnimationReady(() -> target.animateTo(animateToWhenReady));
     UI.getContext(context).navigation().navigateTo(c);
     return true;
+  }
+
+  // Reactions overlay
+
+  private ReactionsOverlayComponent overlayComponent;
+
+  public void addReactionToOverlay (float centerX, float centerY, TdApi.Reaction reaction) {
+    overlayComponent.addReactionToOverlay(tdlib, centerX, centerY, reaction);
   }
 }
