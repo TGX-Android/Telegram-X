@@ -974,8 +974,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return useBubbles() ? alignBubbleRight() ? getActualRightContentEdge() - inlineKeyboard.getWidth() : getActualLeftContentEdge() : pRealContentX;
   }
 
+  private int measureReactionsHeight () {
+    return reactionsComponent != null ? (useBubbles() ? reactionsComponent.getHeight(isBubbleTimeExpanded) : reactionsComponent.getFlatHeight()) : 0;
+  }
+
   private int measureKeyboardTop () {
-    return useBubbles() ? bottomContentEdge + TGInlineKeyboard.getButtonSpacing() : pContentY + getContentHeight() + getPaddingBottom() + (hasFooter() ? getFooterHeight() + getFooterPaddingTop() + getFooterPaddingBottom() : 0);
+    return (useBubbles() ? bottomContentEdge + TGInlineKeyboard.getButtonSpacing() : pContentY + getContentHeight() + getPaddingBottom() + (hasFooter() ? getFooterHeight() + getFooterPaddingTop() + getFooterPaddingBottom() : 0)) + measureReactionsHeight();
   }
 
   protected boolean rebuildContentDimensions () {
@@ -1943,7 +1947,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     if (reactionsComponent != null && !reactionsComponent.shouldRenderSmall()) {
-      reactionsComponent.draw(view, c, pContentX, pContentY + getContentHeight() + xBadgePadding);
+      reactionsComponent.draw(view, c, pRealContentX, pContentY + getContentHeight() + xBadgePadding);
     }
 
     if (contentOffset != 0) {
