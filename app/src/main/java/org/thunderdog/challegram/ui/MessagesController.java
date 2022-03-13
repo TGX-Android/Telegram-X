@@ -4192,11 +4192,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
       b.append(Lang.getString(resId));
     }
     String text = b.toString().trim();
-    patchReactions(patchReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, disableViewCounter), msg);
+    patchReactions(patchReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, disableViewCounter), msg, disableViewCounter);
   }
 
-  private PopupLayout patchReactions (PopupLayout layout, TGMessage message) {
-    if (chat == null || chat.availableReactions.length == 0 || !(layout.getChildAt(1) instanceof OptionsLayout)) {
+  private PopupLayout patchReactions (PopupLayout layout, TGMessage message, boolean disableReactions) {
+    if (chat == null || chat.availableReactions.length == 0 || disableReactions || !(layout.getChildAt(1) instanceof OptionsLayout)) {
       return layout;
     }
 
