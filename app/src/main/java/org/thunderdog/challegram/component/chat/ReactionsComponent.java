@@ -74,11 +74,14 @@ public class ReactionsComponent implements FactorAnimator.Target {
   private final FactorAnimator rcHeightAnimator = new FactorAnimator(ANIMATOR_CONTAINER_PARAMS_H, this, RC_INTERPOLATOR, RC_DURATION);
 
   private final ArrayList<Reaction> clientReactions = new ArrayList<>();
+  private TdApi.MessageReaction[] clientReactionsOrder;
+
   private final TGMessage source;
   private final ViewProvider viewProvider;
 
   private final RectF rcRect = new RectF();
   private RectF[] rcClickListeners;
+  private int realMaxWidth;
 
   public ReactionsComponent (TGMessage source, ViewProvider viewProvider) {
     this.source = source;
@@ -127,6 +130,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
     rcClickListeners = new RectF[clientReactions.size()];
     initializeClickArray();
 
+    clientReactionsOrder = messageReactions;
     measure(messageReactions, animated);
     componentVisibleAnimator.setValue(messageReactions.length > 0, animated);
   }
@@ -152,7 +156,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
     for (int i = 0; i < order.length; i++) {
       Reaction reaction = existingHash.get(order[i].reaction);
 
-      if (currentX + reaction.getStaticWidth() >= TGMessage.getEstimatedContentMaxWidth()) {
+      if (source.getRealContentX() + currentX + reaction.getStaticWidth() >= (realMaxWidth > 0 ? realMaxWidth : TGMessage.getEstimatedContentMaxWidth())) {
         // too much space taken, move to next row
         width = currentX;
         currentY += REACTION_HEIGHT + REACTION_ITEM_SEPARATOR;
@@ -176,7 +180,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
   }
 
   public int getHeight (boolean needSizeCut) {
-    return (int) ((rcHeightAnimator.getFactor() + REACTION_ITEM_HALF_SEPARATOR - (needSizeCut ? Screen.dp(16f) : 0)) * componentVisibleAnimator.getFloatValue());
+    return (int) ((rcHeightAnimator.getFactor() + REACTION_ITEM_HALF_SEPARATOR - (needSizeCut ? Screen.dp(16f) : 0) + (!needSizeCut ? Screen.dp(8f) : 0) + Screen.dp(16f)) * componentVisibleAnimator.getFloatValue());
   }
 
   public int getFlatHeight () {
@@ -250,6 +254,12 @@ public class ReactionsComponent implements FactorAnimator.Target {
     }
 
     return false;
+  }
+
+  public void measureLayout (int pRealContentMaxWidth) {
+    if (realMaxWidth == pRealContentMaxWidth || clientReactionsOrder == null) return;
+    realMaxWidth = pRealContentMaxWidth;
+    measure(clientReactionsOrder, false);
   }
 
   private static class Reaction implements FactorAnimator.Target {

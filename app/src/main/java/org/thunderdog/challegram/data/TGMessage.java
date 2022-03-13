@@ -678,7 +678,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     if (reactionsComponent != null) {
-      width = Math.max(width, reactionsComponent.getWidth() + getBubbleTimePartWidth());
+      width = Math.max(width, reactionsComponent.getWidth());
     }
 
     return width; //  + getBubblePaddingLeft() + getBubblePaddingRight();
@@ -880,6 +880,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       if (isPsa()) {
         pContentY += getPsaTitleHeight();
       }
+    }
+
+    if (reactionsComponent != null) {
+      reactionsComponent.measureLayout(pRealContentMaxWidth);
     }
 
     updateContentPositions(true);
@@ -1873,7 +1877,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
       if (useBubbles) {
         lineTop = forwardY;
-        lineBottom = bottomContentEdge - xBubblePadding - xBubblePaddingSmall - (useBubbleTime() ? getBubbleTimePartHeight() : 0) - getBubbleReduceHeight();
+        lineBottom = bottomContentEdge - xBubblePadding - xBubblePaddingSmall - (useBubbleTime() ? getBubbleTimePartHeight() : 0) - getBubbleReduceHeight() - (reactionsComponent != null ? reactionsComponent.getHeight(true) : 0);
         mergeBottom = mergeTop = false;
       } else {
         if ((flags & FLAG_MERGE_FORWARD) != 0 && (flags & FLAG_HEADER_ENABLED) == 0) {
@@ -1947,7 +1951,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     if (reactionsComponent != null && !reactionsComponent.shouldRenderSmall()) {
-      reactionsComponent.draw(view, c, pRealContentX, pContentY + getContentHeight() + xBadgePadding);
+      reactionsComponent.draw(view, c, (!useBubbles() || useFullWidth()) ? pRealContentX - (isForward() ? Screen.dp(11f) : 0) : getInternalBubbleStartX(), pContentY + getContentHeight() + xBadgePadding);
     }
 
     if (contentOffset != 0) {
@@ -2834,7 +2838,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   private int bubbleTimePartWidth, bubbleInnerWidth;
 
-  protected final int getBubbleTimePartWidth () {
+  public final int getBubbleTimePartWidth () {
     return useBubbles() && useBubbleTime() ? bubbleTimePartWidth : 0;
   }
 
