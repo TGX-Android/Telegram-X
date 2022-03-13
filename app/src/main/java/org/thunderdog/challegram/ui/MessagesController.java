@@ -1248,6 +1248,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     contentView.addView(bottomBar);
     contentView.addView(scrollToBottomButtonWrap);
     contentView.addView(mentionButtonWrap);
+    contentView.addView(reactionButtonWrap);
 
     if (previewMode == PREVIEW_MODE_NONE) {
       contentView.addView(emojiButton);
@@ -1839,6 +1840,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_mention: {
         manager.scrollToNextMention();
+        break;
+      }
+      case R.id.btn_reaction: {
+        manager.scrollToNextReaction();
         break;
       }
       case R.id.msg_command: {
@@ -2967,16 +2972,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void setInputVisible (boolean visible, boolean notEmpty) {
     RelativeLayout.LayoutParams params1 = (RelativeLayout.LayoutParams) scrollToBottomButtonWrap.getLayoutParams();
     RelativeLayout.LayoutParams params2 = (RelativeLayout.LayoutParams) mentionButtonWrap.getLayoutParams();
+    RelativeLayout.LayoutParams params3 = (RelativeLayout.LayoutParams) reactionButtonWrap.getLayoutParams();
     if (visible) {
       params1.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
       params1.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 0);
       params2.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
       params2.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 0);
+      params3.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
+      params3.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 0);
     } else {
       params1.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
       params1.addRule(RelativeLayout.ABOVE, 0);
       params2.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
       params2.addRule(RelativeLayout.ABOVE, 0);
+      params3.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+      params3.addRule(RelativeLayout.ABOVE, 0);
     }
     if (visible) {
       bottomWrap.setVisibility(View.VISIBLE);
@@ -5761,7 +5771,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void setReactionButtonFactor (float factor) {
-    if (this.mentionButtonFactor != factor) {
+    if (this.reactionButtonFactor != factor) {
       this.reactionButtonFactor = factor;
       float range = MathUtils.clamp(factor);
       reactionButtonWrap.setAlpha(range);
@@ -6081,6 +6091,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return y;
   }
 
+  private float getReactionButtonY () {
+    int moveY = Screen.dp(74f) - Screen.dp(16f);
+    float y = -getButtonsOffset() - (moveY * scrollToBottomVisible.getFloatValue()) - (Screen.dp(58f) * mentionButtonFactor);
+    if (isInForceTouchMode()) {
+      y += -Screen.dp(16f) + Screen.dp(4f);
+    }
+    return y;
+  }
+
   public void setReplyFactor (float factor) {
     if (this.replyFactor != factor) {
       this.replyFactor = factor;
@@ -6098,6 +6117,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     if (mentionButtonWrap != null) {
       mentionButtonWrap.setTranslationY(getMentionButtonY());
+    }
+    if (reactionButtonWrap != null) {
+      reactionButtonWrap.setTranslationY(getReactionButtonY());
     }
     updateBottomBarStyle();
   }
