@@ -5412,7 +5412,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     float fromY = bottomButtonFactor == 1f ? baseY : baseY + (int) ((float) barHeight * (1f - bottomButtonFactor));
     float alpha = 1f - 1f * detachFactor * (1f - bottomButtonFactor);
     int moveBy = Screen.dp(74f) - Screen.dp(16f);
-    float toY = -getButtonsOffset() - Screen.dp(16f) - moveBy - moveBy * mentionButtonFactor; //  -getReplyOffset() - (Screen.dp(74f) - Screen.dp(48f)) / 2f;
+    float toY = -getButtonsOffset() - Screen.dp(16f) - moveBy - moveBy * Math.max(reactionButtonFactor, mentionButtonFactor); //  -getReplyOffset() - (Screen.dp(74f) - Screen.dp(48f)) / 2f;
     bottomBar.setCollapseFactor(detachFactor);
     bottomBar.setAlpha(alpha);
     int dx = (int) ((bottomBar.getMeasuredWidth() / 2f - Screen.dp(16f) - barHeight / 2) * detachFactor);
@@ -5728,6 +5728,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       float range = MathUtils.clamp(factor);
       mentionButtonWrap.setAlpha(range);
       updateBottomBarStyle();
+      updateReactionButtonY();
     }
   }
 
@@ -6118,10 +6119,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (mentionButtonWrap != null) {
       mentionButtonWrap.setTranslationY(getMentionButtonY());
     }
+    updateReactionButtonY();
+    updateBottomBarStyle();
+  }
+
+  private void updateReactionButtonY () {
     if (reactionButtonWrap != null) {
       reactionButtonWrap.setTranslationY(getReactionButtonY());
     }
-    updateBottomBarStyle();
   }
 
   private void updateReplyView () {

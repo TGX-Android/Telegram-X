@@ -6120,7 +6120,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   @TdlibThread
   private void updateMessageUnreadReactions (TdApi.UpdateMessageUnreadReactions update) {
-    listeners.updateMessageUnreadReactions(update);
+    final boolean counterChanged, availabilityChanged;
+    synchronized (dataLock) {
+      final TdApi.Chat chat = chats.get(update.chatId);
+      if (TdlibUtils.assertChat(update.chatId, chat, update)) {
+        return;
+      }
+      availabilityChanged = (chat.unreadReactionCount > 0) != (update.unreadReactionCount > 0);
+      counterChanged = chat.unreadReactionCount != update.unreadReactionCount;
+      chat.unreadReactionCount = update.unreadReactionCount;
+    }
+
+    listeners.updateMessageUnreadReactions(update, counterChanged, availabilityChanged);
   }
 
   @TdlibThread

@@ -3705,6 +3705,19 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return msg.containsUnreadMention;
   }
 
+  public final boolean containsUnreadReaction () {
+    synchronized (this) {
+      if (combinedMessages != null) {
+        for (int i = combinedMessages.size() - 1; i >= 0; i--) {
+          if (combinedMessages.get(i).unreadReactions.length > 0) {
+            return true;
+          }
+        }
+      }
+    }
+    return msg.unreadReactions.length > 0;
+  }
+
   public final void readMention (long messageId) {
     synchronized (this) {
       if (combinedMessages != null) {
@@ -3718,6 +3731,22 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
     if (msg.id == messageId) {
       msg.containsUnreadMention = false;
+    }
+  }
+
+  public final void readReaction (long messageId) {
+    synchronized (this) {
+      if (combinedMessages != null) {
+        for (TdApi.Message message : combinedMessages) {
+          if (message.id == messageId) {
+            message.unreadReactions = new TdApi.UnreadReaction[0];
+            return;
+          }
+        }
+      }
+    }
+    if (msg.id == messageId) {
+      msg.unreadReactions = new TdApi.UnreadReaction[0];
     }
   }
 
