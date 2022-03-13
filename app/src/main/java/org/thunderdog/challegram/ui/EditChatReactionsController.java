@@ -81,7 +81,7 @@ public class EditChatReactionsController extends EditBaseController<EditChatReac
 
       selectedReactions.clear();
       if (selectAll) {
-        selectedReactions.addAll(Arrays.asList(tdlib.getActiveReactionsEmoji()));
+        selectedReactions.addAll(Arrays.asList(tdlib.getActiveReactions()));
       }
 
       adapter.updateAllValuedSettingsById(R.id.btn_manageReactionsEntry);
@@ -185,7 +185,9 @@ public class EditChatReactionsController extends EditBaseController<EditChatReac
     items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.ReactionManageList));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
 
-    for (TdApi.Reaction supportedReaction : tdlib.getActiveReactions()) {
+    for (String supportedReactionEmoji: tdlib.getActiveReactions()) {
+      TdApi.Reaction supportedReaction = tdlib.getReaction(supportedReactionEmoji);
+
       items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_manageReactionsEntry, 0, supportedReaction.title, false).setStringValue(supportedReaction.reaction).setDrawModifier(new DrawModifier() {
         @Override
         public void afterDraw (View view, Canvas c) {

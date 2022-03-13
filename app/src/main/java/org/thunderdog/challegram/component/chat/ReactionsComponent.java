@@ -411,7 +411,6 @@ public class ReactionsComponent implements FactorAnimator.Target {
     }
 
     public void drawSmall (Canvas c, ComplexReceiver reactionsReceiver, int sx, int sy) {
-      //Log.e("%s %s %s", sx, xCoordinate.getFactor(), getSmallWidth());
       final float alpha = appearAnimator.getFloatValue();
       final float width = getSmallWidth();
       final float height = Screen.dp(16f);

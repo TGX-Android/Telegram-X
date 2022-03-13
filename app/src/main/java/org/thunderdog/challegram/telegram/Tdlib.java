@@ -436,11 +436,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private boolean youtubePipDisabled, qrLoginCamera, dialogFiltersTooltip, dialogFiltersEnabled;
   private String qrLoginCode;
   private String[] diceEmoji;
-  private TdApi.Reaction[] supportedReactions;
   private boolean callsEnabled = true, expectBlocking, isLocationVisible;
   private boolean canIgnoreSensitiveContentRestrictions, ignoreSensitiveContentRestrictions;
   private boolean canArchiveAndMuteNewChatsFromUnknownUsers, archiveAndMuteNewChatsFromUnknownUsers;
   private RtcServer[] rtcServers;
+
+  private HashMap<String, TdApi.Reaction> supportedReactions = new HashMap<>();
+  private String[] supportedReactionsEmojies;
 
   private long unixTime;
   private long unixTimeReceived;
@@ -7377,7 +7379,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private void updateReactions (TdApi.UpdateReactions update) {
     synchronized (dataLock) {
-      this.supportedReactions = update.reactions;
+      this.supportedReactions.clear();
+      ArrayList<String> emojies = new ArrayList<>();
+
+      for (TdApi.Reaction reaction : update.reactions) {
+        if (reaction.isActive) {
+          emojies.add(reaction.reaction);
+          this.supportedReactions.put(reaction.reaction, reaction);
+        }
+      }
+
+      this.supportedReactionsEmojies = emojies.toArray(new String[0]);
     }
   }
 
@@ -8716,47 +8728,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public int getActiveReactionCount () {
     synchronized (dataLock) {
-      return getActiveReactions().length;
+      return supportedReactions.size();
     }
   }
 
-  public TdApi.Reaction[] getActiveReactions () {
+  public String[] getActiveReactions () {
     synchronized (dataLock) {
-      ArrayList<TdApi.Reaction> reactions = new ArrayList<>();
-
-      for (TdApi.Reaction supportedReaction : supportedReactions) {
-        if (supportedReaction.isActive) {
-          reactions.add(supportedReaction);
-        }
-      }
-
-      return reactions.toArray(new TdApi.Reaction[0]);
-    }
-  }
-
-  public String[] getActiveReactionsEmoji () {
-    synchronized (dataLock) {
-      ArrayList<String> reactions = new ArrayList<>();
-
-      for (TdApi.Reaction supportedReaction : supportedReactions) {
-        if (supportedReaction.isActive) {
-          reactions.add(supportedReaction.reaction);
-        }
-      }
-
-      return reactions.toArray(new String[0]);
+      return supportedReactionsEmojies;
     }
   }
 
   public TdApi.Reaction getReaction (String reactionStr) {
     synchronized (dataLock) {
-      for (TdApi.Reaction supportedReaction : supportedReactions) {
-        if (supportedReaction.reaction.equals(reactionStr)) {
-          return supportedReaction;
-        }
-      }
-
-      return null;
+      return supportedReactions.get(reactionStr);
     }
   }
 }
