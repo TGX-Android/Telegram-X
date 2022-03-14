@@ -23,6 +23,8 @@ import org.thunderdog.challegram.data.TGMessageSticker;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.loader.gif.GifFile;
+import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -266,6 +268,8 @@ public class ReactionsComponent implements FactorAnimator.Target {
     private final TGMessage source;
 
     private final ImageFile staticIconFile;
+    private final GifFile dynamicIconFile;
+
     private final Path staticIconContour = new Path();
 
     private final BoolAnimator appearAnimator = new BoolAnimator(ANIMATOR_VISIBLE, this, RC_INTERPOLATOR, RC_DURATION);
@@ -289,9 +293,14 @@ public class ReactionsComponent implements FactorAnimator.Target {
       this.source = source;
 
       Td.buildOutline(reactionObj.staticIcon.outline, (float) (small ? REACTION_ICON_SIZE_SMALL : REACTION_ICON_SIZE) / reactionObj.staticIcon.height, staticIconContour);
+
       staticIconFile = new ImageFile(tdlib, reactionObj.staticIcon.sticker);
       staticIconFile.setSize(small ? REACTION_ICON_SIZE_SMALL : REACTION_ICON_SIZE);
       staticIconFile.setNoBlur();
+
+      dynamicIconFile = new GifFile(tdlib, reactionObj.centerAnimation);
+      dynamicIconFile.setPlayOnce(true);
+
       chooseAnimator.setValue(reaction.isChosen, false);
 
       textCounter = new Counter.Builder()
@@ -403,7 +412,13 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
       this.reaction = reaction;
       chooseAnimator.setValue(reaction.isChosen, animated);
-      if (animated) source.messagesController().updateReactionOverlayAlpha(createKey(), reaction.isChosen);
+
+      if (animated) {
+        source.messagesController().updateReactionOverlayAlpha(createKey(), reaction.isChosen);
+        if (reaction.isChosen) {
+          dynamicIconFile.setLooped(false);
+        }
+      }
 
       setCoordinates((REACTION_BASE_WIDTH * 4) * index, 0, animated);
     }
@@ -474,8 +489,6 @@ public class ReactionsComponent implements FactorAnimator.Target {
       c.translate(startX, startY);
       c.scale(animationScale, animationScale, width / 2, height / 2);
 
-      ImageReceiver r = reactionsReceiver.getImageReceiver(reaction.reaction.hashCode());
-
       if (bubblePathWidth != width) {
         bubblePathWidth = width;
         bubbleRect.set(0, 0, width, height);
@@ -501,15 +514,22 @@ public class ReactionsComponent implements FactorAnimator.Target {
         c.drawCircle(Screen.dp(16f), (height / 2f), width * chooseAnimator.getFloatValue(), Paints.fillingPaint(getChosenColor()));
 
       int izPad = (REACTION_HEIGHT - REACTION_ICON_SIZE) / 2;
+
+      // Static
+      ImageReceiver r = reactionsReceiver.getImageReceiver(reaction.reaction.hashCode());
       r.setBounds(Screen.dp(8f), izPad, Screen.dp(8f) + REACTION_ICON_SIZE, REACTION_HEIGHT - izPad);
 
-      if (r.isEmpty()) r.requestFile(staticIconFile);
-      if (r.needPlaceholder()) r.drawPlaceholderContour(c, staticIconContour, alpha);
-      r.setAlpha(alpha);
-      r.draw(c);
-      r.setAlpha(1f);
+      // Dynamic
+      GifReceiver gr = reactionsReceiver.getGifReceiver(reaction.reaction.hashCode());
+      int grCx = r.centerX();
+      int grCy = r.centerY();
+      int grPad = Screen.dp(18f);
+      if (gr.isEmpty()) gr.requestFile(dynamicIconFile);
+      if (gr.needPlaceholder()) gr.drawPlaceholderContour(c, staticIconContour, alpha);
+      gr.setBounds(grCx - grPad, grCy - grPad, grCx + grPad, grCy + grPad);
+      gr.draw(c);
 
-      textCounter.draw(c, r.getRight() + Screen.dp(6f), r.centerY(), Gravity.LEFT, alpha);
+      textCounter.draw(c, Screen.dp(8f) + REACTION_ICON_SIZE + Screen.dp(6f), gr.centerY(), Gravity.LEFT, alpha);
 
       if (clipped) {
         ViewSupport.restoreClipPath(c, saveCount);
