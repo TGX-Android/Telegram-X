@@ -17,44 +17,38 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+
+import me.vkryl.android.animator.BoolAnimator;
+import me.vkryl.android.animator.FactorAnimator;
 
 public class ReactionsOverlayComponent extends View {
-  private static final int RC_HIDE_AFTER = 1000;
-
-  private final Handler rcHandler = new Handler(Looper.getMainLooper());
-
-  private final ArrayList<GifReceiver> runningOverlays = new ArrayList<>();
-  private float[] runningOverlaysDbg = new float[] {0, 0};
+  private final HashMap<String, OverlayItem> runningOverlays = new HashMap<>();
 
   public ReactionsOverlayComponent (Context context) {
     super(context);
     setWillNotDraw(false);
   }
 
-  public void addReactionToOverlay (Tdlib tdlib, float centerX, float centerY, TdApi.Reaction reaction) {
-    int size = Screen.dp(96f);
-    int halfSize = size / 2;
+  public void addReactionToOverlay (Tdlib tdlib, String key, TdApi.Reaction reaction) {
+    runningOverlays.put(key, new OverlayItem(tdlib, key, this, reaction));
+  }
 
-    GifReceiver gr = new GifReceiver(this);
-    gr.setBounds((int) centerX - halfSize, (int) centerY - halfSize, (int) centerX + halfSize, (int) centerY + halfSize);
+  public void updateReactionOverlayLocation (String key, float centerX, float centerY) {
+    if (runningOverlays.containsKey(key)) {
+      runningOverlays.get(key).setBounds(centerX, centerY);
+    }
+  }
 
-    GifFile animatedFile = new GifFile(tdlib, reaction.aroundAnimation != null ? reaction.aroundAnimation : reaction.effectAnimation); // activateAnimation, centerAnimation
-    animatedFile.setScaleType(GifFile.CENTER_CROP);
-    animatedFile.setSize(size);
-    animatedFile.setPlayOnce(true);
-    animatedFile.addLoopListener(() -> runningOverlays.remove(gr));
-
-    gr.requestFile(animatedFile);
-
-    //runningOverlaysDbg = new float[] { centerX, centerY };
-    runningOverlays.add(gr);
+  public void updateReactionOverlayAlpha (String key, boolean visible) {
+    if (runningOverlays.containsKey(key)) {
+      runningOverlays.get(key).updateReactionOverlayAlpha(visible);
+    }
   }
 
   public void onScrolled (int dy) {
-    for (int i = 0; i < runningOverlays.size(); i++) {
-      GifReceiver ov = runningOverlays.get(i);
-      ov.setBounds(ov.getLeft(), ov.getTop() - dy, ov.getRight(), ov.getBottom() - dy);
-      //runningOverlaysDbg[1] -= dy;
+    for (OverlayItem ov : runningOverlays.values()) {
+      ov.onScrolled(dy);
     }
 
     invalidate();
@@ -62,9 +56,46 @@ public class ReactionsOverlayComponent extends View {
 
   @Override
   protected void onDraw (Canvas canvas) {
-    for (int i = 0; i < runningOverlays.size(); i++) {
-      runningOverlays.get(i).draw(canvas);
-      //if (BuildConfig.DEBUG) canvas.drawCircle(runningOverlaysDbg[0], runningOverlaysDbg[1], 20, Paints.getGreenPorterDuffPaint());
+    for (OverlayItem ov : runningOverlays.values()) {
+      ov.draw(canvas);
+    }
+  }
+
+  private static class OverlayItem {
+    private final BoolAnimator alphaAnimator = new BoolAnimator(0, (FactorAnimator.Target) (id, factor, fraction, callee) -> {
+
+    }, ReactionsComponent.RC_INTERPOLATOR, ReactionsComponent.RC_DURATION);
+
+    private final GifReceiver receiver;
+
+    public OverlayItem (Tdlib tdlib, String key, ReactionsOverlayComponent viewRef, TdApi.Reaction reaction) {
+      GifFile animatedFile = new GifFile(tdlib, reaction.aroundAnimation != null ? reaction.aroundAnimation : reaction.effectAnimation);
+      animatedFile.setScaleType(GifFile.CENTER_CROP);
+      animatedFile.setSize(Screen.dp(96f));
+      animatedFile.setPlayOnce(true);
+      animatedFile.addLoopListener(() -> viewRef.runningOverlays.remove(key));
+
+      this.receiver = new GifReceiver(viewRef);
+      this.receiver.requestFile(animatedFile);
+    }
+
+    public void updateReactionOverlayAlpha (boolean visible) {
+      alphaAnimator.setValue(visible, true);
+    }
+
+    public void onScrolled (int dy) {
+      receiver.setBounds(receiver.getLeft(), receiver.getTop() - dy, receiver.getRight(), receiver.getBottom() - dy);
+    }
+
+    public void setBounds (float centerX, float centerY) {
+      int halfSize = Screen.dp(48f);
+      receiver.setBounds((int) centerX - halfSize, (int) centerY - halfSize, (int) centerX + halfSize, (int) centerY + halfSize);
+    }
+
+    public void draw (Canvas canvas) {
+      receiver.setAlpha(alphaAnimator.getFloatValue());
+      receiver.draw(canvas);
+      receiver.setAlpha(1f);
     }
   }
 }

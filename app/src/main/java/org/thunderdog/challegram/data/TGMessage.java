@@ -882,10 +882,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       }
     }
 
-    if (reactionsComponent != null) {
-      reactionsComponent.measureLayout(pRealContentMaxWidth);
-    }
-
     updateContentPositions(true);
     if (allowMessageHorizontalExtend()) {
       if (replyData != null && !alignReplyHorizontally()) {
@@ -2842,6 +2838,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return useBubbles() && useBubbleTime() ? bubbleTimePartWidth : 0;
   }
 
+  public final int getBubbleInnerWidth () {
+    return useBubbles() && useBubbleTime() ? bubbleInnerWidth : 0;
+  }
+
   protected final boolean moveBubbleTimePartToLeft () {
     return Lang.rtl();
   }
@@ -2899,6 +2899,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         }
         this.bubbleInnerWidth = bubbleWidth;
         this.bubbleTimePartWidth = bubbleTimePartWidth;
+        if (this.reactionsComponent != null) {
+          this.reactionsComponent.measureLayout(bubbleInnerWidth);
+        }
       } else {
         this.bubbleTimePartWidth = 0;
       }

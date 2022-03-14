@@ -35,6 +35,7 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.Counter;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Objects;
 
@@ -57,8 +58,8 @@ public class ReactionsComponent implements FactorAnimator.Target {
   private static final int REACTION_BASE_WIDTH = REACTION_ICON_SIZE + Screen.dp(12f);
 
   // Animator Settings
-  private static final Interpolator RC_INTERPOLATOR = new CubicBezierInterpolator(0.2, 0.01, 0.28, 0.91);
-  private static final long RC_DURATION = 250L;
+  public static final Interpolator RC_INTERPOLATOR = new CubicBezierInterpolator(0.2, 0.01, 0.28, 0.91);
+  public static final long RC_DURATION = 250L;
 
   // Animator IDs
   private static final int ANIMATOR_VISIBLE = 0;
@@ -107,16 +108,15 @@ public class ReactionsComponent implements FactorAnimator.Target {
       if (existingHash.containsKey(reaction.reaction)) {
         // reaction exists, update it
         Reaction existingReaction = existingHash.get(reaction.reaction);
+        if (existingReaction == null) continue;
         existingReaction.update(messageReactions[i], i, animated, shouldRenderSmall());
-        if (!animated) existingReaction.requestOverlay = false;
       } else {
         // reaction does not exist, add it
         // note that previous index is already added, so we can be assured in list changes
-        Reaction newReaction = new Reaction(source.tdlib(), reaction, viewProvider, source.isOutgoing() && !source.isChannel(), shouldRenderSmall());
+        Reaction newReaction = new Reaction(source.tdlib(), source, reaction, viewProvider, source.isOutgoing() && !source.isChannel(), shouldRenderSmall(), animated);
         clientReactions.add(i, newReaction);
         newReaction.update(messageReactions[i], i, false, shouldRenderSmall());
         newReaction.show(animated);
-        if (!animated) newReaction.requestOverlay = false;
       }
     }
 
@@ -149,26 +149,30 @@ public class ReactionsComponent implements FactorAnimator.Target {
       existingHash.put(existingReaction.reaction.reaction, existingReaction);
     }
 
+    float maxWidth = TGMessage.getEstimatedContentMaxWidth();
     int width = 0;
     int currentX = 0;
     int currentY = source.useBubbles() ? REACTION_ITEM_HALF_SEPARATOR : 0;
+    boolean needExtraHeight = false;
 
     for (int i = 0; i < order.length; i++) {
       Reaction reaction = existingHash.get(order[i].reaction);
+      if (reaction == null) continue;
 
-      if (source.getRealContentX() + currentX + reaction.getStaticWidth() >= (realMaxWidth > 0 ? realMaxWidth : TGMessage.getEstimatedContentMaxWidth())) {
+      if (source.getRealContentX() + currentX + reaction.getStaticWidth() >= maxWidth) {
         // too much space taken, move to next row
         width = currentX;
         currentY += REACTION_HEIGHT + REACTION_ITEM_SEPARATOR;
         currentX = 0;
       }
 
+      needExtraHeight = source.useBubbles() && realMaxWidth > 0 && (source.getRealContentX() + currentX + reaction.getStaticWidth() + REACTION_ITEM_SEPARATOR >= source.getBubbleInnerWidth() - source.getBubbleTimePartWidth());
       reaction.setCoordinates(currentX, currentY, animated);
       currentX += (shouldRenderSmall() ? reaction.getSmallWidth() : reaction.getStaticWidth()) + ((i != order.length - 1) ? (shouldRenderSmall() ? REACTION_ITEM_SEPARATOR_SMALL : REACTION_ITEM_SEPARATOR) : 0);
     }
 
     int reactionsWidth = width == 0 ? currentX : width;
-    int reactionsHeight = currentY == 0 ? REACTION_HEIGHT : currentY + REACTION_HEIGHT;
+    int reactionsHeight = currentY == 0 ? REACTION_HEIGHT : currentY + REACTION_HEIGHT + (needExtraHeight ? Screen.dp(16f) : 0);
 
     if (animated) {
       rcWidthAnimator.animateTo(reactionsWidth);
@@ -180,7 +184,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
   }
 
   public int getHeight (boolean needSizeCut) {
-    return (int) ((rcHeightAnimator.getFactor() + REACTION_ITEM_HALF_SEPARATOR - (needSizeCut ? Screen.dp(16f) : 0) + (!needSizeCut ? Screen.dp(8f) : 0) + Screen.dp(16f)) * componentVisibleAnimator.getFloatValue());
+    return (int) ((rcHeightAnimator.getFactor() + REACTION_ITEM_HALF_SEPARATOR - (needSizeCut ? Screen.dp(16f) : 0) * componentVisibleAnimator.getFloatValue()));
   }
 
   public int getFlatHeight () {
@@ -229,15 +233,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
       float sy = startY + reaction.getStartYRelative();
       rcClickListeners[i].set(sx, sy, sx + reaction.getStaticWidth(), sy + reaction.getHeight());
 
-      reaction.draw(c, view.getReactionsReceiver(), startX, startY, clientReactions.size() == 1, shouldRenderSmall());
-
-      if (reaction.requestOverlay) {
-        if (loc != null) {
-          source.messagesController().addReactionToOverlay(sx + Screen.dp(16), loc[1] + rcClickListeners[i].centerY() - (Screen.getStatusBarHeight() + HeaderView.getHeaderHeight(null)), reaction.reactionObj);
-        }
-
-        reaction.requestOverlay = false;
-      }
+      reaction.draw(c, view.getReactionsReceiver(), startX, startY, loc != null ? loc[1] + rcClickListeners[i].centerY() : 0, clientReactions.size() == 1, shouldRenderSmall());
     }
 
     c.restore();
@@ -267,6 +263,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
     private final boolean isOutgoing;
     private final ViewProvider viewProvider;
     private final Counter textCounter;
+    private final TGMessage source;
 
     private final ImageFile staticIconFile;
     private final Path staticIconContour = new Path();
@@ -283,13 +280,13 @@ public class ReactionsComponent implements FactorAnimator.Target {
     private TdApi.MessageReaction reaction;
     private Runnable onHideAnimationEnd;
     private float bubblePathWidth;
-    private boolean requestOverlay;
 
-    public Reaction (Tdlib tdlib, TdApi.MessageReaction reaction, ViewProvider viewProvider, boolean isOutgoing, boolean small) {
+    public Reaction (Tdlib tdlib, TGMessage source, TdApi.MessageReaction reaction, ViewProvider viewProvider, boolean isOutgoing, boolean small, boolean animate) {
       this.reaction = reaction;
       this.reactionObj = tdlib.getReaction(reaction.reaction);
       this.isOutgoing = isOutgoing;
       this.viewProvider = viewProvider;
+      this.source = source;
 
       Td.buildOutline(reactionObj.staticIcon.outline, (float) (small ? REACTION_ICON_SIZE_SMALL : REACTION_ICON_SIZE) / reactionObj.staticIcon.height, staticIconContour);
       staticIconFile = new ImageFile(tdlib, reactionObj.staticIcon.sticker);
@@ -306,7 +303,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
         .build();
 
       textCounter.setCount(reaction.totalCount, false);
-      requestOverlay = reaction.isChosen;
+      if (animate && reaction.isChosen) createOverlay();
     }
 
     public void setCoordinates (float x, float y, boolean animated) {
@@ -391,9 +388,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
     }
 
     public void update (TdApi.MessageReaction reaction, int index, boolean animated, boolean small) {
-      if (reaction.isChosen && !this.reaction.isChosen) {
-        requestOverlay = true;
-      }
+      if (reaction.isChosen && !this.reaction.isChosen && animated) createOverlay();
 
       if (small) {
         counterAppearAnimator.setValue(reaction.totalCount > 1, animated);
@@ -408,15 +403,28 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
       this.reaction = reaction;
       chooseAnimator.setValue(reaction.isChosen, animated);
+      if (animated) source.messagesController().updateReactionOverlayAlpha(createKey(), reaction.isChosen);
 
       setCoordinates((REACTION_BASE_WIDTH * 4) * index, 0, animated);
     }
 
-    public void draw (Canvas c, ComplexReceiver reactionsReceiver, int sx, int sy, boolean isSingle, boolean isSmall) {
+    private String createKey () {
+      return source.getChatId() + "_" + source.getId() + "_" + reaction.reaction;
+    }
+
+    private void createOverlay () {
+      source.messagesController().addReactionToOverlay(createKey(), reactionObj);
+    }
+
+    public void draw (Canvas c, ComplexReceiver reactionsReceiver, int sx, int sy, float vy, boolean isSingle, boolean isSmall) {
       if (isSmall) {
         drawSmall(c, reactionsReceiver, sx, sy);
       } else {
         drawLarge(c, reactionsReceiver, sx, sy, isSingle);
+      }
+
+      if (vy > 0) {
+        source.messagesController().updateReactionOverlayLocation(createKey(), sx + xCoordinate.getFactor() + Screen.dp(16), vy - (Screen.getStatusBarHeight() + HeaderView.getHeaderHeight(null)));
       }
     }
 
