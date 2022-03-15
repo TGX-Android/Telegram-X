@@ -3470,4 +3470,8 @@ public class U {
       return false;
     }
   }
+
+  public static int safeLength (Object[] arr) {
+    return arr != null ? arr.length : 0;
+  }
 }

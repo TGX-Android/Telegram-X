@@ -3720,13 +3720,13 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     synchronized (this) {
       if (combinedMessages != null) {
         for (int i = combinedMessages.size() - 1; i >= 0; i--) {
-          if (combinedMessages.get(i).unreadReactions.length > 0) {
+          if (U.safeLength(combinedMessages.get(i).unreadReactions) > 0) {
             return true;
           }
         }
       }
     }
-    return msg.unreadReactions.length > 0;
+    return U.safeLength(msg.unreadReactions) > 0;
   }
 
   public final void readMention (long messageId) {
