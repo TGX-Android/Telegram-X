@@ -118,6 +118,8 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
 
   public static final int TYPE_EVENT_INVITE_LINK_REVOKED = 100;
   public static final int TYPE_EVENT_INVITE_LINK_DELETE = 101;
+  public static final int TYPE_EVENT_REACTIONS_DISABLED = 102;
+  public static final int TYPE_EVENT_REACTIONS_UPDATED = 104;
 
   // Data
 
@@ -135,6 +137,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
   private String stringValue;
   private TdApi.Location locationValue;
   private TdApi.ChatInviteLink inviteLinkValue;
+  private String[] reactionsNew;
 
   // Layout
 
@@ -368,6 +371,11 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
         this.type = TYPE_EVENT_INVITE_LINK_DELETE;
         this.inviteLinkValue = ((TdApi.ChatEventInviteLinkDeleted) chatEvent.action).inviteLink;
         this.actionUser = inviteLinkValue.creatorUserId != 0 ? userForId(inviteLinkValue.creatorUserId) : null;
+        break;
+      case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
+        TdApi.ChatEventAvailableReactionsChanged reactionsChanged = (TdApi.ChatEventAvailableReactionsChanged) chatEvent.action;
+        this.type = reactionsChanged.newAvailableReactions.length == 0 ? TYPE_EVENT_REACTIONS_DISABLED : TYPE_EVENT_REACTIONS_UPDATED;
+        this.reactionsNew = reactionsChanged.newAvailableReactions;
         break;
       case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR: {
         this.type = TYPE_EVENT_VIDEO_CHAT_PARTICIPANT_VOLUME_CHANGED;
@@ -814,6 +822,15 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
           } else {
             makeText(Td.isTemporary(inviteLinkValue) ? R.string.LinkDeleteTemp : R.string.LinkDeleteOther, new Arg(sender), new Arg(actionUser), new Arg(inviteLinkValue.inviteLink).setIsUrl(true));
           }
+        }
+        break;
+      }
+      case TYPE_EVENT_REACTIONS_UPDATED:
+      case TYPE_EVENT_REACTIONS_DISABLED: {
+        if (type == TYPE_EVENT_REACTIONS_DISABLED) {
+          makeText(R.string.EventLogReactionDisabled, new Arg(sender));
+        } else {
+          makeText(R.string.EventLogReactionUpdated, new Arg(sender), new Arg(Strings.join(", ", (Object[]) reactionsNew)));
         }
         break;
       }

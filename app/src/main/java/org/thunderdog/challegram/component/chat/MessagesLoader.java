@@ -1187,6 +1187,7 @@ public class MessagesLoader implements Client.ResultHandler {
         case TdApi.ChatEventMemberJoinedByRequest.CONSTRUCTOR:
         case TdApi.ChatEventInviteLinkRevoked.CONSTRUCTOR:
         case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
+        case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
         case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
         case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR: {
           m = newMessage(chatId, isChannel, event);

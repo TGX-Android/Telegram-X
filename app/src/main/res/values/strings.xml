@@ -4257,6 +4257,9 @@
   <string name="RequestToJoinChannelInfo">This channel accepts new members only after they are being accepted by admins.</string>
   <string name="ProxyLinkUnsupported">Proxy is unsupported or link is invalid.</string>
 
+  <string name="EventLogReactionDisabled">%1$s disabled reactions</string>
+  <string name="EventLogReactionUpdated">%1$s updated the list of available reactions to: %2$s</string>
+
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
   <string name="suggested_language_code_plural" />
