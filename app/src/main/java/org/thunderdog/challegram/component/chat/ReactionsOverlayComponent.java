@@ -34,9 +34,9 @@ public class ReactionsOverlayComponent extends View {
     runningOverlays.put(key, new OverlayItem(tdlib, key, this, reaction));
   }
 
-  public void updateReactionOverlayLocation (String key, float centerX, float centerY) {
+  public void updateReactionOverlayLocation (String key, float centerX, float centerY, boolean isSmall) {
     if (runningOverlays.containsKey(key)) {
-      runningOverlays.get(key).setBounds(centerX, centerY);
+      runningOverlays.get(key).setBounds(centerX, centerY, isSmall);
     }
   }
 
@@ -87,8 +87,8 @@ public class ReactionsOverlayComponent extends View {
       receiver.setBounds(receiver.getLeft(), receiver.getTop() - dy, receiver.getRight(), receiver.getBottom() - dy);
     }
 
-    public void setBounds (float centerX, float centerY) {
-      int halfSize = Screen.dp(48f);
+    public void setBounds (float centerX, float centerY, boolean isSmall) {
+      int halfSize = Screen.dp(isSmall ? 36f : 48f);
       receiver.setBounds((int) centerX - halfSize, (int) centerY - halfSize, (int) centerX + halfSize, (int) centerY + halfSize);
     }
 

@@ -235,7 +235,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
       float sy = startY + reaction.getStartYRelative();
       rcClickListeners[i].set(sx, sy, sx + reaction.getStaticWidth(), sy + reaction.getHeight());
 
-      reaction.draw(c, view.getReactionsReceiver(), startX, startY, loc != null ? loc[1] + rcClickListeners[i].centerY() : 0, clientReactions.size() == 1, shouldRenderSmall());
+      reaction.draw(c, view.getReactionsReceiver(), startX, startY, loc != null ? loc[1] + (shouldRenderSmall() ? 0 : rcClickListeners[i].centerY()) : 0, clientReactions.size() == 1, shouldRenderSmall());
     }
 
     c.restore();
@@ -441,17 +441,13 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
     public void draw (Canvas c, ComplexReceiver reactionsReceiver, int sx, int sy, float vy, boolean isSingle, boolean isSmall) {
       if (isSmall) {
-        drawSmall(c, reactionsReceiver, sx, sy);
+        drawSmall(c, reactionsReceiver, sx, sy, vy);
       } else {
-        drawLarge(c, reactionsReceiver, sx, sy, isSingle);
-      }
-
-      if (vy > 0) {
-        source.messagesController().updateReactionOverlayLocation(createKey(), sx + xCoordinate.getFactor() + Screen.dp(16), vy - (Screen.getStatusBarHeight() + HeaderView.getHeaderHeight(null)));
+        drawLarge(c, reactionsReceiver, sx, sy, isSingle, vy);
       }
     }
 
-    public void drawSmall (Canvas c, ComplexReceiver reactionsReceiver, int sx, int sy) {
+    public void drawSmall (Canvas c, ComplexReceiver reactionsReceiver, int sx, int sy, float vy) {
       final float alpha = appearAnimator.getFloatValue();
       final float width = getSmallWidth();
       final float height = Screen.dp(16f);
@@ -466,26 +462,40 @@ public class ReactionsComponent implements FactorAnimator.Target {
       c.translate(startX, startY);
       c.scale(animationScale, animationScale, width / 2, height / 2);
 
+      GifReceiver gr = reactionsReceiver.getGifReceiver(reaction.reaction.hashCode());
       ImageReceiver r = reactionsReceiver.getImageReceiver(reaction.reaction.hashCode());
+
       r.setBounds(tcWidth, vertPad, REACTION_ICON_SIZE_SMALL + tcWidth, (int) (height - vertPad));
       if (r.isEmpty()) r.requestFile(staticIconFile);
       if (r.needPlaceholder()) r.drawPlaceholderContour(c, staticIconContour, alpha);
-      r.setAlpha(alpha);
-      r.draw(c);
-      r.setAlpha(1f);
+      if (gr.isEmpty() || !isPlayingNow) {
+        r.setAlpha(alpha);
+        r.draw(c);
+        r.setAlpha(1f);
+      }
 
-      c.save();
+      int grCx = r.centerX();
+      int grCy = r.centerY();
+      int grPad = Screen.dp(12f);
+      if (drawAnimated && gr.isEmpty()) gr.requestFile(dynamicIconFile);
+      gr.setBounds(grCx - grPad, grCy - grPad, grCx + grPad, grCy + grPad);
+      gr.setAlpha(alpha);
+      gr.draw(c);
+      gr.setAlpha(1f);
+
       textCounter.draw(c, 0, r.centerY(), Gravity.LEFT, 1f);
       c.restore();
 
-      c.restore();
+      if (vy > 0) {
+        source.messagesController().updateReactionOverlayLocation(createKey(), startX + r.centerX(), vy + startY + r.centerY() - (Screen.getStatusBarHeight() + HeaderView.getHeaderHeight(null)), true);
+      }
     }
 
     public boolean hasAnimationEnded () {
       return dynamicIconFile.isPlayOnce() && dynamicIconFile.hasLooped() && !dynamicIconFile.needDecodeLastFrame();
     }
 
-    public void drawLarge (Canvas c, ComplexReceiver reactionsReceiver, int sx, int sy, boolean isSingle) {
+    public void drawLarge (Canvas c, ComplexReceiver reactionsReceiver, int sx, int sy, boolean isSingle, float vy) {
       final boolean clipped = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
 
       final float width = getWidth();
@@ -558,6 +568,10 @@ public class ReactionsComponent implements FactorAnimator.Target {
       }
 
       c.restore();
+
+      if (vy > 0) {
+        source.messagesController().updateReactionOverlayLocation(createKey(), startX + Screen.dp(16), vy - (Screen.getStatusBarHeight() + HeaderView.getHeaderHeight(null)), false);
+      }
     }
   }
 }
