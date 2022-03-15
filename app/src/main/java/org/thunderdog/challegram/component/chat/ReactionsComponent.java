@@ -285,6 +285,9 @@ public class ReactionsComponent implements FactorAnimator.Target {
     private Runnable onHideAnimationEnd;
     private float bubblePathWidth;
 
+    private boolean drawAnimated;
+    private boolean isPlayingNow;
+
     public Reaction (Tdlib tdlib, TGMessage source, TdApi.MessageReaction reaction, ViewProvider viewProvider, boolean isOutgoing, boolean small, boolean animate) {
       this.reaction = reaction;
       this.reactionObj = tdlib.getReaction(reaction.reaction);
@@ -295,11 +298,15 @@ public class ReactionsComponent implements FactorAnimator.Target {
       Td.buildOutline(reactionObj.staticIcon.outline, (float) (small ? REACTION_ICON_SIZE_SMALL : REACTION_ICON_SIZE) / reactionObj.staticIcon.height, staticIconContour);
 
       staticIconFile = new ImageFile(tdlib, reactionObj.staticIcon.sticker);
-      staticIconFile.setSize(small ? REACTION_ICON_SIZE_SMALL : REACTION_ICON_SIZE);
+      staticIconFile.setSize((small ? REACTION_ICON_SIZE_SMALL : REACTION_ICON_SIZE) * 4);
       staticIconFile.setNoBlur();
 
       dynamicIconFile = new GifFile(tdlib, reactionObj.centerAnimation);
       dynamicIconFile.setPlayOnce(true);
+      dynamicIconFile.addLoopListener(() -> drawAnimated = false);
+      dynamicIconFile.setFrameChangeListener((file, frameNo, frameDelta) -> {
+        isPlayingNow = frameNo > 4;
+      });
 
       chooseAnimator.setValue(reaction.isChosen, false);
 
@@ -428,6 +435,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
     }
 
     private void createOverlay () {
+      drawAnimated = true;
       source.messagesController().addReactionToOverlay(createKey(), reactionObj);
     }
 
@@ -473,6 +481,10 @@ public class ReactionsComponent implements FactorAnimator.Target {
       c.restore();
     }
 
+    public boolean hasAnimationEnded () {
+      return dynamicIconFile.isPlayOnce() && dynamicIconFile.hasLooped() && !dynamicIconFile.needDecodeLastFrame();
+    }
+
     public void drawLarge (Canvas c, ComplexReceiver reactionsReceiver, int sx, int sy, boolean isSingle) {
       final boolean clipped = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
 
@@ -516,20 +528,28 @@ public class ReactionsComponent implements FactorAnimator.Target {
       int izPad = (REACTION_HEIGHT - REACTION_ICON_SIZE) / 2;
 
       // Static
+      GifReceiver gr = reactionsReceiver.getGifReceiver(reaction.reaction.hashCode());
       ImageReceiver r = reactionsReceiver.getImageReceiver(reaction.reaction.hashCode());
       r.setBounds(Screen.dp(8f), izPad, Screen.dp(8f) + REACTION_ICON_SIZE, REACTION_HEIGHT - izPad);
+      if (r.isEmpty()) r.requestFile(staticIconFile);
+      if (r.needPlaceholder()) r.drawPlaceholderContour(c, staticIconContour, alpha);
+      if (gr.isEmpty() || !isPlayingNow) {
+        r.setAlpha(alpha);
+        r.draw(c);
+        r.setAlpha(1f);
+      }
 
       // Dynamic
-      GifReceiver gr = reactionsReceiver.getGifReceiver(reaction.reaction.hashCode());
       int grCx = r.centerX();
       int grCy = r.centerY();
-      int grPad = Screen.dp(18f);
-      if (gr.isEmpty()) gr.requestFile(dynamicIconFile);
-      if (gr.needPlaceholder()) gr.drawPlaceholderContour(c, staticIconContour, alpha);
+      int grPad = Screen.dp(16f);
+      if (drawAnimated && gr.isEmpty()) gr.requestFile(dynamicIconFile);
       gr.setBounds(grCx - grPad, grCy - grPad, grCx + grPad, grCy + grPad);
+      gr.setAlpha(alpha);
       gr.draw(c);
+      gr.setAlpha(1f);
 
-      textCounter.draw(c, Screen.dp(8f) + REACTION_ICON_SIZE + Screen.dp(6f), gr.centerY(), Gravity.LEFT, alpha);
+      textCounter.draw(c, Screen.dp(8f) + REACTION_ICON_SIZE + Screen.dp(6f), r.centerY(), Gravity.LEFT, alpha);
 
       if (clipped) {
         ViewSupport.restoreClipPath(c, saveCount);
