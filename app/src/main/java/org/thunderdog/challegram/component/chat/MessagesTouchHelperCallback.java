@@ -9,6 +9,7 @@ import android.graphics.Canvas;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageBotInfo;
@@ -60,6 +61,10 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
       flags |= Lang.rtl() ? ItemTouchHelper.LEFT : ItemTouchHelper.RIGHT;
     }
 
+    if (canQuickReact()) {
+      flags |= ItemTouchHelper.DOWN;
+    }
+
     return makeMovementFlags(0, flags);
   }
 
@@ -69,6 +74,10 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
 
   public boolean canDragShare () {
     return Settings.instance().needChatQuickShare() && !controller.isSecretChat();
+  }
+
+  public boolean canQuickReact () {
+    return Settings.instance().needQuickReaction() && !controller.needTabs() && controller.getChat() != null && U.safeLength(controller.getChat().availableReactions) > 0;
   }
 
   @Override
@@ -142,6 +151,7 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
       final MessageView v = MessagesHolder.findMessageView(holder.itemView);
       final TGMessage msg = v.getMessage();
       msg.translate(dx, true);
+      msg.translateVertical(dy);
       if (holder.itemView instanceof MessageViewGroup) {
         ((MessageViewGroup) holder.itemView).setSwipeTranslation(msg.getTranslation());
       }

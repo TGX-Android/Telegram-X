@@ -1578,6 +1578,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
     final float selectableFactor = manager.getSelectableFactor();
 
+    initQuickReaction(view);
     checkEdges();
 
     // Unread messages badge
@@ -5446,7 +5447,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   // Translation
 
-  private float translation;
+  private float translation, translationY;
   private float dismissFactor;
 
   public void resetTransformState () {
@@ -5559,6 +5560,19 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
   }
 
+  public void translateVertical (float dy) {
+    if (((flags & FLAG_IGNORE_SWIPE) != 0)) {
+      return;
+    }
+
+    if (translationY == dy) {
+      return;
+    }
+
+    translationY = dy;
+    invalidate(true);
+  }
+
   public void translate (float dx, boolean bySwipe) {
     if (bySwipe && ((flags & FLAG_IGNORE_SWIPE) != 0)) {
       return;
@@ -5625,6 +5639,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       if (translation == 0f) {
         return;
       }
+
+      float tsFactor = ReactionsComponent.RC_INTERPOLATOR.getInterpolation(MathUtils.clamp(translationY / 250F));
+      float tsFactorInv = 1f - tsFactor;
+
       int threshold = Screen.dp(BUBBLE_MOVE_THRESHOLD);
       float scaleFactor = (translation > 0f ? shareReadyFactor : replyReadyFactor);
       float alpha = MathUtils.clamp(Math.abs(translation) / (float) threshold) * scaleFactor;
@@ -5636,95 +5654,48 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       float cx = translation > 0f ? translation / 2 : view.getMeasuredWidth() + translation / 2;
       float darkFactor = Theme.getDarkFactor() * (1f - manager.controller().wallpaper().getBackgroundTransparency());
       float radius = Screen.dp(16f) * scale;
+
+      boolean shouldRenderReactions = iQuickReaction != null && Lang.rtl() == (translation > 0);
+      cy -= shouldRenderReactions ? Screen.dp(32f) * tsFactor : 0;
+      float qiScale = shouldRenderReactions ? MathUtils.fromTo(0.5f, 1f, tsFactorInv) : 1f;
+      float tAlpha = shouldRenderReactions ? MathUtils.fromTo(0.5f, 1f, tsFactorInv) : 1f;
+      c.save();
+      c.scale(qiScale, qiScale, cx, cy);
       if (darkFactor > 0f) {
-        c.drawCircle(cx, cy, radius, Paints.getProgressPaint(ColorUtils.alphaColor(alpha * darkFactor, Theme.headerColor()), Screen.dp(1f)));
+        c.drawCircle(cx, cy, radius, Paints.getProgressPaint(ColorUtils.alphaColor(tAlpha * darkFactor, Theme.headerColor()), Screen.dp(1f)));
       }
-      c.drawCircle(cx, cy, radius, Paints.fillingPaint(ColorUtils.alphaColor(alpha, getBubbleButtonBackgroundColor())));
+      c.drawCircle(cx, cy, radius, Paints.fillingPaint(ColorUtils.alphaColor(tAlpha, getBubbleButtonBackgroundColor())));
       Drawable icon = Lang.rtl() != (translation > 0) ? iQuickShare : iQuickReply;
-      Paint paint = Paints.getInlineBubbleIconPaint(ColorUtils.alphaColor(alpha, getBubbleButtonTextColor()));
       c.save();
       c.scale((Lang.rtl() ? -.8f : .8f) * scale, .8f * scale, cx, cy);
-      Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2, cy - icon.getMinimumHeight() / 2, paint);
+      Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2, cy - icon.getMinimumHeight() / 2, Paints.getInlineBubbleIconPaint(ColorUtils.alphaColor(tAlpha, getBubbleButtonTextColor())));
       c.restore();
-      return;
-    }
+      c.restore();
 
-    /*if (false) {
-      final int height = bottomContentEdge - topContentEdge;
-
-      final int leftContentEdge = getActualLeftContentEdge();
-      final int rightContentEdge = getActualRightContentEdge();
-
-      final int width = rightContentEdge - leftContentEdge;
-      final int minSide = Math.min(width, height);
-
-      final float totalWidth = Math.min(Math.abs(x), width);
-
-      final int cy = useCircleBubble() ? bottomContentEdge - width / 2 : topContentEdge + height / 2;
-
-      if (x > 0) {
+      if (shouldRenderReactions) {
+        // quick reaction
+        cy += Screen.dp(32f);
+        qiScale = MathUtils.fromTo(0.5f, 1f, tsFactor);
+        tAlpha = MathUtils.fromTo(0.5f, 1f, tsFactor);
         c.save();
-        c.clipRect(leftContentEdge, topContentEdge, leftContentEdge + totalWidth, bottomContentEdge);
-        if (useBubble()) {
-          drawBubble(c, Paints.fillingPaint(quickColor), false);
-        } else {
-          c.drawRect(leftContentEdge, topContentEdge, rightContentEdge, bottomContentEdge, Paints.fillingPaint(quickColor));
+        c.scale(qiScale, qiScale, cx, cy);
+        if (darkFactor > 0f) {
+          c.drawCircle(cx, cy, radius, Paints.getProgressPaint(ColorUtils.alphaColor(tAlpha * darkFactor, Theme.headerColor()), Screen.dp(1f)));
         }
-
-        final float iconX = leftContentEdge + totalWidth - xQuickPadding - iQuickShare.getWidth();
-        final int check = Screen.dp(12f) + iQuickShare.getHeight();
-        if (check > minSide) {
-          c.save();
-          float scale = (float) minSide / (float) check;
-          c.scale(scale, scale, iconX, cy);
-        }
-        c.drawBitmap(iQuickShare, iconX, cy - (int) ((float) iQuickShare.getHeight() * .5f), mQuickText);
-
-        if (width - xQuickPadding - xQuickTextPadding - xQuickPadding - iQuickShare.getWidth() - xQuickShareWidth > 0) {
-          float textX = iconX - xQuickTextPadding - xQuickShareWidth;
-          c.drawText(shareText, textX, cy + xQuickTextOffset, mQuickText);
-        }
-
-        if (check > minSide) {
-          c.restore();
-        }
-
+        c.drawCircle(cx, cy, radius, Paints.fillingPaint(ColorUtils.alphaColor(tAlpha, getBubbleButtonBackgroundColor())));
+        c.save();
+        c.scale((Lang.rtl() ? -.8f : .8f) * scale, .8f * scale, cx, cy);
+        int w = icon.getMinimumWidth() / 2;
+        int h = icon.getMinimumHeight() / 2;
+        iQuickReaction.setBounds((int) cx - w, cy - h, (int) cx + w, cy + h);
+        iQuickReaction.setAlpha(tAlpha);
+        iQuickReaction.draw(c);
         c.restore();
-      } else {
-        c.save();
-        c.clipRect(rightContentEdge - totalWidth, topContentEdge, rightContentEdge, bottomContentEdge);
-        if (useBubble()) {
-          drawBubble(c, Paints.fillingPaint(quickColor), false);
-        } else {
-          c.drawRect(leftContentEdge, topContentEdge, rightContentEdge, bottomContentEdge, Paints.fillingPaint(quickColor));
-        }
-
-        float iconX = rightContentEdge - totalWidth + xQuickPadding;
-
-        int check = Screen.dp(12f) + iQuickReply.getHeight();
-        if (check > minSide) {
-          c.save();
-          float scale = (float) minSide / (float) check;
-          c.scale(scale, scale, iconX, cy);
-        }
-
-        c.drawBitmap(iQuickReply, iconX, cy - (int) ((float) iQuickReply.getHeight() * .5f) + Screen.dp(.5f), mQuickText);
-
-        if (width - xQuickPadding - xQuickTextPadding - xQuickPadding - iQuickReply.getWidth() - xQuickReplyWidth > 0) {
-          float textX = iconX + iQuickReply.getWidth() + xQuickTextPadding;
-          c.drawText(replyText, textX, cy + xQuickTextOffset, mQuickText);
-        }
-
-        if (check > minSide) {
-          c.restore();
-        }
-
         c.restore();
       }
 
-
       return;
-    }*/
+    }
 
     int startY, endY;
     if (useBubbles()) {
@@ -6482,6 +6453,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   // Icons
 
+  private ImageReceiver iQuickReaction;
   private static Drawable iQuickReply, iQuickShare, iBadge;
   private static String shareText, replyText;
   private static boolean initialized;
@@ -6492,6 +6464,16 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     iQuickReply = Drawables.get(res, R.drawable.baseline_reply_24);
     iQuickShare = Drawables.get(res, R.drawable.baseline_forward_24);
     initBubbleResources();
+  }
+
+  private void initQuickReaction (MessageView view) {
+    if (iQuickReaction != null || !Settings.instance().needQuickReaction()) return;
+    Tdlib tdlib = manager.controller().tdlib();
+    ImageFile qrFile = new ImageFile(tdlib, tdlib.getReaction(Settings.instance().getQuickReactionEmoji(tdlib)).staticIcon.sticker);
+    qrFile.setSize(Screen.dp(56f));
+    qrFile.setNoBlur();
+    iQuickReaction = new ImageReceiver(view, 0);
+    iQuickReaction.requestFile(qrFile);
   }
 
   private static void initTexts () {

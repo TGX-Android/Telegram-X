@@ -291,6 +291,9 @@ public class Settings {
   private static final String KEY_WALLPAPER_PATH = "_path";
   private static final String KEY_WALLPAPER_ID = "_id";
 
+  private static final String KEY_QUICK_REACTION_ENABLED = "quick_reaction";
+  private static final String KEY_QUICK_REACTION_EMOJI = "quick_reaction_emoji";
+
   private static String key (String key, int accountId) {
     return accountId != 0 ? accountId + "_" + key : key;
   }
@@ -6171,5 +6174,15 @@ public class Settings {
 
   public void putKnownSize (String path, long length, long lastModified, int width, int height) {
     pmc.putLongArray(KEY_KNOWN_SIZE + path, new long[] {length, lastModified, BitwiseUtils.mergeLong(width, height)});
+  }
+
+  // Quick Reactions
+
+  public boolean needQuickReaction () {
+    return getBoolean(KEY_QUICK_REACTION_ENABLED, true);
+  }
+
+  public String getQuickReactionEmoji (Tdlib tdlib) {
+    return getString(KEY_QUICK_REACTION_EMOJI, tdlib.getActiveReactions()[0]);
   }
 }
