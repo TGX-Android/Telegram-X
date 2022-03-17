@@ -4259,6 +4259,10 @@
 
   <string name="EventLogReactionDisabled">%1$s disabled reactions</string>
   <string name="EventLogReactionUpdated">%1$s updated the list of available reactions to: %2$s</string>
+  
+  <string name="QuickReactions">Quick Reactions</string>
+  <string name="QuickReactionsEnable">Enable Quick Reactions</string>
+  <string name="QuickReactionsHint">Availability of specific reactions depends on settings of a group or channel.</string>
 
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />

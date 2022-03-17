@@ -5560,16 +5560,63 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
   }
 
+  private int pullingDownOffset;
+
+  private float lockDy;
+  private final FactorAnimator translationYLockAnimator = new FactorAnimator(0, (id, factor, fraction, callee) -> {
+    translationY = factor;
+    invalidate(true);
+  }, AnimatorUtils.OVERSHOOT_INTERPOLATOR, 210l);
+
+  public void resetVertical () {
+    translationYLockAnimator.forceFactor(0f);
+    lockDy = 0;
+    pullingDownOffset = 0;
+    translationY = 0;
+  }
+
   public void translateVertical (float dy) {
     if (((flags & FLAG_IGNORE_SWIPE) != 0)) {
       return;
     }
 
-    if (translationY == dy) {
-      return;
+    if (dy > 0) {
+      float k;
+
+      if (dy < Screen.dp(110)) {
+        float progress = dy / Screen.dp(110f);
+        k = 0.65f * (1f - progress) + 0.45f * progress;
+      } else {
+        k = 1;
+      }
+
+      pullingDownOffset = (int) (dy * k);
     }
 
-    translationY = dy;
+    float tyTemp = MathUtils.clamp((float) pullingDownOffset / Screen.dp(110f));
+    Log.e("PDO %s %s %s", dy, translationY, tyTemp);
+    if (tyTemp > 0.42f) {
+      if (!translationYLockAnimator.isAnimating() && translationYLockAnimator.getFactor() != 1f) {
+        // lock
+        lockDy = tyTemp;
+        translationYLockAnimator.forceFactor(lockDy);
+        translationYLockAnimator.animateTo(1f);
+        vibrate();
+      }
+      return;
+    } else {
+      if (translationYLockAnimator.isAnimating()) {
+        return;
+      } else if (translationYLockAnimator.getFactor() > lockDy) {
+        translationYLockAnimator.animateTo(lockDy);
+        vibrate();
+        return;
+      }
+
+      // unlock
+      translationY = tyTemp;
+    }
+
     invalidate(true);
   }
 
@@ -5640,7 +5687,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         return;
       }
 
-      float tsFactor = ReactionsComponent.RC_INTERPOLATOR.getInterpolation(MathUtils.clamp(translationY / 250F));
+      float tsFactor = translationY;
       float tsFactorInv = 1f - tsFactor;
 
       int threshold = Screen.dp(BUBBLE_MOVE_THRESHOLD);

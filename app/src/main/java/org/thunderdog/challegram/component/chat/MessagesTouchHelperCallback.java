@@ -52,7 +52,7 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
 
     int flags = 0;
 
-    if (canDragReply() && m.canReplyTo()) {
+    if ((canDragReply() && m.canReplyTo()) || canQuickReact()) {
       int flag = Lang.rtl() ? ItemTouchHelper.RIGHT : ItemTouchHelper.LEFT;
       flags |= flag;
     }
@@ -130,6 +130,7 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
     TGMessage msg = MessagesHolder.findMessageView(holder.itemView).getMessage();
     if (msg.getTranslation() != 0f) {
       msg.completeTranslation();
+      msg.resetVertical();
       if (holder.itemView instanceof MessageViewGroup) {
         ((MessageViewGroup) holder.itemView).setSwipeTranslation(0f);
       }
