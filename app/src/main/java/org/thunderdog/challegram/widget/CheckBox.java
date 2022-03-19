@@ -20,6 +20,7 @@ import org.thunderdog.challegram.tool.Screen;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.MathUtils;
 
 public class CheckBox extends View {
   //private static final int DISABLED_COLOR = 0xff7D858F;
@@ -29,23 +30,27 @@ public class CheckBox extends View {
   private static final int FLAG_CHECKED = 0x01;
   private static final int FLAG_HIDDEN = 0x02;
   private static final int FLAG_DISABLED = 0x04;
+  private static final int FLAG_INDETERMINATE = 0x08;
 
   private float showFactor;
   private float factor;
+  private float indeterminateFactor;
 
   private int flags;
 
   private final int radius;
-  private final int x1, y1, lineSize;
+  private final int x1, x1pad, y1, lineSize;
   private final int offset;
 
   private final RectF rect;
   private final Paint outerPaint;
+  private final Paint checkPaint;
 
   public CheckBox (Context context) {
     super(context);
 
-    x1 = Screen.dp(4f);
+    x1 = Screen.dp(3f);
+    x1pad = Screen.dp(4f);
     y1 = Screen.dp(11f);
     lineSize = Screen.dp(1.5f);
 
@@ -56,6 +61,10 @@ public class CheckBox extends View {
     outerPaint.setColor(Theme.radioOutlineColor());
     outerPaint.setStyle(Paint.Style.STROKE);
     outerPaint.setStrokeWidth(radius);
+
+    checkPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
+    checkPaint.setStyle(Paint.Style.STROKE);
+    checkPaint.setStrokeWidth(4f);
 
     rect = new RectF();
     rect.left = offset;
@@ -92,6 +101,34 @@ public class CheckBox extends View {
     obj.start();
   }
 
+  public void setIndeterminate (boolean checked, final boolean animated) {
+    if ((checked && (flags & FLAG_INDETERMINATE) != 0) || (!checked && (flags & FLAG_INDETERMINATE) == 0)) {
+      return;
+    }
+    if (checked) {
+      flags |= FLAG_INDETERMINATE;
+    } else {
+      flags &= ~ FLAG_INDETERMINATE;
+    }
+    if (!animated) {
+      this.indeterminateFactor = checked ? 1f : 0f;
+      invalidate();
+      return;
+    }
+    ValueAnimator obj;
+    final float startFactor = getIndeterminateFactor();
+    obj = AnimatorUtils.simpleValueAnimator(); //ObjectAnimator.ofFloat(this, "factor", checked ? 1f : 0f);
+    if (checked) {
+      final float diffFactor = 1f - startFactor;
+      obj.addUpdateListener(animation -> setIndeterminateFactor(startFactor + diffFactor * AnimatorUtils.getFraction(animation)));
+    } else {
+      obj.addUpdateListener(animation -> setIndeterminateFactor(startFactor - startFactor * AnimatorUtils.getFraction(animation)));
+    }
+    obj.setDuration(165l);
+    obj.setInterpolator(AnimatorUtils.DECELERATE_INTERPOLATOR);
+    obj.start();
+  }
+
   public void setFactor (float factor) {
     if (this.factor != factor) {
       this.factor = factor;
@@ -99,8 +136,19 @@ public class CheckBox extends View {
     }
   }
 
+  public void setIndeterminateFactor (float factor) {
+    if (this.indeterminateFactor != factor) {
+      this.indeterminateFactor = factor;
+      invalidate();
+    }
+  }
+
   public float getFactor () {
     return factor;
+  }
+
+  public float getIndeterminateFactor () {
+    return indeterminateFactor;
   }
 
   public void setHidden (boolean hidden, final boolean animated) {
@@ -145,6 +193,11 @@ public class CheckBox extends View {
   public boolean toggle () {
     setChecked((flags & FLAG_CHECKED) == 0, true);
     return (flags & FLAG_CHECKED) != 0;
+  }
+
+  public boolean toggleIndeterminate () {
+    setIndeterminate((flags & FLAG_INDETERMINATE) == 0, true);
+    return (flags & FLAG_INDETERMINATE) != 0;
   }
 
   public void setDisabled (boolean disabled) {
@@ -212,15 +265,43 @@ public class CheckBox extends View {
       c.drawRect(left, rect.bottom - offset - h, right, rect.bottom - offset, Paints.fillingPaint(alphaColor));
 
       if (checkFactor != 0f) {
-        c.translate(-Screen.dp(.5f), 0);
-        c.rotate(-45f, cx, cy);
-
-        int w2 = (int) ((float) Screen.dp(12f) * checkFactor);
-        int h1 = (int) ((float) Screen.dp(6f) * checkFactor);
+        int w2 = (int) (Screen.dp(8f) * checkFactor);
+        int h2 = (int) (Screen.dp(8f) * checkFactor);
+        int h1 = (int) (x1pad * checkFactor);
+        int x1pad2 = Screen.dp(1f);
 
         final int checkColor = ColorUtils.alphaColor(showFactor, Theme.radioCheckColor());
-        c.drawRect(x1, y1 - h1, x1 + lineSize, y1, Paints.fillingPaint(checkColor));
-        c.drawRect(x1, y1 - lineSize, x1 + w2, y1, Paints.fillingPaint(checkColor));
+        checkPaint.setColor(checkColor);
+
+        int smallSx = x1 + x1pad;
+        int smallSy = (int) cy + x1pad;
+
+        if (indeterminateFactor == 1f) {
+          float diff = ((rect.right - (x1 * 2)) / 2f) * checkFactor;
+          c.drawLine(
+            cx - diff,
+            cy,
+            cx + diff,
+            cy,
+            checkPaint
+          );
+        } else {
+          c.drawLine(
+            smallSx,
+            MathUtils.fromTo(smallSy, smallSy - h1, indeterminateFactor),
+            smallSx - h1,
+            smallSy - h1,
+            checkPaint
+          );
+
+          c.drawLine(
+            smallSx - x1pad2,
+            MathUtils.fromTo(smallSy, smallSy - h1, indeterminateFactor),
+            smallSx + w2 - x1pad2,
+            MathUtils.fromTo(smallSy - h2, smallSy - h1, indeterminateFactor),
+            checkPaint
+          );
+        }
       }
     }
 
