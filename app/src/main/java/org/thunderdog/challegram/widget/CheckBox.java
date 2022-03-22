@@ -151,6 +151,10 @@ public class CheckBox extends View {
     return indeterminateFactor;
   }
 
+  public boolean isIndeterminate () {
+    return (flags & FLAG_INDETERMINATE) != 0;
+  }
+
   public void setHidden (boolean hidden, final boolean animated) {
     if ((hidden && (flags & FLAG_HIDDEN) != 0) || (!hidden & (flags & FLAG_HIDDEN) == 0)) {
       return;
@@ -288,7 +292,7 @@ public class CheckBox extends View {
         } else {
           c.drawLine(
             smallSx,
-            MathUtils.fromTo(smallSy, smallSy - h1, indeterminateFactor),
+            smallSy - (h1 * indeterminateFactor),
             smallSx - h1,
             smallSy - h1,
             checkPaint
@@ -296,7 +300,7 @@ public class CheckBox extends View {
 
           c.drawLine(
             smallSx - x1pad2,
-            MathUtils.fromTo(smallSy, smallSy - h1, indeterminateFactor),
+            smallSy - (h1 * indeterminateFactor),
             smallSx + w2 - x1pad2,
             MathUtils.fromTo(smallSy - h2, smallSy - h1, indeterminateFactor),
             checkPaint
