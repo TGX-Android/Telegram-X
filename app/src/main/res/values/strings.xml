@@ -4264,6 +4264,13 @@
   <string name="QuickReactionsEnable">Enable Quick Reactions</string>
   <string name="QuickReactionsHint">Availability of specific reactions depends on settings of a group or channel.</string>
 
+  <string name="ReactionManageDisabled">Reactions disabled</string>
+  <string name="ReactionManageEnabled_one">%1$s reaction enabled</string>
+  <string name="ReactionManageEnabled_other">%1$s reactions enabled</string>
+
+  <string name="MessageXReacted_one">%1$s reacted</string>
+  <string name="MessageXReacted_other">%1$s reacted</string>
+
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
   <string name="suggested_language_code_plural" />

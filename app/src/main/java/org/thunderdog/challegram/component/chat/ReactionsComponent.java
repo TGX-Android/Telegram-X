@@ -268,7 +268,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
     private final TGMessage source;
 
     private final ImageFile staticIconFile;
-    private final GifFile dynamicIconFile;
+    private GifFile dynamicIconFile;
 
     private final Path staticIconContour = new Path();
 
@@ -301,12 +301,13 @@ public class ReactionsComponent implements FactorAnimator.Target {
       staticIconFile.setSize((small ? REACTION_ICON_SIZE_SMALL : REACTION_ICON_SIZE) * 4);
       staticIconFile.setNoBlur();
 
-      dynamicIconFile = new GifFile(tdlib, reactionObj.centerAnimation);
-      dynamicIconFile.setPlayOnce(true);
-      dynamicIconFile.addLoopListener(() -> drawAnimated = false);
-      dynamicIconFile.setFrameChangeListener((file, frameNo, frameDelta) -> {
-        isPlayingNow = frameNo > 4;
-      });
+      if (reactionObj.centerAnimation != null) {
+        dynamicIconFile = new GifFile(tdlib, reactionObj.centerAnimation);
+        dynamicIconFile.setPlayOnce(true);
+        dynamicIconFile.setFrameChangeListener((file, frameNo, frameDelta) -> {
+          isPlayingNow = frameNo > 4;
+        });
+      }
 
       chooseAnimator.setValue(reaction.isChosen, false);
 
@@ -422,7 +423,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
       if (animated) {
         source.messagesController().updateReactionOverlayAlpha(createKey(), reaction.isChosen);
-        if (reaction.isChosen) {
+        if (reaction.isChosen && dynamicIconFile != null) {
           dynamicIconFile.setLooped(false);
         }
       }
@@ -469,19 +470,23 @@ public class ReactionsComponent implements FactorAnimator.Target {
       if (r.isEmpty()) r.requestFile(staticIconFile);
       if (r.needPlaceholder()) r.drawPlaceholderContour(c, staticIconContour, alpha);
       if (gr.isEmpty() || !isPlayingNow) {
-        r.setAlpha(alpha);
+        r.setPaintAlpha(alpha);
         r.draw(c);
-        r.setAlpha(1f);
+        r.restorePaintAlpha();
       }
 
-      int grCx = r.centerX();
-      int grCy = r.centerY();
-      int grPad = Screen.dp(12f);
-      if (drawAnimated && gr.isEmpty()) gr.requestFile(dynamicIconFile);
-      gr.setBounds(grCx - grPad, grCy - grPad, grCx + grPad, grCy + grPad);
-      gr.setAlpha(alpha);
-      gr.draw(c);
-      gr.setAlpha(1f);
+      if (dynamicIconFile != null) {
+        int grCx = r.centerX();
+        int grCy = r.centerY();
+        int grPad = Screen.dp(12f);
+        if (gr.isEmpty()) gr.requestFile(dynamicIconFile);
+        if (drawAnimated) {
+          gr.setBounds(grCx - grPad, grCy - grPad, grCx + grPad, grCy + grPad);
+          gr.setPaintAlpha(alpha);
+          gr.draw(c);
+          gr.restorePaintAlpha();
+        }
+      }
 
       textCounter.draw(c, 0, r.centerY(), Gravity.LEFT, 1f);
       c.restore();
@@ -492,7 +497,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
     }
 
     public boolean hasAnimationEnded () {
-      return dynamicIconFile.isPlayOnce() && dynamicIconFile.hasLooped() && !dynamicIconFile.needDecodeLastFrame();
+      return dynamicIconFile != null && dynamicIconFile.isPlayOnce() && dynamicIconFile.hasLooped() && !dynamicIconFile.needDecodeLastFrame();
     }
 
     public void drawLarge (Canvas c, ComplexReceiver reactionsReceiver, int sx, int sy, boolean isSingle, float vy) {
@@ -544,20 +549,24 @@ public class ReactionsComponent implements FactorAnimator.Target {
       if (r.isEmpty()) r.requestFile(staticIconFile);
       if (r.needPlaceholder()) r.drawPlaceholderContour(c, staticIconContour, alpha);
       if (gr.isEmpty() || !isPlayingNow) {
-        r.setAlpha(alpha);
+        r.setPaintAlpha(alpha);
         r.draw(c);
-        r.setAlpha(1f);
+        r.restorePaintAlpha();
       }
 
       // Dynamic
-      int grCx = r.centerX();
-      int grCy = r.centerY();
-      int grPad = Screen.dp(16f);
-      if (drawAnimated && gr.isEmpty()) gr.requestFile(dynamicIconFile);
-      gr.setBounds(grCx - grPad, grCy - grPad, grCx + grPad, grCy + grPad);
-      gr.setAlpha(alpha);
-      gr.draw(c);
-      gr.setAlpha(1f);
+      if (dynamicIconFile != null) {
+        int grCx = r.centerX();
+        int grCy = r.centerY();
+        int grPad = Screen.dp(16f);
+        if (gr.isEmpty()) gr.requestFile(dynamicIconFile);
+        if (drawAnimated) {
+          gr.setBounds(grCx - grPad, grCy - grPad, grCx + grPad, grCy + grPad);
+          gr.setPaintAlpha(alpha);
+          gr.draw(c);
+          gr.restorePaintAlpha();
+        }
+      }
 
       textCounter.draw(c, Screen.dp(8f) + REACTION_ICON_SIZE + Screen.dp(6f), r.centerY(), Gravity.LEFT, alpha);
 

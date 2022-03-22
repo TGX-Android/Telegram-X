@@ -7377,22 +7377,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
-  private void updateReactions (TdApi.UpdateReactions update) {
-    synchronized (dataLock) {
-      this.supportedReactions.clear();
-      ArrayList<String> emojies = new ArrayList<>();
-
-      for (TdApi.Reaction reaction : update.reactions) {
-        if (reaction.isActive) {
-          emojies.add(reaction.reaction);
-          this.supportedReactions.put(reaction.reaction, reaction);
-        }
-      }
-
-      this.supportedReactionsEmojies = emojies.toArray(new String[0]);
-    }
-  }
-
   private void updateStickerSet (TdApi.StickerSet stickerSet) {
     animatedTgxEmoji.update(this, stickerSet);
     animatedDiceExplicit.update(this, stickerSet);
@@ -8725,6 +8709,22 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   // Reactions
+
+  private void updateReactions (TdApi.UpdateReactions update) {
+    synchronized (dataLock) {
+      this.supportedReactions.clear();
+      ArrayList<String> emojies = new ArrayList<>();
+
+      for (TdApi.Reaction reaction : update.reactions) {
+        if (reaction.isActive) {
+          emojies.add(reaction.reaction);
+          this.supportedReactions.put(reaction.reaction, reaction);
+        }
+      }
+
+      this.supportedReactionsEmojies = emojies.toArray(new String[0]);
+    }
+  }
 
   public int getActiveReactionCount () {
     synchronized (dataLock) {

@@ -21,6 +21,7 @@ import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.media.MediaMetadataRetriever;
@@ -234,6 +235,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.ScrimUtil;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.AnimatedFrameLayout;
@@ -4218,21 +4220,100 @@ public class MessagesController extends ViewController<MessagesController.Argume
     OptionsLayout optionsLayout = (OptionsLayout) layout.getChildAt(1);
     LinearLayout reactionWrap = new LinearLayout(layout.getContext());
 
+    // Reactions wrap
+    FrameLayout rvRootWrap = new FrameLayout(layout.getContext());
+    rvRootWrap.setLayoutParams(new LinearLayout.LayoutParams(0, Screen.dp(56f), 1));
+
+    View scrim = new View(layout.getContext());
+    scrim.setLayoutParams(new FrameLayout.LayoutParams(Screen.dp(36f), Screen.dp(56f), Gravity.END));
+    scrim.setBackground(ScrimUtil.makeCubicGradientScrimDrawable(Theme.getColor(R.id.theme_color_background), 2, Gravity.RIGHT, false));
+
     RecyclerView rvWrap = new RecyclerView(layout.getContext());
     rvWrap.setLayoutManager(new LinearLayoutManager(layout.getContext(), LinearLayoutManager.HORIZONTAL, false));
     rvWrap.setAdapter(new ReactionsMenuComponent(message, chat, layout));
-    rvWrap.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f)));
     rvWrap.setPadding(0, 0, Screen.dp(16f), 0);
     rvWrap.setClipToPadding(false);
     ViewSupport.setThemedBackground(rvWrap, R.id.theme_color_background);
+    rvRootWrap.addView(rvWrap);
+    rvRootWrap.addView(scrim);
 
-    reactionWrap.addView(rvWrap);
+    // Viewers
+    Drawable favIcon = Drawables.get(context.getResources(), R.drawable.baseline_favorite_16);
+    favIcon.setColorFilter(Paints.getColorFilter(Theme.getColor(R.id.theme_color_icon)));
+    Drawable viewIcon = Drawables.get(context.getResources(), R.drawable.baseline_visibility_16);
+    viewIcon.setColorFilter(Paints.getColorFilter(Theme.getColor(R.id.theme_color_icon)));
+
+    int pad = Screen.dp(12);
+    boolean showViewers = message.canGetViewers();
+    boolean showReactors = message.canGetAddedReactions();
+    LinearLayout vrWrap = new LinearLayout(layout.getContext());
+    ViewSupport.setThemedBackground(vrWrap, R.id.theme_color_background);
+
+    if (!showViewers && !showReactors) {
+      vrWrap.setVisibility(View.GONE);
+      scrim.setVisibility(View.GONE);
+    }
+
+    if (showViewers) {
+      TextView viewers = new TextView(layout.getContext());
+      viewers.setPadding(pad, 0, pad, 0);
+      viewers.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(56f)));
+      viewers.setCompoundDrawablesWithIntrinsicBounds(viewIcon, null, null, null);
+      viewers.setCompoundDrawablePadding(Screen.dp(8));
+      viewers.setTextColor(Theme.getColor(R.id.theme_color_text));
+      viewers.setGravity(Gravity.CENTER_VERTICAL);
+      viewers.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12f);
+      viewers.setVisibility(View.GONE);
+      Views.setClickable(viewers);
+      RippleSupport.setTransparentSelector(viewers);
+      vrWrap.addView(viewers);
+
+      tdlib.client().send(new TdApi.GetMessageViewers(message.getChatId(), message.getId()), (obj) -> {
+        if (obj.getConstructor() != TdApi.Users.CONSTRUCTOR) return;
+        runOnUiThreadOptional(() -> {
+          TdApi.Users users = (TdApi.Users) obj;
+          viewers.setVisibility(View.VISIBLE);
+          viewers.setText(String.valueOf(users.totalCount));
+          viewers.setOnClickListener((view) -> {
+            layout.hideWindow(true);
+            if (users.userIds.length > 1) {
+              ModernActionedLayout.showMessageSeen(this, message, users.userIds);
+            } else if (users.userIds.length == 1) {
+              tdlib.ui().openPrivateProfile(this, users.userIds[0], new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(view)));
+            }
+          });
+        });
+      });
+    }
+
+    if (showReactors) {
+      TextView reactors = new TextView(layout.getContext());
+      reactors.setPadding(pad, 0, pad, 0);
+      reactors.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(56f)));
+      reactors.setCompoundDrawablesWithIntrinsicBounds(favIcon, null, null, null);
+      reactors.setCompoundDrawablePadding(Screen.dp(8));
+      reactors.setTextColor(Theme.getColor(R.id.theme_color_text));
+      reactors.setGravity(Gravity.CENTER_VERTICAL);
+      reactors.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12f);
+      reactors.setText(String.valueOf(message.getTotalReactionCount()));
+      Views.setClickable(reactors);
+      RippleSupport.setTransparentSelector(reactors);
+      vrWrap.addView(reactors);
+
+      reactors.setOnClickListener((view) -> {
+        ModernActionedLayout.showMessageReactors(this, message.getTotalReactionCount(), message.getChatId(), message.getId());
+      });
+    }
+
+    reactionWrap.addView(rvRootWrap);
+    reactionWrap.addView(vrWrap);
+
     optionsLayout.addView(reactionWrap, 2);
     return layout;
   }
 
   private PopupLayout patchReadReceiptsOptions (PopupLayout layout, TGMessage message, boolean disableViewCounter) {
-    if (!message.canGetViewers() || disableViewCounter || (message.isUnread() && !message.noUnread()) || !(layout.getChildAt(1) instanceof OptionsLayout)) {
+    if (disableViewCounter || !message.canGetViewers() || message.containsAnyReaction() || (message.isUnread() && !message.noUnread()) || !(layout.getChildAt(1) instanceof OptionsLayout)) {
       return layout;
     }
 

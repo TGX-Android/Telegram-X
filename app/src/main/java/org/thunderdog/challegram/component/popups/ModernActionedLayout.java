@@ -1,21 +1,21 @@
 package org.thunderdog.challegram.component.popups;
 
-import androidx.annotation.Nullable;
-
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.component.attach.MediaBottomBaseController;
 import org.thunderdog.challegram.component.attach.MediaLayout;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.telegram.TdlibUi;
-
-import me.vkryl.core.lambda.RunnableData;
 
 public class ModernActionedLayout extends MediaLayout {
   private MediaBottomBaseController<?> curController;
 
   public static void showMessageSeen (ViewController<?> context, TGMessage msg, long[] userIds) {
     showMal(context, (mal) -> new MessageSeenController(mal, msg, userIds));
+  }
+
+  public static void showMessageReactors (ViewController<?> context, int reactionCount, long chatId, long msgId) {
+    // Show subcontroller only if reactions shouldn't be separated
+    showMal(context, (mal) -> new MessageReactorsController(mal, chatId, msgId, reactionCount));
   }
 
   public static void showJoinRequests (ViewController<?> context, long chatId, TdApi.ChatJoinRequestsInfo requestsInfo) {

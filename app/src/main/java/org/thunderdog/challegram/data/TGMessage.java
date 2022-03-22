@@ -3717,19 +3717,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return msg.containsUnreadMention;
   }
 
-  public final boolean containsUnreadReaction () {
-    synchronized (this) {
-      if (combinedMessages != null) {
-        for (int i = combinedMessages.size() - 1; i >= 0; i--) {
-          if (U.safeLength(combinedMessages.get(i).unreadReactions) > 0) {
-            return true;
-          }
-        }
-      }
-    }
-    return U.safeLength(msg.unreadReactions) > 0;
-  }
-
   public final void readMention (long messageId) {
     synchronized (this) {
       if (combinedMessages != null) {
@@ -4075,6 +4062,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   public final boolean canGetViewers () {
     return msg.canGetViewers;
+  }
+
+  public final boolean canGetAddedReactions () {
+    return msg.canGetAddedReactions;
   }
 
   public final boolean canBeDeletedOnlyForSelf () {
@@ -7378,5 +7369,50 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     return null;
+  }
+
+  public final boolean containsUnreadReaction () {
+    synchronized (this) {
+      if (combinedMessages != null) {
+        for (int i = combinedMessages.size() - 1; i >= 0; i--) {
+          if (U.safeLength(combinedMessages.get(i).unreadReactions) > 0) {
+            return true;
+          }
+        }
+      }
+    }
+    return U.safeLength(msg.unreadReactions) > 0;
+  }
+
+  public final boolean containsAnyReaction () {
+    synchronized (this) {
+      if (combinedMessages != null) {
+        for (int i = combinedMessages.size() - 1; i >= 0; i--) {
+          if (combinedMessages.get(i).interactionInfo != null && U.safeLength(combinedMessages.get(i).interactionInfo.reactions) > 0) {
+            return true;
+          }
+        }
+      }
+    }
+    return msg.interactionInfo != null && U.safeLength(msg.interactionInfo.reactions) > 0;
+  }
+
+  public final int getTotalReactionCount () {
+    int count = 0;
+    synchronized (this) {
+      if (combinedMessages != null) {
+        for (int i = combinedMessages.size() - 1; i >= 0; i--) {
+          count += combinedMessages.get(i).interactionInfo != null ? getArrayReactionCount(combinedMessages.get(i).interactionInfo.reactions) : 0;
+        }
+      }
+    }
+    count += msg.interactionInfo != null ? getArrayReactionCount(msg.interactionInfo.reactions) : 0;
+    return count;
+  }
+
+  private int getArrayReactionCount(TdApi.MessageReaction[] arr) {
+    int count = 0;
+    for (TdApi.MessageReaction r : arr) count += r.totalCount;
+    return count;
   }
 }
