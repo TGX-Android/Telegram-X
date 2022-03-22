@@ -13,9 +13,9 @@ public class ModernActionedLayout extends MediaLayout {
     showMal(context, (mal) -> new MessageSeenController(mal, msg, userIds));
   }
 
-  public static void showMessageReactors (ViewController<?> context, int reactionCount, long chatId, long msgId) {
-    // Show subcontroller only if reactions shouldn't be separated
-    showMal(context, (mal) -> new MessageReactorsController(mal, chatId, msgId, reactionCount));
+  public static void showMessageReactors (ViewController<?> context, int reactionCount, long chatId, long msgId, TdApi.MessageReaction[] reactions) {
+    // TODO: Show subcontroller only if reactions shouldn't be separated
+    showMal(context, (mal) -> new MessageReactorsController(mal, chatId, msgId, reactionCount, reactions));
   }
 
   public static void showJoinRequests (ViewController<?> context, long chatId, TdApi.ChatJoinRequestsInfo requestsInfo) {

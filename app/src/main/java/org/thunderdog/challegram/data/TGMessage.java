@@ -7415,4 +7415,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     for (TdApi.MessageReaction r : arr) count += r.totalCount;
     return count;
   }
+
+  public TdApi.MessageReaction[] getMessageReactions () {
+    return msg.interactionInfo != null ? msg.interactionInfo.reactions : new TdApi.MessageReaction[0];
+  }
 }

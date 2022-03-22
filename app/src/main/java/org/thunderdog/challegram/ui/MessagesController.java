@@ -4301,7 +4301,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       vrWrap.addView(reactors);
 
       reactors.setOnClickListener((view) -> {
-        ModernActionedLayout.showMessageReactors(this, message.getTotalReactionCount(), message.getChatId(), message.getId());
+        ModernActionedLayout.showMessageReactors(this, message.getTotalReactionCount(), message.getChatId(), message.getId(), message.getMessageReactions());
       });
     }
 

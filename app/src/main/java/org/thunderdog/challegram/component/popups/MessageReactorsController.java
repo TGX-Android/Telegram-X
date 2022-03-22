@@ -12,26 +12,23 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.MediaBottomBaseController;
 import org.thunderdog.challegram.component.attach.MediaLayout;
-import org.thunderdog.challegram.component.base.SettingView;
-import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.TGMessage;
-import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
-import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.navigation.ViewPagerHeaderViewCompact;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.SettingHolder;
-import org.thunderdog.challegram.ui.SettingsAdapter;
-import org.thunderdog.challegram.widget.ListInfoView;
 
-import java.util.ArrayList;
+import me.vkryl.android.widget.FrameLayoutFix;
 
-public class MessageReactorsController extends MediaBottomBaseController<Void> implements View.OnClickListener {
+public class MessageReactorsController extends MediaBottomBaseController<Void> {
   private final long chatId;
   private final long msgId;
   private final int reactionCount;
+  private final TdApi.MessageReaction[] reactions;
+
+  private ViewPagerHeaderViewCompact headerCell;
 
   public static CharSequence getViewString (int count) {
     return Lang.pluralBold(R.string.MessageXReacted, count);
@@ -48,8 +45,9 @@ public class MessageReactorsController extends MediaBottomBaseController<Void> i
     return true;
   }
 
-  public MessageReactorsController (MediaLayout context, long chatId, long msgId, int reactionCount) {
+  public MessageReactorsController (MediaLayout context, long chatId, long msgId, int reactionCount, TdApi.MessageReaction[] reactions) {
     super(context, getViewString(reactionCount).toString());
+    this.reactions = reactions;
     this.reactionCount = reactionCount;
     this.chatId = chatId;
     this.msgId = msgId;
@@ -62,17 +60,49 @@ public class MessageReactorsController extends MediaBottomBaseController<Void> i
     buildContentView(false);
     setLayoutManager(new LinearLayoutManager(context(), RecyclerView.VERTICAL, false));
 
-    // Build ViewPager's
+    // Build ViewPagers + header
+    headerCell = new ViewPagerHeaderViewCompact(context);
+    FrameLayoutFix.LayoutParams params = (FrameLayoutFix.LayoutParams) ((ViewPagerHeaderViewCompact) headerCell).getRecyclerView().getLayoutParams();
+    if (getBackButton() != BackHeaderButton.TYPE_NONE) {
+      if (Lang.rtl()) {
+        params.rightMargin = Screen.dp(56f);
+      } else {
+        params.leftMargin = Screen.dp(56f);
+      }
+    }
+    addThemeInvalidateListener(headerCell.getTopView());
+    headerCell.getTopView().checkRtl();
+    headerCell.getTopView().setItems(new String[0]);
+    for (TdApi.MessageReaction r: reactions) {
+      headerCell.getTopView().addItem(r.reaction + "   " + r.totalCount);
+    }
+    headerCell.getTopView().setSelectionFactor(0f);
 
     initMetrics();
     this.allowExpand = getInitialContentHeight() == super.getInitialContentHeight();
-    load();
 
     return contentView;
   }
 
-  private void load () {
-    //tdlib.client().send(new TdApi.GetMessageAddedReactions());
+  @Override
+  protected void onCompleteShow (boolean isPopup) {
+    //mediaLayout.getHeaderView().getFilling().setColor(Theme.getColor(R.id.theme_color_background));
+    //mediaLayout.getHeaderView().setVisibility(View.GONE);
+  }
+
+  @Override
+  public View getCustomHeaderCell () {
+    return (View) headerCell;
+  }
+
+  @Override
+  public boolean anchorHeaderToContent () {
+    return true;
+  }
+
+  @Override
+  public float getContentTranslationY () {
+    return recyclerView.getTranslationY();
   }
 
   @Override
@@ -95,13 +125,5 @@ public class MessageReactorsController extends MediaBottomBaseController<Void> i
   @Override
   public int getId () {
     return R.id.controller_messageReacted;
-  }
-
-  @Override
-  public void onClick (View v) {
-    if (v.getId() == R.id.user) {
-      mediaLayout.hide(false);
-      tdlib.ui().openPrivateProfile(this, ((ListItem) v.getTag()).getLongId(), new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
-    }
   }
 }

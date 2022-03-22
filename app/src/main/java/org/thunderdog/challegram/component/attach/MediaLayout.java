@@ -5,8 +5,10 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Canvas;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -50,6 +52,7 @@ import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Intents;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
@@ -70,6 +73,7 @@ import me.vkryl.android.DeviceUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.TdConstants;
 
@@ -246,6 +250,10 @@ public class MediaLayout extends FrameLayoutFix implements
       themeListeners.addThemeInvalidateListener(customBottomBar);
       customBottomBar.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
       customBottomBar.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.EXACTLY);
+    }
+
+    if (currentController.anchorHeaderToContent()) {
+      prepareHeader();
     }
 
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -764,6 +772,7 @@ public class MediaLayout extends FrameLayoutFix implements
   private void prepareRevealAnimation () {
     currentStartHeight = currentController.getStartHeight();
     currentController.get().setTranslationY(currentStartHeight);
+    setHeaderTranslation(currentStartHeight);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       invalidateOutline();
     }
@@ -775,7 +784,9 @@ public class MediaLayout extends FrameLayoutFix implements
       popupLayout.setRevealFactor(factor);
     }
     setBottomBarFactor(factor);
-    currentController.get().setTranslationY(currentStartHeight - (int) ((float) currentStartHeight * factor));
+    int currentHeight = currentStartHeight - (int) ((float) currentStartHeight * factor);
+    currentController.get().setTranslationY(currentHeight);
+    setHeaderTranslation(currentController.getContentTranslationY() + currentHeight);
   }
 
   public void onContentHeightChanged () {
@@ -1556,11 +1567,17 @@ public class MediaLayout extends FrameLayoutFix implements
           return true;
         }
       };
-      headerView.initWithSingleController(getCurrentController(), true);
-      headerView.setAlpha(0f);
+      headerView.initWithSingleController(getCurrentController(), !isHeaderAnchoredToContent());
+      headerView.setAlpha(isHeaderAnchoredToContent() ? 1f : 0f);
       headerView.setTranslationY(-HeaderView.getSize(false) - headerView.getFilling().getExtraHeight());
+      if (isHeaderAnchoredToContent()) headerView.getFilling().setColor(Theme.backgroundColor());
       addView(headerView);
       lastHeaderIndex = index;
+
+      if (isHeaderAnchoredToContent()) {
+        statusBarLickView = new LickView(getContext());
+        addView(statusBarLickView);
+      }
     }
 
     if (lastHeaderIndex != index) {
@@ -1573,11 +1590,30 @@ public class MediaLayout extends FrameLayoutFix implements
     if (this.headerFactor != factor) {
       this.headerFactor = factor;
       if (headerView != null && !ignoreHeaderStyles) {
-        headerView.setAlpha(factor);
-        int offsetY = HeaderView.getSize(false) + headerView.getFilling().getExtraHeight();
-        headerView.setTranslationY(-offsetY + (int) ((float) offsetY * factor));
+        if (isHeaderAnchoredToContent()) {
+          int headerColor = ColorUtils.fromToArgb(Theme.backgroundColor(), Theme.fillingColor(), factor);
+          headerView.getFilling().setColor(headerColor);
+          headerView.invalidate();
+          statusBarLickView.setColor(headerColor);
+          statusBarLickView.setFactor(factor);
+        } else {
+          headerView.setAlpha(factor);
+          int offsetY = HeaderView.getSize(false) + headerView.getFilling().getExtraHeight();
+          headerView.setTranslationY(-offsetY + (int) ((float) offsetY * factor));
+        }
       }
     }
+  }
+
+  public void setHeaderTranslation (float dy) {
+    if (headerView != null && isHeaderAnchoredToContent()) {
+      headerView.setTranslationY(dy);
+      statusBarLickView.setTranslationY(dy - HeaderView.getTopOffset());
+    }
+  }
+
+  private boolean isHeaderAnchoredToContent () {
+    return getCurrentController().anchorHeaderToContent();
   }
 
   private boolean visible = true;
@@ -1588,6 +1624,43 @@ public class MediaLayout extends FrameLayoutFix implements
       NavigationController c = UI.getNavigation();
       if (c != null) {
         c.get().setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
+      }
+    }
+  }
+
+  //
+
+  private LickView statusBarLickView;
+
+  private static class LickView extends View {
+    public LickView (Context context) {
+      super(context);
+      setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, HeaderView.getTopOffset()));
+    }
+
+    private float factor;
+    private int color;
+
+    public void setFactor (float factor) {
+      if (this.factor != factor) {
+        this.factor = factor;
+        invalidate();
+      }
+    }
+
+    public void setColor (int color) {
+      if (this.color != color) {
+        this.color = color;
+        invalidate();
+      }
+    }
+
+    @Override
+    protected void onDraw (Canvas c) {
+      if (factor > 0f) {
+        int bottom = getMeasuredHeight();
+        int top = bottom - (int) ((float) bottom * factor);
+        c.drawRect(0, top, getMeasuredWidth(), bottom, Paints.fillingPaint(color));
       }
     }
   }

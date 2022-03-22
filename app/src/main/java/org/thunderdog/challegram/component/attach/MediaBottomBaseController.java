@@ -121,6 +121,14 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
     return false;
   }
 
+  public boolean anchorHeaderToContent () {
+    return false;
+  }
+
+  public float getContentTranslationY () {
+    return 0;
+  }
+
   // Metrics
 
   private int contentHeight, startHeight, currentHeight;
@@ -671,6 +679,9 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
     }
     if (emptyView != null) {
       emptyView.setTranslationY(findYForStaticView(Screen.dp(18f)));
+    }
+    if (anchorHeaderToContent()) {
+      mediaLayout.setHeaderTranslation(top);
     }
     // Use to align overlay views
   }
