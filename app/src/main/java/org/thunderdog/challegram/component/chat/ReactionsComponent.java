@@ -295,13 +295,15 @@ public class ReactionsComponent implements FactorAnimator.Target {
       this.viewProvider = viewProvider;
       this.source = source;
 
-      Td.buildOutline(reactionObj.staticIcon.outline, (float) (small ? REACTION_ICON_SIZE_SMALL : REACTION_ICON_SIZE) / reactionObj.staticIcon.height, staticIconContour);
+      if (reactionObj != null) {
+        Td.buildOutline(reactionObj.staticIcon.outline, (float) (small ? REACTION_ICON_SIZE_SMALL : REACTION_ICON_SIZE) / reactionObj.staticIcon.height, staticIconContour);
+      }
 
-      staticIconFile = new ImageFile(tdlib, reactionObj.staticIcon.sticker);
+      staticIconFile = new ImageFile(tdlib, reactionObj != null ? reactionObj.staticIcon.sticker : null);
       staticIconFile.setSize((small ? REACTION_ICON_SIZE_SMALL : REACTION_ICON_SIZE) * 4);
       staticIconFile.setNoBlur();
 
-      if (reactionObj.centerAnimation != null) {
+      if (reactionObj != null && reactionObj.centerAnimation != null) {
         dynamicIconFile = new GifFile(tdlib, reactionObj.centerAnimation);
         dynamicIconFile.setPlayOnce(true);
         dynamicIconFile.setFrameChangeListener((file, frameNo, frameDelta) -> {
