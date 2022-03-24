@@ -196,6 +196,7 @@
   <item type="id" name="controller_chatJoinRequests" />
   <item type="id" name="controller_messageSeen" />
   <item type="id" name="controller_messageReacted" />
+  <item type="id" name="controller_messageReactedSingle" />
   <item type="id" name="controller_joinDialog" />
 
   <item type="id" name="controller_code" />

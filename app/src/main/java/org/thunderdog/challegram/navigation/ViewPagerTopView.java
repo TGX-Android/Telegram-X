@@ -12,10 +12,14 @@ import android.view.ViewParent;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.loader.ComplexReceiver;
+import org.thunderdog.challegram.loader.ImageFile;
+import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeColorId;
@@ -30,28 +34,44 @@ import java.util.List;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.Destroyable;
 
 /**
  * Date: 26/12/2016
  * Author: default
  */
-public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener, View.OnClickListener, View.OnLongClickListener {
+public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener, View.OnClickListener, View.OnLongClickListener, Destroyable {
   private static class Item {
     public final String string;
     public final boolean needFakeBold;
     public final @DrawableRes int iconRes;
+    public final @Nullable ImageFile iconImage;
+    public final @Nullable String imageId;
 
     public Item (String string) {
       this.string = string;
       this.needFakeBold = Text.needFakeBold(string);
       this.iconRes = 0;
+      this.iconImage = null;
+      this.imageId = null;
     }
 
     public Item (int iconRes) {
       this.string = null;
       this.needFakeBold = false;
       this.iconRes = iconRes;
+      this.iconImage = null;
+      this.imageId = null;
+    }
+
+    public Item (String string, String imageId, ImageFile iconImage) {
+      this.string = string;
+      this.needFakeBold = Text.needFakeBold(string);
+      this.iconRes = 0;
+      this.iconImage = iconImage;
+      this.imageId = imageId;
     }
 
     private Drawable icon;
@@ -72,7 +92,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     public void calculateWidth (TextPaint paint) {
       final int width;
       if (string != null) {
-        width = (int) U.measureText(string, paint);
+        width = (int) (U.measureText(string, paint) + (iconImage != null ? ICON_HALF_SIZE * 2 : 0));
       } else if (iconRes != 0) {
         width = Screen.dp(24f) + Screen.dp(6f);
       } else {
@@ -107,10 +127,19 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   private @ThemeColorId int fromTextColorId, toTextColorId = R.id.theme_color_headerText;
   private @ThemeColorId int selectionColorId;
 
+  private ComplexReceiver iconImageReceiver = new ComplexReceiver(this);
+  private final static float ICON_HALF_SIZE = Screen.dp(8f);
+
+  @Override
+  public void performDestroy () {
+    iconImageReceiver.performDestroy();
+  }
+
   public ViewPagerTopView (Context context) {
     super(context);
     this.textPadding = Screen.dp(19f);
     setWillNotDraw(false);
+    iconImageReceiver.attach();
   }
 
   @Override
@@ -237,6 +266,11 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       i++;
     }
     maxItemWidth = items.isEmpty() ? 0 : totalWidth / items.size();
+  }
+
+  public void addItem (String item, String imageId, ImageFile image) {
+    addItemAtIndex(new Item(item, imageId, image), -1);
+    iconImageReceiver.getImageReceiver(imageId.hashCode()).requestFile(image);
   }
 
   public void addItem (String item) {
@@ -589,7 +623,17 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
         if (item != null) {
           int color = ColorUtils.fromToArgb(textFromColor, textToColor, factor * (1f - disabledFactor));
           if (item.ellipsizedString != null) {
-            c.drawText(item.ellipsizedString, cx + itemWidth / 2 - item.actualWidth / 2, viewHeight / 2 + Screen.dp(6f), Paints.getViewPagerTextPaint(color, item.needFakeBold));
+            float textX = cx + itemWidth / 2f - item.actualWidth / 2f;
+            float cy = viewHeight / 2f;
+            if (item.iconImage != null) {
+              textX -= Screen.dp(4f);
+              ImageReceiver iconReceiver = iconImageReceiver.getImageReceiver(item.imageId.hashCode());
+              iconReceiver.setPaintAlpha(MathUtils.fromTo(0.5f, 1f, factor * (1f - disabledFactor)));
+              iconReceiver.setBounds((int) textX, (int) (cy - ICON_HALF_SIZE), (int) (textX + (ICON_HALF_SIZE * 2)), (int) (cy + ICON_HALF_SIZE));
+              iconReceiver.draw(c);
+              textX += Screen.dp(8f) + (ICON_HALF_SIZE * 2);
+            }
+            c.drawText(item.ellipsizedString, textX, cy + Screen.dp(6f), Paints.getViewPagerTextPaint(color, item.needFakeBold));
           } else if (item.iconRes != 0) {
             Drawable drawable = item.getIcon();
             Drawables.draw(c, drawable, cx + itemWidth / 2 - drawable.getMinimumWidth() / 2, viewHeight / 2 - drawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(color));
