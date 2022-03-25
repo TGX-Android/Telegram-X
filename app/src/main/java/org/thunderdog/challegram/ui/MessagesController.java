@@ -4245,7 +4245,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     int pad = Screen.dp(12);
     boolean showViewers = message.canGetViewers();
-    boolean showReactors = message.canGetAddedReactions();
+    boolean showReactors = message.canGetAddedReactions() && message.getTotalReactionCount() != 0;
     LinearLayout vrWrap = new LinearLayout(layout.getContext());
     ViewSupport.setThemedBackground(vrWrap, R.id.theme_color_background);
 
