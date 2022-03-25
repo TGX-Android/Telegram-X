@@ -1,6 +1,8 @@
 package org.thunderdog.challegram.component.popups;
 
 import android.content.Context;
+import android.os.Build;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -56,6 +58,14 @@ public class MessageReactorsController extends MediaBottomBaseController<Void> i
   public boolean onBackPressed (boolean fromTop) {
     mediaLayout.hide(false);
     return true;
+  }
+
+  @Override
+  public void dispatchRecyclerTouchEvent (MotionEvent e) {
+    super.dispatchRecyclerTouchEvent(e);
+    if (pager != null) {
+      ((MessageReactionsUserListController) pagerAdapter.getCachedItemByPosition(pager.getCurrentItem())).dispatchEventToRecycler(e);
+    }
   }
 
   public MessageReactorsController (MediaLayout context, long chatId, long msgId, int reactionCount, TdApi.MessageReaction[] reactions) {

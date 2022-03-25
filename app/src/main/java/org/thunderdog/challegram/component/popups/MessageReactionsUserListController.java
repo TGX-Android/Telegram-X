@@ -2,12 +2,16 @@ package org.thunderdog.challegram.component.popups;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -110,6 +114,10 @@ public class MessageReactionsUserListController extends RecyclerViewController<M
         });
       }
     });
+  }
+
+  public void dispatchEventToRecycler (MotionEvent ev) {
+    getRecyclerView().dispatchTouchEvent(ev);
   }
 
   private void buildCells () {
