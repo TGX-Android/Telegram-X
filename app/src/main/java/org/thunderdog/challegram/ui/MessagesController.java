@@ -4230,7 +4230,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     RecyclerView rvWrap = new RecyclerView(layout.getContext());
     rvWrap.setLayoutManager(new LinearLayoutManager(layout.getContext(), LinearLayoutManager.HORIZONTAL, false));
-    rvWrap.setAdapter(new ReactionsMenuComponent(message, chat, layout));
     rvWrap.setPadding(0, 0, Screen.dp(16f), 0);
     rvWrap.setClipToPadding(false);
     ViewSupport.setThemedBackground(rvWrap, R.id.theme_color_background);
@@ -4309,6 +4308,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
     reactionWrap.addView(vrWrap);
 
     optionsLayout.addView(reactionWrap, 1);
+
+    tdlib.client().send(new TdApi.GetMessageAvailableReactions(message.getChatId(), message.getId()), (obj) -> {
+      if (obj.getConstructor() != TdApi.AvailableReactions.CONSTRUCTOR) return;
+      runOnUiThreadOptional(() -> {
+        TdApi.AvailableReactions ar = (TdApi.AvailableReactions) obj;
+        rvWrap.setAdapter(new ReactionsMenuComponent(message, chat, layout, ar.reactions));
+      });
+    });
+
     return layout;
   }
 

@@ -25,12 +25,14 @@ public class ReactionsMenuComponent extends RecyclerView.Adapter<ReactionsMenuCo
   private final TdApi.Chat sourceChat;
   private final String chosenReaction;
   private final PopupLayout layout;
+  private final String[] availableReactions;
 
-  public ReactionsMenuComponent (TGMessage message, TdApi.Chat sourceChat, PopupLayout layout) {
+  public ReactionsMenuComponent (TGMessage message, TdApi.Chat sourceChat, PopupLayout layout, String[] availableReactions) {
     this.message = message;
     this.sourceChat = sourceChat;
     this.chosenReaction = message.getChosenReaction();
     this.layout = layout;
+    this.availableReactions = availableReactions;
   }
 
   @NonNull
@@ -41,7 +43,7 @@ public class ReactionsMenuComponent extends RecyclerView.Adapter<ReactionsMenuCo
 
   @Override
   public void onBindViewHolder (@NonNull RmcViewHolder holder, int position) {
-    holder.bind(message.tdlib(), sourceChat.availableReactions[position], message, layout, sourceChat.availableReactions[position].equals(chosenReaction));
+    holder.bind(message.tdlib(), availableReactions[position], message, layout, availableReactions[position].equals(chosenReaction));
   }
 
   @Override
@@ -61,7 +63,7 @@ public class ReactionsMenuComponent extends RecyclerView.Adapter<ReactionsMenuCo
 
   @Override
   public int getItemCount () {
-    return sourceChat.availableReactions.length;
+    return availableReactions.length;
   }
 
   public static class RmcViewHolder extends RecyclerView.ViewHolder {
