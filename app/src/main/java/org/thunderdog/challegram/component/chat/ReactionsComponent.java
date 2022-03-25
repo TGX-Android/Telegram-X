@@ -186,7 +186,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
   }
 
   public int getHeight (boolean needSizeCut) {
-    return (int) ((rcHeightAnimator.getFactor() + REACTION_ITEM_HALF_SEPARATOR - (needSizeCut ? Screen.dp(16f) : 0) * componentVisibleAnimator.getFloatValue()));
+    return (int) ((rcHeightAnimator.getFactor() + REACTION_ITEM_HALF_SEPARATOR - (needSizeCut ? Screen.dp(16f) : 0)) * componentVisibleAnimator.getFloatValue());
   }
 
   public int getFlatHeight () {
