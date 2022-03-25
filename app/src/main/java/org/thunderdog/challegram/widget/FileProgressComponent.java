@@ -382,7 +382,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
       } else if (TD.isFileLoading(file)) {
         setCurrentState(TdlibFilesManager.STATE_IN_PROGRESS, shouldAnimate());
       } else {
-        setCurrentState(TD.isFileLoadedAndExists(file) ? TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED : TdlibFilesManager.STATE_PAUSED, shouldAnimate());
+        setCurrentState(TD.isFileLoaded(file) ? TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED : TdlibFilesManager.STATE_PAUSED, shouldAnimate());
       }
     } else {
       setCurrentState(TdlibFilesManager.STATE_PAUSED, shouldAnimate());

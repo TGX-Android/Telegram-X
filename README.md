@@ -6,8 +6,8 @@ This is the complete source code and the build instructions for the official alt
 
 * [**Telegram X** on Google Play](http://play.google.com/store/apps/details?id=org.thunderdog.challegram)
 * [Subscribe to Beta](https://play.google.com/apps/testing/org.thunderdog.challegram)
-* [Announcements and Change Logs](https://t.me/tgx_android)
-* [Developer Log and APKs](https://t.me/tgx_log)
+* [APKs and Build Info](https://t.me/tgx_log)
+* [Bot to verify APK hash](https://t.me/tgx_bot)
 
 ## Build instructions
 
