@@ -4308,7 +4308,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     reactionWrap.addView(rvRootWrap);
     reactionWrap.addView(vrWrap);
 
-    optionsLayout.addView(reactionWrap, 2);
+    optionsLayout.addView(reactionWrap, 1);
     return layout;
   }
 
