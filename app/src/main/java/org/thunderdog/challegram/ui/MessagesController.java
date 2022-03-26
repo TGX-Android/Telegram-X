@@ -4262,7 +4262,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       viewers.setTextColor(Theme.getColor(R.id.theme_color_text));
       viewers.setGravity(Gravity.CENTER_VERTICAL);
       viewers.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12f);
-      viewers.setVisibility(View.GONE);
+      viewers.setVisibility(View.INVISIBLE);
+      viewers.setText(" "); // "placeholder"
       Views.setClickable(viewers);
       RippleSupport.setTransparentSelector(viewers);
       vrWrap.addView(viewers);
