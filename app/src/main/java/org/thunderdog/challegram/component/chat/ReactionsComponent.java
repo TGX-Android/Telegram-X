@@ -85,6 +85,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
   private final RectF rcRect = new RectF();
   private RectF[] rcClickListeners;
   private int realMaxWidth;
+  private int lastWidth, lastHeight;
 
   public ReactionsComponent (TGMessage source, ViewProvider viewProvider) {
     this.source = source;
@@ -190,7 +191,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
   }
 
   public int getFlatHeight () {
-    return (int) ((rcHeightAnimator.getFactor() + REACTION_ITEM_HALF_SEPARATOR + (source.useBubbles() ? REACTION_ITEM_HALF_SEPARATOR : 0)) * componentVisibleAnimator.getFloatValue());
+    return (int) (((rcHeightAnimator.getFactor() + REACTION_ITEM_HALF_SEPARATOR)) * componentVisibleAnimator.getFloatValue());
   }
 
   public int getWidth () {
@@ -213,10 +214,22 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
   @Override
   public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
-    if ((id == ANIMATOR_VISIBLE || id == ANIMATOR_CONTAINER_PARAMS_H) && shouldRenderUnderBubble()) {
-      source.notifyMessageHeightChanged();
-    } else {
-      viewProvider.invalidate();
+    checkLayoutParams((id == ANIMATOR_VISIBLE || id == ANIMATOR_CONTAINER_PARAMS_H) && shouldRenderUnderBubble());
+  }
+
+  private void checkLayoutParams (boolean shouldNotifyHeightChange) {
+    int newWidth = getWidth();
+    int newHeight = source.useBubbles() ? getHeight(false) : getFlatHeight();
+
+    if (newWidth != lastWidth || newHeight != lastHeight) {
+      lastWidth = newWidth;
+      lastHeight = newHeight;
+
+      if (shouldNotifyHeightChange) {
+        source.notifyMessageHeightChanged();
+      } else {
+        viewProvider.requestLayout();
+      }
     }
   }
 
