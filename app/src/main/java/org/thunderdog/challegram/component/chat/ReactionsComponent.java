@@ -335,7 +335,9 @@ public class ReactionsComponent implements FactorAnimator.Target {
         .build();
 
       textCounter.setCount(reaction.totalCount, false);
-      if (animate && reaction.isChosen) createOverlay();
+      if (animate && reaction.isChosen) createOverlay(() -> {
+
+      });
     }
 
     public void setCoordinates (float x, float y, boolean animated) {
@@ -420,7 +422,11 @@ public class ReactionsComponent implements FactorAnimator.Target {
     }
 
     public void update (TdApi.MessageReaction reaction, int index, boolean animated, boolean small) {
-      if (reaction.isChosen && !this.reaction.isChosen && animated) createOverlay();
+      if (reaction.isChosen && !this.reaction.isChosen && animated) createOverlay(() -> {
+        if (dynamicIconFile != null) {
+          dynamicIconFile.setLooped(false);
+        }
+      });
 
       if (small) {
         counterAppearAnimator.setValue(reaction.totalCount > 1, animated);
@@ -438,9 +444,6 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
       if (animated) {
         source.messagesController().updateReactionOverlayAlpha(createKey(), reaction.isChosen);
-        if (reaction.isChosen && dynamicIconFile != null) {
-          dynamicIconFile.setLooped(false);
-        }
       }
 
       setCoordinates((REACTION_BASE_WIDTH * 4) * index, 0, animated);
@@ -450,9 +453,9 @@ public class ReactionsComponent implements FactorAnimator.Target {
       return source.getChatId() + "_" + source.getId() + "_" + reaction.reaction;
     }
 
-    private void createOverlay () {
+    private void createOverlay (@Nullable Runnable onFirstFrameListener) {
       drawAnimated = true;
-      source.messagesController().addReactionToOverlay(createKey(), reactionObj);
+      source.messagesController().addReactionToOverlay(createKey(), reactionObj, onFirstFrameListener);
     }
 
     public void draw (Canvas c, ComplexReceiver reactionsReceiver, int sx, int sy, float vy, boolean isSingle, boolean isSmall) {
