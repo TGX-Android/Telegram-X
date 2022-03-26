@@ -132,9 +132,10 @@ public class ReactionsConfigComponent extends RecyclerView.Adapter<ReactionsConf
   public static class RccView extends View {
     private static final int SIZE = Screen.dp(32f);
     private final BoolAnimator isSelected = new BoolAnimator(this, AnimatorUtils.ACCELERATE_DECELERATE_INTERPOLATOR, 210l);
-    private final ReactionReceiver receiver;
     private Text reactionName;
     private boolean needAdditionalPadding;
+
+    private final ReactionReceiver receiver;
 
     public RccView (Context context) {
       super(context);

@@ -10560,8 +10560,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private ReactionsOverlayComponent overlayComponent;
 
-  public void addReactionToOverlay (String key, TdApi.Reaction reaction) {
-    overlayComponent.addReactionToOverlay(tdlib, key, reaction);
+  public void addReactionToOverlay (String key, TdApi.Reaction reaction, @Nullable Runnable onFirstFrameListener) {
+    overlayComponent.addReactionToOverlay(tdlib, key, reaction, onFirstFrameListener);
   }
 
   public void updateReactionOverlayLocation (String key, float centerX, float centerY, boolean isSmall) {
