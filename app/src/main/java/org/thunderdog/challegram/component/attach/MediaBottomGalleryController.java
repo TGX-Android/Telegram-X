@@ -496,7 +496,10 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   public boolean onPhotoOrVideoOpenRequested (ImageFile fromFile) {
     if (fromFile instanceof ImageGalleryFile && currentBucket != null) {
       MediaStack stack = new MediaStack(context, tdlib);
-      stack.set(fromFile, currentBucket.getMedia());
+      final List<ImageFile> files = currentBucket.getMedia();
+      final long time = SystemClock.elapsedRealtime();
+      stack.set(fromFile, files);
+      Log.i("stack.set complete for %d files in %dms", stack.getCurrentSize(), SystemClock.elapsedRealtime() - time);
 
       MediaViewController controller = new MediaViewController(context, tdlib);
       controller.setArguments(MediaViewController.Args.fromGallery(this, this, this, this, stack, mediaLayout.areScheduledOnly()).setReceiverChatId(mediaLayout.getTargetChatId()));

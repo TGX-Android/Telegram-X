@@ -70,6 +70,7 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
   private ImageFile previewImageFile;
   private TdApi.File targetFile;
   private FileProgressComponent fileProgress;
+  private boolean needCreateGalleryFileProgress;
 
   // Source data
   private long sourceChatId, sourceMessageId;
@@ -504,12 +505,7 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
         ((ImageVideoThumbFile) this.targetImage).setMaxSize(maxSize);
         ((ImageVideoThumbFile) this.targetImage).setFrameTimeUs(imageFile.getStartTimeUs() > 0 ? imageFile.getStartTimeUs() : 0);
       }
-
-      this.fileProgress = new FileProgressComponent(context, tdlib, TdlibFilesManager.DOWNLOAD_FLAG_VIDEO, false, 0, 0);
-      this.fileProgress.setUseStupidInvalidate();
-      this.fileProgress.setIsLocal();
-      this.fileProgress.setDownloadedIconRes(FileProgressComponent.PLAY_ICON);
-      this.fileProgress.setFile(imageFile.getFile());
+      this.needCreateGalleryFileProgress = true;
     } else if (!imageFile.isFromCamera()) {
       if (type == TYPE_GALLERY_GIF) {
         this.targetGif = new GifFileLocal(tdlib, imageFile.getFilePath());
@@ -574,7 +570,7 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
     }*/
     TdApi.File file = previewImageFile != null ? previewImageFile.getFile() : null;
     if (file == null && (thumbImageFile == null || thumbImageFile instanceof ImageFileLocal)) {
-      file = fileProgress != null && fileProgress.isLoaded() ? fileProgress.getFile() : file;
+      file = getFileProgress() != null && fileProgress.isLoaded() ? fileProgress.getFile() : file;
       if (fileProgress != null && !fileProgress.isLoaded()) {
          fileProgress.downloadAutomatically(sourceChatId);
       }
@@ -731,12 +727,23 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
   }
 
   public void pauseAbandonedDownload () {
-    if (fileProgress != null && (currentViews == null || !currentViews.hasAnyTargetToInvalidate())) {
+    if (getFileProgress() != null && (currentViews == null || !currentViews.hasAnyTargetToInvalidate())) {
       fileProgress.pauseDownload(false);
     }
   }
 
   public FileProgressComponent getFileProgress () {
+    if (fileProgress == null && needCreateGalleryFileProgress) {
+      this.fileProgress = new FileProgressComponent(context, tdlib, TdlibFilesManager.DOWNLOAD_FLAG_VIDEO, false, 0, 0);
+      this.fileProgress.setUseStupidInvalidate();
+      this.fileProgress.setIsLocal();
+      this.fileProgress.setDownloadedIconRes(FileProgressComponent.PLAY_ICON);
+      this.fileProgress.setFile(sourceGalleryFile.getFile());
+      if (currentViews != null) {
+        fileProgress.setViewProvider(currentViews);
+      }
+      needCreateGalleryFileProgress = false;
+    }
     return fileProgress;
   }
 
@@ -1007,15 +1014,15 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
   }
 
   public boolean performClick (View view) {
-    return fileProgress != null && fileProgress.performClick(view);
+    return getFileProgress() != null && fileProgress.performClick(view);
   }
 
   public boolean performClick (View view, float x, float y) {
-    return fileProgress != null && fileProgress.performClick(view, x, y);
+    return getFileProgress() != null && fileProgress.performClick(view, x, y);
   }
 
   public boolean onClick (View view, float x, float y) {
-    if (fileProgress != null) {
+    if (getFileProgress() != null) {
       if (isLoaded()) {
         int centerX = fileProgress.centerX();
         int centerY = fileProgress.centerY();
@@ -1031,7 +1038,7 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
   }
 
   public boolean onTouchEvent (View view, MotionEvent e) {
-    return fileProgress != null && fileProgress.onTouchEvent(view, e);
+    return getFileProgress() != null && fileProgress.onTouchEvent(view, e);
   }
 
   // View-related stuff
@@ -1043,6 +1050,7 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
   }
 
   public void attachToView (View view, FileProgressComponent.SimpleListener listener, ImageFile.RotationListener rotationListener) {
+    final FileProgressComponent fileProgress = view != null ? getFileProgress() : this.fileProgress;
     if (currentViews == null) {
       currentViews = new MultipleViewProvider();
       currentViews.setContentProvider(this);
