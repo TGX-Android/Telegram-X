@@ -1586,6 +1586,8 @@ public class MediaLayout extends FrameLayoutFix implements
     }
   }
 
+  private static final float SBLV_THRESHOLD = 0.85f;
+
   public void setHeaderFactor (float factor) {
     if (this.headerFactor != factor) {
       this.headerFactor = factor;
@@ -1595,7 +1597,10 @@ public class MediaLayout extends FrameLayoutFix implements
           headerView.getFilling().setColor(headerColor);
           headerView.invalidate();
           statusBarLickView.setColor(headerColor);
-          statusBarLickView.setFactor(factor);
+
+          float sbvDelta = 1f - SBLV_THRESHOLD;
+          float sbvFactor = factor < SBLV_THRESHOLD ? 0f : (factor - SBLV_THRESHOLD) / sbvDelta;
+          statusBarLickView.setFactor(sbvFactor);
         } else {
           headerView.setAlpha(factor);
           int offsetY = HeaderView.getSize(false) + headerView.getFilling().getExtraHeight();
