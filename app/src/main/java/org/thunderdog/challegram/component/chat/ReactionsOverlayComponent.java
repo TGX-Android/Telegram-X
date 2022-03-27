@@ -33,7 +33,9 @@ public class ReactionsOverlayComponent extends View {
   }
 
   public void addReactionToOverlay (Tdlib tdlib, String key, TdApi.Reaction reaction, @Nullable Runnable onFirstFrameListener) {
-    runningOverlays.put(key, new OverlayItem(tdlib, key, this, reaction, onFirstFrameListener));
+    if (!runningOverlays.containsKey(key)) {
+      runningOverlays.put(key, new OverlayItem(tdlib, key, this, reaction, onFirstFrameListener));
+    }
   }
 
   public void updateReactionOverlayLocation (String key, float centerX, float centerY, boolean isSmall) {

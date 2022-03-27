@@ -6,6 +6,8 @@ import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -15,10 +17,12 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.chat.ReactionsConfigComponent;
+import org.thunderdog.challegram.component.chat.ReactionsOverlayComponent;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.DrawModifier;
@@ -30,6 +34,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 
 public class EditChatReactionsController extends EditBaseController<EditChatReactionsController.Args> implements View.OnClickListener {
   private final ArrayList<String> selectedReactions = new ArrayList<>();
+  private ReactionsOverlayComponent overlays;
 
   public static class Args {
     public long chatId;
@@ -128,6 +133,10 @@ public class EditChatReactionsController extends EditBaseController<EditChatReac
 
   @Override
   protected void onCreateView (Context context, FrameLayoutFix contentView, RecyclerView recyclerView) {
+    overlays = new ReactionsOverlayComponent(context);
+    overlays.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+    contentView.addView(overlays);
+
     gridAdapter = new ReactionsConfigComponent(new ReactionsConfigComponent.Delegate() {
       @Override
       public Tdlib provideTdlib () {
@@ -145,11 +154,15 @@ public class EditChatReactionsController extends EditBaseController<EditChatReac
       }
 
       @Override
-      public void toggleReaction (String emoji) {
+      public void toggleReaction (String emoji, int[] coords, Runnable onFirstFrameEnabled) {
         if (selectedReactions.contains(emoji)) {
           selectedReactions.remove(emoji);
+          overlays.updateReactionOverlayAlpha(emoji, false);
         } else {
           selectedReactions.add(emoji);
+          overlays.addReactionToOverlay(tdlib, emoji, tdlib.getReaction(emoji), onFirstFrameEnabled);
+          overlays.updateReactionOverlayLocation(emoji, coords[0], coords[1] - (HeaderView.getHeaderHeight(EditChatReactionsController.this) + HeaderView.getTopOffset()), false);
+          overlays.updateReactionOverlayAlpha(emoji, true);
         }
 
         adapter.updateValuedSettingById(R.id.btn_manageReactionsGlobal);
@@ -197,6 +210,12 @@ public class EditChatReactionsController extends EditBaseController<EditChatReac
       @Override
       public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
         outRect.bottom = ((ListItem) view.getTag()).getViewType() == ListItem.TYPE_ZERO_VIEW ? Screen.dp(56f) + Screen.dp(16f) * 2 : 0;
+      }
+    });
+    recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+      @Override
+      public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
+        overlays.onScrolled(dy);
       }
     });
 

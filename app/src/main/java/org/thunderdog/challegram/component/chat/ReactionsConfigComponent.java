@@ -125,7 +125,7 @@ public class ReactionsConfigComponent extends RecyclerView.Adapter<ReactionsConf
     String[] getAvailableReactions ();
 
     boolean isReactionEnabled (String emoji);
-    void toggleReaction (String emoji);
+    void toggleReaction (String emoji, int[] coords, Runnable onFirstFrameEnabled);
     TdApi.Reaction getReaction (String emoji);
   }
 
@@ -189,10 +189,14 @@ public class ReactionsConfigComponent extends RecyclerView.Adapter<ReactionsConf
     }
 
     public void onClick (String emoji, Delegate delegate) {
-      delegate.toggleReaction(emoji);
+      int[] coords = Views.getLocationOnScreen(this);
+      delegate.toggleReaction(emoji, new int[] {
+        coords[0] + receiver.getMainReceiver().centerX(),
+        coords[1] + receiver.getMainReceiver().centerY(),
+      }, receiver::playGif);
+
       boolean isEnabled = delegate.isReactionEnabled(emoji);
       isSelected.setValue(isEnabled, true);
-      if (isEnabled) receiver.playGif();
     }
   }
 }
