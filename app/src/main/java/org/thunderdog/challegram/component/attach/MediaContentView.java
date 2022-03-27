@@ -24,6 +24,7 @@ public class MediaContentView extends FrameLayoutFix implements GestureDetector.
 
   private final float touchSlop;
   private final GestureDetector flingDetector;
+  private boolean blockTouch;
 
   public MediaContentView (Context context) {
     super(context);
@@ -70,6 +71,7 @@ public class MediaContentView extends FrameLayoutFix implements GestureDetector.
     isAnimating = base.isAnimating();
     touchStartY = e.getY();
     shouldIntercept = !isAnimating && base.canMoveRecycler() && base.isInsideRecyclerView(e.getX(), e.getY());
+    blockTouch = base.shouldIgnoreCollapsing();
   }
 
   @Override
@@ -92,9 +94,6 @@ public class MediaContentView extends FrameLayoutFix implements GestureDetector.
           float y = e.getY();
           float yDiff = y - touchStartY;
           if (Math.abs(yDiff) >= touchSlop && currentScrollY == 0) {
-            //scrolling = currentScrollY != 0 && yDiff <= currentScrollY; //(currentScrollY == 0 || yDiff > currentScrollY)
-            //scrollStartY = y + currentScrollY;
-
             intercepting = true;
             interceptStartY = y;
             base.onRecyclerMovementStarted();
@@ -147,7 +146,9 @@ public class MediaContentView extends FrameLayoutFix implements GestureDetector.
       return super.onTouchEvent(e);
     }
 
-    flingDetector.onTouchEvent(e);
+    if (!blockTouch) {
+      flingDetector.onTouchEvent(e);
+    }
 
     switch (e.getAction()) {
       case MotionEvent.ACTION_DOWN: {
@@ -155,19 +156,23 @@ public class MediaContentView extends FrameLayoutFix implements GestureDetector.
         break;
       }
       case MotionEvent.ACTION_MOVE: {
-        if (scrolling) {
-          if (e.getY() <= scrollStartY) {
-            base.dispatchRecyclerTouchEvent(e);
-            return true;
-          } else {
-            base.forceScrollRecyclerToTop();
-            scrolling = false;
+        if (blockTouch) {
+          base.dispatchRecyclerTouchEvent(e);
+        } else {
+          if (scrolling) {
+            if (e.getY() <= scrollStartY) {
+              base.dispatchRecyclerTouchEvent(e);
+              return true;
+            } else {
+              base.forceScrollRecyclerToTop();
+              scrolling = false;
+            }
           }
-        }
-        if (base.moveRecyclerView(e.getY() - interceptStartY)) {
-          if (!scrolling) {
-            scrolling = true;
-            scrollStartY = e.getY();
+          if (base.moveRecyclerView(e.getY() - interceptStartY)) {
+            if (!scrolling) {
+              scrolling = true;
+              scrollStartY = e.getY();
+            }
           }
         }
         break;
@@ -176,8 +181,9 @@ public class MediaContentView extends FrameLayoutFix implements GestureDetector.
       case MotionEvent.ACTION_UP: {
         intercepting = false;
         base.dispatchRecyclerTouchEvent(e);
-        base.onRecyclerMovementFinished();
+        if (!blockTouch) base.onRecyclerMovementFinished();
         ((BaseActivity) getContext()).setOrientationLockFlagEnabled(BaseActivity.ORIENTATION_FLAG_TOUCHING_MEDIA_LAYOUT, false);
+        blockTouch = false;
         return true;
       }
     }
