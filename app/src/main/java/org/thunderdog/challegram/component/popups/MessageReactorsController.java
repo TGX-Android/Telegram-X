@@ -64,8 +64,17 @@ public class MessageReactorsController extends MediaBottomBaseController<Void> i
   public void dispatchRecyclerTouchEvent (MotionEvent e) {
     super.dispatchRecyclerTouchEvent(e);
     if (pager != null) {
-      ((MessageReactionsUserListController) pagerAdapter.getCachedItemByPosition(pager.getCurrentItem())).dispatchEventToRecycler(e);
+      getCurrentPage().dispatchEventToRecycler(e);
     }
+  }
+
+  @Override
+  public boolean shouldIgnoreCollapsing () {
+    return getCurrentPage().hasScrolled();
+  }
+
+  private MessageReactionsUserListController getCurrentPage () {
+    return (MessageReactionsUserListController) pagerAdapter.getCachedItemByPosition(pager.getCurrentItem());
   }
 
   public MessageReactorsController (MediaLayout context, long chatId, long msgId, int reactionCount, TdApi.MessageReaction[] reactions) {

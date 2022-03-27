@@ -129,6 +129,10 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
     return 0;
   }
 
+  public boolean shouldIgnoreCollapsing () {
+    return false;
+  }
+
   // Metrics
 
   private int contentHeight, startHeight, currentHeight;

@@ -8,12 +8,14 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
+import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.ui.ListItem;
@@ -40,6 +42,10 @@ public class MessageReactionsUserListController extends RecyclerViewController<M
     }
   }
 
+  public boolean hasScrolled () {
+    return scrolledY > 0;
+  }
+
   public static class Args {
     private final long chatId, msgId;
     private final String srcReaction;
@@ -58,6 +64,7 @@ public class MessageReactionsUserListController extends RecyclerViewController<M
   private List<TdApi.AddedReaction> reactions = new ArrayList<>();
   private boolean canLoadMore;
   private int totalCount = -1;
+  private int scrolledY = 0;
 
   private String loadOffset;
 
@@ -93,6 +100,18 @@ public class MessageReactionsUserListController extends RecyclerViewController<M
 
     recyclerView.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT));
     recyclerView.setAdapter(adapter);
+    recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+      @Override
+      public void onScrolled (RecyclerView recyclerView, int dx, int dy) {
+        scrolledY += dy;
+        /*if ((isBottomSheet || controller.isFocused()) && canLoadMore && !isLoadingMore && joinRequests != null && !joinRequests.isEmpty() && loadOffset != 0) {
+          int lastVisiblePosition = ((LinearLayoutManager) recyclerView.getLayoutManager()).findLastVisibleItemPosition();
+          if (lastVisiblePosition + 10 >= joinRequests.size()) {
+            loadMore();
+          }
+        }*/
+      }
+    });
 
     loadInitial();
   }
@@ -116,8 +135,11 @@ public class MessageReactionsUserListController extends RecyclerViewController<M
     });
   }
 
-  public void dispatchEventToRecycler (MotionEvent ev) {
-    getRecyclerView().dispatchTouchEvent(ev);
+  public void dispatchEventToRecycler (MotionEvent event) {
+    int yOffset = HeaderView.getTopOffset() + HeaderView.getHeaderHeight(this);
+    MotionEvent modified = MotionEvent.obtain(event.getDownTime(), event.getEventTime(), event.getAction(), event.getX(), event.getY() - yOffset, event.getMetaState());
+    getRecyclerView().dispatchTouchEvent(modified);
+    modified.recycle();
   }
 
   private void buildCells () {
