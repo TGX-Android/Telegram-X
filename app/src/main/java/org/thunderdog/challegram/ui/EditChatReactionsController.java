@@ -162,7 +162,6 @@ public class EditChatReactionsController extends EditBaseController<EditChatReac
           selectedReactions.add(emoji);
           overlays.addReactionToOverlay(tdlib, emoji, tdlib.getReaction(emoji), onFirstFrameEnabled);
           overlays.updateReactionOverlayLocation(emoji, coords[0], coords[1] - (HeaderView.getHeaderHeight(EditChatReactionsController.this) + HeaderView.getTopOffset()), false);
-          overlays.updateReactionOverlayAlpha(emoji, true);
         }
 
         adapter.updateValuedSettingById(R.id.btn_manageReactionsGlobal);

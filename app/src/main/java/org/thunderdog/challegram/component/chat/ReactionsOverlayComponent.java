@@ -66,30 +66,39 @@ public class ReactionsOverlayComponent extends View {
   }
 
   private static class OverlayItem {
-    private final BoolAnimator alphaAnimator = new BoolAnimator(0, (id, factor, fraction, callee) -> {}, ReactionsComponent.RC_INTERPOLATOR, ReactionsComponent.RC_DURATION);
-
     private final GifReceiver receiver;
     private boolean isStartedPlaying;
+    private @Nullable Runnable onFirstFrameListener;
+
+    private final BoolAnimator alphaAnimator = new BoolAnimator(0, new FactorAnimator.Target() {
+      @Override
+      public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
+
+      }
+
+      @Override
+      public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
+        if (finalFactor == 0f) {
+          // alpha is off, we can destroy
+          receiver.getCurrentFile().onLoop();
+        }
+      }
+    }, ReactionsComponent.RC_INTERPOLATOR, ReactionsComponent.RC_DURATION, true);
+
 
     public OverlayItem (Tdlib tdlib, String key, ReactionsOverlayComponent viewRef, TdApi.Reaction reaction, @Nullable Runnable onFirstFrameListener) {
+      this.onFirstFrameListener = onFirstFrameListener;
       GifFile animatedFile = new GifFile(tdlib, reaction.aroundAnimation != null ? reaction.aroundAnimation : reaction.effectAnimation);
       animatedFile.setScaleType(GifFile.CENTER_CROP);
       animatedFile.setSize(Screen.dp(96f));
       animatedFile.setPlayOnce(true);
       animatedFile.addLoopListener(() -> viewRef.runningOverlays.remove(key));
-      animatedFile.setFrameChangeListener((file, frameNo, frameDelta) -> {
-        boolean isStartedPlaying = frameNo > 0;
-        if (isStartedPlaying != this.isStartedPlaying) {
-          if (onFirstFrameListener != null) onFirstFrameListener.run();
-          this.isStartedPlaying = isStartedPlaying;
-        }
-      });
-
       this.receiver = new GifReceiver(viewRef);
       this.receiver.requestFile(animatedFile);
     }
 
     public void updateReactionOverlayAlpha (boolean visible) {
+      if (!alphaAnimator.getValue()) return;
       alphaAnimator.setValue(visible, true);
     }
 
@@ -103,6 +112,12 @@ public class ReactionsOverlayComponent extends View {
     }
 
     public void draw (Canvas canvas) {
+      boolean isStartedPlaying = !receiver.needPlaceholder();
+      if (isStartedPlaying != this.isStartedPlaying) {
+        if (onFirstFrameListener != null) onFirstFrameListener.run();
+        this.isStartedPlaying = isStartedPlaying;
+      }
+
       receiver.setAlpha(alphaAnimator.getFloatValue());
       receiver.draw(canvas);
       receiver.setAlpha(1f);

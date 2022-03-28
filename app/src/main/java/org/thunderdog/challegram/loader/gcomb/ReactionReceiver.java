@@ -37,6 +37,7 @@ public class ReactionReceiver {
   public void playGif () {
     isGifPlaying = true;
     wrapped.getGifReceiver().getCurrentFile().setLooped(false);
+    wrapped.getTargetView().invalidate();
   }
 
   private ImageFile createPreview (Tdlib tdlib, TdApi.Reaction reaction, int size) {
@@ -48,6 +49,7 @@ public class ReactionReceiver {
 
   private GifFile createFile (Tdlib tdlib, TdApi.Reaction reaction) {
     GifFile dynamicIconFile = new GifFile(tdlib, reaction.centerAnimation != null ? reaction.centerAnimation : reaction.activateAnimation);
+    dynamicIconFile.setUnique(true);
     dynamicIconFile.setPlayOnce(true);
     return dynamicIconFile;
   }

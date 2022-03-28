@@ -318,6 +318,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
       if (reactionObj != null && reactionObj.centerAnimation != null) {
         dynamicIconFile = new GifFile(tdlib, reactionObj.centerAnimation);
+        dynamicIconFile.setUnique(true);
         dynamicIconFile.setPlayOnce(true);
         dynamicIconFile.setFrameChangeListener((file, frameNo, frameDelta) -> {
           isPlayingNow = frameNo > 4;
