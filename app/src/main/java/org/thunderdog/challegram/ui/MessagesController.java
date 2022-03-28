@@ -4314,7 +4314,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (obj.getConstructor() != TdApi.AvailableReactions.CONSTRUCTOR) return;
       runOnUiThreadOptional(() -> {
         TdApi.AvailableReactions ar = (TdApi.AvailableReactions) obj;
-        rvWrap.setAdapter(new ReactionsMenuComponent(message, chat, layout, ar.reactions));
+        ReactionsMenuComponent rmc = new ReactionsMenuComponent(message, chat, layout, ar.reactions);
+        rvWrap.setAdapter(rmc);
+
+        int idx = rmc.findIndexOfChosen();
+        if (idx != 0) ((LinearLayoutManager) rvWrap.getLayoutManager()).scrollToPositionWithOffset(idx, Screen.dp(12f)); // extra offset to show users that you can swipe to left
       });
     });
 

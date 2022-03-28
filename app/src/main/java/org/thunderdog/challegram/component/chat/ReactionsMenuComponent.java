@@ -34,6 +34,14 @@ public class ReactionsMenuComponent extends RecyclerView.Adapter<ReactionsMenuCo
     this.layout = layout;
     this.availableReactions = availableReactions;
   }
+  
+  public int findIndexOfChosen () {
+    for (int i = 0; i < availableReactions.length; i++) {
+      if (availableReactions[i].equals(chosenReaction)) return i;
+    }
+
+    return 0;
+  }
 
   @NonNull
   @Override
