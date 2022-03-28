@@ -12,16 +12,21 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.util.DrawModifier;
+
+import me.vkryl.core.lambda.Destroyable;
 
 /**
  * Date: 8/18/17
  * Author: default
  */
 
-public class SmallChatView extends BaseView implements AttachDelegate, TooltipOverlayView.LocationProvider {
+public class SmallChatView extends BaseView implements AttachDelegate, TooltipOverlayView.LocationProvider, Destroyable {
   private final ImageReceiver receiver;
 
   private DoubleTextWrapper chat;
+  private DrawModifier drawModifier;
+  private ImageReceiver emojiReceiver;
 
   public SmallChatView (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -49,11 +54,19 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
   @Override
   public void attach () {
     receiver.attach();
+    if (emojiReceiver != null) emojiReceiver.attach();
   }
 
   @Override
   public void detach () {
     receiver.detach();
+    if (emojiReceiver != null) emojiReceiver.detach();
+  }
+
+  @Override
+  public void performDestroy () {
+    //receiver.destroy(); TODO: we need this?
+    if (emojiReceiver != null) emojiReceiver.destroy();
   }
 
   @Override
@@ -111,6 +124,11 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
     }
   }
 
+  public void setDrawModifier (DrawModifier drawModifier) {
+    this.drawModifier = drawModifier;
+    invalidate();
+  }
+
   @Override
   protected void onDraw (Canvas c) {
     if (chat == null) {
@@ -119,6 +137,7 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
 
     layoutReceiver();
 
+    if (drawModifier != null) drawModifier.beforeDraw(this, c);
     if (chat.getAvatarFile() != null) {
       if (receiver.needPlaceholder()) {
         receiver.drawPlaceholderRounded(c, receiver.getRadius());
@@ -129,5 +148,14 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
     }
 
     chat.draw(this, receiver, c);
+    if (drawModifier != null) drawModifier.afterDraw(this, c);
+  }
+
+  public ImageReceiver getReceiver () {
+    if (emojiReceiver == null) {
+      emojiReceiver = new ImageReceiver(this, 0);
+    }
+
+    return emojiReceiver;
   }
 }

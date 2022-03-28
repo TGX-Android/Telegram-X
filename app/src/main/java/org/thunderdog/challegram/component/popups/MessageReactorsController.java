@@ -104,6 +104,7 @@ public class MessageReactorsController extends MediaBottomBaseController<Void> i
     }
     headerCell.getTopView().checkRtl();
     headerCell.getTopView().setItems(new String[0]);
+    headerCell.getTopView().addItem(String.valueOf(reactionCount), R.drawable.baseline_favorite_16);
     for (TdApi.MessageReaction r: reactions) {
       headerCell.getTopView().addItem(String.valueOf(r.totalCount), r.reaction, createStaticFile(tdlib.getReaction(r.reaction).staticIcon));
     }
@@ -236,7 +237,7 @@ public class MessageReactorsController extends MediaBottomBaseController<Void> i
 
   @Override
   protected int getInitialContentHeight () {
-    int initialContentHeight = SettingHolder.measureHeightForType(ListItem.TYPE_USER) * reactionCount;
+    int initialContentHeight = SettingHolder.measureHeightForType(ListItem.TYPE_CHAT_SMALL) * reactionCount;
     initialContentHeight += Screen.dp(24f);
     return Math.min(super.getInitialContentHeight(), initialContentHeight);
   }
@@ -348,11 +349,11 @@ public class MessageReactorsController extends MediaBottomBaseController<Void> i
 
   private ViewController<?> onCreatePagerItemForPosition (Context context, int position) {
     MessageReactionsUserListController mrc = new MessageReactionsUserListController(context, tdlib);
-    mrc.setArguments(new MessageReactionsUserListController.Args(chatId, msgId, reactions[position].reaction, () -> mediaLayout.hide(false)));
+    mrc.setArguments(new MessageReactionsUserListController.Args(chatId, msgId, position == 0 ? "" : reactions[position - 1].reaction, () -> mediaLayout.hide(false)));
     return mrc;
   }
 
   private int getPagerItemCount () {
-    return reactions.length;
+    return reactions.length + 1;
   }
 }

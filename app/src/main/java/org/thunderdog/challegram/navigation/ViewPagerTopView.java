@@ -66,6 +66,14 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       this.imageId = null;
     }
 
+    public Item (String string, int iconRes) {
+      this.string = string;
+      this.needFakeBold = Text.needFakeBold(string);
+      this.iconRes = iconRes;
+      this.iconImage = null;
+      this.imageId = null;
+    }
+
     public Item (String string, String imageId, ImageFile iconImage) {
       this.string = string;
       this.needFakeBold = Text.needFakeBold(string);
@@ -92,7 +100,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     public void calculateWidth (TextPaint paint) {
       final int width;
       if (string != null) {
-        width = (int) (U.measureText(string, paint) + (iconImage != null ? ICON_HALF_SIZE * 2 : 0));
+        width = (int) (U.measureText(string, paint) + (iconRes != 0 ? Screen.dp(20f) : 0) + (iconImage != null ? ICON_HALF_SIZE * 2 : 0));
       } else if (iconRes != 0) {
         width = Screen.dp(24f) + Screen.dp(6f);
       } else {
@@ -271,6 +279,10 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   public void addItem (String item, String imageId, ImageFile image) {
     addItemAtIndex(new Item(item, imageId, image), -1);
     iconImageReceiver.getImageReceiver(imageId.hashCode()).requestFile(image);
+  }
+
+  public void addItem (String item, int icon) {
+    addItemAtIndex(new Item(item, icon), -1);
   }
 
   public void addItem (String item) {
@@ -632,6 +644,11 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
               iconReceiver.setBounds((int) textX, (int) (cy - ICON_HALF_SIZE), (int) (textX + (ICON_HALF_SIZE * 2)), (int) (cy + ICON_HALF_SIZE));
               iconReceiver.draw(c);
               textX += Screen.dp(8f) + (ICON_HALF_SIZE * 2);
+            } else if (item.iconRes != 0) {
+              textX += Screen.dp(4f);
+              Drawable drawable = item.getIcon();
+              Drawables.draw(c, drawable, textX - drawable.getMinimumWidth() / 2, viewHeight / 2 - drawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(color));
+              textX += Screen.dp(16f);
             }
             c.drawText(item.ellipsizedString, textX, cy + Screen.dp(6f), Paints.getViewPagerTextPaint(color, item.needFakeBold));
           } else if (item.iconRes != 0) {
