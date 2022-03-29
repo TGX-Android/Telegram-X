@@ -97,7 +97,15 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
       Runnable after = null;
       boolean needDelay = false;
       if (direction == (Lang.rtl() ? CustomTouchHelper.RIGHT : CustomTouchHelper.LEFT) && canDragReply()) {
-        after = () -> controller.showReply(msg.getNewestMessage(), true, true);
+        after = () -> {
+          if (msg.isTranslatedEnough()) {
+            controller.quickReact(msg.getNewestMessage());
+          } else {
+            controller.showReply(msg.getNewestMessage(), true, true);
+          }
+
+          msg.resetVertical();
+        };
       }
       if (direction == (Lang.rtl() ? CustomTouchHelper.LEFT : CustomTouchHelper.RIGHT) && canDragShare()) {
         after = () -> controller.shareMessages(msg.getChatId(), msg.getAllMessages());
@@ -129,13 +137,16 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
     helper.ignoreSwipe(holder, swipeDir);
     TGMessage msg = MessagesHolder.findMessageView(holder.itemView).getMessage();
     if (msg.getTranslation() != 0f) {
+      boolean needReaction = msg.isTranslatedEnough();
       msg.completeTranslation();
       msg.resetVertical();
       if (holder.itemView instanceof MessageViewGroup) {
         ((MessageViewGroup) holder.itemView).setSwipeTranslation(0f);
       }
       if (swipeDir == (Lang.rtl() ? CustomTouchHelper.RIGHT : CustomTouchHelper.LEFT)) {
-        if (canDragReply()) {
+        if (needReaction) {
+          controller.quickReact(msg.getNewestMessage());
+        } else if (canDragReply()) {
           controller.showReply(msg.getNewestMessage(), true, true);
         }
       } else {

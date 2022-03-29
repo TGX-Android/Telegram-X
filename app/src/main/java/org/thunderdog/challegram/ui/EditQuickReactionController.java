@@ -18,6 +18,7 @@ import org.thunderdog.challegram.component.chat.ReactionsConfigComponent;
 import org.thunderdog.challegram.component.chat.ReactionsOverlayComponent;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;

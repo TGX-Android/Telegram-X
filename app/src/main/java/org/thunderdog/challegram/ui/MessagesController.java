@@ -5995,6 +5995,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  public void quickReact (TdApi.Message msg) {
+    tdlib.send(new TdApi.SetMessageReaction(msg.chatId, msg.id, Settings.instance().getQuickReactionEmoji(tdlib), false), (r) -> {});
+  }
+
   public void showReply (TdApi.Message msg, boolean byUser, boolean showKeyboard) {
     if (inPreviewMode || isInForceTouchMode()) {
       return;

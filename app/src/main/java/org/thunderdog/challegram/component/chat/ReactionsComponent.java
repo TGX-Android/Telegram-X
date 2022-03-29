@@ -511,7 +511,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
       c.restore();
 
       if (vy > 0) {
-        source.messagesController().updateReactionOverlayLocation(createKey(), startX + r.centerX(), vy + startY + r.centerY() - (Screen.getStatusBarHeight() + HeaderView.getHeaderHeight(null)), true);
+        source.messagesController().updateReactionOverlayLocation(createKey(), startX + r.centerX() + source.getTranslation(), vy + startY + r.centerY() - (Screen.getStatusBarHeight() + HeaderView.getHeaderHeight(null)), true);
       }
     }
 
@@ -598,7 +598,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
       c.restore();
 
       if (vy > 0) {
-        source.messagesController().updateReactionOverlayLocation(createKey(), startX + Screen.dp(16), vy - (Screen.getStatusBarHeight() + HeaderView.getHeaderHeight(null)), false);
+        source.messagesController().updateReactionOverlayLocation(createKey(), startX + Screen.dp(16) + source.getTranslation(), vy - (Screen.getStatusBarHeight() + HeaderView.getHeaderHeight(null)), false);
       }
     }
   }

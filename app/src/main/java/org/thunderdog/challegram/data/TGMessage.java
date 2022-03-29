@@ -5451,6 +5451,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return translation;
   }
 
+  public float getTranslationY () {
+    return translationY;
+  }
+
   public boolean canSwipe () {
     return ((flags & FLAG_IGNORE_SWIPE) == 0);
   }
@@ -5553,6 +5557,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   private int pullingDownOffset;
 
+  private boolean isReactionNeeded;
   private float lockDy;
   private final FactorAnimator translationYLockAnimator = new FactorAnimator(0, (id, factor, fraction, callee) -> {
     translationY = factor;
@@ -5564,17 +5569,22 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     lockDy = 0;
     pullingDownOffset = 0;
     translationY = 0;
+    isReactionNeeded = false;
+  }
+
+  public boolean isTranslatedEnough () {
+    return isReactionNeeded;
   }
 
   public void translateVertical (float dy) {
-    if (((flags & FLAG_IGNORE_SWIPE) != 0)) {
+    if (((flags & FLAG_IGNORE_SWIPE) != 0) || iQuickReactionUnavailable || translationYLockAnimator.isAnimating()) {
       return;
     }
 
     if (dy > 0) {
       float k;
 
-      if (dy < Screen.dp(110)) {
+      if (dy < Screen.dp(110f)) {
         float progress = dy / Screen.dp(110f);
         k = 0.65f * (1f - progress) + 0.45f * progress;
       } else {
@@ -5585,7 +5595,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     float tyTemp = MathUtils.clamp((float) pullingDownOffset / Screen.dp(110f));
-    Log.e("PDO %s %s %s", dy, translationY, tyTemp);
+
+    if (BuildConfig.DEBUG) {
+      Log.v("MsgQR [dy = %s, total = %s], offset = %s, need = %s, [yLockFactor = %s, yLock = %s]", dy, translationY, tyTemp, isReactionNeeded, translationYLockAnimator.getFactor(), lockDy);
+    }
+
     if (tyTemp > 0.42f) {
       if (!translationYLockAnimator.isAnimating() && translationYLockAnimator.getFactor() != 1f) {
         // lock
@@ -5593,6 +5607,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         translationYLockAnimator.forceFactor(lockDy);
         translationYLockAnimator.animateTo(1f);
         vibrate();
+        isReactionNeeded = true;
       }
       return;
     } else {
@@ -5601,7 +5616,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       } else if (translationYLockAnimator.getFactor() > lockDy) {
         translationYLockAnimator.animateTo(lockDy);
         vibrate();
+        isReactionNeeded = false;
         return;
+      }
+
+      if (translationYLockAnimator.getFactor() == lockDy && lockDy == 1f) {
+        // fixes one issue when it can be stuck
+        lockDy = tyTemp;
+        translationYLockAnimator.forceFactor(0f);
       }
 
       // unlock
@@ -6492,6 +6514,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   // Icons
 
   private ImageReceiver iQuickReaction;
+  private boolean iQuickReactionUnavailable;
+
+  private static String quickReactionText;
+
   private static Drawable iQuickReply, iQuickShare, iBadge;
   private static String shareText, replyText;
   private static boolean initialized;
@@ -6505,13 +6531,24 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private void initQuickReaction (MessageView view) {
-    if (iQuickReaction != null || !Settings.instance().needQuickReaction()) return;
+    if (iQuickReactionUnavailable || iQuickReaction != null || !Settings.instance().needQuickReaction()) return;
+
+    String qrEmoji = Settings.instance().getQuickReactionEmoji(tdlib);
+    if (!Arrays.asList(chat.availableReactions).contains(qrEmoji)) {
+      iQuickReactionUnavailable = true;
+      return;
+    }
+
+    TdApi.Reaction qrEmojiObj = tdlib.getReaction(qrEmoji);
+
     Tdlib tdlib = manager.controller().tdlib();
-    ImageFile qrFile = new ImageFile(tdlib, tdlib.getReaction(Settings.instance().getQuickReactionEmoji(tdlib)).staticIcon.sticker);
+    ImageFile qrFile = new ImageFile(tdlib, qrEmojiObj.staticIcon.sticker);
     qrFile.setSize(Screen.dp(56f));
     qrFile.setNoBlur();
-    iQuickReaction = new ImageReceiver(view, 0);
+
+    if (iQuickReaction == null) iQuickReaction = new ImageReceiver(view, 0);
     iQuickReaction.requestFile(qrFile);
+    quickReactionText = qrEmojiObj.title;
   }
 
   private static void initTexts () {

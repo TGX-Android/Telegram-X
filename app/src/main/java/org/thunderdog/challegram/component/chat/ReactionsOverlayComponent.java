@@ -109,6 +109,7 @@ public class ReactionsOverlayComponent extends View {
     public void setBounds (float centerX, float centerY, boolean isSmall) {
       int halfSize = Screen.dp(isSmall ? 36f : 48f);
       receiver.setBounds((int) centerX - halfSize, (int) centerY - halfSize, (int) centerX + halfSize, (int) centerY + halfSize);
+      receiver.getTargetView().invalidate();
     }
 
     public void draw (Canvas canvas) {
