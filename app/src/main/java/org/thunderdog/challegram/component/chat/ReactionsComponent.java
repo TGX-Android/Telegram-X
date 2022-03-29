@@ -20,6 +20,7 @@ import org.thunderdog.challegram.charts.CubicBezierInterpolator;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageMedia;
 import org.thunderdog.challegram.data.TGMessageSticker;
+import org.thunderdog.challegram.data.TGMessageVideo;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
@@ -144,6 +145,10 @@ public class ReactionsComponent implements FactorAnimator.Target {
     }
   }
 
+  public boolean needExtraYPadding () {
+    return source.useBubbles() && !((source instanceof TGMessageMedia || source instanceof TGMessageVideo) && !source.isForward());
+  }
+
   private void measure (TdApi.MessageReaction[] order, boolean animated) {
     HashMap<String, Reaction> existingHash = new HashMap<>();
 
@@ -155,7 +160,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
     float maxWidth = TGMessage.getEstimatedContentMaxWidth();
     int width = 0;
     int currentX = 0;
-    int currentY = source.useBubbles() ? REACTION_ITEM_HALF_SEPARATOR : 0;
+    int currentY = (!source.useBubbles() || needExtraYPadding()) ? REACTION_ITEM_HALF_SEPARATOR : 0;
     boolean needExtraHeight = false;
 
     for (int i = 0; i < order.length; i++) {
@@ -187,7 +192,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
   }
 
   public int getHeight (boolean needSizeCut) {
-    return (int) ((rcHeightAnimator.getFactor() + REACTION_ITEM_HALF_SEPARATOR - (needSizeCut ? Screen.dp(16f) : 0)) * componentVisibleAnimator.getFloatValue());
+    return (int) ((rcHeightAnimator.getFactor() + REACTION_ITEM_HALF_SEPARATOR - (needSizeCut ? Screen.dp(16f) : 0) + (!needSizeCut && !needExtraYPadding() ? Screen.dp(4f) : 0)) * componentVisibleAnimator.getFloatValue());
   }
 
   public int getFlatHeight () {
@@ -199,13 +204,15 @@ public class ReactionsComponent implements FactorAnimator.Target {
   }
 
   public boolean shouldRenderUnderBubble () {
+    if (!source.useBubbles()) return true;
+
     if (source instanceof TGMessageMedia) {
       return ((TGMessageMedia) source).isEmptyCaption();
     } else if (source instanceof TGMessageSticker) {
       return true;
+    } else {
+      return false;
     }
-
-    return !source.useBubbles();
   }
 
   public boolean shouldRenderSmall () {

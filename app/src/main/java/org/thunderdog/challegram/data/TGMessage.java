@@ -9,6 +9,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
@@ -798,6 +799,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }));
   }
 
+  // private int[] _dbg_bh = new int[6];
+  // private int[] _dbg_colors = new int[] { Color.BLUE, Color.MAGENTA, Color.GREEN, Color.RED, Color.YELLOW, Color.CYAN };
+
   private int computeBubbleHeight () {
     int height = getContentHeight();
     if (replyData != null && !alignReplyHorizontally()) {
@@ -979,7 +983,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private int measureKeyboardTop () {
-    return (useBubbles() ? bottomContentEdge + TGInlineKeyboard.getButtonSpacing() : pContentY + getContentHeight() + getPaddingBottom() + (hasFooter() ? getFooterHeight() + getFooterPaddingTop() + getFooterPaddingBottom() : 0)) + measureReactionsHeight();
+    return (useBubbles() ? bottomContentEdge + TGInlineKeyboard.getButtonSpacing() : pContentY + getContentHeight() + getPaddingBottom() + (hasFooter() ? getFooterHeight() + getFooterPaddingTop() + getFooterPaddingBottom() : 0)) + (useBubbles() ? 0 : measureReactionsHeight());
   }
 
   protected boolean rebuildContentDimensions () {
@@ -1948,12 +1952,17 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     if (reactionsComponent != null && !reactionsComponent.shouldRenderSmall()) {
-      reactionsComponent.draw(view, c, (!useBubbles() || useFullWidth()) ? pRealContentX - (isForward() ? Screen.dp(11f) : 0) : getInternalBubbleStartX(), pContentY + getContentHeight() + xBadgePadding);
+      reactionsComponent.draw(view, c, (!useBubbles() || useFullWidth()) ? pRealContentX - (isForward() ? Screen.dp(11f) : 0) : getInternalBubbleStartX(), pContentY + getContentHeight() + (reactionsComponent.needExtraYPadding() ? xBadgePadding : 0));
     }
 
     if (contentOffset != 0) {
       c.restore();
     }
+
+    // debugging
+    // for (int i = 0; i < _dbg_bh.length; i++) {
+    //   c.drawLine(200, i > 0 ? _dbg_bh[i - 1] : 0, 200, _dbg_bh[i], Paints.getPorterDuffPaint(_dbg_colors[i]));
+    // }
 
     if (savedTranslation) {
       c.restore();
