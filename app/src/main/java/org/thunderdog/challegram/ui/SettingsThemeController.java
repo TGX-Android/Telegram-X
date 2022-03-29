@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Canvas;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.os.Build;
@@ -19,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.luckycatlabs.sunrisesunset.SunriseSunsetCalculator;
 
+import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -29,6 +31,8 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.helper.LocationHelper;
+import org.thunderdog.challegram.loader.ImageFile;
+import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
@@ -42,16 +46,19 @@ import org.thunderdog.challegram.theme.ThemeInfo;
 import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.AppUpdater;
+import org.thunderdog.challegram.util.DrawModifier;
 import org.thunderdog.challegram.util.DrawableModifier;
 import org.thunderdog.challegram.util.EmojiModifier;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.RadioView;
 import org.thunderdog.challegram.widget.SliderWrapView;
+import org.thunderdog.challegram.widget.SmallChatView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -156,6 +163,21 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
               v.setData(R.string.EmojiBuiltIn);
             } else {
               v.setData(emojiPack.displayName);
+            }
+            break;
+          }
+          case R.id.btn_quickReaction: {
+            if (Settings.instance().needQuickReaction()) {
+              TdApi.Reaction currentQuickReaction = tdlib.getReaction(Settings.instance().getQuickReactionEmoji(tdlib));
+              ImageFile staticFile = new ImageFile(tdlib, currentQuickReaction.staticIcon.sticker);
+              staticFile.setSize(Screen.dp(48f));
+              staticFile.setScaleType(ImageFile.FIT_CENTER);
+              staticFile.setNoBlur();
+              v.setData(currentQuickReaction.title);
+              v.getReceiver().requestFile(staticFile);
+            } else {
+              v.setData(R.string.QuickReactionDisabled);
+              v.getReceiver().clear();
             }
             break;
           }
@@ -492,6 +514,18 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_icon, 0, R.string.Icons).setDrawModifier(new DrawableModifier(R.drawable.baseline_star_20, R.drawable.baseline_account_balance_wallet_20, R.drawable.baseline_location_on_20, R.drawable.baseline_favorite_20)));
         }
+
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_quickReaction, 0, R.string.QuickReaction).setDrawModifier(new DrawModifier() {
+          @Override
+          public void afterDraw (View view, Canvas c) {
+            ImageReceiver receiver = ((SettingView) view).getReceiver();
+            int right = Screen.dp(18f);
+            int size = Screen.dp(24f);
+            receiver.setBounds(view.getMeasuredWidth() - right - size, view.getMeasuredHeight() / 2 - size / 2, view.getMeasuredWidth() - right, view.getMeasuredHeight() / 2 + size / 2);
+            receiver.draw(c);
+          }
+        }));
       }
 
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -831,6 +865,11 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       adapter.updateValuedSettingById(R.id.btn_icon);
   }
 
+  public void updateQuickReaction () {
+    if (adapter != null)
+      adapter.updateValuedSettingById(R.id.btn_quickReaction);
+  }
+
   @Override
   public void onEmojiPackChanged () {
     updateSelectedEmoji();
@@ -1090,6 +1129,12 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       case R.id.btn_icon: {
         SettingsCloudIconController c = new SettingsCloudIconController(context, tdlib);
         c.setArguments(new SettingsCloudController.Args<>(this));
+        navigateTo(c);
+        break;
+      }
+      case R.id.btn_quickReaction: {
+        EditQuickReactionController c = new EditQuickReactionController(context, tdlib);
+        c.setArguments(new EditQuickReactionController.Args(this));
         navigateTo(c);
         break;
       }

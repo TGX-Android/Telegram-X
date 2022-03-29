@@ -128,6 +128,7 @@
   <item type="id" name="controller_camera" />
   <item type="id" name="controller_memberRights" />
   <item type="id" name="controller_manageReactions" />
+  <item type="id" name="controller_manageQuickReaction" />
   <item type="id" name="controller_linkChat" />
 
   <item type="id" name="controller_bug_killer" />
@@ -307,6 +308,7 @@
   <item type="id" name="btn_speaker" />
   <item type="id" name="btn_emoji" />
   <item type="id" name="btn_icon" />
+  <item type="id" name="btn_quickReaction" />
   <item type="id" name="btn_section" />
   <item type="id" name="btn_stickerSet" />
   <item type="id" name="btn_description" />

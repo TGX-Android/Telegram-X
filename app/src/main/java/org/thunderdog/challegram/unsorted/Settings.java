@@ -6182,6 +6182,14 @@ public class Settings {
     return getBoolean(KEY_QUICK_REACTION_ENABLED, true);
   }
 
+  public void setQuickReaction (boolean enabled) {
+    putBoolean(KEY_QUICK_REACTION_ENABLED, enabled);
+  }
+
+  public void setQuickReactionEmoji (String emoji) {
+    putString(KEY_QUICK_REACTION_EMOJI, emoji);
+  }
+
   public String getQuickReactionEmoji (Tdlib tdlib) {
     return getString(KEY_QUICK_REACTION_EMOJI, tdlib.getActiveReactions()[0]);
   }
