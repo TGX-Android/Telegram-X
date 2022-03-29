@@ -96,9 +96,9 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
     if (msg.useBubbles()) {
       Runnable after = null;
       boolean needDelay = false;
-      if (direction == (Lang.rtl() ? CustomTouchHelper.RIGHT : CustomTouchHelper.LEFT) && canDragReply()) {
+      if (direction == (Lang.rtl() ? CustomTouchHelper.RIGHT : CustomTouchHelper.LEFT) && (canDragReply() || canQuickReact())) {
         after = () -> {
-          if (msg.isTranslatedEnough()) {
+          if (msg.isTranslatedEnough() || !canDragReply()) {
             controller.quickReact(msg.getNewestMessage());
           } else {
             controller.showReply(msg.getNewestMessage(), true, true);
@@ -144,7 +144,7 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
         ((MessageViewGroup) holder.itemView).setSwipeTranslation(0f);
       }
       if (swipeDir == (Lang.rtl() ? CustomTouchHelper.RIGHT : CustomTouchHelper.LEFT)) {
-        if (needReaction) {
+        if (needReaction || !canDragReply()) {
           controller.quickReact(msg.getNewestMessage());
         } else if (canDragReply()) {
           controller.showReply(msg.getNewestMessage(), true, true);

@@ -5585,8 +5585,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return isReactionNeeded;
   }
 
+  public boolean isQuickReactionUnavailable () {
+    return iQuickReactionUnavailable;
+  }
+
   public void translateVertical (float dy) {
-    if (((flags & FLAG_IGNORE_SWIPE) != 0) || iQuickReactionUnavailable || translationYLockAnimator.isAnimating()) {
+    if (((flags & FLAG_IGNORE_SWIPE) != 0) || translation > 0 || iQuickReactionUnavailable || translationYLockAnimator.isAnimating() || !messagesController().canWriteMessages()) {
       return;
     }
 
@@ -5709,7 +5713,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         return;
       }
 
-      float tsFactor = translationY;
+      boolean shouldRenderReactions = iQuickReaction != null && Lang.rtl() == (translation > 0);
+      boolean shouldRenderIcon = Lang.rtl() != (translation > 0) || ((MessageView) view).canQuickReply(); // if swiping right OR can write messages
+
+      float tsFactor = !shouldRenderIcon ? 1f : translationY;
       float tsFactorInv = 1f - tsFactor;
 
       int threshold = Screen.dp(BUBBLE_MOVE_THRESHOLD);
@@ -5724,26 +5731,28 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       float darkFactor = Theme.getDarkFactor() * (1f - manager.controller().wallpaper().getBackgroundTransparency());
       float radius = Screen.dp(16f) * scale;
 
-      boolean shouldRenderReactions = iQuickReaction != null && Lang.rtl() == (translation > 0);
-      cy -= shouldRenderReactions ? Screen.dp(32f) * tsFactor : 0;
       float qiScale = shouldRenderReactions ? MathUtils.fromTo(0.5f, 1f, tsFactorInv) : 1f;
       float tAlpha = shouldRenderReactions ? MathUtils.fromTo(0.5f, 1f, tsFactorInv) : 1f;
-      c.save();
-      c.scale(qiScale, qiScale, cx, cy);
-      if (darkFactor > 0f) {
-        c.drawCircle(cx, cy, radius, Paints.getProgressPaint(ColorUtils.alphaColor(tAlpha * darkFactor, Theme.headerColor()), Screen.dp(1f)));
-      }
-      c.drawCircle(cx, cy, radius, Paints.fillingPaint(ColorUtils.alphaColor(tAlpha, getBubbleButtonBackgroundColor())));
       Drawable icon = Lang.rtl() != (translation > 0) ? iQuickShare : iQuickReply;
-      c.save();
-      c.scale((Lang.rtl() ? -.8f : .8f) * scale, .8f * scale, cx, cy);
-      Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2, cy - icon.getMinimumHeight() / 2, Paints.getInlineBubbleIconPaint(ColorUtils.alphaColor(tAlpha, getBubbleButtonTextColor())));
-      c.restore();
-      c.restore();
+
+      if (shouldRenderIcon) {
+        cy -= shouldRenderReactions ? Screen.dp(32f) * tsFactor : 0;
+        c.save();
+        c.scale(qiScale, qiScale, cx, cy);
+        if (darkFactor > 0f) {
+          c.drawCircle(cx, cy, radius, Paints.getProgressPaint(ColorUtils.alphaColor(tAlpha * darkFactor, Theme.headerColor()), Screen.dp(1f)));
+        }
+        c.drawCircle(cx, cy, radius, Paints.fillingPaint(ColorUtils.alphaColor(tAlpha, getBubbleButtonBackgroundColor())));
+        c.save();
+        c.scale((Lang.rtl() ? -.8f : .8f) * scale, .8f * scale, cx, cy);
+        Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2, cy - icon.getMinimumHeight() / 2, Paints.getInlineBubbleIconPaint(ColorUtils.alphaColor(tAlpha, getBubbleButtonTextColor())));
+        c.restore();
+        c.restore();
+        if (shouldRenderReactions) cy += Screen.dp(32f);
+      }
 
       if (shouldRenderReactions) {
         // quick reaction
-        cy += Screen.dp(32f);
         qiScale = MathUtils.fromTo(0.5f, 1f, tsFactor);
         tAlpha = MathUtils.fromTo(0.5f, 1f, tsFactor);
         c.save();

@@ -1318,23 +1318,20 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       return false;
     }
     MessagesController m = msg.messagesController();
-    if (diffX < 0f && !m.canWriteMessages()) {
-      return false;
-    }
     MessagesRecyclerView recyclerView = findParentRecyclerView();
     if (recyclerView == null) {
       return false;
     }
     MessagesTouchHelperCallback helperCallback = recyclerView.getMessagesTouchHelper();
     if (Lang.rtl()) {
-      if ((helperCallback.canDragReply() && diffX > 0) || (helperCallback.canDragShare() && diffX < 0)) {
+      if (((helperCallback.canDragReply() || (helperCallback.canQuickReact() && !msg.isQuickReactionUnavailable())) && diffX > 0) || (helperCallback.canDragShare() && diffX < 0)) {
         if (touchX < m.get().getMeasuredWidth() - MessagesController.getSlideBackBound()) {
           m.startSwipe(findTargetView());
           return true;
         }
       }
     } else {
-      if ((helperCallback.canDragReply() && diffX < 0) || (helperCallback.canDragShare() && diffX > 0)) {
+      if (((helperCallback.canDragReply() || (helperCallback.canQuickReact() && !msg.isQuickReactionUnavailable())) && diffX < 0) || (helperCallback.canDragShare() && diffX > 0)) {
         if (touchX > MessagesController.getSlideBackBound()) {
           m.startSwipe(findTargetView());
           return true;
@@ -1342,6 +1339,11 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       }
     }
     return false;
+  }
+
+  public boolean canQuickReply () {
+    MessagesRecyclerView recyclerView = findParentRecyclerView();
+    return recyclerView != null && recyclerView.getMessagesTouchHelper().canDragReply();
   }
 
   @Override
