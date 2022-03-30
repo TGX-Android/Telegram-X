@@ -52,7 +52,7 @@ import me.vkryl.td.Td;
 public class ReactionsComponent implements FactorAnimator.Target {
   // Sizes
   private static final int REACTION_HEIGHT = Screen.dp(28f);
-  private static final int REACTION_ITEM_SEPARATOR = Screen.dp(8f);
+  private static final int REACTION_ITEM_SEPARATOR = Screen.dp(6f);
   private static final int REACTION_ITEM_SEPARATOR_SMALL = Screen.dp(2f);
   private static final int REACTION_ITEM_HALF_SEPARATOR = Screen.dp(4f);
   private static final int REACTION_RADIUS = Screen.dp(32f);
@@ -149,6 +149,10 @@ public class ReactionsComponent implements FactorAnimator.Target {
     return source.useBubbles() && !((source instanceof TGMessageMedia || source instanceof TGMessageVideo) && !source.isForward());
   }
 
+  public boolean needExtraMissingPadding () {
+    return source.getMessage().replyToMessageId == 0 && !source.isForward() && source.useBubbles() && (source instanceof TGMessageMedia || source instanceof TGMessageVideo) && !shouldRenderUnderBubble();
+  }
+
   private void measure (TdApi.MessageReaction[] order, boolean animated) {
     HashMap<String, Reaction> existingHash = new HashMap<>();
 
@@ -157,30 +161,36 @@ public class ReactionsComponent implements FactorAnimator.Target {
       existingHash.put(existingReaction.reaction.reaction, existingReaction);
     }
 
-    float maxWidth = TGMessage.getEstimatedContentMaxWidth();
+    float maxWidth = source.getRealContentMaxWidth();
     int width = 0;
     int currentX = 0;
-    int currentY = (!source.useBubbles() || needExtraYPadding()) ? REACTION_ITEM_HALF_SEPARATOR : 0;
+    int currentY = (!shouldRenderSmall() && (!source.useBubbles() || needExtraYPadding())) ? REACTION_ITEM_HALF_SEPARATOR : 0;
     boolean needExtraHeight = false;
 
     for (int i = 0; i < order.length; i++) {
       Reaction reaction = existingHash.get(order[i].reaction);
       if (reaction == null) continue;
 
-      if (source.getRealContentX() + currentX + reaction.getStaticWidth() >= maxWidth) {
+      float predictWidth = source.getRealContentX() + currentX + reaction.getStaticWidth();
+
+      if (predictWidth >= maxWidth) {
         // too much space taken, move to next row
         width = currentX;
         currentY += REACTION_HEIGHT + REACTION_ITEM_SEPARATOR;
         currentX = 0;
       }
 
-      needExtraHeight = source.useBubbles() && realMaxWidth > 0 && (source.getRealContentX() + currentX + reaction.getStaticWidth() + REACTION_ITEM_SEPARATOR >= source.getBubbleInnerWidth() - source.getBubbleTimePartWidth());
+      needExtraHeight = (source.getRealContentX() + currentX + reaction.getStaticWidth()) >= maxWidth - source.getBubbleTimePartWidth();
+
+      //Log.e("SIZETEST %s [btpw = %s, max = %s, msgmax = %s] -> %s", predictWidth, maxWidth - source.getBubbleTimePartWidth(), maxWidth, source.getRealContentMaxWidth(), needExtraHeight);
+      //needExtraHeight = source.useBubbles() && realMaxWidth > 0 && (source.getRealContentX() + currentX + reaction.getStaticWidth() + REACTION_ITEM_SEPARATOR >= source.getBubbleInnerWidth() - source.getBubbleTimePartWidth());
+
       reaction.setCoordinates(currentX, currentY, animated);
-      currentX += (shouldRenderSmall() ? reaction.getSmallWidth() : reaction.getStaticWidth()) + ((i != order.length - 1) ? (shouldRenderSmall() ? REACTION_ITEM_SEPARATOR_SMALL : REACTION_ITEM_SEPARATOR) : 0);
+      currentX += (shouldRenderSmall() ? reaction.getSmallWidth() : reaction.getStaticWidth()) + ((shouldRenderSmall() ? REACTION_ITEM_SEPARATOR_SMALL : REACTION_ITEM_SEPARATOR));
     }
 
     int reactionsWidth = width == 0 ? currentX : width;
-    int reactionsHeight = currentY == 0 ? REACTION_HEIGHT : currentY + REACTION_HEIGHT + (needExtraHeight ? Screen.dp(16f) : 0);
+    int reactionsHeight = (currentY == 0 ? REACTION_HEIGHT : currentY + REACTION_HEIGHT) + (needExtraHeight ? Screen.dp(12f) : 0) + (needExtraMissingPadding() ? Screen.dp(2f) : 0);
 
     if (animated) {
       rcWidthAnimator.animateTo(reactionsWidth);
@@ -191,8 +201,8 @@ public class ReactionsComponent implements FactorAnimator.Target {
     }
   }
 
-  public int getHeight (boolean needSizeCut) {
-    return (int) ((rcHeightAnimator.getFactor() + REACTION_ITEM_HALF_SEPARATOR - (needSizeCut ? Screen.dp(16f) : 0) + (!needSizeCut && !needExtraYPadding() ? Screen.dp(4f) : 0)) * componentVisibleAnimator.getFloatValue());
+  public int getHeight () {
+    return (int) (((rcHeightAnimator.getFactor() + REACTION_ITEM_HALF_SEPARATOR)) * componentVisibleAnimator.getFloatValue());
   }
 
   public int getFlatHeight () {
@@ -204,6 +214,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
   }
 
   public boolean shouldRenderUnderBubble () {
+    if (shouldRenderSmall()) return false;
     if (!source.useBubbles()) return true;
 
     if (source instanceof TGMessageMedia) {
@@ -226,7 +237,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
   private void checkLayoutParams (boolean shouldNotifyHeightChange) {
     int newWidth = getWidth();
-    int newHeight = source.useBubbles() ? getHeight(false) : getFlatHeight();
+    int newHeight = source.useBubbles() ? getHeight() : getFlatHeight();
 
     if (newWidth != lastWidth || newHeight != lastHeight) {
       lastWidth = newWidth;
@@ -241,6 +252,12 @@ public class ReactionsComponent implements FactorAnimator.Target {
   }
 
   public void draw (MessageView view, Canvas c, int startX, int startY) {
+    if (shouldRenderUnderBubble()) {
+      startY += Screen.dp(2f);
+    } else if (shouldRenderSmall()) {
+      startY += Screen.dp(4f);
+    }
+
     rcRect.set(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight() - Screen.dp(source.needExtraPadding() ? 10f : 4f));
     c.save();
     c.clipRect(rcRect);
@@ -265,7 +282,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
     if (shouldRenderSmall() || rcClickListeners == null || rcClickListeners.length == 0) return false; // should be not handled
 
     for (int i = 0; i < rcClickListeners.length; i++) {
-      if (rcClickListeners[i].contains(x, y)) {
+      if (rcClickListeners[i].contains(x, y) && clientReactions.size() > i) {
         source.tdlib().send(new TdApi.SetMessageReaction(source.getChatId(), source.getId(), clientReactions.get(i).reaction.reaction, false), (r) -> {});
         return true;
       }
@@ -380,7 +397,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
       return isOutgoing ? ColorUtils.fromToArgb(
         Theme.getColor(R.id.theme_color_bubbleOut_text), Color.WHITE, chooseAnimator.getFloatValue()
       ) : ColorUtils.fromToArgb(
-        Theme.getColor(R.id.theme_color_fillingPositive), Color.WHITE, chooseAnimator.getFloatValue()
+        Theme.getColor(source.useBubbles() ? R.id.theme_color_bubbleIn_text : R.id.theme_color_fillingPositive), Color.WHITE, chooseAnimator.getFloatValue()
       );
     }
 

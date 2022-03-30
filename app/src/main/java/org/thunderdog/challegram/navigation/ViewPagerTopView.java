@@ -645,7 +645,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
               iconReceiver.draw(c);
               textX += Screen.dp(8f) + (ICON_HALF_SIZE * 2);
             } else if (item.iconRes != 0) {
-              textX += Screen.dp(4f);
+              textX += Screen.dp(5f);
               Drawable drawable = item.getIcon();
               Drawables.draw(c, drawable, textX - drawable.getMinimumWidth() / 2, viewHeight / 2 - drawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(color));
               textX += Screen.dp(16f);

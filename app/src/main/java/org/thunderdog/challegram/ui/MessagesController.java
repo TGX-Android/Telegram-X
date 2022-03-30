@@ -4224,17 +4224,31 @@ public class MessagesController extends ViewController<MessagesController.Argume
     FrameLayout rvRootWrap = new FrameLayout(layout.getContext());
     rvRootWrap.setLayoutParams(new LinearLayout.LayoutParams(0, Screen.dp(56f), 1));
 
+    int scrimWidth = Screen.dp(36f);
     View scrim = new View(layout.getContext());
-    scrim.setLayoutParams(new FrameLayout.LayoutParams(Screen.dp(36f), Screen.dp(56f), Gravity.END));
+    scrim.setLayoutParams(new FrameLayout.LayoutParams(scrimWidth, Screen.dp(56f), Gravity.END));
     scrim.setBackground(ScrimUtil.makeCubicGradientScrimDrawable(Theme.getColor(R.id.theme_color_background), 2, Gravity.RIGHT, false));
 
     RecyclerView rvWrap = new RecyclerView(layout.getContext());
     rvWrap.setLayoutManager(new LinearLayoutManager(layout.getContext(), LinearLayoutManager.HORIZONTAL, false));
-    rvWrap.setPadding(0, 0, Screen.dp(16f), 0);
+    rvWrap.setPadding(0, 0, Screen.dp(10f), 0);
     rvWrap.setClipToPadding(false);
     ViewSupport.setThemedBackground(rvWrap, R.id.theme_color_background);
     rvRootWrap.addView(rvWrap);
     rvRootWrap.addView(scrim);
+
+    final int[] totalScrolled = { 0 };
+    rvWrap.addOnScrollListener(new RecyclerView.OnScrollListener() {
+      @Override
+      public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
+        totalScrolled[0] += dx;
+        float thrs = rvWrap.getMeasuredWidth();
+        float delta = totalScrolled[0] - thrs;
+        float deltaPercent = MathUtils.clamp(delta / thrs);
+        scrim.setTranslationX(deltaPercent * scrimWidth);
+        Log.e("RWOSL total %s <delta = %s> [thrs = %s, prcnt = %s]", totalScrolled[0], delta, thrs, deltaPercent);
+      }
+    });
 
     // Viewers
     Drawable favIcon = Drawables.get(context.getResources(), R.drawable.baseline_favorite_16);
@@ -4243,8 +4257,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     viewIcon.setColorFilter(Paints.getColorFilter(Theme.getColor(R.id.theme_color_icon)));
 
     int pad = Screen.dp(12);
-    boolean showViewers = message.canGetViewers();
     boolean showReactors = message.canGetAddedReactions() && message.getTotalReactionCount() != 0;
+    boolean showViewers = showReactors && message.canGetViewers();
     LinearLayout vrWrap = new LinearLayout(layout.getContext());
     ViewSupport.setThemedBackground(vrWrap, R.id.theme_color_background);
 

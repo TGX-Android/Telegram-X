@@ -799,11 +799,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }));
   }
 
-  // private int[] _dbg_bh = new int[6];
-  // private int[] _dbg_colors = new int[] { Color.BLUE, Color.MAGENTA, Color.GREEN, Color.RED, Color.YELLOW, Color.CYAN };
+  private int[] _dbg_bh = new int[6];
+  private int[] _dbg_colors = new int[] { Color.BLUE, Color.MAGENTA, Color.GREEN, Color.RED, Color.YELLOW, Color.CYAN };
 
   private int computeBubbleHeight () {
     int height = getContentHeight();
+    _dbg_bh[0] = height;
     if (replyData != null && !alignReplyHorizontally()) {
       height += getBubbleReplyOffset();
     }
@@ -813,16 +814,21 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         height += getPsaTitleHeight();
       }
     }
+    _dbg_bh[1] = height;
     if (useForward()) {
       height += getBubbleForwardOffset();
     }
+    _dbg_bh[2] = height;
     if (hasFooter()) {
       height += getFooterHeight() + getFooterPaddingTop() + getFooterPaddingBottom();
     }
+    _dbg_bh[3] = height;
     if (reactionsComponent != null && !reactionsComponent.shouldRenderUnderBubble() && !reactionsComponent.shouldRenderSmall()) {
-      height += reactionsComponent.getHeight(isBubbleTimeExpanded);
+      height += Math.max(0, reactionsComponent.getHeight() - (isBubbleTimeExpanded ? getBubbleTimePartHeight() : 0));
     }
+    _dbg_bh[4] = height;
     height += getBubbleReduceHeight();
+    _dbg_bh[5] = height;
 
     return height;
   }
@@ -979,7 +985,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private int measureReactionsHeight () {
-    return reactionsComponent != null ? (useBubbles() ? reactionsComponent.getHeight(isBubbleTimeExpanded) : reactionsComponent.getFlatHeight()) : 0;
+    return reactionsComponent != null ? (useBubbles() ? reactionsComponent.getHeight() : reactionsComponent.getFlatHeight()) : 0;
   }
 
   private int measureKeyboardTop () {
@@ -1878,7 +1884,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
       if (useBubbles) {
         lineTop = forwardY;
-        lineBottom = bottomContentEdge - xBubblePadding - xBubblePaddingSmall - (useBubbleTime() ? getBubbleTimePartHeight() : 0) - getBubbleReduceHeight() - (reactionsComponent != null ? reactionsComponent.getHeight(true) : 0);
+        lineBottom = bottomContentEdge - xBubblePadding - xBubblePaddingSmall - (useBubbleTime() ? getBubbleTimePartHeight() : 0) - getBubbleReduceHeight() - (reactionsComponent != null ? reactionsComponent.getHeight() : 0);
         mergeBottom = mergeTop = false;
       } else {
         if ((flags & FLAG_MERGE_FORWARD) != 0 && (flags & FLAG_HEADER_ENABLED) == 0) {
@@ -1951,8 +1957,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       replyData.draw(c, startX, top, endX, width, replyReceiver, Lang.rtl());
     }
 
+    //     int startY = bottomContentEdge - getBubbleTimePartHeight() - getBubbleTimePartOffsetY() - getBubbleReduceHeight();
     if (reactionsComponent != null && !reactionsComponent.shouldRenderSmall()) {
-      reactionsComponent.draw(view, c, (!useBubbles() || useFullWidth()) ? pRealContentX - (isForward() ? Screen.dp(11f) : 0) : getInternalBubbleStartX(), pContentY + getContentHeight() + (reactionsComponent.needExtraYPadding() ? xBadgePadding : 0));
+      //int _dbg_sx = (!useBubbles() || useFullWidth()) ? pRealContentX - (isForward() ? Screen.dp(11f) : 0) : getInternalBubbleStartX();
+      //int _dbg_sy = pContentY + getContentHeight();
+      //c.drawRect(pContentX, pContentY, pContentX + getContentWidth(), pContentY + getContentHeight(), Paints.getPorterDuffPaint(ColorUtils.alphaColor(0.3f, Color.BLUE)));
+      //c.drawRect(_dbg_sx, _dbg_sy,  getRealContentX() + getEstimatedContentMaxWidth(), _dbg_sy + reactionsComponent.getHeight(), Paints.getPorterDuffPaint(ColorUtils.alphaColor(0.3f, Color.GREEN)));
+      //c.drawRect(_dbg_sx, _dbg_sy, _dbg_sx + reactionsComponent.getWidth(), _dbg_sy + reactionsComponent.getHeight(), Paints.getPorterDuffPaint(ColorUtils.alphaColor(0.3f, Color.RED)));
+      reactionsComponent.draw(view, c, (!useBubbles() || useFullWidth() || reactionsComponent.shouldRenderUnderBubble()) ? pRealContentX - (isForward() ? Screen.dp(11f) : 0) : getInternalBubbleStartX(), pContentY + getContentHeight());
     }
 
     if (contentOffset != 0) {
@@ -1960,9 +1972,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     // debugging
-    // for (int i = 0; i < _dbg_bh.length; i++) {
-    //   c.drawLine(200, i > 0 ? _dbg_bh[i - 1] : 0, 200, _dbg_bh[i], Paints.getPorterDuffPaint(_dbg_colors[i]));
-    // }
+    for (int i = 0; i < _dbg_bh.length; i++) {
+       //c.drawLine(200, (i > 0 ? _dbg_bh[i - 1] : 0) + xPaddingTop, 200, _dbg_bh[i] + xPaddingTop, Paints.getPorterDuffPaint(_dbg_colors[i]));
+    }
 
     if (savedTranslation) {
       c.restore();
