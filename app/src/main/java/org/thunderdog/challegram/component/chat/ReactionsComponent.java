@@ -4,7 +4,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Build;
 import android.view.Gravity;
@@ -14,7 +13,6 @@ import android.view.animation.Interpolator;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.charts.CubicBezierInterpolator;
 import org.thunderdog.challegram.data.TGMessage;
@@ -38,9 +36,7 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.Counter;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Objects;
 
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
@@ -190,7 +186,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
     }
 
     int reactionsWidth = width == 0 ? currentX : width;
-    int reactionsHeight = (currentY == 0 ? REACTION_HEIGHT : currentY + REACTION_HEIGHT) + (needExtraHeight ? Screen.dp(12f) : 0) + (needExtraMissingPadding() ? Screen.dp(2f) : 0);
+    int reactionsHeight = (currentY == 0 ? REACTION_HEIGHT : currentY + REACTION_HEIGHT) + (needExtraHeight ? Screen.dp(16f) : 0) + (needExtraMissingPadding() ? Screen.dp(2f) : 0);
 
     if (animated) {
       rcWidthAnimator.animateTo(reactionsWidth);
@@ -202,11 +198,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
   }
 
   public int getHeight () {
-    return (int) (((rcHeightAnimator.getFactor() + REACTION_ITEM_HALF_SEPARATOR)) * componentVisibleAnimator.getFloatValue());
-  }
-
-  public int getFlatHeight () {
-    return (int) (((rcHeightAnimator.getFactor() + REACTION_ITEM_HALF_SEPARATOR)) * componentVisibleAnimator.getFloatValue());
+    return (int) (rcHeightAnimator.getFactor() * componentVisibleAnimator.getFloatValue());
   }
 
   public int getWidth () {
@@ -237,7 +229,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
   private void checkLayoutParams (boolean shouldNotifyHeightChange) {
     int newWidth = getWidth();
-    int newHeight = source.useBubbles() ? getHeight() : getFlatHeight();
+    int newHeight = getHeight();
 
     if (newWidth != lastWidth || newHeight != lastHeight) {
       lastWidth = newWidth;
@@ -389,20 +381,31 @@ public class ReactionsComponent implements FactorAnimator.Target {
     }
 
     public int getBackgroundColor () {
-      if (chooseAnimator.getFloatValue() == 1f) return getChosenColor();
-      return ColorUtils.alphaColor(0.15f, getChosenColor());
+      return isOutgoing ? ColorUtils.fromToArgb(
+        ColorUtils.alphaColor(0.15f, Theme.getColor(R.id.theme_color_bubbleOut_time)),
+        Theme.getColor(R.id.theme_color_bubbleOut_file),
+        chooseAnimator.getFloatValue()
+      ) : ColorUtils.fromToArgb(
+        ColorUtils.alphaColor(0.15f, Theme.getColor(R.id.theme_color_bubbleIn_time)),
+        Theme.getColor(R.id.theme_color_file),
+        chooseAnimator.getFloatValue()
+      );
     }
 
     public int getTextColor () {
       return isOutgoing ? ColorUtils.fromToArgb(
-        Theme.getColor(R.id.theme_color_bubbleOut_text), Color.WHITE, chooseAnimator.getFloatValue()
+        Theme.getColor(R.id.theme_color_bubbleOut_text),
+        Color.WHITE,
+        chooseAnimator.getFloatValue()
       ) : ColorUtils.fromToArgb(
-        Theme.getColor(source.useBubbles() ? R.id.theme_color_bubbleIn_text : R.id.theme_color_fillingPositive), Color.WHITE, chooseAnimator.getFloatValue()
+        Theme.getColor(R.id.theme_color_bubbleIn_text),
+        Color.WHITE,
+        chooseAnimator.getFloatValue()
       );
     }
 
     public int getChosenColor () {
-      return Theme.getColor(R.id.theme_color_fillingPositive);
+      return Theme.getColor(isOutgoing ? R.id.theme_color_bubbleOut_file : R.id.theme_color_file);
     }
 
     public float getHeight () {
