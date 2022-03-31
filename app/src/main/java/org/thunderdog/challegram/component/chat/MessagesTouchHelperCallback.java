@@ -9,6 +9,7 @@ import android.graphics.Canvas;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGMessage;
@@ -104,7 +105,7 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
             controller.showReply(msg.getNewestMessage(), true, true);
           }
 
-          msg.resetVertical();
+          msg.prepareToReset();
         };
       }
       if (direction == (Lang.rtl() ? CustomTouchHelper.LEFT : CustomTouchHelper.RIGHT) && canDragShare()) {
@@ -163,7 +164,11 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
       final MessageView v = MessagesHolder.findMessageView(holder.itemView);
       final TGMessage msg = v.getMessage();
       msg.translate(dx, true);
-      msg.translateVertical(dy);
+      if (isActive) {
+        msg.translateVertical(dy);
+      } else {
+        msg.smoothResetVertical();
+      }
       if (holder.itemView instanceof MessageViewGroup) {
         ((MessageViewGroup) holder.itemView).setSwipeTranslation(msg.getTranslation());
       }

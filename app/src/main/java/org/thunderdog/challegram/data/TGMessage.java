@@ -9,7 +9,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
@@ -113,6 +112,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
@@ -121,7 +121,6 @@ import me.vkryl.core.collection.LongList;
 import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
@@ -5507,6 +5506,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       @Override
       public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
         flags &= ~FLAG_IGNORE_SWIPE;
+        resetVertical();
         /*if (needDelay) {
           U.run(after);
         }*/
@@ -5570,12 +5570,27 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     invalidate(true);
   }, AnimatorUtils.OVERSHOOT_INTERPOLATOR, 210l);
 
+  public void smoothResetVertical () {
+    if (pullingDownOffset == 0) return;
+    lockDy = 0;
+    pullingDownOffset = 0;
+    isReactionNeeded = false;
+    manager.setProcessingQuickReaction(false);
+    translationYLockAnimator.forceFactor(translationY);
+    translationYLockAnimator.animateTo(0f);
+  }
+
   public void resetVertical () {
     translationYLockAnimator.forceFactor(0f);
     lockDy = 0;
     pullingDownOffset = 0;
     translationY = 0;
     isReactionNeeded = false;
+    manager.setProcessingQuickReaction(false);
+  }
+
+  public void prepareToReset () {
+    pullingDownOffset = 0;
   }
 
   public boolean isTranslatedEnough () {
@@ -5586,60 +5601,64 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return iQuickReactionUnavailable;
   }
 
+  private static final float QUICK_REACTION_THRESHOLD = Screen.dp(110f);
+
   public void translateVertical (float dy) {
     if (((flags & FLAG_IGNORE_SWIPE) != 0) || translation > 0 || iQuickReactionUnavailable || translationYLockAnimator.isAnimating() || !messagesController().canWriteMessages()) {
       return;
     }
 
+    manager.setProcessingQuickReaction(true);
+
+    // isReactionNeeded is also acting as a invert switch
     if (dy > 0) {
       float k;
+      float tDy = isReactionNeeded ? (QUICK_REACTION_THRESHOLD - dy) : dy;
 
-      if (dy < Screen.dp(110f)) {
-        float progress = dy / Screen.dp(110f);
+      if (tDy < QUICK_REACTION_THRESHOLD) {
+        float progress = tDy / QUICK_REACTION_THRESHOLD;
         k = 0.65f * (1f - progress) + 0.45f * progress;
       } else {
         k = 1;
       }
 
-      pullingDownOffset = (int) (dy * k);
+      pullingDownOffset = (int) (tDy * k);
+      //Log.v("MsgQR:T [dy = %s, k = %s, progress = %s], offset = %s, threshold = %s, pulling = %s (inverted = %s)", tDy, k, tDy / QUICK_REACTION_THRESHOLD, pullingDownOffset, QUICK_REACTION_THRESHOLD, dy < QUICK_REACTION_THRESHOLD, isReactionNeeded);
     }
 
-    float tyTemp = MathUtils.clamp((float) pullingDownOffset / Screen.dp(110f));
-
-    if (BuildConfig.DEBUG) {
-      Log.v("MsgQR [dy = %s, total = %s], offset = %s, need = %s, [yLockFactor = %s, yLock = %s]", dy, translationY, tyTemp, isReactionNeeded, translationYLockAnimator.getFactor(), lockDy);
-    }
+    float tyTemp = MathUtils.clamp((float) pullingDownOffset / QUICK_REACTION_THRESHOLD);
+    if (isReactionNeeded) tyTemp = 1f - tyTemp;
 
     if (tyTemp > 0.42f) {
-      if (!translationYLockAnimator.isAnimating() && translationYLockAnimator.getFactor() != 1f) {
+      if (!isReactionNeeded && !translationYLockAnimator.isAnimating() && translationYLockAnimator.getFactor() != 1f && dy > 0) {
         // lock
         lockDy = tyTemp;
         translationYLockAnimator.forceFactor(lockDy);
         translationYLockAnimator.animateTo(1f);
         vibrate();
         isReactionNeeded = true;
-      }
-      return;
-    } else {
-      if (translationYLockAnimator.isAnimating()) {
-        return;
-      } else if (translationYLockAnimator.getFactor() > lockDy) {
-        translationYLockAnimator.animateTo(lockDy);
-        vibrate();
-        isReactionNeeded = false;
         return;
       }
 
-      if (translationYLockAnimator.getFactor() == lockDy && lockDy == 1f) {
-        // fixes one issue when it can be stuck
-        lockDy = tyTemp;
-        translationYLockAnimator.forceFactor(0f);
-      }
+      if (isReactionNeeded) {
+        if (dy == 0) {
+          // reached the top
+          pullingDownOffset = 0;
+          isReactionNeeded = false;
+          lockDy = tyTemp;
+          translationYLockAnimator.forceFactor(lockDy);
+          translationYLockAnimator.animateTo(0f);
+          vibrate();
+          return;
+        }
 
-      // unlock
-      translationY = tyTemp;
+        translationY = tyTemp;
+        invalidate(true);
+        return;
+      }
     }
 
+    translationY = tyTemp;
     invalidate(true);
   }
 
@@ -5714,7 +5733,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       boolean shouldRenderIcon = Lang.rtl() != (translation > 0) || ((MessageView) view).canQuickReply(); // if swiping right OR can write messages
 
       float tsFactor = !shouldRenderIcon ? 1f : translationY;
-      float tsFactorInv = 1f - tsFactor;
+      float tsFactorInv = 1f - MathUtils.clamp(tsFactor);
 
       int threshold = Screen.dp(BUBBLE_MOVE_THRESHOLD);
       float scaleFactor = (translation > 0f ? shareReadyFactor : replyReadyFactor);

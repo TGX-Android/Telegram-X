@@ -157,7 +157,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
       existingHash.put(existingReaction.reaction.reaction, existingReaction);
     }
 
-    float maxWidth = source.getRealContentMaxWidth();
+    float maxWidth = source.useBubbles() ? source.getRealContentMaxWidth() : TGMessage.getEstimatedContentMaxWidth();
     int width = 0;
     int currentX = 0;
     int currentY = (!shouldRenderSmall() && (!source.useBubbles() || needExtraYPadding())) ? REACTION_ITEM_HALF_SEPARATOR : 0;

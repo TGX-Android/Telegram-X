@@ -53,4 +53,10 @@ public class MessagesLayoutManager extends LinearLayoutManager {
     linearSmoothScroller.setTargetPosition(position);
     startSmoothScroll(linearSmoothScroller);
   }
+
+  @Override
+  public boolean canScrollVertically () {
+    if (manager.isProcessingQuickReaction()) return false;
+    return super.canScrollVertically();
+  }
 }

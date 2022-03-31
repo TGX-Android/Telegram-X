@@ -2891,4 +2891,16 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return color;
     }
   }
+
+  // Quick Reaction
+
+  private boolean processingQuickReaction;
+
+  public boolean isProcessingQuickReaction () {
+    return processingQuickReaction;
+  }
+
+  public void setProcessingQuickReaction (boolean value) {
+    this.processingQuickReaction = value;
+  }
 }
