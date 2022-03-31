@@ -142,11 +142,15 @@ public class ReactionsComponent implements FactorAnimator.Target {
   }
 
   public boolean needExtraYPadding () {
-    return source.useBubbles() && !((source instanceof TGMessageMedia || source instanceof TGMessageVideo) && !source.isForward());
+    return source.useBubbles() && !((source instanceof TGMessageMedia || source instanceof TGMessageVideo || source instanceof TGMessageSticker) && !source.isForward());
   }
 
   public boolean needExtraMissingPadding () {
     return source.getMessage().replyToMessageId == 0 && !source.isForward() && source.useBubbles() && (source instanceof TGMessageMedia || source instanceof TGMessageVideo) && !shouldRenderUnderBubble();
+  }
+
+  public boolean needExtraMissingOffset () {
+    return !source.isForward() && source.useBubbles() && (source instanceof TGMessageMedia || source instanceof TGMessageVideo || source instanceof TGMessageSticker) && shouldRenderUnderBubble();
   }
 
   private void measure (TdApi.MessageReaction[] order, boolean animated) {
@@ -157,7 +161,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
       existingHash.put(existingReaction.reaction.reaction, existingReaction);
     }
 
-    float maxWidth = source.useBubbles() ? source.getRealContentMaxWidth() : TGMessage.getEstimatedContentMaxWidth();
+    float maxWidth = (source.useBubbles() && !shouldRenderUnderBubble()) ? source.getRealContentMaxWidth() : TGMessage.getEstimatedContentMaxWidth();
     int width = 0;
     int currentX = 0;
     int currentY = (!shouldRenderSmall() && (!source.useBubbles() || needExtraYPadding())) ? REACTION_ITEM_HALF_SEPARATOR : 0;
@@ -186,7 +190,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
     }
 
     int reactionsWidth = width == 0 ? currentX : width;
-    int reactionsHeight = (currentY == 0 ? REACTION_HEIGHT : currentY + REACTION_HEIGHT) + (needExtraHeight ? Screen.dp(16f) : 0) + (needExtraMissingPadding() ? Screen.dp(2f) : 0);
+    int reactionsHeight = (currentY == 0 ? REACTION_HEIGHT : currentY + REACTION_HEIGHT) + (needExtraHeight ? Screen.dp(16f) : 0) + ((needExtraMissingPadding() || source instanceof TGMessageSticker) ? Screen.dp(2f) : 0) + (shouldRenderUnderBubble() ? Screen.dp(needExtraMissingOffset() ? 4f : 2f) : 0);
 
     if (animated) {
       rcWidthAnimator.animateTo(reactionsWidth);
@@ -245,7 +249,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
   public void draw (MessageView view, Canvas c, int startX, int startY) {
     if (shouldRenderUnderBubble()) {
-      startY += Screen.dp(2f);
+      startY += Screen.dp(needExtraMissingOffset() ? 4f : 2f);
     } else if (shouldRenderSmall()) {
       startY += Screen.dp(4f);
     }
