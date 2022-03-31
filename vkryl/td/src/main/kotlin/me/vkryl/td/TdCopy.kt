@@ -78,6 +78,7 @@ fun Message.copyTo (dst: Message) {
   dst.canGetStatistics = this.canGetStatistics
   dst.canGetMessageThread = this.canGetMessageThread
   dst.canGetViewers = this.canGetViewers
+  dst.canGetAddedReactions = this.canGetAddedReactions
   dst.canGetMediaTimestampLinks = this.canGetMediaTimestampLinks
   dst.hasTimestampedMedia = this.hasTimestampedMedia
   dst.isChannelPost = this.isChannelPost

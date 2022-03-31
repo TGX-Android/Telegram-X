@@ -144,9 +144,9 @@ public class MessageReactionsUserListController extends RecyclerViewController<M
         ArrayList<ListItem> newItems = new ArrayList<>();
         for (int i = 0; i < result.reactions.length; i++) {
           newItems.add(createUserItem(result.reactions[i]));
-          newItems.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+          newItems.add(new ListItem(ListItem.TYPE_SEPARATOR));
         }
-        newItems.remove(newItems.size() - 1);
+        if (!canLoadMore) newItems.remove(newItems.size() - 1);
         adapter.addItems(adapter.getItemCount() - 2, newItems.toArray(new ListItem[0]));
       }
     });
@@ -182,10 +182,10 @@ public class MessageReactionsUserListController extends RecyclerViewController<M
 
     for (TdApi.AddedReaction r : reactions) {
       items.add(createUserItem(r));
-      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     }
 
-    items.remove(items.size() - 1);
+    if (!canLoadMore) items.remove(items.size() - 1);
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_LIST_INFO_VIEW));

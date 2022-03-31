@@ -13,6 +13,7 @@ import android.view.animation.Interpolator;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.charts.CubicBezierInterpolator;
 import org.thunderdog.challegram.data.TGMessage;
@@ -146,7 +147,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
   }
 
   public boolean needExtraMissingPadding () {
-    return source.getMessage().replyToMessageId == 0 && !source.isForward() && source.useBubbles() && (source instanceof TGMessageMedia || source instanceof TGMessageVideo) && !shouldRenderUnderBubble();
+    return !source.isForward() && source.useBubbles() && (source instanceof TGMessageMedia || source instanceof TGMessageVideo) && !shouldRenderUnderBubble();
   }
 
   public boolean needExtraMissingOffset () {
@@ -190,7 +191,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
     }
 
     int reactionsWidth = width == 0 ? currentX : width;
-    int reactionsHeight = (currentY == 0 ? REACTION_HEIGHT : currentY + REACTION_HEIGHT) + (needExtraHeight ? Screen.dp(16f) : 0) + ((needExtraMissingPadding() || source instanceof TGMessageSticker) ? Screen.dp(2f) : 0) + (shouldRenderUnderBubble() ? Screen.dp(needExtraMissingOffset() ? 4f : 2f) : 0);
+    int reactionsHeight = (currentY == 0 ? REACTION_HEIGHT : currentY + REACTION_HEIGHT) + (needExtraHeight ? Screen.dp(16f) : 0) + (((needExtraMissingPadding() || source instanceof TGMessageSticker) && !needExtraHeight) ? Screen.dp(source instanceof TGMessageSticker ? 2f : 8f) : 0) + (shouldRenderUnderBubble() ? Screen.dp(needExtraMissingOffset() ? 4f : 2f) : 0);
 
     if (animated) {
       rcWidthAnimator.animateTo(reactionsWidth);
@@ -203,6 +204,10 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
   public int getHeight () {
     return (int) (rcHeightAnimator.getFactor() * componentVisibleAnimator.getFloatValue());
+  }
+
+  public int getHeight (boolean compensate) {
+    return (int) (Math.max(0, (rcHeightAnimator.getFactor() - (compensate ? Screen.dp(16f) : 0))) * componentVisibleAnimator.getFloatValue());
   }
 
   public int getWidth () {

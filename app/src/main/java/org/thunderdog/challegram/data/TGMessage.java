@@ -1875,7 +1875,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
       if (useBubbles) {
         lineTop = forwardY;
-        lineBottom = bottomContentEdge - xBubblePadding - xBubblePaddingSmall - (useBubbleTime() ? getBubbleTimePartHeight() : 0) - getBubbleReduceHeight() - (reactionsComponent != null ? reactionsComponent.getHeight() : 0);
+        lineBottom = bottomContentEdge - xBubblePadding - xBubblePaddingSmall - (useBubbleTime() ? getBubbleTimePartHeight() : 0) - getBubbleReduceHeight() - (reactionsComponent != null ? reactionsComponent.getHeight(isBubbleTimeExpanded) : 0);
         mergeBottom = mergeTop = false;
       } else {
         if ((flags & FLAG_MERGE_FORWARD) != 0 && (flags & FLAG_HEADER_ENABLED) == 0) {
@@ -4665,6 +4665,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     dst.canBeEdited = src.canBeEdited;
     dst.canGetStatistics = src.canGetStatistics;
     dst.canGetViewers = src.canGetViewers;
+    dst.canGetAddedReactions = src.canGetAddedReactions;
     dst.canGetMediaTimestampLinks = src.canGetMediaTimestampLinks;
     dst.hasTimestampedMedia = src.hasTimestampedMedia;
 
@@ -5607,7 +5608,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private static final float QUICK_REACTION_THRESHOLD = Screen.dp(110f);
 
   public void translateVertical (float dy) {
-    if (((flags & FLAG_IGNORE_SWIPE) != 0) || translation > 0 || iQuickReactionUnavailable || translationYLockAnimator.isAnimating() || !messagesController().canWriteMessages()) {
+    if (((flags & FLAG_IGNORE_SWIPE) != 0) || translation > 0 || iQuickReactionUnavailable || !useBubbles() /* TODO */ || translationYLockAnimator.isAnimating() || !messagesController().canWriteMessages()) {
       return;
     }
 
@@ -5689,6 +5690,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
     translation = dx;
 
+    if (translation == 0) {
+      resetVertical();
+    }
+
     if (useBubbles) {
       if (dx >= 0) {
         flags &= ~FLAG_READY_REPLY;
@@ -5750,8 +5755,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       float darkFactor = Theme.getDarkFactor() * (1f - manager.controller().wallpaper().getBackgroundTransparency());
       float radius = Screen.dp(16f) * scale;
 
-      float qiScale = shouldRenderReactions ? MathUtils.fromTo(0.5f, 1f, tsFactorInv) : 1f;
-      float tAlpha = shouldRenderReactions ? MathUtils.fromTo(0.5f, 1f, tsFactorInv) : 1f;
+      float qiScale = shouldRenderReactions ? MathUtils.fromTo(0.5f, 1f, tsFactorInv) : alpha;
+      float tAlpha = shouldRenderReactions ? MathUtils.fromTo(alpha * 0.5f, alpha, tsFactorInv) : alpha;
       Drawable icon = Lang.rtl() != (translation > 0) ? iQuickShare : iQuickReply;
 
       if (shouldRenderIcon) {
@@ -5773,7 +5778,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       if (shouldRenderReactions) {
         // quick reaction
         qiScale = MathUtils.fromTo(0.5f, 1f, tsFactor);
-        tAlpha = MathUtils.fromTo(0.5f, 1f, tsFactor);
+        tAlpha = MathUtils.fromTo(alpha * 0.5f, alpha, tsFactor);
         c.save();
         c.scale(qiScale, qiScale, cx, cy);
         if (darkFactor > 0f) {
@@ -5785,7 +5790,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         int w = icon.getMinimumWidth() / 2;
         int h = icon.getMinimumHeight() / 2;
         iQuickReaction.setBounds((int) cx - w, cy - h, (int) cx + w, cy + h);
-        iQuickReaction.setAlpha(tAlpha);
+        iQuickReaction.setPaintAlpha(tAlpha);
         iQuickReaction.draw(c);
         c.restore();
         c.restore();

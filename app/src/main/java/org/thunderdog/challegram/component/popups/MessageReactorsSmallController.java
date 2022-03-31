@@ -180,10 +180,10 @@ public class MessageReactorsSmallController extends MediaBottomBaseController<Vo
 
     for (TdApi.AddedReaction r : reactions) {
       items.add(createUserItem(r));
-      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     }
 
-    items.remove(items.size() - 1);
+    if (!items.isEmpty()) items.remove(items.size() - 1);
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     if (allowExpand) items.add(new ListItem(ListItem.TYPE_LIST_INFO_VIEW));
