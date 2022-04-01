@@ -12,6 +12,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
@@ -678,7 +679,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       }
     }
 
-    if (reactionsComponent != null) {
+    if (reactionsComponent != null && !reactionsComponent.shouldRenderUnderBubble()) {
       width = Math.max(width, reactionsComponent.getWidth());
     }
 
@@ -5864,9 +5865,15 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     } else {
       int blockHeight = (endY - startY);
       c.save();
-      c.translate(0, -(blockHeight * tsFactor));
 
       int endX = view.getMeasuredWidth();
+      Rect clip = Paints.getRect();
+      clip.set((int) (endX + x), startY, endX, endY);
+      c.clipRect(clip);
+
+      c.save();
+      c.translate(0, -(blockHeight * tsFactor));
+
       c.drawRect(endX + x, startY, endX, endY, Paints.fillingPaint(ColorUtils.alphaColor(tsFactorInv, quickColor)));
 
       float iconX = endX + x + xQuickPadding;
@@ -5930,6 +5937,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         }
         c.restore();
       }
+
+      c.restore();
     }
   }
 

@@ -4213,7 +4213,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private PopupLayout patchReactions (PopupLayout layout, TGMessage message, boolean disableReactions) {
-    if (chat == null || chat.availableReactions.length == 0 || disableReactions || !(layout.getChildAt(1) instanceof OptionsLayout)) {
+    if (chat == null || chat.availableReactions.length == 0 || disableReactions || message.isSponsored() || message.isEventLog() || message.isSecretChat() || message.isScheduled() || !(layout.getChildAt(1) instanceof OptionsLayout)) {
       return layout;
     }
 

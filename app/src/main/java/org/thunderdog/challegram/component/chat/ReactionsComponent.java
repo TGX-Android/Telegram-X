@@ -17,6 +17,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.charts.CubicBezierInterpolator;
 import org.thunderdog.challegram.data.TGMessage;
+import org.thunderdog.challegram.data.TGMessageLocation;
 import org.thunderdog.challegram.data.TGMessageMedia;
 import org.thunderdog.challegram.data.TGMessageSticker;
 import org.thunderdog.challegram.data.TGMessageVideo;
@@ -163,6 +164,8 @@ public class ReactionsComponent implements FactorAnimator.Target {
     }
 
     float maxWidth = (source.useBubbles() && !shouldRenderUnderBubble()) ? source.getRealContentMaxWidth() : TGMessage.getEstimatedContentMaxWidth();
+    //Log.e("MWTEST %s %s -> %s [rX = %s]", source.getRealContentMaxWidth(), TGMessageSticker.getEstimatedContentMaxWidth(), maxWidth, source.getRealContentX());
+
     int width = 0;
     int currentX = 0;
     int currentY = (!shouldRenderSmall() && (!source.useBubbles() || needExtraYPadding())) ? REACTION_ITEM_HALF_SEPARATOR : 0;
@@ -172,7 +175,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
       Reaction reaction = existingHash.get(order[i].reaction);
       if (reaction == null) continue;
 
-      float predictWidth = source.getRealContentX() + currentX + reaction.getStaticWidth();
+      float predictWidth = (source.useBubbles() ? source.getRealContentX() : 0) + currentX + reaction.getStaticWidth();
 
       if (predictWidth >= maxWidth) {
         // too much space taken, move to next row
@@ -191,7 +194,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
     }
 
     int reactionsWidth = (width == 0 ? currentX : width);
-    if (reactionsWidth > 0 && !needExtraHeight && source.useBubbles() && !shouldRenderUnderBubble() && !shouldRenderSmall()) reactionsWidth += source.getBubbleTimePartWidth();
+    if (reactionsWidth > 0 && (!needExtraHeight || order.length <= 2) && source.useBubbles() && !shouldRenderUnderBubble() && !shouldRenderSmall()) reactionsWidth += source.getBubbleTimePartWidth();
 
     int reactionsHeight = (currentY == 0 ? REACTION_HEIGHT : currentY + REACTION_HEIGHT) + (needExtraHeight ? Screen.dp(16f) : 0) + (((needExtraMissingPadding() || source instanceof TGMessageSticker) && !needExtraHeight) ? Screen.dp(source instanceof TGMessageSticker ? 2f : 8f) : 0) + (shouldRenderUnderBubble() ? Screen.dp(needExtraMissingOffset() ? 4f : 2f) : 0);
 
@@ -222,7 +225,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
     if (source instanceof TGMessageMedia) {
       return ((TGMessageMedia) source).isEmptyCaption();
-    } else if (source instanceof TGMessageSticker) {
+    } else if (source instanceof TGMessageSticker || source instanceof TGMessageVideo || source instanceof TGMessageLocation) {
       return true;
     } else {
       return false;
