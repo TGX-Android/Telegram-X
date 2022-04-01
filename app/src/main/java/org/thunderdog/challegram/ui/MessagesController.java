@@ -9617,6 +9617,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
     });
   }
 
+  @Override
+  public void onChatAvailableReactionsUpdated (long chatId, String[] availableReactions) {
+    tdlib.ui().post(() -> {
+      if (getChatId() == chatId) {
+        manager.updateQuickReactionAvailable(availableReactions);
+      }
+    });
+  }
+
   private boolean exitOnTransformFinish;
 
   @Override

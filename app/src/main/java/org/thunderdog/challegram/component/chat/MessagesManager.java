@@ -635,6 +635,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         loadFromStart();
       }
     }
+    updateQuickReactionAvailable(chat.availableReactions);
     subscribeForUpdates();
   }
 
@@ -2894,13 +2895,21 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   // Quick Reaction
 
-  private boolean processingQuickReaction;
+  private boolean processingQuickReaction, quickReactionAvailable;
 
   public boolean isProcessingQuickReaction () {
     return processingQuickReaction;
   }
 
+  public boolean isQuickReactionAvailable () {
+    return quickReactionAvailable;
+  }
+
   public void setProcessingQuickReaction (boolean value) {
     this.processingQuickReaction = value;
+  }
+
+  public void updateQuickReactionAvailable (String[] availableReactions) {
+    quickReactionAvailable = Arrays.asList(availableReactions).contains(Settings.instance().getQuickReactionEmoji(tdlib));
   }
 }

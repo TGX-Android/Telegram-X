@@ -5602,17 +5602,17 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public boolean isQuickReactionUnavailable () {
-    return iQuickReactionUnavailable;
+    return !manager.isQuickReactionAvailable();
   }
 
   private static final float QUICK_REACTION_THRESHOLD = Screen.dp(110f);
 
   public void translateVertical (float dy) {
-    if (((flags & FLAG_IGNORE_SWIPE) != 0) || translation > 0 || iQuickReactionUnavailable || !useBubbles() /* TODO */ || translationYLockAnimator.isAnimating() || !messagesController().canWriteMessages()) {
+    if (((flags & FLAG_IGNORE_SWIPE) != 0) || translation > 0 || !manager.isQuickReactionAvailable() || isEventLog() || translationYLockAnimator.isAnimating() || !messagesController().canWriteMessages()) {
       return;
     }
 
-    manager.setProcessingQuickReaction(true);
+    manager.setProcessingQuickReaction(dy > 0);
 
     // isReactionNeeded is also acting as a invert switch
     if (dy > 0) {
@@ -5732,16 +5732,16 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       mQuickText.setAlpha(255);
     }
 
+    boolean shouldRenderReactions = manager.isQuickReactionAvailable() && iQuickReaction != null && Lang.rtl() == (translation > 0);
+    boolean shouldRenderIcon = Lang.rtl() != (translation > 0) || ((MessageView) view).canQuickReply(); // if swiping right OR can write messages
+    boolean shouldRenderOnlyReactions = shouldRenderReactions && !shouldRenderIcon;
+    float tsFactor = !shouldRenderIcon ? 1f : translationY;
+    float tsFactorInv = 1f - MathUtils.clamp(tsFactor);
+
     if (useBubbles()) {
       if (translation == 0f) {
         return;
       }
-
-      boolean shouldRenderReactions = iQuickReaction != null && Lang.rtl() == (translation > 0);
-      boolean shouldRenderIcon = Lang.rtl() != (translation > 0) || ((MessageView) view).canQuickReply(); // if swiping right OR can write messages
-
-      float tsFactor = !shouldRenderIcon ? 1f : translationY;
-      float tsFactorInv = 1f - MathUtils.clamp(tsFactor);
 
       int threshold = Screen.dp(BUBBLE_MOVE_THRESHOLD);
       float scaleFactor = (translation > 0f ? shareReadyFactor : replyReadyFactor);
@@ -5820,8 +5820,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       textWidth = xQuickShareWidth;
     } else {
       icon = iQuickReply;
-      text = replyText;
-      textWidth = xQuickReplyWidth;
+      text = shouldRenderOnlyReactions ? quickReactionText : replyText;
+      textWidth = shouldRenderOnlyReactions ? xQuickReactionWidth : xQuickReplyWidth;
     }
 
     if (x > 0) {
@@ -6465,7 +6465,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   protected static int xViewsPaddingRight, xViewsOffset, xViewsPaddingLeft;
 
-  protected static int xQuickWidth, xQuickPadding, xQuickTextPadding, xQuickTextOffset, xQuickShareWidth, xQuickReplyWidth;
+  protected static int xQuickWidth, xQuickPadding, xQuickTextPadding, xQuickTextOffset, xQuickShareWidth, xQuickReplyWidth, xQuickReactionWidth;
 
   // protected static int xCaptionTouchOffset, xCaptionAddition;
 
@@ -6556,9 +6556,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   // Icons
 
   private ImageReceiver iQuickReaction;
-  private boolean iQuickReactionUnavailable;
 
-  private static String quickReactionText;
+  private static String quickReactionEmoji, quickReactionText;
 
   private static Drawable iQuickReply, iQuickShare, iBadge;
   private static String shareText, replyText;
@@ -6573,16 +6572,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private void initQuickReaction (MessageView view) {
-    if (iQuickReactionUnavailable || iQuickReaction != null || !Settings.instance().needQuickReaction()) return;
+    if (chat == null || !Settings.instance().needQuickReaction() || !manager.isQuickReactionAvailable()) return;
 
     String qrEmoji = Settings.instance().getQuickReactionEmoji(tdlib);
-    if (!Arrays.asList(chat.availableReactions).contains(qrEmoji)) {
-      iQuickReactionUnavailable = true;
-      return;
-    }
+    if (quickReactionEmoji != null && quickReactionEmoji.equals(qrEmoji)) return;
+
+    Log.v("initQuickReaction");
 
     TdApi.Reaction qrEmojiObj = tdlib.getReaction(qrEmoji);
-
     Tdlib tdlib = manager.controller().tdlib();
     ImageFile qrFile = new ImageFile(tdlib, qrEmojiObj.staticIcon.sticker);
     qrFile.setSize(Screen.dp(56f));
@@ -6591,6 +6588,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (iQuickReaction == null) iQuickReaction = new ImageReceiver(view, 0);
     iQuickReaction.requestFile(qrFile);
     quickReactionText = qrEmojiObj.title;
+    xQuickReactionWidth = (int) U.measureText(quickReactionText, mQuickText);
+    quickReactionEmoji = qrEmoji;
   }
 
   private static void initTexts () {
