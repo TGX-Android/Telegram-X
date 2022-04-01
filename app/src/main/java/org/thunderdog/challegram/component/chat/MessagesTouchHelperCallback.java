@@ -94,7 +94,7 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
   @Override
   public boolean onBeforeSwipe (RecyclerView.ViewHolder holder, int direction) {
     final TGMessage msg = MessagesHolder.findMessageView(holder.itemView).getMessage();
-    if (msg.useBubbles()) {
+    if (msg.useBubbles() || msg.isTranslatedEnough()) {
       Runnable after = null;
       boolean needDelay = false;
       if (direction == (Lang.rtl() ? CustomTouchHelper.RIGHT : CustomTouchHelper.LEFT) && (canDragReply() || canQuickReact())) {
