@@ -4246,7 +4246,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
         float delta = totalScrolled[0] - thrs;
         float deltaPercent = MathUtils.clamp(delta / thrs);
         scrim.setTranslationX(deltaPercent * scrimWidth);
-        Log.e("RWOSL total %s <delta = %s> [thrs = %s, prcnt = %s]", totalScrolled[0], delta, thrs, deltaPercent);
       }
     });
 

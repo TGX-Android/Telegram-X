@@ -181,7 +181,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
         currentX = 0;
       }
 
-      needExtraHeight = (source.getRealContentX() + currentX + reaction.getStaticWidth()) >= maxWidth - source.getBubbleTimePartWidth();
+      needExtraHeight = source.useBubbles() && (source.getRealContentX() + currentX + reaction.getStaticWidth()) >= maxWidth - source.getBubbleTimePartWidth();
 
       //Log.e("SIZETEST %s [btpw = %s, max = %s, msgmax = %s] -> %s", predictWidth, maxWidth - source.getBubbleTimePartWidth(), maxWidth, source.getRealContentMaxWidth(), needExtraHeight);
       //needExtraHeight = source.useBubbles() && realMaxWidth > 0 && (source.getRealContentX() + currentX + reaction.getStaticWidth() + REACTION_ITEM_SEPARATOR >= source.getBubbleInnerWidth() - source.getBubbleTimePartWidth());
@@ -190,15 +190,17 @@ public class ReactionsComponent implements FactorAnimator.Target {
       currentX += (shouldRenderSmall() ? reaction.getSmallWidth() : reaction.getStaticWidth()) + ((shouldRenderSmall() ? REACTION_ITEM_SEPARATOR_SMALL : REACTION_ITEM_SEPARATOR));
     }
 
-    int reactionsWidth = width == 0 ? currentX : width;
+    int reactionsWidth = (width == 0 ? currentX : width);
+    if (reactionsWidth > 0 && !needExtraHeight && source.useBubbles() && !shouldRenderUnderBubble() && !shouldRenderSmall()) reactionsWidth += source.getBubbleTimePartWidth();
+
     int reactionsHeight = (currentY == 0 ? REACTION_HEIGHT : currentY + REACTION_HEIGHT) + (needExtraHeight ? Screen.dp(16f) : 0) + (((needExtraMissingPadding() || source instanceof TGMessageSticker) && !needExtraHeight) ? Screen.dp(source instanceof TGMessageSticker ? 2f : 8f) : 0) + (shouldRenderUnderBubble() ? Screen.dp(needExtraMissingOffset() ? 4f : 2f) : 0);
 
     if (animated) {
       rcWidthAnimator.animateTo(reactionsWidth);
       rcHeightAnimator.animateTo(reactionsHeight);
     } else {
-      rcWidthAnimator.forceFactor(reactionsWidth);
-      rcHeightAnimator.forceFactor(reactionsHeight);
+      if (!rcWidthAnimator.isAnimating()) rcWidthAnimator.forceFactor(reactionsWidth);
+      if (!rcHeightAnimator.isAnimating()) rcHeightAnimator.forceFactor(reactionsHeight);
     }
   }
 
@@ -362,7 +364,9 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
       textCounter.setCount(reaction.totalCount, false);
       if (animate && reaction.isChosen) createOverlay(() -> {
-
+        if (dynamicIconFile != null) {
+          dynamicIconFile.setLooped(false);
+        }
       });
     }
 
