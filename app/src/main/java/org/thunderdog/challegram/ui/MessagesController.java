@@ -4331,6 +4331,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
         ReactionsMenuComponent rmc = new ReactionsMenuComponent(message, chat, layout, ar.reactions);
         rvWrap.setAdapter(rmc);
 
+        if (ar.reactions.length == 0) {
+          reactionWrap.setVisibility(View.GONE);
+        }
+
         int idx = rmc.findIndexOfChosen();
         if (idx != 0) ((LinearLayoutManager) rvWrap.getLayoutManager()).scrollToPositionWithOffset(idx, Screen.dp(12f)); // extra offset to show users that you can swipe to left
       });

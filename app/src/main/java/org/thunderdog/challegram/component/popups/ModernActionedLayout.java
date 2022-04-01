@@ -14,7 +14,7 @@ public class ModernActionedLayout extends MediaLayout {
   }
 
   public static void showMessageReactors (ViewController<?> context, int reactionCount, long chatId, long msgId, TdApi.MessageReaction[] reactions) {
-    if (reactionCount >= 10) {
+    if (reactionCount > 20) {
       showMal(context, (mal) -> new MessageReactorsController(mal, chatId, msgId, reactionCount, reactions));
     } else {
       showMal(context, (mal) -> new MessageReactorsSmallController(mal, chatId, msgId, reactionCount));
