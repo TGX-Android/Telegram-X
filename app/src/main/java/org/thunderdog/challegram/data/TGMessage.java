@@ -5841,7 +5841,19 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         c.save();
         c.scale(-1f, 1f, iconX + icon.getMinimumWidth() / 2, cy);
       }
-      Drawables.draw(c, icon, iconX, cy - (int) ((float) icon.getMinimumHeight() * .5f), iconPaint);
+
+      if (shouldRenderOnlyReactions) {
+        int ccx = (int) iconX;
+        int ccy = cy - (int) ((float) icon.getMinimumHeight() * .5f);
+        int w = icon.getMinimumWidth() / 2;
+        int h = icon.getMinimumHeight() / 2;
+        iQuickReaction.setBounds((int) ccx - w, ccy - h, (int) ccx + w, ccy + h);
+        iQuickReaction.setPaintAlpha((float) mQuickText.getAlpha() / 255f);
+        iQuickReaction.draw(c);
+      } else {
+        Drawables.draw(c, icon, iconX, cy - (int) ((float) icon.getMinimumHeight() * .5f), iconPaint);
+      }
+
       if (rtl) {
         c.restore();
       }
@@ -6575,9 +6587,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (chat == null || !Settings.instance().needQuickReaction() || !manager.isQuickReactionAvailable()) return;
 
     String qrEmoji = Settings.instance().getQuickReactionEmoji(tdlib);
-    if (quickReactionEmoji != null && quickReactionEmoji.equals(qrEmoji)) return;
-
-    Log.v("initQuickReaction");
+    if (iQuickReaction != null && quickReactionEmoji != null && quickReactionEmoji.equals(qrEmoji)) return;
 
     TdApi.Reaction qrEmojiObj = tdlib.getReaction(qrEmoji);
     Tdlib tdlib = manager.controller().tdlib();
