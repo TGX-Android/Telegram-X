@@ -264,7 +264,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
       startY += Screen.dp(4f);
     }
 
-    rcRect.set(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight() - Screen.dp(source.needExtraPadding() ? 10f : 4f));
+    rcRect.set(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight() - Screen.dp(source.needExtraPadding() ? 10f : 4f) - source.getKeyboardHeight());
     c.save();
     c.clipRect(rcRect);
 

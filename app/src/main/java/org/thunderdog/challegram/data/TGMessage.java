@@ -3358,6 +3358,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return height;
   }
 
+  public int getKeyboardHeight () {
+    return inlineKeyboard != null ? inlineKeyboard.getHeight() : 0;
+  }
+
   public int getContentX () {
     return pContentX;
   }
@@ -5603,7 +5607,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public boolean isQuickReactionUnavailable () {
-    return !manager.isQuickReactionAvailable(sender.getChatId(), msg.forwardInfo != null && msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginChannel.CONSTRUCTOR);
+    return !manager.isQuickReactionAvailable(sender.getChatId(), msg.forwardInfo != null && msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginChannel.CONSTRUCTOR && msg.forwardInfo.fromChatId != 0);
   }
 
   private static final float QUICK_REACTION_THRESHOLD = Screen.dp(110f);
@@ -5613,7 +5617,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       return;
     }
 
-    manager.setProcessingQuickReaction(dy > 0);
+    manager.setProcessingQuickReaction(translation != 0 && dy > 0);
 
     if (!messagesController().canWriteMessages()) {
       return;

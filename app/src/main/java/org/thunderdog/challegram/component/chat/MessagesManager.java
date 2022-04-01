@@ -2912,6 +2912,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void setProcessingQuickReaction (boolean value) {
+    //if (this.processingQuickReaction != value) Log.d("setProcessingQuickReaction %s %s", value, new Throwable().fillInStackTrace().getStackTrace()[1]);
     this.processingQuickReaction = value;
   }
 
