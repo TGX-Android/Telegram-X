@@ -2901,7 +2901,13 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     return processingQuickReaction;
   }
 
-  public boolean isQuickReactionAvailable () {
+  public boolean isQuickReactionAvailable (long chatId, boolean isAutoForward) {
+    if (isAutoForward) {
+      // use info from the channel
+      TdApi.Chat channel = tdlib.chat(chatId);
+      return channel != null && Arrays.asList(channel.availableReactions).contains(Settings.instance().getQuickReactionEmoji(tdlib));
+    }
+
     return quickReactionAvailable;
   }
 

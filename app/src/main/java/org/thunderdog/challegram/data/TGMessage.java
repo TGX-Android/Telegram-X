@@ -5602,13 +5602,13 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public boolean isQuickReactionUnavailable () {
-    return !manager.isQuickReactionAvailable();
+    return !manager.isQuickReactionAvailable(sender.getChatId(), msg.forwardInfo != null && msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginChannel.CONSTRUCTOR);
   }
 
   private static final float QUICK_REACTION_THRESHOLD = Screen.dp(110f);
 
   public void translateVertical (float dy) {
-    if (((flags & FLAG_IGNORE_SWIPE) != 0) || translation > 0 || !manager.isQuickReactionAvailable() || isEventLog() || translationYLockAnimator.isAnimating()) {
+    if (((flags & FLAG_IGNORE_SWIPE) != 0) || translation > 0 || isQuickReactionUnavailable() || isEventLog() || translationYLockAnimator.isAnimating()) {
       return;
     }
 
@@ -5739,7 +5739,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       mQuickText.setAlpha(255);
     }
 
-    boolean shouldRenderReactions = manager.isQuickReactionAvailable() && iQuickReaction != null && Lang.rtl() == (translation > 0);
+    boolean shouldRenderReactions = !isQuickReactionUnavailable() && iQuickReaction != null && Lang.rtl() == (translation > 0);
     boolean shouldRenderIcon = Lang.rtl() != (translation > 0) || ((MessageView) view).canQuickReply(); // if swiping right OR can write messages
     boolean shouldRenderOnlyReactions = shouldRenderReactions && !shouldRenderIcon;
     float tsFactor = !shouldRenderIcon ? 1f : translationY;
@@ -6621,7 +6621,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private void initQuickReaction (MessageView view) {
-    if (chat == null || !Settings.instance().needQuickReaction() || !manager.isQuickReactionAvailable()) return;
+    if (chat == null || !Settings.instance().needQuickReaction() || isQuickReactionUnavailable()) return;
 
     String qrEmoji = Settings.instance().getQuickReactionEmoji(tdlib);
     if (iQuickReaction != null && quickReactionEmoji != null && quickReactionEmoji.equals(qrEmoji)) return;
