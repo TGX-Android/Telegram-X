@@ -260,8 +260,6 @@ public class ReactionsComponent implements FactorAnimator.Target {
   public void draw (MessageView view, Canvas c, int startX, int startY) {
     if (shouldRenderUnderBubble()) {
       startY += Screen.dp(needExtraMissingOffset() ? 4f : 2f);
-    } else if (shouldRenderSmall()) {
-      startY += Screen.dp(4f);
     }
 
     rcRect.set(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight() - Screen.dp(source.needExtraPadding() ? 10f : 4f) - source.getKeyboardHeight());

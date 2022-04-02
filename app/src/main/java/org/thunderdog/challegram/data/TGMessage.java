@@ -3130,7 +3130,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     if (reactionsComponent != null && reactionsComponent.shouldRenderSmall()) {
-      reactionsComponent.draw(view, c, startX, startY);
+      reactionsComponent.draw(view, c, startX, startY + Screen.dp(3f));
       startX += reactionsComponent.getWidth();
     }
 
