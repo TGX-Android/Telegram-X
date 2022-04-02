@@ -220,7 +220,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
   }
 
   public boolean shouldRenderUnderBubble () {
-    if (shouldRenderSmall()) return false;
+    if (shouldRenderSmall() || source.isForward()) return false;
     if (!source.useBubbles()) return true;
 
     if (source instanceof TGMessageMedia) {
