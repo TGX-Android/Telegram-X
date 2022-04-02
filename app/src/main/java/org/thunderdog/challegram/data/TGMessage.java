@@ -1876,7 +1876,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
       if (useBubbles) {
         lineTop = forwardY;
-        lineBottom = bottomContentEdge - xBubblePadding - xBubblePaddingSmall - (useBubbleTime() ? getBubbleTimePartHeight() : 0) - getBubbleReduceHeight() - (reactionsComponent != null ? reactionsComponent.getHeight(isBubbleTimeExpanded) : 0);
+        lineBottom = bottomContentEdge - xBubblePadding - xBubblePaddingSmall - (useBubbleTime() ? getBubbleTimePartHeight() : 0) - getBubbleReduceHeight() - ((reactionsComponent != null && !reactionsComponent.shouldRenderSmall() && !reactionsComponent.shouldRenderUnderBubble()) ? reactionsComponent.getHeight(isBubbleTimeExpanded) : 0);
         mergeBottom = mergeTop = false;
       } else {
         if ((flags & FLAG_MERGE_FORWARD) != 0 && (flags & FLAG_HEADER_ENABLED) == 0) {
