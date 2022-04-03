@@ -92,16 +92,22 @@ public class ReactionsComponent implements FactorAnimator.Target {
     update(source.getMessage().interactionInfo != null ? source.getMessage().interactionInfo.reactions : new TdApi.MessageReaction[0], false);
   }
 
-  public void update (TdApi.MessageReaction[] messageReactions, boolean animated) {
-    if (clientReactions.isEmpty() && messageReactions.length == 0) return;
-
-    ArrayList<String> emojiList = new ArrayList<>();
+  private HashMap<String, Reaction> asMap () {
     HashMap<String, Reaction> existingHash = new HashMap<>();
 
     for (int i = 0; i < clientReactions.size(); i++) {
       Reaction existingReaction = clientReactions.get(i);
       existingHash.put(existingReaction.reaction.reaction, existingReaction);
     }
+
+    return existingHash;
+  }
+
+  public void update (TdApi.MessageReaction[] messageReactions, boolean animated) {
+    if (clientReactions.isEmpty() && messageReactions.length == 0) return;
+
+    ArrayList<String> emojiList = new ArrayList<>();
+    HashMap<String, Reaction> existingHash = asMap();
 
     for (int i = 0; i < messageReactions.length; i++) {
       TdApi.MessageReaction reaction = messageReactions[i];
@@ -156,12 +162,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
   }
 
   private void measure (TdApi.MessageReaction[] order, boolean animated) {
-    HashMap<String, Reaction> existingHash = new HashMap<>();
-
-    for (int i = 0; i < clientReactions.size(); i++) {
-      Reaction existingReaction = clientReactions.get(i);
-      existingHash.put(existingReaction.reaction.reaction, existingReaction);
-    }
+    HashMap<String, Reaction> existingHash = asMap();
 
     float maxWidth = (source.useBubbles() && !shouldRenderUnderBubble()) ? source.getRealContentMaxWidth() : TGMessage.getEstimatedContentMaxWidth();
     //Log.e("MWTEST %s %s -> %s [rX = %s]", source.getRealContentMaxWidth(), TGMessageSticker.getEstimatedContentMaxWidth(), maxWidth, source.getRealContentX());
@@ -225,10 +226,8 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
     if (source instanceof TGMessageMedia) {
       return ((TGMessageMedia) source).isEmptyCaption();
-    } else if (source instanceof TGMessageSticker || source instanceof TGMessageVideo || source instanceof TGMessageLocation) {
-      return true;
     } else {
-      return false;
+      return source instanceof TGMessageSticker || source instanceof TGMessageVideo || source instanceof TGMessageLocation;
     }
   }
 
@@ -301,6 +300,17 @@ public class ReactionsComponent implements FactorAnimator.Target {
     measure(clientReactionsOrder, false);
   }
 
+  public void animateUnread (TdApi.UnreadReaction[] unreadReactions) {
+    HashMap<String, Reaction> map = asMap();
+
+    for (TdApi.UnreadReaction unread : unreadReactions) {
+      Reaction mapped = map.get(unread.reaction);
+      if (mapped != null) {
+        mapped.animate();
+      }
+    }
+  }
+
   private static class Reaction implements FactorAnimator.Target {
     private final TdApi.Reaction reactionObj;
     private final boolean isOutgoing;
@@ -364,11 +374,9 @@ public class ReactionsComponent implements FactorAnimator.Target {
         .build();
 
       textCounter.setCount(reaction.totalCount, false);
-      if (animate && reaction.isChosen) createOverlay(() -> {
-        if (dynamicIconFile != null) {
-          dynamicIconFile.setLooped(false);
-        }
-      });
+      if (animate && (small || reaction.isChosen)) {
+        animate();
+      }
     }
 
     public void setCoordinates (float x, float y, boolean animated) {
@@ -464,11 +472,9 @@ public class ReactionsComponent implements FactorAnimator.Target {
     }
 
     public void update (TdApi.MessageReaction reaction, int index, boolean animated, boolean small) {
-      if (reaction.isChosen && !this.reaction.isChosen && animated) createOverlay(() -> {
-        if (dynamicIconFile != null) {
-          dynamicIconFile.setLooped(false);
-        }
-      });
+      if (((reaction.isChosen && !this.reaction.isChosen) || small) && animated) {
+        animate();
+      }
 
       if (small) {
         counterAppearAnimator.setValue(reaction.totalCount > 1, animated);
@@ -493,6 +499,14 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
     private String createKey () {
       return source.getChatId() + "_" + source.getId() + "_" + reaction.reaction;
+    }
+
+    private void animate () {
+      createOverlay(() -> {
+        if (dynamicIconFile != null) {
+          dynamicIconFile.setLooped(false);
+        }
+      });
     }
 
     private void createOverlay (@Nullable Runnable onFirstFrameListener) {

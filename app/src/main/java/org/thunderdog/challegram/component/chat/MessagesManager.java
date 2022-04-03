@@ -2076,6 +2076,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   public static final int HIGHLIGHT_MODE_POSITION_RESTORE = 3;
   public static final int HIGHLIGHT_MODE_UNREAD_NEXT = 4;
   public static final int HIGHLIGHT_MODE_NORMAL_NEXT = 5;
+  public static final int HIGHLIGHT_MODE_UNREAD_REACTION = 6;
 
   private MessageId highlightMessageId;
   private int highlightMode;
@@ -2208,7 +2209,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (closestReactions != null && !closestReactions.isEmpty()) {
       TdApi.Message message = closestReactions.remove(0);
       // REACTIONS TODO: special highlight mode
-      highlightMessage(new MessageId(message.chatId, message.id), HIGHLIGHT_MODE_NORMAL, null, true);
+      highlightMessage(new MessageId(message.chatId, message.id), HIGHLIGHT_MODE_UNREAD_REACTION, null, true);
       return;
     }
     if (reactionsHandler != null) {
@@ -2416,6 +2417,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
     if (fullHeight > height - offset) {
       height -= offset;
+    }
+
+    if (highlightMode == HIGHLIGHT_MODE_UNREAD_REACTION) {
+      scrollMessage.animateUnreadReactions();
     }
 
     if (highlightMode == HIGHLIGHT_MODE_UNREAD || highlightMode == HIGHLIGHT_MODE_UNREAD_NEXT || fullHeight + scrollMessage.findTopEdge() >= height) {

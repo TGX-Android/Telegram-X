@@ -4081,6 +4081,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return msg.canGetAddedReactions;
   }
 
+  public void animateUnreadReactions () {
+    if (reactionsComponent != null) {
+      reactionsComponent.animateUnread(msg.unreadReactions);
+    }
+  }
+
   public final boolean canBeDeletedOnlyForSelf () {
     return msg.canBeDeletedOnlyForSelf;
   }
