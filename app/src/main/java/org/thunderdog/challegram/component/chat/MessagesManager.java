@@ -2208,8 +2208,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   public void scrollToNextReaction () {
     if (closestReactions != null && !closestReactions.isEmpty()) {
       TdApi.Message message = closestReactions.remove(0);
-      // REACTIONS TODO: special highlight mode
       highlightMessage(new MessageId(message.chatId, message.id), HIGHLIGHT_MODE_UNREAD_REACTION, null, true);
+      UI.post(() -> {
+        tdlib.client().send(new TdApi.ViewMessages(message.chatId, message.messageThreadId, new long[] { message.id }, true), tdlib.okHandler());
+      }, 250L);
       return;
     }
     if (reactionsHandler != null) {
@@ -2425,6 +2427,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
     if (highlightMode == HIGHLIGHT_MODE_UNREAD || highlightMode == HIGHLIGHT_MODE_UNREAD_NEXT || fullHeight + scrollMessage.findTopEdge() >= height) {
       scrollToPositionWithOffset(index, height - fullHeight, smooth);
+    } else if (highlightMode == HIGHLIGHT_MODE_UNREAD_REACTION) {
+      scrollToPositionWithOffset(index, height / 2 - fullHeight / 2 + scrollMessage.findTopEdge(), smooth); // TODO
     } else {
       scrollToPositionWithOffset(index, height / 2 - fullHeight / 2 + scrollMessage.findTopEdge(), smooth);
     }
