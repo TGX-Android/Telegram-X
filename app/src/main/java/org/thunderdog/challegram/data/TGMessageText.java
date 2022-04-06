@@ -399,7 +399,7 @@ public class TGMessageText extends TGMessage {
   }
 
   @Override
-  protected int getContentWidth () {
+  public int getContentWidth () {
     return webPage != null ? Math.max(wrapper.getWidth(), webPage.getWidth()) : wrapper.getWidth();
   }
 

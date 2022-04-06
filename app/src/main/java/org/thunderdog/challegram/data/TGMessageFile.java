@@ -474,7 +474,7 @@ public class TGMessageFile extends TGMessage {
   }
 
   @Override
-  protected int getContentWidth () {
+  public int getContentWidth () {
     return Math.round(files.getMetadata().getMaximumItemWidth());
   }
 

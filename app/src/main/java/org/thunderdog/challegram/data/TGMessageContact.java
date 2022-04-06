@@ -139,7 +139,7 @@ public class TGMessageContact extends TGMessage implements TdlibCache.UserDataCh
   }
 
   @Override
-  protected int getContentWidth () {
+  public int getContentWidth () {
     return (useBubbles() ? 0 : Screen.dp(10f)) + avatarSize + Screen.dp(12f) + Math.max(nameWidth, phoneWidth);
   }
 

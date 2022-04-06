@@ -682,7 +682,7 @@ public class TGMessageMedia extends TGMessage {
   }
 
   @Override
-  protected int getContentWidth () {
+  public int getContentWidth () {
     return wrapper == null ? mosaicWrapper.getWidth() : Math.max(mosaicWrapper.getWidth(), wrapper.getWidth());
   }
 

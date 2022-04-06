@@ -89,7 +89,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
   public ReactionsComponent (TGMessage source, ViewProvider viewProvider) {
     this.source = source;
     this.viewProvider = viewProvider;
-    update(source.getMessage().interactionInfo != null ? source.getMessage().interactionInfo.reactions : new TdApi.MessageReaction[0], false);
+    update(source.getMessage().interactionInfo != null ? source.getMessage().interactionInfo.reactions : new TdApi.MessageReaction[0], false, false);
   }
 
   private HashMap<String, Reaction> asMap () {
@@ -103,7 +103,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
     return existingHash;
   }
 
-  public void update (TdApi.MessageReaction[] messageReactions, boolean animated) {
+  public void update (TdApi.MessageReaction[] messageReactions, boolean animated, boolean measure) {
     if (clientReactions.isEmpty() && messageReactions.length == 0) return;
 
     ArrayList<String> emojiList = new ArrayList<>();
@@ -139,8 +139,10 @@ public class ReactionsComponent implements FactorAnimator.Target {
     initializeClickArray();
 
     clientReactionsOrder = messageReactions;
-    measure(messageReactions, animated);
-    componentVisibleAnimator.setValue(messageReactions.length > 0, animated);
+    if (measure) {
+      measure(messageReactions, animated);
+      componentVisibleAnimator.setValue(messageReactions.length > 0, animated);
+    }
   }
 
   private void initializeClickArray () {
@@ -164,8 +166,8 @@ public class ReactionsComponent implements FactorAnimator.Target {
   private void measure (TdApi.MessageReaction[] order, boolean animated) {
     HashMap<String, Reaction> existingHash = asMap();
 
-    float maxWidth = (source.useBubbles() && !shouldRenderUnderBubble()) ? source.getRealContentMaxWidth() : TGMessage.getEstimatedContentMaxWidth();
-    //Log.e("MWTEST %s %s -> %s [rX = %s]", source.getRealContentMaxWidth(), TGMessageSticker.getEstimatedContentMaxWidth(), maxWidth, source.getRealContentX());
+    float leftBubbleEdge = (source.useBubbles() ? source.getActualLeftContentEdge() : 0);
+    float maxWidth = (!source.allowMessageHorizontalExtend()) ? source.getContentWidth() : TGMessage.getEstimatedContentMaxWidth();
 
     int width = 0;
     int currentX = 0;
@@ -176,28 +178,30 @@ public class ReactionsComponent implements FactorAnimator.Target {
       Reaction reaction = existingHash.get(order[i].reaction);
       if (reaction == null) continue;
 
-      float predictWidth = (source.useBubbles() ? source.getRealContentX() : 0) + currentX + reaction.getStaticWidth();
+      boolean isLast = i == (order.length - 1);
+      float predictWidth = leftBubbleEdge + currentX + reaction.getStaticWidth() + Screen.dp(10f);
 
-      if (predictWidth >= maxWidth) {
+      if ((predictWidth - leftBubbleEdge) >= maxWidth || predictWidth >= Screen.currentWidth()) {
         // too much space taken, move to next row
-        width = currentX;
+        width = currentX - (shouldRenderSmall() ? REACTION_ITEM_SEPARATOR_SMALL : REACTION_ITEM_SEPARATOR);
         currentY += REACTION_HEIGHT + REACTION_ITEM_SEPARATOR;
         currentX = 0;
       }
 
-      needExtraHeight = source.useBubbles() && (source.getRealContentX() + currentX + reaction.getStaticWidth()) >= maxWidth - source.getBubbleTimePartWidth();
-
-      //Log.e("SIZETEST %s [btpw = %s, max = %s, msgmax = %s] -> %s", predictWidth, maxWidth - source.getBubbleTimePartWidth(), maxWidth, source.getRealContentMaxWidth(), needExtraHeight);
-      //needExtraHeight = source.useBubbles() && realMaxWidth > 0 && (source.getRealContentX() + currentX + reaction.getStaticWidth() + REACTION_ITEM_SEPARATOR >= source.getBubbleInnerWidth() - source.getBubbleTimePartWidth());
-
+      // needExtraHeight = source.useBubbles() && (source.getRealContentX() + currentX + reaction.getStaticWidth() - leftBubbleEdge) >= maxWidth - source.getBubbleTimePartWidth();
       reaction.setCoordinates(currentX, currentY, animated);
-      currentX += (shouldRenderSmall() ? reaction.getSmallWidth() : reaction.getStaticWidth()) + ((shouldRenderSmall() ? REACTION_ITEM_SEPARATOR_SMALL : REACTION_ITEM_SEPARATOR));
+      currentX += (shouldRenderSmall() ? reaction.getSmallWidth() : reaction.getStaticWidth()) + (!isLast ? (shouldRenderSmall() ? REACTION_ITEM_SEPARATOR_SMALL : REACTION_ITEM_SEPARATOR) : 0);
+
+      if (source.useBubbles() && isLast) {
+        // comparing if reactions are inside the time
+        int rowWidth = currentX - (shouldRenderSmall() ? REACTION_ITEM_SEPARATOR_SMALL : REACTION_ITEM_SEPARATOR);
+        int startTimePoint = source.getBubbleInnerWidth() - source.getBubbleTimePartWidth();
+        needExtraHeight = startTimePoint <= rowWidth;
+      }
     }
 
     int reactionsWidth = (width == 0 ? currentX : width);
-    if (reactionsWidth > 0 && (!needExtraHeight || order.length <= 2) && source.useBubbles() && !shouldRenderUnderBubble() && !shouldRenderSmall()) reactionsWidth += source.getBubbleTimePartWidth();
-
-    int reactionsHeight = (currentY == 0 ? REACTION_HEIGHT : currentY + REACTION_HEIGHT) + (needExtraHeight ? Screen.dp(16f) : 0) + (((needExtraMissingPadding() || source instanceof TGMessageSticker) && !needExtraHeight) ? Screen.dp(source instanceof TGMessageSticker ? 2f : 8f) : 0) + (shouldRenderUnderBubble() ? Screen.dp(needExtraMissingOffset() ? 4f : 2f) : 0);
+    int reactionsHeight = (currentY == 0 ? REACTION_HEIGHT : currentY + REACTION_HEIGHT) + (needExtraHeight ? Screen.dp(12f) + (source.isSmallBubbleContentPadding() ? Screen.dp(8f) : 0) : 0) + (((needExtraMissingPadding() || source instanceof TGMessageSticker) && !needExtraHeight) ? Screen.dp(source instanceof TGMessageSticker ? 2f : 8f) : 0) + (shouldRenderUnderBubble() ? Screen.dp(needExtraMissingOffset() ? 4f : 2f) : 0);
 
     if (animated) {
       rcWidthAnimator.animateTo(reactionsWidth);
@@ -209,7 +213,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
   }
 
   public int getHeight () {
-    return (int) (rcHeightAnimator.getFactor() * componentVisibleAnimator.getFloatValue());
+    return getHeight(false);
   }
 
   public int getHeight (boolean compensate) {
@@ -298,6 +302,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
     if (realMaxWidth == pRealContentMaxWidth || clientReactionsOrder == null) return;
     realMaxWidth = pRealContentMaxWidth;
     measure(clientReactionsOrder, false);
+    componentVisibleAnimator.setValue(clientReactionsOrder.length > 0, false);
   }
 
   public void animateUnread (TdApi.UnreadReaction[] unreadReactions) {

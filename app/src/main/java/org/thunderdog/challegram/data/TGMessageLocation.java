@@ -865,7 +865,7 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
   }
 
   @Override
-  protected int getContentWidth () {
+  public int getContentWidth () {
     return previewWidth;
   }
 

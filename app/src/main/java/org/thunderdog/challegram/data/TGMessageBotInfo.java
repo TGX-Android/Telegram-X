@@ -87,7 +87,7 @@ public class TGMessageBotInfo extends TGMessage {
   }
 
   @Override
-  protected int getContentWidth () {
+  public int getContentWidth () {
     return Math.max(titleWrapper != null ? titleWrapper.getWidth() : 0, textWrapper.getWidth());
   }
 

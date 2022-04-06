@@ -285,7 +285,7 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
   }
 
   @Override
-  protected int getContentWidth () {
+  public int getContentWidth () {
     return videoSize;
   }
 

@@ -159,7 +159,7 @@ public class TGMessageCall extends TGMessage {
   }
 
   @Override
-  protected int getContentWidth () {
+  public int getContentWidth () {
     return (int) Math.max(Math.max(titleWidth, subtitleWidth + Screen.dp(20f)), useBubbles() ? Screen.dp(182f) : 0) + Screen.dp(40f) + Screen.dp(11f);
   }
 

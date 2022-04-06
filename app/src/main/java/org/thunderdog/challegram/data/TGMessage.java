@@ -1086,7 +1086,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   protected void buildContent (int maxWidth) { }
 
-  protected int getContentWidth () {
+  public int getContentWidth () {
     return pRealContentMaxWidth;
   }
 
@@ -1950,13 +1950,13 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     if (reactionsComponent != null && !reactionsComponent.shouldRenderSmall()) {
-      /*
+
       int _dbg_sx = (!useBubbles() || useFullWidth()) ? pRealContentX - (isForward() ? Screen.dp(11f) : 0) : getInternalBubbleStartX();
       int _dbg_sy = pContentY + getContentHeight();
       c.drawRect(pContentX, pContentY, pContentX + getContentWidth(), pContentY + getContentHeight(), Paints.getPorterDuffPaint(ColorUtils.alphaColor(0.3f, Color.BLUE)));
       c.drawRect(_dbg_sx, _dbg_sy,  getRealContentX() + getEstimatedContentMaxWidth(), _dbg_sy + reactionsComponent.getHeight(), Paints.getPorterDuffPaint(ColorUtils.alphaColor(0.3f, Color.GREEN)));
       c.drawRect(_dbg_sx, _dbg_sy, _dbg_sx + reactionsComponent.getWidth(), _dbg_sy + reactionsComponent.getHeight(), Paints.getPorterDuffPaint(ColorUtils.alphaColor(0.3f, Color.RED)));
-      */
+
       reactionsComponent.draw(view, c, !useBubbles() ? pRealContentX - (isForward() ? Screen.dp(11f) : 0) : reactionsComponent.shouldRenderUnderBubble() ? pContentX : getInternalBubbleStartX(), pContentY + getContentHeight());
     }
 
@@ -2834,7 +2834,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return false;
   }
 
-  private boolean allowMessageHorizontalExtend () {
+  public boolean allowMessageHorizontalExtend () {
     return /*msg.forwardInfo != null ||*/ !useBubbles() || allowBubbleHorizontalExtend();
   }
 
@@ -2909,9 +2909,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         }
         this.bubbleInnerWidth = bubbleWidth;
         this.bubbleTimePartWidth = bubbleTimePartWidth;
-        if (this.reactionsComponent != null) {
-          this.reactionsComponent.measureLayout(bubbleInnerWidth);
-        }
       } else {
         this.bubbleTimePartWidth = 0;
       }
@@ -2994,6 +2991,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       updateContentPositions(false);
       notifyBubbleChanged();
       // invalidateOutline(true);
+      if (this.reactionsComponent != null) {
+        //boolean log = (msg.content.getConstructor() == TdApi.MessageSticker.CONSTRUCTOR || msg.content.getConstructor() == TdApi.MessageDice.CONSTRUCTOR);
+        this.reactionsComponent.measureLayout(bubbleWidth);
+      }
+    } else if (this.reactionsComponent != null) {
+      this.reactionsComponent.measureLayout(getContentWidth());
     }
   }
 
@@ -4659,7 +4662,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     shareCounter.setCount(interactionInfo != null ? interactionInfo.forwardCount : 0, animated);
     isPinned.showHide(isPinned(), animated);
     if (reactionsComponent != null) {
-      reactionsComponent.update(interactionInfo != null ? interactionInfo.reactions : new TdApi.MessageReaction[0], animated);
+      reactionsComponent.update(interactionInfo != null ? interactionInfo.reactions : new TdApi.MessageReaction[0], animated, true);
     }
   }
 
@@ -4865,6 +4868,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   protected int getBubbleContentPadding () {
     return xBubblePadding;
+  }
+
+  public boolean isSmallBubbleContentPadding () {
+    return getBubbleContentPadding() == xBubblePaddingSmall;
   }
 
   private int getBubblePaddingLeft () {
@@ -5610,6 +5617,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   public boolean isTranslatedEnough () {
     return isReactionNeeded;
+  }
+
+  public boolean isBubbleTimeExpanded () {
+    return isBubbleTimeExpanded;
   }
 
   public boolean isQuickReactionUnavailable () {

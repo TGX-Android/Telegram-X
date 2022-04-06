@@ -428,7 +428,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
   }
 
   @Override
-  protected int getContentWidth () {
+  public int getContentWidth () {
     return stickerWidth;
   }
 

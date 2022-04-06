@@ -164,7 +164,7 @@ public class TGMessageGame extends TGMessage implements MediaWrapper.OnClickList
   }
 
   @Override
-  protected int getContentWidth () {
+  public int getContentWidth () {
     return getImagePaddingLeft() + Math.max(text != null ? text.getWidth() : 0, mediaWrapper.getCellWidth());
   }
 
