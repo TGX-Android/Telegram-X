@@ -4243,9 +4243,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
       public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
         totalScrolled[0] += dx;
         float thrs = rvWrap.getMeasuredWidth();
-        float delta = totalScrolled[0] - thrs;
-        float deltaPercent = MathUtils.clamp(delta / thrs);
-        scrim.setTranslationX(deltaPercent * scrimWidth);
+
+        float scrolledPrcnt = MathUtils.clamp((totalScrolled[0] / thrs) - 0.95f);
+        float trPercent = scrolledPrcnt / 0.15f;
+
+        scrim.setTranslationX(scrimWidth * trPercent);
       }
     });
 

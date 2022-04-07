@@ -192,7 +192,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
       reaction.setCoordinates(currentX, currentY, animated);
       currentX += (shouldRenderSmall() ? reaction.getSmallWidth() : reaction.getStaticWidth()) + (!isLast ? (shouldRenderSmall() ? REACTION_ITEM_SEPARATOR_SMALL : REACTION_ITEM_SEPARATOR) : 0);
 
-      if (source.useBubbles() && isLast) {
+      if (!shouldRenderUnderBubble() && source.useBubbles() && isLast) {
         // comparing if reactions are inside the time
         int rowWidth = currentX - (shouldRenderSmall() ? REACTION_ITEM_SEPARATOR_SMALL : REACTION_ITEM_SEPARATOR);
         int startTimePoint = source.getBubbleInnerWidth() - source.getBubbleTimePartWidth();

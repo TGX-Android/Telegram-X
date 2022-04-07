@@ -2,42 +2,27 @@ package org.thunderdog.challegram.component.chat;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Rect;
-import android.os.Build;
-import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.data.TGMessage;
-import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.gcomb.ReactionReceiver;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.Text;
-import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextColorSets;
-import org.thunderdog.challegram.widget.ImageReceiverView;
-import org.thunderdog.challegram.widget.PopupLayout;
-import org.thunderdog.challegram.widget.SimplestCheckBox;
 
 import java.util.List;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
-import me.vkryl.android.animator.FactorAnimator;
-import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 
 public class ReactionsConfigComponent extends RecyclerView.Adapter<ReactionsConfigComponent.RccViewHolder> {
