@@ -507,11 +507,17 @@ public class ReactionsComponent implements FactorAnimator.Target {
     }
 
     private void animate () {
-      createOverlay(() -> {
-        if (dynamicIconFile != null) {
-          dynamicIconFile.setLooped(false);
-        }
-      });
+      if (dynamicIconFile != null) {
+        source.performWithReactionsReceiver(reactionsReceiver -> reactionsReceiver.getGifReceiver(getKey()).setOnGifLoadedListener(() -> createOverlay(() -> {
+          if (dynamicIconFile != null) {
+            dynamicIconFile.setLooped(false);
+          }
+        })));
+      }
+    }
+
+    private int getKey () {
+      return reaction.reaction.hashCode();
     }
 
     private void createOverlay (@Nullable Runnable onFirstFrameListener) {
@@ -542,8 +548,8 @@ public class ReactionsComponent implements FactorAnimator.Target {
       c.translate(startX, startY);
       c.scale(animationScale, animationScale, width / 2, height / 2);
 
-      GifReceiver gr = reactionsReceiver.getGifReceiver(reaction.reaction.hashCode());
-      ImageReceiver r = reactionsReceiver.getImageReceiver(reaction.reaction.hashCode());
+      GifReceiver gr = reactionsReceiver.getGifReceiver(getKey());
+      ImageReceiver r = reactionsReceiver.getImageReceiver(getKey());
 
       r.setBounds(tcWidth, vertPad, REACTION_ICON_SIZE_SMALL + tcWidth, (int) (height - vertPad));
       if (r.isEmpty()) r.requestFile(staticIconFile);
@@ -622,8 +628,8 @@ public class ReactionsComponent implements FactorAnimator.Target {
       int izPad = (REACTION_HEIGHT - REACTION_ICON_SIZE) / 2;
 
       // Static
-      GifReceiver gr = reactionsReceiver.getGifReceiver(reaction.reaction.hashCode());
-      ImageReceiver r = reactionsReceiver.getImageReceiver(reaction.reaction.hashCode());
+      GifReceiver gr = reactionsReceiver.getGifReceiver(getKey());
+      ImageReceiver r = reactionsReceiver.getImageReceiver(getKey());
       r.setBounds(Screen.dp(8f), izPad, Screen.dp(8f) + REACTION_ICON_SIZE, REACTION_HEIGHT - izPad);
       if (r.isEmpty()) r.requestFile(staticIconFile);
       if (r.needPlaceholder()) r.drawPlaceholderContour(c, staticIconContour, alpha);

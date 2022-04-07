@@ -2282,6 +2282,13 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     performWithViews(view -> view.invalidateReplyReceiver(msg.chatId, msg.id));
   }
 
+  public final void performWithReactionsReceiver (RunnableData<ComplexReceiver> act) {
+    View msg = findCurrentView();
+    if (msg != null) {
+      act.runWithData(((MessageView) msg).getReactionsReceiver());
+    }
+  }
+
   // Touch
 
   public boolean allowLongPress (float x, float y) {

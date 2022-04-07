@@ -309,6 +309,8 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
 
   // Loader stuff
 
+  private Runnable onGifLoadedListener;
+
   @Override
   public void gifLoaded (GifFile file, GifState gif) {
     getHandler().onLoad(this, file, gif);
@@ -324,6 +326,12 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     if (file.getFileId() == fileId) {
       this.gif = gif;
       this.state = STATE_LOADED;
+
+      if (onGifLoadedListener != null) {
+        onGifLoadedListener.run();
+        onGifLoadedListener = null;
+      }
+
       layoutGif();
       invalidate();
     }
@@ -334,6 +342,14 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     int fileId = this.file == null ? 0 : this.file.getFileId();
     if (file.getFileId() == fileId) {
       invalidate();
+    }
+  }
+
+  public void setOnGifLoadedListener (Runnable listener) {
+    if (this.state == STATE_LOADED) {
+      listener.run();
+    } else {
+      this.onGifLoadedListener = listener;
     }
   }
 
