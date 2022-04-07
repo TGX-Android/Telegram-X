@@ -64,7 +64,7 @@ public class CheckBox extends View {
 
     checkPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
     checkPaint.setStyle(Paint.Style.STROKE);
-    checkPaint.setStrokeWidth(4f);
+    checkPaint.setStrokeWidth(4.5f);
 
     rect = new RectF();
     rect.left = offset;
