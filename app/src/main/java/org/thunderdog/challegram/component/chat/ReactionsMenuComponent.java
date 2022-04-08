@@ -16,6 +16,7 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.widget.ImageReceiverView;
 import org.thunderdog.challegram.widget.PopupLayout;
@@ -89,6 +90,7 @@ public class ReactionsMenuComponent extends RecyclerView.Adapter<ReactionsMenuCo
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) itemView.setStateListAnimator(null);
 
       itemView.setOnClickListener((v) -> {
+        UI.hapticVibrate(getEmojiView(), false);
         layout.hideWindow(true);
         tdlib.send(new TdApi.SetMessageReaction(msg.getChatId(), msg.getId(), reaction, false), (r) -> {});
       });

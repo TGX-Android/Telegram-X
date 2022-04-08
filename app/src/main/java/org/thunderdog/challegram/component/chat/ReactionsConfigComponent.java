@@ -15,6 +15,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
@@ -175,6 +176,8 @@ public class ReactionsConfigComponent extends RecyclerView.Adapter<ReactionsConf
 
     public void onClick (String emoji, Delegate delegate) {
       int[] coords = Views.getLocationOnScreen(this);
+
+      UI.hapticVibrate(this, false);
       delegate.toggleReaction(emoji, new int[] {
         coords[0] + receiver.getMainReceiver().centerX(),
         coords[1] + receiver.getMainReceiver().centerY(),

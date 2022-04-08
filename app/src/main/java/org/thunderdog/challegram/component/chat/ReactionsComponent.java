@@ -89,7 +89,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
   public ReactionsComponent (TGMessage source, ViewProvider viewProvider) {
     this.source = source;
     this.viewProvider = viewProvider;
-    update(source.getMessage().interactionInfo != null ? source.getMessage().interactionInfo.reactions : new TdApi.MessageReaction[0], false, false);
+    update(source.getOldestMessage().interactionInfo != null ? source.getOldestMessage().interactionInfo.reactions : new TdApi.MessageReaction[0], false, false);
   }
 
   private HashMap<String, Reaction> asMap () {
@@ -291,6 +291,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
     for (int i = 0; i < rcClickListeners.length; i++) {
       if (rcClickListeners[i].contains(x, y) && clientReactions.size() > i) {
         source.tdlib().send(new TdApi.SetMessageReaction(source.getChatId(), source.getId(), clientReactions.get(i).reaction.reaction, false), (r) -> {});
+        UI.hapticVibrate(source.findCurrentView(), false);
         return true;
       }
     }
@@ -509,19 +510,19 @@ public class ReactionsComponent implements FactorAnimator.Target {
     private void animate () {
       if (dynamicIconFile != null) {
         source.performWithReactionsReceiver(reactionsReceiver -> reactionsReceiver.getGifReceiver(getKey()).setOnGifLoadedListener(() -> createOverlay(() -> {
-          if (dynamicIconFile != null) {
-            dynamicIconFile.setLooped(false);
-          }
+          drawAnimated = true;
+          reactionsReceiver.getGifReceiver(getKey()).requestFile(dynamicIconFile);
+          dynamicIconFile.setLooped(false);
+          source.invalidate();
         })));
       }
     }
 
     private int getKey () {
-      return reaction.reaction.hashCode();
+      return createKey().hashCode();
     }
 
     private void createOverlay (@Nullable Runnable onFirstFrameListener) {
-      drawAnimated = true;
       source.messagesController().addReactionToOverlay(createKey(), reactionObj, onFirstFrameListener);
     }
 

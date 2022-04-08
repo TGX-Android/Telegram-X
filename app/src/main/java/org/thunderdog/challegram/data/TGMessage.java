@@ -4669,7 +4669,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     shareCounter.setCount(interactionInfo != null ? interactionInfo.forwardCount : 0, animated);
     isPinned.showHide(isPinned(), animated);
     if (reactionsComponent != null) {
-      reactionsComponent.update(interactionInfo != null ? interactionInfo.reactions : new TdApi.MessageReaction[0], animated, true);
+      int idx = indexOfMessageInternal(msg.id);
+      if (idx == 0 || idx == MESSAGE_INDEX_SELF) {
+        reactionsComponent.update(interactionInfo != null ? interactionInfo.reactions : new TdApi.MessageReaction[0], animated, true);
+      }
     }
   }
 
@@ -4789,6 +4792,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       }
       if (changed) {
         updateInteractionInfo(true);
+      } else if (reactionsComponent != null && i == 0) { // Reactions are added only on the first message
+        reactionsComponent.update(interactionInfo != null ? interactionInfo.reactions : new TdApi.MessageReaction[0], true, true);
       }
     }
     return changed;
