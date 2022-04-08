@@ -7527,9 +7527,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   // Extra reaction stuff
 
   public final String getChosenReaction () {
-    if (getMessage().interactionInfo == null) return null;
+    if (getOldestMessage().interactionInfo == null) return null;
 
-    for (TdApi.MessageReaction reaction : getMessage().interactionInfo.reactions) {
+    for (TdApi.MessageReaction reaction : getOldestMessage().interactionInfo.reactions) {
       if (reaction.isChosen) {
         return reaction.reaction;
       }
@@ -7539,42 +7539,17 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public final boolean containsUnreadReaction () {
-    synchronized (this) {
-      if (combinedMessages != null) {
-        for (int i = combinedMessages.size() - 1; i >= 0; i--) {
-          if (U.safeLength(combinedMessages.get(i).unreadReactions) > 0) {
-            return true;
-          }
-        }
-      }
-    }
-    return U.safeLength(msg.unreadReactions) > 0;
+    return U.safeLength(getOldestMessage().unreadReactions) > 0;
   }
 
   public final boolean containsAnyReaction () {
-    synchronized (this) {
-      if (combinedMessages != null) {
-        for (int i = combinedMessages.size() - 1; i >= 0; i--) {
-          if (combinedMessages.get(i).interactionInfo != null && U.safeLength(combinedMessages.get(i).interactionInfo.reactions) > 0) {
-            return true;
-          }
-        }
-      }
-    }
-    return msg.interactionInfo != null && U.safeLength(msg.interactionInfo.reactions) > 0;
+    TdApi.Message oldest = getOldestMessage();
+    return oldest.interactionInfo != null && U.safeLength(oldest.interactionInfo.reactions) > 0;
   }
 
   public final int getTotalReactionCount () {
-    synchronized (this) {
-      if (combinedMessages != null) {
-        for (int i = combinedMessages.size() - 1; i >= 0; i--) {
-          if (combinedMessages.get(0).interactionInfo != null) {
-            return getArrayReactionCount(combinedMessages.get(i).interactionInfo.reactions);
-          }
-        }
-      }
-    }
-    return msg.interactionInfo != null ? getArrayReactionCount(msg.interactionInfo.reactions) : 0;
+    TdApi.Message oldest = getOldestMessage();
+    return oldest.interactionInfo != null ? getArrayReactionCount(oldest.interactionInfo.reactions) : 0;
   }
 
   private int getArrayReactionCount(TdApi.MessageReaction[] arr) {
@@ -7584,6 +7559,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public TdApi.MessageReaction[] getMessageReactions () {
-    return msg.interactionInfo != null ? msg.interactionInfo.reactions : new TdApi.MessageReaction[0];
+    TdApi.Message oldest = getOldestMessage();
+    return oldest.interactionInfo != null ? oldest.interactionInfo.reactions : new TdApi.MessageReaction[0];
   }
 }
