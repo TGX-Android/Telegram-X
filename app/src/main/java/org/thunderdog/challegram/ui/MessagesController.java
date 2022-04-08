@@ -4257,8 +4257,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     Drawable viewIcon = Drawables.get(context.getResources(), R.drawable.baseline_visibility_16);
     viewIcon.setColorFilter(Paints.getColorFilter(Theme.getColor(R.id.theme_color_icon)));
 
+    TdApi.Message oldMsg = message.getOldestMessage();
     int pad = Screen.dp(12);
-    boolean showReactors = message.canGetAddedReactions() && message.getTotalReactionCount() != 0;
+    boolean showReactors = oldMsg.canGetAddedReactions && message.getTotalReactionCount() != 0;
     boolean showViewers = showReactors && message.canGetViewers();
     LinearLayout vrWrap = new LinearLayout(layout.getContext());
     ViewSupport.setThemedBackground(vrWrap, R.id.theme_color_background);
@@ -4316,7 +4317,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       vrWrap.addView(reactors);
 
       reactors.setOnClickListener((view) -> {
-        ModernActionedLayout.showMessageReactors(this, message.getTotalReactionCount(), message.getChatId(), message.getId(), message.getMessageReactions());
+        ModernActionedLayout.showMessageReactors(this, message.getTotalReactionCount(), oldMsg.chatId, oldMsg.id, message.getMessageReactions());
       });
     }
 
