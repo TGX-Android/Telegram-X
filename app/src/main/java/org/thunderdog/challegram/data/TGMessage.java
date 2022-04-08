@@ -981,7 +981,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private int measureKeyboardTop () {
-    return (useBubbles() ? bottomContentEdge + TGInlineKeyboard.getButtonSpacing() : pContentY + getContentHeight() + getPaddingBottom() + (hasFooter() ? getFooterHeight() + getFooterPaddingTop() + getFooterPaddingBottom() : 0)) + (useBubbles() ? 0 : measureReactionsHeight());
+    return (useBubbles() ? bottomContentEdge + TGInlineKeyboard.getButtonSpacing() : pContentY + getContentHeight() + getPaddingBottom() + (hasFooter() ? getFooterHeight() + getFooterPaddingTop() + getFooterPaddingBottom() : 0));
   }
 
   protected boolean rebuildContentDimensions () {
@@ -1957,7 +1957,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       c.drawRect(_dbg_sx, _dbg_sy,  getRealContentX() + getEstimatedContentMaxWidth(), _dbg_sy + reactionsComponent.getHeight(), Paints.getPorterDuffPaint(ColorUtils.alphaColor(0.3f, Color.GREEN)));
       c.drawRect(_dbg_sx, _dbg_sy, _dbg_sx + reactionsComponent.getWidth(), _dbg_sy + reactionsComponent.getHeight(), Paints.getPorterDuffPaint(ColorUtils.alphaColor(0.3f, Color.RED)));
       */
-      reactionsComponent.draw(view, c, !useBubbles() ? pRealContentX - (isForward() ? Screen.dp(11f) : 0) : reactionsComponent.shouldRenderUnderBubble() ? pContentX : getInternalBubbleStartX(), pContentY + getContentHeight());
+      int rcX = !useBubbles() ? pRealContentX - (isForward() ? Screen.dp(11f) : 0) : reactionsComponent.shouldRenderUnderBubble() ? pContentX : getInternalBubbleStartX();
+      int rcY = pContentY + getContentHeight() + ((inlineKeyboard != null && !inlineKeyboard.isEmpty() && reactionsComponent.shouldRenderUnderBubble()) ? inlineKeyboard.getHeight() + Screen.dp(4f) + (!useBubbles() ? Screen.dp(4f) : 0) : 0);
+      reactionsComponent.draw(view, c, rcX, rcY);
     }
 
     if (contentOffset != 0) {
