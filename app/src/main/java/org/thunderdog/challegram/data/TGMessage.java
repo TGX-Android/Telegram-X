@@ -7565,16 +7565,16 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public final int getTotalReactionCount () {
-    int count = 0;
     synchronized (this) {
       if (combinedMessages != null) {
         for (int i = combinedMessages.size() - 1; i >= 0; i--) {
-          count += combinedMessages.get(i).interactionInfo != null ? getArrayReactionCount(combinedMessages.get(i).interactionInfo.reactions) : 0;
+          if (combinedMessages.get(0).interactionInfo != null) {
+            return getArrayReactionCount(combinedMessages.get(i).interactionInfo.reactions);
+          }
         }
       }
     }
-    count += msg.interactionInfo != null ? getArrayReactionCount(msg.interactionInfo.reactions) : 0;
-    return count;
+    return msg.interactionInfo != null ? getArrayReactionCount(msg.interactionInfo.reactions) : 0;
   }
 
   private int getArrayReactionCount(TdApi.MessageReaction[] arr) {
