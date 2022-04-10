@@ -298,7 +298,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
     for (int i = 0; i < rcClickListeners.length; i++) {
       if (rcClickListeners[i].contains(x, y) && clientReactions.size() > i) {
-        source.tdlib().send(new TdApi.SetMessageReaction(source.getChatId(), source.getSmallestId(), clientReactions.get(i).reaction.reaction, false), (r) -> {});
+        source.messagesController().setMessageReaction(source.getOldestMessage(), clientReactions.get(i).reaction.reaction);
         UI.hapticVibrate(source.findCurrentView(), false);
         return true;
       }

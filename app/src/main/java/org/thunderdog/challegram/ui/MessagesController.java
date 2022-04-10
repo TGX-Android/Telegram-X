@@ -4338,7 +4338,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
 
         int idx = rmc.findIndexOfChosen();
-        if (idx != 0) ((LinearLayoutManager) rvWrap.getLayoutManager()).scrollToPositionWithOffset(idx, Screen.dp(12f)); // extra offset to show users that you can swipe to left
+        if (idx != 0) {
+          totalScrolled[0] = Screen.dp(12f) + (Screen.dp(46f) * idx);
+          ((LinearLayoutManager) rvWrap.getLayoutManager()).scrollToPositionWithOffset(idx, Screen.dp(12f)); // extra offset to show users that you can swipe to left
+        }
       });
     });
 
@@ -6016,7 +6019,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void quickReact (TdApi.Message msg) {
-    tdlib.send(new TdApi.SetMessageReaction(msg.chatId, msg.id, Settings.instance().getQuickReactionEmoji(tdlib), false), (r) -> {});
+    setMessageReaction(msg, Settings.instance().getQuickReactionEmoji(tdlib));
+  }
+
+  public void setMessageReaction (TdApi.Message msg, String emoji) {
+    tdlib.send(new TdApi.SetMessageReaction(msg.chatId, msg.id, emoji, false), (r) -> {
+      tdlib.getMessage(msg.chatId, msg.id, (nMsg) -> {
+        msg.canGetAddedReactions = nMsg.canGetAddedReactions;
+      });
+    });
   }
 
   public void showReply (TdApi.Message msg, boolean byUser, boolean showKeyboard) {

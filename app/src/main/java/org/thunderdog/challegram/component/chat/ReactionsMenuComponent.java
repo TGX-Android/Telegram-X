@@ -92,7 +92,7 @@ public class ReactionsMenuComponent extends RecyclerView.Adapter<ReactionsMenuCo
       itemView.setOnClickListener((v) -> {
         UI.hapticVibrate(getEmojiView(), false);
         layout.hideWindow(true);
-        tdlib.send(new TdApi.SetMessageReaction(msg.getChatId(), msg.getSmallestId(), reaction, false), (r) -> {});
+        msg.messagesController().setMessageReaction(msg.getOldestMessage(), reaction);
       });
     }
 
