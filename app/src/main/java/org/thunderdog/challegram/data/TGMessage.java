@@ -1950,15 +1950,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     if (reactionsComponent != null && !reactionsComponent.shouldRenderSmall()) {
-      /*
-      int _dbg_sx = (!useBubbles() || useFullWidth()) ? pRealContentX - (isForward() ? Screen.dp(11f) : 0) : getInternalBubbleStartX();
-      int _dbg_sy = pContentY + getContentHeight();
-      c.drawRect(pContentX, pContentY, pContentX + getContentWidth(), pContentY + getContentHeight(), Paints.getPorterDuffPaint(ColorUtils.alphaColor(0.3f, Color.BLUE)));
-      c.drawRect(_dbg_sx, _dbg_sy,  getRealContentX() + getEstimatedContentMaxWidth(), _dbg_sy + reactionsComponent.getHeight(), Paints.getPorterDuffPaint(ColorUtils.alphaColor(0.3f, Color.GREEN)));
-      c.drawRect(_dbg_sx, _dbg_sy, _dbg_sx + reactionsComponent.getWidth(), _dbg_sy + reactionsComponent.getHeight(), Paints.getPorterDuffPaint(ColorUtils.alphaColor(0.3f, Color.RED)));
-      */
       int rcX = !useBubbles() ? pRealContentX - (isForward() ? Screen.dp(11f) : 0) : reactionsComponent.shouldRenderUnderBubble() ? pContentX : getInternalBubbleStartX();
       int rcY = pContentY + getContentHeight() + ((inlineKeyboard != null && !inlineKeyboard.isEmpty() && reactionsComponent.shouldRenderUnderBubble()) ? inlineKeyboard.getHeight() + Screen.dp(4f) + (!useBubbles() ? Screen.dp(4f) : 0) : 0);
+      //c.drawRect(rcX, rcY,  rcX + reactionsComponent._maxWidth, rcY + reactionsComponent.getHeight(), Paints.getPorterDuffPaint(ColorUtils.alphaColor(0.3f, Color.GREEN)));
+      //c.drawRect(rcX, rcY,  rcX + reactionsComponent.getWidth(), rcY + reactionsComponent.getHeight(), Paints.getPorterDuffPaint(ColorUtils.alphaColor(0.3f, Color.RED)));
       reactionsComponent.draw(view, c, rcX, rcY);
     }
 

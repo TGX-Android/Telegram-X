@@ -183,7 +183,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
       if ((predictWidth - leftBubbleEdge) >= maxWidth || predictWidth >= Screen.currentWidth()) {
         // too much space taken, move to next row
-        width = currentX - (shouldRenderSmall() ? REACTION_ITEM_SEPARATOR_SMALL : REACTION_ITEM_SEPARATOR);
+        width = Math.max(width, currentX - (shouldRenderSmall() ? REACTION_ITEM_SEPARATOR_SMALL : REACTION_ITEM_SEPARATOR));
         currentY += REACTION_HEIGHT + REACTION_ITEM_SEPARATOR;
         currentX = 0;
       }
@@ -364,9 +364,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
         dynamicIconFile = new GifFile(tdlib, reactionObj.centerAnimation);
         dynamicIconFile.setUnique(true);
         dynamicIconFile.setPlayOnce(true);
-        dynamicIconFile.setFrameChangeListener((file, frameNo, frameDelta) -> {
-          isPlayingNow = frameNo > 4;
-        });
+        dynamicIconFile.setFrameChangeListener((file, frameNo, frameDelta) -> isPlayingNow = frameNo > 4);
       }
 
       chooseAnimator.setValue(reaction.isChosen, false);
