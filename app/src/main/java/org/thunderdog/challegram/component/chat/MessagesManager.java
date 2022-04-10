@@ -1584,7 +1584,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
-  public void updateMessageReactionRead (long messageId) {
+  public void updateMessageReactionRead (long messageId, @Nullable TdApi.UnreadReaction[] unreadReactions) {
     if (closestReactions != null && !closestReactions.isEmpty()) {
       int i = 0;
       for (TdApi.Message message : closestReactions) {
@@ -1597,8 +1597,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
     int index = adapter.indexOfMessageContainer(messageId);
     if (index != -1) {
-      adapter.getItem(index).readReaction(messageId);
-      // TODO nothing?
+      adapter.getItem(index).setUnreadReactions(messageId, unreadReactions);
     }
   }
 
@@ -2422,13 +2421,12 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
 
     if (highlightMode == HIGHLIGHT_MODE_UNREAD_REACTION) {
-      scrollMessage.animateUnreadReactions();
+      TdApi.UnreadReaction[] unread = scrollMessage.getOldestMessage().unreadReactions;
+      UI.post(() -> { scrollMessage.animateUnreadReactions(unread); }, 200L);
     }
 
     if (highlightMode == HIGHLIGHT_MODE_UNREAD || highlightMode == HIGHLIGHT_MODE_UNREAD_NEXT || fullHeight + scrollMessage.findTopEdge() >= height) {
       scrollToPositionWithOffset(index, height - fullHeight, smooth);
-    } else if (highlightMode == HIGHLIGHT_MODE_UNREAD_REACTION) {
-      scrollToPositionWithOffset(index, height / 2 - fullHeight / 2 + scrollMessage.findTopEdge(), smooth); // TODO
     } else {
       scrollToPositionWithOffset(index, height / 2 - fullHeight / 2 + scrollMessage.findTopEdge(), smooth);
     }
@@ -2847,12 +2845,12 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   public void onMessageUnreadReactionsChanged (long chatId, long messageId, @Nullable TdApi.UnreadReaction[] unreadReactions, int unreadReactionCount) {
     int sentMessageIndex = indexOfSentMessage(chatId, messageId);
     if (sentMessageIndex != -1) {
-      sentMessages.get(sentMessageIndex).unreadReactions = new TdApi.UnreadReaction[0];
+      sentMessages.get(sentMessageIndex).unreadReactions = unreadReactions;
       return;
     }
     tdlib.ui().post(() -> {
       if (loader.getChatId() == chatId) {
-        updateMessageReactionRead(messageId);
+        updateMessageReactionRead(messageId, unreadReactions);
       }
     });
   }

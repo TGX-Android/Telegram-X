@@ -3754,18 +3754,22 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public final void readReaction (long messageId) {
+    setUnreadReactions(messageId, new TdApi.UnreadReaction[0]);
+  }
+
+  public final void setUnreadReactions (long messageId, TdApi.UnreadReaction[] unreadReactions) {
     synchronized (this) {
       if (combinedMessages != null) {
         for (TdApi.Message message : combinedMessages) {
           if (message.id == messageId) {
-            message.unreadReactions = new TdApi.UnreadReaction[0];
+            message.unreadReactions = unreadReactions;
             return;
           }
         }
       }
     }
     if (msg.id == messageId) {
-      msg.unreadReactions = new TdApi.UnreadReaction[0];
+      msg.unreadReactions = unreadReactions;
     }
   }
 
@@ -4088,9 +4092,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return msg.canGetAddedReactions;
   }
 
-  public void animateUnreadReactions () {
-    if (reactionsComponent != null) {
-      reactionsComponent.animateUnread(msg.unreadReactions);
+  public void animateUnreadReactions (TdApi.UnreadReaction[] unreadReactions) {
+    if (reactionsComponent != null && unreadReactions != null) {
+      reactionsComponent.animateUnread(unreadReactions);
     }
   }
 
