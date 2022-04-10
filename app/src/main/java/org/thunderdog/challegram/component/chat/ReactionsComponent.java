@@ -85,6 +85,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
   private RectF[] rcClickListeners;
   private int realMaxWidth;
   private int lastWidth, lastHeight;
+  private boolean measured;
 
   public ReactionsComponent (TGMessage source, ViewProvider viewProvider) {
     this.source = source;
@@ -210,6 +211,8 @@ public class ReactionsComponent implements FactorAnimator.Target {
       if (!rcWidthAnimator.isAnimating()) rcWidthAnimator.forceFactor(reactionsWidth);
       if (!rcHeightAnimator.isAnimating()) rcHeightAnimator.forceFactor(reactionsHeight);
     }
+
+    measured = true;
   }
 
   public int getHeight () {
@@ -217,11 +220,16 @@ public class ReactionsComponent implements FactorAnimator.Target {
   }
 
   public int getHeight (boolean compensate) {
-    return (int) (Math.max(0, (rcHeightAnimator.getFactor() - (compensate ? Screen.dp(16f) : 0))) * componentVisibleAnimator.getFloatValue());
+    if (!measured) measure();
+    return (int) (Math.max(0, (rcHeightAnimator.getFactor() - (compensate ? Screen.dp(16f) : 0))) * getVisibility());
   }
 
   public int getWidth () {
-    return (int) (rcWidthAnimator.getFactor() * componentVisibleAnimator.getFloatValue());
+    return (int) (rcWidthAnimator.getFactor() * getVisibility());
+  }
+
+  private float getVisibility () {
+    return shouldRenderSmall() ? 1f : componentVisibleAnimator.getFloatValue();
   }
 
   public boolean shouldRenderUnderBubble () {
@@ -302,6 +310,12 @@ public class ReactionsComponent implements FactorAnimator.Target {
   public void measureLayout (int pRealContentMaxWidth) {
     if (realMaxWidth == pRealContentMaxWidth || clientReactionsOrder == null) return;
     realMaxWidth = pRealContentMaxWidth;
+    measure(clientReactionsOrder, false);
+    componentVisibleAnimator.setValue(clientReactionsOrder.length > 0, false);
+  }
+
+  private void measure () {
+    if (clientReactionsOrder == null) return;
     measure(clientReactionsOrder, false);
     componentVisibleAnimator.setValue(clientReactionsOrder.length > 0, false);
   }
@@ -403,6 +417,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
       UI.post(() -> {
         onHideAnimationEnd = onEnd;
         appearAnimator.setValue(false, animated);
+        source.messagesController().updateReactionOverlayAlpha(createKey(), false);
       });
     }
 
