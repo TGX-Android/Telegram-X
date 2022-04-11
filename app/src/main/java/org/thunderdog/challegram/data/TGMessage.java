@@ -817,9 +817,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (hasFooter()) {
       height += getFooterHeight() + getFooterPaddingTop() + getFooterPaddingBottom();
     }
-    if (reactionsComponent != null && !reactionsComponent.shouldRenderUnderBubble() && !reactionsComponent.shouldRenderSmall()) {
-      height += Math.max(0, reactionsComponent.getHeight() - (isBubbleTimeExpanded ? getBubbleTimePartHeight() : 0));
-    }
     height += getBubbleReduceHeight();
 
     return height;
@@ -2878,6 +2875,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
       int bubbleWidth = computeBubbleWidth();
       int bubbleHeight = computeBubbleHeight();
+      int reactionsHeight = (reactionsComponent != null && !reactionsComponent.shouldRenderSmall() && !reactionsComponent.shouldRenderUnderBubble()) ? reactionsComponent.getHeight() : 0;
 
       this.isBubbleTimeExpanded = false;
       if (!headerDisabled() && !(drawBubbleTimeOverContent() && !useForward()) && useBubbleTime()) {
@@ -2886,10 +2884,21 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         final int extendedWidth = bottomLineContentWidth + bubbleTimePartWidth;
         final boolean allowHorizontalExtend = allowBubbleHorizontalExtend();
 
-        final int expandedBubbleWidth = allowHorizontalExtend ? Math.max(bubbleWidth, bubbleTimePartWidth) : bubbleWidth;
-        final int expandedBubbleHeight = bubbleHeight + getBubbleTimePartHeight();
         final int maxLineWidth = allowHorizontalExtend ? pRealContentMaxWidth : Math.min(pRealContentMaxWidth, bubbleWidth);
         final int fitBubbleWidth = Math.max(bubbleWidth, extendedWidth);
+
+        if (bottomLineContentWidth == BOTTOM_LINE_EXPAND_HEIGHT || extendedWidth > maxLineWidth) {
+          // bubble time expanded
+          int diff = Math.max(0, reactionsHeight - getBubbleTimePartHeight());
+          bubbleHeight += diff;
+          //Log.d("[%s] bubbleHeight:expand // %s -> %s", getId(), diff, bubbleHeight);
+        } else {
+          bubbleHeight += reactionsHeight;
+          //Log.d("[%s] bubbleHeight:defaul // %s -> %s", getId(), reactionsHeight, bubbleHeight);
+        }
+
+        final int expandedBubbleWidth = allowHorizontalExtend ? Math.max(bubbleWidth, bubbleTimePartWidth) : bubbleWidth;
+        final int expandedBubbleHeight = bubbleHeight + getBubbleTimePartHeight();
 
         switch (bottomLineContentWidth) {
           case BOTTOM_LINE_KEEP_WIDTH:
@@ -2915,6 +2924,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         this.bubbleTimePartWidth = bubbleTimePartWidth;
       } else {
         this.bubbleTimePartWidth = 0;
+        bubbleHeight += reactionsHeight;
       }
 
       final int bubblePaddingLeft = getBubblePaddingLeft();
