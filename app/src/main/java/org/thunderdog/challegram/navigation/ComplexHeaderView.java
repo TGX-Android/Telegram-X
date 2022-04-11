@@ -8,6 +8,8 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.View;
@@ -19,6 +21,7 @@ import androidx.annotation.StringRes;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
 import org.thunderdog.challegram.component.chat.ChatHeaderView;
 import org.thunderdog.challegram.core.Lang;
@@ -76,6 +79,8 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   private static final int FLAG_IGNORE_MUTE = 1 << 16;
   private static final int FLAG_RED_HIGHLIGHT = 1 << 17;
   private static final int FLAG_NO_EXPAND = 1 << 18;
+  private static final int FLAG_SHOW_SCAM = 1 << 19;
+  private static final int FLAG_SHOW_FAKE = 1 << 20;
 
   protected float scaleFactor;
 
@@ -348,6 +353,20 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
 
   public void setShowVerify (boolean showVerify) {
     if (setFlags(BitwiseUtils.setFlag(flags, FLAG_SHOW_VERIFY, showVerify))) {
+      layoutTitle();
+      invalidate();
+    }
+  }
+
+  public void setShowScam (boolean showScam) {
+    if (setFlags(BitwiseUtils.setFlag(flags, FLAG_SHOW_SCAM, showScam))) {
+      layoutTitle();
+      invalidate();
+    }
+  }
+
+  public void setShowFake (boolean showFake) {
+    if (setFlags(BitwiseUtils.setFlag(flags, FLAG_SHOW_FAKE, showFake))) {
       layoutTitle();
       invalidate();
     }
@@ -795,6 +814,8 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
       final boolean showMute = (flags & FLAG_SHOW_MUTE) != 0 && (flags & FLAG_IGNORE_MUTE) == 0;
       final boolean showVerify = (flags & FLAG_SHOW_VERIFY) != 0;
       final boolean showArrow = (flags & FLAG_NEED_ARROW) != 0;
+      final boolean showScam = (flags & FLAG_SHOW_SCAM) != 0;
+      final boolean showFake = (flags & FLAG_SHOW_FAKE) != 0;
 
       final int titleColor = getTitleColor();
       final int subtitleColor = getSubtitleColor();
@@ -898,6 +919,12 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
           iconsAdded += drawable.getMinimumWidth();
         }
 
+        if (showFake || showScam) {
+          int baseX = (int) (iconLeft + iconsAdded + Screen.dp(10f));
+          int baseY = (int) (iconTop - Screen.dp(1.5f));
+          drawOutlinedText(c, Lang.getString(showFake ? R.string.FakeMark : R.string.ScamMark), baseX, baseY, trimmedTitleExpanded != null ? MathUtils.fromTo(trimmedTitle.getLineHeight(), trimmedTitleExpanded.getLineHeight(), avatarExpandFactor) : trimmedTitle.getLineHeight());
+        }
+
         if (showMute) {
           float muteAlpha = (1f - this.muteFadeFactor) * iconAlpha;
           Drawable drawable = getSparseDrawable(R.drawable.deproko_baseline_notifications_off_24, 0);
@@ -951,6 +978,20 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
     } finally {
       Views.restore(c, saveCount);
     }
+  }
+
+  private void drawOutlinedText (Canvas c, String text, int cx, int cy, int height) {
+    int additionalPaddingVert = Screen.dp(2f);
+    int additionalPadding = Screen.dp(4f);
+
+    Paint textPaint = Paints.getMediumTextPaint(12, getSubtitleColor(), false);
+    float textWidth = U.measureText(text, textPaint);
+
+    RectF rct = Paints.getRectF();
+    rct.set(cx - additionalPadding, cy + additionalPaddingVert, cx + textWidth + additionalPadding, cy + height - additionalPaddingVert);
+    c.drawRoundRect(rct, Screen.dp(2f), Screen.dp(2f), Paints.getProgressPaint(getSubtitleColor(), Screen.dp(1.5f)));
+
+    c.drawText(text, cx, cy + Screen.dp(16f), textPaint);
   }
 
   private Callback callback;

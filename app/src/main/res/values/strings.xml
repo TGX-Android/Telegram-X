@@ -4252,6 +4252,9 @@
   <string name="RequestToJoinChannelInfo">This channel accepts new members only after they are being accepted by admins.</string>
   <string name="ProxyLinkUnsupported">Proxy is unsupported or link is invalid.</string>
 
+  <string name="ScamMark">SCAM</string>
+  <string name="FakeMark">FAKE</string>
+
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
   <string name="suggested_language_code_plural" />
