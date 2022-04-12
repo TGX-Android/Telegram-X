@@ -844,7 +844,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
         .allBold()
         .clipTextArea()
         .build();
-      avail -= chatMark.getWidth();
+      avail -= chatMark.getWidth() + (Screen.dp(4f) * 2);
     }
     if (showViews()) {
       avail -= viewCounter.getScaledWidth(Screen.dp(3f));

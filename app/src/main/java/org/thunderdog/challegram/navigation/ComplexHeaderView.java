@@ -638,8 +638,18 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
     if (StringUtils.isEmpty(title)) {
       trimmedTitle = trimmedTitleExpanded = null;
     } else {
+      final boolean showScam = (flags & FLAG_SHOW_SCAM) != 0;
+      final boolean showFake = (flags & FLAG_SHOW_FAKE) != 0;
+      final int additionalEndPadding;
+
+      if (showFake || showScam) {
+        additionalEndPadding = getOutlinedWidth(Lang.getString(showFake ? R.string.FakeMark : R.string.ScamMark));
+      } else {
+        additionalEndPadding = 0;
+      }
+
       avatarTextScale = DEFAULT_AVATAR_TEXT_SCALE;
-      trimmedTitle = new Text.Builder(title, getCurrentScaledTextMaxWidth(), Paints.robotoStyleProvider(18), getTitleColorSet())
+      trimmedTitle = new Text.Builder(title, getCurrentScaledTextMaxWidth() - additionalEndPadding, Paints.robotoStyleProvider(18), getTitleColorSet())
         .lineWidthProvider((lineIndex, y, defaultMaxWidth, lineHeight) -> defaultMaxWidth - getTextOffsetLeft() - getTextOffsetRight())
         .lineMarginProvider((lineIndex, y, defaultMaxWidth, lineHeight) -> lineIndex == 0 ? getTextOffsetLeft() : 0)
         .singleLine()
@@ -650,7 +660,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
       if (trimmedTitle.isEllipsized()) {
         int maxLineCount = 2;
         do {
-          trimmedTitleExpanded = new Text.Builder(title, getExpandedMaxTextWidth(), Paints.robotoStyleProvider(18), getTitleColorSet())
+          trimmedTitleExpanded = new Text.Builder(title, getExpandedMaxTextWidth() - additionalEndPadding, Paints.robotoStyleProvider(18), getTitleColorSet())
             .lineMarginProvider((lineIndex, y, defaultMaxWidth, lineHeight) -> lineIndex == 0 ? getTextOffsetLeft() : 0)
             .maxLineCount(maxLineCount)
             .clipTextArea()
@@ -992,6 +1002,10 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
     c.drawRoundRect(rct, Screen.dp(2f), Screen.dp(2f), Paints.getProgressPaint(getSubtitleColor(), Screen.dp(1.5f)));
 
     c.drawText(text, cx, cy + Screen.dp(16f), textPaint);
+  }
+
+  private int getOutlinedWidth (String text) {
+    return (int) ((Screen.dp(12f) + (Screen.dp(4f) * 2) + U.measureText(text, Paints.getMediumTextPaint(12, getSubtitleColor(), false))));
   }
 
   private Callback callback;
