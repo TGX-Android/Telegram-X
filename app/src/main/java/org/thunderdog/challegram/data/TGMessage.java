@@ -3007,7 +3007,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       // invalidateOutline(true);
       if (this.reactionsComponent != null) {
         //boolean log = (msg.content.getConstructor() == TdApi.MessageSticker.CONSTRUCTOR || msg.content.getConstructor() == TdApi.MessageDice.CONSTRUCTOR);
-        this.reactionsComponent.measureLayout(bubbleWidth);
+        //this.reactionsComponent.measureLayout(bubbleWidth);
       }
     } else if (this.reactionsComponent != null) {
       this.reactionsComponent.measureLayout(getContentWidth());

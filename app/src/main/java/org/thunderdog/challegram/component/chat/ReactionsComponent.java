@@ -90,7 +90,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
   public ReactionsComponent (TGMessage source, ViewProvider viewProvider) {
     this.source = source;
     this.viewProvider = viewProvider;
-    update(source.getOldestMessage().interactionInfo != null ? source.getOldestMessage().interactionInfo.reactions : new TdApi.MessageReaction[0], false, false);
+    update(source.getOldestMessage().interactionInfo != null ? source.getOldestMessage().interactionInfo.reactions : new TdApi.MessageReaction[0], false, !source.useBubbles());
   }
 
   private HashMap<String, Reaction> asMap () {
