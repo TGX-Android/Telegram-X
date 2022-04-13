@@ -164,6 +164,19 @@ public class ReactionsComponent implements FactorAnimator.Target {
   }
 
   private void measure (TdApi.MessageReaction[] order, boolean animated) {
+    if (order == null || order.length == 0) {
+      if (animated) {
+        rcWidthAnimator.animateTo(0);
+        rcHeightAnimator.animateTo(0);
+      } else {
+        if (!rcWidthAnimator.isAnimating()) rcWidthAnimator.forceFactor(0);
+        if (!rcHeightAnimator.isAnimating()) rcHeightAnimator.forceFactor(0);
+      }
+
+      measured = true;
+      return;
+    }
+
     HashMap<String, Reaction> existingHash = asMap();
 
     float leftBubbleEdge = (source.useBubbles() ? source.getActualLeftContentEdge() : 0);
