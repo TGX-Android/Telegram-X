@@ -64,16 +64,14 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
   // Animator IDs
   private static final int ANIMATOR_VISIBLE = 0;
-  private static final int ANIMATOR_CHOOSE = 1;
-  private static final int ANIMATOR_COORDINATE = 2;
-  private static final int ANIMATOR_CONTAINER_PARAMS_H = 3;
-  private static final int ANIMATOR_CONTAINER_PARAMS_W = 4;
-  private static final int ANIMATOR_TEXT_VISIBLE = 5;
+  private static final int ANIMATOR_CONTAINER_PARAMS_H = 1;
+  private static final int ANIMATOR_CONTAINER_PARAMS_W = 2;
 
   // Animators
   private final BoolAnimator componentVisibleAnimator = new BoolAnimator(ANIMATOR_VISIBLE, this, RC_INTERPOLATOR, RC_DURATION);
   private final FactorAnimator rcWidthAnimator = new FactorAnimator(ANIMATOR_CONTAINER_PARAMS_W, this, RC_INTERPOLATOR, RC_DURATION);
   private final FactorAnimator rcHeightAnimator = new FactorAnimator(ANIMATOR_CONTAINER_PARAMS_H, this, RC_INTERPOLATOR, RC_DURATION);
+  private int containerWidth, containerHeight;
 
   private final ArrayList<Reaction> clientReactions = new ArrayList<>();
   private TdApi.MessageReaction[] clientReactionsOrder;
@@ -104,6 +102,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
     return existingHash;
   }
 
+  // TODO: analyze why it sometimes takes 15-20ms to complete
   public void update (TdApi.MessageReaction[] messageReactions, boolean animated, boolean measure) {
     if (clientReactions.isEmpty() && messageReactions.length == 0) return;
 
@@ -216,16 +215,16 @@ public class ReactionsComponent implements FactorAnimator.Target {
   }
 
   public int getHeight () {
-    return getHeight(false);
-  }
-
-  public int getHeight (boolean compensate) {
-    if (!measured) measure();
-    return (int) (Math.max(0, (rcHeightAnimator.getFactor() - (compensate ? Screen.dp(16f) : 0))) * getVisibility());
+    return containerHeight;
   }
 
   public int getWidth () {
-    return (int) (rcWidthAnimator.getFactor() * getVisibility());
+    return containerWidth;
+  }
+
+  public int getCompensatedHeight (boolean compensate) {
+    if (!compensate) return getHeight();
+    return (int) (Math.max(0, rcHeightAnimator.getFactor() - Screen.dp(16f)) * getVisibility());
   }
 
   private float getVisibility () {
@@ -249,6 +248,19 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
   @Override
   public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
+    switch (id) {
+      case ANIMATOR_CONTAINER_PARAMS_H:
+        containerHeight = (int) (rcHeightAnimator.getFactor() * getVisibility());
+        break;
+      case ANIMATOR_CONTAINER_PARAMS_W:
+        containerWidth = (int) (rcWidthAnimator.getFactor() * getVisibility());
+        break;
+      case ANIMATOR_VISIBLE:
+        containerHeight = (int) (rcHeightAnimator.getFactor() * getVisibility());
+        containerWidth = (int) (rcWidthAnimator.getFactor() * getVisibility());
+        break;
+    }
+
     checkLayoutParams((id == ANIMATOR_VISIBLE || id == ANIMATOR_CONTAINER_PARAMS_H) && shouldRenderUnderBubble());
   }
 
@@ -314,6 +326,10 @@ public class ReactionsComponent implements FactorAnimator.Target {
     componentVisibleAnimator.setValue(clientReactionsOrder.length > 0, false);
   }
 
+  public void measureIfNot () {
+    if (!measured) measure();
+  }
+
   private void measure () {
     if (clientReactionsOrder == null) return;
     measure(clientReactionsOrder, false);
@@ -343,6 +359,10 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
     private final Path staticIconContour = new Path();
 
+    private static final int ANIMATOR_VISIBLE = 3;
+    private static final int ANIMATOR_CHOOSE = 4;
+    private static final int ANIMATOR_COORDINATE = 5;
+    private static final int ANIMATOR_TEXT_VISIBLE = 6;
     private final BoolAnimator appearAnimator = new BoolAnimator(ANIMATOR_VISIBLE, this, RC_INTERPOLATOR, RC_DURATION);
     private final BoolAnimator chooseAnimator = new BoolAnimator(ANIMATOR_CHOOSE, this, RC_INTERPOLATOR, RC_DURATION);
     private final FactorAnimator xCoordinate = new FactorAnimator(ANIMATOR_COORDINATE, this, RC_INTERPOLATOR, RC_DURATION);
