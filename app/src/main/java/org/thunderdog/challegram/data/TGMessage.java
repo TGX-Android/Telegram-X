@@ -2929,7 +2929,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       int rightContentEdge = leftContentEdge + bubbleWidth;
 
       if (reactionsComponent != null) {
-        reactionsComponent.measureIfNot();
+        reactionsComponent.measureIfNot(alignBubbleRight() ? width - rightContentEdge : leftContentEdge);
         if (shouldShowReactions) {
           if (isBubbleTimeExpanded) {
             bubbleHeight += Math.max(0, reactionsComponent.getHeight() - getBubbleTimePartHeight());

@@ -13,7 +13,6 @@ import android.view.animation.Interpolator;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.charts.CubicBezierInterpolator;
 import org.thunderdog.challegram.data.TGMessage;
@@ -140,7 +139,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
     clientReactionsOrder = messageReactions;
     if (measure) {
-      measure(messageReactions, animated);
+      measure(messageReactions, -1, animated);
       componentVisibleAnimator.setValue(messageReactions.length > 0, animated);
     }
   }
@@ -163,7 +162,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
     return !source.isForward() && source.useBubbles() && (source instanceof TGMessageMedia || source instanceof TGMessageVideo || source instanceof TGMessageSticker) && shouldRenderUnderBubble();
   }
 
-  private void measure (TdApi.MessageReaction[] order, boolean animated) {
+  private void measure (TdApi.MessageReaction[] order, int leftEdge, boolean animated) {
     if (order == null || order.length == 0) {
       if (animated) {
         rcWidthAnimator.animateTo(0);
@@ -179,7 +178,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
     HashMap<String, Reaction> existingHash = asMap();
 
-    float leftBubbleEdge = (source.useBubbles() ? source.getActualLeftContentEdge() : 0);
+    float leftBubbleEdge = leftEdge != -1 ? leftEdge : (source.useBubbles() ? source.getActualLeftContentEdge() : 0);
     float maxWidth = (!source.allowMessageHorizontalExtend()) ? source.getContentWidth() : TGMessage.getEstimatedContentMaxWidth();
 
     int width = 0;
@@ -335,17 +334,14 @@ public class ReactionsComponent implements FactorAnimator.Target {
   public void measureLayout (int pRealContentMaxWidth) {
     if (realMaxWidth == pRealContentMaxWidth || clientReactionsOrder == null) return;
     realMaxWidth = pRealContentMaxWidth;
-    measure(clientReactionsOrder, false);
+    measure(clientReactionsOrder, -1, false);
     componentVisibleAnimator.setValue(clientReactionsOrder.length > 0, false);
   }
 
-  public void measureIfNot () {
-    if (!measured) measure();
-  }
-
-  private void measure () {
+  public void measureIfNot (int leftEdge) {
+    if (measured) return;
     if (clientReactionsOrder == null) return;
-    measure(clientReactionsOrder, false);
+    measure(clientReactionsOrder, leftEdge, false);
     componentVisibleAnimator.setValue(clientReactionsOrder.length > 0, false);
   }
 
