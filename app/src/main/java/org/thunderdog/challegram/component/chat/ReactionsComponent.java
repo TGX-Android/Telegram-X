@@ -76,7 +76,6 @@ public class ReactionsComponent implements FactorAnimator.Target {
   private TdApi.MessageReaction[] clientReactionsOrder;
 
   private final TGMessage source;
-  private final ViewProvider viewProvider;
 
   private final RectF rcRect = new RectF();
   private RectF[] rcClickListeners;
@@ -84,9 +83,8 @@ public class ReactionsComponent implements FactorAnimator.Target {
   private int lastWidth, lastHeight;
   private boolean measured;
 
-  public ReactionsComponent (TGMessage source, ViewProvider viewProvider) {
+  public ReactionsComponent (TGMessage source) {
     this.source = source;
-    this.viewProvider = viewProvider;
     update(source.getOldestMessage().interactionInfo != null ? source.getOldestMessage().interactionInfo.reactions : new TdApi.MessageReaction[0], false, !source.useBubbles());
   }
 
@@ -120,7 +118,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
       } else {
         // reaction does not exist, add it
         // note that previous index is already added, so we can be assured in list changes
-        Reaction newReaction = new Reaction(source.tdlib(), source, reaction, viewProvider, source.isOutgoing() && !source.isChannel(), shouldRenderSmall(), animated);
+        Reaction newReaction = new Reaction(source.tdlib(), source, reaction, source.isOutgoing() && !source.isChannel(), shouldRenderSmall(), animated);
         clientReactions.add(i, newReaction);
         newReaction.update(messageReactions[i], i, false, shouldRenderSmall());
         newReaction.show(animated);
@@ -287,7 +285,11 @@ public class ReactionsComponent implements FactorAnimator.Target {
       if (shouldNotifyHeightChange) {
         source.notifyMessageHeightChanged();
       } else {
-        viewProvider.requestLayout();
+        if (source.needViewGroup()) {
+          source.invalidateParentOrSelf(false);
+        } else {
+          source.requestLayout();
+        }
       }
     }
   }
@@ -359,7 +361,6 @@ public class ReactionsComponent implements FactorAnimator.Target {
   private static class Reaction implements FactorAnimator.Target {
     private final TdApi.Reaction reactionObj;
     private final boolean isOutgoing;
-    private final ViewProvider viewProvider;
     private final Counter textCounter;
     private final TGMessage source;
 
@@ -388,11 +389,10 @@ public class ReactionsComponent implements FactorAnimator.Target {
     private boolean drawAnimated;
     private boolean isPlayingNow;
 
-    public Reaction (Tdlib tdlib, TGMessage source, TdApi.MessageReaction reaction, ViewProvider viewProvider, boolean isOutgoing, boolean small, boolean animate) {
+    public Reaction (Tdlib tdlib, TGMessage source, TdApi.MessageReaction reaction, boolean isOutgoing, boolean small, boolean animate) {
       this.reaction = reaction;
       this.reactionObj = tdlib.getReaction(reaction.reaction);
       this.isOutgoing = isOutgoing;
-      this.viewProvider = viewProvider;
       this.source = source;
 
       if (reactionObj != null) {
@@ -407,7 +407,10 @@ public class ReactionsComponent implements FactorAnimator.Target {
         dynamicIconFile = new GifFile(tdlib, reactionObj.centerAnimation);
         dynamicIconFile.setUnique(true);
         dynamicIconFile.setPlayOnce(true);
-        dynamicIconFile.setFrameChangeListener((file, frameNo, frameDelta) -> isPlayingNow = frameNo > 4);
+        dynamicIconFile.setFrameChangeListener((file, frameNo, frameDelta) -> {
+          isPlayingNow = frameNo > 4;
+          if (source.needViewGroup()) source.invalidateParentOrSelf(false);
+        });
       }
 
       chooseAnimator.setValue(reaction.isChosen, false);
@@ -416,7 +419,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
         .noBackground()
         .allBold(false)
         .textSize(small ? 10f : 12f)
-        .callback((counter, sizeChanged) -> viewProvider.invalidate())
+        .callback((counter, sizeChanged) -> source.invalidateParentOrSelf(false))
         .colorSet(this::getTextColor)
         .build();
 
@@ -508,7 +511,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
     @Override
     public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
-      viewProvider.invalidate();
+      source.invalidateParentOrSelf(false);
     }
 
     @Override

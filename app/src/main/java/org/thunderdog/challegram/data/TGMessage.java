@@ -344,7 +344,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       loadReply();
     }
 
-    reactionsComponent = new ReactionsComponent(this, currentViews);
+    reactionsComponent = new ReactionsComponent(this);
 
     if (isHot() && needHotTimer() && msg.ttlExpiresIn < msg.ttl) {
       startHotTimer(false);
