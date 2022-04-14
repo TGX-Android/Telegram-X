@@ -482,6 +482,16 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
   }
 
   @Override
+  public int getRealBubbleLeftEdgeOfContent () {
+    return findStickerLeft();
+  }
+
+  @Override
+  public int getActualBubbleLeftEdgeOfContent () {
+    return findStickerLeft();
+  }
+
+  @Override
   protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth, ComplexReceiver receiver) {
     int left = findStickerLeft();
     int top = getContentY();

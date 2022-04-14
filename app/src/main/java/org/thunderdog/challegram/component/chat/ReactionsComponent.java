@@ -176,7 +176,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
 
     HashMap<String, Reaction> existingHash = asMap();
 
-    float leftBubbleEdge = leftEdge != -1 ? leftEdge : (source.useBubbles() ? source.getActualLeftContentEdge() : 0);
+    float leftBubbleEdge = leftEdge != -1 ? leftEdge : (source.useBubbles() ? source.getActualBubbleLeftEdgeOfContent() : 0);
     float maxWidth = (!source.allowMessageHorizontalExtend()) ? source.getContentWidth() : TGMessage.getEstimatedContentMaxWidth();
 
     int width = 0;

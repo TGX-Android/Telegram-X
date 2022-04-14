@@ -1947,7 +1947,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     if (reactionsComponent != null && !reactionsComponent.shouldRenderSmall()) {
-      int rcX = !useBubbles() ? pRealContentX - (isForward() ? Screen.dp(11f) : 0) : reactionsComponent.shouldRenderUnderBubble() ? pContentX : getInternalBubbleStartX();
+      int rcX = !useBubbles() ? pRealContentX - (isForward() ? Screen.dp(11f) : 0) : reactionsComponent.shouldRenderUnderBubble() ? getRealBubbleLeftEdgeOfContent() : getInternalBubbleStartX();
       int rcY = pContentY + getContentHeight() + ((inlineKeyboard != null && !inlineKeyboard.isEmpty() && reactionsComponent.shouldRenderUnderBubble()) ? inlineKeyboard.getHeight() + Screen.dp(4f) + (!useBubbles() ? Screen.dp(4f) : 0) : 0);
       //c.drawRect(rcX, rcY,  rcX + reactionsComponent._maxWidth, rcY + reactionsComponent.getHeight(), Paints.getPorterDuffPaint(ColorUtils.alphaColor(0.3f, Color.GREEN)));
       //c.drawRect(rcX, rcY,  rcX + reactionsComponent.getWidth(), rcY + reactionsComponent.getHeight(), Paints.getPorterDuffPaint(ColorUtils.alphaColor(0.3f, Color.RED)));
@@ -1966,6 +1966,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     } else if (dismissFactor != 0f && !needViewGroup()) {
       drawTranslate(view, c);
     }
+  }
+
+  public int getRealBubbleLeftEdgeOfContent () {
+    return pContentX;
+  }
+
+  public int getActualBubbleLeftEdgeOfContent () {
+    return getActualLeftContentEdge();
   }
 
   protected final boolean needColoredNames () {
