@@ -299,9 +299,14 @@ public class ReactionsComponent implements FactorAnimator.Target {
       startY += Screen.dp(needExtraMissingOffset() ? 4f : 2f);
     }
 
-    rcRect.set(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight());
-    c.save();
-    c.clipRect(rcRect);
+    if (source.useBubbles() && !shouldRenderUnderBubble() && !shouldRenderSmall()) {
+      c.save();
+      c.clipPath(source.getBubbleClipPath());
+    } else {
+      rcRect.set(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight());
+      c.save();
+      c.clipRect(rcRect);
+    }
 
     View cv = source.findCurrentView();
     int[] loc = cv != null ? Views.getLocationInWindow(source.findCurrentView()) : null;
@@ -623,7 +628,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
       c.restore();
 
       if (vy > 0) {
-        source.messagesController().updateReactionOverlayLocation(createKey(), startX + r.centerX() + source.getTranslation(), vy + startY + r.centerY() - (Screen.getStatusBarHeight() + HeaderView.getHeaderHeight(null)), true);
+        source.messagesController().updateReactionOverlayLocation(createKey(), startX + r.centerX() + (source.needViewGroup() ? 0 : source.getTranslation()), vy + startY + r.centerY() - (Screen.getStatusBarHeight() + HeaderView.getHeaderHeight(null)), true);
       }
     }
 
@@ -710,7 +715,7 @@ public class ReactionsComponent implements FactorAnimator.Target {
       c.restore();
 
       if (vy > 0) {
-        source.messagesController().updateReactionOverlayLocation(createKey(), startX + Screen.dp(16) + source.getTranslation(), vy - (Screen.getStatusBarHeight() + HeaderView.getHeaderHeight(null)), false);
+        source.messagesController().updateReactionOverlayLocation(createKey(), startX + Screen.dp(16) + (source.needViewGroup() ? 0 : source.getTranslation()), vy - (Screen.getStatusBarHeight() + HeaderView.getHeaderHeight(null)), false);
       }
     }
   }
