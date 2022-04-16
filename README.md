@@ -77,3 +77,7 @@ Once obtained, there are three ways to find out the commit for the specific chec
 
 * Sending checksum to [`@tgx_bot`](https://t.me/tgx_bot);
 * Searching for a checksum in [`@tgx_log`](https://t.me/tgx_log). You can do so without need in installing any Telegram client by using this URL format: [`https://t.me/s/tgx_log?q={checksum}`](https://t.me/s/tgx_log?q=c541ebb0a3ae7bb6e6bd155530f375d567b8aef1761fdd942fb5d69af62e24ae) (click to see in action). Note: unpublished builds cannot be verified this way.
+
+## Third-party dependencies
+
+List of used third-party components used in **Telegram X** can be found [here](/docs/THIRDPARTY.md).
