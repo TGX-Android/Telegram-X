@@ -62,3 +62,6 @@
 	path = app/jni/thirdparty/rlottie
 	url = https://github.com/TGX-Android/rlottie
 	shallow = true
+[submodule "vkryl/td"]
+	path = vkryl/td
+	url = https://github.com/TGX-Android/tdlib-utils.git
