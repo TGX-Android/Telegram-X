@@ -4858,6 +4858,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       headerCell.setShowMute(tdlib.chatNeedsMuteIcon(chat.id));
       if (!isUpdate) {
         headerCell.setShowVerify(tdlib.chatVerified(chat));
+        headerCell.setShowScam(tdlib.chatScam(chat));
+        headerCell.setShowFake(tdlib.chatFake(chat));
       }
     }
   }

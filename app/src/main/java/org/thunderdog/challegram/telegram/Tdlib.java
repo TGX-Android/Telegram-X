@@ -3391,6 +3391,38 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return false;
   }
 
+  public boolean chatScam (TdApi.Chat chat) {
+    if (chat == null) {
+      return false;
+    }
+    switch (chat.type.getConstructor()) {
+      case TdApi.ChatTypePrivate.CONSTRUCTOR:
+      case TdApi.ChatTypeSecret.CONSTRUCTOR:
+        TdApi.User user = chatUser(chat);
+        return user != null && user.isScam;
+      case TdApi.ChatTypeSupergroup.CONSTRUCTOR:
+        TdApi.Supergroup supergroup = cache().supergroup(ChatId.toSupergroupId(chat.id));
+        return supergroup != null && supergroup.isScam;
+    }
+    return false;
+  }
+
+  public boolean chatFake (TdApi.Chat chat) {
+    if (chat == null) {
+      return false;
+    }
+    switch (chat.type.getConstructor()) {
+      case TdApi.ChatTypePrivate.CONSTRUCTOR:
+      case TdApi.ChatTypeSecret.CONSTRUCTOR:
+        TdApi.User user = chatUser(chat);
+        return user != null && user.isFake;
+      case TdApi.ChatTypeSupergroup.CONSTRUCTOR:
+        TdApi.Supergroup supergroup = cache().supergroup(ChatId.toSupergroupId(chat.id));
+        return supergroup != null && supergroup.isFake;
+    }
+    return false;
+  }
+
   public boolean chatRestricted (TdApi.Chat chat) {
     return !StringUtils.isEmpty(chatRestrictionReason(chat));
   }
