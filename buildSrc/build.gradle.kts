@@ -2,7 +2,7 @@ plugins {
   `kotlin-dsl`
 }
 
-val kotlinVersion = "1.6.10"
+val kotlinVersion = "1.6.20"
 
 gradlePlugin {
   plugins {
@@ -45,11 +45,10 @@ configurations.all {
 
 dependencies {
   compileOnly(gradleApi())
-  implementation("com.android.tools.build:gradle:7.1.2")
+  implementation("com.android.tools.build:gradle:7.1.3")
   implementation("com.google.gms:google-services:4.3.10")
   implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}")
-  // implementation("com.google.android.gms:oss-licenses-plugin:0.10.4")
   implementation("com.squareup.okhttp3:okhttp:4.9.3")
   implementation("com.squareup.okhttp3:logging-interceptor:4.9.3")
-  implementation("com.beust:klaxon:5.5")
+  implementation("com.beust:klaxon:5.6")
 }
