@@ -1075,7 +1075,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           addThemeInvalidateListener(fontSliderView);
           fontSliderView.setSlideEnabled(true, false);
           fontSliderView.setValueCount(Settings.CHAT_FONT_SIZES.length);
-          updateFontSliderValue(fontSliderView);
+          updateFontSliderValue(fontSliderView, false);
           fontSliderView.setListener(new SliderView.Listener() {
             @Override
             public void onSetStateChanged (SliderView view, boolean isSetting) {
@@ -1342,7 +1342,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     addThemeInvalidateListener(cornerSliderView);
     cornerSliderView.setSlideEnabled(true, false);
     cornerSliderView.setValueCount(elements.length);
-    updateBubbleRadiusValue(cornerSliderView, mergeCorners);
+    updateBubbleRadiusValue(cornerSliderView, mergeCorners, false);
     cornerSliderView.setListener(new SliderView.Listener() {
       @Override
       public void onSetStateChanged (SliderView view, boolean isSetting) {
@@ -1368,7 +1368,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             float newMerge = (factor * Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES[Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES.length - 1]);
             Settings.instance().setBubbleMergeCornerSize(newMerge, Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES[getApproxIndexForCornerRadius(newMerge, true)]);
             if (mergeCornerSliderView != null) {
-              updateBubbleRadiusValue(mergeCornerSliderView, true);
+              updateBubbleRadiusValue(mergeCornerSliderView, true, false);
             }
           }
         }
@@ -1404,7 +1404,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void updateBubbleMergeSliderVisibility() {
-    mergeCornerWrap.setVisibility((Settings.instance().needMergeCornerRadius() && !Theme.isBubbleRadiusOverridden()) ? View.VISIBLE : View.GONE);
+    mergeCornerWrap.setVisibility((Theme.BUBBLE_BIG_RADIUS_AVAILABLE && Settings.instance().needMergeCornerRadius() && !Theme.isBubbleRadiusOverridden()) ? View.VISIBLE : View.GONE);
   }
 
   private SliderView fontSliderView;
@@ -1412,7 +1412,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private SliderView mergeCornerSliderView;
   private ViewGroup mergeCornerWrap;
 
-  private static void updateFontSliderValue (SliderView sliderView) {
+  private static void updateFontSliderValue (SliderView sliderView, boolean animate) {
     boolean found = false;
     int index = 0;
     for (float dp : Settings.CHAT_FONT_SIZES) {
@@ -1423,11 +1423,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
       index++;
     }
     if (found) {
-      sliderView.setValue((float) index / (float) (Settings.CHAT_FONT_SIZES.length - 1));
+      float value = (float) index / (float) (Settings.CHAT_FONT_SIZES.length - 1);
+      if (animate) {
+        sliderView.animateValue(value);
+      } else {
+        sliderView.setValue(value);
+      }
     }
   }
 
-  private static void updateBubbleRadiusValue (SliderView sliderView, boolean mergeMode) {
+  private static void updateBubbleRadiusValue (SliderView sliderView, boolean mergeMode, boolean animate) {
     boolean found = false;
     int index = 0;
     float currentDp = (mergeMode ? Settings.instance().getLastKnownBubbleMergeCornerSize() : Settings.instance().getLastKnownBubbleCornerSize());
@@ -1439,7 +1444,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
       index++;
     }
     if (found) {
-      sliderView.setValue((float) index / (float) ((mergeMode ? Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES : Settings.MSG_BUBBLE_RADIUS_SIZES).length - 1));
+      float value = (float) index / (float) ((mergeMode ? Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES : Settings.MSG_BUBBLE_RADIUS_SIZES).length - 1);
+      if (animate) {
+        sliderView.animateValue(value);
+      } else {
+        sliderView.setValue(value);
+      }
     }
   }
 
@@ -2027,11 +2037,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_chatFontSizeReset: {
         Settings.instance().resetChatFontSize();
-        updateFontSliderValue(fontSliderView);
+        updateFontSliderValue(fontSliderView, true);
 
         if (cornerSliderView != null && !Theme.isBubbleRadiusOverridden()) {
-          updateBubbleRadiusValue(cornerSliderView, false);
-          updateBubbleRadiusValue(mergeCornerSliderView, false);
+          updateBubbleRadiusValue(cornerSliderView, false, true);
+          updateBubbleRadiusValue(mergeCornerSliderView, true, true);
           updateBubbleMergeSliderVisibility();
         }
 
@@ -3404,7 +3414,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             StringList strings = new StringList(3);
             ids.append(R.id.btn_chatFontSizeScale);
             strings.append(Settings.instance().needChatFontSizeScaling() ? R.string.TextSizeScaleDisable : R.string.TextSizeScaleEnable);
-            if (!Theme.isBubbleRadiusOverridden() && manager.useBubbles()) {
+            if (!Theme.isBubbleRadiusOverridden() && manager.useBubbles() && Theme.BUBBLE_BIG_RADIUS_AVAILABLE) {
               ids.append(R.id.btn_chatBubbleMergeRadius);
               strings.append(Settings.instance().needMergeCornerRadius() ? R.string.MergeBubbleCornersDisable : R.string.MergeBubbleCorners);
             }

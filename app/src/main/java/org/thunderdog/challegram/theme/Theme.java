@@ -874,14 +874,14 @@ public class Theme {
     return Theme.getProperty(ThemeProperty.IMAGE_CORNER);
   }
 
-  private static final boolean BUBBLE_BIG_RADIUS_AVAILABLE = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
+  public static final boolean BUBBLE_BIG_RADIUS_AVAILABLE = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
 
   public static float getBubbleDefaultRadius () {
     return isBubbleRadiusOverridden() ? getThemeBubbleDefaultRadius() : Settings.instance().getBubbleCornerSize();
   }
 
   public static float getBubbleMergeRadius () {
-    return isBubbleRadiusOverridden() ? getThemeBubbleMergeRadius() : Settings.instance().getBubbleMergeCornerSize();
+    return isBubbleRadiusOverridden() ? getThemeBubbleMergeRadius() : BUBBLE_BIG_RADIUS_AVAILABLE ? Settings.instance().getBubbleMergeCornerSize() : Settings.instance().getBubbleCornerSize();
   }
 
   public static float getThemeBubbleDefaultRadius () {

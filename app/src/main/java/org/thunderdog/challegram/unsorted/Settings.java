@@ -657,8 +657,8 @@ public class Settings {
   private static final float CHAT_FONT_SIZE_MIN = CHAT_FONT_SIZES[0];
   private static final float CHAT_FONT_SIZE_MAX = CHAT_FONT_SIZES[CHAT_FONT_SIZES.length - 1];
 
-  public static final float[] MSG_BUBBLE_RADIUS_SIZES = {0f, 4f, 8f, 10f, 14f, 18f};
-  public static final float MSG_BUBBLE_RADIUS_DEFAULT = 18f;
+  public static final float[] MSG_BUBBLE_RADIUS_SIZES = Theme.BUBBLE_BIG_RADIUS_AVAILABLE ? new float[]{0f, 4f, 8f, 10f, 14f, 18f} : new float[]{0f, 2f, 4f, 6f};
+  public static final float MSG_BUBBLE_RADIUS_DEFAULT = Theme.BUBBLE_BIG_RADIUS_AVAILABLE ? 18f : 6f;
 
   public static final float[] MSG_BUBBLE_MERGE_RADIUS_SIZES = {0f, 2f, 4f, 6f};
   public static final float MSG_BUBBLE_MERGE_RADIUS_DEFAULT = 6f;
