@@ -58,6 +58,7 @@ import org.drinkmore.Tracer;
 import org.thunderdog.challegram.component.attach.MediaLayout;
 import org.thunderdog.challegram.component.base.ProgressWrap;
 import org.thunderdog.challegram.component.chat.InlineResultsWrap;
+import org.thunderdog.challegram.component.popups.ModernOptions;
 import org.thunderdog.challegram.component.preview.PreviewLayout;
 import org.thunderdog.challegram.component.sticker.StickerPreviewView;
 import org.thunderdog.challegram.component.sticker.StickerSetWrap;
@@ -128,14 +129,13 @@ import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.FutureInt;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceUtils;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 import nl.dionsegijn.konfetti.KonfettiView;
 import nl.dionsegijn.konfetti.models.Shape;
 
 public abstract class BaseActivity extends ComponentActivity implements View.OnTouchListener, FactorAnimator.Target, Keyboard.OnStateChangeListener, ThemeChangeListener, SensorEventListener, TGPlayerController.TrackChangeListener, TGLegacyManager.EmojiLoadListener, Lang.Listener, Handler.Callback {
   public static final long POPUP_SHOW_SLOW_DURATION = 240l;
 
-  private static final int CLEAR_STACK = 0;
   private static final int OPEN_CAMERA_BY_TAP = 1;
   private static final int DISPATCH_ACTIVITY_STATE = 2;
 
@@ -315,6 +315,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     handler = new Handler(this);
 
     UI.clearActivity(this);
+    updateWindowContextTheme();
     if (Config.USE_CUSTOM_NAVIGATION_COLOR) {
       this.isWindowLight = !Theme.isDark();
     }
@@ -572,6 +573,10 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (view instanceof TextView)
       ((TextView) view).setTextColor(textColor);
 
+    view = dialog.findViewById(android.R.id.message);
+    if (view instanceof TextView)
+      ((TextView) view).setTextColor(textColor);
+    
     view = Views.tryFindAndroidView(context, dialog, "alertTitle");
     Views.makeFakeBold(view);
     if (view instanceof TextView)
@@ -687,6 +692,10 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   public void updateWindowDecorSystemUiVisibility () {
     setWindowDecorSystemUiVisibility(lastWindowVisibility, false);
+  }
+
+  public void updateWindowContextTheme() {
+    getWindow().getContext().getTheme().applyStyle(Theme.isDark() ? R.style.AppTheme_Dark : R.style.AppTheme, true);
   }
 
   public void setWindowDecorSystemUiVisibility (int visibility, boolean remember) {
@@ -983,6 +992,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       Tracer.onUiError(t);
       throw t;
     }
+    if (navigation != null) {
+      navigation.destroy();
+    }
     Lang.removeLanguageListener(this);
     if (statusBar != null) {
       statusBar.performDestroy();
@@ -1163,7 +1175,6 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         } else if (c.inSelectMode() || c.inSearchMode() || c.inCustomMode()) {
           navigation.onBackPressed(fromTop);
         } else {
-          handler.sendMessageDelayed(Message.obtain(handler, CLEAR_STACK), 150l);
           super.onBackPressed();
         }
       }
@@ -1193,12 +1204,6 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   @Override
   public final boolean handleMessage (Message msg) {
     switch (msg.what) {
-      case CLEAR_STACK: {
-        if (navigation != null) {
-          navigation.destroy();
-        }
-        break;
-      }
       case OPEN_CAMERA_BY_TAP: {
         openCameraByTap((ViewController.CameraOpenOptions) msg.obj);
         break;
@@ -2088,6 +2093,25 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
   }
 
+  public void closeFilePip (TdApi.File[] targetFiles) {
+    final int size = forgottenWindows.size();
+    for (int i = 0; i < size; i++) {
+      PopupLayout popupLayout = forgottenWindows.valueAt(i);
+      if (popupLayout != null && popupLayout.getBoundController() instanceof MediaViewController) {
+        MediaViewController mvc = ((MediaViewController) popupLayout.getBoundController());
+        TdApi.File currentFile = mvc.getCurrentFile();
+        if (currentFile != null) {
+          for (TdApi.File file : targetFiles) {
+            if (currentFile.id == file.id) {
+              mvc.close();
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+
   public boolean completelyForgetThisWindow (PopupLayout window) {
     final int size = forgottenWindows.size();
     for (int i = size - 1; i >= 0; i--) {
@@ -2170,13 +2194,31 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   private final SparseArrayCompat<ActivityResultHandler> activityResultHandlers = new SparseArrayCompat<>();
   private final SparseArrayCompat<ActivityPermissionResult> permissionsResultHandlers = new SparseArrayCompat<>();
 
-  public void requestLocationPermission (boolean needBackground, ActivityPermissionResult handler) {
+  public void requestLocationPermission (boolean needBackground, boolean skipAlert, ActivityPermissionResult handler) {
+    requestLocationPermission(needBackground, skipAlert, () -> {
+      handler.onPermissionResult(REQUEST_FINE_LOCATION, false);
+    }, handler);
+  }
+
+  public void requestLocationPermission (boolean needBackground, boolean skipAlert, Runnable onCancel, ActivityPermissionResult handler) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      if (skipAlert) {
+        requestLocationPermissionImpl(needBackground, handler);
+      } else {
+        ModernOptions.showLocationAlert(this, needBackground, onCancel, () -> {
+          requestLocationPermissionImpl(needBackground, handler);
+        });
+      }
+    }
+  }
+
+  private void requestLocationPermissionImpl (boolean needBackground, ActivityPermissionResult handler) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       String[] permissions;
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && Config.REQUEST_BACKGROUND_LOCATION && needBackground) {
-        permissions = new String[] {Manifest.permission.ACCESS_BACKGROUND_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
+        permissions = new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
       } else {
-        permissions = new String[] {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
+        permissions = new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
       }
       if (handler != null) {
         permissionsResultHandlers.put(REQUEST_FINE_LOCATION, handler);
@@ -2287,8 +2329,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       disallowScreenshots = (navigation.shouldDisallowScreenshots() || Passcode.instance().shouldDisallowScreenshots());
       if (!disallowScreenshots) {
         for (PopupLayout popupLayout : windows) {
-          ViewController<?> c = popupLayout.getBoundController();
-          if (c != null && c.shouldDisallowScreenshots()) {
+          if (popupLayout.shouldDisallowScreenshots()) {
             disallowScreenshots = true;
             break;
           }
@@ -2299,8 +2340,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
           PopupLayout popupLayout = forgottenWindows.valueAt(i);
           if (popupLayout == null)
             continue;
-          ViewController<?> c = popupLayout.getBoundController();
-          if (c != null && c.shouldDisallowScreenshots()) {
+          if (popupLayout.shouldDisallowScreenshots()) {
             disallowScreenshots = true;
             break;
           }
@@ -2949,6 +2989,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     closeThumbnails(ThemeController.class);
     if (oldTheme.needLightStatusBar() != newTheme.needLightStatusBar()) {
       updateWindowDecorSystemUiVisibility();
+    }
+    if (oldTheme.isDark() != newTheme.isDark()) {
+      updateWindowContextTheme();
     }
   }
 

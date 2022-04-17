@@ -42,7 +42,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 
 /**
  * Date: 21/10/2016

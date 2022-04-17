@@ -41,7 +41,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 public abstract class MediaBottomBaseController<T> extends ViewController<T> {
   protected final MediaLayout mediaLayout;
   private final int titleRes;
-  private final String titleString;
+  private String titleString;
 
   protected MediaBottomBaseController (MediaLayout context, int titleResource) {
     super(context.getContext(), context.tdlib());
@@ -66,6 +66,11 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
   @Override
   public CharSequence getName () {
     return titleRes != 0 ? Lang.getString(titleRes) : titleString;
+  }
+
+  public void setName (String name) {
+    titleString = name;
+    mediaLayout.getHeaderView().setTitle(this);
   }
 
   // Settings
@@ -109,6 +114,10 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
   }
 
   public boolean supportsMediaGrouping () {
+    return false;
+  }
+
+  public boolean ignoreStartHeightLimits() {
     return false;
   }
 
@@ -160,10 +169,12 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
   }
 
   private int getMaxStartHeight () {
+    if (ignoreStartHeightLimits()) return Integer.MAX_VALUE;
     return Math.min(getContentHeight() + getBarHeightIfAvailable() + HeaderView.getSize(false), Math.min(getCurrentWidth() + getBarHeightIfAvailable(), getMaxStartHeightLimit()));
   }
 
   protected int getMaxStartHeightLimit () {
+    if (ignoreStartHeightLimits()) return Integer.MAX_VALUE;
     return getMaxHeight() - MediaBottomBar.getBarHeight() / 4;
   }
 

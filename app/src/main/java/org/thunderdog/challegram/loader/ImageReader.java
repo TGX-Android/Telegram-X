@@ -628,7 +628,7 @@ public class ImageReader {
     String json = U.gzipFileToString(path);
     if (StringUtils.isEmpty(json))
       return null;
-    long ptr = N.createLottieDecoder(path, json, null, null);
+    long ptr = N.createLottieDecoder(path, json, null, 0);
     if (ptr == 0)
       return null;
     int[] size = new int[2];

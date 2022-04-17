@@ -88,6 +88,7 @@ public abstract class TextEntity {
     return end;
   }
   public abstract boolean isClickable ();
+  public abstract TdApi.TextEntity getSpoiler ();
   public abstract boolean isBold ();
   public abstract boolean isIcon ();
   public TextIcon getIcon () { return null; }
@@ -142,7 +143,7 @@ public abstract class TextEntity {
   public abstract boolean isSmall ();
   public abstract void performClick (View view, Text text, TextPart textPart, @Nullable Text.ClickCallback callback);
   public abstract boolean performLongPress (View view, Text text, TextPart textPart, boolean allowShare, @Nullable Text.ClickCallback callback);
-  protected abstract boolean equals (TextEntity b, boolean forPressHighlight);
+  protected abstract boolean equals (TextEntity b, int compareMode, String originalText);
   public abstract boolean isEssential ();
   public abstract TextColorSet getSpecialColorSet (TextColorSet defaultColorSet);
 
@@ -236,7 +237,11 @@ public abstract class TextEntity {
     return new TextEntityMessage(tdlib, in, entity, openParameters);
   }
 
-  public static boolean equals (TextEntity a, TextEntity b, boolean forPressHighlight) {
-    return (a == null && b == null) || (!(a == null || b == null) && a.getType() == b.getType() && a.equals(b, forPressHighlight));
+  public static final int COMPARE_MODE_NORMAL = 0;
+  public static final int COMPARE_MODE_CLICK_HIGHLIGHT = 1;
+  public static final int COMPARE_MODE_SPOILER = 2;
+
+  public static boolean equals (TextEntity a, TextEntity b, int compareMode, String originalText) {
+    return (a == null && b == null) || (!(a == null || b == null) && a.getType() == b.getType() && a.equals(b, compareMode, originalText));
   }
 }

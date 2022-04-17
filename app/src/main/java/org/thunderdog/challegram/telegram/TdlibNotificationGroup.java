@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Set;
 
 import me.vkryl.core.collection.LongList;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.util.FilteredIterator;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
@@ -298,7 +298,7 @@ public class TdlibNotificationGroup implements Iterable<TdlibNotification> {
                 if (needHideReplacements) {
                   increaseHiddenNotificationId(addedNotification.getId());
                 } else {
-                  boolean changed = !Td.equalsTo(pushMessage.sender, message.sender); // FIXME TDLib?
+                  boolean changed = !Td.equalsTo(pushMessage.senderId, message.senderId); // FIXME TDLib?
                   if (!changed) {
                     TdApi.FormattedText text = Td.textOrCaption(message.content); // TODO: server should include entities in push content
                     if (!Td.isEmpty(text) && text.entities != null && text.entities.length > 0) {

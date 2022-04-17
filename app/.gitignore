@@ -5,6 +5,7 @@
 /x86_64
 /universal
 /src/main/java/org/thunderdog/challegram/core/LangUtils.kt
+/src/main/java/org/drinkmore/ClientException.java
 /src/main/res/values/generated.xml
 /src/main/java/org/thunderdog/challegram/theme/builtin/Theme*.kt
 /src/main/java/org/thunderdog/challegram/theme/ThemeColors.kt

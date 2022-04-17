@@ -307,6 +307,14 @@ public class SortedUsersAdapter extends RecyclerView.Adapter<SortedUsersAdapter.
     }
   }
 
+  public @Nullable TdApi.ChatMember getChatMember (TdApi.MessageSender senderId) {
+    if (senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
+      return getChatMember(((TdApi.MessageSenderUser) senderId).userId);
+    } else {
+      return null;
+    }
+  }
+
   public @Nullable TdApi.ChatMember getChatMember (long userId) {
     int i = indexOfUser(userId);
     return i != -1 ? users.get(i).member : null;

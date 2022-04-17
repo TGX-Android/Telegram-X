@@ -14,7 +14,7 @@ import org.thunderdog.challegram.util.DrawModifier;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 
 /**
  * Date: 16/11/2016
@@ -139,6 +139,8 @@ public class ListItem {
   public static final int TYPE_STATS_MESSAGE_PREVIEW = 121;
 
   public static final int TYPE_EMBED_STICKER = 130;
+  public static final int TYPE_JOIN_REQUEST = 131;
+  public static final int TYPE_CHAT_HEADER_LARGE = 132;
 
   private static final int FLAG_SELECTED = 1;
   private static final int FLAG_BOOL_VALUE = 1 << 1;

@@ -19,6 +19,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.PrivacySettings;
 import org.thunderdog.challegram.telegram.PrivacySettingsListener;
 import org.thunderdog.challegram.telegram.SessionListener;
@@ -40,7 +41,7 @@ import java.util.List;
  * Author: default
  */
 
-public class SettingsPrivacyController extends RecyclerViewController<SettingsPrivacyController.Args> implements View.OnClickListener, Client.ResultHandler, ViewController.SettingsIntDelegate, TdlibCache.UserDataChangeListener, TdlibContactManager.StatusChangeListener, PrivacySettingsListener, SessionListener {
+public class SettingsPrivacyController extends RecyclerViewController<SettingsPrivacyController.Args> implements View.OnClickListener, Client.ResultHandler, ViewController.SettingsIntDelegate, TdlibCache.UserDataChangeListener, TdlibContactManager.StatusChangeListener, PrivacySettingsListener, SessionListener, ChatListener {
   public static class Args {
     private final boolean onlyPrivacy;
 
@@ -91,8 +92,8 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
           case R.id.btn_incognitoMode:
             v.getToggler().setRadioEnabled(Settings.instance().needsIncognitoMode(), isUpdate);
             break;
-          case R.id.btn_blockedUsers:
-            v.setData(getBlockedUsersCount());
+          case R.id.btn_blockedSenders:
+            v.setData(getBlockedSendersCount());
             break;
           case R.id.btn_privacyRule:
             v.setData(buildPrivacy(((TdApi.UserPrivacySetting) item.getData()).getConstructor()));
@@ -142,7 +143,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
 
       items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.PrivacyTitle));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_blockedUsers, R.drawable.baseline_remove_circle_24, R.string.BlockedUsers));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_blockedSenders, R.drawable.baseline_remove_circle_24, R.string.BlockedSenders));
     }
 
     TdApi.UserPrivacySetting[] privacySettings = new TdApi.UserPrivacySetting[] {
@@ -424,7 +425,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
         });
         break;
       }
-      case R.id.btn_blockedUsers: {
+      case R.id.btn_blockedSenders: {
         SettingsBlockedController c = new SettingsBlockedController(context, tdlib);
         c.setArguments(this);
         navigateTo(c);
@@ -535,10 +536,10 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
 
   // Blocked users
 
-  private int blockedChatsCount = -1;
+  private int blockedSendersCount = -1;
 
-  private CharSequence getBlockedUsersCount () {
-    return blockedChatsCount == -1 ? Lang.getString(R.string.LoadingInformation) : blockedChatsCount > 0 ? Lang.pluralBold(R.string.xUsers, blockedChatsCount) : Lang.getString(R.string.BlockedNone);
+  private CharSequence getBlockedSendersCount () {
+    return blockedSendersCount == -1 ? Lang.getString(R.string.LoadingInformation) : blockedSendersCount > 0 ? Lang.pluralBold(R.string.xSenders, blockedSendersCount) : Lang.getString(R.string.BlockedNone);
   }
 
   private String getMapProviderName (boolean cloud) {
@@ -558,19 +559,19 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
   public void onUserUpdated (TdApi.User user) { }
 
   public void diffBlockList (int delta) {
-    if (this.blockedChatsCount != -1) {
-      this.blockedChatsCount += delta;
-      adapter.updateValuedSettingById(R.id.btn_blockedUsers);
+    if (this.blockedSendersCount != -1) {
+      this.blockedSendersCount += delta;
+      adapter.updateValuedSettingById(R.id.btn_blockedSenders);
     }
   }
 
   @Override
-  public void onUserFullUpdated (long userId, TdApi.UserFullInfo userFull) {
-    tdlib.ui().post(() -> {
+  public void onChatBlocked (long chatId, boolean isBlocked) {
+    runOnUiThread(() -> {
       if (!isDestroyed()) {
         tdlib.client().send(new TdApi.GetBlockedMessageSenders(0, 1), SettingsPrivacyController.this);
       }
-    });
+    }, 350l);
   }
 
   // Sessions
@@ -748,9 +749,9 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
       switch (object.getConstructor()) {
         case TdApi.MessageSenders.CONSTRUCTOR: {
           int totalCount = ((TdApi.MessageSenders) object).totalCount;
-          if (this.blockedChatsCount != totalCount) {
-            this.blockedChatsCount = totalCount;
-            adapter.updateValuedSettingById(R.id.btn_blockedUsers);
+          if (this.blockedSendersCount != totalCount) {
+            this.blockedSendersCount = totalCount;
+            adapter.updateValuedSettingById(R.id.btn_blockedSenders);
           }
           break;
         }

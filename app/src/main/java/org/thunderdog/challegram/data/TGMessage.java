@@ -71,8 +71,6 @@ import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.theme.ThemeProperty;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
-import org.thunderdog.challegram.tool.EmojiCodeColored;
-import org.thunderdog.challegram.tool.EmojiData;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
@@ -121,7 +119,7 @@ import me.vkryl.core.collection.LongList;
 import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
@@ -138,6 +136,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private static final int MESSAGE_FLAG_HAS_OLDER_MESSAGE = 1 << 2;
   private static final int MESSAGE_FLAG_IS_THREAD_HEADER = 1 << 3;
   private static final int MESSAGE_FLAG_BELOW_HEADER = 1 << 4;
+  private static final int MESSAGE_FLAG_FORCE_AVATAR = 1 << 5;
 
   private static final int FLAG_LAYOUT_BUILT = 1 << 5;
   private static final int FLAG_MERGE_FORWARD = 1 << 6;
@@ -216,6 +215,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private float topRightRadius, topLeftRadius, bottomLeftRadius, bottomRightRadius;
   private final RectF bubblePathRect, bubbleClipPathRect;
 
+  private boolean needSponsorSmallPadding;
+
   protected final MessagesManager manager;
   protected final Tdlib tdlib;
   protected final MultipleViewProvider currentViews;
@@ -243,7 +244,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     this.currentViews.setContentProvider(this);
     this.msg = msg;
 
-    TdApi.MessageSender sender = msg.sender;
+    TdApi.MessageSender sender = msg.senderId;
     if (tdlib.isSelfChat(msg.chatId)) {
       flags |= FLAG_SELF_CHAT;
       if (msg.forwardInfo != null) {
@@ -298,7 +299,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       .textSize(useBubbles() ? 11f : 12f)
       .callback(this)
       .colorSet(this::getTimePartTextColor)
-      .drawable(this.sender.isChannel() || this.sender.isChannelAutoForward() ? R.drawable.templarian_baseline_comment_12 : R.drawable.baseline_updirectory_arrow_left_14, 12f, 3f, Gravity.LEFT)
+      .drawable(this.sender.isChannel() ? R.drawable.templarian_baseline_comment_12 : R.drawable.baseline_updirectory_arrow_left_14, 12f, 3f, Gravity.LEFT)
       .build();
     this.shareCounter = new Counter.Builder()
       .noBackground()
@@ -382,6 +383,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private String genTime () {
     if (isEventLog()) {
       return Lang.getRelativeTimestampShort(msg.date, TimeUnit.SECONDS);
+    } else if (isSponsored()) {
+      return Lang.getString(R.string.SponsoredSign);
     }
     StringBuilder b = new StringBuilder();
     String signature;
@@ -485,9 +488,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return Lang.getDate(getComparingDate(), TimeUnit.SECONDS);
   }
 
+  public final void forceAvatarWhenMerging (boolean value) {
+    flags = BitwiseUtils.setFlag(flags, MESSAGE_FLAG_FORCE_AVATAR, value);
+  }
+
   public final boolean mergeWith (@Nullable TGMessage top, boolean isBottom) {
     if (top != null) {
       top.setNeedExtraPadding(false);
+      top.setNeedExtraPresponsoredPadding(isSponsored());
       flags |= MESSAGE_FLAG_HAS_OLDER_MESSAGE;
     } else {
       flags &= ~MESSAGE_FLAG_HAS_OLDER_MESSAGE;
@@ -505,7 +513,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         top.setIsBottom(true);
       }
       setHeaderEnabled(!headerDisabled());
-      if (top != null || getDate() != 0 || isScheduled()) {
+      if ((top != null || getDate() != 0 || isScheduled()) && !isSponsored()) {
         flags |= FLAG_SHOW_DATE;
         setDate(genDate());
       } else {
@@ -732,7 +740,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   protected final boolean needCommentButton () {
-    if (!Config.COMMENTS_SUPPORTED || !msg.isChannelPost || isScheduled() || !allowInteraction()) {
+    if (!Config.COMMENTS_SUPPORTED || !msg.isChannelPost || isScheduled() || !allowInteraction() || isSponsored()) {
       return false;
     }
     TdApi.Message msg = this.msg;
@@ -1014,6 +1022,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   protected final int getExtraPadding () {
+    if (needSponsorSmallPadding) {
+      return Screen.dp(7f);
+    }
+
     return (flags & FLAG_EXTRA_PADDING) != 0 ? Screen.dp(7f) + (messagesController().needExtraBigPadding() ? Screen.dp(48f) : 0) : 0;
   }
 
@@ -1125,6 +1137,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (!useBubble() || separateReplyFromBubble()) {
       return false;
     }
+    if (isSponsored() && useBubbles())
+      return true;
     if (isPsa() && forceForwardedInfo())
       return true;
     if (isOutgoing() && sender.isAnonymousGroupAdmin())
@@ -2236,6 +2250,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   @CallSuper
   public boolean performLongPress (View view, float x, float y) {
+    if (isSponsored()) {
+      return false;
+    }
     boolean result = false;
     if (inlineKeyboard != null) {
       result = inlineKeyboard.performLongPress(view);
@@ -2438,14 +2455,18 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   public final boolean forceForwardedInfo () {
     return msg.forwardInfo != null && !isOutgoing() && (
-      BitwiseUtils.getFlag(flags, FLAG_SELF_CHAT) ||
-      ( sender.isChannelAutoForward() &&
-        msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginChannel.CONSTRUCTOR &&
-        msg.forwardInfo.fromChatId == ((TdApi.MessageForwardOriginChannel) msg.forwardInfo.origin).chatId
-      ) ||
+      BitwiseUtils.getFlag(flags, FLAG_SELF_CHAT) || isChannelAutoForward() ||
       msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginMessageImport.CONSTRUCTOR ||
       (isPsa() && !sender.isUser() && useBubbles()) ||
       isRepliesChat());
+  }
+
+  public final boolean isChannelAutoForward () {
+    return (msg.forwardInfo != null && msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginChannel.CONSTRUCTOR &&
+      msg.forwardInfo.fromChatId == ((TdApi.MessageForwardOriginChannel) msg.forwardInfo.origin).chatId &&
+      msg.senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR &&
+      ((TdApi.MessageSenderChat) msg.senderId).chatId == msg.forwardInfo.fromChatId
+    );
   }
 
   public final boolean isRepliesChat () {
@@ -2697,7 +2718,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private void buildForward () {
-    if (!useForward()) {
+    if (!useForward() || forwardInfo == null) {
       return;
     }
 
@@ -3246,7 +3267,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   public boolean onMessageClick (MessageView v, MessagesController c) {
     // TODO
-    return isEventLog();
+    return /* isEventLog() */ false;
   }
 
   public int getWidth () {
@@ -3594,6 +3615,15 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return msg.id;
   }
 
+  public final TdApi.Message getOldestMessage () {
+    synchronized (this) {
+      if (combinedMessages != null && !combinedMessages.isEmpty()) {
+        return combinedMessages.get(0);
+      }
+    }
+    return msg;
+  }
+
   public final TdApi.Message getNewestMessage () {
     synchronized (this) {
       if (combinedMessages != null && !combinedMessages.isEmpty()) {
@@ -3650,7 +3680,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   @AnyThread
   public final boolean wouldCombineWith (TdApi.Message message) {
-    if (msg.mediaAlbumId == 0 || msg.mediaAlbumId != message.mediaAlbumId || msg.ttl != message.ttl || isHot() || isEventLog()) {
+    if (msg.mediaAlbumId == 0 || msg.mediaAlbumId != message.mediaAlbumId || msg.ttl != message.ttl || isHot() || isEventLog() || isSponsored()) {
       return false;
     }
     int combineMode = TD.getCombineMode(msg);
@@ -3747,7 +3777,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   private String getAdministratorSign () {
     String result = null;
-    if (administrator != null) {
+    if (isSponsored()) {
+      return null;
+    } else if (administrator != null) {
       if (!StringUtils.isEmpty(administrator.customTitle))
         result = administrator.customTitle;
       else if (administrator.isOwner)
@@ -3755,9 +3787,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       else
         result = Lang.getString(R.string.message_adminSignPlain);
     } else if (sender.isAnonymousGroupAdmin()) {
-      result = !StringUtils.isEmpty(msg.authorSignature) ? msg.authorSignature : null;
-    } else if (sender.isChannelAutoForward()) {
-      result = Lang.getString(R.string.message_channelSign);
+      result = !StringUtils.isEmpty(msg.authorSignature) ? msg.authorSignature : Lang.getString(R.string.message_adminSignPlain);
+    } else if (StringUtils.isEmpty(msg.authorSignature) && msg.chatId != 0 && tdlib.isMultiChat(msg.chatId)) {
+      long chatId = sender.getChatId();
+      if (tdlib.isChannel(chatId)) {
+        result = Lang.getString(R.string.message_channelSign);
+      } else if (ChatId.isMultiChat(chatId)) {
+        result = Lang.getString(R.string.message_groupSign);
+      }
     }
     if (result != null) {
       if (useBubbles())
@@ -3773,7 +3810,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private boolean needAdminSign () {
-    return administrator != null || (sender.isAnonymousGroupAdmin() && !StringUtils.isEmpty(msg.authorSignature)) || (sender.isChannelAutoForward() && !isThreadHeader());
+    return getAdministratorSign() != null;
   }
 
   public final void setAdministratorSign (@Nullable TdApi.ChatAdministrator administrator) {
@@ -3810,6 +3847,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   public final boolean isPsa () {
     return msg.forwardInfo != null && !StringUtils.isEmpty(msg.forwardInfo.publicServiceAnnouncementType) && !sender.isUser();
+  }
+
+  public boolean isSponsored () {
+    return false;
   }
 
   public final int getPinnedMessageCount () {
@@ -3945,7 +3986,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public final boolean canBeSelected () {
-    return (!isNotSent() || canResend()) && (flags & FLAG_UNSUPPORTED) == 0 && !(this instanceof TGMessageChat) && allowInteraction();
+    return (!isNotSent() || canResend()) && (flags & FLAG_UNSUPPORTED) == 0 && !(this instanceof TGMessageChat) && allowInteraction() && !isSponsored();
   }
 
   public boolean canEditText () {
@@ -3954,6 +3995,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   public boolean canBeForwarded () {
     return msg.canBeForwarded && (msg.content.getConstructor() != TdApi.MessageLocation.CONSTRUCTOR || ((TdApi.MessageLocation) msg.content).expiresIn == 0) && !isEventLog();
+  }
+
+  public boolean canBeSaved () {
+    return msg.canBeSaved;
   }
 
   public boolean isUnread () {
@@ -4110,7 +4155,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public final boolean needMessageButton () {
-    return ((flags & FLAG_SELF_CHAT) != 0 || sender.isChannelAutoForward() || isRepliesChat()) && msg.forwardInfo != null && msg.forwardInfo.fromChatId != 0 &&  msg.forwardInfo.fromMessageId != 0 &&  msg.forwardInfo.fromChatId != msg.chatId;
+    return ((flags & FLAG_SELF_CHAT) != 0 || isChannelAutoForward() || isRepliesChat()) && msg.forwardInfo != null && msg.forwardInfo.fromChatId != 0 &&  msg.forwardInfo.fromMessageId != 0 &&  msg.forwardInfo.fromChatId != msg.chatId;
   }
 
   public final void openSourceMessage () {
@@ -4514,6 +4559,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     dst.canBeDeletedForAllUsers = src.canBeDeletedForAllUsers;
     dst.canGetMessageThread = src.canGetMessageThread;
     dst.canBeForwarded = src.canBeForwarded;
+    dst.canBeSaved = src.canBeSaved;
     dst.canBeEdited = src.canBeEdited;
     dst.canGetStatistics = src.canGetStatistics;
     dst.canGetViewers = src.canGetViewers;
@@ -4768,6 +4814,26 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     } else {
       if ((flags & FLAG_EXTRA_PADDING) != 0) {
         flags &= ~FLAG_EXTRA_PADDING;
+        if ((flags & FLAG_LAYOUT_BUILT) != 0) {
+          height = computeHeight();
+        }
+      }
+    }
+    return oldHeight != height;
+  }
+
+  public boolean setNeedExtraPresponsoredPadding (boolean needPadding) {
+    int oldHeight = height;
+    if (needPadding) {
+      if (!needSponsorSmallPadding) {
+        needSponsorSmallPadding = true;
+        if ((flags & FLAG_LAYOUT_BUILT) != 0) {
+          height = computeHeight();
+        }
+      }
+    } else {
+      if (needSponsorSmallPadding) {
+        needSponsorSmallPadding = false;
         if ((flags & FLAG_LAYOUT_BUILT) != 0) {
           height = computeHeight();
         }
@@ -6369,7 +6435,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   // Other
 
   public static TGMessage valueOf (MessagesManager context, TdApi.Message msg, TdApi.Chat chat, @Nullable LongSparseArray<TdApi.ChatAdministrator> chatAdmins) {
-    return valueOf(context, msg, chat, msg.sender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR && chatAdmins != null ? chatAdmins.get(((TdApi.MessageSenderUser) msg.sender).userId) : null);
+    return valueOf(context, msg, chat, msg.senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR && chatAdmins != null ? chatAdmins.get(((TdApi.MessageSenderUser) msg.senderId).userId) : null);
   }
 
   public static TGMessage valueOf (MessagesManager context, TdApi.Message msg, TdApi.Chat chat, @Nullable TdApi.ChatAdministrator admin) {
@@ -6429,20 +6495,24 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       if (content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR) {
         TdApiExt.MessageChatEvent event = (TdApiExt.MessageChatEvent) content;
         switch (event.event.action.getConstructor()) {
-          case TdApi.ChatEventMemberJoined.CONSTRUCTOR:
-            content = new TdApi.MessageChatAddMembers(new long[]{event.event.userId});
+          case TdApi.ChatEventMemberJoined.CONSTRUCTOR: {
+            final long userId = Td.getSenderUserId(event.event.memberId);
+            content = new TdApi.MessageChatAddMembers(new long[]{userId});
             break;
-          case TdApi.ChatEventMemberLeft.CONSTRUCTOR:
-            content = new TdApi.MessageChatDeleteMember(event.event.userId);
+          }
+          case TdApi.ChatEventMemberLeft.CONSTRUCTOR: {
+            final long userId = Td.getSenderUserId(event.event.memberId);
+            content = new TdApi.MessageChatDeleteMember(userId);
             break;
-          case TdApi.ChatEventMessageTtlSettingChanged.CONSTRUCTOR:
-            content = new TdApi.MessageChatSetTtl(((TdApi.ChatEventMessageTtlSettingChanged) event.event.action).newMessageTtlSetting);
+          }
+          case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
+            content = new TdApi.MessageChatSetTtl(((TdApi.ChatEventMessageTtlChanged) event.event.action).newMessageTtl);
             break;
           case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
             content = new TdApi.MessageVideoChatStarted(((TdApi.ChatEventVideoChatCreated) event.event.action).groupCallId);
             break;
-          case TdApi.ChatEventVideoChatDiscarded.CONSTRUCTOR:
-            content = new TdApi.MessageVideoChatEnded(0); // ((TdApi.ChatEventVoiceChatDiscarded) event.event.action).groupCallId
+          case TdApi.ChatEventVideoChatEnded.CONSTRUCTOR:
+            content = new TdApi.MessageVideoChatEnded(0); // ((TdApi.ChatEventVideoChatEnded) event.event.action).groupCallId
             break;
           case TdApi.ChatEventTitleChanged.CONSTRUCTOR: {
             TdApi.ChatEventTitleChanged e = (TdApi.ChatEventTitleChanged) event.event.action;
@@ -6583,7 +6653,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                 TdApi.ChatEventInviteLinkEdited e = (TdApi.ChatEventInviteLinkEdited) event.event.action;
 
                 boolean changedLimit = e.oldInviteLink.memberLimit != e.newInviteLink.memberLimit;
-                boolean changedExpires = e.oldInviteLink.expireDate != e.newInviteLink.expireDate;
+                boolean changedExpires = e.oldInviteLink.expirationDate != e.newInviteLink.expirationDate;
 
                 String link = StringUtils.urlWithoutProtocol(e.newInviteLink.inviteLink);
                 String prevLimit = e.oldInviteLink.memberLimit != 0 ? Strings.buildCounter(e.oldInviteLink.memberLimit) : Lang.getString(R.string.EventLogEditedInviteLinkNoLimit);
@@ -6592,27 +6662,27 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                 String text;
                 if (changedLimit && changedExpires) {
                   String expires;
-                  if (e.newInviteLink.expireDate == 0) {
+                  if (e.newInviteLink.expirationDate == 0) {
                     expires = Lang.getString(R.string.LinkExpiresNever);
-                  } else if (DateUtils.isToday(e.newInviteLink.expireDate, TimeUnit.SECONDS)) {
-                    expires = Lang.getString(R.string.LinkExpiresTomorrow, Lang.time(e.newInviteLink.expireDate, TimeUnit.SECONDS));
-                  } else if (DateUtils.isTomorrow(e.newInviteLink.expireDate, TimeUnit.SECONDS)) {
-                    expires = Lang.getString(R.string.LinkExpiresTomorrow, Lang.time(e.newInviteLink.expireDate, TimeUnit.SECONDS));
+                  } else if (DateUtils.isToday(e.newInviteLink.expirationDate, TimeUnit.SECONDS)) {
+                    expires = Lang.getString(R.string.LinkExpiresTomorrow, Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
+                  } else if (DateUtils.isTomorrow(e.newInviteLink.expirationDate, TimeUnit.SECONDS)) {
+                    expires = Lang.getString(R.string.LinkExpiresTomorrow, Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
                   } else {
-                    expires = Lang.getString(R.string.LinkExpiresFuture, Lang.getDate(e.newInviteLink.expireDate, TimeUnit.SECONDS), Lang.time(e.newInviteLink.expireDate, TimeUnit.SECONDS));
+                    expires = Lang.getString(R.string.LinkExpiresFuture, Lang.getDate(e.newInviteLink.expirationDate, TimeUnit.SECONDS), Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
                   }
                   text = Lang.getString(R.string.EventLogEditedInviteLink, link, prevLimit, newLimit, expires);
                 } else if (changedLimit) {
                   text = Lang.getString(R.string.EventLogEditedInviteLinkLimit, link, prevLimit, newLimit);
                 } else {
-                  if (e.newInviteLink.expireDate == 0) {
+                  if (e.newInviteLink.expirationDate == 0) {
                     text = Lang.getString(R.string.EventLogEditedInviteLinkExpireNever, link);
-                  } else if (DateUtils.isToday(e.newInviteLink.expireDate, TimeUnit.SECONDS)) {
-                    text = Lang.getString(R.string.EventLogEditedInviteLinkExpireToday, link, Lang.time(e.newInviteLink.expireDate, TimeUnit.SECONDS));
-                  } else if (DateUtils.isTomorrow(e.newInviteLink.expireDate, TimeUnit.SECONDS)) {
-                    text = Lang.getString(R.string.EventLogEditedInviteLinkExpireTomorrow, link, Lang.time(e.newInviteLink.expireDate, TimeUnit.SECONDS));
+                  } else if (DateUtils.isToday(e.newInviteLink.expirationDate, TimeUnit.SECONDS)) {
+                    text = Lang.getString(R.string.EventLogEditedInviteLinkExpireToday, link, Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
+                  } else if (DateUtils.isTomorrow(e.newInviteLink.expirationDate, TimeUnit.SECONDS)) {
+                    text = Lang.getString(R.string.EventLogEditedInviteLinkExpireTomorrow, link, Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
                   } else {
-                    text = Lang.getString(R.string.EventLogEditedInviteLinkExpireFuture, link, Lang.getDate(e.newInviteLink.expireDate, TimeUnit.SECONDS), Lang.time(e.newInviteLink.expireDate, TimeUnit.SECONDS));
+                    text = Lang.getString(R.string.EventLogEditedInviteLinkExpireFuture, link, Lang.getDate(e.newInviteLink.expirationDate, TimeUnit.SECONDS), Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
                   }
                 }
 
@@ -6653,6 +6723,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                 ArrayList<TdApi.TextEntity> entities = new ArrayList<>();
                 final TdApi.ChatMemberStatus oldStatus, newStatus;
                 final boolean isPromote, isTransferOwnership;
+                boolean isAnonymous = false;
 
                 final int stringRes;
                 int restrictedUntil = 0;
@@ -6679,13 +6750,22 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                   } else {
                     isTransferOwnership = false;
 
+                    if (e.oldStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR && e.newStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
+                      type = 5;
+                      isAnonymous = ((TdApi.ChatMemberStatusCreator) e.oldStatus).isAnonymous != ((TdApi.ChatMemberStatusCreator) e.newStatus).isAnonymous;
+                    }
+
                     switch (e.oldStatus.getConstructor()) {
                       case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
                         oldStatus = e.oldStatus;
                         break;
                       default:
-                        type = 1;
-                        oldStatus = new TdApi.ChatMemberStatusAdministrator();
+                        if (!isAnonymous) {
+                          type = 1;
+                          oldStatus = new TdApi.ChatMemberStatusAdministrator();
+                        } else {
+                          oldStatus = e.oldStatus;
+                        }
                         break;
                     }
 
@@ -6694,8 +6774,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                         newStatus = e.newStatus;
                         break;
                       default:
-                        type = 2;
-                        newStatus = new TdApi.ChatMemberStatusAdministrator();
+                        if (!isAnonymous) {
+                          type = 2;
+                          newStatus = new TdApi.ChatMemberStatusAdministrator();
+                        } else {
+                          newStatus = e.newStatus;
+                        }
                         break;
                     }
                   }
@@ -6757,7 +6841,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                         break;
                     }
 
-                    if (newState == 1 && prevState == 0) {
+                    if (e.oldStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR && e.newStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
+                      isAnonymous = ((TdApi.ChatMemberStatusCreator) e.oldStatus).isAnonymous != ((TdApi.ChatMemberStatusCreator) e.newStatus).isAnonymous;
+                      stringRes = R.string.EventLogPromoted;
+                    } else if (newState == 1 && prevState == 0) {
                       stringRes = R.string.EventLogGroupBanned;
                       restrictedUntil = ((TdApi.ChatMemberStatusBanned) newStatus).bannedUntilDate;
                     } else if (newState != 0) {
@@ -6766,6 +6853,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                     } else {
                       stringRes = R.string.EventLogRestrictedDeleted;
                     }
+
                     /* else {
                       throw new IllegalArgumentException("server bug: " + event.event.action);
                     }*/
@@ -6821,6 +6909,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
                 if (isTransferOwnership) {
                   // no need to show anything
+                } else if (isAnonymous) {
+                  appendRight(b, R.string.EventLogPromotedRemainAnonymous, ((TdApi.ChatMemberStatusCreator) oldStatus).isAnonymous, ((TdApi.ChatMemberStatusCreator) newStatus).isAnonymous, false);
                 } else if (isPromote) {
                   final TdApi.ChatMemberStatusAdministrator oldAdmin = (TdApi.ChatMemberStatusAdministrator) oldStatus;
                   final TdApi.ChatMemberStatusAdministrator newAdmin = (TdApi.ChatMemberStatusAdministrator) newStatus;
@@ -6849,7 +6939,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                   final TdApi.ChatMemberStatusRestricted oldBan = oldStatus.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR ? (TdApi.ChatMemberStatusRestricted) oldStatus : null;
                   final TdApi.ChatMemberStatusRestricted newBan = newStatus.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR ? (TdApi.ChatMemberStatusRestricted) newStatus : null;
 
-                  appendRight(b, R.string.EventLogRestrictedReadMessages, oldCanReadMessages, newCanReadMessages, false);
+                  if (memberId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
+                    appendRight(b, R.string.EventLogRestrictedReadMessages, oldCanReadMessages, newCanReadMessages, false);
+                  }
                   appendRight(b, R.string.EventLogRestrictedSendMessages, oldBan != null ? oldBan.permissions.canSendMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendMessages : newCanReadMessages, false);
                   appendRight(b, R.string.EventLogRestrictedSendMedia, oldBan != null ? oldBan.permissions.canSendMediaMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendMediaMessages : newCanReadMessages, false);
                   appendRight(b, R.string.EventLogRestrictedSendStickers, oldBan != null ? oldBan.permissions.canSendOtherMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendOtherMessages : newCanReadMessages, false);
@@ -6934,7 +7026,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           return new TGMessageSticker(context, msg, nonNull(((TdApi.MessageDice) content)));
         }
         case TdApi.MessageSticker.CONSTRUCTOR: {
-          return new TGMessageSticker(context, msg, nonNull(((TdApi.MessageSticker) content).sticker), false, null, null);
+          return new TGMessageSticker(context, msg, nonNull(((TdApi.MessageSticker) content).sticker), false, 0);
         }
         case TdApi.MessageVoiceNote.CONSTRUCTOR: {
           return new TGMessageFile(context, msg);

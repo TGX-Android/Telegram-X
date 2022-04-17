@@ -400,7 +400,7 @@ public class PageBlockRichText extends PageBlock {
     }), getFooterProvider(), TextColorSets.InstantView.AUTHOR, Text.FLAG_ARTICLE, openParameters);
 
     this.needAvatar = true;
-    TdApi.PhotoSize size = TD.findSmallest(embeddedPost.authorPhoto);
+    TdApi.PhotoSize size = Td.findSmallest(embeddedPost.authorPhoto);
     if (size != null) {
       if (embeddedPost.authorPhoto.minithumbnail != null) {
         avatarMiniThumbnail = new ImageFileLocal(embeddedPost.authorPhoto.minithumbnail);

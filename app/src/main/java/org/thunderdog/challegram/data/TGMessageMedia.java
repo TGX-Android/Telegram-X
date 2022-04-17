@@ -764,4 +764,8 @@ public class TGMessageMedia extends TGMessage {
     boolean res = super.performLongPress(view, x, y);
     return mosaicWrapper.performLongPress(view) || (wrapper != null && wrapper.performLongPress(view)) || res;
   }
+
+  public boolean isVideoFirstInMosaic (int mediaId) {
+    return mosaicWrapper.isSingular() || (mosaicWrapper.getSingularItem() != null && mosaicWrapper.getSingularItem().isVideo() && mosaicWrapper.getSingularItem().getVideo().video.id == mediaId);
+  }
 }

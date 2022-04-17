@@ -40,9 +40,10 @@ open class ModulePlugin : Plugin<Project> {
 
     val properties = loadProperties("local.properties")
     val keystore = Keystore(properties.getOrThrow("keystore.file"))
+    val appVersionOverride = properties.getProperty("app.version", "0").toInt()
 
     val versions = loadProperties("version.properties")
-    val appVersion = versions.getOrThrow("version.app").toInt()
+    val appVersion = if (appVersionOverride > 0) appVersionOverride else versions.getOrThrow("version.app").toInt()
     val majorVersion = versions.getOrThrow("version.major").toInt()
 
     val timeZone = TimeZone.getTimeZone("UTC")

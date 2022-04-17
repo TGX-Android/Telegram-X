@@ -410,6 +410,16 @@ public class Lang {
     return (target, argStart, argEnd, argIndex, needFakeBold) -> TD.toSpan(entity);
   }
 
+  public static CustomTypefaceSpan newSenderSpan (TdlibDelegate context, TdApi.MessageSender senderId) {
+    switch (senderId.getConstructor()) {
+      case TdApi.MessageSenderUser.CONSTRUCTOR:
+        return newUserSpan(context, ((TdApi.MessageSenderUser) senderId).userId);
+      case TdApi.MessageSenderChat.CONSTRUCTOR:
+        return null; // TODO
+    }
+    throw new UnsupportedOperationException(senderId.toString());
+  }
+
   public static CustomTypefaceSpan newUserSpan (TdlibDelegate context, long userId) {
     return TD.toDisplaySpan(new TdApi.TextEntityTypeMentionName(userId)).setOnClickListener((view, span) -> {
       context.tdlib().ui().openPrivateProfile(context, userId, null);
@@ -1667,7 +1677,7 @@ public class Lang {
     if (months < 12) {
       return plural(R.string.xMonths, months);
     }
-    int years = days / 365;
+    int years = Math.max(1, days / 365);
     return plural(R.string.xYears, years);
   }
 
@@ -1949,20 +1959,20 @@ public class Lang {
     return getRelativeDate(unixTime, unit, fromUnixTime, fromUnit, allowDuration, justNowSeconds, R.string.timestamp, false);
   }
 
-  public static String getReverseRelativeDate (long futureUnixTime, TimeUnit futureUnit, long fromUnixTime, TimeUnit fromUnit, boolean allowDuration, int justNowSeconds, @StringRes int res, boolean approximate) {
+  public static CharSequence getReverseRelativeDateBold (long futureUnixTime, TimeUnit futureUnit, long fromUnixTime, TimeUnit fromUnit, boolean allowDuration, int justNowSeconds, @StringRes int res, boolean approximate) {
     if (allowDuration) {
       long difference = futureUnit.toSeconds(futureUnixTime) - fromUnit.toSeconds(fromUnixTime);
       if (difference >= -5 * 60) {
         if (difference < justNowSeconds)
-          return getString(LangUtils.getRelativeDateForm(res, RelativeDateForm.NOW));
+          return getStringBold(LangUtils.getRelativeDateForm(res, RelativeDateForm.NOW));
         if (difference < 60)
-          return plural(LangUtils.getRelativeDateForm(res, RelativeDateForm.SECONDS), (int) difference);
+          return pluralBold(LangUtils.getRelativeDateForm(res, RelativeDateForm.SECONDS), (int) difference);
         difference /= 60;
         if (difference < 60)
-          return plural(LangUtils.getRelativeDateForm(res, RelativeDateForm.MINUTES), (int) difference);
+          return pluralBold(LangUtils.getRelativeDateForm(res, RelativeDateForm.MINUTES), (int) difference);
         difference /= 60;
         if (difference < 4)
-          return plural(LangUtils.getRelativeDateForm(res, RelativeDateForm.HOURS), (int) difference);
+          return pluralBold(LangUtils.getRelativeDateForm(res, RelativeDateForm.HOURS), (int) difference);
       }
     }
 
@@ -1981,23 +1991,23 @@ public class Lang {
     final String time = time(futureUnixTime, futureUnit);
     int days = (int) TimeUnit.MILLISECONDS.toDays(unixTimeFutureStartMs - unixTimeFromStartMs);
     if (days == 0) { // Today
-      return getString(LangUtils.getRelativeDateForm(res, RelativeDateForm.TODAY), time);
+      return getStringBold(LangUtils.getRelativeDateForm(res, RelativeDateForm.TODAY), time);
     }
     if (days == 1) { // Tomorrow
-      return getString(LangUtils.getRelativeDateForm(res, RelativeDateForm.TOMORROW), time);
+      return getStringBold(LangUtils.getRelativeDateForm(res, RelativeDateForm.TOMORROW), time);
     }
     if (approximate) {
       if (days < 14) { // Less than 2 weeks
-        return plural(LangUtils.getRelativeDateForm(res, RelativeDateForm.DAYS), days);
+        return pluralBold(LangUtils.getRelativeDateForm(res, RelativeDateForm.DAYS), days);
       }
       if (days < 30) {
-        return plural(LangUtils.getRelativeDateForm(res, RelativeDateForm.WEEKS), days / 7);
+        return pluralBold(LangUtils.getRelativeDateForm(res, RelativeDateForm.WEEKS), days / 7);
       }
       int months = (futureYear - fromYear) * 12 + (futureMonth - fromMonth);
       if (months < 12) {
-        return plural(LangUtils.getRelativeDateForm(res, RelativeDateForm.MONTHS), months);
+        return pluralBold(LangUtils.getRelativeDateForm(res, RelativeDateForm.MONTHS), months);
       }
-      return plural(LangUtils.getRelativeDateForm(res, RelativeDateForm.YEARS), months / 12);
+      return pluralBold(LangUtils.getRelativeDateForm(res, RelativeDateForm.YEARS), months / 12);
     } else {
       if (days < 7) { // Less than a week
         return getString(LangUtils.getRelativeDateForm(res, RelativeDateForm.WEEKDAY), weekShort(c), time);
@@ -2008,7 +2018,7 @@ public class Lang {
       } else {
         date = dateYearShort(c);
       }
-      return getString(LangUtils.getRelativeDateForm(res, RelativeDateForm.DATE), date, time);
+      return getStringBold(LangUtils.getRelativeDateForm(res, RelativeDateForm.DATE), date, time);
     }
   }
 

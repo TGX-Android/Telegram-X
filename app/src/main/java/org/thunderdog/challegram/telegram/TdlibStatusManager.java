@@ -45,17 +45,17 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
     default boolean canAnimateAction (long chatId, long messageThreadId, @NonNull ChatState chatState) { return false; }
   }
 
-  public static class UserAction {
-    public final long userId;
+  public static class Action {
+    public final TdApi.MessageSender senderId;
     public TdApi.ChatAction action;
-    public UserAction (long userId, TdApi.ChatAction action) {
-      this.userId = userId;
+    public Action (TdApi.MessageSender senderId, TdApi.ChatAction action) {
+      this.senderId = senderId;
       this.action = action;
     }
   }
 
   public static class ChatState implements FactorAnimator.Target {
-    private final ArrayList<UserAction> actions = new ArrayList<>();
+    private final ArrayList<Action> actions = new ArrayList<>();
     private final TdlibStatusManager context;
     private final Tdlib tdlib;
 
@@ -143,7 +143,7 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
         effectiveAction = actions.get(0).action;
         effectiveProgress = TD.getProgress(effectiveAction);
       } else {
-        for (TdlibStatusManager.UserAction action : actions) {
+        for (Action action : actions) {
           int progress = TD.getProgress(action.action);
           if (progress != -1) {
             effectiveProgress += progress;
@@ -181,7 +181,7 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
         }
         List<String> names = new ArrayList<>();
         int othersCount = 0;
-        for (TdlibStatusManager.UserAction action : actions) {
+        for (Action action : actions) {
           if (!isActionUnknown) {
             int progress = TD.getProgress(action.action);
             if (progress != -1) {
@@ -196,7 +196,7 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
             }
           }
           if (++userCount <= 2) { // Allow only 2 names
-            names.add(tdlib.cache().userName(action.userId));
+            names.add(tdlib.senderName(action.senderId));
           } else {
             othersCount++;
           }
@@ -267,17 +267,17 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
       int size = actions.size();
       int changeFlags = 0;
       for (int i = size - 1; i >= 0; i--) {
-        changeFlags |= setActionAt(i, actions.get(i).userId, action);
+        changeFlags |= setActionAt(i, actions.get(i).senderId, action);
       }
       applyChanges(changeFlags);
     }
 
-    public void setAction (long userId, TdApi.ChatAction action) {
+    public void setAction (TdApi.MessageSender senderId, TdApi.ChatAction action) {
       int foundIndex = -1;
       int i = 0;
-      for (UserAction userAction : actions) {
-        if (userAction.userId == userId) {
-          if (Td.equalsTo(userAction.action, action)) {
+      for (Action pendingAction : actions) {
+        if (Td.equalsTo(senderId, pendingAction.senderId)) {
+          if (Td.equalsTo(pendingAction.action, action)) {
             return;
           }
           foundIndex = i;
@@ -285,11 +285,11 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
         }
         i++;
       }
-      int changeFlags = setActionAt(foundIndex, userId, action);
+      int changeFlags = setActionAt(foundIndex, senderId, action);
       applyChanges(changeFlags);
     }
 
-    private int setActionAt (int index, long userId, TdApi.ChatAction action) {
+    private int setActionAt (int index, TdApi.MessageSender senderId, TdApi.ChatAction action) {
       boolean isCancel = action.getConstructor() == TdApi.ChatActionCancel.CONSTRUCTOR;
       int changeFlags = 0;
       if (isCancel) {
@@ -298,7 +298,7 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
           changeFlags |= CHANGE_FLAG_TEXT;
         }
       } else if (index != -1) {
-        UserAction userAction = actions.get(index);
+        Action userAction = actions.get(index);
         TdApi.ChatAction oldAction = userAction.action;
         userAction.action = action;
         if (oldAction.getConstructor() == action.getConstructor()) {
@@ -307,7 +307,7 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
           changeFlags = CHANGE_FLAG_TEXT | CHANGE_FLAG_ICON;
         }
       } else {
-        actions.add(0, new UserAction(userId, action));
+        actions.add(0, new Action(senderId, action));
         changeFlags |= CHANGE_FLAG_TEXT;
       }
       return changeFlags;
@@ -532,7 +532,7 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
   }
 
   @UiThread
-  void onUpdateChatUserAction (TdApi.UpdateUserChatAction update) {
+  void onUpdateChatUserAction (TdApi.UpdateChatAction update) {
     if (update.action.getConstructor() == TdApi.ChatActionWatchingAnimations.CONSTRUCTOR) {
       // TODO?
       return;
@@ -546,7 +546,7 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
       state = new ChatState(this, tdlib, update.chatId, update.messageThreadId);
       chatStates.put(key, state);
     }
-    state.setAction(update.userId, update.action);
+    state.setAction(update.senderId, update.action);
   }
 
   private static void notifyChatActionsChanged (long chatId, long messageThreadId, ChatState chatState, int changeFlags, @Nullable Iterator<ChatStateListener> list) {

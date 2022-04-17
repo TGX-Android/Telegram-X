@@ -183,16 +183,16 @@ dependencies {
     implementation("androidx.palette:palette:1.0.0")
     implementation("androidx.recyclerview:recyclerview:1.2.1")
     implementation("androidx.viewpager:viewpager:1.0.0")
-    implementation("androidx.work:work-runtime:2.7.0")
+    implementation("androidx.work:work-runtime:2.7.1")
     implementation("androidx.browser:browser:1.4.0")
     implementation("androidx.exifinterface:exifinterface:1.3.3")
-    implementation("androidx.collection:collection:1.1.0")
+    implementation("androidx.collection:collection:1.2.0")
     implementation("androidx.interpolator:interpolator:1.0.0")
     implementation("androidx.gridlayout:gridlayout:1.0.0")
     // CameraX: https://developer.android.com/jetpack/androidx/releases/camera
-    implementation("androidx.camera:camera-camera2:1.1.0-alpha10")
-    implementation("androidx.camera:camera-lifecycle:1.1.0-alpha10")
-    implementation("androidx.camera:camera-view:1.0.0-alpha30")
+    implementation("androidx.camera:camera-camera2:1.1.0-beta01")
+    implementation("androidx.camera:camera-lifecycle:1.1.0-beta01")
+    implementation("androidx.camera:camera-view:1.1.0-beta01")
     // Google Play Services: https://developers.google.com/android/guides/releases
     implementation("com.google.android.gms:play-services-base:17.6.0")
     implementation("com.google.android.gms:play-services-basement:17.6.0")
@@ -206,13 +206,13 @@ dependencies {
         exclude(group = "com.google.firebase", module = "firebase-measurement-connector")
     }
     // Play Core: https://developer.android.com/reference/com/google/android/play/core/release-notes
-    implementation("com.google.android.play:core:1.10.2")
+    implementation("com.google.android.play:core:1.10.3")
     // ExoPlayer: https://github.com/google/ExoPlayer/blob/release-v2/RELEASENOTES.md
-    implementation("com.google.android.exoplayer:exoplayer-core:2.16.0")
+    implementation("com.google.android.exoplayer:exoplayer-core:2.17.1")
     // The Checker Framework: https://checkerframework.org/CHANGELOG.md
-    compileOnly("org.checkerframework:checker-qual:3.19.0")
+    compileOnly("org.checkerframework:checker-qual:3.21.1")
     // OkHttp: https://github.com/square/okhttp/blob/master/CHANGELOG.md
-    implementation("com.squareup.okhttp3:okhttp:4.9.2")
+    implementation("com.squareup.okhttp3:okhttp:4.9.3")
     // ShortcutBadger: https://github.com/leolin310148/ShortcutBadger
     implementation("me.leolin:ShortcutBadger:1.1.22@aar")
     // ReLinker: https://github.com/KeepSafe/ReLinker/blob/master/CHANGELOG.md
@@ -221,6 +221,8 @@ dependencies {
     implementation("nl.dionsegijn:konfetti:1.2.6")
     // Transcoder: https://github.com/natario1/Transcoder/blob/master/docs/_about/changelog.md
     implementation("com.github.natario1:Transcoder:ba8f098c94")
+    // https://github.com/mikereedell/sunrisesunsetlib-java
+    implementation("com.luckycatlabs:SunriseSunsetCalculator:1.2")
 
     // ZXing: https://github.com/zxing/zxing/blob/master/CHANGES
     implementation("com.google.zxing:core:3.4.1")

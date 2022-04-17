@@ -226,6 +226,10 @@ public class TdlibContactManager implements CleanupStartupDelegate {
   }
 
   public void reset (boolean includeServer, final Runnable after) {
+    if (!UI.inUiThread()) {
+      UI.post(() -> reset(includeServer, after));
+      return;
+    }
     cancelPendingImportTask();
     setHideOption(HIDE_OPTION_DEFAULT);
     setStatus(STATUS_INACTIVE);

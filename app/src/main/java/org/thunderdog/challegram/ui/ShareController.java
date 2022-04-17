@@ -2880,8 +2880,8 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
     final Args args = getArgumentsStrict();
 
-    TdApi.MessageSendOptions cloudSendOptions = new TdApi.MessageSendOptions(forceDisableNotification || forceSendWithoutSound, false, schedulingState);
-    TdApi.MessageSendOptions secretSendOptions = cloudSendOptions.disableNotification ? new TdApi.MessageSendOptions(true, cloudSendOptions.fromBackground, cloudSendOptions.schedulingState) : cloudSendOptions;
+    TdApi.MessageSendOptions cloudSendOptions = new TdApi.MessageSendOptions(forceDisableNotification || forceSendWithoutSound, false, false, schedulingState);
+    TdApi.MessageSendOptions secretSendOptions = cloudSendOptions.disableNotification ? new TdApi.MessageSendOptions(true, cloudSendOptions.fromBackground, false, cloudSendOptions.schedulingState) : cloudSendOptions;
 
     for (int i = 0; i < selectedChatIds.size(); i++) {
       final long chatId = selectedChatIds.get(i);
@@ -3027,17 +3027,17 @@ public class ShareController extends TelegramViewController<ShareController.Args
         case MODE_MESSAGES: {
           final String name;
           boolean isUser;
-          switch (args.messages[0].sender.getConstructor()) {
+          switch (args.messages[0].senderId.getConstructor()) {
             case TdApi.MessageSenderUser.CONSTRUCTOR:
-              name = tdlib.cache().userName(((TdApi.MessageSenderUser) args.messages[0].sender).userId);
+              name = tdlib.cache().userName(((TdApi.MessageSenderUser) args.messages[0].senderId).userId);
               isUser = true;
               break;
             case TdApi.MessageSenderChat.CONSTRUCTOR:
-              name = tdlib.chatTitle(((TdApi.MessageSenderChat) args.messages[0].sender).chatId);
+              name = tdlib.chatTitle(((TdApi.MessageSenderChat) args.messages[0].senderId).chatId);
               isUser = false;
               break;
             default:
-              throw new UnsupportedOperationException(args.messages[0].sender.toString());
+              throw new UnsupportedOperationException(args.messages[0].senderId.toString());
           }
           tdlib.getMessageLink(args.messages[0], args.messages.length > 1, args.messageThreadId != 0, link ->
             Intents.shareText(Lang.getString(args.messageThreadId != 0 && isUser ? R.string.ShareTextComment : isUser || !tdlib.isChannel(args.messages[0].chatId) ? R.string.ShareTextMessage : R.string.ShareTextPost, link.url, name))

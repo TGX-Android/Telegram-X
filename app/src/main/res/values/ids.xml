@@ -118,6 +118,7 @@
   <item type="id" name="controller_logOut" />
   <item type="id" name="controller_editLanguage" />
   <item type="id" name="controller_editChatLink" />
+  <item type="id" name="controller_editSession" />
   <item type="id" name="controller_strings" />
   <item type="id" name="controller_editPhone" />
   <item type="id" name="controller_request" />
@@ -191,7 +192,9 @@
   <item type="id" name="controller_editBio" />
   <item type="id" name="controller_editDescription" />
   <item type="id" name="controller_createPoll" />
+  <item type="id" name="controller_chatJoinRequests" />
   <item type="id" name="controller_messageSeen" />
+  <item type="id" name="controller_joinDialog" />
 
   <item type="id" name="controller_code" />
   <item type="id" name="controller_name" />
@@ -217,6 +220,7 @@
   <item type="id" name="controller_backgroundGrid" />
   <item type="id" name="controller_chatLinks" />
   <item type="id" name="controller_chatLinkMembers" />
+  <item type="id" name="controller_sponsoredMessagesInfo" />
 
   <item type="id" name="separator" />
 
@@ -347,6 +351,7 @@
   <item type="id" name="btn_addContact" />
   <item type="id" name="btn_inviteLink" />
   <item type="id" name="btn_toggleSignatures" />
+  <item type="id" name="btn_toggleProtection" />
   <item type="id" name="btn_allMembers" />
   <item type="id" name="btn_onlyAdmins" />
   <item type="id" name="btn_hidden" />
@@ -368,6 +373,8 @@
   <item type="id" name="session_device" />
   <item type="id" name="session_location" />
   <item type="id" name="session_title" />
+  <item type="id" name="session_calls" />
+  <item type="id" name="session_secret" />
   <item type="id" name="btn_done" />
   <item type="id" name="btn_forgotPassword" />
   <item type="id" name="btn_direction" />
@@ -384,6 +391,7 @@
   <item type="id" name="btn_sessionsEmpty_title" />
   <item type="id" name="btn_currentSession" />
   <item type="id" name="btn_qrLogin" />
+  <item type="id" name="btn_sessionTtl" />
   <item type="id" name="btn_selectChat" />
   <item type="id" name="btn_selectUnread" />
   <item type="id" name="btn_selectAll" />
@@ -457,7 +465,7 @@
   <item type="id" name="btn_cancel" />
   <item type="id" name="btn_removeProxy" />
   <item type="id" name="btn_save" />
-  <item type="id" name="btn_blockedUsers" />
+  <item type="id" name="btn_blockedSenders" />
   <item type="id" name="btn_sessions" />
   <item type="id" name="btn_2fa" />
   <item type="id" name="btn_accountTTL" />
@@ -490,8 +498,8 @@
   <item type="id" name="btn_dismissAdmin" />
   <item type="id" name="btn_transferOwnership" />
   <item type="id" name="btn_everybody" />
-  <item type="id" name="btn_blockUser" />
-  <item type="id" name="btn_unblockUser" />
+  <item type="id" name="btn_blockSender" />
+  <item type="id" name="btn_unblockSender" />
   <item type="id" name="btn_nobody" />
   <item type="id" name="btn_hideSecretChats" />
   <item type="id" name="btn_passcode" />
@@ -651,6 +659,11 @@
   <item type="id" name="btn_expireIn2d" />
   <item type="id" name="btn_expireIn1w" />
   <item type="id" name="btn_expireIn2w" />
+  <item type="id" name="btn_terminateIn1w" />
+  <item type="id" name="btn_terminateIn1m" />
+  <item type="id" name="btn_terminateIn3m" />
+  <item type="id" name="btn_terminateIn6m" />
+  <item type="id" name="btn_terminateInCustom" />
   <item type="id" name="btn_sendScheduled" />
   <item type="id" name="btn_sendAndOpen" />
   <item type="id" name="btn_sendOnceOnline" />
@@ -672,6 +685,7 @@
 
   <item type="id" name="btn_bold" />
   <item type="id" name="btn_italic" />
+  <item type="id" name="btn_spoiler" />
   <item type="id" name="btn_strikethrough" />
   <item type="id" name="btn_underline" />
   <item type="id" name="btn_monospace" />
@@ -728,10 +742,13 @@
   <item type="id" name="btn_viewInviteLinkMembers" />
   <item type="id" name="btn_openAdminInviteLinks" />
   <item type="id" name="btn_manageInviteLinks" />
+  <item type="id" name="btn_manageJoinRequests" />
   <item type="id" name="btn_inviteLinkUserLimit" />
   <item type="id" name="btn_inviteLinkUserSlider" />
   <item type="id" name="btn_inviteLinkDateLimit" />
   <item type="id" name="btn_inviteLinkDateSlider" />
+  <item type="id" name="btn_inviteLinkAdminApproval" />
+  <item type="id" name="btn_inviteLinkName" />
   <item type="id" name="btn_saveGif" />
   <item type="id" name="btn_stickers" />
   <item type="id" name="btn_stickerSetInfo" />
@@ -821,6 +838,17 @@
   <item type="id" name="btn_instantViewModeNone" />
   <item type="id" name="btn_restrictSensitiveContent" />
   <item type="id" name="btn_ignoreContentRestrictions" />
+
+  <item type="id" name="btn_sessionApp" />
+  <item type="id" name="btn_sessionPlatform" />
+  <item type="id" name="btn_sessionCountry" />
+  <item type="id" name="btn_sessionIp" />
+  <item type="id" name="btn_sessionDevice" />
+  <item type="id" name="btn_sessionAcceptSecretChats" />
+  <item type="id" name="btn_sessionAcceptCalls" />
+  <item type="id" name="btn_sessionFirstLogin" />
+  <item type="id" name="btn_sessionLastLogin" />
+  <item type="id" name="btn_sessionLogout" />
 
   <item type="id" name="btn_secret_dontReadMessages" />
   <item type="id" name="btn_secret_dropSavedScrollPositions" />
@@ -977,6 +1005,7 @@
   <item type="id" name="btn_messageAddContact" />
   <item type="id" name="btn_messageReschedule" />
   <item type="id" name="btn_messageSendNow" />
+  <item type="id" name="btn_messageSponsorInfo" />
 
   <item type="id" name="btn_unpinMessage" />
   <item type="id" name="btn_dismissForSelf" />
@@ -998,6 +1027,9 @@
   <item type="id" name="btn_username_copy_link" />
   <item type="id" name="btn_username_share" />
   <item type="id" name="btn_discard_record" />
+
+  <item type="id" name="btn_approveChatRequest" />
+  <item type="id" name="btn_declineChatRequest" />
 
   <item type="id" name="btn_menu_enable" />
   <item type="id" name="btn_menu_1hour" />
@@ -1065,7 +1097,7 @@
   <item type="id" name="btn_gif" />
   <item type="id" name="btn_bucket" />
 
-  <item type="id" name="btn_banUser" />
+  <item type="id" name="btn_banMember" />
   <item type="id" name="btn_reportSpam" />
   <item type="id" name="btn_reportBug" />
   <item type="id" name="btn_deleteAll" />
@@ -1094,6 +1126,10 @@
   <item type="id" name="btn_makePrivate" />
   <item type="id" name="btn_makePublic" />
   <item type="id" name="btn_restrictMember" />
+
+  <item type="id" name="btn_messageRestrictMember" />
+  <item type="id" name="btn_messageBlockUser" />
+  <item type="id" name="btn_messageUnblockMember" />
 
   <item type="id" name="btn_applyWallpaper" />
 

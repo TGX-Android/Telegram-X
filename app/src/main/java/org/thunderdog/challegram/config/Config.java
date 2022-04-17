@@ -32,6 +32,9 @@ public class Config {
   public static final boolean MODERN_IMAGE_DECODER_ENABLED = true;
   public static final boolean FORCE_SOFTWARE_IMAGE_DECODER = true;
 
+  // Allow stretch bounce in places where the glow looks ugly
+  public static final boolean HAS_NICE_OVER_SCROLL_EFFECT = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S;
+
   private static Boolean hasWebpSupport;
   public static boolean useBundledWebp () {
     if (BuildConfig.WEBP_ENABLED) {
@@ -256,4 +259,8 @@ public class Config {
   public static final boolean QR_AVAILABLE = true;
   public static final boolean QR_FORCE_ZXING = false;
   public static final boolean MANAGE_STORAGE_PERMISSION_AVAILABLE = false; // Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
+
+  public static final boolean VIDEO_CLOUD_PLAYBACK_AVAILABLE = true;
+
+  public static final String FILE_PROVIDER_AUTHORITY = BuildConfig.APPLICATION_ID + ".provider";
 }

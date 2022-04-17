@@ -10,14 +10,17 @@ import android.graphics.Rect;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageLoader;
 import org.thunderdog.challegram.loader.ImageReceiver;
@@ -35,6 +38,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.widget.FileProgressComponent;
 import org.thunderdog.challegram.widget.ForceTouchView;
+import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.SparseDrawableView;
 
 import me.vkryl.android.AnimatorUtils;
@@ -73,6 +77,7 @@ public class MediaCellView extends ViewGroup implements
   private @Nullable VideoPlayerView playerView;
   private CellButtonView buttonView;
   private CellVideoView videoParentView;
+  private BufferingProgressBarWrap bufferingProgressView;
 
   private class ForegroundView extends View {
     public ForegroundView (Context context) {
@@ -127,6 +132,10 @@ public class MediaCellView extends ViewGroup implements
     this.buttonView = new CellButtonView(context);
     this.buttonView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
     addView(buttonView);
+
+    this.bufferingProgressView = new BufferingProgressBarWrap(context);
+    this.bufferingProgressView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+    addView(bufferingProgressView);
   }
 
   @Override
@@ -461,6 +470,7 @@ public class MediaCellView extends ViewGroup implements
 
   public void destroy () {
     setMedia(null);
+    bufferingProgressView.performDestroy();
     imageReceiver.destroy();
     gifReceiver.destroy();
     imagePreviewReceiver.destroy();
@@ -534,7 +544,7 @@ public class MediaCellView extends ViewGroup implements
       this.revealFactor = revealFactor;
       if (media != null) {
         float alpha = MathUtils.clamp(revealFactor);
-        if (media.isLoaded() && media.isVideo() && media.isRemoteVideo()) {
+        if ((media.isLoaded() || Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) && media.isVideo() && media.isRemoteVideo()) {
           if (disappearing) {
             float diff = 1f - fromComponentsAlpha;
             media.setComponentsAlpha(fromComponentsAlpha + diff * (1f - alpha));
@@ -900,7 +910,7 @@ public class MediaCellView extends ViewGroup implements
   }
 
   public void loadMedia (boolean delayed, float strength) {
-    boolean isAutoplay = media != null && media.isLoaded() && media.isAutoplay();
+    boolean isAutoplay = media != null && (media.isLoaded() || Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) && media.isAutoplay();
     if (isAutoplay)
       strength = 0f;
     if (delayed && strength < 1.0f) {
@@ -919,7 +929,7 @@ public class MediaCellView extends ViewGroup implements
           }
         }
       };
-      long delay = media != null && media.isLoaded() ? media.isAutoplay() ? 150 : DELAY_MIN : DELAY_MAX;
+      long delay = media != null && (media.isLoaded() || Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) ? media.isAutoplay() ? 150 : DELAY_MIN : DELAY_MAX;
       postDelayed(delayedLoad, DELAY_START + (long) ((int) (delay - DELAY_START) * (1f - strength)));
 
       return;
@@ -927,7 +937,7 @@ public class MediaCellView extends ViewGroup implements
       downloadMedia();
       forcePreviewOverlay(0f);
     }
-    if (media != null && media.isLoaded()) {
+    if (media != null && (media.isLoaded() || Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE)) {
       if (media.isGif()) {
         gifReceiver.requestFile(media.getTargetGifFile());
         imageReceiver.requestFile(null);
@@ -962,7 +972,7 @@ public class MediaCellView extends ViewGroup implements
     if (overlayAnimator == null) {
       overlayAnimator = new FactorAnimator(ANIMATOR_OVERLAY, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 120l, this.previewOverlayFactor);
     }
-    if (media == null || media.isLoaded()) {
+    if (media == null || (media.isLoaded() || Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE)) {
       forcePreviewOverlay(0f);
     } else {
       overlayAnimator.animateTo(0f);
@@ -1024,12 +1034,13 @@ public class MediaCellView extends ViewGroup implements
       cancelDelayedLoad();
       this.media.detachFromView(buttonView);
       this.media.detachFromView(imageView);
-      if (delayed && !this.media.isLoaded() && !this.media.isVideo()) {
+      if ((forceTouchMode && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE && this.media.isVideo()) || (delayed && !this.media.isLoaded() && !this.media.isVideo())) {
         this.media.pauseAbandonedDownload();
       }
     }
 
     this.media = media;
+    this.bufferingProgressView.setProgressVisibleInstant(false);
 
     boolean needLock = needLock();
     if (needLock) {
@@ -1057,7 +1068,7 @@ public class MediaCellView extends ViewGroup implements
       } else {
         preview = imagePreviewReceiver;
         if (delayed) {
-          ImageFile imageFile = media.isLoaded() && !media.isVideo() ? media.getThumbImageFile(thumbSize, true) : null;
+          ImageFile imageFile = (media.isLoaded() || Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) && !media.isVideo() ? media.getThumbImageFile(thumbSize, true) : null;
           if (imageFile != null) {
             forcePreviewOverlay(1f);
             imagePreviewReceiver.requestFile(imageFile);
@@ -1091,7 +1102,13 @@ public class MediaCellView extends ViewGroup implements
 
   @Override
   public void onClick (float x, float y) {
-    if (receiver.isInsideContent(x, y, media != null ? media.getWidth() : 0, media != null ? media.getHeight() : 0)) {
+    Receiver tReceiver = receiver;
+
+    if (tReceiver instanceof ImageReceiver && !((ImageReceiver) tReceiver).isLoaded()) {
+      tReceiver = imagePreviewReceiver;
+    }
+
+    if (tReceiver.isInsideContent(x, y, media != null ? media.getWidth() : 0, media != null ? media.getHeight() : 0)) {
       if (canTouch(false)) {
         ((MediaView) getParent()).onMediaClick(x, y);
       }
@@ -1297,7 +1314,7 @@ public class MediaCellView extends ViewGroup implements
   }
 
   public boolean canZoom () {
-    return canTouch(false) && getVisibility() == View.VISIBLE && media != null && getAlpha() == 1f && media.isLoaded() && revealFactor == 1f && factor == 0f && ((MediaView) getParent()).canZoom(this);
+    return canTouch(false) && getVisibility() == View.VISIBLE && media != null && getAlpha() == 1f && (media.isLoaded() || Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) && revealFactor == 1f && factor == 0f && ((MediaView) getParent()).canZoom(this);
   }
 
   public boolean canTouch (boolean isTouchDown) {
@@ -1432,7 +1449,7 @@ public class MediaCellView extends ViewGroup implements
 
     @Override
     protected void onDraw (Canvas c) {
-      if (media != null && !isPlaying && !hideStaticView && (!media.isAutoplay() || !media.isLoaded())) {
+      if (media != null && !isPlaying && !hideStaticView && (!media.isAutoplay() || (!media.isLoaded() && !Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE))) {
         media.drawComponents(this, c, receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom());
       }
     }
@@ -1545,6 +1562,7 @@ public class MediaCellView extends ViewGroup implements
     void onSeekProgress (MediaItem item, long now, long duration, float progress);
     void onPlayPause (MediaItem item, boolean isPlaying);
     void onPlayStarted (MediaItem item, boolean isPlaying);
+    void onSeekSecondaryProgress (MediaItem item, float progress);
   }
 
   private Callback callback;
@@ -1555,7 +1573,7 @@ public class MediaCellView extends ViewGroup implements
 
   @Override
   public boolean onClick (FileProgressComponent context, View view, TdApi.File file, long messageId) {
-    if (media != null && media.isVideo() && media.isLoaded()) {
+    if (media != null && media.isVideo() && (Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE || media.isLoaded())) {
       if (Config.VIDEO_PLAYER_AVAILABLE) {
         if ((!isPlaying && !hideStaticView && !media.isAutoplay()) || view != getParent()) {
           setHideStaticView(true, true);
@@ -1565,7 +1583,7 @@ public class MediaCellView extends ViewGroup implements
           return true;
         }
         return false;
-      } else {
+      } else if (media.isLoaded()) {
         U.openFile(UI.getContext(getContext()).navigation().getCurrentStackItem(), media.getSourceVideo());
       }
       return true;
@@ -1595,6 +1613,7 @@ public class MediaCellView extends ViewGroup implements
         }
       } else {
         invalidateImageComponents();
+        bufferingProgressView.setProgressVisible(false, false);
         if (delayed) {
           UI.post(() -> {
             if (playerView != null) {
@@ -1686,7 +1705,7 @@ public class MediaCellView extends ViewGroup implements
   }
 
   public void autoplayIfNeeded (boolean isSwitch) {
-    if (media != null && media.isVideo() && (!isSwitch || media.isGifType()) && media.isLoaded() && media.isRemoteVideo() && !destroyed) {
+    if (media != null && media.isVideo() && (!isSwitch || media.isGifType()) && (media.isLoaded() || Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) && media.isRemoteVideo() && !destroyed) {
       if (!media.isGifType()) {
         TdlibManager.instance().player().pauseWithReason(TGPlayerController.PAUSE_REASON_OPEN_VIDEO);
       }
@@ -1703,7 +1722,7 @@ public class MediaCellView extends ViewGroup implements
   }
 
   public void updateMute () {
-    if (playerView != null && media != null && media.isVideo() && media.isLoaded() && media.getType() == MediaItem.TYPE_GALLERY_VIDEO) {
+    if (playerView != null && media != null && media.isVideo() && (media.isLoaded() || Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) && media.getType() == MediaItem.TYPE_GALLERY_VIDEO) {
       playerView.setMuted(media.needMute());
     }
   }
@@ -1735,12 +1754,32 @@ public class MediaCellView extends ViewGroup implements
 
   @Override
   public void onStateChanged (TdApi.File file, @TdlibFilesManager.FileDownloadState int state) {
-    setCanSeek(media != null && media.isVideo() && state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED);
+    if (media != null && media.isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
+      setCanSeek(true);
+    } else {
+      setCanSeek(media != null && media.isVideo() && state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED);
+    }
+
     if (state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED && (forceTouchMode || (media != null && media.isAutoplay()))) {
       autoplayIfNeeded(false);
     }
   }
 
   @Override
-  public void onProgress (TdApi.File file, float progress) { }
+  public void onBufferingStateChanged (boolean isBuffering) {
+    bufferingProgressView.setProgressVisible(isBuffering, media != null && media.getFileProgress().isDownloaded());
+  }
+
+  @Override
+  public void onPlayError () {
+    bufferingProgressView.setProgressVisible(false, false);
+  }
+
+  @Override
+  public void onProgress (TdApi.File file, float progress) {
+    if (callback != null) {
+      float bufferingProgress = file.expectedSize != 0 ? (float) (file.local.downloadOffset + file.local.downloadedPrefixSize) / (float) file.expectedSize : 0f;
+      callback.onSeekSecondaryProgress(media, bufferingProgress);
+    }
+  }
 }

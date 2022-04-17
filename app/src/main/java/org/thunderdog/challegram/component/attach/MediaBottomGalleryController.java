@@ -443,7 +443,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
       hapticItems.add(new HapticMenuHelper.MenuItem(R.id.btn_sendAsFile, count <= 1 ? Lang.getString(allVideo ? R.string.SendOriginal : R.string.SendAsFile) : Lang.plural(allVideo ? R.string.SendXOriginals : R.string.SendAsXFiles, count), R.drawable.baseline_insert_drive_file_24).setOnClickListener(v -> {
         if (v.getId() == R.id.btn_sendAsFile) {
           mediaLayout.pickDateOrProceed((forceDisableNotification, schedulingState, disableMarkdown) ->
-            mediaLayout.sendPhotosOrVideos(adapter.getSelectedPhotosAndVideosAsList(true), showingFoundImages, new TdApi.MessageSendOptions(forceDisableNotification, false, schedulingState), disableMarkdown, true)
+            mediaLayout.sendPhotosOrVideos(adapter.getSelectedPhotosAndVideosAsList(true), showingFoundImages, new TdApi.MessageSendOptions(forceDisableNotification, false, false, schedulingState), disableMarkdown, true)
           );
         }
       }));
@@ -496,7 +496,10 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   public boolean onPhotoOrVideoOpenRequested (ImageFile fromFile) {
     if (fromFile instanceof ImageGalleryFile && currentBucket != null) {
       MediaStack stack = new MediaStack(context, tdlib);
-      stack.set(fromFile, currentBucket.getMedia());
+      final List<ImageFile> files = currentBucket.getMedia();
+      final long time = SystemClock.elapsedRealtime();
+      stack.set(fromFile, files);
+      Log.i("stack.set complete for %d files in %dms", stack.getCurrentSize(), SystemClock.elapsedRealtime() - time);
 
       MediaViewController controller = new MediaViewController(context, tdlib);
       controller.setArguments(MediaViewController.Args.fromGallery(this, this, this, this, stack, mediaLayout.areScheduledOnly()).setReceiverChatId(mediaLayout.getTargetChatId()));

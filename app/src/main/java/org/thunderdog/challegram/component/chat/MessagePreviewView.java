@@ -376,13 +376,13 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   // Listeners
 
   public void subscribeToUpdates (TdApi.Message message) {
-    switch (message.sender.getConstructor()) {
+    switch (message.senderId.getConstructor()) {
       case TdApi.MessageSenderChat.CONSTRUCTOR: {
-        tdlib.listeners().subscribeToChatUpdates(((TdApi.MessageSenderChat) message.sender).chatId, this);
+        tdlib.listeners().subscribeToChatUpdates(((TdApi.MessageSenderChat) message.senderId).chatId, this);
         break;
       }
       case TdApi.MessageSenderUser.CONSTRUCTOR: {
-        tdlib.cache().addUserDataListener(((TdApi.MessageSenderUser) message.sender).userId, this);
+        tdlib.cache().addUserDataListener(((TdApi.MessageSenderUser) message.senderId).userId, this);
         break;
       }
     }
@@ -390,13 +390,13 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   }
 
   public void unsubscribeFromUpdates (TdApi.Message message) {
-    switch (message.sender.getConstructor()) {
+    switch (message.senderId.getConstructor()) {
       case TdApi.MessageSenderChat.CONSTRUCTOR: {
-        tdlib.listeners().unsubscribeFromChatUpdates(((TdApi.MessageSenderChat) message.sender).chatId, this);
+        tdlib.listeners().unsubscribeFromChatUpdates(((TdApi.MessageSenderChat) message.senderId).chatId, this);
         break;
       }
       case TdApi.MessageSenderUser.CONSTRUCTOR: {
-        tdlib.cache().removeUserDataListener(((TdApi.MessageSenderUser) message.sender).userId, this);
+        tdlib.cache().removeUserDataListener(((TdApi.MessageSenderUser) message.senderId).userId, this);
         break;
       }
     }
@@ -406,7 +406,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   @Override
   public void onChatTitleChanged (long chatId, String title) {
     tdlib.runOnUiThread(() -> {
-      if (this.message != null && this.message.sender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR && ((TdApi.MessageSenderChat) this.message.sender).chatId == chatId) {
+      if (this.message != null && this.message.senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR && ((TdApi.MessageSenderChat) this.message.senderId).chatId == chatId) {
         updateTitleText();
       }
     });
@@ -415,7 +415,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   @Override
   public void onUserUpdated (TdApi.User user) {
     tdlib.runOnUiThread(() -> {
-      if (this.message != null && this.message.sender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR && ((TdApi.MessageSenderUser) this.message.sender).userId == user.id) {
+      if (this.message != null && this.message.senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR && ((TdApi.MessageSenderUser) this.message.senderId).userId == user.id) {
         updateTitleText();
       }
     });

@@ -31,6 +31,7 @@ import org.thunderdog.challegram.component.attach.MeasuredAdapterDelegate;
 import org.thunderdog.challegram.component.attach.MediaLocationPlaceView;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.base.TogglerView;
+import org.thunderdog.challegram.component.chat.DetachedChatHeaderView;
 import org.thunderdog.challegram.component.chat.MessagePreviewView;
 import org.thunderdog.challegram.component.inline.CustomResultView;
 import org.thunderdog.challegram.component.sharedmedia.MediaSmallView;
@@ -65,6 +66,7 @@ import org.thunderdog.challegram.widget.ChartLayout;
 import org.thunderdog.challegram.widget.CheckBox;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.DoubleTextView;
+import org.thunderdog.challegram.widget.DoubleTextViewWithIcon;
 import org.thunderdog.challegram.widget.EmbeddableStickerView;
 import org.thunderdog.challegram.widget.EmptySmartView;
 import org.thunderdog.challegram.widget.FileProgressComponent;
@@ -356,7 +358,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     // Override
   }
 
-  protected void setSession (ListItem item, int position, RelativeLayout parent, boolean isUpdate, TextView timeView, TextView titleView, TextView subtextView, TextView locationView, ProgressComponentView progressView, @Nullable AvatarView avatarView) {
+  protected void setSession (ListItem item, int position, RelativeLayout parent, boolean isUpdate, TextView timeView, TextView titleView, TextView subtextView, TextView locationView, ProgressComponentView progressView, @Nullable AvatarView avatarView, ImageView iconView, @Nullable TextView secretStateView, @Nullable TextView callsStateView) {
     // Override
   }
 
@@ -367,7 +369,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     TextView locationView = (TextView) parent.getChildAt(3);
     ProgressComponentView progressView = (ProgressComponentView) parent.getChildAt(4);
     AvatarView avatarView = item.getViewType() == ListItem.TYPE_SESSION_WITH_AVATAR ? (AvatarView) parent.getChildAt(5) : null;
-    setSession(item, position, parent, isUpdate, timeView, titleView, subtextView, locationView, progressView, avatarView);
+    ImageView iconView = item.getViewType() == ListItem.TYPE_SESSION ? (ImageView) parent.getChildAt(5) : null;
+    TextView secretStateView = item.getViewType() == ListItem.TYPE_SESSION ? (TextView) parent.getChildAt(6) : null;
+    TextView callStateView = item.getViewType() == ListItem.TYPE_SESSION ? (TextView) parent.getChildAt(7) : null;
+    setSession(item, position, parent, isUpdate, timeView, titleView, subtextView, locationView, progressView, avatarView, iconView, secretStateView, callStateView);
   }
 
   protected void setStickerSet (ListItem item, int position, DoubleTextView group, boolean isArchived, boolean isUpdate) {
@@ -379,6 +384,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
   }
 
   protected void setEmbedSticker (ListItem item, int position, EmbeddableStickerView userView, boolean isUpdate) {
+    // Override
+  }
+
+  protected void setChatHeader (ListItem item, int position, DetachedChatHeaderView headerView) {
     // Override
   }
 
@@ -399,6 +408,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
   }*/
 
   protected void setInfo (ListItem item, int position, ListInfoView infoView) {
+    // Override
+  }
+
+  protected void setJoinRequest (ListItem item, int position, DoubleTextViewWithIcon group, boolean isUpdate) {
     // Override
   }
 
@@ -1447,8 +1460,18 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         setUser(item, position, (UserView) holder.itemView, false);
         break;
       }
+      case ListItem.TYPE_JOIN_REQUEST: {
+        DoubleTextViewWithIcon viewGroup = (DoubleTextViewWithIcon) holder.itemView;
+        viewGroup.checkRtl();
+        setJoinRequest(item, position, viewGroup,false);
+        break;
+      }
       case ListItem.TYPE_EMBED_STICKER: {
         setEmbedSticker(item, position, (EmbeddableStickerView) holder.itemView, false);
+        break;
+      }
+      case ListItem.TYPE_CHAT_HEADER_LARGE: {
+        setChatHeader(item, position, (DetachedChatHeaderView) holder.itemView);
         break;
       }
       case ListItem.TYPE_INFO: {

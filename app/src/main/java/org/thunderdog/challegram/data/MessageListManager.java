@@ -92,7 +92,7 @@ public class MessageListManager extends ListManager<TdApi.Message> implements Me
     return message.chatId == chatId && (!hasFilter() || (
       StringUtils.isEmpty(query) && // unsupported
       (messageThreadId == 0 || message.messageThreadId == messageThreadId) &&
-      (sender == null || Td.equalsTo(message.sender, sender)) &&
+      (sender == null || Td.equalsTo(message.senderId, sender)) &&
       (filter == null || Td.matchesFilter(message, filter))
     ));
   }

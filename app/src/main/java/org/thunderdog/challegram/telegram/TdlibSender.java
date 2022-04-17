@@ -10,7 +10,7 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.util.text.Letters;
 
 import me.vkryl.core.StringUtils;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 
 public class TdlibSender {
@@ -84,10 +84,6 @@ public class TdlibSender {
 
   public boolean isChat () {
     return sender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR;
-  }
-
-  public boolean isChannelAutoForward () {
-    return isChat() && inChatId != getChatId() && tdlib.isChannel(getChatId());
   }
 
   public boolean isAnonymousGroupAdmin () {

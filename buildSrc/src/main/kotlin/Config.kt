@@ -10,7 +10,7 @@ object LibraryVersions {
   const val MULTIDEX = "2.0.1"
   const val DESUGAR = "1.1.5"
   const val ANDROIDX_CORE = "1.7.0"
-  const val ANNOTATIONS = "1.2.0"
+  const val ANNOTATIONS = "1.3.0"
 }
 
 class AbiVariant (val flavor: String, vararg val filters: String = Config.SUPPORTED_ABI, val displayName: String = filters[0], val sideLoadOnly: Boolean = false) {

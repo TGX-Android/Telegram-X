@@ -18,6 +18,7 @@ public interface ChatListener {
   default void onChatPhotoChanged (long chatId, @Nullable TdApi.ChatPhotoInfo photo) { }
   default void onChatReadInbox (long chatId, long lastReadInboxMessageId, int unreadCount, boolean availabilityChanged) { }
   default void onChatHasScheduledMessagesChanged (long chatId, boolean hasScheduledMessages) { }
+  default void onChatHasProtectedContentChanged (long chatId, boolean hasProtectedContent) { }
   default void onChatReadOutbox (long chatId, long lastReadOutboxMessageId) { }
   default void onChatMarkedAsUnread (long chatId, boolean isMarkedAsUnread) { }
   default void onChatBlocked (long chatId, boolean isBlocked) { }
@@ -28,6 +29,9 @@ public interface ChatListener {
   default void onChatReplyMarkupChanged (long chatId, long replyMarkupMessageId) { }
   default void onChatDraftMessageChanged (long chatId, @Nullable TdApi.DraftMessage draftMessage) { }
   default void onChatUnreadMentionCount(long chatId, int unreadMentionCount, boolean availabilityChanged) { }
+  default void onChatUnreadReactionCount(long chatId, int unreadReactionCount, boolean availabilityChanged) { }
   default void onChatDefaultDisableNotifications (long chatId, boolean defaultDisableNotifications) { }
+  default void onChatDefaultMessageSenderIdChanged (long chatId, TdApi.MessageSender senderId) { }
   default void onChatClientDataChanged (long chatId, @Nullable String clientData) { }
+  default void onChatAvailableReactionsUpdated (long chatId, String[] availableReactions) { }
 }

@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.MathUtils;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.Td;
 
 public class ImageGalleryFile extends ImageFile implements Comparable<ImageGalleryFile> {

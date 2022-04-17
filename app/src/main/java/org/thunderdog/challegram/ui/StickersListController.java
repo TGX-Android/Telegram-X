@@ -19,6 +19,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
@@ -195,12 +196,12 @@ public class StickersListController extends ViewController<StickersListControlle
     this.info = info;
   }
 
-  public void setStickers (TdApi.Sticker[] stickers, boolean areMasks, TdApi.Emojis[] emojis) {
+  public void setStickers (TdApi.Sticker[] stickers, TdApi.StickerType stickerType, TdApi.Emojis[] emojis) {
     this.stickers = new ArrayList<>(stickers.length);
     int i = 0;
     boolean canViewPack = getArguments() == null || getArguments().canViewPack();
     for (TdApi.Sticker sticker : stickers) {
-      TGStickerObj obj = new TGStickerObj(tdlib, sticker, areMasks, emojis[i].emojis);
+      TGStickerObj obj = new TGStickerObj(tdlib, sticker, stickerType, emojis[i].emojis);
       if (!canViewPack) {
         obj.setNoViewPack();
       }
@@ -290,7 +291,7 @@ public class StickersListController extends ViewController<StickersListControlle
     };
     addThemeInvalidateListener(recyclerView);
     recyclerView.setItemAnimator(null);
-    recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+    recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS : View.OVER_SCROLL_NEVER);
     recyclerView.setLayoutManager(manager = new RtlGridLayoutManager(context, spanCount).setAlignOnly(true));
     recyclerView.setAdapter(adapter = new StickersAdapter(this, recyclerView, this, offsetProvider));
     recyclerView.setLayoutParams(params);
@@ -376,7 +377,7 @@ public class StickersListController extends ViewController<StickersListControlle
   public void onStickerSetUpdated (TdApi.StickerSet stickerSet) {
     tdlib.ui().post(() -> {
       if (!isDestroyed() && info.id == stickerSet.id) {
-        setStickers(stickerSet.stickers, stickerSet.isMasks, stickerSet.emojis);
+        setStickers(stickerSet.stickers, stickerSet.stickerType, stickerSet.emojis);
         buildCells();
       }
     });
@@ -387,7 +388,7 @@ public class StickersListController extends ViewController<StickersListControlle
     switch (object.getConstructor()) {
       case TdApi.StickerSet.CONSTRUCTOR: {
         TdApi.StickerSet stickerSet = (TdApi.StickerSet) object;
-        setStickers(stickerSet.stickers, stickerSet.isMasks, stickerSet.emojis);
+        setStickers(stickerSet.stickers, stickerSet.stickerType, stickerSet.emojis);
 
         tdlib.ui().post(() -> {
           if (!isDestroyed()) {

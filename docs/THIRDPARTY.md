@@ -1,6 +1,6 @@
 # Third-party components and resources
 
-* [TDLib](https://github.com/tdlib/td): used for interacting with Telegram API and caching data 
+* [TDLib](https://github.com/tdlib/td): used for interacting with Telegram API and caching data
 * [LevelDB](https://github.com/google/leveldb): used for storing local data and settings
 
 * [libtgvoip](https://github.com/grishka/libtgvoip) & java layer by the same author: used for VoIP
@@ -13,7 +13,7 @@
 * [libvpx](https://chromium.googlesource.com/webm/libvpx): vp9 ExoPlayer extension
 * [flac](https://xiph.org/flac): flac ExoPlayer extension
 * [ffmpeg](http://ffmpeg.org): used for GIF playback & ffmpeg ExoPlayer extension
-* [libyuv](https://chromium.googlesource.com/libyuv/libyuv): used to convert pixel format while decoding GIFs 
+* [libyuv](https://chromium.googlesource.com/libyuv/libyuv): used to convert pixel format while decoding GIFs
 
 * [opus](https://gitlab.xiph.org/xiph/opus): used for voice messages
 * [opusfile](https://gitlab.xiph.org/xiph/opusfile)
@@ -32,6 +32,6 @@
 * [ZXing](https://github.com/zxing/zxing/): QR scanning on devices where Google Play Services are not available
 
 * [Google's Material Icons](https://material.io/resources/icons): most of application icons
-* [Material Design Icons](https://materialdesignicons.com): various icons by [Austin Andrews](https://twitter.com/Templarian), [Yasmina Lembachar][https://twitter.com/belledeboheme], [Haley Halcyon](https://twitter.com/itsspelledhaley), [Michael Richins](https://twitter.com/MrGrigri)
+* [Material Design Icons](https://materialdesignicons.com): various icons by [Austin Andrews](https://twitter.com/Templarian), [Yasmina Lembachar](https://twitter.com/belledeboheme), [Haley Halcyon](https://twitter.com/itsspelledhaley), [Michael Richins](https://twitter.com/MrGrigri)
 
 * [Klaxon](https://github.com/cbeust/klaxon): JSON parser used in build scripts

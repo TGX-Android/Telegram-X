@@ -41,7 +41,7 @@ import me.vkryl.android.animator.ReplaceAnimator;
 import me.vkryl.android.animator.VariableFloat;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.Td;
 
 public class TGMessageFile extends TGMessage {

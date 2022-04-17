@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.text.SpannableStringBuilder;
 import android.view.View;
 import android.widget.TextView;
 
@@ -17,6 +18,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.component.user.RemoveHelper;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.data.TD;
@@ -71,13 +73,13 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   private void requestUpdateLinkCell (TdApi.ChatInviteLink linkObj, boolean ignoreUpdate) {
     if (!ignoreUpdate) adapter.updateValuedSettingByData(linkObj);
 
-    if (linkObj.isRevoked || TimeUnit.SECONDS.toMillis(linkObj.expireDate) < tdlib.currentTimeMillis()) {
+    if (linkObj.isRevoked || TimeUnit.SECONDS.toMillis(linkObj.expirationDate) < tdlib.currentTimeMillis()) {
       cellUpdateHandler.removeMessages(0, linkObj);
       pendingRefreshLinks.remove(linkObj);
       return;
     }
 
-    long relativeUpd = Lang.getNextReverseRelativeDateUpdateMs(linkObj.expireDate, TimeUnit.SECONDS, tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS, true, 0);
+    long relativeUpd = Lang.getNextReverseRelativeDateUpdateMs(linkObj.expirationDate, TimeUnit.SECONDS, tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS, true, 0);
     if (relativeUpd != -1) {
       pendingRefreshLinks.add(linkObj);
       cellUpdateHandler.sendMessageDelayed(Message.obtain(cellUpdateHandler, 0, linkObj), relativeUpd);
@@ -182,7 +184,8 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
       @Override
       protected void setEmbedSticker (ListItem item, int position, EmbeddableStickerView userView, boolean isUpdate) {
-        userView.setSticker(new TGStickerObj(tdlib, (TdApi.Sticker) item.getData(), UTYAN_EMOJI, false));
+        TdApi.Sticker sticker = (TdApi.Sticker) item.getData();
+        userView.setSticker(new TGStickerObj(tdlib, sticker, UTYAN_EMOJI, sticker.type));
         userView.setCaptionText(Lang.getString(isChannel ? R.string.ChannelLinkInfo : R.string.LinkInfo));
       }
 
@@ -262,7 +265,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     };
 
     requestLinkRebind();
-    recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+    recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS : View.OVER_SCROLL_NEVER);
     recyclerView.setAdapter(this.adapter);
 
     TGLegacyManager.instance().addEmojiListener(this);
@@ -313,7 +316,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       runOnUiThreadOptional(() -> {
         TdApi.ChatMember member = (TdApi.ChatMember) result;
         EditRightsController c = new EditRightsController(context, tdlib);
-        c.setArguments(new EditRightsController.Args(chatId, adminUserId, false, tdlib.chatStatus(chatId), member).noFocusLock());
+        c.setArguments(new EditRightsController.Args(chatId, new TdApi.MessageSenderUser(adminUserId), false, tdlib.chatStatus(chatId), member).noFocusLock());
         navigateTo(c);
       });
     });
@@ -396,14 +399,14 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     }
   }
 
-  private String generateLinkSubtitle (TdApi.ChatInviteLink inviteLink) {
-    StringBuilder subtitle = new StringBuilder();
+  private CharSequence generateLinkSubtitle (TdApi.ChatInviteLink inviteLink) {
+    SpannableStringBuilder subtitle = new SpannableStringBuilder();
 
     long nowMs = tdlib.currentTimeMillis();
-    long expiresInMs = TimeUnit.SECONDS.toMillis(inviteLink.expireDate) - nowMs;
+    long expiresInMs = TimeUnit.SECONDS.toMillis(inviteLink.expirationDate) - nowMs;
 
     if (inviteLink.memberCount > 0) {
-      subtitle.append(Lang.plural(R.string.InviteLinkJoins, inviteLink.memberCount));
+      subtitle.append(Lang.pluralBold(R.string.InviteLinkJoins, inviteLink.memberCount));
     } else if (inviteLink.isPrimary || inviteLink.memberLimit == 0 || (inviteLink.memberCount == 0 && inviteLink.isRevoked)) {
       subtitle.append(Lang.getString(R.string.InviteLinkNoJoins));
     }
@@ -414,26 +417,30 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       subtitle.append(" • ");
     }
 
+    if (inviteLink.createsJoinRequest && inviteLink.pendingJoinRequestCount > 0) {
+      subtitle.append(Lang.pluralBold(R.string.xRequests, inviteLink.pendingJoinRequestCount)).append(" • ");
+    }
+
     if (!inviteLink.isRevoked && inviteLink.memberLimit > 0) {
       if (inviteLink.memberCount == inviteLink.memberLimit) {
         subtitle.append(Lang.getString(R.string.InviteLinkMemberLimitReached));
       } else {
-        subtitle.append(Lang.plural(R.string.InviteLinkRemains, inviteLink.memberLimit - inviteLink.memberCount));
+        subtitle.append(Lang.pluralBold(R.string.InviteLinkRemains, inviteLink.memberLimit - inviteLink.memberCount));
       }
 
-      subtitle.append(inviteLink.expireDate != 0 ? " • " : "");
+      subtitle.append(inviteLink.expirationDate != 0 ? " • " : "");
     }
 
-    if (inviteLink.isRevoked || inviteLink.expireDate == 0) {
+    if (inviteLink.isRevoked || inviteLink.expirationDate == 0) {
       // add nothing (no expire date or the link is revoked)
     } else if (expiresInMs > 0) {
-      subtitle.append(Lang.getReverseRelativeDate(
-        inviteLink.expireDate, TimeUnit.SECONDS,
+      subtitle.append(Lang.getReverseRelativeDateBold(
+        inviteLink.expirationDate, TimeUnit.SECONDS,
         nowMs, TimeUnit.MILLISECONDS,
         true, 0, R.string.InviteLinkExpires, false
       ));
     } else {
-      subtitle.append(Lang.getString(R.string.InviteLinkExpiredAt, Lang.getTimestamp(inviteLink.expireDate, TimeUnit.SECONDS)));
+      subtitle.append(Lang.getStringBold(R.string.InviteLinkExpiredAt, Lang.getTimestamp(inviteLink.expirationDate, TimeUnit.SECONDS)));
     }
 
     if (subtitle.charAt(subtitle.length() - 2) == '•') {
@@ -444,7 +451,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       subtitle.delete(0, 3);
     }
 
-    return subtitle.toString();
+    return subtitle;
   }
 
   private void loadMoreLinks (boolean revoked) {
@@ -618,6 +625,25 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     updateTotalCount();
   }
 
+  // Makes pendingJoinRequestCount - 1. For seamless UI updates.
+  public void onChatLinkPendingDecisionMade (String linkUrl) {
+    TdApi.ChatInviteLink link = null;
+
+    for (TdApi.ChatInviteLink compare : inviteLinks) {
+      if (compare.inviteLink.equals(linkUrl)) {
+        link = compare;
+        break;
+      }
+    }
+
+    if (link == null) {
+      return;
+    }
+
+    link.pendingJoinRequestCount -= 1;
+    onLinkCreated(link, link);
+  }
+
   // Rebind link cell
   public void smOnLinkEdited (TdApi.ChatInviteLink oldLink, TdApi.ChatInviteLink newLink) {
     int oldLinkIndex = adapter.indexOfViewByData(oldLink);
@@ -678,6 +704,10 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   }
 
   private String simplifyInviteLink (TdApi.ChatInviteLink link) {
+    if (link.name != null && !link.name.isEmpty()) {
+      return link.name;
+    }
+
     String[] linkSegments = link.inviteLink.split("/");
     return linkSegments[linkSegments.length - 1];
   }
@@ -698,7 +728,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     } else {
       items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
-      items.add(new ListItem(ListItem.TYPE_EMBED_STICKER).setData(tdlib.findUtyanEmoji(UTYAN_EMOJI)));
+      items.add(new ListItem(ListItem.TYPE_EMBED_STICKER).setData(tdlib.findTgxEmoji(UTYAN_EMOJI)));
     }
 
     for (TdApi.ChatInviteLink inviteLink : inviteLinks) {

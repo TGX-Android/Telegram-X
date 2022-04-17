@@ -22,8 +22,6 @@ set(OPUSFILE_DIR "${THIRDPARTY_DIR}/opusfile")
 set(OGG_DIR "${THIRDPARTY_DIR}/ogg")
 set(TGVOIP_DIR "${THIRDPARTY_DIR}/libtgvoip")
 set(WEBP_DIR "${THIRDPARTY_DIR}/webp")
-set(VPX_DIR "${THIRDPARTY_DIR}/libvpx")
-set(VPX_CONFIG_DIR "${VPX_DIR}/libvpx_android_configs/${ANDROID_ABI}")
 
 # Using webp only if building for 32-bit platform
 if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "x86")
@@ -42,6 +40,7 @@ else()
   error("Unknown abi: ${ANDROID_ABI}")
 endif()
 set(FFMPEG_DIR "${THIRDPARTY_DIR}/ffmpeg/build/${FFMPEG_ABI}")
+set(LIBVPX_DIR "${THIRDPARTY_DIR}/libvpx/build/${FFMPEG_ABI}")
 set(FFMPEG_LIBS
   swresample
   avformat
@@ -99,7 +98,6 @@ set(EXCLUDE_LIBS
   libflac.a
   libtgvoip.a
   libyuv.a
-  libvpx.a
   libopus.a
   libogg.a
   libopusfile.a
@@ -111,6 +109,7 @@ if (${USE_WEBP})
     libwebpdecoder_static.a
   )
 endif()
+list(APPEND EXCLUDE_LIBS ${LIBVPX_DIR}/lib/libvpx.a)
 foreach(ffmpeg_lib ${FFMPEG_LIBS})
   list(APPEND EXCLUDE_LIBS
     ${FFMPEG_DIR}/lib/lib${ffmpeg_lib}.a
@@ -621,39 +620,9 @@ target_compile_options(yuv PRIVATE
 
 # vpx
 
-file(STRINGS "${VPX_CONFIG_DIR}/libvpx_srcs.txt" vpx_srcs)
-
-# remove */vpx_config.c
-list(FILTER vpx_srcs EXCLUDE REGEX "^[^\n]*/?vpx_config\\.c\n?")
-# remove anything except *.c, *.asm, *.asm.s, *.asm.S
-list(FILTER vpx_srcs INCLUDE REGEX "^.+\\.((c)|(asm(\\.[sS])?))$")
-
-# if(${ANDROID_ABI} STREQUAL "armeabi-v7a")
-  # append .neon to *_neon.c and *.[sS]
-  # string(REGEX REPLACE "(_neon\\.c|\\.[sS])(;|$)" "\\1.neon\\2" vpx_srcs "${vpx_srcs}")
-# endif()
-
-list(SORT vpx_srcs)
-
-# prepend prefix
-Prefix(vpx_srcs "${VPX_DIR}/")
-
-add_library(vpx STATIC
-  ${VPX_CONFIG_DIR}/vpx_config.c
-  ${vpx_srcs}
-)
-target_include_directories(vpx PRIVATE
-  ${VPX_CONFIG_DIR}
-)
-target_include_directories(vpx PUBLIC
-  ${VPX_DIR} ${VPX_DIR}/vpx
-)
-target_compile_definitions(vpx PRIVATE
-  HAVE_CONFIG_H=vpx_config.h
-)
-set_target_properties(vpx PROPERTIES
-  ANDROID_ARM_MODE arm
-)
+add_library(vpx STATIC IMPORTED)
+set_target_properties(vpx PROPERTIES IMPORTED_LOCATION ${LIBVPX_DIR}/lib/libvpx.a)
+target_include_directories(vpx INTERFACE ${LIBVPX_DIR}/include)
 
 # opus
 

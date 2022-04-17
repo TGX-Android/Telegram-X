@@ -44,6 +44,8 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.ui.EditRightsController;
+import org.thunderdog.challegram.ui.HashtagChatController;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.DrawableProvider;
@@ -61,8 +63,10 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.lambda.RunnableData;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
+import me.vkryl.td.Td;
 
 public class MessageView extends SparseDrawableView implements Destroyable, DrawableProvider, MessagesManager.MessageProvider {
   private static final int FLAG_USE_COMMON_RECEIVER = 1;
@@ -424,13 +428,38 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       return true;
     }
 
+    /*if (ChatId.isMultiChat(msg.getChatId()) && !msg.isChannel()) {
+      TdApi.ChatMemberStatus myStatus = msg.tdlib().chatStatus(msg.getChatId());
+      if (myStatus != null && TD.isAdmin(myStatus)) {
+        AtomicBoolean done = new AtomicBoolean(false);
+        msg.tdlib().client().send(new TdApi.GetChatMember(msg.getChatId(), msg.getMessage().senderId), response -> {
+          TdApi.ChatMemberStatus otherStatus = (response.getConstructor() == TdApi.ChatMember.CONSTRUCTOR) ? ((TdApi.ChatMember) response).status : null;
+          msg.tdlib().ui().post(() -> {
+            if (!msg.isDestroyed()) {
+              onMessageClickImpl(x, y, otherStatus);
+            }
+          });
+        });
+        return true;
+      }
+    }*/
+    return onMessageClickImpl(x, y, null);
+  }
+
+  private boolean onMessageClickImpl (float x, float y, @Nullable TdApi.ChatMember sender) {
+    MessagesController m = msg.messagesController();
     boolean isSent = !msg.isNotSent();
+
+    if (msg.isEventLog()) {
+      showEventLogOptions(m, msg);
+      return true;
+    }
 
     if (msg instanceof TGMessageChat) {
       if (isSent) {
-        return showChatOptions(m, (TGMessageChat) msg);
+        return showChatOptions(m, (TGMessageChat) msg, sender);
       } else {
-        m.showMessageOptions(msg, new int[] {R.id.btn_messageDelete}, new String[] {Lang.getString(R.string.Delete)}, new int[] {R.drawable.baseline_delete_24}, null, true);
+        m.showMessageOptions(msg, new int[] {R.id.btn_messageDelete}, new String[] {Lang.getString(R.string.Delete)}, new int[] {R.drawable.baseline_delete_24}, null, sender, true);
         return true;
       }
     }
@@ -438,20 +467,33 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     IntList ids = new IntList(6);
     IntList icons = new IntList(6);
     StringList strings = new StringList(6);
-    Object tag = fillMessageOptions(m, msg, ids, icons, strings, false);
+    Object tag = fillMessageOptions(m, msg, sender, ids, icons, strings, false);
     if (!ids.isEmpty()) {
-      m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), tag, false);
+      m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), tag, sender, false);
       return true;
     }
     return false;
   }
 
-  public static Object fillMessageOptions (MessagesController m, TGMessage msg, IntList ids, IntList icons, StringList strings, boolean isMore) {
+  public static Object fillMessageOptions (MessagesController m, TGMessage msg, @Nullable TdApi.ChatMember sender, IntList ids, IntList icons, StringList strings, boolean isMore) {
     TdApi.Message newestMessage = msg.getNewestMessage();
     TdApi.MessageContent content = newestMessage.content;
     int messageCount = msg.getMessageCount();
     boolean isSent = !msg.isNotSent();
     Object tag = null;
+
+    // Promotion
+
+    if (msg.isSponsored()) {
+      ids.append(R.id.btn_messageCopy);
+      strings.append(R.string.Copy);
+      icons.append(R.drawable.baseline_content_copy_24);
+
+      ids.append(R.id.btn_messageSponsorInfo);
+      strings.append(R.string.SponsoredInfoMenu);
+      icons.append(R.drawable.baseline_info_24);
+      return null;
+    }
 
     if (!isMore) {
       if (msg.isScheduled() && !msg.isNotSent()) {
@@ -647,7 +689,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       icons.append(R.drawable.baseline_link_24);
     }
 
-    if (!isMore && TD.canCopyText(newestMessage)) {
+    if (!isMore && msg.canBeSaved() && TD.canCopyText(newestMessage)) {
       ids.append(R.id.btn_messageCopy);
       strings.append(R.string.Copy);
       icons.append(R.drawable.baseline_content_copy_24);
@@ -691,7 +733,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         tag = downloadedFiles;
 
         TD.DownloadedFile baseDownloadedFile = downloadedFiles.get(0);
-        if (baseDownloadedFile.getFileType().getConstructor() == TdApi.FileTypeAnimation.CONSTRUCTOR) {
+        if (msg.canBeSaved() && baseDownloadedFile.getFileType().getConstructor() == TdApi.FileTypeAnimation.CONSTRUCTOR) {
           ids.append(R.id.btn_saveGif);
           if (allMessages.length == 1) {
             strings.append(R.string.SaveGif);
@@ -708,23 +750,27 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           case TdApi.FileTypeAnimation.CONSTRUCTOR:
           case TdApi.FileTypeVideo.CONSTRUCTOR:
           case TdApi.FileTypePhoto.CONSTRUCTOR: {
-            ids.append(R.id.btn_saveFile);
-            if (allMessages.length == 1) {
-              strings.append(R.string.SaveToGallery);
-            } else {
-              strings.append(Lang.plural(R.string.SaveXToGallery, downloadedFiles.size()));
+            if (msg.canBeSaved()) {
+              ids.append(R.id.btn_saveFile);
+              if (allMessages.length == 1) {
+                strings.append(R.string.SaveToGallery);
+              } else {
+                strings.append(Lang.plural(R.string.SaveXToGallery, downloadedFiles.size()));
+              }
+              icons.append(R.drawable.baseline_image_24);
             }
-            icons.append(R.drawable.baseline_image_24);
             break;
           }
           case TdApi.FileTypeAudio.CONSTRUCTOR: {
-            ids.append(R.id.btn_saveFile);
-            if (allMessages.length == 1) {
-              strings.append(R.string.SaveToMusic);
-            } else {
-              strings.append(Lang.plural(R.string.SaveXToMusic, downloadedFiles.size()));
+            if (msg.canBeSaved()) {
+              ids.append(R.id.btn_saveFile);
+              if (allMessages.length == 1) {
+                strings.append(R.string.SaveToMusic);
+              } else {
+                strings.append(Lang.plural(R.string.SaveXToMusic, downloadedFiles.size()));
+              }
+              icons.append(R.drawable.baseline_music_note_24);
             }
-            icons.append(R.drawable.baseline_music_note_24);
             break;
           }
           default: {
@@ -742,13 +788,15 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
               }
             }
 
-            ids.append(R.id.btn_saveFile);
-            if (allMessages.length == 1) {
-              strings.append(R.string.SaveToDownloads);
-            } else {
-              strings.append(Lang.plural(R.string.SaveXToDownloads, downloadedFiles.size()));
+            if (msg.canBeSaved()) {
+              ids.append(R.id.btn_saveFile);
+              if (allMessages.length == 1) {
+                strings.append(R.string.SaveToDownloads);
+              } else {
+                strings.append(Lang.plural(R.string.SaveXToDownloads, downloadedFiles.size()));
+              }
+              icons.append(R.drawable.baseline_file_download_24);
             }
-            icons.append(R.drawable.baseline_file_download_24);
             break;
           }
         }
@@ -807,12 +855,6 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       }
     }
 
-    /*if (msg.canBeSelected() && isSent) {
-      ids.append(R.id.btn_messageSelect);
-      strings.append(R.string.Select);
-      icons.append(R.drawable.baseline_playlist_add_check_24);
-    }*/
-
     if (msg.canBeReported()) {
       if (isMore) {
         ids.append(R.id.btn_messageReport);
@@ -829,6 +871,75 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       icons.append(R.drawable.baseline_delete_24);
     }
 
+    // Admin tools inside "More"
+    final TdApi.ChatMemberStatus myStatus = m.tdlib().chatStatus(msg.getChatId());
+    if (myStatus != null && TD.isAdmin(myStatus) && Td.getSenderId(msg.getMessage().senderId) != msg.getChatId()) {
+      if (sender != null) {
+        final int restrictMode = TD.canRestrictMember(myStatus, sender.status);
+        if (restrictMode != TD.RESTRICT_MODE_NONE) {
+          if (!msg.isChannel() && !(restrictMode == TD.RESTRICT_MODE_EDIT && sender.memberId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR)) {
+            if (isMore) {
+              ids.append(R.id.btn_messageRestrictMember);
+              icons.append(R.drawable.baseline_block_24);
+              switch (restrictMode) {
+                case TD.RESTRICT_MODE_EDIT:
+                  strings.append(msg.getMessage().senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (msg.tdlib().isChannel(Td.getSenderId(msg.getMessage().senderId)) ? R.string.EditChannelRestrictions : R.string.EditGroupRestrictions) : R.string.EditUserRestrictions);
+                  break;
+                case TD.RESTRICT_MODE_NEW:
+                  strings.append(msg.getMessage().senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (msg.tdlib().isChannel(Td.getSenderId(msg.getMessage().senderId)) ? R.string.BanChannel : R.string.BanChat) : R.string.RestrictUser);
+                  break;
+                case TD.RESTRICT_MODE_VIEW:
+                  strings.append(R.string.ViewRestrictions);
+                  break;
+                default:
+                  throw new IllegalStateException();
+              }
+            } else {
+              moreOptions++;
+            }
+          }
+
+          if (restrictMode != TD.RESTRICT_MODE_VIEW) {
+            if (TD.isMember(sender.status)) {
+              if (isMore) {
+                ids.append(R.id.btn_messageBlockUser);
+                icons.append(R.drawable.baseline_remove_circle_24);
+                strings.append(msg.isChannel() ? R.string.ChannelRemoveUser : R.string.RemoveFromGroup);
+              } else {
+                moreOptions++;
+              }
+            } else {
+              boolean canUnblock = false;
+              switch (sender.status.getConstructor()) {
+                case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
+                case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR: {
+                  canUnblock = true;
+                  break;
+                }
+              }
+              if (canUnblock) {
+                if (isMore) {
+                  strings.append(
+                    sender.status.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR ? R.string.RemoveRestrictions :
+                      msg.tdlib().cache().senderBot(msg.getMessage().senderId) ? R.string.UnbanMemberBot :
+                        msg.getMessage().senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (msg.tdlib().isChannel(Td.getSenderId(msg.getMessage().senderId)) ? R.string.UnbanMemberChannel : R.string.UnbanMemberGroup) :
+                          R.string.UnbanMember
+                  );
+                  ids.append(R.id.btn_messageUnblockMember);
+                  icons.append(R.drawable.baseline_remove_circle_24);
+                } else {
+                  moreOptions++;
+                }
+              }
+            }
+          }
+        }
+      } else if (!isMore) {
+        moreOptions += 2;
+      }
+    }
+
+    // Messages from X
     if (chat != null && msg.tdlib().isMultiChat(chat.id)) {
       if (isMore) {
         ids.append(R.id.btn_messageViewList);
@@ -838,9 +949,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           icon = R.drawable.baseline_group_24;
         } else if (msg.isOutgoing()) {
           strings.append(R.string.ViewMessagesFromYou);
-        } else if (msg.getSender().isChannelAutoForward()) {
-          strings.append(R.string.ViewMessagesFromAutoPost);
-          icon = R.drawable.baseline_bullhorn_24;
+        } else if (msg.getMessage().senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
+          strings.append(Lang.getString(R.string.ViewMessagesFromChat, msg.getSender().getNameShort()));
+          icon = msg.tdlib().isChannel(Td.getSenderId(msg.getMessage().senderId)) ? R.drawable.baseline_bullhorn_24 : R.drawable.baseline_group_24;
         } else {
           strings.append(Lang.getString(R.string.ViewMessagesFromUser, msg.getSender().getNameShort()));
         }
@@ -855,13 +966,14 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       icons.append(R.drawable.baseline_more_horiz_24);
       strings.append(R.string.MoreMessageOptions);
     } else if (moreOptions == 1) {
-      fillMessageOptions(m, msg, ids, icons, strings, true);
+      fillMessageOptions(m, msg, sender, ids, icons, strings, true);
     }
 
     return tag;
   }
 
-  private boolean showChatOptions (MessagesController m, TGMessageChat msg) {
+  @Deprecated
+  private boolean showChatOptions (MessagesController m, TGMessageChat msg, TdApi.ChatMember messageSender) {
     if (msg.getMessage() != null) {
       TdApi.MessageContent content = msg.getMessage().content;
       if (content != null) {
@@ -918,8 +1030,142 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       return false;
     }
 
-    m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), null, true);
+    m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), null, messageSender, true);
     return true;
+  }
+
+  private void showEventLogRestrict (MessagesController m, boolean isRestrict, TdApi.MessageSender sender, TdApi.ChatMemberStatus myStatus, TdApi.ChatMember member) {
+    if (isRestrict && TD.canRestrictMember(myStatus, member.status) == TD.RESTRICT_MODE_NEW) {
+      member = null;
+    }
+
+    EditRightsController c = new EditRightsController(m.context(), m.tdlib());
+    c.setArguments(new EditRightsController.Args(m.getChatId(), sender, isRestrict, myStatus, member).noFocusLock());
+    m.navigateTo(c);
+  }
+
+  private void showEventLogOptions (MessagesController m, TGMessage msg) {
+    TdApi.MessageSender sender = msg.getMessage().senderId;
+
+    IntList ids = new IntList(2);
+    StringList strings = new StringList(2);
+    IntList icons = new IntList(2);
+    IntList colors = new IntList(2);
+
+    TdApi.ChatMemberStatus myStatus = m.tdlib().chatStatus(m.getChatId());
+
+    RunnableData<TdApi.ChatMember> showOptions = (member) -> {
+      m.showOptions(null, ids.get(), strings.get(), colors.get(), icons.get(), (optionItemView, id) -> {
+        switch (optionItemView.getId()) {
+          case R.id.btn_restrictMember:
+            showEventLogRestrict(m, true, sender, myStatus, member);
+            break;
+          case R.id.btn_editRights:
+            showEventLogRestrict(m, false, sender, myStatus, member);
+            break;
+          case R.id.btn_messageCopy:
+            TdApi.FormattedText text;
+
+            if (TD.canCopyText(msg.getMessage())) {
+              text = Td.textOrCaption(msg.getMessage().content);
+            } else if (msg instanceof TGMessageText) {
+              text = ((TGMessageText) msg).getText();
+            } else {
+              text = null;
+            }
+
+            if (text != null)
+              UI.copyText(TD.toCopyText(text), R.string.CopiedText);
+            break;
+          case R.id.btn_messageViewList:
+            HashtagChatController c2 = new HashtagChatController(m.context(), m.tdlib());
+            c2.setArguments(new HashtagChatController.Arguments(null, m.getChatId(), null, sender, m.tdlib().isChannel(Td.getSenderId(sender))));
+            m.navigateTo(c2);
+            break;
+          case R.id.btn_blockSender:
+            m.tdlib().ui().kickMember(m, m.getChatId(), sender, member.status);
+            break;
+        }
+
+        return true;
+      });
+    };
+
+    m.tdlib().client().send(new TdApi.GetChatMember(m.getChatId(), sender), result -> {
+      if (result.getConstructor() != TdApi.ChatMember.CONSTRUCTOR) return;
+
+      TdApi.ChatMember member = (TdApi.ChatMember) result;
+      boolean isChannel = m.tdlib().isChannel(m.getChatId());
+
+      if (TD.canCopyText(msg.getMessage()) || (msg instanceof TGMessageText && ((TGMessageText) msg).getText().text.trim().length() > 0)) {
+        ids.append(R.id.btn_messageCopy);
+        strings.append(R.string.Copy);
+        icons.append(R.drawable.baseline_content_copy_24);
+        colors.append(ViewController.OPTION_COLOR_NORMAL);
+      }
+
+      if (!isChannel) {
+        ids.append(R.id.btn_messageViewList);
+        if (m.tdlib().isSelfUserId(Td.getSenderUserId(sender))) {
+          strings.append(R.string.ViewMessagesFromYou);
+        } else {
+          strings.append(Lang.getString(R.string.ViewMessagesFromUser, m.tdlib().senderName(sender, true)));
+        }
+        icons.append(R.drawable.baseline_person_24);
+        colors.append(ViewController.OPTION_COLOR_NORMAL);
+      }
+
+      if (myStatus != null && !(TD.isCreator(member.status) && TD.isCreator(myStatus))) {
+        int promoteMode = TD.canPromoteAdmin(myStatus, member.status);
+        if (promoteMode != TD.PROMOTE_MODE_NONE && promoteMode != TD.PROMOTE_MODE_NEW) {
+          ids.append(R.id.btn_editRights);
+          icons.append(R.drawable.baseline_stars_24);
+          colors.append(ViewController.OPTION_COLOR_NORMAL);
+          switch (promoteMode) {
+            case TD.PROMOTE_MODE_EDIT:
+              strings.append(R.string.EditAdminRights);
+              break;
+            case TD.PROMOTE_MODE_VIEW:
+              strings.append(R.string.ViewAdminRights);
+              break;
+            default:
+              throw new IllegalStateException();
+          }
+        }
+
+        int restrictMode = TD.canRestrictMember(myStatus, member.status);
+        if (restrictMode != TD.RESTRICT_MODE_NONE && !(sender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR && Td.getSenderId(sender) == m.getChatId())) {
+          if (!isChannel || (isChannel && restrictMode == TD.RESTRICT_MODE_EDIT)) {
+            ids.append(R.id.btn_restrictMember);
+            colors.append(restrictMode == TD.RESTRICT_MODE_NEW ? ViewController.OPTION_COLOR_RED : ViewController.OPTION_COLOR_NORMAL);
+            icons.append(R.drawable.baseline_block_24);
+
+            switch (restrictMode) {
+              case TD.RESTRICT_MODE_EDIT:
+                strings.append(sender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (m.tdlib().isChannel(Td.getSenderId(sender)) ? R.string.EditChannelRestrictions : R.string.EditGroupRestrictions) : R.string.EditUserRestrictions);
+                break;
+              case TD.RESTRICT_MODE_NEW:
+                strings.append(sender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (m.tdlib().isChannel(Td.getSenderId(sender)) ? R.string.BanChannel : R.string.BanChat) : R.string.RestrictUser);
+                break;
+              case TD.RESTRICT_MODE_VIEW:
+                strings.append(R.string.ViewRestrictions);
+                break;
+              default:
+                throw new IllegalStateException();
+            }
+          }
+
+          if (sender.getConstructor() != TdApi.MessageSenderChat.CONSTRUCTOR) {
+            ids.append(R.id.btn_blockSender);
+            icons.append(R.drawable.baseline_remove_circle_24);
+            strings.append(isChannel ? R.string.ChannelRemoveUser : R.string.RemoveFromGroup);
+            colors.append(ViewController.OPTION_COLOR_RED);
+          }
+        }
+      }
+
+      m.runOnUiThreadOptional(() -> showOptions.runWithData(member));
+    });
   }
 
   private void setLongPressed (boolean longPressed) {
@@ -949,15 +1195,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     }
     MessagesController m = (MessagesController) c;
     if (msg instanceof TGMessageChat) {
-      return showChatOptions(m, (TGMessageChat) msg);
+      return onMessageClick(0, 0);
     }
     if (msg.canBeSelected()) {
       selectMessage(m, msg, touchX, touchY);
       return true;
     }
-    /*if (Config.DISABLE_CALL_MESSAGES_SELECT && !msg.isNotSent() && msg.getMessage().content.getConstructor() == TdApi.MessageCall.CONSTRUCTOR) {
-      return onMessageClick();
-    }*/
     return false;
   }
 
@@ -1053,7 +1296,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   }
 
   private boolean startSwipeIfNeeded (float diffX) {
-    if (msg == null || msg.isNotSent() || msg instanceof TGMessageBotInfo || msg instanceof TGMessageChat || UI.getContext(getContext()).getRecordAudioVideoController().isOpen()) {
+    if (msg == null || msg.isNotSent() || msg instanceof TGMessageBotInfo || msg instanceof TGMessageChat || msg.isSponsored() || UI.getContext(getContext()).getRecordAudioVideoController().isOpen()) {
       return false;
     }
     MessagesController m = msg.messagesController();

@@ -2,6 +2,7 @@ package org.thunderdog.challegram.ui;
 
 import android.content.Context;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -109,7 +110,7 @@ public class SettingsWebsitesController extends RecyclerViewController<SettingsP
       }
 
       @Override
-      protected void setSession (ListItem item, int position, RelativeLayout parent, boolean isUpdate, TextView timeView, TextView titleView, TextView subtextView, TextView locationView, ProgressComponentView progressView, AvatarView avatarView) {
+      protected void setSession (ListItem item, int position, RelativeLayout parent, boolean isUpdate, TextView timeView, TextView titleView, TextView subtextView, TextView locationView, ProgressComponentView progressView, AvatarView avatarView, ImageView iconView, TextView secretStateView, TextView callsStateView) {
         TdApi.ConnectedWebsite website = (TdApi.ConnectedWebsite) item.getData();
         titleView.setText(Emoji.instance().replaceEmoji(website.domainName));
         subtextView.setText(Strings.concat(", ", Emoji.instance().replaceEmoji(tdlib.cache().userName(website.botUserId)), website.browser, website.platform));
@@ -230,11 +231,11 @@ public class SettingsWebsitesController extends RecyclerViewController<SettingsP
     if (needConfirm) {
       showSettings(new SettingsWrapBuilder(R.id.btn_terminateSession)
         .setRawItems(new ListItem[] {
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_banUser, 0, Lang.getString(R.string.DisconnectWebsiteBan, tdlib.cache().userName(website.botUserId)), R.id.btn_banUser, banUser)
+          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_banMember, 0, Lang.getString(R.string.DisconnectWebsiteBan, tdlib.cache().userName(website.botUserId)), R.id.btn_banMember, banUser)
         })
         .addHeaderItem(Lang.getString(R.string.TerminateWebSessionQuestion, website.domainName))
         .setIntDelegate((id, result) -> {
-          boolean banUser1 = result.get(R.id.btn_banUser) == R.id.btn_banUser;
+          boolean banUser1 = result.get(R.id.btn_banMember) == R.id.btn_banMember;
           terminateSession(website, banUser1, false);
         })
         .setSaveStr(R.string.DisconnectWebsite)

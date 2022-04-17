@@ -22,7 +22,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.android.util.ViewProvider;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 
 public class TextWrapper implements ListAnimator.Measurable {
   private static final int PORTRAIT_INDEX = 0;

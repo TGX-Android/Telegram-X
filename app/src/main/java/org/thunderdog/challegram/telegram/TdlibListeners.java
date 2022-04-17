@@ -45,6 +45,7 @@ public class TdlibListeners {
   final ReferenceList<PrivacySettingsListener> privacySettingsListeners;
   final ReferenceList<CallsListener> callsListeners;
   final ReferenceList<SessionListener> sessionListeners;
+  final ReferenceList<DownloadsListUpdateListener> downloadsListListener;
 
   final ReferenceList<AnimatedEmojiListener> animatedEmojiListeners;
 
@@ -77,6 +78,7 @@ public class TdlibListeners {
     this.privacySettingsListeners = new ReferenceList<>();
     this.callsListeners = new ReferenceList<>(true);
     this.sessionListeners = new ReferenceList<>(true);
+    this.downloadsListListener = new ReferenceList<>(true);
 
     this.animatedEmojiListeners = new ReferenceList<>(true);
 
@@ -243,6 +245,12 @@ public class TdlibListeners {
   void notifySessionTerminated (TdApi.Session session) {
     for (SessionListener listener : sessionListeners) {
       listener.onSessionTerminated(tdlib, session);
+    }
+  }
+
+  void notifyInactiveSessionTtlChanged (int ttlDays) {
+    for (SessionListener listener : sessionListeners) {
+      listener.onInactiveSessionTtlChanged(tdlib, ttlDays);
     }
   }
 
@@ -424,6 +432,40 @@ public class TdlibListeners {
   @AnyThread
   public void unsubscribeFromAnimationsUpdates (AnimationsListener listener) {
     animationsListeners.remove(listener);
+  }
+
+  @AnyThread
+  public void subscribeToDownloadsListUpdates (DownloadsListUpdateListener listener) {
+    downloadsListListener.add(listener);
+  }
+
+  @AnyThread
+  public void unsubscribeFromDownloadsListUpdates (DownloadsListUpdateListener listener) {
+    downloadsListListener.remove(listener);
+  }
+
+  public void updateFileAddedToDownloads (TdApi.UpdateFileAddedToDownloads update) {
+    for (DownloadsListUpdateListener listener : downloadsListListener) {
+      listener.updateFileAddedToDownloads(update.fileDownload, update.counts);
+    }
+  }
+
+  public void updateFileDownload (TdApi.UpdateFileDownload update) {
+    for (DownloadsListUpdateListener listener : downloadsListListener) {
+      listener.updateFileDownload(update.fileId, update.completeDate, update.isPaused, update.counts);
+    }
+  }
+
+  public void updateFileDownloads (TdApi.UpdateFileDownloads update) {
+    for (DownloadsListUpdateListener listener : downloadsListListener) {
+      listener.updateFileDownloads(update.totalSize, update.totalCount, update.downloadedSize);
+    }
+  }
+
+  public void updateFileRemovedFromDownloads (TdApi.UpdateFileRemovedFromDownloads update) {
+    for (DownloadsListUpdateListener listener : downloadsListListener) {
+      listener.updateFileRemovedFromDownloads(update.fileId, update.counts);
+    }
   }
 
   // updateAuthorizationState
@@ -715,6 +757,27 @@ public class TdlibListeners {
     updateMessageInteractionInfo(update, messageChatListeners.iterator(update.chatId));
   }
 
+  // updateMessageUnreadReactions
+
+  private static void updateMessageUnreadReactions (TdApi.UpdateMessageUnreadReactions update, @Nullable Iterator<MessageListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onMessageUnreadReactionsChanged(update.chatId, update.messageId, update.unreadReactions, update.unreadReactionCount);
+      }
+    }
+  }
+
+  void updateMessageUnreadReactions (TdApi.UpdateMessageUnreadReactions update) {
+    List<TdApi.Message> messages = pendingMessages.get(update.chatId + "_" + update.messageId);
+    if (messages != null) {
+      for (TdApi.Message message : messages) {
+        message.unreadReactions = update.unreadReactions;
+      }
+    }
+    updateMessageUnreadReactions(update, messageListeners.iterator());
+    updateMessageUnreadReactions(update, messageChatListeners.iterator(update.chatId));
+  }
+
   // updateDeleteMessages
 
   private static void updateMessagesDeleted (TdApi.UpdateDeleteMessages update, @Nullable Iterator<MessageListener> list) {
@@ -743,6 +806,21 @@ public class TdlibListeners {
   void updateChatUnreadMentionCount (TdApi.UpdateChatUnreadMentionCount update, boolean availabilityChanged) {
     updateChatUnreadMentionCount(update.chatId, update.unreadMentionCount, availabilityChanged, chatListeners.iterator());
     updateChatUnreadMentionCount(update.chatId, update.unreadMentionCount, availabilityChanged, specificChatListeners.iterator(update.chatId));
+  }
+
+  // updateChatUnreadReactionCount
+
+  private static void updateChatUnreadReactionCount (long chatId, int unreadReactionCount, boolean availabilityChanged, @Nullable Iterator<ChatListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onChatUnreadReactionCount(chatId, unreadReactionCount, availabilityChanged);
+      }
+    }
+  }
+
+  void updateChatUnreadReactionCount (TdApi.UpdateChatUnreadReactionCount update, boolean availabilityChanged) {
+    updateChatUnreadReactionCount(update.chatId, update.unreadReactionCount, availabilityChanged, chatListeners.iterator());
+    updateChatUnreadReactionCount(update.chatId, update.unreadReactionCount, availabilityChanged, specificChatListeners.iterator(update.chatId));
   }
 
   // updateChatLastMessage
@@ -898,6 +976,21 @@ public class TdlibListeners {
     updateChatHasScheduledMessages(update, specificChatListeners.iterator(update.chatId));
   }
 
+  // updateChatHasProtectedContent
+
+  private static void updateChatHasProtectedContent (TdApi.UpdateChatHasProtectedContent update, @Nullable Iterator<ChatListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onChatHasProtectedContentChanged(update.chatId, update.hasProtectedContent);
+      }
+    }
+  }
+
+  void updateChatHasProtectedContent (TdApi.UpdateChatHasProtectedContent update) {
+    updateChatHasProtectedContent(update, chatListeners.iterator());
+    updateChatHasProtectedContent(update, specificChatListeners.iterator(update.chatId));
+  }
+
   // updateChatReadInbox
 
   private static void updateChatReadInbox (TdApi.UpdateChatReadInbox update, boolean availabilityChanged, @Nullable Iterator<ChatListener> list) {
@@ -990,6 +1083,21 @@ public class TdlibListeners {
     // TODO?
   }
 
+  // updateChatAvailableReactions
+
+  private static void updateChatAvailableReactions (TdApi.UpdateChatAvailableReactions update, @Nullable Iterator<ChatListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onChatAvailableReactionsUpdated(update.chatId, update.availableReactions);
+      }
+    }
+  }
+
+  void updateChatAvailableReactions (TdApi.UpdateChatAvailableReactions update) {
+    updateChatAvailableReactions(update, chatListeners.iterator());
+    updateChatAvailableReactions(update, specificChatListeners.iterator(update.chatId));
+  }
+
   // updateCall
 
   private static void updateCall (TdApi.Call call, @Nullable Iterator<CallsListener> list) {
@@ -1071,9 +1179,9 @@ public class TdlibListeners {
     }
   }
 
-  void updateChatMessageTtlSetting (TdApi.UpdateChatMessageTtlSetting update) {
-    updateChatMessageTtlSetting(update.chatId, update.messageTtlSetting, chatListeners.iterator());
-    updateChatMessageTtlSetting(update.chatId, update.messageTtlSetting, specificChatListeners.iterator(update.chatId));
+  void updateChatMessageTtlSetting (TdApi.UpdateChatMessageTtl update) {
+    updateChatMessageTtlSetting(update.chatId, update.messageTtl, chatListeners.iterator());
+    updateChatMessageTtlSetting(update.chatId, update.messageTtl, specificChatListeners.iterator(update.chatId));
   }
 
   // updateChatVoiceChat
@@ -1412,6 +1520,20 @@ public class TdlibListeners {
     if (list != null) {
       while (list.hasNext()) {
         list.next().onChatDefaultDisableNotifications(update.chatId, update.defaultDisableNotification);
+      }
+    }
+  }
+
+  // updateChatDefaultMessageSenderId
+
+  void updateChatDefaultMessageSenderId (TdApi.UpdateChatMessageSender update) {
+    for (ChatListener listener : chatListeners) {
+      listener.onChatDefaultMessageSenderIdChanged(update.chatId, update.messageSenderId);
+    }
+    Iterator<ChatListener> list = specificChatListeners.iterator(update.chatId);
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onChatDefaultMessageSenderIdChanged(update.chatId, update.messageSenderId);
       }
     }
   }

@@ -9,6 +9,7 @@ import org.thunderdog.challegram.mediaview.MediaStackCallback;
 import org.thunderdog.challegram.telegram.Tdlib;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Date: 09/12/2016
@@ -37,7 +38,7 @@ public class MediaStack {
     this.items.add(item);
   }
 
-  public void set (ImageFile imageFile, ArrayList<ImageFile> imageFiles) {
+  public void set (ImageFile imageFile, List<ImageFile> imageFiles) {
     this.items = new ArrayList<>(imageFiles.size());
 
     int foundIndex = -1;

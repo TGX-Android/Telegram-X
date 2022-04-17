@@ -55,9 +55,9 @@ import java.util.LinkedList;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
-import me.vkryl.core.DiffMatchPatch;
+import org.thunderdog.challegram.core.DiffMatchPatch;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 
 public class Views {
   public static void setClickable (View view) {

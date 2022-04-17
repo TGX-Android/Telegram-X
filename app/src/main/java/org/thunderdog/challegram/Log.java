@@ -32,7 +32,7 @@ import me.vkryl.android.SdkVersion;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.util.Blob;
 
 /**

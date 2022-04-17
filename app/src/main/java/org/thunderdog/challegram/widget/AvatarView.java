@@ -25,7 +25,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 
 /**
  * Date: 5/30/17

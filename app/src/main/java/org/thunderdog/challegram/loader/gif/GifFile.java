@@ -18,11 +18,12 @@ import org.thunderdog.challegram.unsorted.Settings;
 import java.util.ArrayList;
 import java.util.List;
 
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 
 public class GifFile {
   public static final int TYPE_GIF = 1;
   public static final int TYPE_MPEG4 = 2;
+  public static final int TYPE_WEBM = 2;
   public static final int TYPE_TG_LOTTIE = 3;
 
   public static final int FIT_CENTER = 1;
@@ -43,8 +44,7 @@ public class GifFile {
   private long chatId, messageId;
   private boolean isLooped, isFrozen;
   private int vibrationPattern = Emoji.VIBRATION_PATTERN_NONE;
-  private String colorReplacementKey;
-  private int[] colorReplacement;
+  private int fitzpatrickType;
 
   private final long creationTime;
 
@@ -60,22 +60,36 @@ public class GifFile {
   }
 
   public GifFile (Tdlib tdlib, TdApi.Sticker sticker) {
-    this(tdlib, sticker.sticker, TYPE_TG_LOTTIE);
-    if (!sticker.isAnimated)
-      throw new IllegalArgumentException(sticker.toString());
+    this(tdlib, sticker.sticker, sticker.type);
   }
 
-  public int[] getColorReplacement () {
-    return colorReplacement;
+  public GifFile (Tdlib tdlib, TdApi.File file, TdApi.StickerType type) {
+    this(tdlib, file, toFileType(type));
   }
 
-  public String getColorReplacementKey () {
-    return colorReplacementKey;
+  public boolean isLottie () {
+    return type == TYPE_TG_LOTTIE;
   }
 
-  public void setColorReplacement (String colorReplacementKey, int[] colorReplacement) {
-    this.colorReplacementKey = colorReplacementKey;
-    this.colorReplacement = colorReplacement;
+  private static int toFileType (TdApi.StickerType type) {
+    switch (type.getConstructor()) {
+      case TdApi.StickerTypeAnimated.CONSTRUCTOR:
+        return TYPE_TG_LOTTIE;
+      case TdApi.StickerTypeVideo.CONSTRUCTOR:
+        return TYPE_MPEG4;
+      case TdApi.StickerTypeMask.CONSTRUCTOR:
+      case TdApi.StickerTypeStatic.CONSTRUCTOR:
+        break;
+    }
+    throw new IllegalArgumentException(type.toString());
+  }
+
+  public int getFitzpatrickType () {
+    return fitzpatrickType;
+  }
+
+  public void setFitzpatrickType (int fitzpatrickType) {
+    this.fitzpatrickType = fitzpatrickType;
   }
 
   public interface FrameChangeListener {
@@ -260,6 +274,10 @@ public class GifFile {
     if (flags != 0) {
       b.append(',');
       b.append(flags);
+    }
+    if (fitzpatrickType != 0) {
+      b.append(",f");
+      b.append(fitzpatrickType);
     }
     if (isUnique() || isPlayOnce()) {
       b.append(',');

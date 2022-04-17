@@ -12,6 +12,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.component.sharedmedia.MediaSmallView;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.MediaWrapper;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
@@ -45,6 +46,7 @@ import java.util.concurrent.TimeUnit;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.ChatId;
+import me.vkryl.td.Td;
 
 /**
  * Date: 09/12/2016
@@ -68,6 +70,7 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
   private ImageFile previewImageFile;
   private TdApi.File targetFile;
   private FileProgressComponent fileProgress;
+  private boolean needCreateGalleryFileProgress;
 
   // Source data
   private long sourceChatId, sourceMessageId;
@@ -315,9 +318,17 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
 
     this.fileProgress = new FileProgressComponent(context, tdlib, TdlibFilesManager.DOWNLOAD_FLAG_VIDEO, true, sourceChatId, sourceMessageId);
     this.fileProgress.setUseStupidInvalidate();
+
     if (allowIcon) {
       this.fileProgress.setDownloadedIconRes(FileProgressComponent.PLAY_ICON);
     }
+
+    if (Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
+      this.fileProgress.setIgnoreLoaderClicks(true);
+      this.fileProgress.setVideoStreamingProgressHidden(true);
+      this.fileProgress.setPausedIconRes(FileProgressComponent.PLAY_ICON);
+    }
+
     this.fileProgress.setFile(targetFile);
   }
 
@@ -435,13 +446,14 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
     this.type = TYPE_CHAT_PROFILE;
     this.sourceChatId = chatId;
     this.sourceMessageId = messageId;
+    this.sourceSender = ChatId.isUserChat(chatId) ? new TdApi.MessageSenderUser(tdlib.chatUserId(chatId)) : new TdApi.MessageSenderChat(chatId);
     this.sourceDate = photo.addedDate;
     this.chatPhoto = photo;
 
     setMiniThumbnail(photo.minithumbnail);
 
-    TdApi.PhotoSize small = TD.findSmallest(photo.sizes);
-    TdApi.PhotoSize big = TD.findBiggest(photo.sizes);
+    TdApi.PhotoSize small = Td.findSmallest(photo.sizes);
+    TdApi.PhotoSize big = Td.findBiggest(photo.sizes);
 
     if (small != null) {
       this.previewImageFile = new ImageFile(tdlib, small.photo);
@@ -493,12 +505,7 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
         ((ImageVideoThumbFile) this.targetImage).setMaxSize(maxSize);
         ((ImageVideoThumbFile) this.targetImage).setFrameTimeUs(imageFile.getStartTimeUs() > 0 ? imageFile.getStartTimeUs() : 0);
       }
-
-      this.fileProgress = new FileProgressComponent(context, tdlib, TdlibFilesManager.DOWNLOAD_FLAG_VIDEO, false, 0, 0);
-      this.fileProgress.setUseStupidInvalidate();
-      this.fileProgress.setIsLocal();
-      this.fileProgress.setDownloadedIconRes(FileProgressComponent.PLAY_ICON);
-      this.fileProgress.setFile(imageFile.getFile());
+      this.needCreateGalleryFileProgress = true;
     } else if (!imageFile.isFromCamera()) {
       if (type == TYPE_GALLERY_GIF) {
         this.targetGif = new GifFileLocal(tdlib, imageFile.getFilePath());
@@ -563,7 +570,7 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
     }*/
     TdApi.File file = previewImageFile != null ? previewImageFile.getFile() : null;
     if (file == null && (thumbImageFile == null || thumbImageFile instanceof ImageFileLocal)) {
-      file = fileProgress != null && fileProgress.isLoaded() ? fileProgress.getFile() : file;
+      file = getFileProgress() != null && fileProgress.isLoaded() ? fileProgress.getFile() : file;
       if (fileProgress != null && !fileProgress.isLoaded()) {
          fileProgress.downloadAutomatically(sourceChatId);
       }
@@ -579,7 +586,7 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
 
           return noScale ? thumbImageFileNoScale : thumbImageFile;
         }
-        TdApi.PhotoSize smallestSize = sourcePhoto != null ? TD.findSmallest(sourcePhoto) : null;
+        TdApi.PhotoSize smallestSize = sourcePhoto != null ? Td.findSmallest(sourcePhoto) : null;
         file = smallestSize != null ? smallestSize.photo : targetImage != null ? targetImage.getFile() : null;
       }
       if (file == null)
@@ -677,7 +684,7 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
             case TdApi.ChatEventPhotoChanged.CONSTRUCTOR: {
               TdApi.ChatEventPhotoChanged changedPhoto = (TdApi.ChatEventPhotoChanged) event.event.action;
               if (changedPhoto.oldPhoto != null || changedPhoto.newPhoto != null) {
-                return new MediaItem(context, tdlib, msg.chatId, 0, changedPhoto.newPhoto != null ? changedPhoto.newPhoto : changedPhoto.oldPhoto).setSourceSender(new TdApi.MessageSenderUser(event.event.userId)).setSourceDate(event.event.date);
+                return new MediaItem(context, tdlib, msg.chatId, 0, changedPhoto.newPhoto != null ? changedPhoto.newPhoto : changedPhoto.oldPhoto).setSourceSender(new TdApi.MessageSenderUser(Td.getSenderUserId(event.event.memberId))).setSourceDate(event.event.date);
               }
             }
           }
@@ -685,19 +692,19 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
         break;
       }
       case TdApi.MessagePhoto.CONSTRUCTOR: {
-        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.sender, msg.date, (TdApi.MessagePhoto) msg.content).setMessage(msg);
+        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.senderId, msg.date, (TdApi.MessagePhoto) msg.content).setMessage(msg);
       }
       case TdApi.MessageVideo.CONSTRUCTOR: {
-        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.sender, msg.date, (TdApi.MessageVideo) msg.content, true).setMessage(msg);
+        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.senderId, msg.date, (TdApi.MessageVideo) msg.content, true).setMessage(msg);
       }
       case TdApi.MessageAnimation.CONSTRUCTOR: {
-        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.sender, msg.date, (TdApi.MessageAnimation) msg.content).setMessage(msg);
+        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.senderId, msg.date, (TdApi.MessageAnimation) msg.content).setMessage(msg);
       }
       case TdApi.MessageChatChangePhoto.CONSTRUCTOR: {
         return new MediaItem(context, tdlib, msg.chatId, msg.id, ((TdApi.MessageChatChangePhoto) msg.content).photo).setMessage(msg);
       }
       case TdApi.MessageVideoNote.CONSTRUCTOR: {
-        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.sender, msg.date, (TdApi.MessageVideoNote) msg.content).setMessage(msg);
+        return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.senderId, msg.date, (TdApi.MessageVideoNote) msg.content).setMessage(msg);
       }
     }
     return null;
@@ -720,12 +727,23 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
   }
 
   public void pauseAbandonedDownload () {
-    if (fileProgress != null && (currentViews == null || !currentViews.hasAnyTargetToInvalidate())) {
+    if (getFileProgress() != null && (currentViews == null || !currentViews.hasAnyTargetToInvalidate())) {
       fileProgress.pauseDownload(false);
     }
   }
 
   public FileProgressComponent getFileProgress () {
+    if (fileProgress == null && needCreateGalleryFileProgress) {
+      this.fileProgress = new FileProgressComponent(context, tdlib, TdlibFilesManager.DOWNLOAD_FLAG_VIDEO, false, 0, 0);
+      this.fileProgress.setUseStupidInvalidate();
+      this.fileProgress.setIsLocal();
+      this.fileProgress.setDownloadedIconRes(FileProgressComponent.PLAY_ICON);
+      this.fileProgress.setFile(sourceGalleryFile.getFile());
+      if (currentViews != null) {
+        fileProgress.setViewProvider(currentViews);
+      }
+      needCreateGalleryFileProgress = false;
+    }
     return fileProgress;
   }
 
@@ -996,27 +1014,31 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
   }
 
   public boolean performClick (View view) {
-    return fileProgress != null && fileProgress.performClick(view);
+    return getFileProgress() != null && fileProgress.performClick(view);
+  }
+
+  public boolean performClick (View view, float x, float y) {
+    return getFileProgress() != null && fileProgress.performClick(view, x, y);
   }
 
   public boolean onClick (View view, float x, float y) {
-    if (fileProgress != null) {
+    if (getFileProgress() != null) {
       if (isLoaded()) {
         int centerX = fileProgress.centerX();
         int centerY = fileProgress.centerY();
         int bound = Screen.dp(FileProgressComponent.DEFAULT_RADIUS);
         if (x >= centerX - bound && x <= centerX + bound && y >= centerY - bound && y <= centerY + bound) {
-          return fileProgress.performClick(view);
+          return fileProgress.performClick(view, x, y);
         }
       } else {
-        return fileProgress.performClick(view);
+        return fileProgress.performClick(view, x, y);
       }
     }
     return false;
   }
 
   public boolean onTouchEvent (View view, MotionEvent e) {
-    return fileProgress != null && fileProgress.onTouchEvent(view, e);
+    return getFileProgress() != null && fileProgress.onTouchEvent(view, e);
   }
 
   // View-related stuff
@@ -1028,6 +1050,7 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
   }
 
   public void attachToView (View view, FileProgressComponent.SimpleListener listener, ImageFile.RotationListener rotationListener) {
+    final FileProgressComponent fileProgress = view != null ? getFileProgress() : this.fileProgress;
     if (currentViews == null) {
       currentViews = new MultipleViewProvider();
       currentViews.setContentProvider(this);
@@ -1235,6 +1258,42 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
 
   public boolean isLoaded () {
     return targetFile == null || TD.isFileLoaded(targetFile) || (fileProgress != null && fileProgress.isLoaded());
+  }
+
+  public boolean canBeSaved () {
+    if (msg != null) {
+      return msg.canBeSaved;
+    }
+    if (type == TYPE_CHAT_PROFILE) {
+      TdApi.Chat chat = tdlib.chat(sourceChatId);
+      return chat != null && !chat.hasProtectedContent;
+    } else if (type == TYPE_GALLERY_PHOTO || type == TYPE_GALLERY_VIDEO || type == TYPE_GALLERY_GIF) {
+      return true;
+    }
+    return getShareFile() != null;
+  }
+
+  public boolean canBeReported () {
+    if (msg != null) {
+      return tdlib.canReportMessage(msg);
+    }
+    switch (type) {
+      case TYPE_CHAT_PROFILE: {
+        return sourceChatId != 0 && tdlib.canReportChatSpam(sourceChatId);
+      }
+      case TYPE_USER_PROFILE: {
+        long userId = ((TdApi.MessageSenderUser) sourceSender).userId;
+        long chatId = ChatId.fromUserId(userId);
+        return tdlib.canReportChatSpam(chatId) || tdlib.cache().userBot(userId);
+      }
+    }
+    return false;
+  }
+
+  public boolean canBeShared () {
+    if (msg != null)
+      return msg.canBeForwarded;
+    return getShareFile() != null;
   }
 
   public TdApi.File getShareFile () {

@@ -89,7 +89,7 @@ import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceUtils;
 import me.vkryl.core.unit.BitUnit;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.unit.ByteUnit;
 import me.vkryl.core.util.Blob;
 import me.vkryl.core.util.BlobEntry;
@@ -227,6 +227,7 @@ public class Settings {
     return KEY_ACCOUNT_INFO + accountId + "_";
   }
 
+  private static final String KEY_TDLIB_AUTHENTICATION_TOKENS = "settings_authentication_token";
   private static final String KEY_TDLIB_CRASH_PREFIX = "settings_tdlib_crash";
   private static final String KEY_TDLIB_CRASH_SUFFIX_APP_VERSION = "app";
   private static final String KEY_TDLIB_CRASH_SUFFIX_FLAGS = "flags";
@@ -804,6 +805,9 @@ public class Settings {
   }
   public long[] getLongArray (String key) {
     return pmc.getLongArray(key);
+  }
+  public void putLongArray (String key, long[] value) {
+    pmc.putLongArray(key, value);
   }
   public void putInt (String key, int value) {
     pmc.putInt(key, value);
@@ -5700,6 +5704,34 @@ public class Settings {
       putBoolean(KEY_IS_EMULATOR, true);
       TdlibManager.instance().setIsEmulator(true);
     }
+  }
+
+  private List<String> authenticationTokens;
+
+  public void trackAuthenticationToken (String token) {
+    List<String> tokens = getAuthenticationTokensList();
+    if (!tokens.contains(token)) {
+      tokens.add(token);
+      while (tokens.size() > 20) {
+        tokens.remove(0);
+      }
+      pmc.putStringArray(KEY_TDLIB_AUTHENTICATION_TOKENS, tokens.toArray(new String[0]));
+    }
+  }
+
+  public List<String> getAuthenticationTokensList () {
+    if (authenticationTokens == null) {
+      authenticationTokens = new ArrayList<>();
+      String[] tokens = pmc.getStringArray(KEY_TDLIB_AUTHENTICATION_TOKENS);
+      if (tokens != null) {
+        Collections.addAll(authenticationTokens, tokens);
+      }
+    }
+    return authenticationTokens;
+  }
+
+  public String[] getAuthenticationTokens () {
+    return getAuthenticationTokensList().toArray(new String[0]);
   }
 
   // Tdlib crash

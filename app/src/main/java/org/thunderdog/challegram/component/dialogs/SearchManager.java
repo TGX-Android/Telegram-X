@@ -208,8 +208,9 @@ public class SearchManager {
   public static final int FLAG_NO_CHANNELS = 1 << 11;
   public static final int FLAG_NO_SUPPORT = 1 << 12;
   public static final int FLAG_NO_SECRET = 1 << 13;
+  public static final int FLAG_NO_GROUPS = 1 << 14;
 
-  public static final int FILTER_INVITE = FLAG_NEED_TOP_CHATS | FLAG_NEED_GLOBAL_SEARCH | FLAG_ONLY_USERS | FLAG_NO_SELF | FLAG_NO_SUPPORT | FLAG_NO_SECRET;
+  public static final int FILTER_INVITE = FLAG_NEED_TOP_CHATS | FLAG_NEED_GLOBAL_SEARCH | FLAG_NO_SELF | FLAG_NO_SUPPORT | FLAG_NO_SECRET;
   private static final int FILTER_FLAGS = FLAG_ONLY_WRITABLE | FLAG_ONLY_USERS | FLAG_NO_BOTS | FLAG_ONLY_CONTACTS | FLAG_NO_SELF | FLAG_CUSTOM_FILTER | FLAG_NO_CHANNELS | FLAG_NO_SUPPORT | FLAG_NO_SECRET;
 
   private final Tdlib tdlib;
@@ -511,6 +512,7 @@ public class SearchManager {
     final boolean noSupport = (searchFlags & FLAG_NO_SUPPORT) != 0;
     final boolean noSecret = (searchFlags & FLAG_NO_SECRET) != 0;
     final boolean noChannels = (searchFlags & FLAG_NO_CHANNELS) != 0;
+    final boolean noGroups = (searchFlags & FLAG_NO_GROUPS) != 0;
     final boolean needCustomFilter = (searchFlags & FLAG_CUSTOM_FILTER) != 0 && listener != null;
     if (excludeChatIds != null || isFiltered(searchFlags)) {
       int count = 0;
@@ -522,6 +524,9 @@ public class SearchManager {
           continue;
         }
         if (noChannels && tdlib.isChannel(chat.id)) {
+          continue;
+        }
+        if (noGroups && tdlib.isMultiChat(chat.id)) {
           continue;
         }
         if (onlyUsers && (!ChatId.isUserChat(chat.id) || !tdlib.canAddToOtherChat(chat))) {

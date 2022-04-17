@@ -506,6 +506,11 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
                   type = new TdApi.TextEntityTypeItalic();
                   break;
                 }
+                case R.id.btn_spoiler: {
+                  overrideResId = R.string.TextFormatSpoiler;
+                  type = new TdApi.TextEntityTypeSpoiler();
+                  break;
+                }
                 case R.id.btn_underline: {
                   overrideResId = R.string.TextFormatUnderline;
                   type = new TdApi.TextEntityTypeUnderline();
@@ -610,6 +615,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         break;
       case R.id.btn_italic:
         type = new TdApi.TextEntityTypeItalic();
+        break;
+      case R.id.btn_spoiler:
+        type = new TdApi.TextEntityTypeSpoiler();
         break;
       case R.id.btn_strikethrough:
         type = new TdApi.TextEntityTypeStrikethrough();
@@ -876,27 +884,26 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   // ETc
 
   private int lastPlaceholderRes;
-  private String rawPlaceholder;
+  private Object[] lastPlaceholderArgs;
+  private CharSequence rawPlaceholder;
   private float rawPlaceholderWidth;
   private int lastPlaceholderAvailWidth;
 
-  public void setInputPlaceholder (@StringRes int resId) {
+  public void setInputPlaceholder (@StringRes int resId, Object... args) {
+    String placeholder = Lang.getString(resId, args);
+    this.lastPlaceholderRes = resId;
+    this.lastPlaceholderArgs = args;
+    if (StringUtils.equalsOrBothEmpty(placeholder, this.rawPlaceholder)) {
+      return;
+    }
+    this.rawPlaceholder = placeholder;
     if (controller == null) {
-      setHint(Lang.getString(lastPlaceholderRes = resId));
-      return;
+      setHint(placeholder);
+    } else {
+      this.rawPlaceholderWidth = U.measureText(rawPlaceholder, getPaint());
+      this.lastPlaceholderAvailWidth = 0;
+      checkPlaceholderWidth();
     }
-
-    if (this.lastPlaceholderRes == resId) {
-      return;
-    }
-
-    lastPlaceholderRes = resId;
-    rawPlaceholder = Lang.getString(resId);
-    rawPlaceholderWidth = U.measureText(rawPlaceholder, getPaint());
-
-    lastPlaceholderAvailWidth = 0;
-
-    checkPlaceholderWidth();
   }
 
   public void checkPlaceholderWidth () {
@@ -1033,7 +1040,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           }
           if (needMenu) {
             tdlib.ui().post(() -> {
-              tdlib.ui().showScheduleOptions(controller, chatId, false, (forceDisableNotification, schedulingState, disableMarkdown) -> tdlib.sendMessage(chatId, messageThreadId, replyToMessageId, new TdApi.MessageSendOptions(forceDisableNotification || silent, false, schedulingState), content, null), null);
+              tdlib.ui().showScheduleOptions(controller, chatId, false, (forceDisableNotification, schedulingState, disableMarkdown) -> tdlib.sendMessage(chatId, messageThreadId, replyToMessageId, new TdApi.MessageSendOptions(forceDisableNotification || silent, false, false, schedulingState), content, null), null);
             });
           } else {
             tdlib.sendMessage(chatId, messageThreadId, replyToMessageId, silent, false, content);
@@ -1240,9 +1247,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       @Override
       public void onLocaleChange (int arg1) {
         if (lastPlaceholderRes != 0) {
-          int placeholderRes = lastPlaceholderRes;
-          lastPlaceholderRes = 0;
-          setInputPlaceholder(placeholderRes);
+          setInputPlaceholder(lastPlaceholderRes, lastPlaceholderArgs);
         }
       }
 
@@ -1297,15 +1302,19 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       return;
     }
     int resource;
+    Object[] args = null;
     TdApi.ChatMemberStatus status = tdlib.chatStatus(chat.id);
     if (tdlib.isChannel(chat.id)) {
       resource = isSilent ? R.string.ChannelSilentBroadcast : R.string.ChannelBroadcast;
     } else if (tdlib.isMultiChat(chat) && Td.isAnonymous(status)) {
       resource = messageThread != null ? (messageThread.areComments() ? R.string.CommentAnonymously : R.string.MessageReplyAnonymously) :  R.string.MessageAnonymously;
+    } else if (chat.messageSenderId != null && !tdlib.isSelfSender(chat.messageSenderId)) {
+      resource = messageThread != null ? (messageThread.areComments() ? R.string.CommentAsX : R.string.MessageReplyAsX) : R.string.MessageAsX;
+      args = new Object[] { tdlib.senderName(chat.messageSenderId) };
     } else {
       resource = messageThread != null ? (messageThread.areComments() ? R.string.Comment : R.string.MessageReply) : R.string.Message;
     }
-    setInputPlaceholder(resource);
+    setInputPlaceholder(resource, args);
   }
 
   public void setDraft (@Nullable TdApi.InputMessageContent draftContent) {

@@ -10,12 +10,12 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.util.DrawableProvider;
 
 import java.io.File;
 
 import me.vkryl.android.animator.ListAnimator;
+import me.vkryl.td.Td;
 
 public abstract class MediaPreview implements ListAnimator.Measurable {
   /*private static MediaWrapper createMediaWrapper (BaseActivity context, Tdlib tdlib, TdApi.Message message, TdApi.MessageContent content) {
@@ -52,7 +52,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
         return new MediaPreviewSimple(tdlib, size, cornerRadius, game.animation.thumbnail, game.animation.minithumbnail);
       }
     } else if (game.photo != null) {
-      TdApi.PhotoSize thumbnail = TD.findSmallest(game.photo);
+      TdApi.PhotoSize thumbnail = Td.findSmallest(game.photo);
       if (thumbnail != null || game.photo.minithumbnail != null) {
         return new MediaPreviewSimple(tdlib, size, cornerRadius, TD.toThumbnail(thumbnail), game.photo.minithumbnail);
       }
@@ -144,7 +144,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
             // doc preview
             return valueOf(tdlib, webPage.document, size, cornerRadius);
           } else if (webPage.photo != null) {
-            TdApi.PhotoSize thumbnail = TD.findSmallest(webPage.photo);
+            TdApi.PhotoSize thumbnail = Td.findSmallest(webPage.photo);
             if (thumbnail != null || webPage.photo.minithumbnail != null) {
               return new MediaPreviewSimple(tdlib, size, cornerRadius, TD.toThumbnail(thumbnail), webPage.photo.minithumbnail);
             }
@@ -154,7 +154,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       }
       case TdApi.MessagePhoto.CONSTRUCTOR: {
         TdApi.Photo photo = ((TdApi.MessagePhoto) message.content).photo;
-        TdApi.PhotoSize thumbnail = TD.findSmallest(photo);
+        TdApi.PhotoSize thumbnail = Td.findSmallest(photo);
         if (thumbnail != null || photo.minithumbnail != null) {
           return new MediaPreviewSimple(tdlib, size, cornerRadius, TD.toThumbnail(thumbnail), photo.minithumbnail);
         }
@@ -171,7 +171,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       }
       case TdApi.MessageChatChangePhoto.CONSTRUCTOR: {
         TdApi.ChatPhoto photo = ((TdApi.MessageChatChangePhoto) message.content).photo;
-        TdApi.PhotoSize thumbnail = TD.findSmallest(photo.sizes);
+        TdApi.PhotoSize thumbnail = Td.findSmallest(photo.sizes);
         if (thumbnail != null || photo.minithumbnail != null) {
           return new MediaPreviewSimple(tdlib, size, cornerRadius, TD.toThumbnail(thumbnail), photo.minithumbnail);
         }

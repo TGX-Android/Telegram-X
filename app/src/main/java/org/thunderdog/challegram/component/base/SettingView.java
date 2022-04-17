@@ -60,7 +60,7 @@ import me.vkryl.android.util.SingleViewProvider;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 
 public class SettingView extends FrameLayoutFix implements FactorAnimator.Target, TGLegacyManager.EmojiLoadListener, AttachDelegate, Destroyable, RemoveHelper.RemoveDelegate, TextColorSet, TooltipOverlayView.LocationProvider {
   public static final int TYPE_INFO = 0x01;

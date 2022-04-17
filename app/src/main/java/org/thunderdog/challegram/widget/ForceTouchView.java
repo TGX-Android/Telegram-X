@@ -51,6 +51,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.SensitiveContentContainer;
 import org.thunderdog.challegram.util.text.Text;
 
 import me.vkryl.android.AnimatorUtils;
@@ -69,7 +70,7 @@ import me.vkryl.td.ChatId;
 
 public class ForceTouchView extends FrameLayoutFix implements
   PopupLayout.AnimatedPopupProvider, FactorAnimator.Target,
-  ChatListener, NotificationSettingsListener, TdlibCache.UserDataChangeListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, ThemeChangeListener, TdlibCache.UserStatusChangeListener {
+  ChatListener, NotificationSettingsListener, TdlibCache.UserDataChangeListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, ThemeChangeListener, TdlibCache.UserStatusChangeListener, SensitiveContentContainer {
   private ForceTouchContext forceTouchContext;
   private RelativeLayout contentWrap;
   private View backgroundView;
@@ -202,6 +203,19 @@ public class ForceTouchView extends FrameLayoutFix implements
     addView(contentWrap);
 
     themeListenerList.addThemeInvalidateListener(contentWrap);
+  }
+
+  @Override
+  public boolean shouldDisallowScreenshots () {
+    if (forceTouchContext != null) {
+      if (forceTouchContext.boundController != null) {
+        return forceTouchContext.boundController.shouldDisallowScreenshots();
+      }
+      if (forceTouchContext.contentView instanceof SensitiveContentContainer) {
+        return ((SensitiveContentContainer) forceTouchContext.contentView).shouldDisallowScreenshots();
+      }
+    }
+    return false;
   }
 
   @Override
@@ -1002,6 +1016,8 @@ public class ForceTouchView extends FrameLayoutFix implements
 
   private void setHeaderUser (TdApi.User user) {
     headerView.setShowVerify(user.isVerified);
+    headerView.setShowScam(user.isScam);
+    headerView.setShowFake(user.isFake);
     headerView.setText(TD.getUserName(user), tdlib.status().getPrivateChatSubtitle(user.id, user, false));
     setChatAvatar();
   }
@@ -1019,6 +1035,8 @@ public class ForceTouchView extends FrameLayoutFix implements
 
     headerView.setShowLock(ChatId.isSecret(chatId));
     headerView.setShowVerify(tdlib.chatVerified(chat));
+    headerView.setShowScam(tdlib.chatScam(chat));
+    headerView.setShowFake(tdlib.chatFake(chat));
     headerView.setShowMute(tdlib.chatNeedsMuteIcon(chat.id));
     headerView.setText(tdlib.chatTitle(chat), tdlib.status().chatStatus(chat));
     setChatAvatar();

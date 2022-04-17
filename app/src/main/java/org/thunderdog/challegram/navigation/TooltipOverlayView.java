@@ -60,7 +60,7 @@ import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableLong;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.BitwiseUtils;
 
 public class TooltipOverlayView extends ViewGroup {
   public interface LocationProvider {
@@ -1088,6 +1088,9 @@ public class TooltipOverlayView extends ViewGroup {
       }
       if (controller != null) {
         return controller.isFocused();
+      }
+      if (originalView != null) {
+        return ViewCompat.isAttachedToWindow(originalView);
       }
       return false;
     }

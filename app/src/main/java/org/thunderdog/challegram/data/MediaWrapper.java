@@ -1,6 +1,7 @@
 package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
@@ -16,8 +17,10 @@ import androidx.core.content.res.ResourcesCompat;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -44,10 +47,14 @@ import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.widget.FileProgressComponent;
 import org.thunderdog.challegram.widget.SimplestCheckBox;
 
+import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.td.Td;
 
 /**
  * Date: 28/01/2017
@@ -96,6 +103,12 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   private final boolean useHotStuff;
 
   private boolean hideLoader;
+
+  private final BoolAnimator downloadedAnimator = new BoolAnimator(0, (id, factor, fraction, callee) -> {
+    if (source != null) {
+      source.postInvalidate();
+    }
+  }, AnimatorUtils.DECELERATE_INTERPOLATOR, 230l);
 
   public MediaWrapper (BaseActivity context, Tdlib tdlib, @NonNull TdApi.Photo photo, long chatId, long messageId, @Nullable TGMessage source, boolean useHotStuff) {
     this(context, tdlib, photo, chatId, messageId, source, useHotStuff, false);
@@ -154,6 +167,11 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     fileProgress.setIgnoreLoaderClicks(hideLoader);
   }
 
+  private boolean isSafeToStream (TGMessage source) {
+    if (source == null) return false; // TODO: PageBlockMedia support&rendering
+    return !source.isSecretChat() && !source.isHot();
+  }
+
   public MediaWrapper (BaseActivity context, Tdlib tdlib, @NonNull TdApi.Document document, long chatId, long messageId, @Nullable TGMessage source, boolean useHotStuff) {
     this(context, tdlib, new TdApi.Video(0, document.thumbnail.width, document.thumbnail.height, document.fileName, document.mimeType, false, true, document.minithumbnail, document.thumbnail, document.document), chatId, messageId, source, useHotStuff);
   }
@@ -202,7 +220,20 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       fileProgress.setHideDownloadedIcon(true);
     }
 
+    if (isSafeToStream(source) && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
+      this.fileProgress.setHideDownloadedIcon(true);
+      this.fileProgress.setIgnoreLoaderClicks(true);
+      this.fileProgress.setVideoStreaming(true);
+      this.fileProgress.setDownloadedIconRes(FileProgressComponent.PLAY_ICON);
+      this.fileProgress.setPausedIconRes(R.drawable.baseline_cloud_download_24);
+    }
+
     this.fileProgress.setFile(video.video, source != null ? source.getMessage(messageId) : null);
+
+    if (source != null && !source.isSecretChat() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
+      this.downloadedAnimator.setValue(this.fileProgress.isDownloaded(), false);
+    }
+
     updateDuration();
   }
 
@@ -390,7 +421,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   public static int getWidth (TdApi.Photo photo, TdApi.PhotoSize targetSize) {
     if (targetSize != null)
       return targetSize.width;
-    TdApi.PhotoSize biggestSize = TD.findBiggest(photo);
+    TdApi.PhotoSize biggestSize = Td.findBiggest(photo);
     if (biggestSize != null)
       return biggestSize.width;
     return 0;
@@ -399,7 +430,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   public static int getHeight (TdApi.Photo photo, TdApi.PhotoSize targetSize) {
     if (targetSize != null)
       return targetSize.height;
-    TdApi.PhotoSize biggestSize = TD.findBiggest(photo);
+    TdApi.PhotoSize biggestSize = Td.findBiggest(photo);
     if (biggestSize != null)
       return biggestSize.height;
     return 0;
@@ -428,7 +459,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       if (TD.isFileLoadedAndExists(photoSize.photo))
         biggestLoadedSize = photoSize;
     }
-    if (biggestLoadedSize != null && TD.findSmallest(sizes).photo.id != biggestLoadedSize.photo.id)
+    if (biggestLoadedSize != null && Td.findSmallest(sizes).photo.id != biggestLoadedSize.photo.id)
       return biggestLoadedSize;
     int maxWidth = TGMessage.getEstimatedContentMaxWidth();
     int maxHeight = (int) ((float) maxWidth * MAX_HEIGHT_FACTOR);
@@ -787,7 +818,11 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       this.cellHeight = height;
       this.lastLeft = this.lastTop = -1;
       if (widthChanged && !StringUtils.isEmpty(duration)) {
-        trimDuration();
+        if (!(isVideo() && !getFileProgress().isLoaded() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE)) {
+          trimDuration();
+        } else {
+          trimDoubleDuration();
+        }
       }
     }
   }
@@ -833,13 +868,10 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       cellBottom -= selectionPadding;
     }
 
+    fileProgress.setPaddingCompensation(selectionPadding);
     fileProgress.setBounds(cellLeft, cellTop, cellRight, cellBottom);
 
     DrawAlgorithms.drawReceiver(c, preview, receiver, false, true, cellLeft, cellTop, cellRight, cellBottom);
-
-    if (!hideLoader) {
-      fileProgress.draw(view, c);
-    }
 
     if (selectionPadding > 0) {
       cellLeft -= selectionPadding;
@@ -876,19 +908,76 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       }
     }
 
-    if (!StringUtils.isEmpty(durationTrimmed) && selectionFactor < 1f) {
-      int pDurationTop = cellTop + Screen.dp(4f);
-      int pDurationRight = cellRight - Screen.dp(4f);
-      int pDurationLeft = pDurationRight - durationWidth - Screen.dp(4f);
+    float dlFactor = 1f - downloadedAnimator.getFloatValue();
+    float durationDx = 0f;
+    boolean isStreamingUI = fileProgress.isVideoStreaming() && isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE;
+    boolean showDuration = !StringUtils.isEmpty(durationTrimmed) && selectionFactor < 1f;
+    boolean isDoubleLine = isStreamingUI && duration != null && durationShort != null && (source == null || source.getCombinedMessageCount() == 0 || fileProgress.isProcessing() || (fileProgress.getFile() != null && fileProgress.getFile().remote.isUploadingActive));
+    boolean isSmallStreamingUI = isStreamingUI && !isDoubleLine;
+    boolean needTopOffset = source != null && source.useFullWidth() && source.hasHeader() && source.isChannel() && isVideo() && (source instanceof TGMessageMedia && ((TGMessageMedia) source).isVideoFirstInMosaic(video.video.id)) && source.replyData == null;
+    RectF durationRect = Paints.getRectF();
 
-      RectF rectF = Paints.getRectF();
-      rectF.set(pDurationLeft - Screen.dp(4f), pDurationTop, pDurationRight, pDurationTop + durationHeight());
+    if (showDuration) {
+      // Only if: channel + single item in stack + bubble-less mode
 
-      c.drawRoundRect(rectF, Screen.dp(4f), Screen.dp(4f), Paints.fillingPaint(ColorUtils.alphaColor(alpha * (1f - selectionFactor), 0x4c000000)));
-      Paint paint = Paints.whiteMediumPaint(13f, false, false);
+      int fpRadius = !isVideo() || !isDoubleLine ? 0 : downloadedAnimator.isAnimating() ? Screen.dp(FileProgressComponent.DEFAULT_STREAMING_RADIUS) : getFileProgress().getRadius();
+      int doubleFpRadius = fpRadius * 2;
+
+      int pDurationCorners = isDoubleLine ? (int) MathUtils.fromTo(Screen.dp(4f), Screen.dp(12f), dlFactor) : Screen.dp(4f);
+      int pDurationTop = cellTop + Screen.dp(8f) + (needTopOffset ? Screen.dp(16f) : 0);
+      int pDurationLeft = cellLeft + Screen.dp(12f);
+      int pDurationRight = (int) (pDurationLeft + (isDoubleLine ? MathUtils.fromTo(durationWidthShort, durationWidth, dlFactor) : durationWidth) + ((doubleFpRadius) * (isStreamingUI ? dlFactor : 1f)) + ((isStreamingUI) ? MathUtils.fromTo(Screen.dp(4f), Screen.dp(isSmallStreamingUI ? 26f : 16f), dlFactor) : Screen.dp(4f)));
+      int pDurationBottom = pDurationTop + (isDoubleLine ? (int) MathUtils.fromTo(durationHeight(), (doubleFpRadius) + Screen.dp(8f), dlFactor) : durationHeight());
+
+      durationRect.set(pDurationLeft - Screen.dp(4f), pDurationTop, pDurationRight, pDurationBottom);
+
+      getFileProgress().setVideoStreamingOptions(needTopOffset, false, isSmallStreamingUI ? FileProgressComponent.STREAMING_UI_MODE_SMALL : FileProgressComponent.STREAMING_UI_MODE_LARGE, durationRect, downloadedAnimator);
+      c.drawRoundRect(durationRect, pDurationCorners, pDurationCorners, Paints.fillingPaint(ColorUtils.alphaColor(alpha * (1f - selectionFactor), 0x4c000000)));
+
+      // This is set to fix text visible outside the rounded rect during the animation
+      durationRect.right -= pDurationCorners / 2f;
+
+      Paint paint;
+
+      if (isDoubleLine) {
+        paint = Paints.getRegularTextPaint(13f, Color.WHITE);
+      } else {
+        paint = Paints.whiteMediumPaint(13f, false, false);
+      }
+
       paint.setAlpha((int) (255f * alpha * (1f - selectionFactor)));
-      c.drawText(durationTrimmed, pDurationLeft, pDurationTop - Screen.dp(4f) + durationOffset(), paint);
+
+      if (isDoubleLine) {
+        c.save();
+        c.clipRect(durationRect);
+        int textBaseline = pDurationLeft + (int) MathUtils.fromTo(0, (durationDx = doubleFpRadius + Screen.dp(6f)), dlFactor);
+        int textYBaseline = (int) MathUtils.fromTo(pDurationTop + durationOffset(), pDurationTop + (((pDurationTop + doubleFpRadius + Screen.dp(8f)) - pDurationTop) / 2f), dlFactor);
+        c.drawText(durationShort, textBaseline, textYBaseline - Screen.dp(4f), paint);
+        paint.setAlpha((int) (paint.getAlpha() * dlFactor));
+        c.drawText(duration, textBaseline, textYBaseline + Screen.dp(13f), paint);
+        c.restore();
+      } else {
+        c.drawText(durationTrimmed, pDurationLeft + (isStreamingUI ? Screen.dp(20f) * dlFactor : 0), pDurationTop - Screen.dp(4f) + durationOffset(), paint);
+      }
+
       paint.setAlpha(255);
+    } else if (isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
+      getFileProgress().setVideoStreamingOptions(needTopOffset, true, isSmallStreamingUI ? FileProgressComponent.STREAMING_UI_MODE_SMALL : FileProgressComponent.STREAMING_UI_MODE_LARGE, durationRect, downloadedAnimator);
+    }
+
+    if (isSmallStreamingUI) {
+      getFileProgress().setPausedIconRes(R.drawable.baseline_cloud_download_16);
+    } else if (isStreamingUI) {
+      getFileProgress().setPausedIconRes(R.drawable.baseline_cloud_download_24);
+    }
+
+    if (!hideLoader) {
+      getFileProgress().setRequestedAlpha(alpha * (1f - selectionFactor));
+      if (isDoubleLine) {
+        fileProgress.drawClipped(view, c, durationRect, (-durationDx) * downloadedAnimator.getFloatValue());
+      } else {
+        fileProgress.draw(view, c);
+      }
     }
 
     if (nativeEmbed != null && embedIcon != null) {
@@ -1033,6 +1122,25 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     }
   }
 
+  private void trimDoubleDuration () {
+    int width = cellWidth - Screen.dp(8f) * 2 - (Screen.dp(FileProgressComponent.DEFAULT_STREAMING_RADIUS) * 2);
+    if (width > 0 && (durationWidthFull > width || durationWidthShort > width)) {
+      durationTrimmed = duration;
+      durationWidth = durationWidthFull;
+
+      if (durationWidthFull > width && (durationShort != null && durationWidthShort < width)) {
+        durationTrimmed = durationShort;
+        durationWidth = durationWidthShort;
+      } else if (durationShort == null || durationWidthShort > width) {
+        durationTrimmed = null;
+        durationWidth = 0;
+      }
+
+      duration = null;
+      durationShort = null;
+    }
+  }
+
   private boolean updateDuration () {
     if (video == null && animation == null) {
       return false;
@@ -1040,9 +1148,15 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
     String textShort = null;
     String text = "";
+
+    String twLineHeader = null;
+    String twLineSubheader = null;
+    boolean shouldHaveTwoLines = false;
+
     if (fileProgress.isFailed()) {
       text = textShort = Lang.getString(R.string.failed);
     } else if (!(fileProgress.isUploadFinished() || (source != null && !source.isSending())) || !fileProgress.isLoaded()) {
+      shouldHaveTwoLines = true;
       textShort = Strings.buildSize(fileProgress.getTotalSize());
       if (fileProgress.isLoading() || !fileProgress.isUploadFinished()) {
         if (fileProgress.isProcessing()) {
@@ -1067,14 +1181,35 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
     if (video != null) {
       textShort = Strings.buildDuration(video.duration);
+
+      if (shouldHaveTwoLines) {
+        twLineHeader = text;
+        twLineSubheader = textShort;
+      }
+
       if (!text.isEmpty()) {
         text = text + ", " + textShort;
+      } else if (fileProgress.isVideoStreaming()) {
+        text = twLineHeader = Strings.buildSize(fileProgress.getTotalSize());
+        twLineSubheader = textShort;
       } else {
         text = textShort;
       }
     }
 
-    if (!StringUtils.equalsOrBothEmpty(this.duration, text)) {
+    if (twLineHeader != null && (!StringUtils.equalsOrBothEmpty(this.duration, twLineHeader) || !StringUtils.equalsOrBothEmpty(this.durationShort, twLineSubheader))) {
+      this.duration = twLineHeader;
+      this.durationShort = twLineSubheader;
+      TextPaint paint = Paints.getRegularTextPaint(13f);
+      this.durationWidthFull = (int) U.measureText(twLineHeader, paint);
+      this.durationWidthShort = (int) U.measureText(twLineSubheader, paint);
+      this.durationWidth = Math.max(this.durationWidthFull, this.durationWidthShort);
+      this.durationTrimmed = this.duration;
+      trimDoubleDuration();
+      return true;
+    }
+
+    if (twLineHeader == null && !StringUtils.equalsOrBothEmpty(this.duration, text)) {
       this.duration = text;
       this.durationShort = textShort;
       TextPaint paint = Paints.whiteMediumPaint(13f, false, true);

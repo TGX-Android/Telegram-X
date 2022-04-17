@@ -7,6 +7,9 @@ package org.thunderdog.challegram.helper;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
+import android.media.audiofx.AcousticEchoCanceler;
+import android.media.audiofx.AutomaticGainControl;
+import android.media.audiofx.NoiseSuppressor;
 import android.os.SystemClock;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -17,6 +20,7 @@ import org.thunderdog.challegram.data.TGRecord;
 import org.thunderdog.challegram.filegen.GenerationInfo;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.voip.AudioRecordJNI;
 
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -45,6 +49,10 @@ public class Recorder implements Runnable {
   private boolean isRecording;
   private long samplesCount;
   private short[] recordSamples = new short[1024];
+
+  private AutomaticGainControl agc;
+  private NoiseSuppressor ns;
+  private AcousticEchoCanceler aec;
 
   private Recorder () {
     recordThread = new BaseThread("RecorderThread");
@@ -158,7 +166,7 @@ public class Recorder implements Runnable {
       }
 
       if (bufferSize == 0) {
-        bufferSize = AudioRecord.getMinBufferSize(16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+        bufferSize = AudioRecord.getMinBufferSize(48000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
 
         if (bufferSize <= 0) {
           bufferSize = 1280;
@@ -181,7 +189,7 @@ public class Recorder implements Runnable {
         fileBuffer.rewind();
       }
 
-      recorder = new AudioRecord(MediaRecorder.AudioSource.MIC, 16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize * 10);
+      recorder = new AudioRecord(MediaRecorder.AudioSource.MIC, 48000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize * 10);
     } catch (Throwable t) {
       Log.e("Couldn't set up recorder", t);
       dispatchError();
@@ -189,6 +197,7 @@ public class Recorder implements Runnable {
     }
 
     try {
+      tryInitEnhancers();
       recordStart = SystemClock.elapsedRealtime();
       recordTimeCount = 0;
       removeFile = true;
@@ -278,7 +287,7 @@ public class Recorder implements Runnable {
       if (fileBuffer.position() == fileBuffer.limit() || flush) {
         if (N.writeFrame(fileBuffer, !flush ? fileBuffer.limit() : buffer.position()) != 0) {
           fileBuffer.rewind();
-          recordTimeCount += fileBuffer.limit() / 2 / 16;
+          recordTimeCount += fileBuffer.limit() / 3 / 2 / 16;
         }
       }
       if (oldLimit != -1) {
@@ -308,6 +317,7 @@ public class Recorder implements Runnable {
           }
           try {
             recorder.stop();
+            tryReleaseEnhancers();
           } catch (Throwable t) {
             Log.e("Cannot stop recorder", t);
           }
@@ -391,6 +401,61 @@ public class Recorder implements Runnable {
 
   private float getMaxAmplitude () {
     return lastAmplitude;
+  }
+
+  private void tryInitEnhancers () {
+    try {
+      if (AutomaticGainControl.isAvailable()) {
+        agc = AutomaticGainControl.create(recorder.getAudioSessionId());
+        if (agc != null)
+          agc.setEnabled(true);
+      } else {
+        Log.w(Log.TAG_VOICE, "AutomaticGainControl is not available on this device");
+      }
+    } catch (Throwable x) {
+      Log.e(Log.TAG_VOICE,"Error creating AutomaticGainControl", x);
+    }
+
+    try {
+      if (NoiseSuppressor.isAvailable()) {
+        ns = NoiseSuppressor.create(recorder.getAudioSessionId());
+        if (ns != null)
+          ns.setEnabled(AudioRecordJNI.isGoodAudioEffect(ns));
+      } else {
+        Log.w(Log.TAG_VOICE, "NoiseSuppressor is not available on this device");
+      }
+    } catch (Throwable x) {
+      Log.e(Log.TAG_VOICE, "Error creating NoiseSuppressor", x);
+    }
+
+    try {
+      if (AcousticEchoCanceler.isAvailable()) {
+        aec = AcousticEchoCanceler.create(recorder.getAudioSessionId());
+        if (aec != null)
+          aec.setEnabled(AudioRecordJNI.isGoodAudioEffect(aec));
+      } else {
+        Log.w(Log.TAG_VOICE, "AcousticEchoCanceler is not available on this device");
+      }
+    } catch (Throwable x) {
+      Log.e(Log.TAG_VOICE, "Error creating AcousticEchoCanceler", x);
+    }
+  }
+
+  private void tryReleaseEnhancers () {
+    if (agc != null) {
+      agc.release();
+      agc = null;
+    }
+
+    if (ns != null) {
+      ns.release();
+      ns = null;
+    }
+
+    if (aec != null) {
+      aec.release();
+      aec = null;
+    }
   }
 
   public interface Listener {

@@ -154,7 +154,8 @@ import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.core.unit.BitwiseUtils;
+import me.vkryl.core.lambda.RunnableData;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
@@ -1307,7 +1308,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private void updateVideoState (boolean animated) {
     MediaItem item = stack.getCurrent();
-    setVideoVisible(item.isVideo(), item.isLoaded(), item.getVideoDuration(true, TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS, animated);
+    setVideoVisible(item.isVideo(), Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE || item.isLoaded(), item.getVideoDuration(true, TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS, animated);
     if (mode == MODE_GALLERY) {
       boolean isVideo = item.isVideo();
       if (isVideo) {
@@ -1487,16 +1488,17 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           strings.append(R.string.OpenInExternalApp);
         }
 
-        if (item.isLoaded()) {
+        if (item.isLoaded() && item.canBeSaved()) {
           ids.append(R.id.btn_saveToGallery);
           strings.append(R.string.SaveToGallery);
-
-          if (mode != MODE_SECRET && mode != MODE_GALLERY && (item.getMessage() != null || item.getShareFile() != null)) {
-            ids.append(R.id.btn_share);
-            strings.append(R.string.Share);
-          }
         }
-        if (item.isGifType()) {
+
+        if (mode != MODE_SECRET && mode != MODE_GALLERY && item.canBeSaved() && item.canBeShared()) {
+          ids.append(R.id.btn_share);
+          strings.append(R.string.Share);
+        }
+
+        if (item.isGifType() && item.canBeSaved()) {
           ids.append(R.id.btn_saveGif);
           strings.append(R.string.SaveGif);
         }
@@ -1511,8 +1513,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           strings.append(R.string.ShowInChat);
         }
 
-        TdApi.Message message = item.getMessage();
-        if (message != null && tdlib.canReportMessage(message)) {
+        if (item.canBeReported() && (item.getMessage() != null || stack.getCurrentIndex() == 0)) {
           ids.append(R.id.btn_messageReport);
           strings.append(R.string.Report);
         }
@@ -1549,7 +1550,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   @Override
   public boolean shouldDisallowScreenshots () {
-    return mode == MODE_SECRET;
+    return mode == MODE_SECRET || !stack.getCurrent().canBeSaved();
   }
 
   @Override
@@ -1571,7 +1572,47 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         break;
       }
       case R.id.btn_messageReport: {
-        TdlibUi.reportChat(this, item.getSourceChatId(), new TdApi.Message[] {item.getMessage()}, true, null, getForcedTheme());
+        TdApi.Message message = item.getMessage();
+        if (message != null) {
+          TdlibUi.reportChat(this, item.getSourceChatId(), new TdApi.Message[] {message}, null, getForcedTheme());
+        } else {
+          final long chatId = Td.getSenderId(item.getSourceSender());
+          final RunnableData<TdApi.PhotoSize> act = (photoSize) -> {
+            if (photoSize != null) {
+              tdlib.ui().post(() ->
+                TdlibUi.reportChatPhoto(this, chatId, photoSize.photo.id, null, getForcedTheme())
+              );
+            }
+          };
+          switch (ChatId.getType(chatId)) {
+            case TdApi.ChatTypeBasicGroup.CONSTRUCTOR: {
+              tdlib.cache().basicGroupFull(ChatId.toBasicGroupId(chatId), groupFull -> {
+                if (groupFull != null && groupFull.photo != null) {
+                  act.runWithData(Td.findBiggest(groupFull.photo.sizes));
+                }
+              });
+              break;
+            }
+            case TdApi.ChatTypePrivate.CONSTRUCTOR:
+            case TdApi.ChatTypeSecret.CONSTRUCTOR: {
+              final long userId = tdlib.chatUserId(chatId);
+              tdlib.cache().userFull(userId, userFull -> {
+                if (userFull != null && userFull.photo != null) {
+                  act.runWithData(Td.findBiggest(userFull.photo.sizes));
+                }
+              });
+              break;
+            }
+            case TdApi.ChatTypeSupergroup.CONSTRUCTOR: {
+              tdlib.cache().supergroupFull(ChatId.toSupergroupId(chatId), supergroupFull -> {
+                if (supergroupFull != null && supergroupFull.photo != null) {
+                  act.runWithData(Td.findBiggest(supergroupFull.photo.sizes));
+                }
+              });
+              break;
+            }
+          }
+        }
         break;
       }
       case R.id.btn_copyLink: {
@@ -1579,7 +1620,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           UI.copyText(getArgumentsStrict().copyLink, R.string.CopiedLink);
         } else if (item.getSourceChatId() != 0) {
           if (tdlib.canCopyPostLink(item.getMessage())) {
-            tdlib.getMessageLink(item.getMessage(), false, messageThreadId != 0, link -> UI.copyText(link.url, link.isPublic ?R.string.CopiedLink : R.string.CopiedLinkPrivate));
+            tdlib.getMessageLink(item.getMessage(), false, messageThreadId != 0, link -> UI.copyText(link.url, link.isPublic ? R.string.CopiedLink : R.string.CopiedLinkPrivate));
           }
         }
         break;
@@ -2957,6 +2998,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   @Override
+  public void onSeekSecondaryProgress (MediaItem item, float progress) {
+    if (stack.getCurrent() == item && videoSliderView != null) {
+      videoSliderView.updateSecondarySeek(progress);
+    }
+  }
+
+  @Override
   public void onPlayPause (MediaItem item, boolean isPlaying) {
     if (stack.getCurrent() != item) {
       return;
@@ -3958,7 +4006,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     @Override
     public void invalidateContent () {
-      if (this.item != null && this.item.getPreviewImageFile() == null && this.item.isLoaded()) {
+      if (this.item != null && this.item.getPreviewImageFile() == null && (Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE || this.item.isLoaded())) {
         this.preview.getImageReceiver().requestFile(item.getThumbImageFile(Screen.dp(THUMBS_HEIGHT) + Screen.dp(THUMBS_PADDING) * 2, false));
       }
     }
@@ -5284,7 +5332,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   @Override
   public boolean allowSliderChanges (SliderView view) {
-    return stack.getCurrent().isVideo() && stack.getCurrent().isLoaded();
+    return stack.getCurrent().isVideo() && (Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE || stack.getCurrent().isLoaded());
   }
 
   private int getSelectedMediaCount () {
@@ -5293,6 +5341,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private boolean isCurrentItemSelected () {
     return selectDelegate != null && selectDelegate.isMediaItemSelected(stack.getCurrentIndex(), stack.getCurrent());
+  }
+
+  public TdApi.File getCurrentFile () {
+    return stack.getCurrent().getTargetFile();
   }
 
   // Clicks
@@ -7848,7 +7900,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       imageFiles.add(stack.getCurrent().getSourceGalleryFile());
     }
 
-    sendDelegate.sendSelectedItems(imageFiles, new TdApi.MessageSendOptions(forceDisableNotification, false, schedulingState), disableMarkdown, asFiles);
+    sendDelegate.sendSelectedItems(imageFiles, new TdApi.MessageSendOptions(forceDisableNotification, false, false, schedulingState), disableMarkdown, asFiles);
     setUIBlocked(true);
     popupView.hideWindow(true);
   }
