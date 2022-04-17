@@ -47,6 +47,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
 import me.vkryl.td.Td;
@@ -1384,14 +1385,9 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
   @Override
   public void invalidateTypingPart (boolean onlyIcon) {
-    List<Reference<View>> list = currentViews.getViewsList();
-    if (list != null) {
-      for (int i = list.size() - 1; i >= 0; i--) {
-        View view = list.get(i).get();
-        if (view != null) {
-          ((ChatView) view).invalidateTypingPart(onlyIcon);
-        }
-      }
+    ReferenceList<View> views = currentViews.getViewsList();
+    for (View view : views) {
+      ((ChatView) view).invalidateTypingPart(onlyIcon);
     }
   }
 

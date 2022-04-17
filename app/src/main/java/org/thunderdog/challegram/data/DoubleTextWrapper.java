@@ -28,12 +28,10 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.widget.SmallChatView;
 
-import java.lang.ref.Reference;
-import java.util.List;
-
 import me.vkryl.android.animator.BounceAnimator;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
@@ -297,15 +295,10 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
 
   @Override
   public void invalidateContent () {
-    List<Reference<View>> views = currentViews.getViewsList();
-    if (views != null) {
-      for (Reference<View> reference : views) {
-        View view = reference.get();
-        if (view != null) {
-          if (view instanceof SmallChatView) {
-            ((SmallChatView) view).invalidateContent(this);
-          }
-        }
+    ReferenceList<View> views = currentViews.getViewsList();
+    for (View view : views) {
+      if (view instanceof SmallChatView) {
+        ((SmallChatView) view).invalidateContent(this);
       }
     }
   }
