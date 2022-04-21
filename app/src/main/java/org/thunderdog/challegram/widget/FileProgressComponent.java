@@ -1150,6 +1150,12 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
       originRadius = Screen.dp(7f);
       originRadius += (toRadius - originRadius) * progressFactor;
       fillingPadding = 0;
+    } else if (isVideoStreaming()) {
+      int radius = Screen.dp(20f); // 28f full
+      x += radius;
+      y += radius;
+      originRadius = Screen.dp(5f);
+      fillingPadding = (int) (Screen.dp(1.5f) * alpha * (1f - hideFactor));
     } else {
       double radians = Math.toRadians(45f);
       int radius = (right - left) / 2;

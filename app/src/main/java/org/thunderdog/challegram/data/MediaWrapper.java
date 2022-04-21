@@ -95,6 +95,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
   protected Path path;
   protected final FileProgressComponent fileProgress;
+  protected final RectF durationRect = new RectF();
 
   private long sourceMessageId;
   private @Nullable TGMessage source;
@@ -911,11 +912,12 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     float dlFactor = 1f - downloadedAnimator.getFloatValue();
     float durationDx = 0f;
     boolean isStreamingUI = fileProgress.isVideoStreaming() && isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE;
-    boolean showDuration = !StringUtils.isEmpty(durationTrimmed) && selectionFactor < 1f;
     boolean isDoubleLine = isStreamingUI && duration != null && durationShort != null && (source == null || source.getCombinedMessageCount() == 0 || fileProgress.isProcessing() || (fileProgress.getFile() != null && fileProgress.getFile().remote.isUploadingActive));
     boolean isSmallStreamingUI = isStreamingUI && !isDoubleLine;
     boolean needTopOffset = source != null && source.useFullWidth() && source.hasHeader() && source.isChannel() && isVideo() && (source instanceof TGMessageMedia && ((TGMessageMedia) source).isVideoFirstInMosaic(video.video.id)) && source.replyData == null;
-    RectF durationRect = Paints.getRectF();
+
+    RectF actionButtonRect = Paints.getRectF();
+    boolean showDuration = !StringUtils.isEmpty(durationTrimmed) && selectionFactor < 1f;
 
     if (showDuration) {
       // Only if: channel + single item in stack + bubble-less mode
@@ -929,38 +931,51 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       int pDurationRight = (int) (pDurationLeft + (isDoubleLine ? MathUtils.fromTo(durationWidthShort, durationWidth, dlFactor) : durationWidth) + ((doubleFpRadius) * (isStreamingUI ? dlFactor : 1f)) + ((isStreamingUI) ? MathUtils.fromTo(Screen.dp(4f), Screen.dp(isSmallStreamingUI ? 26f : 16f), dlFactor) : Screen.dp(4f)));
       int pDurationBottom = pDurationTop + (isDoubleLine ? (int) MathUtils.fromTo(durationHeight(), (doubleFpRadius) + Screen.dp(8f), dlFactor) : durationHeight());
 
+      float cellCenterX = cellLeft + cellWidth / 2f;
+      float cellCenterY = cellTop + cellHeight / 2f;
+
+      int radius = Screen.dp(28f);
+      int radiusCloud = Screen.dp(14f);
+
+      actionButtonRect.set(cellCenterX - radius, cellCenterY - radius, cellCenterX + radius, cellCenterY + radius);
       durationRect.set(pDurationLeft - Screen.dp(4f), pDurationTop, pDurationRight, pDurationBottom);
 
-      getFileProgress().setVideoStreamingOptions(needTopOffset, false, isSmallStreamingUI ? FileProgressComponent.STREAMING_UI_MODE_SMALL : FileProgressComponent.STREAMING_UI_MODE_LARGE, durationRect, downloadedAnimator);
-      c.drawRoundRect(durationRect, pDurationCorners, pDurationCorners, Paints.fillingPaint(ColorUtils.alphaColor(alpha * (1f - selectionFactor), 0x4c000000)));
-
-      // This is set to fix text visible outside the rounded rect during the animation
-      durationRect.right -= pDurationCorners / 2f;
-
-      Paint paint;
-
-      if (isDoubleLine) {
-        paint = Paints.getRegularTextPaint(13f, Color.WHITE);
+      if (durationRect.intersect(actionButtonRect)) {
+        durationRect.set(cellCenterX + radiusCloud, cellCenterY + radiusCloud, cellCenterX + radiusCloud + Screen.dp(12f), cellCenterY + radiusCloud + Screen.dp(12f));
+        getFileProgress().setVideoStreamingOptions(needTopOffset, true, isSmallStreamingUI ? FileProgressComponent.STREAMING_UI_MODE_SMALL : FileProgressComponent.STREAMING_UI_MODE_LARGE, durationRect, downloadedAnimator);
+        c.drawRect(durationRect, Paints.fillingPaint(Color.GREEN));
       } else {
-        paint = Paints.whiteMediumPaint(13f, false, false);
+        getFileProgress().setVideoStreamingOptions(needTopOffset, false, isSmallStreamingUI ? FileProgressComponent.STREAMING_UI_MODE_SMALL : FileProgressComponent.STREAMING_UI_MODE_LARGE, durationRect, downloadedAnimator);
+        c.drawRoundRect(durationRect, pDurationCorners, pDurationCorners, Paints.fillingPaint(ColorUtils.alphaColor(alpha * (1f - selectionFactor), 0x4c000000)));
+
+        // This is set to fix text visible outside the rounded rect during the animation
+        durationRect.right -= pDurationCorners / 2f;
+
+        Paint paint;
+
+        if (isDoubleLine) {
+          paint = Paints.getRegularTextPaint(13f, Color.WHITE);
+        } else {
+          paint = Paints.whiteMediumPaint(13f, false, false);
+        }
+
+        paint.setAlpha((int) (255f * alpha * (1f - selectionFactor)));
+
+        if (isDoubleLine) {
+          c.save();
+          c.clipRect(durationRect);
+          int textBaseline = pDurationLeft + (int) MathUtils.fromTo(0, (durationDx = doubleFpRadius + Screen.dp(6f)), dlFactor);
+          int textYBaseline = (int) MathUtils.fromTo(pDurationTop + durationOffset(), pDurationTop + (((pDurationTop + doubleFpRadius + Screen.dp(8f)) - pDurationTop) / 2f), dlFactor);
+          c.drawText(durationShort, textBaseline, textYBaseline - Screen.dp(4f), paint);
+          paint.setAlpha((int) (paint.getAlpha() * dlFactor));
+          c.drawText(duration, textBaseline, textYBaseline + Screen.dp(13f), paint);
+          c.restore();
+        } else {
+          c.drawText(durationTrimmed, pDurationLeft + (isStreamingUI ? Screen.dp(20f) * dlFactor : 0), pDurationTop - Screen.dp(4f) + durationOffset(), paint);
+        }
+
+        paint.setAlpha(255);
       }
-
-      paint.setAlpha((int) (255f * alpha * (1f - selectionFactor)));
-
-      if (isDoubleLine) {
-        c.save();
-        c.clipRect(durationRect);
-        int textBaseline = pDurationLeft + (int) MathUtils.fromTo(0, (durationDx = doubleFpRadius + Screen.dp(6f)), dlFactor);
-        int textYBaseline = (int) MathUtils.fromTo(pDurationTop + durationOffset(), pDurationTop + (((pDurationTop + doubleFpRadius + Screen.dp(8f)) - pDurationTop) / 2f), dlFactor);
-        c.drawText(durationShort, textBaseline, textYBaseline - Screen.dp(4f), paint);
-        paint.setAlpha((int) (paint.getAlpha() * dlFactor));
-        c.drawText(duration, textBaseline, textYBaseline + Screen.dp(13f), paint);
-        c.restore();
-      } else {
-        c.drawText(durationTrimmed, pDurationLeft + (isStreamingUI ? Screen.dp(20f) * dlFactor : 0), pDurationTop - Screen.dp(4f) + durationOffset(), paint);
-      }
-
-      paint.setAlpha(255);
     } else if (isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
       getFileProgress().setVideoStreamingOptions(needTopOffset, true, isSmallStreamingUI ? FileProgressComponent.STREAMING_UI_MODE_SMALL : FileProgressComponent.STREAMING_UI_MODE_LARGE, durationRect, downloadedAnimator);
     }
