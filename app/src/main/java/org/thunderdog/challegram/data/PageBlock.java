@@ -29,13 +29,12 @@ import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
 import org.thunderdog.challegram.widget.PageBlockView;
 
-import java.lang.ref.Reference;
 import java.util.ArrayList;
-import java.util.List;
 
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.Td;
 
 /**
@@ -152,18 +151,10 @@ public abstract class PageBlock implements MultipleViewProvider.InvalidateConten
 
   @Override
   public void invalidateContent () {
-    final List<Reference<View>> views = currentViews.getViewsList();
-    if (views != null && !views.isEmpty()) {
-      final int size = views.size();
-      for (int i = size - 1; i >= 0; i--) {
-        View view = views.get(i).get();
-        if (view != null) {
-          if (view instanceof PageBlockView) {
-            ((PageBlockView) view).requestFiles(true);
-          }
-        } else {
-          views.remove(i);
-        }
+    final ReferenceList<View> views = currentViews.getViewsList();
+    for (View view : views) {
+      if (view instanceof PageBlockView) {
+        ((PageBlockView) view).requestFiles(true);
       }
     }
   }

@@ -330,7 +330,6 @@ public class Settings {
   private static final int FLAG_OTHER_START_ROUND_REAR = 1 << 28;
   private static final int FLAG_OTHER_DISABLE_BIG_EMOJI = 1 << 29;
   private static final int FLAG_OTHER_DISABLE_SECRET_LINK_PREVIEWS = 1 << 30;
-  private static final int FLAG_OTHER_ENABLE_BUBBLE_MERGE_CORNER_RADIUS = 1 << 31;
 
   public static final long SETTING_FLAG_BATMAN_POLL_TRANSITIONS = 1 << 1;
   public static final long SETTING_FLAG_EDIT_MARKDOWN = 1 << 2;
@@ -341,12 +340,11 @@ public class Settings {
   public static final long SETTING_FLAG_FORCE_EXO_PLAYER_EXTENSIONS = 1 << 7;
   public static final long SETTING_FLAG_NO_AUDIO_COMPRESSION = 1 << 8;
   public static final long SETTING_FLAG_DOWNLOAD_BETAS = 1 << 9;
-
   public static final long SETTING_FLAG_CAMERA_NO_FLIP = 1 << 10;
   public static final long SETTING_FLAG_CAMERA_KEEP_DISCARDED_MEDIA = 1 << 11;
   public static final long SETTING_FLAG_CAMERA_SHOW_GRID = 1 << 12;
-
   public static final long SETTING_FLAG_NO_EMBEDS = 1 << 13;
+  public static final long SETTING_FLAG_NO_BUBBLE_MERGE_CORNER_RADIUS = 1 << 14;
 
   private static final @Deprecated int DISABLED_FLAG_OTHER_NEED_RAISE_TO_SPEAK = 1 << 2;
   private static final @Deprecated int DISABLED_FLAG_OTHER_AUTODOWNLOAD_IN_BACKGROUND = 1 << 3;
@@ -668,16 +666,7 @@ public class Settings {
   public static final int INSTANT_VIEW_MODE_ALL = 2;
 
   @Nullable
-  private Float _chatFontSize;
-
-  @Nullable
-  private Float _bubbleCornerSize;
-  @Nullable
-  private Float _bubbleLastKnownCornerSize;
-  @Nullable
-  private Float _bubbleMergeCornerSize;
-  @Nullable
-  private Float _bubbleLastKnownMergeCornerSize;
+  private Float _chatFontSize, _bubbleCornerSize, _bubbleMergeCornerSize;
 
   @Nullable
   private Integer _preferredAudioPlaybackMode;
@@ -3059,29 +3048,17 @@ public class Settings {
   }
 
   private boolean isCornerRadiusChanged () {
-    return getLastKnownBubbleCornerSize() != MSG_BUBBLE_RADIUS_DEFAULT || getLastKnownBubbleMergeCornerSize() != MSG_BUBBLE_MERGE_RADIUS_DEFAULT || needMergeCornerRadius();
+    return getLastKnownBubbleCornerSize() != MSG_BUBBLE_RADIUS_DEFAULT || getLastKnownBubbleMergeCornerSize() != MSG_BUBBLE_MERGE_RADIUS_DEFAULT || getNewSetting(SETTING_FLAG_NO_BUBBLE_MERGE_CORNER_RADIUS);
   }
 
   public boolean needChatFontSizeScaling () {
     return checkSetting(FLAG_OTHER_FONT_SCALING);
   }
 
-  public boolean needMergeCornerRadius () {
-    return checkSetting(FLAG_OTHER_ENABLE_BUBBLE_MERGE_CORNER_RADIUS);
-  }
-
   public void setNeedChatFontSizeScaling (boolean need) {
     if (setSetting(FLAG_OTHER_FONT_SCALING, need)) {
       notifyFontSizeListeners(chatFontSizeChangeListeners, getChatFontSize());
     }
-  }
-
-  public void setNeedMergeCornerRadius (boolean need) {
-    setSetting(FLAG_OTHER_ENABLE_BUBBLE_MERGE_CORNER_RADIUS, need);
-  }
-
-  public void toggleNeedMergeCornerRadius () {
-    setNeedMergeCornerRadius(!needMergeCornerRadius());
   }
 
   public void toggleChatFontSizeScaling () {
@@ -3092,9 +3069,9 @@ public class Settings {
     setNeedChatFontSizeScaling(false);
     setChatFontSize(CHAT_FONT_SIZE_DEFAULT);
     if (!Theme.isBubbleRadiusOverridden()) {
-      setNeedMergeCornerRadius(false);
-      setBubbleCornerSize(MSG_BUBBLE_RADIUS_DEFAULT, MSG_BUBBLE_RADIUS_DEFAULT);
-      setBubbleMergeCornerSize(MSG_BUBBLE_MERGE_RADIUS_DEFAULT, MSG_BUBBLE_MERGE_RADIUS_DEFAULT);
+      setNewSetting(SETTING_FLAG_NO_BUBBLE_MERGE_CORNER_RADIUS, false);
+      setBubbleCornerSize(MSG_BUBBLE_RADIUS_DEFAULT);
+      setBubbleMergeCornerSize(MSG_BUBBLE_MERGE_RADIUS_DEFAULT);
     }
   }
 
@@ -3133,49 +3110,51 @@ public class Settings {
 
   public float getBubbleCornerSize () {
     if (_bubbleCornerSize == null) {
-      _bubbleCornerSize = _bubbleLastKnownCornerSize = pmc.getFloat(KEY_BUBBLE_CORNER_SIZE, MSG_BUBBLE_RADIUS_DEFAULT);
+      _bubbleCornerSize = pmc.getFloat(KEY_BUBBLE_CORNER_SIZE, MSG_BUBBLE_RADIUS_DEFAULT);
     }
-
     return _bubbleCornerSize;
   }
 
   public float getLastKnownBubbleCornerSize () {
-    if (_bubbleLastKnownCornerSize == null) {
-      _bubbleCornerSize = _bubbleLastKnownCornerSize = pmc.getFloat(KEY_BUBBLE_CORNER_SIZE, MSG_BUBBLE_RADIUS_DEFAULT);
+    if (_bubbleCornerSize == null) {
+      _bubbleCornerSize = pmc.getFloat(KEY_BUBBLE_CORNER_SIZE, MSG_BUBBLE_RADIUS_DEFAULT);
     }
-
-    return _bubbleLastKnownCornerSize;
+    return _bubbleCornerSize;
   }
 
-  public void setBubbleCornerSize (float cornerSize, float finalCornerSize) {
+  public void setBubbleCornerSize (float cornerSize) {
+    if (!Theme.BUBBLE_BIG_RADIUS_AVAILABLE && cornerSize > MSG_BUBBLE_RADIUS_DEFAULT)
+      throw new IllegalArgumentException();
     this._bubbleCornerSize = cornerSize;
-    if (_bubbleLastKnownCornerSize != finalCornerSize) {
-      this._bubbleLastKnownCornerSize = finalCornerSize;
-      putFloat(KEY_BUBBLE_CORNER_SIZE, finalCornerSize);
+    if (cornerSize != MSG_BUBBLE_RADIUS_DEFAULT) {
+      putFloat(KEY_BUBBLE_CORNER_SIZE, cornerSize);
+    } else {
+      remove(KEY_BUBBLE_CORNER_SIZE);
     }
   }
 
   public float getBubbleMergeCornerSize () {
     if (_bubbleMergeCornerSize == null) {
-      _bubbleMergeCornerSize = _bubbleLastKnownMergeCornerSize = pmc.getFloat(KEY_BUBBLE_MERGE_CORNER_SIZE, MSG_BUBBLE_MERGE_RADIUS_DEFAULT);
+      _bubbleMergeCornerSize = pmc.getFloat(KEY_BUBBLE_MERGE_CORNER_SIZE, MSG_BUBBLE_MERGE_RADIUS_DEFAULT);
     }
-
     return _bubbleMergeCornerSize;
   }
 
   public float getLastKnownBubbleMergeCornerSize () {
-    if (_bubbleLastKnownMergeCornerSize == null) {
-      _bubbleMergeCornerSize = _bubbleLastKnownMergeCornerSize = pmc.getFloat(KEY_BUBBLE_MERGE_CORNER_SIZE, MSG_BUBBLE_MERGE_RADIUS_DEFAULT);
+    if (_bubbleMergeCornerSize == null) {
+      _bubbleMergeCornerSize = pmc.getFloat(KEY_BUBBLE_MERGE_CORNER_SIZE, MSG_BUBBLE_MERGE_RADIUS_DEFAULT);
     }
-
-    return _bubbleLastKnownMergeCornerSize;
+    return _bubbleMergeCornerSize;
   }
 
-  public void setBubbleMergeCornerSize (float cornerSize, float finalCornerSize) {
+  public void setBubbleMergeCornerSize (float cornerSize) {
+    if (!Theme.BUBBLE_BIG_RADIUS_AVAILABLE && cornerSize > MSG_BUBBLE_MERGE_RADIUS_DEFAULT)
+      throw new IllegalArgumentException();
     this._bubbleMergeCornerSize = cornerSize;
-    if (_bubbleLastKnownMergeCornerSize != finalCornerSize) {
-      this._bubbleLastKnownMergeCornerSize = finalCornerSize;
-      putFloat(KEY_BUBBLE_MERGE_CORNER_SIZE, finalCornerSize);
+    if (cornerSize != MSG_BUBBLE_MERGE_RADIUS_DEFAULT) {
+      putFloat(KEY_BUBBLE_MERGE_CORNER_SIZE, cornerSize);
+    } else {
+      remove(KEY_BUBBLE_MERGE_CORNER_SIZE);
     }
   }
 

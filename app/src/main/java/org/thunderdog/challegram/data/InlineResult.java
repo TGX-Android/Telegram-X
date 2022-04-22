@@ -25,14 +25,13 @@ import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.util.MessageSourceProvider;
 import org.thunderdog.challegram.widget.SimplestCheckBox;
 
-import java.lang.ref.Reference;
 import java.util.ArrayList;
-import java.util.List;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.reference.ReferenceList;
 
 /**
  * Date: 30/11/2016
@@ -325,17 +324,12 @@ public abstract class InlineResult <T> implements MessageSourceProvider, Multipl
 
   @Override
   public void invalidateContent () {
-    List<Reference<View>> views = currentViews.getViewsList();
-    if (views != null) {
-      for (Reference<View> reference : views) {
-        View view = reference.get();
-        if (view != null) {
-          if (view instanceof CustomResultView) {
-            ((CustomResultView) view).invalidateContent(this);
-          } else if (view instanceof MultipleViewProvider.InvalidateContentProvider) {
-            ((MultipleViewProvider.InvalidateContentProvider) view).invalidateContent();
-          }
-        }
+    ReferenceList<View> views = currentViews.getViewsList();
+    for (View view : views) {
+      if (view instanceof CustomResultView) {
+        ((CustomResultView) view).invalidateContent(this);
+      } else if (view instanceof MultipleViewProvider.InvalidateContentProvider) {
+        ((MultipleViewProvider.InvalidateContentProvider) view).invalidateContent();
       }
     }
   }

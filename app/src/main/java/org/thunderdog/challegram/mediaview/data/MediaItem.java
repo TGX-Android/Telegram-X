@@ -39,12 +39,12 @@ import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.widget.FileProgressComponent;
 
 import java.io.File;
-import java.lang.ref.Reference;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
@@ -630,18 +630,10 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
     if (thumbViewHolder == null) {
       return;
     }
-    List<Reference<View>> views = thumbViewHolder.getViewsList();
-    if (views != null && !views.isEmpty()) {
-      final int size = views.size();
-      for (int i = size - 1; i >= 0; i--) {
-        View view = views.get(i).get();
-        if (view != null) {
-          if (view instanceof ThumbExpandChangeListener) {
-            ((ThumbExpandChangeListener) view).onThumbExpandFactorChanged(this);
-          }
-        } else {
-          views.remove(i);
-        }
+    ReferenceList<View> views = thumbViewHolder.getViewsList();
+    for (View view : views) {
+      if (view instanceof ThumbExpandChangeListener) {
+        ((ThumbExpandChangeListener) view).onThumbExpandFactorChanged(this);
       }
     }
   }
@@ -1356,28 +1348,20 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
   @Override
   public void invalidateContent () {
     if (currentViews != null) {
-      List<Reference<View>> views = currentViews.getViewsList();
-      if (views != null) {
-        for (Reference<View> reference : views) {
-          View view = reference.get();
-          if (view != null) {
-            if (view instanceof MediaSmallView) {
-              ((MediaSmallView) view).invalidateContent(this);
-            } else if (view.getParent() instanceof MediaCellView) {
-              ((MediaCellView) view.getParent()).invalidateContent(this);
-            }
-          }
+      ReferenceList<View> views = currentViews.getViewsList();
+      for (View view : views) {
+        if (view instanceof MediaSmallView) {
+          ((MediaSmallView) view).invalidateContent(this);
+        } else if (view.getParent() instanceof MediaCellView) {
+          ((MediaCellView) view.getParent()).invalidateContent(this);
         }
       }
     }
     if (thumbViewHolder != null) {
-      List<Reference<View>> views = thumbViewHolder.getViewsList();
-      if (views != null) {
-        for (Reference<View> reference : views) {
-          View view = reference.get();
-          if (view instanceof MultipleViewProvider.InvalidateContentProvider) {
-            ((MultipleViewProvider.InvalidateContentProvider) view).invalidateContent();
-          }
+      ReferenceList<View> views = thumbViewHolder.getViewsList();
+      for (View view : views) {
+        if (view instanceof MultipleViewProvider.InvalidateContentProvider) {
+          ((MultipleViewProvider.InvalidateContentProvider) view).invalidateContent();
         }
       }
     }

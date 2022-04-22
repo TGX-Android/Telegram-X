@@ -96,11 +96,9 @@ import org.thunderdog.challegram.widget.SimplestCheckBox;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.lang.ref.Reference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -111,6 +109,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
@@ -119,7 +118,6 @@ import me.vkryl.core.collection.LongList;
 import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
@@ -2199,17 +2197,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private void performWithViews (@NonNull RunnableData<MessageView> act) {
-    final List<Reference<View>> attachedToViews = currentViews.getViewsList();
-    if (attachedToViews != null) {
-      final int size = attachedToViews.size();
-      for (int i = size - 1; i >= 0; i--) {
-        View view = attachedToViews.get(i).get();
-        if (view != null) {
-          act.runWithData((MessageView) view);
-        } else {
-          attachedToViews.remove(i);
-        }
-      }
+    final ReferenceList<View> attachedToViews = currentViews.getViewsList();
+    for (View view : attachedToViews) {
+      act.runWithData((MessageView) view);
     }
   }
 
