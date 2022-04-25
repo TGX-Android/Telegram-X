@@ -542,7 +542,13 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
           originRadius = Screen.dp(7f);
           originRadius += (toRadius - originRadius) * progressFactor;
           progress.setRadius(originRadius);
-        } else {
+        } else if (isVideoStreaming()) {
+          int radius = Screen.dp(20f); // 28f full
+          x += radius;
+          y += radius;
+          originRadius = Screen.dp(5f);
+          progress.setRadius(originRadius - Screen.dp(2f));
+        }  else {
           int radius = (right - left) / 2;
           double radians = Math.toRadians(45f);
 
@@ -1382,7 +1388,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
         c.drawCircle(centerX(), centerY(), Screen.dp(DEFAULT_RADIUS), Paints.fillingPaint(fillingColor));
         drawPlayPause(c, centerX(), centerY(), alpha, true);
 
-        if (!vsClipRect.isEmpty()) {
+        if (!vsClipRect.isEmpty() && !isVideoStreamingCloudNeeded) {
           c.save();
           c.clipRect(vsClipRect);
           c.translate(vsTranslateDx, 0);

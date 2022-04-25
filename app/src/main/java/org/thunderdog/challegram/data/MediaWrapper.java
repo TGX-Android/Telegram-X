@@ -822,7 +822,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
         if (!(isVideo() && !getFileProgress().isLoaded() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE)) {
           trimDuration();
         } else {
-          trimDoubleDuration();
+          trimDoubleDuration(durationAlternative, durationAlternativeWidth);
         }
       }
     }
@@ -928,7 +928,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       int pDurationCorners = isDoubleLine ? (int) MathUtils.fromTo(Screen.dp(4f), Screen.dp(12f), dlFactor) : Screen.dp(4f);
       int pDurationTop = cellTop + Screen.dp(8f) + (needTopOffset ? Screen.dp(16f) : 0);
       int pDurationLeft = cellLeft + Screen.dp(12f);
-      int pDurationRight = (int) (pDurationLeft + (isDoubleLine ? MathUtils.fromTo(durationWidthShort, durationWidth, dlFactor) : durationWidth) + ((doubleFpRadius) * (isStreamingUI ? dlFactor : 1f)) + ((isStreamingUI) ? MathUtils.fromTo(Screen.dp(4f), Screen.dp(isSmallStreamingUI ? 26f : 16f), dlFactor) : Screen.dp(4f)));
+      int pDurationRight = (int) (pDurationLeft + MathUtils.fromTo(durationWidthShort, durationWidth, dlFactor) + ((doubleFpRadius) * (isStreamingUI ? dlFactor : 1f)) + ((isStreamingUI) ? MathUtils.fromTo(Screen.dp(4f), Screen.dp(isSmallStreamingUI ? 26f : 16f), dlFactor) : Screen.dp(4f)));
       int pDurationBottom = pDurationTop + (isDoubleLine ? (int) MathUtils.fromTo(durationHeight(), (doubleFpRadius) + Screen.dp(8f), dlFactor) : durationHeight());
 
       float cellCenterX = cellLeft + cellWidth / 2f;
@@ -943,7 +943,6 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       if (durationRect.intersect(actionButtonRect)) {
         durationRect.set(cellCenterX + radiusCloud, cellCenterY + radiusCloud, cellCenterX + radiusCloud + Screen.dp(12f), cellCenterY + radiusCloud + Screen.dp(12f));
         getFileProgress().setVideoStreamingOptions(needTopOffset, true, isSmallStreamingUI ? FileProgressComponent.STREAMING_UI_MODE_SMALL : FileProgressComponent.STREAMING_UI_MODE_LARGE, durationRect, downloadedAnimator);
-        c.drawRect(durationRect, Paints.fillingPaint(Color.GREEN));
       } else {
         getFileProgress().setVideoStreamingOptions(needTopOffset, false, isSmallStreamingUI ? FileProgressComponent.STREAMING_UI_MODE_SMALL : FileProgressComponent.STREAMING_UI_MODE_LARGE, durationRect, downloadedAnimator);
         c.drawRoundRect(durationRect, pDurationCorners, pDurationCorners, Paints.fillingPaint(ColorUtils.alphaColor(alpha * (1f - selectionFactor), 0x4c000000)));
@@ -961,19 +960,29 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
         paint.setAlpha((int) (255f * alpha * (1f - selectionFactor)));
 
+        c.save();
+        c.clipRect(durationRect);
         if (isDoubleLine) {
-          c.save();
-          c.clipRect(durationRect);
           int textBaseline = pDurationLeft + (int) MathUtils.fromTo(0, (durationDx = doubleFpRadius + Screen.dp(6f)), dlFactor);
           int textYBaseline = (int) MathUtils.fromTo(pDurationTop + durationOffset(), pDurationTop + (((pDurationTop + doubleFpRadius + Screen.dp(8f)) - pDurationTop) / 2f), dlFactor);
-          c.drawText(durationShort, textBaseline, textYBaseline - Screen.dp(4f), paint);
+          c.drawText(durationShort, textBaseline, textYBaseline - Screen.dp(4f), Paints.whiteMediumPaint(13f, false, false));
           paint.setAlpha((int) (paint.getAlpha() * dlFactor));
           c.drawText(duration, textBaseline, textYBaseline + Screen.dp(13f), paint);
-          c.restore();
         } else {
-          c.drawText(durationTrimmed, pDurationLeft + (isStreamingUI ? Screen.dp(20f) * dlFactor : 0), pDurationTop - Screen.dp(4f) + durationOffset(), paint);
+          float textX = pDurationLeft + (isStreamingUI ? Screen.dp(20f) * dlFactor : 0);
+          float textY = pDurationTop - Screen.dp(4f) + durationOffset();
+          durationDx = isStreamingUI ? (Screen.dp(20f)) : 0;
+          if (durationShort != null) {
+            paint.setAlpha((int) (255 * dlFactor));
+            c.drawText(duration != null ? duration : durationTrimmed, textX, textY, paint);
+            paint.setAlpha((int) (255 * downloadedAnimator.getFloatValue()));
+            c.drawText(durationShort, textX, textY, paint);
+          } else if (durationTrimmed != null) {
+            c.drawText(durationTrimmed, textX, textY, paint);
+          }
         }
 
+        c.restore();
         paint.setAlpha(255);
       }
     } else if (isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
@@ -988,7 +997,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
     if (!hideLoader) {
       getFileProgress().setRequestedAlpha(alpha * (1f - selectionFactor));
-      if (isDoubleLine) {
+      if (isStreamingUI) {
         fileProgress.drawClipped(view, c, durationRect, (-durationDx) * downloadedAnimator.getFloatValue());
       } else {
         fileProgress.draw(view, c);
@@ -1115,9 +1124,9 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
   private String duration;
   private String durationShort;
-  private int durationWidthFull, durationWidthShort;
+  private int durationWidthFull, durationWidthShort, durationAlternativeWidth;
   private int durationWidth;
-  private String durationTrimmed;
+  private String durationTrimmed, durationAlternative;
 
   private void trimDuration () {
     int width = cellWidth - Screen.dp(4f) * 3;
@@ -1137,15 +1146,17 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     }
   }
 
-  private void trimDoubleDuration () {
+  private void trimDoubleDuration (String alternative, int alternativeWidth) {
     int width = cellWidth - Screen.dp(8f) * 2 - (Screen.dp(FileProgressComponent.DEFAULT_STREAMING_RADIUS) * 2);
     if (width > 0 && (durationWidthFull > width || durationWidthShort > width)) {
       durationTrimmed = duration;
       durationWidth = durationWidthFull;
 
       if (durationWidthFull > width && (durationShort != null && durationWidthShort < width)) {
-        durationTrimmed = durationShort;
-        durationWidth = durationWidthShort;
+        durationTrimmed = alternative != null ? alternative : durationShort;
+        durationWidth = alternative != null ? alternativeWidth : durationWidthShort;
+        duration = null;
+        return;
       } else if (durationShort == null || durationWidthShort > width) {
         durationTrimmed = null;
         durationWidth = 0;
@@ -1166,15 +1177,17 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
     String twLineHeader = null;
     String twLineSubheader = null;
+    String twAlternativeHeader = null;
     boolean shouldHaveTwoLines = false;
 
     if (fileProgress.isFailed()) {
       text = textShort = Lang.getString(R.string.failed);
-    } else if (!(fileProgress.isUploadFinished() || (source != null && !source.isSending())) || !fileProgress.isLoaded()) {
+    } else if (!(fileProgress.isUploadFinished() || (source != null && !source.isSending())) || !fileProgress.isLoaded() || fileProgress.isDownloaded()) {
       shouldHaveTwoLines = true;
       textShort = Strings.buildSize(fileProgress.getTotalSize());
-      if (fileProgress.isLoading() || !fileProgress.isUploadFinished()) {
+      if (fileProgress.isLoading() || !fileProgress.isUploadFinished() || fileProgress.isDownloaded()) {
         if (fileProgress.isProcessing()) {
+          twAlternativeHeader = textShort;
           text = Lang.getString(R.string.ProcessingMedia, textShort);
         } else {
           int progressSize = fileProgress.getProgressSize();
@@ -1182,8 +1195,10 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
           if (progressSize <= totalSize) {
             float ratio = (float) progressSize / (float) totalSize;
             text = Lang.getString(R.string.format_uploadStatus, (int) Math.floor(100f * ratio), textShort);
+            twAlternativeHeader = Lang.getString(R.string.format_percentage, (int) Math.floor(100f * ratio));
           } else {
             text = Strings.buildSize(progressSize) + " / " + textShort;
+            twAlternativeHeader = Strings.buildSize(progressSize);
           }
         }
       }
@@ -1215,12 +1230,14 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     if (twLineHeader != null && (!StringUtils.equalsOrBothEmpty(this.duration, twLineHeader) || !StringUtils.equalsOrBothEmpty(this.durationShort, twLineSubheader))) {
       this.duration = twLineHeader;
       this.durationShort = twLineSubheader;
+      this.durationAlternative = twAlternativeHeader;
       TextPaint paint = Paints.getRegularTextPaint(13f);
       this.durationWidthFull = (int) U.measureText(twLineHeader, paint);
       this.durationWidthShort = (int) U.measureText(twLineSubheader, paint);
+      this.durationAlternativeWidth = (int) U.measureText(twAlternativeHeader, paint);
       this.durationWidth = Math.max(this.durationWidthFull, this.durationWidthShort);
       this.durationTrimmed = this.duration;
-      trimDoubleDuration();
+      trimDoubleDuration(this.durationAlternative, this.durationAlternativeWidth);
       return true;
     }
 
