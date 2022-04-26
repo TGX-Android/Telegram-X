@@ -937,7 +937,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       int radius = Screen.dp(28f);
       int radiusCloud = Screen.dp(14f);
 
-      actionButtonRect.set(cellCenterX - radius, cellCenterY - radius, cellCenterX + radius, cellCenterY + radius);
+      actionButtonRect.set(cellCenterX - radius, cellCenterY - radius + (isSmallStreamingUI ? 0 : Screen.dp(6f)), cellCenterX + radius, cellCenterY + radius);
       durationRect.set(pDurationLeft - Screen.dp(4f), pDurationTop, pDurationRight, pDurationBottom);
 
       if (durationRect.intersect(actionButtonRect)) {
