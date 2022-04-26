@@ -2377,7 +2377,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     if (TD.isBot(user)) {
-      if (userFull != null && (!StringUtils.isEmpty(userFull.bio) || !StringUtils.isEmpty(userFull.shareText))) {
+      if (userFull != null && (!StringUtils.isEmpty(userFull.bio) || (userFull.botInfo != null && !StringUtils.isEmpty(userFull.botInfo.shareText)))) {
         items.add(newDescriptionItem());
         addedCount++;
       }
@@ -2422,8 +2422,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private void prepareFullCells (final TdApi.UserFullInfo userFull) {
     if (!StringUtils.isEmpty(userFull.bio)) {
       setDescription(userFull.bio);
-    } else if (!StringUtils.isEmpty(userFull.shareText)) {
-      setDescription(userFull.shareText);
+    } else if (userFull.botInfo != null && !StringUtils.isEmpty(userFull.botInfo.shareText)) {
+      setDescription(userFull.botInfo.shareText);
     }
   }
 
@@ -2638,7 +2638,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private String getCurrentDescription () {
     if (userFull != null)
-      return !StringUtils.isEmpty(userFull.bio) ? userFull.bio : userFull.shareText;
+      return !StringUtils.isEmpty(userFull.bio) ? userFull.bio : userFull.botInfo != null ? userFull.botInfo.shareText : "";
     if (supergroupFull != null)
       return supergroupFull.description;
     if (groupFull != null)
@@ -3834,7 +3834,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
             return true;
           case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-            return ((TdApi.ChatMemberStatusAdministrator) supergroup.status).canRestrictMembers;
+            return ((TdApi.ChatMemberStatusAdministrator) supergroup.status).rights.canRestrictMembers;
         }
         break;
     }
@@ -3849,7 +3849,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
             return true;
           case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-            return ((TdApi.ChatMemberStatusAdministrator) supergroup.status).canPromoteMembers;
+            return ((TdApi.ChatMemberStatusAdministrator) supergroup.status).rights.canPromoteMembers;
         }
         break;
       case MODE_GROUP:
