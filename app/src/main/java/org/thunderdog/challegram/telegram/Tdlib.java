@@ -2430,21 +2430,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return chatId != 0 && canClearHistory(chat(chatId));
   }
 
+  public boolean canClearHistoryForEveryone (long chatId) {
+    return chatId != 0 && canClearHistoryForEveryone(chat(chatId));
+  }
+
   public boolean canClearHistory (TdApi.Chat chat) {
-    if (chat == null || chat.lastMessage == null) {
-      return false;
-    }
-    switch (ChatId.getType(chat.id)) {
-      case TdApi.ChatTypePrivate.CONSTRUCTOR:
-      case TdApi.ChatTypeSecret.CONSTRUCTOR:
-      case TdApi.ChatTypeBasicGroup.CONSTRUCTOR:
-        return true;
-      case TdApi.ChatTypeSupergroup.CONSTRUCTOR: {
-        TdApi.Supergroup supergroup = chatToSupergroup(chat.id);
-        return supergroup != null && !supergroup.isChannel && StringUtils.isEmpty(supergroup.username);
-      }
-    }
-    return false;
+    return chat != null && chat.lastMessage != null && (chat.canBeDeletedOnlyForSelf || chat.canBeDeletedForAllUsers);
+  }
+
+  public boolean canClearHistoryForEveryone (TdApi.Chat chat) {
+    return chat != null && chat.lastMessage != null && chat.canBeDeletedForAllUsers;
   }
 
   public boolean canAddToOtherChat (TdApi.Chat chat) {
