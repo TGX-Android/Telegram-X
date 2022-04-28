@@ -2347,6 +2347,7 @@
   <string name="DeleteSecretChatClosedConfirm">Are you sure you want to delete the secret chat with %1$s? This action cannot be undone.</string>
   <string name="DeleteSecretChatConfirm">Are you sure you want to delete the secret chat with %1$s? All chat history will be deleted forever. This action cannot be undone.</string>
   <string name="DeleteSecretChatHistoryForOtherParty">Delete all messages for %1$s</string>
+  <string name="DeleteChatHistoryForAllUsers">Clear for all members</string>
   <string name="ChatWithUser">Chat with %1$s</string>
   <string name="SecretChatWithUser">Secret chat with %1$s</string>
   <string name="LeaveDoneGroup">Leave</string>
