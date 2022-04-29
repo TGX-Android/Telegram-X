@@ -34,6 +34,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.widget.FileProgressComponent;
@@ -41,6 +42,7 @@ import org.thunderdog.challegram.widget.FileProgressComponent;
 import java.io.File;
 
 import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
@@ -391,18 +393,21 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
       int centerY = receiver.getBottom() - radius - Screen.dp(10f);
 
       final float scale = .6f + (1f - unmuteFactor) * .4f;
+      int restoreToCount;
       if (scale != 1f) {
-        c.save();
+        restoreToCount = Views.save(c);
         c.scale(scale, scale, centerX, centerY);
+      } else {
+        restoreToCount = -1;
       }
       c.drawCircle(centerX, centerY, radius, Paints.fillingPaint(ColorUtils.alphaColor(alpha, 0x40000000)));
       Paint paint = Paints.getPorterDuffPaint(0xffffffff);
       paint.setAlpha((int) (255f * alpha));
       Drawable drawable = view.getSparseDrawable(R.drawable.deproko_baseline_sound_muted_24, 0);
-      Drawables.draw(c, drawable, centerX - drawable.getMinimumWidth() / 2, centerY - drawable.getMinimumHeight() / 2, paint);
+      Drawables.draw(c, drawable, centerX - drawable.getMinimumWidth() / 2f, centerY - drawable.getMinimumHeight() / 2f, paint);
       paint.setAlpha(255);
       if (scale != 1f) {
-        c.restore();
+        Views.restore(c, restoreToCount);
       }
     }
   }

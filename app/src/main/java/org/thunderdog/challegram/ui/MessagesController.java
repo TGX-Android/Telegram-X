@@ -6979,7 +6979,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (settings != null) {
         TdApi.ChatNotificationSettings newSettings = new TdApi.ChatNotificationSettings(
           true, 0,
-          settings.useDefaultSound, settings.sound,
+          settings.useDefaultSound, settings.soundId,
           settings.useDefaultShowPreview, settings.showPreview,
           settings.useDefaultDisablePinnedMessageNotifications, settings.disablePinnedMessageNotifications,
           settings.useDefaultDisableMentionNotifications, settings.disableMentionNotifications

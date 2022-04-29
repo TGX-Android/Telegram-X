@@ -1720,7 +1720,18 @@ public class TD {
         return !StringUtils.isEmpty(creator.customTitle) || creator.isAnonymous;
       case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
         TdApi.ChatMemberStatusAdministrator admin = (TdApi.ChatMemberStatusAdministrator) status;
-        return !(admin.canChangeInfo && admin.canDeleteMessages && admin.canInviteUsers && admin.canRestrictMembers && admin.canPinMessages && admin.canManageVideoChats && !admin.canPromoteMembers && StringUtils.isEmpty(admin.customTitle) && !admin.isAnonymous);
+        TdApi.ChatAdministratorRights rights = admin.rights;
+        return !(
+          rights.canChangeInfo &&
+          rights.canDeleteMessages &&
+          rights.canInviteUsers &&
+          rights.canRestrictMembers &&
+          rights.canPinMessages &&
+          rights.canManageVideoChats &&
+          !rights.canPromoteMembers &&
+          StringUtils.isEmpty(admin.customTitle) &&
+          !rights.isAnonymous
+        );
       case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR:
       case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
         return true;
@@ -1793,7 +1804,7 @@ public class TD {
       case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
         return true;
       case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-        return ((TdApi.ChatMemberStatusAdministrator) status).canPromoteMembers;
+        return ((TdApi.ChatMemberStatusAdministrator) status).rights.canPromoteMembers;
     }
     return false;
   }
@@ -1803,7 +1814,7 @@ public class TD {
       case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
         return true;
       case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-        return ((TdApi.ChatMemberStatusAdministrator) status).canInviteUsers;
+        return ((TdApi.ChatMemberStatusAdministrator) status).rights.canInviteUsers;
     }
     return false;
   }
@@ -2575,7 +2586,7 @@ public class TD {
           } else {
             return PROMOTE_MODE_VIEW;
           }
-        } else if (((TdApi.ChatMemberStatusAdministrator) myStatus).canPromoteMembers) {
+        } else if (((TdApi.ChatMemberStatusAdministrator) myStatus).rights.canPromoteMembers) {
           return PROMOTE_MODE_NEW;
         }
         break;
@@ -2609,7 +2620,7 @@ public class TD {
             return RESTRICT_MODE_NEW;
         }
       case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-        if (((TdApi.ChatMemberStatusAdministrator) me).canRestrictMembers) {
+        if (((TdApi.ChatMemberStatusAdministrator) me).rights.canRestrictMembers) {
           switch (him.getConstructor()) {
             case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
               if (((TdApi.ChatMemberStatusAdministrator) him).canBeEdited) {
@@ -2664,7 +2675,7 @@ public class TD {
     } else {
       TdApi.InputMessageContent[] array = new TdApi.InputMessageContent[album.size()];
       album.toArray(array);
-      functions.add(new TdApi.SendMessageAlbum(chatId, 0, 0, options, array));
+      functions.add(new TdApi.SendMessageAlbum(chatId, 0, 0, options, array, false));
     }
     album.clear();
   }
@@ -2706,7 +2717,7 @@ public class TD {
       if (sliceSize == 1) {
         functions.add(new TdApi.SendMessage(chatId, messageThreadId, functions.isEmpty() ? replyToMessageId : 0, options, null, slice[0]));
       } else {
-        functions.add(new TdApi.SendMessageAlbum(chatId, messageThreadId, functions.isEmpty() ? replyToMessageId : 0, options, slice));
+        functions.add(new TdApi.SendMessageAlbum(chatId, messageThreadId, functions.isEmpty() ? replyToMessageId : 0, options, slice, false));
       }
 
       remaining -= sliceSize;
@@ -2824,7 +2835,7 @@ public class TD {
           case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
             return true;
           case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-            return ((TdApi.ChatMemberStatusAdministrator) supergroup.status).canPostMessages;
+            return ((TdApi.ChatMemberStatusAdministrator) supergroup.status).rights.canPostMessages;
         }
         return false;
       } else {

@@ -3243,7 +3243,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
     ThemeCustom theme = getTheme();
     float originalValue = theme.getProperty(propertyId);
     Float value;
-    if (originalValue != rawValue) {
+    if (originalValue != rawValue || propertyId == ThemeProperty.PARENT_THEME) {
       value = rawValue;
     } else {
       value = null;

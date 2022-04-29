@@ -315,6 +315,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     handler = new Handler(this);
 
     UI.clearActivity(this);
+    updateWindowContextTheme();
     if (Config.USE_CUSTOM_NAVIGATION_COLOR) {
       this.isWindowLight = !Theme.isDark();
     }
@@ -691,6 +692,10 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   public void updateWindowDecorSystemUiVisibility () {
     setWindowDecorSystemUiVisibility(lastWindowVisibility, false);
+  }
+
+  public void updateWindowContextTheme() {
+    getWindow().getContext().getTheme().applyStyle(Theme.isDark() ? R.style.AppTheme_Dark : R.style.AppTheme, true);
   }
 
   public void setWindowDecorSystemUiVisibility (int visibility, boolean remember) {
@@ -2984,6 +2989,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     closeThumbnails(ThemeController.class);
     if (oldTheme.needLightStatusBar() != newTheme.needLightStatusBar()) {
       updateWindowDecorSystemUiVisibility();
+    }
+    if (oldTheme.isDark() != newTheme.isDark()) {
+      updateWindowContextTheme();
     }
   }
 

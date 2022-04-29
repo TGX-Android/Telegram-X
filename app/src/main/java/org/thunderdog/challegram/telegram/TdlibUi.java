@@ -34,6 +34,7 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.dialogs.ChatView;
+import org.thunderdog.challegram.component.popups.ModernActionedLayout;
 import org.thunderdog.challegram.component.preview.PreviewLayout;
 import org.thunderdog.challegram.component.preview.YouTube;
 import org.thunderdog.challegram.component.sticker.StickerSetWrap;
@@ -2252,6 +2253,11 @@ public class TdlibUi extends Handler {
         case TdApi.Chat.CONSTRUCTOR:
           openChatProfile(context, tdlib.objectToChat(object), messageThread, openParameters);
           break;
+        case TdApi.User.CONSTRUCTOR: {
+          final long userId = ((TdApi.User) object).id;
+          openChatProfile(context, ChatId.fromUserId(userId), messageThread, new TdApi.CreatePrivateChat(userId, false), openParameters);
+          break;
+        }
         case TdApi.Error.CONSTRUCTOR:
           UI.showError(object);
           break;
@@ -2413,25 +2419,11 @@ public class TdlibUi extends Handler {
       tdlib.runOnUiThread(() -> openJoinDialog(context, inviteLink, inviteLinkInfo, openParameters));
       return;
     }
-    final boolean isChannel = TD.isChannel(inviteLinkInfo.type);
-    CharSequence msg;
-    if (inviteLinkInfo.createsJoinRequest) {
-      msg = Lang.getStringBold(isChannel ? R.string.RequestFollowChannelX : R.string.RequestJoinGroupX, inviteLinkInfo.title);
-    } else {
-      msg = Lang.getStringBold(isChannel ? R.string.FollowChannelX : R.string.JoinGroupX, inviteLinkInfo.title);
-    }
-    if (!StringUtils.isEmpty(inviteLinkInfo.description)) {
-      msg = new SpannableStringBuilder(msg).append("\n\n").append(Lang.wrap(inviteLinkInfo.description, Lang.italicCreator()));
-    }
     ViewController<?> c = context.context().navigation().getCurrentStackItem();
     if (c != null) {
-      c.showOptions(msg, new int[] {R.id.btn_join, R.id.btn_cancel}, new String[] {inviteLinkInfo.createsJoinRequest ? Lang.getString(isChannel ? R.string.RequestJoinChannelBtn : R.string.RequestJoinGroupBtn) : Lang.getOK(), Lang.getString(R.string.Cancel)}, null, new int[] {R.drawable.baseline_person_add_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-        if (id == R.id.btn_join) {
-          joinChatByInviteLink(context, inviteLink, inviteLinkInfo, openParameters);
-        }
-        return true;
-      });
+      ModernActionedLayout.showJoinDialog(c, inviteLinkInfo, () -> joinChatByInviteLink(context, inviteLink, inviteLinkInfo, openParameters));
     }
+    return;
   }
 
   private void checkInviteLink (final TdlibDelegate context, final String inviteLink, final @Nullable UrlOpenParameters openParameters) {
@@ -3264,6 +3256,15 @@ public class TdlibUi extends Handler {
             case TdApi.InternalLinkTypeProxy.CONSTRUCTOR: {
               TdApi.InternalLinkTypeProxy proxy = (TdApi.InternalLinkTypeProxy) linkType;
               openProxyAlert(context, proxy.server, proxy.port, proxy.type, newProxyDescription(proxy.server, Integer.toString(proxy.port)).toString());
+              break;
+            }
+            case TdApi.InternalLinkTypeUnsupportedProxy.CONSTRUCTOR: {
+              showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.ProxyLinkUnsupported), openParameters);
+              break;
+            }
+            case TdApi.InternalLinkTypeUserPhoneNumber.CONSTRUCTOR: {
+              final String phoneNumber = ((TdApi.InternalLinkTypeUserPhoneNumber) linkType).phoneNumber;
+              openChatProfile(context, 0, null, new TdApi.SearchUserByPhoneNumber(phoneNumber), null);
               break;
             }
             case TdApi.InternalLinkTypePublicChat.CONSTRUCTOR: {

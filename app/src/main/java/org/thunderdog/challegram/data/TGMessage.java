@@ -96,11 +96,9 @@ import org.thunderdog.challegram.widget.SimplestCheckBox;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.lang.ref.Reference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -111,6 +109,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
@@ -119,7 +118,6 @@ import me.vkryl.core.collection.LongList;
 import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
@@ -2199,17 +2197,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private void performWithViews (@NonNull RunnableData<MessageView> act) {
-    final List<Reference<View>> attachedToViews = currentViews.getViewsList();
-    if (attachedToViews != null) {
-      final int size = attachedToViews.size();
-      for (int i = size - 1; i >= 0; i--) {
-        View view = attachedToViews.get(i).get();
-        if (view != null) {
-          act.runWithData((MessageView) view);
-        } else {
-          attachedToViews.remove(i);
-        }
-      }
+    final ReferenceList<View> attachedToViews = currentViews.getViewsList();
+    for (View view : attachedToViews) {
+      act.runWithData((MessageView) view);
     }
   }
 
@@ -2718,7 +2708,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private void buildForward () {
-    if (!useForward()) {
+    if (!useForward() || forwardInfo == null) {
       return;
     }
 
@@ -6914,23 +6904,23 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                 } else if (isPromote) {
                   final TdApi.ChatMemberStatusAdministrator oldAdmin = (TdApi.ChatMemberStatusAdministrator) oldStatus;
                   final TdApi.ChatMemberStatusAdministrator newAdmin = (TdApi.ChatMemberStatusAdministrator) newStatus;
-                  appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedManageChannel : R.string.EventLogPromotedManageGroup, oldAdmin.canManageChat, newAdmin.canManageChat, false);
-                  appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedChangeChannelInfo : R.string.EventLogPromotedChangeGroupInfo, oldAdmin.canChangeInfo, newAdmin.canChangeInfo, false);
+                  appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedManageChannel : R.string.EventLogPromotedManageGroup, oldAdmin.rights.canManageChat, newAdmin.rights.canManageChat, false);
+                  appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedChangeChannelInfo : R.string.EventLogPromotedChangeGroupInfo, oldAdmin.rights.canChangeInfo, newAdmin.rights.canChangeInfo, false);
                   if (msg.isChannelPost) {
-                    appendRight(b, R.string.EventLogPromotedPostMessages, oldAdmin.canChangeInfo, newAdmin.canChangeInfo, false);
-                    appendRight(b, R.string.EventLogPromotedEditMessages, oldAdmin.canEditMessages, newAdmin.canEditMessages, false);
+                    appendRight(b, R.string.EventLogPromotedPostMessages, oldAdmin.rights.canChangeInfo, newAdmin.rights.canChangeInfo, false);
+                    appendRight(b, R.string.EventLogPromotedEditMessages, oldAdmin.rights.canEditMessages, newAdmin.rights.canEditMessages, false);
                   }
-                  appendRight(b, R.string.EventLogPromotedDeleteMessages, oldAdmin.canDeleteMessages, newAdmin.canDeleteMessages, false);
-                  appendRight(b, R.string.EventLogPromotedBanUsers, oldAdmin.canRestrictMembers, newAdmin.canRestrictMembers, false);
-                  appendRight(b, R.string.EventLogPromotedAddUsers, oldAdmin.canInviteUsers, newAdmin.canInviteUsers, false);
+                  appendRight(b, R.string.EventLogPromotedDeleteMessages, oldAdmin.rights.canDeleteMessages, newAdmin.rights.canDeleteMessages, false);
+                  appendRight(b, R.string.EventLogPromotedBanUsers, oldAdmin.rights.canRestrictMembers, newAdmin.rights.canRestrictMembers, false);
+                  appendRight(b, R.string.EventLogPromotedAddUsers, oldAdmin.rights.canInviteUsers, newAdmin.rights.canInviteUsers, false);
                   if (!msg.isChannelPost) {
-                    appendRight(b, R.string.EventLogPromotedPinMessages, oldAdmin.canPinMessages, newAdmin.canPinMessages, false);
+                    appendRight(b, R.string.EventLogPromotedPinMessages, oldAdmin.rights.canPinMessages, newAdmin.rights.canPinMessages, false);
                   }
-                  appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedManageLiveStreams : R.string.EventLogPromotedManageVoiceChats, oldAdmin.canManageVideoChats, newAdmin.canManageVideoChats, false);
+                  appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedManageLiveStreams : R.string.EventLogPromotedManageVoiceChats, oldAdmin.rights.canManageVideoChats, newAdmin.rights.canManageVideoChats, false);
                   if (!msg.isChannelPost) {
-                    appendRight(b, R.string.EventLogPromotedRemainAnonymous, oldAdmin.isAnonymous, newAdmin.isAnonymous, false);
+                    appendRight(b, R.string.EventLogPromotedRemainAnonymous, oldAdmin.rights.isAnonymous, newAdmin.rights.isAnonymous, false);
                   }
-                  appendRight(b, R.string.EventLogPromotedAddAdmins, oldAdmin.canPromoteMembers, newAdmin.canPromoteMembers, false);
+                  appendRight(b, R.string.EventLogPromotedAddAdmins, oldAdmin.rights.canPromoteMembers, newAdmin.rights.canPromoteMembers, false);
                   appendRight(b, R.string.EventLogPromotedTitle, R.string.EventLogPromotedTitleChange, oldAdmin.customTitle, newAdmin.customTitle, false);
                 } else if (oldStatus != null && newStatus != null) {
                   final boolean oldCanReadMessages = oldStatus.getConstructor() != TdApi.ChatMemberStatusBanned.CONSTRUCTOR;

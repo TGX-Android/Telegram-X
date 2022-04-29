@@ -278,14 +278,14 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
           default:
             throw new IllegalStateException();
         }
-        if (member.status.getConstructor() == TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR && (!isChannel() || ((TdApi.ChatMemberStatusAdministrator) member.status).isAnonymous) && (
+        if (member.status.getConstructor() == TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR && (!isChannel() || ((TdApi.ChatMemberStatusAdministrator) member.status).rights.isAnonymous) && (
           TD.isCreator(myStatus) ||
           (myStatus.getConstructor() == TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR &&
-           ((TdApi.ChatMemberStatusAdministrator) myStatus).isAnonymous &&
+           ((TdApi.ChatMemberStatusAdministrator) myStatus).rights.isAnonymous &&
            promoteMode != TD.PROMOTE_MODE_VIEW
           )
         )) {
-          boolean isAnonymous = ((TdApi.ChatMemberStatusAdministrator) member.status).isAnonymous;
+          boolean isAnonymous = ((TdApi.ChatMemberStatusAdministrator) member.status).rights.isAnonymous;
           ids.append(isAnonymous ? R.id.btn_makePublic : R.id.btn_makePrivate);
           colors.append(OPTION_COLOR_NORMAL);
           icons.append(isAnonymous ? R.drawable.nilsfast_baseline_incognito_off_24 : R.drawable.infanf_baseline_incognito_24);
@@ -394,7 +394,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
                   ((TdApi.ChatMemberStatusCreator) newStatus).isAnonymous = id == R.id.btn_makePrivate;
                   break;
                 case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-                  ((TdApi.ChatMemberStatusAdministrator) newStatus).isAnonymous = id == R.id.btn_makePrivate;
+                  ((TdApi.ChatMemberStatusAdministrator) newStatus).rights.isAnonymous = id == R.id.btn_makePrivate;
                   break;
                 default:
                   return;
