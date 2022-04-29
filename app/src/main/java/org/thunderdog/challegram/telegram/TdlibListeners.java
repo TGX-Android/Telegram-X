@@ -45,6 +45,7 @@ public class TdlibListeners {
   final ReferenceList<PrivacySettingsListener> privacySettingsListeners;
   final ReferenceList<CallsListener> callsListeners;
   final ReferenceList<SessionListener> sessionListeners;
+  final ReferenceList<DownloadsListUpdateListener> downloadsListListener;
 
   final ReferenceList<AnimatedEmojiListener> animatedEmojiListeners;
 
@@ -77,6 +78,7 @@ public class TdlibListeners {
     this.privacySettingsListeners = new ReferenceList<>();
     this.callsListeners = new ReferenceList<>(true);
     this.sessionListeners = new ReferenceList<>(true);
+    this.downloadsListListener = new ReferenceList<>(true);
 
     this.animatedEmojiListeners = new ReferenceList<>(true);
 
@@ -430,6 +432,40 @@ public class TdlibListeners {
   @AnyThread
   public void unsubscribeFromAnimationsUpdates (AnimationsListener listener) {
     animationsListeners.remove(listener);
+  }
+
+  @AnyThread
+  public void subscribeToDownloadsListUpdates (DownloadsListUpdateListener listener) {
+    downloadsListListener.add(listener);
+  }
+
+  @AnyThread
+  public void unsubscribeFromDownloadsListUpdates (DownloadsListUpdateListener listener) {
+    downloadsListListener.remove(listener);
+  }
+
+  public void updateFileAddedToDownloads (TdApi.UpdateFileAddedToDownloads update) {
+    for (DownloadsListUpdateListener listener : downloadsListListener) {
+      listener.updateFileAddedToDownloads(update.fileDownload, update.counts);
+    }
+  }
+
+  public void updateFileDownload (TdApi.UpdateFileDownload update) {
+    for (DownloadsListUpdateListener listener : downloadsListListener) {
+      listener.updateFileDownload(update.fileId, update.completeDate, update.isPaused, update.counts);
+    }
+  }
+
+  public void updateFileDownloads (TdApi.UpdateFileDownloads update) {
+    for (DownloadsListUpdateListener listener : downloadsListListener) {
+      listener.updateFileDownloads(update.totalSize, update.totalCount, update.downloadedSize);
+    }
+  }
+
+  public void updateFileRemovedFromDownloads (TdApi.UpdateFileRemovedFromDownloads update) {
+    for (DownloadsListUpdateListener listener : downloadsListListener) {
+      listener.updateFileRemovedFromDownloads(update.fileId, update.counts);
+    }
   }
 
   // updateAuthorizationState

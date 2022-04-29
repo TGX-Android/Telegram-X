@@ -14,4 +14,19 @@
         <item name="android:windowBackground">@color/splash</item>
         <item name="android:forceDarkAllowed">false</item>
     </style>
+
+    <style name="AppTheme.Dark" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowActionBarOverlay">true</item>
+        <item name="android:colorPrimaryDark">@color/status_bar</item> <!-- status bar color -->
+        <item name="android:colorPrimary">@color/apps_list</item> <!-- launched apps list -->
+        <item name="android:colorControlActivated">#ff5b95c2</item>
+        <item name="android:datePickerStyle">@style/DatePickerTheme</item>
+        <item name="android:datePickerDialogTheme">@style/DialogTheme</item>
+        <item name="android:timePickerStyle">@style/TimePickerTheme</item>
+        <item name="android:timePickerDialogTheme">@style/DialogTheme</item>
+        <item name="android:navigationBarColor">@color/navigation_bar</item>
+        <item name="android:windowBackground">@color/splash</item>
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
 </resources>

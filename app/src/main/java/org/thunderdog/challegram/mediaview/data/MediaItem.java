@@ -39,12 +39,12 @@ import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.widget.FileProgressComponent;
 
 import java.io.File;
-import java.lang.ref.Reference;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
@@ -70,6 +70,7 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
   private ImageFile previewImageFile;
   private TdApi.File targetFile;
   private FileProgressComponent fileProgress;
+  private boolean needCreateGalleryFileProgress;
 
   // Source data
   private long sourceChatId, sourceMessageId;
@@ -324,8 +325,8 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
 
     if (Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
       this.fileProgress.setIgnoreLoaderClicks(true);
+      this.fileProgress.setVideoStreamingProgressHidden(true);
       this.fileProgress.setPausedIconRes(FileProgressComponent.PLAY_ICON);
-      this.fileProgress.setVideoStreamingProgressIgnore(true);
     }
 
     this.fileProgress.setFile(targetFile);
@@ -504,12 +505,7 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
         ((ImageVideoThumbFile) this.targetImage).setMaxSize(maxSize);
         ((ImageVideoThumbFile) this.targetImage).setFrameTimeUs(imageFile.getStartTimeUs() > 0 ? imageFile.getStartTimeUs() : 0);
       }
-
-      this.fileProgress = new FileProgressComponent(context, tdlib, TdlibFilesManager.DOWNLOAD_FLAG_VIDEO, false, 0, 0);
-      this.fileProgress.setUseStupidInvalidate();
-      this.fileProgress.setIsLocal();
-      this.fileProgress.setDownloadedIconRes(FileProgressComponent.PLAY_ICON);
-      this.fileProgress.setFile(imageFile.getFile());
+      this.needCreateGalleryFileProgress = true;
     } else if (!imageFile.isFromCamera()) {
       if (type == TYPE_GALLERY_GIF) {
         this.targetGif = new GifFileLocal(tdlib, imageFile.getFilePath());
@@ -574,7 +570,7 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
     }*/
     TdApi.File file = previewImageFile != null ? previewImageFile.getFile() : null;
     if (file == null && (thumbImageFile == null || thumbImageFile instanceof ImageFileLocal)) {
-      file = fileProgress != null && fileProgress.isLoaded() ? fileProgress.getFile() : file;
+      file = getFileProgress() != null && fileProgress.isLoaded() ? fileProgress.getFile() : file;
       if (fileProgress != null && !fileProgress.isLoaded()) {
          fileProgress.downloadAutomatically(sourceChatId);
       }
@@ -634,18 +630,10 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
     if (thumbViewHolder == null) {
       return;
     }
-    List<Reference<View>> views = thumbViewHolder.getViewsList();
-    if (views != null && !views.isEmpty()) {
-      final int size = views.size();
-      for (int i = size - 1; i >= 0; i--) {
-        View view = views.get(i).get();
-        if (view != null) {
-          if (view instanceof ThumbExpandChangeListener) {
-            ((ThumbExpandChangeListener) view).onThumbExpandFactorChanged(this);
-          }
-        } else {
-          views.remove(i);
-        }
+    ReferenceList<View> views = thumbViewHolder.getViewsList();
+    for (View view : views) {
+      if (view instanceof ThumbExpandChangeListener) {
+        ((ThumbExpandChangeListener) view).onThumbExpandFactorChanged(this);
       }
     }
   }
@@ -731,12 +719,23 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
   }
 
   public void pauseAbandonedDownload () {
-    if (fileProgress != null && (currentViews == null || !currentViews.hasAnyTargetToInvalidate())) {
+    if (getFileProgress() != null && (currentViews == null || !currentViews.hasAnyTargetToInvalidate())) {
       fileProgress.pauseDownload(false);
     }
   }
 
   public FileProgressComponent getFileProgress () {
+    if (fileProgress == null && needCreateGalleryFileProgress) {
+      this.fileProgress = new FileProgressComponent(context, tdlib, TdlibFilesManager.DOWNLOAD_FLAG_VIDEO, false, 0, 0);
+      this.fileProgress.setUseStupidInvalidate();
+      this.fileProgress.setIsLocal();
+      this.fileProgress.setDownloadedIconRes(FileProgressComponent.PLAY_ICON);
+      this.fileProgress.setFile(sourceGalleryFile.getFile());
+      if (currentViews != null) {
+        fileProgress.setViewProvider(currentViews);
+      }
+      needCreateGalleryFileProgress = false;
+    }
     return fileProgress;
   }
 
@@ -1007,15 +1006,15 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
   }
 
   public boolean performClick (View view) {
-    return fileProgress != null && fileProgress.performClick(view);
+    return getFileProgress() != null && fileProgress.performClick(view);
   }
 
   public boolean performClick (View view, float x, float y) {
-    return fileProgress != null && fileProgress.performClick(view, x, y);
+    return getFileProgress() != null && fileProgress.performClick(view, x, y);
   }
 
   public boolean onClick (View view, float x, float y) {
-    if (fileProgress != null) {
+    if (getFileProgress() != null) {
       if (isLoaded()) {
         int centerX = fileProgress.centerX();
         int centerY = fileProgress.centerY();
@@ -1031,7 +1030,7 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
   }
 
   public boolean onTouchEvent (View view, MotionEvent e) {
-    return fileProgress != null && fileProgress.onTouchEvent(view, e);
+    return getFileProgress() != null && fileProgress.onTouchEvent(view, e);
   }
 
   // View-related stuff
@@ -1043,6 +1042,7 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
   }
 
   public void attachToView (View view, FileProgressComponent.SimpleListener listener, ImageFile.RotationListener rotationListener) {
+    final FileProgressComponent fileProgress = view != null ? getFileProgress() : this.fileProgress;
     if (currentViews == null) {
       currentViews = new MultipleViewProvider();
       currentViews.setContentProvider(this);
@@ -1348,28 +1348,20 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
   @Override
   public void invalidateContent () {
     if (currentViews != null) {
-      List<Reference<View>> views = currentViews.getViewsList();
-      if (views != null) {
-        for (Reference<View> reference : views) {
-          View view = reference.get();
-          if (view != null) {
-            if (view instanceof MediaSmallView) {
-              ((MediaSmallView) view).invalidateContent(this);
-            } else if (view.getParent() instanceof MediaCellView) {
-              ((MediaCellView) view.getParent()).invalidateContent(this);
-            }
-          }
+      ReferenceList<View> views = currentViews.getViewsList();
+      for (View view : views) {
+        if (view instanceof MediaSmallView) {
+          ((MediaSmallView) view).invalidateContent(this);
+        } else if (view.getParent() instanceof MediaCellView) {
+          ((MediaCellView) view.getParent()).invalidateContent(this);
         }
       }
     }
     if (thumbViewHolder != null) {
-      List<Reference<View>> views = thumbViewHolder.getViewsList();
-      if (views != null) {
-        for (Reference<View> reference : views) {
-          View view = reference.get();
-          if (view instanceof MultipleViewProvider.InvalidateContentProvider) {
-            ((MultipleViewProvider.InvalidateContentProvider) view).invalidateContent();
-          }
+      ReferenceList<View> views = thumbViewHolder.getViewsList();
+      for (View view : views) {
+        if (view instanceof MultipleViewProvider.InvalidateContentProvider) {
+          ((MultipleViewProvider.InvalidateContentProvider) view).invalidateContent();
         }
       }
     }

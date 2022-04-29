@@ -3391,6 +3391,38 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return false;
   }
 
+  public boolean chatScam (TdApi.Chat chat) {
+    if (chat == null) {
+      return false;
+    }
+    switch (chat.type.getConstructor()) {
+      case TdApi.ChatTypePrivate.CONSTRUCTOR:
+      case TdApi.ChatTypeSecret.CONSTRUCTOR:
+        TdApi.User user = chatUser(chat);
+        return user != null && user.isScam;
+      case TdApi.ChatTypeSupergroup.CONSTRUCTOR:
+        TdApi.Supergroup supergroup = cache().supergroup(ChatId.toSupergroupId(chat.id));
+        return supergroup != null && supergroup.isScam;
+    }
+    return false;
+  }
+
+  public boolean chatFake (TdApi.Chat chat) {
+    if (chat == null) {
+      return false;
+    }
+    switch (chat.type.getConstructor()) {
+      case TdApi.ChatTypePrivate.CONSTRUCTOR:
+      case TdApi.ChatTypeSecret.CONSTRUCTOR:
+        TdApi.User user = chatUser(chat);
+        return user != null && user.isFake;
+      case TdApi.ChatTypeSupergroup.CONSTRUCTOR:
+        TdApi.Supergroup supergroup = cache().supergroup(ChatId.toSupergroupId(chat.id));
+        return supergroup != null && supergroup.isFake;
+    }
+    return false;
+  }
+
   public boolean chatRestricted (TdApi.Chat chat) {
     return !StringUtils.isEmpty(chatRestrictionReason(chat));
   }
@@ -6772,6 +6804,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  // Updates: ATTACH MENU BOTS
+
+  @TdlibThread
+  private void updateAttachmentMenuBots (TdApi.UpdateAttachmentMenuBots update) {
+    // TODO
+  }
+
+  @TdlibThread
+  private void updateWebAppMessageSent (TdApi.UpdateWebAppMessageSent update) {
+    // TODO
+  }
+
   // Updates: NOTIFICATIONS
 
   @TdlibThread
@@ -6795,6 +6839,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private void updateNotificationSettings (TdApi.UpdateScopeNotificationSettings update) {
     listeners.updateNotificationSettings(update);
     notificationManager.onUpdateNotificationSettings(update);
+  }
+
+  @TdlibThread
+  private void onUpdateSavedNotificationSounds (TdApi.UpdateSavedNotificationSounds update) {
+    // TODO
   }
 
   // Updates: PRIVACY
@@ -6882,6 +6931,26 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     } else {
       files().onFileUpdated(update);
     }
+  }
+
+  @TdlibThread
+  private void updateFileAddedToDownloads (TdApi.UpdateFileAddedToDownloads update) {
+    listeners.updateFileAddedToDownloads(update);
+  }
+
+  @TdlibThread
+  private void updateFileDownload (TdApi.UpdateFileDownload update) {
+    listeners.updateFileDownload(update);
+  }
+
+  @TdlibThread
+  private void updateFileDownloads (TdApi.UpdateFileDownloads update) {
+    listeners.updateFileDownloads(update);
+  }
+
+  @TdlibThread
+  private void updateFileRemovedFromDownloads (TdApi.UpdateFileRemovedFromDownloads update) {
+    listeners.updateFileRemovedFromDownloads(update);
   }
 
   // Updates: CONFIG
@@ -7694,6 +7763,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         break;
       }
 
+      // Attachment Bots
+      case TdApi.UpdateAttachmentMenuBots.CONSTRUCTOR: {
+        updateAttachmentMenuBots((TdApi.UpdateAttachmentMenuBots) update);
+        break;
+      }
+      case TdApi.UpdateWebAppMessageSent.CONSTRUCTOR: {
+        updateWebAppMessageSent((TdApi.UpdateWebAppMessageSent) update);
+        break;
+      }
+
       // Notifications
       case TdApi.UpdateChatNotificationSettings.CONSTRUCTOR: {
         updateNotificationSettings((TdApi.UpdateChatNotificationSettings) update);
@@ -7761,6 +7840,22 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           Log.i(Log.TAG_TDLIB_FILES, "updateFile id=%d size=%d expectedSize=%d remote=%s local=%s", updateFile.file.id, updateFile.file.size, updateFile.file.expectedSize, updateFile.file.remote.toString(), updateFile.file.local.toString());
         }
         updateFile(updateFile);
+        break;
+      }
+      case TdApi.UpdateFileAddedToDownloads.CONSTRUCTOR: {
+        updateFileAddedToDownloads((TdApi.UpdateFileAddedToDownloads) update);
+        break;
+      }
+      case TdApi.UpdateFileDownload.CONSTRUCTOR: {
+        updateFileDownload((TdApi.UpdateFileDownload) update);
+        break;
+      }
+      case TdApi.UpdateFileDownloads.CONSTRUCTOR: {
+        updateFileDownloads((TdApi.UpdateFileDownloads) update);
+        break;
+      }
+      case TdApi.UpdateFileRemovedFromDownloads.CONSTRUCTOR: {
+        updateFileRemovedFromDownloads((TdApi.UpdateFileRemovedFromDownloads) update);
         break;
       }
 
@@ -8184,7 +8279,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
           return true;
         case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-          if (((TdApi.ChatMemberStatusAdministrator) status).canInviteUsers) {
+          if (((TdApi.ChatMemberStatusAdministrator) status).rights.canInviteUsers) {
             return true;
           }
           break;
@@ -8213,7 +8308,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
           return true;
         case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-          return (((TdApi.ChatMemberStatusAdministrator) status).canInviteUsers);
+          return (((TdApi.ChatMemberStatusAdministrator) status).rights.canInviteUsers);
         default:
           return false;
       }
@@ -8269,7 +8364,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
           return true;
         case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-          if (((TdApi.ChatMemberStatusAdministrator) status).canChangeInfo) {
+          if (((TdApi.ChatMemberStatusAdministrator) status).rights.canChangeInfo) {
             return true;
           }
           break;
@@ -8295,7 +8390,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
           return true;
         case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-          if (((TdApi.ChatMemberStatusAdministrator) status).canRestrictMembers) {
+          if (((TdApi.ChatMemberStatusAdministrator) status).rights.canRestrictMembers) {
             return true;
           }
           break;
@@ -8316,7 +8411,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
           return true;
         case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-          if (((TdApi.ChatMemberStatusAdministrator) status).canDeleteMessages) {
+          if (((TdApi.ChatMemberStatusAdministrator) status).rights.canDeleteMessages) {
             return true;
           }
           break;
@@ -8360,7 +8455,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
             return true;
           case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-            return ((TdApi.ChatMemberStatusAdministrator) status).canEditMessages;
+            return ((TdApi.ChatMemberStatusAdministrator) status).rights.canEditMessages;
         }
       }
       return false;
@@ -8370,7 +8465,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
             return true;
           case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-            if (((TdApi.ChatMemberStatusAdministrator) status).canPinMessages)
+            if (((TdApi.ChatMemberStatusAdministrator) status).rights.canPinMessages)
               return true;
             break;
           case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR:

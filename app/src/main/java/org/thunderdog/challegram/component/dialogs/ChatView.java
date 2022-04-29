@@ -7,6 +7,7 @@ package org.thunderdog.challegram.component.dialogs;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
 import android.view.Gravity;
@@ -489,6 +490,19 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
 
     if (chat.showVerify()) {
       Drawables.drawRtl(c, Icons.getChatVerifyDrawable(), chat.getVerifyLeft(), getMuteTop(chatListMode), Paints.getVerifyPaint(), viewWidth, rtl);
+    }
+
+    if ((chat.showScam() || chat.showFake()) && chat.getChatMark() != null) {
+      int additionalPadding = Screen.dp(4f);
+
+      int chatMarkLeft = chat.getVerifyLeft() + Screen.dp(10f);
+      int chatMarkY = getTitleTop2(chatListMode) + Screen.dp(0.5f);
+
+      RectF rct = Paints.getRectF();
+      rct.set(chatMarkLeft - additionalPadding, chatMarkY, chatMarkLeft + chat.getChatMark().getWidth() + additionalPadding, chatMarkY + chat.getChatMark().getLineHeight(true));
+      c.drawRoundRect(rct, Screen.dp(2f), Screen.dp(2f), Paints.getProgressPaint(Theme.getColor(R.id.theme_color_textNegative), Screen.dp(1.5f)));
+
+      chat.getChatMark().draw(c, chatMarkLeft, chatMarkY + Screen.dp(1f));
     }
 
     if (chat.showMute()) {

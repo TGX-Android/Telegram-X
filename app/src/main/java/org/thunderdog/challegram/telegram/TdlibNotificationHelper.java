@@ -158,7 +158,7 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
   public void updateGroup (TdApi.UpdateNotificationGroup update) {
     if (!accept(update.type))
       return;
-    boolean isSilent = update.isSilent;
+    boolean isSilent = update.notificationSoundId == 0;
     if (!isSilent && update.notificationSettingsChatId != 0 && ChatId.isUserChat(update.notificationSettingsChatId) && tdlib.settings().needMuteNonContacts()) {
       TdApi.User user = tdlib.chatUser(update.notificationSettingsChatId);
       if (user != null && !user.isContact) {

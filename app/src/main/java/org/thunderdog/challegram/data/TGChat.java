@@ -47,6 +47,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
 import me.vkryl.td.Td;
@@ -61,6 +62,8 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
   private static final int FLAG_CONTENT_STRING = 1 << 10;
   private static final int FLAG_ONLINE = 1 << 12;
   private static final int FLAG_ARCHIVE = 1 << 14;
+  private static final int FLAG_SHOW_SCAM = 1 << 15;
+  private static final int FLAG_SHOW_FAKE = 1 << 16;
 
   private int flags, listMode;
 
@@ -102,6 +105,8 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
   private int timeLeft;
   private int muteLeft, verifyLeft;
   private int checkRight;
+
+  private Text chatMark;
 
   private final MultipleViewProvider currentViews = new MultipleViewProvider();
 
@@ -730,6 +735,14 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     return (flags & FLAG_SHOW_VERIFY) != 0;
   }
 
+  public boolean showScam () {
+    return (flags & FLAG_SHOW_SCAM) != 0;
+  }
+
+  public boolean showFake () {
+    return (flags & FLAG_SHOW_FAKE) != 0;
+  }
+
   public boolean isSelfChat () {
     return (flags & FLAG_SELF_CHAT) != 0;
   }
@@ -823,6 +836,17 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     if (showVerify) {
       avail = avail - Screen.dp(20f);
     }
+    this.flags = BitwiseUtils.setFlag(flags, FLAG_SHOW_SCAM, tdlib.chatScam(chat));
+    this.flags = BitwiseUtils.setFlag(flags, FLAG_SHOW_FAKE, tdlib.chatFake(chat));
+    boolean showChatMark = showFake() || showScam();
+    if (showChatMark) {
+      chatMark = new Text.Builder(Lang.getString(showFake() ? R.string.FakeMark : R.string.ScamMark), avail, Paints.robotoStyleProvider(12f), TextColorSets.Regular.NEGATIVE)
+        .singleLine()
+        .allBold()
+        .clipTextArea()
+        .build();
+      avail -= chatMark.getWidth() + (Screen.dp(4f) * 2);
+    }
     if (showViews()) {
       avail -= viewCounter.getScaledWidth(Screen.dp(3f));
     } else if (isSending() || isOutgoing()) {
@@ -848,6 +872,9 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     muteLeft = ChatView.getLeftPadding(listMode) + titleWidth + ChatView.getMutePadding();
     if (showVerify) {
       muteLeft += Screen.dp(20f);
+    }
+    if (showChatMark) {
+      muteLeft += chatMark.getWidth();
     }
     if (isSecret) {
       verifyLeft +=  Screen.dp(14f);
@@ -1282,6 +1309,11 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     return trimmedText;
   }
 
+  @Nullable
+  public Text getChatMark () {
+    return chatMark;
+  }
+
   public int getTextLeft () {
     return textLeft;
   }
@@ -1353,14 +1385,9 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
   @Override
   public void invalidateTypingPart (boolean onlyIcon) {
-    List<Reference<View>> list = currentViews.getViewsList();
-    if (list != null) {
-      for (int i = list.size() - 1; i >= 0; i--) {
-        View view = list.get(i).get();
-        if (view != null) {
-          ((ChatView) view).invalidateTypingPart(onlyIcon);
-        }
-      }
+    ReferenceList<View> views = currentViews.getViewsList();
+    for (View view : views) {
+      ((ChatView) view).invalidateTypingPart(onlyIcon);
     }
   }
 
