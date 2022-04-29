@@ -692,7 +692,7 @@ public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyab
       miniPreview = null;
     }
     TD.ContentPreview contentPreview = TD.getChatListPreview(tdlib, msg.chatId, msg);
-    if (isChannel() && msg.forwardInfo != null) {
+    if (msg.forwardInfo != null) {
       switch (msg.forwardInfo.origin.getConstructor()) {
         case TdApi.MessageForwardOriginUser.CONSTRUCTOR:
           sender = new TdApi.MessageSenderUser(((TdApi.MessageForwardOriginUser) msg.forwardInfo.origin).senderUserId);
