@@ -121,10 +121,11 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         if (args.member != null) {
           if (args.member.status.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
             TdApi.ChatMemberStatusCreator creator = (TdApi.ChatMemberStatusCreator) args.member.status;
-            targetAdmin = new TdApi.ChatMemberStatusAdministrator(creator.customTitle, false, true, true, true, true, true, true, true, true, true, true, creator.isAnonymous);
+            // TODO bot defaults
+            targetAdmin = new TdApi.ChatMemberStatusAdministrator(creator.customTitle, true, new TdApi.ChatAdministratorRights(true, true, true, true, true, true, true, true, true, true, creator.isAnonymous));
           } else if (args.member.status.getConstructor() == TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR) {
             TdApi.ChatMemberStatusAdministrator admin = (TdApi.ChatMemberStatusAdministrator) args.member.status;
-            targetAdmin = new TdApi.ChatMemberStatusAdministrator(admin.customTitle, admin.canBeEdited, admin.canManageChat, admin.canChangeInfo, admin.canPostMessages, admin.canEditMessages, admin.canDeleteMessages, admin.canInviteUsers, admin.canRestrictMembers, admin.canPinMessages, admin.canPromoteMembers, admin.canManageVideoChats, admin.isAnonymous);
+            targetAdmin = (TdApi.ChatMemberStatusAdministrator) Td.copyOf(admin);
           } else {
             targetAdmin = newTargetAdmin();
           }
@@ -146,10 +147,10 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     switch (args.myStatus.getConstructor()) {
       case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR: {
         TdApi.ChatMemberStatusAdministrator me = (TdApi.ChatMemberStatusAdministrator) args.myStatus;
-        return new TdApi.ChatMemberStatusAdministrator(null, true, me.canManageChat, me.canChangeInfo, me.canPostMessages, me.canEditMessages, me.canDeleteMessages, me.canInviteUsers, me.canRestrictMembers, me.canPinMessages, false, me.canManageVideoChats, me.isAnonymous);
+        return new TdApi.ChatMemberStatusAdministrator(null, true, Td.copyOf(me.rights));
       }
     }
-    return new TdApi.ChatMemberStatusAdministrator(null, true, true, true, true, true, true, true, true, true, false, true, false);
+    return new TdApi.ChatMemberStatusAdministrator(null, true, new TdApi.ChatAdministratorRights(true, true, true, true, true, true, true, true, false, true, false));
   }
 
   @Override
@@ -265,17 +266,17 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           case R.id.btn_dismissAdmin: {
             showOptions(null, new int[]{R.id.btn_dismissAdmin, R.id.btn_cancel}, new String[]{Lang.getString(R.string.DismissAdmin), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
               if (id == R.id.btn_dismissAdmin && !isDoneInProgress()) {
-                targetAdmin.canChangeInfo = false;
-                targetAdmin.canManageChat = false;
-                targetAdmin.canPostMessages = false;
-                targetAdmin.canEditMessages = false;
-                targetAdmin.canDeleteMessages = false;
-                targetAdmin.canInviteUsers = false;
-                targetAdmin.canRestrictMembers = false;
-                targetAdmin.canPinMessages = false;
-                targetAdmin.canManageVideoChats = false;
-                targetAdmin.isAnonymous = false;
-                targetAdmin.canPromoteMembers = false;
+                targetAdmin.rights.canChangeInfo = false;
+                targetAdmin.rights.canManageChat = false;
+                targetAdmin.rights.canPostMessages = false;
+                targetAdmin.rights.canEditMessages = false;
+                targetAdmin.rights.canDeleteMessages = false;
+                targetAdmin.rights.canInviteUsers = false;
+                targetAdmin.rights.canRestrictMembers = false;
+                targetAdmin.rights.canPinMessages = false;
+                targetAdmin.rights.canManageVideoChats = false;
+                targetAdmin.rights.isAnonymous = false;
+                targetAdmin.rights.canPromoteMembers = false;
                 updateValues();
                 setDoneInProgress(true);
                 setDoneVisible(true);
@@ -327,7 +328,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
   @Override
   protected boolean onDoneClick () {
     if (getArgumentsStrict().mode == MODE_ADMIN_PROMOTION) {
-      targetAdmin.canManageChat = true;
+      targetAdmin.rights.canManageChat = true;
     }
     performRequest(false);
     return true;
@@ -377,7 +378,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       }
     } else if (args.member != null && args.member.status.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
       TdApi.ChatMemberStatusCreator creator = (TdApi.ChatMemberStatusCreator) args.member.status;
-      newStatus = new TdApi.ChatMemberStatusCreator(targetAdmin.customTitle, targetAdmin.isAnonymous, creator.isMember);
+      newStatus = new TdApi.ChatMemberStatusCreator(targetAdmin.customTitle, targetAdmin.rights.isAnonymous, creator.isMember);
     } else {
       newStatus = targetAdmin;
     }
@@ -699,7 +700,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
             case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
               return true;
             case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-              return ((TdApi.ChatMemberStatusAdministrator) args.myStatus).canRestrictMembers;
+              return ((TdApi.ChatMemberStatusAdministrator) args.myStatus).rights.canRestrictMembers;
           }
           break;
         default: {
@@ -713,29 +714,29 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR: {
         TdApi.ChatMemberStatusAdministrator me = (TdApi.ChatMemberStatusAdministrator) args.myStatus;
         if (args.mode == MODE_RESTRICTION) {
-          return me.canRestrictMembers;
+          return me.rights.canRestrictMembers;
         } else {
           switch (id) {
             case R.id.right_addNewAdmins:
-              return me.canPromoteMembers;
+              return me.rights.canPromoteMembers;
             case R.id.right_banUsers:
-              return me.canRestrictMembers;
+              return me.rights.canRestrictMembers;
             case R.id.right_changeChatInfo:
-              return me.canChangeInfo;
+              return me.rights.canChangeInfo;
             case R.id.right_deleteMessages:
-              return me.canDeleteMessages;
+              return me.rights.canDeleteMessages;
             case R.id.right_editMessages:
-              return me.canEditMessages;
+              return me.rights.canEditMessages;
             case R.id.right_inviteUsers:
-              return me.canInviteUsers;
+              return me.rights.canInviteUsers;
             case R.id.right_pinMessages:
-              return me.canPinMessages;
+              return me.rights.canPinMessages;
             case R.id.right_manageVideoChats:
-              return me.canManageVideoChats;
+              return me.rights.canManageVideoChats;
             case R.id.right_remainAnonymous:
-              return me.isAnonymous;
+              return me.rights.isAnonymous;
             case R.id.right_sendMessages:
-              return me.canPostMessages;
+              return me.rights.canPostMessages;
 
             case R.id.right_embedLinks:
             case R.id.right_readMessages:
@@ -762,7 +763,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     } else {
       boolean value;
       if (targetAdmin != null) {
-        value = targetAdmin.canPromoteMembers;
+        value = targetAdmin.rights.canPromoteMembers;
       } else {
         int i = adapter.indexOfViewById(R.id.right_addNewAdmins);
         value = i != -1 && adapter.getItems().get(i).getBoolValue();
@@ -878,11 +879,12 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
   private boolean canTransferOwnership () {
     if (targetAdmin == null || tdlib.cache().senderBot(getArgumentsStrict().senderId) || !targetAdmin.canBeEdited || getArgumentsStrict().mode != MODE_ADMIN_PROMOTION || getArgumentsStrict().myStatus.getConstructor() != TdApi.ChatMemberStatusCreator.CONSTRUCTOR)
       return false;
-    boolean isChannel = tdlib.isChannel(getArgumentsStrict().chatId);
+    final boolean isChannel = tdlib.isChannel(getArgumentsStrict().chatId);
+    final TdApi.ChatAdministratorRights rights = targetAdmin.rights;
     if (isChannel) {
-      return targetAdmin.canChangeInfo && targetAdmin.canPostMessages && targetAdmin.canEditMessages && targetAdmin.canDeleteMessages && targetAdmin.canInviteUsers && targetAdmin.canManageVideoChats && targetAdmin.canPromoteMembers;
+      return rights.canChangeInfo && rights.canPostMessages && rights.canEditMessages && rights.canDeleteMessages && rights.canInviteUsers && rights.canManageVideoChats && rights.canPromoteMembers;
     } else {
-      return targetAdmin.canChangeInfo && targetAdmin.canDeleteMessages && targetAdmin.canRestrictMembers && targetAdmin.canInviteUsers && targetAdmin.canPinMessages && targetAdmin.canManageVideoChats && targetAdmin.canPromoteMembers;
+      return rights.canChangeInfo && rights.canDeleteMessages && rights.canRestrictMembers && rights.canInviteUsers && rights.canPinMessages && rights.canManageVideoChats && rights.canPromoteMembers;
     }
   }
 
@@ -1109,7 +1111,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
         return true;
       case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-        return ((TdApi.ChatMemberStatusAdministrator) status).canRestrictMembers;
+        return ((TdApi.ChatMemberStatusAdministrator) status).rights.canRestrictMembers;
     }
     return false;
   }
@@ -1128,7 +1130,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
         return true;
       case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-        return ((TdApi.ChatMemberStatusAdministrator) status).canPromoteMembers;
+        return ((TdApi.ChatMemberStatusAdministrator) status).rights.canPromoteMembers;
     }
     return false;
   }
@@ -1161,7 +1163,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       TdApi.ChatMemberStatusAdministrator old = (TdApi.ChatMemberStatusAdministrator) args.member.status;
       return !Td.equalsTo(old, targetAdmin);
     } else if (args.member.status.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
-      return ((TdApi.ChatMemberStatusCreator) args.member.status).isAnonymous != targetAdmin.isAnonymous;
+      return ((TdApi.ChatMemberStatusCreator) args.member.status).isAnonymous != targetAdmin.rights.isAnonymous;
     }
     return false;
   }
@@ -1192,7 +1194,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       }
       case R.id.right_sendMessages: {
         if (getArgumentsStrict().mode == MODE_ADMIN_PROMOTION) {
-          targetAdmin.canPostMessages = newValue;
+          targetAdmin.rights.canPostMessages = newValue;
         } else {
           setCanViewMessages(canViewMessages || newValue);
           targetRestrict.permissions.canSendMessages = newValue;
@@ -1225,7 +1227,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       }
       case R.id.right_changeChatInfo: {
         if (getArgumentsStrict().mode == MODE_ADMIN_PROMOTION) {
-          targetAdmin.canChangeInfo = newValue;
+          targetAdmin.rights.canChangeInfo = newValue;
         } else {
           setCanViewMessages(canViewMessages || newValue);
           targetRestrict.permissions.canChangeInfo = newValue;
@@ -1234,7 +1236,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       }
       case R.id.right_inviteUsers: {
         if (getArgumentsStrict().mode == MODE_ADMIN_PROMOTION) {
-          targetAdmin.canInviteUsers = newValue;
+          targetAdmin.rights.canInviteUsers = newValue;
         } else {
           setCanViewMessages(canViewMessages || newValue);
           targetRestrict.permissions.canInviteUsers = newValue;
@@ -1243,7 +1245,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       }
       case R.id.right_pinMessages: {
         if (getArgumentsStrict().mode == MODE_ADMIN_PROMOTION) {
-          targetAdmin.canPinMessages = newValue;
+          targetAdmin.rights.canPinMessages = newValue;
         } else {
           setCanViewMessages(canViewMessages || newValue);
           // FIXME? targetRestrict.permissions.canSendMessages = targetRestrict.permissions.canSendMessages || newValue;
@@ -1252,23 +1254,23 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         break;
       }
       case R.id.right_addNewAdmins:
-        targetAdmin.canPromoteMembers = newValue;
+        targetAdmin.rights.canPromoteMembers = newValue;
         updateDescriptionHint();
         break;
       case R.id.right_banUsers:
-        targetAdmin.canRestrictMembers = newValue;
+        targetAdmin.rights.canRestrictMembers = newValue;
         break;
       case R.id.right_manageVideoChats:
-        targetAdmin.canManageVideoChats = newValue;
+        targetAdmin.rights.canManageVideoChats = newValue;
         break;
       case R.id.right_remainAnonymous:
-        targetAdmin.isAnonymous = newValue;
+        targetAdmin.rights.isAnonymous = newValue;
         break;
       case R.id.right_deleteMessages:
-        targetAdmin.canDeleteMessages = newValue;
+        targetAdmin.rights.canDeleteMessages = newValue;
         break;
       case R.id.right_editMessages:
-        targetAdmin.canEditMessages = newValue;
+        targetAdmin.rights.canEditMessages = newValue;
         break;
     }
     if (getArgumentsStrict().mode == MODE_CHAT_PERMISSIONS || getArgumentsStrict().mode == MODE_RESTRICTION) {
@@ -1325,7 +1327,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       case R.id.right_readMessages:
         return canViewMessages;
       case R.id.right_sendMessages:
-        return getArgumentsStrict().mode == MODE_ADMIN_PROMOTION ? targetAdmin.canPostMessages : canViewMessages && targetRestrict.permissions.canSendMessages;
+        return getArgumentsStrict().mode == MODE_ADMIN_PROMOTION ? targetAdmin.rights.canPostMessages : canViewMessages && targetRestrict.permissions.canSendMessages;
       case R.id.right_sendMedia:
         return canViewMessages && targetRestrict.permissions.canSendMessages && targetRestrict.permissions.canSendMediaMessages;
       case R.id.right_sendStickersAndGifs:
@@ -1335,23 +1337,23 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       case R.id.right_embedLinks:
         return canViewMessages && targetRestrict.permissions.canSendMessages && targetRestrict.permissions.canAddWebPagePreviews;
       case R.id.right_changeChatInfo:
-        return getArgumentsStrict().mode == MODE_ADMIN_PROMOTION ? targetAdmin.canChangeInfo || checkDefaultRight(id) : canViewMessages && targetRestrict.permissions.canChangeInfo;
+        return getArgumentsStrict().mode == MODE_ADMIN_PROMOTION ? targetAdmin.rights.canChangeInfo || checkDefaultRight(id) : canViewMessages && targetRestrict.permissions.canChangeInfo;
       case R.id.right_inviteUsers:
-        return getArgumentsStrict().mode == MODE_ADMIN_PROMOTION ? targetAdmin.canInviteUsers || checkDefaultRight(id) : canViewMessages && targetRestrict.permissions.canInviteUsers;
+        return getArgumentsStrict().mode == MODE_ADMIN_PROMOTION ? targetAdmin.rights.canInviteUsers || checkDefaultRight(id) : canViewMessages && targetRestrict.permissions.canInviteUsers;
       case R.id.right_pinMessages:
-        return getArgumentsStrict().mode == MODE_ADMIN_PROMOTION ? targetAdmin.canPinMessages || checkDefaultRight(id) : canViewMessages && targetRestrict.permissions.canPinMessages; // FIXME? targetRestrict.permissions.canSendMessages
+        return getArgumentsStrict().mode == MODE_ADMIN_PROMOTION ? targetAdmin.rights.canPinMessages || checkDefaultRight(id) : canViewMessages && targetRestrict.permissions.canPinMessages; // FIXME? targetRestrict.permissions.canSendMessages
       case R.id.right_deleteMessages:
-        return targetAdmin.canDeleteMessages;
+        return targetAdmin.rights.canDeleteMessages;
       case R.id.right_banUsers:
-        return targetAdmin.canRestrictMembers;
+        return targetAdmin.rights.canRestrictMembers;
       case R.id.right_addNewAdmins:
-        return targetAdmin.canPromoteMembers;
+        return targetAdmin.rights.canPromoteMembers;
       case R.id.right_manageVideoChats:
-        return targetAdmin.canManageVideoChats;
+        return targetAdmin.rights.canManageVideoChats;
       case R.id.right_remainAnonymous:
-        return targetAdmin.isAnonymous;
+        return targetAdmin.rights.isAnonymous;
       case R.id.right_editMessages:
-        return targetAdmin.canEditMessages;
+        return targetAdmin.rights.canEditMessages;
     }
     throw new IllegalArgumentException("id == " + UI.getResources().getResourceName(id));
   }

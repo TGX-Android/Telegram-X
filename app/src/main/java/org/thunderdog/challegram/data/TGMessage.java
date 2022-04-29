@@ -6904,23 +6904,23 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                 } else if (isPromote) {
                   final TdApi.ChatMemberStatusAdministrator oldAdmin = (TdApi.ChatMemberStatusAdministrator) oldStatus;
                   final TdApi.ChatMemberStatusAdministrator newAdmin = (TdApi.ChatMemberStatusAdministrator) newStatus;
-                  appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedManageChannel : R.string.EventLogPromotedManageGroup, oldAdmin.canManageChat, newAdmin.canManageChat, false);
-                  appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedChangeChannelInfo : R.string.EventLogPromotedChangeGroupInfo, oldAdmin.canChangeInfo, newAdmin.canChangeInfo, false);
+                  appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedManageChannel : R.string.EventLogPromotedManageGroup, oldAdmin.rights.canManageChat, newAdmin.rights.canManageChat, false);
+                  appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedChangeChannelInfo : R.string.EventLogPromotedChangeGroupInfo, oldAdmin.rights.canChangeInfo, newAdmin.rights.canChangeInfo, false);
                   if (msg.isChannelPost) {
-                    appendRight(b, R.string.EventLogPromotedPostMessages, oldAdmin.canChangeInfo, newAdmin.canChangeInfo, false);
-                    appendRight(b, R.string.EventLogPromotedEditMessages, oldAdmin.canEditMessages, newAdmin.canEditMessages, false);
+                    appendRight(b, R.string.EventLogPromotedPostMessages, oldAdmin.rights.canChangeInfo, newAdmin.rights.canChangeInfo, false);
+                    appendRight(b, R.string.EventLogPromotedEditMessages, oldAdmin.rights.canEditMessages, newAdmin.rights.canEditMessages, false);
                   }
-                  appendRight(b, R.string.EventLogPromotedDeleteMessages, oldAdmin.canDeleteMessages, newAdmin.canDeleteMessages, false);
-                  appendRight(b, R.string.EventLogPromotedBanUsers, oldAdmin.canRestrictMembers, newAdmin.canRestrictMembers, false);
-                  appendRight(b, R.string.EventLogPromotedAddUsers, oldAdmin.canInviteUsers, newAdmin.canInviteUsers, false);
+                  appendRight(b, R.string.EventLogPromotedDeleteMessages, oldAdmin.rights.canDeleteMessages, newAdmin.rights.canDeleteMessages, false);
+                  appendRight(b, R.string.EventLogPromotedBanUsers, oldAdmin.rights.canRestrictMembers, newAdmin.rights.canRestrictMembers, false);
+                  appendRight(b, R.string.EventLogPromotedAddUsers, oldAdmin.rights.canInviteUsers, newAdmin.rights.canInviteUsers, false);
                   if (!msg.isChannelPost) {
-                    appendRight(b, R.string.EventLogPromotedPinMessages, oldAdmin.canPinMessages, newAdmin.canPinMessages, false);
+                    appendRight(b, R.string.EventLogPromotedPinMessages, oldAdmin.rights.canPinMessages, newAdmin.rights.canPinMessages, false);
                   }
-                  appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedManageLiveStreams : R.string.EventLogPromotedManageVoiceChats, oldAdmin.canManageVideoChats, newAdmin.canManageVideoChats, false);
+                  appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedManageLiveStreams : R.string.EventLogPromotedManageVoiceChats, oldAdmin.rights.canManageVideoChats, newAdmin.rights.canManageVideoChats, false);
                   if (!msg.isChannelPost) {
-                    appendRight(b, R.string.EventLogPromotedRemainAnonymous, oldAdmin.isAnonymous, newAdmin.isAnonymous, false);
+                    appendRight(b, R.string.EventLogPromotedRemainAnonymous, oldAdmin.rights.isAnonymous, newAdmin.rights.isAnonymous, false);
                   }
-                  appendRight(b, R.string.EventLogPromotedAddAdmins, oldAdmin.canPromoteMembers, newAdmin.canPromoteMembers, false);
+                  appendRight(b, R.string.EventLogPromotedAddAdmins, oldAdmin.rights.canPromoteMembers, newAdmin.rights.canPromoteMembers, false);
                   appendRight(b, R.string.EventLogPromotedTitle, R.string.EventLogPromotedTitleChange, oldAdmin.customTitle, newAdmin.customTitle, false);
                 } else if (oldStatus != null && newStatus != null) {
                   final boolean oldCanReadMessages = oldStatus.getConstructor() != TdApi.ChatMemberStatusBanned.CONSTRUCTOR;

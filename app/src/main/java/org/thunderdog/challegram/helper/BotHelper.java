@@ -165,19 +165,21 @@ public class BotHelper implements Client.ResultHandler, Runnable, InlineSearchCo
       return;
     }
 
-    if (!StringUtils.isEmpty(full.description) && !context.areScheduledOnly()) {
-      this.botInfoMessage = new TGMessageBotInfo(context.getManager(), chatId, new TdApi.FormattedText(full.description, Text.findEntities(full.description, Text.ENTITY_FLAGS_ALL)));
-    }
-
-    if (full.commands.length > 0) {
-      ArrayList<InlineResult<?>> commands = new ArrayList<>(full.commands.length);
-      for (TdApi.BotCommand command : full.commands) {
-        commands.add(new InlineResultCommand(context.context(), context.tdlib(), objectId, command));
+    if (full.botInfo != null) {
+      if (!StringUtils.isEmpty(full.botInfo.description) && !context.areScheduledOnly()) {
+        this.botInfoMessage = new TGMessageBotInfo(context.getManager(), chatId, new TdApi.FormattedText(full.botInfo.description, Text.findEntities(full.botInfo.description, Text.ENTITY_FLAGS_ALL)));
       }
-      this.commands = commands;
-      context.tdlib().uiExecute(this);
-    } else if (botInfoMessage != null) {
-      context.tdlib().uiExecute(this);
+
+      if (full.botInfo.commands.length > 0) {
+        ArrayList<InlineResult<?>> commands = new ArrayList<>(full.botInfo.commands.length);
+        for (TdApi.BotCommand command : full.botInfo.commands) {
+          commands.add(new InlineResultCommand(context.context(), context.tdlib(), objectId, command));
+        }
+        this.commands = commands;
+        context.tdlib().uiExecute(this);
+      } else if (botInfoMessage != null) {
+        context.tdlib().uiExecute(this);
+      }
     }
   }
 
