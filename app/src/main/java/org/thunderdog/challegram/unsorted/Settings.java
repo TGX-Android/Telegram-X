@@ -3108,6 +3108,14 @@ public class Settings {
     ReferenceUtils.addReference(chatFontSizeChangeListeners, listener);
   }
 
+  public float getBubbleOutlineFactor () {
+    if (getBubbleCornerSize() == 18f || getBubbleCornerSize() == 6f) {
+      return 0f;
+    } else {
+      return 1f;
+    }
+  }
+
   public float getBubbleCornerSize () {
     if (_bubbleCornerSize == null) {
       _bubbleCornerSize = pmc.getFloat(KEY_BUBBLE_CORNER_SIZE, MSG_BUBBLE_RADIUS_DEFAULT);

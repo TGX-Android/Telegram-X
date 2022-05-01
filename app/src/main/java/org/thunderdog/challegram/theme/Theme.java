@@ -855,7 +855,7 @@ public class Theme {
   }
 
   public static float getBubbleOutlineFactor () {
-    return Theme.getProperty(ThemeProperty.BUBBLE_OUTLINE);
+    return isBubbleOutlineOverridden() ? Theme.getProperty(ThemeProperty.BUBBLE_OUTLINE) : Settings.instance().getBubbleOutlineFactor();
   }
 
   public static float getBubbleOutlineSize () {
@@ -903,6 +903,10 @@ public class Theme {
 
   public static boolean isBubbleRadiusOverridden () {
     return isPropertyOverridden(BUBBLE_BIG_RADIUS_AVAILABLE ? ThemeProperty.BUBBLE_CORNER : ThemeProperty.BUBBLE_CORNER_LEGACY) || isPropertyOverridden(BUBBLE_BIG_RADIUS_AVAILABLE ? ThemeProperty.BUBBLE_CORNER_MERGED : ThemeProperty.BUBBLE_CORNER_LEGACY);
+  }
+
+  public static boolean isBubbleOutlineOverridden () {
+    return isPropertyOverridden(ThemeProperty.BUBBLE_OUTLINE);
   }
 
   public static boolean isBubbleRadiusBig (float radius) {
