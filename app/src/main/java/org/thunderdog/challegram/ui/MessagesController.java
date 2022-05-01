@@ -1365,7 +1365,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           Settings.instance().setBubbleMergeCornerSize(roundedValue);
         } else {
           Settings.instance().setBubbleCornerSize(roundedValue);
-          if (Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_BUBBLE_MERGE_CORNER_RADIUS)) {
+          if (Settings.instance().getNewSetting(Settings.SETTING_FLAG_CUSTOM_BUBBLE_MERGE_CORNER_RADIUS)) {
             float newMerge = (factor * Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES[Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES.length - 1]);
             final float roundedMerge = Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES[getApproxIndexForCornerRadius(newMerge, true)];
             Settings.instance().setBubbleMergeCornerSize(roundedMerge);
@@ -1406,7 +1406,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void updateBubbleMergeSliderVisibility() {
-    mergeCornerWrap.setVisibility((Theme.BUBBLE_BIG_RADIUS_AVAILABLE && !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_BUBBLE_MERGE_CORNER_RADIUS) && !Theme.isBubbleRadiusOverridden()) ? View.VISIBLE : View.GONE);
+    mergeCornerWrap.setVisibility((Theme.BUBBLE_BIG_RADIUS_AVAILABLE && Settings.instance().getNewSetting(Settings.SETTING_FLAG_CUSTOM_BUBBLE_MERGE_CORNER_RADIUS) && !Theme.isBubbleRadiusOverridden()) ? View.VISIBLE : View.GONE);
   }
 
   private SliderView fontSliderView;
@@ -2033,7 +2033,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         break;
       }
       case R.id.btn_chatBubbleMergeRadius: {
-        Settings.instance().toggleNewSetting(Settings.SETTING_FLAG_NO_BUBBLE_MERGE_CORNER_RADIUS);
+        Settings.instance().toggleNewSetting(Settings.SETTING_FLAG_CUSTOM_BUBBLE_MERGE_CORNER_RADIUS);
         updateBubbleMergeSliderVisibility();
         break;
       }
@@ -3418,7 +3418,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             strings.append(Settings.instance().needChatFontSizeScaling() ? R.string.TextSizeScaleDisable : R.string.TextSizeScaleEnable);
             if (!Theme.isBubbleRadiusOverridden() && manager.useBubbles() && Theme.BUBBLE_BIG_RADIUS_AVAILABLE) {
               ids.append(R.id.btn_chatBubbleMergeRadius);
-              strings.append(!Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_BUBBLE_MERGE_CORNER_RADIUS) ? R.string.MergeBubbleCornersDisable : R.string.MergeBubbleCorners);
+              strings.append(Settings.instance().getNewSetting(Settings.SETTING_FLAG_CUSTOM_BUBBLE_MERGE_CORNER_RADIUS) ? R.string.MergeBubbleCornersDisable : R.string.MergeBubbleCorners);
             }
             if (Settings.instance().canResetChatFontSize()) {
               ids.append(R.id.btn_chatFontSizeReset);

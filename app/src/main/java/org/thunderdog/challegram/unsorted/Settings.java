@@ -344,7 +344,7 @@ public class Settings {
   public static final long SETTING_FLAG_CAMERA_KEEP_DISCARDED_MEDIA = 1 << 11;
   public static final long SETTING_FLAG_CAMERA_SHOW_GRID = 1 << 12;
   public static final long SETTING_FLAG_NO_EMBEDS = 1 << 13;
-  public static final long SETTING_FLAG_NO_BUBBLE_MERGE_CORNER_RADIUS = 1 << 14;
+  public static final long SETTING_FLAG_CUSTOM_BUBBLE_MERGE_CORNER_RADIUS = 1 << 14;
 
   private static final @Deprecated int DISABLED_FLAG_OTHER_NEED_RAISE_TO_SPEAK = 1 << 2;
   private static final @Deprecated int DISABLED_FLAG_OTHER_AUTODOWNLOAD_IN_BACKGROUND = 1 << 3;
@@ -3048,7 +3048,7 @@ public class Settings {
   }
 
   private boolean isCornerRadiusChanged () {
-    return getLastKnownBubbleCornerSize() != MSG_BUBBLE_RADIUS_DEFAULT || getLastKnownBubbleMergeCornerSize() != MSG_BUBBLE_MERGE_RADIUS_DEFAULT || getNewSetting(SETTING_FLAG_NO_BUBBLE_MERGE_CORNER_RADIUS);
+    return getLastKnownBubbleCornerSize() != MSG_BUBBLE_RADIUS_DEFAULT || getLastKnownBubbleMergeCornerSize() != MSG_BUBBLE_MERGE_RADIUS_DEFAULT || getNewSetting(SETTING_FLAG_CUSTOM_BUBBLE_MERGE_CORNER_RADIUS);
   }
 
   public boolean needChatFontSizeScaling () {
@@ -3069,7 +3069,7 @@ public class Settings {
     setNeedChatFontSizeScaling(false);
     setChatFontSize(CHAT_FONT_SIZE_DEFAULT);
     if (!Theme.isBubbleRadiusOverridden()) {
-      setNewSetting(SETTING_FLAG_NO_BUBBLE_MERGE_CORNER_RADIUS, false);
+      setNewSetting(SETTING_FLAG_CUSTOM_BUBBLE_MERGE_CORNER_RADIUS, false);
       setBubbleCornerSize(MSG_BUBBLE_RADIUS_DEFAULT);
       setBubbleMergeCornerSize(MSG_BUBBLE_MERGE_RADIUS_DEFAULT);
     }
