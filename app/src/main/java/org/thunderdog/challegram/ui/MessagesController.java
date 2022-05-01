@@ -1365,7 +1365,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           Settings.instance().setBubbleMergeCornerSize(roundedValue);
         } else {
           Settings.instance().setBubbleCornerSize(roundedValue);
-          if (Settings.instance().getNewSetting(Settings.SETTING_FLAG_CUSTOM_BUBBLE_MERGE_CORNER_RADIUS)) {
+          if (!Settings.instance().getNewSetting(Settings.SETTING_FLAG_CUSTOM_BUBBLE_MERGE_CORNER_RADIUS)) {
             float newMerge = (factor * Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES[Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES.length - 1]);
             final float roundedMerge = Settings.MSG_BUBBLE_MERGE_RADIUS_SIZES[getApproxIndexForCornerRadius(newMerge, true)];
             Settings.instance().setBubbleMergeCornerSize(roundedMerge);
