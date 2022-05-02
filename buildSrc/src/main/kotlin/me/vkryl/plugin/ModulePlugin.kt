@@ -38,7 +38,7 @@ open class ModulePlugin : Plugin<Project> {
 
     val javaVersion = JavaVersion.VERSION_11
 
-    val properties = loadProperties("local.properties")
+    val properties = loadProperties()
     val keystore = Keystore(properties.getOrThrow("keystore.file"))
     val appVersionOverride = properties.getProperty("app.version", "0").toInt()
 
