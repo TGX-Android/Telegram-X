@@ -975,9 +975,10 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
           float textY = pDurationTop - Screen.dp(4f) + durationOffset();
           durationDx = isStreamingUI ? (Screen.dp(20f)) : 0;
           if (durationShort != null) {
-            paint.setAlpha((int) (255 * dlFactor));
+            int paintAlpha = paint.getAlpha();
+            paint.setAlpha((int) (paintAlpha * dlFactor));
             c.drawText(duration != null ? duration : durationTrimmed, textX, textY, paint);
-            paint.setAlpha((int) (255 * downloadedAnimator.getFloatValue()));
+            paint.setAlpha((int) (paintAlpha * downloadedAnimator.getFloatValue()));
             c.drawText(durationShort, textX, textY, paint);
           } else if (durationTrimmed != null) {
             c.drawText(durationTrimmed, textX, textY, paint);
