@@ -1,6 +1,6 @@
 [submodule "app/jni/thirdparty/webp"]
 	path = app/jni/thirdparty/webp
-	url = https://chromium.googlesource.com/webm/libwebp
+	url = https://github.com/webmproject/libwebp.git
 	shallow = true
 [submodule "app/jni/thirdparty/libyuv"]
 	path = app/jni/thirdparty/libyuv
