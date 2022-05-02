@@ -912,7 +912,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     float dlFactor = 1f - downloadedAnimator.getFloatValue();
     float durationDx = 0f;
     boolean isStreamingUI = fileProgress.isVideoStreaming() && isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE;
-    boolean isDoubleLine = isStreamingUI && duration != null && durationShort != null && (source == null || source.getCombinedMessageCount() == 0 || fileProgress.isProcessing() || (fileProgress.getFile() != null && fileProgress.getFile().remote.isUploadingActive));
+    boolean isDoubleLine = isStreamingUI && duration != null && durationShort != null;
     boolean isSmallStreamingUI = isStreamingUI && !isDoubleLine;
     boolean needTopOffset = source != null && source.useFullWidth() && source.hasHeader() && source.isChannel() && isVideo() && (source instanceof TGMessageMedia && ((TGMessageMedia) source).isVideoFirstInMosaic(video.video.id)) && source.replyData == null;
 
@@ -925,11 +925,11 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       int fpRadius = !isVideo() || !isDoubleLine ? 0 : downloadedAnimator.isAnimating() ? Screen.dp(FileProgressComponent.DEFAULT_STREAMING_RADIUS) : getFileProgress().getRadius();
       int doubleFpRadius = fpRadius * 2;
 
-      int pDurationCorners = isDoubleLine ? (int) MathUtils.fromTo(Screen.dp(4f), Screen.dp(12f), dlFactor) : Screen.dp(4f);
+      int pDurationCorners = isDoubleLine ? MathUtils.fromTo(Screen.dp(4f), Screen.dp(12f), dlFactor) : Screen.dp(4f);
       int pDurationTop = cellTop + Screen.dp(8f) + (needTopOffset ? Screen.dp(16f) : 0);
       int pDurationLeft = cellLeft + Screen.dp(12f);
       int pDurationRight = (int) (pDurationLeft + MathUtils.fromTo(durationWidthShort, durationWidth, dlFactor) + ((doubleFpRadius) * (isStreamingUI ? dlFactor : 1f)) + ((isStreamingUI) ? MathUtils.fromTo(Screen.dp(4f), Screen.dp(isSmallStreamingUI ? 26f : 16f), dlFactor) : Screen.dp(4f)));
-      int pDurationBottom = pDurationTop + (isDoubleLine ? (int) MathUtils.fromTo(durationHeight(), (doubleFpRadius) + Screen.dp(8f), dlFactor) : durationHeight());
+      int pDurationBottom = pDurationTop + (isDoubleLine ? MathUtils.fromTo(durationHeight(), (doubleFpRadius) + Screen.dp(8f), dlFactor) : durationHeight());
 
       float cellCenterX = cellLeft + cellWidth / 2f;
       float cellCenterY = cellTop + cellHeight / 2f;
@@ -965,8 +965,10 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
         if (isDoubleLine) {
           int textBaseline = pDurationLeft + (int) MathUtils.fromTo(0, (durationDx = doubleFpRadius + Screen.dp(6f)), dlFactor);
           int textYBaseline = (int) MathUtils.fromTo(pDurationTop + durationOffset(), pDurationTop + (((pDurationTop + doubleFpRadius + Screen.dp(8f)) - pDurationTop) / 2f), dlFactor);
-          c.drawText(durationShort, textBaseline, textYBaseline - Screen.dp(4f), Paints.whiteMediumPaint(13f, false, false));
+          Paint mediumPaint = Paints.whiteMediumPaint(13f, false, false);
           paint.setAlpha((int) (paint.getAlpha() * dlFactor));
+          mediumPaint.setAlpha(paint.getAlpha());
+          c.drawText(durationShort, textBaseline, textYBaseline - Screen.dp(4f), mediumPaint);
           c.drawText(duration, textBaseline, textYBaseline + Screen.dp(13f), paint);
         } else {
           float textX = pDurationLeft + (isStreamingUI ? Screen.dp(20f) * dlFactor : 0);

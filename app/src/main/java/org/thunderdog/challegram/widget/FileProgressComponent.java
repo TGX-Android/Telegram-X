@@ -1192,7 +1192,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     if (!isTrack || progressFactor <= 1f) {
       float circleFactor = 1f - (alpha * (1f - hideFactor)) * (isTrack ? 1f - progressFactor : 1f);
       int radius = (int) (originRadius * (1f - hideFactor));
-      DrawAlgorithms.drawCloud(c, x, y, radius, circleFactor, ColorUtils.alphaColor(alpha, cloudColor), fillingPadding, fillingColor);
+      DrawAlgorithms.drawCloud(c, x, y, radius, circleFactor, ColorUtils.alphaColor(alpha, cloudColor), fillingPadding, fillingColor, isVideoStreaming());
 
       if (isTrack) {
         int color = Theme.fillingColor();

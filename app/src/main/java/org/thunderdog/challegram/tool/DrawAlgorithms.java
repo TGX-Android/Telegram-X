@@ -231,7 +231,7 @@ public class DrawAlgorithms {
     }
   }
 
-  public static void drawCloud (Canvas c, int centerX, int centerY, int originRadius, float factor, @ColorInt int color, int paddingRadius, @ColorInt int paddingColor) {
+  public static void drawCloud (Canvas c, int centerX, int centerY, int originRadius, float factor, @ColorInt int color, int paddingRadius, @ColorInt int paddingColor, boolean needThirdPadding) {
     final boolean saved = centerX != 0 || centerY != 0;
     if (saved) {
       c.save();
@@ -270,6 +270,10 @@ public class DrawAlgorithms {
         Paint paddingPaint = Paints.fillingPaint(paddingColor);
         c.drawCircle(0, 0, originRadius + paddingRadius, paddingPaint);
         c.drawCircle(xLeft, yLeft, radiusLeft + paddingRadius, paddingPaint);
+        if (needThirdPadding) {
+          c.drawCircle(xRight, yRight, radiusRight + paddingRadius, paddingPaint);
+          c.drawRect(xLeft, yRight, xRight, yRight + radiusRight + paddingRadius, paddingPaint);
+        }
       }
 
       Paint paint = Paints.fillingPaint(color);
