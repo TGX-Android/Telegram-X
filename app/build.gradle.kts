@@ -32,8 +32,6 @@ android {
     defaultConfig {
         val properties = extra["properties"] as Properties
 
-        applicationId = properties.getOrThrow("app.id")
-
         // Fields
 
         val versions = extra["versions"] as Properties
