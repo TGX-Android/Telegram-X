@@ -40,7 +40,7 @@
 	shallow = true
 [submodule "app/jni/thirdparty/libvpx"]
 	path = app/jni/thirdparty/libvpx
-	url = https://chromium.googlesource.com/webm/libvpx
+	url = https://github.com/webmproject/libvpx.git
 	shallow = true
 [submodule "tdlib"]
 	path = tdlib
