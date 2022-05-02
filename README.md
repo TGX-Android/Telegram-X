@@ -81,4 +81,4 @@ Once obtained, there are three ways to find out the commit for the specific chec
 
 ## Third-party dependencies
 
-List of third-party components used in **Telegram X** can be found [here](/docs/THIRDPARTY.md).
+List of third-party components used in **Telegram X** can be found [here](/docs/THIRDPARTY.md). Additionally you can check the specific commit of the third-party component used, for example, [here](/app/jni/thirdparty).
