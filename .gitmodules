@@ -12,7 +12,7 @@
 	shallow = true
 [submodule "app/jni/thirdparty/ffmpeg"]
 	path = app/jni/thirdparty/ffmpeg
-	url = https://git.ffmpeg.org/ffmpeg.git
+	url = https://github.com/FFmpeg/FFmpeg
 	shallow = true
 [submodule "app/jni/thirdparty/lz4"]
 	path = app/jni/thirdparty/lz4
