@@ -24,19 +24,19 @@
 	shallow = true
 [submodule "app/jni/thirdparty/flac"]
 	path = app/jni/thirdparty/flac
-	url = https://gitlab.xiph.org/xiph/flac.git
+	url = https://github.com/xiph/flac.git
 	shallow = true
 [submodule "app/jni/thirdparty/opus"]
 	path = app/jni/thirdparty/opus
-	url = https://gitlab.xiph.org/xiph/opus.git
+	url = https://github.com/xiph/opus.git
 	shallow = true
 [submodule "app/jni/thirdparty/opusfile"]
 	path = app/jni/thirdparty/opusfile
-	url = https://gitlab.xiph.org/xiph/opusfile
+	url = https://github.com/xiph/opusfile.git
 	shallow = true
 [submodule "app/jni/thirdparty/ogg"]
 	path = app/jni/thirdparty/ogg
-	url = https://gitlab.xiph.org/xiph/ogg.git
+	url = https://github.com/xiph/ogg.git
 	shallow = true
 [submodule "app/jni/thirdparty/libvpx"]
 	path = app/jni/thirdparty/libvpx
