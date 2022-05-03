@@ -1460,6 +1460,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
       drawCloudState(c, alpha); 
     }
     if (progress != null && !isVideoStreamingProgressHidden) {
+      progress.setAlpha(alpha);
       progress.forceColor(getProgressColor());
       progress.draw(c);
     }
