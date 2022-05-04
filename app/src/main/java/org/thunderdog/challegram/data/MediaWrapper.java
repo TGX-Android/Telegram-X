@@ -966,8 +966,8 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
           int textBaseline = pDurationLeft + (int) MathUtils.fromTo(0, (durationDx = doubleFpRadius + Screen.dp(6f)), dlFactor);
           int textYBaseline = (int) MathUtils.fromTo(pDurationTop + durationOffset(), pDurationTop + (((pDurationTop + doubleFpRadius + Screen.dp(8f)) - pDurationTop) / 2f), dlFactor);
           Paint mediumPaint = Paints.whiteMediumPaint(13f, false, false);
-          paint.setAlpha((int) (paint.getAlpha() * dlFactor));
           mediumPaint.setAlpha(paint.getAlpha());
+          paint.setAlpha((int) (paint.getAlpha() * dlFactor));
           c.drawText(durationShort, textBaseline, textYBaseline - Screen.dp(4f), mediumPaint);
           c.drawText(duration, textBaseline, textYBaseline + Screen.dp(13f), paint);
         } else {
@@ -1185,10 +1185,10 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
     if (fileProgress.isFailed()) {
       text = textShort = Lang.getString(R.string.failed);
-    } else if (!(fileProgress.isUploadFinished() || (source != null && !source.isSending())) || !fileProgress.isLoaded() || fileProgress.isDownloaded()) {
+    } else if (!(fileProgress.isUploadFinished() || (source != null && !source.isSending())) || !fileProgress.isLoaded() || (isVideo() && fileProgress.isDownloaded())) {
       shouldHaveTwoLines = true;
       textShort = Strings.buildSize(fileProgress.getTotalSize());
-      if (fileProgress.isLoading() || !fileProgress.isUploadFinished() || fileProgress.isDownloaded()) {
+      if (fileProgress.isLoading() || !fileProgress.isUploadFinished() || (isVideo() && fileProgress.isDownloaded())) {
         if (fileProgress.isProcessing()) {
           twAlternativeHeader = textShort;
           text = Lang.getString(R.string.ProcessingMedia, textShort);
