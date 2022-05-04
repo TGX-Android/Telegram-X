@@ -102,7 +102,7 @@ android {
         val versionCode = defaultConfig.versionCode ?: error("null")
 
         val versionCodeOverride = versionCode * 1000 + abi * 10
-        val versionNameOverride = "${variant.versionName}.${defaultConfig.versionCode}-${abiVariant.displayName}${if (extra.has("app_name_suffix")) "-" + extra["app_name_suffix"] else ""}${if (variant.buildType.isDebuggable) "-debug" else ""}"
+        val versionNameOverride = "${variant.versionName}.${defaultConfig.versionCode}${if (extra.has("app_version_suffix")) extra["app_version_suffix"] else "" }-${abiVariant.displayName}${if (extra.has("app_name_suffix")) "-" + extra["app_name_suffix"] else ""}${if (variant.buildType.isDebuggable) "-debug" else ""}"
         val fileName = "Telegram-X-${versionNameOverride.replace("-universal(?=-|\$)", "")}"
 
         variant.buildConfigInt("ORIGINAL_VERSION_CODE", versionCode)

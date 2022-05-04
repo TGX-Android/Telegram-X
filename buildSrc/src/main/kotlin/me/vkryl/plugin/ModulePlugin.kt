@@ -180,6 +180,10 @@ open class ModulePlugin : Plugin<Project> {
               }
             } else emptyList()
 
+            if (pullRequests.isNotEmpty()) {
+              project.extra.set("app_version_suffix", "+${pullRequests.joinToString(",") { it.id.toString() }}")
+            }
+
             defaultConfig {
               applicationId = appId
 
