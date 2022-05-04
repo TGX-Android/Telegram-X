@@ -2413,7 +2413,7 @@ public class U {
   }
 
   public static CharSequence getUsefulMetadata (Tdlib tdlib) {
-    return Lang.getAppBuildAndVersion(tdlib) + " (" + BuildConfig.COMMIT_SHORT + ")\nAndroid " + SdkVersion.getPrettyName() + "(" + Build.VERSION.SDK_INT + ")" + "\n" + Build.BRAND + " " + Build.MODEL + " (" + Build.DISPLAY + ")";
+    return Lang.getAppBuildAndVersion(tdlib) + " (" + BuildConfig.COMMIT + ")\nAndroid " + SdkVersion.getPrettyName() + "(" + Build.VERSION.SDK_INT + ")" + "\n" + Build.BRAND + " " + Build.MODEL + " (" + Build.DISPLAY + ")";
   }
 
   public static String resolveMimeType (String path) {
