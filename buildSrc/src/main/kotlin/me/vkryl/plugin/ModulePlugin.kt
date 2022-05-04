@@ -174,11 +174,9 @@ open class ModulePlugin : Plugin<Project> {
             project.extra.set("properties", properties)
             project.extra.set("versions", versions)
 
-            val pullRequests: List<PullRequest> = if (properties.contains("pr.ids")) {
-              properties.getOrThrow("pr.ids").split(',').map {
-                PullRequest(it.toInt(), properties)
-              }
-            } else emptyList()
+            val pullRequests: List<PullRequest> = properties.getProperty("pr.ids", "").split(',').filter { it.matches(Regex("^[0-9]+$")) }.map {
+              PullRequest(it.toInt(), properties)
+            }.sortedBy { it.id }
 
             if (pullRequests.isNotEmpty()) {
               project.extra.set("app_version_suffix", "+${pullRequests.joinToString(",") { it.id.toString() }}")
