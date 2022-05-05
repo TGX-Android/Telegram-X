@@ -184,6 +184,10 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     this.isVideoStreamingProgressHidden = isVideoStreamingProgressHidden;
   }
 
+  public void setVideoStreamingClippingRect (RectF clipRect) {
+    vsClipRect.set(clipRect);
+  }
+
   public void setVideoStreamingOptions (boolean topOffsetNeeded, boolean cloudNeeded, int uiMode, RectF videoStreamingRect, BoolAnimator onDownloadedAnimator) {
     int prevUiMode = videoStreamingUiMode;
     boolean needProgressLayout = isVideoStreamingOffsetNeeded != topOffsetNeeded || !vsDownloadClickRect.equals(videoStreamingRect);
