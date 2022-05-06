@@ -221,7 +221,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       fileProgress.setHideDownloadedIcon(true);
     }
 
-    if (isSafeToStream(source) && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
+    if (isSafeToStream(source) && video.supportsStreaming && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
       this.fileProgress.setHideDownloadedIcon(true);
       this.fileProgress.setIgnoreLoaderClicks(true);
       this.fileProgress.setVideoStreaming(true);
@@ -911,10 +911,13 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
     float dlFactor = 1f - downloadedAnimator.getFloatValue();
     float durationDx = 0f;
-    boolean isStreamingUI = fileProgress.isVideoStreaming() && isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE;
+    boolean isStreamingUI = fileProgress.isVideoStreaming() && isVideo();
     boolean isDoubleLine = isStreamingUI && duration != null && durationShort != null;
+    if (source != null && source.getCombinedMessageCount() > 2) isDoubleLine = false; // 3+ combines can cause size issues
     boolean isSmallStreamingUI = isStreamingUI && !isDoubleLine;
     boolean needTopOffset = source != null && source.useFullWidth() && source.hasHeader() && source.isChannel() && isVideo() && (source instanceof TGMessageMedia && ((TGMessageMedia) source).isVideoFirstInMosaic(video.video.id)) && source.replyData == null;
+
+    // Log.d("%s %s => [%s, %s, trim: %s] <%s>", isStreamingUI, isDoubleLine, duration, durationShort, durationTrimmed, dlFactor);
 
     RectF actionButtonRect = Paints.getRectF();
     boolean showDuration = !StringUtils.isEmpty(durationTrimmed) && selectionFactor < 1f;
@@ -940,7 +943,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       actionButtonRect.set(cellCenterX - radius, cellCenterY - radius + (isSmallStreamingUI ? 0 : Screen.dp(6f)), cellCenterX + radius, cellCenterY + radius);
       durationRect.set(pDurationLeft - Screen.dp(4f), pDurationTop, pDurationRight, pDurationBottom);
 
-      if (durationRect.intersect(actionButtonRect)) {
+      if (durationRect.intersects(actionButtonRect.left, actionButtonRect.top, actionButtonRect.right, actionButtonRect.bottom)) {
         durationRect.set(cellCenterX + radiusCloud, cellCenterY + radiusCloud, cellCenterX + radiusCloud + Screen.dp(12f), cellCenterY + radiusCloud + Screen.dp(12f));
         getFileProgress().setVideoStreamingOptions(needTopOffset, true, isSmallStreamingUI ? FileProgressComponent.STREAMING_UI_MODE_SMALL : FileProgressComponent.STREAMING_UI_MODE_LARGE, durationRect, downloadedAnimator);
       } else {

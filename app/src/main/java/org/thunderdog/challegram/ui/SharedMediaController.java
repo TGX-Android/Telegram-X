@@ -295,7 +295,7 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
     }
     MediaItem item = MediaItem.valueOf(context(), tdlib, message);
     if (item != null) {
-      if (item.isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE && (filter.getConstructor() == TdApi.SearchMessagesFilterVideo.CONSTRUCTOR || filter.getConstructor() == TdApi.SearchMessagesFilterPhotoAndVideo.CONSTRUCTOR)) {
+      if (item.isVideo() && item.getSourceVideo().supportsStreaming && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE && (filter.getConstructor() == TdApi.SearchMessagesFilterVideo.CONSTRUCTOR || filter.getConstructor() == TdApi.SearchMessagesFilterPhotoAndVideo.CONSTRUCTOR)) {
         item.getFileProgress().setHideDownloadedIcon(true);
         item.getFileProgress().setVideoStreaming(true);
       }
