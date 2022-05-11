@@ -177,6 +177,25 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     this(context, tdlib, new TdApi.Video(0, document.thumbnail.width, document.thumbnail.height, document.fileName, document.mimeType, false, true, document.minithumbnail, document.thumbnail, document.document), chatId, messageId, source, useHotStuff);
   }
 
+  private void setVideoStreamingUi (boolean value) {
+    boolean oldValue = this.fileProgress.isVideoStreaming();
+
+    if (oldValue != value) {
+      this.fileProgress.setIgnoreLoaderClicks(value);
+      this.fileProgress.setVideoStreaming(value);
+
+      if (value) {
+        this.fileProgress.setHideDownloadedIcon(true);
+        this.fileProgress.setDownloadedIconRes(FileProgressComponent.PLAY_ICON);
+        this.fileProgress.setPausedIconRes(R.drawable.baseline_cloud_download_24);
+      } else {
+        this.fileProgress.setHideDownloadedIcon(source != null && source.isHotTimerStarted() && !source.isOutgoing());
+        this.fileProgress.setDownloadedIconRes(isHot() ? (source != null && source.isHotDone() ? R.drawable.baseline_check_24 : R.drawable.deproko_baseline_whatshot_24) : FileProgressComponent.PLAY_ICON);
+        this.fileProgress.setPausedIconRes(R.drawable.baseline_file_download_24);
+      }
+    }
+  }
+
   public MediaWrapper (BaseActivity context, Tdlib tdlib, @NonNull TdApi.Video video, long chatId, long messageId, @Nullable TGMessage source, boolean useHotStuff) {
     this.tdlib = tdlib;
     this.video = video;
@@ -221,12 +240,8 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       fileProgress.setHideDownloadedIcon(true);
     }
 
-    if (isSafeToStream(source) && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
-      this.fileProgress.setHideDownloadedIcon(true);
-      this.fileProgress.setIgnoreLoaderClicks(true);
-      this.fileProgress.setVideoStreaming(true);
-      this.fileProgress.setDownloadedIconRes(FileProgressComponent.PLAY_ICON);
-      this.fileProgress.setPausedIconRes(R.drawable.baseline_cloud_download_24);
+    if (isSafeToStream(source) && !video.video.remote.isUploadingActive && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
+      setVideoStreamingUi(true);
     }
 
     this.fileProgress.setFile(video.video, source != null ? source.getMessage(messageId) : null);
