@@ -180,6 +180,11 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     DrawAlgorithms.buildPlayPause(playPausePath, Screen.dp(18f), -1f, playPauseDrawFactor = this.playPauseFactor);
   }
 
+  public void vsLayout () {
+    checkProgressStyles();
+    layoutProgress();
+  }
+
   public void setVideoStreamingProgressHidden (boolean isVideoStreamingProgressHidden) {
     this.isVideoStreamingProgressHidden = isVideoStreamingProgressHidden;
   }

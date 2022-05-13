@@ -193,6 +193,12 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
         this.fileProgress.setDownloadedIconRes(isHot() ? (source != null && source.isHotDone() ? R.drawable.baseline_check_24 : R.drawable.deproko_baseline_whatshot_24) : FileProgressComponent.PLAY_ICON);
         this.fileProgress.setPausedIconRes(R.drawable.baseline_file_download_24);
       }
+
+      if (source != null && !source.isSecretChat() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
+        this.downloadedAnimator.setValue(this.fileProgress.isDownloaded(), false);
+      }
+
+      this.fileProgress.vsLayout();
     }
   }
 
@@ -1100,6 +1106,10 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
   @Override
   public void onStateChanged (TdApi.File file, @TdlibFilesManager.FileDownloadState int state) {
+    if (Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE && video != null) {
+      setVideoStreamingUi(!video.video.remote.isUploadingActive);
+    }
+
     if ((video != null || animation != null) && updateDuration()) {
       if (source != null) {
         source.postInvalidate();
