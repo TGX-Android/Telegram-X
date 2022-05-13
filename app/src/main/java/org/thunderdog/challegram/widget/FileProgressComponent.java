@@ -278,6 +278,10 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     return file != null && !file.local.isDownloadingCompleted && !file.remote.isUploadingCompleted && file.remote.uploadedSize == 0;
   }
 
+  public boolean isUploading () {
+    return file != null && !file.remote.isUploadingCompleted;
+  }
+
   public void setIsLocal () {
     this.isLocal = true;
     // setCurrentState(TGDownloadManager.STATE_DOWNLOADED_OR_UPLOADED, shouldAnimate());

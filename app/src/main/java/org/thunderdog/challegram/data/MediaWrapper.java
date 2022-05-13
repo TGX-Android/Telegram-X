@@ -946,7 +946,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       int pDurationCorners = isDoubleLine ? MathUtils.fromTo(Screen.dp(4f), Screen.dp(12f), dlFactor) : Screen.dp(4f);
       int pDurationTop = cellTop + Screen.dp(8f) + (needTopOffset ? Screen.dp(16f) : 0);
       int pDurationLeft = cellLeft + Screen.dp(12f);
-      int pDurationRight = (int) (pDurationLeft + MathUtils.fromTo(durationWidthShort, durationWidth, dlFactor) + ((doubleFpRadius) * (isStreamingUI ? dlFactor : 1f)) + ((isStreamingUI) ? MathUtils.fromTo(Screen.dp(4f), Screen.dp(isSmallStreamingUI ? 26f : 16f), dlFactor) : Screen.dp(4f)));
+      int pDurationRight = (int) (pDurationLeft + ((durationTrimmed != null && fileProgress.isUploading()) ? durationWidth : MathUtils.fromTo(durationWidthShort, durationWidth, dlFactor)) + ((doubleFpRadius) * (isStreamingUI ? dlFactor : 1f)) + ((isStreamingUI) ? MathUtils.fromTo(Screen.dp(4f), Screen.dp(isSmallStreamingUI ? 26f : 16f), dlFactor) : Screen.dp(4f)));
       int pDurationBottom = pDurationTop + (isDoubleLine ? MathUtils.fromTo(durationHeight(), (doubleFpRadius) + Screen.dp(8f), dlFactor) : durationHeight());
 
       float cellCenterX = cellLeft + cellWidth / 2f;
@@ -992,7 +992,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
           float textX = pDurationLeft + (isStreamingUI ? Screen.dp(20f) * dlFactor : 0);
           float textY = pDurationTop - Screen.dp(4f) + durationOffset();
           durationDx = isStreamingUI ? (Screen.dp(20f)) : 0;
-          if (durationShort != null) {
+          if (!fileProgress.isUploading() && durationShort != null) {
             int paintAlpha = paint.getAlpha();
             paint.setAlpha((int) (paintAlpha * dlFactor));
             c.drawText(duration != null ? duration : durationTrimmed, textX, textY, paint);
