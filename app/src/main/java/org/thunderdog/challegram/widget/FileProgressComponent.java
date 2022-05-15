@@ -174,10 +174,11 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   }
 
   public void setVideoStreaming (boolean isVideoStreaming) {
+    boolean isUpdated = this.isVideoStreaming != isVideoStreaming;
     this.isVideoStreaming = isVideoStreaming;
     this.playPausePath = new Path();
     setIsPlaying(false, false);
-    DrawAlgorithms.buildPlayPause(playPausePath, Screen.dp(18f), -1f, playPauseDrawFactor = this.playPauseFactor);
+    if (isUpdated) DrawAlgorithms.buildPlayPause(playPausePath, Screen.dp(18f), -1f, playPauseDrawFactor = this.playPauseFactor);
   }
 
   public void vsLayout () {
@@ -204,8 +205,9 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     vsDownloadClickRect.set(videoStreamingRect);
     updateVsRect();
 
-    if (prevUiMode != videoStreamingUiMode) {
+    if (prevUiMode != uiMode) {
       checkProgressStyles();
+      DrawAlgorithms.buildPlayPause(playPausePath, Screen.dp(uiMode == STREAMING_UI_MODE_SMALL ? 15f : 18f), -1f, playPauseDrawFactor = this.playPauseFactor);
       if (currentState == TdlibFilesManager.STATE_IN_PROGRESS) {
         setIcon(getCancelIcon(), false);
       }
@@ -1398,7 +1400,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
       }
 
       if (isVideoStreaming()) {
-        c.drawCircle(centerX(), centerY(), Screen.dp(DEFAULT_RADIUS), Paints.fillingPaint(fillingColor));
+        c.drawCircle(centerX(), centerY(), Screen.dp(videoStreamingUiMode == STREAMING_UI_MODE_LARGE ? DEFAULT_RADIUS : DEFAULT_STREAMING_RADIUS), Paints.fillingPaint(fillingColor));
         drawPlayPause(c, centerX(), centerY(), alpha, true);
 
         if (!vsClipRect.isEmpty() && !isVideoStreamingCloudNeeded) {
