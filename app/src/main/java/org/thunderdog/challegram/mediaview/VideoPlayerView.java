@@ -1,5 +1,6 @@
 package org.thunderdog.challegram.mediaview;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.os.Build;
 import android.os.Handler;
@@ -17,6 +18,7 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.PlaybackException;
 import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.analytics.AnalyticsListener;
 import com.google.android.exoplayer2.source.ClippingMediaSource;
 import com.google.android.exoplayer2.source.LoopingMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
@@ -28,16 +30,19 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.telegram.CallManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibManager;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 
 import java.io.File;
 
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.lambda.CancellableRunnable;
 
 /**
  * Date: 12/12/2016
@@ -138,6 +143,7 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
         player.release();
         player = null;
       }
+      setLongStreamingAlertHandler(false);
       setPlaying(false);
       return;
     }
@@ -177,6 +183,15 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
       } else {
         this.player.setVideoTextureView((TextureView) targetView);
       }
+
+      setLongStreamingAlertHandler(true);
+      this.player.addAnalyticsListener(new AnalyticsListener() {
+        @Override
+        public void onRenderedFirstFrame (EventTime eventTime, Object output, long renderTimeMs) {
+          setLongStreamingAlertHandler(false);
+        }
+      });
+
       this.player.setPlayWhenReady(isPlaying);
       if (targetView.getParent() == null) {
         this.parentView.addView(targetView, addIndex);
@@ -196,6 +211,49 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
     if (forcePlay) {
       setPlaying(true);
     }
+  }
+
+  private final static int LONG_STREAMING_PRELOAD_DURATION = 5 * 1000;
+  private CancellableRunnable longStreamingAlertRunnable;
+  private AlertDialog pendingLsAlert;
+
+  private void setLongStreamingAlertHandler (boolean state) {
+    if (state) {
+      if (longStreamingAlertRunnable == null) {
+        longStreamingAlertRunnable = new CancellableRunnable() {
+          @Override
+          public void act () {
+            if (UI.getContext(context).currentTdlib().isConnected()) { // we don't want to show this without internet connection
+              showLongStreamingAlert();
+            }
+          }
+        };
+
+        UI.post(longStreamingAlertRunnable, LONG_STREAMING_PRELOAD_DURATION);
+      }
+    } else if (longStreamingAlertRunnable != null) {
+      if (pendingLsAlert != null) {
+        pendingLsAlert.dismiss();
+      }
+
+      longStreamingAlertRunnable.cancel();
+      longStreamingAlertRunnable = null;
+      pendingLsAlert = null;
+    }
+  }
+
+  private void showLongStreamingAlert () {
+    AlertDialog.Builder b = new AlertDialog.Builder(context, Theme.dialogTheme());
+    b.setTitle(Lang.getString(R.string.Warning));
+    b.setMessage(Lang.getString(R.string.LongStreamingPreloadAlert));
+    b.setPositiveButton(Lang.getString(R.string.LongStreamingPreloadAlertClose), (dialog, which) -> {
+      pendingLsAlert = null;
+      dialog.dismiss();
+    });
+    b.setOnCancelListener(dialog -> {
+      pendingLsAlert = null;
+    });
+    pendingLsAlert = UI.getContext(context).showAlert(b);
   }
 
   public boolean checkTrim () {
