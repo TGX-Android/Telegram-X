@@ -334,8 +334,6 @@
       android:label="@string/AppName"
       android:launchMode="singleTask"
       android:windowSoftInputMode="stateHidden|adjustPan">
-      <meta-data android:name="com.sec.android.app.launcher.icon_theme" android:value="themeColor" />
-
       <intent-filter android:label="@string/AppName">
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
