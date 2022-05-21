@@ -3,11 +3,15 @@ package me.vkryl.plugin
 import Config
 import Keystore
 import LibraryVersions
+import buildConfigLong
+import buildConfigString
 import buildDate
 import com.android.build.gradle.AppExtension
 import com.android.build.gradle.BaseExtension
 import com.android.build.gradle.LibraryExtension
 import com.android.build.gradle.ProguardFiles
+import com.beust.klaxon.JsonObject
+import com.beust.klaxon.Parser
 import getOrThrow
 import loadProperties
 import monthYears
@@ -24,6 +28,20 @@ import java.net.URI
 import java.util.*
 
 open class ModulePlugin : Plugin<Project> {
+  data class PullRequest (
+    val id: Int,
+    val commitShort: String,
+    val commitLong: String,
+    val author: String
+  ) {
+    constructor(id: Int, properties: Properties) : this(
+      id,
+      properties.getOrThrow("pr.$id.commit_short"),
+      properties.getOrThrow("pr.$id.commit_long"),
+      properties.getOrThrow("pr.$id.author")
+    )
+  }
+
   override fun apply(project: Project) {
     val plugins = arrayOf(
       "kotlin-android"
@@ -38,9 +56,24 @@ open class ModulePlugin : Plugin<Project> {
 
     val javaVersion = JavaVersion.VERSION_11
 
-    val properties = loadProperties("local.properties")
+    val properties = loadProperties()
     val keystore = Keystore(properties.getOrThrow("keystore.file"))
     val appVersionOverride = properties.getProperty("app.version", "0").toInt()
+    val appId = properties.getOrThrow("app.id")
+
+    val parser: Parser = Parser.default()
+    val googleServices = parser.parse("app/google-services.json") as JsonObject
+    var foundPackageName: String? = null
+    googleServices.array<JsonObject>("client")!!.filter {
+      // client_info.android_client_info.package_name
+      val clientInfo = it.obj("client_info")!!
+      val googleAppId = clientInfo.string("mobilesdk_app_id")!!
+      val clientInfoPackage = clientInfo.obj("android_client_info")?.string("package_name")
+      foundPackageName = clientInfoPackage
+      clientInfoPackage == appId && (googleAppId != "1:1037154859800:android:683d617a5fe76437" || clientInfoPackage == "org.thunderdog.challegram")
+    }.ifEmpty {
+      error("google_services.json is not updated for $appId package. Found: $foundPackageName")
+    }
 
     val versions = loadProperties("version.properties")
     val appVersion = if (appVersionOverride > 0) appVersionOverride else versions.getOrThrow("version.app").toInt()
@@ -107,12 +140,12 @@ open class ModulePlugin : Plugin<Project> {
 
           is AppExtension -> {
             var git: List<String>
-            val process = ProcessBuilder("bash", "-c", "echo \"$(git rev-parse --short HEAD) $(git rev-parse HEAD) $(git show -s --format=%ct) $(git config --get remote.origin.url) $(git rev-parse --abbrev-ref HEAD)\"").start()
+            val process = ProcessBuilder("bash", "-c", "echo \"$(git rev-parse --short HEAD) $(git rev-parse HEAD) $(git show -s --format=%ct) $(git config --get remote.origin.url))\"").start()
             process.inputStream.reader(Charsets.UTF_8).use {
               git = it.readText().trim().split(' ', limit = 5)
             }
             process.waitFor()
-            if (git.size != 5) {
+            if (git.size != 4) {
               error("Source code must be fetched from git repository.")
             }
             val commitHashShort = git[0]
@@ -137,17 +170,42 @@ open class ModulePlugin : Plugin<Project> {
             }
 
             val commitUrl = String.format(Locale.ENGLISH, "%1\$s/commit/%3\$s", remoteUrl, commitHashShort, commitHashLong)
-            val commitBranch = git[4]
 
             project.extra.set("properties", properties)
             project.extra.set("versions", versions)
-            project.extra.set("app_version", appVersion)
-            project.extra.set("commit_short", commitHashShort)
-            project.extra.set("commit_long", commitHashLong)
-            project.extra.set("commit_date", commitDate)
-            project.extra.set("remote_url", remoteUrl)
-            project.extra.set("commit_url", commitUrl)
-            project.extra.set("commit_branch", commitBranch)
+
+            val pullRequests: List<PullRequest> = properties.getProperty("pr.ids", "").split(',').filter { it.matches(Regex("^[0-9]+$")) }.map {
+              PullRequest(it.toInt(), properties)
+            }.sortedBy { it.id }
+
+            if (pullRequests.isNotEmpty()) {
+              project.extra.set("app_version_suffix", "+${pullRequests.joinToString(",") { it.id.toString() }}")
+            }
+
+            defaultConfig {
+              applicationId = appId
+
+              buildConfigString("PROJECT_NAME", properties.getOrThrow("app.name"))
+              buildConfigString("MARKET_URL", "https://play.google.com/store/apps/details?id=${appId}")
+
+              buildConfigString("DOWNLOAD_URL", properties.getOrThrow("app.download_url"))
+
+              buildConfigString("REMOTE_URL", remoteUrl)
+              buildConfigString("COMMIT_URL", commitUrl)
+              buildConfigString("COMMIT", commitHashShort)
+              buildConfigLong("COMMIT_DATE", commitDate)
+              buildConfigString("SOURCES_URL", properties.getProperty("app.sources_url", remoteUrl))
+
+              buildConfigField("int[]", "PULL_REQUEST_ID", "{${
+                pullRequests.joinToString(", ") { it.id.toString() }
+              }}")
+              buildConfigField("String[]", "PULL_REQUEST_COMMIT", "{${
+                pullRequests.joinToString(", ") { "\"${it.commitShort}\"" }
+              }}")
+              buildConfigField("String[]", "PULL_REQUEST_URL", "{${
+                pullRequests.joinToString(", ") { "\"${remoteUrl}/pull/${it.id}/commits/${it.commitLong}\"" } 
+              }}")
+            }
 
             signingConfigs {
               arrayOf(getByName("debug"), maybeCreate("release")).forEach { config ->

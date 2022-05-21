@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="AppName">Telegram X</string>
-
   <string name="language_continueInLanguage">Continue in English</string>
 
   <string name="Page1Title">Telegram X</string>

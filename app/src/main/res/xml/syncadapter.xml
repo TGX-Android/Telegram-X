@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<sync-adapter xmlns:android="http://schemas.android.com/apk/res/android"
-  android:contentAuthority="org.thunderdog.challegram.sync.provider"
-  android:accountType="org.thunderdog.challegram.sync.account"
-  android:userVisible="true"
-  android:supportsUploading="true"
-  android:allowParallelSyncs="false"
-  android:isAlwaysSyncable="true" />

@@ -1086,7 +1086,7 @@ public class SettingsController extends ViewController<Void> implements
 
     SpannableStringBuilder b = new SpannableStringBuilder();
     b.append(Lang.getMarkdownStringSecure(this, R.string.AppSignature, BuildConfig.VERSION_NAME));
-    b.append('\n').append(Lang.getMarkdownStringSecure(this, R.string.CommitSignature, BuildConfig.COMMIT_SHORT, BuildConfig.COMMIT_URL));
+    b.append('\n').append(Lang.getMarkdownStringSecure(this, R.string.CommitSignature, BuildConfig.COMMIT, BuildConfig.COMMIT_URL));
     b.append('\n').append(Lang.getMarkdownStringSecure(this, R.string.CreatedOn, Lang.getTimestamp(BuildConfig.COMMIT_DATE, TimeUnit.SECONDS)));
 
     showOptions(b, ids.get(), strings.get(), null, icons.get(), (itemView, id) -> {
