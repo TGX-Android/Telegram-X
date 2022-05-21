@@ -815,7 +815,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private int getBubbleReplyOffset () {
-    return ReplyComponent.height() + Screen.dp(useBubble() ? 3f : 6f);
+    return ReplyComponent.height() + Screen.dp(useBubble() ? 3f : 6f) - (useForward() ? Screen.dp(4f) : 0);
   }
 
   public void rebuildLayout () {
