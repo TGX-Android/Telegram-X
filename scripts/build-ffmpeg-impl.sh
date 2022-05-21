@@ -81,7 +81,6 @@ function build_one {
   \
   --enable-runtime-cpudetect \
   --enable-pthreads \
-  --enable-avresample \
   --enable-filter="scale" \
   --enable-filter="overlay" \
   --enable-protocol=file \
