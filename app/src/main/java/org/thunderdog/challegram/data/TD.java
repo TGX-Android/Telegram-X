@@ -5458,6 +5458,10 @@ public class TD {
           return new ContentPreview(EMOJI_CALL_END, 0, Lang.getString(message.isOutgoing ? R.string.ChatContentVoiceChatFinished_outgoing : R.string.ChatContentVoiceChatFinished, Lang.getCallDuration(videoChatOrLiveStream.duration)), true);
         }
       }
+      case TdApi.MessageVideoChatScheduled.CONSTRUCTOR: {
+        TdApi.MessageVideoChatScheduled event = (TdApi.MessageVideoChatScheduled) message.content;
+        return new ContentPreview(EMOJI_CALL, 0, Lang.getString(message.isChannelPost ? R.string.LiveStreamScheduledOn : R.string.VideoChatScheduledFor, Lang.getMessageTimestamp(event.startDate, TimeUnit.SECONDS)), true);
+      }
       case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR: {
         TdApi.MessageInviteVideoChatParticipants info = (TdApi.MessageInviteVideoChatParticipants) message.content;
         if (message.isChannelPost) {

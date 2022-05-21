@@ -7094,6 +7094,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         case TdApi.MessageVideoChatStarted.CONSTRUCTOR: {
           return new TGMessageChat(context, msg, (TdApi.MessageVideoChatStarted) content);
         }
+        case TdApi.MessageVideoChatScheduled.CONSTRUCTOR: {
+          return new TGMessageChat(context, msg, (TdApi.MessageVideoChatScheduled) content);
+        }
         case TdApi.MessageVideoChatEnded.CONSTRUCTOR: {
           return new TGMessageChat(context, msg, (TdApi.MessageVideoChatEnded) content);
         }

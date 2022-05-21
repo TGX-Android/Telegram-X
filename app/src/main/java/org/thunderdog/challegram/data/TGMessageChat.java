@@ -115,6 +115,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
   public static final int TYPE_VIDEO_CHAT_ENDED = 91;
   public static final int TYPE_INVITE_VIDEO_CHAT_PARTICIPANTS = 92;
   public static final int TYPE_PROXIMITY_ALERT = 93;
+  public static final int TYPE_VIDEO_CHAT_SCHEDULED = 94;
 
   public static final int TYPE_EVENT_INVITE_LINK_REVOKED = 100;
   public static final int TYPE_EVENT_INVITE_LINK_DELETE = 101;
@@ -289,6 +290,12 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
   public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageVideoChatStarted voiceChatStarted) {
     super(context, msg);
     this.type = TYPE_VIDEO_CHAT_STARTED;
+  }
+
+  public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageVideoChatScheduled videoChatScheduled) {
+    super(context, msg);
+    this.type = TYPE_VIDEO_CHAT_SCHEDULED;
+    this.longValue = videoChatScheduled.startDate;
   }
 
   public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageVideoChatEnded videoChatEnded) {
@@ -1041,6 +1048,9 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
         } else {
           makeText(msg.isChannelPost ? R.string.LiveStreamStarted : R.string.VoiceChatStarted);
         }
+        break;
+      case TYPE_VIDEO_CHAT_SCHEDULED:
+        makeText(msg.isChannelPost ? R.string.LiveStreamScheduledOn : R.string.VideoChatScheduledFor, new Arg(Lang.getMessageTimestamp((int) longValue, TimeUnit.SECONDS)));
         break;
       case TYPE_VIDEO_CHAT_ENDED:
         if (msg.isOutgoing) {
