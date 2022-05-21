@@ -1110,6 +1110,8 @@
   <item type="id" name="btn_reportChatPornography" />
   <item type="id" name="btn_reportChatChildAbuse" />
   <item type="id" name="btn_reportChatCopyright" />
+  <item type="id" name="btn_reportChatIllegalDrugs" />
+  <item type="id" name="btn_reportChatPersonalDetails" />
   <item type="id" name="btn_reportChatOther" />
 
   <item type="id" name="btn_saveFile" />

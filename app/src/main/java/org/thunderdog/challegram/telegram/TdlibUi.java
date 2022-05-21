@@ -5638,6 +5638,14 @@ public class TdlibUi extends Handler {
     // colors.append(ViewController.OPTION_COLOR_NORMAL);
     strings.append(R.string.Copyright);
 
+    ids.append(R.id.btn_reportChatIllegalDrugs);
+    // colors.append(ViewController.OPTION_COLOR_NORMAL);
+    strings.append(R.string.IllegalDrugs);
+
+    ids.append(R.id.btn_reportChatPersonalDetails);
+    // colors.append(ViewController.OPTION_COLOR_NORMAL);
+    strings.append(R.string.PersonalDetails);
+
     ids.append(R.id.btn_reportChatOther);
     // colors.append(ViewController.OPTION_COLOR_NORMAL);
     strings.append(R.string.Other);
@@ -5663,6 +5671,12 @@ public class TdlibUi extends Handler {
         break;
       case R.id.btn_reportChatChildAbuse:
         reason = new TdApi.ChatReportReasonChildAbuse();
+        break;
+      case R.id.btn_reportChatIllegalDrugs:
+        reason = new TdApi.ChatReportReasonIllegalDrugs();
+        break;
+      case R.id.btn_reportChatPersonalDetails:
+        reason = new TdApi.ChatReportReasonPersonalDetails();
         break;
       case R.id.btn_reportChatOther:
         // TODO replace with openInputAlert
