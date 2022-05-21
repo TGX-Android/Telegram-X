@@ -6015,7 +6015,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         incrementReferenceCount(REFERENCE_TYPE_MESSAGE);
       }
     } else if (delta < 0) {
-      for (int i = delta - 1; i >= 0; i--) {
+      for (int i = 0; i < -delta; i++) {
         decrementReferenceCount(REFERENCE_TYPE_MESSAGE);
       }
     }
