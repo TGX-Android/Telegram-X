@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
   xmlns:tools="http://schemas.android.com/tools"
-  package="org.thunderdog.challegram"
   android:installLocation="auto">
 
   <uses-sdk tools:overrideLibrary="androidx.camera.camera2, androidx.camera.core, androidx.camera.view, androidx.camera.lifecycle, androidx.camera.extensions, com.otaliastudios.transcoder, com.otaliastudios.opengl, com.linkedin.android.litr, com.linkedin.android.litr.filter" />
@@ -324,14 +323,12 @@
     <activity
       android:name=".ManageSpaceActivity"
       android:configChanges="keyboard|keyboardHidden|orientation|screenSize|locale|layoutDirection|uiMode"
-      android:label="@string/AppName"
       android:launchMode="singleTask"
       android:windowSoftInputMode="adjustPan" />
 
     <activity
       android:name=".MainActivity"
       android:configChanges="keyboard|keyboardHidden|orientation|screenSize|locale|layoutDirection|uiMode"
-      android:label="@string/AppName"
       android:launchMode="singleTask"
       android:windowSoftInputMode="stateHidden|adjustPan">
       <intent-filter android:label="@string/AppName">
