@@ -4255,6 +4255,9 @@
   <string name="ScamMark">SCAM</string>
   <string name="FakeMark">FAKE</string>
 
+  <string name="IllegalDrugs">Illegal Drugs</string>
+  <string name="PersonalDetails">Personal Details</string>
+
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />
   <string name="suggested_language_code_plural" />
