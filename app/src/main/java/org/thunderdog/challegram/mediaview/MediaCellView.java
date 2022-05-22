@@ -10,13 +10,11 @@ import android.graphics.Rect;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ProgressBar;
 
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
@@ -38,7 +36,6 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.widget.FileProgressComponent;
 import org.thunderdog.challegram.widget.ForceTouchView;
-import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.SparseDrawableView;
 
 import me.vkryl.android.AnimatorUtils;
@@ -1778,7 +1775,7 @@ public class MediaCellView extends ViewGroup implements
   @Override
   public void onProgress (TdApi.File file, float progress) {
     if (callback != null) {
-      float bufferingProgress = file.expectedSize != 0 ? (float) (file.local.downloadOffset + file.local.downloadedPrefixSize) / (float) file.expectedSize : 0f;
+      float bufferingProgress = TD.getFileOffsetProgress(file) + TD.getFilePrefixProgress(file);
       callback.onSeekSecondaryProgress(media, bufferingProgress);
     }
   }

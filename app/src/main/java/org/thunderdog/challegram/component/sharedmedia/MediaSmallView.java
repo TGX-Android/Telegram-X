@@ -9,6 +9,7 @@ import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
@@ -264,7 +265,7 @@ public class MediaSmallView extends SparseDrawableView implements Destroyable, F
       c.restore();
     }
 
-    boolean isStreamingUI = item.isVideo();
+    boolean isStreamingUI = item.isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE;
 
     int textLeft = receiver.getLeft() + Screen.dp(7f);
     int textTop = receiver.getTop() + Screen.dp(5f);
@@ -289,6 +290,7 @@ public class MediaSmallView extends SparseDrawableView implements Destroyable, F
       if (isStreamingUI) {
         item.getFileProgress().setVideoStreamingProgressHidden(false);
         item.getFileProgress().setVideoStreamingOptions(false, false, FileProgressComponent.STREAMING_UI_MODE_EXTRA_SMALL, rectF, downloadedAnimator);
+        item.getFileProgress().setVideoStreamingClippingRect(rectF);
       }
     }
 

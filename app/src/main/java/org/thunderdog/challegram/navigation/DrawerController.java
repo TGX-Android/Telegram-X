@@ -54,6 +54,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.ChatsController;
 import org.thunderdog.challegram.ui.ListItem;
+import org.thunderdog.challegram.ui.MainController;
 import org.thunderdog.challegram.ui.PeopleController;
 import org.thunderdog.challegram.ui.SettingsAdapter;
 import org.thunderdog.challegram.ui.SettingsController;
@@ -265,6 +266,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_tdlib_clearLogs, R.drawable.baseline_bug_report_24, "Clear TDLib logs", false));
       items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_tdlib_shareLogs, R.drawable.baseline_bug_report_24, "Send TDLib log", false));
+      items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_tdlib_viewLogsOld, R.drawable.baseline_bug_report_24, "Clear Database", false));
       /*if (BuildConfig.DEBUG) {
         items.add(new SettingItem(SettingItem.TYPE_DRAWER_ITEM, R.id.btn_submitCrash, R.drawable.baseline_bug_report_24, "Crash app", false));
       }*/
@@ -808,6 +810,23 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
       }
       case R.id.btn_tdlib_shareLogs: {
         TdlibUi.sendLogs(context.navigation().getCurrentStackItem(), false, false);
+        break;
+      }
+      case R.id.btn_tdlib_viewLogsOld: {
+        context.currentTdlib().ui().eraseLocalData(context.navigation().getCurrentStackItem(), true, new TdlibUi.EraseCallback() {
+          @Override
+          public void onPrepareEraseData() {
+            //navigationController().getStack().destroyAllExceptLast();
+            setArguments(null);
+          }
+
+          @Override
+          public void onEraseDataCompleted() {
+            //MainController c = new MainController(context, tdlib);
+            //c.get();
+            //navigationController().insertController(c, 0);
+          }
+        });
         break;
       }
       case R.id.btn_wallet: {

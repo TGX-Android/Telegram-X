@@ -1004,8 +1004,9 @@ public class U {
   }
 
   public static boolean canStreamVideo (TdApi.InputFile inputFile) {
-    // TODO
-    return false;
+    // TODO: check if supportsStreaming boolean is set dynamically in any existing TG client
+    // "send as originals" should be false here I suppose
+    return true;
   }
 
   public static Location getLastKnownLocation (Context context, boolean allowNetwork) {

@@ -4256,6 +4256,10 @@
   <string name="ScamMark">SCAM</string>
   <string name="FakeMark">FAKE</string>
 
+  <string name="LongStreamingPreloadAlert">In order to start playback this video requires to be fully downloaded.</string>
+  <string name="LongStreamingPreloadAlertClose">Got it</string>
+
+  <string name="format_percentage">%1$d%%</string>
   <string name="IllegalDrugs">Illegal Drugs</string>
   <string name="PersonalDetails">Personal Details</string>
 
