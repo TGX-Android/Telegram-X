@@ -118,7 +118,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
   }
 
   public boolean isVisuallySilent () { // Display bell icon
-    return notification.soundId == 0;
+    return notification.isSilent;
   }
 
   public TdApi.Message findMessage () {

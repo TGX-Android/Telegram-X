@@ -3966,21 +3966,27 @@ public class TdlibUi extends Handler {
   }
 
   private void showClearHistoryConfirm (ViewController<?> context, final long chatId, @Nullable Runnable after) {
-    if (tdlib.canRevokeChat(chatId)) {
+    if (tdlib.canRevokeChat(chatId) || tdlib.canClearHistoryForEveryone(chatId)) {
       context.showSettings(new SettingsWrapBuilder(R.id.btn_removeChatFromList)
         .setAllowResize(false)
         .addHeaderItem(tdlib.isSelfChat(chatId) ? Lang.getMarkdownString(context, R.string.ClearSavedMessagesConfirm) : Lang.getString(R.string.ClearHistoryConfirm))
-        .setRawItems(new ListItem[] {
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_clearChatHistory, 0, Lang.getString(R.string.DeleteSecretChatHistoryForOtherParty, tdlib.cache().userFirstName(ChatId.toUserId(chatId))), R.id.btn_clearChatHistory, tdlib.isUserChat(chatId) && tdlib.cache().userDeleted(tdlib.chatUserId(chatId)))
-        })
         .setSaveColorId(R.id.theme_color_textNegative)
         .setSaveStr(R.string.Delete)
+        .setRawItems(new ListItem[] {
+          new ListItem(
+            ListItem.TYPE_CHECKBOX_OPTION,
+            R.id.btn_clearChatHistory,
+            0,
+            ChatId.isPrivate(chatId) ? Lang.getString(R.string.DeleteSecretChatHistoryForOtherParty, tdlib.cache().userFirstName(ChatId.toUserId(chatId))) : Lang.getString(R.string.DeleteChatHistoryForAllUsers),
+            R.id.btn_clearChatHistory,
+            tdlib.canRevokeChat(chatId) && tdlib.isUserChat(chatId) && tdlib.cache().userDeleted(tdlib.chatUserId(chatId))
+          )
+        })
         .setIntDelegate((id, result) -> {
           boolean clearHistory = result.get(R.id.btn_clearChatHistory) == R.id.btn_clearChatHistory;
           tdlib.client().send(new TdApi.DeleteChatHistory(chatId, false, clearHistory), tdlib.okHandler());
           U.run(after);
-        })
-      );
+        }));
     } else {
       context.showOptions(
         tdlib.isSelfChat(chatId) ? Lang.getMarkdownString(context, R.string.ClearSavedMessagesConfirm) : Lang.getString(R.string.ClearHistoryConfirm),
@@ -5638,6 +5644,14 @@ public class TdlibUi extends Handler {
     // colors.append(ViewController.OPTION_COLOR_NORMAL);
     strings.append(R.string.Copyright);
 
+    ids.append(R.id.btn_reportChatIllegalDrugs);
+    // colors.append(ViewController.OPTION_COLOR_NORMAL);
+    strings.append(R.string.IllegalDrugs);
+
+    ids.append(R.id.btn_reportChatPersonalDetails);
+    // colors.append(ViewController.OPTION_COLOR_NORMAL);
+    strings.append(R.string.PersonalDetails);
+
     ids.append(R.id.btn_reportChatOther);
     // colors.append(ViewController.OPTION_COLOR_NORMAL);
     strings.append(R.string.Other);
@@ -5663,6 +5677,12 @@ public class TdlibUi extends Handler {
         break;
       case R.id.btn_reportChatChildAbuse:
         reason = new TdApi.ChatReportReasonChildAbuse();
+        break;
+      case R.id.btn_reportChatIllegalDrugs:
+        reason = new TdApi.ChatReportReasonIllegalDrugs();
+        break;
+      case R.id.btn_reportChatPersonalDetails:
+        reason = new TdApi.ChatReportReasonPersonalDetails();
         break;
       case R.id.btn_reportChatOther:
         // TODO replace with openInputAlert

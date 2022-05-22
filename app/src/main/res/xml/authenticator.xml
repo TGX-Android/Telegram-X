@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<account-authenticator xmlns:android="http://schemas.android.com/apk/res/android"
-  android:accountType="org.thunderdog.challegram.sync.account"
-  android:icon="@mipmap/app_launcher_round"
-  android:smallIcon="@mipmap/app_launcher_round"
-  android:label="@string/AppName" />
