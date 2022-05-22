@@ -663,7 +663,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         float forwardWidth = Math.max((isPsa && fPsaTextT != null ? fAuthorNameT.getWidth() : fAuthorNameT != null ? fAuthorNameT.getWidth() : 0) +
           + fTimeWidth + Screen.dp(6f)
           + (getViewCountMode() == VIEW_COUNT_FORWARD ? viewCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN)) + shareCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN)) : 0),
-          isPsa && fPsaTextT != null && fAuthorNameT != null ? fAuthorNameT.getWidth() : 0);
+          isPsa && fPsaTextT != null && fAuthorNameT != null ? fAuthorNameT.getWidth() : 0)
+          + (replyData != null ? xTextPadding : 0);
         width = Math.max(width, Math.max(contentWidth + Screen.dp(11f), (int) (forwardWidth + Screen.dp(11f))));
       } else {
         width = Math.max(width, contentWidth + Screen.dp(11f));
@@ -814,7 +815,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private int getBubbleReplyOffset () {
-    return ReplyComponent.height() + Screen.dp(useBubble() ? 3f : 6f);
+    return ReplyComponent.height() + Screen.dp(useBubble() ? 3f : 6f) - (useForward() ? Screen.dp(4f) : 0);
   }
 
   public void rebuildLayout () {
@@ -1844,7 +1845,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       boolean mergeTop, mergeBottom;
 
       if (useBubbles) {
-        lineTop = forwardY;
+        lineTop = replyData != null ? (topContentEdge + (useBubble() ? xBubblePadding + xBubblePaddingSmall : Screen.dp(8f)) + (useBubbleName() ? getBubbleNameHeight() : 0)) : forwardY;
         lineBottom = bottomContentEdge - xBubblePadding - xBubblePaddingSmall - (useBubbleTime() ? getBubbleTimePartHeight() : 0) - getBubbleReduceHeight();
         mergeBottom = mergeTop = false;
       } else {
@@ -1860,7 +1861,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           lineBottom = height;
           mergeBottom = true;
         } else {
-          lineBottom = forwardY + getForwardHeight();
+          lineBottom = forwardY + getForwardHeight() + (replyData != null ? ReplyComponent.height() : 0);
           mergeBottom = false;
         }
       }
@@ -1913,6 +1914,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       } else {
         startX = pContentX;
         endX = viewWidth - startX;
+      }
+
+      if (useBubbles && isForward() && !isSelfChat()) {
+        startX += xTextPadding;
       }
 
       replyData.draw(c, startX, top, endX, width, replyReceiver, Lang.rtl());
