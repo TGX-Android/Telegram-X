@@ -6901,7 +6901,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                   // no need to show anything
                 } else if (isAnonymous) {
                   appendRight(b, R.string.EventLogPromotedRemainAnonymous, ((TdApi.ChatMemberStatusCreator) oldStatus).isAnonymous, ((TdApi.ChatMemberStatusCreator) newStatus).isAnonymous, false);
-                } else if (isPromote) {
+                } else if (isPromote && oldStatus != null && newStatus != null) {
                   final TdApi.ChatMemberStatusAdministrator oldAdmin = (TdApi.ChatMemberStatusAdministrator) oldStatus;
                   final TdApi.ChatMemberStatusAdministrator newAdmin = (TdApi.ChatMemberStatusAdministrator) newStatus;
                   appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedManageChannel : R.string.EventLogPromotedManageGroup, oldAdmin.rights.canManageChat, newAdmin.rights.canManageChat, false);
@@ -7093,6 +7093,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         }
         case TdApi.MessageVideoChatStarted.CONSTRUCTOR: {
           return new TGMessageChat(context, msg, (TdApi.MessageVideoChatStarted) content);
+        }
+        case TdApi.MessageVideoChatScheduled.CONSTRUCTOR: {
+          return new TGMessageChat(context, msg, (TdApi.MessageVideoChatScheduled) content);
         }
         case TdApi.MessageVideoChatEnded.CONSTRUCTOR: {
           return new TGMessageChat(context, msg, (TdApi.MessageVideoChatEnded) content);
