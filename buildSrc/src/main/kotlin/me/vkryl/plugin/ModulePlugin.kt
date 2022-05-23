@@ -140,7 +140,7 @@ open class ModulePlugin : Plugin<Project> {
 
           is AppExtension -> {
             var git: List<String>
-            val process = ProcessBuilder("bash", "-c", "echo \"$(git rev-parse --short HEAD) $(git rev-parse HEAD) $(git show -s --format=%ct) $(git config --get remote.origin.url))\"").start()
+            val process = ProcessBuilder("bash", "-c", "echo \"$(git rev-parse --short HEAD) $(git rev-parse HEAD) $(git show -s --format=%ct) $(git config --get remote.origin.url)\"").start()
             process.inputStream.reader(Charsets.UTF_8).use {
               git = it.readText().trim().split(' ', limit = 5)
             }
