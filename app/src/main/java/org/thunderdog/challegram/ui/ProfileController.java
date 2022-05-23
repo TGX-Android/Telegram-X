@@ -3950,8 +3950,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     this.currentPickMode = pickMode;
     ContactsController c = new ContactsController(context, tdlib);
     c.initWithMode(ContactsController.MODE_ADD_MEMBER);
+    c.setAllowBots(!isChannel() || pickMode == MODE_MEMBER_ADMIN);
     if (!isChannel()) {
-      c.setAllowBots(pickMode == MODE_MEMBER_ADMIN);
       c.setAllowChats(pickMode == MODE_MEMBER_BAN, pickMode == MODE_MEMBER_BAN);
     }
     c.setArguments(new ContactsController.Args(this));
