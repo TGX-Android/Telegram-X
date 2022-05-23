@@ -22,6 +22,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Locale;
 
 import me.vkryl.core.StringUtils;
@@ -94,9 +95,12 @@ public class VoIPController{
     if(endpoints.length==0){
       throw new IllegalArgumentException("endpoints size is 0");
     }
+    boolean needFilter = false;
     for(TdApi.CallServer endpoint : endpoints){
-      if (endpoint.type.getConstructor() != TdApi.CallServerTypeTelegramReflector.CONSTRUCTOR)
-        throw new IllegalArgumentException();
+      if (endpoint.type.getConstructor() != TdApi.CallServerTypeTelegramReflector.CONSTRUCTOR) {
+        needFilter = true;
+        continue;
+      }
       if(StringUtils.isEmpty(endpoint.ipAddress) && StringUtils.isEmpty(endpoint.ipv6Address)){
         throw new IllegalArgumentException("endpoint "+endpoint+" has empty/null ipv4");
       }
@@ -104,6 +108,17 @@ public class VoIPController{
       if(peerTag!=null && peerTag.length!=16){
         throw new IllegalArgumentException("endpoint "+endpoint+" has peer_tag of wrong length");
       }
+    }
+    if (needFilter) {
+      List<TdApi.CallServer> callServers = new ArrayList<>();
+      for (TdApi.CallServer endpoint : endpoints) {
+        if (endpoint.type.getConstructor() == TdApi.CallServerTypeTelegramReflector.CONSTRUCTOR) {
+          callServers.add(endpoint);
+        }
+      }
+      endpoints = callServers.toArray(new TdApi.CallServer[0]);
+      if (endpoints.length == 0)
+        throw new IllegalArgumentException("no CallServerTypeTelegramReflector found");
     }
     ensureNativeInstance();
     nativeSetRemoteEndpoints(nativeInst, endpoints, allowP2p, tcp, connectionMaxLayer);

@@ -1150,7 +1150,12 @@ public class TGCallService extends Service implements
     TdApi.CallStateReady state = (TdApi.CallStateReady) call.state;
 
     controller.setEncryptionKey(state.encryptionKey, call.isOutgoing);
-    controller.setRemoteEndpoints(state.servers, state.protocol.udpP2p && state.allowP2p, Settings.instance().forceTcpInCalls(), state.protocol.maxLayer);
+    try {
+      controller.setRemoteEndpoints(state.servers, state.protocol.udpP2p && state.allowP2p, Settings.instance().forceTcpInCalls(), state.protocol.maxLayer);
+    } catch (IllegalArgumentException e) {
+      hangUp();
+      return;
+    }
     int proxyId = Settings.instance().getEffectiveCallsProxyId();
     if (proxyId != Settings.PROXY_ID_NONE) {
       Settings.Proxy proxy = Settings.instance().getProxyConfig(proxyId);
