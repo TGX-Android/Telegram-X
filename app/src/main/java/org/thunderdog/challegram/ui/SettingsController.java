@@ -446,6 +446,14 @@ public class SettingsController extends ViewController<Void> implements
         }
         view.setUnreadCounter(hasError ? Tdlib.CHAT_FAILED : 0, false, isUpdate);
         switch (item.getId()) {
+          case R.id.btn_sourceCode: {
+            view.setData(Lang.getString(R.string.CommitInfo,
+              (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex == 0 ? Lang.newCodeSpan(needFakeBold) : null,
+              BuildConfig.COMMIT,
+              Lang.getTimestamp(BuildConfig.COMMIT_DATE, TimeUnit.SECONDS)
+            ));
+            break;
+          }
           case R.id.btn_devices: {
             if (sessions == null) {
               view.setData(R.string.LoadingInformation);
@@ -584,6 +592,11 @@ public class SettingsController extends ViewController<Void> implements
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_privacyPolicy, R.drawable.baseline_policy_24, R.string.PrivacyPolicy));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+
+    items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sourceCode, R.drawable.baseline_github_24, R.string.ViewSourceCode));
+    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+
     items.add(new ListItem(ListItem.TYPE_BUILD_NO, R.id.btn_build, 0, Lang.getAppBuildAndVersion(tdlib), false));
 
     processUserFull(tdlib.myUserFull());
@@ -843,6 +856,10 @@ public class SettingsController extends ViewController<Void> implements
     
   }
 
+  private void viewSourceCode () {
+    tdlib.ui().openUrl(this, BuildConfig.COMMIT_URL, new TdlibUi.UrlOpenParameters().disableInstantView());
+  }
+
   @Override
   public void onClick (View v) {
     cancelSupportOpen();
@@ -866,6 +883,10 @@ public class SettingsController extends ViewController<Void> implements
       }
       case R.id.btn_devices: {
         navigateTo(new SettingsSessionsController(context, tdlib));
+        break;
+      }
+      case R.id.btn_sourceCode: {
+        viewSourceCode();
         break;
       }
       case R.id.btn_themeSettings: {
@@ -1096,7 +1117,7 @@ public class SettingsController extends ViewController<Void> implements
           break;
         }
         case R.id.btn_sourceCode: {
-          UI.openUrl(BuildConfig.COMMIT_URL);
+          viewSourceCode();
           break;
         }
         case R.id.btn_copyDebug: {

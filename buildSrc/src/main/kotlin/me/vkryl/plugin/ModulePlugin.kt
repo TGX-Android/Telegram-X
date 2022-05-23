@@ -169,7 +169,7 @@ open class ModulePlugin : Plugin<Project> {
               error("Unfortunately, currently you must host your fork on github.com.")
             }
 
-            val commitUrl = String.format(Locale.ENGLISH, "%1\$s/commit/%3\$s", remoteUrl, commitHashShort, commitHashLong)
+            val commitUrl = String.format(Locale.ENGLISH, "%1\$s/tree/%3\$s", remoteUrl, commitHashShort, commitHashLong)
 
             project.extra.set("properties", properties)
             project.extra.set("versions", versions)
