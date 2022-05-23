@@ -48,7 +48,7 @@ android {
         buildConfigString("TELEGRAM_RESOURCES_CHANNEL", Telegram.RESOURCES_CHANNEL)
         buildConfigString("TELEGRAM_UPDATES_CHANNEL", Telegram.UPDATES_CHANNEL)
 
-        buildConfigInt("EMOJI_VERSION", Emoji.VERSION)
+        buildConfigInt("EMOJI_VERSION", versions.getIntOrThrow("version.emoji"))
         buildConfigString("EMOJI_BUILTIN_ID", Emoji.BUILTIN_ID)
 
         buildConfigString("LANGUAGE_PACK", Telegram.LANGUAGE_PACK)

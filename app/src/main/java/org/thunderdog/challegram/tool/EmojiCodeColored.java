@@ -72,6 +72,13 @@ public class EmojiCodeColored {
       "\uD83E\uDD76",
       "\uD83D\uDE36\u200D\uD83C\uDF2B",
       "\uD83E\uDD71", // Yawning Face
+      "\uD83E\uDEE0" /* 🫠 */,
+      "\uD83E\uDEE2" /* 🫢 */,
+      "\uD83E\uDEE3" /* 🫣 */,
+      "\uD83E\uDEE1" /* 🫡 */,
+      "\uD83E\uDEE5" /* 🫥 */,
+      "\uD83E\uDEE4" /* 🫤 */,
+      "\uD83E\uDD79" /* 🥹 */,
       "\uD83D\uDE31",
       "\uD83D\uDE28",
       "\uD83D\uDE30",
@@ -160,6 +167,13 @@ public class EmojiCodeColored {
       "\uD83E\uDD19",
       "\uD83D\uDCAA",
       "\uD83D\uDD95",
+      "\uD83E\uDEF1",
+      "\uD83E\uDEF2",
+      "\uD83E\uDEF3",
+      "\uD83E\uDEF4",
+      "\uD83E\uDEF0",
+      "\uD83E\uDEF5",
+      "\uD83E\uDEF6",
       "\u270D",
       "\uD83E\uDD0F", // Pinching Hand
       "\uD83D\uDE4F",
@@ -171,6 +185,7 @@ public class EmojiCodeColored {
       "\uD83D\uDC84",
       "\uD83D\uDC8B",
       "\uD83D\uDC44",
+      "\uD83E\uDEE6",
       "\uD83E\uDDB7",
       "\uD83D\uDC45",
       "\uD83D\uDC42",
@@ -289,7 +304,7 @@ public class EmojiCodeColored {
       "\uD83E\uDD35\u200D\u2640",
       "\uD83E\uDD35",
       "\uD83E\uDD35\u200D\u2642",
-
+      "\uD83E\uDEC5",
       "\uD83D\uDC78",
       "\uD83E\uDD34",
       "\uD83E\uDDB8\u200D\u2640",
@@ -325,7 +340,10 @@ public class EmojiCodeColored {
       "\uD83E\uDDDA\u200D\u2640",
       "\uD83E\uDDDA",
       "\uD83E\uDDDA\u200D\u2642",
+      "\uD83E\uDDCC",
       "\uD83D\uDC7C",
+      "\uD83E\uDEC4",
+      "\uD83E\uDEC3",
       "\uD83E\uDD30",
       "\uD83E\uDD31",
       "\uD83D\uDC69\u200D\uD83C\uDF7C",
@@ -591,6 +609,7 @@ public class EmojiCodeColored {
       "\uD83E\uDDC3", // Beverage Box
       "\uD83E\uDDC9", // Mate
       "\uD83E\uDDCA", // Ice
+      "\uD83E\uDED8",
       "\uD83E\uDD64",
       "\uD83E\uDDCB",
       "\uD83C\uDF76",
@@ -842,6 +861,19 @@ public class EmojiCodeColored {
       "\uD83E\uDE70", // Ballet Shoes
       "\uD83E\uDE95", // Banjo
       "\uD83E\uDE94", // Diya Lamp
+      "\uD83E\uDED7",
+      "\uD83E\uDED9",
+      "\uD83D\uDEDD",
+      "\uD83D\uDEDE",
+      "\uD83D\uDEDF",
+      "\uD83E\uDEAC",
+      "\uD83E\uDEA9",
+      "\uD83E\uDEAB",
+      "\uD83E\uDE7C",
+      "\uD83E\uDE7B",
+      "\uD83E\uDEE7",
+      "\uD83E\uDEAA",
+      "\uD83D\uDFF0",
       "\uD83C\uDFBF",
       "\uD83C\uDFC6",
       "\uD83E\uDD47",

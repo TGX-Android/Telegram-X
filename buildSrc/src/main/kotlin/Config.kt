@@ -58,7 +58,6 @@ object App {
 }
 
 object Emoji {
-  const val VERSION = 4 // Emoji 13.1
   // Identifier of the built-in emoji set. Change it if built-in emoji pack is changed
   const val BUILTIN_ID = "apple"
 }

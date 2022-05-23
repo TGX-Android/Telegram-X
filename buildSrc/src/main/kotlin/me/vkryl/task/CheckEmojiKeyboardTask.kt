@@ -151,7 +151,8 @@ open class CheckEmojiKeyboardTask : BaseTask() {
       Pair("\uD83D\uDC69\u200D\uD83E\uDD1D\u200D\uD83D\uDC69", "\uD83D\uDC6D"),
       Pair("\uD83D\uDC68\u200D\uD83E\uDD1D\u200D\uD83D\uDC68", "\uD83D\uDC6C"),
       Pair("\uD83E\uDDD1\u200D\u2764\u200D\uD83D\uDC8B\u200D\uD83E\uDDD1", "\uD83D\uDC8F"),
-      Pair("\uD83E\uDDD1\u200D\u2764\u200D\uD83E\uDDD1", "\uD83D\uDC91")
+      Pair("\uD83E\uDDD1\u200D\u2764\u200D\uD83E\uDDD1", "\uD83D\uDC91"),
+      Pair("\uD83E\uDEF1\u200D\uD83E\uDEF2", "\uD83E\uDD1D" /* 🤝 */)
     )
 
     val supportedTonedEmoji = mutableSetOf<String>()
