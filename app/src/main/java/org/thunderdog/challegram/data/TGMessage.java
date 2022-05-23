@@ -6757,7 +6757,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                       default:
                         if (!isAnonymous) {
                           type = 1;
-                          oldStatus = new TdApi.ChatMemberStatusAdministrator();
+                          oldStatus = new TdApi.ChatMemberStatusAdministrator(null, false, new TdApi.ChatAdministratorRights());
                         } else {
                           oldStatus = e.oldStatus;
                         }
@@ -6771,7 +6771,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                       default:
                         if (!isAnonymous) {
                           type = 2;
-                          newStatus = new TdApi.ChatMemberStatusAdministrator();
+                          newStatus = new TdApi.ChatMemberStatusAdministrator(null, false, new TdApi.ChatAdministratorRights());
                         } else {
                           newStatus = e.newStatus;
                         }
@@ -6906,7 +6906,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                   // no need to show anything
                 } else if (isAnonymous) {
                   appendRight(b, R.string.EventLogPromotedRemainAnonymous, ((TdApi.ChatMemberStatusCreator) oldStatus).isAnonymous, ((TdApi.ChatMemberStatusCreator) newStatus).isAnonymous, false);
-                } else if (isPromote && oldStatus != null && newStatus != null) {
+                } else if (isPromote) {
                   final TdApi.ChatMemberStatusAdministrator oldAdmin = (TdApi.ChatMemberStatusAdministrator) oldStatus;
                   final TdApi.ChatMemberStatusAdministrator newAdmin = (TdApi.ChatMemberStatusAdministrator) newStatus;
                   appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedManageChannel : R.string.EventLogPromotedManageGroup, oldAdmin.rights.canManageChat, newAdmin.rights.canManageChat, false);
