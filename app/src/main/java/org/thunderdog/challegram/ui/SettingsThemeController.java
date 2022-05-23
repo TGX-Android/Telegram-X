@@ -1456,7 +1456,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         break;
       }
       case R.id.btn_subscribeToBeta: {
-        tdlib.ui().openUrl(this, Lang.getStringSecure(R.string.url_betaSubscription), null);
+        tdlib.ui().subscribeToBeta(this);
         break;
       }
       case R.id.btn_checkUpdates: {

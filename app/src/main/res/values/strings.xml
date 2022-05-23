@@ -4264,6 +4264,7 @@
   <string name="PersonalDetails">Personal Details</string>
   <string name="ViewSourceCode">View Source Code</string>
   <string name="CommitInfo">%1$s commit, %2$s</string>
+  <string name="AppOnGooglePlay">App on Google Play</string>
 
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />

@@ -594,6 +594,12 @@ public class SettingsController extends ViewController<Void> implements
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_checkUpdates, R.drawable.baseline_google_play_24, U.isAppSideLoaded() ? R.string.AppOnGooglePlay : R.string.CheckForUpdates));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    if (!U.isAppSideLoaded()) {
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_subscribeToBeta, R.drawable.templarian_baseline_flask_24, R.string.SubscribeToBeta));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    }
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sourceCode, R.drawable.baseline_github_24, R.string.ViewSourceCode));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
@@ -856,6 +862,10 @@ public class SettingsController extends ViewController<Void> implements
     
   }
 
+  private void viewGooglePlay () {
+    tdlib.ui().openUrl(this, BuildConfig.MARKET_URL, new TdlibUi.UrlOpenParameters().disableInstantView());
+  }
+
   private void viewSourceCode () {
     tdlib.ui().openUrl(this, BuildConfig.COMMIT_URL, new TdlibUi.UrlOpenParameters().disableInstantView());
   }
@@ -883,6 +893,14 @@ public class SettingsController extends ViewController<Void> implements
       }
       case R.id.btn_devices: {
         navigateTo(new SettingsSessionsController(context, tdlib));
+        break;
+      }
+      case R.id.btn_checkUpdates: {
+        viewGooglePlay();
+        break;
+      }
+      case R.id.btn_subscribeToBeta: {
+        tdlib.ui().subscribeToBeta(this);
         break;
       }
       case R.id.btn_sourceCode: {
