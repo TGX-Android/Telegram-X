@@ -444,7 +444,7 @@
   <string name="PasscodeInvalidPin">Invalid PIN</string>
   <string name="PasscodeInvalidPattern">Invalid Pattern</string>
 
-  <string name="ChangePasscodeInfo">When you set up an additional passcode, a lock icon will appear on the chats page. Tap it to lock and unlock the app.\n\nNote: if you forget the passcode, you\'ll need to delete and reinstall the app. All secret chats will be lost.</string>
+  <string name="ChangePasscodeInfo">When a passcode is set, a lock icon appears on the chats page. Tap it to lock and unlock your Telegram app.\n\nNote: if you forget your passcode, you\'ll need to log out or reinstall the app. All secret chats will be lost.</string>
   <string name="AutoLock">Auto-Lock</string>
   <string name="AutoLockDisabled">Disabled</string>
   <string name="AutoLockInstant">Instant</string>
@@ -472,7 +472,7 @@
   <string name="DeletePhoto">Delete photo</string>
   <string name="ClearHistory">Clear history</string>
   <string name="Cancel">Cancel</string>
-  <string name="AddMember">Add member</string>
+  <string name="AddMember">Add members</string>
   <string name="AddMembers">Add members</string>
   <string name="DeleteAndLeave">Delete and exit</string>
   <string name="justAdd">Just add to group</string>
@@ -513,10 +513,10 @@
   <string name="BotStart">START</string>
   <string name="ChannelPublic">Public Channel</string>
   <string name="ChannelPublicInfo">Public channels can be found in search, anyone can join them.</string>
-  <string name="ChannelUsernameHelp">People can share this link with others and find your channel using Telegram search.</string>
+  <string name="ChannelUsernameHelp">If you set a public link, other people will be able to find and join your channel.\n\nYou can use a–z, 0–9 and underscores.\nMinimum length is 5 characters.</string>
   <string name="ChannelPrivate">Private Channel</string>
-  <string name="ChannelPrivateInfo">Private channels can only be joined via an invite link.</string>
-  <string name="ChannelPrivateLinkHelp">People can join your channel by following this link. You can revoke the link any time.</string>
+  <string name="ChannelPrivateInfo">Private channels can only be joined via invite link.</string>
+  <string name="ChannelPrivateLinkHelp">People can join your channel by following this link. You can revoke the link at any time.</string>
   <string name="SendMessageTo">Send message to…</string>
   <string name="GroupName">Group name</string>
   <string name="GroupDontAdd">Do not add to the group</string>
@@ -539,10 +539,10 @@
   <string name="ChannelBroadcast">Broadcast</string>
   <string name="LeaveChannel">Leave channel</string>
   <string name="DestroyChannel">Destroy channel</string>
-  <string name="DestroyChannelHint">Wait! Deleting this channel will remove all subscribers and all messages will be lost.\nDelete the channel anyway?</string>
+  <string name="DestroyChannelHint">Deleting this channel will remove all subscribers and all posts will be lost.</string>
   <string name="LeaveMegaMenu">Leave group</string>
   <string name="DestroyGroup">Destroy group</string>
-  <string name="DestroyGroupHint">Wait! Deleting this group will remove all members and all messages will be lost.\nDelete the group anyway?</string>
+  <string name="DestroyGroupHint">Deleting this group will remove all members and all messages will be lost. Do you want to delete the group?</string>
   <string name="LeaveChatAdminHint">Warning: you will lose all your admin rights after leaving</string>
   <string name="inactiveGroup">inactive group</string>
   <string name="RevokeLink">Revoke Link</string>
@@ -656,12 +656,12 @@
   <string name="XVideoSaved_other">%1$s videos saved to Gallery</string>
   <string name="ChannelSignMessages">Sign Messages</string>
   <string name="RestrictSaving">Restrict Saving Content</string>
-  <string name="RestrictSavingBotInfo">Copying and forwarding of this message is restricted by the bot.</string>
+  <string name="RestrictSavingBotInfo">Copying and forwarding is not allowed from this bot.</string>
   <string name="RestrictSavingUserInfo">Copying and forwarding of this message is restricted.</string>
   <string name="RestrictSavingGroupInfo">Copying and forwarding is restricted by group admins</string>
   <string name="RestrictSavingChannelInfo">Copying and forwarding is restricted by channel admins</string>
-  <string name="RestrictSavingGroupHint">Members won\'t be able to forward messages from this group or save media files.</string>
-  <string name="RestrictSavingChannelHint">Subscribers won\'t be able to forward messages from this channel or save media files.</string>
+  <string name="RestrictSavingGroupHint">Members won\'t be able to copy, save and forward content from this group.</string>
+  <string name="RestrictSavingChannelHint">Subscribers won\'t be able to copy, save and forward content from this channel.</string>
   <string name="PostNotFound">Post not found</string>
   <string name="OpenSupergroup">Open Supergroup</string>
   <string name="Call">Call</string>
@@ -706,7 +706,7 @@
   <string name="Downloading">Downloading %1$s of %2$s</string>
   <string name="Confirm">Confirm</string>
   <string name="TooManyPublicChannels">Sorry, you have created too many public channels. You can either create a private channel or delete one of your existing channels first.</string>
-  <string name="TooManyPublicLinks">Sorry, you have created too many public links. Try deleting or making some of your groups or channels private.</string>
+  <string name="TooManyPublicLinks">You have reserved too many public links. Try revoking the link from an older group or channel, or create a private one instead.</string>
   <string name="XIsAlreadyInChat">%1$s is already a member of this chat</string>
   <string name="XIsAlreadyAdmin">%1$s already has admin rights</string>
   <string name="ProfilePhoto">Profile photo</string>
@@ -810,8 +810,8 @@
   <string name="EncryptedDescription4">Do not allow forwarding</string>
   <string name="EditMessage">Edit message</string>
   <string name="NotNow">Not now</string>
-  <string name="ChannelNotifyMembersInfoOn">Members will be notified when you post</string>
-  <string name="ChannelNotifyMembersInfoOff">Members will receive a silent notification</string>
+  <string name="ChannelNotifyMembersInfoOn">Subscribers will be notified when you post.</string>
+  <string name="ChannelNotifyMembersInfoOff">Subscribers will receive a silent notification.</string>
   <string name="ChannelSilentBroadcast">Silent Broadcast</string>
   <string name="MessageLifetime">Self-Destruct Timer</string>
   <string name="Done">Done</string>
@@ -898,7 +898,7 @@
   <string name="WhoCanAddYouToGroupsAndChannels">Who can add you to groups and channels?</string>
   <string name="WhoCanAddMeInfo">You can restrict who can add you to groups and channels with granular precision.</string>
   <string name="LastSeenTitle">Who can see your Last Seen time?</string>
-  <string name="CustomHelp">You won\'t see Last Seen and Online statuses for people with whom you don\'t share yours. Approximate last seen will be shown instead (recently, within a week, within a month).</string>
+  <string name="CustomHelp">You won\'t see Last Seen or Online statuses for people with whom you don\'t share yours. Approximate times will be shown instead (recently, within a week, within a month).</string>
   <string name="AlwaysShareWith">Always Share With</string>
   <string name="NeverShareWith">Never Share With</string>
   <string name="CustomShareSettingsHelp">These settings will override the values above.</string>
@@ -907,7 +907,7 @@
   <string name="AlwaysAllow">Always Allow</string>
   <string name="NeverAllow">Never Allow</string>
   <string name="SetAdditionalPassword">Set additional password</string>
-  <string name="SetAdditionalPasswordInfo">You can set a password that will be required when you log in on a new device in addition to the code you get in the SMS.</string>
+  <string name="SetAdditionalPasswordInfo">You can set a password that will be required when you log in on a new device in addition to the code you get via SMS.</string>
   <string name="EnabledPasswordText">You have enabled Two-Step verification.\nYou\'ll need the password you set up here to log in to your Telegram account.</string>
   <string name="ChangePassword">Change Password</string>
   <string name="DisablePassword">Disable Password</string>
@@ -941,8 +941,8 @@
   <string name="InvalidCode">Invalid code. Please try again.</string>
   <string name="AbortPassword">Abort Two-Step Verification Setup</string>
   <string name="AwaitingEmailConfirmation">Awaiting email confirmation</string>
-  <string name="InvalidPasswordTryAgain">Invalid password. Please try again</string>
-  <string name="PasswordAndHintMustBeDifferent">Password and hint must be different.</string>
+  <string name="InvalidPasswordTryAgain">Invalid password, please try again.</string>
+  <string name="PasswordAndHintMustBeDifferent">Hint must be different from password.</string>
   <string name="RecoveryCodeInvalid">Invalid recovery code. Please try again</string>
   <string name="PasswordMatchesOldOne">Password hasn\'t changed.</string>
   <string name="format_PasscodeTooManyAttempts">Too many attempts. %1$s</string>
@@ -1193,7 +1193,7 @@
   <string name="SentMissedCall">Within next few seconds you should receive a short call from a phone number which starts with **%1$s**.</string>
   <string name="SentMissedCallXDigits_one">Please enter the last **%1$s digit** of the missed call.</string>
   <string name="SentMissedCallXDigits_other">Please enter the last **%1$s digits** of the missed call.</string>
-  <string name="DidNotGetTheCode">Haven\'t received the code?</string>
+  <string name="DidNotGetTheCode">Didn\'t get the code?</string>
   <string name="SuccessfullyChangedNumber">Successfully changed number to %1$s.</string>
   <string name="YourPhone">Your Phone</string>
   <string name="SetUpUsername">Set Username</string>
@@ -1333,7 +1333,7 @@
   <string name="RequestJoinGroupX">Request group admins to let you join %1$s?</string>
   <string name="RequestFollowChannelX">Request channel admins to let you join %1$s?</string>
   <string name="RequestJoinGroupBtn">Request to join</string>
-  <string name="RequestJoinChannelBtn">Request to follow</string>
+  <string name="RequestJoinChannelBtn">Request to join</string>
   <string name="RequestJoinGroupSent">Request to join %1$s has been sent</string>
   <string name="RequestJoinChannelSent">Request to follow %1$s has been sent</string>
   <string name="XChangedGroupTitle">%1$s changed the group name</string>
@@ -1396,7 +1396,7 @@
   <string name="AddAdminToTheGroup">Add %1$s to the group and assign as an admin?</string>
   <string name="QAddXToChannel">Add %1$s to the channel?</string>
   <string name="VoiceCalls">Voice Calls</string>
-  <string name="VoiceCallPrivacyDesc">You can restrict who can call you with granular precision</string>
+  <string name="VoiceCallPrivacyDesc">Choose exactly who can and can\'t call you.</string>
   <string name="Ringtone">Ringtone</string>
   <string name="RingtoneDisabled">Disabled</string>
   <string name="Calls">Calls</string>
@@ -1427,10 +1427,10 @@
   <string name="TextSizeReset">Reset to Default</string>
   <string name="NoCalls">You haven\'t called anybody yet.</string>
   <string name="VoipOfflineAirplaneTitle">Airplane Mode</string>
-  <string name="VoipOfflineAirplane">You currently have airplane mode enabled. Please turn it off or connect to Wi-Fi in order to make calls.</string>
+  <string name="VoipOfflineAirplane">You have airplane mode enabled. Please turn it off or connect to Wi-Fi to make calls.</string>
   <string name="VoipOfflineTitle">Offline</string>
   <string name="VoipOffline">You\'re currently offline. Please connect to the Internet in order to make calls.</string>
-  <string name="NoRightToCall">Sorry, you cannot call %1$s because of their privacy settings.</string>
+  <string name="NoRightToCall">Sorry, you cannot call %1$s because of their privacy settings. You can ask them to modify their setting or to call you instead.</string>
   <string name="VoipConnecting">Connecting</string>
   <string name="VoipRinging">Ringing</string>
   <string name="VoipWaiting">Waiting</string>
@@ -1453,7 +1453,7 @@
   <string name="UseLessDataAlways">Always</string>
   <string name="MicrophonePermission">Permission required</string>
   <string name="MicrophonePermissionDesc">Microphone access required in order to make calls.</string>
-  <string name="CallEmojiHint">If these emoji are the same on %1$s\'s screen, this call is 100%% secure.</string>
+  <string name="CallEmojiHint">If the emoji on %1$s\'s screen are the same, this call is 100%% secure.</string>
   <string name="ShowCall">Show call</string>
   <string name="VoipOngoingAlertTitle">Another call in progress</string>
   <string name="CallInProgressDesc">You currently have an ongoing call with %1$s. Would you like to hang up on that call and start a new one with %2$s?</string>
@@ -1603,7 +1603,7 @@
   <string name="ThemeGreen">Green</string>
   <string name="VideoMessages">Video messages</string>
   <string name="NoVideoMessages">No Video messages</string>
-  <string name="DeleteContactConfirm">Are you sure you want to delete %1$s from contacts list?</string>
+  <string name="DeleteContactConfirm">Delete %1$s from contacts?</string>
   <string name="BotIsDown">Bot is not responding. Please try again later.</string>
   <string name="BotIsDownSpecific">%1$s is not responding. Please try again later.</string>
   <string name="UseInAppBrowser">In-app Browser</string>
@@ -1618,7 +1618,7 @@
   <string name="BlockUser">Block user</string>
   <string name="BlockSender">Block sender</string>
   <string name="MessageLifetimePhoto">If you set a timer, the photo will self-destruct after it was viewed.</string>
-  <string name="MessageLifetimeVideo">If you set a timer, the video will self-destruct after it was viewed.</string>
+  <string name="MessageLifetimeVideo">If you set a timer, the video will self-destruct after it is viewed.</string>
   <string name="NoMembersToShow">No members to show</string>
   <string name="NoMembersToShowDesc">Try changing your search query.\nFound members will be shown here.</string>
   <string name="ManageChannel">Manage Channel</string>
@@ -1740,7 +1740,7 @@
   <string name="Unselect">Unselect</string>
   <string name="LinkInUse">Sorry, this public link is already taken.</string>
   <string name="LinkInvalid">Sorry, this public link is invalid.</string>
-  <string name="LinkInvalidShort">Public link must have at least 5 characters.</string>
+  <string name="LinkInvalidShort">Public links must have at least 5 characters.</string>
   <string name="LinkInvalidLong">Public link must not exceed 32 characters.</string>
   <string name="LinkInvalidStartNumber">Sorry, a link can\'t start with a number.</string>
   <string name="LinkGroupHelp">You can set a public link on **Telegram**. If you do, other people will be able to find and join your group by this link.\n\nYou can use **a–z**, **0–9** and underscores.\nMinimum length is **5** characters.</string>
@@ -1778,7 +1778,7 @@
   <string name="EventLogEmptyChannel">**No recent actions**\n\nNo notable actions taken\nby the admins of this channel\nin the last 48 hours.</string>
   <string name="EventLogEmptySearch">**No actions found**\n\nNo recent actions that match your query\nwere found.</string>
   <string name="EventLogEmptyTextSearch">No recent actions that contain \'%1$s\' have been found.</string>
-  <string name="EventLogInfoTitle">What is the Recent Actions?</string>
+  <string name="EventLogInfoTitle">What are Recent Actions?</string>
   <string name="EventLogInfoDetail">This is a list of all notable actions by group members and admins in the last 48 hours.</string>
   <string name="EventLogInfoDetailChannel">This is a list of all notable actions by channel admins in the last 48 hours.</string>
   <string name="EventLogChannelRestricted">banned %1$s</string>
@@ -1797,7 +1797,7 @@
   <string name="EventLogDeletedMessages">%1$s deleted this message:</string>
   <string name="EventLogChangedGroupLink">%1$s changed the group link:</string>
   <string name="EventLogChangedChannelLink">%1$s changed the channel link:</string>
-  <string name="EventLogRemovedGroupLink">%1$s removed group link</string>
+  <string name="EventLogRemovedGroupLink">%1$s removed group link:</string>
   <string name="EventLogRemovedChannelLink">%1$s removed channel link</string>
   <string name="EventLogPreviousLink">Previous link</string>
   <string name="EventLogEditedGroupDescription">%1$s edited the group description:</string>
@@ -1827,7 +1827,7 @@
   <string name="EventLogPermissionSendMedia">Send media</string>
   <string name="EventLogRestrictedNew">restricted %1$s\n\nDuration: %2$s</string>
   <string name="EventLogRestrictedUntil">changed restrictions for %1$s\n\nDuration: %2$s</string>
-  <string name="EventLogRestrictedDeleted">removed restrictions of %1$s</string>
+  <string name="EventLogRestrictedDeleted">removed restrictions from %1$s</string>
   <string name="EventLogRestrictedSendStickers">Send stickers &amp; GIFs</string>
   <string name="EventLogPermissionSendStickers">Send stickers &amp; GIFs</string>
   <string name="EventLogRestrictedSendPolls">Send polls</string>
@@ -1874,7 +1874,7 @@
   <string name="EventLogFilterDeletedMessages">Deleted messages</string>
   <string name="EventLogFilterEditedMessages">Edited messages</string>
   <string name="EventLogFilterPinnedMessages">Pinned messages</string>
-  <string name="EventLogFilterLeavingMembers">Leaving members</string>
+  <string name="EventLogFilterLeavingMembers">Members leaving</string>
   <string name="EventLogFilterVoiceChats">Video chats</string>
   <string name="EventLogFilterLiveStreams">Live streams</string>
   <string name="EventLogSlowModeChanged">%1$s set the slow mode timer to %2$s</string>
@@ -2005,7 +2005,7 @@
   <string name="ChatAccessPrivateGroup">This group is private</string>
   <string name="ChatAccessPrivateChannel">This channel is private</string>
   <string name="YouCantInviteMembers">You can\'t add members to this chat</string>
-  <string name="RecoveryCodeSent">We\'ve sent you a 6-digit recovery code to %1$s. Please check your email and enter it here.</string>
+  <string name="RecoveryCodeSent">We\'ve sent a 6-digit recovery code to %1$s. Please check your email and enter it here.</string>
   <string name="RecoveryCodeResent">The verification code has been resent to your email.</string>
   <string name="RecoveryCodeSentEmailUnknown">We\'ve sent you a 6-digit recovery code. Please check your email and enter it here.</string>
   <string name="RestoreEmailTroubleUnknown">Having trouble accessing your email?</string>
@@ -2058,7 +2058,7 @@
   <string name="IncognitoKeyboardInfo">Request keyboard to not update any personalized data such as typing history and personalized language model based on what you type in Secret Chats.\n\nBe aware that this setting is not a guarantee, and some IMEs may not respect it.</string>
   <string name="FailureMessageText">This message could not be displayed because of an error. We are very sorry for that.\n\nPlease copy the scary error details below and submit them to @tgandroidtests so we can investigate the issue. Thank you!</string>
   <string name="PrivacyCallsP2PTitle2">Peer-to-Peer in Calls</string>
-  <string name="PeerToPeerInfo">Disabling peer-to-peer will relay all calls through Telegram servers to avoid revealing your IP address, but will slightly decrease audio quality.</string>
+  <string name="PeerToPeerInfo">Disabling peer-to-peer will relay all calls through Telegram servers to avoid revealing your IP address, but may decrease audio quality.</string>
   <string name="AutoNightDisabled">Disabled</string>
   <string name="AutoNightSystem">System Default</string>
   <string name="AutoNightSystemQ">System</string>
@@ -2085,7 +2085,7 @@
   <string name="DisconnectAllWebsitesHint">Are you sure you want to disconnect all websites?</string>
   <string name="DisconnectWebsiteBan">Block %1$s</string>
   <string name="ConnectedWebsitesDesc">Tap to disconnect from your Telegram account.</string>
-  <string name="NotificationsLed">LED</string>
+  <string name="NotificationsLed">Light</string>
   <string name="LedDisabled">Disabled</string>
   <string name="LedDefault">Default</string>
   <string name="LedBlue">Blue</string>
@@ -2211,7 +2211,7 @@
   <string name="message_channelSign">channel</string>
   <string name="message_groupSign">group</string>
   <string name="CustomTitle">Custom Title</string>
-  <string name="CustomTitleHint">A custom title that will be shown to all members instead of \'%1$s\'.</string>
+  <string name="CustomTitleHint">A title that members will see instead of \'%1$s\'.</string>
   <string name="WhoCanCallMe">Who can call me</string>
   <string name="UseP2PWith">Use peer-to-peer with</string>
   <string name="PrivacyLastSeenExceptionOn">Visible</string>
@@ -2264,7 +2264,7 @@
   <string name="ProxyReorderByPing">Reorder by ping</string>
   <string name="ProxyRemove">Remove proxy</string>
   <string name="ProxyEdit">Edit proxy</string>
-  <string name="ProxyRemoveInfo">Are you sure you want to delete this proxy configuration?</string>
+  <string name="ProxyRemoveInfo">Delete this proxy configuration?</string>
   <string name="ErrorUsersTooFew">You can\'t add the selected users to groups because of their privacy settings.</string>
   <string name="SyncContacts">Sync Contacts</string>
   <string name="SyncContactsInfoOff">Turn on to continuously sync contacts from this device with your account.</string>
@@ -2594,7 +2594,7 @@
   <string name="ThemeEdit">Edit</string>
   <string name="ThemeRemove">Delete</string>
   <string name="ThemeRemoveConfirm">Delete Theme</string>
-  <string name="ThemeRemoveInfo">Are you sure you want to delete this theme? This action cannot be undone.</string>
+  <string name="ThemeRemoveInfo">Delete this theme? It will be permanently deleted and can\'t be undone.</string>
   <string name="ThemeMinimize">Minimize</string>
   <string name="ThemeClose">Close</string>
 
@@ -2859,7 +2859,7 @@
   <string name="IncludeDismissed">Include Dismissed Messages</string>
   <string name="IncludeDismissedHintOn">Switch on to include previously dismissed unread messages when new notification arrives from a chat.</string>
   <string name="IncludeDismissedHintOff">Switch off to exclude previously dismissed unread messages when new notification arrives from a chat.</string>
-  <string name="Groups">Groups</string>
+  
   <string name="Channels">Channels</string>
 
   <string name="Mentions">Mentions and Replies</string>
@@ -2900,8 +2900,8 @@
   <string name="format_pinned">Pinned: %1$s</string>
   <string name="format_notificationTitlePinned">%1$s (pinned message)</string>
 
-  <string name="error_USER_NOT_MUTUAL_CONTACT">Sorry, if a person is no longer part of a group, you need to add each other to your respective contact lists to be able to add them back.\n\nNote that they could still join via the group\'s invite link as long as they are not in the removed users list.</string>
-  <string name="error_CHAT_SEND_POLL_FORBIDDEN">Chat admins have restricted posting polls</string>
+  <string name="error_USER_NOT_MUTUAL_CONTACT">If a person has left the group in the past, you need to be in their Telegram contacts to add them back.\n\nThey can still join via the group\'s invite link as long as they are not on the Removed Users list.</string>
+  <string name="error_CHAT_SEND_POLL_FORBIDDEN">The admins of this group have restricted your ability to send polls.</string>
   <string name="error_LANG_CODE_NOT_SUPPORTED">Sorry, this language pack doesn\'t exist</string>
   <string name="error_APP_UPGRADE_NEEDED">This feature is not available. Please make sure the app is up-to-date, or wait for new updates.</string>
   <string name="error_NotFound">Page not found or no longer exists.</string>
@@ -2914,7 +2914,7 @@
   <string name="errorPrivacyAddMember">Sorry, the user restricted who can add them to chats in their privacy settings.</string>
   <string name="UserPrivacyRestricted">Sorry, the user restricted this action in their privacy settings.</string>
   <string name="NobodyLikesSpam2">Sorry, you can interact only with mutual contacts at the moment.</string> <!--PEER_FLOOD-->
-  <string name="error_BOTS_TOO_MUCH">Sorry, this group has too many bots. Please remove some of the bots you\'re not using first.</string>
+  <string name="error_BOTS_TOO_MUCH">There are too many bots in this group. Please remove some of the bots you\'re not using first.</string>
   <string name="error_ADMINS_TOO_MUCH">Sorry, this group has too many admins. Please remove one of the existing admins first.</string>
 
   <string name="NotificationImportance">Notification Style</string>
@@ -3066,7 +3066,7 @@
   <string name="LaunchAppGuideExternalError">Telegram X has previously failed to launch because of device error.\n\nPress **Launch App** to try again. If application keeps failing, follow these steps:\n\n• Check you have enough disk space available: **%1$s**.\n• Ensure there are no other storage issues, such as SD-card being ejected or unrecognized.\n• Restart your device.\n\nIf this does not help, you may want to look for similar issues on [TDLib\'s GitHub page](https://github.com/tdlib/td/issues) for possible resolutions, or create a new one, including error message and device details.</string>
 
   <string name="LaunchSubtitleTdlibIssue">TDLib fatal error. Version: %1$s</string>
-  <string name="LaunchAppGuideTdlibIssue">"Telegram X has previously failed to launch because of TDLib fatal error.\n\nPress **Launch App** to try again. If application continues to fail, follow these steps:\n\n• [Verify](%2$s) you have the latest Telegram X version installed.\n• Restart your device.\n\n**If the steps above do not help**\n\n1. Share error details with TDLib developers using one of the following ways:\n— Privately via [@tdlib_bot](https://t.me/tdlib_bot) by using another device or [Telegram Web](https://web.telegram.org/).\n— Publicly via [GitHub page](https://github.com/tdlib/td/issues). **Do not** share **tdlib_log.txt** publicly.\n2. Kindly wait for the response.\n3. Change log settings below as requested by TDLib developers.\n4. Press **Launch App** to make app force stop again.\n5. Share **tdlib_log.txt** with TDLib developers and wait for the problem to be resolved.\n6. Once updated, you'll be able to launch app normally.\n\n**Alternative options**\n\n• Search for similar issues on [GitHub](https://github.com/tdlib/td/issues) to see if there are common solutions.\n• Reinstall the app. Secret chats will be lost. If you use same phone number you were logged in, all other chats and data will be restored from the Telegram cloud."</string>
+  <string name="LaunchAppGuideTdlibIssue">Telegram X has previously failed to launch because of TDLib fatal error.\n\nPress **Launch App** to try again. If application continues to fail, follow these steps:\n\n• [Verify](%2$s) you have the latest Telegram X version installed.\n• Restart your device.\n\n**If the steps above do not help**\n\n1. Share error details with TDLib developers using one of the following ways:\n— Privately via [@tdlib_bot](https://t.me/tdlib_bot) by using another device or [Telegram Web](https://web.telegram.org/).\n— Publicly via [GitHub page](https://github.com/tdlib/td/issues). **Do not** share **tdlib_log.txt** publicly.\n2. Kindly wait for the response.\n3. Change log settings below as requested by TDLib developers.\n4. Press **Launch App** to make app force stop again.\n5. Share **tdlib_log.txt** with TDLib developers and wait for the problem to be resolved.\n6. Once updated, you\'ll be able to launch app normally.\n\n**Alternative options**\n\n• Search for similar issues on [GitHub](https://github.com/tdlib/td/issues) to see if there are common solutions.\n• Reinstall the app. Secret chats will be lost. If you use same phone number you were logged in, all other chats and data will be restored from the Telegram cloud.</string>
 
   <string name="SelfDestructPhoto">Self-Destruct Photo</string>
   <string name="SelfDestructVideo">Self-Destruct Video</string>
@@ -3099,7 +3099,7 @@
   <string name="EraseDatabase">Erase All Data</string>
   <string name="EraseDatabaseDone">All data successfully erased.</string>
   <string name="EraseDatabaseError">Unable to delete files.</string>
-  <string name="EraseDatabaseProgress">Erasing all data… Please wait, this operation may take a while. Don\'t close the app.</string>
+  <string name="EraseDatabaseProgress">Erasing all data… Please wait, this may take some time. \nDon\'t close the app.</string>
   <string name="EraseDatabaseWarn">**Warning!**\n\nSecret Chats will be lost. All media will need to be downloaded again.</string>
   <string name="EraseDatabaseWarn2">**No, seriously.**\n\nAre you sure you want to clear Local Database, delete all downloaded media files and kill all Secret Chats?</string>
   <string name="EraseDatabaseMultiUser">This action does not affect other accounts.</string>
@@ -3181,7 +3181,7 @@
   <string name="ChatDisabledPolls">Only admins can create polls in this group</string>
   <string name="ChatDisabledMessages">Only admins can write messages in this group</string>
 
-  <string name="ChatRestrictedGifs">Admins have restricted you from sending GIFs in this group</string>
+  <string name="ChatRestrictedGifs">The admins of this group have restricted your ability to send GIFs.</string>
   <string name="ChatRestrictedGifsUntil">Admins have restricted you from sending GIFs in this group until %1$s</string>
   <string name="ChatRestrictedBots">Admins have restricted you from using inline bots in this group</string>
   <string name="ChatRestrictedBotsUntil">Admins have restricted you from using inline bots in this group until %1$s</string>
@@ -3194,10 +3194,10 @@
   <string name="ChatRestrictedVoice">Admins have restricted you from sending voice messages in this group</string>
   <string name="ChatRestrictedVideoNotes">Admins have restricted you from sending video messages in this group</string>
   <string name="ChatRestrictedVoiceUntil">Admins have restricted you from sending voice messages in this group until %1$s</string>
-  <string name="ChatRestrictedVideoNotesUntil">Admins have restricted you from sending video messages in this group until %1$s</string>
-  <string name="ChatRestrictedMedia">Admins have restricted you from sending media in this group</string>
+  <string name="ChatRestrictedVideoNotesUntil">The admins of this group have restricted your ability to send video messages until %1$s.</string>
+  <string name="ChatRestrictedMedia">The admins of this group have restricted your ability to send media.</string>
   <string name="ChatRestrictedMediaUntil">Admins have restricted you from sending media in this group until %1$s</string>
-  <string name="ChatRestrictedPolls">Admins have restricted you from sending polls in this group</string>
+  <string name="ChatRestrictedPolls">The admins of this group have restricted your ability to send polls.</string>
   <string name="ChatRestrictedPollsUntil">Admins have restricted you from sending polls in this group until %1$s</string>
   <string name="ChatRestrictedMessages">Admins have restricted you from sending messages in this group</string>
   <string name="ChatRestrictedMessagesUntil">Admins have restricted you from sending messages in this group until %1$s</string>
@@ -3670,8 +3670,8 @@
   <string name="StatsViews">Views Per Post</string>
   <string name="StatsShares">Shares Per Post</string>
   <string name="StatsNotifications">Enabled Notifications</string>
-  <string name="StatsValueGrowth">%1$s: +%2$s (%3$s%%) &#8593;</string>
-  <string name="StatsValueFall">%1$s: -%2$s (%3$s%%) &#8595;</string>
+  <string name="StatsValueGrowth">%1$s: +%2$s (%3$s%%) ↑</string>
+  <string name="StatsValueFall">%1$s: -%2$s (%3$s%%) ↓</string>
 
   <string name="StatsChartGrowth">Growth</string>
   <string name="StatsChartFollowers">Followers</string>
@@ -3729,7 +3729,7 @@
   <string name="HoldToSendAsCopy">Hold to forward without quoting and other options.</string>
   <string name="HoldToSendAsFile">Hold to send as a file and other options.</string>
   <string name="CameraButtonHint">Tap for photo, hold for video</string>
-  <string name="UseExplicitDice">Explicit Dice</string>
+  
 
   <string name="EditPrivacyGlobal">Open General Privacy Settings</string>
   <string name="EditPrivacy">Privacy Exceptions</string>
@@ -3778,7 +3778,7 @@
   <string name="PsaForward">PSA Notification</string>
   <string name="PsaForwardCovid">COVID-19 Notification</string>
 
-  <string name="PsaInfo" />
+  <string name="PsaInfo">This message provides you with a public service announcement.</string>
   <string name="PsaInfoCovid">This message provides you with a public service announcement in relation to the ongoing **COVID-19** pandemic. Learn more about this initiative at https://telegram.org/blog/coronavirus</string>
 
   <string name="PsaChatInfo">This chat provides you public service announcements.</string>
@@ -3939,7 +3939,7 @@
   <string name="PrimaryInviteLinkMenu">Primary Invite Link</string>
   <string name="PrimaryInviteLink">Primary Link</string>
   <string name="AdditionalInviteLinks">Additional Links</string>
-  <string name="AdditionalInviteLinksHint">You can create additional invite links that have a limited time or number of uses.</string>
+  <string name="AdditionalInviteLinksHint">You can create additional invite links that have a limited time or number of users.</string>
   <string name="RevokedInviteLinks">Revoked Links</string>
   <string name="OtherAdminsInviteLinks">Links created by other admins</string>
   <string name="InviteLinkNoJoins">no one joined</string>
@@ -3972,10 +3972,10 @@
   <string name="InviteLinkEdit">Edit Link</string>
   <string name="InviteLinkDelete">Delete Link</string>
   <string name="InviteLinkCopy">Copy Link</string>
-  <string name="InviteLinkLimitedByPeriod">Limited by period</string>
+  <string name="InviteLinkLimitedByPeriod">Limit by time period</string>
   <string name="InviteLinkLimitedByUsers">Limited by number of users</string>
   <string name="InviteLinkLimitedByPeriodHint">You can make the link expire after a certain time.</string>
-  <string name="InviteLinkLimitedByUsersHint">You can make the link expire after it has been used for a certain number of times.</string>
+  <string name="InviteLinkLimitedByUsersHint">You can make the link work only for a certain number of users.</string>
   <string name="InviteLinkLimitedByPeriodItem">Enter custom expire date</string>
   <string name="InviteLinkLimitedByUsersItem">Number of Users</string>
   <string name="InviteLinkLimitedByUsersAlertHint">0 — no limit</string>
@@ -4028,7 +4028,7 @@
 
   <string name="ChatTtl">Auto-delete messages</string>
   <string name="ChatTtlOff">Off</string>
-  <string name="ChatTtlDisabled">Choose a period of time after which messages will be automatically deleted for members of the group.</string>
+  <string name="ChatTtlDisabled">Choose a period of time after which messages will be automatically deleted from the group.</string>
   <string name="ChatTtlEnabled">Automatically delete new messages after %1$s for members of the group.</string>
   <string name="ChannelTtl">Auto-delete posts</string>
   <string name="ChannelTtlOff">Off</string>
@@ -4250,7 +4250,7 @@
   <string name="LocationAlertLocationDisclaimer">Telegram X does not use location data for any hidden purposes, and accesses it only by your explicit request.</string>
 
   <string name="RequestToJoinGroupInfo">This group accepts new members only after they are being accepted by admins.</string>
-  <string name="RequestToJoinChannelInfo">This channel accepts new members only after they are being accepted by admins.</string>
+  <string name="RequestToJoinChannelInfo">This channel accepts new subscribers only after they are approved by its admins.</string>
   <string name="ProxyLinkUnsupported">Proxy is unsupported or link is invalid.</string>
 
   <string name="ScamMark">SCAM</string>
