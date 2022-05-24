@@ -633,6 +633,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
 
   private static final float DEFAULT_AVATAR_TEXT_SCALE = 1.3f;
   private float avatarTextScale = DEFAULT_AVATAR_TEXT_SCALE;
+  private int additionalTextEndPadding;
 
   private void layoutTitle () {
     if (StringUtils.isEmpty(title)) {
@@ -640,16 +641,15 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
     } else {
       final boolean showScam = (flags & FLAG_SHOW_SCAM) != 0;
       final boolean showFake = (flags & FLAG_SHOW_FAKE) != 0;
-      final int additionalEndPadding;
 
       if (showFake || showScam) {
-        additionalEndPadding = getOutlinedWidth(Lang.getString(showFake ? R.string.FakeMark : R.string.ScamMark));
+        additionalTextEndPadding = getOutlinedWidth(Lang.getString(showFake ? R.string.FakeMark : R.string.ScamMark));
       } else {
-        additionalEndPadding = 0;
+        additionalTextEndPadding = 0;
       }
 
       avatarTextScale = DEFAULT_AVATAR_TEXT_SCALE;
-      trimmedTitle = new Text.Builder(title, getCurrentScaledTextMaxWidth() - additionalEndPadding, Paints.robotoStyleProvider(18), getTitleColorSet())
+      trimmedTitle = new Text.Builder(title, getCurrentScaledTextMaxWidth() - additionalTextEndPadding, Paints.robotoStyleProvider(18), getTitleColorSet())
         .lineWidthProvider((lineIndex, y, defaultMaxWidth, lineHeight) -> defaultMaxWidth - getTextOffsetLeft() - getTextOffsetRight())
         .lineMarginProvider((lineIndex, y, defaultMaxWidth, lineHeight) -> lineIndex == 0 ? getTextOffsetLeft() : 0)
         .singleLine()
@@ -660,7 +660,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
       if (trimmedTitle.isEllipsized()) {
         int maxLineCount = 2;
         do {
-          trimmedTitleExpanded = new Text.Builder(title, getExpandedMaxTextWidth() - additionalEndPadding, Paints.robotoStyleProvider(18), getTitleColorSet())
+          trimmedTitleExpanded = new Text.Builder(title, getExpandedMaxTextWidth() - additionalTextEndPadding, Paints.robotoStyleProvider(18), getTitleColorSet())
             .lineMarginProvider((lineIndex, y, defaultMaxWidth, lineHeight) -> lineIndex == 0 ? getTextOffsetLeft() : 0)
             .maxLineCount(maxLineCount)
             .clipTextArea()
@@ -933,6 +933,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
           int baseX = (int) (iconLeft + iconsAdded + Screen.dp(10f));
           int baseY = (int) (iconTop - Screen.dp(1.5f));
           drawOutlinedText(c, Lang.getString(showFake ? R.string.FakeMark : R.string.ScamMark), baseX, baseY, trimmedTitleExpanded != null ? MathUtils.fromTo(trimmedTitle.getLineHeight(), trimmedTitleExpanded.getLineHeight(), avatarExpandFactor) : trimmedTitle.getLineHeight());
+          iconsAdded += additionalTextEndPadding;
         }
 
         if (showMute) {
@@ -1005,7 +1006,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   }
 
   private int getOutlinedWidth (String text) {
-    return (int) ((Screen.dp(12f) + (Screen.dp(4f) * 2) + U.measureText(text, Paints.getMediumTextPaint(12, getSubtitleColor(), false))));
+    return (int) ((Screen.dp(6f) + (Screen.dp(4f) * 2) + U.measureText(text, Paints.getMediumTextPaint(12, getSubtitleColor(), false))));
   }
 
   private Callback callback;
