@@ -251,11 +251,6 @@ open class ModulePlugin : Plugin<Project> {
                   "proguard-rules.pro"
                 )
               }
-
-              lintOptions {
-                disable("MissingTranslation")
-                isCheckDependencies = true
-              }
             }
 
             project.dependencies {

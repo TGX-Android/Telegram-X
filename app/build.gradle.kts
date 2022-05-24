@@ -66,6 +66,11 @@ android {
         }
     }
 
+    lint {
+        disable += "MissingTranslation"
+        checkDependencies = true
+    }
+
     buildTypes {
         getByName("release") {
             Config.EXOPLAYER_EXTENSIONS.forEach { module ->
