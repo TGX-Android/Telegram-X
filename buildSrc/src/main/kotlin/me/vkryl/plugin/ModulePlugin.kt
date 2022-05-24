@@ -12,6 +12,7 @@ import com.android.build.gradle.LibraryExtension
 import com.android.build.gradle.ProguardFiles
 import com.beust.klaxon.JsonObject
 import com.beust.klaxon.Parser
+import getIntOrThrow
 import getOrThrow
 import loadProperties
 import monthYears
@@ -32,12 +33,14 @@ open class ModulePlugin : Plugin<Project> {
     val id: Int,
     val commitShort: String,
     val commitLong: String,
+    val date: Int,
     val author: String
   ) {
     constructor(id: Int, properties: Properties) : this(
       id,
       properties.getOrThrow("pr.$id.commit_short"),
       properties.getOrThrow("pr.$id.commit_long"),
+      properties.getIntOrThrow("pr.$id.date"),
       properties.getOrThrow("pr.$id.author")
     )
   }
@@ -201,11 +204,14 @@ open class ModulePlugin : Plugin<Project> {
               buildConfigField("int[]", "PULL_REQUEST_ID", "{${
                 pullRequests.joinToString(", ") { it.id.toString() }
               }}")
+              buildConfigField("int[]", "PULL_REQUEST_COMMIT_DATE", "{${
+                pullRequests.joinToString(", ") { it.date.toString() }
+              }}")
               buildConfigField("String[]", "PULL_REQUEST_COMMIT", "{${
                 pullRequests.joinToString(", ") { "\"${it.commitShort}\"" }
               }}")
               buildConfigField("String[]", "PULL_REQUEST_URL", "{${
-                pullRequests.joinToString(", ") { "\"${remoteUrl}/pull/${it.id}/commits/${it.commitLong}\"" } 
+                pullRequests.joinToString(", ") { "\"${remoteUrl}/pull/${it.id}/files/${it.commitLong}\"" } 
               }}")
             }
 
