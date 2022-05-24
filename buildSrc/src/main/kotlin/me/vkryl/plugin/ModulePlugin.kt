@@ -185,7 +185,7 @@ open class ModulePlugin : Plugin<Project> {
               project.extra.set("app_version_suffix", "+${pullRequests.joinToString(",") { it.id.toString() }}")
             }
 
-            namespace = appId
+            namespace = "org.thunderdog.challegram"
 
             defaultConfig {
               applicationId = appId
