@@ -156,7 +156,7 @@ public class VideoGen {
       if (needStream) {
         try (InputStream stream = U.openInputStream(path)) {
           return stream.available();
-        } catch (IOException | SecurityException ignored2) { }
+        } catch (Throwable ignored2) { }
       }
     }
     return 0;

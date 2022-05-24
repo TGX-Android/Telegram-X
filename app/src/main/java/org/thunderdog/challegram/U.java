@@ -2776,7 +2776,7 @@ public class U {
     return is.read() | (is.read() << 8);
   }
 
-  public static InputStream openInputStream (String path) throws IOException {
+  public static InputStream openInputStream (String path) throws Throwable {
     InputStream is;
     if (path.startsWith("content://")) {
       is = UI.getContext().getContentResolver().openInputStream(Uri.parse(path));
@@ -3465,9 +3465,9 @@ public class U {
   }
 
   public static boolean canReadContentUri (Uri uri) {
-    try (InputStream is = openInputStream(uri.toString())) {
+    try (InputStream ignored = openInputStream(uri.toString())) {
       return true;
-    } catch (Exception e) {
+    } catch (Throwable ignored2) {
       return false;
     }
   }
