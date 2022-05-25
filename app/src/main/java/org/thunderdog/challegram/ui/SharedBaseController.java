@@ -487,7 +487,7 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
   private CancellableRunnable searchTask;
   private CancellableResultHandler baseHandler;
 
-  protected TdApi.Function buildRequest (final long chatId, final long messageThreadId, final String query, final long offset, final String secretOffset, final int limit) {
+  protected TdApi.Function<?> buildRequest (final long chatId, final long messageThreadId, final String query, final long offset, final String secretOffset, final int limit) {
     if (StringUtils.isEmpty(query) || !ChatId.isSecret(chatId)) {
       return new TdApi.SearchChatMessages(chatId, query, null, offset, 0, limit, provideSearchFilter(), messageThreadId);
     } else {
@@ -496,7 +496,7 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
   }
 
   protected final void performRequest (final long chatId, final long messageThreadId, final String query, final long offset, final String secretOffset, final int limit) {
-    TdApi.Function function = buildRequest(chatId, messageThreadId, query, offset, secretOffset, limit);
+    TdApi.Function<?> function = buildRequest(chatId, messageThreadId, query, offset, secretOffset, limit);
     if (function == null) {
       return;
     }

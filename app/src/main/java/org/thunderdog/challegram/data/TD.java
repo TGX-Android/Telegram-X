@@ -1479,7 +1479,7 @@ public class TD {
     return messageIds;
   }
 
-  public static boolean forwardMessages (long toChatId, TdApi.Message[] messages, boolean sendCopy, boolean removeCaption, TdApi.MessageSendOptions options, ArrayList<TdApi.Function> out) {
+  public static boolean forwardMessages (long toChatId, TdApi.Message[] messages, boolean sendCopy, boolean removeCaption, TdApi.MessageSendOptions options, ArrayList<TdApi.Function<?>> out) {
     if (messages.length == 0) {
       return false;
     }
@@ -2667,7 +2667,7 @@ public class TD {
     return waveform;*/
   }
 
-  public static void processAlbum (Tdlib tdlib, long chatId, TdApi.MessageSendOptions options, List<TdApi.Function> functions, List<TdApi.InputMessageContent> album) {
+  public static void processAlbum (Tdlib tdlib, long chatId, TdApi.MessageSendOptions options, List<TdApi.Function<?>> functions, List<TdApi.InputMessageContent> album) {
     if (album == null || album.isEmpty())
       return;
     if (album.size() == 1) {
@@ -2680,11 +2680,11 @@ public class TD {
     album.clear();
   }
 
-  public static List<TdApi.Function> toFunctions (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions options, TdApi.InputMessageContent[] content, boolean needGroupMedia) {
+  public static List<TdApi.Function<?>> toFunctions (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions options, TdApi.InputMessageContent[] content, boolean needGroupMedia) {
     if (content.length == 0)
       return Collections.emptyList();
 
-    List<TdApi.Function> functions = new ArrayList<>();
+    List<TdApi.Function<?>> functions = new ArrayList<>();
 
     int remaining = content.length;
     int processed = 0;
@@ -2727,7 +2727,7 @@ public class TD {
     return functions;
   }
 
-  public static void processSingle (Tdlib tdlib, long chatId, TdApi.MessageSendOptions options, List<TdApi.Function> functions, TdApi.InputMessageContent content) {
+  public static void processSingle (Tdlib tdlib, long chatId, TdApi.MessageSendOptions options, List<TdApi.Function<?>> functions, TdApi.InputMessageContent content) {
     functions.add(new TdApi.SendMessage(chatId, 0, 0, options, null, content));
   }
 

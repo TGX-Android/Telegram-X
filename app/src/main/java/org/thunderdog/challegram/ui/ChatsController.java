@@ -1833,7 +1833,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     });
   }
 
-  private void performSelectAction (TdApi.Function function) {
+  private void performSelectAction (TdApi.Function<?> function) {
     tdlib.client().send(function, result -> {
       switch (result.getConstructor()) {
         case TdApi.Ok.CONSTRUCTOR:

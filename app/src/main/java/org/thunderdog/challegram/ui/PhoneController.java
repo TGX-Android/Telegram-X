@@ -893,7 +893,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
 
     final String phone = "+" + tdlibNumber;
 
-    TdApi.Function function;
+    TdApi.Function<?> function;
 
     switch (mode) {
       case MODE_ADD_CONTACT:

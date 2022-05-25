@@ -1878,13 +1878,13 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       refreshViewsRunnable = new CancellableRunnable() {
         @Override
         public void act () {
-          ArrayList<TdApi.Function> functions = new ArrayList<>();
+          ArrayList<TdApi.Function<?>> functions = new ArrayList<>();
           for (int i = 0; i < refreshMessageIds.size(); i++) {
             long chatId = refreshMessageIds.keyAt(i);
             long[] messageIds = refreshMessageIds.valueAt(i);
             functions.add(new TdApi.ViewMessages(chatId, chatId == refreshChatId ? refreshMessageThreadId : 0, messageIds, false));
           }
-          tdlib.sendAll(functions.toArray(new TdApi.Function[0]), tdlib.okHandler(), () -> tdlib.ui().post(MessagesManager.this::scheduleRefresh));
+          tdlib.sendAll(functions.toArray(new TdApi.Function<?>[0]), tdlib.okHandler(), () -> tdlib.ui().post(MessagesManager.this::scheduleRefresh));
         }
       };
       refreshViewsRunnable.removeOnCancel(tdlib.ui());

@@ -1854,7 +1854,7 @@ public class TdlibUi extends Handler {
     }
   }
 
-  private void showChatOpenError (TdApi.Function createRequest, TdApi.Error error, @Nullable ChatOpenParameters parameters) {
+  private void showChatOpenError (TdApi.Function<?> createRequest, TdApi.Error error, @Nullable ChatOpenParameters parameters) {
     if (!UI.inUiThread()) {
       tdlib.ui().post(() -> {
         showChatOpenError(createRequest, error, parameters);
@@ -1916,7 +1916,7 @@ public class TdlibUi extends Handler {
     }
   }
 
-  private void openChat (final TdlibDelegate context, final long chatId, final TdApi.Function createRequest, final @Nullable ChatOpenParameters params) {
+  private void openChat (final TdlibDelegate context, final long chatId, final TdApi.Function<?> createRequest, final @Nullable ChatOpenParameters params) {
     if (chatId != 0) {
       final TdApi.Chat chat = tdlib.chat(chatId);
       if (chat != null) {
@@ -1948,7 +1948,7 @@ public class TdlibUi extends Handler {
     }
     if (params != null && params.highlightSet && params.highlightMessageId != null && (params.options & CHAT_OPTION_ENSURE_HIGHLIGHT_AVAILABILITY) != 0) {
       // Checking if post is available
-      TdApi.Function function;
+      TdApi.Function<?> function;
       if (params.highlightMessageId.getOtherMessageIds() != null && params.highlightMessageId.getOtherMessageIds().length > 0) {
         function = new TdApi.GetMessages(params.highlightMessageId.getChatId(), ArrayUtils.addElement(params.highlightMessageId.getOtherMessageIds(), params.highlightMessageId.getMessageId()));
       } else {
@@ -2241,7 +2241,7 @@ public class TdlibUi extends Handler {
     }
   }
 
-  private void openChatProfile (final TdlibDelegate context, final long chatId, @Nullable ThreadInfo messageThread, TdApi.Function createRequest, final @Nullable UrlOpenParameters openParameters) {
+  private void openChatProfile (final TdlibDelegate context, final long chatId, @Nullable ThreadInfo messageThread, TdApi.Function<?> createRequest, final @Nullable UrlOpenParameters openParameters) {
     TdApi.Chat chat = tdlib.chat(chatId);
     if (chat != null) {
       openChatProfile(context, chat, messageThread, openParameters);
@@ -5657,7 +5657,7 @@ public class TdlibUi extends Handler {
     strings.append(R.string.Other);
   }
 
-  private static <T extends TdApi.Function> void toReportReasons (ViewController<?> context, int reportReasonId, CharSequence title, T request, boolean forceText, RunnableData<T> reportCallback) {
+  private static <T extends TdApi.Function<?>> void toReportReasons (ViewController<?> context, int reportReasonId, CharSequence title, T request, boolean forceText, RunnableData<T> reportCallback) {
     final TdApi.ChatReportReason reason;
     switch (reportReasonId) {
       case R.id.btn_reportChatSpam:

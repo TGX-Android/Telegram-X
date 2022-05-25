@@ -45,7 +45,7 @@ public abstract class ListManager<T> implements Destroyable, Iterable<T> {
   protected abstract void subscribeToUpdates ();
   protected abstract void unsubscribeFromUpdates ();
 
-  protected abstract TdApi.Function nextLoadFunction (boolean reverse, int itemCount, int loadCount);
+  protected abstract TdApi.Function<?> nextLoadFunction (boolean reverse, int itemCount, int loadCount);
 
   private int totalCount = COUNT_UNKNOWN;
   protected final int initialLoadCount, loadCount;

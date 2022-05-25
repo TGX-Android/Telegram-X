@@ -432,7 +432,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
         }
       }
     };
-    TdApi.Function function;
+    TdApi.Function<?> function;
     if (more) {
       function = new TdApi.SearchStickers(emoji, 1000);
     } else {
@@ -1018,7 +1018,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
       hideResults();
     }
 
-    final TdApi.Function function;
+    final TdApi.Function<?> function;
     if (callback.provideInlineSearchChatUserId() != 0) {
       if (needInlineBots) {
         if (results.isEmpty()) {

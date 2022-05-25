@@ -105,7 +105,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
   }
 
   @Override
-  protected TdApi.Function buildRequest (long chatId, long messageThreadId, String query, long offset, String secretOffset, int limit) {
+  protected TdApi.Function<?> buildRequest (long chatId, long messageThreadId, String query, long offset, String secretOffset, int limit) {
     limit = offset == 0 ? 50 : 100;
     long supergroupId = ChatId.toSupergroupId(chatId);
     if (!StringUtils.isEmpty(query)) {
@@ -123,6 +123,15 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
             break;
           case TdApi.SupergroupMembersFilterAdministrators.CONSTRUCTOR:
             chatMembersFilter = new TdApi.ChatMembersFilterAdministrators();
+            break;
+          case TdApi.SupergroupMembersFilterContacts.CONSTRUCTOR:
+            chatMembersFilter = new TdApi.ChatMembersFilterContacts();
+            break;
+          case TdApi.SupergroupMembersFilterMention.CONSTRUCTOR:
+            chatMembersFilter = new TdApi.ChatMembersFilterMention(((TdApi.SupergroupMembersFilterMention) specificFilter).messageThreadId);
+            break;
+          case TdApi.SupergroupMembersFilterRecent.CONSTRUCTOR:
+          case TdApi.SupergroupMembersFilterSearch.CONSTRUCTOR:
             break;
         }
       }

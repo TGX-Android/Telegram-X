@@ -111,7 +111,7 @@ public class MessagesSearchManager {
     if (this.contextId != contextId) {
       return;
     }
-    TdApi.Function function;
+    TdApi.Function<?> function;
     if (isSecret) {
       function = new TdApi.SearchSecretMessages(chatId, input, nextSearchOffset, SEARCH_LOAD_LIMIT, new TdApi.SearchMessagesFilterEmpty());
     } else {

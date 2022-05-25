@@ -930,7 +930,7 @@ public class Log {
     log(0, LEVEL_ASSERT, fmt, args);
   }
 
-  public static void unexpectedTdlibResponse (TdApi.Object response, Class<? extends TdApi.Function> function, Class<?>... objects) {
+  public static void unexpectedTdlibResponse (TdApi.Object response, @SuppressWarnings("rawtypes") Class<? extends TdApi.Function> function, Class<?>... objects) {
     StringBuilder b = new StringBuilder("Unexpected TDLib response");
     if (function != null) {
       b.append(" for ");

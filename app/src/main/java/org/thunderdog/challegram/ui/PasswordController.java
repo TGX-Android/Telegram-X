@@ -702,7 +702,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     }
 
     setInRecoveryProgress(true);
-    TdApi.Function function;
+    TdApi.Function<?> function;
     switch (mode) {
       case MODE_CODE_PHONE_CONFIRM:
         function = new TdApi.ResendPhoneNumberConfirmationCode();
@@ -1097,7 +1097,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       setStackLocked(true);
     }
 
-    TdApi.Function function;
+    TdApi.Function<?> function;
     switch (mode) {
       case MODE_CODE_PHONE_CONFIRM:
         function = new TdApi.CheckPhoneNumberConfirmationCode(code);

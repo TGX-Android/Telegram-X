@@ -14,7 +14,6 @@ import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.SessionIconKt;
 import org.thunderdog.challegram.util.text.TextColorSets;
@@ -118,7 +117,7 @@ public class EditSessionController extends EditBaseController<EditSessionControl
   protected boolean onDoneClick () {
     setDoneInProgress(true);
 
-    List<TdApi.Function> functions = new ArrayList<>();
+    List<TdApi.Function<?>> functions = new ArrayList<>();
 
     if (allowSecretChats != session.canAcceptSecretChats) {
       functions.add(new TdApi.ToggleSessionCanAcceptSecretChats(session.id, allowSecretChats));
@@ -128,7 +127,7 @@ public class EditSessionController extends EditBaseController<EditSessionControl
       functions.add(new TdApi.ToggleSessionCanAcceptCalls(session.id, allowCalls));
     }
 
-    tdlib.sendAll(functions.toArray(new TdApi.Function[0]), (obj) -> {
+    tdlib.sendAll(functions.toArray(new TdApi.Function<?>[0]), (obj) -> {
 
     }, () -> {
       runOnUiThreadOptional(() -> {

@@ -1497,8 +1497,8 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
       return;
     }
 
-    final ArrayList<TdApi.Function> functions = new ArrayList<>(totalCount);
-    TdApi.Function requestOld, requestNew;
+    final ArrayList<TdApi.Function<?>> functions = new ArrayList<>(totalCount);
+    TdApi.Function<?> requestOld, requestNew;
     if (!StringUtils.isEmpty(playlistSearchQuery) && ChatId.isSecret(chatId)) {
       requestOld = allowOlder ? new TdApi.SearchSecretMessages(chatId, playlistSearchQuery, playlistSecretNextOffset, 100, filter) : null;
       requestNew = null;
@@ -1520,7 +1520,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
         functions.add(requestOld);
     }
 
-    for (TdApi.Function function : functions) {
+    for (TdApi.Function<?> function : functions) {
       boolean areNew = function instanceof TdApi.GetInlineQueryResults || (function instanceof TdApi.SearchChatMessages && ((TdApi.SearchChatMessages) function).offset < 0);
       if (areNew) {
         messageListStateFlags |= LIST_STATE_LOADING_NEWER;

@@ -320,7 +320,7 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
         adapter.updateValuedSettingByPosition(indexOfProxy(proxyId));
       }
     }
-    TdApi.Function function = proxyId != Settings.PROXY_ID_NONE ? new TdApi.AddProxy(info.server, info.port, false, info.type) : new TdApi.PingProxy(0);
+    TdApi.Function<?> function = proxyId != Settings.PROXY_ID_NONE ? new TdApi.AddProxy(info.server, info.port, false, info.type) : new TdApi.PingProxy(0);
     long[] step = new long[1];
     step[0] = SystemClock.uptimeMillis();
     tdlib.client().send(function, new Client.ResultHandler() {

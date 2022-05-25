@@ -131,7 +131,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   private static final int MODE_TELEGRAM_FILES = 8;
 
   public interface ShareProviderDelegate {
-    void generateFunctionsForChat (long chatId, TdApi.Chat chat, TdApi.MessageSendOptions sendOptions, ArrayList<TdApi.Function> functions);
+    void generateFunctionsForChat (long chatId, TdApi.Chat chat, TdApi.MessageSendOptions sendOptions, ArrayList<TdApi.Function<?>> functions);
     CharSequence generateErrorMessageForChat (long chatId);
   }
   public static class Args {
@@ -2873,7 +2873,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       return;
     }
 
-    final ArrayList<TdApi.Function> functions = new ArrayList<>();
+    final ArrayList<TdApi.Function<?>> functions = new ArrayList<>();
     final TdApi.FormattedText comment = inputView.getOutputText(true);
 
     final boolean hasComment = !Td.isEmpty(comment);
@@ -2955,7 +2955,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       tdlib.client().send(functions.get(0), tdlib.messageHandler());
     } else {
       tdlib.runOnTdlibThread(() -> {
-        for (TdApi.Function function : functions) {
+        for (TdApi.Function<?> function : functions) {
           tdlib.client().send(function, tdlib.messageHandler());
         }
       });

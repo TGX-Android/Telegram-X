@@ -304,7 +304,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         }
       });
       scheduleOptimizationCheck();
-      final TdApi.Function startup;
+      final TdApi.Function<?> startup;
       if (tdlib.accountId == 0 && Settings.instance().needProxyLegacyMigrateCheck()) {
         startup = new TdApi.GetProxies();
       } else {
@@ -1255,7 +1255,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return formattedText;
   }
 
-  private static void makeUpdateText (int major, int agesSinceBirthdate, int monthsSinceLastBirthday, int buildNo, String changeLogUrl, List<TdApi.Function> functions, List<TdApi.InputMessageContent> messages, boolean isLast) {
+  private static void makeUpdateText (int major, int agesSinceBirthdate, int monthsSinceLastBirthday, int buildNo, String changeLogUrl, List<TdApi.Function<?>> functions, List<TdApi.InputMessageContent> messages, boolean isLast) {
     /*if (isLast) {
       version = BuildConfig.OVERRIDEN_VERSION_NAME;
       int i = version.indexOf('-');
@@ -1321,7 +1321,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     int prevVersion = test || Config.TEST_CHANGELOG ? 0 : Settings.instance().getInt(key, 0);
     if (prevVersion != BuildConfig.ORIGINAL_VERSION_CODE) {
       List<TdApi.InputMessageContent> updates = new ArrayList<>();
-      List<TdApi.Function> functions = new ArrayList<>();
+      List<TdApi.Function<?>> functions = new ArrayList<>();
       if (checkVersion(prevVersion, APP_RELEASE_VERSION_2018_MARCH, test)) {
         makeUpdateText(0, 20, 6, APP_RELEASE_VERSION_2018_MARCH, "http://telegra.ph/Telegram-X-03-26", functions, updates, false);
       }
@@ -1376,7 +1376,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             }
           }
         };
-        for (TdApi.Function function : functions) {
+        for (TdApi.Function<?> function : functions) {
           client().send(function, handler);
         }
       }
@@ -1544,11 +1544,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return clientHolder().client;
   }
 
-  public void send (TdApi.Function function, Client.ResultHandler handler) {
+  public void send (TdApi.Function<?> function, Client.ResultHandler handler) {
     client().send(function, handler);
   }
 
-  public void sendAll (TdApi.Function[] functions, Client.ResultHandler handler, @Nullable Runnable after) {
+  public void sendAll (TdApi.Function<?>[] functions, Client.ResultHandler handler, @Nullable Runnable after) {
     if (functions.length == 0) {
       if (after != null) {
         after.run();
@@ -1576,7 +1576,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       remaining = null;
       actualHandler = handler;
     }
-    for (TdApi.Function function : functions) {
+    for (TdApi.Function<?> function : functions) {
       send(function, actualHandler);
     }
   }
@@ -1936,7 +1936,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   @Nullable
-  public TdApi.Object clientExecute (TdApi.Function function, long timeoutMs) {
+  public TdApi.Object clientExecute (TdApi.Function<?> function, long timeoutMs) {
     if (inTdlibThread())
       throw new IllegalStateException("Cannot call from TDLib thread: " + function);
     final CountDownLatch latch = new CountDownLatch(1);
@@ -2231,7 +2231,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     });
   }
 
-  public void chat (long chatId, Future<TdApi.Function> createFunction, @NonNull RunnableData<TdApi.Chat> callback) {
+  public void chat (long chatId, Future<TdApi.Function<?>> createFunction, @NonNull RunnableData<TdApi.Chat> callback) {
     if (createFunction == null) {
       chat(chatId, callback);
     } else {
@@ -3733,7 +3733,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
-  private <T extends TdApi.Object> void performEdit (long chatId, long messageId, T pendingData, TdApi.Function function, Map<String, T> map) {
+  private <T extends TdApi.Object> void performEdit (long chatId, long messageId, T pendingData, TdApi.Function<?> function, Map<String, T> map) {
     final String key = chatId + "_" + messageId;
     synchronized (map) {
       map.put(key, pendingData);
@@ -4108,7 +4108,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     final boolean needForward = ChatId.isBasicGroup(chatId) && forwardLimit > 0 && !TD.isMember(currentStatus, false) && TD.isMember(newStatus, false) && sender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR;
     final AtomicBoolean oneShot = (needForward && TD.isAdmin(newStatus)) ? new AtomicBoolean(false) : null;
 
-    TdApi.Function function;
+    TdApi.Function<?> function;
     if (needForward) {
       function = new TdApi.AddChatMember(chatId, ((TdApi.MessageSenderUser) sender).userId, forwardLimit);
     } else {
@@ -4888,7 +4888,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public void setProxy (int proxyId, @Nullable String server, int port, @Nullable TdApi.ProxyType type) {
     // setProxyId(Settings.PROXY_ID_UNKNOWN);
-    final TdApi.Function function;
+    final TdApi.Function<?> function;
     if (server != null)
       function = new TdApi.AddProxy(server, port, true, type);
     else
@@ -8117,7 +8117,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   void fetchAllMessages (long chatId, @Nullable String query, @Nullable TdApi.SearchMessagesFilter filter,  @NonNull RunnableData<List<TdApi.Message>> callback) {
     List<TdApi.Message> messages = new ArrayList<>();
     boolean needFilter = !StringUtils.isEmpty(query) || filter != null;
-    TdApi.Function function;
+    TdApi.Function<?> function;
     if (needFilter) {
       function = new TdApi.SearchChatMessages(chatId, query, null, 0, 0, 100, filter, 0);
     } else {

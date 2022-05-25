@@ -424,7 +424,7 @@ public class UI {
     }
   }
 
-  public static void showWeird (TdApi.Object response, Class<? extends TdApi.Function> function, Class<?>... objects) {
+  public static void showWeird (TdApi.Object response, Class<? extends TdApi.Function<?>> function, Class<?>... objects) {
     Log.unexpectedTdlibResponse(response, function, objects);
   }
 

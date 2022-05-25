@@ -1004,7 +1004,7 @@ public class MessagesLoader implements Client.ResultHandler {
       loadingAllowMoreTop = allowMoreTop;
       loadingAllowMoreBottom = allowMoreBottom;
 
-      TdApi.Function function;
+      TdApi.Function<?> function;
 
       switch (specialMode) {
         case SPECIAL_MODE_EVENT_LOG:

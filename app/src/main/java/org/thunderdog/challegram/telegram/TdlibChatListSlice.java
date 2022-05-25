@@ -326,7 +326,7 @@ public class TdlibChatListSlice {
     return false;
   }
 
-  public void bringToTop (long chatId, @Nullable Future<TdApi.Function> createFunction, @Nullable Runnable after) {
+  public void bringToTop (long chatId, @Nullable Future<TdApi.Function<?>> createFunction, @Nullable Runnable after) {
     if (this.listener == null)
       throw new IllegalStateException();
     tdlib.chat(chatId, createFunction, chat -> {

@@ -113,7 +113,7 @@ public final class TdlibDataSource extends BaseDataSource {
     this.bytesRead = dataSpec.position;
     this.tdlib = TdlibManager.getTdlib(accountId);
 
-    final TdApi.Function function = !StringUtils.isEmpty(remoteId) ? new TdApi.GetRemoteFile(remoteId, null) : new TdApi.GetFile(fileId);
+    final TdApi.Function<?> function = !StringUtils.isEmpty(remoteId) ? new TdApi.GetRemoteFile(remoteId, null) : new TdApi.GetFile(fileId);
 
     final CountDownLatch openLatch = new CountDownLatch(1);
     final AtomicBoolean isOpening = new AtomicBoolean(true);

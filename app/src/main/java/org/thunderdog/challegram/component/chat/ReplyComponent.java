@@ -484,7 +484,7 @@ public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyab
     setContent(title, content, null, preview, image, false, false);
   }
 
-  private TdApi.Function retryFunction;
+  private TdApi.Function<?> retryFunction;
 
   public void load () {
     if (parent != null) {
@@ -766,7 +766,7 @@ public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyab
       }
       case TdApi.Error.CONSTRUCTOR: {
         if (retryFunction != null) {
-          TdApi.Function function = retryFunction;
+          TdApi.Function<?> function = retryFunction;
           retryFunction = null;
           tdlib.client().send(function, this);
           return;

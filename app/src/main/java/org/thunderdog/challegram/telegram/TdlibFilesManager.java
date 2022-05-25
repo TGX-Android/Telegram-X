@@ -106,7 +106,7 @@ public class TdlibFilesManager implements GlobalConnectionListener {
 
   public void syncFile (@NonNull final TdApi.File file, @Nullable TdApi.FileType remoteFileType, final long timeoutMs) {
     final CountDownLatch latch = new CountDownLatch(1);
-    TdApi.Function function;
+    TdApi.Function<?> function;
     if (remoteFileType != null) {
       function = new TdApi.GetRemoteFile(file.remote.id, remoteFileType);
     } else {

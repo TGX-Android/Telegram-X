@@ -112,7 +112,7 @@ public class PollResultsController extends RecyclerViewController<PollResultsCon
       this.adapter.setNoEmptyProgress();
       this.voters = new UserListManager(tdlib, 50, 50, this) {
         @Override
-        protected TdApi.Function nextLoadFunction (boolean reverse, int itemCount, int loadCount) {
+        protected TdApi.Function<?> nextLoadFunction (boolean reverse, int itemCount, int loadCount) {
           return new TdApi.GetPollVoters(chatId, messageId, optionId, itemCount, loadCount);
         }
       };

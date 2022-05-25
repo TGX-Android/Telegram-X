@@ -168,7 +168,7 @@ public class Tracer {
     onOtherError(otherError);
   }
 
-  public static void onTdlibFatalError (int accountId, @Nullable Class<? extends TdApi.Function> function, TdApi.Error error, @Nullable StackTraceElement[] stackTrace) {
+  public static void onTdlibFatalError (int accountId, @Nullable Class<? extends TdApi.Function<?>> function, TdApi.Error error, @Nullable StackTraceElement[] stackTrace) {
     String message = (function != null ? function.getSimpleName() : "unknown") + ": " + TD.toErrorString(error);
     Settings.instance().storeCrash(accountId, message, Settings.CRASH_FLAG_SOURCE_TDLIB_PARAMETERS);
     if (stackTrace != null) {

@@ -1523,7 +1523,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
       ShareController.ShareProviderDelegate shareDelegate = new ShareController.ShareProviderDelegate() {
         @Override
-        public void generateFunctionsForChat (long chatId, TdApi.Chat chat, TdApi.MessageSendOptions sendOptions, ArrayList<TdApi.Function> functions) {
+        public void generateFunctionsForChat (long chatId, TdApi.Chat chat, TdApi.MessageSendOptions sendOptions, ArrayList<TdApi.Function<?>> functions) {
           List<TdApi.InputMessageContent> album = null;
           for (TdApi.InputMessageContent content : contents) {
             content = tdlib.filegen().createThumbnail(content, ChatId.isSecret(chatId));

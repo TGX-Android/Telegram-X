@@ -3377,7 +3377,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       return;
     }
 
-    final ArrayList<TdApi.Function> changes = new ArrayList<>(3);
+    final ArrayList<TdApi.Function<?>> changes = new ArrayList<>(3);
 
     final String newTitle = chatTitleItem != null ? chatTitleItem.getStringValue() : null;
     if (chatTitleItem != null) {
@@ -3441,7 +3441,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         }
       };
 
-      for (TdApi.Function function : changes) {
+      for (TdApi.Function<?> function : changes) {
         tdlib.client().send(function, resultHandler);
       }
     };
@@ -3454,7 +3454,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             setInProgress(false);
           });
         } else {
-          for (TdApi.Function function : changes) {
+          for (TdApi.Function<?> function : changes) {
             switch (function.getConstructor()) {
               case TdApi.SetChatDescription.CONSTRUCTOR:
                 ((TdApi.SetChatDescription) function).chatId = toChatId;

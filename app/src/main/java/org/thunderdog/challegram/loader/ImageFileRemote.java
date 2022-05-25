@@ -10,7 +10,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.telegram.TdlibProvider;
 
 public class ImageFileRemote extends ImageFile {
-  private TdApi.Function getterFunction;
+  private TdApi.Function<?> getterFunction;
   private TdApi.FileType fileType;
   private boolean fileUpdated;
   private String forceRemoteId;
@@ -21,7 +21,7 @@ public class ImageFileRemote extends ImageFile {
     setNoBlur();
   }
 
-  public ImageFileRemote (TdlibProvider tdlib, TdApi.Function function, String remoteId) {
+  public ImageFileRemote (TdlibProvider tdlib, TdApi.Function<?> function, String remoteId) {
     super(tdlib, TD.newFile(0, "", "", 0));
     this.getterFunction = function;
     this.forceRemoteId = remoteId;
@@ -32,7 +32,7 @@ public class ImageFileRemote extends ImageFile {
   }
 
   public void extractFile (Client.ResultHandler handler) {
-    TdApi.Function function = getterFunction != null ? getterFunction : new TdApi.GetRemoteFile(file.remote.id, getFileType());
+    TdApi.Function<?> function = getterFunction != null ? getterFunction : new TdApi.GetRemoteFile(file.remote.id, getFileType());
     tdlib.tdlib().client().send(function, handler);
   }
 

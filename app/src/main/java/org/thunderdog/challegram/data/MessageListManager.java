@@ -128,7 +128,7 @@ public class MessageListManager extends ListManager<TdApi.Message> implements Me
         }
       });
     } else {
-      TdApi.Function function;
+      TdApi.Function<?> function;
       if (hasComplexFilter()) {
         if (local) {
           if (callback != null) {
@@ -205,7 +205,7 @@ public class MessageListManager extends ListManager<TdApi.Message> implements Me
   }
 
   @Override
-  protected TdApi.Function nextLoadFunction (boolean reverse, int itemCount, int loadCount) {
+  protected TdApi.Function<?> nextLoadFunction (boolean reverse, int itemCount, int loadCount) {
     long fromMessageId = this.items.isEmpty() ? startFromMessageId : this.items.get(reverse ? 0 : this.items.size() - 1).id;
     if (hasFilter()) {
       if (reverse) {

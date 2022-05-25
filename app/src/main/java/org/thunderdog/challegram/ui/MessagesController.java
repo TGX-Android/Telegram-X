@@ -6772,7 +6772,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (!pin) {
       m.iterate(message -> {
         if (message.isPinned != pin) {
-          TdApi.Function function = pin ?
+          TdApi.Function<?> function = pin ?
             new TdApi.PinChatMessage(getChatId(), message.id, false, false) :
             new TdApi.UnpinChatMessage(getChatId(), message.id);
           tdlib.client().send(function, tdlib.okHandler());
@@ -8664,8 +8664,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
         MediaBottomFilesController.MusicEntry musicFile = musicFiles.get(i);
         content[i] = tdlib.filegen().createThumbnail(new TdApi.InputMessageAudio(TD.createInputFile(musicFile.getPath(), musicFile.getMimeType()), null, (int) (musicFile.getDuration() / 1000l), musicFile.getTitle(), musicFile.getArtist(), null), isSecretChat());
       }
-      List<TdApi.Function> functions = TD.toFunctions(chat.id, getMessageThreadId(), allowReply ? obtainReplyId() : 0, new TdApi.MessageSendOptions(forceDisableNotification || obtainSilentMode(), false, false, schedulingState), content, needGroupMedia);
-      for (TdApi.Function function : functions) {
+      List<TdApi.Function<?>> functions = TD.toFunctions(chat.id, getMessageThreadId(), allowReply ? obtainReplyId() : 0, new TdApi.MessageSendOptions(forceDisableNotification || obtainSilentMode(), false, false, schedulingState), content, needGroupMedia);
+      for (TdApi.Function<?> function : functions) {
         tdlib.client().send(function, tdlib.messageHandler());
       }
     }
@@ -8875,8 +8875,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
           TdApi.InputMessageContent inputMessageContent = tdlib.filegen().createThumbnail(TD.toInputMessageContent(path, inputFile, info, null), isSecretChat);
           content.add(inputMessageContent);
         }
-        List<TdApi.Function> functions = TD.toFunctions(chatId, getMessageThreadId(), replyMessageId, new TdApi.MessageSendOptions(silentMode, false, false, schedulingState), content.toArray(new TdApi.InputMessageContent[0]), needGroupMedia);
-        for (TdApi.Function function : functions) {
+        List<TdApi.Function<?>> functions = TD.toFunctions(chatId, getMessageThreadId(), replyMessageId, new TdApi.MessageSendOptions(silentMode, false, false, schedulingState), content.toArray(new TdApi.InputMessageContent[0]), needGroupMedia);
+        for (TdApi.Function<?> function : functions) {
           tdlib.client().send(function, tdlib.messageHandler());
         }
       });
@@ -8995,8 +8995,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
         inputContent[i] = content;
         i++;
       }
-      List<TdApi.Function> functions = TD.toFunctions(chatId, getMessageThreadId(), replyToMessageId, options, inputContent, needGroupMedia);
-      for (TdApi.Function function : functions) {
+      List<TdApi.Function<?>> functions = TD.toFunctions(chatId, getMessageThreadId(), replyToMessageId, options, inputContent, needGroupMedia);
+      for (TdApi.Function<?> function : functions) {
         tdlib.client().send(function, tdlib.messageHandler());
       }
     });
@@ -9763,7 +9763,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  private TdApi.Function jumpToDateRequest;
+  private TdApi.Function<?> jumpToDateRequest;
 
   private void cancelJumpToDate () {
     jumpToDateRequest = null;
