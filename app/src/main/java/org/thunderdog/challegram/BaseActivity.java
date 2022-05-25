@@ -111,6 +111,7 @@ import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.ActivityPermissionResult;
 import org.thunderdog.challegram.util.AppUpdater;
+import org.thunderdog.challegram.util.KonfettiBuilder;
 import org.thunderdog.challegram.widget.BaseRootLayout;
 import org.thunderdog.challegram.widget.DragDropLayout;
 import org.thunderdog.challegram.widget.ForceTouchView;
@@ -124,14 +125,13 @@ import java.util.List;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.FutureInt;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceUtils;
-import me.vkryl.core.BitwiseUtils;
-import nl.dionsegijn.konfetti.KonfettiView;
-import nl.dionsegijn.konfetti.models.Shape;
+import nl.dionsegijn.konfetti.xml.KonfettiView;
 
 public abstract class BaseActivity extends ComponentActivity implements View.OnTouchListener, FactorAnimator.Target, Keyboard.OnStateChangeListener, ThemeChangeListener, SensorEventListener, TGPlayerController.TrackChangeListener, TGLegacyManager.EmojiLoadListener, Lang.Listener, Handler.Callback {
   public static final long POPUP_SHOW_SLOW_DURATION = 240l;
@@ -3327,23 +3327,8 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     pivotX += pos[0] - baseX;
     pivotY += pos[1] - baseY;
 
-    konfettiView
-      .build()
-      .addColors(
-              Theme.getColor(R.id.theme_color_confettiRed),
-              Theme.getColor(R.id.theme_color_confettiGreen),
-              Theme.getColor(R.id.theme_color_confettiBlue),
-              Theme.getColor(R.id.theme_color_confettiCyan),
-              Theme.getColor(R.id.theme_color_confettiPurple),
-              Theme.getColor(R.id.theme_color_confettiYellow)
-              )
-      .setDirection(0.0, 359.0)
-      .setSpeed(1f, 12f)
-      .setFadeOutEnabled(true)
-      .setTimeToLive(600l)
-      .addShapes(Shape.Circle.INSTANCE, Shape.Square.INSTANCE)
-      .addSizes(new nl.dionsegijn.konfetti.models.Size(12, 2))
-      .setPosition(pivotX, pivotY)
-      .burst(150);
+    konfettiView.start(
+      KonfettiBuilder.buildKonfettiParty(pivotX, pivotY)
+    );
   }
 }
