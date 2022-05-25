@@ -874,10 +874,10 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
       muteLeft += Screen.dp(20f);
     }
     if (showChatMark) {
-      muteLeft += chatMark.getWidth();
+      muteLeft += chatMark.getWidth() + Screen.dp(14f);
     }
     if (isSecret) {
-      verifyLeft +=  Screen.dp(14f);
+      verifyLeft += Screen.dp(14f);
       muteLeft += Screen.dp(14f);
     }
     if (changed && avatarPlaceholder != null) {

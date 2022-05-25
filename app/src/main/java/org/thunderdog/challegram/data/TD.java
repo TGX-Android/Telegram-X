@@ -1138,7 +1138,7 @@ public class TD {
         }
         if (retriever != null) {
           try {
-            duration = StringUtils.parseInt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION));
+            duration = StringUtils.parseInt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)) / 1000;
             title = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
             performer = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
             if (StringUtils.isEmpty(performer)) {
