@@ -450,8 +450,12 @@ public class SettingsController extends ViewController<Void> implements
             view.setData(Lang.getString(R.string.CommitInfo,
               (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex == 0 ? Lang.newCodeSpan(needFakeBold) : null,
               BuildConfig.COMMIT,
-              Lang.getTimestamp(BuildConfig.COMMIT_DATE, TimeUnit.SECONDS)
+              Lang.getUTCTimestamp(BuildConfig.COMMIT_DATE, TimeUnit.SECONDS)
             ));
+            break;
+          }
+          case R.id.btn_copyDebug: {
+            view.setData(R.string.CopyReportDataInfo);
             break;
           }
           case R.id.btn_devices: {
@@ -601,6 +605,8 @@ public class SettingsController extends ViewController<Void> implements
       items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     }
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sourceCode, R.drawable.baseline_github_24, R.string.ViewSourceCode));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_copyDebug, R.drawable.baseline_bug_report_24, R.string.CopyReportData));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     items.add(new ListItem(ListItem.TYPE_BUILD_NO, R.id.btn_build, 0, Lang.getAppBuildAndVersion(tdlib), false));
@@ -907,6 +913,10 @@ public class SettingsController extends ViewController<Void> implements
         viewSourceCode();
         break;
       }
+      case R.id.btn_copyDebug: {
+        UI.copyText(U.getUsefulMetadata(tdlib), R.string.CopiedText);
+        break;
+      }
       case R.id.btn_themeSettings: {
         navigateTo(new SettingsThemeController(context, tdlib));
         break;
@@ -1101,19 +1111,11 @@ public class SettingsController extends ViewController<Void> implements
     IntList icons = new IntList(size);
     StringList strings = new StringList(size);
 
-    ids.append(R.id.btn_sourceCode);
-    strings.append(R.string.SourceCode);
-    icons.append(R.drawable.baseline_code_24);
-
     ids.append(R.id.btn_copyText);
     strings.append(R.string.CopyVersion);
     icons.append(R.drawable.baseline_content_copy_24);
 
     if (allowDebug) {
-      ids.append(R.id.btn_copyDebug);
-      strings.append(R.string.CopyReportData);
-      icons.append(R.drawable.baseline_content_copy_24);
-
       ids.append(R.id.btn_tdlib);
       strings.append(R.string.TdlibLogs);
       icons.append(R.drawable.baseline_build_24);
@@ -1125,21 +1127,11 @@ public class SettingsController extends ViewController<Void> implements
 
     SpannableStringBuilder b = new SpannableStringBuilder();
     b.append(Lang.getMarkdownStringSecure(this, R.string.AppSignature, BuildConfig.VERSION_NAME));
-    b.append('\n').append(Lang.getMarkdownStringSecure(this, R.string.CommitSignature, BuildConfig.COMMIT, BuildConfig.COMMIT_URL));
-    b.append('\n').append(Lang.getMarkdownStringSecure(this, R.string.CreatedOn, Lang.getTimestamp(BuildConfig.COMMIT_DATE, TimeUnit.SECONDS)));
 
     showOptions(b, ids.get(), strings.get(), null, icons.get(), (itemView, id) -> {
       switch (id) {
         case R.id.btn_copyText: {
           UI.copyText(Lang.getAppBuildAndVersion(tdlib), R.string.CopiedText);
-          break;
-        }
-        case R.id.btn_sourceCode: {
-          viewSourceCode();
-          break;
-        }
-        case R.id.btn_copyDebug: {
-          UI.copyText(U.getUsefulMetadata(tdlib), R.string.CopiedText);
           break;
         }
         case R.id.btn_build: {

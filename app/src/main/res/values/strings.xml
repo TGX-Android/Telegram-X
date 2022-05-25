@@ -2984,6 +2984,7 @@
   <string name="TestModeWarn">**Warning**: Testing Utilities are available for **testing** and **debugging** purposes **only**. None of them are guaranteed to work.\n\nDo not use them, unless you know what you are doing.</string>
   <string name="CopyVersion">Copy Version</string>
   <string name="CopyReportData">Copy Report Details</string>
+  <string name="CopyReportDataInfo">Use when submitting a bug report</string>
 
   <string name="LogFiles">Log Files</string>
   <string name="AppLogs">Application Logs</string>

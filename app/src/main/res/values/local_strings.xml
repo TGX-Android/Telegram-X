@@ -6,4 +6,6 @@
   <string name="suggested_language_code_base" />
   <string name="suggested_language_code_plural" />
   <string name="suggested_language_rtl" />
+
+  <string name="format_timestampWithTimeZone">%1$02d.%2$02d.%3$d, %4$d:%5$02d %6$s</string>
 </resources>

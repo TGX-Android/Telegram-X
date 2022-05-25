@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -2288,6 +2289,18 @@ public class Lang {
     int month = target.get(Calendar.MONTH) + 1;
     int year = target.get(Calendar.YEAR) % 100;
     return getString(R.string.format_datestamp, day, month, year);
+  }
+
+  public static String getUTCTimestamp (long time, TimeUnit unit) {
+    long unixTime = unit.toMillis(time);
+    Calendar target = DateUtils.calendarInstance(unixTime);
+    target.setTimeZone(TimeZone.getTimeZone("UTC"));
+    int day = target.get(Calendar.DAY_OF_MONTH);
+    int month = target.get(Calendar.MONTH) + 1;
+    int year = target.get(Calendar.YEAR);
+    int hourOfDay = target.get(Calendar.HOUR_OF_DAY);
+    int minute = target.get(Calendar.MINUTE);
+    return getString(R.string.format_timestampWithTimeZone, day, month, year, hourOfDay, minute, target.getTimeZone().getDisplayName(false, TimeZone.SHORT));
   }
 
   public static String getTimestamp (long time, TimeUnit unit) {
