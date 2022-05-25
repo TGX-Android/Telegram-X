@@ -188,8 +188,8 @@ dependencies {
         exclude(group = "com.google.firebase", module = "firebase-analytics")
         exclude(group = "com.google.firebase", module = "firebase-measurement-connector")
     }
-    // Play Core: https://developer.android.com/reference/com/google/android/play/core/release-notes
-    implementation("com.google.android.play:core:1.10.3")
+    // Play In-App Updates: https://developer.android.com/reference/com/google/android/play/core/release-notes-in_app_updates
+    implementation("com.google.android.play:app-update:2.0.0")
     // ExoPlayer: https://github.com/google/ExoPlayer/blob/release-v2/RELEASENOTES.md
     implementation("com.google.android.exoplayer:exoplayer-core:2.17.1")
     // The Checker Framework: https://checkerframework.org/CHANGELOG.md
