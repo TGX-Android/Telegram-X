@@ -71,6 +71,7 @@ public class TGFoundChat {
     setChat(chat, query, isGlobal);
   }
 
+  @Deprecated
   public TGFoundChat (Tdlib tdlib, long userId) {
     this(tdlib, tdlib.cache().user(userId), null, false);
   }

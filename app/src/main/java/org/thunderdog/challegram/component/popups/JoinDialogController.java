@@ -5,12 +5,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
-import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.MediaBottomBaseController;
 import org.thunderdog.challegram.component.attach.MediaLayout;
@@ -21,14 +19,12 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
-import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.SettingsAdapter;
 import org.thunderdog.challegram.util.text.TextEntity;
-import org.thunderdog.challegram.widget.BaseView;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.VerticalChatView;
 
@@ -127,7 +123,10 @@ public class JoinDialogController extends MediaBottomBaseController<Void> implem
 
       ArrayList<ListItem> itemsMembers = new ArrayList<>();
       for (int i = 0; i < inviteLinkInfo.memberUserIds.length; i++) {
-        itemsMembers.add(new ListItem(ListItem.TYPE_CHAT_VERTICAL, R.id.user).setLongId(inviteLinkInfo.memberUserIds[i]).setData(new TGFoundChat(tdlib, inviteLinkInfo.memberUserIds[i]).setNoUnread()));
+        TdApi.User user = tdlib.cache().user(inviteLinkInfo.memberUserIds[i]);
+        if (user != null) {
+          itemsMembers.add(new ListItem(ListItem.TYPE_CHAT_VERTICAL, R.id.user).setLongId(inviteLinkInfo.memberUserIds[i]).setData(new TGFoundChat(tdlib, user, null, false).setNoUnread()));
+        }
       }
       adapterMembers.setItems(itemsMembers.toArray(new ListItem[0]), false);
     }
