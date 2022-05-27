@@ -68,7 +68,7 @@ configure_abi() {
       ANDROID_API=16
       TARGET="x86-android-gcc"
       NDK_ABIARCH="i686-linux-android"
-      CFLAGS="${CFLAGS_} -O3 -march=i686 -mtune=intel -msse3 -mfpmath=sse -m32 -fPIC"
+      CFLAGS="${CFLAGS_} -O3 -march=i686 -mtune=i686 -msse3 -mfpmath=sse -m32 -fPIC"
       LDFLAGS="-m32"
       ASFLAGS="-D__ANDROID__"
       CPU=i686
@@ -78,7 +78,7 @@ configure_abi() {
       ANDROID_API=21
       TARGET="x86_64-android-gcc"
       NDK_ABIARCH="x86_64-linux-android"
-      CFLAGS="${CFLAGS_} -O3 -march=x86-64 -mtune=intel -msse4.2 -mpopcnt -m64 -fPIC"
+      CFLAGS="${CFLAGS_} -O3 -march=x86-64 -mtune=x86-64 -msse4.2 -mpopcnt -m64 -fPIC"
       LDFLAGS=""
       ASFLAGS="-D__ANDROID__"
       CPU=x86_64
@@ -96,15 +96,25 @@ configure_abi() {
 
   export PATH=${PREBUILT}/bin:$PATH
 
-  export AR="${CROSS_PREFIX}ar"
-  export AS="${CROSS_PREFIX}clang"
+  export AR="${PREBUILT}/bin/llvm-ar"
   export CC="${CROSS_PREFIX_CLANG}clang"
   export CXX="${CROSS_PREFIX_CLANG}clang++"
-  export LD="${CROSS_PREFIX}ld.gold"
-  export STRIP="${CROSS_PREFIX}strip"
-  export RANLIB="${CROSS_PREFIX}ranlib"
-  export CPP="${CROSS_PREFIX}cpp"
-  export NM="${CROSS_PREFIX}nm"
+  export CPP="$CXX"
+  export AS="$CC"
+  export LD="$CC"
+  export STRIP="${PREBUILT}/bin/llvm-strip"
+  export RANLIB="${PREBUILT}/bin/llvm-ranlib"
+  export NM="${PREBUILT}/bin/llvm-nm"
+
+  validate_file "$AR"
+  validate_file "$CC"
+  validate_file "$CXX"
+  validate_file "$CPP"
+  validate_file "$AS"
+  validate_file "$LD"
+  validate_file "$STRIP"
+  validate_file "$RANLIB"
+  validate_file "$NM"
 
   PREFIX=./build/$CPU
 }
@@ -124,7 +134,6 @@ configure_make() {
   fi
 
   ./configure \
-    --extra-cflags="-isystem ${SYSROOT}/usr/include/${NDK_ABIARCH} -isystem ${SYSROOT}/usr/include" \
     --libc=${SYSROOT} \
     --prefix=${PREFIX} \
     --target=${TARGET} \

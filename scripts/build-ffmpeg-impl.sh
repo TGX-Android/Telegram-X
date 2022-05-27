@@ -11,9 +11,10 @@ function build_one {
   LIBVPX_INCLUDE="-I$THIRDPARTY_LIBRARIES/libvpx/build/$CPU/include/"
   LIBVPX_LIB="-L$THIRDPARTY_LIBRARIES/libvpx/build/$CPU/lib/"
 
-  AR="${CROSS_PREFIX}-ar"
-  NM="${CROSS_PREFIX}-nm"
-  STRIP="${CROSS_PREFIX}-strip"
+  AR="${PREBUILT}/bin/llvm-ar"
+  NM="${PREBUILT}/bin/llvm-nm"
+  STRIP="${PREBUILT}/bin/llvm-strip"
+  RANLIB="${PREBUILT}/bin/llvm-ranlib"
   YASM=$PREBUILT/bin/yasm
 
   validate_file "$CC"
@@ -24,6 +25,7 @@ function build_one {
   validate_file "$NM"
   validate_file "$STRIP"
   validate_file "$YASM"
+  validate_file "$RANLIB"
   validate_dir "$LINK"
 
   echo "Cleaning..."
@@ -39,6 +41,7 @@ function build_one {
   --strip=${STRIP} \
   --cc=${CC} \
   --cxx=${CXX} \
+  --ranlib=${RANLIB} \
   --enable-stripping \
   --arch="$ARCH" \
   --target-os=linux \
@@ -55,7 +58,7 @@ function build_one {
   --sysroot="$SYSROOT" \
   --extra-cflags="-w -Werror -Wl,-Bsymbolic -Os -DCONFIG_LINUX_PERF=0 -DANDROID $OPTIMIZE_CFLAGS $LIBVPX_INCLUDE --static -fPIC" \
   --extra-ldflags="$LIBVPX_LIB -Wl,-Bsymbolic -nostdlib -lc -lm -ldl -fPIC" \
-  --extra-libs="-lgcc" \
+  --extra-libs="-lunwind" \
   \
   --enable-version3 \
   --enable-gpl \
@@ -142,7 +145,7 @@ LINK=$SYSROOT/usr/lib/x86_64-linux-android/$ANDROID_API
 CROSS_PREFIX=$PREBUILT/bin/x86_64-linux-android
 CC=${CROSS_PREFIX}${ANDROID_API}-clang
 CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
-LD=${PREBUILT}/x86_64-linux-android/bin/ld.gold
+LD=$CC
 AS=$CC
 ARCH=x86_64
 CPU=x86_64
@@ -157,7 +160,7 @@ LINK=$SYSROOT/usr/lib/aarch64-linux-android/$ANDROID_API
 CROSS_PREFIX=$PREBUILT/bin/aarch64-linux-android
 CC=${CROSS_PREFIX}${ANDROID_API}-clang
 CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
-LD=${PREBUILT}/aarch64-linux-android/bin/ld.gold
+LD=$CC
 AS=$CC
 ARCH=arm64
 CPU=arm64-v8a
@@ -173,7 +176,7 @@ LINK=$SYSROOT/usr/lib/arm-linux-androideabi/$ANDROID_API
 CROSS_PREFIX=$PREBUILT/bin/arm-linux-androideabi
 CC=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang
 CXX=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang++
-LD=${PREBUILT}/arm-linux-androideabi/bin/ld.gold
+LD=$CC
 AS=$CC
 ARCH=arm
 CPU=armv7-a
@@ -188,7 +191,7 @@ LINK=$SYSROOT/usr/lib/i686-linux-android/$ANDROID_API
 CROSS_PREFIX=$PREBUILT/bin/i686-linux-android
 CC=${CROSS_PREFIX}${ANDROID_API}-clang
 CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
-LD=${PREBUILT}/i686-linux-android/bin/ld.gold
+LD=$CC
 AS=$CC
 ARCH=x86
 CPU=i686
