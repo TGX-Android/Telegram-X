@@ -66,6 +66,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.FileUtils;
@@ -8157,12 +8159,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   public static final class UpdateFileInfo {
     public final TdApi.Document document;
     public final int buildNo;
-    public final String version;
+    public final String version, commit;
 
-    public UpdateFileInfo (TdApi.Document document, int buildNo, String version) {
+    public UpdateFileInfo (TdApi.Document document, int buildNo, String version, String commit) {
       this.document = document;
       this.buildNo = buildNo;
       this.version = version;
+      this.commit = commit;
     }
   }
 
@@ -8187,9 +8190,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     clientHolder().updates.findResource(message -> {
       if (message != null && message.content.getConstructor() == TdApi.MessageDocument.CONSTRUCTOR) {
         TdApi.Document document = ((TdApi.MessageDocument) message.content).document;
+        TdApi.FormattedText caption = ((TdApi.MessageDocument) message.content).caption;
         boolean ok = false;
         int buildNo = 0;
         String version = null;
+        String commit = null;
         final String prefix = "Telegram-X-";
         if (!StringUtils.isEmpty(document.fileName) && document.fileName.startsWith(prefix)) {
           int i = document.fileName.indexOf('-', prefix.length());
@@ -8201,7 +8206,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             }
           }
         }
-        onDone.runWithData(ok ? new UpdateFileInfo(document, buildNo, version) : null);
+        if (!Td.isEmpty(caption)) {
+          Pattern pattern = Pattern.compile("(?<=Commit:)\\s*([a-zA-Z0-9]+)", Pattern.CASE_INSENSITIVE);
+          Matcher matcher = pattern.matcher(caption.text);
+          if (matcher.find()) {
+            commit = matcher.group(1);
+            if (StringUtils.isEmpty(commit)) {
+              commit = null;
+            }
+          }
+        }
+        onDone.runWithData(ok ? new UpdateFileInfo(document, buildNo, version, commit) : null);
       }
     }, "#apk " + (
       Settings.instance().getNewSetting(Settings.SETTING_FLAG_DOWNLOAD_BETAS) ? "" : "#stable "

@@ -81,6 +81,15 @@ fun Properties.getIntOrThrow (key: String): Int {
   }
 }
 
+fun Properties.getLongOrThrow (key: String): Long {
+  val value = this.getOrThrow(key)
+  return try {
+    value.toLong()
+  } catch (e: NumberFormatException) {
+    error("$key is set, but not a number")
+  }
+}
+
 fun Properties.getOrThrow (key: String): String {
   return this[key]?.let {
     val res = it.toString()

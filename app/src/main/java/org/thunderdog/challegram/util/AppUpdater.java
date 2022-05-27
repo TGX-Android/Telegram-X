@@ -91,7 +91,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
 
   private long bytesDownloaded, totalBytesToDownload;
   @Nullable
-  private String displayVersion;
+  private String displayVersion, commit;
   @FlowType
   private int flowType;
 
@@ -133,6 +133,11 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
   @Nullable
   public String displayVersion () {
     return displayVersion;
+  }
+
+  @Nullable
+  public String commit () {
+    return commit;
   }
 
   public long bytesDownloaded () {
@@ -184,14 +189,14 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
       this.googlePlayUpdateInfo = updateInfo;
       int installStatus = updateInfo.installStatus();
       if (installStatus == InstallStatus.DOWNLOADED) {
-        onUpdateAvailable(FlowType.GOOGLE_PLAY, updateInfo.bytesDownloaded(), updateInfo.totalBytesToDownload(), "#" + (int) (updateInfo.availableVersionCode() / 1000), true);
+        onUpdateAvailable(FlowType.GOOGLE_PLAY, updateInfo.bytesDownloaded(), updateInfo.totalBytesToDownload(), "#" + (int) (updateInfo.availableVersionCode() / 1000), null, true);
       } else if (installStatus == InstallStatus.FAILED) {
         onGooglePlayFlowError();
       } else {
         int updateAvailability = updateInfo.updateAvailability();
         switch (updateAvailability) {
           case UpdateAvailability.UPDATE_AVAILABLE: {
-            onUpdateAvailable(FlowType.GOOGLE_PLAY, updateInfo.bytesDownloaded(), updateInfo.totalBytesToDownload(), "#" + (int) (updateInfo.availableVersionCode() / 1000), false);
+            onUpdateAvailable(FlowType.GOOGLE_PLAY, updateInfo.bytesDownloaded(), updateInfo.totalBytesToDownload(), "#" + (int) (updateInfo.availableVersionCode() / 1000), null, false);
             break;
           }
           case UpdateAvailability.UNKNOWN: {
@@ -279,7 +284,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
       onUpdateDownloadProgress(state.bytesDownloaded(), state.totalBytesToDownload());
     } else if (installStatus == InstallStatus.DOWNLOADED) {
       googlePlayUpdateManager.unregisterListener(this);
-      onUpdateAvailable(FlowType.GOOGLE_PLAY, state.bytesDownloaded(), state.totalBytesToDownload(), displayVersion, true);
+      onUpdateAvailable(FlowType.GOOGLE_PLAY, state.bytesDownloaded(), state.totalBytesToDownload(), displayVersion, commit, true);
     }
   }
 
@@ -299,6 +304,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
           file.local.downloadedSize,
           file.expectedSize,
           updateFile.version,
+          updateFile.commit,
           TD.isFileLoadedAndExists(file)
         );
       } else {
@@ -314,17 +320,27 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
         if (c != null && c.isFocused()) {
           final long bytesToDownload = totalBytesToDownload() - bytesDownloaded();
           final String displayVersion = displayVersion();
-          c.showOptions(new ViewController.Options.Builder()
+          final String commit = commit();
+          ViewController.Options.Builder b = new ViewController.Options.Builder()
             .info(Lang.getMarkdownString(c,
               !StringUtils.isEmpty(displayVersion) ? R.string.AppUpdateAvailableVersionPrompt : R.string.AppUpdateAvailablePrompt,
               (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex != 1 ? Lang.boldCreator().onCreateSpan(target, argStart, argEnd, argIndex, needFakeBold) : null,
               Strings.buildSize(bytesToDownload), displayVersion
             ))
-            .item(new ViewController.OptionItem(R.id.btn_update, Lang.getString(R.string.DownloadUpdate), ViewController.OPTION_COLOR_BLUE, R.drawable.baseline_system_update_24))
-            .cancelItem()
-            .build(), (optionItemView, id) -> {
-            if (id == R.id.btn_update) {
-              downloadUpdate();
+            .item(new ViewController.OptionItem(R.id.btn_update, Lang.getString(R.string.DownloadUpdate), ViewController.OPTION_COLOR_BLUE, R.drawable.baseline_system_update_24));
+          final String changesUrl = commit != null && !BuildConfig.COMMIT.equals(commit) ? BuildConfig.REMOTE_URL + "/compare/" + BuildConfig.COMMIT + "..." + commit : null;
+          if (changesUrl != null) {
+            b.item(new ViewController.OptionItem(R.id.btn_sourceCode, Lang.getString(R.string.UpdateSourceChanges), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_code_24));
+          }
+          b.cancelItem();
+          c.showOptions(b.build(), (optionItemView, id) -> {
+            switch (id) {
+              case R.id.btn_update:
+                downloadUpdate();
+                break;
+              case R.id.btn_sourceCode:
+                UI.openUrl(changesUrl);
+                break;
             }
             return true;
           });
@@ -367,7 +383,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
       if (updateFile.file.id == currentFile.id) {
         Td.copyTo(updateFile.file, currentFile);
         if (TD.isFileLoadedAndExists(updateFile.file)) {
-          onUpdateAvailable(FlowType.TELEGRAM_CHANNEL, updateFile.file.local.downloadedSize, updateFile.file.expectedSize, telegramChannelFile.version, true);
+          onUpdateAvailable(FlowType.TELEGRAM_CHANNEL, updateFile.file.local.downloadedSize, updateFile.file.expectedSize, telegramChannelFile.version, telegramChannelFile.commit, true);
         } else if (TD.isFileLoading(updateFile.file)) {
           onUpdateDownloading();
           onUpdateDownloadProgress(updateFile.file.local.downloadedSize, updateFile.file.expectedSize);
@@ -380,11 +396,12 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
     });
   }
 
-  private void onUpdateAvailable (@FlowType int flowType, long bytesDownloaded, long totalBytesToDownload, @Nullable String displayVersion, boolean readyToInstall) {
+  private void onUpdateAvailable (@FlowType int flowType, long bytesDownloaded, long totalBytesToDownload, @Nullable String displayVersion, @Nullable String commit, boolean readyToInstall) {
     this.flowType = flowType;
     this.bytesDownloaded = bytesDownloaded;
     this.totalBytesToDownload = totalBytesToDownload;
     this.displayVersion = displayVersion;
+    this.commit = commit;
     if (readyToInstall) {
       setState(State.READY_TO_INSTALL);
     } else {

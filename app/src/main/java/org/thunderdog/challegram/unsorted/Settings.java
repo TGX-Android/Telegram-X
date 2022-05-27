@@ -59,6 +59,7 @@ import org.thunderdog.challegram.theme.ThemeSet;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.util.AppBuildInfo;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 
 import java.io.File;
@@ -233,6 +234,13 @@ public class Settings {
   private static final String KEY_TDLIB_CRASH_SUFFIX_UPTIME = "uptime";
   private static final String KEY_TDLIB_CRASH_SUFFIX_MESSAGE = "rip";
   private static final String KEY_TDLIB_CRASH_SUFFIX_ACCOUNT_ID = "id";
+
+  private static final String KEY_APP_COMMIT_DATE = "app_commit_date";
+  private static final String KEY_APP_INSTALLATION_ID = "app_install_id";
+  private static final String KEY_APP_INSTALLATION_PREFIX = "installation";
+
+  private static final String KEY_INSTALLATION_SUFFIX_FIRST_RUN = "first_run";
+  private static final String KEY_INSTALLATION_SUFFIX_COMMIT = "first_run";
 
   private static final String KEY_KNOWN_SIZE = "known_size_for_";
   private static final String KEY_LANGUAGE_CURRENT = "settings_language_code";
@@ -741,6 +749,7 @@ public class Settings {
       pmc.remove(KEY_TUTORIAL);
       pmc.removeByPrefix(KEY_TUTORIAL_PSA);
     }
+    trackInstalledApkVersion();
     Log.i("Opened database in %dms", SystemClock.uptimeMillis() - ms);
     checkPendingPasscodeLocks();
   }
@@ -6171,5 +6180,28 @@ public class Settings {
 
   public void putKnownSize (String path, long length, long lastModified, int width, int height) {
     pmc.putLongArray(KEY_KNOWN_SIZE + path, new long[] {length, lastModified, BitwiseUtils.mergeLong(width, height)});
+  }
+
+  private long nextInstallationId () {
+    return pmc.getLong(KEY_APP_INSTALLATION_ID, 0) + 1;
+  }
+
+  public void trackInstalledApkVersion () {
+    if (BuildConfig.DEBUG) {
+      // Track only published builds
+      return;
+    }
+    final long knownCommitDate = pmc.getLong(KEY_APP_COMMIT_DATE, 0);
+    if (BuildConfig.COMMIT_DATE <= knownCommitDate) {
+      // Track only updates with more recent commits.
+      return;
+    }
+    AppBuildInfo buildInfo = new AppBuildInfo();
+    final long installationId = nextInstallationId();
+    pmc.edit()
+      .putLong(KEY_APP_INSTALLATION_ID, installationId)
+      .putLong(KEY_APP_COMMIT_DATE, buildInfo.getCommitDate());
+    buildInfo.saveTo(pmc, KEY_APP_INSTALLATION_PREFIX + installationId);
+    pmc.apply();
   }
 }

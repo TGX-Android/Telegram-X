@@ -12,7 +12,7 @@ import com.android.build.gradle.LibraryExtension
 import com.android.build.gradle.ProguardFiles
 import com.beust.klaxon.JsonObject
 import com.beust.klaxon.Parser
-import getIntOrThrow
+import getLongOrThrow
 import getOrThrow
 import loadProperties
 import monthYears
@@ -30,17 +30,17 @@ import java.util.*
 
 open class ModulePlugin : Plugin<Project> {
   data class PullRequest (
-    val id: Int,
+    val id: Long,
     val commitShort: String,
     val commitLong: String,
-    val date: Int,
+    val commitDate: Long,
     val author: String
   ) {
-    constructor(id: Int, properties: Properties) : this(
+    constructor(id: Long, properties: Properties) : this(
       id,
       properties.getOrThrow("pr.$id.commit_short"),
       properties.getOrThrow("pr.$id.commit_long"),
-      properties.getIntOrThrow("pr.$id.date"),
+      properties.getLongOrThrow("pr.$id.date"),
       properties.getOrThrow("pr.$id.author")
     )
   }
@@ -178,7 +178,7 @@ open class ModulePlugin : Plugin<Project> {
             project.extra.set("versions", versions)
 
             val pullRequests: List<PullRequest> = properties.getProperty("pr.ids", "").split(',').filter { it.matches(Regex("^[0-9]+$")) }.map {
-              PullRequest(it.toInt(), properties)
+              PullRequest(it.toLong(), properties)
             }.sortedBy { it.id }
 
             if (pullRequests.isNotEmpty()) {
@@ -198,17 +198,21 @@ open class ModulePlugin : Plugin<Project> {
               buildConfigString("REMOTE_URL", remoteUrl)
               buildConfigString("COMMIT_URL", commitUrl)
               buildConfigString("COMMIT", commitHashShort)
+              buildConfigString("COMMIT_FULL", commitHashLong)
               buildConfigLong("COMMIT_DATE", commitDate)
               buildConfigString("SOURCES_URL", properties.getProperty("app.sources_url", remoteUrl))
 
-              buildConfigField("int[]", "PULL_REQUEST_ID", "{${
+              buildConfigField("long[]", "PULL_REQUEST_ID", "{${
                 pullRequests.joinToString(", ") { it.id.toString() }
               }}")
-              buildConfigField("int[]", "PULL_REQUEST_COMMIT_DATE", "{${
-                pullRequests.joinToString(", ") { it.date.toString() }
+              buildConfigField("long[]", "PULL_REQUEST_COMMIT_DATE", "{${
+                pullRequests.joinToString(", ") { it.commitDate.toString() }
               }}")
               buildConfigField("String[]", "PULL_REQUEST_COMMIT", "{${
                 pullRequests.joinToString(", ") { "\"${it.commitShort}\"" }
+              }}")
+              buildConfigField("String[]", "PULL_REQUEST_COMMIT_FULL", "{${
+                pullRequests.joinToString(", ") { "\"${it.commitLong}\"" }
               }}")
               buildConfigField("String[]", "PULL_REQUEST_URL", "{${
                 pullRequests.joinToString(", ") { "\"${remoteUrl}/pull/${it.id}/files/${it.commitLong}\"" } 
