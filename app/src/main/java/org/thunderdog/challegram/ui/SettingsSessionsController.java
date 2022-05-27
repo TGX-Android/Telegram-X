@@ -40,9 +40,7 @@ import me.vkryl.core.DateUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.RunnableInt;
-import me.vkryl.core.lambda.RunnableLong;
 import me.vkryl.td.Td;
-import me.vkryl.td.TdConstants;
 
 /**
  * Date: 17/11/2016
@@ -275,7 +273,7 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
             subtextView.setText(getAppName(sessions.currentSession));
             locationView.setText(Strings.concatIpLocation(sessions.currentSession.ip, sessions.currentSession.country));
             progressView.forceFactor(0f);
-            iconView.setImageResource(R.drawable.baseline_device_android_x);
+            iconView.setImageResource(R.drawable.baseline_device_android_x_24);
             secretStateView.setVisibility(sessions.currentSession.canAcceptSecretChats ? View.VISIBLE : View.GONE);
             callsStateView.setVisibility(sessions.currentSession.canAcceptCalls ? View.VISIBLE : View.GONE);
             callsStateView.setPadding(sessions.currentSession.canAcceptSecretChats ? 0 : Screen.dp(48f), 0, 0, 0);

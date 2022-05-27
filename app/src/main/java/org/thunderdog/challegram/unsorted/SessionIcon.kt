@@ -7,7 +7,7 @@ import org.thunderdog.challegram.R
 @DrawableRes
 fun Session.asIcon (): Int {
   return if (apiId == 21724) {
-    R.drawable.baseline_device_android_x
+    R.drawable.baseline_device_android_x_24
   } else when (type.constructor) {
     SessionTypeFirefox.CONSTRUCTOR -> R.drawable.templarian_device_web_firefox_24
     SessionTypeOpera.CONSTRUCTOR -> R.drawable.baseline_device_web_opera_24
@@ -23,7 +23,7 @@ fun Session.asIcon (): Int {
     SessionTypeVivaldi.CONSTRUCTOR -> R.drawable.baseline_device_web_vivaldi_24
     SessionTypeBrave.CONSTRUCTOR -> R.drawable.baseline_device_web_brave_24
     SessionTypeUbuntu.CONSTRUCTOR -> R.drawable.templarian_baseline_device_ubuntu_24
-    SessionTypeLinux.CONSTRUCTOR, // TODO: find a nice-looking penguin
+    SessionTypeLinux.CONSTRUCTOR -> R.drawable.baseline_device_linux_24
     SessionTypeUnknown.CONSTRUCTOR -> R.drawable.baseline_device_other_24
     else -> R.drawable.baseline_device_other_24
   }
