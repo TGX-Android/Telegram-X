@@ -16,6 +16,8 @@ import me.vkryl.td.ChatId;
 public class TdlibSender {
   private static final int FLAG_BOT = 1;
   private static final int FLAG_SERVICE_ACCOUNT = 1 << 1;
+  private static final int FLAG_SCAM = 1 << 2;
+  private static final int FLAG_FAKE = 1 << 3;
 
   private final Tdlib tdlib;
   private final long inChatId;
@@ -51,6 +53,8 @@ public class TdlibSender {
 
         flags = BitwiseUtils.setFlag(flags, FLAG_BOT, tdlib.isBotChat(chat));
         flags = BitwiseUtils.setFlag(flags, FLAG_SERVICE_ACCOUNT, tdlib.isServiceNotificationsChat(chatId));
+        flags = BitwiseUtils.setFlag(flags, FLAG_SCAM, tdlib.chatScam(chat));
+        flags = BitwiseUtils.setFlag(flags, FLAG_FAKE, tdlib.chatFake(chat));
 
         break;
       }
@@ -68,6 +72,8 @@ public class TdlibSender {
 
         flags = BitwiseUtils.setFlag(flags, FLAG_BOT, TD.isBot(user));
         flags = BitwiseUtils.setFlag(flags, FLAG_SERVICE_ACCOUNT, tdlib.isServiceNotificationsChat(ChatId.fromUserId(userId)));
+        flags = BitwiseUtils.setFlag(flags, FLAG_SCAM, user != null && user.isScam);
+        flags = BitwiseUtils.setFlag(flags, FLAG_FAKE, user != null && user.isFake);
 
         break;
       }
@@ -156,5 +162,17 @@ public class TdlibSender {
 
   public boolean isServiceAccount () {
     return BitwiseUtils.getFlag(flags, FLAG_SERVICE_ACCOUNT);
+  }
+
+  public boolean isScam () {
+    return BitwiseUtils.getFlag(flags, FLAG_SCAM);
+  }
+
+  public boolean isFake () {
+    return BitwiseUtils.getFlag(flags, FLAG_FAKE);
+  }
+
+  public boolean hasChatMark () {
+    return isScam() || isFake();
   }
 }
