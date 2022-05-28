@@ -1105,6 +1105,10 @@ public class MediaCellView extends ViewGroup implements
       tReceiver = imagePreviewReceiver;
     }
 
+    if (media != null && media.isVideo() && media.isGifType() && media.isLoaded() && tReceiver instanceof ImageReceiver && gifReceiver != null) {
+      tReceiver = gifReceiver;
+    }
+
     if (tReceiver.isInsideContent(x, y, media != null ? media.getWidth() : 0, media != null ? media.getHeight() : 0)) {
       if (canTouch(false)) {
         ((MediaView) getParent()).onMediaClick(x, y);
