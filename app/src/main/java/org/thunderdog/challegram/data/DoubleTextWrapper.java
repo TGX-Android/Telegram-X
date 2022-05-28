@@ -3,6 +3,7 @@ package org.thunderdog.challegram.data;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 
@@ -56,6 +57,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
 
   private String title;
   private Text trimmedTitle;
+  private Text chatMark;
 
   private CharSequence subtitle;
   private Text trimmedSubtitle;
@@ -76,6 +78,13 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
     this.userId = TD.getUserId(chat);
     this.groupId = ChatId.toBasicGroupId(chat.id);
     this.channelId = ChatId.toSupergroupId(chat.id);
+
+    if (chat.type.getConstructor() == TdApi.ChatTypeSupergroup.CONSTRUCTOR) {
+      setChatMark(tdlib.chatScam(chat), tdlib.chatFake(chat));
+    } else {
+      setChatMark(false, false);
+    }
+
     setTitle(chat.title);
     this.avatarPlaceholder = tdlib.chatPlaceholder(chat, false, AVATAR_PLACEHOLDER_RADIUS, null);
     if (chat.photo != null) {
@@ -91,6 +100,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
     this.userId = userId;
     this.user = tdlib.cache().user(userId);
 
+    setChatMark(this.user != null && this.user.isScam, this.user != null && this.user.isFake);
     setTitle(TD.getUserName(user));
     this.avatarPlaceholder = tdlib.cache().userPlaceholder(user, false, AVATAR_PLACEHOLDER_RADIUS, null);
     if (user != null && user.profilePhoto != null) {
@@ -126,6 +136,18 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
     }
     item.setMember(member, needFullDescription, needAdminSign);
     return item;
+  }
+
+  private void setChatMark (boolean isScam, boolean isFake) {
+    if (isScam || isFake) {
+      chatMark = new Text.Builder(Lang.getString(isFake ? R.string.FakeMark : R.string.ScamMark), 0, Paints.robotoStyleProvider(10f), TextColorSets.Regular.NEGATIVE)
+        .singleLine()
+        .allBold()
+        .clipTextArea()
+        .build();
+    } else {
+      chatMark = null;
+    }
   }
 
   public void setIgnoreOnline (boolean ignoreOnline) {
@@ -341,6 +363,11 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
       this.adminSign = null;
     }
 
+    if (chatMark != null) {
+      chatMark.changeMaxWidth(availWidth);
+      availWidth -= chatMark.getWidth() + Screen.dp(8f);
+    }
+
     if (availWidth <= 0) {
       trimmedTitle = null;
       return;
@@ -406,6 +433,15 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
 
     if (trimmedSubtitle != null) {
       trimmedSubtitle.draw(c, left, Screen.dp(33f), isOnline ? TextColorSets.Regular.NEUTRAL : null);
+    }
+
+    if (trimmedTitle != null && chatMark != null) {
+      int cmLeft = left + trimmedTitle.getWidth() + Screen.dp(6f);
+      RectF rct = Paints.getRectF();
+      rct.set(cmLeft, Screen.dp(13f), cmLeft + chatMark.getWidth() + Screen.dp(8f), Screen.dp(13f) + trimmedTitle.getLineHeight(false));
+      c.drawRoundRect(rct, Screen.dp(2f), Screen.dp(2f), Paints.getProgressPaint(Theme.getColor(R.id.theme_color_textNegative), Screen.dp(1.5f)));
+      cmLeft += Screen.dp(4f);
+      chatMark.draw(c, cmLeft, cmLeft + chatMark.getWidth(), 0, Screen.dp(13f) + ((trimmedTitle.getLineHeight(false) - chatMark.getLineHeight(false)) / 2));
     }
   }
 
