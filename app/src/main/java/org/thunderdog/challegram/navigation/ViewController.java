@@ -2291,7 +2291,6 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     }
 
     final PopupLayout popupLayout = new PopupLayout(context);
-    int popupAdditionalHeight;
 
     popupLayout.setTag(this);
     popupLayout.init(true);
@@ -2304,13 +2303,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     optionsWrap.setInfo(this, tdlib(), options.info, false);
     optionsWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
 
-    if (Screen.needsKeyboardPadding(context)) {
-      popupAdditionalHeight = Screen.getNavigationBarFrameHeight();
-      optionsWrap.setPadding(0, 0, 0, popupAdditionalHeight);
-      popupLayout.setNeedFullScreen(true);
-    } else {
-      popupAdditionalHeight = 0;
-    }
+    hideSoftwareKeyboard();
 
     ShadowView shadowView = new ShadowView(context);
     shadowView.setSimpleTopShadow(true);
@@ -2349,7 +2342,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
     // Window
 
-    popupLayout.showSimplePopupView(optionsWrap, shadowView.getLayoutParams().height + Screen.dp(54f) * options.items.length + optionsWrap.getTextHeight() + popupAdditionalHeight);
+    popupLayout.showSimplePopupView(optionsWrap, shadowView.getLayoutParams().height + Screen.dp(54f) * options.items.length + optionsWrap.getTextHeight());
 
     return popupLayout;
   }
