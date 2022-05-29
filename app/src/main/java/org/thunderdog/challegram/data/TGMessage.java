@@ -815,7 +815,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private int getBubbleReplyOffset () {
-    return ReplyComponent.height() + Screen.dp(useBubble() ? 3f : 6f) - (useForward() ? Screen.dp(4f) : 0);
+    return ReplyComponent.height() + Screen.dp(useBubble() ? 3f : 6f) - (useForward() ? Screen.dp(9f) : 0);
   }
 
   public void rebuildLayout () {
@@ -1890,9 +1890,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
       int width = replyData.width(useBubbles && !useBubble());
 
-      top = useBubbles ? topContentEdge + (useBubble() ? xBubblePadding + xBubblePaddingSmall : Screen.dp(8f)) + (useBubbleName() ? getBubbleNameHeight() : 0) : pContentY - ReplyComponent.height();
-
       if (useBubbles) {
+        top = topContentEdge + (useBubble() ? xBubblePadding + xBubblePaddingSmall : Screen.dp(8f)) + (useBubbleName() ? getBubbleNameHeight() : 0);
         if (isOutgoing() && (!useBubble() || separateReplyFromBubble())) {
           startX = getActualRightContentEdge() - width;
           endX = getInternalBubbleEndX();
@@ -1908,11 +1907,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
             top = topContentEdge + (bottomContentEdge - topContentEdge) / 2 - ReplyComponent.height() / 2;
           }
         }
-      } else if (useFullWidth()) {
-        startX = pRealContentX;
-        endX = viewWidth - startX;
       } else {
-        startX = pContentX;
+        top = pContentY - ReplyComponent.height();
+        startX = useFullWidth() ? pRealContentX : pContentX;
         endX = viewWidth - startX;
       }
 
