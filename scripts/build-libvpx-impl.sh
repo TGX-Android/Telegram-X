@@ -48,11 +48,10 @@ configure_abi() {
       ANDROID_API=16
       TARGET="armv7-android-gcc --enable-neon --disable-neon-asm"
       NDK_ABIARCH="armv7a-linux-androideabi"
-      CFLAGS="${CFLAGS_} -Os -march=armv7-a -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb -D__thumb__"
-      LDFLAGS="${LDFLAGS_} -march=armv7-a"
+      CFLAGS="${CFLAGS_} -Os -march=armv7-a -marm -mfloat-abi=softfp -mfpu=neon -mthumb -D__thumb__"
+      LDFLAGS="${LDFLAGS_}"
       ASFLAGS=""
       CPU=armv7-a
-      export CROSS_PREFIX=${PREBUILT}/bin/arm-linux-androideabi-
     ;;
     arm64-v8a)
       ANDROID_API=21
@@ -62,27 +61,24 @@ configure_abi() {
       LDFLAGS="${LDFLAGS_}"
       ASFLAGS=""
       CPU=arm64-v8a
-      export CROSS_PREFIX=${PREBUILT}/bin/${NDK_ABIARCH}-
     ;;
     x86)
       ANDROID_API=16
       TARGET="x86-android-gcc"
       NDK_ABIARCH="i686-linux-android"
-      CFLAGS="${CFLAGS_} -O3 -march=i686 -mtune=i686 -msse3 -mfpmath=sse -m32 -fPIC"
+      CFLAGS="${CFLAGS_} -O3 -march=i686 -msse3 -mfpmath=sse -m32 -fPIC"
       LDFLAGS="-m32"
       ASFLAGS="-D__ANDROID__"
       CPU=i686
-      export CROSS_PREFIX=${PREBUILT}/bin/${NDK_ABIARCH}-
     ;;
     x86_64)
       ANDROID_API=21
       TARGET="x86_64-android-gcc"
       NDK_ABIARCH="x86_64-linux-android"
-      CFLAGS="${CFLAGS_} -O3 -march=x86-64 -mtune=x86-64 -msse4.2 -mpopcnt -m64 -fPIC"
+      CFLAGS="${CFLAGS_} -O3 -march=x86-64 -msse4.2 -mpopcnt -m64 -fPIC"
       LDFLAGS=""
       ASFLAGS="-D__ANDROID__"
       CPU=x86_64
-      export CROSS_PREFIX=${PREBUILT}/bin/${NDK_ABIARCH}-
     ;;
   esac
 

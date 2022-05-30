@@ -8,8 +8,11 @@ function validate_dir {
   test -d "$1" || (echo "Directory not found: $1" && false)
 }
 function build_one {
-  LIBVPX_INCLUDE="-I$THIRDPARTY_LIBRARIES/libvpx/build/$CPU/include/"
-  LIBVPX_LIB="-L$THIRDPARTY_LIBRARIES/libvpx/build/$CPU/lib/"
+  LIBVPX_INCLUDE_DIR="$THIRDPARTY_LIBRARIES/libvpx/build/$CPU/include"
+  LIBVPX_LIB_DIR="$THIRDPARTY_LIBRARIES/libvpx/build/$CPU/lib"
+
+  validate_dir $LIBVPX_INCLUDE_DIR
+  validate_dir $LIBVPX_LIB_DIR
 
   AR="${PREBUILT}/bin/llvm-ar"
   NM="${PREBUILT}/bin/llvm-nm"
@@ -56,8 +59,8 @@ function build_one {
   --enable-x86asm \
   --cross-prefix="$CROSS_PREFIX"- \
   --sysroot="$SYSROOT" \
-  --extra-cflags="-w -Werror -Wl,-Bsymbolic -Os -DCONFIG_LINUX_PERF=0 -DANDROID $OPTIMIZE_CFLAGS $LIBVPX_INCLUDE --static -fPIC" \
-  --extra-ldflags="$LIBVPX_LIB -Wl,-Bsymbolic -nostdlib -lc -lm -ldl -fPIC" \
+  --extra-cflags="-w -Werror -Wl,-Bsymbolic -Os -DCONFIG_LINUX_PERF=0 -DANDROID $OPTIMIZE_CFLAGS -I$LIBVPX_INCLUDE_DIR --static -fPIC" \
+  --extra-ldflags="-Wl,-L$LIBVPX_LIB_DIR -lvpx -Wl,-Bsymbolic -nostdlib -lc -lm -ldl -fPIC" \
   --extra-libs="-lunwind" \
   \
   --enable-version3 \
