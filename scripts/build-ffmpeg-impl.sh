@@ -31,6 +31,9 @@ function build_one {
   validate_file "$RANLIB"
   validate_dir "$LINK"
 
+  LIBS=${PREBUILT}/lib64/clang/12.0.9/lib/linux
+  validate_dir "$LIBS"
+
   echo "Cleaning..."
   rm -f config.h
   make clean || true
@@ -60,8 +63,8 @@ function build_one {
   --cross-prefix="$CROSS_PREFIX"- \
   --sysroot="$SYSROOT" \
   --extra-cflags="-w -Werror -Wl,-Bsymbolic -Os -DCONFIG_LINUX_PERF=0 -DANDROID $OPTIMIZE_CFLAGS -I$LIBVPX_INCLUDE_DIR --static -fPIC" \
-  --extra-ldflags="-Wl,-L$LIBVPX_LIB_DIR -lvpx -Wl,-Bsymbolic -nostdlib -lc -lm -ldl -fPIC" \
-  --extra-libs="-lunwind" \
+  --extra-ldflags="-L$LIBVPX_LIB_DIR $EXTRA_LDFLAGS -L -lvpx -Wl,-Bsymbolic -nostdlib -lc -lm -ldl -fPIC" \
+  --extra-libs="-lunwind $EXTRA_LIBS" \
   \
   --enable-version3 \
   --enable-gpl \
@@ -155,6 +158,8 @@ CPU=x86_64
 PREFIX=./build/$CPU
 ADDITIONAL_CONFIGURE_FLAG="--disable-asm"
 OPTIMIZE_CFLAGS=""
+EXTRA_LIBS=""
+EXTRA_LDFLAGS=""
 build_one
 
 #arm64-v8a
@@ -170,6 +175,8 @@ CPU=arm64-v8a
 PREFIX=./build/$CPU
 ADDITIONAL_CONFIGURE_FLAG="--disable-asm --enable-optimizations"
 OPTIMIZE_CFLAGS=""
+EXTRA_LIBS=""
+EXTRA_LDFLAGS=""
 # FIXME ADDITIONAL_CONFIGURE_FLAG="--enable-neon --enable-optimizations"
 build_one
 
@@ -185,7 +192,9 @@ ARCH=arm
 CPU=armv7-a
 PREFIX=./build/$CPU
 ADDITIONAL_CONFIGURE_FLAG="--enable-neon"
-OPTIMIZE_CFLAGS="-marm -march=$CPU"
+OPTIMIZE_CFLAGS="-marm -march=$CPU -mfloat-abi=softfp"
+EXTRA_LDFLAGS=-L${PREBUILT}/lib64/clang/12.0.9/lib/linux
+EXTRA_LIBS=-lclang_rt.builtins-arm-android
 build_one
 
 #x86 platform
@@ -201,6 +210,8 @@ CPU=i686
 PREFIX=./build/$CPU
 ADDITIONAL_CONFIGURE_FLAG="--disable-x86asm --disable-inline-asm --disable-asm"
 OPTIMIZE_CFLAGS="-march=$CPU"
+EXTRA_LDFLAGS=-L${PREBUILT}/lib64/clang/12.0.9/lib/linux
+EXTRA_LIBS=-lclang_rt.builtins-i686-android
 build_one
 
 # Copy headers to all platform-specific folders
