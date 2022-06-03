@@ -10,7 +10,7 @@
   <string name="Page6Title">Cloud-Based</string>
   <string name="Page1Message">The world\'s **fastest** messaging app.\nIt is **free** and **secure**.</string>
   <string name="Page2Message">**Telegram** delivers messages\nfaster than any other application.</string>
-  <string name="Page3Message">**Telegram** is free forever. No ads.\nNo subscription fees.</string>
+  <string name="Page3Message">**Telegram** provides free unlimited\ncloud storage for chats and media.</string>
   <string name="Page4Message">**Telegram** has no limits on\nthe size of your media and chats.</string>
   <string name="Page5Message">**Telegram** keeps your messages\nsafe from hacker attacks.</string>
   <string name="Page6Message">**Telegram** lets you access your\nmessages from multiple devices.</string>
@@ -444,11 +444,11 @@
   <string name="PasscodeInvalidPin">Invalid PIN</string>
   <string name="PasscodeInvalidPattern">Invalid Pattern</string>
 
-  <string name="ChangePasscodeInfo">When a passcode is set, a lock icon appears on the chats page. Tap it to lock and unlock your Telegram app.\n\nNote: if you forget your passcode, you\'ll need to log out or reinstall the app. All secret chats will be lost.</string>
+  <string name="ChangePasscodeInfo">When a passcode is set, a lock icon appears above your chat list. Tap it to lock your Telegram app.\n\nNote: if you forget your passcode, you\'ll need to log out or reinstall the app. All your Secret Chats will be lost.</string>
   <string name="AutoLock">Auto-Lock</string>
   <string name="AutoLockDisabled">Disabled</string>
   <string name="AutoLockInstant">Instant</string>
-  <string name="passcode_auto_hint">Require passcode if away for a time.</string>
+  <string name="passcode_auto_hint">Require passcode if away for some time.</string>
   <string name="ChangePasscode">Change Passcode</string>
   <string name="passcode_passcodeInvisibility">Passcode Invisibility</string>
   <string name="passcode_fingerprint">Unlock with Fingerprint</string>
@@ -469,10 +469,10 @@
   <string name="AddContact">Add Contact</string>
   <string name="takePhoto">Take photo</string>
   <string name="pickFromGallery">Choose from Gallery</string>
-  <string name="DeletePhoto">Delete photo</string>
+  <string name="DeletePhoto">Remove photo</string>
   <string name="ClearHistory">Clear history</string>
   <string name="Cancel">Cancel</string>
-  <string name="AddMember">Add members</string>
+  <string name="AddMember">Add Members</string>
   <string name="AddMembers">Add members</string>
   <string name="DeleteAndLeave">Delete and exit</string>
   <string name="justAdd">Just add to group</string>
@@ -660,7 +660,7 @@
   <string name="RestrictSavingUserInfo">Copying and forwarding of this message is restricted.</string>
   <string name="RestrictSavingGroupInfo">Copying and forwarding is restricted by group admins</string>
   <string name="RestrictSavingChannelInfo">Copying and forwarding is restricted by channel admins</string>
-  <string name="RestrictSavingGroupHint">Members won\'t be able to copy, save and forward content from this group.</string>
+  <string name="RestrictSavingGroupHint">Members won\'t be able to copy, save or forward content from this group.</string>
   <string name="RestrictSavingChannelHint">Subscribers won\'t be able to copy, save and forward content from this channel.</string>
   <string name="PostNotFound">Post not found</string>
   <string name="OpenSupergroup">Open Supergroup</string>
@@ -963,7 +963,7 @@
   <string name="RepeatNotificationsDisabled">Disabled</string>
   <string name="ResetNotifications">Reset All Notifications</string>
   <string name="Default">Default</string>
-  <string name="OnlyIfSilent">Only if silent</string>
+  <string name="OnlyIfSilent">Only on silent</string>
   <string name="NoStickerSets">No sticker sets installed</string>
   <string name="NoMasks">No masks installed</string>
   <string name="ArchivedStickersInfo">You can have up to %1$s sticker sets installed. Unused stickers are archived when you install new sets.</string>
@@ -977,7 +977,7 @@
   <string name="Long">Long</string>
   <string name="DoubleShort">Double Short</string>
   <string name="IsDefault">%1$s (default)</string>
-  <string name="SmileysAndPeople">Smileys &amp; People</string>
+  <string name="SmileysAndPeople">Emoji &amp; People</string>
   <string name="AnimalsAndNature">Animals &amp; Nature</string>
   <string name="FoodDrink">Food &amp; Drink</string>
   <string name="TravelAndPlaces">Travel &amp; Places</string>
@@ -1167,7 +1167,7 @@
   <string name="UsernameInUse">Sorry, this username is already taken.</string>
   <string name="UsernameInvalid">Sorry, this username is invalid.</string>
   <string name="UsernameInvalidShort">A username must have at least 5 characters.</string>
-  <string name="UsernameInvalidLong">The username must not exceed 32 characters.</string>
+  <string name="UsernameInvalidLong">Username can\'t exceed 32 characters.</string>
   <string name="UsernameInvalidStartNumber">Usernames can\'t start with a number.</string>
   <string name="UsernameHelp">You can choose a username on **Telegram**. If you do, people will be able to find you by this username and contact you without knowing your phone number.\n\nYou can use **a–z**, **0–9** and underscores.\nMinimum length is **5** characters.</string>
   <string name="UsernameChecking">Checking username…</string>
@@ -1370,7 +1370,7 @@
   <string name="LinkJoinChannelPrimaryWithApproval">%1$s subscribed via the primary invite link %2$s, approved by %3$s</string>
   <string name="LinkJoinPrimaryYouWithApproval">You joined via the primary invite link %1$s, approved by %2$s</string>
   <string name="LinkJoinChannelPrimaryYouWithApproval">You subscribed via the primary invite link %1$s, approved by %2$s</string>
-  
+
   <string name="LinkRevokePrimary">%1$s revoked the primary invite link %2$s</string>
   <string name="LinkRevokePrimaryYou">You revoked the primary invite link %1$s</string>
   <string name="LinkRevokeOther">%1$s revoked %2$s\'s invite link %3$s</string>
@@ -1544,7 +1544,7 @@
   <string name="BioDescription">Any details such as age, occupation or city.\nExample: 23 y.o. designer from San Francisco.</string>
   <string name="AttachPhotoExpired">Photo has expired</string>
   <string name="AttachVideoExpired">Video has expired</string>
-  <string name="SendByEnter">Send by Enter</string>
+  <string name="SendByEnter">Send with Enter</string>
   <string name="HideChatKeyboard">Hide keyboard on chat scroll</string>
   <string name="CopiedHashtag">Hashtag has been copied to the clipboard</string>
   <string name="CopiedCashtag">Cashtag has been copied to the clipboard</string>
@@ -1565,7 +1565,7 @@
   <string name="PriorityRegular">Regular</string>
   <string name="PriorityUrgent">Urgent</string>
   <string name="PriorityLow">Low</string>
-  <string name="PriorityAboutUrgentAndLow">Urgent notifications will appear when your phone is in Do Not Disturb mode. Low priority notifications will appear in system tray without interrupting.</string>
+  <string name="PriorityAboutUrgentAndLow">Urgent notifications will appear even in Do Not Disturb mode. Low priority will appear only in the system tray.</string>
   <string name="NotificationsPriority">Priority</string>
   <string name="SelectMessagesInBetween">Select messages in between</string>
   <string name="ProcessingFile">Processing…</string>
@@ -1848,7 +1848,7 @@
   <string name="EventLogPromoted">changed privileges of %1$s</string>
   <string name="EventLogUnpromoted">removed admin privileges of %1$s</string>
   <string name="EventLogPromotedChangeChannelInfo">Change channel info</string>
-  <string name="EventLogPromotedChangeGroupInfo">Change group Info</string>
+  <string name="EventLogPromotedChangeGroupInfo">Change group info</string>
   <string name="EventLogPromotedManageChannel">Manage channel</string>
   <string name="EventLogPromotedManageGroup">Manage group</string>
   <string name="EventLogPromotedPostMessages">Post messages</string>
@@ -2118,7 +2118,7 @@
   <string name="SharingLiveLocationToChats_one">You are sharing Live Location with %1$s chat</string>
   <string name="SharingLiveLocationToChats_other">You are sharing Live Location with %1$s chats</string>
   <string name="LiveLocationAlertPrivate">Choose for how long %1$s will see your live location.</string>
-  <string name="LiveLocationAlertGroup">Choose for how long people in this chat will see your live location.</string>
+  <string name="LiveLocationAlertGroup">Choose for how long people in this chat will see your accurate location, including when the app is closed.</string>
   <string name="StopSharingLiveLocation">Stop Sharing Live Location</string>
   <string name="StopLiveLocationInfo">Would you like stop sharing Live Location to all chats?</string>
   <string name="StopLiveLocationInfoX">Would you like stop sharing Live Location with %1$s?</string>
@@ -2278,7 +2278,7 @@
   <string name="QuickActionSettingShare">Share</string>
   <string name="QuickActionSettingReply">Reply</string>
   <string name="SecretWebPage">Link Previews</string>
-  <string name="SecretWebPageInfo">Link previews will be generated on Telegram servers. We do not store data about the links you send.</string>
+  <string name="SecretWebPageInfo">Link previews will be generated on Telegram servers. We do not store any data about the links you send.</string>
   <string name="PrivacyPaymentsClear">Clear Payment and Shipping Info</string>
   <string name="PrivacyClearShipping">Shipping info</string>
   <string name="PrivacyClearPayment">Payment info</string>
@@ -2410,7 +2410,7 @@
   <string name="MapPreviewProvider">Map Preview Provider</string>
   <string name="MapPreviewProviderInfo">When you receive a map or live location, in order to display a map preview, it has to be generated by the selected provider.\n\nThis requires sending an anonymous request with the received location coordinates.</string>
   <string name="MapPreviewProviderHint">Choose a provider to display map previews in Secret Chats.\n\nThis requires sending the selected provider an anonymous request with the received coordinates.</string>
-  <string name="MapPreviewProviderNone">None</string>
+  <string name="MapPreviewProviderNone">No Previews</string>
   <string name="MapPreviewProviderUnset">Unset</string>
   <string name="MapPreviewProviderGoogle">Google Maps</string>
   <string name="MapPreviewProviderTelegram">Telegram</string>
@@ -2860,7 +2860,7 @@
   <string name="IncludeDismissed">Include Dismissed Messages</string>
   <string name="IncludeDismissedHintOn">Switch on to include previously dismissed unread messages when new notification arrives from a chat.</string>
   <string name="IncludeDismissedHintOff">Switch off to exclude previously dismissed unread messages when new notification arrives from a chat.</string>
-  
+
   <string name="Channels">Channels</string>
 
   <string name="Mentions">Mentions and Replies</string>
@@ -2941,7 +2941,7 @@
   <string name="NotificationsSettingOff">Notifications are disabled by default. You can unmute specific chats from the chat list.</string>
 
   <string name="ShowSecret">Secret Chats on Lock Screen</string>
-  <string name="ShowSecretOn">Turn off to hide secret chat notifications when device is locked. You will still receive sound, if device is not muted.</string>
+  <string name="ShowSecretOn">Turn off to hide secret chat notifications when the device is locked. You will still receive sounds, if the device is not muted.</string>
   <string name="ShowSecretOff">Turn on to display secret chat notifications when device is locked. This doesn\'t reveal the contents of messages.</string>
 
   <string name="HideSecret">Hide on Lock Screen</string>
@@ -3412,8 +3412,8 @@
   <string name="ChatHistoryWarnLinkedChannel">Warning: this group will be unlinked from %1$s.</string>
 
   <string name="LinkGroupTitle">Select Chat</string>
-  <string name="ArchiveHide">Hide above the list</string>
-  <string name="ArchivePin">Pin in the list</string>
+  <string name="ArchiveHide">Hide from Chat List</string>
+  <string name="ArchivePin">Pin in Chat List</string>
 
   <string name="MessagesPrivate">Messages in private chats</string>
   <string name="MessagesGroups">Messages in groups</string>
@@ -3731,7 +3731,7 @@
   <string name="HoldToSendAsCopy">Hold to forward without quoting and other options.</string>
   <string name="HoldToSendAsFile">Hold to send as a file and other options.</string>
   <string name="CameraButtonHint">Tap for photo, hold for video</string>
-  
+
 
   <string name="EditPrivacyGlobal">Open General Privacy Settings</string>
   <string name="EditPrivacy">Privacy Exceptions</string>
@@ -3911,7 +3911,6 @@
   <string name="UpdateSourceChanges">View source code changes</string>
   <string name="AppUpdateAvailablePrompt">A new **Telegram X** update is available. Would you like to download? (%1$s)</string>
   <string name="AppUpdateAvailableVersionPrompt">A new **Telegram X** `%2$s` update is available. Would you like to download? (%1$s)</string>
-  <string name="AppUpdateAvailableVersionCommitPrompt">A new **Telegram X** `%2$s` (commit [%3$s](%4$s)) update is available. Would you like to download? (%1$s)</string>
   <string name="AppUpdateAvailablePromptConfirm">Download and install</string>
 
   <string name="CommitSignature">**Commit**: [%1$s](%2$s)</string>
@@ -3977,7 +3976,7 @@
   <string name="InviteLinkDelete">Delete Link</string>
   <string name="InviteLinkCopy">Copy Link</string>
   <string name="InviteLinkLimitedByPeriod">Limit by time period</string>
-  <string name="InviteLinkLimitedByUsers">Limited by number of users</string>
+  <string name="InviteLinkLimitedByUsers">Limit by number of users</string>
   <string name="InviteLinkLimitedByPeriodHint">You can make the link expire after a certain time.</string>
   <string name="InviteLinkLimitedByUsersHint">You can make the link work only for a certain number of users.</string>
   <string name="InviteLinkLimitedByPeriodItem">Enter custom expire date</string>
@@ -4151,7 +4150,7 @@
   <string name="part_SignedInXDevices_one">on %1$s device</string>
   <string name="part_SignedInXDevices_other">on %1$s devices</string>
 
-  <string name="NotificationsErrorBlocked">Notifications are blocked in system settings</string>
+  <string name="NotificationsErrorBlocked">Blocked in system settings</string>
   <string name="NotificationsErrorBlockedCategory">Notifications from this account are blocked</string>
   <string name="NotificationsErrorBlockedMixed">Some notifications are blocked</string>
   <string name="NotificationsErrorBlockedGroup">Notifications from groups are blocked</string>
@@ -4260,7 +4259,7 @@
   <string name="ScamMark">SCAM</string>
   <string name="FakeMark">FAKE</string>
 
-  <string name="LongStreamingPreloadAlert">In order to start playback this video requires to be fully downloaded.</string>
+  <string name="LongStreamingPreloadAlert">This video is not optimized for streaming. You need to fully download it before viewing.</string>
   <string name="LongStreamingPreloadAlertClose">Got it</string>
 
   <string name="format_percentage">%1$d%%</string>
