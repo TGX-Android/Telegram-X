@@ -181,10 +181,6 @@ open class ModulePlugin : Plugin<Project> {
               PullRequest(it.toLong(), properties)
             }.sortedBy { it.id }
 
-            if (pullRequests.isNotEmpty()) {
-              project.extra.set("app_version_suffix", "+${pullRequests.joinToString(",") { it.id.toString() }}")
-            }
-
             namespace = "org.thunderdog.challegram"
 
             defaultConfig {

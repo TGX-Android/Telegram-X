@@ -4268,4 +4268,12 @@
   <string name="ViewSourceCode">View Source Code</string>
   <string name="CommitInfo">%1$s commit, %2$s</string>
   <string name="AppOnGooglePlay">App on Google Play</string>
+
+  <string name="PullRequestsInfo_one">Current build includes %1$s pull request that is currently under review</string>
+  <string name="PullRequestsInfo_other">This build includes %1$s pull requests that are currently under review</string>
+  <string name="PullRequestCommit">Pull Request #%1$d</string>
+  <string name="format_commit">%1$s (commit %2$s)</string>
+  <string name="xPRs_one">%1$s PR</string>
+  <string name="xPRs_other">%1$s PRs</string>
+  <string name="PR">PR #%1$d</string>
 </resources>

@@ -54,7 +54,9 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
+import org.thunderdog.challegram.util.AppBuildInfo;
 import org.thunderdog.challegram.util.OptionDelegate;
+import org.thunderdog.challegram.util.PullRequest;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
@@ -447,11 +449,21 @@ public class SettingsController extends ViewController<Void> implements
         view.setUnreadCounter(hasError ? Tdlib.CHAT_FAILED : 0, false, isUpdate);
         switch (item.getId()) {
           case R.id.btn_sourceCode: {
-            view.setData(Lang.getString(R.string.CommitInfo,
+            CharSequence buildInfoShort = Lang.getString(R.string.CommitInfo,
               (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex == 0 ? Lang.newCodeSpan(needFakeBold) : null,
               BuildConfig.COMMIT,
               Lang.getUTCTimestamp(BuildConfig.COMMIT_DATE, TimeUnit.SECONDS)
-            ));
+            );
+            if (BuildConfig.PULL_REQUEST_ID.length > 0) {
+              SpannableStringBuilder b = new SpannableStringBuilder(buildInfoShort).append(" + ");
+              if (BuildConfig.PULL_REQUEST_ID.length > 1) {
+                b.append(Lang.plural(R.string.xPRs, BuildConfig.PULL_REQUEST_ID.length));
+              } else {
+                b.append(Lang.getString(R.string.PR, BuildConfig.PULL_REQUEST_ID[0]));
+              }
+              buildInfoShort = b;
+            }
+            view.setData(buildInfoShort);
             break;
           }
           case R.id.btn_copyDebug: {
@@ -910,7 +922,27 @@ public class SettingsController extends ViewController<Void> implements
         break;
       }
       case R.id.btn_sourceCode: {
-        viewSourceCode();
+        AppBuildInfo appBuildInfo = new AppBuildInfo();
+        if (!appBuildInfo.getPullRequests().isEmpty()) {
+          Options.Builder b = new Options.Builder()
+            .info(Lang.plural(R.string.PullRequestsInfo, appBuildInfo.getPullRequests().size()))
+            .item(new OptionItem(R.id.btn_sourceCode, Lang.getString(R.string.format_commit, Lang.getString(R.string.ViewSourceCode), appBuildInfo.getCommit()), OPTION_COLOR_NORMAL, R.drawable.baseline_github_24));
+          int i = 0;
+          for (PullRequest pullRequest : appBuildInfo.getPullRequests()) {
+            b.item(new OptionItem(i++, Lang.getString(R.string.format_commit, Lang.getString(R.string.PullRequestCommit, pullRequest.getId()), pullRequest.getCommit()), OPTION_COLOR_NORMAL, R.drawable.templarian_baseline_source_merge_24));
+          }
+          showOptions(b.build(), (view, id) -> {
+            if (id == R.id.btn_sourceCode) {
+              viewSourceCode();
+            } else if (id >= 0 && id < appBuildInfo.getPullRequests().size()) {
+              PullRequest pullRequest = appBuildInfo.getPullRequests().get(id);
+              tdlib.ui().openUrl(this, pullRequest.getCommitUrl(), new TdlibUi.UrlOpenParameters().disableInstantView());
+            }
+            return true;
+          });
+        } else {
+          viewSourceCode();
+        }
         break;
       }
       case R.id.btn_copyDebug: {
