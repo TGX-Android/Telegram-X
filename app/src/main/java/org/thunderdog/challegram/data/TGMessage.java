@@ -1921,7 +1921,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         endX = viewWidth - startX;
       }
 
-      if (useBubbles && isForward() && !isSelfChat()) {
+      if (useBubbles && isForward() && !(isSelfChat() || isRepliesChat())) {
         startX += xTextPadding;
       }
 
