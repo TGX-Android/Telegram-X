@@ -179,7 +179,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   // header values
 
   private String date;
-  private @Nullable Text hAuthorNameT, hPsaTextT;
+  private @Nullable Text hAuthorNameT, hPsaTextT, hAuthorChatMark;
   private @Nullable Text hAdminNameT;
   private ImageFile hAvatar;
   private AvatarPlaceholder hAvatarPlaceholder;
@@ -635,7 +635,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private int getAuthorWidth () {
-    return hAuthorNameT != null ? hAuthorNameT.getWidth() : needName(true) ? -Screen.dp(3f) : 0;
+    return hAuthorNameT != null ? hAuthorNameT.getWidth() + (hAuthorChatMark != null ? hAuthorChatMark.getWidth() + Screen.dp(8f) : 0) : needName(true) ? -Screen.dp(3f) : 0;
   }
 
   private int computeBubbleWidth () {
@@ -1692,6 +1692,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
             newTop += getPsaTitleHeight();
           }
           hAuthorNameT.draw(c, left, left + hAuthorNameT.getWidth(), 0, newTop);
+          if (sender.hasChatMark() && hAuthorChatMark != null) {
+            int cmLeft = left + hAuthorNameT.getWidth() + Screen.dp(6f);
+            RectF rct = Paints.getRectF();
+            rct.set(cmLeft, newTop, cmLeft + hAuthorChatMark.getWidth() + Screen.dp(8f), newTop + hAuthorNameT.getLineHeight(false));
+            c.drawRoundRect(rct, Screen.dp(2f), Screen.dp(2f), Paints.getProgressPaint(Theme.getColor(R.id.theme_color_textNegative), Screen.dp(1.5f)));
+            cmLeft += Screen.dp(4f);
+            hAuthorChatMark.draw(c, cmLeft, cmLeft + hAuthorChatMark.getWidth(), 0, newTop + ((hAuthorNameT.getLineHeight(false) - hAuthorChatMark.getLineHeight(false)) / 2));
+          }
         }
         if (useBubbles && needAdminSign() && hAdminNameT != null) {
           int x = getActualRightContentEdge() - xBubblePadding - xBubblePaddingSmall - hAdminNameT.getWidth();
@@ -2525,6 +2533,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return new TdlibUi.UrlOpenParameters().sourceMessage(this);
   }
 
+  private Text makeChatMark (int maxWidth) {
+    return new Text.Builder(Lang.getString(sender.isFake() ? R.string.FakeMark : R.string.ScamMark), maxWidth, Paints.robotoStyleProvider(10f), TextColorSets.Regular.NEGATIVE)
+      .singleLine()
+      .allBold()
+      .clipTextArea()
+      .build();
+  }
+
   private Text makeName (String authorName, boolean available, boolean isPsa, boolean hideName, long viaBotUserId, int maxWidth, boolean isForward) {
     if (maxWidth <= 0)
       return null;
@@ -2605,8 +2621,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       }
       if (needName(true) && maxWidth > 0) {
         hAuthorNameT = makeName(authorName, !(forceForwardedInfo() && forwardInfo instanceof TGSourceHidden), isPsa, !needName(false), msg.forwardInfo == null || forceForwardedInfo() ? msg.viaBotUserId : 0, maxWidth, false);
+        if (!forceForwardedInfo() && sender.hasChatMark()) {
+          hAuthorChatMark = makeChatMark(maxWidth);
+        }
       } else {
         hAuthorNameT = null;
+        hAuthorChatMark = null;
       }
       if (isPsa) {
         hPsaTextT = new Text.Builder(tdlib, Lang.getPsaNotificationType(controller(), msg.forwardInfo.publicServiceAnnouncementType), openParameters(), maxWidth, getNameStyleProvider(), getChatAuthorPsaColorSet()).allClickable().singleLine().onClick(this::onNameClick).build();
@@ -2664,8 +2684,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
     if (nameMaxWidth > 0) {
       hAuthorNameT = makeName(authorName, !(forceForwardedInfo() && forwardInfo instanceof TGSourceHidden), isPsa, !needName(false), msg.forwardInfo == null || forceForwardedInfo() ? msg.viaBotUserId : 0, nameMaxWidth, false);
+      if (!forceForwardedInfo() && sender.hasChatMark()) {
+        hAuthorChatMark = makeChatMark(totalMaxWidth);
+      }
     } else {
       hAuthorNameT = null;
+      hAuthorChatMark = null;
     }
   }
 
