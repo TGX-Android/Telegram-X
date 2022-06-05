@@ -67,6 +67,11 @@ public class TGMessageBotInfo extends TGMessage {
   }
 
   @Override
+  public boolean canBeSaved () {
+    return true;
+  }
+
+  @Override
   protected void buildContent (int maxWidth) {
     int maxTextWidth = width - xPaddingRight - xContentLeft;
     if (titleWrapper != null) {
