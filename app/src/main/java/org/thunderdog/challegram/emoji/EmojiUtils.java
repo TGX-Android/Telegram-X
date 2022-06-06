@@ -1,3 +1,17 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014-2022 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 11/05/2019
+ */
 package org.thunderdog.challegram.emoji;
 
 import android.annotation.TargetApi;
@@ -9,10 +23,6 @@ import android.view.inputmethod.InputConnection;
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 
-/**
- * Date: 2019-05-11
- * Author: default
- */
 @TargetApi(Build.VERSION_CODES.KITKAT)
 public class EmojiUtils {
   static boolean handleDeleteSurroundingText(@NonNull final InputConnection inputConnection,

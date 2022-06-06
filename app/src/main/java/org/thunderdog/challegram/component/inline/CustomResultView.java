@@ -1,3 +1,17 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014-2022 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 27/12/2016
+ */
 package org.thunderdog.challegram.component.inline;
 
 import android.content.Context;
@@ -20,13 +34,9 @@ import org.thunderdog.challegram.widget.SparseDrawableView;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
-import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.lambda.Destroyable;
 
-/**
- * Date: 27/12/2016
- * Author: default
- */
 public class CustomResultView extends SparseDrawableView implements Destroyable, SelectableItemDelegate, FactorAnimator.Target, RemoveHelper.RemoveDelegate, DrawableProvider {
   private static final int FLAG_DETACHED = 1;
   private static final int FLAG_CAUGHT = 1 << 1;

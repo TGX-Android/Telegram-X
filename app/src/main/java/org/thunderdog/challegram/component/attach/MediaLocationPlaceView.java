@@ -1,3 +1,17 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014-2022 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 21/10/2016
+ */
 package org.thunderdog.challegram.component.attach;
 
 import android.content.Context;
@@ -39,15 +53,10 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.core.BitwiseUtils;
-
-/**
- * Date: 21/10/2016
- * Author: default
- */
 
 public class MediaLocationPlaceView extends FrameLayoutFix implements AttachDelegate, Destroyable, FactorAnimator.Target, TimerView.ActiveStateChangeListener {
   private static final float IMAGE_RADIUS = 20f;

@@ -1,3 +1,17 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014-2022 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 26/01/2017
+ */
 package org.thunderdog.challegram.support;
 
 import android.graphics.ColorFilter;
@@ -10,11 +24,6 @@ import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.util.ColorChangeAcceptorDelegate;
 
 import me.vkryl.core.ColorUtils;
-
-/**
- * Date: 26/01/2017
- * Author: default
- */
 
 public abstract class SimpleShapeDrawable extends Drawable implements ColorChangeAcceptorDelegate {
   public static final boolean USE_SOFTWARE_SHADOW = Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP;

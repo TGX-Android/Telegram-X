@@ -1,3 +1,17 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014-2022 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 23/02/2017
+ */
 package org.thunderdog.challegram.util.text;
 
 import android.view.View;
@@ -27,11 +41,6 @@ import me.vkryl.core.collection.IntList;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
-
-/**
- * Date: 23/02/2017
- * Author: default
- */
 
 public class TextEntityMessage extends TextEntity {
   private static final int FLAG_CLICKABLE = 1;

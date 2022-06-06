@@ -1,3 +1,17 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014-2022 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 25/12/2016
+ */
 package org.thunderdog.challegram.ui;
 
 import android.annotation.SuppressLint;
@@ -106,7 +120,7 @@ import org.thunderdog.challegram.widget.DoneButton;
 import org.thunderdog.challegram.widget.EmptySmartView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import org.thunderdog.challegram.widget.ProgressComponentView;
-import org.thunderdog.challegram.widget.RtlViewPager;
+import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.SliderWrapView;
 import org.thunderdog.challegram.widget.ViewControllerPagerAdapter;
@@ -131,11 +145,6 @@ import me.vkryl.core.lambda.RunnableLong;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 import me.vkryl.td.TdConstants;
-
-/**
- * Date: 25/12/2016
- * Author: default
- */
 
 public class ProfileController extends ViewController<ProfileController.Args> implements
   Menu,

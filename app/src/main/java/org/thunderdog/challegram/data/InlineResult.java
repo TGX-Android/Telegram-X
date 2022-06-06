@@ -1,3 +1,17 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014-2022 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 30/11/2016
+ */
 package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
@@ -32,11 +46,6 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.reference.ReferenceList;
-
-/**
- * Date: 30/11/2016
- * Author: default
- */
 
 public abstract class InlineResult <T> implements MessageSourceProvider, MultipleViewProvider.InvalidateContentProvider {
   public static final int TYPE_ARTICLE = 0;

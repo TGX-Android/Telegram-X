@@ -1,11 +1,3 @@
-/*
- * This is the source code of Telegram for Android v. 5.x.x.
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Grishka, 2013-2016.
- */
-
 package org.thunderdog.challegram.voip;
 
 import android.media.AudioFormat;
@@ -22,6 +14,7 @@ import java.nio.ByteBuffer;
 import java.util.regex.Pattern;
 
 @SuppressWarnings("unused")
+@Deprecated
 public class AudioRecordJNI {
 
 	private AudioRecord audioRecord;

@@ -1,11 +1,3 @@
-/*
- * This is the source code of Telegram for Android v. 3.x.x.
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Grishka, 2013-2016.
- */
-
 package org.thunderdog.challegram.voip;
 
 import android.media.audiofx.AcousticEchoCanceler;
@@ -27,6 +19,7 @@ import java.util.Locale;
 
 import me.vkryl.core.StringUtils;
 
+@Deprecated
 public class VoIPController{
 
   public static final int NET_TYPE_UNKNOWN=0;

@@ -1,4 +1,21 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014-2022 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 20/04/2019
+ */
 package org.thunderdog.challegram;
+
+import static org.xmlpull.v1.XmlPullParser.END_DOCUMENT;
+import static org.xmlpull.v1.XmlPullParser.START_TAG;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
@@ -35,13 +52,6 @@ import java.util.Map;
 
 import me.vkryl.core.StringUtils;
 
-import static org.xmlpull.v1.XmlPullParser.END_DOCUMENT;
-import static org.xmlpull.v1.XmlPullParser.START_TAG;
-
-/**
- * Date: 2019-04-20
- * Author: default
- */
 public class FileProvider extends ContentProvider {
   private static final String[] COLUMNS = {
     OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE };

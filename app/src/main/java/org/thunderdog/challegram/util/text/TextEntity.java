@@ -1,3 +1,17 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014-2022 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 23/02/2017
+ */
 package org.thunderdog.challegram.util.text;
 
 import android.text.Spanned;
@@ -22,11 +36,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.vkryl.core.StringUtils;
-
-/**
- * Date: 23/02/2017
- * Author: default
- */
 
 public abstract class TextEntity {
   public static final int TYPE_MESSAGE_ENTITY = 0;

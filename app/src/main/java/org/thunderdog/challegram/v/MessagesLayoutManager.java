@@ -1,3 +1,17 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014-2022 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 09/01/2017
+ */
 package org.thunderdog.challegram.v;
 
 import android.content.Context;
@@ -9,11 +23,6 @@ import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.thunderdog.challegram.component.chat.MessagesManager;
-
-/**
- * Date: 9/1/17
- * Author: default
- */
 
 public class MessagesLayoutManager extends LinearLayoutManager {
   private static final float MILLISECONDS_PER_INCH = 10f;

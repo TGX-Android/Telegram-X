@@ -1,3 +1,17 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014-2022 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 07/11/2017
+ */
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
@@ -18,11 +32,6 @@ import org.thunderdog.challegram.v.CustomRecyclerView;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
-
-/**
- * Date: 7/11/17
- * Author: default
- */
 
 public class SettingsLogFilesController extends RecyclerViewController<SettingsLogFilesController.Arguments> implements
   View.OnClickListener, Log.OutputListener {

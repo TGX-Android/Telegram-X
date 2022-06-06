@@ -1,6 +1,16 @@
-/**
- * File created on 25/04/15 at 09:12
- * Copyright Vyacheslav Krylov, 2014
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014-2022 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 25/04/2015 at 09:12
  */
 package org.thunderdog.challegram.tool;
 
@@ -39,6 +49,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.core.DiffMatchPatch;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewTranslator;
@@ -55,9 +66,8 @@ import java.util.LinkedList;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
-import org.thunderdog.challegram.core.DiffMatchPatch;
-import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.lambda.Destroyable;
 
 public class Views {
   public static void setClickable (View view) {

@@ -1,3 +1,17 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014-2022 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 24/03/2018
+ */
 package org.thunderdog.challegram.navigation;
 
 import androidx.annotation.IdRes;
@@ -15,10 +29,6 @@ import org.thunderdog.challegram.widget.TimerView;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Date: 3/24/18
- * Author: default
- */
 public class SettingsWrapBuilder {
   public final @IdRes
   int id;

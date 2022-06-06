@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.thunderdog.challegram.widget;
+package org.thunderdog.challegram.widget.rtl;
 
 import android.content.Context;
 import android.database.DataSetObserver;
@@ -28,6 +28,7 @@ import androidx.viewpager.widget.PagerAdapter;
 
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.RtlCheckListener;
+import org.thunderdog.challegram.widget.ViewPager;
 
 import java.util.Map;
 

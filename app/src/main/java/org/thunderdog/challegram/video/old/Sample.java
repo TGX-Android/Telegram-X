@@ -1,5 +1,6 @@
 package org.thunderdog.challegram.video.old;
 
+@Deprecated
 public class Sample {
   private long offset = 0;
   private long size = 0;

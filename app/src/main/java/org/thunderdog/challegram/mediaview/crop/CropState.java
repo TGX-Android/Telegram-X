@@ -1,3 +1,17 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014-2022 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 18/10/2017
+ */
 package org.thunderdog.challegram.mediaview.crop;
 
 import androidx.annotation.Nullable;
@@ -6,11 +20,6 @@ import org.thunderdog.challegram.Log;
 
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
-
-/**
- * Date: 10/18/17
- * Author: default
- */
 
 public class CropState {
   private double left = 0.0, top = 0.0, right = 1.0, bottom = 1.0;

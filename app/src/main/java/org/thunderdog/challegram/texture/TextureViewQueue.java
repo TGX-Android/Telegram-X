@@ -1,3 +1,17 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014-2022 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 20/12/2016
+ */
 package org.thunderdog.challegram.texture;
 
 import android.graphics.SurfaceTexture;
@@ -14,11 +28,6 @@ import javax.microedition.khronos.egl.EGLContext;
 import javax.microedition.khronos.egl.EGLDisplay;
 import javax.microedition.khronos.egl.EGLSurface;
 import javax.microedition.khronos.opengles.GL;
-
-/**
- * Date: 20/12/2016
- * Author: default
- */
 
 @SuppressWarnings("NewApi")
 public class TextureViewQueue extends BaseThread implements android.view.TextureView.SurfaceTextureListener {

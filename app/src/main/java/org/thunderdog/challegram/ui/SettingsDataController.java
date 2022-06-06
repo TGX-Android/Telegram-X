@@ -1,3 +1,17 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014-2022 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 16/11/2016
+ */
 package org.thunderdog.challegram.ui;
 
 import android.annotation.SuppressLint;
@@ -32,11 +46,6 @@ import org.thunderdog.challegram.voip.VoIPController;
 import java.util.List;
 
 import me.vkryl.core.ArrayUtils;
-
-/**
- * Date: 16/11/2016
- * Author: default
- */
 
 public class SettingsDataController extends RecyclerViewController<SettingsDataController.Args> implements View.OnClickListener, ViewController.SettingsIntDelegate,
   GlobalConnectionListener, Client.ResultHandler, Settings.ProxyChangeListener {
