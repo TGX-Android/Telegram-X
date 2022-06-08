@@ -2630,10 +2630,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         authorName = sender.getName();
       }
       if (needName(true) && maxWidth > 0) {
-        hAuthorNameT = makeName(authorName, !(forceForwardedInfo() && forwardInfo instanceof TGSourceHidden), isPsa, !needName(false), msg.forwardInfo == null || forceForwardedInfo() ? msg.viaBotUserId : 0, maxWidth, false);
         if (!forceForwardedInfo() && sender.hasChatMark()) {
           hAuthorChatMark = makeChatMark(maxWidth);
+          maxWidth -= hAuthorChatMark.getWidth();
         }
+
+        hAuthorNameT = makeName(authorName, !(forceForwardedInfo() && forwardInfo instanceof TGSourceHidden), isPsa, !needName(false), msg.forwardInfo == null || forceForwardedInfo() ? msg.viaBotUserId : 0, maxWidth, false);
       } else {
         hAuthorNameT = null;
         hAuthorChatMark = null;
