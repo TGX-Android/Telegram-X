@@ -285,6 +285,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
     RemoveHelper.attach(recyclerView, new RemoveHelper.Callback() {
       @Override
       public boolean canRemove (RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int position) {
+        if (adapter.getItems().isEmpty()) return false;
         ListItem item = (ListItem) adapter.getItems().get(position);
         return item != null && item.getId() == R.id.btn_inviteLink;
       }
