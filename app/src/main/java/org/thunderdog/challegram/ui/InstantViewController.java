@@ -198,8 +198,9 @@ public class InstantViewController extends ViewController<InstantViewController.
           try {
             blocks = PageBlock.parse(this, getUrl(), getArgumentsStrict().instantView, pageBlock, this, null);
           } catch (Throwable t) {
-            Log.e("Unsupported instant view block", t);
-            context().tooltipManager().builder(view).show(tdlib, R.string.InstantViewError).hideDelayed();
+            Log.e("Exception in instant view block", t);
+            context().tooltipManager().builder(view).show(tdlib, t instanceof UnsupportedOperationException ? R.string.InstantViewSectionUnsupported : R.string.InstantViewError).hideDelayed();
+            ((PageBlockRichText) pageBlock).toggleDetailsOpened();
             return;
           }
           ListItem[] items = new ListItem[blocks.size()];
