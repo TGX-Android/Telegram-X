@@ -3123,6 +3123,7 @@
 
   <string name="InstantViewUnsupported">Instant View for this page is not yet supported.</string>
   <string name="InstantViewError">Instant View could not be displayed due to an error.</string>
+  <string name="InstantViewSectionUnsupported">Instant View for this section is not yet supported.</string>
   <string name="LanguageDatabase">Localizations</string>
   <string name="SettingsAndThemes">Settings and Themes</string>
 
