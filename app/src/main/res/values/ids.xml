@@ -694,6 +694,7 @@
   <item type="id" name="btn_inlineOpen" />
   <item type="id" name="btn_copyText" />
   <item type="id" name="btn_sourceCode" />
+  <item type="id" name="btn_sourceCodeChanges" />
   <item type="id" name="btn_copyDebug" />
   <item type="id" name="btn_pasteText" />
   <item type="id" name="btn_copyUsername" />

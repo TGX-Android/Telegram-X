@@ -423,6 +423,8 @@ public class SettingsController extends ViewController<Void> implements
     }
   }
 
+  private AppBuildInfo previousBuildInfo;
+
   @Override
   protected View onCreateView (Context context) {
     this.headerCell = new ComplexHeaderView(context, tdlib, this);
@@ -473,6 +475,10 @@ public class SettingsController extends ViewController<Void> implements
               buildInfoShort = b;
             }
             view.setData(buildInfoShort);
+            break;
+          }
+          case R.id.btn_sourceCodeChanges: {
+            view.setData(Lang.getString(R.string.ViewSourceCodeChangesSince, Lang.codeCreator(), previousBuildInfo.getVersionName(), previousBuildInfo.getCommit()));
             break;
           }
           case R.id.btn_copyDebug: {
@@ -627,6 +633,11 @@ public class SettingsController extends ViewController<Void> implements
     }
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sourceCode, R.drawable.baseline_github_24, R.string.ViewSourceCode));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    this.previousBuildInfo = Settings.instance().getPreviousBuildInformation();
+    if (this.previousBuildInfo != null) {
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sourceCodeChanges, R.drawable.baseline_code_24, R.string.ViewSourceCodeChanges));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    }
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_copyDebug, R.drawable.baseline_bug_report_24, R.string.CopyReportData));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
@@ -930,8 +941,13 @@ public class SettingsController extends ViewController<Void> implements
         tdlib.ui().subscribeToBeta(this);
         break;
       }
+      case R.id.btn_sourceCodeChanges: {
+        // TODO provide an ability to view changes in PRs if they are present in both builds
+        tdlib.ui().openUrl(this, Settings.instance().getCurrentBuildInformation().changesUrlFrom(previousBuildInfo), new TdlibUi.UrlOpenParameters().disableInstantView());
+        break;
+      }
       case R.id.btn_sourceCode: {
-        AppBuildInfo appBuildInfo = new AppBuildInfo();
+        AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
         if (!appBuildInfo.getPullRequests().isEmpty()) {
           Options.Builder b = new Options.Builder()
             .info(Lang.plural(R.string.PullRequestsInfo, appBuildInfo.getPullRequests().size()))

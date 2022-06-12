@@ -16,22 +16,22 @@ import me.vkryl.leveldb.LevelDB
 import org.thunderdog.challegram.BuildConfig
 
 data class AppBuildInfo(
+  val installationId: Long,
   val versionCode: Int,
   val versionName: String,
   val firstRunDate: Long,
   val commit: String,
   val commitFull: String,
-  val commitUrl: String,
   val commitDate: Long,
   val pullRequests: List<PullRequest>
 ) {
-  constructor() : this(
-    BuildConfig.VERSION_CODE,
-    BuildConfig.VERSION_NAME,
+  constructor(installationId: Long) : this(
+    installationId,
+    BuildConfig.ORIGINAL_VERSION_CODE,
+    BuildConfig.ORIGINAL_VERSION_NAME,
     System.currentTimeMillis(),
     BuildConfig.COMMIT,
     BuildConfig.COMMIT_FULL,
-    BuildConfig.COMMIT_URL,
     BuildConfig.COMMIT_DATE,
     builtinPullRequests()
   )
@@ -43,7 +43,6 @@ data class AppBuildInfo(
       .putLong("${keyPrefix}_started", firstRunDate)
       .putString("${keyPrefix}_commit", commit)
       .putString("${keyPrefix}_full", commitFull)
-      .putString("${keyPrefix}_url", commitUrl)
       .putLong("${keyPrefix}_date", commitDate)
     editor
       .putLongArray("${keyPrefix}_prs", pullRequests.map { it.id }.toLongArray())
@@ -53,9 +52,17 @@ data class AppBuildInfo(
       }
     }
   }
+
+  fun changesUrlFrom (previousBuild: AppBuildInfo): String? {
+    return if (this.commitDate > previousBuild.commitDate) {
+      "${BuildConfig.REMOTE_URL}/compare/${previousBuild.commit}...${this.commit}"
+    } else {
+      null
+    }
+  }
   
   companion object {
-    fun restoreFrom (pmc: LevelDB, keyPrefix: String): AppBuildInfo {
+    @JvmStatic fun restoreFrom (pmc: LevelDB, installationId: Long, keyPrefix: String): AppBuildInfo {
       val prIds = pmc.getLongArray("${keyPrefix}_prs") ?: longArrayOf()
       val pullRequests = if (prIds.isNotEmpty()) {
         prIds.map { pullRequestId ->
@@ -65,12 +72,12 @@ data class AppBuildInfo(
         emptyList()
       }
       return AppBuildInfo(
+        installationId,
         pmc.getInt("${keyPrefix}_code", 0),
         pmc.getString("${keyPrefix}_name", "")!!,
         pmc.getLong("${keyPrefix}_started", 0),
         pmc.getString("${keyPrefix}_commit", "")!!,
         pmc.getString("${keyPrefix}_full", "")!!,
-        pmc.getString("${keyPrefix}_url", "")!!,
         pmc.getLong("${keyPrefix}_date", 0),
         pullRequests
       )

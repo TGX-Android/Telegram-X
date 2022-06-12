@@ -6196,6 +6196,8 @@ public class Settings {
     return pmc.getLong(KEY_APP_INSTALLATION_ID, 0) + 1;
   }
 
+  private AppBuildInfo currentBuildInformation;
+
   public void trackInstalledApkVersion () {
     if (BuildConfig.DEBUG) {
       // Track only published builds
@@ -6206,12 +6208,32 @@ public class Settings {
       // Track only updates with more recent commits.
       return;
     }
-    AppBuildInfo buildInfo = new AppBuildInfo();
     final long installationId = nextInstallationId();
+    AppBuildInfo buildInfo = new AppBuildInfo(installationId);
     pmc.edit()
       .putLong(KEY_APP_INSTALLATION_ID, installationId)
       .putLong(KEY_APP_COMMIT_DATE, buildInfo.getCommitDate());
     buildInfo.saveTo(pmc, KEY_APP_INSTALLATION_PREFIX + installationId);
     pmc.apply();
+    this.currentBuildInformation = buildInfo;
+  }
+
+  public AppBuildInfo getCurrentBuildInformation () {
+    if (currentBuildInformation == null) {
+      long installationId = pmc.getLong(KEY_APP_INSTALLATION_ID, 0);
+      this.currentBuildInformation = AppBuildInfo.restoreFrom(pmc, installationId, KEY_APP_INSTALLATION_PREFIX + installationId);
+    }
+    return this.currentBuildInformation;
+  }
+
+  @Nullable
+  public AppBuildInfo getPreviousBuildInformation () {
+    AppBuildInfo currentBuild = getCurrentBuildInformation();
+    long previousInstallationId = (currentBuild.getInstallationId() - 1);
+    if (previousInstallationId > 0) {
+      return AppBuildInfo.restoreFrom(pmc, previousInstallationId, KEY_APP_INSTALLATION_PREFIX + previousInstallationId);
+    } else {
+      return null;
+    }
   }
 }
