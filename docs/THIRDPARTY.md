@@ -38,3 +38,4 @@
 
 * [Diff-Match-Patch](http://code.google.com/p/google-diff-match-patch/): [source code](/app/src/main/java/org/thunderdog/challegram/core/DiffMatchPatch.java)
 * [RTL View Pager](https://github.com/diego-gomez-olvera/RtlViewPager): [source code](/app/src/main/java/org/thunderdog/challegram/widget/rtl/RtlViewPager.java)
+* [svg-android](https://github.com/japgolly/svg-android): [source code](/app/src/main/java/org/thunderdog/challegram/loader/svg)

@@ -10,7 +10,7 @@ The guide below provides the flow for creating a perfect pull request to the Tel
 - [ ] **Separated**. Different bug fixes are divided into independent PRs.
 - [ ] **Linked**. If you fix a specific issue, add it to the title and its description to the body.
 - [ ] **Creating**. The fix does not break anything in other interfaces or on specific devices. 
-- [ ] **Сonsistent**. Use the proper design relevant to the issue. If the design is missing, the PR must include at least two screenshots (before and after the changes).
+- [ ] **Consistent**. Use the proper design relevant to the issue. If the design is missing, the PR must include at least two screenshots (before and after the changes).
  
 ## When adding features, expect:
 - [ ] **Discussion**. If you implement a feature that requires a new design for the app, be ready to receive and follow comments or edit suggestions.
