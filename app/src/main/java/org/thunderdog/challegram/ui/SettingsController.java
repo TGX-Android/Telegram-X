@@ -478,7 +478,12 @@ public class SettingsController extends ViewController<Void> implements
             break;
           }
           case R.id.btn_sourceCodeChanges: {
-            view.setData(Lang.getString(R.string.ViewSourceCodeChangesSince, Lang.codeCreator(), previousBuildInfo.getVersionName(), previousBuildInfo.getCommit()));
+            String previousVersionName = previousBuildInfo.getVersionName();
+            int i = previousVersionName.indexOf('-');
+            if (i != -1) {
+              previousVersionName = previousVersionName.substring(0, i);
+            }
+            view.setData(Lang.getString(R.string.ViewSourceCodeChangesSince, Lang.codeCreator(), previousVersionName, previousBuildInfo.getCommit()));
             break;
           }
           case R.id.btn_copyDebug: {
