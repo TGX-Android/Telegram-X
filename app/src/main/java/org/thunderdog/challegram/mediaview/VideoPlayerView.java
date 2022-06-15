@@ -193,7 +193,11 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
         this.player.setVideoTextureView((TextureView) targetView);
       }
 
-      setLongStreamingAlertHandler(true);
+      // FIXME: Must not be just a timeout alert.
+      //        It should be shown once a significant part of file is downloaded and
+      //        estimated remaining download time (when can be determined) is over 2 seconds.
+      //        Uncomment line below once implemented properly.
+      // setLongStreamingAlertHandler(true);
       this.player.addAnalyticsListener(new AnalyticsListener() {
         @Override
         public void onRenderedFirstFrame (EventTime eventTime, Object output, long renderTimeMs) {
