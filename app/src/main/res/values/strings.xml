@@ -353,7 +353,7 @@
   <string name="ChatContentGroupTtlWeeks_other">Set messages to auto-delete in %1$s weeks</string>
   <string name="ChatContentGroupTtlMonths_one">Set messages to auto-delete in %1$s month</string>
   <string name="ChatContentGroupTtlMonths_other">Set messages to auto-delete in %1$s months</string>
-  <string name="ChatContentGroupTtlOff">Disabled the auto-delete timer</string>
+  <string name="ChatContentGroupTtlOff">Disabled auto-delete</string>
   <string name="ChatContentChannelTtlSeconds_one">Set posts to auto-delete in %1$s second</string>
   <string name="ChatContentChannelTtlSeconds_other">Set posts to auto-delete in %1$s seconds</string>
   <string name="ChatContentChannelTtlMinutes_one">Set posts to auto-delete in %1$s minute</string>
@@ -366,7 +366,7 @@
   <string name="ChatContentChannelTtlWeeks_other">Set posts to auto-delete in %1$s weeks</string>
   <string name="ChatContentChannelTtlMonths_one">Set posts to auto-delete in %1$s month</string>
   <string name="ChatContentChannelTtlMonths_other">Set posts to auto-delete in %1$s months</string>
-  <string name="ChatContentChannelTtlOff">Disabled the auto-delete timer</string>
+  <string name="ChatContentChannelTtlOff">Disabled auto-delete</string>
   <string name="ChatContentTtlSeconds_one">Set the self-destruct timer to %1$s second</string>
   <string name="ChatContentTtlSeconds_other">Set the self-destruct timer to %1$s seconds</string>
   <string name="ChatContentTtlMinutes_one">Set the self-destruct timer to %1$s minute</string>
@@ -2952,7 +2952,7 @@
 
   <string name="NotificationsGuideBlockedApp">Notifications from Telegram are blocked in system settings. Tap System Notification Settings to unblock them.</string>
   <string name="NotificationsGuideBlockedCategory">Notifications for current account are disabled in system settings.\n\nTo enable notifications:\n• Tap System Notification Settings\n• Find «%1$s» notification category.\n• Turn toggle on to unblock notifications.</string>
-  <string name="NotificationsGuideBlockedAll">Notifications from Telegram are blocked in system settings.\n\nTo enable notifications:\n• Tap System Notification Settings\n• Turn «Show Notifications» toggle on.</string>
+  <string name="NotificationsGuideBlockedAll">Notifications from Telegram are blocked in your device settings.\n\nTo enable notifications:\n• Tap System Notification Settings.\n• Turn on Show Notifications.</string>
   <string name="NotificationsGuideSyncGlobalOff">You have data sync turned off in system settings. Notifications may not arrive when app is closed.\n\nData sync may be implicitly turned off by the battery optimization mode on your device.</string>
   <string name="NotificationsGuideSyncAppOff">You have data sync turned off for Telegram X. Notifications may not arrive when app is closed.\n\nData sync may be implicitly turned off by the battery optimization mode on your device.</string>
   <string name="NotificationsGuideFirebaseUnavailable">Google Play Services are unavailable. Please check you have them installed and up-to-date.\n\nNotifications may arrive with big delays or not arrive at all without them.</string>
@@ -3186,8 +3186,8 @@
 
   <string name="ChatRestrictedGifs">The admins of this group have restricted your ability to send GIFs.</string>
   <string name="ChatRestrictedGifsUntil">Admins have restricted you from sending GIFs in this group until %1$s</string>
-  <string name="ChatRestrictedBots">Admins have restricted you from using inline bots in this group</string>
-  <string name="ChatRestrictedBotsUntil">Admins have restricted you from using inline bots in this group until %1$s</string>
+  <string name="ChatRestrictedBots">The admins of this group have restricted your ability to send inline content.</string>
+  <string name="ChatRestrictedBotsUntil">The admins of this group have restricted your ability to send inline content. until %1$s</string>
   <string name="ChatRestrictedStickers">Admins have restricted you from sending stickers in this group</string>
   <string name="ChatRestrictedStickersUntil">Admins have restricted you from sending stickers in this group until %1$s</string>
   <string name="ChatRestrictedDice">Admins have restricted you from rolling a die in this group. Hold to send it as an emoji.</string>
