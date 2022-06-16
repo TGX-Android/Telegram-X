@@ -1982,7 +1982,7 @@ public class TD {
   }
 
   public static TdApi.User newFakeUser (long userId, String firstName, String lastName) {
-    return new TdApi.User(userId, firstName, lastName, "", "", new TdApi.UserStatusEmpty(), null, false, false, false, false, null, false, false, true, new TdApi.UserTypeRegular(), null);
+    return new TdApi.User(userId, firstName, lastName, "", "", new TdApi.UserStatusEmpty(), null, false, false, false, false, false, null, false, false, true, new TdApi.UserTypeRegular(), null, false);
   }
 
   public static TdApi.Audio newFakeAudio (TdApi.Document doc) {
@@ -2005,7 +2005,7 @@ public class TD {
     return message;
   }
 
-  public static int getFileSize (TdApi.File file) {
+  public static long getFileSize (TdApi.File file) {
     return file == null ? 0 : file.size;
   }
 
@@ -4160,7 +4160,7 @@ public class TD {
     private final TdApi.File file;
     private final String fileName;
     private final String mimeType;
-    private final int fileSize;
+    private final long fileSize;
     private final TdApi.FileType fileType;
 
     public DownloadedFile (TdApi.File file, String fileName, String mimeType, TdApi.FileType fileType) {
@@ -4203,7 +4203,7 @@ public class TD {
       return file.id;
     }
 
-    public int getFileSize () {
+    public long getFileSize () {
       return fileSize;
     }
 

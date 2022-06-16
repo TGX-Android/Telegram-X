@@ -110,6 +110,7 @@ import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
+import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextWrapper;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.v.HeaderEditText;
@@ -2306,6 +2307,19 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     return Math.max(0, width - Screen.dp(73f) - Screen.dp(17f));
   }
 
+  private boolean setDescription (TdApi.FormattedText text) {
+    if (Td.isEmpty(text) && canEditDescription()) {
+      text = new TdApi.FormattedText(Lang.getString(R.string.Description), new TdApi.TextEntity[0]);
+    }
+    if (this.aboutWrapper == null || !this.aboutWrapper.getText().equals(text.text)) {
+      aboutWrapper = new TextWrapper(text.text, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, TextEntity.valueOf(tdlib, text, new TdlibUi.UrlOpenParameters().sourceChat(getChatId())));
+      aboutWrapper.addTextFlags(Text.FLAG_CUSTOM_LONG_PRESS | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0));
+      aboutWrapper.prepare(getTextWidth(Screen.currentWidth()));
+      return true;
+    }
+    return false;
+  }
+
   private boolean setDescription (String text) {
     if (StringUtils.isEmpty(text) && canEditDescription()) {
       text = Lang.getString(R.string.Description);
@@ -2386,7 +2400,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     if (TD.isBot(user)) {
-      if (userFull != null && (!StringUtils.isEmpty(userFull.bio) || (userFull.botInfo != null && !StringUtils.isEmpty(userFull.botInfo.shareText)))) {
+      if (userFull != null && (!Td.isEmpty(userFull.bio) || (userFull.botInfo != null && !StringUtils.isEmpty(userFull.botInfo.shareText)))) {
         items.add(newDescriptionItem());
         addedCount++;
       }
@@ -2429,7 +2443,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @WorkerThread
   private void prepareFullCells (final TdApi.UserFullInfo userFull) {
-    if (!StringUtils.isEmpty(userFull.bio)) {
+    if (!Td.isEmpty(userFull.bio)) {
       setDescription(userFull.bio);
     } else if (userFull.botInfo != null && !StringUtils.isEmpty(userFull.botInfo.shareText)) {
       setDescription(userFull.botInfo.shareText);
@@ -2647,7 +2661,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private String getCurrentDescription () {
     if (userFull != null)
-      return !StringUtils.isEmpty(userFull.bio) ? userFull.bio : userFull.botInfo != null ? userFull.botInfo.shareText : "";
+      return !Td.isEmpty(userFull.bio) ? userFull.bio.text : userFull.botInfo != null ? userFull.botInfo.shareText : "";
     if (supergroupFull != null)
       return supergroupFull.description;
     if (groupFull != null)
