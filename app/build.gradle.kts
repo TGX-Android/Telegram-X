@@ -111,7 +111,7 @@ android {
         val fileName = "Telegram-X-${versionNameOverride.replace("-universal(?=-|\$)", "")}"
 
         variant.buildConfigInt("ORIGINAL_VERSION_CODE", versionCode)
-        variant.buildConfigString("ORIGINAL_VERSION_NAME", variant.versionName)
+        variant.buildConfigString("ORIGINAL_VERSION_NAME", "${variant.versionName}.${defaultConfig.versionCode}")
         variant.buildConfigInt("ABI", abi)
 
         variant.outputs.map { it as ApkVariantOutputImpl }.forEach { output ->

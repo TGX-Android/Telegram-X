@@ -479,9 +479,18 @@ public class SettingsController extends ViewController<Void> implements
           }
           case R.id.btn_sourceCodeChanges: {
             String previousVersionName = previousBuildInfo.getVersionName();
-            int i = previousVersionName.indexOf('-');
-            if (i != -1) {
-              previousVersionName = previousVersionName.substring(0, i);
+            int index = previousVersionName.indexOf('-');
+            if (index != -1) {
+              previousVersionName = previousVersionName.substring(0, index);
+            }
+            int dotCount = 0;
+            for (int i = 0; i < previousVersionName.length(); i++) {
+              if (previousVersionName.charAt(i) == '.') {
+                dotCount++;
+              }
+            }
+            if (dotCount == 2) { // Missing build no: 0.24.9
+              previousVersionName = previousVersionName + "." + previousBuildInfo.getVersionCode();
             }
             view.setData(Lang.getString(R.string.ViewSourceCodeChangesSince, Lang.codeCreator(), previousVersionName, previousBuildInfo.getCommit()));
             break;
