@@ -3075,6 +3075,8 @@
 
   <string name="InvoiceFor">Invoice for %1$s</string>
   <string name="Invoice">Invoice</string>
+  <string name="InvoiceFmt">%1$s INVOICE</string>
+  <string name="InvoiceFmtTest">%1$s TEST INVOICE</string>
 
   <string name="MarketUrl">https://play.google.com/store/apps/details?id=org.thunderdog.challegram</string>
 

@@ -7069,9 +7069,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           TdApi.MessageLocation location = (TdApi.MessageLocation) content;
           return new TGMessageLocation(context, msg, nonNull(location.location), location.livePeriod, location.expiresIn);
         }
-        /*case TdApi.MessageInvoice.CONSTRUCTOR: {
-          return new TGMessageInvoice(msg, validateContent((TdApi.MessageInvoice) content));
-        }*/
+        case TdApi.MessageInvoice.CONSTRUCTOR: {
+          return new TGMessageInvoice(context, msg, ((TdApi.MessageInvoice) content));
+        }
         case TdApi.MessageContact.CONSTRUCTOR: {
           return new TGMessageContact(context, msg, (TdApi.MessageContact) content);
         }
@@ -7154,7 +7154,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           return new TGMessageChat(context, msg, (TdApi.MessageChatUpgradeFrom) content);
         }
         // unsupported
-        case TdApi.MessageInvoice.CONSTRUCTOR:
         case TdApi.MessagePassportDataSent.CONSTRUCTOR:
           break;
         case TdApi.MessageUnsupported.CONSTRUCTOR:
