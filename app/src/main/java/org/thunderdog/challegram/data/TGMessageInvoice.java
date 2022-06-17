@@ -112,7 +112,7 @@ public class TGMessageInvoice extends TGMessage {
   private TextWrapper buildInvoiceInfoWrapper (TdApi.MessageInvoice invoice) {
     CharSequence text = Lang.getStringBold(invoice.isTest ? R.string.InvoiceFmtTest : R.string.InvoiceFmt, CurrencyUtils.buildAmount(invoice.currency, invoice.totalAmount));
     TdApi.TextEntity[] entities = TD.toEntities(text, false);
-    return new TextWrapper(invoice.description, Paints.robotoStyleProvider(14f), getTextColorSet(), TextEntity.valueOf(tdlib, text.toString(), entities, null));
+    return new TextWrapper(text.toString(), Paints.robotoStyleProvider(mediaWrapper != null ? 13f : 14f), getTextColorSet(), TextEntity.valueOf(tdlib, text.toString(), entities, null));
   }
 
   @Override
@@ -200,9 +200,13 @@ public class TGMessageInvoice extends TGMessage {
     startY += descriptionWrapper.getHeight();
 
     if (mediaWrapper != null) {
+      float inset = 4f;
+      float margin = 4f;
+
       RectF boundRect = Paints.getRectF();
-      boundRect.set(startX, origStartY, startX + invoiceInfoWrapper.getWidth(), origStartY + invoiceInfoWrapper.getHeight());
-      c.drawRoundRect(boundRect, Screen.dp(4f), Screen.dp(4f), Paints.fillingPaint(0x40000000));
+      boundRect.set(startX + Screen.dp(margin), origStartY + Screen.dp(margin), startX + Screen.dp(margin) + invoiceInfoWrapper.getWidth() + Screen.dp(inset * 4), origStartY + Screen.dp(margin) + invoiceInfoWrapper.getHeight() + Screen.dp(inset * 2));
+      c.drawRoundRect(boundRect, Screen.dp(margin), Screen.dp(margin), Paints.fillingPaint(0x80000000));
+      invoiceInfoWrapper.draw(c, startX + Screen.dp(margin) + Screen.dp(inset * 2), origStartY + Screen.dp(margin) + Screen.dp(inset));
     } else {
       invoiceInfoWrapper.draw(c, startX, startY);
     }
@@ -219,7 +223,7 @@ public class TGMessageInvoice extends TGMessage {
 
   @Override
   protected int getContentHeight () {
-    return (mediaWrapper != null ? mediaWrapper.getCellHeight() : (invoiceInfoWrapper.getHeight() + Screen.dp(TEXT_SMALL_MARGIN))) + Screen.dp(TEXT_MARGIN) + titleWrapper.getHeight() + Screen.dp(TEXT_SMALL_MARGIN) + descriptionWrapper.getHeight() - (useBubbles() ? getBubbleContentPadding() : 0);
+    return (mediaWrapper != null ? mediaWrapper.getCellHeight() : (Screen.dp(TEXT_SMALL_MARGIN))) + Screen.dp(TEXT_MARGIN) + titleWrapper.getHeight() + Screen.dp(TEXT_SMALL_MARGIN) + descriptionWrapper.getHeight() - (useBubbles() ? getBubbleContentPadding() : 0);
   }
 
   private static int getImagePaddingLeft () {
