@@ -56,7 +56,7 @@ import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.EmojiString;
 import org.thunderdog.challegram.util.text.Text;
-import org.thunderdog.challegram.widget.CheckBox;
+import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.ProgressComponent;
 
 import java.util.ArrayList;
@@ -1261,7 +1261,7 @@ public class TGInlineKeyboard {
                     case ListItem.TYPE_CHECKBOX_OPTION:
                     case ListItem.TYPE_CHECKBOX_OPTION_MULTILINE:
                     case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
-                      ((CheckBox) itemView.getChildAt(0)).setChecked(item.isSelected(), isUpdate);
+                      ((CheckBoxView) itemView.getChildAt(0)).setChecked(item.isSelected(), isUpdate);
                       break;
                   }
                 })

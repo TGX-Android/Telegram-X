@@ -77,7 +77,7 @@ import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.AvatarView;
 import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.ChartLayout;
-import org.thunderdog.challegram.widget.CheckBox;
+import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.DoubleTextView;
 import org.thunderdog.challegram.widget.DoubleTextViewWithIcon;
@@ -492,7 +492,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     // Override
   }
 
-  protected void modifyChatView (ListItem item, SmallChatView chatView, @Nullable CheckBox checkBox, boolean isUpdate) {
+  protected void modifyChatView (ListItem item, SmallChatView chatView, @Nullable CheckBoxView checkBox, boolean isUpdate) {
     // Override
   }
 
@@ -931,8 +931,8 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
 
       if (view instanceof SettingView && ((SettingView) view).getChildCount() > 0 && view.getId() == items.get(index).getId()) {
         View child = ((SettingView) view).getChildAt(0);
-        if (child instanceof CheckBox) {
-          ((CheckBox) child).setChecked(isChecked, true);
+        if (child instanceof CheckBoxView) {
+          ((CheckBoxView) child).setChecked(isChecked, true);
           continue;
         }
         if (child instanceof RadioView) {
@@ -1111,7 +1111,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE:
       case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
       case ListItem.TYPE_CHECKBOX_OPTION_MULTILINE: {
-        return v instanceof SettingView && ((CheckBox) ((SettingView) v).getChildAt(0)).toggle();
+        return v instanceof SettingView && ((CheckBoxView) ((SettingView) v).getChildAt(0)).toggle();
       }
       case ListItem.TYPE_DRAWER_ITEM_WITH_RADIO:
       case ListItem.TYPE_DRAWER_ITEM_WITH_RADIO_SEPARATED: {
@@ -1396,7 +1396,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_CHAT_SMALL_SELECTABLE: {
         FrameLayoutFix wrapView = (FrameLayoutFix) holder.itemView;
         ((SmallChatView) wrapView.getChildAt(0)).setChat((DoubleTextWrapper) item.getData());
-        modifyChatView(item, ((SmallChatView) wrapView.getChildAt(0)), ((CheckBox) wrapView.getChildAt(1)), false);
+        modifyChatView(item, ((SmallChatView) wrapView.getChildAt(0)), ((CheckBoxView) wrapView.getChildAt(1)), false);
         break;
       }
       case ListItem.TYPE_PAGE_BLOCK_EMBEDDED:
@@ -1583,7 +1583,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
           case ListItem.TYPE_CHECKBOX_OPTION_REVERSE:
           case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE:
           case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR: {
-            CheckBox checkBox = ((CheckBox) ((SettingView) holder.itemView).getChildAt(0));
+            CheckBoxView checkBox = ((CheckBoxView) ((SettingView) holder.itemView).getChildAt(0));
             checkBox.setChecked(item.isSelected(), false);
             Views.setGravity(checkBox, ((viewType == ListItem.TYPE_CHECKBOX_OPTION_REVERSE) != Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL);
             break;
