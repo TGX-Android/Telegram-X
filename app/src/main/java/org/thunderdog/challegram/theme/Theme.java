@@ -34,6 +34,7 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.FillingDrawable;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
@@ -952,5 +953,18 @@ public class Theme {
       stateListDrawable.addState(StateSet.WILD_CARD, new ColorDrawable(0x00000000));
       return stateListDrawable;
     }
+  }
+
+  // TDLib layer
+
+  public static TdApi.ThemeParameters tdlibThemeParameters () {
+    return new TdApi.ThemeParameters(
+      Theme.getColor(R.id.theme_color_background),
+      Theme.getColor(R.id.theme_color_text),
+      Theme.getColor(R.id.theme_color_textLight),
+      Theme.getColor(R.id.theme_color_textLink),
+      Theme.getColor(R.id.theme_color_fillingPositive),
+      Theme.getColor(R.id.theme_color_fillingPositiveContent)
+    );
   }
 }

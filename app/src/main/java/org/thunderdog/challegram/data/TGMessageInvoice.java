@@ -31,6 +31,7 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextColorSets;
@@ -90,6 +91,11 @@ public class TGMessageInvoice extends TGMessage {
     if (mediaWrapper != null) {
       mediaWrapper.getFileProgress().downloadAutomatically(type);
     }
+  }
+
+  @Override
+  public boolean onMessageClick (MessageView v, MessagesController c) {
+    return super.onMessageClick(v, c); // open form by click?
   }
 
   private void setPhoto (@Nullable TdApi.Photo photo) {
@@ -169,7 +175,7 @@ public class TGMessageInvoice extends TGMessage {
       mediaWrapper.buildContent(cellWidth, cellHeight);
     }
 
-    int maxTextWidth = (useBubbles() && mediaWrapper != null) ? mediaWrapper.getContentWidth() - xBubblePadding * 2 : getRealContentMaxWidth();
+    int maxTextWidth = (useBubbles() && mediaWrapper != null) ? mediaWrapper.getCellWidth() - xBubblePadding * 2 : getRealContentMaxWidth();
     titleWrapper.prepare(maxTextWidth);
     descriptionWrapper.prepare(maxTextWidth);
     invoiceInfoWrapper.prepare(maxTextWidth);

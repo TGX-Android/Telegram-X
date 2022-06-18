@@ -52,6 +52,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.MessagesController;
+import org.thunderdog.challegram.ui.PaymentFormController;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.EmojiString;
@@ -1058,7 +1059,31 @@ public class TGInlineKeyboard {
 
       switch (type.getConstructor()) {
         case TdApi.InlineKeyboardButtonTypeBuy.CONSTRUCTOR: {
-          // TODO
+          makeActive();
+          showProgressDelayed();
+
+          RunnableData<CharSequence> act = alertText -> {
+            context.context.tdlib.client().send(new TdApi.GetPaymentForm(
+              new TdApi.InputInvoiceMessage(context.context.getChatId(), context.context.getId()), Theme.tdlibThemeParameters()
+            ), (result) -> {
+              if (currentContextId == contextId) {
+                makeActive();
+                cancelDelayedProgress();
+                animateProgressFactor(1f);
+              }
+
+              if (result.getConstructor() == TdApi.PaymentForm.CONSTRUCTOR) {
+                context.context.tdlib.ui().post(() -> {
+                  PaymentFormController c = new PaymentFormController(context.context.context(), context.context.tdlib());
+                  c.setArguments(new PaymentFormController.Args((TdApi.PaymentForm) result));
+                  context.context.controller().navigateTo(c);
+                });
+              } else {
+                UI.showError(result);
+              }
+            });
+          };
+
           break;
         }
 
