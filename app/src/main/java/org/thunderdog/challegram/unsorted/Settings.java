@@ -214,6 +214,7 @@ public class Settings {
   private static final String KEY_CAMERA_ASPECT_RATIO = "settings_camera_ratio";
   private static final String KEY_CAMERA_TYPE = "settings_camera_type";
   private static final String KEY_CAMERA_VOLUME_CONTROL = "settings_camera_control";
+  private static final String KEY_BIG_REACTIONS = "settings_big_reactions";
 
   private static final String KEY_TDLIB_VERBOSITY = "settings_tdlib_verbosity";
   private static final String KEY_TDLIB_DEBUG_PREFIX = "settings_tdlib_allow_debug";
@@ -362,6 +363,9 @@ public class Settings {
   public static final long SETTING_FLAG_CAMERA_SHOW_GRID = 1 << 12;
 
   public static final long SETTING_FLAG_NO_EMBEDS = 1 << 13;
+
+  public static final int FLAG_BIG_REACTIONS_CHATS=1;
+  public static final int FLAG_BIG_REACTIONS_CHANNELS=2;
 
   private static final @Deprecated int DISABLED_FLAG_OTHER_NEED_RAISE_TO_SPEAK = 1 << 2;
   private static final @Deprecated int DISABLED_FLAG_OTHER_AUTODOWNLOAD_IN_BACKGROUND = 1 << 3;
@@ -6235,5 +6239,19 @@ public class Settings {
     } else {
       return null;
     }
+  }
+
+  public boolean getUseBigReactions(boolean channel){
+    int flag=channel ? FLAG_BIG_REACTIONS_CHANNELS : FLAG_BIG_REACTIONS_CHATS;
+    return (pmc.getInt(KEY_BIG_REACTIONS, 3) & flag)==flag;
+  }
+
+  public void setUseBigReactions(boolean chats, boolean channels){
+    int flags=0;
+    if(chats)
+      flags|=FLAG_BIG_REACTIONS_CHATS;
+    if(channels)
+      flags|=FLAG_BIG_REACTIONS_CHANNELS;
+    pmc.edit().putInt(KEY_BIG_REACTIONS, flags).apply();
   }
 }

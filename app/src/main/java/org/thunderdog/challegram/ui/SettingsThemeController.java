@@ -281,6 +281,15 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
             }
             break;
           }
+          case R.id.btn_useBigReactions:{
+            ArrayList<String> options=new ArrayList<>();
+            if(Settings.instance().getUseBigReactions(false))
+              options.add(Lang.getString(R.string.Chats));
+            if(Settings.instance().getUseBigReactions(true))
+              options.add(Lang.getString(R.string.Channels));
+            v.setData(options.isEmpty() ? Lang.getString(R.string.BigReactionsNone) : TextUtils.join(Lang.getConcatSeparator(), options));
+            break;
+          }
           case R.id.btn_autoNightModeScheduled_location: {
             if (isUpdate) {
               v.setEnabledAnimated(locationHelper == null);
@@ -664,6 +673,8 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.AnimatedEmoji).setLongId(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI).setBoolValue(true));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_useBigEmoji, 0, R.string.BigEmoji));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_useBigReactions, 0, R.string.BigReactions));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.LoopAnimatedStickers).setLongId(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP).setBoolValue(true));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -1393,6 +1404,18 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       }
       case R.id.btn_useBigEmoji: {
         Settings.instance().setUseBigEmoji(adapter.toggleView(v));
+        break;
+      }
+      case R.id.btn_useBigReactions:{
+        showSettings(
+          new SettingsWrapBuilder(R.id.btn_useBigReactions).setRawItems(new ListItem[]{
+                new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_chats, 0, R.string.Chats, R.id.btn_chats, Settings.instance().getUseBigReactions(false)),
+                new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_channels, 0, R.string.Channels, R.id.btn_channels, Settings.instance().getUseBigReactions(true))
+          }).addHeaderItem(Lang.getString(R.string.BigReactionsExplanation)).setIntDelegate((id, result) -> {
+            Settings.instance().setUseBigReactions(result.get(R.id.btn_chats) == R.id.btn_chats, result.get(R.id.btn_channels) == R.id.btn_channels);
+            adapter.updateValuedSettingById(R.id.btn_useBigReactions);
+          })
+        );
         break;
       }
       case R.id.btn_secret_batmanTransitions: {
