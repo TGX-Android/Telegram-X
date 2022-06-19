@@ -26,8 +26,8 @@ import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.td.MessageId;
 
 public class MessagesSearchManager {
+  public static final int SEARCH_LOAD_LIMIT = 20;
   private static final int SEARCH_DELAY = 100;
-  private static final int SEARCH_LOAD_LIMIT = 20;
 
   private static final int FLAG_LOADING = 0x01;
   private static final int FLAG_CAN_LOAD_MORE = 0x02;
@@ -172,7 +172,7 @@ public class MessagesSearchManager {
         return;
       }
       Collections.addAll(currentSearchResults, messages.messages);
-      delegate.showSearchResult(++currentIndex, currentTotalCount, new MessageId(messages.messages[0].chatId, messages.messages[0].id));
+      delegate.showSearchResult(currentIndex, currentTotalCount, new MessageId(messages.messages[0].chatId, messages.messages[0].id));
       return;
     }
     if (messages == null || messages.messages.length == 0) {
@@ -201,7 +201,7 @@ public class MessagesSearchManager {
         return;
       }
       Collections.addAll(currentSearchResults, messages.messages);
-      delegate.showSearchResult(++currentIndex, currentTotalCount, new MessageId(messages.messages[0].chatId, messages.messages[0].id));
+      delegate.showSearchResult(currentIndex, currentTotalCount, new MessageId(messages.messages[0].chatId, messages.messages[0].id));
       return;
     }
     if (messages == null || messages.messages.length == 0) {
@@ -221,27 +221,36 @@ public class MessagesSearchManager {
   }
 
   public void moveToNext (boolean next) {
+    moveToNext(next, 1);
+  }
+
+  public void moveToNext (boolean next, int byHowMuch) {
+    int nextIndex = currentIndex + (next ? byHowMuch : -byHowMuch);
+    moveToIndex(nextIndex);
+  }
+
+  private void moveToIndex (int index) {
     if ((flags & FLAG_LOADING) != 0) {
       return;
     }
-    int nextIndex = currentIndex + (next ? 1 : -1);
-    if (nextIndex < 0) {
+    if (index < 0) {
       delegate.onTryToLoadPrevious();
-      return;
+      index = 0;
     }
-    if (nextIndex >= currentTotalCount) {
+    if (index >= currentTotalCount) {
       delegate.onTryToLoadNext();
-      return;
+      index = currentTotalCount - 1;
     }
     if (currentSearchResults == null) {
       return;
     }
-    if (nextIndex < currentSearchResults.size()) {
-      TdApi.Message message = currentSearchResults.get(nextIndex);
-      delegate.showSearchResult(currentIndex = nextIndex, currentTotalCount, new MessageId(message.chatId, message.id));
+    if (index < currentSearchResults.size()) {
+      TdApi.Message message = currentSearchResults.get(index);
+      delegate.showSearchResult(currentIndex = index, currentTotalCount, new MessageId(message.chatId, message.id));
     } else if ((flags & FLAG_CAN_LOAD_MORE) != 0) {
       flags |= FLAG_LOADING;
       delegate.onAwaitNext();
+      currentIndex = index;
       TdApi.Message last = currentSearchResults.isEmpty() ? null : currentSearchResults.get(currentSearchResults.size() - 1);
       // TODO switch to basic group chat
       searchInternal(contextId, currentChatId, currentMessageThreadId, currentFromSender, currentIsSecret, currentInput, last.id, currentSecretOffset);
