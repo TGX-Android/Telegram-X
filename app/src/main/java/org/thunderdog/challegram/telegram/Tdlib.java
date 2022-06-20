@@ -448,6 +448,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private String qrLoginCode;
   private String[] diceEmoji;
   private TdApi.Reaction[] supportedReactions;
+  private HashMap<String, TdApi.Reaction> supportedReactionsByEmoji=new HashMap<>();
   private boolean callsEnabled = true, expectBlocking, isLocationVisible;
   private boolean canIgnoreSensitiveContentRestrictions, ignoreSensitiveContentRestrictions;
   private boolean canArchiveAndMuteNewChatsFromUnknownUsers, archiveAndMuteNewChatsFromUnknownUsers;
@@ -7429,6 +7430,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private void updateReactions (TdApi.UpdateReactions update) {
     synchronized (dataLock) {
       this.supportedReactions = update.reactions;
+      supportedReactionsByEmoji.clear();
+      for(TdApi.Reaction r:update.reactions){
+        supportedReactionsByEmoji.put(r.reaction, r);
+      }
     }
   }
 
@@ -7436,6 +7441,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     animatedTgxEmoji.update(this, stickerSet);
     animatedDiceExplicit.update(this, stickerSet);
     listeners.updateStickerSet(stickerSet);
+  }
+
+  public TdApi.Reaction getReaction(String reaction){
+    synchronized(dataLock){
+      return supportedReactionsByEmoji.get(reaction);
+    }
+  }
+
+  public List<TdApi.Reaction> getSupportedReactions(){
+    synchronized(dataLock){
+      return new ArrayList<>(Arrays.asList(supportedReactions));
+    }
   }
 
   // Filegen

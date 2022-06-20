@@ -99,6 +99,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private ComplexReceiver complexReceiver;
   private MessageViewGroup parentMessageViewGroup;
   private MessagesManager manager;
+  private ComplexReceiver reactionSmallIconsReceiver;
 
   public MessageView (Context context) {
     super(context);
@@ -150,6 +151,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     }
     if (complexReceiver != null) {
       complexReceiver.performDestroy();
+    }
+    if(reactionSmallIconsReceiver!=null){
+      reactionSmallIconsReceiver.performDestroy();
     }
     if (msg != null) {
       msg.onDestroy();
@@ -330,7 +334,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   @Override
   public void onDraw (Canvas c) {
-    msg.draw(this, c, avatarReceiver, replyReceiver, previewReceiver, contentReceiver, gifReceiver, complexReceiver);
+    msg.draw(this, c, avatarReceiver, replyReceiver, previewReceiver, contentReceiver, gifReceiver, complexReceiver, reactionSmallIconsReceiver);
   }
 
   public ImageReceiver getAvatarReceiver () {
@@ -339,6 +343,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   public ImageReceiver getContentReceiver () {
     return contentReceiver;
+  }
+
+  public ComplexReceiver getReactionSmallIconsReceiver(){
+    if(reactionSmallIconsReceiver==null)
+      reactionSmallIconsReceiver=new ComplexReceiver(this);
+    return reactionSmallIconsReceiver;
   }
 
   public Receiver getAnyReceiver () {

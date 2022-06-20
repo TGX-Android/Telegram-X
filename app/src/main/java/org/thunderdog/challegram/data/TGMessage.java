@@ -71,6 +71,7 @@ import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.reactions.CompactReactionsRenderer;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibSender;
@@ -230,6 +231,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   protected final MultipleViewProvider currentViews;
   protected final MultipleViewProvider overlayViews;
 
+  private boolean settingsUseBigReactions;
+  private CompactReactionsRenderer compactReactions;
+
   protected TGMessage (MessagesManager manager, TdApi.Message msg) {
     if (!initialized) {
       synchronized (TGMessage.class) {
@@ -317,6 +321,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       .colorSet(this::getTimePartTextColor)
       .drawable(R.drawable.baseline_share_arrow_14, 14f, 3f, Gravity.LEFT)
       .build();
+
+    settingsUseBigReactions=Settings.instance().getUseBigReactions(this.sender.isChannel());
+    if(needDrawReactionsWithTime())
+      compactReactions=new CompactReactionsRenderer(this);
+
     updateInteractionInfo(false);
 
     this.time = genTime();
@@ -1557,7 +1566,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return useBubbles() && (!useBubble() || separateReplyFromBubble());
   }
 
-  public final void draw (MessageView view, Canvas c, @NonNull ImageReceiver avatarReceiver, Receiver replyReceiver, DoubleImageReceiver previewReceiver, ImageReceiver contentReceiver, GifReceiver gifReceiver, ComplexReceiver complexReceiver) {
+  public final void draw (MessageView view, Canvas c, @NonNull ImageReceiver avatarReceiver, Receiver replyReceiver, DoubleImageReceiver previewReceiver, ImageReceiver contentReceiver, GifReceiver gifReceiver, ComplexReceiver complexReceiver, ComplexReceiver smallReactionsReceiver) {
     final int viewWidth = view.getMeasuredWidth();
     final int viewHeight = view.getMeasuredHeight();
 
@@ -1767,6 +1776,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           viewCounter.draw(c, right, top, Gravity.RIGHT, 1f, view, getTimePartIconColorId());
           right -= viewCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
         }
+      }
+
+      // reactions
+      if(needDrawReactionsWithTime() && compactReactions!=null){
+        c.save();
+        c.translate(right-compactReactions.getWidth(), top);
+        compactReactions.draw(c, smallReactionsReceiver);
+        c.restore();
       }
     }
 
@@ -2086,6 +2103,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     setViewAttached(view != null || hasAttachedToAnything());
     if (currentViews.attachToView(view) && view != null) {
       onMessageAttachedToView(view, true);
+      if(needDrawReactionsWithTime() && compactReactions!=null){
+        loadCompactReactionsIntoView(view);
+      }
     }
   }
 
@@ -2685,6 +2705,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       max -= shareCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
       max -= viewCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
     }
+    if(needDrawReactionsWithTime()){
+      max-=compactReactions.getWidth();
+    }
 
     int nameMaxWidth;
     if (isPsa) {
@@ -3006,7 +3029,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return Screen.dp(8f);
   }
 
-  protected int getTimePartTextColor () {
+  public int getTimePartTextColor () {
     if (!useBubbles()) {
       return getDecentColor();
     }
@@ -3092,6 +3115,13 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     int counterY = startY + Screen.dp(11.5f);
+    if(needDrawReactionsWithTime()){
+      c.save();
+      c.translate(startX, counterY);
+      compactReactions.draw(c, view.getReactionSmallIconsReceiver());
+      c.restore();
+      startX+=compactReactions.getWidth();
+    }
     if (getViewCountMode() == VIEW_COUNT_MAIN) {
       if (isSending) {
         final float viewsWidth = viewCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
@@ -3189,6 +3219,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (includePadding) {
       width += Screen.dp(8f);
     }
+    if(needDrawReactionsWithTime() && compactReactions!=null){
+      width+=compactReactions.getWidth();
+    }
     return width;
   }
 
@@ -3200,6 +3233,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
   protected final boolean needBottomContentRounding () {
     return useForward() || drawBubbleTimeOverContent() || hasFooter();
+  }
+
+  protected boolean needDrawReactionsWithTime(){
+    return this.sender.isUser() || !settingsUseBigReactions;
   }
 
   protected static final int BOTTOM_LINE_EXPAND_HEIGHT = -1;
@@ -4576,6 +4613,18 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     hasCommentButton.setValue(commentMode == COMMENT_MODE_BUTTON, animated);
     shareCounter.setCount(interactionInfo != null ? interactionInfo.forwardCount : 0, animated);
     isPinned.showHide(isPinned(), animated);
+
+    if(needDrawReactionsWithTime()){
+      compactReactions.update(allowAnimation);
+      performWithViews(this::loadCompactReactionsIntoView);
+    }else{
+      // TODO
+    }
+  }
+
+  private void loadCompactReactionsIntoView(MessageView v){
+    ComplexReceiver receiver=v.getReactionSmallIconsReceiver();
+    compactReactions.loadIconsIntoReceiver(receiver);
   }
 
   private static void copyFlags (TdApi.Message src, TdApi.Message dst) {
@@ -5243,6 +5292,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         if (useBubbles() || (flags & FLAG_HEADER_ENABLED) != 0) {
           layoutInfo();
         }
+      }else if(compactReactions!=null && counter==compactReactions.getCounter()){
+        layoutInfo();
       }
     }
     if (UI.inUiThread()) { // FIXME remove this after reworking combineWith method
