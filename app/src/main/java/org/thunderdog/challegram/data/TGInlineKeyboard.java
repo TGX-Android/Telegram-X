@@ -1062,27 +1062,13 @@ public class TGInlineKeyboard {
           makeActive();
           showProgressDelayed();
 
-          RunnableData<CharSequence> act = alertText -> {
-            context.context.tdlib.client().send(new TdApi.GetPaymentForm(
-              new TdApi.InputInvoiceMessage(context.context.getChatId(), context.context.getId()), Theme.tdlibThemeParameters()
-            ), (result) -> {
+          context.context.tdlib.ui().openPaymentInvoiceForm(
+            context.context, new TdApi.InputInvoiceMessage(context.context.getChatId(), context.context.getId()), () -> {
               if (currentContextId == contextId) {
-                makeActive();
-                cancelDelayedProgress();
-                animateProgressFactor(1f);
+                makeInactive();
               }
-
-              if (result.getConstructor() == TdApi.PaymentForm.CONSTRUCTOR) {
-                context.context.tdlib.ui().post(() -> {
-                  PaymentFormController c = new PaymentFormController(context.context.context(), context.context.tdlib());
-                  c.setArguments(new PaymentFormController.Args((TdApi.PaymentForm) result));
-                  context.context.controller().navigateTo(c);
-                });
-              } else {
-                UI.showError(result);
-              }
-            });
-          };
+            }
+          );
 
           break;
         }

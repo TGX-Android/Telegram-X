@@ -22,28 +22,45 @@ import org.thunderdog.challegram.ui.ShareController;
 
 @SuppressWarnings("unused")
 public final class WebViewProxy {
-  private final GameController context;
+  private final ClientCallback callback;
 
-  public WebViewProxy (GameController context) {
-    this.context = context;
+  public WebViewProxy (ClientCallback callback) {
+    this.callback = callback;
   }
 
   @JavascriptInterface
   public final void postEvent (final String eventName, final String eventData) {
     UI.post(() -> {
-      if (context.getArguments() != null && context.getArgumentsStrict().message != null) {
-        GameController.Args args = context.getArgumentsStrict();
+      switch (eventName) {
+        case "share_game":
+        case "share_score": {
+          callback.shareGame(eventName.equals("share_score"));
+          break;
+        }
 
-        if ("share_game".equals(eventName)) {
-          ShareController c = new ShareController(context.context(), context.tdlib());
-          c.setArguments(new ShareController.Args(args.game, args.userId, args.message, false));
-          c.show();
-        } else if ("share_score".equals(eventName)) {
-          ShareController c = new ShareController(context.context(), context.tdlib());
-          c.setArguments(new ShareController.Args(args.game, args.userId, args.message, true));
-          c.show();
+        case "game_over": {
+          callback.gameOver();
+          break;
+        }
+
+        case "game_loaded": {
+          callback.gameLoaded();
+          break;
+        }
+
+        case "payment_form_submit": {
+          callback.submitPaymentForm(eventData);
+          break;
         }
       }
     });
+  }
+
+  public interface ClientCallback {
+    default void shareGame (boolean withScore) {}
+    default void gameOver () {}
+    default void gameLoaded () {}
+
+    default void submitPaymentForm (String jsonData) {}
   }
 }

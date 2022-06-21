@@ -48,6 +48,7 @@ import org.thunderdog.challegram.component.base.TogglerView;
 import org.thunderdog.challegram.component.chat.DetachedChatHeaderView;
 import org.thunderdog.challegram.component.chat.MessagePreviewView;
 import org.thunderdog.challegram.component.inline.CustomResultView;
+import org.thunderdog.challegram.component.payments.PaymentPricePartView;
 import org.thunderdog.challegram.component.sharedmedia.MediaSmallView;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
@@ -1675,6 +1676,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       }
       case ListItem.TYPE_CHART_HEADER_DETACHED: {
         ((ChartHeaderView) holder.itemView).setChart((MiniChart) item.getData());
+        break;
+      }
+      case ListItem.TYPE_PAYMENT_PRICE_PART: {
+        ((PaymentPricePartView) holder.itemView).setData((PaymentPricePartView.PartData) item.getData());
         break;
       }
       case ListItem.TYPE_CHART_LINEAR:

@@ -463,6 +463,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
     this.type = TYPE_PAYMENT_SUCCESSFUL;
 
     this.stringValue = CurrencyUtils.buildAmount(successful.currency, successful.totalAmount);
+    this.longValue = successful.isRecurring ? successful.isFirstRecurring ? 2 : 1 : 0;
 
     if (successful.invoiceMessageId != 0) {
       tdlib.client().send(new TdApi.GetMessage(msg.chatId, successful.invoiceMessageId), this);
@@ -792,10 +793,12 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
         }
         TdApi.User botUser = tdlib.chatUser(chat);
         String botName = botUser != null ? botUser.firstName : "bot";
+        boolean isRecurring = longValue == 1 || longValue == 2;
+        boolean isFirstRecurring = longValue == 2;
         if (otherMessage != null && otherMessage.content.getConstructor() == TdApi.MessageInvoice.CONSTRUCTOR) {
-          makeText(R.string.PaymentSuccessfullyPaid, new Arg(stringValue), new Arg(botName, botUser), new Arg(((TdApi.MessageInvoice) otherMessage.content).title).setActive(true));
+          makeText(isFirstRecurring ? R.string.PaymentSuccessfullyPaidRecurring : R.string.PaymentSuccessfullyPaid, new Arg(stringValue), new Arg(botName, botUser), new Arg(((TdApi.MessageInvoice) otherMessage.content).title).setActive(true));
         } else {
-          makeText(R.string.PaymentSuccessfullyPaidNoItem, new Arg(stringValue), new Arg(botName, botUser));
+          makeText(isFirstRecurring ? R.string.PaymentSuccessfullyPaidNoItemRecurring : R.string.PaymentSuccessfullyPaidNoItem, new Arg(stringValue), new Arg(botName, botUser));
         }
         break;
       }

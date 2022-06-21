@@ -148,7 +148,17 @@ public class GameController extends WebkitController<GameController.Args> implem
       headerCell.setSubtitle(getArguments().username);
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-      webView.addJavascriptInterface(new WebViewProxy(this), "TelegramWebviewProxy");
+      webView.addJavascriptInterface(new WebViewProxy(new WebViewProxy.ClientCallback() {
+        @Override
+        public void shareGame (boolean withScore) {
+          if (getArguments() != null && getArgumentsStrict().message != null) {
+            GameController.Args args = getArgumentsStrict();
+            ShareController c = new ShareController(context, tdlib);
+            c.setArguments(new ShareController.Args(args.game, args.userId, args.message, withScore));
+            c.show();
+          }
+        }
+      }), "TelegramWebviewProxy");
     }
     if (getArguments() != null) {
       webView.loadUrl(getArguments().gameUrl);

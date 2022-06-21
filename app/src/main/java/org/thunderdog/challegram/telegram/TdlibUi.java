@@ -106,6 +106,7 @@ import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.ui.PasscodeController;
 import org.thunderdog.challegram.ui.PasscodeSetupController;
 import org.thunderdog.challegram.ui.PasswordController;
+import org.thunderdog.challegram.ui.PaymentFormController;
 import org.thunderdog.challegram.ui.PhoneController;
 import org.thunderdog.challegram.ui.ProfileController;
 import org.thunderdog.challegram.ui.RequestController;
@@ -3364,6 +3365,9 @@ public class TdlibUi extends Handler {
               showLinkTooltip(tdlib, R.drawable.baseline_info_24, Lang.getMarkdownString(context, R.string.NoCloudThemeSupport), openParameters);
               break;
             }
+            case TdApi.InternalLinkTypeInvoice.CONSTRUCTOR: {
+              openPaymentInvoiceForm(context, new TdApi.InputInvoiceName(((TdApi.InternalLinkTypeInvoice) linkType).invoiceName), null);
+            }
             case TdApi.InternalLinkTypeBackground.CONSTRUCTOR: {
               TdApi.InternalLinkTypeBackground background = (TdApi.InternalLinkTypeBackground) linkType;
               // TODO show progress?
@@ -6208,5 +6212,41 @@ public class TdlibUi extends Handler {
 
   public void subscribeToBeta (TdlibDelegate context) {
     openUrl(context, Lang.getStringSecure(R.string.url_betaSubscription), null);
+  }
+
+  public void openPaymentInvoiceForm (final TdlibDelegate context, TdApi.InputInvoice inputInvoice, @Nullable Runnable after) {
+    tdlib.client().send(new TdApi.GetPaymentForm(
+      inputInvoice, Theme.tdlibThemeParameters()
+    ), (result) -> {
+      if (result.getConstructor() == TdApi.PaymentForm.CONSTRUCTOR) {
+        TdApi.PaymentForm form = (TdApi.PaymentForm) result;
+
+        RunnableData<TdApi.ValidatedOrderInfo> openForm = (validated) -> post(() -> {
+          if (after != null) after.run();
+          PaymentFormController c = new PaymentFormController(context.context(), context.tdlib());
+          c.setArguments(new PaymentFormController.Args(form, inputInvoice, validated));
+          context.context().navigation().navigateTo(c);
+        });
+
+        if (form.savedOrderInfo != null) {
+          tdlib.client().send(new TdApi.ValidateOrderInfo(
+            inputInvoice, form.savedOrderInfo, true
+          ), (savedResult) -> {
+            if (savedResult.getConstructor() == TdApi.ValidatedOrderInfo.CONSTRUCTOR) {
+              openForm.runWithData((TdApi.ValidatedOrderInfo) savedResult);
+            } else {
+              openForm.runWithData(null);
+            }
+          });
+        } else {
+          openForm.runWithData(null);
+        }
+      } else {
+        UI.showError(result);
+        if (after != null) {
+          post(after);
+        }
+      }
+    });
   }
 }

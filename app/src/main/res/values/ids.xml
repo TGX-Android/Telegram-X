@@ -38,6 +38,7 @@
   <item type="id" name="menu_editLangPackString" />
   <item type="id" name="menu_proxy" />
   <item type="id" name="menu_share" />
+  <item type="id" name="menu_newPaymentMethodWeb" />
 
   <item type="id" name="btn_menu_customize" />
   <item type="id" name="menu_btn_manage" />
@@ -68,6 +69,7 @@
   <item type="id" name="menu_btn_call" />
   <item type="id" name="menu_btn_share" />
   <item type="id" name="menu_btn_unpinAll" />
+  <item type="id" name="menu_btn_savePaymentMethod" />
 
   <item type="id" name="menu_btn_masks" />
   <item type="id" name="menu_btn_pictureInPicture" />
@@ -850,6 +852,12 @@
   <item type="id" name="btn_sessionFirstLogin" />
   <item type="id" name="btn_sessionLastLogin" />
   <item type="id" name="btn_sessionLogout" />
+
+  <item type="id" name="btn_paymentFormDescription" />
+  <item type="id" name="btn_paymentFormMethod" />
+  <item type="id" name="btn_paymentFormProvider" />
+  <item type="id" name="btn_paymentFormShipmentMethod" />
+  <item type="id" name="btn_paymentFormShipmentAddress" />
 
   <item type="id" name="btn_secret_dontReadMessages" />
   <item type="id" name="btn_secret_dropSavedScrollPositions" />
