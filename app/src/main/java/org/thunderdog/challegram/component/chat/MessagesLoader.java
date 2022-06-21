@@ -534,7 +534,7 @@ public class MessagesLoader implements Client.ResultHandler {
       this.content = content;
     }
   }
-  
+
   private static @StringRes int getPreviewStringKey (String key) {
     switch (key) {
       case "json_1_name": return R.string.json_1_name;

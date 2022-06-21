@@ -72,6 +72,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -8782,5 +8783,56 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
       return suggestedAction;
     }
+  }
+
+  public void getAvailableReactions(long chatId, long messageId, RunnableData<TdApi.AvailableReactions> callBack) {
+    TdApi.GetMessageAvailableReactions getMessageAvailableReactions = new TdApi.GetMessageAvailableReactions(chatId, messageId);
+    client().send(getMessageAvailableReactions, object -> {
+      if (object instanceof TdApi.AvailableReactions) {
+        callBack.runWithData((TdApi.AvailableReactions) object);
+      }
+    });
+  }
+
+  public void getMessageReactions(TdApi.Message message, RunnableData<Map<TdApi.Reaction, Integer>> callBack) {
+    TdApi.GetMessageAddedReactions getMessageAddedReactions = new TdApi.GetMessageAddedReactions();
+    getMessageAddedReactions.chatId = message.chatId;
+    getMessageAddedReactions.messageId = message.id;
+    getMessageAddedReactions.limit = 100;
+    getMessageAddedReactions.offset = "";
+    tdlib().client().send(getMessageAddedReactions, object -> {
+      if (object instanceof TdApi.AddedReactions) {
+        TdApi.AddedReactions data = (TdApi.AddedReactions) object;
+        if (data.reactions.length > 0) {
+          Map<TdApi.Reaction, Integer> reactions = new HashMap<>();
+          int i = 0;
+          for (TdApi.AddedReaction reaction : data.reactions) {
+            TdApi.Reaction currentReaction = getReaction(reaction.reaction);
+            if (reactions.containsKey(currentReaction)) {
+              reactions.put(currentReaction, reactions.get(currentReaction) + 1);
+            } else {
+              reactions.put(currentReaction, 1);
+            }
+            i++;
+          }
+          callBack.runWithData(reactions);
+        }
+      } else {
+        callBack.runWithData(null);
+      }
+    });
+  }
+
+  private TdApi.Reaction getReaction(String reaction) {
+    for (TdApi.Reaction reactionCurrent : getSupportedReactions()) {
+      if (reactionCurrent.reaction.equals(reaction)) {
+        return reactionCurrent;
+      }
+    }
+    return null;
+  }
+
+  public TdApi.Reaction[] getSupportedReactions() {
+    return supportedReactions;
   }
 }

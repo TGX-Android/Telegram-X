@@ -1175,6 +1175,8 @@
   <item type="id" name="pluralMany" />
   <item type="id" name="pluralOther" />
 
+  <item type="id" name="reactions" />
+
   <!-- THEMES -->
 
   <item type="id" name="btn_theme" />

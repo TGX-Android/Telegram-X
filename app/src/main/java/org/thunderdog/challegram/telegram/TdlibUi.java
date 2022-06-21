@@ -5624,7 +5624,7 @@ public class TdlibUi extends Handler {
         }
       });
       return true;
-    }, null);
+    }, (ThemeDelegate) null);
   }
 
   private static final int REPORT_REASON_COUNT = 7;

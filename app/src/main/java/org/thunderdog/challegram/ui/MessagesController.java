@@ -224,6 +224,7 @@ import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ProgressComponentView;
+import org.thunderdog.challegram.widget.ReactionsLayout;
 import org.thunderdog.challegram.widget.RippleRevealView;
 import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 import org.thunderdog.challegram.widget.SendButton;
@@ -328,6 +329,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private FrameLayoutFix scrollToBottomButtonWrap, mentionButtonWrap;
   private CircleButton scrollToBottomButton, mentionButton;
   private CounterBadgeView unreadCountView, mentionCountView;
+
+  private TGMessage message;
 
   public boolean sponsoredMessageLoaded = false;
 
@@ -4151,7 +4154,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       b.append(Lang.getString(resId));
     }
     String text = b.toString().trim();
-    patchReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, disableViewCounter);
+    PopupLayout popupLayout;
+    popupLayout = showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons, null, selectedMessage);
+    patchReadReceiptsOptions(popupLayout, msg, disableViewCounter);
   }
 
   private void patchReadReceiptsOptions (PopupLayout layout, TGMessage message, boolean disableViewCounter) {
@@ -5253,6 +5258,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
         return true;
       }
       case R.id.btn_cancel: { // nothing
+        return true;
+      }
+      case R.id.reactions: {
+        if (selectedMessage != null) {
+          manager.updateMessageReaction(selectedMessage.getMessage().id);
+        }
         return true;
       }
     }

@@ -511,7 +511,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       parent.tdlib().ui().openUrl(parent.controller(), url, rippleButton.firstButton().openParameters(view).disableInstantView());
       return true;
     }
-    
+
     if (mediaWrapper != null && allowRipple && isTelegramType(type)) {
       MediaViewController.openFromMessage(parent);
       return true;

@@ -497,6 +497,15 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     return hasScrolled;
   }
 
+  public void updateMessageReaction(long messageId) {
+    int index = adapter.indexOfMessageContainer(messageId);
+    if (index != -1) {
+      TGMessage currentMessage = adapter.getMessage(index);
+      currentMessage.updateReactions();
+      invalidateViewAt(index);
+    }
+  }
+
   // Search
 
   public void openSearch (TdApi.Chat chat, String query, TdApi.MessageSender sender, TdApi.SearchMessagesFilter filter) {
@@ -2721,6 +2730,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         updateMessageInteractionInfo(messageId, interactionInfo);
       }
     });
+    updateMessageReaction(messageId);
   }
 
   @Override

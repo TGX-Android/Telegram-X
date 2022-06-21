@@ -68,6 +68,7 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -111,6 +112,7 @@ import org.thunderdog.challegram.widget.MaterialEditText;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
+import org.thunderdog.challegram.widget.ReactionsLayout;
 import org.thunderdog.challegram.widget.SeparatorView;
 import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.TimerView;
@@ -125,6 +127,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
@@ -138,7 +141,6 @@ import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableInt;
 import me.vkryl.core.lambda.RunnableLong;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
@@ -2121,7 +2123,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles) {
-    return showOptions(info, ids, titles, null, null, null);
+    return showOptions(info, ids, titles, null, null);
   }
 
   public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, OptionDelegate delegate) {
@@ -2129,11 +2131,11 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public final PopupLayout showOptions (int[] ids, String[] titles, int[] colors) {
-    return showOptions(null, ids, titles, colors, null, null);
+    return showOptions(null, ids, titles, colors, null);
   }
 
   public final PopupLayout showOptions (int[] ids, String[] titles) {
-    return showOptions(null, ids, titles, null, null, null);
+    return showOptions(null, ids, titles, null, null);
   }
 
   public final PopupLayout showConfirm (@Nullable CharSequence info, @Nullable String okString, @NonNull Runnable onConfirm) {
@@ -2165,6 +2167,14 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     return showOptions(info, ids, titles, colors, icons, null);
   }
 
+  public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, final OptionDelegate delegate, ThemeDelegate theme) {
+    return showOptions(info, ids, titles, colors, icons, delegate, theme, null);
+  }
+
+  public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, final OptionDelegate delegate, TGMessage currentMessage) {
+    return showOptions(info, ids, titles, colors, icons, delegate, null, currentMessage);
+  }
+
   public final void showUnsavedChangesPromptBeforeLeaving (@Nullable Runnable onConfirm) {
     showUnsavedChangesPromptBeforeLeaving(null, Lang.getString(R.string.DiscardChanges), onConfirm);
   }
@@ -2181,7 +2191,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, final OptionDelegate delegate) {
-    return showOptions(info, ids, titles, colors, icons, delegate, null);
+    return showOptions(info, ids, titles, colors, icons, delegate, null, null);
   }
 
   public final PopupLayout showWarning (CharSequence info, RunnableBool callback) {
@@ -2282,19 +2292,19 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     }
   }
 
-  public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, final OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme) {
+  public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, final OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme, TGMessage currentMessage) {
     OptionItem[] items = new OptionItem[ids.length];
     for (int i = 0; i < ids.length; i++) {
       items[i] = new OptionItem(ids != null ? ids[i] : i, titles[i], colors != null ? colors[i] : OPTION_COLOR_NORMAL, icons != null ? icons[i] : 0);
     }
-    return showOptions(new Options(info, items), delegate, forcedTheme);
+    return showOptions(new Options(info, items), delegate, forcedTheme, currentMessage);
   }
 
   public final PopupLayout showOptions (Options options, final OptionDelegate delegate) {
-    return showOptions(options, delegate, null);
+    return showOptions(options, delegate, null, null);
   }
 
-  public final PopupLayout showOptions (Options options, final OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme) {
+  public final PopupLayout showOptions (Options options, final OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme, TGMessage currentMessage) {
     if (isStackLocked()) {
       Log.i("Ignoring options show because stack is locked");
       return null;
@@ -2313,6 +2323,20 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     OptionsLayout optionsWrap = new OptionsLayout(context(), this, forcedTheme);
     optionsWrap.setInfo(this, tdlib(), options.info, false);
     optionsWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
+
+    if (currentMessage != null) {
+      ReactionsLayout reactionLinearLayout = new ReactionsLayout(context, tdlib, currentMessage);
+      reactionLinearLayout.setReactionCallback(() -> {
+        popupLayout.hideWindow(true);
+        ViewController<?> c = context.navigation().getCurrentStackItem();
+        if (c instanceof OptionDelegate) {
+          ((OptionDelegate) c).onOptionItemPressed(reactionLinearLayout, R.id.reactions);
+        }
+      });
+      reactionLinearLayout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(54f)));
+      reactionLinearLayout.setBackgroundColor(Theme.getColor(R.id.theme_color_headerBackground));
+      optionsWrap.addView(reactionLinearLayout);
+    }
 
     if (Screen.needsKeyboardPadding(context)) {
       popupAdditionalHeight = Screen.getNavigationBarFrameHeight();

@@ -51,6 +51,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
   private @Nullable TGStickerObj sticker;
   private Path contour;
   private Tdlib tdlib;
+  private boolean isReaction = false;
 
   public StickerSmallView (Context context) {
     super(context);
@@ -64,6 +65,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
   }
 
   private boolean isAnimation;
+  private boolean isPreviewEnabled = true;
 
   public void setSticker (@Nullable TGStickerObj sticker) {
     this.sticker = sticker;
@@ -143,6 +145,10 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     emojiDisabled = true;
   }
 
+  public void setPreviewEnabled(boolean enabled) {
+    isPreviewEnabled = enabled;
+  }
+
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     if (isSuggestion) {
@@ -188,6 +194,14 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     if (saved) {
       c.restore();
     }
+  }
+
+  public void setAnimation(boolean isAnimation) {
+    this.isAnimation = isAnimation;
+  }
+
+  public void setIsReaction(boolean isReaction) {
+    this.isReaction = isReaction;
   }
 
   // Touch
@@ -243,7 +257,9 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
       case MotionEvent.ACTION_DOWN: {
         startX = e.getX();
         startY = e.getY();
-        openPreviewDelayed();
+        if (isPreviewEnabled) {
+          openPreviewDelayed();
+        }
         return true;
       }
       case MotionEvent.ACTION_CANCEL: {
@@ -251,7 +267,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
         return true;
       }
       case MotionEvent.ACTION_UP: {
-        boolean clicked = previewScheduled && !previewOpened;
+        boolean clicked = (previewScheduled && !previewOpened) || isReaction;
         closePreview(e);
         if (clicked && callback != null && sticker != null) {
           ViewUtils.onClick(this);

@@ -17,6 +17,8 @@ package org.thunderdog.challegram.component.chat;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
@@ -47,6 +49,7 @@ import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.player.TGPlayerController;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
@@ -64,6 +67,7 @@ import org.thunderdog.challegram.v.MessagesRecyclerView;
 import org.thunderdog.challegram.widget.SparseDrawableView;
 
 import java.util.List;
+import java.util.Map;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
@@ -479,7 +483,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     StringList strings = new StringList(6);
     Object tag = fillMessageOptions(m, msg, sender, ids, icons, strings, false);
     if (!ids.isEmpty()) {
-      m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), tag, sender, false);
+      m.showMessageOptions(msg,ids.get(), strings.get(), icons.get(), tag, sender, false);
       return true;
     }
     return false;

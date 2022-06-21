@@ -95,6 +95,7 @@ import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Paints;
@@ -3226,7 +3227,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             }
           }
           return true;
-        }, null);
+        }, (ThemeDelegate) null);
         break;
       }
       case MODE_EDIT_SUPERGROUP: {
@@ -3240,7 +3241,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             );
           }
           return true;
-        }, null);
+        }, (ThemeDelegate) null);
         break;
       }
     }
