@@ -900,7 +900,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
     showError(null);
     setInProgress(true);
 
-    final String phone = "+" + tdlibNumber;
+    final String phone = tdlib.account().isDebug() ? phoneNumber : "+" + tdlibNumber;
 
     TdApi.Function<?> function;
 
@@ -913,6 +913,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
         break;
       case MODE_LOGIN:
         function = new TdApi.SetAuthenticationPhoneNumber(phone, TD.defaultPhoneNumberAuthenticationSettings());
+        // test phone number
         tdlib.setAuthPhoneNumber(phoneCode, phoneNumber);
         break;
       default:
