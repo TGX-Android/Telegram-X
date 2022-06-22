@@ -1774,6 +1774,21 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     });
   }
 
+  public void getMessageAvailableReactions(long chatId, long messageId, @Nullable RunnableData<TdApi.AvailableReactions> callback) {
+    client().send(new TdApi.GetMessageAvailableReactions(chatId, messageId), result -> {
+      if (callback != null)
+        callback.runWithData((TdApi.AvailableReactions) result);
+    });
+  }
+
+  public void getMessageAddedReactions(long chatId, long messageId, String reaction, String offset, int limit, @Nullable RunnableData<TdApi.AddedReactions> callback) {
+    client().send(new TdApi.GetMessageAddedReactions(chatId, messageId, reaction, offset, limit), result -> {
+      if (callback != null) {
+        callback.runWithData((TdApi.AddedReactions) result);
+      }
+    });
+  }
+
   @Nullable
   public TdApi.Message getMessageLocally (long chatId, long messageId) {
     if (inTdlibThread()) {
@@ -8715,6 +8730,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       throw new UnsupportedOperationException();
     }
     return null;
+  }
+
+  public TdApi.Reaction[] getSupportedReactions() {
+    return supportedReactions;
   }
 
   public boolean showRestriction (TdApi.Chat chat, @RightId int rightId, @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes) {

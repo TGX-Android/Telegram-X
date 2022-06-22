@@ -256,6 +256,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && manager.useBubbles()) {
         invalidateOutline();
       }
+
     }
   }
 
@@ -469,7 +470,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       if (isSent) {
         return showChatOptions(m, (TGMessageChat) msg, sender);
       } else {
-        m.showMessageOptions(msg, new int[] {R.id.btn_messageDelete}, new String[] {Lang.getString(R.string.Delete)}, new int[] {R.drawable.baseline_delete_24}, null, sender, true);
+        m.showMessageOptions(msg, new int[] {R.id.btn_messageDelete}, new String[] {Lang.getString(R.string.Delete)}, new int[] {R.drawable.baseline_delete_24}, null, null, sender, true);
         return true;
       }
     }
@@ -477,15 +478,16 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     IntList ids = new IntList(6);
     IntList icons = new IntList(6);
     StringList strings = new StringList(6);
-    Object tag = fillMessageOptions(m, msg, sender, ids, icons, strings, false);
+    StringList reactions = new StringList(29);
+    Object tag = fillMessageOptions(m, msg, sender, ids, icons, strings, reactions, false);
     if (!ids.isEmpty()) {
-      m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), tag, sender, false);
+      m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), reactions.get(), tag, sender, false);
       return true;
     }
     return false;
   }
 
-  public static Object fillMessageOptions (MessagesController m, TGMessage msg, @Nullable TdApi.ChatMember sender, IntList ids, IntList icons, StringList strings, boolean isMore) {
+  public static Object fillMessageOptions (MessagesController m, TGMessage msg, @Nullable TdApi.ChatMember sender, IntList ids, IntList icons, StringList strings, StringList reactions, boolean isMore) {
     TdApi.Message newestMessage = msg.getNewestMessage();
     TdApi.MessageContent content = newestMessage.content;
     int messageCount = msg.getMessageCount();
@@ -632,6 +634,16 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         ids.append(R.id.btn_messageShare);
         strings.append(R.string.Share);
         icons.append(R.drawable.baseline_forward_24);
+      }
+
+      if (reactions.isEmpty()) {
+        TdApi.Message message = msg.getMessage();
+        msg.tdlib().getMessageAvailableReactions(message.chatId, message.id, result -> {
+          for (String reaction : result.reactions) {
+            reactions.append(reaction);
+          }
+          android.util.Log.d("AKBOLAT.TGX", "Reactions " + reactions.get().length);
+        });
       }
     }
 
@@ -976,7 +988,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       icons.append(R.drawable.baseline_more_horiz_24);
       strings.append(R.string.MoreMessageOptions);
     } else if (moreOptions == 1) {
-      fillMessageOptions(m, msg, sender, ids, icons, strings, true);
+      fillMessageOptions(m, msg, sender, ids, icons, strings, reactions,true);
     }
 
     return tag;
@@ -1040,7 +1052,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       return false;
     }
 
-    m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), null, messageSender, true);
+    m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), null, null, messageSender, true);
     return true;
   }
 

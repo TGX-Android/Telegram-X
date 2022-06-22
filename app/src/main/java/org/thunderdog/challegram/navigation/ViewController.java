@@ -64,6 +64,7 @@ import org.thunderdog.challegram.FillingDrawable;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
+import org.thunderdog.challegram.component.chat.MessageReactionsBar;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
@@ -125,6 +126,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
@@ -138,7 +140,6 @@ import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableInt;
 import me.vkryl.core.lambda.RunnableLong;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
@@ -2165,6 +2166,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     return showOptions(info, ids, titles, colors, icons, null);
   }
 
+  public final PopupLayout showOptions (CharSequence info, String[] reactions, int[] ids, String[] titles, int[] colors, int[] icons) {
+    return showOptions(info, reactions, ids, titles, colors, icons, null);
+  }
+
   public final void showUnsavedChangesPromptBeforeLeaving (@Nullable Runnable onConfirm) {
     showUnsavedChangesPromptBeforeLeaving(null, Lang.getString(R.string.DiscardChanges), onConfirm);
   }
@@ -2182,6 +2187,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, final OptionDelegate delegate) {
     return showOptions(info, ids, titles, colors, icons, delegate, null);
+  }
+
+  public final PopupLayout showOptions (CharSequence info, String[] reactions, int[] ids, String[] titles, int[] colors, int[] icons, final OptionDelegate delegate) {
+    return showOptions(info, reactions, ids, titles, colors, icons, delegate, null);
   }
 
   public final PopupLayout showWarning (CharSequence info, RunnableBool callback) {
@@ -2248,9 +2257,12 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     public final CharSequence info;
     public final OptionItem[] items;
 
-    public Options (CharSequence info, OptionItem[] items) {
+    public final String[] reactions;
+
+    public Options(CharSequence info, OptionItem[] items, String[] reactions) {
       this.info = info;
       this.items = items;
+      this.reactions = reactions;
     }
 
     public static class Builder {
@@ -2277,7 +2289,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       }
 
       public Options build () {
-        return new Options(info, items.toArray(new OptionItem[0]));
+        return new Options(info, items.toArray(new OptionItem[0]), null);
       }
     }
   }
@@ -2287,7 +2299,15 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     for (int i = 0; i < ids.length; i++) {
       items[i] = new OptionItem(ids != null ? ids[i] : i, titles[i], colors != null ? colors[i] : OPTION_COLOR_NORMAL, icons != null ? icons[i] : 0);
     }
-    return showOptions(new Options(info, items), delegate, forcedTheme);
+    return showOptions(new Options(info, items, null), delegate, forcedTheme);
+  }
+
+  public final PopupLayout showOptions (CharSequence info, String[] reactions, int[] ids, String[] titles, int[] colors, int[] icons, final OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme) {
+    OptionItem[] items = new OptionItem[ids.length];
+    for (int i = 0; i < ids.length; i++) {
+      items[i] = new OptionItem(ids != null ? ids[i] : i, titles[i], colors != null ? colors[i] : OPTION_COLOR_NORMAL, icons != null ? icons[i] : 0);
+    }
+    return showOptions(new Options(info, items, reactions), delegate, forcedTheme);
   }
 
   public final PopupLayout showOptions (Options options, final OptionDelegate delegate) {
@@ -2313,6 +2333,15 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     OptionsLayout optionsWrap = new OptionsLayout(context(), this, forcedTheme);
     optionsWrap.setInfo(this, tdlib(), options.info, false);
     optionsWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
+
+    if (options.reactions != null && options.reactions.length > 0) {
+      android.util.Log.d("AKBOLAT.TGX", "View reactions " + options.reactions.length);
+
+      MessageReactionsBar messageReactionsBar = new MessageReactionsBar(context, this, forcedTheme, options.reactions);
+      messageReactionsBar.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48)));
+
+      optionsWrap.addView(messageReactionsBar);
+    }
 
     if (Screen.needsKeyboardPadding(context)) {
       popupAdditionalHeight = Screen.getNavigationBarFrameHeight();
