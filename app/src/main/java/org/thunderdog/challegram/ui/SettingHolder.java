@@ -61,6 +61,7 @@ import org.thunderdog.challegram.mediaview.paint.widget.ColorPreviewView;
 import org.thunderdog.challegram.mediaview.paint.widget.ColorToneView;
 import org.thunderdog.challegram.navigation.DrawerItemView;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.reactions.UserReactionView;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -225,7 +226,8 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         return Screen.dp(64f);
       }
       case ListItem.TYPE_CHAT_BETTER:
-      case ListItem.TYPE_USER: {
+      case ListItem.TYPE_USER:
+      case ListItem.TYPE_USER_REACTION: {
         return Screen.dp(72f);
       }
       case ListItem.TYPE_RECYCLER_HORIZONTAL: {
@@ -1108,8 +1110,13 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         }
         return holder;
       }
-      case ListItem.TYPE_USER: {
-        UserView userView = new UserView(context, tdlib); // FIXME theme
+      case ListItem.TYPE_USER:
+      case ListItem.TYPE_USER_REACTION: {
+        UserView userView;
+        if(viewType==ListItem.TYPE_USER)
+          userView=new UserView(context, tdlib); // FIXME theme
+        else
+          userView=new UserReactionView(context, tdlib);
         userView.setOffsetLeft(Screen.dp(11f));
         userView.setOnClickListener(onClickListener);
         Views.setClickable(userView);

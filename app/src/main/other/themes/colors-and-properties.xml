@@ -76,7 +76,7 @@
 
         <!-- TEXT -->
 
-        <item name="text" /> <!-- Text on top of filling -->
+        <item name="text" porterDuff="true" /> <!-- Text on top of filling -->
         <item name="textSelectionHighlight" tinted="true" />
         <item name="textLight" porterDuff="true" />
         <item name="textSecure" porterDuff="true" />

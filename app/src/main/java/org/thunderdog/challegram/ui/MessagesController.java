@@ -177,6 +177,7 @@ import org.thunderdog.challegram.navigation.ViewPagerHeaderViewCompact;
 import org.thunderdog.challegram.navigation.ViewPagerTopView;
 import org.thunderdog.challegram.player.RecordAudioVideoController;
 import org.thunderdog.challegram.player.RoundVideoController;
+import org.thunderdog.challegram.reactions.ReactionsMessageOptionsSheetHeaderView;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ChatListener;
@@ -4151,15 +4152,25 @@ public class MessagesController extends ViewController<MessagesController.Argume
       b.append(Lang.getString(resId));
     }
     String text = b.toString().trim();
-    patchReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, disableViewCounter);
+    patchReactionsAndReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, disableViewCounter);
   }
 
-  private void patchReadReceiptsOptions (PopupLayout layout, TGMessage message, boolean disableViewCounter) {
-    if (!message.canGetViewers() || disableViewCounter || (message.isUnread() && !message.noUnread()) || !(layout.getChildAt(1) instanceof OptionsLayout)) {
+  private void patchReactionsAndReadReceiptsOptions(PopupLayout layout, TGMessage message, boolean disableViewCounter) {
+    if(!(layout.getChildAt(1) instanceof OptionsLayout))
+      return;
+
+    boolean canReact=chat!=null && chat.availableReactions!=null && chat.availableReactions.length>0;
+    OptionsLayout optionsLayout = (OptionsLayout) layout.getChildAt(1);
+
+    if(canReact){
+      ReactionsMessageOptionsSheetHeaderView header=new ReactionsMessageOptionsSheetHeaderView(layout.getContext(), this, message, layout);
+      optionsLayout.addView(header, 1);
       return;
     }
 
-    OptionsLayout optionsLayout = (OptionsLayout) layout.getChildAt(1);
+    if (!message.canGetViewers() || disableViewCounter || (message.isUnread() && !message.noUnread())) {
+      return;
+    }
 
     LinearLayout receiptWrap = new LinearLayout(layout.getContext());
 

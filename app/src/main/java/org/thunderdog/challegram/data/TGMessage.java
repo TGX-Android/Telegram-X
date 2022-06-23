@@ -4168,6 +4168,20 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return msg.forwardInfo != null;
   }
 
+  public boolean canGetAddedReactions(){
+    return msg.canGetAddedReactions;
+  }
+
+  public int getTotalReactionCount(){
+    if(msg.interactionInfo==null || msg.interactionInfo.reactions==null)
+      return 0;
+    int count=0;
+    for(TdApi.MessageReaction mr:msg.interactionInfo.reactions){
+      count+=mr.totalCount;
+    }
+    return count;
+  }
+
   // Setters
 
   private @Nullable TdApi.Chat chat;

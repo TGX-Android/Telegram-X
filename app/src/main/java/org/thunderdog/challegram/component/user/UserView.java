@@ -148,7 +148,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
       status = null;
       statusWidth = 0;
     }
-    float availWidth = getMeasuredWidth() - textLeftMargin - offsetLeft - paddingRight - (unregisteredContact != null ? Screen.dp(32f) : 0);
+    float availWidth = getMeasuredWidth() - textLeftMargin - offsetLeft - getContentPaddingRight() - (unregisteredContact != null ? Screen.dp(32f) : 0);
     if (availWidth > 0) {
       sourceStatus = status;
       if (statusWidth > availWidth) {
@@ -178,11 +178,15 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
     } else {
       name = null;
     }
-    float availWidth = getMeasuredWidth() - textLeftMargin - offsetLeft - paddingRight - (unregisteredContact != null ? Screen.dp(32f) : 0);
+    float availWidth = getMeasuredWidth() - textLeftMargin - offsetLeft - getContentPaddingRight() - (unregisteredContact != null ? Screen.dp(32f) : 0);
     if (availWidth > 0) {
       sourceName = name;
       trimmedName = StringUtils.isEmpty(name) ? null : new Text.Builder(name, (int) availWidth, Paints.robotoStyleProvider(16), TextColorSets.Regular.NORMAL).singleLine().allBold().build();
     }
+  }
+
+  protected int getContentPaddingRight(){
+    return paddingRight;
   }
 
   public void updateAll () {

@@ -4283,4 +4283,6 @@
   <string name="BigReactions">Big Reactions</string>
   <string name="BigReactionsExplanation">Big reactions are interactive buttons under messages presenting each reaction.</string>
   <string name="BigReactionsNone">None</string>
+  <string name="xReactions_one">%1$s reaction</string>
+  <string name="xReactions_other">%1$s reactions</string>
 </resources>
