@@ -4092,7 +4092,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private Object selectedMessageTag;
 
   @Deprecated
-  public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, String[] reactions, Object selectedMessageTag, TdApi.ChatMember selectedMessageSender, boolean disableViewCounter) {
+  public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, Object selectedMessageTag, TdApi.ChatMember selectedMessageSender, boolean disableViewCounter) {
     // TODO rework into proper style
     this.selectedMessage = msg;
     this.selectedMessageTag = selectedMessageTag;
@@ -5062,17 +5062,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
               TdApi.ChatMember otherMember = result.getConstructor() == TdApi.ChatMember.CONSTRUCTOR ? ((TdApi.ChatMember) result) : null;
               tdlib.ui().post(() -> {
                 if (!selectedMessage.isDestroyed()) {
-                  Object tag = MessageView.fillMessageOptions(this, selectedMessage, otherMember, ids, icons, strings, null, true);
+                  Object tag = MessageView.fillMessageOptions(this, selectedMessage, otherMember, ids, icons, strings, true);
                   if (!ids.isEmpty()) {
-                    showMessageOptions(selectedMessage, ids.get(), strings.get(), icons.get(), null, tag, otherMember, true);
+                    showMessageOptions(selectedMessage, ids.get(), strings.get(), icons.get(), tag, otherMember, true);
                   }
                 }
               });
             });
           } else {
-            Object tag = MessageView.fillMessageOptions(this, selectedMessage, selectedMessageSender, ids, icons, strings, null, true);
+            Object tag = MessageView.fillMessageOptions(this, selectedMessage, selectedMessageSender, ids, icons, strings, true);
             if (!ids.isEmpty()) {
-              showMessageOptions(selectedMessage, ids.get(), strings.get(), icons.get(), null, tag, selectedMessageSender, true);
+              showMessageOptions(selectedMessage, ids.get(), strings.get(), icons.get(), tag, selectedMessageSender, true);
             }
           }
         }
