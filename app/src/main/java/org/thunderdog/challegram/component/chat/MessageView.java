@@ -642,7 +642,6 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           for (String reaction : result.reactions) {
             reactions.append(reaction);
           }
-          android.util.Log.d("AKBOLAT.TGX", "Reactions " + reactions.get().length);
         });
       }
     }

@@ -2,15 +2,15 @@ package org.thunderdog.challegram.component.chat;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.ColorFilter;
-import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -19,34 +19,45 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
+import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.support.CircleDrawable;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeDelegate;
+import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.widget.NoScrollTextView;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import me.vkryl.android.ViewUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
 
 @SuppressLint("ViewConstructor")
 public class MessageReactionsBar extends FrameLayoutFix {
 
-    public MessageReactionsBar(@NonNull Context context, ViewController<?> parent, @Nullable ThemeDelegate forcedTheme, String[] reactionIds) {
+    public MessageReactionsBar(@NonNull Context context, ViewController<?> parent, TGMessage message) {
         super(context);
 
-        List<TdApi.Reaction> availableReactions = mapReactions(parent.tdlib(), reactionIds);
-
         HorizontalScrollView horizontalScrollView = initScrollView(context);
-
-        initReactionList(parent.tdlib(), horizontalScrollView, availableReactions);
-
         addView(horizontalScrollView);
 
-        initBackground(forcedTheme);
+        TdApi.MessageReaction chosenReaction = null;
+        for (TdApi.MessageReaction reaction : message.getReactions()) {
+            if (reaction.isChosen) {
+                chosenReaction = reaction;
+                break;
+            }
+        }
+
+        TdApi.MessageReaction finalChosenReaction = chosenReaction;
+        parent.tdlib().getMessageAvailableReactions(message.getChatId(), message.getId(), result -> {
+            List<TdApi.Reaction> availableReactions = mapReactions(parent.tdlib(), result.reactions);
+            initReactionList(parent.tdlib(), horizontalScrollView, availableReactions, finalChosenReaction);
+        });
     }
 
     @NonNull
@@ -72,46 +83,74 @@ public class MessageReactionsBar extends FrameLayoutFix {
         return horizontalScrollView;
     }
 
-
-    private void initReactionList(Tdlib tdlib, HorizontalScrollView horizontalScrollView, List<TdApi.Reaction> availableReactions) {
+    private void initReactionList(Tdlib tdlib, HorizontalScrollView horizontalScrollView, List<TdApi.Reaction> availableReactions, @Nullable TdApi.MessageReaction chosenReaction) {
         LinearLayout linearLayout = new LinearLayout(getContext());
         linearLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        linearLayout.setGravity(Gravity.CENTER_VERTICAL);
         linearLayout.setOrientation(LinearLayout.HORIZONTAL);
 
         for (TdApi.Reaction reaction : availableReactions) {
-            StickerSmallView stickerSmallView = new StickerSmallView(getContext()){
-                @Override
-                public boolean dispatchTouchEvent(MotionEvent event) {
-                    return false;
-                }
-            };
-            stickerSmallView.setSticker(new TGStickerObj(tdlib, reaction.activateAnimation, "", reaction.activateAnimation.type));
-            stickerSmallView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(48), Screen.dp(48)));
+            StickerSmallView stickerSmallView = initSticker(tdlib, reaction, chosenReaction);
             linearLayout.addView(stickerSmallView);
         }
         horizontalScrollView.addView(linearLayout);
     }
 
-    private void initBackground(@Nullable ThemeDelegate forcedTheme) {
-        ViewUtils.setBackground(this, new Drawable() {
+    @NonNull
+    private StickerSmallView initSticker(Tdlib tdlib, TdApi.Reaction reaction, @Nullable TdApi.MessageReaction chosenReaction) {
+        StickerSmallView stickerSmallView = new StickerSmallView(getContext()) {
             @Override
-            public void draw (@NonNull Canvas c) {
-                View view = getChildAt(0);
-                int height = view != null ? view.getMeasuredHeight() : 0;
-                if (height > 0)
-                    c.drawRect(0, height, getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(forcedTheme != null ? forcedTheme.getColor(R.id.theme_color_filling) : Theme.getColor(R.id.theme_color_filling)));
+            public boolean dispatchTouchEvent(MotionEvent event) {
+                return false;
             }
+        };
+        stickerSmallView.setSticker(new TGStickerObj(tdlib, reaction.activateAnimation, "", reaction.activateAnimation.type));
+        stickerSmallView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(40), Screen.dp(40)));
+        if (chosenReaction != null && chosenReaction.reaction.equals(reaction.reaction)) {
+            stickerSmallView.setBackground(new CircleDrawable(R.id.theme_color_headerButton, 40f, true));
+        }
+        return stickerSmallView;
+    }
 
-            @Override
-            public void setAlpha (int alpha) { }
 
-            @Override
-            public void setColorFilter (@Nullable ColorFilter colorFilter) { }
+    public static TextView getCounterText(Context context, int color, int icon) {
+        TextView text = new NoScrollTextView(context);
+        text.setVisibility(View.GONE);
+        text.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13f);
+        final int colorId = getOptionColorId(color);
+        text.setTextColor(Theme.getColor(colorId));
+        text.setGravity(Gravity.CENTER_VERTICAL);
 
-            @Override
-            public int getOpacity () {
-                return PixelFormat.UNKNOWN;
+        text.setCompoundDrawablePadding(Screen.dp(8f));
+        text.setClickable(false);
+
+        if (icon != 0) {
+            Drawable drawable = Drawables.get(context.getResources(), icon);
+            if (drawable != null) {
+                final int drawableColorId = color == ViewController.OPTION_COLOR_NORMAL ? R.id.theme_color_icon : colorId;
+                drawable.setColorFilter(Paints.getColorFilter(Theme.getColor(drawableColorId)));
+                if (Lang.rtl()) {
+                    text.setCompoundDrawablesWithIntrinsicBounds(null, null, drawable, null);
+                } else {
+                    text.setCompoundDrawablesWithIntrinsicBounds(drawable, null, null, null);
+                }
             }
-        });
+        }
+        return text;
+    }
+
+    private static @ThemeColorId int getOptionColorId (int color) {
+        switch (color) {
+            case ViewController.OPTION_COLOR_NORMAL: {
+                return R.id.theme_color_text;
+            }
+            case ViewController.OPTION_COLOR_RED: {
+                return R.id.theme_color_textNegative;
+            }
+            case ViewController.OPTION_COLOR_BLUE: {
+                return R.id.theme_color_textNeutral;
+            }
+        }
+        throw new IllegalArgumentException("color == " + color);
     }
 }

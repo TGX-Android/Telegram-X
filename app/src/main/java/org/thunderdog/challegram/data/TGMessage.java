@@ -3535,6 +3535,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return info != null ? info.viewCount : 0;
   }
 
+  public final TdApi.MessageReaction[] getReactions () {
+    if (isSending() || isFailed()) {
+      return new TdApi.MessageReaction[]{};
+    }
+    TdApi.MessageInteractionInfo info = msg.interactionInfo;
+    return info != null ? info.reactions : new TdApi.MessageReaction[]{};
+  }
+
   public final int getReplyCount () {
     if (!Config.COMMENTS_SUPPORTED || isThreadHeader()) {
       return 0;

@@ -103,6 +103,7 @@ import org.thunderdog.challegram.component.chat.InlineResultsWrap;
 import org.thunderdog.challegram.component.chat.InputView;
 import org.thunderdog.challegram.component.chat.InvisibleImageView;
 import org.thunderdog.challegram.component.chat.JoinRequestsView;
+import org.thunderdog.challegram.component.chat.MessageReactionsBar;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessageViewGroup;
 import org.thunderdog.challegram.component.chat.MessagesAdapter;
@@ -209,9 +210,9 @@ import org.thunderdog.challegram.unsorted.Test;
 import org.thunderdog.challegram.util.CancellableResultHandler;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
+import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.Unlockable;
-import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.v.MessagesLayoutManager;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
@@ -225,12 +226,12 @@ import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.RippleRevealView;
-import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 import org.thunderdog.challegram.widget.SendButton;
 import org.thunderdog.challegram.widget.SeparatorView;
 import org.thunderdog.challegram.widget.TripleAvatarView;
 import org.thunderdog.challegram.widget.ViewPager;
 import org.thunderdog.challegram.widget.WallpaperParametersView;
+import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -247,6 +248,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.AnimatedFrameLayout;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
@@ -257,7 +259,6 @@ import me.vkryl.core.lambda.Future;
 import me.vkryl.core.lambda.FutureLong;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
@@ -4151,7 +4152,64 @@ public class MessagesController extends ViewController<MessagesController.Argume
       b.append(Lang.getString(resId));
     }
     String text = b.toString().trim();
-    patchReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, reactions, ids, options, null, icons), msg, disableViewCounter);
+
+    PopupLayout layout = showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
+    patchReadReceiptsOptions(layout, msg, disableViewCounter);
+    patchEmojiOptions(layout, msg, disableViewCounter);
+  }
+
+  private void patchEmojiOptions(PopupLayout layout, TGMessage message, boolean disableViewCounter) {
+    if (disableViewCounter || !(layout.getChildAt(1) instanceof OptionsLayout)) {
+      return;
+    }
+    OptionsLayout optionsLayout = (OptionsLayout) layout.getChildAt(1);
+
+    LinearLayout statsWrap = new LinearLayout(layout.getContext());
+    statsWrap.setOrientation(LinearLayout.HORIZONTAL);
+    statsWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.END));
+
+    Views.setClickable(statsWrap);
+    RippleSupport.setSimpleWhiteBackground(statsWrap);
+
+    TextView reactionsCount = MessageReactionsBar.getCounterText(layout.getContext(), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_favorite_14);
+    reactionsCount.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    reactionsCount.setPadding(Screen.dp(16f), 0, 0, 0);
+    statsWrap.addView(reactionsCount);
+
+    TextView viewCount = MessageReactionsBar.getCounterText(layout.getContext(), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_visibility_14);
+    viewCount.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    viewCount.setPadding(Screen.dp(16f), 0, Screen.dp(16f), 0);
+    statsWrap.addView(viewCount);
+
+    MessageReactionsBar messageReactionsBar = new MessageReactionsBar(context, this, message);
+    messageReactionsBar.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48)));
+    RippleSupport.setSimpleWhiteBackground(messageReactionsBar);
+
+    messageReactionsBar.addView(statsWrap);
+    optionsLayout.addView(messageReactionsBar, 2);
+
+    tdlib.client().send(new TdApi.GetMessageViewers(message.getChatId(), message.getId()), (obj) -> {
+      if (obj.getConstructor() != TdApi.Users.CONSTRUCTOR) return;
+      runOnUiThreadOptional(() -> {
+        TdApi.Users users = (TdApi.Users) obj;
+
+        if (users.userIds.length > 0) {
+          viewCount.setText(String.valueOf(users.totalCount));
+          viewCount.setVisibility(View.VISIBLE);
+        }
+      });
+    });
+
+    tdlib.getMessageAddedReactions(message.getChatId(), message.getId(), null, "", 100, result -> {
+      runOnUiThreadOptional(() -> {
+        int totalCount = result.totalCount;
+
+        if (totalCount > 0) {
+          reactionsCount.setText(String.valueOf(totalCount));
+          reactionsCount.setVisibility(View.VISIBLE);
+        }
+      });
+    });
   }
 
   private void patchReadReceiptsOptions (PopupLayout layout, TGMessage message, boolean disableViewCounter) {

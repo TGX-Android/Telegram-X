@@ -84,6 +84,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.FileUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
@@ -95,7 +96,6 @@ import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableInt;
 import me.vkryl.core.lambda.RunnableLong;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.util.JobList;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
@@ -1783,8 +1783,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public void getMessageAddedReactions(long chatId, long messageId, String reaction, String offset, int limit, @Nullable RunnableData<TdApi.AddedReactions> callback) {
     client().send(new TdApi.GetMessageAddedReactions(chatId, messageId, reaction, offset, limit), result -> {
-      if (callback != null) {
-        callback.runWithData((TdApi.AddedReactions) result);
+      if (result instanceof TdApi.AddedReactions) {
+        if (callback != null)
+          callback.runWithData((TdApi.AddedReactions) result);
       }
     });
   }
