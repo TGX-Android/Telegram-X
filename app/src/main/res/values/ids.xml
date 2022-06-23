@@ -222,6 +222,8 @@
   <item type="id" name="controller_chatLinkMembers" />
   <item type="id" name="controller_sponsoredMessagesInfo" />
 
+  <item type="id" name="controller_reactions" />
+
   <item type="id" name="separator" />
 
   <item type="id" name="msg_input" />

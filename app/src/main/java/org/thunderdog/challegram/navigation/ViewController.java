@@ -111,6 +111,7 @@ import org.thunderdog.challegram.widget.MaterialEditText;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
+import org.thunderdog.challegram.widget.ReactionsLayout;
 import org.thunderdog.challegram.widget.SeparatorView;
 import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.TimerView;
@@ -2287,14 +2288,22 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     for (int i = 0; i < ids.length; i++) {
       items[i] = new OptionItem(ids != null ? ids[i] : i, titles[i], colors != null ? colors[i] : OPTION_COLOR_NORMAL, icons != null ? icons[i] : 0);
     }
-    return showOptions(new Options(info, items), delegate, forcedTheme);
+    return showOptions(new Options(info, items), delegate, forcedTheme, false);
   }
 
   public final PopupLayout showOptions (Options options, final OptionDelegate delegate) {
-    return showOptions(options, delegate, null);
+    return showOptions(options, delegate, null, false);
   }
 
-  public final PopupLayout showOptions (Options options, final OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme) {
+  public final PopupLayout showOptionsWithReactions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons) {
+    OptionItem[] items = new OptionItem[ids.length];
+    for (int i = 0; i < ids.length; i++) {
+      items[i] = new OptionItem(ids != null ? ids[i] : i, titles[i], colors != null ? colors[i] : OPTION_COLOR_NORMAL, icons != null ? icons[i] : 0);
+    }
+    return showOptions(new Options(info, items), null, null, true);
+  }
+
+  public final PopupLayout showOptions (Options options, final OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme, boolean showReactions) {
     if (isStackLocked()) {
       Log.i("Ignoring options show because stack is locked");
       return null;
@@ -2327,6 +2336,11 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     optionsWrap.addView(shadowView, 0);
     addThemeInvalidateListener(shadowView);
 
+    // Reactions bar generation
+    ReactionsLayout reactionsLayout = new ReactionsLayout(context);
+    reactionsLayout.initWithMediasEnabled(this, false);
+    optionsWrap.addView(reactionsLayout);
+
     // Item generation
     View.OnClickListener onClickListener;
     if (delegate != null) {
@@ -2343,6 +2357,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         }
       };
     }
+
     int index = 0;
     for (OptionItem item : options.items) {
       TextView text = OptionsLayout.genOptionView(context, item.id, item.name, item.color, item.icon, onClickListener, getThemeListeners(), forcedTheme);
