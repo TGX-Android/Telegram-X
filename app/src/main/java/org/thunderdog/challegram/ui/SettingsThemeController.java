@@ -318,6 +318,9 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
           case R.id.btn_useBigEmoji:
             v.getToggler().setRadioEnabled(Settings.instance().useBigEmoji(), isUpdate);
             break;
+          case R.id.btn_useBigReactions:
+            v.getToggler().setRadioEnabled(Settings.instance().useBigReactions(), isUpdate);
+            break;
           case R.id.btn_markdown: {
             v.getToggler().setRadioEnabled(Settings.instance().getNewSetting(Settings.SETTING_FLAG_EDIT_MARKDOWN), isUpdate);
             break;
@@ -664,6 +667,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.AnimatedEmoji).setLongId(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI).setBoolValue(true));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_useBigEmoji, 0, R.string.BigEmoji));
+      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_useBigReactions, 0, R.string.BigReactions));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.LoopAnimatedStickers).setLongId(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP).setBoolValue(true));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -1393,6 +1397,10 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       }
       case R.id.btn_useBigEmoji: {
         Settings.instance().setUseBigEmoji(adapter.toggleView(v));
+        break;
+      }
+      case R.id.btn_useBigReactions: {
+        Settings.instance().setUseBigReactions(adapter.toggleView(v));
         break;
       }
       case R.id.btn_secret_batmanTransitions: {

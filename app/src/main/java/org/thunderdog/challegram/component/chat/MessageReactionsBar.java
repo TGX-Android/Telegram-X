@@ -57,7 +57,7 @@ public class MessageReactionsBar extends LinearLayout {
     }
 
     TdApi.MessageReaction finalChosenReaction = chosenReaction;
-    parent.tdlib().getMessageAvailableReactions(message.getChatId(), message.getId(), result -> {
+    parent.tdlib().getMessageAvailableReactions(message.getChatId(), message.getId(), result -> { //tdlib.cache()
       List<TdApi.Reaction> availableReactions = mapReactions(parent.tdlib(), result.reactions);
       initReactionList(parent.tdlib(), horizontalScrollView, availableReactions, finalChosenReaction);
     });

@@ -346,6 +346,7 @@ public class Settings {
   private static final int FLAG_OTHER_START_ROUND_REAR = 1 << 28;
   private static final int FLAG_OTHER_DISABLE_BIG_EMOJI = 1 << 29;
   private static final int FLAG_OTHER_DISABLE_SECRET_LINK_PREVIEWS = 1 << 30;
+  private static final int FLAG_OTHER_DISABLE_BIG_REACTIONS = 1 << 31;
 
   public static final long SETTING_FLAG_BATMAN_POLL_TRANSITIONS = 1 << 1;
   public static final long SETTING_FLAG_EDIT_MARKDOWN = 1 << 2;
@@ -1526,6 +1527,7 @@ public class Settings {
       }
       case VERSION_26: {
         changeDefaultOtherFlag(pmc, editor, FLAG_OTHER_DISABLE_BIG_EMOJI, false);
+        changeDefaultOtherFlag(pmc, editor, FLAG_OTHER_DISABLE_BIG_REACTIONS, false);
         break;
       }
       case VERSION_27: {
@@ -2318,6 +2320,14 @@ public class Settings {
 
   public void setUseBigEmoji (boolean useBigEmoji) {
     setNegativeSetting(FLAG_OTHER_DISABLE_BIG_EMOJI, useBigEmoji);
+  }
+
+  public boolean useBigReactions () {
+    return checkNegativeSetting(FLAG_OTHER_DISABLE_BIG_REACTIONS);
+  }
+
+  public void setUseBigReactions (boolean useBigReactions) {
+    setNegativeSetting(FLAG_OTHER_DISABLE_BIG_REACTIONS, useBigReactions);
   }
 
   public int getInstantViewMode () {
