@@ -1776,8 +1776,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public void getMessageAvailableReactions(long chatId, long messageId, @Nullable RunnableData<TdApi.AvailableReactions> callback) {
     client().send(new TdApi.GetMessageAvailableReactions(chatId, messageId), result -> {
-      if (callback != null)
-        callback.runWithData((TdApi.AvailableReactions) result);
+      if (result instanceof TdApi.AvailableReactions) {
+        if (callback != null)
+          callback.runWithData((TdApi.AvailableReactions) result);
+      }
     });
   }
 
@@ -1786,6 +1788,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       if (result instanceof TdApi.AddedReactions) {
         if (callback != null)
           callback.runWithData((TdApi.AddedReactions) result);
+      }
+    });
+  }
+
+  public void setMessageReaction(long chatId, long messageId, String reaction, boolean isBig, @Nullable RunnableData<TdApi.Ok> callback) {
+    client().send(new TdApi.SetMessageReaction(chatId, messageId, reaction, isBig), result -> {
+      if (result instanceof TdApi.Ok) {
+        if (callback != null){
+          callback.runWithData((TdApi.Ok) result);
+        }
       }
     });
   }
