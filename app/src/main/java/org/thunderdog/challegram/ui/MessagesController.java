@@ -4166,10 +4166,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     LinearLayout statsWrap = new LinearLayout(layout.getContext());
     statsWrap.setOrientation(LinearLayout.HORIZONTAL);
-    statsWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.END));
+    statsWrap.setPadding(0, 0, Screen.dp(16), 0);
+    statsWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
     Views.setClickable(statsWrap);
-    RippleSupport.setSimpleWhiteBackground(statsWrap);
+    RippleSupport.setSimpleWhiteBackground(statsWrap, R.id.theme_color_background, this);
 
     TextView reactionsCount = MessageReactionsBar.getCounterText(layout.getContext(), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_favorite_14);
     reactionsCount.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -4178,12 +4179,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     TextView viewCount = MessageReactionsBar.getCounterText(layout.getContext(), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_visibility_14);
     viewCount.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
-    viewCount.setPadding(Screen.dp(16f), 0, Screen.dp(16f), 0);
+    viewCount.setPadding(Screen.dp(16f), 0, 0, 0);
     statsWrap.addView(viewCount);
 
     MessageReactionsBar messageReactionsBar = new MessageReactionsBar(context, this, message);
     messageReactionsBar.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48)));
-    RippleSupport.setSimpleWhiteBackground(messageReactionsBar);
+    RippleSupport.setSimpleWhiteBackground(messageReactionsBar, R.id.theme_color_background, this);
 
     messageReactionsBar.addView(statsWrap);
     optionsLayout.addView(messageReactionsBar, 2);

@@ -37,10 +37,11 @@ import java.util.List;
 import me.vkryl.android.widget.FrameLayoutFix;
 
 @SuppressLint("ViewConstructor")
-public class MessageReactionsBar extends FrameLayoutFix {
+public class MessageReactionsBar extends LinearLayout {
 
     public MessageReactionsBar(@NonNull Context context, ViewController<?> parent, TGMessage message) {
         super(context);
+        setOrientation(LinearLayout.HORIZONTAL);
 
         HorizontalScrollView horizontalScrollView = initScrollView(context);
         addView(horizontalScrollView);
@@ -78,7 +79,7 @@ public class MessageReactionsBar extends FrameLayoutFix {
     @NonNull
     private HorizontalScrollView initScrollView(@NonNull Context context) {
         HorizontalScrollView horizontalScrollView = new HorizontalScrollView(context);
-        horizontalScrollView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        horizontalScrollView.setLayoutParams(new LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f));
         horizontalScrollView.setHorizontalScrollBarEnabled(false);
         return horizontalScrollView;
     }
