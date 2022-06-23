@@ -76,6 +76,8 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     }
     contour = sticker != null ? sticker.getContour(Math.min(imageReceiver.getWidth(), imageReceiver.getHeight())) : null;
     imageReceiver.requestFile(imageFile);
+    if (gifFile != null)
+      gifFile.setPlayOnce(isPlayOnce);
     gifReceiver.requestFile(gifFile);
   }
 
@@ -141,6 +143,12 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
 
   public void setEmojiDisabled () {
     emojiDisabled = true;
+  }
+
+  private boolean isPlayOnce;
+
+  public void setPlayOnce() {
+    isPlayOnce = true;
   }
 
   @Override

@@ -105,8 +105,9 @@ public class MessageReactionsBar extends LinearLayout {
                 return false;
             }
         };
-        stickerSmallView.setSticker(new TGStickerObj(tdlib, reaction.activateAnimation, "", reaction.activateAnimation.type));
         stickerSmallView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(40), Screen.dp(40)));
+        stickerSmallView.setPlayOnce();
+        stickerSmallView.setSticker(new TGStickerObj(tdlib, reaction.activateAnimation, "", reaction.activateAnimation.type));
         if (chosenReaction != null && chosenReaction.reaction.equals(reaction.reaction)) {
             stickerSmallView.setBackground(new CircleDrawable(R.id.theme_color_headerButton, 40f, true));
         }
@@ -140,7 +141,8 @@ public class MessageReactionsBar extends LinearLayout {
         return text;
     }
 
-    private static @ThemeColorId int getOptionColorId (int color) {
+    private static @ThemeColorId
+    int getOptionColorId(int color) {
         switch (color) {
             case ViewController.OPTION_COLOR_NORMAL: {
                 return R.id.theme_color_text;
