@@ -1562,6 +1562,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     final int viewHeight = view.getMeasuredHeight();
 
     final boolean useBubbles = useBubbles();
+    final boolean useBigReactions = useBigReactions();
 
     final float selectableFactor = manager.getSelectableFactor();
 
@@ -1770,14 +1771,16 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         }
       }
 
-      right -= computeReactionsPartWidth(false);
+      if (!useBigReactions) {
+        right -= computeReactionsPartWidth(false);
 
-      if (needMetadata)
-        right += Screen.dp(2f);
-      else
-        right -= Screen.dp(12f);
+        if (needMetadata)
+          right += Screen.dp(2f);
+        else
+          right -= Screen.dp(12f);
 
-      drawReaction(c, view, right, xTimeTop + getHeaderPadding(), Paints.reactionPaint());
+        drawReaction(c, view, right, xTimeTop + getHeaderPadding(), Paints.reactionPaint());
+      }
     }
 
     // Check box
@@ -3103,8 +3106,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
     int counterY = startY + Screen.dp(11.5f);
 
-    drawReaction(c, view, startX, startY + Screen.dp(15.5f), Paints.reactionPaint());
-    startX += computeReactionsPartWidth(true); // check the RTL
+    if (!useBigReactions()) {
+      drawReaction(c, view, startX, startY + Screen.dp(15.5f), Paints.reactionPaint());
+      startX += computeReactionsPartWidth(true); // check the RTL
+    }
 
     if (getViewCountMode() == VIEW_COUNT_MAIN) {
       if (isSending) {
@@ -3187,7 +3192,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       width += Screen.dp(5f) + Icons.getEditedIcon().getWidth();
     }*/
     width += pTimeWidth;
-    width += computeReactionsPartWidth(true);
+    if (!useBigReactions()) {
+      width += computeReactionsPartWidth(true);
+    }
     if (width == 0 && !StringUtils.isEmpty(time)) { // TODO do it in a proper place
       width = (int) U.measureText(time, mTimeBubble());
     }
