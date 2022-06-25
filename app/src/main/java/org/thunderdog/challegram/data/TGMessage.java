@@ -218,7 +218,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private int pClockLeft, pClockTop;
   private int pTicksLeft, pTicksTop;
   private int pDateWidth;
-  private int pReactionWidth;
 
   private final Path bubblePath, bubbleClipPath;
   private float topRightRadius, topLeftRadius, bottomLeftRadius, bottomRightRadius;
@@ -1770,6 +1769,15 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           right -= viewCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
         }
       }
+
+      right -= computeReactionsPartWidth(false);
+
+      if (needMetadata)
+        right += Screen.dp(2f);
+      else
+        right -= Screen.dp(12f);
+
+      drawReaction(c, view, right, xTimeTop + getHeaderPadding(), Paints.reactionPaint());
     }
 
     // Check box
@@ -2611,7 +2619,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private void layoutInfo () {
     boolean isPsa = isPsa() && forceForwardedInfo();
 
-    pReactionWidth = Screen.dp(16);
     if (useBubbles()) {
       // time part
       pTimeWidth = (int) U.measureText(time, mTimeBubble());
@@ -3096,8 +3103,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
     int counterY = startY + Screen.dp(11.5f);
 
-    drawReaction(c, view, startX, startY + Screen.dp(15.5f));
-    startX += computeReactionsPartWidth();
+    drawReaction(c, view, startX, startY + Screen.dp(15.5f), Paints.reactionPaint());
+    startX += computeReactionsPartWidth(true); // check the RTL
 
     if (getViewCountMode() == VIEW_COUNT_MAIN) {
       if (isSending) {
@@ -3160,13 +3167,13 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
   }
 
-  private void drawReaction (Canvas canvas, MessageView view, int startX, int startY) {
+  private void drawReaction (Canvas canvas, MessageView view, int startX, int startY, Paint paint) {
     if (getReactions().length > 0) {
       for (int i = 0; i < getReactions().length; i++) {
         if (i > 2)
           break;
-        canvas.drawText(getReactions()[i].reaction, startX, startY, Paints.colorPaint(mTimeBubble(), getBubbleTimeTextColor()));
-        startX += pReactionWidth;
+        canvas.drawText(getReactions()[i].reaction, startX, startY, paint);
+        startX += Screen.dp(16f);
       }
     }
   }
@@ -3180,7 +3187,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       width += Screen.dp(5f) + Icons.getEditedIcon().getWidth();
     }*/
     width += pTimeWidth;
-    width += computeReactionsPartWidth();
+    width += computeReactionsPartWidth(true);
     if (width == 0 && !StringUtils.isEmpty(time)) { // TODO do it in a proper place
       width = (int) U.measureText(time, mTimeBubble());
     }
@@ -3211,14 +3218,17 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return width;
   }
 
-  protected final int computeReactionsPartWidth () {
+  protected final int computeReactionsPartWidth (boolean includePadding) {
     int width = 0;
     if (getReactions().length > 0) {
       for (int i = 0; i < getReactions().length; i++) {
         if (i > 2)
           break;
-        width += pReactionWidth;
+        width += Screen.dp(16f);
       }
+    }
+    if (includePadding) {
+      width += Screen.dp(4f);
     }
     return width;
   }
