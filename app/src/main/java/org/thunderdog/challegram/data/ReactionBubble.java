@@ -17,46 +17,58 @@ import org.thunderdog.challegram.tool.Screen;
 import me.vkryl.core.MathUtils;
 
 public class ReactionBubble {
-  private int parentWidth;
+  private static final int paddingLeft = Screen.dp(8f);
+  private static final int paddingTop = Screen.dp(8f);
+  private static final int paddingRight = Screen.dp(8f);
+  private static final int paddingBottom = Screen.dp(8f);
+
+  private static final int marginTop = Screen.dp(5f);
+  private static final int marginBottom = Screen.dp(5f);
+  private static final int marginLeft = Screen.dp(5f);
+  private static final int marginRight = Screen.dp(5f);
+
+  public static final int outMarginTop = Screen.dp(5f);
+  public static final int outMarginBottom = Screen.dp(5f);
+  public static final int outMarginLeft = Screen.dp(10f);
+  public static final int outMarginRight = Screen.dp(10f);
+
+  private int id;
 
   private final Path path, clipPath;
   private final RectF pathRect, clipPathRect;
 
-  private final int paddingLeft = Screen.dp(8f);
-  private final int paddingTop = Screen.dp(8f);
-  private final int paddingRight = Screen.dp(8f);
-  private final int paddingBottom = Screen.dp(8f);
-
-  public final int marginTop = Screen.dp(10f);
-  public final int marginBottom = Screen.dp(10f);
-
   private int count = 0;
 
-  public ReactionBubble() {
+  public ReactionBubble(int id) {
+    this.id = id;
     this.path = new Path();
     this.pathRect = new RectF();
     this.clipPath = new Path();
     this.clipPathRect = new RectF();
   }
 
-  private int computeBubbleHeight () {
+  private static int computeBubbleHeight () {
     return Screen.dp(10);
   }
 
-  private int computeBubbleWidth () {
+  private static int computeBubbleWidth () {
     return Screen.dp(20);
   }
 
-  public int getHeight () {
+  public static int getHeight () {
     return computeBubbleHeight() + paddingTop + paddingBottom;
   }
 
-  public int getHeightWithMargins () {
+  public static int getHeightWithMargins () {
     return  getHeight() + marginTop + marginBottom;
   }
 
-  public int getWidth () {
+  public static int getWidth () {
     return computeBubbleWidth() + paddingLeft + paddingRight;
+  }
+
+  public static int getWidthWithMargins () {
+    return getWidth() + marginLeft + marginRight;
   }
 
   public void buildBubble (float leftContentEdge,  float bottomContentEdge) {
