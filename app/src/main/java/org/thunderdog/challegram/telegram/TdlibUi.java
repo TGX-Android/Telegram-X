@@ -6217,36 +6217,17 @@ public class TdlibUi extends Handler {
   public void openPaymentInvoiceForm (final TdlibDelegate context, TdApi.InputInvoice inputInvoice, @Nullable Runnable after) {
     tdlib.client().send(new TdApi.GetPaymentForm(
       inputInvoice, Theme.tdlibThemeParameters()
-    ), (result) -> {
+    ), (result) -> post(() -> {
+      if (after != null) after.run();
+
       if (result.getConstructor() == TdApi.PaymentForm.CONSTRUCTOR) {
         TdApi.PaymentForm form = (TdApi.PaymentForm) result;
-
-        RunnableData<TdApi.ValidatedOrderInfo> openForm = (validated) -> post(() -> {
-          if (after != null) after.run();
-          PaymentFormController c = new PaymentFormController(context.context(), context.tdlib());
-          c.setArguments(new PaymentFormController.Args(form, inputInvoice, validated));
-          context.context().navigation().navigateTo(c);
-        });
-
-        if (form.savedOrderInfo != null) {
-          tdlib.client().send(new TdApi.ValidateOrderInfo(
-            inputInvoice, form.savedOrderInfo, true
-          ), (savedResult) -> {
-            if (savedResult.getConstructor() == TdApi.ValidatedOrderInfo.CONSTRUCTOR) {
-              openForm.runWithData((TdApi.ValidatedOrderInfo) savedResult);
-            } else {
-              openForm.runWithData(null);
-            }
-          });
-        } else {
-          openForm.runWithData(null);
-        }
+        PaymentFormController c = new PaymentFormController(context.context(), context.tdlib());
+        c.setArguments(new PaymentFormController.Args(form, inputInvoice));
+        context.context().navigation().navigateTo(c);
       } else {
         UI.showError(result);
-        if (after != null) {
-          post(after);
-        }
       }
-    });
+    }));
   }
 }

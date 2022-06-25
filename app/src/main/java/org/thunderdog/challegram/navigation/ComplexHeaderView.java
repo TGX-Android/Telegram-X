@@ -428,6 +428,14 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
     this.avatarPlaceholder = null;
   }
 
+  public void setAvatar (ImageFile avatar, ImageFile avatarFull) {
+    this.avatar = avatar;
+    this.avatarFull = avatarFull;
+    this.previewProfilePhoto = null;
+    this.previewChatPhoto = null;
+    this.avatarPlaceholder = null;
+  }
+
   public ImageFile getAvatar () {
     return avatar;
   }

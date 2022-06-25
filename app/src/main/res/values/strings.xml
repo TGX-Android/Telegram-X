@@ -4316,6 +4316,7 @@
   <string name="PaymentFormMethodToastSaved">This payment method will be saved for future use. It will be stored directly with the payment provider, and Telegram has no access to your credit card data.</string>
   <string name="PaymentFormMethodToastNotSaved">This payment method won\'t be saved for future use</string>
   <string name="PaymentFormMethodError">An error occurred when processing a new payment method</string>
+  <string name="ShowReceipt">Show Receipt</string>
   <string name="format_paymentFormAddressWithSecondLine">%1$s %2$s, %3$s, %4$s, %5$s, %6$s</string>
   <string name="format_paymentFormAddress">%1$s, %2$s, %3$s, %4$s, %5$s</string>
 

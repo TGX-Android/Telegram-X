@@ -53,6 +53,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.ui.PaymentFormController;
+import org.thunderdog.challegram.ui.PaymentReceiptController;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.EmojiString;
@@ -434,6 +435,8 @@ public class TGInlineKeyboard {
 
     private @DrawableRes int customIconRes;
     private boolean isCustom;
+
+    private boolean isReceipt;
     private String currencyChar;
     private float currencyCharWidth;
 
@@ -445,12 +448,15 @@ public class TGInlineKeyboard {
       String text = uppercase(cleanButtonText(button.text));
       this.needFakeBold = Text.needFakeBold(text);
       TextPaint textPaint = Paints.getBoldPaint14(needFakeBold);
-      this.wrapper = new EmojiString(text, maxWidth, textPaint);
       this.type = button.type;
+
       if (type.getConstructor() == TdApi.InlineKeyboardButtonTypeBuy.CONSTRUCTOR) {
         currencyChar = CurrencyUtils.getCurrencyChar(((TdApi.MessageInvoice) parent.getMessage().content).currency);
         currencyCharWidth = U.measureText(currencyChar, Paints.getBoldTextPaint(CURRENCY_TEXT_SIZE_DP));
+        isReceipt = ((TdApi.MessageInvoice) context.context.msg.content).receiptMessageId != 0;
       }
+
+      this.wrapper = new EmojiString(isReceipt ? Lang.getString(R.string.ShowReceipt) : text, maxWidth, textPaint);
     }
 
     public float getPreferredMinWidth () {
@@ -649,7 +655,11 @@ public class TGInlineKeyboard {
             break;
           }
           case TdApi.InlineKeyboardButtonTypeBuy.CONSTRUCTOR: {
-            if (!StringUtils.isEmpty(currencyChar)) {
+            if (isReceipt) {
+              int padding = Screen.dp(4f);
+              Drawable icon = getSparseDrawable(R.drawable.baseline_receipt_12, ThemeColorId.NONE);
+              Drawables.draw(c, icon, dirtyRect.right - icon.getMinimumWidth() - padding, dirtyRect.top + padding, useBubbleMode ? Paints.getInlineBubbleIconPaint(ColorUtils.alphaColor(1f - progressFactor, textColor)) : textColorFactor == 0f && progressFactor == 1f ? Paints.getInlineIconPorterDuffPaint(isOutBubble) : Paints.getPorterDuffPaint(ColorUtils.alphaColor(1f - progressFactor, ColorUtils.fromToArgb(iconColor, Theme.inlineTextActiveColor(), textColorFactor))));
+            } else if (!StringUtils.isEmpty(currencyChar)) {
               int color = ColorUtils.alphaColor(1f - progressFactor, useBubbleMode ? textColor : ColorUtils.fromToArgb(iconColor, Theme.inlineTextActiveColor(), textColorFactor));
               c.drawText(currencyChar, dirtyRect.right - Screen.dp(6f) - currencyCharWidth, dirtyRect.top + getStrokePadding() + Screen.dp(12f), Paints.getBoldTextPaint(CURRENCY_TEXT_SIZE_DP, color));
             }
@@ -1062,13 +1072,29 @@ public class TGInlineKeyboard {
           makeActive();
           showProgressDelayed();
 
-          context.context.tdlib.ui().openPaymentInvoiceForm(
-            context.context, new TdApi.InputInvoiceMessage(context.context.getChatId(), context.context.getId()), () -> {
+          long receiptMsg = ((TdApi.MessageInvoice) context.context.msg.content).receiptMessageId;
+
+          if (receiptMsg != 0) {
+            context.context.tdlib.client().send(new TdApi.GetPaymentReceipt(context.context.getChatId(), receiptMsg), (receipt) -> context.context.tdlib.ui().post(() -> {
               if (currentContextId == contextId) {
                 makeInactive();
               }
-            }
-          );
+
+              if (receipt.getConstructor() == TdApi.PaymentReceipt.CONSTRUCTOR) {
+                PaymentReceiptController c = new PaymentReceiptController(context.context.context(), context.context.tdlib());
+                c.setArguments(new PaymentReceiptController.Args((TdApi.PaymentReceipt) receipt));
+                context.context.context().navigation().navigateTo(c);
+              } else {
+                UI.showError(receipt);
+              }
+            }));
+          } else {
+            context.context.tdlib.ui().openPaymentInvoiceForm(context.context, new TdApi.InputInvoiceMessage(context.context.getChatId(), context.context.getId()), () -> {
+              if (currentContextId == contextId) {
+                makeInactive();
+              }
+            });
+          }
 
           break;
         }

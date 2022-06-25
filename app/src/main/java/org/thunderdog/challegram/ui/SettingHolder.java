@@ -263,6 +263,9 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         int marginBottom = Screen.dp(12f);
         return toneHeight + paletteHeight * 2 + inputHeight * 2 + barHeight + marginBottom;
       }
+      case ListItem.TYPE_PAYMENT_PRICE_PART: {
+        return Screen.dp(24f);
+      }
       default: {
         // FIXME: This can be used only by ThemeController
         if (viewType <= ListItem.TYPE_CUSTOM)

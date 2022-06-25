@@ -4,7 +4,11 @@ import android.content.Context;
 import android.graphics.Color;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -13,7 +17,10 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
+import org.thunderdog.challegram.component.chat.ChatBottomBarView;
+import org.thunderdog.challegram.component.payments.PaymentFormBottomBarView;
 import org.thunderdog.challegram.component.payments.PaymentPricePartView;
+import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -27,27 +34,31 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Size;
+import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
 import java.util.ArrayList;
 import java.util.Locale;
 
+import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BoolAnimator;
+import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.CurrencyUtils;
+import me.vkryl.core.MathUtils;
+import me.vkryl.core.collection.IntList;
 import me.vkryl.td.Td;
 
 public class PaymentFormController extends ViewController<PaymentFormController.Args> implements View.OnClickListener {
   public static class Args {
     private final TdApi.PaymentForm paymentForm;
     private final TdApi.InputInvoice paymentInvoice;
-    private final @Nullable TdApi.ValidatedOrderInfo validatedAndSavedInfo;
 
-    public Args (TdApi.PaymentForm paymentForm, TdApi.InputInvoice paymentInvoice, @Nullable TdApi.ValidatedOrderInfo validatedAndSavedInfo) {
+    public Args (TdApi.PaymentForm paymentForm, TdApi.InputInvoice paymentInvoice) {
       this.paymentForm = paymentForm;
       this.paymentInvoice = paymentInvoice;
-      this.validatedAndSavedInfo = validatedAndSavedInfo;
     }
   }
 
@@ -86,11 +97,6 @@ public class PaymentFormController extends ViewController<PaymentFormController.
 
     if (paymentForm.savedOrderInfo != null) {
       this.currentOrderInfo = paymentForm.savedOrderInfo;
-
-      if (args.validatedAndSavedInfo != null) {
-        this.validatedOrderInfoId = args.validatedAndSavedInfo.orderInfoId;
-        this.availableShippingOptions = args.validatedAndSavedInfo.shippingOptions;
-      }
     }
 
     updateTotalAmount();
@@ -99,7 +105,15 @@ public class PaymentFormController extends ViewController<PaymentFormController.
   @Override
   protected View onCreateView (Context context) {
     this.headerCell = new ComplexHeaderView(context, tdlib, this);
-    this.headerCell.setAvatarExpandListener((headerView1, expandFactor, byCollapse, allowanceFactor, collapseFactor) -> updateButtonsColor());
+    this.headerCell.setAvatarExpandListener((headerView1, expandFactor, byCollapse, allowanceFactor, collapseFactor) -> {
+      if (byCollapse && bottomBar != null) {
+        scrollToBottomVisibleFactor = expandFactor;
+        updateBottomBarStyle();
+      }
+
+      updateButtonsColor();
+    });
+
     this.headerCell.setAllowEmptyClick();
     this.headerCell.initWithController(this, true);
     this.headerCell.setInnerMargins(Screen.dp(isHeaderFullscreen() ? 56f : 12f), 0);
@@ -142,7 +156,13 @@ public class PaymentFormController extends ViewController<PaymentFormController.
 
     bindItems();
     this.contentView.setAdapter(adapter);
-    return contentView;
+
+    RelativeLayout wrapper = new RelativeLayout(context);
+    createBottomBar();
+    wrapper.addView(bottomBar);
+    wrapper.addView(contentView, new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+    return wrapper;
   }
 
   private String formatShippingAddressSubtitle () {
@@ -162,16 +182,34 @@ public class PaymentFormController extends ViewController<PaymentFormController.
         c.setArguments(new WebPaymentMethodController.Args(getPaymentProcessorName(), paymentForm.url, this));
         navigateTo(c);
         break;
+      case R.id.btn_paymentFormShipmentMethod:
+        validateAndRequestShipping(() -> {
+          IntList ids = new IntList(0);
+          StringList titles = new StringList(0);
+
+          for (TdApi.ShippingOption so : availableShippingOptions) {
+            ids.append(so.id.hashCode());
+            titles.append(so.id + " - " + so.title);
+          }
+
+          showOptions("Choose", ids.get(), titles.get());
+        });
+        break;
     }
   }
 
-  private void validateAndRequestShipping () {
+  private void validateAndRequestShipping (Runnable after) {
+    if (validatedOrderInfoId != null) {
+      after.run();
+      return;
+    }
+
     tdlib.client().send(new TdApi.ValidateOrderInfo(paymentInvoice, currentOrderInfo, true), (obj) -> {
       if (obj.getConstructor() == TdApi.ValidatedOrderInfo.CONSTRUCTOR) {
         TdApi.ValidatedOrderInfo validatedOrderInfo = (TdApi.ValidatedOrderInfo) obj;
         this.validatedOrderInfoId = validatedOrderInfo.orderInfoId;
         this.availableShippingOptions = validatedOrderInfo.shippingOptions;
-        runOnUiThreadOptional(this::updateShippingInterface);
+        runOnUiThreadOptional(after);
       } else {
         UI.showError(obj);
       }
@@ -212,7 +250,7 @@ public class PaymentFormController extends ViewController<PaymentFormController.
       TdApi.PhotoSize size = Td.findBiggest(paymentForm.productPhoto);
       ImageFile sizeFile = size != null ? new ImageFile(tdlib, size.photo) : null;
       if (sizeFile != null) sizeFile.setScaleType(ImageFile.CENTER_CROP);
-      headerCell.setAvatar(sizeFile);
+      headerCell.setAvatar(size != null ? new ImageFile(tdlib, size.photo) : null, sizeFile);
       headerCell.setText(paymentForm.productTitle, tdlib.cache().userDisplayName(paymentForm.sellerBotUserId, false, false));
       headerCell.invalidate();
     }
@@ -235,6 +273,8 @@ public class PaymentFormController extends ViewController<PaymentFormController.
     if (paymentForm.invoice.needShippingAddress) {
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_paymentFormShipmentAddress, R.drawable.baseline_location_on_24, 0, false));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_paymentFormShipmentMethod, R.drawable.baseline_local_shipping_24, 0, false));
     }
 
     if (availableShippingOptions != null && availableShippingOptions.length > 0) {
@@ -258,8 +298,17 @@ public class PaymentFormController extends ViewController<PaymentFormController.
 
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_PAYMENT_PRICE_PART).setData(new PaymentPricePartView.PartData(Lang.getString(R.string.PaymentFormTotal), formatCurrency(paymentFormTotalAmount), true)));
+    items.add(new ListItem(ListItem.TYPE_PADDING).setHeight(Screen.dp(48f)));
 
     adapter.setItems(items, false);
+    tryPredictingHeaderHeight();
+  }
+
+  private void tryPredictingHeaderHeight () {
+    int adapterHeight = adapter.measureHeight(-1);
+    boolean shouldExpand = adapterHeight >= (Screen.currentActualHeight());
+    scrollToBottomVisibleFactor = shouldExpand ? 1f : 0f;
+    updateBottomBarStyle();
   }
 
   private void updateTotalAmount () {
@@ -273,6 +322,46 @@ public class PaymentFormController extends ViewController<PaymentFormController.
     } else {
       return CurrencyUtils.buildAmount(paymentForm.invoice.currency, amount);
     }
+  }
+
+  // Animations - Scroll to Bottom + Pay superbutton
+
+  private PaymentFormBottomBarView bottomBar;
+  private float scrollToBottomVisibleFactor;
+
+  private void createBottomBar () {
+    RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48f));
+    params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+
+    bottomBar = new PaymentFormBottomBarView(context, tdlib) {
+      @Override
+      protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        updateBottomBarStyle();
+      }
+    };
+
+    bottomBar.setOnClickListener(this);
+    bottomBar.setLayoutParams(params);
+    bottomBar.setAction(0, Lang.getString(R.string.PaymentFormPay, CurrencyUtils.buildAmount(paymentForm.invoice.currency, paymentFormTotalAmount)), R.drawable.baseline_arrow_downward_24, false);
+    bottomBar.setOnClickListener(view -> {
+      // TODO check if expanded
+      contentView.smoothScrollToPosition(adapter.getItemCount() - 1);
+    });
+
+    addThemeInvalidateListener(bottomBar);
+    updateBottomBarStyle();
+  }
+
+  private void updateBottomBarStyle () {
+    if (bottomBar == null) return;
+
+    float toY = -Screen.dp(16f);
+    int barHeight = Screen.dp(48f);
+    int dx = (int) ((bottomBar.getMeasuredWidth() / 2f - Screen.dp(16f) - barHeight / 2) * scrollToBottomVisibleFactor);
+    bottomBar.setCollapseFactor(scrollToBottomVisibleFactor);
+    bottomBar.setTranslationY(scrollToBottomVisibleFactor == 0f ? 0 : toY * scrollToBottomVisibleFactor);
+    bottomBar.setTranslationX(dx);
   }
 
   // Internal - Bridge methods
