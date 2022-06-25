@@ -621,6 +621,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return !headerDisabled() && (flags & FLAG_HEADER_ENABLED) != 0;
   }
 
+  public boolean hasReactions () {
+    return true;
+  }
+
   protected int getSmallestMaxContentWidth () {
     return Math.min(pRealContentMaxWidth, Screen.smallestSide() - xPaddingRight - pRealContentX);
   }
@@ -1647,7 +1651,13 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       drawBubble(c, Paints.fillingPaint(bubbleColor), false, 0);
 
       final int reactionBubbleColor = Theme.getColor(R.id.theme_color_themeCyan);
-      reactionBubble.drawBubble(c, Paints.fillingPaint(reactionBubbleColor), false, 0);
+      final int reactionBubbleTextColor = Theme.getColor(R.id.theme_color_text);
+      reactionBubble.drawBubble(
+          c,
+          Paints.fillingPaint(reactionBubbleColor),
+          Paints.getTextPaint16(reactionBubbleTextColor),
+          false
+      );
 
       float commentButton = hasCommentButton.getFloatValue();
       if (commentButton > 0f) {
@@ -2356,6 +2366,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     /*if ((flags & FLAG_HEADER_ENABLED) == 0 && (msg.forwardInfo == null || forwardInfo == null) && replyData == null && (inlineKeyboard == null || inlineKeyboard.isEmpty())) {
       return false;
     }*/
+    if (hasReactions() && reactionBubble.onTouchEvent(view, e)) {
+      return true;
+    }
     if (hasHeader() && needName(true)) {
       if (hAuthorNameT != null && hAuthorNameT.onTouchEvent(view, e))
         return true;

@@ -3,7 +3,10 @@ package org.thunderdog.challegram.data;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.RectF;
+import android.view.MotionEvent;
+import android.view.View;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.theme.Theme;
@@ -26,6 +29,9 @@ public class ReactionBubble {
 
   public final int marginTop = Screen.dp(10f);
   public final int marginBottom = Screen.dp(10f);
+
+  private int count = 0;
+
   public ReactionBubble() {
     this.path = new Path();
     this.pathRect = new RectF();
@@ -77,53 +83,76 @@ public class ReactionBubble {
   }
 
 
-  public void drawBubble (Canvas c, Paint paint, boolean stroke, int padding) {
-    if (paint.getAlpha() == 0) {
-      return;
-    }
-
-    final float left = pathRect.left - padding;
-    final float top = pathRect.top - padding;
-    final float right = pathRect.right + padding;
-    final float bottom = pathRect.bottom + padding;
+  public void drawBubble (Canvas c, Paint backgroundPaint, Paint textPaint, boolean stroke) {
+    final float left = pathRect.left;
+    final float top = pathRect.top;
+    final float right = pathRect.right;
+    final float bottom = pathRect.bottom;
 
     int rad = Screen.dp(computeBubbleHeight() / 2f);
 
     final RectF rectF = Paints.getRectF();
     if (rad != 0) {
       rectF.set(left, top, left + rad * 2, top + rad * 2);
-      c.drawArc(rectF, 180f, 90f, !stroke, paint);
+      c.drawArc(rectF, 180f, 90f, !stroke, backgroundPaint);
       if (!stroke) {
-        c.drawRect(left, top + rad, left + rad, top + rad, paint);
+        c.drawRect(left, top + rad, left + rad, top + rad, backgroundPaint);
       }
       rectF.set(right - rad * 2, top, right, top + rad * 2);
-      c.drawArc(rectF, 270f, 90f, !stroke, paint);
+      c.drawArc(rectF, 270f, 90f, !stroke, backgroundPaint);
       if (!stroke) {
-        c.drawRect(right - rad, top + rad, right, top + rad, paint);
+        c.drawRect(right - rad, top + rad, right, top + rad, backgroundPaint);
       }
-      c.drawRect(left + rad, top, right - rad, top + rad, paint);
+      c.drawRect(left + rad, top, right - rad, top + rad, backgroundPaint);
       rectF.set(left, bottom - rad * 2, left + rad * 2, bottom);
-      c.drawArc(rectF, 90f, 90f, !stroke, paint);
+      c.drawArc(rectF, 90f, 90f, !stroke, backgroundPaint);
       if (!stroke) {
-        c.drawRect(left, bottom - rad, left + rad, bottom - rad, paint);
+        c.drawRect(left, bottom - rad, left + rad, bottom - rad, backgroundPaint);
       }
       rectF.set(right - rad * 2, bottom - rad * 2, right, bottom);
-      c.drawArc(rectF, 0f, 90f, !stroke, paint);
+      c.drawArc(rectF, 0f, 90f, !stroke, backgroundPaint);
       if (!stroke) {
-        c.drawRect(right - rad, bottom - rad, right, bottom - rad, paint);
+        c.drawRect(right - rad, bottom - rad, right, bottom - rad, backgroundPaint);
       }
-      c.drawRect(left + rad, bottom - rad, right - rad, bottom, paint);
+      c.drawRect(left + rad, bottom - rad, right - rad, bottom, backgroundPaint);
     }
     if (stroke) {
-      c.drawLine(left + rad, top, right - rad, top, paint);
-      c.drawLine(left + rad, bottom, right - rad, bottom, paint);
-      c.drawLine(left, top + rad, left, bottom - rad, paint);
-      c.drawLine(right, top + rad, right, bottom - rad, paint);
+      c.drawLine(left + rad, top, right - rad, top, backgroundPaint);
+      c.drawLine(left + rad, bottom, right - rad, bottom, backgroundPaint);
+      c.drawLine(left, top + rad, left, bottom - rad, backgroundPaint);
+      c.drawLine(right, top + rad, right, bottom - rad, backgroundPaint);
     } else {
       float bubbleTop = top + rad;
       float bubbleBottom = bottom - rad;
       if (bubbleBottom > bubbleTop)
-        c.drawRect(left, bubbleTop, right, bubbleBottom, paint);
+        c.drawRect(left, bubbleTop, right, bubbleBottom, backgroundPaint);
+    }
+
+    String text = String.valueOf(count);
+    Rect textBounds = new Rect();
+    textPaint.getTextBounds(text, 0, text.length(), textBounds);
+    int textHeight = textBounds.height();
+    int textWidth = textBounds.width();
+    final float textX = (left + right) / 2 - textWidth / 2f;
+    final float textY = (top + bottom) / 2 + textHeight / 2f;
+    c.drawText(text, textX, textY, textPaint);
+  }
+
+  public boolean onTouchEvent (View view, MotionEvent e) {
+    if (e.getAction() != MotionEvent.ACTION_DOWN) return false;
+    float touchX = e.getX();
+    float touchY = e.getY();
+
+    final float left = pathRect.left;
+    final float top = pathRect.top;
+    final float right = pathRect.right;
+    final float bottom = pathRect.bottom;
+    if (touchX > left && touchX < right && touchY > top && touchY < bottom) {
+      count++;
+      view.invalidate();
+      return true;
+    } else {
+      return false;
     }
   }
 }
