@@ -837,6 +837,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     return (loader.isChannel() ? !settings.forcePlainModeInChannels() : settings.useBubbles()) || controller.inWallpaperMode();
   }
 
+  public boolean useBigReactions () {
+    return Settings.instance().useBigReactions();
+  }
+
   @Nullable
   @Override
   public TGPlayerController.PlayList buildPlayList (TdApi.Message fromMessage) {

@@ -218,6 +218,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private int pClockLeft, pClockTop;
   private int pTicksLeft, pTicksTop;
   private int pDateWidth;
+  private int pReactionWidth;
 
   private final Path bubblePath, bubbleClipPath;
   private float topRightRadius, topLeftRadius, bottomLeftRadius, bottomRightRadius;
@@ -1588,6 +1589,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       Drawables.draw(c, iBadge, pBadgeIconX, iconTop + top, Paints.getUnreadSeparationPaint(color));
     }
 
+    // selection and highlight background
     if (useBubbles && !needViewGroup()) {
       drawBackground(view, c);
     }
@@ -2609,6 +2611,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private void layoutInfo () {
     boolean isPsa = isPsa() && forceForwardedInfo();
 
+    pReactionWidth = Screen.dp(16);
     if (useBubbles()) {
       // time part
       pTimeWidth = (int) U.measureText(time, mTimeBubble());
@@ -3092,6 +3095,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     int counterY = startY + Screen.dp(11.5f);
+
+    drawReaction(c, view, startX, startY + Screen.dp(15.5f));
+    startX += computeReactionsPartWidth();
+
     if (getViewCountMode() == VIEW_COUNT_MAIN) {
       if (isSending) {
         final float viewsWidth = viewCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
@@ -3149,7 +3156,18 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         boolean unread = isUnread() && !noUnread();
         Drawables.draw(c, unread ? Icons.getSingleTick(iconColorId) : Icons.getDoubleTick(iconColorId), startX - Screen.dp(Icons.TICKS_SHIFT_X), top - Screen.dp(Icons.TICKS_SHIFT_Y), unread ? ticksPaint : ticksReadPaint);
       }
-      startX += Icons.getSingleTickWidth();
+      startX += Icons.getSingleTickWidth(); // for what?
+    }
+  }
+
+  private void drawReaction (Canvas canvas, MessageView view, int startX, int startY) {
+    if (getReactions().length > 0) {
+      for (int i = 0; i < getReactions().length; i++) {
+        if (i > 2)
+          break;
+        canvas.drawText(getReactions()[i].reaction, startX, startY, Paints.colorPaint(mTimeBubble(), getBubbleTimeTextColor()));
+        startX += pReactionWidth;
+      }
     }
   }
 
@@ -3162,6 +3180,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       width += Screen.dp(5f) + Icons.getEditedIcon().getWidth();
     }*/
     width += pTimeWidth;
+    width += computeReactionsPartWidth();
     if (width == 0 && !StringUtils.isEmpty(time)) { // TODO do it in a proper place
       width = (int) U.measureText(time, mTimeBubble());
     }
@@ -3188,6 +3207,18 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
     if (includePadding) {
       width += Screen.dp(8f);
+    }
+    return width;
+  }
+
+  protected final int computeReactionsPartWidth () {
+    int width = 0;
+    if (getReactions().length > 0) {
+      for (int i = 0; i < getReactions().length; i++) {
+        if (i > 2)
+          break;
+        width += pReactionWidth;
+      }
     }
     return width;
   }
@@ -7266,6 +7297,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   public final boolean useBubbles () {
     return manager().useBubbles();
   }
+
+  public final boolean useBigReactions () {
+    return manager().useBigReactions();
+  }
+
   /*public static boolean useBubbles () {
     return ThemeManager.getChatStyle() == ThemeManager.CHAT_STYLE_BUBBLES;
   }*/

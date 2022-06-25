@@ -4210,16 +4210,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
       });
     });
 
-    tdlib.getMessageAddedReactions(message.getChatId(), message.getId(), null, "", 100, result -> {
-      runOnUiThreadOptional(() -> {
-        int totalCount = result.totalCount;
+    if (message.getMessage().canGetAddedReactions) {
+      tdlib.getMessageAddedReactions(message.getChatId(), message.getId(), null, "", 100, result -> {
+        runOnUiThreadOptional(() -> {
+          int totalCount = result.totalCount;
 
-        if (totalCount > 0) {
-          reactionsCount.setText(String.valueOf(totalCount));
-          reactionsCount.setVisibility(View.VISIBLE);
-        }
+          if (totalCount > 0) {
+            reactionsCount.setText(String.valueOf(totalCount));
+            reactionsCount.setVisibility(View.VISIBLE);
+          }
+        });
       });
-    });
+    }
   }
 
   private void patchReadReceiptsOptions (PopupLayout layout, TGMessage message, boolean disableViewCounter) {
