@@ -2337,9 +2337,11 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     addThemeInvalidateListener(shadowView);
 
     // Reactions bar generation
-    ReactionsLayout reactionsLayout = new ReactionsLayout(context);
-    reactionsLayout.initWithMediasEnabled(this, false);
-    optionsWrap.addView(reactionsLayout);
+    if (showReactions) {
+      ReactionsLayout reactionsLayout = new ReactionsLayout(context);
+      reactionsLayout.initWithMediasEnabled(this, false);
+      optionsWrap.addView(reactionsLayout);
+    }
 
     // Item generation
     View.OnClickListener onClickListener;
