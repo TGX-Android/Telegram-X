@@ -141,6 +141,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private static final int MAXIMUM_CHANNEL_MERGE_COUNT = 19;
   private static final int MAXIMUM_COMMON_MERGE_COUNT = 14;
 
+  private static final int MINIMUM_REACTIONS_IN_LINE = 3;
+
   private static final int MESSAGE_FLAG_READ = 1;
   private static final int MESSAGE_FLAG_IS_BOTTOM = 1 << 1;
   private static final int MESSAGE_FLAG_HAS_OLDER_MESSAGE = 1 << 2;
@@ -815,7 +817,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     bubbleWidth = bubbleWidth - ReactionBubble.outMarginLeft - ReactionBubble.outMarginRight;
     float width = ReactionBubble.getWidthWithMargins();
     int count = 0;
-    while (width < bubbleWidth) {
+    while (width <= bubbleWidth) {
       width += ReactionBubble.getWidthWithMargins();
       count++;
     }
@@ -2972,6 +2974,15 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       bubbleWidth += bubblePaddingLeft + bubblePaddingRight;
       bubbleHeight += bubblePaddingTop + bubblePaddingBottom;
 
+      // Adjust bubble width for reactions
+
+      int maxReactionsInLine = getMaxReactionsInOneLine(bubbleWidth);
+      if (maxReactionsInLine < MINIMUM_REACTIONS_IN_LINE) {
+        bubbleWidth = MINIMUM_REACTIONS_IN_LINE * ReactionBubble.getWidthWithMargins() + ReactionBubble.outMarginRight + ReactionBubble.outMarginLeft;
+      }
+
+      // Adjust bubble height for reactions
+
       float reactionsTotalHeight = getReactionsLines(bubbleWidth) * ReactionBubble.getHeightWithMargins();
       reactionsTotalHeight = reactionsTotalHeight + ReactionBubble.outMarginTop;
       if (reactionsFitWithTime(bubbleWidth) || drawBubbleTimeOverContent()) {
@@ -2988,7 +2999,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         }
         bubbleHeight += reactionsTotalHeight;
       }
-
 
       int leftContentEdge = centerBubble() ? width / 2 - bubbleWidth / 2 : computeBubbleLeft();
       int rightContentEdge = leftContentEdge + bubbleWidth;
@@ -3070,7 +3080,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
       for (int i = 0; i < reactionBubbles.size(); i++ ) {
         int lineCount = getReactionsLines(bubbleWidth);
-        int maxReactionsInLine = getMaxReactionsInOneLine(bubbleWidth);
+        maxReactionsInLine = getMaxReactionsInOneLine(bubbleWidth);
         int line = (lineCount - 1) - (i / maxReactionsInLine);
         int posInLine = i % maxReactionsInLine;
         reactionBubbles.get(i).buildBubble(
