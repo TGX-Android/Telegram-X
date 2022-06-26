@@ -356,7 +356,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     reactionBubbles = new ArrayList<>();
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 3; i++) {
       reactionBubbles.add(new ReactionBubble(i));
     }
   }
@@ -812,6 +812,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private int getMaxReactionsInOneLine (float bubbleWidth) {
+    bubbleWidth = bubbleWidth - ReactionBubble.outMarginLeft - ReactionBubble.outMarginRight;
     float width = ReactionBubble.getWidthWithMargins();
     int count = 0;
     while (width < bubbleWidth) {
@@ -842,8 +843,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private boolean reactionsFitWithTime (float bubbleWidth) {
-    int totalWidth = getReactionsInLastLine(bubbleWidth) * ReactionBubble.getWidth();
-    return computeBubbleWidth() > getBubbleTimePartWidth() + totalWidth;
+    int totalWidth = getReactionsInLastLine(bubbleWidth) * ReactionBubble.getWidthWithMargins();
+    return computeBubbleWidth() > computeBubbleTimePartWidth(true) + totalWidth;
   }
 
   private int computeBubbleHeight () {
@@ -2921,6 +2922,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       int bubbleWidth = computeBubbleWidth();
       int bubbleHeight = computeBubbleHeight();
 
+      boolean contentFitWithTime = true;
+      int timeBubbleTotalHeight = getBubbleTimePartHeight() + getBubbleTimePartOffsetY() + getBubbleReduceHeight();
+      if (drawBubbleTimeOverContent()) {
+        timeBubbleTotalHeight += Screen.dp(6);
+      }
+
       if (!headerDisabled() && !(drawBubbleTimeOverContent() && !useForward()) && useBubbleTime()) {
         final int bubbleTimePartWidth = computeBubbleTimePartWidth(true);
         final int bottomLineContentWidth = useForward() ? BOTTOM_LINE_EXPAND_HEIGHT : hasFooter() ? footerText.getLastLineWidth() + Screen.dp(10f) : getBottomLineContentWidth();
@@ -2928,7 +2935,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         final boolean allowHorizontalExtend = allowBubbleHorizontalExtend();
 
         final int expandedBubbleWidth = allowHorizontalExtend ? Math.max(bubbleWidth, bubbleTimePartWidth) : bubbleWidth;
-        final int expandedBubbleHeight = bubbleHeight + getBubbleTimePartHeight();
+        final int expandedBubbleHeight = bubbleHeight + timeBubbleTotalHeight;
         final int maxLineWidth = allowHorizontalExtend ? pRealContentMaxWidth : Math.min(pRealContentMaxWidth, bubbleWidth);
         final int fitBubbleWidth = Math.max(bubbleWidth, extendedWidth);
 
@@ -2943,6 +2950,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           }
           default: {
             if (bottomLineContentWidth == BOTTOM_LINE_EXPAND_HEIGHT || extendedWidth > maxLineWidth) {
+              contentFitWithTime = false;
               bubbleWidth = expandedBubbleWidth;
               bubbleHeight = expandedBubbleHeight;
             } else {
@@ -2965,11 +2973,19 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       bubbleHeight += bubblePaddingTop + bubblePaddingBottom;
 
       float reactionsTotalHeight = getReactionsLines(bubbleWidth) * ReactionBubble.getHeightWithMargins();
-      reactionsTotalHeight = reactionsTotalHeight + ReactionBubble.outMarginTop + ReactionBubble.outMarginBottom;
-      if (!reactionsFitWithTime(bubbleWidth) || drawBubbleTimeOverContent()) {
+      reactionsTotalHeight = reactionsTotalHeight + ReactionBubble.outMarginTop;
+      if (reactionsFitWithTime(bubbleWidth) || drawBubbleTimeOverContent()) {
+        reactionsTotalHeight += ReactionBubble.outMarginBottom;
+      }
+      if (!reactionsFitWithTime(bubbleWidth)) {
         bubbleHeight += reactionsTotalHeight;
-      } else if (getBubbleTimePartHeight() < ReactionBubble.getHeightWithMargins()) {
-        bubbleHeight -= getBubbleTimePartHeight();
+        if (drawBubbleTimeOverContent() || contentFitWithTime) {
+          bubbleHeight += timeBubbleTotalHeight;
+        }
+      } else if (timeBubbleTotalHeight < reactionsTotalHeight) {
+        if (!contentFitWithTime) {
+          bubbleHeight -= timeBubbleTotalHeight;
+        }
         bubbleHeight += reactionsTotalHeight;
       }
 
@@ -3041,10 +3057,15 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         }
       }
 
-      float reactionsLeftEdge = leftContentEdge + ReactionBubble.outMarginLeft;
-      float reactionsBottomEdge = bottomContentEdge - ReactionBubble.outMarginBottom;
+      int reactionsLeftEdge = leftContentEdge + ReactionBubble.outMarginLeft;
+      int reactionsBottomEdge = bottomContentEdge;
+
+      if (reactionsFitWithTime(bubbleWidth) || drawBubbleTimeOverContent()) {
+        reactionsBottomEdge -= ReactionBubble.outMarginBottom;
+      }
+
       if (!reactionsFitWithTime(bubbleWidth)) {
-        reactionsBottomEdge -= getBubbleTimePartHeight();
+        reactionsBottomEdge -= timeBubbleTotalHeight;
       }
 
       for (int i = 0; i < reactionBubbles.size(); i++ ) {

@@ -9,8 +9,11 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.emoji.Emoji;
+import org.thunderdog.challegram.emoji.EmojiInfo;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
+import org.thunderdog.challegram.tool.EmojiData;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 
@@ -22,15 +25,19 @@ public class ReactionBubble {
   private static final int paddingRight = Screen.dp(8f);
   private static final int paddingBottom = Screen.dp(8f);
 
-  private static final int marginTop = Screen.dp(5f);
-  private static final int marginBottom = Screen.dp(5f);
-  private static final int marginLeft = Screen.dp(5f);
-  private static final int marginRight = Screen.dp(5f);
+  private static final int marginTop = Screen.dp(4f);
+  private static final int marginBottom = Screen.dp(4f);
+  private static final int marginLeft = Screen.dp(4f);
+  private static final int marginRight = Screen.dp(4f);
 
-  public static final int outMarginTop = Screen.dp(5f);
-  public static final int outMarginBottom = Screen.dp(5f);
-  public static final int outMarginLeft = Screen.dp(10f);
-  public static final int outMarginRight = Screen.dp(10f);
+  public static final int outMarginTop = Screen.dp(0f);
+  public static final int outMarginBottom = Screen.dp(8f);
+  public static final int outMarginLeft = Screen.dp(8f);
+  public static final int outMarginRight = Screen.dp(8f);
+
+  private static final int reactionSize = Screen.dp(20f);
+
+  private static final int spaceBetweenTextAndReaction = Screen.dp(4f);
 
   private int id;
 
@@ -48,14 +55,14 @@ public class ReactionBubble {
   }
 
   private static int computeBubbleHeight () {
-    return Screen.dp(10);
+    return Screen.dp(12);
   }
 
   private static int computeBubbleWidth () {
-    return Screen.dp(20);
+    return Screen.dp(36);
   }
 
-  public static int getHeight () {
+  private static int getHeight () {
     return computeBubbleHeight() + paddingTop + paddingBottom;
   }
 
@@ -63,7 +70,7 @@ public class ReactionBubble {
     return  getHeight() + marginTop + marginBottom;
   }
 
-  public static int getWidth () {
+  private static int getWidth () {
     return computeBubbleWidth() + paddingLeft + paddingRight;
   }
 
@@ -71,17 +78,17 @@ public class ReactionBubble {
     return getWidth() + marginLeft + marginRight;
   }
 
-  public void buildBubble (float leftContentEdge,  float bottomContentEdge) {
+  public void buildBubble (int leftContentEdge,  int bottomContentEdge) {
     int bubbleWidth = computeBubbleWidth();
     int bubbleHeight = computeBubbleHeight();
 
     bubbleWidth += paddingLeft + paddingRight;
     bubbleHeight += paddingTop + paddingBottom;
 
-    float rightContentEdge = leftContentEdge + bubbleWidth;
-    float topContentEdge = bottomContentEdge - bubbleHeight;
+    int rightContentEdge = leftContentEdge + bubbleWidth;
+    int topContentEdge = bottomContentEdge - bubbleHeight;
 
-    int rad = Screen.dp(computeBubbleHeight() / 2f);
+    int rad = computeBubbleHeight();
 
     path.reset();
     clipPath.reset();
@@ -96,12 +103,14 @@ public class ReactionBubble {
 
 
   public void drawBubble (Canvas c, Paint backgroundPaint, Paint textPaint, boolean stroke) {
-    final float left = pathRect.left;
-    final float top = pathRect.top;
-    final float right = pathRect.right;
-    final float bottom = pathRect.bottom;
+    final int left = (int) pathRect.left;
+    final int top = (int) pathRect.top;
+    final int right = (int) pathRect.right;
+    final int bottom = (int) pathRect.bottom;
 
-    int rad = Screen.dp(computeBubbleHeight() / 2f);
+    int rad = computeBubbleHeight();
+
+    // Draw background
 
     final RectF rectF = Paints.getRectF();
     if (rad != 0) {
@@ -140,14 +149,31 @@ public class ReactionBubble {
         c.drawRect(left, bubbleTop, right, bubbleBottom, backgroundPaint);
     }
 
+    // Draw text
+
     String text = String.valueOf(count);
     Rect textBounds = new Rect();
     textPaint.getTextBounds(text, 0, text.length(), textBounds);
     int textHeight = textBounds.height();
     int textWidth = textBounds.width();
-    final float textX = (left + right) / 2 - textWidth / 2f;
-    final float textY = (top + bottom) / 2 + textHeight / 2f;
+    int contentTotalWidth = textWidth + reactionSize + spaceBetweenTextAndReaction;
+    int centerX = (left + right) / 2;
+    int centerY = (top + bottom) / 2;
+    final int textX = centerX + contentTotalWidth / 2 - textWidth;
+    final int textY = centerY + textHeight / 2;
     c.drawText(text, textX, textY, textPaint);
+
+    // Draw reaction
+
+    String emojiCode = EmojiData.dataColored[0][0];
+    Emoji emojiManager = Emoji.instance();
+    EmojiInfo info = emojiManager.getEmojiInfo(emojiCode);
+    int reactionLeft = centerX - contentTotalWidth / 2;
+    int reactionRight = reactionLeft + reactionSize;
+    int reactionTop = centerY - reactionSize / 2;
+    int reactionBottom = reactionTop + reactionSize;
+    Rect rect = new Rect(reactionLeft, reactionTop, reactionRight, reactionBottom);
+    Emoji.instance().draw(c, info, rect);
   }
 
   public boolean onTouchEvent (View view, MotionEvent e) {
