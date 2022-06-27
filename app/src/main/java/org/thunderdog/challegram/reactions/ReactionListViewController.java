@@ -3,7 +3,6 @@ package org.thunderdog.challegram.reactions;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
-import android.animation.ArgbEvaluator;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -49,16 +48,13 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import androidx.annotation.NonNull;
 import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
-import me.vkryl.android.util.ClickHelper;
 
 public class ReactionListViewController{
 	private final Context context;
@@ -390,7 +386,7 @@ public class ReactionListViewController{
 			statusBarBackground.setVisibility(View.VISIBLE);
 			set.playTogether(
 					ObjectAnimator.ofFloat(statusBarBackground, View.TRANSLATION_Y, 0f),
-					animateColor(ObjectAnimator.ofInt(topBarBg, "color", Theme.getColor(R.id.theme_color_headerLightBackground))),
+					ReactionUtils.animateColor(ObjectAnimator.ofInt(topBarBg, "color", Theme.getColor(R.id.theme_color_headerLightBackground))),
 					ObjectAnimator.ofFloat(topShadow, View.ALPHA, 1f)
 			);
 			set.addListener(new AnimatorListenerAdapter(){
@@ -402,7 +398,7 @@ public class ReactionListViewController{
 		}else{
 			set.playTogether(
 					ObjectAnimator.ofFloat(statusBarBackground, View.TRANSLATION_Y, statusBarBackground.getHeight()),
-					animateColor(ObjectAnimator.ofInt(topBarBg, "color", Theme.backgroundColor())),
+					ReactionUtils.animateColor(ObjectAnimator.ofInt(topBarBg, "color", Theme.backgroundColor())),
 					ObjectAnimator.ofFloat(topShadow, View.ALPHA, 0f)
 			);
 			set.addListener(new AnimatorListenerAdapter(){
@@ -417,11 +413,6 @@ public class ReactionListViewController{
 		set.setInterpolator(CubicBezierInterpolator.DEFAULT);
 		set.start();
 		statusBarBgAnimator=set;
-	}
-
-	private ObjectAnimator animateColor(ObjectAnimator anim){
-		anim.setEvaluator(new ArgbEvaluator());
-		return anim;
 	}
 
 	private void appendReactions(List<TdApi.AddedReaction> reactions, boolean addToAll){

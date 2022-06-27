@@ -174,7 +174,7 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
     return UI.isPortrait() && !UI.isTablet() && isChannel();
   }
 
-  protected boolean drawBubbleTimeOverContent () {
+  public boolean drawBubbleTimeOverContent() {
     return venue == null;
   }
 

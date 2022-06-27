@@ -468,7 +468,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
   }
 
   @Override
-  protected boolean drawBubbleTimeOverContent () {
+  public boolean drawBubbleTimeOverContent() {
     return true;
   }
 

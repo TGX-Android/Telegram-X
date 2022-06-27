@@ -48,6 +48,7 @@ import androidx.collection.LongSparseArray;
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.drinkmore.Tracer;
+import org.jetbrains.annotations.NotNull;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
@@ -170,6 +171,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private static final int FLAG_ERROR = 1 << 30;
   private static final int FLAG_BEING_ADDED = 1 << 31;
 
+  private static final TdApi.MessageReaction[] EMPTY_REACTIONS={};
+
   protected TdApi.Message msg;
   private int flags;
 
@@ -233,6 +236,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   private boolean settingsUseBigReactions;
   private CompactReactionsRenderer compactReactions;
+  private int reactionButtonsHeight, reactionButtonsWidth;
 
   protected TGMessage (MessagesManager manager, TdApi.Message msg) {
     if (!initialized) {
@@ -1039,7 +1043,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return useBubbles() ? getBubbleViewPaddingBottom() : xPaddingBottom;
   }
 
-  protected final int getExtraPadding () {
+  public final int getExtraPadding() {
     if (needSponsorSmallPadding) {
       return Screen.dp(7f);
     }
@@ -1053,6 +1057,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       if (inlineKeyboard != null && !inlineKeyboard.isEmpty()) {
         height += inlineKeyboard.getHeight() + TGInlineKeyboard.getButtonSpacing();
       }
+      if(hasReactions() && !needDrawReactionsWithTime() && drawBubbleTimeOverContent()){
+        height+=reactionButtonsHeight;
+      }
       return height;
     } else {
       int height = pContentY + getContentHeight() + getPaddingBottom() + getExtraPadding();
@@ -1062,7 +1069,18 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       if (hasFooter()) {
         height += getFooterHeight() + getFooterPaddingTop() + getFooterPaddingBottom();
       }
+      if(hasReactions() && !needDrawReactionsWithTime()){
+        height+=reactionButtonsHeight;
+      }
       return height;
+    }
+  }
+
+  public void setReactionButtonsSize(int width, int height){
+    if(reactionButtonsHeight!=height || reactionButtonsWidth!=width){
+      reactionButtonsHeight=height;
+      reactionButtonsWidth=width;
+      this.width=0; // invalidates layout
     }
   }
 
@@ -2851,7 +2869,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   private int bubbleTimePartWidth, bubbleInnerWidth;
 
-  protected final int getBubbleTimePartWidth () {
+  public final int getBubbleTimePartWidth () {
     return useBubbles() && useBubbleTime() ? bubbleTimePartWidth : 0;
   }
 
@@ -2899,9 +2917,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
             break;
           }
           default: {
-            if (bottomLineContentWidth == BOTTOM_LINE_EXPAND_HEIGHT || extendedWidth > maxLineWidth) {
-              bubbleWidth = expandedBubbleWidth;
-              bubbleHeight = expandedBubbleHeight;
+            if ((bottomLineContentWidth == BOTTOM_LINE_EXPAND_HEIGHT || extendedWidth > maxLineWidth)){
+              bubbleWidth=expandedBubbleWidth;
+              if(!(!needDrawReactionsWithTime() && hasReactions() && !drawBubbleTimeOverContent())){
+                bubbleHeight=expandedBubbleHeight;
+              }
             } else {
               bubbleWidth = fitBubbleWidth;
             }
@@ -2918,6 +2938,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       final int bubblePaddingTop = getBubblePaddingTop();
       final int bubblePaddingRight = getBubblePaddingRight();
       final int bubblePaddingBottom = getBubblePaddingBottom();
+
+      if(!needDrawReactionsWithTime() && hasReactions() && !drawBubbleTimeOverContent()){
+        bubbleHeight+=reactionButtonsHeight;
+        if(canExpandBubbleWidthForReactions())
+          bubbleWidth=Math.max(reactionButtonsWidth, bubbleWidth);
+      }
 
       bubbleWidth += bubblePaddingLeft + bubblePaddingRight;
       bubbleHeight += bubblePaddingTop + bubblePaddingBottom;
@@ -3225,7 +3251,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return width;
   }
 
-  protected boolean drawBubbleTimeOverContent () {
+  public boolean drawBubbleTimeOverContent () {
     return false;
   }
   protected final boolean needTopContentRounding () {
@@ -3235,8 +3261,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return useForward() || drawBubbleTimeOverContent() || hasFooter();
   }
 
-  protected boolean needDrawReactionsWithTime(){
-    return this.sender.isUser() || !settingsUseBigReactions;
+  public boolean needDrawReactionsWithTime(){
+    return msg.chatId>0 || !settingsUseBigReactions;
   }
 
   protected static final int BOTTOM_LINE_EXPAND_HEIGHT = -1;
@@ -4182,6 +4208,29 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return count;
   }
 
+  public boolean hasReactions(){
+    TdApi.Message msg=getMessageForReactions();
+    return msg.interactionInfo!=null && msg.interactionInfo.reactions!=null && msg.interactionInfo.reactions.length>0;
+  }
+
+  @NotNull
+  public TdApi.MessageReaction[] getReactions(){
+    TdApi.Message msg=getMessageForReactions();
+    if(msg.interactionInfo!=null && msg.interactionInfo.reactions!=null)
+      return msg.interactionInfo.reactions;
+    return EMPTY_REACTIONS;
+  }
+
+  public TdApi.Message getMessageForReactions(){
+    if(combinedMessages!=null && !combinedMessages.isEmpty())
+      return combinedMessages.get(0);
+    return msg;
+  }
+
+  public boolean canExpandBubbleWidthForReactions(){
+    return false;
+  }
+
   // Setters
 
   private @Nullable TdApi.Chat chat;
@@ -4632,7 +4681,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       compactReactions.update(allowAnimation);
       performWithViews(this::loadCompactReactionsIntoView);
     }else{
-      // TODO
+      performWithViews(MessageView::updateReactions);
     }
   }
 

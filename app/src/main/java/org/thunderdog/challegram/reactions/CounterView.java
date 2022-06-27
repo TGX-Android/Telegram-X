@@ -31,4 +31,9 @@ public class CounterView extends SparseDrawableView{
 	protected void onDraw(Canvas canvas){
 		counter.draw(canvas, getWidth()/2, getHeight()/2, Gravity.CENTER_HORIZONTAL, 1f, this, iconColor);
 	}
+
+	public void setCount(int count, boolean animated){
+		counter.setCount(count, animated);
+		requestLayout();
+	}
 }

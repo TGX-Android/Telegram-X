@@ -56,7 +56,6 @@ import org.thunderdog.challegram.widget.FileProgressComponent;
 import java.io.File;
 
 import me.vkryl.android.AnimatorUtils;
-import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
@@ -329,7 +328,7 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
   }
 
   @Override
-  protected boolean drawBubbleTimeOverContent () {
+  public boolean drawBubbleTimeOverContent() {
     return true;
   }
 
