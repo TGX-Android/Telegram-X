@@ -1546,4 +1546,8 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
     }
     return false;
   }
+
+  public void setReactionButtonsTranslation(float translationX){
+    reactionButtons.setTranslationX(translationX);
+  }
 }

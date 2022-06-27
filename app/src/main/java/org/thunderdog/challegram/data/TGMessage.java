@@ -5642,6 +5642,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     invalidate(true);
+    if(hasReactions() && !needDrawReactionsWithTime()){
+      performWithViews(v->v.setReactionButtonsTranslation(translation));
+    }
   }
 
   private void drawTranslate (View view, Canvas c) {
