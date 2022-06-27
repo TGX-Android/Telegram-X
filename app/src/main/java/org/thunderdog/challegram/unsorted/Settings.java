@@ -229,7 +229,7 @@ public class Settings {
   public static final String KEY_ACCOUNT_INFO_SUFFIX_NAME2 = "name2"; // last_name
   public static final String KEY_ACCOUNT_INFO_SUFFIX_USERNAME = "username"; // last_name
   public static final String KEY_ACCOUNT_INFO_SUFFIX_PHONE = "phone"; // phone
-  public static final String KEY_ACCOUNT_INFO_SUFFIX_PHOTO = "photo"; // path, if aloaded
+  public static final String KEY_ACCOUNT_INFO_SUFFIX_PHOTO = "photo"; // path, if loaded
   public static final String KEY_ACCOUNT_INFO_SUFFIX_PHOTO_FULL = "photo_full"; // path, if loaded
   public static final String KEY_ACCOUNT_INFO_SUFFIX_COUNTER = "counter_"; // counter
   public static String accountInfoPrefix (int accountId) {

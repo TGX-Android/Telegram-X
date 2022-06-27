@@ -40,48 +40,58 @@ public class ReactionBubble {
   private static final int spaceBetweenTextAndReaction = Screen.dp(4f);
 
   private int id;
+  private int count = 0;
+
+  private static final int height = Screen.dp(12);
+  private int width = Screen.dp(36);
 
   private final Path path, clipPath;
   private final RectF pathRect, clipPathRect;
 
-  private int count = 0;
+  private Paint textPaint;
 
-  public ReactionBubble(int id, int count) {
+  public ReactionBubble (int id, int count) {
     this.id = id;
     this.count = count;
     this.path = new Path();
     this.pathRect = new RectF();
     this.clipPath = new Path();
     this.clipPathRect = new RectF();
+
+    adjustWidthWithCount();
   }
 
-  private static int computeBubbleHeight () {
-    return Screen.dp(12);
-  }
-
-  private static int computeBubbleWidth () {
-    return Screen.dp(36);
+  public final int getId () {
+    return id;
   }
 
   private static int getHeight () {
-    return computeBubbleHeight() + paddingTop + paddingBottom;
+    return height + paddingTop + paddingBottom;
   }
 
   public static int getHeightWithMargins () {
-    return  getHeight() + marginTop + marginBottom;
+    return getHeight() + marginTop + marginBottom;
   }
 
-  private static int getWidth () {
-    return computeBubbleWidth() + paddingLeft + paddingRight;
+  private int getWidth () {
+    return width + paddingLeft + paddingRight;
   }
 
-  public static int getWidthWithMargins () {
+  public int getWidthWithMargins () {
     return getWidth() + marginLeft + marginRight;
   }
 
-  public void buildBubble (int leftContentEdge,  int bottomContentEdge) {
-    int bubbleWidth = computeBubbleWidth();
-    int bubbleHeight = computeBubbleHeight();
+  private void adjustWidthWithCount () {
+    if (count > 99) {
+      width = Screen.dp(52f);
+    } else if (count > 9) {
+      width = Screen.dp(44f);
+    }
+  }
+
+  public void buildBubble (int leftContentEdge, int bottomContentEdge) {
+    int bubbleWidth = width;
+    int bubbleHeight = height;
 
     bubbleWidth += paddingLeft + paddingRight;
     bubbleHeight += paddingTop + paddingBottom;
@@ -89,7 +99,7 @@ public class ReactionBubble {
     int rightContentEdge = leftContentEdge + bubbleWidth;
     int topContentEdge = bottomContentEdge - bubbleHeight;
 
-    int rad = computeBubbleHeight();
+    int rad = height;
 
     path.reset();
     clipPath.reset();
@@ -104,12 +114,14 @@ public class ReactionBubble {
 
 
   public void drawBubble (Canvas c, Paint backgroundPaint, Paint textPaint, boolean stroke) {
+    this.textPaint = textPaint;
+
     final int left = (int) pathRect.left;
     final int top = (int) pathRect.top;
     final int right = (int) pathRect.right;
     final int bottom = (int) pathRect.bottom;
 
-    int rad = computeBubbleHeight();
+    int rad = height;
 
     // Draw background
 
@@ -188,6 +200,7 @@ public class ReactionBubble {
     final float bottom = pathRect.bottom;
     if (touchX > left && touchX < right && touchY > top && touchY < bottom) {
       count++;
+      adjustWidthWithCount();
       view.invalidate();
       return true;
     } else {

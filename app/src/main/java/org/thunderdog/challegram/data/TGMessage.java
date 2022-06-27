@@ -109,8 +109,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -817,45 +819,110 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }));
   }
 
-  private int getMaxReactionsInOneLine (float parentWidth) {
-    if (useBubble()) {
-      parentWidth = parentWidth - ReactionBubble.outMarginLeft - ReactionBubble.outMarginRight;
-    } else {
-      parentWidth = parentWidth - getContentLeft();
+  private int getMaxReactionBubbleWidth () {
+    int maxWidth = 0;
+    for (ReactionBubble reactionBubble: reactionBubbles) {
+      if (reactionBubble.getWidthWithMargins() > maxWidth) {
+        maxWidth = reactionBubble.getWidthWithMargins();
+      }
     }
-
-    float width = ReactionBubble.getWidthWithMargins();
-    int count = 0;
-    while (width <= parentWidth) {
-      width += ReactionBubble.getWidthWithMargins();
-      count++;
-    }
-    return count;
+    return maxWidth;
   }
 
-  private int getReactionsInLastLine (float parentWidth) {
-    int reactionsCount = reactionBubbles.size();
-    int reactionsInOneLine = getMaxReactionsInOneLine(parentWidth);
-    int reactionsInLastLine = reactionsCount % reactionsInOneLine;
-    if (reactionsInLastLine == 0) {
-      reactionsInLastLine = reactionsInOneLine;
+  private int getMinReactionsInOneLine (float parentWidth) {
+    int reactionsInLine = 0;
+    int minReactionsInLine = -1;
+    float width = ReactionBubble.outMarginLeft + ReactionBubble.outMarginRight;
+    for (ReactionBubble reactionBubble: reactionBubbles) {
+      width += reactionBubble.getWidthWithMargins();
+      if (width <= parentWidth) {
+        reactionsInLine++;
+      } else {
+        if (minReactionsInLine == -1 || minReactionsInLine > reactionsInLine) {
+          minReactionsInLine = reactionsInLine;
+        }
+        reactionsInLine = 0;
+        width = reactionBubble.getWidthWithMargins() + ReactionBubble.outMarginLeft + ReactionBubble.outMarginRight;
+      }
     }
-    return reactionsInLastLine;
+    return minReactionsInLine;
   }
 
-  private int getReactionsLines(float parentWidth) {
-    int reactionsCount = reactionBubbles.size();
-    int reactionsInOneLine = getMaxReactionsInOneLine(parentWidth);
-    int reactionsLines = reactionsCount / reactionsInOneLine;
-    if (reactionsCount % reactionsInOneLine > 0) {
-      reactionsLines++;
+  private Map<Integer, Integer> getLinesForReactions (float parentWidth) {
+    Map<Integer, Integer> result = new HashMap<>();
+    float lineIndent = ReactionBubble.outMarginRight;
+    if (useBubbles()) {
+      lineIndent += ReactionBubble.outMarginLeft;
+    }
+    float width = lineIndent;
+    int lastLine = getReactionsLines(parentWidth) - 1;
+    int line = 0;
+    for (ReactionBubble reactionBubble: reactionBubbles) {
+      width += reactionBubble.getWidthWithMargins();
+      if (width > parentWidth) {
+        line++;
+        width = lineIndent;
+      }
+      result.put(reactionBubble.getId(), lastLine - line);
+    }
+    return result;
+  }
+
+  private Map<Integer, Integer> getLeftIndentsForReactions (float parentWidth) {
+    Map<Integer, Integer> result = new HashMap<>();
+    float basicLineIndent = ReactionBubble.outMarginRight;
+    if (useBubbles()) {
+      basicLineIndent += ReactionBubble.outMarginLeft;
+    }
+    float width = basicLineIndent;
+    int leftIndent = 0;
+    for (ReactionBubble reactionBubble: reactionBubbles) {
+      width += reactionBubble.getWidthWithMargins();
+      if (width > parentWidth) {
+        leftIndent = 0;
+        width = basicLineIndent;
+      }
+      result.put(reactionBubble.getId(), leftIndent);
+      leftIndent += reactionBubble.getWidthWithMargins();
+    }
+    return result;
+  }
+
+  private float getReactionsLastLineWidth (float parentWidth) {
+    float lineIndent = ReactionBubble.outMarginRight;
+    if (useBubbles()) {
+      lineIndent += ReactionBubble.outMarginLeft;
+    }
+    float width = lineIndent;
+    for (ReactionBubble reactionBubble: reactionBubbles) {
+      width += reactionBubble.getWidthWithMargins();
+      if (width > parentWidth) {
+        width = lineIndent;
+      }
+    }
+    return width;
+  }
+
+  private int getReactionsLines (float parentWidth) {
+    int reactionsLines = 1;
+    float lineIndent = ReactionBubble.outMarginRight;
+    if (useBubbles()) {
+      lineIndent += ReactionBubble.outMarginLeft;
+    }
+    float width = lineIndent;
+    for (ReactionBubble reactionBubble: reactionBubbles) {
+      width += reactionBubble.getWidthWithMargins();
+      if (width > parentWidth) {
+        reactionsLines++;
+        width = lineIndent;
+      }
     }
     return reactionsLines;
   }
 
   private boolean reactionsFitWithTime (float parentWidth) {
-    int totalWidth = getReactionsInLastLine(parentWidth) * ReactionBubble.getWidthWithMargins();
-    return computeBubbleWidth() > computeBubbleTimePartWidth(true) + totalWidth;
+    float reactionsWidth = getReactionsLastLineWidth(parentWidth);
+    return computeBubbleWidth() > computeBubbleTimePartWidth(true) + reactionsWidth;
   }
 
   private int computeBubbleHeight () {
@@ -1114,9 +1181,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         height += getFooterHeight() + getFooterPaddingTop() + getFooterPaddingBottom();
       }
       if (hasReactions()) {
-        float reactionsTotalHeight = getReactionsLines(width) * ReactionBubble.getHeightWithMargins();
-        reactionsTotalHeight = reactionsTotalHeight + ReactionBubble.outMarginTop;
-        height += reactionsTotalHeight + ReactionBubble.outMarginBottom;
+        float reactionsTotalHeight = getReactionsLines(width - getContentLeft()) * ReactionBubble.getHeightWithMargins();
+        reactionsTotalHeight = reactionsTotalHeight + ReactionBubble.outMarginTop + ReactionBubble.outMarginBottom;
+        height += reactionsTotalHeight;
       }
       return height;
     }
@@ -1717,6 +1784,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
     // Reactions
 
+    buildBubble(false);
     final int reactionBubbleColor = Theme.getColor(R.id.theme_color_themeCyan);
     final int reactionBubbleTextColor = Theme.getColor(R.id.theme_color_text);
     for (ReactionBubble reactionBubble: reactionBubbles) {
@@ -2990,30 +3058,33 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       bubbleWidth += bubblePaddingLeft + bubblePaddingRight;
       bubbleHeight += bubblePaddingTop + bubblePaddingBottom;
 
-      // Adjust bubble width for reactions
+      if (hasReactions()) {
+        // Adjust bubble width for reactions
 
-      int maxReactionsInLine = getMaxReactionsInOneLine(bubbleWidth);
-      if (maxReactionsInLine < MINIMUM_REACTIONS_IN_LINE) {
-        bubbleWidth = MINIMUM_REACTIONS_IN_LINE * ReactionBubble.getWidthWithMargins() + ReactionBubble.outMarginRight + ReactionBubble.outMarginLeft;
-      }
-
-      // Adjust bubble height for reactions
-
-      float reactionsTotalHeight = getReactionsLines(bubbleWidth) * ReactionBubble.getHeightWithMargins();
-      reactionsTotalHeight = reactionsTotalHeight + ReactionBubble.outMarginTop;
-      if (reactionsFitWithTime(bubbleWidth) || drawBubbleTimeOverContent()) {
-        reactionsTotalHeight += ReactionBubble.outMarginBottom;
-      }
-      if (!reactionsFitWithTime(bubbleWidth)) {
-        bubbleHeight += reactionsTotalHeight;
-        if (drawBubbleTimeOverContent() || contentFitWithTime) {
-          bubbleHeight += timeBubbleTotalHeight;
+        int minReactionsInLine = getMinReactionsInOneLine(bubbleWidth);
+        if (minReactionsInLine < reactionBubbles.size() && minReactionsInLine < MINIMUM_REACTIONS_IN_LINE) {
+          int maxReactionWidth = getMaxReactionBubbleWidth();
+          bubbleWidth = MINIMUM_REACTIONS_IN_LINE * maxReactionWidth + ReactionBubble.outMarginRight + ReactionBubble.outMarginLeft;
         }
-      } else if (timeBubbleTotalHeight < reactionsTotalHeight) {
-        if (!contentFitWithTime) {
-          bubbleHeight -= timeBubbleTotalHeight;
+
+        // Adjust bubble height for reactions
+
+        float reactionsTotalHeight = getReactionsLines(bubbleWidth) * ReactionBubble.getHeightWithMargins();
+        reactionsTotalHeight = reactionsTotalHeight + ReactionBubble.outMarginTop;
+        if (reactionsFitWithTime(bubbleWidth) || drawBubbleTimeOverContent()) {
+          reactionsTotalHeight += ReactionBubble.outMarginBottom;
         }
-        bubbleHeight += reactionsTotalHeight;
+        if (!reactionsFitWithTime(bubbleWidth)) {
+          bubbleHeight += reactionsTotalHeight;
+          if (drawBubbleTimeOverContent() || contentFitWithTime) {
+            bubbleHeight += timeBubbleTotalHeight;
+          }
+        } else if (timeBubbleTotalHeight < reactionsTotalHeight) {
+          if (!contentFitWithTime) {
+            bubbleHeight -= timeBubbleTotalHeight;
+          }
+          bubbleHeight += reactionsTotalHeight;
+        }
       }
 
       int leftContentEdge = centerBubble() ? width / 2 - bubbleWidth / 2 : computeBubbleLeft();
@@ -3082,42 +3153,51 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           }
         }
       }
-
-      int reactionsLeftEdge = leftContentEdge + ReactionBubble.outMarginLeft;
-      int reactionsBottomEdge = bottomContentEdge;
-
-      if (reactionsFitWithTime(bubbleWidth) || drawBubbleTimeOverContent()) {
-        reactionsBottomEdge -= ReactionBubble.outMarginBottom;
-      }
-
-      if (!reactionsFitWithTime(bubbleWidth)) {
-        reactionsBottomEdge -= timeBubbleTotalHeight;
-      }
-
-      for (int i = 0; i < reactionBubbles.size(); i++ ) {
-        int lineCount = getReactionsLines(bubbleWidth);
-        maxReactionsInLine = getMaxReactionsInOneLine(bubbleWidth);
-        int line = (lineCount - 1) - (i / maxReactionsInLine);
-        int posInLine = i % maxReactionsInLine;
-        reactionBubbles.get(i).buildBubble(
-            reactionsLeftEdge + posInLine * ReactionBubble.getWidthWithMargins(),
-            reactionsBottomEdge - line * ReactionBubble.getHeightWithMargins()
-        );
-      }
+      buildReactionBubbles(bubbleWidth);
 
       updateContentPositions(false);
       notifyBubbleChanged();
     } else {
+      buildReactionBubbles(width - getContentLeft());
+      notifyBubbleChanged();
+    }
+  }
+
+  private void buildReactionBubbles (float parentWidth) {
+    if (useBubbles()) {
+      int timeBubbleTotalHeight = getBubbleTimePartHeight() + getBubbleTimePartOffsetY() + getBubbleReduceHeight();
+      int reactionsLeftEdge = leftContentEdge + ReactionBubble.outMarginLeft;
+      int reactionsBottomEdge = bottomContentEdge;
+
+      if (reactionsFitWithTime(parentWidth) || drawBubbleTimeOverContent()) {
+        reactionsBottomEdge -= ReactionBubble.outMarginBottom;
+      }
+
+      if (!reactionsFitWithTime(parentWidth)) {
+        reactionsBottomEdge -= timeBubbleTotalHeight;
+      }
+
+      Map<Integer, Integer> reactionIdsToLines = getLinesForReactions(parentWidth);
+      Map<Integer, Integer> reactionIdsToLeftEdges = getLeftIndentsForReactions(parentWidth);
+      for (ReactionBubble reactionBubble: reactionBubbles) {
+        int line = reactionIdsToLines.get(reactionBubble.getId());
+        int leftIndent = reactionIdsToLeftEdges.get(reactionBubble.getId());
+        reactionBubble.buildBubble(
+            reactionsLeftEdge + leftIndent,
+            reactionsBottomEdge - line * ReactionBubble.getHeightWithMargins()
+        );
+      }
+    } else {
       int reactionsLeftEdge = getContentLeft();
       int reactionsBottomEdge = computeHeight() - ReactionBubble.outMarginBottom;
 
-      for (int i = 0; i < reactionBubbles.size(); i++ ) {
-        int lineCount = getReactionsLines(width);
-        int maxReactionsInLine = getMaxReactionsInOneLine(width);
-        int line = (lineCount - 1) - (i / maxReactionsInLine);
-        int posInLine = i % maxReactionsInLine;
-        reactionBubbles.get(i).buildBubble(
-            reactionsLeftEdge + posInLine * ReactionBubble.getWidthWithMargins(),
+      Map<Integer, Integer> reactionIdsToLines = getLinesForReactions(parentWidth);
+      Map<Integer, Integer> reactionIdsToLeftEdges = getLeftIndentsForReactions(parentWidth);
+      for (ReactionBubble reactionBubble: reactionBubbles) {
+        int line = reactionIdsToLines.get(reactionBubble.getId());
+        int leftIndent = reactionIdsToLeftEdges.get(reactionBubble.getId());
+        reactionBubble.buildBubble(
+            reactionsLeftEdge + leftIndent,
             reactionsBottomEdge - line * ReactionBubble.getHeightWithMargins()
         );
       }
