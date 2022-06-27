@@ -4169,7 +4169,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     LinearLayout statsWrap = new LinearLayout(layout.getContext());
     statsWrap.setOrientation(LinearLayout.HORIZONTAL);
-    statsWrap.setPadding(0, 0, Screen.dp(16), 0);
     statsWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
     Views.setClickable(statsWrap);
@@ -4196,19 +4195,22 @@ public class MessagesController extends ViewController<MessagesController.Argume
     RippleSupport.setSimpleWhiteBackground(messageReactionsBar, R.id.theme_color_background, this);
 
     messageReactionsBar.addView(statsWrap);
-    optionsLayout.addView(messageReactionsBar, 2);
+    optionsLayout.addView(messageReactionsBar, 0);
 
-    tdlib.client().send(new TdApi.GetMessageViewers(message.getChatId(), message.getId()), (obj) -> {
-      if (obj.getConstructor() != TdApi.Users.CONSTRUCTOR) return;
-      runOnUiThreadOptional(() -> {
-        TdApi.Users users = (TdApi.Users) obj;
+    if (message.getMessage().canGetViewers) {
+      tdlib.client().send(new TdApi.GetMessageViewers(message.getChatId(), message.getId()), (obj) -> {
+        if (obj.getConstructor() != TdApi.Users.CONSTRUCTOR) return;
+        runOnUiThreadOptional(() -> {
+          TdApi.Users users = (TdApi.Users) obj;
 
-        if (users.userIds.length > 0) {
-          viewCount.setText(String.valueOf(users.totalCount));
-          viewCount.setVisibility(View.VISIBLE);
-        }
+          if (users.userIds.length > 0) {
+            viewCount.setText(String.valueOf(users.totalCount));
+            viewCount.setVisibility(View.VISIBLE);
+            statsWrap.setPadding(0, 0, Screen.dp(16), 0);
+          }
+        });
       });
-    });
+    }
 
     if (message.getMessage().canGetAddedReactions) {
       tdlib.getMessageAddedReactions(message.getChatId(), message.getId(), null, "", 100, result -> {
@@ -4218,6 +4220,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           if (totalCount > 0) {
             reactionsCount.setText(String.valueOf(totalCount));
             reactionsCount.setVisibility(View.VISIBLE);
+            statsWrap.setPadding(0, 0, Screen.dp(16), 0);
           }
         });
       });
