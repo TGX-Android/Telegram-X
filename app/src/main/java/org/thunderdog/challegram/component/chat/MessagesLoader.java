@@ -1351,9 +1351,6 @@ public class MessagesLoader implements Client.ResultHandler {
           }
         }
         cur = TGMessage.valueOf(manager, messages[j], chat, administrator);
-        if (messages[j].interactionInfo != null) {
-          cur.setReactions(messages[j].interactionInfo.reactions);
-        }
         if (cur != null) {
           if (!containsScrollingMessage && scrollMessageId != null && scrollMessageId.compareTo(messages[j].chatId, messages[j].id)) {
             containsScrollingMessage = true;

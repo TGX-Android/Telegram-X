@@ -359,7 +359,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       startHotTimer(false);
     }
 
-    reactionBubbles = new ArrayList<>();
+    if (msg.interactionInfo != null) {
+      setReactions(msg.interactionInfo.reactions);
+    } else {
+      reactionBubbles = new ArrayList<>();
+    }
   }
 
   private static @NonNull <T> T nonNull (@Nullable T value) {
@@ -396,8 +400,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       c.destroy();
   }
 
-  public void setReactions(TdApi.MessageReaction[] reactions) {
-    for (int i = 0; i < reactions.length; i ++) {
+  private void setReactions (TdApi.MessageReaction[] reactions) {
+    reactionBubbles = new ArrayList<>();
+    for (int i = 0; i < reactions.length; i++) {
       TdApi.MessageReaction reaction = reactions[i];
       reactionBubbles.add(
           new ReactionBubble(i, reaction.totalCount, reaction.reaction, reaction.isChosen, false, this::setMessageReaction)
@@ -1707,6 +1712,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     final float selectableFactor = manager.getSelectableFactor();
 
     checkEdges();
+
+    if (msg.interactionInfo != null) {
+      setReactions(msg.interactionInfo.reactions);
+    }
 
     // Unread messages badge
     if ((flags & FLAG_SHOW_BADGE) != 0) {
