@@ -41,6 +41,7 @@ public class ReactionBubble {
 
   private int id;
   private int count = 0;
+  private String emoji;
 
   private static final int height = Screen.dp(12);
   private int width = Screen.dp(36);
@@ -50,13 +51,14 @@ public class ReactionBubble {
 
   private Paint textPaint;
 
-  public ReactionBubble (int id, int count) {
+  public ReactionBubble (int id, int count, String emoji) {
     this.id = id;
     this.count = count;
     this.path = new Path();
     this.pathRect = new RectF();
     this.clipPath = new Path();
     this.clipPathRect = new RectF();
+    this.emoji = emoji;
 
     adjustWidthWithCount();
   }
@@ -178,9 +180,8 @@ public class ReactionBubble {
 
     // Draw reaction
 
-    String emojiCode = EmojiData.dataColored[0][0];
     Emoji emojiManager = Emoji.instance();
-    EmojiInfo info = emojiManager.getEmojiInfo(emojiCode);
+    EmojiInfo info = emojiManager.getEmojiInfo(emoji);
     int reactionLeft = centerX - contentTotalWidth / 2;
     int reactionRight = reactionLeft + reactionSize;
     int reactionTop = centerY - reactionSize / 2;

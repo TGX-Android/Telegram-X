@@ -399,7 +399,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   public void setReactions(TdApi.MessageReaction[] reactions) {
     for (int i = 0; i < reactions.length; i ++) {
       TdApi.MessageReaction reaction = reactions[i];
-      reactionBubbles.add(new ReactionBubble(i, reaction.totalCount));
+      reactionBubbles.add(new ReactionBubble(i, reaction.totalCount, reaction.reaction));
     }
   }
 
@@ -839,7 +839,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         reactionsInLine++;
       } else {
         if (minReactionsInLine == -1 || minReactionsInLine > reactionsInLine) {
-          minReactionsInLine = reactionsInLine;
+          minReactionsInLine = reactionBubble.getWidthWithMargins() + reactionsInLine;
         }
         reactionsInLine = 0;
         width = reactionBubble.getWidthWithMargins() + ReactionBubble.outMarginLeft + ReactionBubble.outMarginRight;
@@ -861,7 +861,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       width += reactionBubble.getWidthWithMargins();
       if (width > parentWidth) {
         line++;
-        width = lineIndent;
+        width = reactionBubble.getWidthWithMargins() + lineIndent;
       }
       result.put(reactionBubble.getId(), lastLine - line);
     }
@@ -880,7 +880,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       width += reactionBubble.getWidthWithMargins();
       if (width > parentWidth) {
         leftIndent = 0;
-        width = basicLineIndent;
+        width = reactionBubble.getWidthWithMargins() + basicLineIndent;
       }
       result.put(reactionBubble.getId(), leftIndent);
       leftIndent += reactionBubble.getWidthWithMargins();
@@ -914,7 +914,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       width += reactionBubble.getWidthWithMargins();
       if (width > parentWidth) {
         reactionsLines++;
-        width = lineIndent;
+        width = reactionBubble.getWidthWithMargins() + lineIndent;
       }
     }
     return reactionsLines;
