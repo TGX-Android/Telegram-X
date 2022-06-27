@@ -130,7 +130,16 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
         bottom=msg.getBottomContentEdge();
 
       if(manager.useBubbles()){
-        reactionButtons.layout(msg.getActualLeftContentEdge(), bottom-reactionButtons.getMeasuredHeight(), msg.getActualRightContentEdge(), bottom);
+        if(msg.drawBubbleTimeOverContent()){
+          int width=Math.max(reactionButtons.getMeasuredWidth(), msg.getActualRightContentEdge()-msg.getActualLeftContentEdge());
+          if(msg.isOutgoing()){
+            reactionButtons.layout(msg.getActualRightContentEdge()-width, bottom-reactionButtons.getMeasuredHeight(), msg.getActualRightContentEdge(), bottom);
+          }else{
+            reactionButtons.layout(msg.getActualLeftContentEdge(), bottom-reactionButtons.getMeasuredHeight(), msg.getActualLeftContentEdge()+width, bottom);
+          }
+        }else{
+          reactionButtons.layout(msg.getActualLeftContentEdge(), bottom-reactionButtons.getMeasuredHeight(), msg.getActualRightContentEdge(), bottom);
+        }
       }else{
         bottom-=msg.getExtraPadding();
         reactionButtons.layout(Screen.dp(50), bottom-reactionButtons.getMeasuredHeight(), r-l, bottom);
@@ -343,8 +352,10 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
             int maxW=msg.getActualRightContentEdge()-msg.getActualLeftContentEdge();
             if(msg.canExpandBubbleWidthForReactions() && maxW<msg.getRealContentMaxWidth())
               reactionButtons.measure(msg.getRealContentMaxWidth() | MeasureSpec.AT_MOST, MeasureSpec.UNSPECIFIED);
+            else if(msg.drawBubbleTimeOverContent())
+              reactionButtons.measure(msg.getRealContentMaxWidth() | MeasureSpec.AT_MOST, MeasureSpec.UNSPECIFIED);
             else
-              reactionButtons.measure(maxW|MeasureSpec.EXACTLY, MeasureSpec.UNSPECIFIED);
+              reactionButtons.measure(maxW | MeasureSpec.EXACTLY, MeasureSpec.UNSPECIFIED);
             msg.setReactionButtonsSize(reactionButtons.getMeasuredWidth(), reactionButtons.getMeasuredHeight());
             msg.buildLayout(width); // maybe there's a better way of doing it than building layout twice?
           }else{
@@ -367,6 +378,11 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
       reactionButtons.setVisibility(VISIBLE);
       reactionButtons.setMessage(msg);
       reactionButtons.setBottomRightIndentWidth(manager.useBubbles() ? msg.getBubbleTimePartWidth() : 0);
+      if(manager.useBubbles() && msg.drawBubbleTimeOverContent()){
+        reactionButtons.setPadding(0, Screen.dp(6), 0, Screen.dp(10));
+      }else{
+        reactionButtons.setPadding(Screen.dp(10), 0, Screen.dp(10), Screen.dp(10));
+      }
     }else{
       reactionButtons.setVisibility(GONE);
     }

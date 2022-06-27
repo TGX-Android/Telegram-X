@@ -213,8 +213,8 @@ public class ReactionListViewController{
 			viewersTab.listItems.addAll(Arrays.stream(viewers.userIds).mapToObj(id->new ListItem(ListItem.TYPE_USER).setLongId(id)).collect(Collectors.toList()));
 			viewersTab.adapter.notifyItemRangeInserted(0, viewersTab.listItems.size());
 		}
-		if(message.getMessage().interactionInfo!=null){
-			for(TdApi.MessageReaction mr : message.getMessage().interactionInfo.reactions){
+		if(message.getMessageForReactions().interactionInfo!=null){
+			for(TdApi.MessageReaction mr : message.getMessageForReactions().interactionInfo.reactions){
 				TabViewController tab=new TabViewController(mr.reaction);
 				tab.total=mr.totalCount;
 				viewControllers.add(tab);
@@ -236,7 +236,7 @@ public class ReactionListViewController{
 		topBar.addView(tabBar, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
 
 		if(total>0){
-			tdlib.sendOnUiThread(new TdApi.GetMessageAddedReactions(message.getChatId(), message.getId(), null, null, 100), res->{
+			tdlib.sendOnUiThread(new TdApi.GetMessageAddedReactions(message.getChatId(), message.getMessageForReactions().id, null, null, 100), res->{
 				if(res instanceof TdApi.AddedReactions){
 					TdApi.AddedReactions ar=(TdApi.AddedReactions) res;
 					for(TabViewController vc : viewControllers){
@@ -436,10 +436,9 @@ public class ReactionListViewController{
 
 	private void loadMoreReactions(TabViewController tab){
 		loadingMore=true;
-		tdlib.sendOnUiThread(new TdApi.GetMessageAddedReactions(message.getChatId(), message.getId(), tab.reaction, tab.next, 100), res->{
+		tdlib.sendOnUiThread(new TdApi.GetMessageAddedReactions(message.getChatId(), message.getMessageForReactions().id, tab.reaction, tab.next, 100), res->{
 			if(res instanceof TdApi.AddedReactions){
 				TdApi.AddedReactions ar=(TdApi.AddedReactions) res;
-				Log.i("1111", ar+"");
 				if(tab==allReactionsTab){
 					for(TabViewController vc:viewControllers){
 						vc.next=ar.nextOffset;

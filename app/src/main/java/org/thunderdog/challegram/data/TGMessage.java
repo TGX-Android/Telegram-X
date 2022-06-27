@@ -4195,10 +4195,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public boolean canGetAddedReactions(){
-    return msg.canGetAddedReactions;
+    return getMessageForReactions().canGetAddedReactions;
   }
 
   public int getTotalReactionCount(){
+    TdApi.Message msg=getMessageForReactions();
     if(msg.interactionInfo==null || msg.interactionInfo.reactions==null)
       return 0;
     int count=0;
