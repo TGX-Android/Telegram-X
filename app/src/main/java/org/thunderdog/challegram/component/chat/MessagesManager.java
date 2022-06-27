@@ -838,7 +838,14 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public boolean useBigReactions () {
-    return Settings.instance().useBigReactions();
+    if (isSecretChat() || loader.isUserChat()) {
+      return false;
+    } else if (isChannel() && Settings.instance().useBigReactionsInChannel()) {
+      return true;
+    } else if (loader.isMultiChat() && Settings.instance().useBigReactionsInChat()) {
+      return true;
+    }
+    return false;
   }
 
   @Nullable

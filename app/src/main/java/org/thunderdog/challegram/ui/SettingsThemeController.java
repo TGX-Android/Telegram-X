@@ -75,11 +75,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.TimeZone;
 
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
-import me.vkryl.core.BitwiseUtils;
 
 public class SettingsThemeController extends RecyclerViewController<SettingsThemeController.Args> implements View.OnClickListener, ViewController.SettingsIntDelegate, SliderWrapView.RealTimeChangeListener, View.OnLongClickListener, TGLegacyManager.EmojiLoadListener, AppUpdater.Listener {
   public SettingsThemeController (Context context, Tdlib tdlib) {
@@ -318,8 +318,21 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
           case R.id.btn_useBigEmoji:
             v.getToggler().setRadioEnabled(Settings.instance().useBigEmoji(), isUpdate);
             break;
-          case R.id.btn_useBigReactions:
-            v.getToggler().setRadioEnabled(Settings.instance().useBigReactions(), isUpdate);
+          case R.id.btn_bigReactions:
+            StringBuilder str = new StringBuilder();
+            if (Settings.instance().useBigReactionsInChat()) {
+              str.append(Lang.getString(R.string.Chats));
+            }
+            if (Settings.instance().useBigReactionsInChannel()) {
+              if (str.length() > 0) {
+                str.append(Lang.getConcatSeparator());
+              }
+              str.append(Lang.getString(R.string.Channels));
+            }
+            if (str.length() == 0) {
+              str.append(Lang.getString(R.string.QuickActionSettingNone));
+            }
+            v.setData(str.toString());
             break;
           case R.id.btn_markdown: {
             v.getToggler().setRadioEnabled(Settings.instance().getNewSetting(Settings.SETTING_FLAG_EDIT_MARKDOWN), isUpdate);
@@ -668,7 +681,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_useBigEmoji, 0, R.string.BigEmoji));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_useBigReactions, 0, R.string.BigReactions));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_bigReactions, 0, R.string.BigReactions));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.LoopAnimatedStickers).setLongId(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP).setBoolValue(true));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -1400,8 +1413,8 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         Settings.instance().setUseBigEmoji(adapter.toggleView(v));
         break;
       }
-      case R.id.btn_useBigReactions: {
-        Settings.instance().setUseBigReactions(adapter.toggleView(v));
+      case R.id.btn_bigReactions: {
+        showBigReactionOptions();
         break;
       }
       case R.id.btn_secret_batmanTransitions: {
@@ -2075,6 +2088,17 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       adapter.updateValuedSettingById(R.id.btn_instantViewMode);
     }));
   }
+
+  private void showBigReactionOptions () {
+    showSettings(R.id.btn_bigReactions, new ListItem[]{
+            new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_bigReactionsInChat, 0, R.string.Chats, R.id.btn_bigReactionsInChat, Settings.instance().useBigReactionsInChat()),
+            new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_bigReactionsInChannels, 0, R.string.Channels, R.id.btn_bigReactionsInChannels, Settings.instance().useBigReactionsInChannel())
+    }, (id, result) -> {
+      Settings.instance().setDisableBigReactions(result.get(R.id.btn_bigReactionsInChat) != R.id.btn_bigReactionsInChat, result.get(R.id.btn_bigReactionsInChannels) != R.id.btn_bigReactionsInChannels);
+      adapter.updateValuedSettingById(R.id.btn_bigReactions);
+    });
+  }
+
 
   /*private void showMarkdownOptions () {
     int markdownOption = Settings.instance().getMarkdownMode();

@@ -1650,6 +1650,14 @@ public class MessagesLoader implements Client.ResultHandler {
     return tdlib.isChannelChat(chat);
   }
 
+  public boolean isUserChat () {
+    return tdlib.isUserChat(chat);
+  }
+
+  public boolean isMultiChat () {
+    return tdlib.isMultiChat(chat);
+  }
+
   @Override
   public void onResult (TdApi.Object object) {
     if (object.getConstructor() != TdApi.Ok.CONSTRUCTOR) {

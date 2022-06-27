@@ -337,7 +337,9 @@
   <item type="id" name="btn_sizeUnitBinary" />
   <item type="id" name="btn_separateMedia" />
   <item type="id" name="btn_useBigEmoji" />
-  <item type="id" name="btn_useBigReactions" />
+  <item type="id" name="btn_bigReactions" />
+  <item type="id" name="btn_bigReactionsInChat" />
+  <item type="id" name="btn_bigReactionsInChannels" />
   <item type="id" name="btn_markdownEnabled" />
   <item type="id" name="btn_markdownTextOnly" />
   <item type="id" name="btn_markdownDisabled" />

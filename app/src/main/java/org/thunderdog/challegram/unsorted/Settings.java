@@ -346,7 +346,8 @@ public class Settings {
   private static final int FLAG_OTHER_START_ROUND_REAR = 1 << 28;
   private static final int FLAG_OTHER_DISABLE_BIG_EMOJI = 1 << 29;
   private static final int FLAG_OTHER_DISABLE_SECRET_LINK_PREVIEWS = 1 << 30;
-  private static final int FLAG_OTHER_DISABLE_BIG_REACTIONS = 1 << 31;
+  private static final int FLAG_OTHER_DISABLE_BIG_REACTIONS_CHAT = 1 << 31;
+  private static final int FLAG_OTHER_DISABLE_BIG_REACTIONS_CHANNEL = 1 << 32;
 
   public static final long SETTING_FLAG_BATMAN_POLL_TRANSITIONS = 1 << 1;
   public static final long SETTING_FLAG_EDIT_MARKDOWN = 1 << 2;
@@ -989,7 +990,6 @@ public class Settings {
     }
     chatListModeListeners.add(listener);
   }
-
   public void removeChatListModeListener (ChatListModeChangeListener listModeChangeListener) {
     if (chatListModeListeners != null)
       chatListModeListeners.remove(listModeChangeListener);
@@ -1005,6 +1005,7 @@ public class Settings {
       }
     }
   }
+
 
   private long makeDefaultNewSettings () {
     long settings = 0;
@@ -1527,7 +1528,6 @@ public class Settings {
       }
       case VERSION_26: {
         changeDefaultOtherFlag(pmc, editor, FLAG_OTHER_DISABLE_BIG_EMOJI, false);
-        changeDefaultOtherFlag(pmc, editor, FLAG_OTHER_DISABLE_BIG_REACTIONS, false);
         break;
       }
       case VERSION_27: {
@@ -2322,14 +2322,6 @@ public class Settings {
     setNegativeSetting(FLAG_OTHER_DISABLE_BIG_EMOJI, useBigEmoji);
   }
 
-  public boolean useBigReactions () {
-    return checkNegativeSetting(FLAG_OTHER_DISABLE_BIG_REACTIONS);
-  }
-
-  public void setUseBigReactions (boolean useBigReactions) {
-    setNegativeSetting(FLAG_OTHER_DISABLE_BIG_REACTIONS, useBigReactions);
-  }
-
   public int getInstantViewMode () {
     return getInt(KEY_INSTANT_VIEW, INSTANT_VIEW_MODE_INTERNAL);
   }
@@ -2544,6 +2536,21 @@ public class Settings {
     int newSettings = getSettings();
     newSettings = BitwiseUtils.setFlag(newSettings, FLAG_OTHER_NO_CHAT_QUICK_SHARE, disableChatQuickShare);
     newSettings = BitwiseUtils.setFlag(newSettings, FLAG_OTHER_NO_CHAT_QUICK_REPLY, disableChatQuickReply);
+    setSettings(newSettings);
+  }
+
+  public boolean useBigReactionsInChat () {
+    return checkNegativeSetting(FLAG_OTHER_DISABLE_BIG_REACTIONS_CHAT);
+  }
+
+  public boolean useBigReactionsInChannel () {
+    return checkNegativeSetting(FLAG_OTHER_DISABLE_BIG_REACTIONS_CHANNEL);
+  }
+
+  public void setDisableBigReactions( boolean disableInChat, boolean disableInChannels) {
+    int newSettings = getSettings();
+    newSettings = BitwiseUtils.setFlag(newSettings, FLAG_OTHER_DISABLE_BIG_REACTIONS_CHAT, disableInChat);
+    newSettings = BitwiseUtils.setFlag(newSettings, FLAG_OTHER_DISABLE_BIG_REACTIONS_CHANNEL, disableInChannels);
     setSettings(newSettings);
   }
 
