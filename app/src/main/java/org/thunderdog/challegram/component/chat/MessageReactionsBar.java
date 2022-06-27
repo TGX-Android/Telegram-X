@@ -103,13 +103,22 @@ public class MessageReactionsBar extends LinearLayout {
   private StickerTinyView initSticker (Tdlib tdlib, TdApi.Reaction reaction, @Nullable TdApi.MessageReaction chosenReaction) {
     StickerTinyView sticker = new StickerTinyView(getContext());
     sticker.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(40), Screen.dp(40)));
-    sticker.setPlayOnce();
     sticker.setSticker(new TGStickerObj(tdlib, reaction.activateAnimation, "", reaction.activateAnimation.type));
     if (chosenReaction != null && chosenReaction.reaction.equals(reaction.reaction)) {
       sticker.setBackground(new CircleDrawable(R.id.theme_color_headerButton, 40f, true));
     }
 
-    sticker.setOnClickListener(v -> callback.onSelectReaction(reaction));
+    sticker.setCallback(new StickerTinyView.OnTouchCallback() {
+      @Override
+      public void onSingleTap () {
+        callback.onSelectReaction(reaction, false);
+      }
+
+      @Override
+      public void onLongRelease () {
+        callback.onSelectReaction(reaction, true);
+      }
+    });
 
     return sticker;
   }
@@ -157,6 +166,6 @@ public class MessageReactionsBar extends LinearLayout {
   }
 
   public interface OnSelectReactionCallback {
-    void onSelectReaction (TdApi.Reaction reaction);
+    void onSelectReaction (TdApi.Reaction reaction, boolean isBig);
   }
 }

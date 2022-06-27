@@ -4184,12 +4184,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
     viewCount.setPadding(Screen.dp(16f), 0, 0, 0);
     statsWrap.addView(viewCount);
 
-    MessageReactionsBar messageReactionsBar = new MessageReactionsBar(context, this, message, reaction -> {
-      tdlib.setMessageReaction(message.getChatId(), message.getId(), reaction.reaction, false, result -> {
-        runOnUiThreadOptional(() -> {
-          layout.hideWindow(true);
-        });
+    MessageReactionsBar messageReactionsBar = new MessageReactionsBar(context, this, message, (reaction, isBig) -> {
+      tdlib.setMessageReaction(message.getChatId(), message.getId(), reaction.reaction, isBig, result -> {
+//        runOnUiThreadOptional(() -> {
+//        });
       });
+      layout.hideWindow(true);
     });
     messageReactionsBar.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48)));
     RippleSupport.setSimpleWhiteBackground(messageReactionsBar, R.id.theme_color_background, this);

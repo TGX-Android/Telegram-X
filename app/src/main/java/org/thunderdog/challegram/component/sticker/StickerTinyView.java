@@ -17,6 +17,7 @@ package org.thunderdog.challegram.component.sticker;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Path;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.Interpolator;
 import android.view.animation.OvershootInterpolator;
@@ -27,7 +28,6 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
-import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 
@@ -36,6 +36,11 @@ import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Destroyable;
 
 public class StickerTinyView extends View implements FactorAnimator.Target, Destroyable {
+
+  private static final float MIN_SCALE = 1.3f;
+  private static final long CLICK_LIFESPAN = 230l;
+  private static final long LONG_PRESS_DELAY = 1000;
+
   public static final float PADDING = 8f;
   private static final Interpolator OVERSHOOT_INTERPOLATOR = new OvershootInterpolator(3.2f);
 
@@ -45,14 +50,22 @@ public class StickerTinyView extends View implements FactorAnimator.Target, Dest
   private @Nullable TGStickerObj sticker;
   private Path contour;
 
-  public StickerTinyView(Context context) {
+  private boolean isAnimation;
+
+  private CancellableRunnable longPress;
+
+  private boolean isPressed;
+  private boolean longPressScheduled;
+  private boolean longPressReady;
+
+  private OnTouchCallback callback;
+
+  public StickerTinyView (Context context) {
     super(context);
     this.imageReceiver = new ImageReceiver(this, 0);
     this.gifReceiver = new GifReceiver(this);
-    this.animator = new FactorAnimator(0, this, OVERSHOOT_INTERPOLATOR, 230l);
+    this.animator = new FactorAnimator(0, this, OVERSHOOT_INTERPOLATOR, CLICK_LIFESPAN);
   }
-
-  private boolean isAnimation;
 
   public void setSticker (@Nullable TGStickerObj sticker) {
     this.sticker = sticker;
@@ -66,7 +79,7 @@ public class StickerTinyView extends View implements FactorAnimator.Target, Dest
     contour = sticker != null ? sticker.getContour(Math.min(imageReceiver.getWidth(), imageReceiver.getHeight())) : null;
     imageReceiver.requestFile(imageFile);
     if (gifFile != null)
-      gifFile.setPlayOnce(isPlayOnce);
+      gifFile.setPlayOnce(true);
     gifReceiver.requestFile(gifFile);
   }
 
@@ -93,29 +106,12 @@ public class StickerTinyView extends View implements FactorAnimator.Target, Dest
     factor = 0f;
   }
 
-  private static final float MIN_SCALE = .82f;
-
   @Override
   public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
     if (this.factor != factor) {
       this.factor = factor;
       invalidate();
     }
-  }
-
-  @Override
-  public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
-    /*if (finalFactor == 0f) {
-      animator.setInterpolator(OVERSHOOT_INTERPOLATOR);
-    } else if (finalFactor == 1f) {
-      animator.setInterpolator(Anim.DECELERATE_INTERPOLATOR);
-    }*/
-  }
-
-  private boolean isPlayOnce;
-
-  public void setPlayOnce() {
-    isPlayOnce = true;
   }
 
   @Override
@@ -156,5 +152,100 @@ public class StickerTinyView extends View implements FactorAnimator.Target, Dest
     if (saved) {
       c.restore();
     }
+  }
+
+  @Override
+  public boolean onTouchEvent (MotionEvent e) {
+    switch (e.getAction()) {
+      case MotionEvent.ACTION_DOWN: {
+        startTouch();
+        return true;
+      }
+      case MotionEvent.ACTION_CANCEL: {
+        cancelTouch();
+        return true;
+      }
+      case MotionEvent.ACTION_UP: {
+        boolean isSingleClicked = longPressScheduled && !longPressReady;
+        boolean isLongPressed = !longPressScheduled && longPressReady;
+        cancelTouch();
+        if (isSingleClicked) {
+          onSingleTapped();
+        }
+        if (isLongPressed) {
+          onLongReleased();
+        }
+        return true;
+      }
+    }
+    return true;
+  }
+
+  private void startTouch () {
+    setStickerPressed(true);
+    openPreviewDelayed();
+  }
+
+  private void cancelTouch () {
+    setStickerPressed(false);
+    cancelDelayedPreview();
+    longPressReady = false;
+  }
+
+  private void setStickerPressed (boolean isPressed) {
+    if (this.isPressed != isPressed) {
+      this.isPressed = isPressed;
+      animator.animateTo(isPressed ? 1f : 0f);
+    }
+  }
+
+  private void openPreviewDelayed () {
+    cancelDelayedPreview();
+    longPress = new CancellableRunnable() {
+      @Override
+      public void act () {
+        onLongPressed();
+        longPressScheduled = false;
+      }
+    };
+    longPressScheduled = true;
+    postDelayed(longPress, LONG_PRESS_DELAY);
+  }
+  private void cancelDelayedPreview () {
+    if (longPress != null) {
+      longPress.cancel();
+      longPress = null;
+    }
+    longPressScheduled = false;
+  }
+
+  private void onSingleTapped () {
+    android.util.Log.d("AKBOLAT", "onSingleTapped");
+    if (callback != null) {
+      callback.onSingleTap();
+    }
+  }
+
+  private void onLongPressed () {
+    android.util.Log.d("AKBOLAT", "onLongPressed");
+    longPressReady = true;
+
+    UI.forceVibrate(this, true);
+  }
+
+  private void onLongReleased () {
+    android.util.Log.d("AKBOLAT", "onLongReleased");
+    if (callback != null) {
+      callback.onLongRelease();
+    }
+  }
+
+  public void setCallback (OnTouchCallback callback) {
+    this.callback = callback;
+  }
+
+  public interface OnTouchCallback {
+    void onSingleTap ();
+    void onLongRelease();
   }
 }
