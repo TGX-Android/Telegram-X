@@ -900,7 +900,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
     showError(null);
     setInProgress(true);
 
-    final String phone = "+" + tdlibNumber;
+    final String phone = tdlib.account().isDebug() ? tdlibNumber : "+" + tdlibNumber;
 
     TdApi.Function<?> function;
 

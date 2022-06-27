@@ -518,7 +518,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     this.isLoggingOut = account.isLoggingOut();
 
     this.parameters = new TdApi.TdlibParameters(
-      false, null, null, // updateParameters
+      true, null, null, // updateParameters
       true,
       true,
       true,
