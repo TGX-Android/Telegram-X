@@ -3712,6 +3712,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     client().send(new TdApi.ResendMessages(chatId, messageIds), messageHandler());
   }
 
+  public void setMessageReaction (long chatId, long messageId, String reaction, boolean isBig) {
+    client().send(new TdApi.SetMessageReaction(chatId, messageId, reaction, isBig), okHandler);
+  }
+
   private final HashMap<String, TdApi.MessageContent> pendingMessageTexts = new HashMap<>();
   private final HashMap<String, TdApi.FormattedText> pendingMessageCaptions = new HashMap<>();
 

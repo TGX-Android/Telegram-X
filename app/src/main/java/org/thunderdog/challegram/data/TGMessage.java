@@ -399,7 +399,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   public void setReactions(TdApi.MessageReaction[] reactions) {
     for (int i = 0; i < reactions.length; i ++) {
       TdApi.MessageReaction reaction = reactions[i];
-      reactionBubbles.add(new ReactionBubble(i, reaction.totalCount, reaction.reaction));
+      reactionBubbles.add(
+          new ReactionBubble(i, reaction.totalCount, reaction.reaction, reaction.isChosen, false, this::setMessageReaction)
+      );
     }
   }
 
@@ -923,6 +925,13 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private boolean reactionsFitWithTime (float parentWidth) {
     float reactionsWidth = getReactionsLastLineWidth(parentWidth);
     return computeBubbleWidth() > computeBubbleTimePartWidth(true) + reactionsWidth;
+  }
+
+  private void setMessageReaction (String reaction, boolean isBig) {
+    for (ReactionBubble reactionBubble: reactionBubbles) {
+      reactionBubble.setIsChosen(reactionBubble.getReaction().equals(reaction));
+    }
+    tdlib.setMessageReaction(msg.chatId, msg.id, reaction, isBig);
   }
 
   private int computeBubbleHeight () {
@@ -1785,12 +1794,15 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     // Reactions
 
     buildBubble(false);
-    final int reactionBubbleColor = Theme.getColor(R.id.theme_color_themeCyan);
+    int reactionBubbleColorActive = Theme.getColor(R.id.theme_color_bubbleOut_file);
+    int reactionBubbleColorNegative = Theme.getColor(R.id.theme_color_bubbleIn_time);
+    reactionBubbleColorNegative = ColorUtils.alphaColor(0.15f, reactionBubbleColorNegative);
     final int reactionBubbleTextColor = Theme.getColor(R.id.theme_color_text);
     for (ReactionBubble reactionBubble: reactionBubbles) {
       reactionBubble.drawBubble(
           c,
-          Paints.fillingPaint(reactionBubbleColor),
+          reactionBubbleColorActive,
+          reactionBubbleColorNegative,
           Paints.getTextPaint16(reactionBubbleTextColor),
           false
       );

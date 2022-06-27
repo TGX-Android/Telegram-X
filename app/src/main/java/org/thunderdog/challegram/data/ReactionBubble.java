@@ -17,6 +17,8 @@ import org.thunderdog.challegram.tool.EmojiData;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 
+import java.util.function.BiConsumer;
+
 import me.vkryl.core.MathUtils;
 
 public class ReactionBubble {
@@ -40,8 +42,10 @@ public class ReactionBubble {
   private static final int spaceBetweenTextAndReaction = Screen.dp(4f);
 
   private int id;
-  private int count = 0;
-  private String emoji;
+  private int count;
+  private String reaction;
+  private boolean isBig;
+  private boolean isChosen;
 
   private static final int height = Screen.dp(12);
   private int width = Screen.dp(36);
@@ -49,22 +53,29 @@ public class ReactionBubble {
   private final Path path, clipPath;
   private final RectF pathRect, clipPathRect;
 
-  private Paint textPaint;
+  private BiConsumer<String, Boolean> setMessageReaction;
 
-  public ReactionBubble (int id, int count, String emoji) {
+  public ReactionBubble (int id, int count, String reaction, boolean isChosen, boolean isBig, BiConsumer<String, Boolean> setMessageReaction) {
     this.id = id;
     this.count = count;
     this.path = new Path();
     this.pathRect = new RectF();
     this.clipPath = new Path();
     this.clipPathRect = new RectF();
-    this.emoji = emoji;
+    this.reaction = reaction;
+    this.isChosen = isChosen;
+    this.isBig = isBig;
+    this.setMessageReaction = setMessageReaction;
 
     adjustWidthWithCount();
   }
 
   public final int getId () {
     return id;
+  }
+
+  public final String getReaction () {
+    return reaction;
   }
 
   private static int getHeight () {
@@ -115,9 +126,7 @@ public class ReactionBubble {
   }
 
 
-  public void drawBubble (Canvas c, Paint backgroundPaint, Paint textPaint, boolean stroke) {
-    this.textPaint = textPaint;
-
+  public void drawBubble (Canvas c, int colorActive, int colorNegative, Paint textPaint, boolean stroke) {
     final int left = (int) pathRect.left;
     final int top = (int) pathRect.top;
     final int right = (int) pathRect.right;
@@ -126,6 +135,8 @@ public class ReactionBubble {
     int rad = height;
 
     // Draw background
+
+    Paint backgroundPaint = isChosen ? Paints.fillingPaint(colorActive) : Paints.fillingPaint(colorNegative);
 
     final RectF rectF = Paints.getRectF();
     if (rad != 0) {
@@ -181,7 +192,7 @@ public class ReactionBubble {
     // Draw reaction
 
     Emoji emojiManager = Emoji.instance();
-    EmojiInfo info = emojiManager.getEmojiInfo(emoji);
+    EmojiInfo info = emojiManager.getEmojiInfo(reaction);
     int reactionLeft = centerX - contentTotalWidth / 2;
     int reactionRight = reactionLeft + reactionSize;
     int reactionTop = centerY - reactionSize / 2;
@@ -200,12 +211,27 @@ public class ReactionBubble {
     final float right = pathRect.right;
     final float bottom = pathRect.bottom;
     if (touchX > left && touchX < right && touchY > top && touchY < bottom) {
-      count++;
-      adjustWidthWithCount();
+      onClick();
       view.invalidate();
       return true;
     } else {
       return false;
     }
+  }
+
+  private void onClick () {
+    String reaction = isChosen ? "" : this.reaction;
+    setMessageReaction.accept(reaction, isBig);
+    adjustWidthWithCount();
+  }
+
+  public void setIsChosen (boolean isChosen) {
+    if (this.isChosen == isChosen) return;
+    if (isChosen) {
+      count++;
+    } else {
+      count--;
+    }
+    this.isChosen = isChosen;
   }
 }
