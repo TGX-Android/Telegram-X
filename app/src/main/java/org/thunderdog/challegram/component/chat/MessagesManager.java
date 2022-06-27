@@ -1221,6 +1221,17 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     return null;
   }
 
+  public TGMessage findTGMessage (long chatId, long messageId) {
+    if (loader.getChatId() == chatId) {
+      int i = adapter.indexOfMessageContainer(messageId);
+      if (i != -1) {
+        MessageView view = (MessageView) manager.findViewByPosition(i);
+        return view.getMessage();
+      }
+    }
+    return null;
+  }
+
   // View utils
 
   private View findTopView () {

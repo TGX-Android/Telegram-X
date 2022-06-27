@@ -29,6 +29,7 @@ import org.json.JSONObject;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
@@ -1350,6 +1351,9 @@ public class MessagesLoader implements Client.ResultHandler {
           }
         }
         cur = TGMessage.valueOf(manager, messages[j], chat, administrator);
+        if (messages[j].interactionInfo != null) {
+          cur.setReactions(messages[j].interactionInfo.reactions);
+        }
         if (cur != null) {
           if (!containsScrollingMessage && scrollMessageId != null && scrollMessageId.compareTo(messages[j].chatId, messages[j].id)) {
             containsScrollingMessage = true;

@@ -216,6 +216,26 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   };
 
+/*  private final class MessageReactionsHandler implements Client.ResultHandler {
+    private final long chatId;
+    private final long messageId;
+
+    public MessageReactionsHandler (long chatId, long messageId) {
+      this.chatId = chatId;
+      this.messageId = messageId;
+    }
+
+    @Override
+    public void onResult (TdApi.Object object) {
+      if (object.getConstructor() != TdApi.AddedReactions.CONSTRUCTOR) {
+        Log.e("getAddedMessageReactions failed: %s", TD.toErrorString(object));
+      }
+      TdApi.AddedReactions list = (TdApi.AddedReactions) object;
+      TdApi.AddedReaction[] addedReactions = list.reactions;
+      listeners.updateMessageReactions(chatId, messageId, addedReactions);
+    }
+  }*/
+
   private static final class ClientHolder implements Client.ResultHandler, Client.ExceptionHandler {
     private final Tdlib tdlib;
     private final Client client;
@@ -431,6 +451,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private final TdlibWallpaperManager wallpaperManager;
   private final TdlibNotificationManager notificationManager;
   private final TdlibFileGenerationManager fileGenerationManager;
+
+  private final HashMap<Long, Long> messageIdsToChatIds = new HashMap<>();
+  private final HashMap<Long, TdApi.AddedReactions> messageReactions = new HashMap<>();
 
   private final HashSet<Long> channels = new HashSet<>();
   private final LongSparseLongArray accessibleChatTimers = new LongSparseLongArray();
@@ -6050,6 +6073,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (!debugInstance && update.message.chatId == ChatId.fromUserId(TdConstants.TELEGRAM_ACCOUNT_ID)) {
       listeners.notifySessionListPossiblyChanged(true);
     }
+
+    TdApi.Message message = update.message;
   }
 
   private void updateMessageSendSucceeded (TdApi.UpdateMessageSendSucceeded update) {

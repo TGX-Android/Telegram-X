@@ -46,8 +46,9 @@ public class ReactionBubble {
 
   private int count = 0;
 
-  public ReactionBubble(int id) {
+  public ReactionBubble(int id, int count) {
     this.id = id;
+    this.count = count;
     this.path = new Path();
     this.pathRect = new RectF();
     this.clipPath = new Path();
