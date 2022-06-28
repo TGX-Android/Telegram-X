@@ -15,9 +15,6 @@ import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.chat.EmojiToneHelper;
 import org.thunderdog.challegram.component.chat.EmojiView;
 import org.thunderdog.challegram.config.Config;
-import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.emoji.Emoji;
-import org.thunderdog.challegram.emoji.RecentEmoji;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -25,7 +22,6 @@ import org.thunderdog.challegram.tool.EmojiData;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.v.CustomRecyclerView;
-import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.ReactionsLayout;
 
 import java.util.ArrayList;
@@ -33,23 +29,24 @@ import java.util.List;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
-import me.vkryl.core.StringUtils;
 
 public class ReactionListController extends ViewController<ReactionsLayout> implements View.OnClickListener {
+    private CustomRecyclerView recyclerView;
+    private LinearLayoutManager manager;
+    private ReactionListController.ReactionAdapter adapter;
+    private EmojiToneHelper toneHelper;
+    private List<Item> items;
+
     public ReactionListController (Context context, Tdlib tdlib) {
         super(context, tdlib);
+
+        items = new ArrayList<>();
     }
 
     @Override
     public int getId () {
         return R.id.controller_reactions;
     }
-
-    private CustomRecyclerView recyclerView;
-    private LinearLayoutManager manager;
-    private ReactionListController.ReactionAdapter adapter;
-    private EmojiToneHelper toneHelper;
-    private List<Item> items;
 
     private boolean useDarkMode;
 
@@ -65,13 +62,6 @@ public class ReactionListController extends ViewController<ReactionsLayout> impl
         manager = new LinearLayoutManager(context);
         manager.setOrientation(RecyclerView.HORIZONTAL);
         toneHelper = new EmojiToneHelper(context, getArgumentsStrict().getToneDelegate(), this);
-        items = new ArrayList<>();
-        String[] emojiCodes = EmojiData.dataColored[0];
-        for (int i = 0; i < 9; i++) {
-            String emojiCode = emojiCodes[i];
-            Item item = new Item(emojiCode, EmojiData.instance().getEmojiColorState(emojiCode));
-            items.add(item);
-        }
         adapter = new ReactionListController.ReactionAdapter(context, items, this, this);
 
         this.useDarkMode = getArgumentsStrict().useDarkMode();
@@ -103,13 +93,28 @@ public class ReactionListController extends ViewController<ReactionsLayout> impl
         String emoji = emojiView.getEmojiColored();
     }
 
-    private static class Item {
-        public final String emojiCode;
-        public final int emojiColorState;
+    @Override
+    public void setArguments(ReactionsLayout reactionsLayout) {
+        String[] reactions = reactionsLayout.getReactions();
+        for (int i = 0; i < reactions.length; i++) {
+            String reaction = reactions[i];
+            int reactionColorState = EmojiData.instance().getEmojiColorState(reaction);
+            items.add(new Item(reaction, reactionColorState));
+            if (adapter != null) {
+                adapter.notifyItemInserted(i);
+            }
+        }
 
-        public Item (String emojiCode, int emojiColorState) {
-            this.emojiCode = emojiCode;
-            this.emojiColorState = emojiColorState;
+        super.setArguments(reactionsLayout);
+    }
+
+    private static class Item {
+        public final String reaction;
+        public final int reactionColorState;
+
+        public Item (String reaction, int reactionColorState) {
+            this.reaction = reaction;
+            this.reactionColorState = reactionColorState;
         }
     }
 
@@ -155,7 +160,7 @@ public class ReactionListController extends ViewController<ReactionsLayout> impl
         public void onBindViewHolder (@NonNull ItemHolder holder, int position) {
             ReactionListController.Item item = items.get(position);
             holder.itemView.setId(R.id.emoji);
-            ((EmojiView) holder.itemView).setEmoji(item.emojiCode, item.emojiColorState);
+            ((EmojiView) holder.itemView).setEmoji(item.reaction, item.reactionColorState);
         }
 
         @Override

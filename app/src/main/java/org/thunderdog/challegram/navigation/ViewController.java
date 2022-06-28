@@ -2339,7 +2339,9 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     // Reactions bar generation
     if (showReactions) {
       ReactionsLayout reactionsLayout = new ReactionsLayout(context);
-      reactionsLayout.initWithMediasEnabled(this, false);
+      TdApi.Chat chat = tdlib.chat(getChatId());
+      String[] reactions = chat == null ? new String[0] : chat.availableReactions;
+      reactionsLayout.init(this, false, reactions);
       optionsWrap.addView(reactionsLayout);
     }
 

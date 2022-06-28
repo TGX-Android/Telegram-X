@@ -14,6 +14,7 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.chat.EmojiToneHelper;
@@ -36,14 +37,16 @@ import me.vkryl.android.widget.FrameLayoutFix;
 public class ReactionsLayout extends FrameLayoutFix {
     private boolean useDarkMode;
     private ViewController<?> parentController;
+    private String[] reactions;
 
     public ReactionsLayout (Context context) {
         super(context);
     }
 
-    public void initWithMediasEnabled (ViewController<?> context, boolean useDarkMode) {
+    public void init (ViewController<?> context, boolean useDarkMode, String[] reactions) {
         this.useDarkMode = useDarkMode;
         this.parentController = context;
+        this.reactions = reactions;
 
         setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
@@ -55,6 +58,10 @@ public class ReactionsLayout extends FrameLayoutFix {
 
     public boolean useDarkMode () {
         return useDarkMode;
+    }
+
+    public String[] getReactions () {
+        return reactions;
     }
 
     public EmojiToneHelper.Delegate getToneDelegate () {
