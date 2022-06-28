@@ -2288,22 +2288,14 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     for (int i = 0; i < ids.length; i++) {
       items[i] = new OptionItem(ids != null ? ids[i] : i, titles[i], colors != null ? colors[i] : OPTION_COLOR_NORMAL, icons != null ? icons[i] : 0);
     }
-    return showOptions(new Options(info, items), delegate, forcedTheme, false);
+    return showOptions(new Options(info, items), delegate, forcedTheme);
   }
 
   public final PopupLayout showOptions (Options options, final OptionDelegate delegate) {
-    return showOptions(options, delegate, null, false);
+    return showOptions(options, delegate, null);
   }
 
-  public final PopupLayout showOptionsWithReactions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons) {
-    OptionItem[] items = new OptionItem[ids.length];
-    for (int i = 0; i < ids.length; i++) {
-      items[i] = new OptionItem(ids != null ? ids[i] : i, titles[i], colors != null ? colors[i] : OPTION_COLOR_NORMAL, icons != null ? icons[i] : 0);
-    }
-    return showOptions(new Options(info, items), null, null, true);
-  }
-
-  public final PopupLayout showOptions (Options options, final OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme, boolean showReactions) {
+  public final PopupLayout showOptions (Options options, final OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme) {
     if (isStackLocked()) {
       Log.i("Ignoring options show because stack is locked");
       return null;
@@ -2335,15 +2327,6 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     shadowView.setSimpleTopShadow(true);
     optionsWrap.addView(shadowView, 0);
     addThemeInvalidateListener(shadowView);
-
-    // Reactions bar generation
-    if (showReactions) {
-      ReactionsLayout reactionsLayout = new ReactionsLayout(context);
-      TdApi.Chat chat = tdlib.chat(getChatId());
-      String[] reactions = chat == null ? new String[0] : chat.availableReactions;
-      reactionsLayout.init(this, false, reactions);
-      optionsWrap.addView(reactionsLayout);
-    }
 
     // Item generation
     View.OnClickListener onClickListener;

@@ -10,6 +10,7 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.chat.EmojiToneHelper;
@@ -26,6 +27,7 @@ import org.thunderdog.challegram.widget.ReactionsLayout;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
@@ -35,12 +37,9 @@ public class ReactionListController extends ViewController<ReactionsLayout> impl
     private LinearLayoutManager manager;
     private ReactionListController.ReactionAdapter adapter;
     private EmojiToneHelper toneHelper;
-    private List<Item> items;
 
     public ReactionListController (Context context, Tdlib tdlib) {
         super(context, tdlib);
-
-        items = new ArrayList<>();
     }
 
     @Override
@@ -59,10 +58,21 @@ public class ReactionListController extends ViewController<ReactionsLayout> impl
 
     @Override
     protected View onCreateView (Context context) {
+        String[] reactions = getArgumentsStrict().getReactions();
+        List<Item> items = new ArrayList<>();
+        for (int i = 0; i < reactions.length; i++) {
+            String reaction = reactions[i];
+            int reactionColorState = EmojiData.instance().getEmojiColorState(reaction);
+            items.add(new Item(reaction, reactionColorState));
+            if (adapter != null) {
+                adapter.notifyItemInserted(i);
+            }
+        }
+
         manager = new LinearLayoutManager(context);
         manager.setOrientation(RecyclerView.HORIZONTAL);
         toneHelper = new EmojiToneHelper(context, getArgumentsStrict().getToneDelegate(), this);
-        adapter = new ReactionListController.ReactionAdapter(context, items, this, this);
+        adapter = new ReactionListController.ReactionAdapter(context, items, this, getArgumentsStrict().getOnReactionClick());
 
         this.useDarkMode = getArgumentsStrict().useDarkMode();
 
@@ -93,21 +103,6 @@ public class ReactionListController extends ViewController<ReactionsLayout> impl
         String emoji = emojiView.getEmojiColored();
     }
 
-    @Override
-    public void setArguments(ReactionsLayout reactionsLayout) {
-        String[] reactions = reactionsLayout.getReactions();
-        for (int i = 0; i < reactions.length; i++) {
-            String reaction = reactions[i];
-            int reactionColorState = EmojiData.instance().getEmojiColorState(reaction);
-            items.add(new Item(reaction, reactionColorState));
-            if (adapter != null) {
-                adapter.notifyItemInserted(i);
-            }
-        }
-
-        super.setArguments(reactionsLayout);
-    }
-
     private static class Item {
         public final String reaction;
         public final int reactionColorState;
@@ -125,32 +120,31 @@ public class ReactionListController extends ViewController<ReactionsLayout> impl
     }
 
     private static class ReactionAdapter extends RecyclerView.Adapter<ReactionListController.ItemHolder> {
-        private static final float reactionSize = 60f;
-        private static final float reactionPadding = 10f;
+        private static final int reactionSize = Screen.dp(40f);
+        private static final int reactionPadding = Screen.dp(10f);
 
         private final Context context;
-        private final View.OnClickListener onClickListener;
         private final ReactionListController parent;
         private final List<Item> items;
+        private final Consumer<String> onReactionClick;
 
-        public ReactionAdapter (Context context, List<Item> items, View.OnClickListener onClickListener, ReactionListController parent) {
+        public ReactionAdapter (Context context, List<Item> items, ReactionListController parent, Consumer<String> onReactionClick) {
             this.context = context;
-            this.onClickListener = onClickListener;
             this.parent = parent;
             this.items = items;
+            this.onReactionClick = onReactionClick;
         }
         @NonNull
         @Override
         public ItemHolder onCreateViewHolder (@NonNull ViewGroup parent, int viewType) {
             EmojiView imageView = new EmojiView(context, this.parent.toneHelper);
-            imageView.setLayoutParams(new RecyclerView.LayoutParams(Screen.dp(reactionSize), Screen.dp(reactionSize)));
+            imageView.setLayoutParams(new RecyclerView.LayoutParams(reactionSize, reactionSize));
             imageView.setPadding(
-                    Screen.dp(reactionPadding),
-                    Screen.dp(reactionPadding),
-                    Screen.dp(reactionPadding),
-                    Screen.dp(reactionPadding)
+                reactionPadding,
+                reactionPadding,
+                reactionPadding,
+                reactionPadding
             );
-            imageView.setOnClickListener(onClickListener);
             Views.setClickable(imageView);
             RippleSupport.setTransparentSelector(imageView);
             return new ReactionListController.ItemHolder(imageView);
@@ -160,6 +154,9 @@ public class ReactionListController extends ViewController<ReactionsLayout> impl
         public void onBindViewHolder (@NonNull ItemHolder holder, int position) {
             ReactionListController.Item item = items.get(position);
             holder.itemView.setId(R.id.emoji);
+            holder.itemView.setOnClickListener(view -> {
+                onReactionClick.accept(item.reaction);
+            });
             ((EmojiView) holder.itemView).setEmoji(item.reaction, item.reactionColorState);
         }
 

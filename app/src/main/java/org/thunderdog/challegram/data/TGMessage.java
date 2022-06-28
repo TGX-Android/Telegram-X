@@ -932,7 +932,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return computeBubbleWidth() > computeBubbleTimePartWidth(true) + reactionsWidth;
   }
 
-  private void setMessageReaction (String reaction, boolean isBig) {
+  public void setMessageReaction (String reaction, boolean isBig) {
     for (ReactionBubble reactionBubble: reactionBubbles) {
       reactionBubble.setIsChosen(reactionBubble.getReaction().equals(reaction));
     }

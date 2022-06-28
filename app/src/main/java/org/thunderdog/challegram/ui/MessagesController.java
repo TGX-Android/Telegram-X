@@ -224,6 +224,7 @@ import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ProgressComponentView;
+import org.thunderdog.challegram.widget.ReactionsLayout;
 import org.thunderdog.challegram.widget.RippleRevealView;
 import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 import org.thunderdog.challegram.widget.SendButton;
@@ -4151,7 +4152,30 @@ public class MessagesController extends ViewController<MessagesController.Argume
       b.append(Lang.getString(resId));
     }
     String text = b.toString().trim();
-    patchReadReceiptsOptions(showOptionsWithReactions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, disableViewCounter);
+    PopupLayout optionsWithReactions = showOptionsWithReactions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons, msg);
+    patchReadReceiptsOptions(optionsWithReactions, msg, disableViewCounter);
+  }
+
+  public final PopupLayout showOptionsWithReactions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, TGMessage msg) {
+    OptionItem[] items = new OptionItem[ids.length];
+    for (int i = 0; i < ids.length; i++) {
+      items[i] = new OptionItem(ids != null ? ids[i] : i, titles[i], colors != null ? colors[i] : OPTION_COLOR_NORMAL, icons != null ? icons[i] : 0);
+    }
+    PopupLayout popupLayout = showOptions(new Options(info, items), null, null);
+
+    // Reactions
+    OptionsLayout optionsLayout = (OptionsLayout) popupLayout.getChildAt(1);
+    ReactionsLayout reactionsLayout = new ReactionsLayout(context);
+    TdApi.Chat chat = tdlib.chat(msg.getChatId());
+    String[] reactions = chat == null ? new String[0] : chat.availableReactions;
+    reactionsLayout.init(this, false, reactions, reaction -> {
+      msg.setMessageReaction(reaction, false);
+      msg.invalidate();
+      popupLayout.hideWindow(true);
+    });
+    optionsLayout.addView(reactionsLayout, 2);
+
+    return popupLayout;
   }
 
   private void patchReadReceiptsOptions (PopupLayout layout, TGMessage message, boolean disableViewCounter) {
