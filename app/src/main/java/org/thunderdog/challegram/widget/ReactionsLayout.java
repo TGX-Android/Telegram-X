@@ -36,10 +36,6 @@ public class ReactionsLayout extends FrameLayoutFix {
         setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     }
 
-    public void setOnReactionClick () {
-
-    }
-
     public boolean useDarkMode () {
         return useDarkMode;
     }

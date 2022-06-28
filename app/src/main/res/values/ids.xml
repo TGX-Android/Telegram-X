@@ -129,6 +129,8 @@
   <item type="id" name="controller_memberRights" />
   <item type="id" name="controller_linkChat" />
 
+  <item type="id" name="controller_chatReactions" />
+
   <item type="id" name="controller_bug_killer" />
   <item type="id" name="controller_logs" />
 
@@ -558,6 +560,26 @@
   <item type="id" name="btn_statsPublicShares" />
   <item type="id" name="btn_statsPublishDate" />
   <item type="id" name="btn_statsSignature" />
+
+  <item type="id" name="btn_reactions" />
+  <item type="id" name="btn_selectReaction" />
+  <item type="id" name="text_reactionCaption" />
+  <item type="id" name="btn_thumbsUp" />
+  <item type="id" name="btn_thumbsDown" />
+  <item type="id" name="btn_redHeart" />
+  <item type="id" name="btn_fire" />
+  <item type="id" name="btn_smilingFaceWithHearts" />
+  <item type="id" name="btn_clappingHands" />
+  <item type="id" name="btn_beamingFace" />
+  <item type="id" name="btn_thinkingFace" />
+  <item type="id" name="btn_explodingHead" />
+  <item type="id" name="btn_screamingFace" />
+  <item type="id" name="btn_angryFace" />
+  <item type="id" name="btn_cryingFace" />
+  <item type="id" name="btn_partyProper" />
+  <item type="id" name="btn_starStruck" />
+  <item type="id" name="btn_faceVomiting" />
+  <item type="id" name="btn_pileOfPoo" />
 
   <item type="id" name="stats_memberCount" />
   <item type="id" name="stats_join" />

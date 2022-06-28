@@ -818,6 +818,7 @@
   <string name="Off">Off</string>
   <string name="Chats">Chats</string>
   <string name="Notifications">Notifications</string>
+  <string name="Reactions">Reactions</string>
   <string name="NotificationsEnabled">Enabled</string>
   <string name="NotificationsEnabledHint">Enabled (%1$s)</string>
   <string name="NotificationsBlocked">Blocked</string>
@@ -4191,6 +4192,23 @@
   <string name="MessageSeenNobody">Nobody Viewed</string>
   <string name="MessageSeenNobodyListened">Nobody Listened</string>
   <string name="MessageSeenNobodyPlayed">Nobody Played</string>
+
+  <string name="ThumbsUp">Thumbs Up</string>
+  <string name="ThumbsDown">Thumbs Down</string>
+  <string name="RedHeart">Red Heart</string>
+  <string name="Fire">Fire</string>
+  <string name="SmilingFaceWithHearts">Smiling Face with Hearts</string>
+  <string name="ClappingHands">Clapping Hands</string>
+  <string name="BeamingFace">Beaming Face</string>
+  <string name="ThinkingFace">Thinking Face</string>
+  <string name="ExplodingHead">Exploding Head</string>
+  <string name="ScreamingFace">Screaming Face</string>
+  <string name="AngryFace">Angry Face</string>
+  <string name="CryingFace">Crying Face</string>
+  <string name="PartyProper">Party Proper</string>
+  <string name="StarStruck">Star-Struck</string>
+  <string name="FaceVomiting">Face Vomiting</string>
+  <string name="PileOfPoo">Pile of Poo</string>
 
   <string name="ChannelNoCopy">Sorry, copying from this channel is disabled by admins.</string>
   <string name="ChannelNoSave">Sorry, saving media from this channel is disabled by admins.</string>

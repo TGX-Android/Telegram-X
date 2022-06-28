@@ -8438,6 +8438,35 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return allowDefault && chat.permissions.canChangeInfo;
   }
 
+  public boolean canSelectReactions (TdApi.Chat chat) {
+    if (chat == null || chat.id == 0) {
+      return false;
+    }
+    TdApi.ChatMemberStatus status = chatStatus(chat.id);
+    if (status != null) {
+      switch (status.getConstructor()) {
+        case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
+          return true;
+        case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
+          if (((TdApi.ChatMemberStatusAdministrator) status).rights.canChangeInfo) {
+            return true;
+          }
+          break;
+        case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR:
+          if (!((TdApi.ChatMemberStatusRestricted) status).permissions.canChangeInfo) {
+            return false;
+          }
+          break;
+
+        case TdApi.ChatMemberStatusLeft.CONSTRUCTOR:
+        case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
+        case TdApi.ChatMemberStatusMember.CONSTRUCTOR:
+          break;
+      }
+    }
+    return chat.permissions.canChangeInfo;
+  }
+
   public boolean canRestrictMembers (long chatId) {
     TdApi.ChatMemberStatus status = chatStatus(chatId);
     if (status != null) {

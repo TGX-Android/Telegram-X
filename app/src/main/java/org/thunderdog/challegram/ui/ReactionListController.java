@@ -64,9 +64,6 @@ public class ReactionListController extends ViewController<ReactionsLayout> impl
             String reaction = reactions[i];
             int reactionColorState = EmojiData.instance().getEmojiColorState(reaction);
             items.add(new Item(reaction, reactionColorState));
-            if (adapter != null) {
-                adapter.notifyItemInserted(i);
-            }
         }
 
         manager = new LinearLayoutManager(context);
