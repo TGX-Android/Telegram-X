@@ -18,13 +18,12 @@ import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.Destroyable;
 
-public class StickerTinyViewHolder extends FrameLayoutFix implements Destroyable {
+public class ReactionInChatWrapper extends FrameLayoutFix implements Destroyable {
 
   public static final float PADDING = 8f;
 
@@ -32,7 +31,7 @@ public class StickerTinyViewHolder extends FrameLayoutFix implements Destroyable
 
   public int yOffset = 0;
 
-  public StickerTinyViewHolder (Context context) {
+  public ReactionInChatWrapper (Context context) {
     super(context);
   }
 
@@ -56,23 +55,23 @@ public class StickerTinyViewHolder extends FrameLayoutFix implements Destroyable
     }
   }
 
-  public void reattach (StickerTinyView stickerTinyView) {
-    stickerTinyView.detach();
+  public void reattach (ReactionInChatView reactionInChatView) {
+    reactionInChatView.detach();
 
     int[] location = new int[2];
-    stickerTinyView.getLocationOnScreen(location);
+    reactionInChatView.getLocationOnScreen(location);
     int x = location[0];
     int y = location[1];
 
-    ((ViewGroup) stickerTinyView.getParent()).removeView(stickerTinyView);
-    this.addView(stickerTinyView);
+    ((ViewGroup) reactionInChatView.getParent()).removeView(reactionInChatView);
+    this.addView(reactionInChatView);
 
-    stickerTinyView.setPadding(0, 0, 0, 0);
-    LayoutParams layoutParams = (LayoutParams) stickerTinyView.getLayoutParams();
+    reactionInChatView.setPadding(0, 0, 0, 0);
+    LayoutParams layoutParams = (LayoutParams) reactionInChatView.getLayoutParams();
     layoutParams.leftMargin = x;
     layoutParams.topMargin = y - yOffset;
-    stickerTinyView.setLayoutParams(layoutParams);
+    reactionInChatView.setLayoutParams(layoutParams);
 
-    stickerTinyView.attach();
+    reactionInChatView.attach();
   }
 }

@@ -123,7 +123,7 @@ import org.thunderdog.challegram.component.chat.WallpaperRecyclerView;
 import org.thunderdog.challegram.component.chat.WallpaperView;
 import org.thunderdog.challegram.component.popups.MessageSeenController;
 import org.thunderdog.challegram.component.popups.ModernActionedLayout;
-import org.thunderdog.challegram.component.sticker.StickerTinyViewHolder;
+import org.thunderdog.challegram.component.sticker.ReactionInChatWrapper;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
@@ -331,7 +331,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private CircleButton scrollToBottomButton, mentionButton;
   private CounterBadgeView unreadCountView, mentionCountView;
 
-  private StickerTinyViewHolder stickerTinyViewHolder;
+  private ReactionInChatWrapper reactionInChatWrapper;
   public boolean sponsoredMessageLoaded = false;
 
   public MessagesController (Context context, Tdlib tdlib) {
@@ -1241,7 +1241,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     TGLegacyManager.instance().addEmojiListener(this);
 
-    stickerTinyViewHolder = new StickerTinyViewHolder(context());
+    reactionInChatWrapper = new ReactionInChatWrapper(context());
     if (needTabs()) {
       /*headerCell = new ViewPagerHeaderViewCompact(context);
         FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) ((ViewPagerHeaderViewCompact) headerCell).getRecyclerView().getLayoutParams();
@@ -1303,13 +1303,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
       contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
       contentView.addView(pagerContentView);
 
-      contentView.addView(stickerTinyViewHolder);
+      contentView.addView(reactionInChatWrapper);
 
       return contentView;
 
     }
 
-    contentView.addView(stickerTinyViewHolder);
+    contentView.addView(reactionInChatWrapper);
 
     return contentView;
   }
@@ -4191,8 +4191,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     MessageReactionsBar messageReactionsBar = new MessageReactionsBar(context, this, message, (sticker, reaction, isBig) -> {
       tdlib.setMessageReaction(message.getChatId(), message.getId(), reaction.reaction, isBig, result -> {});
 
-      sticker.setTargetXY(message.findCurrentView(), message.getReactionTargetX(), message.getReactionTargetY(), stickerTinyViewHolder.yOffset);
-      stickerTinyViewHolder.reattach(sticker);
+      sticker.setTargetXY(message.findCurrentView(), message.getReactionTargetX(), message.getReactionTargetY(), reactionInChatWrapper.yOffset);
+      reactionInChatWrapper.reattach(sticker);
       sticker.playAnimation();
 
       layout.hideWindow(true);

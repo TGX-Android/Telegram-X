@@ -26,7 +26,6 @@ import android.view.animation.OvershootInterpolator;
 
 import androidx.annotation.Nullable;
 
-import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
@@ -38,7 +37,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Destroyable;
 
-public class StickerTinyView extends View implements FactorAnimator.Target, Destroyable {
+public class ReactionInChatView extends View implements FactorAnimator.Target, Destroyable {
 
   private static final float MIN_SCALE = 1.3f;
   private static final long CLICK_LIFESPAN = 230l;
@@ -74,7 +73,7 @@ public class StickerTinyView extends View implements FactorAnimator.Target, Dest
 
   private OnTouchCallback callback;
 
-  public StickerTinyView (Context context) {
+  public ReactionInChatView (Context context) {
     super(context);
     this.imageReceiver = new ImageReceiver(this, 0);
     this.gifReceiver = new GifReceiver(this);

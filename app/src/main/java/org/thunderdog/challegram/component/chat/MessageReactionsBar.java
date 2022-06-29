@@ -16,7 +16,7 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.component.sticker.StickerTinyView;
+import org.thunderdog.challegram.component.sticker.ReactionInChatView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGMessage;
@@ -93,22 +93,22 @@ public class MessageReactionsBar extends LinearLayout {
     linearLayout.setOrientation(LinearLayout.HORIZONTAL);
 
     for (TdApi.Reaction reaction : availableReactions) {
-      StickerTinyView sticker = initSticker(tdlib, reaction, chosenReaction);
+      ReactionInChatView sticker = initSticker(tdlib, reaction, chosenReaction);
       linearLayout.addView(sticker);
     }
     horizontalScrollView.addView(linearLayout);
   }
 
   @NonNull
-  private StickerTinyView initSticker (Tdlib tdlib, TdApi.Reaction reaction, @Nullable TdApi.MessageReaction chosenReaction) {
-    StickerTinyView sticker = new StickerTinyView(getContext());
+  private ReactionInChatView initSticker (Tdlib tdlib, TdApi.Reaction reaction, @Nullable TdApi.MessageReaction chosenReaction) {
+    ReactionInChatView sticker = new ReactionInChatView(getContext());
     sticker.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(40), Screen.dp(40)));
     sticker.setSticker(new TGStickerObj(tdlib, reaction.appearAnimation, "", reaction.appearAnimation.type));
     if (chosenReaction != null && chosenReaction.reaction.equals(reaction.reaction)) {
       sticker.setBackground(new CircleDrawable(R.id.theme_color_headerButton, 40f, true));
     }
 
-    sticker.setCallback(new StickerTinyView.OnTouchCallback() {
+    sticker.setCallback(new ReactionInChatView.OnTouchCallback() {
       @Override
       public void onSingleTap () {
         callback.onSelectReaction(sticker, reaction, false);
@@ -166,6 +166,6 @@ public class MessageReactionsBar extends LinearLayout {
   }
 
   public interface OnSelectReactionCallback {
-    void onSelectReaction (StickerTinyView sticker, TdApi.Reaction reaction, boolean isBig);
+    void onSelectReaction (ReactionInChatView sticker, TdApi.Reaction reaction, boolean isBig);
   }
 }
