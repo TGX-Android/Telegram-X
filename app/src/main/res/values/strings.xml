@@ -3157,6 +3157,8 @@
   <string name="EmojiSetsInfo">Are you sure you want to clear unused emoji sets?</string>
   <string name="BigEmoji">Big Emoji</string>
 
+  <string name="ChatReactions">Chat Reactions</string>
+
   <string name="error_CHAT_ADMIN_REQUIRED">You do not have enough privileges to perform this action.</string>
   <string name="ChatPermissions">Chat Permissions</string>
   <string name="ChatPermissionsRestrictHint">This permission is disabled for all members without admin privileges.</string>

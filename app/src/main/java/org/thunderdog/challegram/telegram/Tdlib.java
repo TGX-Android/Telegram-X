@@ -4047,6 +4047,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     client().send(new TdApi.SetChatNotificationSettings(chatId, settings), okHandler);
   }
 
+  public void setChatAvailableReactions (long chatId, String[] reactions) {
+    client().send(new TdApi.SetChatAvailableReactions(chatId, reactions), okHandler);
+  }
+
   public void setMuteForSync (long chatId, int muteFor) {
     TdApi.Chat chat = chatSync(chatId);
     if (chat == null)
