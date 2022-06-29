@@ -643,7 +643,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
           break;
         }
 
-        String text = TD.getTextFromMessage(otherMessage);
+        String text = TD.getTextFromMessageSpoilerless(otherMessage);
         if (!StringUtils.isEmpty(text)) {
           text = Strings.replaceNewLines(Strings.limit(text, 20));
         }

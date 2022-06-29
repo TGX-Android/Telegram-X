@@ -1004,7 +1004,7 @@ public class Lang {
         return Lang.getString(R.string.PinnedMessageChanged);
       }
     }
-    String text = TD.getTextFromMessage(message);
+    String text = TD.getTextFromMessageSpoilerless(message);
     if (!needPerson) {
       if (StringUtils.isEmpty(text))
         text = Lang.lowercase(TD.buildShortPreview(tdlib, message, true));
