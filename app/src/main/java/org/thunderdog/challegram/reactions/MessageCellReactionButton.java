@@ -5,7 +5,6 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
-import android.graphics.RectF;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.RoundRectShape;
 import android.util.Property;
@@ -43,6 +42,7 @@ public class MessageCellReactionButton extends FrameLayout{
 	private ShapeDrawable background;
 	private int nonSelectedColor, selectedColor, currentTextColor;
 	private int textColorNonSelected, textColorSelected;
+	private int currentCount;
 
 	private static final Property<MessageCellReactionButton, Integer> TEXT_COLOR=new Property<>(Integer.class, "fdafsda"){
 		@Override
@@ -127,6 +127,7 @@ public class MessageCellReactionButton extends FrameLayout{
 			background.getPaint().setColor(nonSelectedColor);
 		}
 		currentTextColor=textColorNonSelected;
+		selected=false;
 	}
 
 	public void copyFrom(MessageCellReactionButton other){
@@ -137,10 +138,12 @@ public class MessageCellReactionButton extends FrameLayout{
 	}
 
 	public void setReactions(TdApi.MessageReaction reaction, boolean animated){
-		boolean countChanged=reactions!=null && reactions.totalCount!=reaction.totalCount;
+		boolean countChanged=reactions!=null && currentCount!=reaction.totalCount;
 
 		if(!countChanged && reactions!=null && reactions.reaction.equals(reaction.reaction))
 			return;
+
+		currentCount=reaction.totalCount;
 
 		reactions=reaction;
 		counter.setCount(reaction.totalCount, animated);

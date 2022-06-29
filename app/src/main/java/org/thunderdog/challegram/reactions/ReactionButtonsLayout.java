@@ -4,8 +4,6 @@ import android.animation.AnimatorSet;
 import android.animation.LayoutTransition;
 import android.animation.ObjectAnimator;
 import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.graphics.Rect;
 import android.view.MotionEvent;
 import android.view.View;
@@ -14,9 +12,7 @@ import android.view.ViewGroup;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.charts.CubicBezierInterpolator;
 import org.thunderdog.challegram.data.TGMessage;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.ui.MessagesController;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,7 +24,6 @@ public class ReactionButtonsLayout extends ViewGroup{
 	private TGMessage message;
 	private int bottomRightIndentWidth;
 	private Rect rect=new Rect();
-	private boolean inBubble;
 	private LayoutTransition layoutTransition;
 	private ReactionButtonClickListener clickListener;
 	private MessageCellReactionButton.BackgroundStyle buttonStyle;
@@ -113,61 +108,22 @@ public class ReactionButtonsLayout extends ViewGroup{
 		if(message==null)
 			return;
 
-//		if(r-l<getMeasuredWidth()) throw new IllegalStateException("wrong width "+(r-l)+" expected "+getMeasuredWidth());
-//		if(b-t!=getMeasuredHeight()) throw new IllegalStateException("wrong height");
-
-//		// for outgoing media messages, align buttons to the right
-//		if(!inBubble && message.isOutgoing()){
-//			int rowStart=0;
-//			// go through all children and add up their widths
-//			for(int i=0; i<getChildCount(); i++){
-//				View child=getChildAt(i);
-//				if(disappearingButtons.contains(child))
-//					continue;
-//				if(curX+child.getMeasuredWidth()>width){
-//					// we have a completed row, go backwards and lay it out right to left
-//					curX=r-l-getPaddingRight();
-//					for(int j=i-1; j>=rowStart; j--){
-//						View child2=getChildAt(j);
-//						if(disappearingButtons.contains(child2))
-//							continue;
-//						child2.layout(curX-child2.getMeasuredWidth(), curY, curX, curY+child2.getMeasuredHeight());
-//						curX-=child2.getMeasuredWidth()+gap;
-//					}
-//					rowStart=i;
-//					curX=getPaddingLeft();
-//					curY+=rowHeight+gap;
-//				}
-//				curX+=child.getMeasuredWidth()+gap;
-//			}
-//			// lay out the last row
-//			curX=r-l-getPaddingRight();
-//			for(int j=getChildCount()-1; j>=rowStart; j--){
-//				View child2=getChildAt(j);
-//				if(disappearingButtons.contains(child2))
-//					continue;
-//				child2.layout(curX-child2.getMeasuredWidth(), curY, curX, curY+child2.getMeasuredHeight());
-//				curX-=child2.getMeasuredWidth()+gap;
-//			}
-//		}else{
-			for(int i=0; i<getChildCount(); i++){
-				View child=getChildAt(i);
-				if(disappearingButtons.contains(child))
-					continue;
-				if(curX+child.getMeasuredWidth()>width){
-					curX=getPaddingLeft();
-					curY+=rowHeight+gap;
-				}
-				child.layout(curX, curY, curX+child.getMeasuredWidth(), curY+child.getMeasuredHeight());
-				curX+=child.getMeasuredWidth()+gap;
-			}
-//		}
+		for(int i=0; i<getChildCount(); i++){
+			 View child=getChildAt(i);
+			 if(disappearingButtons.contains(child))
+				  continue;
+			 if(curX+child.getMeasuredWidth()>width){
+				  curX=getPaddingLeft();
+				  curY+=rowHeight+gap;
+			 }
+			 child.layout(curX, curY, curX+child.getMeasuredWidth(), curY+child.getMeasuredHeight());
+			 curX+=child.getMeasuredWidth()+gap;
+		}
 	}
 
 	public void setMessage(TGMessage message){
 		boolean sameMessage=this.message!=null && this.message.getChatId()==message.getChatId() && this.message.getId()==message.getId();
 		this.message=message;
-//		this.inBubble=inBubble;
 		if(message.useBubbles()){
 			if(message.drawBubbleTimeOverContent())
 				buttonStyle=MessageCellReactionButton.BackgroundStyle.BUBBLE_OUTSIDE;

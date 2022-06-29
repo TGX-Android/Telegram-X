@@ -44,6 +44,7 @@ import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.mediaview.data.MediaStack;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.player.TGPlayerController;
+import org.thunderdog.challegram.reactions.ReactionAnimationOverlay;
 import org.thunderdog.challegram.telegram.ListManager;
 import org.thunderdog.challegram.telegram.MessageEditListener;
 import org.thunderdog.challegram.telegram.MessageListener;
@@ -101,6 +102,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   private boolean isScrolling;
 
+  private ReactionAnimationOverlay animationOverlay;
+
   public MessagesManager (final MessagesController controller) {
     this.controller = controller;
     controller.context().addPasscodeListener(this);
@@ -142,6 +145,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         }
       }
     };
+    animationOverlay=new ReactionAnimationOverlay(controller);
   }
 
   public int getKnownTotalMessageCount () {
@@ -2794,5 +2798,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         color = ColorUtils.fromToArgb(color, Theme.getColor(bubbleNoWallpaperColorId), transparency);
       return color;
     }
+  }
+
+  public ReactionAnimationOverlay getAnimationOverlay(){
+    return animationOverlay;
   }
 }

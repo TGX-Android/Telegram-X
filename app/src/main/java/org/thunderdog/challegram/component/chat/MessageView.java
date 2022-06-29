@@ -17,6 +17,7 @@ package org.thunderdog.challegram.component.chat;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Canvas;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.view.HapticFeedbackConstants;
@@ -50,6 +51,9 @@ import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.player.TGPlayerController;
+import org.thunderdog.challegram.reactions.MessageCellReactionButton;
+import org.thunderdog.challegram.reactions.PreloadedReactionAnimations;
+import org.thunderdog.challegram.reactions.ReactionAnimationOverlay;
 import org.thunderdog.challegram.reactions.ReactionButtonsLayout;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -82,7 +86,7 @@ import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
-public class MessageView extends SparseDrawableViewGroup implements Destroyable, DrawableProvider, MessagesManager.MessageProvider {
+public class MessageView extends SparseDrawableViewGroup implements Destroyable, DrawableProvider, MessagesManager.MessageProvider, ReactionButtonsLayout.ReactionButtonClickListener {
   private static final int FLAG_USE_COMMON_RECEIVER = 1;
   private static final int FLAG_CAUGHT_CLICK = 1 << 1;
   private static final int FLAG_CAUGHT_MESSAGE_TOUCH = 1 << 2;
@@ -105,6 +109,7 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
   private MessagesManager manager;
   private ComplexReceiver reactionSmallIconsReceiver;
   private ReactionButtonsLayout reactionButtons;
+  private boolean isAttachedToWindow;
 
   public MessageView (Context context) {
     super(context);
@@ -117,6 +122,7 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
     }
     setWillNotDraw(false);
     reactionButtons=new ReactionButtonsLayout(context);
+    reactionButtons.setButtonClickListener(this);
     addView(reactionButtons);
   }
 
@@ -1549,5 +1555,81 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
 
   public void setReactionButtonsTranslation(float translationX){
     reactionButtons.setTranslationX(translationX);
+  }
+
+  @Override
+  protected void onAttachedToWindow(){
+    super.onAttachedToWindow();
+    isAttachedToWindow=true;
+  }
+
+  @Override
+  protected void onDetachedFromWindow(){
+    super.onDetachedFromWindow();
+    isAttachedToWindow=false;
+  }
+
+  @Override
+  public void onReactionClick(MessageCellReactionButton btn){
+    manager.controller().sendMessageReaction(msg, btn.getReaction().reaction, null, null);
+  }
+
+  @Override
+  public boolean onReactionLongClick(MessageCellReactionButton btn){
+    return false;
+  }
+
+  private int[] tmpViewLocation={0, 0};
+
+  public boolean getReactionIconBounds(String reaction, Rect outRect){
+    if(!isAttachedToWindow || !isAttached)
+      return false;
+    if(msg.needDrawReactionsWithTime()){
+      int i=0;
+      for(TdApi.MessageReaction r:msg.getReactions()){
+        if(r.reaction.equals(reaction)){
+          ImageReceiver receiver=reactionSmallIconsReceiver.getImageReceiver(i);
+          getLocationOnScreen(tmpViewLocation);
+          int x=msg.getCompactReactionsX()+receiver.getWidth()*i+tmpViewLocation[0];
+          int y=msg.getCompactReactionsY()+tmpViewLocation[1]-receiver.getHeight()/2;
+          outRect.set(x, y, x+receiver.getWidth(), y+receiver.getHeight());
+          return true;
+        }
+        i++;
+        if(i==3)
+          break;
+      }
+      return false;
+    }else{
+      MessageCellReactionButton btn=reactionButtons.getReactionButton(reaction);
+      if(btn==null)
+        return false;
+      View icon=btn.getIcon();
+      icon.getLocationOnScreen(tmpViewLocation);
+      outRect.set(tmpViewLocation[0], tmpViewLocation[1], tmpViewLocation[0]+icon.getWidth(), tmpViewLocation[1]+icon.getHeight());
+      return true;
+    }
+  }
+
+  public void setReactionIconHidden(String reaction, boolean hidden){
+    if(msg.needDrawReactionsWithTime()){
+      int i=0;
+      for(TdApi.MessageReaction r:msg.getReactions()){
+        if(r.reaction.equals(reaction)){
+          ImageReceiver receiver=reactionSmallIconsReceiver.getImageReceiver(i);
+          receiver.setAlpha(hidden ? 0f : 1f);
+          postInvalidate();
+          return;
+        }
+        i++;
+        if(i==3)
+          return;
+      }
+    }else{
+      MessageCellReactionButton btn=reactionButtons.getReactionButton(reaction);
+      if(btn!=null){
+        btn.getIcon().setAlpha(hidden ? 0f : 1f);
+      }
+    }
   }
 }

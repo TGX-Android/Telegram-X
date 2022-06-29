@@ -45,10 +45,12 @@ import android.text.TextUtils;
 import android.util.SparseIntArray;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -177,6 +179,8 @@ import org.thunderdog.challegram.navigation.ViewPagerHeaderViewCompact;
 import org.thunderdog.challegram.navigation.ViewPagerTopView;
 import org.thunderdog.challegram.player.RecordAudioVideoController;
 import org.thunderdog.challegram.player.RoundVideoController;
+import org.thunderdog.challegram.reactions.PreloadedReactionAnimations;
+import org.thunderdog.challegram.reactions.ReactionAnimationOverlay;
 import org.thunderdog.challegram.reactions.ReactionsMessageOptionsSheetHeaderView;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
@@ -238,6 +242,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -10315,5 +10320,126 @@ public class MessagesController extends ViewController<MessagesController.Argume
     c.postOnAnimationReady(() -> target.animateTo(animateToWhenReady));
     UI.getContext(context).navigation().navigateTo(c);
     return true;
+  }
+
+  public void sendMessageReaction(TGMessage msg, String reaction, ImageView src, PopupLayout popup){
+    MessageView mv=(MessageView) manager.findMessageView(getChatId(), msg.getMessageForReactions().id);
+    ArrayList<TdApi.MessageReaction> reactions=new ArrayList<>(Arrays.asList(msg.getReactions()));
+    TdApi.MessageReaction existingReaction=null;
+    for(TdApi.MessageReaction r:reactions){
+      if(r.isChosen){
+        existingReaction=r;
+        break;
+      }
+    }
+    boolean didAdd=false;
+    if(existingReaction!=null){
+      existingReaction.totalCount--;
+      existingReaction.isChosen=false;
+      if(existingReaction.totalCount==0){
+        reactions.remove(existingReaction);
+      }
+    }
+    if(existingReaction==null || !existingReaction.reaction.equals(reaction)){
+      TdApi.MessageReaction newReaction=null;
+      for(TdApi.MessageReaction r:reactions){
+        if(r.reaction.equals(reaction)){
+          newReaction=r;
+          break;
+        }
+      }
+      if(newReaction==null){
+        newReaction=new TdApi.MessageReaction(reaction, 1, true, null);
+        reactions.add(newReaction);
+        didAdd=true;
+      }else{
+        newReaction.totalCount++;
+        newReaction.isChosen=true;
+        didAdd=true;
+      }
+      Collections.sort(reactions, Comparator.comparingInt(c->c.totalCount));
+    }
+    TdApi.Message m=msg.getMessageForReactions();
+    if(m.interactionInfo==null)
+      m.interactionInfo=new TdApi.MessageInteractionInfo();
+    m.interactionInfo.reactions=reactions.toArray(new TdApi.MessageReaction[0]);
+    if(mv!=null){
+      mv.updateReactions();
+      if(didAdd){
+        mv.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener(){
+          @Override
+          public boolean onPreDraw(){
+            mv.getViewTreeObserver().removeOnPreDrawListener(this);
+
+            if(src!=null){
+              ReactionAnimationOverlay ov=manager.getAnimationOverlay();
+              Rect srcPos=new Rect();
+              int[] loc={0, 0};
+              src.getLocationOnScreen(loc);
+              srcPos.set(loc[0], loc[1], loc[0]+src.getWidth(), loc[1]+src.getHeight());
+              ov.playFlyingReactionAnimation(outRect -> {
+                return mv.getReactionIconBounds(reaction, outRect);
+              }, srcPos, src.getDrawable(), ()->{
+                src.setAlpha(0f);
+                if(popup!=null)
+                  popup.hideWindow(true);
+              }, ()->playReactionEffectAnimation(msg, reaction));
+            }else{
+              playReactionEffectAnimation(msg, reaction);
+            }
+
+            return true;
+          }
+        });
+      }
+    }
+    if(!didAdd && popup!=null){
+      popup.hideWindow(true);
+    }
+    tdlib.send(new TdApi.SetMessageReaction(getChatId(), msg.getMessageForReactions().id, reaction, false), tdlib.okHandler());
+  }
+
+  private void playReactionEffectAnimation(TGMessage msg, String reaction){
+    MessageView mv=(MessageView) manager.findMessageView(getChatId(), msg.getMessageForReactions().id);
+    if(mv==null)
+      return;
+
+    mv.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener(){
+    	@Override
+    	public boolean onPreDraw(){
+    		mv.getViewTreeObserver().removeOnPreDrawListener(this);
+
+          ReactionAnimationOverlay ov=manager.getAnimationOverlay();
+          PreloadedReactionAnimations anims=msg.tdlib().getReactionAnimations(reaction);
+          if(anims.around==null)
+            return true;
+
+          ov.playLottieAnimation(outRect->{
+            if(!mv.getReactionIconBounds(reaction, outRect))
+              return false;
+            int width=outRect.width();
+            int centerX=outRect.centerX();
+            int centerY=outRect.centerY();
+            int size=Math.round(width*2f);
+            outRect.set(centerX-size, centerY-size, centerX+size, centerY+size);
+            return true;
+          }, anims.around, null, null);
+
+          if(anims.center!=null)
+            ov.playLottieAnimation(outRect->{
+              if(!mv.getReactionIconBounds(reaction, outRect))
+                return false;
+              int size=outRect.width();
+              int centerX=outRect.centerX();
+              int centerY=outRect.centerY();
+              outRect.set(centerX-size, centerY-size, centerX+size, centerY+size);
+              return true;
+            }, anims.center, ()->mv.setReactionIconHidden(reaction, true), ()->mv.setReactionIconHidden(reaction, false));
+
+          return true;
+    	}
+    });
+    mv.invalidate();
+    mv.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
   }
 }

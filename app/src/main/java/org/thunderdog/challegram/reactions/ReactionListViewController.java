@@ -10,7 +10,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.Property;
 import android.view.Gravity;
 import android.view.MotionEvent;

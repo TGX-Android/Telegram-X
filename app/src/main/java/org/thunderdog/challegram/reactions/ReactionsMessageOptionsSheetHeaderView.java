@@ -1,8 +1,15 @@
 package org.thunderdog.challegram.reactions;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.ColorFilter;
+import android.graphics.Paint;
+import android.graphics.PixelFormat;
+import android.graphics.drawable.Drawable;
 import android.view.Gravity;
+import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -25,6 +32,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import androidx.annotation.DrawableRes;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout{
 	private MessagesController controller;
@@ -67,14 +76,27 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout{
 
 		int vpad=Screen.dp(12), hpad=Screen.dp(6);
 		scrollContent.setPadding(hpad, 0, hpad, 0);
+		String chosenReaction=null;
+		for(TdApi.MessageReaction mr:message.getReactions()){
+			if(mr.isChosen){
+				chosenReaction=mr.reaction;
+				break;
+			}
+		}
 		for(TdApi.Reaction r:reactions){
+			FrameLayout btn=new FrameLayout(context);
 			ImageView gifView=new ImageView(context);
 			LottieAnimationDrawable drawable=new LottieAnimationDrawable(tdlib.getReactionAnimations(r.reaction).appear, Screen.dp(24), Screen.dp(24));
-			gifView.setScaleType(ImageView.ScaleType.CENTER);
 			gifView.setImageDrawable(drawable);
+			btn.setTag(r);
+			btn.setOnClickListener(this::onReactionClick);
 			drawable.start();
+			btn.addView(gifView, new FrameLayout.LayoutParams(Screen.dp(24), Screen.dp(24), Gravity.CENTER));
+			if(r.reaction.equals(chosenReaction)){
+				btn.setBackground(new ChosenReactionBackgroundDrawable());
+			}
 
-			scrollContent.addView(gifView, new LinearLayout.LayoutParams(Screen.dp(36), Screen.dp(48)));
+			scrollContent.addView(btn, new LinearLayout.LayoutParams(Screen.dp(36), Screen.dp(48)));
 		}
 
 		countersView=new LinearLayout(context);
@@ -171,5 +193,35 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout{
 		OptionsLayout parent=(OptionsLayout) getParent();
 		currentReactionList.dismissFromOptionsSheet(reactionsCounter, seenCounter, parent, countersView);
 		currentReactionList=null;
+	}
+
+	private void onReactionClick(View v){
+		TdApi.Reaction r=(TdApi.Reaction) v.getTag();
+		controller.sendMessageReaction(message, r.reaction, (ImageView) ((ViewGroup)v).getChildAt(0), popupLayout);
+	}
+
+	private static class ChosenReactionBackgroundDrawable extends Drawable{
+		private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
+
+		@Override
+		public void draw(@NonNull Canvas canvas){
+			paint.setColor(Theme.getColor(R.id.theme_color_file));
+			canvas.drawCircle(getBounds().centerX(), getBounds().centerY(), Screen.dp(17.25f), paint);
+		}
+
+		@Override
+		public void setAlpha(int alpha){
+
+		}
+
+		@Override
+		public void setColorFilter(@Nullable ColorFilter colorFilter){
+
+		}
+
+		@Override
+		public int getOpacity(){
+			return PixelFormat.TRANSLUCENT;
+		}
 	}
 }

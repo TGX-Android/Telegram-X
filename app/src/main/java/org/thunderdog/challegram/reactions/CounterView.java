@@ -3,10 +3,7 @@ package org.thunderdog.challegram.reactions;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.view.Gravity;
-import android.view.View;
 
-import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.widget.SparseDrawableView;
 

@@ -3,7 +3,6 @@ package org.thunderdog.challegram.reactions;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.util.Log;
 import android.util.Property;
 import android.view.Gravity;
 import android.view.View;
@@ -24,7 +23,6 @@ import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.widget.ImageReceiverView;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import androidx.viewpager.widget.ViewPager;
 

@@ -237,6 +237,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private boolean settingsUseBigReactions;
   private CompactReactionsRenderer compactReactions;
   private int reactionButtonsHeight, reactionButtonsWidth;
+  private int compactReactionsX, compactReactionsY;
 
   protected TGMessage (MessagesManager manager, TdApi.Message msg) {
     if (!initialized) {
@@ -1800,6 +1801,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       if(needDrawReactionsWithTime() && compactReactions!=null){
         c.save();
         c.translate(right-compactReactions.getWidth(), top);
+        compactReactionsX=right-compactReactions.getWidth();
+        compactReactionsY=top;
         compactReactions.draw(c, smallReactionsReceiver);
         c.restore();
       }
@@ -2082,6 +2085,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   public int getChildrenTop () {
     return pContentY;
+  }
+
+  public int getCompactReactionsX(){
+    return compactReactionsX;
+  }
+
+  public int getCompactReactionsY(){
+    return compactReactionsY;
   }
 
   public boolean needGifReceiver () {
@@ -3144,6 +3155,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if(needDrawReactionsWithTime()){
       c.save();
       c.translate(startX, counterY);
+      compactReactionsX=startX;
+      compactReactionsY=counterY;
       compactReactions.draw(c, view.getReactionSmallIconsReceiver());
       c.restore();
       startX+=compactReactions.getWidth();

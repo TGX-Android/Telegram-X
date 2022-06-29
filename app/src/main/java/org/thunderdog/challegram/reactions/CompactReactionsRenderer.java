@@ -1,7 +1,6 @@
 package org.thunderdog.challegram.reactions;
 
 import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.view.Gravity;
 
 import org.drinkless.td.libcore.telegram.TdApi;

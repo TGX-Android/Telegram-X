@@ -2,12 +2,9 @@ package org.thunderdog.challegram.reactions;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.util.Log;
 import android.view.View;
 
-import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
-import org.thunderdog.challegram.loader.gif.GifState;
 
 public class GifReceiverView extends View{
 	private GifReceiver receiver;

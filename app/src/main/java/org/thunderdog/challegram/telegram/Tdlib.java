@@ -7483,6 +7483,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     PreloadedReactionAnimations anims=new PreloadedReactionAnimations();
     preloadedReactionAnimations.put(reaction.reaction, anims);
     loadLottieAnimation(reaction.appearAnimation, anim->anims.appear=anim);
+    if(reaction.aroundAnimation!=null)
+      loadLottieAnimation(reaction.aroundAnimation, anim->anims.around=anim);
+//    loadLottieAnimation(reaction.activateAnimation, anim->anims.activate=anim);
+    if(reaction.centerAnimation!=null)
+      loadLottieAnimation(reaction.centerAnimation, anim->anims.center=anim);
   }
 
   private void loadLottieAnimation(TdApi.Sticker sticker, Consumer<PreloadedLottieAnimation> callback){
