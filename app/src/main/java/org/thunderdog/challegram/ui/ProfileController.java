@@ -1873,6 +1873,19 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             }
             break;
           }
+          case R.id.btn_allowedReactions: {
+            switch (mode) {
+              case MODE_EDIT_SUPERGROUP:
+              case MODE_EDIT_CHANNEL:
+              case MODE_EDIT_GROUP: {
+                //OKI use real number of possible reactions?
+                //OKI fix R.string.xPermissions
+                view.setData(Lang.plural(R.string.xPermissions, chat.availableReactions.length, TdConstants.CHAT_REACTIONS_COUNT));
+                break;
+              }
+            }
+            break;
+          }
           case R.id.btn_prehistoryMode: {
             switch (mode) {
               case MODE_EDIT_SUPERGROUP:
@@ -3128,6 +3141,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     navigateTo(c);
   }
 
+    private void openAllowedReactions () {
+    EditReactionsController c = new EditReactionsController(context, tdlib);
+    c.setArguments(new EditReactionsController.Args(chat.id));
+    navigateTo(c);
+  }
+
   private void openRecentActions () {
     MessagesController c = new MessagesController(context, tdlib);
     c.setArguments(new MessagesController.Arguments(MessagesController.PREVIEW_MODE_EVENT_LOG, null, chat));
@@ -3594,6 +3613,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, mode == MODE_EDIT_CHANNEL ? R.string.RestrictSavingChannelHint : R.string.RestrictSavingGroupHint));
       added = false;
+    }
+    //OKI is there any conditions?
+    if (true) {
+      items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_allowedReactions, 0, R.string.Reactions));
+      added = true;
     }
     if (tdlib.canToggleAllHistory(chat)) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
@@ -4612,6 +4637,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       // EDIT stuff
       case R.id.btn_prehistoryMode: {
         togglePrehistoryMode();
+        break;
+      }
+      case R.id.btn_allowedReactions: {
+        openAllowedReactions();
         break;
       }
       case R.id.btn_chatPermissions: {

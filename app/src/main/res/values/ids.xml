@@ -1182,4 +1182,11 @@
   <item type="id" name="btn_themeCreateInfo" />
   <item type="id" name="btn_themeExportNeedDefault" />
   <item type="id" name="btn_themeExportSetAuthor" />
+
+  <item type="id" name="controller_allowedReactions" />
+  <item type="id" name="controller_reactions" />
+  <item type="id" name="btn_allowedReactions" />
+  <item type="id" name="btn_reactionsDisabled" />
+  <item type="id" name="text_reactionTitle" />
+
 </resources>
