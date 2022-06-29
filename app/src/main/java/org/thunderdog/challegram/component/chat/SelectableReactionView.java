@@ -105,7 +105,9 @@ public class SelectableReactionView extends View {
       int cy = viewHeight / 2;
 
       // Draw emoji
-      int emojiSize = Math.min(viewWidth, viewHeight) - Screen.dp(16f);
+      int emojiWidth = viewWidth / 2;
+      int emojiHeight = viewHeight / 2;
+      int emojiSize = Math.min(emojiWidth, emojiHeight) - Screen.dp(16f);
       Rect emojiRect = Paints.getRect();
       emojiRect.left = cx - emojiSize / 2;
       emojiRect.top = cy - emojiSize / 2;
@@ -116,9 +118,9 @@ public class SelectableReactionView extends View {
 
       // Draw check mark
       if (selected) {
-        int markSize = Math.max(CHECK_MARK_MIN_SIZE, emojiSize / 4);
-        int markRight = viewWidth;
-        int markBottom = viewHeight;
+        int markSize = Math.max(CHECK_MARK_MIN_SIZE, emojiSize / 2);
+        int markRight = emojiRect.right + markSize / 2;
+        int markBottom = emojiRect.bottom + markSize / 2;
         int markLeft = markRight - markSize;
         int markTop = markBottom - markSize;
         checkMarkDrawable.setBounds(markLeft, markTop, markRight, markBottom);

@@ -32,7 +32,7 @@ import java.util.function.Consumer;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
 
-public class ReactionListController extends ViewController<ReactionsLayout> implements View.OnClickListener {
+public class ReactionListController extends ViewController<ReactionsLayout> {
     private CustomRecyclerView recyclerView;
     private LinearLayoutManager manager;
     private ReactionListController.ReactionAdapter adapter;
@@ -88,16 +88,6 @@ public class ReactionListController extends ViewController<ReactionsLayout> impl
     public void destroy () {
         super.destroy();
         Views.destroyRecyclerView(recyclerView);
-    }
-
-    @Override
-    public void onClick (View v) {
-        if (!(v instanceof EmojiView)) {
-            return;
-        }
-        EmojiView emojiView = (EmojiView) v;
-        String rawEmoji = emojiView.getRawEmoji();
-        String emoji = emojiView.getEmojiColored();
     }
 
     private static class Item {
