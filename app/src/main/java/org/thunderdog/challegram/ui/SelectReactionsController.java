@@ -2,6 +2,7 @@ package org.thunderdog.challegram.ui;
 
 import android.content.Context;
 import android.graphics.Rect;
+import android.preference.CheckBoxPreference;
 import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
@@ -28,12 +29,16 @@ import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.EmojiData;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.v.CustomRecyclerView;
+import org.thunderdog.challegram.widget.CheckBoxView;
+import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.DoneButton;
+import org.thunderdog.challegram.widget.ThreeStateCheckBoxView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -84,10 +89,32 @@ public class SelectReactionsController extends ViewController<SelectReactionsCon
 
   @Override
   protected View onCreateView (Context context) {
-    FrameLayoutFix contentView = new FrameLayoutFix(context);
-    contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-
     Arguments arguments = getArgumentsStrict();
+
+    LinearLayout contentView = new LinearLayout(context);
+    contentView.setOrientation(LinearLayout.VERTICAL);
+    contentView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+    LinearLayout checkBoxLayout = new LinearLayout(context);
+    checkBoxLayout.setOrientation(LinearLayout.HORIZONTAL);
+    checkBoxLayout.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Screen.dp(40f)));
+    checkBoxLayout.setGravity(Gravity.CENTER_VERTICAL);
+    CustomTextView checkBoxText = new CustomTextView(context, tdlib);
+    checkBoxText.setLayoutParams(new LinearLayout.LayoutParams(Screen.smallestSide() - Screen.dp(40f), LinearLayout.LayoutParams.WRAP_CONTENT));
+    checkBoxText.setPadding(Screen.dp(10f), 0, 0, 0);
+    String checkBoxString = arguments.getSelectedReactions().length + " " + Lang.getString(R.string.ReactionsEnabled);
+    checkBoxText.setBoldText(checkBoxString, null, false);
+    checkBoxText.setTextSize(18f);
+    checkBoxLayout.addView(checkBoxText);
+    ThreeStateCheckBoxView checkBoxView = new ThreeStateCheckBoxView(context);
+    checkBoxView.setLayoutParams(new LinearLayout.LayoutParams(Screen.dp(20f), Screen.dp(20f)));
+    Views.setClickable(checkBoxView);
+    checkBoxView.setOnClickListener(view -> {
+      checkBoxView.toggle();
+    });
+    checkBoxLayout.addView(checkBoxView);
+    contentView.addView(checkBoxLayout);
+
     String[] reactions = arguments.getAllReactions();
     for (int i = 0; i < reactions.length; i++) {
       String reaction = reactions[i];
@@ -107,7 +134,7 @@ public class SelectReactionsController extends ViewController<SelectReactionsCon
 
     recyclerView = (CustomRecyclerView) Views.inflate(context(), R.layout.recycler_custom, contentView);
     recyclerView.setHasFixedSize(true);
-    recyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    recyclerView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
     recyclerView.setLayoutManager(manager);
     recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS :View.OVER_SCROLL_NEVER);
     recyclerView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 140l));
