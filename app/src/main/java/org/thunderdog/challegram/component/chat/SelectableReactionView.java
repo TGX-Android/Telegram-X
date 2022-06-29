@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.Nullable;
@@ -37,10 +38,15 @@ public class SelectableReactionView extends View {
   private String emojiColored;
   private String emojiTone;
   private String[] emojiOtherTones;
+  private boolean selected = false;
+  Drawable checkMarkDrawable;
 
   public SelectableReactionView (Context context, EmojiToneHelper toneHelper) {
     super(context);
     this.toneHelper = toneHelper;
+    checkMarkDrawable = getResources().getDrawable(R.drawable.baseline_check_circle_24);
+    int color = Theme.getColor(R.id.theme_color_bubbleOut_file);
+    DrawableCompat.setTint(checkMarkDrawable, color);
   }
 
   @Override
@@ -53,6 +59,7 @@ public class SelectableReactionView extends View {
   public void setOnClickListener (@Nullable OnClickListener l) {
     this.onClickListener = l;
   }
+
 
   public void setReaction (String emoji, int colorState) {
     if (StringUtils.equalsOrBothEmpty(this.emoji, emoji)) return;
@@ -79,6 +86,16 @@ public class SelectableReactionView extends View {
     }
   }
 
+  public void setSelected(boolean value) {
+    if (value == selected) return;
+    selected = value;
+    invalidate();
+  }
+
+  public boolean selected() {
+    return selected;
+  }
+
   @Override
   protected void onDraw (Canvas c) {
     if (info != null) {
@@ -98,16 +115,15 @@ public class SelectableReactionView extends View {
 
 
       // Draw check mark
-      int markSize = Math.max(CHECK_MARK_MIN_SIZE, emojiSize / 4);
-      int markRight = viewWidth;
-      int markBottom = viewHeight;
-      int markLeft = markRight - markSize;
-      int markTop = markBottom - markSize;
-      Drawable checkMarkDrawable = getResources().getDrawable(R.drawable.baseline_check_circle_24);
-      int color = Theme.getColor(R.id.theme_color_bubbleOut_file);
-      DrawableCompat.setTint(checkMarkDrawable, color);
-      checkMarkDrawable.setBounds(markLeft, markTop, markRight, markBottom);
-      checkMarkDrawable.draw(c);
+      if (selected) {
+        int markSize = Math.max(CHECK_MARK_MIN_SIZE, emojiSize / 4);
+        int markRight = viewWidth;
+        int markBottom = viewHeight;
+        int markLeft = markRight - markSize;
+        int markTop = markBottom - markSize;
+        checkMarkDrawable.setBounds(markLeft, markTop, markRight, markBottom);
+        checkMarkDrawable.draw(c);
+      }
     }
   }
 }

@@ -3128,7 +3128,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private void openChatReactions () {
     EditReactionsController c = new EditReactionsController(context, tdlib);
-    c.setArguments(new EditReactionsController.Arguments(false));
+    c.setArguments(new EditReactionsController.Arguments(false, chat.availableReactions));
     navigateTo(c);
   }
 

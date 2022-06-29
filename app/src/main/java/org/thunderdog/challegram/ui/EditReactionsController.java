@@ -21,6 +21,7 @@ import org.thunderdog.challegram.component.chat.EmojiToneHelper;
 import org.thunderdog.challegram.component.chat.SelectableReactionView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -42,16 +43,26 @@ public class EditReactionsController extends ViewController<EditReactionsControl
   private LinearLayoutManager manager;
   private EditReactionsController.ReactionAdapter adapter;
   private EmojiToneHelper toneHelper;
+  private final List<EditReactionsController.Item> items;
 
   public EditReactionsController (Context context, Tdlib tdlib) {
     super(context, tdlib);
+    items = new ArrayList<>();
   }
 
   @Override
   public int getId () {
-    return R.id.controller_reactions;
+    return R.id.controller_chatReactions;
   }
 
+  @Override
+  public boolean onBackPressed (boolean fromTop) {
+    if (hasAnyChanges()) {
+      showUnsavedChangesPromptBeforeLeaving(null);
+      return true;
+    }
+    return false;
+  }
   @Override
   protected void handleLanguageDirectionChange () {
     super.handleLanguageDirectionChange();
@@ -60,16 +71,21 @@ public class EditReactionsController extends ViewController<EditReactionsControl
   }
 
   @Override
+  protected int getBackButton () {
+    return BackHeaderButton.TYPE_BACK;
+  }
+
+  @Override
   protected View onCreateView (Context context) {
     FrameLayoutFix contentView = new FrameLayoutFix(context);
     contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-    String[] reactions = getArgumentsStrict().getReactions();
-    List<EditReactionsController.Item> items = new ArrayList<>();
+    Arguments arguments = getArgumentsStrict();
+    String[] reactions = arguments.getReactions();
     for (int i = 0; i < reactions.length; i++) {
       String reaction = reactions[i];
       int reactionColorState = EmojiData.instance().getEmojiColorState(reaction);
-      items.add(new EditReactionsController.Item(reaction, reactionColorState));
+      items.add(new EditReactionsController.Item(reaction, reactionColorState, arguments.isReactionSelected(reaction)));
       if (adapter != null) {
         adapter.notifyItemInserted(i);
       }
@@ -100,6 +116,16 @@ public class EditReactionsController extends ViewController<EditReactionsControl
     Views.destroyRecyclerView(recyclerView);
   }
 
+  private boolean hasAnyChanges () {
+    EditReactionsController.Arguments arguments = getArgumentsStrict();
+    for (Item item: items) {
+      if (item.selected != arguments.isReactionSelected(item.reaction)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   private static class Item {
     public static final String DEFAULT_CAPTION = "This reaction is not supported";
 
@@ -107,9 +133,12 @@ public class EditReactionsController extends ViewController<EditReactionsControl
     public final int reactionColorState;
     public final String caption;
 
-    public Item (String reaction, int reactionColorState) {
+    public boolean selected = false;
+
+    public Item (String reaction, int reactionColorState, boolean selected) {
       this.reaction = reaction;
       this.reactionColorState = reactionColorState;
+      this.selected = selected;
       switch (reaction) {
         case "👍": {
           caption = Lang.getString(R.string.ThumbsUp);
@@ -193,22 +222,16 @@ public class EditReactionsController extends ViewController<EditReactionsControl
     @NonNull
     @Override
     public EditReactionsController.ItemHolder onCreateViewHolder (@NonNull ViewGroup parent, int viewType) {
-      SelectableReactionView reactionView = new SelectableReactionView(context, this.parent.toneHelper);
-      reactionView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-      reactionView.setPadding(
-          reactionPadding,
-          reactionPadding,
-          reactionPadding,
-          reactionPadding
-      );
-      Views.setClickable(reactionView);
-      RippleSupport.setTransparentSelector(reactionView);
-
       LinearLayout wrapper = new LinearLayout(context);
       wrapper.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+      RippleSupport.setTransparentSelector(wrapper);
+
+      SelectableReactionView reactionView = new SelectableReactionView(context, this.parent.toneHelper);
+      reactionView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
       wrapper.addView(reactionView);
 
       TextView captionView = new TextView(context);
+      captionView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
       captionView.setId(R.id.text_reactionCaption);
       wrapper.addView(captionView);
 
@@ -220,10 +243,13 @@ public class EditReactionsController extends ViewController<EditReactionsControl
       EditReactionsController.Item item = items.get(position);
       holder.itemView.setId(R.id.btn_selectReaction);
       holder.itemView.setOnClickListener(view -> {
+        item.selected = !item.selected;
+        holder.reactionView.setSelected(item.selected);
         onReactionClick.accept(item.reaction);
       });
       holder.captionView.setText(item.caption);
       holder.reactionView.setReaction(item.reaction, item.reactionColorState);
+      holder.reactionView.setSelected(item.selected);
     }
 
     @Override
@@ -233,7 +259,7 @@ public class EditReactionsController extends ViewController<EditReactionsControl
   }
 
   public static class Arguments {
-    private boolean useDarkMode;
+    private final boolean useDarkMode;
     private final String[] reactions = new String[] {
         "👍",
         "👎",
@@ -247,9 +273,11 @@ public class EditReactionsController extends ViewController<EditReactionsControl
         "😱",
         "🤩"
     };
+    private final String[] selectedReactions;
 
-    public Arguments (boolean useDarkMode) {
+    public Arguments (boolean useDarkMode, String[] selectedReactions) {
       this.useDarkMode = useDarkMode;
+      this.selectedReactions = selectedReactions;
     }
 
     public boolean useDarkMode () {
@@ -258,6 +286,19 @@ public class EditReactionsController extends ViewController<EditReactionsControl
 
     public String[] getReactions () {
       return reactions;
+    }
+
+    public String[] getSelectedReactions () {
+      return reactions;
+    }
+
+    public boolean isReactionSelected (String reaction) {
+      for (int i = 0; i < selectedReactions.length; i++) {
+        if (selectedReactions[i].equals(reaction)) {
+          return true;
+        }
+      }
+      return false;
     }
   }
 }
