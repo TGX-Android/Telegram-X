@@ -36,7 +36,6 @@ public class ThreeStateCheckBoxView extends View implements FactorAnimator.Targe
   private final BoolAnimator isHidden = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 165l);
   private final BoolAnimator isDisabled = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 165l);
 
-
   public ThreeStateCheckBoxView (Context context) {
     super(context);
 
@@ -45,6 +44,10 @@ public class ThreeStateCheckBoxView extends View implements FactorAnimator.Targe
     outerPaint.setStyle(Paint.Style.STROKE);
 
     rect = new RectF();
+  }
+
+  public ThreeStateCheckBoxView.State getState() {
+    return currentState;
   }
 
   public void setState (ThreeStateCheckBoxView.State newState) {
@@ -76,8 +79,6 @@ public class ThreeStateCheckBoxView extends View implements FactorAnimator.Targe
 
   public void toggle () {
     if (currentState == State.FALSE) {
-      setState(State.INTERIM);
-    } else if (currentState == State.INTERIM) {
       setState(State.TRUE);
     } else {
       setState(State.FALSE);

@@ -1,9 +1,6 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
-import android.graphics.Rect;
-import android.preference.CheckBoxPreference;
-import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,31 +8,24 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.StringRes;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.chat.EmojiToneHelper;
 import org.thunderdog.challegram.component.chat.SelectableReactionView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.EmojiData;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
-import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.v.CustomRecyclerView;
-import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.DoneButton;
 import org.thunderdog.challegram.widget.ThreeStateCheckBoxView;
@@ -56,6 +46,8 @@ public class SelectReactionsController extends ViewController<SelectReactionsCon
   private final List<SelectReactionsController.Item> items;
   private DoneButton doneButton;
   private boolean doneVisible = false;
+  private CustomTextView checkBoxText;
+  private ThreeStateCheckBoxView checkBoxView;
 
   public SelectReactionsController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -91,45 +83,59 @@ public class SelectReactionsController extends ViewController<SelectReactionsCon
   protected View onCreateView (Context context) {
     Arguments arguments = getArgumentsStrict();
 
+    String[] reactions = arguments.getAllReactions();
+    for (int i = 0; i < reactions.length; i++) {
+      String reaction = reactions[i];
+      int reactionColorState = EmojiData.instance().getEmojiColorState(reaction);
+      items.add(new SelectReactionsController.Item(reaction, reactionColorState, arguments.isReactionSelected(reaction)));
+    }
+
     LinearLayout contentView = new LinearLayout(context);
     contentView.setOrientation(LinearLayout.VERTICAL);
     contentView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
     LinearLayout checkBoxLayout = new LinearLayout(context);
     checkBoxLayout.setOrientation(LinearLayout.HORIZONTAL);
-    checkBoxLayout.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Screen.dp(40f)));
+    checkBoxLayout.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Screen.dp(60f)));
     checkBoxLayout.setGravity(Gravity.CENTER_VERTICAL);
-    CustomTextView checkBoxText = new CustomTextView(context, tdlib);
-    checkBoxText.setLayoutParams(new LinearLayout.LayoutParams(Screen.smallestSide() - Screen.dp(40f), LinearLayout.LayoutParams.WRAP_CONTENT));
+    checkBoxText = new CustomTextView(context, tdlib);
+    checkBoxText.setLayoutParams(new LinearLayout.LayoutParams(Screen.currentWidth() - Screen.dp(40f), LinearLayout.LayoutParams.WRAP_CONTENT));
     checkBoxText.setPadding(Screen.dp(10f), 0, 0, 0);
-    String checkBoxString = arguments.getSelectedReactions().length + " " + Lang.getString(R.string.ReactionsEnabled);
-    checkBoxText.setBoldText(checkBoxString, null, false);
+    setTextForCheckBox(arguments.selectedReactions.length);
     checkBoxText.setTextSize(18f);
     checkBoxLayout.addView(checkBoxText);
-    ThreeStateCheckBoxView checkBoxView = new ThreeStateCheckBoxView(context);
+    checkBoxView = new ThreeStateCheckBoxView(context);
     checkBoxView.setLayoutParams(new LinearLayout.LayoutParams(Screen.dp(20f), Screen.dp(20f)));
     Views.setClickable(checkBoxView);
     checkBoxView.setOnClickListener(view -> {
       checkBoxView.toggle();
+      boolean reactionsState = false;
+      if (checkBoxView.getState() == ThreeStateCheckBoxView.State.TRUE) {
+        reactionsState = true;
+      }
+      for (Item item: items) {
+        item.selected = reactionsState;
+      }
+      doneVisible = hasAnyChanges();
+      synchronized (adapter) {
+        adapter.notifyDataSetChanged();
+      }
+      doneButton.setIsVisible(doneVisible, false);
+      int numOfSelected = reactionsState ? items.size() : 0;
+      setTextForCheckBox(numOfSelected);
     });
+    updateCheckBox();
     checkBoxLayout.addView(checkBoxView);
     contentView.addView(checkBoxLayout);
-
-    String[] reactions = arguments.getAllReactions();
-    for (int i = 0; i < reactions.length; i++) {
-      String reaction = reactions[i];
-      int reactionColorState = EmojiData.instance().getEmojiColorState(reaction);
-      items.add(new SelectReactionsController.Item(reaction, reactionColorState, arguments.isReactionSelected(reaction)));
-      if (adapter != null) {
-        adapter.notifyItemInserted(i);
-      }
-    }
 
     manager = new GridLayoutManager(context, 4);
     toneHelper = new EmojiToneHelper(context, null, this);
     adapter = new SelectReactionsController.ReactionAdapter(context, items, this, String -> {
+      if (items.isEmpty()) return;
       doneVisible = hasAnyChanges();
       doneButton.setIsVisible(doneVisible, false);
+      updateCheckBox();
+      setTextForCheckBox(getNumberOfSelected());
     });
 
     recyclerView = (CustomRecyclerView) Views.inflate(context(), R.layout.recycler_custom, contentView);
@@ -140,6 +146,10 @@ public class SelectReactionsController extends ViewController<SelectReactionsCon
     recyclerView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 140l));
     recyclerView.setAdapter(adapter);
     contentView.addView(recyclerView);
+
+    FrameLayoutFix wrapper = new FrameLayoutFix(context);
+    wrapper.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    wrapper.addView(contentView);
 
     int padding = Screen.dp(4f);
     FrameLayoutFix.LayoutParams params;
@@ -159,11 +169,7 @@ public class SelectReactionsController extends ViewController<SelectReactionsCon
     doneButton.setLayoutParams(params);
     doneButton.setMaximumAlpha(1f);
     doneButton.setIsVisible(false, false);
-    contentView.addView(doneButton);
-
-    FrameLayoutFix wrapper = new FrameLayoutFix(context);
-    wrapper.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-    wrapper.addView(contentView);
+    wrapper.addView(doneButton);
     return wrapper;
   }
 
@@ -186,6 +192,43 @@ public class SelectReactionsController extends ViewController<SelectReactionsCon
       }
     }
     return false;
+  }
+
+  private boolean differentReactionStates () {
+    for (int i = 1; i < items.size(); i ++) {
+      if (items.get(i).selected != items.get(i - 1).selected) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private int getNumberOfSelected () {
+    int count = 0;
+    for (int i = 0; i < items.size(); i ++) {
+      if (items.get(i).selected) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  private void setTextForCheckBox (int num) {
+    String text = Lang.getString(R.string.ReactionsDisabled);
+    if (num > 0) {
+      text = num + " " + Lang.getString(R.string.ReactionsEnabled);
+    }
+    checkBoxText.setText(text, null, true);
+  }
+
+  private void updateCheckBox() {
+    if (differentReactionStates()) {
+      checkBoxView.setState(ThreeStateCheckBoxView.State.INTERIM);
+    } else if (items.get(0).selected == true) {
+      checkBoxView.setState(ThreeStateCheckBoxView.State.TRUE);
+    } else {
+      checkBoxView.setState(ThreeStateCheckBoxView.State.FALSE);
+    }
   }
 
   private static class Item {
@@ -246,6 +289,26 @@ public class SelectReactionsController extends ViewController<SelectReactionsCon
           caption = Lang.getString(R.string.StarStruck);
           break;
         }
+        case "\uD83D\uDC4F": {
+          caption = Lang.getString(R.string.ClappingHands);
+          break;
+        }
+        case "\uD83E\uDD14": {
+          caption = Lang.getString(R.string.ThinkingFace);
+          break;
+        }
+        case "\uD83E\uDD2F": {
+          caption = Lang.getString(R.string.ExplodingHead);
+          break;
+        }
+        case "\uD83D\uDE22": {
+          caption = Lang.getString(R.string.CryingFace);
+          break;
+        }
+        case "\uD83E\uDD70": {
+          caption = Lang.getString(R.string.SmilingFaceWithHearts);
+          break;
+        }
         default: {
           caption = DEFAULT_CAPTION;
           break;
@@ -266,9 +329,8 @@ public class SelectReactionsController extends ViewController<SelectReactionsCon
   }
 
   private static class ReactionAdapter extends RecyclerView.Adapter<SelectReactionsController.ItemHolder> {
-
-    private static final int reactionSize = Screen.dp(60f);
-    private static final int reactionPadding = Screen.dp(10f);
+    private static final int REACTION_SIZE = Screen.dp(80f);
+    private static final int REACTION_PADDING = Screen.dp(40f);
 
     private final Context context;
     private final SelectReactionsController parent;
@@ -281,19 +343,23 @@ public class SelectReactionsController extends ViewController<SelectReactionsCon
       this.items = items;
       this.onReactionClick = onReactionClick;
     }
+
     @NonNull
     @Override
     public SelectReactionsController.ItemHolder onCreateViewHolder (@NonNull ViewGroup parent, int viewType) {
       LinearLayout wrapper = new LinearLayout(context);
+      wrapper.setOrientation(LinearLayout.VERTICAL);
+      wrapper.setGravity(Gravity.CENTER_HORIZONTAL);
       wrapper.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
       RippleSupport.setTransparentSelector(wrapper);
 
-      SelectableReactionView reactionView = new SelectableReactionView(context, this.parent.toneHelper);
-      reactionView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+      SelectableReactionView reactionView = new SelectableReactionView(context, this.parent.toneHelper, REACTION_PADDING);
+      reactionView.setLayoutParams(new LinearLayout.LayoutParams(REACTION_SIZE, REACTION_SIZE));
       wrapper.addView(reactionView);
 
       TextView captionView = new TextView(context);
-      captionView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+      captionView.setGravity(Gravity.CENTER_HORIZONTAL);
+      captionView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
       captionView.setId(R.id.text_reactionCaption);
       wrapper.addView(captionView);
 

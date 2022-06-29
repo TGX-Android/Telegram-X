@@ -3159,6 +3159,7 @@
 
   <string name="ChatReactions">Chat Reactions</string>
   <string name="ReactionsEnabled">Reactions Enabled</string>
+  <string name="ReactionsDisabled">Reactions Disabled</string>
 
   <string name="error_CHAT_ADMIN_REQUIRED">You do not have enough privileges to perform this action.</string>
   <string name="ChatPermissions">Chat Permissions</string>

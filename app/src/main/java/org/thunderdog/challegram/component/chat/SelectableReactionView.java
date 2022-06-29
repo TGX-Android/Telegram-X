@@ -39,11 +39,13 @@ public class SelectableReactionView extends View {
   private String emojiTone;
   private String[] emojiOtherTones;
   private boolean selected = false;
-  Drawable checkMarkDrawable;
+  private Drawable checkMarkDrawable;
+  private final int padding;
 
-  public SelectableReactionView (Context context, EmojiToneHelper toneHelper) {
+  public SelectableReactionView (Context context, EmojiToneHelper toneHelper, int padding) {
     super(context);
     this.toneHelper = toneHelper;
+    this.padding = padding;
     checkMarkDrawable = getResources().getDrawable(R.drawable.baseline_check_circle_24);
     int color = Theme.getColor(R.id.theme_color_bubbleOut_file);
     DrawableCompat.setTint(checkMarkDrawable, color);
@@ -105,9 +107,7 @@ public class SelectableReactionView extends View {
       int cy = viewHeight / 2;
 
       // Draw emoji
-      int emojiWidth = viewWidth / 2;
-      int emojiHeight = viewHeight / 2;
-      int emojiSize = Math.min(emojiWidth, emojiHeight) - Screen.dp(16f);
+      int emojiSize = Math.min(viewWidth, viewHeight) - padding;
       Rect emojiRect = Paints.getRect();
       emojiRect.left = cx - emojiSize / 2;
       emojiRect.top = cy - emojiSize / 2;

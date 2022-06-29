@@ -1874,7 +1874,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             break;
           }
           case R.id.btn_reactions: {
-            view.setData(Lang.plural(R.string.xPermissions, 0, TdConstants.CHAT_REACTIONS_COUNT));
+            int num = chat.availableReactions.length;
+            view.setData(Lang.plural(R.string.xPermissions, num, TdConstants.CHAT_REACTIONS_COUNT));
             break;
           }
           case R.id.btn_prehistoryMode: {
@@ -3133,6 +3134,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         chat.availableReactions,
         selectedReactions -> {
           tdlib.setChatAvailableReactions(chat.id, selectedReactions);
+          synchronized (baseAdapter) {
+            baseAdapter.notifyDataSetChanged();
+          }
         })
     );
     navigateTo(c);
