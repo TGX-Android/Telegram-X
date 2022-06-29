@@ -123,6 +123,7 @@ import org.thunderdog.challegram.component.chat.WallpaperRecyclerView;
 import org.thunderdog.challegram.component.chat.WallpaperView;
 import org.thunderdog.challegram.component.popups.MessageSeenController;
 import org.thunderdog.challegram.component.popups.ModernActionedLayout;
+import org.thunderdog.challegram.component.sticker.StickerTinyViewHolder;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
@@ -330,6 +331,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private CircleButton scrollToBottomButton, mentionButton;
   private CounterBadgeView unreadCountView, mentionCountView;
 
+  private StickerTinyViewHolder stickerTinyViewHolder;
   public boolean sponsoredMessageLoaded = false;
 
   public MessagesController (Context context, Tdlib tdlib) {
@@ -1239,6 +1241,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     TGLegacyManager.instance().addEmojiListener(this);
 
+    stickerTinyViewHolder = new StickerTinyViewHolder(context());
     if (needTabs()) {
       /*headerCell = new ViewPagerHeaderViewCompact(context);
         FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) ((ViewPagerHeaderViewCompact) headerCell).getRecyclerView().getLayoutParams();
@@ -1300,9 +1303,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
       contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
       contentView.addView(pagerContentView);
 
+      contentView.addView(stickerTinyViewHolder);
+
       return contentView;
 
     }
+
+    contentView.addView(stickerTinyViewHolder);
 
     return contentView;
   }
@@ -4155,13 +4162,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     PopupLayout layout = showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
     patchReadReceiptsOptions(layout, msg, disableViewCounter);
-    patchEmojiOptions(layout, msg, disableViewCounter);
+    patchReactionsOptions(layout, msg, disableViewCounter);
   }
 
-  /**
-   * TODO Add rtl support
-   */
-  private void patchEmojiOptions(PopupLayout layout, TGMessage message, boolean disableViewCounter) {
+  private void patchReactionsOptions (PopupLayout layout, TGMessage message, boolean disableViewCounter) {
     if (disableViewCounter || !(layout.getChildAt(1) instanceof OptionsLayout)) {
       return;
     }
@@ -4184,11 +4188,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
     viewCount.setPadding(Screen.dp(16f), 0, 0, 0);
     statsWrap.addView(viewCount);
 
-    MessageReactionsBar messageReactionsBar = new MessageReactionsBar(context, this, message, (reaction, isBig) -> {
-      tdlib.setMessageReaction(message.getChatId(), message.getId(), reaction.reaction, isBig, result -> {
-//        runOnUiThreadOptional(() -> {
-//        });
-      });
+    MessageReactionsBar messageReactionsBar = new MessageReactionsBar(context, this, message, (sticker, reaction, isBig) -> {
+      tdlib.setMessageReaction(message.getChatId(), message.getId(), reaction.reaction, isBig, result -> {});
+
+      sticker.setTargetXY(message.findCurrentView(), message.getReactionTargetX(), message.getReactionTargetY(), stickerTinyViewHolder.yOffset);
+      stickerTinyViewHolder.reattach(sticker);
+      sticker.playAnimation();
+
       layout.hideWindow(true);
     });
     messageReactionsBar.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48)));

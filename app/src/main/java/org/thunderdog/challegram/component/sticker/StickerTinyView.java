@@ -19,11 +19,14 @@ import android.graphics.Canvas;
 import android.graphics.Path;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.Interpolator;
+import android.view.animation.LinearInterpolator;
 import android.view.animation.OvershootInterpolator;
 
 import androidx.annotation.Nullable;
 
+import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
@@ -41,14 +44,20 @@ public class StickerTinyView extends View implements FactorAnimator.Target, Dest
   private static final long CLICK_LIFESPAN = 230l;
   private static final long LONG_PRESS_DELAY = 1000;
 
+  private static final int ON_CLICK_ANIMATION_ID = 100;
+  private static final int TARGET_ANIMATION_ID = 101;
+
   public static final float PADDING = 8f;
   private static final Interpolator OVERSHOOT_INTERPOLATOR = new OvershootInterpolator(3.2f);
+  private static final Interpolator LINEAR_INTERPOLATOR = new LinearInterpolator();
 
   private final ImageReceiver imageReceiver;
   private final GifReceiver gifReceiver;
-  private final FactorAnimator animator;
+  private final FactorAnimator longPressAnimator;
+  private final FactorAnimator translateAnimator;
   private @Nullable TGStickerObj sticker;
   private Path contour;
+  private float factor;
 
   private boolean isAnimation;
 
@@ -58,13 +67,19 @@ public class StickerTinyView extends View implements FactorAnimator.Target, Dest
   private boolean longPressScheduled;
   private boolean longPressReady;
 
+  private int targetX = -1;
+  private int targetY = -1;
+  private int fromLeftMargin = -1;
+  private int fromTopMargin = -1;
+
   private OnTouchCallback callback;
 
   public StickerTinyView (Context context) {
     super(context);
     this.imageReceiver = new ImageReceiver(this, 0);
     this.gifReceiver = new GifReceiver(this);
-    this.animator = new FactorAnimator(0, this, OVERSHOOT_INTERPOLATOR, CLICK_LIFESPAN);
+    this.longPressAnimator = new FactorAnimator(ON_CLICK_ANIMATION_ID, this, OVERSHOOT_INTERPOLATOR, CLICK_LIFESPAN);
+    this.translateAnimator = new FactorAnimator(TARGET_ANIMATION_ID, this, LINEAR_INTERPOLATOR, CLICK_LIFESPAN);
   }
 
   public void setSticker (@Nullable TGStickerObj sticker) {
@@ -99,18 +114,37 @@ public class StickerTinyView extends View implements FactorAnimator.Target, Dest
     gifReceiver.destroy();
   }
 
-  private float factor;
-
   private void resetStickerState () {
-    animator.forceFactor(0f, true);
+    longPressAnimator.forceFactor(0f, true);
     factor = 0f;
   }
 
   @Override
   public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
-    if (this.factor != factor) {
-      this.factor = factor;
-      invalidate();
+    if (id == ON_CLICK_ANIMATION_ID) {
+      if (this.factor != factor) {
+        this.factor = factor;
+        invalidate();
+      }
+    } else {
+      ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) getLayoutParams();
+      float translateX = targetX * factor;
+      float translateY = targetY * factor;
+
+      android.util.Log.d("AKBOLAT", "translate X " + translateX + " Y " + translateY);
+      android.util.Log.d("AKBOLAT", "margin L " + layoutParams.leftMargin + " T " + layoutParams.topMargin);
+
+      layoutParams.leftMargin = (int) (fromLeftMargin + translateX);
+      layoutParams.topMargin = (int) (fromTopMargin + translateY);
+      setLayoutParams(layoutParams);
+    }
+  }
+
+  @Override
+  public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
+    if (id == TARGET_ANIMATION_ID) {
+      android.util.Log.d("AKBOLAT", "onFinished");
+//      ((ViewGroup) getParent()).removeView(this);
     }
   }
 
@@ -182,7 +216,6 @@ public class StickerTinyView extends View implements FactorAnimator.Target, Dest
   }
 
   private void startTouch () {
-    setStickerPressed(true);
     openPreviewDelayed();
   }
 
@@ -195,7 +228,7 @@ public class StickerTinyView extends View implements FactorAnimator.Target, Dest
   private void setStickerPressed (boolean isPressed) {
     if (this.isPressed != isPressed) {
       this.isPressed = isPressed;
-      animator.animateTo(isPressed ? 1f : 0f);
+      longPressAnimator.animateTo(isPressed ? 1f : 0f);
     }
   }
 
@@ -211,6 +244,7 @@ public class StickerTinyView extends View implements FactorAnimator.Target, Dest
     longPressScheduled = true;
     postDelayed(longPress, LONG_PRESS_DELAY);
   }
+
   private void cancelDelayedPreview () {
     if (longPress != null) {
       longPress.cancel();
@@ -220,21 +254,19 @@ public class StickerTinyView extends View implements FactorAnimator.Target, Dest
   }
 
   private void onSingleTapped () {
-    android.util.Log.d("AKBOLAT", "onSingleTapped");
     if (callback != null) {
       callback.onSingleTap();
     }
   }
 
   private void onLongPressed () {
-    android.util.Log.d("AKBOLAT", "onLongPressed");
     longPressReady = true;
+    setStickerPressed(true);
 
     UI.forceVibrate(this, true);
   }
 
   private void onLongReleased () {
-    android.util.Log.d("AKBOLAT", "onLongReleased");
     if (callback != null) {
       callback.onLongRelease();
     }
@@ -244,8 +276,31 @@ public class StickerTinyView extends View implements FactorAnimator.Target, Dest
     this.callback = callback;
   }
 
+  public void setTargetXY (View view, int targetX, int targetY, int yOffset) {
+    if (view == null) return;
+
+    int[] position = new int[2];
+    view.getLocationOnScreen(position);
+
+    this.targetX = position[0] + targetX - Screen.dp(10f);
+    this.targetY = position[1] + targetY - yOffset - Screen.dp(10f);
+  }
+
+  public void playAnimation () {
+    if (targetX == -1 || targetY == -1) return;
+
+    fromLeftMargin = ((ViewGroup.MarginLayoutParams) getLayoutParams()).leftMargin;
+    fromTopMargin = ((ViewGroup.MarginLayoutParams) getLayoutParams()).topMargin;
+
+    targetX -= fromLeftMargin;
+    targetY -= fromTopMargin;
+
+    translateAnimator.animateTo(1f);
+  }
+
   public interface OnTouchCallback {
     void onSingleTap ();
-    void onLongRelease();
+
+    void onLongRelease ();
   }
 }

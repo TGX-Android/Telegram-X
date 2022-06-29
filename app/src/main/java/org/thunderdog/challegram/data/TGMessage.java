@@ -138,6 +138,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   private static final int MAXIMUM_CHANNEL_MERGE_COUNT = 19;
   private static final int MAXIMUM_COMMON_MERGE_COUNT = 14;
+  private static final int MAXIMUM_SMALL_REACTIONS = 2;
 
   private static final int MESSAGE_FLAG_READ = 1;
   private static final int MESSAGE_FLAG_IS_BOTTOM = 1 << 1;
@@ -218,6 +219,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private int pClockLeft, pClockTop;
   private int pTicksLeft, pTicksTop;
   private int pDateWidth;
+
+  private int reactionTargetX, reactionTargetY;
 
   private final Path bubblePath, bubbleClipPath;
   private float topRightRadius, topLeftRadius, bottomLeftRadius, bottomRightRadius;
@@ -1779,7 +1782,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         else
           right -= Screen.dp(12f);
 
-        drawReaction(c, view, right, xTimeTop + getHeaderPadding(), Paints.reactionPaint());
+        drawReaction(c, view, right, xTimeTop + getHeaderPadding(), Paints.reactionPaint(), top);
       }
     }
 
@@ -3104,12 +3107,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       startY -= Screen.dp(1f);
     }
 
-    int counterY = startY + Screen.dp(11.5f);
-
     if (!useBigReactions()) {
-      drawReaction(c, view, startX, startY + Screen.dp(15.5f), Paints.reactionPaint());
+      drawReaction(c, view, startX, startY + Screen.dp(15.5f), Paints.reactionPaint(), startY);
       startX += computeReactionsPartWidth(true); // check the RTL
     }
+
+    int counterY = startY + Screen.dp(11.5f);
 
     if (getViewCountMode() == VIEW_COUNT_MAIN) {
       if (isSending) {
@@ -3172,14 +3175,25 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
   }
 
-  private void drawReaction (Canvas canvas, MessageView view, int startX, int startY, Paint paint) {
-    if (getReactions().length > 0) {
-      for (int i = 0; i < getReactions().length; i++) {
-        if (i > 2)
-          break;
-        canvas.drawText(getReactions()[i].reaction, startX, startY, paint);
-        startX += Screen.dp(16f);
+  public int getReactionTargetX () {
+    return reactionTargetX;
+  }
+
+  public int getReactionTargetY () {
+    return reactionTargetY;
+  }
+
+  private void drawReaction (Canvas canvas, MessageView view, int startX, int startY, Paint paint, int reactionTargetY) {
+    this.reactionTargetX = startX;
+    this.reactionTargetY = reactionTargetY;
+
+    for (int i = 0; i < getReactions().length; i++) {
+      if (i > MAXIMUM_SMALL_REACTIONS) {
+        break;
       }
+
+      canvas.drawText(getReactions()[i].reaction, startX, startY, paint);
+      startX += Screen.dp(16f);
     }
   }
 
