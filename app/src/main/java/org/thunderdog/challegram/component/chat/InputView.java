@@ -39,6 +39,7 @@ import android.text.style.UnderlineSpan;
 import android.util.TypedValue;
 import android.view.ActionMode;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -106,7 +107,7 @@ import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
-public class InputView extends NoClipEditText implements InlineSearchContext.Callback, Runnable, InlineResultsWrap.PickListener, Comparator<Object>, Emoji.Callback, RtlCheckListener, TGLegacyManager.EmojiLoadListener, Destroyable {
+public class InputView extends NoClipEditText implements InlineSearchContext.Callback, InlineResultsWrap.PickListener, Comparator<Object>, Emoji.Callback, RtlCheckListener, TGLegacyManager.EmojiLoadListener, Destroyable {
   public static final boolean USE_ANDROID_SELECTION_FIX = true;
   // private static final int HINT_TEXT_COLOR = 0xffa1aab3;
 
@@ -269,6 +270,28 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       return true;
     }
     return false;
+  }
+
+  @Override
+  public boolean onKeyDown (int keyCode, KeyEvent event) {
+    if (keyCode == KeyEvent.KEYCODE_ENTER && qualifiesForKeySend()) {
+      // default: enter -> newline, ctrl+enter -> send
+      // alternative: enter -> send, ctrl+enter -> newline
+
+      boolean needSendByEnter = Settings.instance().needSendByEnter();
+      boolean clearKey = event.hasNoModifiers();
+      boolean ctrlPressed = event.hasModifiers(KeyEvent.META_CTRL_ON); // for example, Alt + Ctrl + Enter should be ignored
+      boolean shouldSend = (ctrlPressed && !needSendByEnter) || (clearKey && needSendByEnter);
+
+      if (shouldSend && controller != null) {
+        controller.pickDateOrProceed(false, null, (forceDisableNotification, schedulingState, disableMarkdown) -> controller.sendText(true, forceDisableNotification, schedulingState));
+        return true;
+      } else {
+        return super.onKeyDown(keyCode, event);
+      }
+    } else {
+      return super.onKeyDown(keyCode, event);
+    }
   }
 
   private static boolean shouldRemoveSpan (Spanned spanned, CharacterStyle span) {
@@ -477,9 +500,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
           if (controller != null) {
             controller.updateSendButton(s, true);
-          }
-          if (needSendByEnter()) {
-            InputView.this.post(InputView.this);
           }
 
           ignoreChanges = false;
@@ -930,17 +950,12 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     }
   }
 
-  @Override
-  public void run () {
-    Editable text = getText();
-    if (needSendByEnter() && controller != null && !StringUtils.isEmptyOrBlank(text) && text.charAt(text.length() - 1) == '\n') {
-      text.delete(text.length() - 1, text.length());
-      controller.pickDateOrProceed(false, null, (forceDisableNotification, schedulingState, disableMarkdown) -> controller.sendText(true, forceDisableNotification, schedulingState));
-    }
+  private boolean needSendByEnter () {
+    return Settings.instance().needSendByEnter() && qualifiesForKeySend();
   }
 
-  private boolean needSendByEnter () {
-    return Settings.instance().needSendByEnter() && !isSettingText && controller != null && controller.inSimpleSendMode();
+  private boolean qualifiesForKeySend () {
+    return !isSettingText && controller != null && controller.inSimpleSendMode();
   }
 
   public void setInputListener (InputListener inputListener) {
