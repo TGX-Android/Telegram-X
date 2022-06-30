@@ -237,7 +237,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   protected final MultipleViewProvider overlayViews;
 
   private List<ReactionBubble> reactionBubbles;
-  private final Map<String, TGStickerObj> stickersForReactions;
   private boolean reactionsUpToDate = false;
   private int reactionId = 0;
   private MessageView messageView;
@@ -364,8 +363,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     reactionBubbles = new ArrayList<>();
-    stickersForReactions = new HashMap<>();
-    getStickersForReactions(tdlib.chat(msg.chatId).availableReactions);
   }
 
   private static @NonNull <T> T nonNull (@Nullable T value) {
@@ -402,18 +399,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       c.destroy();
   }
 
-  private void getStickersForReactions (String[] reactions) {
-    for (String reaction : reactions) {
-      tdlib.client().send(new TdApi.GetAnimatedEmoji(reaction), result -> {
-        if (result.getConstructor() == TdApi.AnimatedEmoji.CONSTRUCTOR) {
-          TdApi.AnimatedEmoji emoji = (TdApi.AnimatedEmoji) result;
-          TGStickerObj tgStickerObj = new TGStickerObj(tdlib, emoji.sticker, reaction, new TdApi.StickerTypeStatic());
-          stickersForReactions.put(reaction, tgStickerObj);
-        }
-      });
-    }
-  }
-
   private void setReactions (TdApi.MessageReaction[] reactions) {
     List<ReactionBubble> reactionsForRemoval = new ArrayList<>(reactionBubbles);
     for (int i = 0; i < reactions.length; i++) {
@@ -438,12 +423,19 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         reactionId,
         reaction.totalCount,
         reaction.reaction,
-        reaction.isChosen,
+        false,
         false,
         this::setMessageReaction,
         messageView
     );
-    reactionBubble.setSticker(stickersForReactions.get(reactionBubble.getReaction()));
+    reactionBubble.setIsChosen(reaction.isChosen);
+    tdlib.client().send(new TdApi.GetAnimatedEmoji(reaction.reaction), result -> {
+      if (result.getConstructor() == TdApi.AnimatedEmoji.CONSTRUCTOR) {
+        TdApi.AnimatedEmoji emoji = (TdApi.AnimatedEmoji) result;
+        TGStickerObj tgStickerObj = new TGStickerObj(tdlib, emoji.sticker, reaction.reaction, new TdApi.StickerTypeStatic());
+        reactionBubble.setSticker(tgStickerObj);
+      }
+    });
     reactionBubbles.add(reactionBubble);
     reactionId++;
     return reactionBubble;
@@ -3176,6 +3168,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       int bubbleMergeRadius = Screen.dp(Theme.getBubbleMergeRadius());
 
       if (this.leftContentEdge == leftContentEdge && this.topContentEdge == topContentEdge && this.rightContentEdge == rightContentEdge && this.bottomContentEdge == bottomContentEdge && this.lastMergeRadius == bubbleMergeRadius && this.lastDefaultRadius == bubbleDefaultRadius && !force) {
+        buildReactionBubbles(bubbleWidth);
         return;
       }
 

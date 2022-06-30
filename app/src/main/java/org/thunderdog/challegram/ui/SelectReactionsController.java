@@ -12,10 +12,12 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
-import org.thunderdog.challegram.component.chat.EmojiToneHelper;
+import org.thunderdog.challegram.component.reaction.ReactionView;
 import org.thunderdog.challegram.component.reaction.SelectableReactionView;
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
@@ -32,6 +34,7 @@ import org.thunderdog.challegram.widget.ThreeStateCheckBoxView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import me.vkryl.android.AnimatorUtils;
@@ -41,7 +44,6 @@ public class SelectReactionsController extends ViewController<SelectReactionsCon
   private CustomRecyclerView recyclerView;
   private LinearLayoutManager manager;
   private SelectReactionsController.ReactionAdapter adapter;
-  private EmojiToneHelper toneHelper;
   private final List<SelectReactionsController.Item> items;
   private DoneButton doneButton;
   private boolean doneVisible = false;
@@ -128,14 +130,23 @@ public class SelectReactionsController extends ViewController<SelectReactionsCon
     contentView.addView(checkBoxLayout);
 
     manager = new GridLayoutManager(context, 4);
-    toneHelper = new EmojiToneHelper(context, null, this);
-    adapter = new SelectReactionsController.ReactionAdapter(context, items, this, String -> {
+    Consumer<String> onReactionClick = (String) -> {
       if (items.isEmpty()) return;
       doneVisible = hasAnyChanges();
       doneButton.setIsVisible(doneVisible, false);
       updateCheckBox();
       setTextForCheckBox(getNumberOfSelected());
-    });
+    };
+    BiConsumer<SelectableReactionView, String> loadSticker = (reactionView, reaction) -> {
+      tdlib.client().send(new TdApi.GetAnimatedEmoji(reaction), result -> {
+        if (result.getConstructor() == TdApi.AnimatedEmoji.CONSTRUCTOR) {
+          TdApi.AnimatedEmoji emoji = (TdApi.AnimatedEmoji) result;
+          TGStickerObj tgStickerObj = new TGStickerObj(tdlib, emoji.sticker, reaction, new TdApi.StickerTypeStatic());
+          reactionView.setSticker(tgStickerObj);
+        }
+      });
+    };
+    adapter = new SelectReactionsController.ReactionAdapter(context, items, onReactionClick, loadSticker);
 
     recyclerView = (CustomRecyclerView) Views.inflate(context(), R.layout.recycler_custom, contentView);
     recyclerView.setHasFixedSize(true);
@@ -277,7 +288,7 @@ public class SelectReactionsController extends ViewController<SelectReactionsCon
           break;
         }
         case "😭": {
-          caption = Lang.getString(R.string.AngryFace);
+          caption = Lang.getString(R.string.CryingFace);
           break;
         }
         case "😱": {
@@ -301,7 +312,7 @@ public class SelectReactionsController extends ViewController<SelectReactionsCon
           break;
         }
         case "\uD83D\uDE22": {
-          caption = Lang.getString(R.string.CryingFace);
+          caption = Lang.getString(R.string.AngryFace);
           break;
         }
         case "\uD83E\uDD70": {
@@ -332,15 +343,20 @@ public class SelectReactionsController extends ViewController<SelectReactionsCon
     private static final int REACTION_PADDING = Screen.dp(40f);
 
     private final Context context;
-    private final SelectReactionsController parent;
     private final List<SelectReactionsController.Item> items;
     private final Consumer<String> onReactionClick;
+    private final BiConsumer<SelectableReactionView, String> loadSticker;
 
-    public ReactionAdapter (Context context, List<SelectReactionsController.Item> items, SelectReactionsController parent, Consumer<String> onReactionClick) {
+    public ReactionAdapter (
+        Context context,
+        List<SelectReactionsController.Item> items,
+        Consumer<String> onReactionClick,
+        BiConsumer<SelectableReactionView, String> loadSticker
+    ) {
       this.context = context;
-      this.parent = parent;
       this.items = items;
       this.onReactionClick = onReactionClick;
+      this.loadSticker = loadSticker;
     }
 
     @NonNull
@@ -352,7 +368,7 @@ public class SelectReactionsController extends ViewController<SelectReactionsCon
       wrapper.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
       RippleSupport.setTransparentSelector(wrapper);
 
-      SelectableReactionView reactionView = new SelectableReactionView(context, this.parent.toneHelper, REACTION_PADDING);
+      SelectableReactionView reactionView = new SelectableReactionView(context, REACTION_PADDING);
       reactionView.setLayoutParams(new LinearLayout.LayoutParams(REACTION_SIZE, REACTION_SIZE));
       wrapper.addView(reactionView);
 
@@ -375,7 +391,7 @@ public class SelectReactionsController extends ViewController<SelectReactionsCon
         onReactionClick.accept(item.reaction);
       });
       holder.captionView.setText(item.caption);
-      holder.reactionView.setReaction(item.reaction, item.reactionColorState);
+      loadSticker.accept(holder.reactionView, item.reaction);
       holder.reactionView.setSelected(item.selected);
     }
 

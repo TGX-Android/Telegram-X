@@ -152,7 +152,9 @@ public class ReactionBubble {
   }
 
   public void startAnimation () {
-    gifFile.setLooped(false);
+    if (gifFile != null) {
+      gifFile.setLooped(false);
+    }
     this.isAnimation = sticker != null && sticker.isAnimated();
   }
 

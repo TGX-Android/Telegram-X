@@ -39,17 +39,12 @@ public class ReactionView extends View implements FactorAnimator.Target, Destroy
   private @Nullable
   TGStickerObj sticker;
   private Path contour;
-  private Tdlib tdlib;
 
   public ReactionView (Context context) {
     super(context);
     this.imageReceiver = new ImageReceiver(this, 0);
     this.gifReceiver = new GifReceiver(this);
     this.animator = new FactorAnimator(0, this, OVERSHOOT_INTERPOLATOR, 230l);
-  }
-
-  public void init (Tdlib tdlib) {
-    this.tdlib = tdlib;
   }
 
   private boolean isAnimation;
@@ -66,7 +61,6 @@ public class ReactionView extends View implements FactorAnimator.Target, Destroy
     contour = sticker != null ? sticker.getContour(Math.min(imageReceiver.getWidth(), imageReceiver.getHeight())) : null;
     imageReceiver.requestFile(imageFile);
     if (gifFile != null) {
-      gifFile.setLooped(false);
       gifFile.setPlayOnce(true);
     }
     gifReceiver.requestFile(gifFile);

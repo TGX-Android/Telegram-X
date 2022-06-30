@@ -38,7 +38,6 @@ public class ReactionListController extends ViewController<ReactionsLayout> {
     private CustomRecyclerView recyclerView;
     private LinearLayoutManager manager;
     private ReactionListController.ReactionAdapter adapter;
-    private EmojiToneHelper toneHelper;
 
     public ReactionListController (Context context, Tdlib tdlib) {
         super(context, tdlib);
@@ -70,11 +69,9 @@ public class ReactionListController extends ViewController<ReactionsLayout> {
 
         manager = new LinearLayoutManager(context);
         manager.setOrientation(RecyclerView.HORIZONTAL);
-        toneHelper = new EmojiToneHelper(context, getArgumentsStrict().getToneDelegate(), this);
         adapter = new ReactionListController.ReactionAdapter(
             context,
             items,
-            this,
             getArgumentsStrict().getOnReactionClick(),
             ((reactionView, reaction) -> {
                 tdlib.client().send(new TdApi.GetAnimatedEmoji(reaction), result -> {
@@ -123,10 +120,8 @@ public class ReactionListController extends ViewController<ReactionsLayout> {
 
     private static class ReactionAdapter extends RecyclerView.Adapter<ReactionListController.ItemHolder> {
         private static final int REACTION_SIZE = Screen.dp(60f);
-        private static final int REACTION_PADDING = Screen.dp(10f);
 
         private final Context context;
-        private final ReactionListController parent;
         private final List<Item> items;
         private final Consumer<String> onReactionClick;
         private final BiConsumer<ReactionView, String> loadSticker;
@@ -134,12 +129,10 @@ public class ReactionListController extends ViewController<ReactionsLayout> {
         public ReactionAdapter (
             Context context,
             List<Item> items,
-            ReactionListController parent,
             Consumer<String> onReactionClick,
             BiConsumer<ReactionView, String> loadSticker
             ) {
             this.context = context;
-            this.parent = parent;
             this.items = items;
             this.onReactionClick = onReactionClick;
             this.loadSticker = loadSticker;
