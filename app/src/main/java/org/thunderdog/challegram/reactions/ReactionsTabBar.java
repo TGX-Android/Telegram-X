@@ -18,6 +18,7 @@ import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.widget.ImageReceiverView;
@@ -48,7 +49,7 @@ public class ReactionsTabBar extends HorizontalScrollView implements ViewPager.O
 		}
 	};
 
-	public ReactionsTabBar(Context context, ViewPager pager, TGMessage msg, int viewersCount, Tdlib tdlib){
+	public ReactionsTabBar(Context context, ViewPager pager, TGMessage msg, int viewersCount, Tdlib tdlib, ThemeListenerList themeListeners){
 		super(context);
 		this.pager=pager;
 		strip=new TabStripLayout(context);
@@ -65,6 +66,7 @@ public class ReactionsTabBar extends HorizontalScrollView implements ViewPager.O
 			wrap.addView(reactionsTab);
 			this.reactionsTab=wrap;
 			addTab(wrap);
+			themeListeners.addThemeInvalidateListener(reactionsTab);
 		}
 		if(viewersCount>0){
 			CounterView viewersTab=new CounterView(context, new Counter.Builder().noBackground().allBold(true).textColor(R.id.theme_color_text).drawable(R.drawable.baseline_visibility_14, 14f, 3f, Gravity.LEFT), R.id.theme_color_text);
@@ -73,6 +75,7 @@ public class ReactionsTabBar extends HorizontalScrollView implements ViewPager.O
 			wrap.addView(viewersTab);
 			this.viewersTab=wrap;
 			addTab(wrap);
+			themeListeners.addThemeInvalidateListener(viewersTab);
 		}
 		if(total>0){
 			for(TdApi.MessageReaction r:msg.getMessage().interactionInfo.reactions){
@@ -88,9 +91,11 @@ public class ReactionsTabBar extends HorizontalScrollView implements ViewPager.O
 				lp.leftMargin=Screen.dp(4);
 				tab.addView(counter, lp);
 				addTab(tab);
+				themeListeners.addThemeInvalidateListener(counter);
 			}
 		}
 		selectedTab=tabViews.get(0);
+		themeListeners.addThemeInvalidateListener(strip);
 
 		pager.addOnPageChangeListener(this);
 	}
@@ -159,12 +164,12 @@ public class ReactionsTabBar extends HorizontalScrollView implements ViewPager.O
 			super(context);
 			setOrientation(HORIZONTAL);
 			setWillNotDraw(false);
-			paint.setColor(Theme.getColor(R.id.theme_color_text));
 		}
 
 		@Override
 		protected void onDraw(Canvas canvas){
 			super.onDraw(canvas);
+			paint.setColor(Theme.getColor(R.id.theme_color_text));
 			float x=selectedTab.getX(), width;
 			if(currentPositionOffset>0f){
 				x+=selectedTab.getWidth()*currentPositionOffset;

@@ -14,23 +14,25 @@ import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.charts.CubicBezierInterpolator;
 import org.thunderdog.challegram.charts.LayoutHelper;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ThemeInvalidateListener;
+import org.thunderdog.challegram.theme.ThemeListenerEntry;
+import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.text.Counter;
-import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.widget.ImageReceiverView;
 
 import java.util.Arrays;
-import java.util.Random;
 
 import androidx.annotation.NonNull;
 
-public class MessageCellReactionButton extends FrameLayout{
+public class MessageCellReactionButton extends FrameLayout implements ThemeInvalidateListener{
 
 	private ImageReceiverView icon;
 	private CounterView counter;
@@ -43,6 +45,8 @@ public class MessageCellReactionButton extends FrameLayout{
 	private int nonSelectedColor, selectedColor, currentTextColor;
 	private int textColorNonSelected, textColorSelected;
 	private int currentCount;
+	private ThemeListenerList themeListeners=new ThemeListenerList();
+	private BackgroundStyle currentBgStyle;
 
 	private static final Property<MessageCellReactionButton, Integer> TEXT_COLOR=new Property<>(Integer.class, "fdafsda"){
 		@Override
@@ -68,14 +72,24 @@ public class MessageCellReactionButton extends FrameLayout{
 		icon=new ImageReceiverView(context);
 		addView(icon, LayoutHelper.createFrame(14, 14, Gravity.LEFT | Gravity.CENTER_VERTICAL));
 
-		counter=new CounterView(context, new Counter.Builder().allBold(false).noBackground().textSize(10.5f).colorSet(new TextColorSet(){
-			Random rand=new Random();
-			@Override
-			public int defaultTextColor(){
-				return currentTextColor;
-			}
-		}), 0);
+		counter=new CounterView(context, new Counter.Builder().allBold(false).noBackground().textSize(10.5f).colorSet(()->currentTextColor), 0);
 		addView(counter, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 4+14, 0, 9, 0));
+
+		themeListeners.add(new ThemeListenerEntry(ThemeListenerEntry.MODE_INVALIDATE, 0, this));
+	}
+
+	@Override
+	protected void onAttachedToWindow(){
+		super.onAttachedToWindow();
+		BaseActivity activity=(BaseActivity) getContext();
+		activity.addGlobalThemeListeners(themeListeners);
+	}
+
+	@Override
+	protected void onDetachedFromWindow(){
+		BaseActivity activity=(BaseActivity) getContext();
+		activity.removeGlobalThemeListeners(themeListeners);
+		super.onDetachedFromWindow();
 	}
 
 	public ImageReceiverView getIcon(){
@@ -86,15 +100,15 @@ public class MessageCellReactionButton extends FrameLayout{
 		return (Math.round(((color >> 24) & 0xff)*alpha) << 24) | (color & 0x00ffffff);
 	}
 
-	private ShapeDrawable makeRoundRectDrawable(int color){
+	private ShapeDrawable makeRoundRectDrawable(){
 		float[] radius=new float[8];
 		Arrays.fill(radius, Screen.dp(12));
 		ShapeDrawable sd=new ShapeDrawable(new RoundRectShape(radius, null, null));
-		sd.getPaint().setColor(color);
 		return sd;
 	}
 
 	public void setBackgroundStyle(BackgroundStyle style){
+		currentBgStyle=style;
 		textColorSelected=0xffffffff;
 		switch(style){
 			case BUBBLE_INCOMING:
@@ -121,20 +135,13 @@ public class MessageCellReactionButton extends FrameLayout{
 				throw new IllegalStateException("Unexpected value: "+style);
 		}
 		if(background==null){
-			background=makeRoundRectDrawable(nonSelectedColor);
+			background=makeRoundRectDrawable();
 			setBackground(background);
-		}else{
-			background.getPaint().setColor(nonSelectedColor);
 		}
-		currentTextColor=textColorNonSelected;
-		selected=false;
-	}
-
-	public void copyFrom(MessageCellReactionButton other){
-		setReactions(other.reactions, false);
-		setBackground(other.getBackground());
-		setForeground(other.getForeground());
-		selected=other.selected;
+		currentTextColor=selected ? textColorSelected : textColorNonSelected;
+		background.getPaint().setColor(selected ? selectedColor : nonSelectedColor);
+		invalidate();
+		counter.invalidate();
 	}
 
 	public void setReactions(TdApi.MessageReaction reaction, boolean animated){
@@ -222,6 +229,11 @@ public class MessageCellReactionButton extends FrameLayout{
 	@Override
 	public boolean isSelected(){
 		return selected;
+	}
+
+	@Override
+	public void onThemeInvalidate(boolean isTempUpdate){
+		setBackgroundStyle(currentBgStyle);
 	}
 
 	public enum BackgroundStyle{

@@ -9,6 +9,8 @@ import android.content.Context;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
+import android.graphics.drawable.ShapeDrawable;
+import android.graphics.drawable.shapes.RectShape;
 import android.text.TextUtils;
 import android.util.Property;
 import android.view.Gravity;
@@ -33,6 +35,7 @@ import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.MessagesController;
@@ -80,10 +83,11 @@ public class ReactionListViewController{
 	private HashMap<String, TabViewController> viewControllersByType=new HashMap<>();
 	private TdApi.Users viewers;
 
-	private ColorDrawable topBarBg;
 	private boolean scrolledToBottom;
 	private Animator statusBarBgAnimator;
 	private boolean loadingMore=true;
+
+	private ThemeListenerList themeListeners=new ThemeListenerList();
 
 	private static final Property<View, Integer> SCROLL_Y=new Property<>(Integer.class, "fadshjkfdsa"){
 		@Override
@@ -183,24 +187,30 @@ public class ReactionListViewController{
 		shadow.setSimpleTopShadow(true);
 		shadowWrap.addView(shadow, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, shadow.getLayoutParams().height, Gravity.BOTTOM));
 		statusBarBackground=new View(context);
-		statusBarBackground.setBackgroundDrawable(new LayerDrawable(new Drawable[]{ // yes there may be better ways to alpha blend two colors
-				new ColorDrawable(Theme.getColor(R.id.theme_color_headerLightBackground)),
+		ShapeDrawable statusBarBg;
+		statusBarBackground.setBackground(new LayerDrawable(new Drawable[]{ // yes there may be better ways to alpha blend two colors
+				statusBarBg=new ShapeDrawable(new RectShape()),
 				new ColorDrawable(HeaderView.DEFAULT_STATUS_COLOR)
 		}));
+		statusBarBg.getPaint().setColor(Theme.getColor(R.id.theme_color_headerLightBackground));
+		themeListeners.addThemePaintColorListener(statusBarBg.getPaint(), R.id.theme_color_headerLightBackground);
+		themeListeners.addThemeInvalidateListener(statusBarBackground);
+
 		statusBarBackground.setVisibility(View.INVISIBLE);
 		shadowWrap.addView(statusBarBackground, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
 		scrollContent.addView(shadowWrap, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0));
 
 		topBar=new LinearLayout(context);
 		topBar.setOrientation(LinearLayout.HORIZONTAL);
-		topBarBg=new ColorDrawable(Theme.backgroundColor());
-		topBar.setBackgroundDrawable(topBarBg);
+		topBar.setBackgroundColor(Theme.backgroundColor());
 		scrollContent.addView(topBar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48)));
 		backBtn=new BackHeaderButton(context);
 		backBtn.setColor(Theme.getColor(R.id.theme_color_text));
 		backBtn.setButtonFactor(BackHeaderButton.TYPE_BACK);
 		backBtn.setOnClickListener(v->dismissCallback.run());
 		topBar.addView(backBtn, Screen.dp(48), Screen.dp(48));
+		themeListeners.addThemeColorListener(backBtn, R.id.theme_color_text);
+		themeListeners.addThemeBackgroundColorListener(topBar, R.id.theme_color_background);
 
 		int total=message.getTotalReactionCount();
 		if(total>0){
@@ -231,7 +241,7 @@ public class ReactionListViewController{
 		pagerAndShadow.addView(topShadow, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, topShadow.getLayoutParams().height, Gravity.TOP));
 		scrollContent.addView(pagerAndShadow, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 		pager.setAdapter(new PagerAdapter());
-		tabBar=new ReactionsTabBar(context, pager, message, viewers!=null ? viewers.totalCount : 0, tdlib);
+		tabBar=new ReactionsTabBar(context, pager, message, viewers!=null ? viewers.totalCount : 0, tdlib, themeListeners);
 		topBar.addView(tabBar, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
 
 		if(total>0){
@@ -312,6 +322,8 @@ public class ReactionListViewController{
 				return true;
 			}
 		});
+
+		chatController.context().addGlobalThemeListeners(themeListeners);
 	}
 
 	public void dismissFromOptionsSheet(CounterView reactionsCounter, CounterView seenCounter, OptionsLayout optionsLayout, View countersButton){
@@ -375,17 +387,21 @@ public class ReactionListViewController{
 				return true;
 			}
 		});
+
+		chatController.context().removeGlobalThemeListeners(themeListeners);
 	}
 
 	private void scrolledToBottomChanged(){
 		if(statusBarBgAnimator!=null)
 			statusBarBgAnimator.cancel();
+		themeListeners.removeThemeListenerByTarget(topBar);
+		themeListeners.addThemeBackgroundColorListener(topBar, scrolledToBottom ? R.id.theme_color_headerLightBackground : R.id.theme_color_background);
 		AnimatorSet set=new AnimatorSet();
 		if(scrolledToBottom){
 			statusBarBackground.setVisibility(View.VISIBLE);
 			set.playTogether(
 					ObjectAnimator.ofFloat(statusBarBackground, View.TRANSLATION_Y, 0f),
-					ReactionUtils.animateColor(ObjectAnimator.ofInt(topBarBg, "color", Theme.getColor(R.id.theme_color_headerLightBackground))),
+					ReactionUtils.animateColor(ObjectAnimator.ofInt(topBar, "backgroundColor", Theme.backgroundColor(), Theme.getColor(R.id.theme_color_headerLightBackground))),
 					ObjectAnimator.ofFloat(topShadow, View.ALPHA, 1f)
 			);
 			set.addListener(new AnimatorListenerAdapter(){
@@ -397,7 +413,7 @@ public class ReactionListViewController{
 		}else{
 			set.playTogether(
 					ObjectAnimator.ofFloat(statusBarBackground, View.TRANSLATION_Y, statusBarBackground.getHeight()),
-					ReactionUtils.animateColor(ObjectAnimator.ofInt(topBarBg, "color", Theme.backgroundColor())),
+					ReactionUtils.animateColor(ObjectAnimator.ofInt(topBar, "backgroundColor", Theme.getColor(R.id.theme_color_headerLightBackground), Theme.backgroundColor())),
 					ObjectAnimator.ofFloat(topShadow, View.ALPHA, 0f)
 			);
 			set.addListener(new AnimatorListenerAdapter(){
@@ -559,6 +575,7 @@ public class ReactionListViewController{
 				}
 			});
 			ViewSupport.setThemedBackground(list, R.id.theme_color_background);
+			themeListeners.addThemeBackgroundColorListener(list, R.id.theme_color_background);
 		}
 
 		public void clearItems(){

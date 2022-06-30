@@ -22,6 +22,7 @@ import org.thunderdog.challegram.navigation.OptionsLayout;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.util.text.Counter;
@@ -48,6 +49,8 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout{
 	private CounterView reactionsCounter, seenCounter;
 	private TdApi.Users viewers;
 	private ReactionListViewController currentReactionList;
+
+	private ThemeListenerList themeListeners=new ThemeListenerList();
 
 	public ReactionsMessageOptionsSheetHeaderView(Context context, MessagesController controller, TGMessage message, PopupLayout popupLayout){
 		super(context);
@@ -94,6 +97,7 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout{
 			btn.addView(gifView, new FrameLayout.LayoutParams(Screen.dp(24), Screen.dp(24), Gravity.CENTER));
 			if(r.reaction.equals(chosenReaction)){
 				btn.setBackground(new ChosenReactionBackgroundDrawable());
+				themeListeners.addThemeInvalidateListener(btn);
 			}
 
 			scrollContent.addView(btn, new LinearLayout.LayoutParams(Screen.dp(36), Screen.dp(48)));
@@ -135,6 +139,22 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout{
 				return false;
 			}
 		});
+
+		themeListeners.addThemeBackgroundColorListener(this, R.id.theme_color_background);
+		themeListeners.addThemeInvalidateListener(reactionsCounter);
+		themeListeners.addThemeInvalidateListener(seenCounter);
+	}
+
+	@Override
+	protected void onAttachedToWindow(){
+		super.onAttachedToWindow();
+		controller.context().addGlobalThemeListeners(themeListeners);
+	}
+
+	@Override
+	protected void onDetachedFromWindow(){
+		controller.context().removeGlobalThemeListeners(themeListeners);
+		super.onDetachedFromWindow();
 	}
 
 	private CounterView makeAndAddCounterView(@DrawableRes int icon){
