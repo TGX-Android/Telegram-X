@@ -57,15 +57,6 @@ public class SelectableReactionView extends View {
     DrawableCompat.setTint(checkMarkDrawable, color);
   }
 
-/*  public void setReaction (String emoji, int colorState) {
-    if (StringUtils.equalsOrBothEmpty(this.emoji, emoji)) return;
-    this.emoji = emoji;
-    this.colorState = colorState;
-    this.emojiTone = colorState != EmojiData.STATE_NO_COLORS ? Emoji.instance().toneForEmoji(emoji) : null;
-    this.emojiOtherTones = colorState == EmojiData.STATE_HAS_TWO_COLORS ? Emoji.instance().otherTonesForEmoji(emoji) : null;
-    setEmojiImpl(emoji, emojiTone, emojiOtherTones);
-  }*/
-
   public void setSticker (@Nullable TGStickerObj sticker) {
     this.sticker = sticker;
     ImageFile imageFile = sticker != null && !sticker.isEmpty() ? sticker.getImage() : null;

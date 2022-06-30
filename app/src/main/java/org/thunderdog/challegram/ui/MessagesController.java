@@ -241,6 +241,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
@@ -4164,15 +4165,42 @@ public class MessagesController extends ViewController<MessagesController.Argume
     PopupLayout popupLayout = showOptions(new Options(info, items), null, null);
 
     // Reactions
+
     OptionsLayout optionsLayout = (OptionsLayout) popupLayout.getChildAt(1);
+    int size = optionsLayout.getChildCount();
+    List<View> optionViews = new ArrayList<>();
+    for (int i = 2; i < size; i++) {
+      optionViews.add(optionsLayout.getChildAt(i));
+    }
     ReactionsLayout reactionsLayout = new ReactionsLayout(context);
     TdApi.Chat chat = tdlib.chat(msg.getChatId());
     String[] reactions = chat == null ? new String[0] : chat.availableReactions;
-    reactionsLayout.init(this, false, reactions, reaction -> {
+
+    Consumer<String> onReactionClick = reaction -> {
       msg.setMessageReaction(reaction, false);
       msg.invalidate();
       popupLayout.hideWindow(true);
-    });
+    };
+    Runnable onReactedClick = () -> {
+      for (View child: optionViews) {
+        optionsLayout.removeView(child);
+      }
+    };
+    Runnable onBackClick = () -> {
+      for (View child: optionViews) {
+        optionsLayout.addView(child);
+      }
+    };
+    reactionsLayout.init(
+        this,
+        tdlib,
+        false,
+        reactions,
+        msg.getMessage(),
+        onReactionClick,
+        onReactedClick,
+        onBackClick
+    );
     optionsLayout.addView(reactionsLayout, 2);
 
     return popupLayout;
