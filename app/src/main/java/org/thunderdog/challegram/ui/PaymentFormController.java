@@ -178,9 +178,15 @@ public class PaymentFormController extends ViewController<PaymentFormController.
   public void onClick (View v) {
     switch (v.getId()) {
       case R.id.btn_paymentFormMethod:
-        WebPaymentMethodController c = new WebPaymentMethodController(context, tdlib);
-        c.setArguments(new WebPaymentMethodController.Args(getPaymentProcessorName(), paymentForm.url, this));
-        navigateTo(c);
+        if (paymentForm.paymentsProvider != null) {
+          PaymentAddNewCardController c = new PaymentAddNewCardController(context, tdlib);
+          c.setArguments(new PaymentAddNewCardController.Args(this, paymentForm.paymentsProvider));
+          navigateTo(c);
+        } else {
+          WebPaymentMethodController c = new WebPaymentMethodController(context, tdlib);
+          c.setArguments(new WebPaymentMethodController.Args(getPaymentProcessorName(), paymentForm.url, this));
+          navigateTo(c);
+        }
         break;
       case R.id.btn_paymentFormShipmentMethod:
         validateAndRequestShipping(() -> {

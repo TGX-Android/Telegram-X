@@ -224,6 +224,8 @@
   <item type="id" name="controller_chatLinkMembers" />
   <item type="id" name="controller_sponsoredMessagesInfo" />
   <item type="id" name="controller_paymentForm" />
+  <item type="id" name="controller_paymentFormNewMethod" />
+  <item type="id" name="controller_selectCountry" />
 
   <item type="id" name="separator" />
 
@@ -841,6 +843,14 @@
   <item type="id" name="btn_instantViewModeNone" />
   <item type="id" name="btn_restrictSensitiveContent" />
   <item type="id" name="btn_ignoreContentRestrictions" />
+
+  <item type="id" name="btn_inputCardNumber" />
+  <item type="id" name="btn_inputCardExpireDate" />
+  <item type="id" name="btn_inputCardHolder" />
+  <item type="id" name="btn_inputCardCVV" />
+  <item type="id" name="btn_inputCardCountry" />
+  <item type="id" name="btn_inputCardPostCode" />
+  <item type="id" name="btn_inputCardSaveInfo" />
 
   <item type="id" name="btn_sessionApp" />
   <item type="id" name="btn_sessionPlatform" />
