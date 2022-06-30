@@ -14,7 +14,8 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.chat.EmojiToneHelper;
-import org.thunderdog.challegram.component.chat.EmojiView;
+import org.thunderdog.challegram.component.reaction.ReactionView;
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
@@ -27,6 +28,7 @@ import org.thunderdog.challegram.widget.ReactionsLayout;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import me.vkryl.android.AnimatorUtils;
@@ -69,7 +71,20 @@ public class ReactionListController extends ViewController<ReactionsLayout> {
         manager = new LinearLayoutManager(context);
         manager.setOrientation(RecyclerView.HORIZONTAL);
         toneHelper = new EmojiToneHelper(context, getArgumentsStrict().getToneDelegate(), this);
-        adapter = new ReactionListController.ReactionAdapter(context, items, this, getArgumentsStrict().getOnReactionClick());
+        adapter = new ReactionListController.ReactionAdapter(
+            context,
+            items,
+            this,
+            getArgumentsStrict().getOnReactionClick(),
+            ((reactionView, reaction) -> {
+                tdlib.client().send(new TdApi.GetAnimatedEmoji(reaction), result -> {
+                    if (result.getConstructor() == TdApi.AnimatedEmoji.CONSTRUCTOR) {
+                        TdApi.AnimatedEmoji emoji = (TdApi.AnimatedEmoji) result;
+                        TGStickerObj tgStickerObj = new TGStickerObj(tdlib, emoji.sticker, reaction, new TdApi.StickerTypeStatic());
+                        reactionView.setSticker(tgStickerObj);
+                    }
+                });
+            }));
 
         this.useDarkMode = getArgumentsStrict().useDarkMode();
 
@@ -107,44 +122,51 @@ public class ReactionListController extends ViewController<ReactionsLayout> {
     }
 
     private static class ReactionAdapter extends RecyclerView.Adapter<ReactionListController.ItemHolder> {
-        private static final int reactionSize = Screen.dp(40f);
-        private static final int reactionPadding = Screen.dp(10f);
+        private static final int REACTION_SIZE = Screen.dp(60f);
+        private static final int REACTION_PADDING = Screen.dp(10f);
 
         private final Context context;
         private final ReactionListController parent;
         private final List<Item> items;
         private final Consumer<String> onReactionClick;
+        private final BiConsumer<ReactionView, String> loadSticker;
 
-        public ReactionAdapter (Context context, List<Item> items, ReactionListController parent, Consumer<String> onReactionClick) {
+        public ReactionAdapter (
+            Context context,
+            List<Item> items,
+            ReactionListController parent,
+            Consumer<String> onReactionClick,
+            BiConsumer<ReactionView, String> loadSticker
+            ) {
             this.context = context;
             this.parent = parent;
             this.items = items;
             this.onReactionClick = onReactionClick;
+            this.loadSticker = loadSticker;
         }
         @NonNull
         @Override
         public ItemHolder onCreateViewHolder (@NonNull ViewGroup parent, int viewType) {
-            EmojiView imageView = new EmojiView(context, this.parent.toneHelper);
-            imageView.setLayoutParams(new RecyclerView.LayoutParams(reactionSize, reactionSize));
-            imageView.setPadding(
-                reactionPadding,
-                reactionPadding,
-                reactionPadding,
-                reactionPadding
-            );
-            Views.setClickable(imageView);
-            RippleSupport.setTransparentSelector(imageView);
-            return new ReactionListController.ItemHolder(imageView);
+            ReactionView reactionView = new ReactionView(context);
+            reactionView.setLayoutParams(new RecyclerView.LayoutParams(REACTION_SIZE, REACTION_SIZE));
+            RippleSupport.setTransparentSelector(reactionView);
+            Views.setClickable(reactionView);
+            return new ReactionListController.ItemHolder(reactionView);
         }
 
         @Override
         public void onBindViewHolder (@NonNull ItemHolder holder, int position) {
             ReactionListController.Item item = items.get(position);
             holder.itemView.setId(R.id.emoji);
-            holder.itemView.setOnClickListener(view -> {
+            ReactionView reactionView = (ReactionView) holder.itemView;
+            reactionView.setOnClickListener(view -> {
                 onReactionClick.accept(item.reaction);
             });
-            ((EmojiView) holder.itemView).setEmoji(item.reaction, item.reactionColorState);
+            reactionView.setOnLongClickListener(view -> {
+                reactionView.startAnimation();
+                return true;
+            });
+            loadSticker.accept(reactionView, item.reaction);
         }
 
         @Override
