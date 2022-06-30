@@ -4173,6 +4173,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       optionViews.add(optionsLayout.getChildAt(i));
     }
     ReactionsLayout reactionsLayout = new ReactionsLayout(context);
+    ReactedUsersLayout usersLayout = new ReactedUsersLayout(context, tdlib);
     TdApi.Chat chat = tdlib.chat(msg.getChatId());
     String[] reactions = chat == null ? new String[0] : chat.availableReactions;
 
@@ -4182,11 +4183,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
       popupLayout.hideWindow(true);
     };
     Runnable onReactedClick = () -> {
+      int userLayoutHeight = 0;
       for (View child: optionViews) {
+        userLayoutHeight += child.getMeasuredHeightAndState();
         optionsLayout.removeView(child);
       }
+      usersLayout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, userLayoutHeight));
+      optionsLayout.addView(usersLayout);
+      usersLayout.setBackgroundColor(Theme.getColor(R.id.theme_color_background));
+      usersLayout.init(msg.getMessage(), msg.getChat());
     };
     Runnable onBackClick = () -> {
+      optionsLayout.removeView(usersLayout);
       for (View child: optionViews) {
         optionsLayout.addView(child);
       }
@@ -4201,6 +4209,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         onReactedClick,
         onBackClick
     );
+    reactionsLayout.setBackgroundColor(Theme.getColor(R.id.theme_color_background));
     optionsLayout.addView(reactionsLayout, 2);
 
     return popupLayout;

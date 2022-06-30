@@ -225,6 +225,7 @@
   <item type="id" name="controller_sponsoredMessagesInfo" />
 
   <item type="id" name="controller_reactions" />
+  <item type="id" name="controller_reactedUsers" />
 
   <item type="id" name="separator" />
 

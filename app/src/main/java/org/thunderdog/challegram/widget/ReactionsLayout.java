@@ -76,6 +76,8 @@ public class ReactionsLayout extends LinearLayout {
   private void goToUsers () {
     removeAllViews();
 
+    setGravity(Gravity.CENTER_VERTICAL);
+
     ImageView backIcon = new ImageView(context);
     Drawable iconDrawable = getResources().getDrawable(R.drawable.baseline_arrow_back_24);
     int iconColor = Theme.getColor(R.id.theme_color_text);

@@ -48,8 +48,6 @@ public class ReactionListController extends ViewController<ReactionsLayout> {
         return R.id.controller_reactions;
     }
 
-    private boolean useDarkMode;
-
     @Override
     protected void handleLanguageDirectionChange () {
         super.handleLanguageDirectionChange();
@@ -73,7 +71,7 @@ public class ReactionListController extends ViewController<ReactionsLayout> {
             context,
             items,
             getArgumentsStrict().getOnReactionClick(),
-            ((reactionView, reaction) -> {
+            (reactionView, reaction) -> {
                 tdlib.client().send(new TdApi.GetAnimatedEmoji(reaction), result -> {
                     if (result.getConstructor() == TdApi.AnimatedEmoji.CONSTRUCTOR) {
                         TdApi.AnimatedEmoji emoji = (TdApi.AnimatedEmoji) result;
@@ -81,10 +79,8 @@ public class ReactionListController extends ViewController<ReactionsLayout> {
                         reactionView.setSticker(tgStickerObj);
                     }
                 });
-            }));
-
-        this.useDarkMode = getArgumentsStrict().useDarkMode();
-
+            }
+        );
         recyclerView = (CustomRecyclerView) Views.inflate(context(), R.layout.recycler_custom, getArguments());
         recyclerView.setHasFixedSize(true);
         recyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
