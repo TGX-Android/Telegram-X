@@ -78,7 +78,7 @@ public class ReactionsTabBar extends HorizontalScrollView implements ViewPager.O
 			themeListeners.addThemeInvalidateListener(viewersTab);
 		}
 		if(total>0){
-			for(TdApi.MessageReaction r:msg.getMessage().interactionInfo.reactions){
+			for(TdApi.MessageReaction r:msg.getReactions()){
 				LinearLayout tab=new LinearLayout(context);
 				tab.setOrientation(LinearLayout.HORIZONTAL);
 				tab.setGravity(Gravity.CENTER_VERTICAL);

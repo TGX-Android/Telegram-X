@@ -262,6 +262,18 @@ public class ReactionListViewController{
 				}
 			});
 		}
+
+		scrollView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener(){
+			@Override
+			public void onViewAttachedToWindow(View v){
+				chatController.context().addGlobalThemeListeners(themeListeners);
+			}
+
+			@Override
+			public void onViewDetachedFromWindow(View v){
+				chatController.context().removeGlobalThemeListeners(themeListeners);
+			}
+		});
 	}
 
 	public void showFromOptionsSheet(CounterView reactionsCounter, CounterView seenCounter, OptionsLayout optionsLayout, View countersButton, Runnable onTransitionDone){
@@ -322,8 +334,6 @@ public class ReactionListViewController{
 				return true;
 			}
 		});
-
-		chatController.context().addGlobalThemeListeners(themeListeners);
 	}
 
 	public void dismissFromOptionsSheet(CounterView reactionsCounter, CounterView seenCounter, OptionsLayout optionsLayout, View countersButton){
@@ -387,8 +397,18 @@ public class ReactionListViewController{
 				return true;
 			}
 		});
+	}
 
-		chatController.context().removeGlobalThemeListeners(themeListeners);
+	public void showForSingleReaction(String reaction){
+		popup.showSimplePopupView(scrollView, Screen.currentHeight());
+		topPadding.getLayoutParams().height=Screen.currentHeight()/3-HeaderView.getTopOffset();
+		for(int i=0;i<viewControllers.size();i++){
+			if(reaction.equals(viewControllers.get(i).reaction)){
+				pager.setCurrentItem(i);
+				break;
+			}
+		}
+		backBtn.setButtonFactor(BackHeaderButton.TYPE_CLOSE);
 	}
 
 	private void scrolledToBottomChanged(){

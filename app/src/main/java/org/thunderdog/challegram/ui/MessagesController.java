@@ -181,6 +181,7 @@ import org.thunderdog.challegram.player.RecordAudioVideoController;
 import org.thunderdog.challegram.player.RoundVideoController;
 import org.thunderdog.challegram.reactions.PreloadedReactionAnimations;
 import org.thunderdog.challegram.reactions.ReactionAnimationOverlay;
+import org.thunderdog.challegram.reactions.ReactionListViewController;
 import org.thunderdog.challegram.reactions.ReactionsMessageOptionsSheetHeaderView;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
@@ -10441,5 +10442,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
     });
     mv.invalidate();
     mv.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+  }
+
+  public void showMessageReactions(TGMessage msg, String reaction){
+    PopupLayout popup=new PopupLayout(context);
+    popup.init(true);
+    ReactionListViewController list=new ReactionListViewController(context, popup, msg, this, null, ()->popup.hideWindow(true));
+    list.showForSingleReaction(reaction);
   }
 }

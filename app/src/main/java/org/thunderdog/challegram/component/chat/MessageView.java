@@ -1576,6 +1576,10 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
 
   @Override
   public boolean onReactionLongClick(MessageCellReactionButton btn){
+    if(msg.canGetAddedReactions()){
+      manager.controller().showMessageReactions(msg, btn.getReaction().reaction);
+      return true;
+    }
     return false;
   }
 
