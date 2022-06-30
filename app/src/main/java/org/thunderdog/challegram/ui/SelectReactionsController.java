@@ -15,7 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.chat.EmojiToneHelper;
-import org.thunderdog.challegram.component.chat.SelectableReactionView;
+import org.thunderdog.challegram.component.reaction.SelectableReactionView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
@@ -36,7 +36,6 @@ import java.util.function.Consumer;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
-import me.vkryl.td.Td;
 
 public class SelectReactionsController extends ViewController<SelectReactionsController.Arguments> {
   private CustomRecyclerView recyclerView;

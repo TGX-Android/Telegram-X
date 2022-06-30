@@ -4164,18 +4164,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
     PopupLayout popupLayout = showOptions(new Options(info, items), null, null);
 
     // Reactions
-    if (!msg.isOutgoing()) {
-      OptionsLayout optionsLayout = (OptionsLayout) popupLayout.getChildAt(1);
-      ReactionsLayout reactionsLayout = new ReactionsLayout(context);
-      TdApi.Chat chat = tdlib.chat(msg.getChatId());
-      String[] reactions = chat == null ? new String[0] : chat.availableReactions;
-      reactionsLayout.init(this, false, reactions, reaction -> {
-        msg.setMessageReaction(reaction, false);
-        msg.invalidate();
-        popupLayout.hideWindow(true);
-      });
-      optionsLayout.addView(reactionsLayout, 2);
-    }
+    OptionsLayout optionsLayout = (OptionsLayout) popupLayout.getChildAt(1);
+    ReactionsLayout reactionsLayout = new ReactionsLayout(context);
+    TdApi.Chat chat = tdlib.chat(msg.getChatId());
+    String[] reactions = chat == null ? new String[0] : chat.availableReactions;
+    reactionsLayout.init(this, false, reactions, reaction -> {
+      msg.setMessageReaction(reaction, false);
+      msg.invalidate();
+      popupLayout.hideWindow(true);
+    });
+    optionsLayout.addView(reactionsLayout, 2);
 
     return popupLayout;
   }

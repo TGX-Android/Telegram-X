@@ -8,9 +8,16 @@ import android.graphics.RectF;
 import android.view.MotionEvent;
 import android.view.View;
 
+import androidx.annotation.Nullable;
+
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.emoji.EmojiInfo;
+import org.thunderdog.challegram.loader.ImageFile;
+import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.loader.gif.GifFile;
+import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.EmojiData;
@@ -41,11 +48,18 @@ public class ReactionBubble {
 
   private static final int spaceBetweenTextAndReaction = Screen.dp(4f);
 
-  private int id;
+  private final int id;
   private int count;
-  private String reaction;
-  private boolean isBig;
+  private final String reaction;
+  private final boolean isBig;
   private boolean isChosen;
+
+  private final ImageReceiver imageReceiver;
+  private final GifReceiver gifReceiver;
+  private GifFile gifFile;
+  private Path contour;
+  private TGStickerObj sticker;
+  private boolean isAnimation;
 
   private static final int height = Screen.dp(12);
   private int width = Screen.dp(36);
@@ -55,7 +69,14 @@ public class ReactionBubble {
 
   private BiConsumer<String, Boolean> setMessageReaction;
 
-  public ReactionBubble (int id, int count, String reaction, boolean isChosen, boolean isBig, BiConsumer<String, Boolean> setMessageReaction) {
+  public ReactionBubble (
+      int id,
+      int count,
+      String reaction,
+      boolean isChosen,
+      boolean isBig,
+      BiConsumer<String, Boolean> setMessageReaction,
+      View parentView) {
     this.id = id;
     this.count = count;
     this.path = new Path();
@@ -66,12 +87,25 @@ public class ReactionBubble {
     this.isChosen = isChosen;
     this.isBig = isBig;
     this.setMessageReaction = setMessageReaction;
+    this.imageReceiver = new ImageReceiver(parentView, 0);
+    this.gifReceiver = new GifReceiver(parentView);
 
     adjustWidthWithCount();
   }
 
   public final int getId () {
     return id;
+  }
+
+  public void setCount (int count) {
+    this.count = count;
+  }
+
+  public void setIsChosen (boolean isChosen) {
+    if (this.isChosen != isChosen && isChosen) {
+      startAnimation();
+    }
+    this.isChosen = isChosen;
   }
 
   public final String getReaction () {
@@ -102,6 +136,30 @@ public class ReactionBubble {
     }
   }
 
+  public void setSticker (@Nullable TGStickerObj sticker) {
+    this.sticker = sticker;
+    ImageFile imageFile = sticker != null && !sticker.isEmpty() ? sticker.getImage() : null;
+    gifFile = sticker != null && !sticker.isEmpty() ? sticker.getPreviewAnimation() : null;
+    if ((sticker == null || sticker.isEmpty()) && imageFile != null) {
+      throw new RuntimeException("");
+    }
+    contour = sticker != null ? sticker.getContour(Math.min(imageReceiver.getWidth(), imageReceiver.getHeight())) : null;
+    imageReceiver.requestFile(imageFile);
+    if (gifFile != null) {
+      gifFile.setPlayOnce(true);
+    }
+    gifReceiver.requestFile(gifFile);
+  }
+
+  public void startAnimation () {
+    gifFile.setLooped(false);
+    this.isAnimation = sticker != null && sticker.isAnimated();
+  }
+
+  public void stopAnimation () {
+    this.isAnimation = false;
+  }
+
   public void buildBubble (int leftContentEdge, int bottomContentEdge) {
     int bubbleWidth = width;
     int bubbleHeight = height;
@@ -124,7 +182,6 @@ public class ReactionBubble {
       DrawAlgorithms.buildPath(clipPath, clipPathRect, rad, rad, rad, rad);
     }
   }
-
 
   public void drawBubble (Canvas c, int colorActive, int colorNegative, Paint textPaint, boolean stroke) {
     final int left = (int) pathRect.left;
@@ -191,14 +248,28 @@ public class ReactionBubble {
 
     // Draw reaction
 
-    Emoji emojiManager = Emoji.instance();
-    EmojiInfo info = emojiManager.getEmojiInfo(reaction);
     int reactionLeft = centerX - contentTotalWidth / 2;
     int reactionRight = reactionLeft + reactionSize;
     int reactionTop = centerY - reactionSize / 2;
     int reactionBottom = reactionTop + reactionSize;
-    Rect rect = new Rect(reactionLeft, reactionTop, reactionRight, reactionBottom);
-    Emoji.instance().draw(c, info, rect);
+    imageReceiver.setBounds(reactionLeft, reactionTop, reactionRight, reactionBottom);
+    gifReceiver.setBounds(reactionLeft, reactionTop, reactionRight, reactionBottom);
+    contour = sticker != null ? sticker.getContour(Math.min(imageReceiver.getWidth(), imageReceiver.getHeight())) : null;
+
+    if (isAnimation) {
+      if (gifReceiver.needPlaceholder()) {
+        if (imageReceiver.needPlaceholder()) {
+          imageReceiver.drawPlaceholderContour(c, contour);
+        }
+        imageReceiver.draw(c);
+      }
+      gifReceiver.draw(c);
+    } else {
+      if (imageReceiver.needPlaceholder()) {
+        imageReceiver.drawPlaceholderContour(c, contour);
+      }
+      imageReceiver.draw(c);
+    }
   }
 
   public boolean onTouchEvent (View view, MotionEvent e) {
@@ -223,15 +294,5 @@ public class ReactionBubble {
     String reaction = isChosen ? "" : this.reaction;
     setMessageReaction.accept(reaction, isBig);
     adjustWidthWithCount();
-  }
-
-  public void setIsChosen (boolean isChosen) {
-    if (this.isChosen == isChosen) return;
-    if (isChosen) {
-      count++;
-    } else {
-      count--;
-    }
-    this.isChosen = isChosen;
   }
 }

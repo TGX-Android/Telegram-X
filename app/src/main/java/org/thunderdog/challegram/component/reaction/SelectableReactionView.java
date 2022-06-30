@@ -1,4 +1,4 @@
-package org.thunderdog.challegram.component.chat;
+package org.thunderdog.challegram.component.reaction;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -15,6 +15,7 @@ import androidx.annotation.Nullable;
 import androidx.core.graphics.drawable.DrawableCompat;
 
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.chat.EmojiToneHelper;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.emoji.EmojiInfo;
@@ -31,7 +32,6 @@ public class SelectableReactionView extends View {
 
   private OnClickListener onClickListener;
   private final EmojiToneHelper toneHelper;
-  private String caption;
   private String emoji;
   private int colorState;
   private EmojiInfo info;

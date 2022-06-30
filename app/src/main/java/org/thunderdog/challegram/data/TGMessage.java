@@ -21,7 +21,6 @@ import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
@@ -59,6 +58,7 @@ import org.thunderdog.challegram.component.chat.MessageViewGroup;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.chat.MessagesTouchHelperCallback;
 import org.thunderdog.challegram.component.chat.ReplyComponent;
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
@@ -237,6 +237,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   protected final MultipleViewProvider overlayViews;
 
   private List<ReactionBubble> reactionBubbles;
+  private final Map<String, TGStickerObj> stickersForReactions;
+  private boolean reactionsUpToDate = false;
+  private int reactionId = 0;
+  private MessageView messageView;
 
   protected TGMessage (MessagesManager manager, TdApi.Message msg) {
     if (!initialized) {
@@ -359,11 +363,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       startHotTimer(false);
     }
 
-    if (msg.interactionInfo != null) {
-      setReactions(msg.interactionInfo.reactions);
-    } else {
-      reactionBubbles = new ArrayList<>();
-    }
+    reactionBubbles = new ArrayList<>();
+    stickersForReactions = new HashMap<>();
+    getStickersForReactions(tdlib.chat(msg.chatId).availableReactions);
   }
 
   private static @NonNull <T> T nonNull (@Nullable T value) {
@@ -400,14 +402,51 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       c.destroy();
   }
 
+  private void getStickersForReactions (String[] reactions) {
+    for (String reaction : reactions) {
+      tdlib.client().send(new TdApi.GetAnimatedEmoji(reaction), result -> {
+        if (result.getConstructor() == TdApi.AnimatedEmoji.CONSTRUCTOR) {
+          TdApi.AnimatedEmoji emoji = (TdApi.AnimatedEmoji) result;
+          TGStickerObj tgStickerObj = new TGStickerObj(tdlib, emoji.sticker, reaction, new TdApi.StickerTypeStatic());
+          stickersForReactions.put(reaction, tgStickerObj);
+        }
+      });
+    }
+  }
+
   private void setReactions (TdApi.MessageReaction[] reactions) {
-    reactionBubbles = new ArrayList<>();
+    List<ReactionBubble> reactionsForRemoval = new ArrayList<>(reactionBubbles);
     for (int i = 0; i < reactions.length; i++) {
       TdApi.MessageReaction reaction = reactions[i];
-      reactionBubbles.add(
-          new ReactionBubble(i, reaction.totalCount, reaction.reaction, reaction.isChosen, false, this::setMessageReaction)
-      );
+      ReactionBubble reactionBubble = findReactionBubbleWithReaction(reaction.reaction);
+      if (reactionBubble == null) {
+        reactionBubble = addReaction(reaction);
+      } else {
+        reactionBubble.setCount(reaction.totalCount);
+        reactionBubble.setIsChosen(reaction.isChosen);
+      }
+      reactionsForRemoval.remove(reactionBubble);
     }
+    for (ReactionBubble reactionBubble: reactionsForRemoval) {
+      reactionBubbles.remove(reactionBubble);
+    }
+  }
+
+  private ReactionBubble addReaction (TdApi.MessageReaction reaction) {
+    if (messageView == null) return null;
+    ReactionBubble reactionBubble = new ReactionBubble(
+        reactionId,
+        reaction.totalCount,
+        reaction.reaction,
+        reaction.isChosen,
+        false,
+        this::setMessageReaction,
+        messageView
+    );
+    reactionBubble.setSticker(stickersForReactions.get(reactionBubble.getReaction()));
+    reactionBubbles.add(reactionBubble);
+    reactionId++;
+    return reactionBubble;
   }
 
   // Value Generators
@@ -852,6 +891,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         width = reactionBubble.getWidthWithMargins() + ReactionBubble.outMarginLeft + ReactionBubble.outMarginRight;
       }
     }
+    if (minReactionsInLine == -1) {
+      minReactionsInLine = reactionBubbles.size();
+    }
     return minReactionsInLine;
   }
 
@@ -933,10 +975,17 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public void setMessageReaction (String reaction, boolean isBig) {
-    for (ReactionBubble reactionBubble: reactionBubbles) {
-      reactionBubble.setIsChosen(reactionBubble.getReaction().equals(reaction));
-    }
     tdlib.setMessageReaction(msg.chatId, msg.id, reaction, isBig);
+    reactionsUpToDate = false;
+  }
+
+  private ReactionBubble findReactionBubbleWithReaction (String reaction) {
+    for (ReactionBubble reactionBubble: reactionBubbles) {
+      if (reactionBubble.getReaction().equals(reaction)) {
+        return reactionBubble;
+      }
+    }
+    return null;
   }
 
   private int computeBubbleHeight () {
@@ -1704,6 +1753,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public final void draw (MessageView view, Canvas c, @NonNull ImageReceiver avatarReceiver, Receiver replyReceiver, DoubleImageReceiver previewReceiver, ImageReceiver contentReceiver, GifReceiver gifReceiver, ComplexReceiver complexReceiver) {
+    if (view != messageView) {
+      messageView = view;
+    }
+
     final int viewWidth = view.getMeasuredWidth();
     final int viewHeight = view.getMeasuredHeight();
 
@@ -1711,11 +1764,15 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
     final float selectableFactor = manager.getSelectableFactor();
 
-    checkEdges();
 
-    if (msg.interactionInfo != null) {
+    if (msg.interactionInfo == null) {
+      reactionBubbles.clear();
+    } else if (!reactionsUpToDate) {
+      reactionsUpToDate = true;
       setReactions(msg.interactionInfo.reactions);
     }
+
+    checkEdges();
 
     // Unread messages badge
     if ((flags & FLAG_SHOW_BADGE) != 0) {
@@ -3089,6 +3146,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         }
 
         // Adjust bubble height for reactions
+        bubbleHeight -= bubblePaddingBottom;
 
         float reactionsTotalHeight = getReactionsLines(bubbleWidth) * ReactionBubble.getHeightWithMargins();
         reactionsTotalHeight = reactionsTotalHeight + ReactionBubble.outMarginTop;
@@ -3189,6 +3247,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       int timeBubbleTotalHeight = getBubbleTimePartHeight() + getBubbleTimePartOffsetY() + getBubbleReduceHeight();
       int reactionsLeftEdge = leftContentEdge + ReactionBubble.outMarginLeft;
       int reactionsBottomEdge = bottomContentEdge;
+
+      if (alignBubbleRight()) {
+        int translateBy = width - rightContentEdge - leftContentEdge;
+        reactionsLeftEdge += translateBy;
+      }
 
       if (reactionsFitWithTime(parentWidth) || drawBubbleTimeOverContent()) {
         reactionsBottomEdge -= ReactionBubble.outMarginBottom;
@@ -4819,6 +4882,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private void updateInteractionInfo (boolean allowAnimation) {
+    reactionsUpToDate = false;
     TdApi.MessageInteractionInfo interactionInfo = msg.interactionInfo;
     boolean animated = allowAnimation && needAnimateChanges();
     if (viewCounter != null) {
