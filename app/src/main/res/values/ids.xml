@@ -1186,7 +1186,10 @@
   <item type="id" name="controller_allowedReactions" />
   <item type="id" name="controller_reactions" />
   <item type="id" name="btn_allowedReactions" />
-  <item type="id" name="btn_reactionsDisabled" />
+  <item type="id" name="btn_enableReactions" />
+  <item type="id" name="btn_enableQuickReaction" />
+  <item type="id" name="btn_quickReactions" />
+  <item type="id" name="btn_useBigReactions" />
   <item type="id" name="text_reactionTitle" />
 
 </resources>

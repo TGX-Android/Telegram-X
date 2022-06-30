@@ -3143,7 +3143,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
     private void openAllowedReactions () {
     EditReactionsController c = new EditReactionsController(context, tdlib);
-    c.setArguments(new EditReactionsController.Args(chat.id));
+    c.setArguments(new EditReactionsController.Args(chat.id, false, new ArrayList<>()));
     navigateTo(c);
   }
 

@@ -19,6 +19,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.EditReactionsController;
 
 public class SelectableReaction extends View {
+  private String reactionString;
   private EmojiInfo reaction;
   private boolean isSelected;
   public EditReactionsController.ReactionItemHolder holder;
@@ -30,6 +31,7 @@ public class SelectableReaction extends View {
   }
 
   public void setReaction (String reaction) {
+    this.reactionString = reaction;
     this.reaction = Emoji.instance().getEmojiInfo(EmojiData.instance().colorize(reaction, null, new String[]{}));
   }
 
@@ -75,5 +77,9 @@ public class SelectableReaction extends View {
       c.drawCircle(indicator.getBounds().centerX(), indicator.getBounds().centerY(), Screen.dp(10f), indicatorStrokePaint);
       indicator.draw(c);
     }
+  }
+
+  public String getReaction () {
+    return reactionString;
   }
 }

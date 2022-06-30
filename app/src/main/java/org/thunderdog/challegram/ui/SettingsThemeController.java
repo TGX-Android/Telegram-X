@@ -75,11 +75,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.TimeZone;
 
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
-import me.vkryl.core.BitwiseUtils;
 
 public class SettingsThemeController extends RecyclerViewController<SettingsThemeController.Args> implements View.OnClickListener, ViewController.SettingsIntDelegate, SliderWrapView.RealTimeChangeListener, View.OnLongClickListener, TGLegacyManager.EmojiLoadListener, AppUpdater.Listener {
   public SettingsThemeController (Context context, Tdlib tdlib) {
@@ -252,6 +252,10 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
             v.getToggler().setRadioEnabled(Settings.instance().getNewSetting(Settings.SETTING_FLAG_BATMAN_POLL_TRANSITIONS), isUpdate);
             break;
           }
+          case R.id.btn_quickReactions: {
+            v.setData(R.string.Reaction_ThumbsUp);
+            break;
+          }
           case R.id.btn_chatListStyle: {
             switch (Settings.instance().getChatListMode()) {
               case Settings.CHAT_MODE_3LINE_BIG:
@@ -317,6 +321,9 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
             break;
           case R.id.btn_useBigEmoji:
             v.getToggler().setRadioEnabled(Settings.instance().useBigEmoji(), isUpdate);
+            break;
+          case R.id.btn_useBigReactions:
+            v.setData(buildBigReactionOptionsString());
             break;
           case R.id.btn_markdown: {
             v.getToggler().setRadioEnabled(Settings.instance().getNewSetting(Settings.SETTING_FLAG_EDIT_MARKDOWN), isUpdate);
@@ -504,6 +511,8 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       }
 
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_quickReactions, 0, R.string.QuickReaction).setDrawModifier(new EmojiModifier("👍", Paints.emojiPaint())));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_chatListStyle, 0, R.string.ChatListStyle));
 
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -665,6 +674,8 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_useBigEmoji, 0, R.string.BigEmoji));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_useBigReactions, 0, R.string.BigReactions));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.LoopAnimatedStickers).setLongId(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP).setBoolValue(true));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_stickerSuggestions, 0, R.string.SuggestStickers));
@@ -791,6 +802,13 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
     recyclerView.setAdapter(adapter);
 
     tdlib.wallpaper().getBackgrounds(null, Theme.isDark());
+  }
+
+  private static String buildBigReactionOptionsString () {
+    StringList strings = new StringList(2);
+    strings.append(R.string.Chats);
+    strings.append(R.string.Channels);
+    return strings.isEmpty() ? Lang.getString(R.string.Nothing) : strings.join(Lang.getConcatSeparator(), Lang.getConcatSeparatorLast(false));
   }
 
   private static final int CAMERA_SETTING_ITEM_COUNT = 8;
@@ -1395,6 +1413,10 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         Settings.instance().setUseBigEmoji(adapter.toggleView(v));
         break;
       }
+      case R.id.btn_useBigReactions: {
+        toggleBigReactions();
+        break;
+      }
       case R.id.btn_secret_batmanTransitions: {
         Settings.instance().setNewSetting(Settings.SETTING_FLAG_BATMAN_POLL_TRANSITIONS, adapter.toggleView(v));
         break;
@@ -1405,6 +1427,10 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       }
       case R.id.btn_chatListStyle: {
         showChatListOptions();
+        break;
+      }
+      case R.id.btn_quickReactions: {
+        showQuickReactionsOptions();
         break;
       }
       case R.id.btn_instantViewMode: {
@@ -1582,6 +1608,24 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         break;
       }
     }
+  }
+
+  private void toggleBigReactions () {
+    boolean currentValue = true;
+    showSettings(
+      new SettingsWrapBuilder(R.id.btn_useBigReactions)
+        .setRawItems(new ListItem[]{
+          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_visible, 0, R.string.Chats, R.id.btn_useBigReactions, currentValue),
+          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_hidden, 0, R.string.Channels, R.id.btn_useBigReactions, !currentValue)
+        })
+        .setHeaderItem(new ListItem(ListItem.TYPE_INFO, 0, 0, R.string.BigReactionsAreInteractive, false))
+    );
+  }
+
+  private void showQuickReactionsOptions () {
+    EditReactionsController c = new EditReactionsController(context, tdlib);
+    c.setArguments(new EditReactionsController.Args(true, "👍"));
+    navigateTo(c);
   }
 
   private String newThemeName (String name, boolean copy) {
