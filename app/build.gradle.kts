@@ -218,7 +218,8 @@ dependencies {
     // mp4parser: https://github.com/sannies/mp4parser/releases
     implementation("com.googlecode.mp4parser:isoparser:1.0.6")
 
-    // Stripe:
+    // Stripe: https://github.com/stripe/stripe-android
+    // TODO: migrate to direct API usage
     implementation("com.stripe:stripe-android:2.0.2")
 }
 
