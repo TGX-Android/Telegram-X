@@ -28,9 +28,11 @@ import me.vkryl.core.lambda.RunnableData;
 public class SelectCountryController extends RecyclerViewController<SelectCountryController.Args> implements Menu, View.OnClickListener {
   public static class Args {
     private final RunnableData<Country> callback;
+    private final boolean showPhoneCode;
 
-    public Args (RunnableData<Country> callback) {
+    public Args (RunnableData<Country> callback, boolean showPhoneCode) {
       this.callback = callback;
+      this.showPhoneCode = showPhoneCode;
     }
   }
 
@@ -69,21 +71,22 @@ public class SelectCountryController extends RecyclerViewController<SelectCountr
 
   private void bindCountryList (@Nullable String query) {
     ArrayList<ListItem> items = new ArrayList<>();
+    boolean phoneMode = getArgumentsStrict().showPhoneCode;
 
     if (query != null && !query.isEmpty()) {
-      search(query);
+      search(query, phoneMode);
       return;
     }
 
     for (String[] country : TGCountry.instance().getAll()) {
-      items.add(new ListItem(ListItem.TYPE_COUNTRY, R.id.result, 0, country[2], false).setData("+" + country[0]).setStringValue(country[1]));
+      items.add(new ListItem(ListItem.TYPE_COUNTRY, R.id.result, 0, country[2], false).setData(phoneMode ? "+" + country[0] : "").setStringValue(country[1]));
     }
 
     items.remove(items.size() - 1);
     adapter.setItems(items, false);
   }
 
-  private void search (String query) {
+  private void search (String query, boolean phoneMode) {
     Background.instance().post(() -> {
       String[][] countries = TGCountry.instance().getAll();
       String number = Strings.getNumber(query);
@@ -115,7 +118,7 @@ public class SelectCountryController extends RecyclerViewController<SelectCountr
             continue;
           }
         }
-        ListItem item = new ListItem(ListItem.TYPE_COUNTRY, R.id.result, 0, country[2], false).setData("+" + country[0]).setStringValue(country[1]).setSliderInfo(null, level[0]);
+        ListItem item = new ListItem(ListItem.TYPE_COUNTRY, R.id.result, 0, country[2], false).setData(phoneMode ? "+" + country[0] : "").setStringValue(country[1]).setSliderInfo(null, level[0]);
         int i = Collections.binarySearch(results, item, comparator);
         if (i < 0) {
           results.add(-(++i), item);
@@ -139,10 +142,11 @@ public class SelectCountryController extends RecyclerViewController<SelectCountr
     if (v.getId() == R.id.result) {
       ListItem item = (ListItem) v.getTag();
       if (item != null && item.getData() != null) {
+        String data = ((String) item.getData());
         navigateBack();
         getArgumentsStrict().callback.runWithData(
                 new Country(
-                        ((String) item.getData()).substring(1),
+                        data.isEmpty() ? "" : data.substring(1),
                         item.getStringValue(),
                         item.getString().toString()
                 )

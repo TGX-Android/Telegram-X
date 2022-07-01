@@ -19,18 +19,24 @@ import com.stripe.android.util.DateUtils;
 import com.stripe.android.util.StripeTextUtils;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 
@@ -155,11 +161,12 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
     }
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_inputCardSaveInfo, 0, R.string.PaymentFormNewMethodSave));
+    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_inputCardSaveInfo, 0, R.string.PaymentFormNewMethodSave, i_saveInfo));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.PaymentFormNewMethodSaveInfo));
 
     adapter.setItems(items, false);
+
     recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
     recyclerView.setAdapter(adapter);
     checkDoneButton();
@@ -174,29 +181,27 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
         i_cardCountryUI = country.countryName;
         adapter.updateValuedSettingById(R.id.btn_inputCardCountry);
         checkDoneButton();
-      }));
+      }, false));
       navigateTo(c);
     } else if (v.getId() == R.id.btn_inputCardSaveInfo) {
-
+      i_saveInfo = adapter.toggleView(v);
     }
   }
 
-  // fields
   private String i_cardNumber = "";
   private String i_cardExpireDate = "";
   private String i_cardCvv = "";
   private String i_cardHolder = "";
   private String i_cardCountry = "";
   private String i_cardPostcode = "";
-
   private String i_cardCountryUI = "";
-  //
+  private boolean i_saveInfo = true;
 
   @Override
   public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v, String text) {
-    if (id == R.id.btn_inputCardExpireDate) {
-      Log.d("[onTextChanged] %s", text);
+    v.setInErrorState(false);
 
+    if (id == R.id.btn_inputCardExpireDate) {
       if (text.length() == 1 && text.charAt(0) != '/') {
         int textAsInt = Integer.parseInt(text);
         if (textAsInt != 0 && textAsInt != 1) {
@@ -211,7 +216,6 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
         v.getEditText().setSelection(1);
       }
 
-      // verify
       if (v.getText().length() == 5) {
         String[] dateParts = v.getText().toString().split("/");
         int month = Integer.parseInt(dateParts[0]);
@@ -266,8 +270,19 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
     setDoneVisible(isValid);
   }
 
-  private void vibrateError (View target) {
-    UI.hapticVibrate(target, true);
+  private void vibrateError (int target) {
+    setDoneInProgress(false);
+
+    for (int i = 0; i < recyclerView.getChildCount(); i++) {
+      View view = recyclerView.getChildAt(i);
+      if (view.getId() == target) {
+        MaterialEditTextGroup metg = ((MaterialEditTextGroup) ((ViewGroup) view).getChildAt(0));
+        metg.setInErrorState(true);
+        UI.hapticVibrate(metg, true);
+        Keyboard.show(metg.getEditText());
+        break;
+      }
+    }
   }
 
   private void tokenizeCard () throws AuthenticationException {
@@ -280,31 +295,43 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
             .build();
 
     if (!stripeCard.validateNumber()) {
-      adapter.indexOfView()
+      vibrateError(R.id.btn_inputCardNumber);
       return;
     }
 
     if (!stripeCard.validateExpiryDate()) {
-
+      vibrateError(R.id.btn_inputCardExpireDate);
       return;
     }
 
     if (!stripeCard.validateCVC()) {
-
+      vibrateError(R.id.btn_inputCardCVV);
       return;
     }
-
-    // validate
 
     new Stripe(paymentsProvider.publishableKey).createToken(stripeCard, new TokenCallback() {
       @Override
       public void onSuccess (Token token) {
-
+        runOnUiThreadOptional(() -> {
+          try {
+            JSONObject data = new JSONObject();
+            data.put("type", token.getType());
+            data.put("id", token.getId());
+            navigateBack();
+            parentController.onPaymentMethodSelected(new TdApi.InputCredentialsNew(data.toString(), i_saveInfo), token.getCard().getBrand() + " *" + token.getCard().getLast4());
+          } catch (JSONException e) {
+            e.printStackTrace();
+          }
+        });
       }
 
       @Override
       public void onError (Exception error) {
-
+        runOnUiThreadOptional(() -> {
+          Log.e(error);
+          showAlert(new AlertDialog.Builder(context).setTitle(R.string.Error).setMessage(error.getMessage()).setPositiveButton(Lang.getString(R.string.OK), (a, b) -> {}));
+          setDoneInProgress(false);
+        });
       }
     });
   }
