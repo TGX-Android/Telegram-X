@@ -77,6 +77,7 @@ public class ReactionListController extends ViewController<ReactionsLayout> {
                         TdApi.AnimatedEmoji emoji = (TdApi.AnimatedEmoji) result;
                         TGStickerObj tgStickerObj = new TGStickerObj(tdlib, emoji.sticker, reaction, new TdApi.StickerTypeStatic());
                         reactionView.setSticker(tgStickerObj);
+                        reactionView.startAnimation();
                     }
                 });
             }

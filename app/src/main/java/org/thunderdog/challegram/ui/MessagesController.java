@@ -226,6 +226,7 @@ import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.ReactionsLayout;
 import org.thunderdog.challegram.widget.RippleRevealView;
+import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 import org.thunderdog.challegram.widget.SendButton;
 import org.thunderdog.challegram.widget.SeparatorView;
@@ -4157,60 +4158,148 @@ public class MessagesController extends ViewController<MessagesController.Argume
     patchReadReceiptsOptions(optionsWithReactions, msg, disableViewCounter);
   }
 
-  public final PopupLayout showOptionsWithReactions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, TGMessage msg) {
+  private final PopupLayout showOptionsWithReactions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, TGMessage msg) {
     OptionItem[] items = new OptionItem[ids.length];
     for (int i = 0; i < ids.length; i++) {
       items[i] = new OptionItem(ids != null ? ids[i] : i, titles[i], colors != null ? colors[i] : OPTION_COLOR_NORMAL, icons != null ? icons[i] : 0);
     }
-    PopupLayout popupLayout = showOptions(new Options(info, items), null, null);
+    Options options = new Options(info, items);
+
+    if (isStackLocked()) {
+      Log.i("Ignoring options show because stack is locked");
+      return null;
+    }
+
+    final PopupLayout popupLayout = new PopupLayout(context);
+    int popupAdditionalHeight;
+
+    popupLayout.setTag(this);
+    popupLayout.init(true);
+
+    // Options
+
+    OptionsLayout optionsWrap = new OptionsLayout(context(), this, null);
+    optionsWrap.setInfo(this, tdlib(), options.info, false);
+    optionsWrap.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+    if (Screen.needsKeyboardPadding(context)) {
+      popupAdditionalHeight = Screen.getNavigationBarFrameHeight();
+      optionsWrap.setPadding(0, 0, 0, popupAdditionalHeight);
+      popupLayout.setNeedFullScreen(true);
+    } else {
+      popupAdditionalHeight = 0;
+    }
+
+    ShadowView shadowView = new ShadowView(context);
+    shadowView.setSimpleTopShadow(true);
+    optionsWrap.addView(shadowView, 0);
+    addThemeInvalidateListener(shadowView);
+
+    View.OnClickListener onClickListener;
+    onClickListener = v -> {
+      ViewController<?> c = context.navigation().getCurrentStackItem();
+      if (c instanceof OptionDelegate && ((OptionDelegate) c).onOptionItemPressed(v, v.getId())) {
+        popupLayout.hideWindow(true);
+      }
+    };
+
+    for (OptionItem item : options.items) {
+      TextView text = OptionsLayout.genOptionView(context, item.id, item.name, item.color, item.icon, onClickListener, getThemeListeners(), null);
+      RippleSupport.setTransparentSelector(text);
+      text.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(54f)));
+      optionsWrap.addView(text);
+    }
+
+    // Users
+
+    ReactedUsersLayout usersWrap = new ReactedUsersLayout(context, tdlib);
+    usersWrap.init(msg.getMessage(), msg.getChat());
+
+    // Parents
+
+    int screenWidth = Screen.currentWidth();
+
+    LinearLayout parent = new LinearLayout(context);
+    parent.setBackgroundColor(Theme.getColor(R.id.theme_color_background));
+    parent.setOrientation(LinearLayout.HORIZONTAL);
+    parent.setLayoutParams(FrameLayoutFix.newParams(2 * screenWidth, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
+
+    LinearLayout optionsParent = new LinearLayout(context);
+    optionsParent.setBackgroundColor(Theme.getColor(R.id.theme_color_background));
+    optionsParent.setOrientation(LinearLayout.VERTICAL);
+    optionsParent.setLayoutParams(new LinearLayout.LayoutParams(screenWidth, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+    LinearLayout usersParent = new LinearLayout(context);
+    usersParent.setBackgroundColor(Theme.getColor(R.id.theme_color_background));
+    usersParent.setOrientation(LinearLayout.VERTICAL);
+    usersParent.setLayoutParams(new LinearLayout.LayoutParams(screenWidth, ViewGroup.LayoutParams.WRAP_CONTENT));
 
     // Reactions
 
-    OptionsLayout optionsLayout = (OptionsLayout) popupLayout.getChildAt(1);
-    int size = optionsLayout.getChildCount();
-    List<View> optionViews = new ArrayList<>();
-    for (int i = 2; i < size; i++) {
-      optionViews.add(optionsLayout.getChildAt(i));
-    }
-    ReactionsLayout reactionsLayout = new ReactionsLayout(context);
-    ReactedUsersLayout usersLayout = new ReactedUsersLayout(context, tdlib);
+    ReactionsLayout reactionsLayoutOptions = new ReactionsLayout(context);
+    ReactionsLayout reactionsLayoutUsers = new ReactionsLayout(context);
+
+    // Animations
+    final BoolAnimator transition = new BoolAnimator(0,
+        (id, factor, fraction, callee) -> {
+          parent.setTranslationX(-screenWidth * factor);
+        },
+        AnimatorUtils.DECELERATE_INTERPOLATOR,
+        180L
+    );
+
     TdApi.Chat chat = tdlib.chat(msg.getChatId());
     String[] reactions = chat == null ? new String[0] : chat.availableReactions;
-
     Consumer<String> onReactionClick = reaction -> {
       msg.setMessageReaction(reaction, false);
       msg.invalidate();
       popupLayout.hideWindow(true);
     };
     Runnable onReactedClick = () -> {
-      int userLayoutHeight = 0;
-      for (View child: optionViews) {
-        userLayoutHeight += child.getMeasuredHeightAndState();
-        optionsLayout.removeView(child);
-      }
-      usersLayout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, userLayoutHeight));
-      optionsLayout.addView(usersLayout);
-      usersLayout.setBackgroundColor(Theme.getColor(R.id.theme_color_background));
-      usersLayout.init(msg.getMessage(), msg.getChat());
+      usersWrap.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, optionsWrap.getMeasuredHeight()));
+      transition.toggleValue(true);
     };
     Runnable onBackClick = () -> {
-      optionsLayout.removeView(usersLayout);
-      for (View child: optionViews) {
-        optionsLayout.addView(child);
-      }
+      transition.toggleValue(true);
     };
-    reactionsLayout.init(
+
+    reactionsLayoutOptions.init(
         this,
         tdlib,
         false,
         reactions,
         msg.getMessage(),
+        msg.getChat(),
+        true,
         onReactionClick,
         onReactedClick,
         onBackClick
     );
-    reactionsLayout.setBackgroundColor(Theme.getColor(R.id.theme_color_background));
-    optionsLayout.addView(reactionsLayout, 2);
+    reactionsLayoutUsers.init(
+        this,
+        tdlib,
+        false,
+        reactions,
+        msg.getMessage(),
+        msg.getChat(),
+        false,
+        onReactionClick,
+        onReactedClick,
+        onBackClick
+    );
+
+    // Window
+
+    optionsParent.addView(reactionsLayoutOptions);
+    optionsParent.addView(optionsWrap);
+
+    usersParent.addView(reactionsLayoutUsers);
+    usersParent.addView(usersWrap);
+
+    parent.addView(optionsParent);
+    parent.addView(usersParent);
+
+    popupLayout.showSimplePopupView(parent, shadowView.getLayoutParams().height + Screen.dp(54f) * options.items.length + optionsWrap.getTextHeight() + popupAdditionalHeight);
 
     return popupLayout;
   }

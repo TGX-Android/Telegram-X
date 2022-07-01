@@ -29,7 +29,8 @@ import me.vkryl.core.ColorUtils;
 
 public class ReactionsLayout extends LinearLayout {
   private static final int BAR_HEIGHT = Screen.dp(60f);
-  private static final int ICON_SIZE = Screen.dp(40f);
+  private static final int ICON_SIZE = Screen.dp(30f);
+  private static final int BACK_ICON_SIZE = Screen.dp(40f);
   private static final int TEXT_WIDTH_S = Screen.dp(30f);
   private static final int TEXT_WIDTH_M = Screen.dp(40f);
   private static final int TEXT_WIDTH_L = Screen.dp(50f);
@@ -41,6 +42,7 @@ public class ReactionsLayout extends LinearLayout {
   private Context context;
   private Tdlib tdlib;
   private TdApi.Message msg;
+  private TdApi.Chat chat;
   private Consumer<String> onReactionClick;
   private Runnable onReactedClick;
   private Runnable onBackClick;
@@ -56,6 +58,8 @@ public class ReactionsLayout extends LinearLayout {
       boolean useDarkMode,
       String[] reactions,
       TdApi.Message msg,
+      TdApi.Chat chat,
+      boolean options,
       Consumer<String> onReactionClick,
       Runnable onReactedClick,
       Runnable onBackClick
@@ -65,53 +69,113 @@ public class ReactionsLayout extends LinearLayout {
     this.reactions = reactions;
     this.tdlib = tdlib;
     this.msg = msg;
+    this.chat = chat;
     this.onReactionClick = onReactionClick;
     this.onReactedClick = onReactedClick;
     this.onBackClick = onBackClick;
 
     setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, BAR_HEIGHT));
-    goToOptions();
+    setGravity(Gravity.CENTER_VERTICAL);
+    setBackgroundColor(Theme.getColor(R.id.theme_color_background));
+    setOnClickListener(view -> {});
+
+    if (options) {
+      initOptions();
+    } else {
+      initUsers();
+    }
   }
 
-  private void goToUsers () {
+  private void initOptions () {
+    removeAllViews();
+
+    LinearLayout reactedWrapper = new LinearLayout(context);
+    int wrapperWidth = 0;
+    if (chat.type.getConstructor() != TdApi.ChatTypePrivate.CONSTRUCTOR) {
+      reactedWrapper.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
+      reactedWrapper.setGravity(Gravity.CENTER_VERTICAL);
+
+      ImageView reactedIcon = new ImageView(context);
+      Drawable iconDrawable = getResources().getDrawable(R.drawable.baseline_favorite_20);
+      int iconColor = Theme.getColor(R.id.theme_color_text);
+      iconColor = ColorUtils.alphaColor(0.6f, iconColor);
+      DrawableCompat.setTint(iconDrawable, iconColor);
+      reactedIcon.setImageDrawable(iconDrawable);
+      reactedIcon.setPadding(PADDING, 0, PADDING, 0);
+      reactedIcon.setLayoutParams(new LinearLayout.LayoutParams(ICON_SIZE, ICON_SIZE));
+      reactedWrapper.addView(reactedIcon);
+
+      CustomTextView reactedText = new CustomTextView(context, tdlib);
+      int reactedCount = 0;
+      if (msg.interactionInfo != null) {
+        for (int i = 0; i < msg.interactionInfo.reactions.length; i++) {
+          reactedCount += msg.interactionInfo.reactions[i].totalCount;
+        }
+      }
+      reactedText.setBoldText(String.valueOf(reactedCount), null, false);
+      reactedText.setTextSize(16f);
+      reactedText.setPadding(PADDING, 0, PADDING, 0);
+      int textWidth = TEXT_WIDTH_S;
+      if (reactedCount > 99) {
+        textWidth = TEXT_WIDTH_L;
+      } else if (reactedCount > 9) {
+        textWidth = TEXT_WIDTH_M;
+      }
+      reactedText.setLayoutParams(new LinearLayout.LayoutParams(textWidth, ViewGroup.LayoutParams.WRAP_CONTENT));
+      reactedWrapper.addView(reactedText);
+
+      if (msg.canGetAddedReactions) {
+        Views.setClickable(reactedWrapper);
+        RippleSupport.setTransparentSelector(reactedWrapper);
+        reactedWrapper.setOnClickListener(view -> {
+          onReactedClick.run();
+        });
+      }
+
+      wrapperWidth = ICON_SIZE + textWidth;
+    }
+
+    ReactionListController controller = new ReactionListController(context, tdlib);
+    controller.setArguments(this);
+    controller.get().setLayoutParams(new LinearLayout.LayoutParams(
+        Screen.currentWidth() - wrapperWidth,
+        BAR_HEIGHT
+    ));
+
+    addView(controller.get());
+    addView(reactedWrapper);
+  }
+
+  private void initUsers () {
     removeAllViews();
 
     setGravity(Gravity.CENTER_VERTICAL);
 
     ImageView backIcon = new ImageView(context);
-    Drawable iconDrawable = getResources().getDrawable(R.drawable.baseline_arrow_back_24);
-    int iconColor = Theme.getColor(R.id.theme_color_text);
-    DrawableCompat.setTint(iconDrawable, iconColor);
-    backIcon.setImageDrawable(iconDrawable);
+    Drawable backIconDrawable = getResources().getDrawable(R.drawable.baseline_arrow_back_24);
+    int backIconColor = Theme.getColor(R.id.theme_color_text);
+    DrawableCompat.setTint(backIconDrawable, backIconColor);
+    backIcon.setImageDrawable(backIconDrawable);
     backIcon.setPadding(PADDING, 0, PADDING, 0);
-    backIcon.setLayoutParams(new LinearLayout.LayoutParams(ICON_SIZE, ICON_SIZE));
+    backIcon.setLayoutParams(new LinearLayout.LayoutParams(BACK_ICON_SIZE, BACK_ICON_SIZE));
 
     Views.setClickable(backIcon);
     RippleSupport.setTransparentSelector(backIcon);
     backIcon.setOnClickListener(view -> {
-      goToOptions();
       onBackClick.run();
     });
 
     addView(backIcon);
-  }
-
-  private void goToOptions () {
-    removeAllViews();
-
-    LinearLayout reactedWrapper = new LinearLayout(context);
-    reactedWrapper.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
-    reactedWrapper.setGravity(Gravity.CENTER_VERTICAL);
 
     ImageView reactedIcon = new ImageView(context);
-    Drawable iconDrawable = getResources().getDrawable(R.drawable.baseline_favorite_20);
-    int iconColor = Theme.getColor(R.id.theme_color_text);
-    iconColor = ColorUtils.alphaColor(0.6f, iconColor);
-    DrawableCompat.setTint(iconDrawable, iconColor);
-    reactedIcon.setImageDrawable(iconDrawable);
+    Drawable heartIconDrawable = getResources().getDrawable(R.drawable.baseline_favorite_20);
+    int heartIconColor = Theme.getColor(R.id.theme_color_text);
+    heartIconColor = ColorUtils.alphaColor(0.6f, heartIconColor);
+    DrawableCompat.setTint(heartIconDrawable, heartIconColor);
+    reactedIcon.setImageDrawable(heartIconDrawable);
     reactedIcon.setPadding(PADDING, 0, PADDING, 0);
     reactedIcon.setLayoutParams(new LinearLayout.LayoutParams(ICON_SIZE, ICON_SIZE));
-    reactedWrapper.addView(reactedIcon);
+    addView(reactedIcon);
 
     CustomTextView reactedText = new CustomTextView(context, tdlib);
     int reactedCount = 0;
@@ -121,7 +185,7 @@ public class ReactionsLayout extends LinearLayout {
       }
     }
     reactedText.setBoldText(String.valueOf(reactedCount), null, false);
-    reactedText.setTextSize(18f);
+    reactedText.setTextSize(16f);
     reactedText.setPadding(PADDING, 0, PADDING, 0);
     int textWidth = TEXT_WIDTH_S;
     if (reactedCount > 99) {
@@ -130,24 +194,7 @@ public class ReactionsLayout extends LinearLayout {
       textWidth = TEXT_WIDTH_M;
     }
     reactedText.setLayoutParams(new LinearLayout.LayoutParams(textWidth, ViewGroup.LayoutParams.WRAP_CONTENT));
-    reactedWrapper.addView(reactedText);
-
-    Views.setClickable(reactedWrapper);
-    RippleSupport.setTransparentSelector(reactedWrapper);
-    reactedWrapper.setOnClickListener(view -> {
-      goToUsers();
-      onReactedClick.run();
-    });
-
-    ReactionListController controller = new ReactionListController(context, tdlib);
-    controller.setArguments(this);
-    controller.get().setLayoutParams(new LinearLayout.LayoutParams(
-        Screen.currentWidth() - ICON_SIZE - textWidth,
-        BAR_HEIGHT
-    ));
-
-    addView(controller.get());
-    addView(reactedWrapper);
+    addView(reactedText);
   }
 
   public boolean useDarkMode () {

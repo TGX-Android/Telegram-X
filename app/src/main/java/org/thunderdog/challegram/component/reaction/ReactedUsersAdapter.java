@@ -30,6 +30,8 @@ import java.util.List;
 import me.vkryl.android.ViewUtils;
 
 public class ReactedUsersAdapter extends RecyclerView.Adapter<ReactedUsersAdapter.UserWithReactionHolder> implements MeasuredAdapterDelegate {
+  private static final int REACTION_PADDING = Screen.dp(10f);
+
   public interface Callback {
     void onUserPicked (TGUser user);
     void onUserSelected (int selectedCount, TGUser user, boolean isSelected);
@@ -157,7 +159,8 @@ public class ReactedUsersAdapter extends RecyclerView.Adapter<ReactedUsersAdapte
 
           LinearLayout wrapper = new LinearLayout(context);
           wrapper.setOrientation(LinearLayout.HORIZONTAL);
-          wrapper.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+          wrapper.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(UserView.HEIGHT)));
+          wrapper.setBackgroundColor(Theme.getColor(R.id.theme_color_headerBackground));
 
           int offsetLeft = Screen.dp(18f);
           UserView userView;
@@ -172,11 +175,14 @@ public class ReactedUsersAdapter extends RecyclerView.Adapter<ReactedUsersAdapte
             ViewUtils.setBackground(userView, Theme.fillingSelector(R.id.theme_color_chatBackground));
             Views.setClickable(userView);
           }
-          userView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+          LinearLayout.LayoutParams userParams = new LinearLayout.LayoutParams(Screen.currentWidth() - Screen.dp(UserView.HEIGHT), Screen.dp(UserView.HEIGHT));
+          //userParams.setMargins(0, Screen.dp(2f), 0, Screen.dp(2f));
+          userView.setLayoutParams(userParams);
           wrapper.addView(userView);
 
           ReactionView reactionView = new ReactionView(context);
-          reactionView.setLayoutParams(new LinearLayout.LayoutParams(Screen.dp(40f), Screen.dp(40f)));
+          reactionView.setLayoutParams(new LinearLayout.LayoutParams(Screen.dp(UserView.HEIGHT), Screen.dp(UserView.HEIGHT)));
+          reactionView.setPadding(REACTION_PADDING, REACTION_PADDING, REACTION_PADDING, REACTION_PADDING);
           wrapper.addView(reactionView);
 
           return new ReactedUsersAdapter.UserWithReactionHolder(wrapper, userView, reactionView);

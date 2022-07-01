@@ -82,6 +82,7 @@ public class ReactedUserListController extends ViewController<ReactedUsersLayout
     recyclerView.setLayoutManager(manager);
     recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS :View.OVER_SCROLL_NEVER);
     recyclerView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 140l));
+    recyclerView.setBackgroundColor(Theme.getColor(R.id.theme_color_background));
     recyclerView.setAdapter(adapter);
 
     return recyclerView;

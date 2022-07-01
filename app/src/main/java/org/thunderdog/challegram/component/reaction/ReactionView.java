@@ -51,7 +51,6 @@ public class ReactionView extends View implements FactorAnimator.Target, Destroy
 
   public void setSticker (@Nullable TGStickerObj sticker) {
     this.sticker = sticker;
-    startAnimation();
     resetStickerState();
     ImageFile imageFile = sticker != null && !sticker.isEmpty() ? sticker.getImage() : null;
     GifFile gifFile = sticker != null && !sticker.isEmpty() ? sticker.getPreviewAnimation() : null;
