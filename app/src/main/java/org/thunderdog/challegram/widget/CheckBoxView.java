@@ -17,6 +17,7 @@ package org.thunderdog.challegram.widget;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.RectF;
 import android.view.Gravity;
 import android.view.View;
@@ -36,7 +37,7 @@ public class CheckBoxView extends View {
   private final BoolAnimator isChecked = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 165l);
   private final BoolAnimator isHidden = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 165l);
   private final BoolAnimator isDisabled = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 165l);
-  // TODO isIntermediate state, when check angle smoothly changes from 90 to 180 degrees
+  private final BoolAnimator isIndeterminate = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 165l);
 
   private final RectF rect;
   private final Paint outerPaint;
@@ -55,6 +56,10 @@ public class CheckBoxView extends View {
     isChecked.setValue(checked, animated);
   }
 
+  public void setIndeterminate(boolean indeterminate, boolean animated){
+    isIndeterminate.setValue(indeterminate, animated);
+  }
+
   public void setHidden (boolean hidden, final boolean animated) {
     isHidden.setValue(hidden, animated);
   }
@@ -71,6 +76,8 @@ public class CheckBoxView extends View {
 
   private static final float FACTOR_DIFF = .65f;
   private static final float SCALE_DIFF = .15f;
+  private Path path=new Path();
+  private Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
 
   @Override
   protected void onDraw (Canvas c) {
@@ -83,8 +90,8 @@ public class CheckBoxView extends View {
     final float factor = isChecked.getFloatValue();
     final int alpha = (int) (255f * showFactor);
 
-    final int x1 = Screen.dp(4f);
-    final int y1 = Screen.dp(11f);
+//    final int x1 = Screen.dp(4f);
+//    final int y1 = Screen.dp(11f);
     final int lineSize = Screen.dp(1.5f);
 
     float rectFactor = Math.min(factor / FACTOR_DIFF, 1f);
@@ -129,19 +136,31 @@ public class CheckBoxView extends View {
       c.drawRect(left, rect.bottom - offset - h, right, rect.bottom - offset, Paints.fillingPaint(alphaColor));
 
       if (checkFactor != 0f) {
-        c.translate(-Screen.dp(.5f), 0);
-        c.rotate(-45f, cx, cy);
-
-        int w2 = (int) ((float) Screen.dp(12f) * checkFactor);
-        int h1 = (int) ((float) Screen.dp(6f) * checkFactor);
-
         final int checkColor = ColorUtils.alphaColor(showFactor, Theme.radioCheckColor());
-        c.drawRect(x1, y1 - h1, x1 + lineSize, y1, Paints.fillingPaint(checkColor));
-        c.drawRect(x1, y1 - lineSize, x1 + w2, y1, Paints.fillingPaint(checkColor));
+        float indFactor=isIndeterminate.getFloatValue();
+        float x1=Screen.dp(3);
+        float y1=interpolate(Screen.dp(8.5f), Screen.dp(8.5f), indFactor);
+        float x2=interpolate(Screen.dp(6.5f), Screen.dp(8.5f), indFactor);
+        float y2=interpolate(Screen.dp(12), Screen.dp(8.5f), indFactor);
+        float x3=Screen.dp(14.25f);
+        float y3=interpolate(Screen.dp(4.5f), Screen.dp(8.5f), indFactor);
+
+        path.rewind();
+        path.moveTo(interpolate(x2, x1, checkFactor), interpolate(y2, y1, checkFactor));
+        path.lineTo(x2, y2);
+        path.lineTo(interpolate(x2, x3, checkFactor), interpolate(y2, y3, checkFactor));
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setColor(checkColor);
+        paint.setStrokeWidth(lineSize);
+        c.drawPath(path, paint);
       }
     }
 
     Views.restore(c, restoreToCount);
+  }
+
+  private static float interpolate(float x1, float x2, float k){
+    return x1*(1f-k)+x2*k;
   }
 
   public static CheckBoxView simpleCheckBox (Context context) {

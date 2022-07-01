@@ -27,6 +27,7 @@ public class LottieAnimationDrawable extends Drawable implements Animatable{
 	private boolean drawing;
 	private boolean loop;
 	private long frameDelay;
+	private Runnable onEnd;
 
 	public LottieAnimationDrawable(PreloadedLottieAnimation anim, int width, int height){
 		this.anim=anim;
@@ -106,6 +107,8 @@ public class LottieAnimationDrawable extends Drawable implements Animatable{
 				}else{
 					frame--;
 					running=false;
+					if(onEnd!=null)
+						onEnd.run();
 				}
 			}
 			if(!drawing){
@@ -122,5 +125,9 @@ public class LottieAnimationDrawable extends Drawable implements Animatable{
 		anim.getFrame(bitmaps[1], frame);
 		swapBuffers();
 		drawing=false;
+	}
+
+	public void setOnEnd(Runnable onEnd){
+		this.onEnd=onEnd;
 	}
 }

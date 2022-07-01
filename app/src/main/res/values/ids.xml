@@ -128,6 +128,7 @@
   <item type="id" name="controller_camera" />
   <item type="id" name="controller_memberRights" />
   <item type="id" name="controller_linkChat" />
+  <item type="id" name="controller_chatReactions"/>
 
   <item type="id" name="controller_bug_killer" />
   <item type="id" name="controller_logs" />
@@ -448,6 +449,7 @@
   <item type="id" name="btn_chatPermissions" />
   <item type="id" name="btn_view" />
   <item type="id" name="btn_username" />
+  <item type="id" name="btn_reactions" />
   <item type="id" name="btn_prehistoryMode" />
   <item type="id" name="btn_slowMode" />
   <item type="id" name="btn_slowModeDescription" />

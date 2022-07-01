@@ -17,6 +17,7 @@ package org.thunderdog.challegram.widget;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.util.AttributeSet;
 import android.view.View;
 
 import org.thunderdog.challegram.loader.ImageReceiver;
@@ -30,8 +31,16 @@ public class ImageReceiverView extends View implements Destroyable, AttachDelega
 
   private Bitmap overlayBitmap;
 
-  public ImageReceiverView (Context context) {
-    super(context);
+  public ImageReceiverView(Context context){
+    this(context, null);
+  }
+
+  public ImageReceiverView(Context context, AttributeSet attrs){
+    this(context, attrs, 0);
+  }
+
+  public ImageReceiverView(Context context, AttributeSet attrs, int defStyle){
+    super(context, attrs, defStyle);
     this.receiver = new ImageReceiver(this, 0);
   }
 

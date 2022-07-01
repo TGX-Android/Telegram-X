@@ -302,6 +302,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           if (msg.containsUnreadMention() && id > lastViewedMention) {
             lastViewedMention = id;
           }
+          if(msg.containsUnreadReactions() && id>lastViewedReaction){
+            lastViewedReaction=id;
+          }
           if (list == null) {
             list = new LongSet(last - first);
           } else {

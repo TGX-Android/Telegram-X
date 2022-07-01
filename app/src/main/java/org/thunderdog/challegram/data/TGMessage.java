@@ -3749,6 +3749,19 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return msg.containsUnreadMention;
   }
 
+  public boolean containsUnreadReactions(){
+    synchronized(this){
+      if(combinedMessages!=null){
+        for (int i = combinedMessages.size() - 1; i >= 0; i--) {
+          if (combinedMessages.get(i).unreadReactions!=null && combinedMessages.get(i).unreadReactions.length>0) {
+            return true;
+          }
+        }
+      }
+    }
+    return msg.unreadReactions!=null && msg.unreadReactions.length>0;
+  }
+
   public final void readMention (long messageId) {
     synchronized (this) {
       if (combinedMessages != null) {

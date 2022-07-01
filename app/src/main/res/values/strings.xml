@@ -4285,4 +4285,11 @@
   <string name="BigReactionsNone">None</string>
   <string name="xReactions_one">%1$s reaction</string>
   <string name="xReactions_other">%1$s reactions</string>
+  <string name="ChatReactions">Reactions</string>
+  <string name="ReactionsDisabled">Reactions disabled</string>
+  <string name="xReactionsEnabled_one">%1$s reaction enabled</string>
+  <string name="xReactionsEnabled_other">%1$s reactions enabled</string>
+  <string name="ChatReactionsExplanation">Allow members to react to group messages</string>
+  <string name="ChannelReactionsExplanation">Allow members to react to channel messages</string>
+  <string name="AvailableReactions">Available reactions</string>
 </resources>

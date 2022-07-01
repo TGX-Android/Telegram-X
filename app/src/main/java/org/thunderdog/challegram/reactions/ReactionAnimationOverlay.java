@@ -19,6 +19,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import org.jetbrains.annotations.NotNull;
+import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.MessagesController;
 
@@ -28,13 +29,11 @@ import androidx.annotation.Nullable;
 
 public class ReactionAnimationOverlay{
 	private Activity activity;
-	private MessagesController chat;
 	private WindowManager wm;
 	private FrameLayout windowView;
 	private int runningAnimationsCount;
 
-	public ReactionAnimationOverlay(MessagesController chat){
-		this.chat=chat;
+	public ReactionAnimationOverlay(ViewController<?> chat){
 		activity=chat.context();
 		wm=activity.getWindowManager();
 	}
