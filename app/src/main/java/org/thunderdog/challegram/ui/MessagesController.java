@@ -14,6 +14,9 @@
  */
 package org.thunderdog.challegram.ui;
 
+import static org.thunderdog.challegram.tool.UI.getResources;
+import static org.thunderdog.challegram.ui.EditReactionsController.Args.reactions;
+
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -31,6 +34,8 @@ import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.media.MediaMetadataRetriever;
@@ -63,6 +68,7 @@ import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
 import androidx.collection.SparseArrayCompat;
+import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.PagerAdapter;
@@ -209,9 +215,9 @@ import org.thunderdog.challegram.unsorted.Test;
 import org.thunderdog.challegram.util.CancellableResultHandler;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
+import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.Unlockable;
-import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.v.MessagesLayoutManager;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
@@ -225,12 +231,12 @@ import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.RippleRevealView;
-import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 import org.thunderdog.challegram.widget.SendButton;
 import org.thunderdog.challegram.widget.SeparatorView;
 import org.thunderdog.challegram.widget.TripleAvatarView;
 import org.thunderdog.challegram.widget.ViewPager;
 import org.thunderdog.challegram.widget.WallpaperParametersView;
+import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -242,11 +248,14 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.AnimatedFrameLayout;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
@@ -257,7 +266,6 @@ import me.vkryl.core.lambda.Future;
 import me.vkryl.core.lambda.FutureLong;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
@@ -4151,7 +4159,107 @@ public class MessagesController extends ViewController<MessagesController.Argume
       b.append(Lang.getString(resId));
     }
     String text = b.toString().trim();
-    patchReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, disableViewCounter);
+    PopupLayout popupLayout = showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
+    patchReadReceiptsOptions(popupLayout, msg, disableViewCounter);
+    patchReactionsOptions(popupLayout, msg);
+  }
+
+  private void patchReactionsOptions (PopupLayout layout, TGMessage message) {
+    ViewPagerHeaderViewCompact reactionsHeaderView = new ViewPagerHeaderViewCompact(context);
+    ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f));
+    reactionsHeaderView.setLayoutParams(params);
+
+    ViewPagerTopView topView = reactionsHeaderView.getTopView();
+    topView.setUseDarkBackground();
+
+    //OKI fix this workaround
+    String[] items = Arrays.copyOf(reactions, reactions.length+2);
+    //OKI fix the size of reactions
+    topView.setItems(items);
+    topView.setOnClickListener(item -> {
+      UI.showToast(item.getId(), Toast.LENGTH_SHORT);
+    });
+    topView.setSelectionFactor(3);
+
+    pagerContentView = new RtlViewPager(context) {
+      boolean blocked;
+
+      @Override
+      public boolean onInterceptTouchEvent (MotionEvent ev) {
+        if (ev.getAction() == MotionEvent.ACTION_DOWN) {
+          blocked = false;
+        }
+        if (!blocked) {
+          blocked = getCurrentItem() == 0 && (UI.getContext(MessagesController.this.context()).getRecordAudioVideoController().isOpen() || (inputView != null && inputView.getInlineSearchContext().isVisibleOrActive()));
+        }
+
+        return !blocked && super.onInterceptTouchEvent(ev);
+      }
+    };
+    pagerContentView.setOffscreenPageLimit(1);
+    pagerContentView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS : View.OVER_SCROLL_NEVER);
+    pagerContentView.addOnPageChangeListener(this);
+    pagerContentView.setAdapter(pagerContentAdapter);
+    pagerContentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+    reactionsHeaderView.setBackgroundColor(Theme.getColor(R.id.theme_color_background));
+    reactionsHeaderView.addView(createTotalReactionCountView());
+
+    OptionsLayout optionsLayout = (OptionsLayout) layout.getChildAt(1);
+    optionsLayout.addView(reactionsHeaderView, 2);
+  }
+
+  private LinearLayout createTotalReactionCountView () {
+    ImageView reactedIcon = new ImageView(context);
+    Drawable iconDrawable = getResources().getDrawable(R.drawable.baseline_favorite_20);
+    DrawableCompat.setTint(iconDrawable, ColorUtils.alphaColor(0.6f, Theme.getColor(R.id.theme_color_text)));
+    reactedIcon.setImageDrawable(iconDrawable);
+    reactedIcon.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+    TextView reactionTitle = new TextView(context);
+    RelativeLayout.LayoutParams reactionTitleParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+    reactionTitle.setLayoutParams(reactionTitleParams);
+    reactionTitle.setPadding(Screen.dp(8f), 0, 0, 0);
+    reactionTitle.setMaxLines(1);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+      reactionTitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+    }
+    reactionTitle.setEllipsize(TextUtils.TruncateAt.END);
+    reactionTitle.setId(R.id.text_reactionTitle);
+    //OKI bind with real value
+    reactionTitle.setText("12");
+
+    LinearLayout buttonContainer = new LinearLayout(context);
+    LinearLayout.LayoutParams wrapParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT);
+    buttonContainer.setPadding(Screen.dp(40f), Screen.dp(4f), Screen.dp(16f), 0);
+    buttonContainer.setLayoutParams(wrapParams);
+    buttonContainer.setOrientation(LinearLayout.HORIZONTAL);
+    buttonContainer.setGravity(Gravity.CENTER);
+    buttonContainer.addView(reactedIcon);
+    buttonContainer.addView(reactionTitle);
+
+    //OKI code looks weird, need to find a better way
+    GradientDrawable gd = new GradientDrawable(GradientDrawable.Orientation.RIGHT_LEFT, new int[]{
+      Theme.getColor(R.id.theme_color_background),
+      Theme.getColor(R.id.theme_color_background),
+      Theme.getColor(R.id.theme_color_background),
+      Theme.getColor(R.id.theme_color_background),
+      Theme.getColor(R.id.theme_color_background),
+      Theme.getColor(R.id.theme_color_background),
+      Theme.getColor(R.id.theme_color_background),
+      ColorUtils.alphaColor(0.7f, Theme.getColor(R.id.theme_color_background)),
+      ColorUtils.alphaColor(0f, Theme.getColor(R.id.theme_color_background))
+    });
+    //OKI implement detailed reactions information
+    buttonContainer.setOnClickListener(view -> UI.showToast("Detailed reactions info not implemented", Toast.LENGTH_LONG));
+    ViewUtils.setBackground(buttonContainer, gd);
+
+    LinearLayout rightAlignmentWrap = new LinearLayout(context);
+    rightAlignmentWrap.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    rightAlignmentWrap.setGravity(Gravity.RIGHT);
+    rightAlignmentWrap.addView(buttonContainer);
+
+    return rightAlignmentWrap;
   }
 
   private void patchReadReceiptsOptions (PopupLayout layout, TGMessage message, boolean disableViewCounter) {
