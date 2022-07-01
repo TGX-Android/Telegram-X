@@ -252,6 +252,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private long lastCheckedTopId;
   private long lastCheckedBottomId;
   private long lastViewedMention;
+  private long lastViewedReaction;
   private int lastCheckedCount;
 
   private void viewDisplayedMessages (int first, int last) {
@@ -1590,6 +1591,24 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
+  public void updateMessageReactionRead (long messageId, TdApi.UnreadReaction[] reactions) {
+    if ((reactions==null || reactions.length==0) && closestReactions != null && !closestReactions.isEmpty()) {
+      int i = 0;
+      for (TdApi.Message message : closestReactions) {
+        if (message.id == messageId) {
+          closestReactions.remove(i);
+          break;
+        }
+        i++;
+      }
+    }
+    int index = adapter.indexOfMessageContainer(messageId);
+    if (index != -1) {
+      adapter.getItem(index).updateUnreadReactions(messageId, reactions);
+      // TODO nothing?
+    }
+  }
+
   public void updateMessageInteractionInfo (long messageId, @Nullable TdApi.MessageInteractionInfo interactionInfo) {
     int index = adapter.indexOfMessageContainer(messageId);
     if (index != -1 && adapter.getItem(index).setMessageInteractionInfo(messageId, interactionInfo)) {
@@ -2187,6 +2206,72 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
+  // Reactions
+
+  private ArrayList<TdApi.Message> closestReactions;
+  private CancellableResultHandler reactionsHandler;
+
+  public void scrollToNextReaction () {
+    if (closestReactions != null && !closestReactions.isEmpty()) {
+      TdApi.Message message = closestReactions.remove(0);
+      highlightMessage(new MessageId(message.chatId, message.id), HIGHLIGHT_MODE_NORMAL, null, true);
+      return;
+    }
+    if (reactionsHandler != null) {
+      return;
+    }
+    final long fromMessageId;
+    if (lastViewedReaction != 0)  {
+      fromMessageId = lastViewedReaction;
+    } else {
+      TGMessage message = adapter.getTopMessage();
+      if (message == null) {
+        return;
+      }
+      fromMessageId = message.getBiggestId();
+    }
+    final long chatId = loader.getChatId();
+    final long messageThreadId = loader.getMessageThreadId();
+    final boolean[] isRetry = new boolean[1];
+    reactionsHandler = new CancellableResultHandler() {
+      @Override
+      public void processResult (final TdApi.Object object) {
+        if (object.getConstructor() == TdApi.Messages.CONSTRUCTOR) {
+          TdApi.Messages messages = (TdApi.Messages) object;
+          if (messages.totalCount > 0 && messages.messages.length == 0 && !isRetry[0]) {
+            isRetry[0] = true;
+            tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, 0, 0, 10, new TdApi.SearchMessagesFilterUnreadReaction(), messageThreadId), this);
+          } else {
+            setReactions(this, messages, isRetry[0] ? 0 : fromMessageId);
+          }
+        } else {
+          setReactions(this, null, fromMessageId);
+        }
+      }
+    };
+    tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, fromMessageId, -9, 10, new TdApi.SearchMessagesFilterUnreadReaction(), messageThreadId), reactionsHandler);
+  }
+
+  private void setReactions (final CancellableResultHandler handler, final TdApi.Messages messages, final long fromMessageId) {
+    tdlib.ui().post(() -> {
+      if (handler == reactionsHandler) {
+        reactionsHandler = null;
+        if (messages != null && messages.messages.length > 0) {
+          setReactionsImpl(messages.messages, fromMessageId);
+        }
+      }
+    });
+  }
+
+  private void setReactionsImpl (final TdApi.Message[] messages, final long fromMessageId) {
+    ArrayList<TdApi.Message> mentions = new ArrayList<>(messages.length);
+    Collections.addAll(mentions, messages);
+    this.closestReactions = mentions;
+    if (!mentions.isEmpty()) {
+      scrollToNextReaction();
+    }
+  }
+
   // Search
 
   public boolean isReadyToSearch () {
@@ -2751,6 +2836,21 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     tdlib.ui().post(() -> {
       if (loader.getChatId() == chatId) {
         updateMessageMentionRead(messageId);
+      }
+    });
+  }
+
+  @Override
+  public void onMessageUnreadReactionsChanged(long chatId, long messageId, @Nullable TdApi.UnreadReaction[] unreadReactions, int unreadReactionCount){
+    controller.onChatUnreadReactionCount(chatId, unreadReactionCount, false);
+    int sentMessageIndex = indexOfSentMessage(chatId, messageId);
+    if (sentMessageIndex != -1) {
+      sentMessages.get(sentMessageIndex).unreadReactions=unreadReactions;
+      return;
+    }
+    tdlib.ui().post(() -> {
+      if (loader.getChatId() == chatId) {
+        updateMessageReactionRead(messageId, unreadReactions);
       }
     });
   }

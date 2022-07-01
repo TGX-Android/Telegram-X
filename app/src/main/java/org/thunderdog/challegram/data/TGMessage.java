@@ -35,16 +35,6 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 
-import androidx.annotation.AnyThread;
-import androidx.annotation.CallSuper;
-import androidx.annotation.ColorInt;
-import androidx.annotation.IntDef;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.StringRes;
-import androidx.annotation.UiThread;
-import androidx.collection.LongSparseArray;
-
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.drinkmore.Tracer;
@@ -114,6 +104,15 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import androidx.annotation.AnyThread;
+import androidx.annotation.CallSuper;
+import androidx.annotation.ColorInt;
+import androidx.annotation.IntDef;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
+import androidx.annotation.UiThread;
+import androidx.collection.LongSparseArray;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.SdkVersion;
 import me.vkryl.android.animator.BoolAnimator;
@@ -3766,6 +3765,22 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
   }
 
+  public final void updateUnreadReactions (long messageId, TdApi.UnreadReaction[] unreadReactions) {
+    synchronized (this) {
+      if (combinedMessages != null) {
+        for (TdApi.Message message : combinedMessages) {
+          if (message.id == messageId) {
+            message.unreadReactions=unreadReactions;
+            return;
+          }
+        }
+      }
+    }
+    if (msg.id == messageId) {
+      msg.unreadReactions=unreadReactions;
+    }
+  }
+
   public final long getMediaGroupId () {
     return msg.mediaAlbumId;
   }
@@ -4152,6 +4167,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   public boolean markAsViewed () {
     if (canMarkAsViewed()) {
       flags |= FLAG_VIEWED;
+      if(msg.unreadReactions!=null && msg.unreadReactions.length>0){
+        Arrays.stream(msg.unreadReactions).map(r->r.reaction).distinct().forEach(r->manager.controller().playReactionEffectAnimation(this, r));
+      }
       if (msg.containsUnreadMention)
         highlight(true);
       return true;
