@@ -8,35 +8,26 @@ import android.text.InputType;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.stripe.android.Stripe;
-import com.stripe.android.TokenCallback;
-import com.stripe.android.exception.AuthenticationException;
-import com.stripe.android.model.Card;
-import com.stripe.android.model.Token;
-import com.stripe.android.util.DateUtils;
-import com.stripe.android.util.StripeTextUtils;
-
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.payments.CardTokenizerCallback;
+import org.thunderdog.challegram.payments.CardValidators;
+import org.thunderdog.challegram.payments.StripeCardTokenizer;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
-import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 
@@ -220,7 +211,7 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
         String[] dateParts = v.getText().toString().split("/");
         int month = Integer.parseInt(dateParts[0]);
         int year = Integer.parseInt(dateParts[1]);
-        boolean valid = month > 0 && month < 13 && !DateUtils.hasMonthPassed(year, month) && !DateUtils.hasYearPassed(year);
+        boolean valid = CardValidators.INSTANCE.validateExpiryDate(month, year);
         v.setInErrorState(!valid);
       }
 
@@ -285,54 +276,58 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
     }
   }
 
-  private void tokenizeCard () throws AuthenticationException {
+  private void tokenizeCard () {
     String[] expDate = i_cardExpireDate.split("/");
+    int expireMonth = Integer.parseInt(expDate[0]);
+    int expireYear = Integer.parseInt(expDate[1]);
 
-    Card stripeCard = new Card.Builder(i_cardNumber, Integer.valueOf(expDate[0]), Integer.valueOf(expDate[1]), i_cardCvv)
-            .name(paymentsProvider.needCardholderName ? i_cardHolder : null)
-            .addressCountry(paymentsProvider.needCountry ? i_cardCountry : null)
-            .addressZip(paymentsProvider.needPostalCode ? i_cardPostcode : null)
-            .build();
-
-    if (!stripeCard.validateNumber()) {
+    if (!CardValidators.INSTANCE.validateCardNumber(i_cardNumber)) {
       vibrateError(R.id.btn_inputCardNumber);
       return;
     }
 
-    if (!stripeCard.validateExpiryDate()) {
-      vibrateError(R.id.btn_inputCardExpireDate);
-      return;
-    }
-
-    if (!stripeCard.validateCVC()) {
+    if (!CardValidators.INSTANCE.validateCvc(i_cardNumber, i_cardCvv)) {
       vibrateError(R.id.btn_inputCardCVV);
       return;
     }
 
-    new Stripe(paymentsProvider.publishableKey).createToken(stripeCard, new TokenCallback() {
-      @Override
-      public void onSuccess (Token token) {
-        runOnUiThreadOptional(() -> {
-          try {
-            JSONObject data = new JSONObject();
-            data.put("type", token.getType());
-            data.put("id", token.getId());
-            navigateBack();
-            parentController.onPaymentMethodSelected(new TdApi.InputCredentialsNew(data.toString(), i_saveInfo), token.getCard().getBrand() + " *" + token.getCard().getLast4());
-          } catch (JSONException e) {
-            e.printStackTrace();
-          }
-        });
-      }
+    if (!CardValidators.INSTANCE.validateExpiryDate(expireMonth, expireYear)) {
+      vibrateError(R.id.btn_inputCardExpireDate);
+      return;
+    }
 
-      @Override
-      public void onError (Exception error) {
-        runOnUiThreadOptional(() -> {
-          Log.e(error);
-          showAlert(new AlertDialog.Builder(context).setTitle(R.string.Error).setMessage(error.getMessage()).setPositiveButton(Lang.getString(R.string.OK), (a, b) -> {}));
-          setDoneInProgress(false);
-        });
-      }
-    });
+    new StripeCardTokenizer(paymentsProvider.publishableKey).tokenize(
+            i_cardNumber,
+            expireMonth,
+            expireYear,
+            i_cardCvv,
+            paymentsProvider.needCardholderName ? i_cardHolder : null,
+            paymentsProvider.needCountry ? i_cardCountry : null,
+            paymentsProvider.needPostalCode ? i_cardPostcode : null,
+            new CardTokenizerCallback() {
+              @Override
+              public void onSuccess (@NonNull String json) {
+                runOnUiThreadOptional(() -> {
+                  navigateBack();
+                  parentController.onPaymentMethodSelected(new TdApi.InputCredentialsNew(json, i_saveInfo), "test");
+                });
+              }
+
+              @Override
+              public void onError (@NonNull Exception exception) {
+                runOnUiThreadOptional(() -> {
+                  Log.e(exception);
+
+                  showAlert(
+                          new AlertDialog.Builder(context)
+                                  .setTitle(R.string.Error)
+                                  .setMessage(exception.getMessage())
+                                  .setPositiveButton(Lang.getString(R.string.OK), (a, b) -> {})
+                  );
+
+                  setDoneInProgress(false);
+                });
+              }
+            });
   }
 }

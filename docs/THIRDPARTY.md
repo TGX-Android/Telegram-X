@@ -25,8 +25,6 @@
 * [Firebase Messaging](https://firebase.google.com/support/release-notes/android): notifications
 * [YouTube](https://developers.google.com/youtube/android/player/): YouTube player API
 
-* [Stripe SDK](https://github.com/stripe/stripe-android): Stripe native card tokenization in Payments
-
 * [Transcoder](https://github.com/natario1/Transcoder): used to compress video files
 * [ShortcutBadger](https://github.com/leolin310148/ShortcutBadger): used to show badge near app shortcut
 * [ReLinker](https://github.com/KeepSafe/ReLinker): used to properly load native shared libraries
