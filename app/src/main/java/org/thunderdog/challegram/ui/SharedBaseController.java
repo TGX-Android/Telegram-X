@@ -45,7 +45,7 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.CancellableResultHandler;
 import org.thunderdog.challegram.util.MessageSourceProvider;
 import org.thunderdog.challegram.v.MediaRecyclerView;
-import org.thunderdog.challegram.widget.CheckBox;
+import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.EmptySmartView;
 import org.thunderdog.challegram.widget.ListInfoView;
 import org.thunderdog.challegram.widget.SmallChatView;
@@ -171,7 +171,7 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
       }
 
       @Override
-      protected void modifyChatView (ListItem item, SmallChatView chatView, @Nullable CheckBox checkBox, boolean isUpdate) {
+      protected void modifyChatView (ListItem item, SmallChatView chatView, @Nullable CheckBoxView checkBox, boolean isUpdate) {
         modifyChatViewIfNeeded(item, chatView, checkBox, isUpdate);
       }
     };
@@ -1395,7 +1395,7 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
     return null;
   }
 
-  protected void modifyChatViewIfNeeded (ListItem item, SmallChatView chatView, @Nullable CheckBox checkBox, boolean isUpdate) {
+  protected void modifyChatViewIfNeeded (ListItem item, SmallChatView chatView, @Nullable CheckBoxView checkBox, boolean isUpdate) {
     // override
   }
 

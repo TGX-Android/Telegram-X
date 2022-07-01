@@ -56,7 +56,7 @@ import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextWrapper;
 import org.thunderdog.challegram.widget.AttachDelegate;
-import org.thunderdog.challegram.widget.CheckBox;
+import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.ProgressComponent;
 import org.thunderdog.challegram.widget.RadioView;
 
@@ -425,8 +425,8 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     return (RadioView) getChildAt(0);
   }
 
-  public CheckBox findCheckBox () {
-    return (CheckBox) getChildAt(0);
+  public CheckBoxView findCheckBox () {
+    return (CheckBoxView) getChildAt(0);
   }
 
   public boolean toggleRadio () {

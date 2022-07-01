@@ -128,7 +128,7 @@ import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.StringList;
-import org.thunderdog.challegram.widget.CheckBox;
+import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.InfiniteRecyclerView;
 import org.thunderdog.challegram.widget.PopupLayout;
@@ -2733,7 +2733,7 @@ public class TdlibUi extends Handler {
                     case ListItem.TYPE_CHECKBOX_OPTION:
                     case ListItem.TYPE_CHECKBOX_OPTION_MULTILINE:
                     case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
-                      ((CheckBox) itemView.getChildAt(0)).setChecked(item.isSelected(), isUpdate);
+                      ((CheckBoxView) itemView.getChildAt(0)).setChecked(item.isSelected(), isUpdate);
                       break;
                   }
                 })

@@ -20,11 +20,12 @@ This is the complete source code and the build instructions for the official alt
 #### macOS
 
 * [Homebrew](https://brew.sh)
-* git with LFS, wget and sed: `$ brew install git git-lfs wget gsed`
+* git with LFS, wget and sed: `$ brew install git git-lfs wget gsed && git lfs install`
 
 #### Ubuntu
 
 * git with LFS: `# apt install git git-lfs`
+* Run `$ git lfs install` for the current user, if you didn't have `git-lfs` previously installed
 
 ### Building
 

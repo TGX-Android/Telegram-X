@@ -22,8 +22,6 @@ import com.android.build.gradle.AppExtension
 import com.android.build.gradle.BaseExtension
 import com.android.build.gradle.LibraryExtension
 import com.android.build.gradle.ProguardFiles
-import com.beust.klaxon.JsonObject
-import com.beust.klaxon.Parser
 import getLongOrThrow
 import getOrThrow
 import loadProperties
@@ -75,20 +73,6 @@ open class ModulePlugin : Plugin<Project> {
     val keystore = Keystore(properties.getOrThrow("keystore.file"))
     val appVersionOverride = properties.getProperty("app.version", "0").toInt()
     val appId = properties.getOrThrow("app.id")
-
-    val parser: Parser = Parser.default()
-    val googleServices = parser.parse("app/google-services.json") as JsonObject
-    var foundPackageName: String? = null
-    googleServices.array<JsonObject>("client")!!.filter {
-      // client_info.android_client_info.package_name
-      val clientInfo = it.obj("client_info")!!
-      val googleAppId = clientInfo.string("mobilesdk_app_id")!!
-      val clientInfoPackage = clientInfo.obj("android_client_info")?.string("package_name")
-      foundPackageName = clientInfoPackage
-      clientInfoPackage == appId && (googleAppId != "1:1037154859800:android:683d617a5fe76437" || clientInfoPackage == "org.thunderdog.challegram")
-    }.ifEmpty {
-      error("google_services.json is not updated for $appId package. Found: $foundPackageName")
-    }
 
     val versions = loadProperties("version.properties")
     val appVersion = if (appVersionOverride > 0) appVersionOverride else versions.getOrThrow("version.app").toInt()

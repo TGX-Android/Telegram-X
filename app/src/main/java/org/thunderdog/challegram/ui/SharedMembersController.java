@@ -30,7 +30,7 @@ import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.MediaRecyclerView;
-import org.thunderdog.challegram.widget.CheckBox;
+import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.EmptySmartView;
 import org.thunderdog.challegram.widget.SmallChatView;
 
@@ -208,7 +208,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
   }
 
   @Override
-  protected void modifyChatViewIfNeeded (ListItem item, SmallChatView chatView, @Nullable CheckBox checkBox, boolean isUpdate) {
+  protected void modifyChatViewIfNeeded (ListItem item, SmallChatView chatView, @Nullable CheckBoxView checkBox, boolean isUpdate) {
     DoubleTextWrapper user = (DoubleTextWrapper) item.getData();
     if (user == null || user.getMember() == null) {
       return;
@@ -227,7 +227,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
       case ListItem.TYPE_CHAT_SMALL_SELECTABLE: {
         ((View) chatView.getParent()).setEnabled(!isCreator/* && !parent.group.everyoneIsAdministrator*/);
         if (checkBox != null) {
-          checkBox.setDisabled(isCreator);
+          checkBox.setDisabled(isCreator, isUpdate);
           // checkBox.setHidden(parent.group.everyoneIsAdministrator, isUpdate);
           checkBox.setChecked(isCreator || member.status.getConstructor() == TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR, isUpdate);
         }

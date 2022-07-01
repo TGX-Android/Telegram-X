@@ -1,0 +1,8 @@
+# https://editorconfig.org
+root = true
+
+[*]
+charset = utf-8
+indent_size = 2
+indent_style = space
+ij_any_space_before_method_parentheses = true

@@ -98,7 +98,7 @@ import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.v.HeaderEditText;
-import org.thunderdog.challegram.widget.CheckBox;
+import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.CircleButton;
 import org.thunderdog.challegram.widget.ListInfoView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
@@ -480,8 +480,8 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
             for (int i = 0; i < viewGroup.getChildCount(); i++) {
               View v = viewGroup.getChildAt(i);
               boolean checked = id == R.id.theme_color_controlActive;
-              if (v instanceof CheckBox) {
-                ((CheckBox) v).setChecked(checked, false);
+              if (v instanceof CheckBoxView) {
+                ((CheckBoxView) v).setChecked(checked, false);
               } else if (v instanceof RadioView) {
                 ((RadioView) v).setChecked(checked, false);
               } else if (v instanceof MaterialEditTextGroup) {
@@ -686,7 +686,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
             lp = new LinearLayout.LayoutParams(Screen.dp(18f), Screen.dp(18f));
             lp.rightMargin = Screen.dp(4f);
 
-            CheckBox checkBox = CheckBox.simpleCheckBox(context);
+            CheckBoxView checkBox = CheckBoxView.simpleCheckBox(context);
             addThemeInvalidateListener(checkBox);
             checkBox.setLayoutParams(lp);
             lp.gravity = Gravity.CENTER_VERTICAL;

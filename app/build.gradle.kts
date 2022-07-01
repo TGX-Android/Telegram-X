@@ -15,6 +15,10 @@ task<me.vkryl.task.FetchLanguagesTask>("updateLanguages") {
     group = "Setup"
     description = "Generates and updates all strings.xml resources based on translations.telegram.org"
 }
+task<me.vkryl.task.ValidateApiTokensTask>("validateApiTokens") {
+    group = "Setup"
+    description = "Validates some API tokens to make sure they work properly and won't cause problems"
+}
 task<me.vkryl.task.UpdateExceptionsTask>("updateExceptions") {
     group = "Setup"
     description = "Updates exception class names with the app or TDLib version number in order to have separate group on Google Play Developer Console"
@@ -150,7 +154,8 @@ gradle.projectsEvaluated {
     )
     Abi.VARIANTS.forEach { (_, variant) ->
         tasks.getByName("pre${variant.flavor[0].toUpperCase() + variant.flavor.substring(1)}ReleaseBuild").dependsOn(
-            "updateLanguages"
+            "updateLanguages",
+            "validateApiTokens"
         )
     }
 }
