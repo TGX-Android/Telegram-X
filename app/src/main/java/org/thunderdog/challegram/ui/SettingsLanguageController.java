@@ -102,7 +102,7 @@ public class SettingsLanguageController extends RecyclerViewController<Void> imp
 
     AlertDialog.Builder b = new AlertDialog.Builder(context, Theme.dialogTheme());
     b.setTitle(Lang.getString(R.string.TranslationMoreTitle));
-    b.setMessage(Strings.buildMarkdown(this, Lang.getString(R.string.TranslationMoreText), (v, span) -> {
+    b.setMessage(Strings.buildMarkdown(this, Lang.getString(R.string.TranslationMoreText), (v, span, clickedText) -> {
       if (finalDialog[0] != null) {
         try {
           finalDialog[0].dismiss();

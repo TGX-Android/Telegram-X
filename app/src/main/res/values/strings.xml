@@ -4280,6 +4280,11 @@
   <string name="xPRs_other">%1$s PRs</string>
   <string name="PR">PR #%1$d</string>
 
+  <string name="ExperimentalBuildTitle">Caution: experimental build</string>
+  <string name="ExperimentalBuildInfo">This version of **Telegram X** is not designed for long-term use.\n\nIt may completely stop working over a time and you cannot turn notifications on.\n\nIf you are looking for the proper Telegram X APK file, see https://t.me/tgx_log</string>
+
+  <string name="format_PRMadeBy">%1$s by %2$s</string>
+
   <string name="BigReactions">Big Reactions</string>
   <string name="BigReactionsExplanation">Big reactions are interactive buttons under messages presenting each reaction.</string>
   <string name="BigReactionsNone">None</string>

@@ -1437,7 +1437,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   public void openFeatureUnavailable (int stringRes) {
     AtomicReference<AlertDialog> atomicDialog = new AtomicReference<>();
-    atomicDialog.set(openAlert(R.string.FeatureUnavailableSorry, Strings.buildMarkdown(this, Lang.getString(stringRes), (view, span) -> {
+    atomicDialog.set(openAlert(R.string.FeatureUnavailableSorry, Strings.buildMarkdown(this, Lang.getString(stringRes), (view, span, clickedText) -> {
       AlertDialog finalDialog = atomicDialog.get();
       if (finalDialog != null) {
         try {

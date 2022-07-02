@@ -254,8 +254,8 @@ public class TD {
         case TdApi.TextEntityTypeCashtag.CONSTRUCTOR: {
           String hashtag = Td.substring(text, entity);
           span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
-            .setOnClickListener((view, span1) -> {
-              if (onClickListener == null || !onClickListener.onClick(view, span1)) {
+            .setOnClickListener((view, span1, clickedText) -> {
+              if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 if (context != null) {
                   HashtagController c = new HashtagController(context.context(), context.tdlib());
                   c.setArguments(hashtag);
@@ -269,8 +269,8 @@ public class TD {
         case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR: {
           String emailAddress = Td.substring(text, entity);
           span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
-            .setOnClickListener((view, span1) -> {
-              if (onClickListener == null || !onClickListener.onClick(view, span1)) {
+            .setOnClickListener((view, span1, clickedText) -> {
+              if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 Intents.sendEmail(emailAddress);
               }
               return true;
@@ -280,8 +280,8 @@ public class TD {
         case TdApi.TextEntityTypeMention.CONSTRUCTOR: {
           String username = Td.substring(text, entity);
           span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
-            .setOnClickListener((view, span1) -> {
-              if (onClickListener == null || !onClickListener.onClick(view, span1)) {
+            .setOnClickListener((view, span1, clickedText) -> {
+              if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 if (context != null)
                   context.tdlib().ui().openPublicChat(context, username, null);
               }
@@ -292,8 +292,8 @@ public class TD {
         case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR: {
           String cardNumber = Td.substring(text, entity);
           span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
-            .setOnClickListener((view, span1) -> {
-              if (onClickListener == null || !onClickListener.onClick(view, span1)) {
+            .setOnClickListener((view, span1, clickedText) -> {
+              if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 if (context != null)
                   context.tdlib().ui().openCardNumber(context, cardNumber);
               }
@@ -304,8 +304,8 @@ public class TD {
         case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR: {
           String phoneNumber = Td.substring(text, entity);
           span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
-            .setOnClickListener((view, span1) -> {
-              if (onClickListener == null || !onClickListener.onClick(view, span1)) {
+            .setOnClickListener((view, span1, clickedText) -> {
+              if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 Intents.openNumber(phoneNumber);
               }
               return true;
@@ -315,8 +315,8 @@ public class TD {
         case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
           String url = Td.substring(text, entity);
           span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
-            .setOnClickListener((view, span1) -> {
-              if (onClickListener == null || !onClickListener.onClick(view, span1)) {
+            .setOnClickListener((view, span1, clickedText) -> {
+              if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 if (context != null)
                   context.tdlib().ui().openUrl(context, url, null);
               }
@@ -326,8 +326,8 @@ public class TD {
         case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
           String textUrl = ((TdApi.TextEntityTypeTextUrl) entity.type).url;
           span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
-            .setOnClickListener((view, span1) -> {
-              if (onClickListener == null || !onClickListener.onClick(view, span1)) {
+            .setOnClickListener((view, span1, clickedText) -> {
+              if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 if (context != null)
                   context.tdlib().ui().openUrl(context, textUrl, null);
               }
@@ -348,10 +348,11 @@ public class TD {
         if (b == null)
           b = new SpannableStringBuilder(text);
         if (span.getOnClickListener() != null) {
+          final String entityText = Td.substring(text, entity);
           b.setSpan(new ClickableSpan() {
             @Override
             public void onClick (@NonNull View widget) {
-              span.getOnClickListener().onClick(widget, span);
+              span.getOnClickListener().onClick(widget, span, entityText);
             }
           }, entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
@@ -3011,13 +3012,14 @@ public class TD {
           int startIndex = spanned.getSpanStart(span);
           int endIndex = spanned.getSpanEnd(span);
           if (span.isClickable()) {
+            String clickedText = spanned.subSequence(startIndex, endIndex).toString();
             if (b == null)
               b = spanned instanceof SpannableStringBuilder ? (SpannableStringBuilder) spanned : new SpannableStringBuilder(spanned);
             b.removeSpan(span);
             b.setSpan(new ClickableSpan() {
               @Override
               public void onClick (@NonNull View widget) {
-                span.onClick(widget);
+                span.onClick(widget, clickedText);
               }
             }, startIndex, endIndex, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             b.setSpan(span, startIndex, endIndex, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);

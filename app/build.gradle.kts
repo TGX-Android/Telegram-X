@@ -32,6 +32,8 @@ task<me.vkryl.task.CheckEmojiKeyboardTask>("checkEmojiKeyboard") {
     description = "Checks that all supported emoji can be entered from the keyboard"
 }
 
+val isExperimentalBuild = extra["experimental"] as Boolean? ?: false
+
 android {
     defaultConfig {
         val properties = extra["properties"] as Properties
@@ -153,10 +155,12 @@ gradle.projectsEvaluated {
       "updateExceptions"
     )
     Abi.VARIANTS.forEach { (_, variant) ->
-        tasks.getByName("pre${variant.flavor[0].toUpperCase() + variant.flavor.substring(1)}ReleaseBuild").dependsOn(
-            "updateLanguages",
-            "validateApiTokens"
-        )
+        tasks.getByName("pre${variant.flavor[0].toUpperCase() + variant.flavor.substring(1)}ReleaseBuild").let { task ->
+          task.dependsOn("updateLanguages")
+          if (!isExperimentalBuild) {
+            task.dependsOn("validateApiTokens")
+          }
+        }
     }
 }
 
@@ -224,4 +228,6 @@ dependencies {
     implementation("com.googlecode.mp4parser:isoparser:1.0.6")
 }
 
-apply(plugin = "com.google.gms.google-services")
+if (!isExperimentalBuild) {
+    apply(plugin = "com.google.gms.google-services")
+}
