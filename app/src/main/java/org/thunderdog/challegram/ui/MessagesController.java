@@ -198,6 +198,7 @@ import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.TGBackground;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
@@ -233,6 +234,7 @@ import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.RippleRevealView;
 import org.thunderdog.challegram.widget.SendButton;
 import org.thunderdog.challegram.widget.SeparatorView;
+import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.TripleAvatarView;
 import org.thunderdog.challegram.widget.ViewPager;
 import org.thunderdog.challegram.widget.WallpaperParametersView;
@@ -4159,57 +4161,118 @@ public class MessagesController extends ViewController<MessagesController.Argume
       b.append(Lang.getString(resId));
     }
     String text = b.toString().trim();
-    PopupLayout popupLayout = showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
+    PopupLayout popupLayout = showOptionsPopupWithReactions(msg, StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
     patchReadReceiptsOptions(popupLayout, msg, disableViewCounter);
-    patchReactionsOptions(popupLayout, msg);
+//    patchReactionsOptions(, msg);
   }
 
-  private void patchReactionsOptions (PopupLayout layout, TGMessage message) {
+  private PopupLayout showOptionsPopupWithReactions (TGMessage message, CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons) {
+    PopupLayout popupLayout = new PopupLayout(context);
+
+    LinearLayout popupContentView = new LinearLayout(context);
+    popupContentView.setOrientation(LinearLayout.HORIZONTAL);
+    popupContentView.setBackgroundColor(Theme.getColor(R.id.theme_color_background));
+    popupContentView.setLayoutParams(FrameLayoutFix.newParams(2 * Screen.currentWidth(), ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
+
+    LinearLayout optionsWithReactionsPopupFragment = new LinearLayout(context);
+    optionsWithReactionsPopupFragment.setOrientation(LinearLayout.VERTICAL);
+    optionsWithReactionsPopupFragment.setBackgroundColor(Theme.getColor(R.id.theme_color_background));
+    optionsWithReactionsPopupFragment.setLayoutParams(new LinearLayout.LayoutParams(Screen.currentWidth(), ViewGroup.LayoutParams.WRAP_CONTENT));
+
+    LinearLayout userReactionsPopupFragment = new LinearLayout(context);
+    userReactionsPopupFragment.setOrientation(LinearLayout.VERTICAL);
+    userReactionsPopupFragment.setBackgroundColor(Theme.getColor(R.id.theme_color_background));
+    userReactionsPopupFragment.setLayoutParams(new LinearLayout.LayoutParams(Screen.currentWidth(), ViewGroup.LayoutParams.WRAP_CONTENT));
+
     ViewPagerHeaderViewCompact reactionsHeaderView = new ViewPagerHeaderViewCompact(context);
-    ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f));
-    reactionsHeaderView.setLayoutParams(params);
+    reactionsHeaderView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f)));
+    reactionsHeaderView.setBackgroundColor(Theme.getColor(R.id.theme_color_background));
+
+    //OKI avoid duplication of ViewController:2285, rewrite?
+    popupLayout.init(true);
+    popupLayout.setTag(this);
+    int popupAdditionalHeight;
+    ThemeDelegate forcedTheme = null;
+
+    OptionItem[] optionItems = new OptionItem[ids.length];
+    for (int i = 0; i < ids.length; i++) {
+      optionItems[i] = new OptionItem(ids != null ? ids[i] : i, titles[i], colors != null ? colors[i] : OPTION_COLOR_NORMAL, icons != null ? icons[i] : 0);
+    }
+
+    if (isStackLocked()) {
+      Log.i("Ignoring options show because stack is locked");
+      return null;
+    }
+
+    Options options = new Options(info, optionItems);
+    OptionsLayout optionsWrap = new OptionsLayout(context(), this, forcedTheme);
+    optionsWrap.setInfo(this, tdlib(), options.info, false);
+    optionsWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
+
+    if (Screen.needsKeyboardPadding(context)) {
+      popupAdditionalHeight = Screen.getNavigationBarFrameHeight();
+      optionsWrap.setPadding(0, 0, 0, popupAdditionalHeight);
+      popupLayout.setNeedFullScreen(true);
+    } else {
+      popupAdditionalHeight = 0;
+    }
+
+    ShadowView shadowView = new ShadowView(context);
+    shadowView.setSimpleTopShadow(true);
+    optionsWrap.addView(shadowView, 0);
+    addThemeInvalidateListener(shadowView);
+
+    // Item generation
+    View.OnClickListener onClickListener = v -> {
+        ViewController<?> c = context.navigation().getCurrentStackItem();
+        if (c instanceof OptionDelegate && ((OptionDelegate) c).onOptionItemPressed(v, v.getId())) {
+          popupLayout.hideWindow(true);
+        }
+      };
+    int index = 0;
+    for (OptionItem item : options.items) {
+      TextView text = OptionsLayout.genOptionView(context, item.id, item.name, item.color, item.icon, onClickListener, getThemeListeners(), forcedTheme);
+      RippleSupport.setTransparentSelector(text);
+      if (forcedTheme != null)
+        Theme.forceTheme(text, forcedTheme);
+      text.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(54f)));
+      optionsWrap.addView(text);
+      index++;
+    }
+
+    BoolAnimator usersReactionsVisible = new BoolAnimator(0, (id, factor, fraction, callee) -> {
+      popupContentView.setTranslationX((-Screen.currentWidth()) * factor);
+      popupContentView.invalidate();
+    }, AnimatorUtils.DECELERATE_INTERPOLATOR, 220l);
+    View.OnClickListener showUsersReactionView = v -> usersReactionsVisible.toggleValue(true);
+    LinearLayout openUserReactionsButton = createTotalReactionCountButton(showUsersReactionView);
+    reactionsHeaderView.addView(openUserReactionsButton);
 
     ViewPagerTopView topView = reactionsHeaderView.getTopView();
     topView.setUseDarkBackground();
-
     //OKI fix this workaround
-    String[] items = Arrays.copyOf(reactions, reactions.length+2);
-    //OKI fix the size of reactions
-    topView.setItems(items);
-    topView.setOnClickListener(item -> {
-      UI.showToast(item.getId(), Toast.LENGTH_SHORT);
+    //OKI fix with available reactions
+//    message.availableReactions?
+    topView.setItems(Arrays.copyOf(reactions, reactions.length+2));
+    topView.setOnItemClickListener(item -> {
+      UI.showToast(reactions[item], Toast.LENGTH_SHORT);
+      topView.setSelectionFactor(item);
     });
-    topView.setSelectionFactor(3);
+    topView.setSelectionFactor(5);
 
-    pagerContentView = new RtlViewPager(context) {
-      boolean blocked;
-
-      @Override
-      public boolean onInterceptTouchEvent (MotionEvent ev) {
-        if (ev.getAction() == MotionEvent.ACTION_DOWN) {
-          blocked = false;
-        }
-        if (!blocked) {
-          blocked = getCurrentItem() == 0 && (UI.getContext(MessagesController.this.context()).getRecordAudioVideoController().isOpen() || (inputView != null && inputView.getInlineSearchContext().isVisibleOrActive()));
-        }
-
-        return !blocked && super.onInterceptTouchEvent(ev);
-      }
-    };
-    pagerContentView.setOffscreenPageLimit(1);
-    pagerContentView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS : View.OVER_SCROLL_NEVER);
-    pagerContentView.addOnPageChangeListener(this);
-    pagerContentView.setAdapter(pagerContentAdapter);
-    pagerContentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-
-    reactionsHeaderView.setBackgroundColor(Theme.getColor(R.id.theme_color_background));
-    reactionsHeaderView.addView(createTotalReactionCountView());
-
-    OptionsLayout optionsLayout = (OptionsLayout) layout.getChildAt(1);
-    optionsLayout.addView(reactionsHeaderView, 2);
+    // COLLECTING LAYOUTS
+    optionsWithReactionsPopupFragment.addView(reactionsHeaderView);
+    optionsWithReactionsPopupFragment.addView(optionsWrap);
+    //OKI create and add two layouts for users reactions
+//    userReactionsPopupFragment.addView(*);
+//    userReactionsPopupFragment.addView(*);
+    popupContentView.addView(optionsWithReactionsPopupFragment);
+    popupContentView.addView(userReactionsPopupFragment);
+    popupLayout.showSimplePopupView(popupContentView, shadowView.getLayoutParams().height + Screen.dp(54f) * options.items.length + optionsWrap.getTextHeight() + popupAdditionalHeight);
+    return popupLayout;
   }
 
-  private LinearLayout createTotalReactionCountView () {
+  private LinearLayout createTotalReactionCountButton (View.OnClickListener showDetailsListener) {
     ImageView reactedIcon = new ImageView(context);
     Drawable iconDrawable = getResources().getDrawable(R.drawable.baseline_favorite_20);
     DrawableCompat.setTint(iconDrawable, ColorUtils.alphaColor(0.6f, Theme.getColor(R.id.theme_color_text)));
@@ -4252,6 +4315,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     });
     //OKI implement detailed reactions information
     buttonContainer.setOnClickListener(view -> UI.showToast("Detailed reactions info not implemented", Toast.LENGTH_LONG));
+    buttonContainer.setOnClickListener(showDetailsListener);
     ViewUtils.setBackground(buttonContainer, gd);
 
     LinearLayout rightAlignmentWrap = new LinearLayout(context);
