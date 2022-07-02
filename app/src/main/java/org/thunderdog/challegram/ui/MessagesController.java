@@ -99,6 +99,7 @@ import org.thunderdog.challegram.component.chat.ChatHeaderView;
 import org.thunderdog.challegram.component.chat.CommandKeyboardLayout;
 import org.thunderdog.challegram.component.chat.CounterBadgeView;
 import org.thunderdog.challegram.component.chat.EmojiToneHelper;
+import org.thunderdog.challegram.component.chat.EmojiView;
 import org.thunderdog.challegram.component.chat.InlineResultsWrap;
 import org.thunderdog.challegram.component.chat.InputView;
 import org.thunderdog.challegram.component.chat.InvisibleImageView;
@@ -209,9 +210,9 @@ import org.thunderdog.challegram.unsorted.Test;
 import org.thunderdog.challegram.util.CancellableResultHandler;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
+import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.Unlockable;
-import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.v.MessagesLayoutManager;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
@@ -225,12 +226,12 @@ import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.RippleRevealView;
-import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 import org.thunderdog.challegram.widget.SendButton;
 import org.thunderdog.challegram.widget.SeparatorView;
 import org.thunderdog.challegram.widget.TripleAvatarView;
 import org.thunderdog.challegram.widget.ViewPager;
 import org.thunderdog.challegram.widget.WallpaperParametersView;
+import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -247,6 +248,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.AnimatedFrameLayout;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
@@ -257,7 +259,6 @@ import me.vkryl.core.lambda.Future;
 import me.vkryl.core.lambda.FutureLong;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
@@ -5253,6 +5254,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
         return true;
       }
       case R.id.btn_cancel: { // nothing
+        return true;
+      }
+      case R.id.btn_messageReactions: {
+        if (itemView instanceof ViewGroup) {
+          View emojiView = ((ViewGroup) itemView).getChildAt(0);
+          if (emojiView instanceof EmojiView) {
+            if (selectedMessage != null) {
+              String emoji = ((EmojiView) emojiView).getRawEmoji();
+              tdlib.setMessageReaction(selectedMessage.getChatId(), selectedMessage.getId(), emoji, false);
+            }
+          }
+        }
         return true;
       }
     }

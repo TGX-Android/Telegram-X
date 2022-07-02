@@ -38,6 +38,7 @@ import android.view.View;
 import androidx.annotation.AnyThread;
 import androidx.annotation.CallSuper;
 import androidx.annotation.ColorInt;
+import androidx.annotation.IdRes;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -108,7 +109,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -224,6 +228,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private final RectF bubblePathRect, bubbleClipPathRect;
 
   private boolean needSponsorSmallPadding;
+  private boolean reactionIsChosen;
 
   protected final MessagesManager manager;
   protected final Tdlib tdlib;
@@ -251,6 +256,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     this.currentViews = new MultipleViewProvider();
     this.currentViews.setContentProvider(this);
     this.msg = msg;
+    updateIsReactionChosen();
 
     TdApi.MessageSender sender = msg.senderId;
     if (tdlib.isSelfChat(msg.chatId)) {
@@ -352,6 +358,18 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
   }
 
+  void updateIsReactionChosen() {
+    reactionIsChosen = false;
+    if (msg.interactionInfo != null) {
+      for (TdApi.MessageReaction reaction: msg.interactionInfo.reactions) {
+        if (reaction.isChosen) {
+          reactionIsChosen = true;
+          break;
+        }
+      }
+    }
+  }
+
   private static @NonNull <T> T nonNull (@Nullable T value) {
     if (value == null) {
       throw new IllegalArgumentException("TDLib bug");
@@ -449,6 +467,31 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       int date = replaceTimeWithEditTime() ? msg.editDate : msg.date;
       if (date != 0) {
         b.append(Lang.time(date, TimeUnit.SECONDS));
+      }
+    }
+
+    if (msg.interactionInfo != null) {
+      if (ChatId.isUserChat(msg.chatId)) {
+        for (TdApi.MessageReaction reaction : msg.interactionInfo.reactions) {
+          for (int i = 0; i < reaction.totalCount; i++) {
+            b.insert(0, reaction.reaction + " ");
+          }
+        }
+      } else if (msg.interactionInfo.reactions.length > 0) {
+        int totalReactionsCount = 0;
+        StringBuilder reactionsBuilder = new StringBuilder();
+        List<TdApi.MessageReaction> reactions = Arrays.asList(msg.interactionInfo.reactions);
+        Collections.sort(reactions, Comparator.comparingInt(o -> -o.totalCount));
+
+        for (int i = 0; i < reactions.size(); i++) {
+          TdApi.MessageReaction reaction = reactions.get(i);
+          totalReactionsCount += reaction.totalCount;
+          if (i < 3) {
+            reactionsBuilder.append(reaction.reaction).append(" ");
+          }
+        }
+        reactionsBuilder.append(totalReactionsCount).append("  ");
+        b.insert(0, reactionsBuilder);
       }
     }
 
@@ -1727,7 +1770,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
       // Time
       if (needMetadata) {
-        c.drawText(time, pTimeLeft, xTimeTop + getHeaderPadding(), mTime(true));
+        if (reactionIsChosen) {
+          c.drawText(time, pTimeLeft, xTimeTop + getHeaderPadding(), mTime(R.id.theme_color_controlActive));
+        } else {
+          c.drawText(time, pTimeLeft, xTimeTop + getHeaderPadding(), mTime(true));
+        }
       }
 
       // Clock, tick and views
@@ -3125,7 +3172,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     if (time != null) {
-      c.drawText(time, startX, startY + Screen.dp(15.5f), Paints.colorPaint(mTimeBubble(), textColor));
+      int timeColor = reactionIsChosen ? Theme.getColor(R.id.theme_color_controlActive) : textColor;
+      c.drawText(time, startX, startY + Screen.dp(15.5f), Paints.colorPaint(mTimeBubble(), timeColor));
       startX += pTimeWidth;
     }
 
@@ -4576,6 +4624,13 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     hasCommentButton.setValue(commentMode == COMMENT_MODE_BUTTON, animated);
     shareCounter.setCount(interactionInfo != null ? interactionInfo.forwardCount : 0, animated);
     isPinned.showHide(isPinned(), animated);
+    updateIsReactionChosen();
+    if (useBubble()) {
+      buildTime();
+    } else {
+      buildTime();
+      rebuildLayout();
+    }
   }
 
   private static void copyFlags (TdApi.Message src, TdApi.Message dst) {
@@ -4678,7 +4733,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     // override
   }
 
-  public boolean setMessageInteractionInfo (long messageId, TdApi.MessageInteractionInfo interactionInfo) {
+  public int setMessageInteractionInfo (long messageId, TdApi.MessageInteractionInfo interactionInfo) {
     boolean changed;
     synchronized (this) {
       int i = indexOfMessageInternal(messageId);
@@ -4689,13 +4744,13 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         msg.interactionInfo = interactionInfo;
         changed = true;
       } else {
-        return false;
+        return TGMessage.MESSAGE_INVALIDATED;
       }
       if (changed) {
         updateInteractionInfo(true);
       }
     }
-    return changed;
+    return TGMessage.MESSAGE_CHANGED;
   }
 
   public boolean setIsPinned (long messageId, boolean isPinned) {
@@ -6232,6 +6287,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     TextPaint paint = Paints.getRegularTextPaint(12f);
     if (willDraw)
       paint.setColor(Theme.getColor(R.id.theme_color_textLight));;
+    return paint;
+  }
+
+  protected static TextPaint mTime (@IdRes int colorId) {
+    TextPaint paint = mTime(false);
+    paint.setColor(Theme.getColor(colorId));
     return paint;
   }
 
