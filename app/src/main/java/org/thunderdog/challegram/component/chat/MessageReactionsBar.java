@@ -17,7 +17,7 @@ import androidx.annotation.Nullable;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.sticker.ReactionInChatView;
-import org.thunderdog.challegram.component.sticker.TGStickerObj;
+import org.thunderdog.challegram.component.sticker.ReactionInChatViewHolder;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -48,6 +48,15 @@ public class MessageReactionsBar extends LinearLayout {
     HorizontalScrollView horizontalScrollView = initScrollView(context);
     addView(horizontalScrollView);
 
+    TdApi.MessageReaction finalChosenReaction = getChosenReaction(message);
+    parent.tdlib().getMessageAvailableReactions(message.getChatId(), message.getId(), result -> { //tdlib.cache()
+      List<TdApi.Reaction> availableReactions = mapReactions(parent.tdlib(), result.reactions);
+      initReactionList(parent.tdlib(), horizontalScrollView, availableReactions, finalChosenReaction);
+    });
+  }
+
+  @Nullable
+  private TdApi.MessageReaction getChosenReaction (TGMessage message) {
     TdApi.MessageReaction chosenReaction = null;
     for (TdApi.MessageReaction reaction : message.getReactions()) {
       if (reaction.isChosen) {
@@ -56,11 +65,7 @@ public class MessageReactionsBar extends LinearLayout {
       }
     }
 
-    TdApi.MessageReaction finalChosenReaction = chosenReaction;
-    parent.tdlib().getMessageAvailableReactions(message.getChatId(), message.getId(), result -> { //tdlib.cache()
-      List<TdApi.Reaction> availableReactions = mapReactions(parent.tdlib(), result.reactions);
-      initReactionList(parent.tdlib(), horizontalScrollView, availableReactions, finalChosenReaction);
-    });
+    return chosenReaction;
   }
 
   @NonNull
@@ -93,35 +98,38 @@ public class MessageReactionsBar extends LinearLayout {
     linearLayout.setOrientation(LinearLayout.HORIZONTAL);
 
     for (TdApi.Reaction reaction : availableReactions) {
-      ReactionInChatView sticker = initSticker(tdlib, reaction, chosenReaction);
+      ReactionInChatViewHolder sticker = initSticker(tdlib, reaction, chosenReaction);
       linearLayout.addView(sticker);
     }
     horizontalScrollView.addView(linearLayout);
   }
 
   @NonNull
-  private ReactionInChatView initSticker (Tdlib tdlib, TdApi.Reaction reaction, @Nullable TdApi.MessageReaction chosenReaction) {
-    ReactionInChatView sticker = new ReactionInChatView(getContext());
-    sticker.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(40), Screen.dp(40)));
-    sticker.setSticker(new TGStickerObj(tdlib, reaction.appearAnimation, "", reaction.appearAnimation.type));
-    if (chosenReaction != null && chosenReaction.reaction.equals(reaction.reaction)) {
-      sticker.setBackground(new CircleDrawable(R.id.theme_color_headerButton, 40f, true));
+  private ReactionInChatViewHolder initSticker (Tdlib tdlib, TdApi.Reaction reaction, @Nullable TdApi.MessageReaction chosenReaction) {
+    boolean isChosen = chosenReaction != null && chosenReaction.reaction.equals(reaction.reaction);
+    ReactionInChatViewHolder viewHolder = new ReactionInChatViewHolder(getContext());
+    viewHolder.setReactionData(tdlib, reaction, isChosen);
+    viewHolder.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(40), Screen.dp(40)));
+
+    if (isChosen) {
+      viewHolder.setBackground(new CircleDrawable(R.id.theme_color_headerButton, 40f, true));
     }
 
-    sticker.setCallback(new ReactionInChatView.OnTouchCallback() {
+    viewHolder.setCallback(new ReactionInChatViewHolder.OnTouchCallback() {
       @Override
-      public void onSingleTap () {
-        callback.onSelectReaction(sticker, reaction, false);
+      public void onSingleTap (boolean isUndo) {
+        callback.onSelectReaction(viewHolder.getReactionView(), reaction, false, isUndo);
       }
 
       @Override
-      public void onLongRelease () {
-        callback.onSelectReaction(sticker, reaction, true);
+      public void onLongRelease (boolean isUndo) {
+        callback.onSelectReaction(viewHolder.getReactionView(), reaction, true, isUndo);
       }
     });
 
-    return sticker;
+    return viewHolder;
   }
+
 
   public static TextView getCounterText (Context context, int color, int icon) {
     TextView text = new NoScrollTextView(context);
@@ -166,6 +174,6 @@ public class MessageReactionsBar extends LinearLayout {
   }
 
   public interface OnSelectReactionCallback {
-    void onSelectReaction (ReactionInChatView sticker, TdApi.Reaction reaction, boolean isBig);
+    void onSelectReaction (ReactionInChatView sticker, TdApi.Reaction reaction, boolean isBig, boolean isUndo);
   }
 }

@@ -35,16 +35,15 @@ public class ReactionInChatWrapper extends FrameLayoutFix implements Destroyable
 
   private final int[] locationOnScreen = new int[2];
 
+  public int yOffset = 0;
+
+  private int targetX = -1;
+  private int targetY = -1;
 
   private SpringAnimation translateAnimationX = null;
   private SpringAnimation translateAnimationY = null;
   private SpringAnimation scaleAnimationX = null;
   private SpringAnimation scaleAnimationY = null;
-
-  public int yOffset = 0;
-
-  private int targetX = -1;
-  private int targetY = -1;
 
   private ReactionInChatView reactionInChatView;
 

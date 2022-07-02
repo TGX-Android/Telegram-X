@@ -17,11 +17,7 @@ package org.thunderdog.challegram.component.sticker;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Path;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.animation.Interpolator;
-import android.view.animation.LinearInterpolator;
-import android.view.animation.OvershootInterpolator;
 
 import androidx.annotation.Nullable;
 
@@ -30,51 +26,29 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.UI;
 
-import me.vkryl.android.animator.FactorAnimator;
-import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Destroyable;
 
-public class ReactionInChatView extends View implements FactorAnimator.Target, Destroyable {
-
-  private static final float MIN_SCALE = 1.3f;
-  private static final long CLICK_LIFESPAN = 230l;
-  private static final long LONG_PRESS_DELAY = 1000;
-
-  private static final int ON_CLICK_ANIMATION_ID = 100;
+public class ReactionInChatView extends View implements Destroyable {
 
   public static final float PADDING = 8f;
-  private static final Interpolator OVERSHOOT_INTERPOLATOR = new OvershootInterpolator(3.2f);
 
   private final ImageReceiver imageReceiver;
   private final GifReceiver gifReceiver;
-  private final FactorAnimator longPressAnimator;
   private @Nullable TGStickerObj sticker;
   private Path contour;
-  private float factor;
 
   private boolean isAnimation;
-
-  private CancellableRunnable longPress;
-
-  private boolean isPressed;
-  private boolean longPressScheduled;
-  private boolean longPressReady;
-
-  private OnTouchCallback callback;
 
   public ReactionInChatView (Context context) {
     super(context);
     this.imageReceiver = new ImageReceiver(this, 0);
     this.gifReceiver = new GifReceiver(this);
-    this.longPressAnimator = new FactorAnimator(ON_CLICK_ANIMATION_ID, this, OVERSHOOT_INTERPOLATOR, CLICK_LIFESPAN);
   }
 
   public void setSticker (@Nullable TGStickerObj sticker) {
     this.sticker = sticker;
     this.isAnimation = sticker != null && sticker.isAnimated();
-    resetStickerState();
     ImageFile imageFile = sticker != null && !sticker.isEmpty() ? sticker.getImage() : null;
     GifFile gifFile = sticker != null && !sticker.isEmpty() ? sticker.getPreviewAnimation() : null;
     if ((sticker == null || sticker.isEmpty()) && imageFile != null) {
@@ -103,21 +77,6 @@ public class ReactionInChatView extends View implements FactorAnimator.Target, D
     gifReceiver.destroy();
   }
 
-  private void resetStickerState () {
-    longPressAnimator.forceFactor(0f, true);
-    factor = 0f;
-  }
-
-  @Override
-  public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
-    if (id == ON_CLICK_ANIMATION_ID) {
-      if (this.factor != factor) {
-        this.factor = factor;
-        invalidate();
-      }
-    }
-  }
-
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     super.onMeasure(widthMeasureSpec, widthMeasureSpec);
@@ -131,14 +90,6 @@ public class ReactionInChatView extends View implements FactorAnimator.Target, D
 
   @Override
   protected void onDraw (Canvas c) {
-    boolean saved = factor != 0f;
-    if (saved) {
-      c.save();
-      float scale = MIN_SCALE + (1f - MIN_SCALE) * (1f - factor);
-      int cx = getMeasuredWidth() / 2;
-      int cy = getPaddingTop() + (getMeasuredHeight() - getPaddingBottom() - getPaddingBottom()) / 2;
-      c.scale(scale, scale, cx, cy);
-    }
     if (isAnimation) {
       if (gifReceiver.needPlaceholder()) {
         if (imageReceiver.needPlaceholder()) {
@@ -153,102 +104,5 @@ public class ReactionInChatView extends View implements FactorAnimator.Target, D
       }
       imageReceiver.draw(c);
     }
-    if (saved) {
-      c.restore();
-    }
-  }
-
-  @Override
-  public boolean onTouchEvent (MotionEvent e) {
-    switch (e.getAction()) {
-      case MotionEvent.ACTION_DOWN: {
-        startTouch();
-        return true;
-      }
-      case MotionEvent.ACTION_CANCEL: {
-        cancelTouch();
-        return true;
-      }
-      case MotionEvent.ACTION_UP: {
-        boolean isSingleClicked = longPressScheduled && !longPressReady;
-        boolean isLongPressed = !longPressScheduled && longPressReady;
-        cancelTouch();
-        if (isSingleClicked) {
-          onSingleTapped();
-        }
-        if (isLongPressed) {
-          onLongReleased();
-        }
-        return true;
-      }
-    }
-    return true;
-  }
-
-  private void startTouch () {
-    openPreviewDelayed();
-  }
-
-  private void cancelTouch () {
-    setStickerPressed(false);
-    cancelDelayedPreview();
-    longPressReady = false;
-  }
-
-  private void setStickerPressed (boolean isPressed) {
-    if (this.isPressed != isPressed) {
-      this.isPressed = isPressed;
-      longPressAnimator.animateTo(isPressed ? 1f : 0f);
-    }
-  }
-
-  private void openPreviewDelayed () {
-    cancelDelayedPreview();
-    longPress = new CancellableRunnable() {
-      @Override
-      public void act () {
-        onLongPressed();
-        longPressScheduled = false;
-      }
-    };
-    longPressScheduled = true;
-    postDelayed(longPress, LONG_PRESS_DELAY);
-  }
-
-  private void cancelDelayedPreview () {
-    if (longPress != null) {
-      longPress.cancel();
-      longPress = null;
-    }
-    longPressScheduled = false;
-  }
-
-  private void onSingleTapped () {
-    if (callback != null) {
-      callback.onSingleTap();
-    }
-  }
-
-  private void onLongPressed () {
-    longPressReady = true;
-    setStickerPressed(true);
-
-    UI.forceVibrate(this, true);
-  }
-
-  private void onLongReleased () {
-    if (callback != null) {
-      callback.onLongRelease();
-    }
-  }
-
-  public void setCallback (OnTouchCallback callback) {
-    this.callback = callback;
-  }
-
-  public interface OnTouchCallback {
-    void onSingleTap ();
-
-    void onLongRelease ();
   }
 }

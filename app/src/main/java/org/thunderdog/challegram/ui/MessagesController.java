@@ -4188,12 +4188,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
     viewCount.setPadding(Screen.dp(16f), 0, 0, 0);
     statsWrap.addView(viewCount);
 
-    MessageReactionsBar messageReactionsBar = new MessageReactionsBar(context, this, message, (sticker, reaction, isBig) -> {
+    MessageReactionsBar messageReactionsBar = new MessageReactionsBar(context, this, message, (sticker, reaction, isBig, isUndo) -> {
       tdlib.setMessageReaction(message.getChatId(), message.getId(), reaction.reaction, isBig, result -> {});
 
-      reactionInChatWrapper.reattach(sticker);
-      reactionInChatWrapper.setTargetXY(message.findCurrentView(), message.getReactionTargetX(), message.getReactionTargetY());
-      reactionInChatWrapper.playAnimation();
+      if (!isUndo) {
+        reactionInChatWrapper.reattach(sticker);
+        reactionInChatWrapper.setTargetXY(message.findCurrentView(), message.getReactionTargetX(), message.getReactionTargetY());
+        reactionInChatWrapper.playAnimation();
+      }
 
       layout.hideWindow(true);
     });
