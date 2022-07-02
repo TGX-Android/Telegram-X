@@ -102,7 +102,7 @@ public class ReactionInChatAnimationWrapper extends FrameLayoutFix implements De
     int fromLeftMargin = ((MarginLayoutParams) getLayoutParams()).leftMargin;
     int fromTopMargin = ((MarginLayoutParams) getLayoutParams()).topMargin;
 
-    this.targetX = position[0] + targetX - Screen.dp(10f) - fromLeftMargin;
+    this.targetX = position[0] + targetX - Screen.dp(12f) - fromLeftMargin;
     this.targetY = position[1] + targetY - yOffset - Screen.dp(10f) - fromTopMargin;
   }
 
@@ -110,13 +110,13 @@ public class ReactionInChatAnimationWrapper extends FrameLayoutFix implements De
     if (targetX == -1 || targetY == -1 || reactionInChatView == null) return;
 
     translateAnimationX = new SpringAnimation(reactionInChatView, floatPropertyAnimX, targetX);
-    translateAnimationX.getSpring().setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY);
+    translateAnimationX.getSpring().setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY);
     translateAnimationX.getSpring().setStiffness(75f);
     translateAnimationX.addEndListener((animation, canceled, value, velocity) -> {
       startScaleAnimation();
     });
     translateAnimationY = new SpringAnimation(reactionInChatView, floatPropertyAnimY, targetY);
-    translateAnimationY.getSpring().setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY);
+    translateAnimationY.getSpring().setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY);
     translateAnimationY.getSpring().setStiffness(SpringForce.STIFFNESS_VERY_LOW);
     translateAnimationY.addEndListener((animation, canceled, value, velocity) -> {
       startScaleAnimation();
@@ -124,14 +124,14 @@ public class ReactionInChatAnimationWrapper extends FrameLayoutFix implements De
 
     scaleAnimationX = new SpringAnimation(reactionInChatView, DynamicAnimation.SCALE_X, .5f);
     scaleAnimationX.getSpring().setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY);
-    scaleAnimationX.getSpring().setStiffness(SpringForce.STIFFNESS_MEDIUM);
+    scaleAnimationX.getSpring().setStiffness(SpringForce.STIFFNESS_HIGH);
     scaleAnimationX.addEndListener((animation, canceled, value, velocity) -> {
       removeReaction();
     });
 
     scaleAnimationY = new SpringAnimation(reactionInChatView, DynamicAnimation.SCALE_Y, .5f);
     scaleAnimationY.getSpring().setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY);
-    scaleAnimationY.getSpring().setStiffness(SpringForce.STIFFNESS_MEDIUM);
+    scaleAnimationY.getSpring().setStiffness(SpringForce.STIFFNESS_HIGH);
     scaleAnimationY.addEndListener((animation, canceled, value, velocity) -> {
       removeReaction();
     });
