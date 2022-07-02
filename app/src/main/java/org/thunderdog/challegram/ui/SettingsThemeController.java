@@ -75,11 +75,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.TimeZone;
 
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
-import me.vkryl.core.BitwiseUtils;
 
 public class SettingsThemeController extends RecyclerViewController<SettingsThemeController.Args> implements View.OnClickListener, ViewController.SettingsIntDelegate, SliderWrapView.RealTimeChangeListener, View.OnLongClickListener, TGLegacyManager.EmojiLoadListener, AppUpdater.Listener {
   public SettingsThemeController (Context context, Tdlib tdlib) {
@@ -165,6 +165,15 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
               v.setData(R.string.EmojiBuiltIn);
             } else {
               v.setData(emojiPack.displayName);
+            }
+            break;
+          }
+          case R.id.btn_quick_emoji: {
+            Settings settings = Settings.instance();
+            if (settings.isQuickReactionEnabled()) {
+              v.setData(settings.getQuickReactionName());
+            } else {
+              v.setData(R.string.EnableQuickDisabled);
             }
             break;
           }
@@ -509,16 +518,23 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_forcePlainChannels, 0, R.string.ChatStyleBubblesChannel, R.id.btn_forcePlainChannels, !tdlib.settings().forcePlainModeInChannels()));
 
+      TGLegacyManager.instance().addEmojiListener(this);
       if (!tdlib.account().isDebug()) {
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_emoji, 0, R.string.Emoji).setDrawModifier(new EmojiModifier(Lang.getString(R.string.EmojiPreview), Paints.emojiPaint())));
-        TGLegacyManager.instance().addEmojiListener(this);
 
         if (BuildConfig.DEBUG) {
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_icon, 0, R.string.Icons).setDrawModifier(new DrawableModifier(R.drawable.baseline_star_20, R.drawable.baseline_account_balance_wallet_20, R.drawable.baseline_location_on_20, R.drawable.baseline_favorite_20)));
         }
       }
+
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      ListItem quickReactionItem = new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_quick_emoji, 0, R.string.QuickReaction);
+      if (Settings.instance().isQuickReactionEnabled()) {
+        quickReactionItem.setDrawModifier(new EmojiModifier(Settings.instance().getQuickReaction(), Paints.emojiPaint()));
+      }
+      items.add(quickReactionItem);
 
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_chatListStyle, 0, R.string.ChatListStyle));
@@ -854,6 +870,20 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       adapter.updateValuedSettingById(R.id.btn_emoji);
   }
 
+  public void updateQuickEmoji (String emoji, boolean isEnabled) {
+    if (adapter != null) {
+      ListItem item = adapter.findItemById(R.id.btn_quick_emoji);
+      if (item != null) {
+        if (isEnabled) {
+          item.setDrawModifier(new EmojiModifier(emoji, Paints.emojiPaint()));
+        } else {
+          item.setDrawModifier(null);
+        }
+        adapter.updateValuedSettingById(R.id.btn_quick_emoji);
+      }
+    }
+  }
+
   public void updateSelectedIconPack () {
     if (adapter != null)
       adapter.updateValuedSettingById(R.id.btn_icon);
@@ -869,6 +899,11 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
     if (adapter != null) {
       int index = adapter.indexOfViewById(R.id.btn_emoji);
       View view = getRecyclerView().getLayoutManager().findViewByPosition(index);
+      if (view != null)
+        view.invalidate();
+
+      index = adapter.indexOfViewById(R.id.btn_quick_emoji);
+      view = getRecyclerView().getLayoutManager().findViewByPosition(index);
       if (view != null)
         view.invalidate();
     }
@@ -1112,6 +1147,12 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       case R.id.btn_emoji: {
         SettingsCloudEmojiController c = new SettingsCloudEmojiController(context, tdlib);
         c.setArguments(new SettingsCloudController.Args<>(this));
+        navigateTo(c);
+        break;
+      }
+      case R.id.btn_quick_emoji: {
+        QuickReactionController c = new QuickReactionController(context, tdlib);
+        c.setArguments(new QuickReactionController.Args(Settings.instance().getQuickReaction(), Settings.instance().isQuickReactionEnabled(), this));
         navigateTo(c);
         break;
       }

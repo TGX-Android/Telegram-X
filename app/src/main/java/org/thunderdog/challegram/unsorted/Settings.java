@@ -96,6 +96,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.StringUtils;
@@ -104,7 +105,6 @@ import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceUtils;
 import me.vkryl.core.unit.BitUnit;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.unit.ByteUnit;
 import me.vkryl.core.util.Blob;
 import me.vkryl.core.util.BlobEntry;
@@ -308,6 +308,10 @@ public class Settings {
   private static final String KEY_WALLPAPER_EMPTY = "_empty";
   private static final String KEY_WALLPAPER_PATH = "_path";
   private static final String KEY_WALLPAPER_ID = "_id";
+
+  private static final String KEY_QUICK_REACTION = "quick_reaction";
+  private static final String KEY_QUICK_REACTION_NAME = "quick_reaction_name";
+  private static final String KEY_QUICK_REACTION_ENABLED = "quick_reaction_enabled";
 
   private static String key (String key, int accountId) {
     return accountId != 0 ? accountId + "_" + key : key;
@@ -5654,6 +5658,26 @@ public class Settings {
       putBoolean(KEY_IS_EMULATOR, true);
       TdlibManager.instance().setIsEmulator(true);
     }
+  }
+
+  public String getQuickReaction () {
+    return pmc.getString(KEY_QUICK_REACTION, "\uD83D\uDC4D");
+  }
+
+  public String getQuickReactionName () {
+    return pmc.getString(KEY_QUICK_REACTION_NAME, "Thumbs Up");
+  }
+
+  public void setQuickReaction (TdApi.Reaction reaction) {
+    pmc.putString(KEY_QUICK_REACTION, reaction.reaction).putString(KEY_QUICK_REACTION_NAME, reaction.title);
+  }
+
+  public boolean isQuickReactionEnabled () {
+    return pmc.getBoolean(KEY_QUICK_REACTION_ENABLED, true);
+  }
+
+  public void setQuickReactionEnabled (boolean isEnabled) {
+    pmc.putBoolean(KEY_QUICK_REACTION_ENABLED, isEnabled);
   }
 
   private List<String> authenticationTokens;
