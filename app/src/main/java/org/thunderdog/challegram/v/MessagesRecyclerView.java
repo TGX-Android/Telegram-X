@@ -42,7 +42,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.MathUtils;
 
 public class MessagesRecyclerView extends RecyclerView implements FactorAnimator.Target {
-  public static final long ITEM_ANIMATOR_DURATION = 1400L;
+  public static final long ITEM_ANIMATOR_DURATION = 140L;
 
   private MessagesManager manager;
   private CustomTouchHelper touchHelper;
