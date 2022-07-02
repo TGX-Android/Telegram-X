@@ -278,6 +278,8 @@ public class TooltipOverlayView extends ViewGroup {
     private final float maxWidthDp;
     private final int flags;
     private TooltipContentView popupView;
+    private boolean popupEnable;
+    private Rect gifRect;
 
     private final ComplexReceiver iconReceiver;
     @Nullable
@@ -326,7 +328,7 @@ public class TooltipOverlayView extends ViewGroup {
                          @Nullable ViewController<?> controller,
                          @Nullable Text.ClickCallback clickCallback, final float textSize, final boolean allowSp,
                          @DrawableRes int iconRes, @Nullable ImageFile previewFile, @Nullable ImageFile imageFile, @Nullable GifFile gifFile,
-                         final float maxWidthDp, final int flags,
+                         final float maxWidthDp, final int flags, boolean popupEnable, Rect gifRect,
                          TooltipContentView view) {
       this.parentView = parent;
       this.originalView = originalView;
@@ -348,6 +350,8 @@ public class TooltipOverlayView extends ViewGroup {
       this.maxWidthDp = maxWidthDp;
       this.flags = flags;
       this.popupView = view;
+      this.gifRect = gifRect;
+      this.popupEnable = popupEnable;
     }
 
     @Nullable
@@ -438,17 +442,17 @@ public class TooltipOverlayView extends ViewGroup {
       }
     }
 
-    public void show () {
+    public void show (boolean animated) {
       cancelDelayedHide();
       cancelDelayedShow();
       if (controller == null || controller.isFocused() || isVisible.getFloatValue() > 0f) {
-        setIsVisible(true, true);
+        setIsVisible(true, animated);
       } else {
         CancellationSignal signal = new CancellationSignal();
         this.delayedShowCanceled = signal;
         controller.addOneShotFocusListener(() -> {
           if (!signal.isCanceled()) {
-            setIsVisible(true, true);
+            setIsVisible(true, animated);
             if (delayedShowCanceled == signal)
               delayedShowCanceled = null;
           }
@@ -484,10 +488,10 @@ public class TooltipOverlayView extends ViewGroup {
 
     private boolean isAttached;
 
-    private void attach () {
+    private void attach (boolean animated) {
       if (!isAttached) {
         isAttached = true;
-        parentView.addHint(this);
+        parentView.addHint(this, animated);
         popupView.requestIcons(iconReceiver);
         iconReceiver.attach();
         if (imageReceiver != null) {
@@ -571,7 +575,7 @@ public class TooltipOverlayView extends ViewGroup {
         }
       }
       if (isVisible) {
-        attach();
+        attach(animated);
       }
       this.isVisible.setValue(isVisible, animated);
     }
@@ -855,7 +859,7 @@ public class TooltipOverlayView extends ViewGroup {
         saveCount = -1;
       }
       int outlineColor = ColorUtils.alphaColor(alpha, colorProvider.tooltipOutlineColor());
-      if (Color.alpha(outlineColor) > 0) {
+      if (Color.alpha(outlineColor) > 0 && this.popupEnable) {
         parentView.paint.setStyle(Paint.Style.STROKE);
         parentView.paint.setStrokeWidth(Screen.dp(2f));
         parentView.paint.setColor(outlineColor);
@@ -863,8 +867,9 @@ public class TooltipOverlayView extends ViewGroup {
         parentView.paint.setStyle(Paint.Style.FILL);
       }
       parentView.paint.setColor(ColorUtils.alphaColor(alpha, colorProvider.tooltipColor()));
-      c.drawPath(backgroundPath, parentView.paint);
-
+      if(this.popupEnable) {
+        c.drawPath(backgroundPath, parentView.paint);
+      }
       boolean hasIcon = hasIcon();
 
       int innerPaddingLeft, innerPaddingRight, innerPaddingVertical, iconOffset, verticalOffset;
@@ -891,7 +896,19 @@ public class TooltipOverlayView extends ViewGroup {
           imageReceiver.restorePaintAlpha();
         }
         if (gifReceiver != null) {
+          if(gifRect == null) {
           gifReceiver.setBounds(iconCenterX - imageSize / 2, iconCenterY - imageSize / 2, iconCenterX + imageSize / 2, iconCenterY + imageSize / 2);
+          } else {
+            //todo bruh refactor it
+            int yOffset = 60;
+            int xOffset = -40;
+            Rect r = new Rect(iconCenterX - imageSize , iconCenterY - imageSize , iconCenterX + imageSize , iconCenterY + imageSize );
+            r.top+=yOffset;
+            r.bottom+=yOffset;
+            r.right+= xOffset;
+            r.left+=xOffset;
+            gifReceiver.setBounds(r.left, r.top, r.right, r.bottom);
+          }
           gifReceiver.setAlpha(alpha);
           gifReceiver.draw(c);
         }
@@ -907,7 +924,7 @@ public class TooltipOverlayView extends ViewGroup {
         innerPaddingVertical = Screen.dp(INNER_PADDING_VERTICAL);
         iconOffset = verticalOffset = 0;
       }
-      popupView.draw(c, colorProvider, (int) (contentRect.left + innerPaddingLeft + iconOffset), (int) (contentRect.top + innerPaddingVertical + verticalOffset), (int) (contentRect.right - innerPaddingRight), (int) (contentRect.bottom - innerPaddingVertical), alpha, iconReceiver);
+        popupView.draw(c, colorProvider, (int) (contentRect.left + innerPaddingLeft + iconOffset), (int) (contentRect.top + innerPaddingVertical + verticalOffset), (int) (contentRect.right - innerPaddingRight), (int) (contentRect.bottom - innerPaddingVertical), alpha, iconReceiver);
       if (needSave) {
         c.restoreToCount(saveCount);
       }
@@ -997,6 +1014,8 @@ public class TooltipOverlayView extends ViewGroup {
     private OffsetProvider offsetProvider;
     private Text.ClickCallback clickCallback;
     private ViewController<?> controller;
+    private Rect gifRect;
+    private boolean popupEnable = true;
     private float textSize = 13f;
     private boolean allowSp = true;
     private int flags;
@@ -1007,6 +1026,7 @@ public class TooltipOverlayView extends ViewGroup {
     @Nullable
     private TdlibUi.UrlOpenParameters urlOpenParameters;
     private List<RunnableData<TooltipInfo>> onBuild;
+    private boolean animated = true;
 
     private TooltipBuilder (TooltipOverlayView parentView) {
       this.parentView = parentView;
@@ -1089,6 +1109,16 @@ public class TooltipOverlayView extends ViewGroup {
       return this;
     }
 
+    public TooltipBuilder setGifRect(Rect gifRect) {
+      this.gifRect = gifRect;
+      return this;
+    }
+
+    public TooltipBuilder setPopupView(boolean popupEnable) {
+      this.popupEnable = popupEnable;
+      return this;
+    }
+
     public boolean hasController () {
       return this.controller != null;
     }
@@ -1167,6 +1197,11 @@ public class TooltipOverlayView extends ViewGroup {
       return flag(FLAG_HANDLE_BACK_PRESS, handleBackPress);
     }
 
+    public TooltipBuilder setAnimated(boolean animated){
+      this.animated = animated;
+      return this;
+    }
+
     public TooltipBuilder ignoreViewScale (boolean ignoreViewScale) {
       return flag(FLAG_IGNORE_VIEW_SCALE, ignoreViewScale);
     }
@@ -1206,13 +1241,13 @@ public class TooltipOverlayView extends ViewGroup {
     }
 
     public TooltipInfo show (TooltipContentView view) {
-      TooltipInfo info = new TooltipInfo(parentView, originalView, viewProvider, locationProvider, colorProvider, offsetProvider, controller, clickCallback, textSize, allowSp, iconRes, previewFile, imageFile, gifFile, maxWidthDp, flags, view);
+      TooltipInfo info = new TooltipInfo(parentView, originalView, viewProvider, locationProvider, colorProvider, offsetProvider, controller, clickCallback, textSize, allowSp, iconRes, previewFile, imageFile, gifFile, maxWidthDp, flags, popupEnable, gifRect, view);
       if (onBuild != null) {
         for (RunnableData<TooltipInfo> act : onBuild) {
           act.runWithData(info);
         }
       }
-      info.attach();
+      info.attach(animated);
       return info;
     }
   }
@@ -1283,7 +1318,7 @@ public class TooltipOverlayView extends ViewGroup {
     }
   }
 
-  private void addHint (TooltipInfo info) {
+  private void addHint (TooltipInfo info, boolean animated) {
     for (int i = activePopups.size() - 1; i >= 0; i--) {
       TooltipInfo tooltipInfo = activePopups.get(i);
       if (tooltipInfo.delayedHide != null /*&& tooltipInfo.shallBeHidden*/) {
@@ -1300,7 +1335,7 @@ public class TooltipOverlayView extends ViewGroup {
       addOnAttachStateChangeListener(new OnAttachStateChangeListener() {
         @Override
         public void onViewAttachedToWindow (View v) {
-          info.show();
+          info.show(animated);
           removeOnAttachStateChangeListener(this);
         }
 
@@ -1311,7 +1346,7 @@ public class TooltipOverlayView extends ViewGroup {
         availabilityListener.onAvailabilityChanged(this, true);
       }
     } else {
-      info.show();
+      info.show(animated);
     }
   }
 

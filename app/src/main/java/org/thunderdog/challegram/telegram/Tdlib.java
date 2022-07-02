@@ -1320,6 +1320,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     throw new IllegalArgumentException(state.toString());
   }
 
+  public  TdApi.Reaction[] getSupportedReactions() {
+    return supportedReactions;
+  }
+
   public boolean checkChangeLogs (boolean alreadySent, boolean test) {
     final int status = authorizationStatus();
     if (status != STATUS_READY && status != STATUS_UNAUTHORIZED) {

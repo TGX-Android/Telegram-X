@@ -22,6 +22,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 
+import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.util.DrawModifier;
@@ -162,6 +163,7 @@ public class ListItem {
   private int stringResource;
   private @Nullable CharSequence string;
   private final int checkId;
+  private TdApi.Reaction reaction;
   private int flags;
   private long longId;
 
@@ -191,6 +193,10 @@ public class ListItem {
     this(viewType, id, 0, 0, null, 0, false);
   }
 
+  public ListItem (int viewType, int id, TdApi.Reaction reaction) {
+    this(viewType, id, 0, 0, null, 0, false, reaction);
+  }
+
   public ListItem (int viewType, int id, int iconResource, int stringResource) {
     this(viewType, id, iconResource, stringResource, null, 0, false);
   }
@@ -211,13 +217,18 @@ public class ListItem {
     this(viewType, id, iconResource, stringResource, null, checkId, isSelected);
   }
 
-  public ListItem (int viewType, int id, int iconResource, int stringResource, @Nullable CharSequence string, int checkId, boolean isSelected) {
+  public ListItem (int viewType, int id, int iconResource, int stringResource, @Nullable CharSequence string, int checkId, boolean isSelected){
+    this(viewType, id, iconResource, stringResource, string, checkId, isSelected, null);
+  }
+
+  public ListItem (int viewType, int id, int iconResource, int stringResource, @Nullable CharSequence string, int checkId, boolean isSelected, TdApi.Reaction reaction) {
     this.viewType = viewType;
     this.id = id;
     this.iconResource = iconResource;
     this.stringResource = stringResource;
     this.string = string;
     this.checkId = checkId;
+    this.reaction = reaction;
     if (isSelected) {
       this.flags = FLAG_SELECTED;
     }
@@ -278,6 +289,10 @@ public class ListItem {
   @ThemeColorId
   public int getRadioColorId () {
     return radioColorId;
+  }
+
+  public TdApi.Reaction getReaction(){
+    return this.reaction;
   }
 
   public int getIntValue () {

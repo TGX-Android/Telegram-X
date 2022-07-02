@@ -1098,7 +1098,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         }
 
         return true;
-      });
+      }, null);
     };
 
     m.tdlib().client().send(new TdApi.GetChatMember(m.getChatId(), sender), result -> {

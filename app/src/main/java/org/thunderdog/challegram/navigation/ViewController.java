@@ -45,6 +45,7 @@ import android.view.WindowManager;
 import android.view.animation.Interpolator;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.CallSuper;
@@ -64,10 +65,13 @@ import org.thunderdog.challegram.FillingDrawable;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
+import org.thunderdog.challegram.component.chat.ReactionsContextMenu;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.data.TGMessage;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -2165,6 +2169,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     return showOptions(info, ids, titles, colors, icons, null);
   }
 
+  public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, TGMessage message, TdApi.Reaction[] reactions) {
+    return showOptions(info, ids, titles, colors, icons, null, message, reactions);
+  }
+
   public final void showUnsavedChangesPromptBeforeLeaving (@Nullable Runnable onConfirm) {
     showUnsavedChangesPromptBeforeLeaving(null, Lang.getString(R.string.DiscardChanges), onConfirm);
   }
@@ -2182,6 +2190,11 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, final OptionDelegate delegate) {
     return showOptions(info, ids, titles, colors, icons, delegate, null);
+  }
+
+
+  public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, final OptionDelegate delegate, TGMessage message, TdApi.Reaction[] reactions) {
+    return showOptions(info, ids, titles, colors, icons, delegate, null, message, reactions);
   }
 
   public final PopupLayout showWarning (CharSequence info, RunnableBool callback) {
@@ -2283,18 +2296,26 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, final OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme) {
+    return showOptions(info, ids, titles, colors, icons, delegate, forcedTheme, null, null);
+  }
+
+  public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, final OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme, TGMessage message, TdApi.Reaction[] reactions) {
     OptionItem[] items = new OptionItem[ids.length];
     for (int i = 0; i < ids.length; i++) {
       items[i] = new OptionItem(ids != null ? ids[i] : i, titles[i], colors != null ? colors[i] : OPTION_COLOR_NORMAL, icons != null ? icons[i] : 0);
     }
-    return showOptions(new Options(info, items), delegate, forcedTheme);
+    return showOptions(new Options(info, items), delegate, forcedTheme, message, reactions);
   }
 
   public final PopupLayout showOptions (Options options, final OptionDelegate delegate) {
     return showOptions(options, delegate, null);
   }
 
-  public final PopupLayout showOptions (Options options, final OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme) {
+  public final PopupLayout showOptions (Options options, final OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme){
+    return  showOptions(options, delegate, forcedTheme);
+  }
+
+  public final PopupLayout showOptions (Options options, final OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme, final @Nullable TGMessage message, final TdApi.Reaction[] reactions) {
     if (isStackLocked()) {
       Log.i("Ignoring options show because stack is locked");
       return null;
@@ -2306,6 +2327,8 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     popupLayout.setTag(this);
     popupLayout.init(true);
 
+
+
     if (delegate != null) {
       popupLayout.setDisableCancelOnTouchDown(delegate.disableCancelOnTouchdown());
     }
@@ -2313,6 +2336,23 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     OptionsLayout optionsWrap = new OptionsLayout(context(), this, forcedTheme);
     optionsWrap.setInfo(this, tdlib(), options.info, false);
     optionsWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
+
+
+    if(message != null && reactions != null) {
+      if(reactions.length != 0) {
+        var sizeY = Screen.dp(54f);
+        //var receiver = new ComplexReceiver(this.thumbnailContentView);
+        //receiver.attach();
+        var reactionView = new ReactionsContextMenu(context, message, reactions, sizeY);
+        reactionView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, sizeY));
+        optionsWrap.addView(reactionView);
+        reactionView.setOnTouchListener((v, event) -> {
+          int result = reactionView.onClick(event);
+          if (result == 2) popupLayout.hideWindow(true);
+          return result == 1;
+        });
+      }
+    }
 
     if (Screen.needsKeyboardPadding(context)) {
       popupAdditionalHeight = Screen.getNavigationBarFrameHeight();
@@ -2357,9 +2397,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       index++;
     }
 
+
     // Window
 
-    popupLayout.showSimplePopupView(optionsWrap, shadowView.getLayoutParams().height + Screen.dp(54f) * options.items.length + optionsWrap.getTextHeight() + popupAdditionalHeight);
+    popupLayout.showSimplePopupView(optionsWrap, shadowView.getLayoutParams().height + Screen.dp(54f) * options.items.length + optionsWrap.getTextHeight() + popupAdditionalHeight );
 
     return popupLayout;
   }

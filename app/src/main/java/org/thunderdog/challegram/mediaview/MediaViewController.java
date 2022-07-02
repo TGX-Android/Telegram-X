@@ -6588,7 +6588,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           if (!text.equals(brushToneHint.getContentText())) {
             brushToneHint.reset(context().tooltipManager().newContent(tdlib, text, textFlags), 0);
           }
-          brushToneHint.show();
+          brushToneHint.show(true);
         } else {
           brushToneHint = context().tooltipManager().builder(colorPreviewView).preventHideOnTouch(true).color(context().tooltipManager().overrideColorProvider(getForcedTheme())).show(context().tooltipManager().newContent(tdlib, text, textFlags));
         }

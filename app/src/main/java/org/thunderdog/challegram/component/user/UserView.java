@@ -16,6 +16,7 @@ package org.thunderdog.challegram.component.user;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.Looper;
@@ -26,11 +27,14 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGUser;
+import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -63,6 +67,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
   private final ImageReceiver receiver;
 
   private int offsetLeft;
+  private TdApi.Reaction reaction;
 
   public static final float HEIGHT = 72f;
 
@@ -130,6 +135,10 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
     if (user != null && trimmedName != null) {
       trimmedName.toRect(outRect);
     }
+  }
+
+  public void setReaction(TdApi.Reaction reaction) {
+    this.reaction = reaction;
   }
 
   public void updateSubtext () {
@@ -342,6 +351,17 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
       } else {
         c.drawRect(offsetLeft + textLeftMargin, top, getMeasuredWidth(), bottom, Paints.fillingPaint(Theme.separatorColor()));
       }
+    }
+
+
+    if(reaction != null) {
+      int marginX = Screen.dp(16f);
+      int marginY = Screen.dp(20f);
+      int size = getHeight() - marginY*2;
+      ImageFile imageFile = TD.toImageFile(tdlib, reaction.staticIcon.thumbnail);
+      receiver.requestFile(imageFile);
+      receiver.setBounds(getRight() - size - marginX, getMeasuredHeight() - marginY - size, getRight() - marginX, getMeasuredHeight() - marginY);
+      receiver.draw(c);
     }
   }
 

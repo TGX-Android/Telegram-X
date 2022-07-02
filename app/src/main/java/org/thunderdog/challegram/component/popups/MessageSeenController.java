@@ -25,6 +25,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.MediaBottomBaseController;
 import org.thunderdog.challegram.component.attach.MediaLayout;
 import org.thunderdog.challegram.component.base.SettingView;
+import org.thunderdog.challegram.component.chat.ReactionBubble;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGMessage;
@@ -93,6 +94,22 @@ public class MessageSeenController extends MediaBottomBaseController<Void> imple
 
   private boolean allowExpand;
 
+  private TdApi.Reaction getUserPassedReaction(long userId) {
+    var msg = this.msg.getMessage();
+    if(msg.interactionInfo == null) return null;
+    if(msg.interactionInfo.reactions == null) return null;
+    for(var r : msg.interactionInfo.reactions) {
+      for(var id : r.recentSenderIds) {
+        if(id.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
+          if(((TdApi.MessageSenderUser)id).userId == userId) {
+            return ReactionBubble.findReactionInfo(r.reaction, tdlib);
+          }
+        }
+      }
+    }
+    return null;
+  }
+
   @Override
   protected View onCreateView (Context context) {
     buildContentView(false);
@@ -116,6 +133,7 @@ public class MessageSeenController extends MediaBottomBaseController<Void> imple
       @Override
       protected void setUser (ListItem item, int position, UserView userView, boolean isUpdate) {
         userView.setUser(new TGUser(tdlib, tdlib.chatUser(item.getLongId())));
+        userView.setReaction(item.getReaction());
       }
     };
 
@@ -123,8 +141,10 @@ public class MessageSeenController extends MediaBottomBaseController<Void> imple
 
     ArrayList<ListItem> items = new ArrayList<>();
 
+    //todo show reactions in right side of items
     for (long userId : userIds) {
-      items.add(new ListItem(ListItem.TYPE_USER, R.id.user).setLongId(userId));
+      var reaction = getUserPassedReaction(userId);
+      items.add(new ListItem(ListItem.TYPE_USER, R.id.user, reaction).setLongId(userId));
     }
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, R.id.description, 0, R.string.MessageSeenPrivacy));

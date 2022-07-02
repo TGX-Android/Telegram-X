@@ -111,6 +111,7 @@ import org.thunderdog.challegram.component.chat.MessagesLayout;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.chat.PinnedMessagesBar;
 import org.thunderdog.challegram.component.chat.RaiseHelper;
+import org.thunderdog.challegram.component.chat.ReactionBubble;
 import org.thunderdog.challegram.component.chat.ReplyView;
 import org.thunderdog.challegram.component.chat.SilentButton;
 import org.thunderdog.challegram.component.chat.StickerSuggestionAdapter;
@@ -1934,7 +1935,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             sendContact(tdlib.myUser(), true, TD.defaultSendOptions());
           }
           return true;
-        });
+        }, null);
         break;
       }
       case R.id.btn_reportChat: {
@@ -2914,7 +2915,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         .show(tdlib, text);
     } else {
       tooltipInfo.reset(context().tooltipManager().newContent(tdlib, text, 0), isError ? R.drawable.baseline_warning_24 : 0);
-      tooltipInfo.show();
+      tooltipInfo.show(true);
     }
     tooltipInfo.hideDelayed(false);
   }
@@ -3322,7 +3323,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             strings.append(R.string.TextFormatLink);
             icons.append(R.drawable.baseline_link_24);
 
-            showOptions(null, ids.get(), strings.get(), null, icons.get(), (itemView, id1) -> inputView.setSpan(id1));
+            showOptions(null, ids.get(), strings.get(), null, icons.get(), (itemView, id1) -> inputView.setSpan(id1), null);
           } else {
             showMore();
           }
@@ -3445,7 +3446,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
               finishSelectMode(-1);
             }
             return true;
-          });
+          },null);
         }
         break;
       }
@@ -3483,7 +3484,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
               finishSelectMode(-1);
             }
             return true;
-          });
+          }, null);
         }
         break;
       }
@@ -4086,6 +4087,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   // Message options
 
+  private TdApi.Reaction[] reactions = new TdApi.Reaction[]{};
   private TGMessage selectedMessage;
   private TdApi.ChatMember selectedMessageSender;
   private Object selectedMessageTag;
@@ -4093,6 +4095,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Deprecated
   public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, Object selectedMessageTag, TdApi.ChatMember selectedMessageSender, boolean disableViewCounter) {
     // TODO rework into proper style
+
+    var availableReactions = msg.getChat().availableReactions;
+    reactions = new TdApi.Reaction[availableReactions.length];
+
+    for (int i = 0; i < availableReactions.length; i++) {
+      reactions[i] = ReactionBubble.findReactionInfo(availableReactions[i], msg.tdlib());
+    }
+
+
     this.selectedMessage = msg;
     this.selectedMessageTag = selectedMessageTag;
     this.selectedMessageSender = selectedMessageSender;
@@ -4151,7 +4162,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       b.append(Lang.getString(resId));
     }
     String text = b.toString().trim();
-    patchReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, disableViewCounter);
+    patchReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons, msg, reactions), msg, disableViewCounter);
   }
 
   private void patchReadReceiptsOptions (PopupLayout layout, TGMessage message, boolean disableViewCounter) {
@@ -4178,7 +4189,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     optionsLayout.addView(receiptWrap, 2);
 
     tdlib.client().send(new TdApi.GetMessageViewers(message.getChatId(), message.getId()), (obj) -> {
-      if (obj.getConstructor() != TdApi.Users.CONSTRUCTOR) return;
+      if (obj.getConstructor() != TdApi.Users.CONSTRUCTOR ) return;
       runOnUiThreadOptional(() -> {
         TdApi.Users users = (TdApi.Users) obj;
 
@@ -4189,6 +4200,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         } else {
           receiptText.setText(MessageSeenController.getNobodyString(message));
         }
+
 
         tav.setUsers(tdlib, users);
         receiptWrap.setOnClickListener((v) -> {
@@ -4850,7 +4862,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
               tdlib.client().send(new TdApi.StopPoll(message.chatId, message.id, message.replyMarkup), tdlib.okHandler());
             }
             return true;
-          });
+          }, null);
           clearSelectedMessage();
         }
         return true;
@@ -7085,7 +7097,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
                 tdlib.ui().exitToChatScreen(this, chatId);
               }
               return true;
-            });
+            }, null);
           }));
           break;
         }
@@ -7157,7 +7169,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
                   tdlib.client().send(new TdApi.SharePhoneNumber(tdlib.chatUserId(chatId)), tdlib.okHandler());
                 }
                 return true;
-              });
+              }, null);
             }
           }));
           break;

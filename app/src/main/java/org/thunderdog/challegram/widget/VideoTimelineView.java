@@ -489,7 +489,7 @@ public class VideoTimelineView extends View implements Destroyable, FactorAnimat
       }
     } else {
       info.reset(null, buildText(isEnd), 0);
-      info.show();
+      info.show(true);
     }
   }
 
