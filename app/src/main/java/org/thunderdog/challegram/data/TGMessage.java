@@ -5536,7 +5536,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private float dismissFactor;
   private float rawTranslationY;
   private float quickReactionOffset;
-  private int quickReactionIndex;
+  private int quickReactionIndex, lastQuickReactionIndex;
   private FactorAnimator quickReactionSwitchAnimator;
 
   public void resetTransformState () {
@@ -5705,17 +5705,19 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     float diff=actionIdx-quickReactionIndex;
     if(Math.abs(diff)<.5f){
       if(quickReactionSwitchAnimator==null || !quickReactionSwitchAnimator.isAnimating()){
-        quickReactionOffset=quickReactionIndex+diff/4f;
+        quickReactionOffset=quickReactionIndex+diff/(useBubbles ? 4f : 1f);
         if(quickReactionSwitchAnimator!=null){
           quickReactionSwitchAnimator.forceFactor(quickReactionOffset);
         }
       }
     }else{
       int newIdx=Math.round(actionIdx);
-      if(quickReactionSwitchAnimator==null)
-        quickReactionSwitchAnimator=new FactorAnimator(ANIMATOR_QUICK_REACTION, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 110L, quickReactionOffset);
-      quickReactionSwitchAnimator.animateTo(newIdx);
-      quickReactionIndex=newIdx;
+      if(useBubbles){
+        if(quickReactionSwitchAnimator==null)
+          quickReactionSwitchAnimator=new FactorAnimator(ANIMATOR_QUICK_REACTION, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 110L, quickReactionOffset);
+        quickReactionSwitchAnimator.animateTo(newIdx);
+      }
+      lastQuickReactionIndex=quickReactionIndex=newIdx;
       vibrate();
     }
 
@@ -5756,10 +5758,50 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       int x=Math.round(cx-iconW/2);
       int y=Math.round(cy-iconH/2);
       receiver.setBounds(x, y, x+iconW, y+iconH);
+      receiver.setAlpha(iconAlpha/255f);
       receiver.draw(c);
     }
     c.restore();
     if(iconAlpha!=255){
+      c.restore();
+    }
+  }
+
+  private void drawNonBubbleSwipeAction(View view, Canvas c, float x, boolean rtl, float startY, float endY, int quickColor, float cy, String text, float textWidth, Drawable icon, ImageReceiver receiver){
+    int endX = view.getMeasuredWidth();
+    c.drawRect(endX + x, startY, endX, endY, Paints.fillingPaint(quickColor));
+
+    float iconX = endX + x + xQuickPadding;
+
+    int check = Screen.dp(12f) + (icon==null ? Screen.dp(20) : icon.getMinimumHeight());
+    if (check > height) {
+      c.save();
+      float scale = (float) height / (float) check;
+      c.scale(scale, scale, iconX, cy);
+    }
+
+    Paint iconPaint = Paints.getInlineBubbleIconPaint(ColorUtils.alphaColor((float) mQuickText.getAlpha() / 255f, Theme.getColor(R.id.theme_color_messageSwipeContent)));
+    if (rtl) {
+      c.save();
+      c.scale(-1f, 1f, iconX + (icon==null ? Screen.dp(20) : icon.getMinimumWidth()) / 2, cy);
+    }
+    if(icon!=null){
+      Drawables.draw(c, icon, iconX, cy-(int) ((float) icon.getMinimumHeight()*.5f)+Screen.dp(.5f), iconPaint);
+    }else{
+      int iconX2=Math.round(iconX)+Screen.dp(2);
+      int iconY=Math.round(cy-(int) ((float) Screen.dp(16)*.5f)+Screen.dp(.5f));
+      receiver.setBounds(iconX2, iconY, iconX2+Screen.dp(16), iconY+Screen.dp(16));
+      receiver.setAlpha(iconPaint.getAlpha()/255f);
+      receiver.draw(c);
+    }
+    if (rtl) {
+      c.restore();
+    }
+
+    int textX = (int) (endX + x + xQuickPadding + (icon==null ? Screen.dp(20) : icon.getMinimumWidth()) /*+ textWidth*/+Screen.dp(48));
+    c.drawText(text, textX, cy + xQuickTextOffset, mQuickText);
+
+    if (check > height) {
       c.restore();
     }
   }
@@ -5943,32 +5985,31 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         c.restore();
       }
     } else {
-      int endX = view.getMeasuredWidth();
-      c.drawRect(endX + x, startY, endX, endY, Paints.fillingPaint(quickColor));
-
-      float iconX = endX + x + xQuickPadding;
-
-      int check = Screen.dp(12f) + icon.getMinimumHeight();
-      if (check > height) {
+      float initialOffset=-quickReactionOffset*(endY-startY);
+      for(int i=0;i<1+manager.controller().getQuickReactions().size();i++){
         c.save();
-        float scale = (float) height / (float) check;
-        c.scale(scale, scale, iconX, cy);
-      }
-
-      Paint iconPaint = Paints.getInlineBubbleIconPaint(ColorUtils.alphaColor((float) mQuickText.getAlpha() / 255f, Theme.getColor(R.id.theme_color_messageSwipeContent)));
-      if (rtl) {
-        c.save();
-        c.scale(-1f, 1f, iconX + icon.getMinimumWidth() / 2, cy);
-      }
-      Drawables.draw(c, icon, iconX, cy - (int) ((float) icon.getMinimumHeight() * .5f) + Screen.dp(.5f), iconPaint);
-      if (rtl) {
-        c.restore();
-      }
-
-      int textX = (int) (endX + x + xQuickPadding + icon.getMinimumWidth() + textWidth);
-      c.drawText(text, textX, cy + xQuickTextOffset, mQuickText);
-
-      if (check > height) {
+        c.clipRect(0, startY, width, endY);
+        if(i!=quickReactionIndex){
+          c.saveLayerAlpha(x, startY, width, endY, 76, Canvas.ALL_SAVE_FLAG);
+        }
+        c.translate(0, initialOffset+(endY-startY)*i);
+        String actualText;
+        float actualTextWidth;
+        ImageReceiver receiver;
+        if(i==0){
+          actualText=text;
+          actualTextWidth=textWidth;
+          receiver=null;
+        }else{
+          TdApi.Reaction reaction=manager.controller().getQuickReactions().get(i-1);
+          actualText=reaction.title;
+          actualTextWidth=U.measureText(actualText, mQuickText);
+          receiver=view.getQuickReactionsReceiver().getImageReceiver(i-1);
+        }
+        drawNonBubbleSwipeAction(view, c, x, rtl, startY, endY, quickColor, cy, actualText, actualTextWidth, i==0 ? icon : null, receiver);
+        if(i!=quickReactionIndex){
+          c.restore();
+        }
         c.restore();
       }
     }
@@ -6012,12 +6053,15 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     float startDismiss = Math.signum(translation);
     translation = 0f;
     moveFactor = 0f;
+    if(hasReactions() && !needDrawReactionsWithTime()){
+      performWithViews(v->v.setReactionButtonsTranslation(translation));
+    }
 
     animateDismiss(startDismiss, 0f);
   }
 
   public int getQuickReactionIndex(){
-    return quickReactionIndex;
+    return lastQuickReactionIndex;
   }
 
   private static class SelectionInfo {

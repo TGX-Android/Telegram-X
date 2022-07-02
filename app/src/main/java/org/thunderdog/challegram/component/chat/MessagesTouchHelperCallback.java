@@ -152,7 +152,17 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
       }
       if (swipeDir == (Lang.rtl() ? CustomTouchHelper.RIGHT : CustomTouchHelper.LEFT)) {
         if (canDragReply()) {
-          controller.showReply(msg.getNewestMessage(), true, true);
+          int idx=msg.getQuickReactionIndex();
+          if(idx==0){
+            controller.showReply(msg.getNewestMessage(), true, true);
+          }else{
+            int[] loc={0, 0};
+            holder.itemView.getLocationOnScreen(loc);
+            int size=Screen.dp(20);
+            int x=holder.itemView.getWidth()-Screen.dp(32)+loc[0]-size/2;
+            int y=(msg.getBottomContentEdge()-msg.getTopContentEdge())/2+loc[1]-size/2;
+            controller.sendMessageReaction(msg, controller.getQuickReactions().get(idx-1).reaction, null, null, null);
+          }
         }
       } else {
         if (canDragShare()) {
@@ -162,12 +172,16 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
     }
   }
 
+  private float lastActiveDY;
+
   @Override
   public void onChildDraw (Canvas c, RecyclerView recyclerView, RecyclerView.ViewHolder holder, float dx, float dy, int state, boolean isActive) {
     if (state == ItemTouchHelper.ACTION_STATE_SWIPE && MessagesHolder.isMessageType(holder.getItemViewType())) {
       final MessageView v = MessagesHolder.findMessageView(holder.itemView);
       final TGMessage msg = v.getMessage();
-      msg.translate(dx, dy, true);
+      if(isActive)
+        lastActiveDY=dy;
+      msg.translate(dx, isActive ? dy : lastActiveDY, true);
       if (holder.itemView instanceof MessageViewGroup) {
         ((MessageViewGroup) holder.itemView).setSwipeTranslation(msg.getTranslation());
       }
