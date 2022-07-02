@@ -38,6 +38,7 @@ public class ReactedUserListController extends ViewController<ReactedUsersLayout
   private ReactedUsersAdapter adapter;
   private final List<Pair<TGUser, String>> users;
   private TdApi.Message message;
+  private String currentReactionCategory = "";
 
   public ReactedUserListController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -77,6 +78,8 @@ public class ReactedUserListController extends ViewController<ReactedUsersLayout
 
   public void setReaction (String reaction) {
     users.clear();
+    currentReactionCategory = reaction;
+    adapter.showReactions(currentReactionCategory.equals(""));
     synchronized (adapter) {
       adapter.notifyDataSetChanged();
     }
@@ -111,11 +114,13 @@ public class ReactedUserListController extends ViewController<ReactedUsersLayout
         Log.e(object.toString());
         return;
       }
-      TdApi.User user = (TdApi.User) object;
-      if (users != null) {
-        TGUser tgUser = new TGUser(tdlib, user);
-        users.add(new Pair<>(tgUser, reaction));
-        adapter.notifyItemInserted(users.size() - 1);
+      if (currentReactionCategory.equals(reaction) || currentReactionCategory.equals("")) {
+        TdApi.User user = (TdApi.User) object;
+        if (users != null) {
+          TGUser tgUser = new TGUser(tdlib, user);
+          users.add(new Pair<>(tgUser, reaction));
+          adapter.notifyItemInserted(users.size() - 1);
+        }
       }
     }
   }

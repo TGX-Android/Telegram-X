@@ -35,9 +35,11 @@ public class ReactionCategoryListController extends ViewController<ReactionsLayo
   private CustomRecyclerView recyclerView;
   private LinearLayoutManager manager;
   private ReactionCategoryListController.ReactionAdapter adapter;
+  private List<ReactionCategoryListController.Item> items;
 
   public ReactionCategoryListController (Context context, Tdlib tdlib) {
     super(context, tdlib);
+    items = new ArrayList<>();
   }
 
   @Override
@@ -55,7 +57,6 @@ public class ReactionCategoryListController extends ViewController<ReactionsLayo
   @Override
   protected View onCreateView (Context context) {
     String[] reactions = getArgumentsStrict().getReactions();
-    List<ReactionCategoryListController.Item> items = new ArrayList<>();
     for (int i = 0; i < reactions.length; i++) {
       String reaction = reactions[i];
       int reactionColorState = EmojiData.instance().getEmojiColorState(reaction);
@@ -64,19 +65,30 @@ public class ReactionCategoryListController extends ViewController<ReactionsLayo
 
     manager = new LinearLayoutManager(context);
     manager.setOrientation(RecyclerView.HORIZONTAL);
+
+    Consumer<String> onReactionClick = (reaction) -> {
+      getArgumentsStrict().getOnReactionClick().accept(reaction);
+      for (Item item: items) {
+        item.isSelected = item.reaction.equals(reaction);
+      }
+      synchronized (adapter) {
+        adapter.notifyDataSetChanged();
+      }
+    };
+    BiConsumer<ReactionView, String> loadReactionSticker = (reactionView, reaction) -> {
+      tdlib.client().send(new TdApi.GetAnimatedEmoji(reaction), result -> {
+        if (result.getConstructor() == TdApi.AnimatedEmoji.CONSTRUCTOR) {
+          TdApi.AnimatedEmoji emoji = (TdApi.AnimatedEmoji) result;
+          TGStickerObj tgStickerObj = new TGStickerObj(tdlib, emoji.sticker, reaction, new TdApi.StickerTypeStatic());
+          reactionView.setSticker(tgStickerObj);
+        }
+      });
+    };
     adapter = new ReactionCategoryListController.ReactionAdapter(
         context,
         items,
-        getArgumentsStrict().getOnReactionClick(),
-        (reactionView, reaction) -> {
-          tdlib.client().send(new TdApi.GetAnimatedEmoji(reaction), result -> {
-            if (result.getConstructor() == TdApi.AnimatedEmoji.CONSTRUCTOR) {
-              TdApi.AnimatedEmoji emoji = (TdApi.AnimatedEmoji) result;
-              TGStickerObj tgStickerObj = new TGStickerObj(tdlib, emoji.sticker, reaction, new TdApi.StickerTypeStatic());
-              reactionView.setSticker(tgStickerObj);
-            }
-          });
-        }
+        onReactionClick,
+        loadReactionSticker
     );
     recyclerView = (CustomRecyclerView) Views.inflate(context(), R.layout.recycler_custom, getArguments());
     recyclerView.setHasFixedSize(true);
@@ -89,6 +101,15 @@ public class ReactionCategoryListController extends ViewController<ReactionsLayo
     return recyclerView;
   }
 
+  public void removeSelection () {
+    for (Item item: items) {
+      item.isSelected = false;
+    }
+    synchronized (adapter) {
+      adapter.notifyDataSetChanged();
+    }
+  }
+
   @Override
   public void destroy () {
     super.destroy();
@@ -98,6 +119,7 @@ public class ReactionCategoryListController extends ViewController<ReactionsLayo
   private static class Item {
     public final String reaction;
     public final int reactionColorState;
+    public boolean isSelected;
 
     public Item (String reaction, int reactionColorState) {
       this.reaction = reaction;
@@ -152,6 +174,7 @@ public class ReactionCategoryListController extends ViewController<ReactionsLayo
         reactionView.startAnimation();
         return true;
       });
+      reactionView.setReactionSelected(item.isSelected);
       loadSticker.accept(reactionView, item.reaction);
     }
 

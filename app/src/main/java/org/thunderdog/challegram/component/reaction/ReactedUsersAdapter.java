@@ -47,6 +47,7 @@ public class ReactedUsersAdapter extends RecyclerView.Adapter<ReactedUsersAdapte
   private final boolean isSelectable;
   private final boolean needCounter;
   private final @Nullable ViewController<?> themeProvider;
+  private boolean showReactions = true;
 
   public ReactedUsersAdapter (ViewController<?> context, SimpleUsersAdapter.Callback callback, int options, @Nullable  ViewController<?> themeProvider) {
     this.context = context;
@@ -67,6 +68,10 @@ public class ReactedUsersAdapter extends RecyclerView.Adapter<ReactedUsersAdapte
     U.notifyItemsReplaced(this, oldItemCount);
   }
 
+  public void showReactions (boolean value) {
+    this.showReactions = value;
+  }
+
   public LongSparseArray<TGUser> getSelectedUsers () {
     return selected;
   }
@@ -84,13 +89,18 @@ public class ReactedUsersAdapter extends RecyclerView.Adapter<ReactedUsersAdapte
     } else {
       holder.setUser(userWithReaction.first);
     }
-    context.tdlib().client().send(new TdApi.GetAnimatedEmoji(userWithReaction.second), result -> {
-      if (result.getConstructor() == TdApi.AnimatedEmoji.CONSTRUCTOR) {
-        TdApi.AnimatedEmoji emoji = (TdApi.AnimatedEmoji) result;
-        TGStickerObj tgStickerObj = new TGStickerObj(context.tdlib(), emoji.sticker, userWithReaction.second, new TdApi.StickerTypeStatic());
-        holder.reactionView.setSticker(tgStickerObj);
-      }
-    });
+    if (showReactions) {
+      holder.reactionView.setVisibility(View.VISIBLE);
+      context.tdlib().client().send(new TdApi.GetAnimatedEmoji(userWithReaction.second), result -> {
+        if (result.getConstructor() == TdApi.AnimatedEmoji.CONSTRUCTOR) {
+          TdApi.AnimatedEmoji emoji = (TdApi.AnimatedEmoji) result;
+          TGStickerObj tgStickerObj = new TGStickerObj(context.tdlib(), emoji.sticker, userWithReaction.second, new TdApi.StickerTypeStatic());
+          holder.reactionView.setSticker(tgStickerObj);
+        }
+      });
+    } else {
+      holder.reactionView.setVisibility(View.GONE);
+    }
   }
 
   @Override
@@ -159,7 +169,9 @@ public class ReactedUsersAdapter extends RecyclerView.Adapter<ReactedUsersAdapte
 
           LinearLayout wrapper = new LinearLayout(context);
           wrapper.setOrientation(LinearLayout.HORIZONTAL);
-          wrapper.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(UserView.HEIGHT)));
+          LinearLayout.LayoutParams wrapperParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(UserView.HEIGHT));
+          wrapperParams.setMargins(0, Screen.dp(2f), 0, Screen.dp(2f));
+          wrapper.setLayoutParams(wrapperParams);
           wrapper.setBackgroundColor(Theme.getColor(R.id.theme_color_headerBackground));
 
           int offsetLeft = Screen.dp(18f);
@@ -176,7 +188,6 @@ public class ReactedUsersAdapter extends RecyclerView.Adapter<ReactedUsersAdapte
             Views.setClickable(userView);
           }
           LinearLayout.LayoutParams userParams = new LinearLayout.LayoutParams(Screen.currentWidth() - Screen.dp(UserView.HEIGHT), Screen.dp(UserView.HEIGHT));
-          //userParams.setMargins(0, Screen.dp(2f), 0, Screen.dp(2f));
           userView.setLayoutParams(userParams);
           wrapper.addView(userView);
 

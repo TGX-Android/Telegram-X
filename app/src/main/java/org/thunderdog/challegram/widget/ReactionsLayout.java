@@ -153,6 +153,8 @@ public class ReactionsLayout extends LinearLayout {
 
     setGravity(Gravity.CENTER_VERTICAL);
 
+    ReactionCategoryListController controller = new ReactionCategoryListController(context, tdlib);
+
     ImageView backIcon = new ImageView(context);
     Drawable backIconDrawable = getResources().getDrawable(R.drawable.baseline_arrow_back_24);
     int backIconColor = Theme.getColor(R.id.theme_color_text);
@@ -208,8 +210,9 @@ public class ReactionsLayout extends LinearLayout {
     RippleSupport.setTransparentSelector(reactedWrapper);
     reactedWrapper.setOnClickListener(view -> {
       onReactionClick.accept("");
+      controller.removeSelection();
     });
-    ReactionCategoryListController controller = new ReactionCategoryListController(context, tdlib);
+
     controller.setArguments(this);
     controller.get().setLayoutParams(new LinearLayout.LayoutParams(
         Screen.currentWidth() - BACK_ICON_SIZE - ICON_SIZE - textWidth,

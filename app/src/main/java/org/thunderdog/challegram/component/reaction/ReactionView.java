@@ -2,7 +2,9 @@ package org.thunderdog.challegram.component.reaction;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Rect;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.Interpolator;
@@ -21,6 +23,7 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 
@@ -31,20 +34,26 @@ import me.vkryl.core.lambda.Destroyable;
 
 public class ReactionView extends View implements FactorAnimator.Target, Destroyable {
   public static final float PADDING = 8f;
-  private static final Interpolator OVERSHOOT_INTERPOLATOR = new OvershootInterpolator(3.2f);
+  private static final int LINE_WIDTH = Screen.dp(2f);
+  private static final int LINE_PADDING = Screen.dp(4f);
 
   private final ImageReceiver imageReceiver;
   private final GifReceiver gifReceiver;
-  private final FactorAnimator animator;
-  private @Nullable
-  TGStickerObj sticker;
+  private TGStickerObj sticker;
   private Path contour;
+  private Paint linePaint;
+  private Rect line;
+  private boolean isSelected;
 
   public ReactionView (Context context) {
     super(context);
     this.imageReceiver = new ImageReceiver(this, 0);
     this.gifReceiver = new GifReceiver(this);
-    this.animator = new FactorAnimator(0, this, OVERSHOOT_INTERPOLATOR, 230l);
+
+    linePaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
+    linePaint.setColor(Theme.radioOutlineColor());
+    linePaint.setStyle(Paint.Style.FILL);
+    line = new Rect();
   }
 
   private boolean isAnimation;
@@ -96,7 +105,6 @@ public class ReactionView extends View implements FactorAnimator.Target, Destroy
   private float factor;
 
   private void resetStickerState () {
-    animator.forceFactor(0f, true);
     factor = 0f;
   }
 
@@ -120,6 +128,12 @@ public class ReactionView extends View implements FactorAnimator.Target, Destroy
 
   public void setIsSuggestion () {
     isSuggestion = true;
+  }
+
+  public void setReactionSelected (boolean value) {
+    if (value == isSelected) return;
+    isSelected = value;
+    invalidate();
   }
 
   @Override
@@ -164,8 +178,16 @@ public class ReactionView extends View implements FactorAnimator.Target, Destroy
       }
       imageReceiver.draw(c);
     }
-    if (saved) {
-      c.restore();
+
+    if (isSelected) {
+      line.left = getPaddingLeft() + LINE_PADDING;
+      line.top = getMeasuredHeight() - LINE_WIDTH;
+      line.right = getMeasuredWidth() - getPaddingRight() - LINE_PADDING;
+      line.bottom = getMeasuredHeight();
+      c.drawRect(line, linePaint);
+      if (saved) {
+        c.restore();
+      }
     }
   }
 
