@@ -110,7 +110,7 @@
 
   <application
     android:name="org.thunderdog.challegram.BaseApplication"
-    android:allowBackup="false"
+    android:allowBackup="true"
     android:fullBackupContent="false"
     android:hardwareAccelerated="true"
     android:icon="@mipmap/app_launcher"
