@@ -14,6 +14,7 @@ package org.thunderdog.challegram.util
 
 import me.vkryl.leveldb.LevelDB
 import org.thunderdog.challegram.BuildConfig
+import kotlin.math.max
 
 data class AppBuildInfo(
   val installationId: Long,
@@ -82,6 +83,10 @@ data class AppBuildInfo(
         pullRequests
       )
     }
+
+    @JvmStatic fun maxCommitDate (): Long {
+      return max(BuildConfig.COMMIT_DATE, BuildConfig.PULL_REQUEST_COMMIT_DATE.maxOrNull() ?: 0)
+    }
   }
 }
 
@@ -90,7 +95,8 @@ data class PullRequest (
   val commit: String,
   val commitFull: String,
   val commitUrl: String,
-  val commitDate: Long
+  val commitDate: Long,
+  val commitAuthor: String
 ) {
   fun saveTo (editor: LevelDB, keyPrefix: String) {
     editor
@@ -99,6 +105,7 @@ data class PullRequest (
       .putString("${keyPrefix}_full", commitFull)
       .putString("${keyPrefix}_url", commitUrl)
       .putLong("${keyPrefix}_date", commitDate)
+      .putString("${keyPrefix}_author", commitAuthor)
   }
   
   companion object {
@@ -108,7 +115,8 @@ data class PullRequest (
         pmc.getString("${keyPrefix}_commit", "")!!,
         pmc.getString("${keyPrefix}_full", "")!!,
         pmc.getString("${keyPrefix}_url", "")!!,
-        pmc.getLong("${keyPrefix}_date", 0)
+        pmc.getLong("${keyPrefix}_date", 0),
+        pmc.getString("${keyPrefix}_author", "")!!
       )
     } 
   }
@@ -124,7 +132,8 @@ fun builtinPullRequests (): List<PullRequest> {
         BuildConfig.PULL_REQUEST_COMMIT[index],
         BuildConfig.PULL_REQUEST_COMMIT_FULL[index],
         BuildConfig.PULL_REQUEST_URL[index],
-        BuildConfig.PULL_REQUEST_COMMIT_DATE[index]
+        BuildConfig.PULL_REQUEST_COMMIT_DATE[index],
+        BuildConfig.PULL_REQUEST_AUTHOR[index]
       )
     }
   }

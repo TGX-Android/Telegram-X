@@ -460,19 +460,29 @@ public class SettingsController extends ViewController<Void> implements
         view.setUnreadCounter(hasError ? Tdlib.CHAT_FAILED : 0, false, isUpdate);
         switch (item.getId()) {
           case R.id.btn_sourceCode: {
-            CharSequence buildInfoShort = Lang.getString(R.string.CommitInfo,
-              (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex == 0 ? Lang.newCodeSpan(needFakeBold) : null,
-              BuildConfig.COMMIT,
-              Lang.getUTCTimestamp(BuildConfig.COMMIT_DATE, TimeUnit.SECONDS)
-            );
-            if (BuildConfig.PULL_REQUEST_ID.length > 0) {
-              SpannableStringBuilder b = new SpannableStringBuilder(buildInfoShort).append(" + ");
-              if (BuildConfig.PULL_REQUEST_ID.length > 1) {
-                b.append(Lang.plural(R.string.xPRs, BuildConfig.PULL_REQUEST_ID.length));
-              } else {
-                b.append(Lang.getString(R.string.PR, BuildConfig.PULL_REQUEST_ID[0]));
+            PullRequest specificPullRequest = (PullRequest) item.getData();
+            CharSequence buildInfoShort;
+            if (specificPullRequest != null) {
+              buildInfoShort = Lang.getString(R.string.CommitInfo,
+                (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex == 0 ? Lang.newCodeSpan(needFakeBold) : null,
+                specificPullRequest.getCommit(),
+                Lang.getUTCTimestamp(specificPullRequest.getCommitDate(), TimeUnit.SECONDS)
+              );
+            } else {
+              buildInfoShort = Lang.getString(R.string.CommitInfo,
+                (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex == 0 ? Lang.newCodeSpan(needFakeBold) : null,
+                BuildConfig.COMMIT,
+                Lang.getUTCTimestamp(BuildConfig.COMMIT_DATE, TimeUnit.SECONDS)
+              );
+              if (BuildConfig.PULL_REQUEST_ID.length > 0) {
+                SpannableStringBuilder b = new SpannableStringBuilder(buildInfoShort).append(" + ");
+                if (BuildConfig.PULL_REQUEST_ID.length > 1) {
+                  b.append(Lang.plural(R.string.xPRs, BuildConfig.PULL_REQUEST_ID.length));
+                } else {
+                  b.append(Lang.getString(R.string.PR, BuildConfig.PULL_REQUEST_ID[0]));
+                }
+                buildInfoShort = b;
               }
-              buildInfoShort = b;
             }
             view.setData(buildInfoShort);
             break;
@@ -651,6 +661,17 @@ public class SettingsController extends ViewController<Void> implements
     if (this.previousBuildInfo != null) {
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sourceCodeChanges, R.drawable.baseline_code_24, R.string.ViewSourceCodeChanges));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    }
+    AppBuildInfo currentBuildInfo = Settings.instance().getCurrentBuildInformation();
+    if (!currentBuildInfo.getPullRequests().isEmpty()) {
+      for (PullRequest pullRequest : currentBuildInfo.getPullRequests()) {
+        String title = Lang.getString(R.string.PullRequestCommit, pullRequest.getId());
+        if (!pullRequest.getCommitAuthor().isEmpty()) {
+          title = Lang.getString(R.string.format_PRMadeBy, title, pullRequest.getCommitAuthor());
+        }
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sourceCode, R.drawable.templarian_baseline_source_merge_24, title, false).setData(pullRequest));
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+      }
     }
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_copyDebug, R.drawable.baseline_bug_report_24, R.string.CopyReportData));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
@@ -962,7 +983,10 @@ public class SettingsController extends ViewController<Void> implements
       }
       case R.id.btn_sourceCode: {
         AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
-        if (!appBuildInfo.getPullRequests().isEmpty()) {
+        PullRequest specificPullRequest = (PullRequest) ((ListItem) v.getTag()).getData();
+        if (specificPullRequest != null) {
+          tdlib.ui().openUrl(this, specificPullRequest.getCommitUrl(), new TdlibUi.UrlOpenParameters().disableInstantView());
+        } else if (!appBuildInfo.getPullRequests().isEmpty()) {
           Options.Builder b = new Options.Builder()
             .info(Lang.plural(R.string.PullRequestsInfo, appBuildInfo.getPullRequests().size()))
             .item(new OptionItem(R.id.btn_sourceCode, Lang.getString(R.string.format_commit, Lang.getString(R.string.ViewSourceCode), appBuildInfo.getCommit()), OPTION_COLOR_NORMAL, R.drawable.baseline_github_24));
