@@ -51,6 +51,7 @@ import org.thunderdog.challegram.component.base.TogglerView;
 import org.thunderdog.challegram.component.chat.DetachedChatHeaderView;
 import org.thunderdog.challegram.component.chat.MessagePreviewView;
 import org.thunderdog.challegram.component.inline.CustomResultView;
+import org.thunderdog.challegram.component.reactions.ManageReactionsView;
 import org.thunderdog.challegram.component.sharedmedia.MediaSmallView;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.config.Config;
@@ -2359,6 +2360,12 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         chartLayout.setPadding(chartLayout.getPaddingLeft(), Screen.dp(16f), chartLayout.getPaddingRight(), chartLayout.getPaddingBottom());
         chartLayout.initWithType(tdlib, type, adapter, themeProvider);
         return new SettingHolder(chartLayout);
+      }
+      case ListItem.TYPE_REACTIONS_GRID: {
+        ManageReactionsView manageReactionsView = new ManageReactionsView(context, tdlib);
+        ViewSupport.setThemedBackground(manageReactionsView, R.id.theme_color_filling, themeProvider);
+        manageReactionsView.setNestedScrollingEnabled(false);
+        return new SettingHolder(manageReactionsView);
       }
     }
     throw new AssertionError(viewType);

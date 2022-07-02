@@ -58,6 +58,10 @@ import org.thunderdog.challegram.component.chat.MessageViewGroup;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.chat.MessagesTouchHelperCallback;
 import org.thunderdog.challegram.component.chat.ReplyComponent;
+import org.thunderdog.challegram.component.reactions.MessageReactionsContainer;
+import org.thunderdog.challegram.component.reactions.Reaction;
+import org.thunderdog.challegram.component.reactions.ReactionsManager;
+import org.thunderdog.challegram.component.reactions.TGReaction;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
@@ -131,6 +135,9 @@ import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
+
+import static org.thunderdog.challegram.component.reactions.Reaction.DisplayMode.BIG;
+import static org.thunderdog.challegram.component.reactions.Reaction.DisplayMode.MINI;
 
 public abstract class TGMessage implements MultipleViewProvider.InvalidateContentProvider, TdlibDelegate, FactorAnimator.Target, Comparable<TGMessage>, Counter.Callback {
   private static final int MAXIMUM_CHANNEL_MERGE_TIME_DIFF = 150;
@@ -217,6 +224,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private int pTimeLeft, pTimeWidth;
   private int pClockLeft, pClockTop;
   private int pTicksLeft, pTicksTop;
+  private int pReactionsLeft, pReactionTop;
   private int pDateWidth;
 
   private final Path bubblePath, bubbleClipPath;
@@ -229,6 +237,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   protected final Tdlib tdlib;
   protected final MultipleViewProvider currentViews;
   protected final MultipleViewProvider overlayViews;
+  private MessageReactionsContainer reactionsContainer;
+  private ReactionsManager reactionsManager;
 
   protected TGMessage (MessagesManager manager, TdApi.Message msg) {
     if (!initialized) {
@@ -242,7 +252,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
     this.manager = manager;
     this.tdlib = manager.controller().tdlib();
-
+    this.reactionsManager = manager.reactionsManager;
     this.bubblePath = new Path();
     this.bubblePathRect = new RectF();
     this.bubbleClipPath = new Path();
@@ -277,6 +287,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       }
     }
     this.sender = new TdlibSender(tdlib, msg.chatId, sender, manager, !msg.isOutgoing && isDemoChat());
+
+    setChatData(tdlib.chat(this.msg.chatId));
+    this.reactionsContainer = new MessageReactionsContainer(tdlib, reactionsManager, this.msg.chatId, this.msg.id);
+    if (getReactionsDisplayMode() == MINI) {
+      this.reactionsContainer.setHorizontalSpace(2);
+    }
 
     this.isPinned = new Counter.Builder()
       .noBackground()
@@ -665,6 +681,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       if (hasFooter()) {
         width = Math.max(width, getFooterWidth());
       }
+      if (hasReactions()) {
+         int count = reactionsContainer.getReactionsCount();
+        width = Math.max(width, getReactionsWidth() + ( count == 1 ? getBubbleTimePartWidth() : 0));
+      }
     }
 
     if (useForward()) {
@@ -815,6 +835,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (hasFooter()) {
       height += getFooterHeight() + getFooterPaddingTop() + getFooterPaddingBottom();
     }
+    if (shouldDrawReactionInBubble() && hasReactions() && getReactionsDisplayMode() != MINI) {
+      height += getReactionsHeight();
+    }
     height += getBubbleReduceHeight();
 
     return height;
@@ -822,6 +845,26 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   private static int getBubbleForwardOffset () {
     return getBubbleNameHeight();
+  }
+
+  protected int getBigReactionsTopOffset() {
+    int offset = Screen.dp(8);
+    if (!shouldDrawReactionInBubble() && inlineKeyboard != null) {
+      offset += inlineKeyboard.getHeight();
+    }
+    return offset;
+  }
+
+  protected boolean shouldDrawReactionInBubble() {
+    return true;
+  }
+
+  private int getReactionsHeight() {
+      return reactionsContainer.getCurrentHeight() + getBigReactionsTopOffset() + getReactionBottomOffset();
+  }
+
+  protected int getReactionBottomOffset() {
+    return getBubbleTimePartHeight();
   }
 
   private int getBubbleReplyOffset () {
@@ -904,6 +947,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     buildFooter();
+    reactionsContainer.setMaxWidth(getBigReactionsContainerMaxWidth());
+    reactionsContainer.measure();
     buildBubble(true);
 
     if (useBubbles()) {
@@ -931,6 +976,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   protected int getContentMaxWidth () {
     return pContentMaxWidth;
+  }
+
+  protected int getBigReactionsContainerMaxWidth() {
+    return getContentMaxWidth();
+  }
+
+  protected int getReactionsStartX() {
+    return pContentX;
   }
 
   public final @ColorInt int getContentReplaceColor () {
@@ -1044,6 +1097,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       if (inlineKeyboard != null && !inlineKeyboard.isEmpty()) {
         height += inlineKeyboard.getHeight() + TGInlineKeyboard.getButtonSpacing();
       }
+      if (!shouldDrawReactionInBubble() && hasReactions() && getReactionsDisplayMode() != MINI) {
+        height += getReactionsHeight();
+      }
       return height;
     } else {
       int height = pContentY + getContentHeight() + getPaddingBottom() + getExtraPadding();
@@ -1052,6 +1108,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       }
       if (hasFooter()) {
         height += getFooterHeight() + getFooterPaddingTop() + getFooterPaddingBottom();
+      }
+      if (hasReactions() && getReactionsDisplayMode() != MINI) {
+        height += getReactionsHeight();
       }
       return height;
     }
@@ -1661,6 +1720,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       drawContent(view, c, pContentX, pContentY, pContentMaxWidth);
     }
 
+    if (hasReactions() && getReactionsDisplayMode() == BIG) {
+      int top = pContentY + getContentHeight();
+      drawReactions(c, getReactionsStartX(), top + getBigReactionsTopOffset());
+    }
+
     if (hasBubble && needBubbleCornerFix()) {
       int padding = getBubbleContentPadding();
       drawCornerFixes(c, this, 1f,
@@ -1767,6 +1831,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           viewCounter.draw(c, right, top, Gravity.RIGHT, 1f, view, getTimePartIconColorId());
           right -= viewCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
         }
+      }
+
+      if (hasReactions() && getReactionsDisplayMode() == MINI) {
+        drawReactions(c, right - getReactionsWidth(), pReactionTop);
       }
     }
 
@@ -2085,6 +2153,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   public final void onAttachedToView (@Nullable MessageView view) {
     setViewAttached(view != null || hasAttachedToAnything());
     if (currentViews.attachToView(view) && view != null) {
+      reactionsContainer.attachToView(view);
       onMessageAttachedToView(view, true);
     }
   }
@@ -2092,6 +2161,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   public final void onDetachedFromView (@Nullable MessageView view) {
     if (currentViews.detachFromView(view) && view != null) {
       onMessageAttachedToView(view, false);
+      reactionsContainer.detachFromView();
     }
     setViewAttached(hasAttachedToAnything());
   }
@@ -2267,6 +2337,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (inlineKeyboard != null) {
       result = inlineKeyboard.performLongPress(view);
     }
+    if (hasReactions()) {
+      result = reactionsContainer.performLongPress(view, x, y);
+    }
     if (hasFooter()) {
       result = footerText.performLongPress(view) || result;
     }
@@ -2348,6 +2421,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       if (hPsaTextT != null && hPsaTextT.onTouchEvent(view, e))
         return true;
     }
+    if (hasReactions()) {
+      if (this.reactionsContainer.onTouchEvent(view, e)){
+        return true;
+      }
+    }
     if (useForward()) {
       if (fPsaTextT != null && fPsaTextT.onTouchEvent(view, e))
         return true;
@@ -2411,11 +2489,13 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
     pClockTop = getHeaderPadding() + Screen.dp(3.5f);
     pTicksTop = getHeaderPadding() + Screen.dp(3f);
+    pReactionTop = getHeaderPadding() + Screen.dp(1);
 
     if ((flags & FLAG_HEADER_ENABLED) != 0) {
       pClockLeft = pTimeLeft - Screen.dp(6f);
       pTicksLeft = pTimeLeft - Screen.dp(3f);
     } else {
+      pReactionTop += Screen.dp(8);
       pClockLeft = currentWidth - Screen.dp(17f);
       pTicksLeft = currentWidth - Screen.dp(15f);
 
@@ -2424,6 +2504,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         pTicksTop += ReplyComponent.height();
       }
     }
+    pReactionsLeft = pTicksLeft - getReactionsWidth();
   }
 
   public TdApi.Message findReplyMarkupMessage () {
@@ -2901,6 +2982,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
       int leftContentEdge = centerBubble() ? width / 2 - bubbleWidth / 2 : computeBubbleLeft();
       int rightContentEdge = leftContentEdge + bubbleWidth;
+//      bubbleHeight += getReactionsBubbleTimeOffset();
 
       int topContentEdge = computeBubbleTop();
       int bottomContentEdge = topContentEdge + bubbleHeight;
@@ -3074,14 +3156,18 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     final boolean isFailed = isFailed();
 
     boolean reverseOrder;
-
+    int reactionWidth = 0;
+    if (hasReactions()) {
+      reactionWidth = getReactionsWidth();
+    }
     if ((reverseOrder = Config.MOVE_BUBBLE_TIME_RTL_TO_LEFT && moveBubbleTimePartToLeft())) {
       startX = getActualLeftContentEdge() + Screen.dp(10f);
     } else {
       startX = getAbsolutelyRealRightContentEdge(view, innerWidth + Screen.dp(11f));
     }
-    int startY = bottomContentEdge - getBubbleTimePartHeight() - getBubbleTimePartOffsetY() - getBubbleReduceHeight();
 
+    int startY = bottomContentEdge - getBubbleTimePartHeight() - getBubbleTimePartOffsetY() - getBubbleReduceHeight();
+    int reactionY = startY + (!isWhite ? Screen.dp(3f) : -Screen.dp(2f));
     if (backgroundColor != 0) {
       startY -= Screen.dp(4f);
       RectF rectF = Paints.getRectF();
@@ -3089,6 +3175,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       rectF.set(startX - padding, startY, startX + innerWidth + padding, startY + Screen.dp(21f));
       c.drawRoundRect(rectF, Screen.dp(12f), Screen.dp(12f), Paints.fillingPaint(backgroundColor));
       startY -= Screen.dp(1f);
+    }
+
+    //Reactions
+    if (getReactionsDisplayMode() == MINI && hasReactions()) {
+      drawReactions(c, startX, reactionY);
+      startX += reactionWidth;
     }
 
     int counterY = startY + Screen.dp(11.5f);
@@ -3188,6 +3280,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
     if (includePadding) {
       width += Screen.dp(8f);
+    }
+
+    if (getReactionsDisplayMode() == MINI && hasReactions()){
+      width += getReactionsWidth();
     }
     return width;
   }
@@ -3394,6 +3490,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   public TdApi.Message getMessage () {
     return msg;
+  }
+
+  public TGReaction[] getReactions() {
+    return reactionsContainer.getReactions();
   }
 
   public TdApi.Message getMessage (long messageId) {
@@ -3672,6 +3772,21 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       }
     }
     return msg.containsUnreadMention;
+  }
+
+
+  public final boolean containsUnreadReaction () {
+    synchronized (this) {
+      if (combinedMessages != null) {
+        for (int i = combinedMessages.size() - 1; i >= 0; i--) {
+          TdApi.UnreadReaction[] unreadReactions = combinedMessages.get(i).unreadReactions;
+          if (unreadReactions != null && unreadReactions.length > 0) {
+            return true;
+          }
+        }
+      }
+    }
+    return msg.unreadReactions != null && msg.unreadReactions.length > 0;
   }
 
   public final void readMention (long messageId) {
@@ -4078,6 +4193,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       flags |= FLAG_VIEWED;
       if (msg.containsUnreadMention)
         highlight(true);
+      if (containsUnreadReaction()) {
+        highlight(true);
+      }
       return true;
     }
     return false;
@@ -4576,6 +4694,13 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     hasCommentButton.setValue(commentMode == COMMENT_MODE_BUTTON, animated);
     shareCounter.setCount(interactionInfo != null ? interactionInfo.forwardCount : 0, animated);
     isPinned.showHide(isPinned(), animated);
+    TdApi.MessageReaction[] reactions = interactionInfo != null ? interactionInfo.reactions : null;
+    Reaction.DisplayMode displayMode = getReactionsDisplayMode();
+    if (reactions != null && displayMode != null) {
+      this.reactionsContainer.setReactions(reactions, displayMode, animated);
+    } else {
+      this.reactionsContainer.removeReactions();
+    }
   }
 
   private static void copyFlags (TdApi.Message src, TdApi.Message dst) {
@@ -4895,6 +5020,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       forwardInfo.destroy();
     if (replyData != null)
       replyData.performDestroy();
+    reactionsContainer.performDestroy();
     setViewAttached(false);
     onMessageContainerDestroyed();
   }
@@ -7261,4 +7387,42 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   /*public static boolean useBubbles () {
     return ThemeManager.getChatStyle() == ThemeManager.CHAT_STYLE_BUBBLES;
   }*/
+
+
+  protected boolean hasReactions() {
+    TdApi.MessageInteractionInfo info = this.msg.interactionInfo;
+    return info != null && info.reactions.length > 0;
+  }
+
+  protected int getReactionsTop() {
+    boolean isTransparent = !useBubble() || useCircleBubble();
+    boolean isWhite = isTransparent || (drawBubbleTimeOverContent() && !useForward());
+    int offset = !isWhite ? Screen.dp(3f) : -Screen.dp(2f);
+    return bottomContentEdge - getBubbleTimePartHeight() - getBubbleTimePartOffsetY() - getBubbleReduceHeight() + offset;
+  }
+
+  private void drawReactions(Canvas canvas, int left, int top) {
+    reactionsContainer.draw(canvas, left, top);
+  }
+
+  private int getReactionsWidth() {
+    return reactionsContainer.getCurrentWidth();
+  }
+
+  private int getReactionsLastRowWidth() {
+    return reactionsContainer.getCurrentWidth();
+  }
+
+  protected Reaction.DisplayMode getReactionsDisplayMode() {
+    switch (getChat() != null ? getChat().type.getConstructor() : 0) {
+      case TdApi.ChatTypeBasicGroup.CONSTRUCTOR:
+      case TdApi.ChatTypeSupergroup.CONSTRUCTOR:
+        return BIG;
+      case TdApi.ChatTypePrivate.CONSTRUCTOR:
+      case TdApi.ChatTypeSecret.CONSTRUCTOR:
+        return MINI;
+      default:
+        return null;
+    }
+  }
 }

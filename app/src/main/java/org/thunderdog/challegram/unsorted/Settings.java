@@ -309,6 +309,9 @@ public class Settings {
   private static final String KEY_WALLPAPER_PATH = "_path";
   private static final String KEY_WALLPAPER_ID = "_id";
 
+  // type:string description: Quick Reaction string representation
+  private static final String KEY_QUICK_REACTION_STRING= "quick_reaction";
+
   private static String key (String key, int accountId) {
     return accountId != 0 ? accountId + "_" + key : key;
   }
@@ -346,6 +349,7 @@ public class Settings {
   private static final int FLAG_OTHER_START_ROUND_REAR = 1 << 28;
   private static final int FLAG_OTHER_DISABLE_BIG_EMOJI = 1 << 29;
   private static final int FLAG_OTHER_DISABLE_SECRET_LINK_PREVIEWS = 1 << 30;
+  private static final int FLAG_QUICK_REACTION = 1 << 31;
 
   public static final long SETTING_FLAG_BATMAN_POLL_TRANSITIONS = 1 << 1;
   public static final long SETTING_FLAG_EDIT_MARKDOWN = 1 << 2;
@@ -6240,4 +6244,23 @@ public class Settings {
       return null;
     }
   }
+
+  public void setQuickReaction(String reaction) {
+    pmc.edit()
+      .putString(KEY_QUICK_REACTION_STRING, reaction)
+      .apply();
+  }
+
+  public String getQuickReaction() {
+    return pmc.getString(KEY_QUICK_REACTION_STRING, null);
+  }
+
+  public void setQuickReactionEnabled (boolean isEnabled) {
+    setSetting(FLAG_QUICK_REACTION, isEnabled);
+  }
+
+  public boolean isQuickReactionEnabled () {
+    return checkSetting(FLAG_QUICK_REACTION);
+  }
+
 }

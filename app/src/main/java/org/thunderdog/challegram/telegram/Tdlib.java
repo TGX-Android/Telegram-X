@@ -6276,7 +6276,20 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       availabilityChanged = (chat.unreadReactionCount > 0) != (update.unreadReactionCount > 0);
       chat.unreadReactionCount = update.unreadReactionCount;
     }
-    listeners.updateChatUnreadReactionCount(update, availabilityChanged);
+    listeners.updateChatUnreadReactionCount(update.chatId, update.unreadReactionCount, availabilityChanged);
+  }
+
+  public void readChatUnreadReaction (long chatId) {
+    final boolean availabilityChanged;
+    synchronized (dataLock) {
+      final TdApi.Chat chat = chats.get(chatId);
+      if (TdlibUtils.assertChat(chatId, chat)) {
+        return;
+      }
+      availabilityChanged = (chat.unreadReactionCount > 0);
+      chat.unreadReactionCount = (chat.unreadReactionCount > 0) ? chat.unreadReactionCount - 1 : 0;
+      listeners.updateChatUnreadReactionCount(chatId, chat.unreadReactionCount, availabilityChanged);
+    }
   }
 
   @TdlibThread
@@ -7437,6 +7450,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private void updateReactions (TdApi.UpdateReactions update) {
     synchronized (dataLock) {
       this.supportedReactions = update.reactions;
+      listeners.updateSupportedReactions(update);
     }
   }
 
@@ -8790,5 +8804,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
       return suggestedAction;
     }
+  }
+
+  public TdApi.Reaction[] getSupportedReactions() {
+    return this.supportedReactions;
   }
 }

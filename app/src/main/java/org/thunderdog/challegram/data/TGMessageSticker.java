@@ -686,4 +686,14 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
 
     return isCaught;
   }
+
+  @Override
+  protected boolean shouldDrawReactionInBubble() {
+    return false;
+  }
+
+  @Override
+  protected int getReactionBottomOffset() {
+    return 0;
+  }
 }

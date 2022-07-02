@@ -48,6 +48,7 @@ import org.thunderdog.challegram.component.base.TogglerView;
 import org.thunderdog.challegram.component.chat.DetachedChatHeaderView;
 import org.thunderdog.challegram.component.chat.MessagePreviewView;
 import org.thunderdog.challegram.component.inline.CustomResultView;
+import org.thunderdog.challegram.component.reactions.ManageReactionsView;
 import org.thunderdog.challegram.component.sharedmedia.MediaSmallView;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
@@ -1757,6 +1758,11 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_CHAT_VERTICAL:
       case ListItem.TYPE_CHAT_VERTICAL_FULLWIDTH: {
         setChatData(item, (VerticalChatView) holder.itemView);
+        break;
+      }
+      case ListItem.TYPE_REACTIONS_GRID: {
+        ManageReactionsView.ManageInfo manageInfo = (ManageReactionsView.ManageInfo) item.getData();
+        ((ManageReactionsView) holder.itemView).setManageInfo(manageInfo);
         break;
       }
       default: {

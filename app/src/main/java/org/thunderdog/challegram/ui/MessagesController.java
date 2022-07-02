@@ -122,6 +122,9 @@ import org.thunderdog.challegram.component.chat.WallpaperRecyclerView;
 import org.thunderdog.challegram.component.chat.WallpaperView;
 import org.thunderdog.challegram.component.popups.MessageSeenController;
 import org.thunderdog.challegram.component.popups.ModernActionedLayout;
+import org.thunderdog.challegram.component.reactions.BottomSheetLayout;
+import org.thunderdog.challegram.component.reactions.MessageOptionsLayout;
+import org.thunderdog.challegram.component.reactions.ReactionsManager;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
@@ -225,6 +228,7 @@ import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.RippleRevealView;
+import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 import org.thunderdog.challegram.widget.SendButton;
 import org.thunderdog.challegram.widget.SeparatorView;
@@ -325,15 +329,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private WallpaperView wallpaperViewBlurPreview;
   private WallpaperParametersView backgroundParamsView;
 
-  private FrameLayoutFix scrollToBottomButtonWrap, mentionButtonWrap;
-  private CircleButton scrollToBottomButton, mentionButton;
-  private CounterBadgeView unreadCountView, mentionCountView;
+  private FrameLayoutFix scrollToBottomButtonWrap, mentionButtonWrap, reactionButtonWrap;
+  private CircleButton scrollToBottomButton, mentionButton, reactionButton;
+  private CounterBadgeView unreadCountView, mentionCountView, reactionCountView;
+  private final ReactionsManager reactionsManager;
 
   public boolean sponsoredMessageLoaded = false;
 
   public MessagesController (Context context, Tdlib tdlib) {
     super(context, tdlib);
-    this.manager = new MessagesManager(this);
+    this.reactionsManager = ReactionsManager.instance(tdlib);
+    this.manager = new MessagesManager(this, reactionsManager);
   }
 
   @Override
@@ -794,6 +800,47 @@ public class MessagesController extends ViewController<MessagesController.Argume
       toastAlertItem
     }, this);
 
+    // Reaction button
+
+    params = new RelativeLayout.LayoutParams(Screen.dp(118f), Screen.dp(74f));
+    params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+    params.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
+
+    reactionButtonWrap = new FrameLayoutFix(context);
+    reactionButtonWrap.setLayoutParams(params);
+    setReactionButtonFactor(0f);
+
+    final int padding = Screen.dp(4);
+    FrameLayoutFix.LayoutParams fparams = FrameLayoutFix.newParams(Screen.dp(24f) * 2 + padding * 2, Screen.dp(24f) * 2 + padding * 2, Gravity.RIGHT | Gravity.BOTTOM);
+    params.rightMargin = params.bottomMargin = Screen.dp(16f) - padding;
+
+    reactionButton = new CircleButton(context);
+    reactionButton.setId(R.id.btn_unread_reactions);
+    reactionButton.setOnClickListener(this);
+    reactionButton.setOnLongClickListener(v -> {
+      long chatId = getChatId();
+      if (chatId != 0 && !isDestroyed()) {
+        tdlib.client().send(new TdApi.ReadAllChatReactions(chatId), tdlib.okHandler());
+        return true;
+      }
+      return false;
+    });
+    addThemeInvalidateListener(reactionButton);
+    reactionButton.init(R.drawable.baseline_heart_24, 48f, 4f, R.id.theme_color_circleButtonChat, R.id.theme_color_circleButtonChatIcon);
+    reactionButton.setLayoutParams(fparams);
+    reactionButtonWrap.addView(reactionButton);
+
+    int buttonPadding = Screen.dp(24f);
+    fparams = FrameLayoutFix.newParams(buttonPadding + fparams.width, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.RIGHT | Gravity.BOTTOM);
+    fparams.bottomMargin = Screen.dp(24f) * 2 - Screen.dp(28f) / 2;
+
+    reactionCountView = new CounterBadgeView(context);
+    reactionCountView.setLayoutParams(fparams);
+    reactionCountView.setPadding(buttonPadding, 0, 0, 0);
+    addThemeInvalidateListener(reactionCountView);
+    reactionButtonWrap.addView(reactionCountView);
+    reactionButton.setTag(reactionCountView);
+
     // Mention button
 
     params = new RelativeLayout.LayoutParams(Screen.dp(118f), Screen.dp(74f));
@@ -804,8 +851,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     mentionButtonWrap.setLayoutParams(params);
     setMentionButtonFactor(0f);
 
-    final int padding = Screen.dp(4);
-    FrameLayoutFix.LayoutParams fparams = FrameLayoutFix.newParams(Screen.dp(24f) * 2 + padding * 2, Screen.dp(24f) * 2 + padding * 2, Gravity.RIGHT | Gravity.BOTTOM);
+    fparams = FrameLayoutFix.newParams(Screen.dp(24f) * 2 + padding * 2, Screen.dp(24f) * 2 + padding * 2, Gravity.RIGHT | Gravity.BOTTOM);
     params.rightMargin = params.bottomMargin = Screen.dp(16f) - padding;
 
     mentionButton = new CircleButton(context);
@@ -824,7 +870,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     mentionButton.setLayoutParams(fparams);
     mentionButtonWrap.addView(mentionButton);
 
-    int buttonPadding = Screen.dp(24f);
     fparams = FrameLayoutFix.newParams(buttonPadding + fparams.width, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.RIGHT | Gravity.BOTTOM);
     fparams.bottomMargin = Screen.dp(24f) * 2 - Screen.dp(28f) / 2;
 
@@ -1218,6 +1263,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     contentView.addView(bottomBar);
     contentView.addView(scrollToBottomButtonWrap);
     contentView.addView(mentionButtonWrap);
+    contentView.addView(reactionButtonWrap);
 
     if (previewMode == PREVIEW_MODE_NONE) {
       contentView.addView(emojiButton);
@@ -1809,6 +1855,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_mention: {
         manager.scrollToNextMention();
+        break;
+      }
+      case R.id.btn_unread_reactions: {
+        manager.scrollToNextReaction();
         break;
       }
       case R.id.msg_command: {
@@ -2692,6 +2742,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       } else {
         setUnreadCountBadge(chat.unreadCount, true);
         setMentionCountBadge(chat.unreadMentionCount);
+        setReactionCountBadge(chat.unreadReactionCount);
       }
       if (bottomButtonAction == BOTTOM_ACTION_TOGGLE_MUTE) {
         showBottomButton(bottomButtonAction, 0, animated);
@@ -2936,16 +2987,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void setInputVisible (boolean visible, boolean notEmpty) {
     RelativeLayout.LayoutParams params1 = (RelativeLayout.LayoutParams) scrollToBottomButtonWrap.getLayoutParams();
     RelativeLayout.LayoutParams params2 = (RelativeLayout.LayoutParams) mentionButtonWrap.getLayoutParams();
+    RelativeLayout.LayoutParams params3 = (RelativeLayout.LayoutParams) reactionButtonWrap.getLayoutParams();
     if (visible) {
       params1.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
       params1.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 0);
       params2.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
       params2.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 0);
+      params3.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
+      params3.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 0);
     } else {
       params1.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
       params1.addRule(RelativeLayout.ABOVE, 0);
       params2.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
       params2.addRule(RelativeLayout.ABOVE, 0);
+      params3.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+      params3.addRule(RelativeLayout.ABOVE, 0);
     }
     if (visible) {
       bottomWrap.setVisibility(View.VISIBLE);
@@ -4090,6 +4146,35 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private TdApi.ChatMember selectedMessageSender;
   private Object selectedMessageTag;
 
+  public void setMessageSelected(TGMessage msg, Object selectedMessageTag, TdApi.ChatMember selectedMessageSender) {
+    this.selectedMessage = msg;
+    this.selectedMessageTag = selectedMessageTag;
+    this.selectedMessageSender = selectedMessageSender;
+  }
+
+  public void showMessageOptions(TGMessage msg, OptionItem[] optionItems, boolean disableViewCounter) {
+    final BottomSheetLayout popupLayout = new BottomSheetLayout(context);
+
+    popupLayout.setTag(this);
+
+    MessageOptionsLayout optionsLayout = new MessageOptionsLayout(popupLayout, this, null, reactionsManager);
+    optionsLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
+
+    if (Screen.needsKeyboardPadding(context)) {
+      optionsLayout.setPadding(0, 0, 0,  Screen.getNavigationBarFrameHeight());
+    }
+
+    optionsLayout.setMessageOptions(msg, new Options(getMessageOptionInfo(msg), optionItems));
+
+    ShadowView shadowView = new ShadowView(context);
+    shadowView.setSimpleTopShadow(true);
+    optionsLayout.addView(shadowView, 0);
+    addThemeInvalidateListener(shadowView);
+    popupLayout.setBottomSheet(optionsLayout);
+
+    popupLayout.show();
+  }
+
   @Deprecated
   public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, Object selectedMessageTag, TdApi.ChatMember selectedMessageSender, boolean disableViewCounter) {
     // TODO rework into proper style
@@ -4152,6 +4237,64 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     String text = b.toString().trim();
     patchReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, disableViewCounter);
+  }
+
+  private String getMessageOptionInfo(TGMessage msg) {
+    StringBuilder b = new StringBuilder();
+    if (chat != null) {
+      final boolean isChannel = tdlib.isChannel(chat.id);
+      if (msg.getMessage().content != null) {
+        switch (msg.getMessage().content.getConstructor()) {
+          case TdApi.MessageSticker.CONSTRUCTOR: {
+            String from = tdlib.messageAuthor(msg.getMessage(), true, true);
+            if (!StringUtils.isEmpty(from)) {
+              b.append(from);
+              b.append(": ");
+            }
+            b.append(TD.buildShortPreview(tdlib, msg.getMessage(), true));
+            break;
+          }
+          case TdApi.MessageDice.CONSTRUCTOR: {
+            String emoji = ((TdApi.MessageDice) msg.getMessage().content).emoji;
+            b.append(Lang.getString(TD.EMOJI_DART.textRepresentation.equals(emoji) ? R.string.SendDartHint : TD.EMOJI_DICE.textRepresentation.equals(emoji) ? R.string.SendDiceHint : R.string.SendUnknownDiceHint, emoji));
+            break;
+          }
+        }
+      }
+      if (isChannel && msg.getViewCount() > 0 && !msg.isScheduled()) {
+        if (b.length() > 0) {
+          b.append(", ");
+        }
+        b.append(Lang.plural(R.string.xViews, msg.getViewCount()));
+      }
+    }
+    if (msg.isFailed()) {
+      String[] errors = msg.getFailureMessages();
+      if (errors != null) {
+        if (b.length() > 0) {
+          b.append("\n");
+        }
+        b.append(Lang.getString(R.string.SendFailureInfo, Strings.join(", ", (Object[]) errors)));
+      }
+    }
+    if (!msg.canBeSaved()) {
+      if (b.length() > 0) {
+        b.append("\n\n");
+      }
+      TdApi.MessageSender senderId = msg.getMessage().senderId;
+      int resId;
+      if (tdlib.cache().senderBot(senderId)) {
+        resId = R.string.RestrictSavingBotInfo;
+      } else if (tdlib.isChannel(senderId)) {
+        resId = R.string.RestrictSavingChannelInfo;
+      } else if (tdlib.isUser(senderId)) {
+        resId = R.string.RestrictSavingUserInfo;
+      } else {
+        resId = R.string.RestrictSavingGroupInfo;
+      }
+      b.append(Lang.getString(resId));
+    }
+    return b.toString().trim();
   }
 
   private void patchReadReceiptsOptions (PopupLayout layout, TGMessage message, boolean disableViewCounter) {
@@ -5663,6 +5806,53 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  //reaction
+  private static final int ANIMATOR_REACTION_BUTTON = 14;
+  private FactorAnimator reationButtonAnimator;
+  private boolean reactionButtonVisible;
+  private float reactionButtonFactor = 1f;
+  private int reactionCountBadge;
+
+  private void setReactionButtonVisible (boolean visible, boolean animated) {
+    if (this.reactionButtonVisible != visible) {
+      this.reactionButtonVisible = visible;
+      final float toFactor = visible ? 1f : 0f;
+      if (animated) {
+        if (reationButtonAnimator == null) {
+          reationButtonAnimator = new FactorAnimator(ANIMATOR_REACTION_BUTTON, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l, this.reactionButtonFactor);
+        }
+        reationButtonAnimator.animateTo(toFactor);
+      } else {
+        if (reationButtonAnimator != null) {
+          reationButtonAnimator.forceFactor(toFactor);
+        }
+        setReactionButtonFactor(toFactor);
+      }
+    }
+  }
+
+  private void setReactionCountBadge (int reactionCount) {
+    if (reactionCount > 0 && (inPreviewMode || isInForceTouchMode() || areScheduledOnly())) {
+      return;
+    }
+    if (reactionCountBadge != reactionCount) {
+      reactionCountBadge = reactionCount;
+      boolean visible = reactionCount > 0;
+      boolean animate = isFocused();
+      reactionCountView.setCounter(reactionCount, true, animate && reactionButtonFactor > 0f);
+      setReactionButtonVisible(visible, animate);
+    }
+  }
+
+  private void setReactionButtonFactor (float factor) {
+    if (this.reactionButtonFactor != factor) {
+      this.reactionButtonFactor = factor;
+      float range = MathUtils.clamp(factor);
+      reactionButtonWrap.setAlpha(range);
+      updateBottomBarStyle();
+    }
+  }
+
   // Etc
 
   public void startSwipe (View view) {
@@ -5975,6 +6165,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return y;
   }
 
+  private float getReactionButtonY () {
+    int moveY = Screen.dp(74f) - Screen.dp(16f);
+    float y = -getButtonsOffset() - moveY * (mentionButtonFactor + scrollToBottomVisible.getFloatValue());
+    if (isInForceTouchMode()) {
+      y += -Screen.dp(16f) + Screen.dp(4f);
+    }
+    return y;
+  }
+
   public void setReplyFactor (float factor) {
     if (this.replyFactor != factor) {
       this.replyFactor = factor;
@@ -5992,6 +6191,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     if (mentionButtonWrap != null) {
       mentionButtonWrap.setTranslationY(getMentionButtonY());
+    }
+    if (reactionButtonWrap != null) {
+      reactionButtonWrap.setTranslationY(getReactionButtonY());
     }
     updateBottomBarStyle();
   }
@@ -7284,6 +7486,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case ANIMATOR_MENTION_BUTTON: {
         setMentionButtonFactor(factor);
+        break;
+      }
+      case ANIMATOR_REACTION_BUTTON: {
+        setReactionButtonFactor(factor);
         break;
       }
       /*case ANIMATOR_BOTTOM_HINT: {
@@ -9397,6 +9603,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onChatUnreadMentionCount(final long chatId, final int unreadMentionCount, boolean availabilityChanged) {
     tdlib.ui().post(() -> {
       if (getChatId() == chatId) {
+        updateCounters(true);
+      }
+    });
+  }
+
+  @Override
+  public void onChatUnreadReactionCount(long chatId, int unreadReactionCount, boolean availabilityChanged) {
+    tdlib.ui().post(() -> {
+      TdApi.Chat chat = getChat();
+      if (chat != null && chat.id == chatId) {
+        chat.unreadReactionCount = unreadReactionCount;
         updateCounters(true);
       }
     });

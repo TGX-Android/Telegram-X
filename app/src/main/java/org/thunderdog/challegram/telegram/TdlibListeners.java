@@ -55,6 +55,7 @@ public class TdlibListeners {
   final ReferenceList<CallsListener> callsListeners;
   final ReferenceList<SessionListener> sessionListeners;
   final ReferenceList<DownloadsListUpdateListener> downloadsListListener;
+  final ReferenceList<ReactionsListener> reactionsListeners;
 
   final ReferenceList<AnimatedEmojiListener> animatedEmojiListeners;
 
@@ -88,6 +89,7 @@ public class TdlibListeners {
     this.callsListeners = new ReferenceList<>(true);
     this.sessionListeners = new ReferenceList<>(true);
     this.downloadsListListener = new ReferenceList<>(true);
+    this.reactionsListeners = new ReferenceList<>(true);
 
     this.animatedEmojiListeners = new ReferenceList<>(true);
 
@@ -165,6 +167,9 @@ public class TdlibListeners {
       if (any instanceof SessionListener) {
         sessionListeners.add((SessionListener) any);
       }
+      if (any instanceof ReactionsListener) {
+        reactionsListeners.add((ReactionsListener) any);
+      }
     }
   }
 
@@ -215,6 +220,9 @@ public class TdlibListeners {
       }
       if (any instanceof SessionListener) {
         sessionListeners.remove((SessionListener) any);
+      }
+      if (any instanceof ReactionsListener) {
+        reactionsListeners.remove((ReactionsListener) any);
       }
     }
   }
@@ -451,6 +459,16 @@ public class TdlibListeners {
   @AnyThread
   public void unsubscribeFromDownloadsListUpdates (DownloadsListUpdateListener listener) {
     downloadsListListener.remove(listener);
+  }
+
+  @AnyThread
+  public void subscribeToReactionUpdates (ReactionsListener listener) {
+    reactionsListeners.add(listener);
+  }
+
+  @AnyThread
+  public void unsubscribeFromReactionUpdates (ReactionsListener listener) {
+    reactionsListeners.remove(listener);
   }
 
   public void updateFileAddedToDownloads (TdApi.UpdateFileAddedToDownloads update) {
@@ -827,9 +845,9 @@ public class TdlibListeners {
     }
   }
 
-  void updateChatUnreadReactionCount (TdApi.UpdateChatUnreadReactionCount update, boolean availabilityChanged) {
-    updateChatUnreadReactionCount(update.chatId, update.unreadReactionCount, availabilityChanged, chatListeners.iterator());
-    updateChatUnreadReactionCount(update.chatId, update.unreadReactionCount, availabilityChanged, specificChatListeners.iterator(update.chatId));
+  void updateChatUnreadReactionCount (long chatId, int unreadReactionCount, boolean availabilityChanged) {
+    updateChatUnreadReactionCount(chatId, unreadReactionCount, availabilityChanged, chatListeners.iterator());
+    updateChatUnreadReactionCount(chatId, unreadReactionCount, availabilityChanged, specificChatListeners.iterator(chatId));
   }
 
   // updateChatLastMessage
@@ -1582,6 +1600,12 @@ public class TdlibListeners {
   void updateSuggestedActions (TdApi.UpdateSuggestedActions update) {
     for (TdlibOptionListener listener : optionListeners) {
       listener.onSuggestedActionsChanged(update.addedActions, update.removedActions);
+    }
+  }
+
+  void updateSupportedReactions(TdApi.UpdateReactions update) {
+    for (ReactionsListener listener : reactionsListeners) {
+      listener.onSupportedReactionsUpdated(update.reactions);
     }
   }
 }

@@ -424,7 +424,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
     }
 
     animationType = ANIMATION_TYPE_NONE;
-    addView(view);
+    addView(boundView = view);
     if (getContext() instanceof BaseActivity) {
       ((BaseActivity) getContext()).showPopupWindow(this);
     }
@@ -749,7 +749,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
 
   public void animateRevealFactor (float toFactor) {
     if (animator == null) {
-      animator = new FactorAnimator(REVEAL_ANIMATOR, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l, factor);
+      animator = new FactorAnimator(REVEAL_ANIMATOR, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 300, factor);
     }
     if (toFactor == 1f && needRevealStartDelay) {
       animator.setStartDelay(MenuMoreWrap.REVEAL_DURATION);

@@ -445,4 +445,14 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
     }
     fileProgress.notifyInvalidateTargetsChanged();
   }
+
+  @Override
+  protected boolean shouldDrawReactionInBubble() {
+    return false;
+  }
+
+  @Override
+  protected int getReactionBottomOffset() {
+    return 0;
+  }
 }

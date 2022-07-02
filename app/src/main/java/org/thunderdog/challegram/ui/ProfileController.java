@@ -58,6 +58,8 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
 import org.thunderdog.challegram.component.base.SettingView;
+import org.thunderdog.challegram.component.reactions.ReactionSettingsController;
+import org.thunderdog.challegram.component.reactions.ReactionsManager;
 import org.thunderdog.challegram.component.user.SortedUsersAdapter;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
@@ -170,6 +172,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   ViewPagerTopView.OnItemClickListener,
   MediaCollectorDelegate,
   FactorAnimator.Target, ActivityResultHandler,
+  ReactionsManager.ChatReactionsListener,
   DoneListener {
   // Constants
 
@@ -251,6 +254,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private TdApi.User user;
   private TdApi.SecretChat secretChat;
   private TdApi.UserFullInfo userFull;
+  private final ReactionsManager reactionsManager;
 
   TdApi.BasicGroup group;
   TdApi.BasicGroupFullInfo groupFull;
@@ -357,6 +361,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   public ProfileController (Context context, Tdlib tdlib) {
     super(context, tdlib);
+    this.reactionsManager = ReactionsManager.instance(tdlib);
   }
 
   @Override
@@ -1373,6 +1378,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   protected View onCreateView (Context context) {
+    reactionsManager.addChatReactionsListener(this);
     contentView = new FrameLayoutFix(context) {
       private boolean isIntercepting;
 
@@ -1884,6 +1890,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             }
             break;
           }
+          case R.id.reactions_chat_settings_btn: {
+            int availableCount = reactionsManager.getChatAvailableReactionsCount();
+            int supportedCount = reactionsManager.getSupportedReactionsCount();
+            view.setData(Lang.getString(R.string.ReactionCount, availableCount, supportedCount));
+            break;
+          }
           case R.id.btn_chatPermissions: {
             view.setData(Lang.plural(R.string.xPermissions, Td.count(chat.permissions), TdConstants.CHAT_PERMISSIONS_COUNT));
             break;
@@ -2025,6 +2037,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       membersAdapter.destroy();
     }
     pagerAdapter.performDestroy();
+    reactionsManager.removeChatReactionsListener(this);
     Views.destroyRecyclerView(baseRecyclerView);
   }
 
@@ -3595,6 +3608,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, mode == MODE_EDIT_CHANNEL ? R.string.RestrictSavingChannelHint : R.string.RestrictSavingGroupHint));
       added = false;
     }
+    if (tdlib.canChangeInfo(chat)) {
+      items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.reactions_chat_settings_btn, 0, R.string.ChatReactions));
+      added = true;
+    }
     if (tdlib.canToggleAllHistory(chat)) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_prehistoryMode, 0, R.string.ChatHistory));
@@ -3740,6 +3758,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         }
       }
     });
+  }
+
+  @Override
+  public void onChatReactionStateUpdated() {
+    baseAdapter.updateValuedSettingById(R.id.reactions_chat_settings_btn);
   }
 
   private static CharSequence getSlowModeDescription (int seconds) {
@@ -4610,6 +4633,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
 
       // EDIT stuff
+      case R.id.reactions_chat_settings_btn: {
+        ReactionSettingsController reactionSettingsController = new ReactionSettingsController(context, tdlib);
+        reactionSettingsController.setArguments(new ReactionSettingsController.Args(chat.id));
+        navigateTo(reactionSettingsController);
+        break;
+      }
       case R.id.btn_prehistoryMode: {
         togglePrehistoryMode();
         break;

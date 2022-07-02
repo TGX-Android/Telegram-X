@@ -33,11 +33,14 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.luckycatlabs.sunrisesunset.SunriseSunsetCalculator;
 
+import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.base.SettingView;
+import org.thunderdog.challegram.component.reactions.ReactionSettingsController;
+import org.thunderdog.challegram.component.reactions.ReactionsManager;
 import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
@@ -62,6 +65,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.AppUpdater;
 import org.thunderdog.challegram.util.DrawableModifier;
 import org.thunderdog.challegram.util.EmojiModifier;
+import org.thunderdog.challegram.util.ReactionModifier;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.RadioView;
@@ -81,9 +85,10 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.BitwiseUtils;
 
-public class SettingsThemeController extends RecyclerViewController<SettingsThemeController.Args> implements View.OnClickListener, ViewController.SettingsIntDelegate, SliderWrapView.RealTimeChangeListener, View.OnLongClickListener, TGLegacyManager.EmojiLoadListener, AppUpdater.Listener {
+public class SettingsThemeController extends RecyclerViewController<SettingsThemeController.Args> implements View.OnClickListener, ViewController.SettingsIntDelegate, SliderWrapView.RealTimeChangeListener, View.OnLongClickListener, TGLegacyManager.EmojiLoadListener, AppUpdater.Listener, ReactionsManager.QuickReactionListener {
   public SettingsThemeController (Context context, Tdlib tdlib) {
     super(context, tdlib);
+    this.reactionsManager = ReactionsManager.instance(tdlib);
   }
 
   @Override
@@ -123,6 +128,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
   private boolean lightSensorAvailable;
   private float maxSensorValue;
   private LocationHelper locationHelper;
+  private final ReactionsManager reactionsManager;
 
   private List<ThemeInfo> builtinThemes;
   private List<ThemeInfo> installedThemes;
@@ -136,6 +142,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
     cancelLocationRequest();
     TGLegacyManager.instance().removeEmojiListener(this);
     context().appUpdater().removeListener(this);
+    reactionsManager.removeQuickReactionStateListener(this);
   }
 
   private void cancelLocationRequest () {
@@ -165,6 +172,17 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
               v.setData(R.string.EmojiBuiltIn);
             } else {
               v.setData(emojiPack.displayName);
+            }
+            break;
+          }
+          case R.id.reactions_quick_setting_btn: {
+            TdApi.Reaction reaction = ReactionsManager.instance(tdlib()).getQuickReaction();
+            if (reaction != null) {
+              v.setData(reaction.title);
+              v.setDrawModifier(new ReactionModifier(tdlib(), reaction.reaction));
+            } else {
+              v.setData(R.string.QuickReactionDisabled);
+              v.setDrawModifier(null);
             }
             break;
           }
@@ -504,6 +522,11 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       }
 
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.reactions_quick_setting_btn, 0, R.string.QuickReaction)
+              .setDrawModifier(new ReactionModifier(tdlib(), ReactionsManager.instance(tdlib()).getQuickReactionString())));
+
+
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_chatListStyle, 0, R.string.ChatListStyle));
 
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -789,6 +812,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
 
     adapter.setItems(items, true);
     recyclerView.setAdapter(adapter);
+    reactionsManager.addQuickReactionStateListener(this);
 
     tdlib.wallpaper().getBackgrounds(null, Theme.isDark());
   }
@@ -854,6 +878,14 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         view.invalidate();
     }
   }
+
+  @Override
+  public void onQuickReactionStateUpdated() {
+    if (adapter != null)
+      adapter.updateValuedSettingById(R.id.reactions_quick_setting_btn);
+  }
+
+
 
   private static ListItem newItem (ThemeInfo theme) {
     int themeId = theme.getId();
@@ -1093,6 +1125,12 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       case R.id.btn_emoji: {
         SettingsCloudEmojiController c = new SettingsCloudEmojiController(context, tdlib);
         c.setArguments(new SettingsCloudController.Args<>(this));
+        navigateTo(c);
+        break;
+      }
+      case R.id.reactions_quick_setting_btn: {
+        ReactionSettingsController c = new ReactionSettingsController(context, tdlib);
+        c.setArguments(new ReactionSettingsController.Args());
         navigateTo(c);
         break;
       }

@@ -32,6 +32,7 @@ import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.reactions.ReactionsManager;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.MessageListManager;
@@ -95,16 +96,18 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private TdApi.ChatEventLogFilters eventLogFilters;
 
   private LongSparseArray<TdApi.ChatAdministrator> chatAdmins;
+  public ReactionsManager reactionsManager;
 
   private static final int TOP_PRELOAD_COUNT = 10;
   private static final int BOTTOM_PRELOAD_COUNT = 7;
 
   private boolean isScrolling;
 
-  public MessagesManager (final MessagesController controller) {
+  public MessagesManager (final MessagesController controller, final ReactionsManager reactionsManager) {
     this.controller = controller;
     controller.context().addPasscodeListener(this);
     this.tdlib = controller.tdlib();
+    this.reactionsManager = reactionsManager;
     this.loader = new MessagesLoader(this);
     this.listener = new RecyclerView.OnScrollListener() {
       @Override
@@ -297,6 +300,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           if (msg.containsUnreadMention() && id > lastViewedMention) {
             lastViewedMention = id;
           }
+          if (msg.containsUnreadReaction() && id > lastViewedReaction) {
+            lastViewedReaction = id;
+          }
           if (list == null) {
             list = new LongSet(last - first);
           } else {
@@ -451,6 +457,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     highlightMessageId = null;
     hasScrolled = false;
     lastViewedMention = 0;
+    lastViewedReaction = 0;
     chatAdmins = null;
     if (pinnedMessages != null) {
       pinnedMessages.performDestroy();
@@ -461,6 +468,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     unsubscribeFromUpdates();
     mentionsHandler = null;
     closestMentions = null;
+    closestReactions = null;
+    reactionsHandler = null;
     final long chatId = loader.getChatId();
     if (chatId != 0) {
       if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
@@ -2183,6 +2192,74 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
+  //Reactions
+  private ArrayList<TdApi.Message> closestReactions;
+  private CancellableResultHandler reactionsHandler;
+  private long lastViewedReaction = 0;
+
+  public void scrollToNextReaction () {
+    if (closestReactions != null && !closestReactions.isEmpty()) {
+      TdApi.Message message = closestReactions.remove(0);
+      highlightMessage(new MessageId(message.chatId, message.id), HIGHLIGHT_MODE_NORMAL, null, true);
+      tdlib.readChatUnreadReaction(message.chatId);
+      message.unreadReactions = new TdApi.UnreadReaction[0];
+      return;
+    }
+    if (reactionsHandler != null) {
+      return;
+    }
+    final long fromMessageId;
+    if (lastViewedReaction != 0)  {
+      fromMessageId = lastViewedReaction;
+    } else {
+      TGMessage message = adapter.getTopMessage();
+      if (message == null) {
+        return;
+      }
+      fromMessageId = message.getBiggestId();
+    }
+    final long chatId = loader.getChatId();
+    final long messageThreadId = loader.getMessageThreadId();
+    final boolean[] isRetry = new boolean[1];
+    reactionsHandler = new CancellableResultHandler() {
+      @Override
+      public void processResult (final TdApi.Object object) {
+        if (object.getConstructor() == TdApi.Messages.CONSTRUCTOR) {
+          TdApi.Messages messages = (TdApi.Messages) object;
+          if (messages.totalCount > 0 && messages.messages.length == 0 && !isRetry[0]) {
+            isRetry[0] = true;
+            tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, 0, 0, 10, new TdApi.SearchMessagesFilterUnreadReaction(), messageThreadId), this);
+          } else {
+            setReactions(this, messages, isRetry[0] ? 0 : fromMessageId);
+          }
+        } else {
+          setReactions(this, null, fromMessageId);
+        }
+      }
+    };
+    tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, fromMessageId, -9, 10, new TdApi.SearchMessagesFilterUnreadReaction(), messageThreadId), reactionsHandler);
+  }
+
+  private void setReactions (final CancellableResultHandler handler, final TdApi.Messages messages, final long fromMessageId) {
+    tdlib.ui().post(() -> {
+      if (handler == reactionsHandler) {
+        reactionsHandler = null;
+        if (messages != null && messages.messages.length > 0) {
+          setReactionsImpl(messages.messages);
+        }
+      }
+    });
+  }
+
+  private void setReactionsImpl (final TdApi.Message[] messages) {
+    ArrayList<TdApi.Message> reactions = new ArrayList<>(messages.length);
+    Collections.addAll(reactions, messages);
+    this.closestReactions = reactions;
+    if (!reactions.isEmpty()) {
+      scrollToNextReaction();
+    }
+  }
+
   // Search
 
   public boolean isReadyToSearch () {
@@ -2549,6 +2626,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         tdlib.listeners().unsubscribeFromMessageUpdates(lastSubscribedChatId, this);
         tdlib.listeners().unsubscribeFromMessageEditUpdates(lastSubscribedChatId, this);
         tdlib.cache().removeChatMemberStatusListener(lastSubscribedChatId, this);
+        reactionsManager.unsubscribeFromUpdates();
       }
       lastSubscribedChatId = chatId;
       if (chatId != 0) {
@@ -2556,6 +2634,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         tdlib.listeners().subscribeToMessageUpdates(chatId, this);
         tdlib.listeners().subscribeToMessageEditUpdates(chatId, this);
         tdlib.cache().addChatMemberStatusListener(lastSubscribedChatId, this);
+        reactionsManager.subscribeForUpdates(chatId);
       }
     }
   }
@@ -2564,6 +2643,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (lastSubscribedChatId != 0) {
       controller.unsubscribeFromUpdates(lastSubscribedChatId);
       tdlib.listeners().unsubscribeFromMessageUpdates(lastSubscribedChatId, this);
+      reactionsManager.unsubscribeFromUpdates();
       lastSubscribedChatId = 0;
     }
   }

@@ -63,6 +63,7 @@ import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
 import org.thunderdog.challegram.widget.SparseDrawableView;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import me.vkryl.android.AnimatorUtils;
@@ -474,18 +475,28 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       }
     }
 
-    IntList ids = new IntList(6);
-    IntList icons = new IntList(6);
-    StringList strings = new StringList(6);
-    Object tag = fillMessageOptions(m, msg, sender, ids, icons, strings, false);
-    if (!ids.isEmpty()) {
-      m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), tag, sender, false);
+    List<ViewController.OptionItem> items = new ArrayList<>();
+    Object tag = fillMessageOptions(m, msg, sender, items, false);
+    if (!items.isEmpty()) {
+      m.setMessageSelected(msg, tag, sender);
+      m.showMessageOptions(msg,  items.toArray(new ViewController.OptionItem[0]), false);
       return true;
     }
     return false;
   }
 
   public static Object fillMessageOptions (MessagesController m, TGMessage msg, @Nullable TdApi.ChatMember sender, IntList ids, IntList icons, StringList strings, boolean isMore) {
+    List<ViewController.OptionItem> optionItems = new ArrayList<>();
+    Object tag = fillMessageOptions(m, msg, sender, optionItems, isMore);
+    for (ViewController.OptionItem item: optionItems) {
+      ids.append(item.id);
+      icons.append(item.icon);
+      strings.append(item.name.toString());
+    }
+    return tag;
+  }
+
+  public static Object fillMessageOptions (MessagesController m, TGMessage msg, @Nullable TdApi.ChatMember sender, List<ViewController.OptionItem> items, boolean isMore) {
     TdApi.Message newestMessage = msg.getNewestMessage();
     TdApi.MessageContent content = newestMessage.content;
     int messageCount = msg.getMessageCount();
@@ -495,35 +506,51 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     // Promotion
 
     if (msg.isSponsored()) {
-      ids.append(R.id.btn_messageCopy);
-      strings.append(R.string.Copy);
-      icons.append(R.drawable.baseline_content_copy_24);
-
-      ids.append(R.id.btn_messageSponsorInfo);
-      strings.append(R.string.SponsoredInfoMenu);
-      icons.append(R.drawable.baseline_info_24);
+      items.add(new ViewController.OptionItem.Builder()
+              .id(R.id.btn_messageCopy)
+              .name(R.string.Copy)
+              .icon(R.drawable.baseline_content_copy_24)
+              .build()
+      );
+      items.add(new ViewController.OptionItem.Builder()
+              .id(R.id.btn_messageSponsorInfo)
+              .name(R.string.SponsoredInfoMenu)
+              .icon(R.drawable.baseline_info_24)
+              .build()
+      );
       return null;
     }
 
     if (!isMore) {
       if (msg.isScheduled() && !msg.isNotSent()) {
-        ids.append(R.id.btn_messageSendNow);
-        strings.append(R.string.SendNow);
-        icons.append(R.drawable.baseline_send_24);
-
-        ids.append(R.id.btn_messageReschedule);
-        strings.append(R.string.Reschedule);
-        icons.append(R.drawable.baseline_date_range_24);
+        items.add(new ViewController.OptionItem.Builder()
+                .id(R.id.btn_messageSendNow)
+                .name(R.string.SendNow)
+                .icon(R.drawable.baseline_send_24)
+                .build()
+        );
+        items.add(new ViewController.OptionItem.Builder()
+                .id(R.id.btn_messageReschedule)
+                .name(R.string.Reschedule)
+                .icon(R.drawable.baseline_date_range_24)
+                .build()
+        );
       }
       if (msg.canResend()) {
-        ids.append(R.id.btn_messageResend);
-        strings.append(R.string.Resend);
-        icons.append(R.drawable.baseline_repeat_24);
+        items.add(new ViewController.OptionItem.Builder()
+                .id(R.id.btn_messageResend)
+                .name(R.string.Resend)
+                .icon(R.drawable.baseline_repeat_24)
+                .build()
+        );
       }
       if (msg.needMessageButton()) {
-        ids.append(R.id.btn_messageShowSource);
-        strings.append(R.string.ShowSourceMessage);
-        icons.append(R.drawable.baseline_forum_24);
+        items.add(new ViewController.OptionItem.Builder()
+                .id(R.id.btn_messageShowSource)
+                .name(R.string.ShowSourceMessage)
+                .icon(R.drawable.baseline_forum_24)
+                .build()
+        );
       }
 
       switch (content.getConstructor()) {
@@ -532,22 +559,31 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           if (!poll.isClosed) {
             boolean isQuiz = poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR;
             if (TD.canRetractVote(poll)) {
-              ids.append(R.id.btn_messageRetractVote);
-              icons.append(isQuiz ? R.drawable.baseline_help_24 : R.drawable.baseline_poll_24);
-              strings.append(R.string.RetractVote);
+              items.add(new ViewController.OptionItem.Builder()
+                      .id(R.id.btn_messageRetractVote)
+                      .name(R.string.RetractVote)
+                      .icon(isQuiz ? R.drawable.baseline_help_24 : R.drawable.baseline_poll_24)
+                      .build()
+              );
             }
             if (msg.getMessage().canBeEdited) {
-              ids.append(R.id.btn_messagePollStop);
-              icons.append(isQuiz ? R.drawable.baseline_help_24 : R.drawable.baseline_poll_24);
-              strings.append(isQuiz ? R.string.StopQuiz : R.string.StopPoll);
+              items.add(new ViewController.OptionItem.Builder()
+                      .id(R.id.btn_messagePollStop)
+                      .name(isQuiz ? R.string.StopQuiz : R.string.StopPoll)
+                      .icon(isQuiz ? R.drawable.baseline_help_24 : R.drawable.baseline_poll_24)
+                      .build()
+              );
             }
           }
           break;
         }
         case TdApi.MessageCall.CONSTRUCTOR: {
-          ids.append(R.id.btn_messageCall);
-          icons.append(R.drawable.baseline_phone_24);
-          strings.append(msg.isOutgoing() || ((TdApi.MessageCall) content).duration > 0 ? R.string.CallAgain : R.string.CallBack);
+          items.add(new ViewController.OptionItem.Builder()
+                  .id(R.id.btn_messageCall)
+                  .name(msg.isOutgoing() || ((TdApi.MessageCall) content).duration > 0 ? R.string.CallAgain : R.string.CallBack)
+                  .icon(R.drawable.baseline_phone_24)
+                  .build()
+          );
           break;
         }
         case TdApi.MessageContact.CONSTRUCTOR: {
@@ -558,37 +594,55 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
             }
             TdApi.User user = m.tdlib().cache().user(contact.userId);
             if (user != null && !TD.isContact(user)) {
-              ids.append(R.id.btn_messageAddContact);
-              icons.append(R.drawable.baseline_person_add_24);
-              strings.append(R.string.AddContact);
+              items.add(new ViewController.OptionItem.Builder()
+                      .id(R.id.btn_messageAddContact)
+                      .name(R.string.AddContact)
+                      .icon(R.drawable.baseline_person_add_24)
+                      .build()
+              );
             }
           }
-          ids.append(R.id.btn_messageCallContact);
-          icons.append(R.drawable.baseline_phone_24);
-          strings.append(R.string.Call);
+          items.add(new ViewController.OptionItem.Builder()
+                  .id(R.id.btn_messageCallContact)
+                  .name(R.string.Call)
+                  .icon(R.drawable.baseline_phone_24)
+                  .build()
+          );
           break;
         }
         case TdApi.MessageLocation.CONSTRUCTOR: {
           if (((TGMessageLocation) msg).canStopAlive()) {
-            ids.append(R.id.btn_messageLiveStop);
-            icons.append(R.drawable.baseline_remove_circle_24);
-            strings.append(R.string.StopSharingLiveLocation);
+            items.add(new ViewController.OptionItem.Builder()
+                    .id(R.id.btn_messageLiveStop)
+                    .name(R.string.StopSharingLiveLocation)
+                    .icon(R.drawable.baseline_remove_circle_24)
+                    .build()
+            );
           }
-          ids.append(R.id.btn_messageDirections);
-          icons.append(R.drawable.baseline_directions_24);
-          strings.append(R.string.Directions);
+          items.add(new ViewController.OptionItem.Builder()
+                  .id(R.id.btn_messageDirections)
+                  .name(R.string.Directions)
+                  .icon(R.drawable.baseline_directions_24)
+                  .build()
+          );
           break;
         }
         case TdApi.MessageVenue.CONSTRUCTOR: {
-          ids.append(R.id.btn_messageDirections);
-          icons.append(R.drawable.baseline_directions_24);
-          strings.append(R.string.Directions);
+          items.add(new ViewController.OptionItem.Builder()
+                  .id(R.id.btn_messageDirections)
+                  .name(R.string.Directions)
+                  .icon(R.drawable.baseline_directions_24)
+                  .build()
+          );
 
           TdApi.Venue venue = ((TdApi.MessageVenue) content).venue;
           if ("foursquare".equals(venue.provider) && !StringUtils.isEmpty(venue.id)) {
-            ids.append(R.id.btn_messageFoursquare);
-            icons.append(R.drawable.templarian_baseline_foursquare_24);
-            strings.append(R.string.ShowOnFoursquare);
+            items.add(new ViewController.OptionItem.Builder()
+                    .id(R.id.btn_messageFoursquare)
+                    .name(R.string.ShowOnFoursquare)
+                    .icon(R.drawable.templarian_baseline_foursquare_24)
+                    .build()
+            );
           }
           break;
         }
@@ -597,41 +651,57 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       if (m.canWriteMessages() && isSent && msg.canReplyTo()) {
         if (msg.getMessage().content.getConstructor() == TdApi.MessageDice.CONSTRUCTOR && !msg.tdlib().hasRestriction(msg.getMessage().chatId, R.id.right_sendStickersAndGifs)) {
           String emoji = ((TdApi.MessageDice) msg.getMessage().content).emoji;
-          ids.append(R.id.btn_messageReplyWithDice);
+          int textId;
           if (TD.EMOJI_DART.textRepresentation.equals(emoji)) {
-            strings.append(R.string.SendDart);
+            textId = R.string.SendDart;
           } else if (TD.EMOJI_DICE.textRepresentation.equals(emoji)) {
-            strings.append(R.string.SendDice);
+            textId = R.string.SendDice;
           } else {
-            strings.append(R.string.SendUnknownDice);
+            textId = R.string.SendUnknownDice;
           }
-          icons.append(TD.EMOJI_DART.textRepresentation.equals(emoji) ? R.drawable.baseline_gps_fixed_24 : R.drawable.baseline_casino_24);
+          items.add(new ViewController.OptionItem.Builder()
+                  .id(R.id.btn_messageReplyWithDice)
+                  .name(textId)
+                  .icon(TD.EMOJI_DART.textRepresentation.equals(emoji) ? R.drawable.baseline_gps_fixed_24 : R.drawable.baseline_casino_24)
+                  .build()
+          );
         }
-
-        ids.append(R.id.btn_messageReply);
-        strings.append(R.string.Reply);
-        icons.append(R.drawable.baseline_reply_24);
+        items.add(new ViewController.OptionItem.Builder()
+                .id(R.id.btn_messageReply)
+                .name(R.string.Reply)
+                .icon(R.drawable.baseline_reply_24)
+                .build()
+        );
       }
 
       if (Config.COMMENTS_SUPPORTED) {
         if (msg.getReplyCount() > 0) {
-          ids.append(R.id.btn_messageReplies);
-          strings.append(Lang.plural(msg.getSender().isChannel() ? R.string.ViewXComments : R.string.ViewXReplies, msg.getReplyCount()));
-          icons.append(msg.getSender().isChannel() ? R.drawable.outline_templarian_comment_multiple_24 : R.drawable.baseline_reply_all_24);
+          items.add(new ViewController.OptionItem.Builder()
+                  .id(R.id.btn_messageReplies)
+                  .name(Lang.plural(msg.getSender().isChannel() ? R.string.ViewXComments : R.string.ViewXReplies, msg.getReplyCount()))
+                  .icon(msg.getSender().isChannel() ? R.drawable.outline_templarian_comment_multiple_24 : R.drawable.baseline_reply_all_24)
+                  .build()
+          );
         }
       } else {
         TdApi.Message messageWithThread = msg.findMessageWithThread();
         if (messageWithThread != null && messageWithThread.isChannelPost) {
-          ids.append(R.id.btn_messageDiscuss);
-          strings.append(R.string.DiscussMessage);
-          icons.append(R.drawable.outline_templarian_comment_multiple_24);
+          items.add(new ViewController.OptionItem.Builder()
+                  .id(R.id.btn_messageDiscuss)
+                  .name(R.string.DiscussMessage)
+                  .icon(R.drawable.outline_templarian_comment_multiple_24)
+                  .build()
+          );
         }
       }
 
       if (msg.canBeForwarded() && isSent) {
-        ids.append(R.id.btn_messageShare);
-        strings.append(R.string.Share);
-        icons.append(R.drawable.baseline_forward_24);
+        items.add(new ViewController.OptionItem.Builder()
+                .id(R.id.btn_messageShare)
+                .name(R.string.Share)
+                .icon(R.drawable.baseline_forward_24)
+                .build()
+        );
       }
     }
 
@@ -663,13 +733,19 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
             break;
         }
         if (pinnedCount > 0) {
-          ids.append(R.id.btn_messageUnpin);
-          strings.append(unpinRes);
-          icons.append(R.drawable.deproko_baseline_pin_undo_24);
+          items.add(new ViewController.OptionItem.Builder()
+                  .id(R.id.btn_messageUnpin)
+                  .name(unpinRes)
+                  .icon(R.drawable.deproko_baseline_pin_undo_24)
+                  .build()
+          );
         } else {
-          ids.append(R.id.btn_messagePin);
-          strings.append(pinRes);
-          icons.append(R.drawable.deproko_baseline_pin_24);
+          items.add(new ViewController.OptionItem.Builder()
+                  .id(R.id.btn_messagePin)
+                  .name(pinRes)
+                  .icon(R.drawable.deproko_baseline_pin_24)
+                  .build()
+          );
         }
       }
     }
@@ -677,32 +753,44 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     // Stats
 
     if (!isMore && msg.canViewStatistics()) {
-      ids.append(R.id.btn_viewStatistics);
-      strings.append(R.string.ViewStats);
-      icons.append(R.drawable.baseline_bar_chart_24);
+      items.add(new ViewController.OptionItem.Builder()
+              .id(R.id.btn_viewStatistics)
+              .name(R.string.ViewStats)
+              .icon(R.drawable.baseline_bar_chart_24)
+              .build()
+      );
     }
 
     // Edit
 
     if (!isMore && msg.canEditText() && isSent) {
-      ids.append(R.id.btn_messageEdit);
-      strings.append(R.string.edit);
-      icons.append(R.drawable.baseline_edit_24);
+      items.add(new ViewController.OptionItem.Builder()
+              .id(R.id.btn_messageEdit)
+              .name(R.string.edit)
+              .icon(R.drawable.baseline_edit_24)
+              .build()
+      );
     }
 
     // Copy, select
 
     TdApi.Chat chat = m.tdlib().chat(msg.getChatId());
     if (!isMore && m.tdlib().canCopyPostLink(msg.getMessage())) {
-      ids.append(R.id.btn_messageCopyLink);
-      strings.append(R.string.CopyLink);
-      icons.append(R.drawable.baseline_link_24);
+      items.add(new ViewController.OptionItem.Builder()
+              .id(R.id.btn_messageCopyLink)
+              .name(R.string.CopyLink)
+              .icon(R.drawable.baseline_link_24)
+              .build()
+      );
     }
 
     if (!isMore && msg.canBeSaved() && TD.canCopyText(newestMessage)) {
-      ids.append(R.id.btn_messageCopy);
-      strings.append(R.string.Copy);
-      icons.append(R.drawable.baseline_content_copy_24);
+      items.add(new ViewController.OptionItem.Builder()
+              .id(R.id.btn_messageCopy)
+              .name(R.string.Copy)
+              .icon(R.drawable.baseline_content_copy_24)
+              .build()
+      );
     }
 
     if (messageCount == 1) {
@@ -712,15 +800,21 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           int stickerId = sticker.sticker.id;
           boolean isFavorite = m.tdlib().isStickerFavorite(stickerId);
           if (isFavorite || m.tdlib().canFavoriteStickers()) {
-            ids.append(isFavorite ? R.id.btn_messageUnfavoriteContent : R.id.btn_messageFavoriteContent);
-            strings.append(isFavorite ? R.string.RemoveFromFavorites : R.string.AddToFavorites);
-            icons.append(!isFavorite ? R.drawable.baseline_star_border_24 : R.drawable.baseline_star_24);
+            items.add(new ViewController.OptionItem.Builder()
+                    .id(isFavorite ? R.id.btn_messageUnfavoriteContent : R.id.btn_messageFavoriteContent)
+                    .name(isFavorite ? R.string.RemoveFromFavorites : R.string.AddToFavorites)
+                    .icon(!isFavorite ? R.drawable.baseline_star_border_24 : R.drawable.baseline_star_24)
+                    .build()
+            );
           }
         }
         if (msg instanceof TGMessageSticker && ((TGMessageSticker) msg).needSuggestOpenStickerPack()) {
-          ids.append(R.id.btn_messageStickerSet);
-          strings.append(R.string.OpenStickerSet);
-          icons.append(R.drawable.deproko_baseline_stickers_24);
+          items.add(new ViewController.OptionItem.Builder()
+                  .id(R.id.btn_messageStickerSet)
+                  .name(R.string.OpenStickerSet)
+                  .icon(R.drawable.deproko_baseline_stickers_24)
+                  .build()
+          );
         }
       }
     }
@@ -744,13 +838,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
         TD.DownloadedFile baseDownloadedFile = downloadedFiles.get(0);
         if (msg.canBeSaved() && baseDownloadedFile.getFileType().getConstructor() == TdApi.FileTypeAnimation.CONSTRUCTOR) {
-          ids.append(R.id.btn_saveGif);
-          if (allMessages.length == 1) {
-            strings.append(R.string.SaveGif);
-          } else {
-            strings.append(Lang.plural(R.string.SaveXGifs, downloadedFiles.size()));
-          }
-          icons.append(R.drawable.deproko_baseline_gif_24);
+          items.add(new ViewController.OptionItem.Builder()
+                  .id(R.id.btn_saveGif)
+                  .name(allMessages.length == 1 ? Lang.getString(R.string.SaveGif) : Lang.plural(R.string.SaveXGifs, downloadedFiles.size()))
+                  .icon(R.drawable.deproko_baseline_gif_24)
+                  .build()
+          );
         }
         switch (baseDownloadedFile.getFileType().getConstructor()) {
           case TdApi.FileTypeVoiceNote.CONSTRUCTOR:
@@ -761,25 +854,23 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           case TdApi.FileTypeVideo.CONSTRUCTOR:
           case TdApi.FileTypePhoto.CONSTRUCTOR: {
             if (msg.canBeSaved()) {
-              ids.append(R.id.btn_saveFile);
-              if (allMessages.length == 1) {
-                strings.append(R.string.SaveToGallery);
-              } else {
-                strings.append(Lang.plural(R.string.SaveXToGallery, downloadedFiles.size()));
-              }
-              icons.append(R.drawable.baseline_image_24);
+              items.add(new ViewController.OptionItem.Builder()
+                      .id(R.id.btn_saveFile)
+                      .name(allMessages.length == 1 ? Lang.getString(R.string.SaveToGallery) : Lang.plural(R.string.SaveXToGallery, downloadedFiles.size()))
+                      .icon(R.drawable.baseline_image_24)
+                      .build()
+              );
             }
             break;
           }
           case TdApi.FileTypeAudio.CONSTRUCTOR: {
             if (msg.canBeSaved()) {
-              ids.append(R.id.btn_saveFile);
-              if (allMessages.length == 1) {
-                strings.append(R.string.SaveToMusic);
-              } else {
-                strings.append(Lang.plural(R.string.SaveXToMusic, downloadedFiles.size()));
-              }
-              icons.append(R.drawable.baseline_music_note_24);
+              items.add(new ViewController.OptionItem.Builder()
+                      .id(R.id.btn_saveFile)
+                      .name(allMessages.length == 1 ? Lang.getString(R.string.SaveToMusic) : Lang.plural(R.string.SaveXToMusic, downloadedFiles.size()))
+                      .icon(R.drawable.baseline_music_note_24)
+                      .build()
+              );
             }
             break;
           }
@@ -787,38 +878,50 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
             if (allMessages.length == 1 && msg.getMessage().content.getConstructor() == TdApi.MessageDocument.CONSTRUCTOR) {
               TdApi.Document document = ((TdApi.MessageDocument) msg.getMessage().content).document;
               if (TdlibUi.canInstallLanguage(document)) {
-                ids.append(R.id.btn_messageApplyLocalization);
-                strings.append(R.string.LanguageInstall);
-                icons.append(R.drawable.baseline_language_24);
+                items.add(new ViewController.OptionItem.Builder()
+                        .id(R.id.btn_messageApplyLocalization)
+                        .name(R.string.LanguageInstall)
+                        .icon(R.drawable.baseline_language_24)
+                        .build()
+                );
               }
               if (TdlibUi.canInstallTheme(document)) {
-                ids.append(R.id.btn_messageInstallTheme);
-                strings.append(R.string.ThemeInstallDone);
-                icons.append(R.drawable.baseline_palette_24);
+                items.add(new ViewController.OptionItem.Builder()
+                        .id(R.id.btn_messageInstallTheme)
+                        .name(R.string.ThemeInstallDone)
+                        .icon(R.drawable.baseline_palette_24)
+                        .build()
+                );
               }
             }
 
             if (msg.canBeSaved()) {
-              ids.append(R.id.btn_saveFile);
-              if (allMessages.length == 1) {
-                strings.append(R.string.SaveToDownloads);
-              } else {
-                strings.append(Lang.plural(R.string.SaveXToDownloads, downloadedFiles.size()));
-              }
-              icons.append(R.drawable.baseline_file_download_24);
+              items.add(new ViewController.OptionItem.Builder()
+                      .id(R.id.btn_saveFile)
+                      .name(allMessages.length == 1 ? Lang.getString(R.string.SaveToDownloads) : Lang.plural(R.string.SaveXToDownloads, downloadedFiles.size()))
+                      .icon(R.drawable.baseline_file_download_24)
+                      .build()
+              );
             }
             break;
           }
         }
       }
       if (allMessages.length == 1 && playListAddMode != TGPlayerController.ADD_MODE_NONE) {
-        ids.append(R.id.btn_addToPlaylist);
         if (playListAddMode == TGPlayerController.ADD_MODE_MOVE) {
-          strings.append(R.string.PlayListPlayNext);
-          icons.append(R.drawable.baseline_queue_music_24);
+          items.add(new ViewController.OptionItem.Builder()
+                  .id(R.id.btn_addToPlaylist)
+                  .name(R.string.PlayListPlayNext)
+                  .icon(R.drawable.baseline_queue_music_24)
+                  .build()
+          );
         } else {
-          strings.append(playListAddMode == TGPlayerController.ADD_MODE_RESTORE ? R.string.PlayListRestore : R.string.PlayListAdd);
-          icons.append(R.drawable.baseline_playlist_add_24);
+          items.add(new ViewController.OptionItem.Builder()
+                  .id(R.id.btn_addToPlaylist)
+                  .name(playListAddMode == TGPlayerController.ADD_MODE_RESTORE ? R.string.PlayListRestore : R.string.PlayListAdd)
+                  .icon(R.drawable.baseline_playlist_add_24)
+                  .build()
+          );
         }
       }
     }
@@ -827,17 +930,20 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       if (Config.useCloudPlayback(msg.getMessage()) && !file.local.isDownloadingCompleted) {
         if (isMore) {
           if (file.local.isDownloadingActive && !TdlibManager.instance().player().isPlayingFileId(file.id)) {
-            ids.append(R.id.btn_pauseFile);
-            strings.append(R.string.CloudPause);
-            icons.append(R.drawable.baseline_cloud_pause_24);
+            items.add(new ViewController.OptionItem.Builder()
+                    .id(R.id.btn_pauseFile)
+                    .name(R.string.CloudPause)
+                    .icon(R.drawable.baseline_cloud_pause_24)
+                    .build()
+            );
           }
           if (!file.local.isDownloadingActive) {
-            ids.append(R.id.btn_downloadFile);
-            if (file.local.downloadedSize > 0)
-              strings.append(R.string.CloudResume);
-            else
-              strings.append(Lang.getString(R.string.CloudDownload, Strings.buildSize(file.size)));
-            icons.append(R.drawable.baseline_cloud_download_24);
+            items.add(new ViewController.OptionItem.Builder()
+                    .id(R.id.btn_downloadFile)
+                    .name(file.local.downloadedSize > 0 ? Lang.getString(R.string.CloudResume) : Lang.getString(R.string.CloudDownload, Strings.buildSize(file.size)))
+                    .icon(R.drawable.baseline_cloud_download_24)
+                    .build()
+            );
           }
         } else {
           moreOptions++;
@@ -856,9 +962,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       }
       if (hasFilesToRemove) {
         if (isMore) {
-          ids.append(R.id.btn_deleteFile);
-          strings.append(R.string.DeleteFromCache);
-          icons.append(R.drawable.templarian_baseline_broom_24);
+          items.add(new ViewController.OptionItem.Builder()
+                  .id(R.id.btn_deleteFile)
+                  .name(R.string.DeleteFromCache)
+                  .icon(R.drawable.templarian_baseline_broom_24)
+                  .build()
+          );
         } else {
           moreOptions++;
         }
@@ -867,18 +976,24 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
     if (msg.canBeReported()) {
       if (isMore) {
-        ids.append(R.id.btn_messageReport);
-        strings.append(R.string.MessageReport);
-        icons.append(R.drawable.baseline_report_24);
+        items.add(new ViewController.OptionItem.Builder()
+                .id(R.id.btn_messageReport)
+                .name(R.string.MessageReport)
+                .icon(R.drawable.baseline_report_24)
+                .build()
+        );
       } else {
         moreOptions++;
       }
     }
 
     if (!isMore && msg.canBeDeletedForSomebody()) {
-      ids.append(R.id.btn_messageDelete);
-      strings.append(R.string.Delete);
-      icons.append(R.drawable.baseline_delete_24);
+      items.add(new ViewController.OptionItem.Builder()
+              .id(R.id.btn_messageDelete)
+              .name(R.string.Delete)
+              .icon(R.drawable.baseline_delete_24)
+              .build()
+      );
     }
 
     // Admin tools inside "More"
@@ -889,21 +1004,26 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         if (restrictMode != TD.RESTRICT_MODE_NONE) {
           if (!msg.isChannel() && !(restrictMode == TD.RESTRICT_MODE_EDIT && sender.memberId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR)) {
             if (isMore) {
-              ids.append(R.id.btn_messageRestrictMember);
-              icons.append(R.drawable.baseline_block_24);
+              int modeNameId;
               switch (restrictMode) {
                 case TD.RESTRICT_MODE_EDIT:
-                  strings.append(msg.getMessage().senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (msg.tdlib().isChannel(Td.getSenderId(msg.getMessage().senderId)) ? R.string.EditChannelRestrictions : R.string.EditGroupRestrictions) : R.string.EditUserRestrictions);
+                  modeNameId = msg.getMessage().senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (msg.tdlib().isChannel(Td.getSenderId(msg.getMessage().senderId)) ? R.string.EditChannelRestrictions : R.string.EditGroupRestrictions) : R.string.EditUserRestrictions;
                   break;
                 case TD.RESTRICT_MODE_NEW:
-                  strings.append(msg.getMessage().senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (msg.tdlib().isChannel(Td.getSenderId(msg.getMessage().senderId)) ? R.string.BanChannel : R.string.BanChat) : R.string.RestrictUser);
+                  modeNameId = msg.getMessage().senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (msg.tdlib().isChannel(Td.getSenderId(msg.getMessage().senderId)) ? R.string.BanChannel : R.string.BanChat) : R.string.RestrictUser;
                   break;
                 case TD.RESTRICT_MODE_VIEW:
-                  strings.append(R.string.ViewRestrictions);
+                  modeNameId = R.string.ViewRestrictions;
                   break;
                 default:
                   throw new IllegalStateException();
               }
+              items.add(new ViewController.OptionItem.Builder()
+                      .id(R.id.btn_messageRestrictMember)
+                      .name(modeNameId)
+                      .icon(R.drawable.baseline_block_24)
+                      .build()
+              );
             } else {
               moreOptions++;
             }
@@ -912,9 +1032,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           if (restrictMode != TD.RESTRICT_MODE_VIEW) {
             if (TD.isMember(sender.status)) {
               if (isMore) {
-                ids.append(R.id.btn_messageBlockUser);
-                icons.append(R.drawable.baseline_remove_circle_24);
-                strings.append(msg.isChannel() ? R.string.ChannelRemoveUser : R.string.RemoveFromGroup);
+                items.add(new ViewController.OptionItem.Builder()
+                        .id(R.id.btn_messageBlockUser)
+                        .name(msg.isChannel() ? R.string.ChannelRemoveUser : R.string.RemoveFromGroup)
+                        .icon(R.drawable.baseline_remove_circle_24)
+                        .build()
+                );
               } else {
                 moreOptions++;
               }
@@ -929,14 +1052,16 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
               }
               if (canUnblock) {
                 if (isMore) {
-                  strings.append(
-                    sender.status.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR ? R.string.RemoveRestrictions :
-                      msg.tdlib().cache().senderBot(msg.getMessage().senderId) ? R.string.UnbanMemberBot :
-                        msg.getMessage().senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (msg.tdlib().isChannel(Td.getSenderId(msg.getMessage().senderId)) ? R.string.UnbanMemberChannel : R.string.UnbanMemberGroup) :
-                          R.string.UnbanMember
+                  int textId = sender.status.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR ? R.string.RemoveRestrictions :
+                    msg.tdlib().cache().senderBot(msg.getMessage().senderId) ? R.string.UnbanMemberBot :
+                      msg.getMessage().senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (msg.tdlib().isChannel(Td.getSenderId(msg.getMessage().senderId)) ? R.string.UnbanMemberChannel : R.string.UnbanMemberGroup) :
+                        R.string.UnbanMember;
+                  items.add(new ViewController.OptionItem.Builder()
+                          .id(R.id.btn_messageUnblockMember)
+                          .name(textId)
+                          .icon(R.drawable.baseline_remove_circle_24)
+                          .build()
                   );
-                  ids.append(R.id.btn_messageUnblockMember);
-                  icons.append(R.drawable.baseline_remove_circle_24);
                 } else {
                   moreOptions++;
                 }
@@ -952,31 +1077,39 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     // Messages from X
     if (chat != null && msg.tdlib().isMultiChat(chat.id)) {
       if (isMore) {
-        ids.append(R.id.btn_messageViewList);
+        String text;
         int icon = R.drawable.baseline_person_24;
         if (msg.getSender().isAnonymousGroupAdmin()) {
-          strings.append(R.string.ViewMessagesFromAnonymousAdmins);
+          text = Lang.getString(R.string.ViewMessagesFromAnonymousAdmins);
           icon = R.drawable.baseline_group_24;
         } else if (msg.isOutgoing()) {
-          strings.append(R.string.ViewMessagesFromYou);
+          text = Lang.getString(R.string.ViewMessagesFromYou);
         } else if (msg.getMessage().senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
-          strings.append(Lang.getString(R.string.ViewMessagesFromChat, msg.getSender().getNameShort()));
+          text = Lang.getString(R.string.ViewMessagesFromChat, msg.getSender().getNameShort());
           icon = msg.tdlib().isChannel(Td.getSenderId(msg.getMessage().senderId)) ? R.drawable.baseline_bullhorn_24 : R.drawable.baseline_group_24;
         } else {
-          strings.append(Lang.getString(R.string.ViewMessagesFromUser, msg.getSender().getNameShort()));
+          text = Lang.getString(R.string.ViewMessagesFromUser, msg.getSender().getNameShort());
         }
-        icons.append(icon);
+        items.add(new ViewController.OptionItem.Builder()
+                .id(R.id.btn_messageViewList)
+                .name(text)
+                .icon(icon)
+                .build()
+        );
       } else {
         moreOptions++;
       }
     }
 
     if (moreOptions > 1) {
-      ids.append(R.id.btn_messageMore);
-      icons.append(R.drawable.baseline_more_horiz_24);
-      strings.append(R.string.MoreMessageOptions);
+      items.add(new ViewController.OptionItem.Builder()
+              .id(R.id.btn_messageMore)
+              .name(R.string.MoreMessageOptions)
+              .icon(R.drawable.baseline_more_horiz_24)
+              .build()
+      );
     } else if (moreOptions == 1) {
-      fillMessageOptions(m, msg, sender, ids, icons, strings, true);
+      fillMessageOptions(m, msg, sender, items, true);
     }
 
     return tag;

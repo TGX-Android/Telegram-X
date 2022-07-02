@@ -221,6 +221,10 @@
   <item type="id" name="controller_chatLinks" />
   <item type="id" name="controller_chatLinkMembers" />
   <item type="id" name="controller_sponsoredMessagesInfo" />
+  <item type="id" name="controller_user_reactions" />
+  <item type="id" name="controller_message_options" />
+  <item type="id" name="controller_reactions_settings" />
+
 
   <item type="id" name="separator" />
 
@@ -1182,4 +1186,16 @@
   <item type="id" name="btn_themeCreateInfo" />
   <item type="id" name="btn_themeExportNeedDefault" />
   <item type="id" name="btn_themeExportSetAuthor" />
+
+  <!--  Reactions -->
+  <item type="id" name="reactions_chat_checkbox" />
+  <item type="id" name="reactions_chat_checkbox_enabled" />
+  <item type="id" name="reactions_chat_checkbox_descriptions" />
+  <item type="id" name="reactions_chat_header" />
+  <item type="id" name="reactions_chat_settings_btn" />
+  <item type="id" name="reactions_quick_setting_btn" />
+  <item type="id" name="reactions_quick_enabled" />
+  <item type="id" name="reactions_quick_toggle" />
+  <item type="id" name="reactions_quick_toggle_description" />
+  <item type="id" name="btn_unread_reactions" />
 </resources>

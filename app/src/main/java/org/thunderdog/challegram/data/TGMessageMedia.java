@@ -778,4 +778,24 @@ public class TGMessageMedia extends TGMessage {
   public boolean isVideoFirstInMosaic (int mediaId) {
     return mosaicWrapper.isSingular() || (mosaicWrapper.getSingularItem() != null && mosaicWrapper.getSingularItem().isVideo() && mosaicWrapper.getSingularItem().getVideo().video.id == mediaId);
   }
+
+  @Override
+  protected boolean shouldDrawReactionInBubble() {
+    return wrapper != null;
+  }
+
+  @Override
+  protected int getBigReactionsContainerMaxWidth() {
+    return useBubbles() ? mosaicWrapper.getWidth() - xBubblePadding * 2 : getRealContentMaxWidth();
+  }
+
+  @Override
+  protected int getReactionsStartX() {
+    return useBubbles() ? (useForward() ? getContentX() : getContentX() + xBubblePadding) : getRealContentX();
+  }
+
+  @Override
+  protected int getReactionBottomOffset() {
+    return Screen.dp(4);
+  }
 }

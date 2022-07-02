@@ -2667,6 +2667,15 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   @Override
+  public void onChatUnreadReactionCount(long chatId, int unreadReactionCount, boolean availabilityChanged) {
+    runOnUiThreadOptional(() -> {
+      if (chatsView != null) {
+        chatsView.updateChatUnreadReactionsCount(chatId, unreadReactionCount);
+      }
+    });
+  }
+
+  @Override
   public void onChatHasScheduledMessagesChanged (long chatId, boolean hasScheduledMessages) {
     runOnUiThreadOptional(() -> {
       if (chatsView != null) {

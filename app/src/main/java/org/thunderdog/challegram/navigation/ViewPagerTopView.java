@@ -16,6 +16,10 @@ package org.thunderdog.challegram.navigation;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
 import android.text.TextUtils;
@@ -24,6 +28,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 
@@ -47,7 +52,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 
 public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener, View.OnClickListener, View.OnLongClickListener {
-  private static class Item {
+  public static class Item {
     public final String string;
     public final boolean needFakeBold;
     public final @DrawableRes int iconRes;
@@ -64,6 +69,38 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       this.iconRes = iconRes;
     }
 
+    public Item(String string, Drawable icon) {
+      this.string = string;
+      this.needFakeBold = Text.needFakeBold(string);
+      this.icon = icon;
+      this.iconRes = 0;
+    }
+
+    public Item(Drawable icon) {
+      this.string = null;
+      this.needFakeBold = false;
+      this.icon = icon;
+      this.iconRes = 0;
+    }
+
+    public Item(String string, int iconRes) {
+      this.string = string;
+      this.needFakeBold = Text.needFakeBold(string);
+      this.icon = null;
+      this.iconRes = iconRes;
+    }
+
+    private int getTextHeight(Paint paint) {
+      Rect textBounds = new Rect();
+      if (ellipsizedString != null) {
+        paint.getTextBounds(ellipsizedString, 0, ellipsizedString.length(), textBounds);
+      } else {
+        paint.getTextBounds(string, 0, string.length(), textBounds);
+      }
+
+      return textBounds.height();
+    }
+
     private Drawable icon;
 
     public Drawable getIcon () {
@@ -74,16 +111,21 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
     @Override
     public boolean equals (Object obj) {
-      return obj instanceof Item && ((Item) obj).iconRes == iconRes && StringUtils.equalsOrBothEmpty(((Item) obj).string, string);
+      return obj instanceof Item
+              && ((Item) obj).iconRes == iconRes
+              && ((Item) obj).getIcon() == getIcon()
+              && StringUtils.equalsOrBothEmpty(((Item) obj).string, string);
     }
 
     private int width;
 
     public void calculateWidth (TextPaint paint) {
       final int width;
-      if (string != null) {
+      if (string != null && getIcon() != null) {
+        width = (int) U.measureText(string, paint) + Screen.dp(24f) + Screen.dp(6f);
+      } else if (string != null) {
         width = (int) U.measureText(string, paint);
-      } else if (iconRes != 0) {
+      } else if (getIcon() != null) {
         width = Screen.dp(24f) + Screen.dp(6f);
       } else {
         width = 0;
@@ -95,7 +137,10 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     private int actualWidth;
 
     public void trimString (int availWidth, TextPaint paint) {
-      if (string != null) {
+      if (string != null && getIcon() != null) {
+        ellipsizedString = TextUtils.ellipsize(string, paint, availWidth, TextUtils.TruncateAt.END).toString();
+        actualWidth = (int) U.measureText(ellipsizedString, paint) + getIcon().getMinimumWidth() + Screen.dp(8f);
+      }else if (string != null) {
         ellipsizedString = TextUtils.ellipsize(string, paint, availWidth, TextUtils.TruncateAt.END).toString();
         actualWidth = (int) U.measureText(ellipsizedString, paint);
       } else {
@@ -116,6 +161,8 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
   private @ThemeColorId int fromTextColorId, toTextColorId = R.id.theme_color_headerText;
   private @ThemeColorId int selectionColorId;
+  private int selectionColor;
+  private boolean useIconTint = true;
 
   public ViewPagerTopView (Context context) {
     super(context);
@@ -247,6 +294,10 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       i++;
     }
     maxItemWidth = items.isEmpty() ? 0 : totalWidth / items.size();
+  }
+
+  public int getItemWidthAt(int index) {
+    return this.items != null && index >= 0 && index < this.items.size() ? this.items.get(index).actualWidth + 2 * textPadding : 0;
   }
 
   public void addItem (String item) {
@@ -489,6 +540,23 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   public boolean setSelectionColorId (@ThemeColorId int colorId) {
     if (this.selectionColorId != colorId) {
       this.selectionColorId = colorId;
+      return setSelectionColor(Theme.getColor(colorId));
+    }
+    return false;
+  }
+
+  public boolean setUseIconTint(boolean useIconTint) {
+    if (this.useIconTint != useIconTint) {
+      this.useIconTint = useIconTint;
+      invalidate();
+      return true;
+    }
+    return false;
+  }
+
+  public boolean setSelectionColor (@ColorInt int color) {
+    if (this.selectionColor != color) {
+      this.selectionColor = color;
       invalidate();
       return true;
     }
@@ -556,7 +624,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     if (overlayFactor != 1f) {
       int textToColor = Theme.getColor(toTextColorId);
       int textFromColor = fromTextColorId != 0 ? Theme.getColor(fromTextColorId) : ColorUtils.alphaColor(Theme.getSubtitleAlpha(), Theme.getColor(R.id.theme_color_headerText));
-      int selectionColor = selectionColorId != 0 ? Theme.getColor(selectionColorId) : ColorUtils.alphaColor(.9f, Theme.getColor(R.id.theme_color_headerText));
+      int selectionColor = selectionColorId != 0 ? this.selectionColor : ColorUtils.alphaColor(.9f, Theme.getColor(R.id.theme_color_headerText));
 
       boolean rtl = Lang.rtl();
 
@@ -598,11 +666,22 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
           cx -= itemWidth;
         if (item != null) {
           int color = ColorUtils.fromToArgb(textFromColor, textToColor, factor * (1f - disabledFactor));
-          if (item.ellipsizedString != null) {
+          Paint drawablePaint = useIconTint ? Paints.getPorterDuffPaint(color) : null;
+          if (item.ellipsizedString != null && item.getIcon() != null) {
+            Drawable drawable = item.getIcon();
+            float actualWidth = item.actualWidth;
+            float iconWidth = drawable.getMinimumWidth();
+            float drawableHeight = drawable.getMinimumHeight();
+            float x = cx + (itemWidth - actualWidth) / 2f;
+            Paint textPaint = Paints.getViewPagerTextPaint(color, item.needFakeBold);
+            float textHeight = item.getTextHeight(textPaint);
+            Drawables.draw(c, drawable, x, (viewHeight - drawableHeight) / 2f, drawablePaint);
+            c.drawText(item.ellipsizedString, x + iconWidth + Screen.dp(8), (viewHeight + textHeight) / 2, textPaint);
+          } else if (item.ellipsizedString != null) {
             c.drawText(item.ellipsizedString, cx + itemWidth / 2 - item.actualWidth / 2, viewHeight / 2 + Screen.dp(6f), Paints.getViewPagerTextPaint(color, item.needFakeBold));
           } else if (item.iconRes != 0) {
             Drawable drawable = item.getIcon();
-            Drawables.draw(c, drawable, cx + itemWidth / 2 - drawable.getMinimumWidth() / 2, viewHeight / 2 - drawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(color));
+            Drawables.draw(c, drawable, cx + itemWidth / 2 - drawable.getMinimumWidth() / 2, viewHeight / 2 - drawable.getMinimumHeight() / 2, drawablePaint);
           }
         }
         if (!rtl)

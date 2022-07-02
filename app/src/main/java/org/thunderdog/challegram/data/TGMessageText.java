@@ -537,4 +537,14 @@ public class TGMessageText extends TGMessage {
   public long getSponsorChatId () {
     return isSponsored() ? sponsoredMetadata.sponsorChatId : 0;
   }
+
+  @Override
+  protected int getBigReactionsContainerMaxWidth() {
+    return getContentMaxWidth();
+  }
+
+  @Override
+  protected int getReactionBottomOffset() {
+    return webPage == null ? super.getReactionBottomOffset() : 0;
+  }
 }
