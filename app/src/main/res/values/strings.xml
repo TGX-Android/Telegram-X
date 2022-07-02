@@ -4283,7 +4283,7 @@
   <string name="PaymentFormProvider">Payment provider</string>
   <string name="PaymentFormShipAddress">Shipping address</string>
   <string name="PaymentFormShipMethod">Shipping method</string>
-  <string name="PaymentFormNewMethodCard">New Card</string>
+  <string name="PaymentFormNewMethodCard">Payment Information</string>
   <string name="PaymentFormNewMethodCardSection">Payment card</string>
   <string name="PaymentFormNewMethodCardNumber">Card Number</string>
   <string name="PaymentFormNewMethodExpireDate">MM/YY</string>
@@ -4319,6 +4319,11 @@
   <string name="ShowReceipt">Show Receipt</string>
   <string name="format_paymentFormAddressWithSecondLine">%1$s %2$s, %3$s, %4$s, %5$s, %6$s</string>
   <string name="format_paymentFormAddress">%1$s, %2$s, %3$s, %4$s, %5$s</string>
+
+  <string name="format_paymentMethod">**%1$s**\n%2$s</string>
+  <string name="PaymentMethodSaved">saved payment method</string>
+  <string name="PaymentMethodNew">new payment method</string>
+  <string name="PaymentMethodActionChange">Change payment method</string>
 
   <string name="ChooseCountry">Choose a country</string>
 

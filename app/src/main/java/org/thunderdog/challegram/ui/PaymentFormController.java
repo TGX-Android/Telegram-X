@@ -34,6 +34,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Size;
+import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextWrapper;
@@ -174,18 +175,47 @@ public class PaymentFormController extends ViewController<PaymentFormController.
     }
   }
 
+  private void openNewCardController () {
+    if (paymentForm.paymentsProvider != null) {
+      PaymentAddNewCardController c = new PaymentAddNewCardController(context, tdlib);
+      c.setArguments(new PaymentAddNewCardController.Args(this, paymentForm.paymentsProvider));
+      navigateTo(c);
+    } else {
+      WebPaymentMethodController c = new WebPaymentMethodController(context, tdlib);
+      c.setArguments(new WebPaymentMethodController.Args(getPaymentProcessorName(), paymentForm.url, this));
+      navigateTo(c);
+    }
+  }
+
+  private int getCredentialsDescription () {
+    if (inputCredentials.getConstructor() == TdApi.InputCredentialsSaved.CONSTRUCTOR) {
+      return R.string.PaymentMethodSaved;
+    } else {
+      return R.string.PaymentMethodNew;
+    }
+  }
+
   @Override
   public void onClick (View v) {
     switch (v.getId()) {
       case R.id.btn_paymentFormMethod:
-        if (paymentForm.paymentsProvider != null) {
-          PaymentAddNewCardController c = new PaymentAddNewCardController(context, tdlib);
-          c.setArguments(new PaymentAddNewCardController.Args(this, paymentForm.paymentsProvider));
-          navigateTo(c);
+        if (inputCredentials != null) {
+          showOptions(
+                  Lang.getMarkdownString(this, R.string.format_paymentMethod, inputCredentialsTitle, Lang.getString(getCredentialsDescription())),
+                  new int[]{R.id.btn_paymentFormMethod, R.id.btn_cancel},
+                  new String[]{Lang.getString(R.string.PaymentMethodActionChange), Lang.getString(R.string.Cancel)},
+                  new int[]{ViewController.OPTION_COLOR_NORMAL, ViewController.OPTION_COLOR_NORMAL},
+                  new int[]{R.drawable.baseline_credit_card_24, R.drawable.baseline_cancel_24},
+                  (optionItemView, id) -> {
+                    if (id == R.id.btn_paymentFormMethod) {
+                      openNewCardController();
+                    }
+
+                    return true;
+                  }
+          );
         } else {
-          WebPaymentMethodController c = new WebPaymentMethodController(context, tdlib);
-          c.setArguments(new WebPaymentMethodController.Args(getPaymentProcessorName(), paymentForm.url, this));
-          navigateTo(c);
+          openNewCardController();
         }
         break;
       case R.id.btn_paymentFormShipmentMethod:
