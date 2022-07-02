@@ -30,6 +30,8 @@ import org.thunderdog.challegram.tool.EmojiData;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 
+import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 
@@ -45,6 +47,29 @@ public class SelectableReactionView extends View {
   private boolean isAnimation;
   private Path contour;
   private GifFile gifFile;
+
+  private int stickerSize;
+  private int stickerLeft;
+  private int stickerTop;
+  private int stickerRight;
+  private int stickerBottom;
+
+  @Override
+  protected void onLayout (boolean changed, int left, int top, int right, int bottom) {
+    final int viewWidth = getMeasuredWidth();
+    final int viewHeight = getMeasuredHeight();
+    int cx = viewWidth / 2;
+    int cy = viewHeight / 2;
+
+    // Draw emoji
+    stickerSize = Math.min(viewWidth, viewHeight) - padding;
+    stickerLeft = cx - stickerSize / 2;
+    stickerTop = cy - stickerSize / 2;
+    stickerRight = stickerLeft + stickerSize;
+    stickerBottom = stickerTop + stickerSize;
+    imageReceiver.setBounds(stickerLeft, stickerTop, stickerRight, stickerBottom);
+    gifReceiver.setBounds(stickerLeft, stickerTop, stickerRight, stickerBottom);
+  }
 
   public SelectableReactionView (Context context, int padding) {
     super(context);
@@ -83,10 +108,10 @@ public class SelectableReactionView extends View {
     this.isAnimation = false;
   }
 
-  public void setSelected (boolean value) {
+  public void setReactionSelected (boolean value, boolean animated) {
     if (value == selected) return;
     selected = value;
-    if (selected) {
+    if (selected && animated) {
       startAnimation();
     }
     invalidate();
@@ -98,19 +123,7 @@ public class SelectableReactionView extends View {
 
   @Override
   protected void onDraw (Canvas c) {
-    final int viewWidth = getMeasuredWidth();
-    final int viewHeight = getMeasuredHeight();
-    int cx = viewWidth / 2;
-    int cy = viewHeight / 2;
 
-    // Draw emoji
-    int stickerSize = Math.min(viewWidth, viewHeight) - padding;
-    int stickerLeft = cx - stickerSize / 2;
-    int stickerTop = cy - stickerSize / 2;
-    int stickerRight = stickerLeft + stickerSize;
-    int stickerBottom = stickerTop + stickerSize;
-    imageReceiver.setBounds(stickerLeft, stickerTop, stickerRight, stickerBottom);
-    gifReceiver.setBounds(stickerLeft, stickerTop, stickerRight, stickerBottom);
     contour = sticker != null ? sticker.getContour(Math.min(imageReceiver.getWidth(), imageReceiver.getHeight())) : null;
     if (isAnimation) {
       if (gifReceiver.needPlaceholder()) {

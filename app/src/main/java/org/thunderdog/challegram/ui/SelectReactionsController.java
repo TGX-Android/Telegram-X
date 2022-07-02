@@ -120,6 +120,7 @@ public class SelectReactionsController extends ViewController<SelectReactionsCon
       doneVisible = hasAnyChanges();
       synchronized (adapter) {
         adapter.notifyDataSetChanged();
+        recyclerView.scheduleLayoutAnimation();
       }
       doneButton.setIsVisible(doneVisible, false);
       int numOfSelected = reactionsState ? items.size() : 0;
@@ -387,12 +388,12 @@ public class SelectReactionsController extends ViewController<SelectReactionsCon
       holder.itemView.setId(R.id.btn_selectReaction);
       holder.itemView.setOnClickListener(view -> {
         item.selected = !item.selected;
-        holder.reactionView.setSelected(item.selected);
+        holder.reactionView.setReactionSelected(item.selected, true);
         onReactionClick.accept(item.reaction);
       });
       holder.captionView.setText(item.caption);
       loadSticker.accept(holder.reactionView, item.reaction);
-      holder.reactionView.setSelected(item.selected);
+      holder.reactionView.setReactionSelected(item.selected, false);
     }
 
     @Override
