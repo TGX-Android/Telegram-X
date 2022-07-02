@@ -106,8 +106,8 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.DoneListener;
 import org.thunderdog.challegram.util.OptionDelegate;
-import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.SenderPickerDelegate;
+import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextWrapper;
@@ -119,12 +119,13 @@ import org.thunderdog.challegram.widget.CircleButton;
 import org.thunderdog.challegram.widget.DoneButton;
 import org.thunderdog.challegram.widget.EmptySmartView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
+import org.thunderdog.challegram.widget.OnReactionSelected;
 import org.thunderdog.challegram.widget.ProgressComponentView;
-import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.SliderWrapView;
 import org.thunderdog.challegram.widget.ViewControllerPagerAdapter;
 import org.thunderdog.challegram.widget.ViewPager;
+import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -1884,6 +1885,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             }
             break;
           }
+          case R.id.btn_availableReactionsSetting: {
+            view.setData(Lang.getString(R.string.XofY, chat.availableReactions.length, tdlib.getSupportedReactions().length));
+            break;
+          }
           case R.id.btn_chatPermissions: {
             view.setData(Lang.plural(R.string.xPermissions, Td.count(chat.permissions), TdConstants.CHAT_PERMISSIONS_COUNT));
             break;
@@ -3595,6 +3600,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, mode == MODE_EDIT_CHANNEL ? R.string.RestrictSavingChannelHint : R.string.RestrictSavingGroupHint));
       added = false;
     }
+    if (tdlib.canSetupReactions()) {
+      items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_availableReactionsSetting, 0, R.string.Reactions));
+      added = true;
+    }
     if (tdlib.canToggleAllHistory(chat)) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_prehistoryMode, 0, R.string.ChatHistory));
@@ -4617,6 +4627,17 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       case R.id.btn_chatPermissions: {
         openChatPermissions();
         break;
+      }
+      case R.id.btn_availableReactionsSetting: {
+        ReactionsController c = new ReactionsController(context, tdlib);
+        c.setArguments(new ReactionsController.Args(1, chat.availableReactions, new OnReactionSelected() {
+          @Override
+          public void onReactionSelected(String reactionTitle, String reaction, String[] allowedReactions) {
+            tdlib.updateAvailableReactionsForChat(chat.id, allowedReactions);
+          }
+        }
+        ));
+        navigateTo(c);
       }
       case R.id.btn_recentActions: {
         openRecentActions();

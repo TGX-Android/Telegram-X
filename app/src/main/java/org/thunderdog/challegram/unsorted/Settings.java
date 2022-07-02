@@ -291,6 +291,7 @@ public class Settings {
   private static final @Deprecated String KEY_PUSH_USER_ID = "push_user_id";
   private static final String KEY_PUSH_DEVICE_TOKEN = "push_device_token";
   public static final String KEY_IS_EMULATOR = "is_emulator";
+  public static final String KEY_QUICK_REACTION = "quick_reaction";
 
   private static final @Deprecated String KEY_EMOJI_COUNTERS_OLD = "counters_v2";
   private static final @Deprecated String KEY_EMOJI_RECENTS_OLD = "recents_v2";
@@ -5636,6 +5637,19 @@ public class Settings {
       putBoolean(KEY_IS_EMULATOR, true);
       TdlibManager.instance().setIsEmulator(true);
     }
+  }
+
+  public boolean isHasQuickReaction () {
+    String result = pmc.getString(KEY_QUICK_REACTION, "");
+    return result != null && !result.isEmpty();
+  }
+
+  public String getQuickReaction () {
+    return pmc.getString(KEY_QUICK_REACTION, "");
+  }
+
+  public void setQuickReaction (String reaction) {
+    putString(KEY_QUICK_REACTION, reaction);
   }
 
   private List<String> authenticationTokens;

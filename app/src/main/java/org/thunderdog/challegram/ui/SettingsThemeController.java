@@ -33,6 +33,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.luckycatlabs.sunrisesunset.SunriseSunsetCalculator;
 
+import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -75,11 +76,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.TimeZone;
 
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
-import me.vkryl.core.BitwiseUtils;
 
 public class SettingsThemeController extends RecyclerViewController<SettingsThemeController.Args> implements View.OnClickListener, ViewController.SettingsIntDelegate, SliderWrapView.RealTimeChangeListener, View.OnLongClickListener, TGLegacyManager.EmojiLoadListener, AppUpdater.Listener {
   public SettingsThemeController (Context context, Tdlib tdlib) {
@@ -170,6 +171,29 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
           }
           case R.id.btn_icon: {
             v.setData(R.string.IconsBuiltIn);
+            break;
+          }
+          case R.id.btn_quickReaction: {
+            Settings settings = Settings.instance();
+            boolean hasQuickReaction = settings.isHasQuickReaction();
+            if (hasQuickReaction) {
+              item.setViewType(ListItem.TYPE_VALUED_SETTING_COMPACT);
+              for (TdApi.Reaction reaction: tdlib().getSupportedReactions()) {
+                if (settings.getQuickReaction().equals(reaction.title)) {
+                  v.setDrawModifier(new EmojiModifier(reaction.reaction, Paints.emojiPaint()));
+                  break;
+                }
+              }
+            } else {
+              v.clearDrawModifiers();
+              item.setViewType(ListItem.TYPE_SETTING);
+            }
+            v.setData(settings.getQuickReaction());
+
+            int position = adapter.indexOfViewById(R.id.btn_quickReaction);
+            if (position != -1 && !recyclerView.isComputingLayout()) {
+              adapter.notifyItemChanged(position);
+            }
             break;
           }
           case R.id.btn_reduceMotion: {
@@ -502,6 +526,22 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
           items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_icon, 0, R.string.Icons).setDrawModifier(new DrawableModifier(R.drawable.baseline_star_20, R.drawable.baseline_account_balance_wallet_20, R.drawable.baseline_location_on_20, R.drawable.baseline_favorite_20)));
         }
       }
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      Settings settings = Settings.instance();
+      boolean hasQuickReaction = settings.isHasQuickReaction();
+      if (hasQuickReaction) {
+        ListItem listItem = new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_quickReaction, 0, R.string.QuickReaction);
+        for (TdApi.Reaction reaction: tdlib().getSupportedReactions()) {
+          if (settings.getQuickReaction().equals(reaction.title)) {
+            listItem.setDrawModifier(new EmojiModifier(reaction.reaction, Paints.emojiPaint()));
+            break;
+          }
+        }
+        items.add(listItem);
+      } else {
+        items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_quickReaction, 0, R.string.QuickReaction));
+      }
+
 
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_chatListStyle, 0, R.string.ChatListStyle));
@@ -835,6 +875,11 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       adapter.updateValuedSettingById(R.id.btn_emoji);
   }
 
+  public void updateSelectedQuickReaction () {
+    if (adapter != null)
+      adapter.updateValuedSettingById(R.id.btn_quickReaction);
+  }
+
   public void updateSelectedIconPack () {
     if (adapter != null)
       adapter.updateValuedSettingById(R.id.btn_icon);
@@ -1101,6 +1146,13 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         c.setArguments(new SettingsCloudController.Args<>(this));
         navigateTo(c);
         break;
+      }
+      case R.id.btn_quickReaction: {
+        ReactionsController c = new ReactionsController(context, tdlib);
+        c.setArguments(new ReactionsController.Args(0, new String[]{Settings.instance().getQuickReaction()}, (reactionTitle, reaction, availableReactions) ->
+                updateSelectedQuickReaction()
+        ));
+        navigateTo(c);
       }
       case R.id.btn_earpieceMode: {
         showEarpieceOptions(false);

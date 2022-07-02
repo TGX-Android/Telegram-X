@@ -35,6 +35,8 @@ import androidx.core.view.ViewCompat;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.sticker.StickerSmallView;
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ComplexReceiver;
@@ -65,6 +67,7 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.SingleViewProvider;
 import me.vkryl.android.util.ViewProvider;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
@@ -72,7 +75,6 @@ import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableLong;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.core.BitwiseUtils;
 
 public class TooltipOverlayView extends ViewGroup {
   public interface LocationProvider {
@@ -230,6 +232,54 @@ public class TooltipOverlayView extends ViewGroup {
     public void draw (Canvas c, ColorProvider colorProvider, int left, int top, int right, int bottom, float alpha, ComplexReceiver iconReceiver) {
       if (text != null) {
         text.draw(c, left, right, 0, top, null, alpha, iconReceiver);
+      }
+    }
+  }
+
+  private static class TooltipContentReaction extends TooltipContentView {
+    private StickerSmallView reactionView;
+    private final TGStickerObj stickerObj;
+
+    private TooltipContentReaction (TooltipOverlayView parentView, TGStickerObj stickerObj) {
+      super(parentView);
+      this.stickerObj = stickerObj;
+    }
+
+    @Override
+    public int getWidth () {
+      return 48;//reactionView != null ? reactionView.getWidth() : 0;
+    }
+
+    @Override
+    public int getHeight () {
+      return 48;//reactionView != null ? reactionView.getHeight() : 0;
+    }
+
+    @Override
+    public void requestIcons (ComplexReceiver iconReceiver) {
+      iconReceiver.getGifReceiver(2).requestFile(stickerObj.getFullAnimation());
+      //iconReceiver.clear();
+    }
+
+    @Override
+    public boolean layout (TooltipInfo info, int parentWidth, int parentHeight, int maxWidth) {
+      if (reactionView == null) {
+        reactionView = new StickerSmallView(parentView.getContext());
+        reactionView.setSticker(stickerObj);
+        return true;
+      }
+      return false;
+    }
+
+    @Override
+    public boolean onTouchEvent (TooltipInfo info, View view, MotionEvent e) {
+      return false;//text.onTouchEvent(view, e, info.clickCallback);
+    }
+
+    @Override
+    public void draw (Canvas c, ColorProvider colorProvider, int left, int top, int right, int bottom, float alpha, ComplexReceiver iconReceiver) {
+      if (reactionView != null) {
+        reactionView.draw(c);
       }
     }
   }
@@ -1203,6 +1253,10 @@ public class TooltipOverlayView extends ViewGroup {
 
     public TooltipInfo show (TextWrapper textWrapper) {
       return show(new TooltipContentViewTextWrapper(parentView, textWrapper));
+    }
+
+    public TooltipInfo show (TGStickerObj stickerObj) {
+      return show(new TooltipContentReaction(parentView, stickerObj));
     }
 
     public TooltipInfo show (TooltipContentView view) {

@@ -45,6 +45,8 @@ public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSugges
     int getStickerSuggestionsTop ();
     int getStickerSuggestionPreviewViewportHeight ();
     long getStickerSuggestionsChatId ();
+    TGStickerObj getPreviewSticker (String emoji);
+    void toggleBackgroundShadow(boolean show);
   }
 
   private final RecyclerView.LayoutManager manager;
@@ -52,12 +54,14 @@ public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSugges
   private final Callback callback;
   private @Nullable ArrayList<TGStickerObj> stickers;
   private @Nullable ViewController<?> themeProvider;
+  private boolean isReactions;
 
-  public StickerSuggestionAdapter (ViewController<?> context, Callback callback, RecyclerView.LayoutManager manager, @Nullable ViewController<?> themeProvider) {
+  public StickerSuggestionAdapter (ViewController<?> context, Callback callback, RecyclerView.LayoutManager manager, @Nullable ViewController<?> themeProvider, boolean isReactions) {
     this.context = context;
     this.callback = callback;
     this.manager = manager;
     this.themeProvider = themeProvider;
+    this.isReactions = isReactions;
   }
 
   public boolean hasStickers () {
@@ -98,14 +102,18 @@ public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSugges
 
   @Override
   public StickerSuggestionHolder onCreateViewHolder (ViewGroup parent, int viewType) {
-    return StickerSuggestionHolder.create(context.context(), context.tdlib(), viewType, this, themeProvider);
+    return StickerSuggestionHolder.create(context.context(), context.tdlib(), viewType, this, themeProvider, isReactions);
   }
 
   @Override
   public void onBindViewHolder (StickerSuggestionHolder holder, int position) {
     switch (holder.getItemViewType()) {
       case StickerSuggestionHolder.TYPE_STICKER: {
-        ((StickerSmallView) holder.itemView).setSticker(stickers != null ? stickers.get(position - 1) : null);
+        if (isReactions) {
+          ((StickerSmallView) holder.itemView).setSticker(stickers != null && stickers.size() > position ? stickers.get(position) : null);
+        } else {
+          ((StickerSmallView) holder.itemView).setSticker(stickers != null && stickers.size() > position ? stickers.get(position - 1) : null);
+        }
         break;
       }
     }
@@ -133,7 +141,11 @@ public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSugges
 
   @Override
   public int getItemViewType (int position) {
-    return position-- == 0 || stickers == null ? StickerSuggestionHolder.TYPE_START : position < stickers.size() ? StickerSuggestionHolder.TYPE_STICKER : StickerSuggestionHolder.TYPE_END;
+    if (isReactions) {
+      return StickerSuggestionHolder.TYPE_STICKER;
+    } else {
+      return position-- == 0 || stickers == null ? StickerSuggestionHolder.TYPE_START : position < stickers.size() ? StickerSuggestionHolder.TYPE_STICKER : StickerSuggestionHolder.TYPE_END;
+    }
   }
 
   @Override
@@ -191,7 +203,7 @@ public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSugges
 
   @Override
   public void onStickerPreviewOpened (StickerSmallView view, TGStickerObj sticker) {
-
+    callback.toggleBackgroundShadow(true);
   }
 
   @Override
@@ -201,7 +213,7 @@ public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSugges
 
   @Override
   public void onStickerPreviewClosed (StickerSmallView view, TGStickerObj thisSticker) {
-
+    callback.toggleBackgroundShadow(false);
   }
 
   @Override
@@ -212,6 +224,11 @@ public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSugges
   @Override
   public int getStickersListTop () {
     return callback.getStickerSuggestionsTop();
+  }
+
+  @Override
+  public TGStickerObj getStickerForPreview(String emoji) {
+    return callback.getPreviewSticker(emoji);
   }
 
   // Holder
@@ -225,7 +242,7 @@ public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSugges
       super(itemView);
     }
 
-    public static StickerSuggestionHolder create (Context context, Tdlib tdlib, int viewType, StickerSmallView.StickerMovementCallback callback, @Nullable ViewController<?> themeProvider) {
+    public static StickerSuggestionHolder create (Context context, Tdlib tdlib, int viewType, StickerSmallView.StickerMovementCallback callback, @Nullable ViewController<?> themeProvider, boolean isReactions) {
       switch (viewType) {
         case TYPE_START: {
           FrameLayoutFix contentView = new FrameLayoutFix(context);
@@ -270,7 +287,11 @@ public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSugges
           if (themeProvider != null) {
             themeProvider.addThemeInvalidateListener(stickerView);
           }
-          stickerView.setIsSuggestion();
+          if (isReactions) {
+            stickerView.setIsReaction();
+          } else {
+            stickerView.setIsSuggestion();
+          }
           stickerView.setPadding(0, Screen.dp(2.5f), 0, Screen.dp(6.5f));
           stickerView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
           return new StickerSuggestionHolder(stickerView);

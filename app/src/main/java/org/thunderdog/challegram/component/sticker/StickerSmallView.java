@@ -143,12 +143,22 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     emojiDisabled = true;
   }
 
+  private boolean isReaction;
+
+  public boolean isReaction() { return isReaction; }
+
+  public void setIsReaction () {
+    isReaction = true;
+  }
+
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     if (isSuggestion) {
       super.onMeasure(MeasureSpec.makeMeasureSpec(Screen.dp(72f), MeasureSpec.EXACTLY), heightMeasureSpec);
     } else if (isTrending) {
       super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Screen.smallestSide() / 5, MeasureSpec.EXACTLY));
+    } else if (isReaction) {
+      super.onMeasure(MeasureSpec.makeMeasureSpec(Screen.dp(48f), MeasureSpec.EXACTLY), heightMeasureSpec);
     } else {
       //noinspection SuspiciousNameCombination
       super.onMeasure(widthMeasureSpec, widthMeasureSpec);
@@ -229,6 +239,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     boolean needsLongDelay (StickerSmallView view);
     int getStickersListTop ();
     int getViewportHeight ();
+    default TGStickerObj getStickerForPreview(String emoji) { return null; }
   }
 
   private @Nullable StickerMovementCallback callback;
@@ -392,7 +403,9 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
       callback.onStickerPreviewOpened(this, sticker);
       needLongDelay = callback.needsLongDelay(this);
     }
-    scheduleButtons(this, sticker, needLongDelay, false);
+    if (!isReaction) {
+      scheduleButtons(this, sticker, needLongDelay, false);
+    }
 
     UI.forceVibrate(this, true);
 
@@ -401,7 +414,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     int left = getLeft();
     int top = getTop() + getPaddingTop();
 
-    ((BaseActivity) getContext()).openStickerPreview(tdlib, this, sticker, left + width / 2, top + height / 2 + (callback != null ? callback.getStickersListTop() : 0), Math.min(width, height) - Screen.dp(PADDING) * 2, callback.getViewportHeight(), isSuggestion || emojiDisabled);
+    ((BaseActivity) getContext()).openStickerPreview(tdlib, this, isReaction ? callback.getStickerForPreview(sticker.getFoundByEmoji()) : sticker, left + width / 2, top + height / 2 + (callback != null ? callback.getStickersListTop() : 0), Math.min(width, height) - Screen.dp(PADDING) * 2, callback.getViewportHeight(), isSuggestion || emojiDisabled || isReaction);
   }
 
   public @Nullable TGStickerObj getSticker () {

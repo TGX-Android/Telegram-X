@@ -438,6 +438,10 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       return true;
     }
 
+    if (msg.hasReactions() && msg.reactionForClickPosition(x, y, true) != null) {
+      return true;
+    }
+
     /*if (ChatId.isMultiChat(msg.getChatId()) && !msg.isChannel()) {
       TdApi.ChatMemberStatus myStatus = msg.tdlib().chatStatus(msg.getChatId());
       if (myStatus != null && TD.isAdmin(myStatus)) {
@@ -1206,6 +1210,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     MessagesController m = (MessagesController) c;
     if (msg instanceof TGMessageChat) {
       return onMessageClick(0, 0);
+    }
+    if (msg.hasReactions() && msg.onReactionLongClick(touchX, touchY)) {
+      return true;
     }
     if (msg.canBeSelected()) {
       selectMessage(m, msg, touchX, touchY);

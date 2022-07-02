@@ -67,6 +67,10 @@ public class CheckBoxView extends View {
     isDisabled.setValue(disabled, animated);
   }
 
+  public boolean isChecked () {
+    return isChecked.getValue();
+  }
+
   // Internal
 
   private static final float FACTOR_DIFF = .65f;

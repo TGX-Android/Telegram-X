@@ -95,6 +95,10 @@ public class Paints {
       outerCheckPaint.setStrokeWidth(Screen.dp(2f));
     if (emojiPaint != null)
       emojiPaint.setTextSize(Screen.dp(17f));
+    if (reactionPaint != null)
+      reactionPaint.setTextSize(Screen.dp(8f));
+    if (reactionCountPaint != null)
+      reactionCountPaint.setTextSize(Screen.dp(12f));
   }
 
   private static Paint filling;
@@ -849,6 +853,34 @@ public class Paints {
       }
     }
     return emojiPaint;
+  }
+
+  private static TextPaint reactionPaint;
+
+  public static TextPaint reactionPaint () {
+    if (reactionPaint == null) {
+      synchronized (Paints.class) {
+        if (reactionPaint == null) {
+          reactionPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
+          reactionPaint.setTextSize(Screen.dp(8f));
+        }
+      }
+    }
+    return reactionPaint;
+  }
+
+  private static TextPaint reactionCountPaint;
+
+  public static TextPaint reactionCountPaint () {
+    if (reactionCountPaint == null) {
+      synchronized (Paints.class) {
+        if (reactionCountPaint == null) {
+          reactionCountPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
+          reactionCountPaint.setTextSize(Screen.dp(12f));
+        }
+      }
+    }
+    return reactionCountPaint;
   }
 
   // Text paints. TODO reuse it instead of other text paints

@@ -4151,7 +4151,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       b.append(Lang.getString(resId));
     }
     String text = b.toString().trim();
-    patchReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, disableViewCounter);
+    patchReadReceiptsOptions(showOptions(chat.availableReactions, msg.getId(), StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, disableViewCounter);
   }
 
   private void patchReadReceiptsOptions (PopupLayout layout, TGMessage message, boolean disableViewCounter) {
@@ -7387,6 +7387,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return HeaderView.getSize(true) + messagesView.getMeasuredHeight();
   }
 
+  @Override
+  public TGStickerObj getPreviewSticker(String sticker) {
+    return null;
+  }
+
+  @Override
+  public void toggleBackgroundShadow(boolean show) {
+
+  }
+
   public void hideStickerSuggestions () {
     setStickersVisible(false);
   }
@@ -7414,7 +7424,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       stickerSuggestionsWrap.setLayoutParams(params);
 
       RecyclerView.LayoutManager manager = new LinearLayoutManager(context(), LinearLayoutManager.HORIZONTAL, false);
-      stickerSuggestionAdapter = new StickerSuggestionAdapter(this, this, manager, this);
+      stickerSuggestionAdapter = new StickerSuggestionAdapter(this, this, manager, this, false);
       stickerSuggestionAdapter.setStickers(stickers);
       stickerSuggestionsView = new RecyclerView(context()) {
         @Override

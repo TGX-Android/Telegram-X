@@ -15,6 +15,7 @@ package org.thunderdog.challegram.component.popups;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.component.attach.MediaBottomBaseController;
 import org.thunderdog.challegram.component.attach.MediaLayout;
+import org.thunderdog.challegram.component.reaction.ReactionBottomController;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.navigation.ViewController;
 
@@ -31,6 +32,14 @@ public class ModernActionedLayout extends MediaLayout {
 
   public static void showJoinDialog (ViewController<?> context, TdApi.ChatInviteLinkInfo inviteLinkInfo, Runnable onJoinClicked) {
     showMal(context, (mal) -> new JoinDialogController(mal, inviteLinkInfo, onJoinClicked));
+  }
+
+  public static void showMessageReactions (ViewController<?> context, long chatId, long messageId, String[] reactions) {
+    showMal(context, (mal) -> {
+      ReactionBottomController c = new ReactionBottomController(mal);
+      c.setArguments(new ReactionBottomController.Arguments(reactions, chatId, messageId));
+      return c;
+    });
   }
 
   public ModernActionedLayout (ViewController<?> context) {

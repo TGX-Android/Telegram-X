@@ -21,6 +21,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 
 public class TGGif {
   private TdApi.Animation animation;
+  private TdApi.Sticker sticker;
   private GifFile gif;
   private ImageFile file;
 
@@ -32,6 +33,17 @@ public class TGGif {
       this.file.setNeedCancellation(false);
     }
     this.gif = new GifFile(tdlib, animation);
+    this.gif.setScaleType(GifFile.CENTER_CROP);
+  }
+
+  public TGGif (Tdlib tdlib, TdApi.Sticker sticker) {
+    this.sticker = sticker;
+    this.file = TD.toImageFile(tdlib, sticker.thumbnail);
+    if (this.file != null) {
+      this.file.setScaleType(ImageFile.CENTER_CROP);
+      this.file.setNeedCancellation(false);
+    }
+    this.gif = new GifFile(tdlib, sticker.sticker, sticker.type);
     this.gif.setScaleType(GifFile.CENTER_CROP);
   }
 
@@ -52,10 +64,18 @@ public class TGGif {
   }
 
   public int width () {
-    return animation.width != 0 ? animation.width : animation.thumbnail != null ? animation.thumbnail.width : 0;
+    if (animation != null) {
+      return animation.width != 0 ? animation.width : animation.thumbnail != null ? animation.thumbnail.width : 0;
+    } else {
+      return sticker.width != 0 ? sticker.width : sticker.thumbnail != null ? sticker.thumbnail.width : 0;
+    }
   }
 
   public int height () {
-    return animation.height != 0 ? animation.height : animation.thumbnail != null ? animation.thumbnail.height : 0;
+    if (animation != null) {
+      return animation.height != 0 ? animation.height : animation.thumbnail != null ? animation.thumbnail.height : 0;
+    } else {
+      return sticker.height != 0 ? sticker.height : sticker.thumbnail != null ? sticker.thumbnail.height : 0;
+    }
   }
 }

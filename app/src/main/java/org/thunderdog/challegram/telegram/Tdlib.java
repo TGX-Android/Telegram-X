@@ -84,6 +84,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.FileUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
@@ -95,7 +96,6 @@ import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableInt;
 import me.vkryl.core.lambda.RunnableLong;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.util.JobList;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
@@ -6483,6 +6483,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  public void updateAvailableReactionsForChat(long chatId, String[] availableReactions) {
+    // TODO tim find way to send
+  }
+
   @TdlibThread
   private void updateChatAvailableReactions (TdApi.UpdateChatAvailableReactions update) {
     synchronized (dataLock) {
@@ -7430,6 +7434,25 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     synchronized (dataLock) {
       this.supportedReactions = update.reactions;
     }
+  }
+
+  @AnyThread
+  public TdApi.Reaction[] getSupportedReactions () {
+    synchronized (dataLock) {
+      return supportedReactions;
+    }
+  }
+
+  public void sendUserReaction (long chatId, long messageId, String reaction, boolean isBig) {
+    TdApi.SetMessageReaction reaction1 = new TdApi.SetMessageReaction(chatId, messageId, reaction, isBig);
+    send(reaction1, object -> getMessage(chatId, messageId, arg -> {
+      // TODO tim maybe invalidate ui
+    }));
+  }
+
+  public boolean canSetupReactions () {
+    // TODO tim find way for check permission
+    return true;
   }
 
   private void updateStickerSet (TdApi.StickerSet stickerSet) {

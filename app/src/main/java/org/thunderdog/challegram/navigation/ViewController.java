@@ -64,6 +64,8 @@ import org.thunderdog.challegram.FillingDrawable;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
+import org.thunderdog.challegram.component.chat.StickerSuggestionAdapter;
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
@@ -119,12 +121,14 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
@@ -138,7 +142,6 @@ import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableInt;
 import me.vkryl.core.lambda.RunnableLong;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
@@ -2165,6 +2168,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     return showOptions(info, ids, titles, colors, icons, null);
   }
 
+  public final PopupLayout showOptions (String[] reactions, long messageId, CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons) {
+    return showOptions(info, ids, titles, colors, icons, null, messageId, reactions);
+  }
+
   public final void showUnsavedChangesPromptBeforeLeaving (@Nullable Runnable onConfirm) {
     showUnsavedChangesPromptBeforeLeaving(null, Lang.getString(R.string.DiscardChanges), onConfirm);
   }
@@ -2180,8 +2187,12 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     });
   }
 
+  public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, final OptionDelegate delegate, final long messageId, final String[] reactions) {
+    return showOptions(info, ids, titles, colors, icons, delegate, null, messageId, reactions);
+  }
+
   public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, final OptionDelegate delegate) {
-    return showOptions(info, ids, titles, colors, icons, delegate, null);
+    return showOptions(info, ids, titles, colors, icons, delegate, null, 0,null);
   }
 
   public final PopupLayout showWarning (CharSequence info, RunnableBool callback) {
@@ -2283,11 +2294,15 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, final OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme) {
+    return showOptions(info, ids, titles, colors, icons, delegate, forcedTheme, 0,null);
+  }
+
+  public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, final OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme, final long messageId, final String[] reactions) {
     OptionItem[] items = new OptionItem[ids.length];
     for (int i = 0; i < ids.length; i++) {
       items[i] = new OptionItem(ids != null ? ids[i] : i, titles[i], colors != null ? colors[i] : OPTION_COLOR_NORMAL, icons != null ? icons[i] : 0);
     }
-    return showOptions(new Options(info, items), delegate, forcedTheme);
+    return showOptions(new Options(info, items), delegate, forcedTheme, messageId, reactions);
   }
 
   public final PopupLayout showOptions (Options options, final OptionDelegate delegate) {
@@ -2295,6 +2310,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public final PopupLayout showOptions (Options options, final OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme) {
+    return showOptions(options, delegate, forcedTheme, 0, null);
+  }
+
+  public final PopupLayout showOptions (Options options, final OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme, long messageId, String[] reactions) {
     if (isStackLocked()) {
       Log.i("Ignoring options show because stack is locked");
       return null;
@@ -2326,6 +2345,69 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     shadowView.setSimpleTopShadow(true);
     optionsWrap.addView(shadowView, 0);
     addThemeInvalidateListener(shadowView);
+
+    if (reactions != null && reactions.length != 0) {
+      ArrayList<TGStickerObj> stickers = new ArrayList<>();
+      for (int i = 0; i < tdlib().getSupportedReactions().length; i++) {
+        TdApi.Reaction reaction = tdlib().getSupportedReactions()[i];
+        TGStickerObj sticker = new TGStickerObj(tdlib, reaction.appearAnimation, reaction.reaction, reaction.appearAnimation.type);
+        sticker.getPreviewAnimation().setPlayOnce(true);
+        stickers.add(sticker);
+      }
+
+      int stickersListTopHeight = Screen.dp(72f) + Screen.dp(2.5f);
+      int stickersListTotalHeight = stickersListTopHeight + Screen.dp(6.5f);
+
+      RecyclerView stickerSuggestionsView = new RecyclerView(context());
+      RecyclerView.LayoutManager manager = new LinearLayoutManager(context(), LinearLayoutManager.HORIZONTAL, false);
+      StickerSuggestionAdapter stickerSuggestionAdapter = new StickerSuggestionAdapter(this, new StickerSuggestionAdapter.Callback() {
+          @Override
+          public boolean onSendStickerSuggestion(View view, TGStickerObj sticker, boolean forceDisableNotification, @Nullable TdApi.MessageSchedulingState schedulingState) {
+              tdlib.sendUserReaction(getChatId(), messageId, sticker.getFoundByEmoji(), false);
+              popupLayout.hideWindow(true);
+              return true;
+          }
+
+        @Override
+        public int getStickerSuggestionsTop() {
+          return Views.getLocationInWindow(optionsWrap)[1];
+        }
+
+        @Override
+        public int getStickerSuggestionPreviewViewportHeight() {
+          return Screen.currentHeight() - optionsWrap.getMeasuredHeight();
+        }
+
+        @Override
+        public long getStickerSuggestionsChatId() {
+          return 0;
+        }
+
+        @Override
+        public TGStickerObj getPreviewSticker(String emoji) {
+          for (TdApi.Reaction reaction : tdlib().getSupportedReactions()) {
+            if (Objects.equals(reaction.reaction, emoji)) {
+              return new TGStickerObj(tdlib, reaction.selectAnimation, reaction.reaction, reaction.selectAnimation.type);
+            }
+          }
+          return null;
+        }
+
+        @Override
+        public void toggleBackgroundShadow(boolean show) {
+          // TODO tim do this better
+          popupLayout.setHideBackground(show);
+        }
+      }, manager, this, true);
+      stickerSuggestionAdapter.setStickers(stickers);
+
+      stickerSuggestionsView.setItemAnimator(null);
+      stickerSuggestionsView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS : View.OVER_SCROLL_NEVER);
+      stickerSuggestionsView.setAdapter(stickerSuggestionAdapter);
+      stickerSuggestionsView.setLayoutManager(manager);
+      stickerSuggestionsView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, stickersListTotalHeight));
+      optionsWrap.addView(stickerSuggestionsView);
+    }
 
     // Item generation
     View.OnClickListener onClickListener;
