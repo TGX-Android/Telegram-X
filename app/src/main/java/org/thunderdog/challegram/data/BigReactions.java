@@ -14,6 +14,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.Px;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.animator.ListAnimator;
 import org.thunderdog.challegram.loader.ReactionsReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.tool.Screen;
@@ -23,7 +24,6 @@ import org.thunderdog.challegram.util.text.TextColorSet;
 import java.util.ArrayList;
 import java.util.List;
 
-import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.core.ColorUtils;
 
 public final class BigReactions implements Counter.Callback {

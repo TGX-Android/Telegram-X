@@ -11,6 +11,7 @@ import androidx.annotation.Px;
 import androidx.core.util.ObjectsCompat;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.animator.ListAnimator;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.ReactionsReceiver;
 import org.thunderdog.challegram.loader.Receiver;
@@ -21,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.vkryl.android.AnimatorUtils;
-import me.vkryl.android.animator.ListAnimator;
 
 public final class SmallReactions {
   @Dimension(unit = Dimension.DP)
