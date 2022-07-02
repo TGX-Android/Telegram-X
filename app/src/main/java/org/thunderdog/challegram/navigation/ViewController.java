@@ -44,6 +44,7 @@ import android.view.ViewParent;
 import android.view.WindowManager;
 import android.view.animation.Interpolator;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -64,12 +65,14 @@ import org.thunderdog.challegram.FillingDrawable;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
+import org.thunderdog.challegram.component.chat.EmojiView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibContext;
@@ -84,6 +87,7 @@ import org.thunderdog.challegram.theme.ThemeDeprecated;
 import org.thunderdog.challegram.theme.ThemeListenerEntry;
 import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.theme.ThemeManager;
+import org.thunderdog.challegram.tool.EmojiData;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Paints;
@@ -103,6 +107,7 @@ import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.SimpleStringItem;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.TextEntity;
+import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.ForceTouchView;
@@ -125,6 +130,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
@@ -138,7 +144,6 @@ import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableInt;
 import me.vkryl.core.lambda.RunnableLong;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
@@ -2344,16 +2349,28 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       };
     }
     int index = 0;
-    for (OptionItem item : options.items) {
-      TextView text = OptionsLayout.genOptionView(context, item.id, item.name, item.color, item.icon, onClickListener, getThemeListeners(), forcedTheme);
-      RippleSupport.setTransparentSelector(text);
-      if (forcedTheme != null)
-        Theme.forceTheme(text, forcedTheme);
-      text.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(54f)));
-      if (delegate != null) {
-        text.setTag(delegate.getTagForItem(index));
+    for (int i = 0; i < options.items.length; i++) {
+      OptionItem item = options.items[i];
+      if (item.id == R.id.btn_messageReactions) {
+        RecyclerView recyclerView = (CustomRecyclerView) Views.inflate(context, R.layout.recycler_custom, optionsWrap);
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setLayoutManager(new LinearLayoutManager(context, RecyclerView.HORIZONTAL, false));
+        recyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        recyclerView.setAdapter(new EmojiAdapter(context, onClickListener, item.name.toString().split(Lang.getConcatSeparator())));
+        recyclerView.setBackgroundColor(Theme.getColor(R.id.theme_color_background));
+        optionsWrap.addView(recyclerView);
+      } else {
+        TextView text = OptionsLayout.genOptionView(context, item.id, item.name, item.color, item.icon, onClickListener, getThemeListeners(), forcedTheme);
+        RippleSupport.setTransparentSelector(text);
+        if (forcedTheme != null)
+          Theme.forceTheme(text, forcedTheme);
+        text.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(54f)));
+        if (delegate != null) {
+          text.setTag(delegate.getTagForItem(index));
+        }
+        optionsWrap.addView(text);
       }
-      optionsWrap.addView(text);
+
       index++;
     }
 
@@ -2362,6 +2379,68 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     popupLayout.showSimplePopupView(optionsWrap, shadowView.getLayoutParams().height + Screen.dp(54f) * options.items.length + optionsWrap.getTextHeight() + popupAdditionalHeight);
 
     return popupLayout;
+  }
+
+  private static class ItemHolder extends RecyclerView.ViewHolder {
+    public ItemHolder (View itemView) {
+      super(itemView);
+    }
+  }
+
+  private class EmojiAdapter extends RecyclerView.Adapter<ItemHolder> implements TGLegacyManager.EmojiLoadListener {
+    private final Context context;
+    private final View.OnClickListener onClickListener;
+    private final String[] items;
+
+    public EmojiAdapter (Context context, View.OnClickListener onClickListener, String[] items) {
+      this.context = context;
+      this.onClickListener = onClickListener;
+      this.items = items;
+      TGLegacyManager.instance().addEmojiListener(this);
+    }
+
+    @Override
+    public void onEmojiPartLoaded () {
+      notifyDataSetChanged();
+    }
+
+    @Override
+    @NonNull
+    public ItemHolder onCreateViewHolder (@NonNull ViewGroup parent, int viewType) {
+      EmojiView imageView = new EmojiView(context, null);
+      int size = Screen.dp(36f);
+      int padding = Screen.dp(8f);
+
+      FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(size, size);
+      params.gravity = Gravity.CENTER;
+      imageView.setLayoutParams(params);
+
+      FrameLayoutFix wrapper = new FrameLayoutFix(context);
+      wrapper.setLayoutParams(new RecyclerView.LayoutParams(size + padding, size + padding));
+      wrapper.addView(imageView);
+
+      wrapper.setOnClickListener(onClickListener);
+      Views.setClickable(wrapper);
+      RippleSupport.setTransparentSelector(wrapper);
+      return new ItemHolder(wrapper);
+    }
+
+    @Override
+    public void onBindViewHolder (@NonNull ItemHolder holder, int position) {
+      String item = items[position];
+      holder.itemView.setId(R.id.btn_messageReactions);
+      ((EmojiView) ((FrameLayoutFix) holder.itemView).getChildAt(0)).setEmoji(item, EmojiData.STATE_NO_COLORS);
+    }
+
+    @Override
+    public int getItemViewType (int position) {
+      return 0;
+    }
+
+    @Override
+    public int getItemCount () {
+      return items.length;
+    }
   }
 
   public interface PopUpBuilder {
