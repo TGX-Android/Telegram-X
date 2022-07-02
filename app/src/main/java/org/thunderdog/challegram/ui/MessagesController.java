@@ -4214,6 +4214,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     ReactedUsersLayout usersWrap = new ReactedUsersLayout(context, tdlib);
     usersWrap.init(msg.getMessage(), msg.getChat());
+    usersWrap.setReaction("");
 
     // Parents
 
@@ -4255,6 +4256,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       msg.invalidate();
       popupLayout.hideWindow(true);
     };
+    Consumer<String> onReactionCategoryClick = reaction -> {
+      usersWrap.setReaction(reaction);
+    };
     Runnable onReactedClick = () -> {
       usersWrap.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, optionsWrap.getMeasuredHeight()));
       transition.toggleValue(true);
@@ -4283,7 +4287,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         msg.getMessage(),
         msg.getChat(),
         false,
-        onReactionClick,
+        onReactionCategoryClick,
         onReactedClick,
         onBackClick
     );

@@ -36,11 +36,14 @@ public class ReactedUserListController extends ViewController<ReactedUsersLayout
   private CustomRecyclerView recyclerView;
   private LinearLayoutManager manager;
   private ReactedUsersAdapter adapter;
-  private List<Pair<TGUser, String>> users;
+  private final List<Pair<TGUser, String>> users;
   private TdApi.Message message;
 
   public ReactedUserListController (Context context, Tdlib tdlib) {
     super(context, tdlib);
+    users = new ArrayList<>();
+    adapter = new ReactedUsersAdapter(this, null, 0, null);
+    adapter.setUsers(users);
   }
 
   @Override
@@ -58,24 +61,8 @@ public class ReactedUserListController extends ViewController<ReactedUsersLayout
   @Override
   protected View onCreateView (Context context) {
     message = getArgumentsStrict().getMessage();
-    users = new ArrayList<>();
-
-    if (message.canGetAddedReactions) {
-      tdlib.client().send(new TdApi.GetMessageAddedReactions(
-          message.chatId,
-          message.id,
-          "",
-          "",
-          20),
-          new AddedReactionHandler()
-      );
-    }
-
-
     manager = new LinearLayoutManager(context);
     manager.setOrientation(RecyclerView.VERTICAL);
-    adapter = new ReactedUsersAdapter(this, null, 0, null);
-    adapter.setUsers(users);
     recyclerView = (CustomRecyclerView) Views.inflate(context(), R.layout.recycler_custom, getArguments());
     recyclerView.setHasFixedSize(true);
     recyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -86,6 +73,23 @@ public class ReactedUserListController extends ViewController<ReactedUsersLayout
     recyclerView.setAdapter(adapter);
 
     return recyclerView;
+  }
+
+  public void setReaction (String reaction) {
+    users.clear();
+    synchronized (adapter) {
+      adapter.notifyDataSetChanged();
+    }
+    if (message.canGetAddedReactions) {
+      tdlib.client().send(new TdApi.GetMessageAddedReactions(
+              message.chatId,
+              message.id,
+              reaction,
+              "",
+              20),
+          new AddedReactionHandler(reaction)
+      );
+    }
   }
 
   @Override
@@ -117,6 +121,12 @@ public class ReactedUserListController extends ViewController<ReactedUsersLayout
   }
 
   private class AddedReactionHandler implements Client.ResultHandler {
+    private final String reaction;
+
+    public AddedReactionHandler (String reaction) {
+      this.reaction = reaction;
+    }
+
     @Override
     public void onResult (TdApi.Object object) {
       if (object.getConstructor() != TdApi.AddedReactions.CONSTRUCTOR) {
@@ -136,7 +146,7 @@ public class ReactedUserListController extends ViewController<ReactedUsersLayout
         tdlib.client().send(new TdApi.GetMessageAddedReactions(
             message.chatId,
             message.id,
-            "",
+            reaction,
             addedReactions.nextOffset,
             20),
             this

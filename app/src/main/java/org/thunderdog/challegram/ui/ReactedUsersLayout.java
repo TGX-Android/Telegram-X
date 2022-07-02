@@ -13,6 +13,7 @@ import org.thunderdog.challegram.theme.Theme;
 import me.vkryl.android.widget.FrameLayoutFix;
 
 public class ReactedUsersLayout extends FrameLayoutFix {
+  private ReactedUserListController controller;
   private TdApi.Message message;
   private TdApi.Chat chat;
   private Context context;
@@ -27,10 +28,14 @@ public class ReactedUsersLayout extends FrameLayoutFix {
   public void init (TdApi.Message message, TdApi.Chat chat) {
     this.message = message;
     this.chat = chat;
-    ReactedUserListController controller = new ReactedUserListController(context, tdlib);
+    controller = new ReactedUserListController(context, tdlib);
     controller.setArguments(this);
     controller.get().setLayoutParams(new FrameLayoutFix.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     addView(controller.get());
+  }
+
+  public void setReaction (String reaction) {
+    controller.setReaction(reaction);
   }
 
   public TdApi.Message getMessage () {

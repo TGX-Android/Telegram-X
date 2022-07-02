@@ -122,7 +122,7 @@ public class SelectReactionsController extends ViewController<SelectReactionsCon
         adapter.notifyDataSetChanged();
         recyclerView.scheduleLayoutAnimation();
       }
-      doneButton.setIsVisible(doneVisible, false);
+      doneButton.setIsVisible(doneVisible, true);
       int numOfSelected = reactionsState ? items.size() : 0;
       setTextForCheckBox(numOfSelected);
     });
@@ -134,7 +134,7 @@ public class SelectReactionsController extends ViewController<SelectReactionsCon
     Consumer<String> onReactionClick = (String) -> {
       if (items.isEmpty()) return;
       doneVisible = hasAnyChanges();
-      doneButton.setIsVisible(doneVisible, false);
+      doneButton.setIsVisible(doneVisible, true);
       updateCheckBox();
       setTextForCheckBox(getNumberOfSelected());
     };
@@ -173,7 +173,7 @@ public class SelectReactionsController extends ViewController<SelectReactionsCon
       if (doneVisible) {
         arguments.saveSelectedChatReaction(items);
         doneVisible = false;
-        doneButton.setIsVisible(doneVisible, false);
+        doneButton.setIsVisible(doneVisible, true);
         navigateBack();
       }
     });
@@ -181,6 +181,7 @@ public class SelectReactionsController extends ViewController<SelectReactionsCon
     doneButton.setMaximumAlpha(1f);
     doneButton.setIsVisible(false, false);
     wrapper.addView(doneButton);
+
     return wrapper;
   }
 

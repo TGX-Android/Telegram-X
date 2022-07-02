@@ -20,6 +20,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.ui.ReactionCategoryListController;
 import org.thunderdog.challegram.ui.ReactionListController;
 
 import java.util.function.Consumer;
@@ -39,7 +40,7 @@ public class ReactionsLayout extends LinearLayout {
   private boolean useDarkMode;
   private ViewController<?> parentController;
   private String[] reactions;
-  private Context context;
+  private final Context context;
   private Tdlib tdlib;
   private TdApi.Message msg;
   private TdApi.Chat chat;
@@ -77,7 +78,8 @@ public class ReactionsLayout extends LinearLayout {
     setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, BAR_HEIGHT));
     setGravity(Gravity.CENTER_VERTICAL);
     setBackgroundColor(Theme.getColor(R.id.theme_color_background));
-    setOnClickListener(view -> {});
+    setOnClickListener(view -> {
+    });
 
     if (options) {
       initOptions();
@@ -167,15 +169,19 @@ public class ReactionsLayout extends LinearLayout {
 
     addView(backIcon);
 
+    LinearLayout reactedWrapper = new LinearLayout(context);
+    reactedWrapper.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    reactedWrapper.setGravity(Gravity.CENTER_VERTICAL);
+
     ImageView reactedIcon = new ImageView(context);
-    Drawable heartIconDrawable = getResources().getDrawable(R.drawable.baseline_favorite_20);
-    int heartIconColor = Theme.getColor(R.id.theme_color_text);
-    heartIconColor = ColorUtils.alphaColor(0.6f, heartIconColor);
-    DrawableCompat.setTint(heartIconDrawable, heartIconColor);
-    reactedIcon.setImageDrawable(heartIconDrawable);
+    Drawable iconDrawable = getResources().getDrawable(R.drawable.baseline_favorite_20);
+    int iconColor = Theme.getColor(R.id.theme_color_text);
+    iconColor = ColorUtils.alphaColor(0.6f, iconColor);
+    DrawableCompat.setTint(iconDrawable, iconColor);
+    reactedIcon.setImageDrawable(iconDrawable);
     reactedIcon.setPadding(PADDING, 0, PADDING, 0);
     reactedIcon.setLayoutParams(new LinearLayout.LayoutParams(ICON_SIZE, ICON_SIZE));
-    addView(reactedIcon);
+    reactedWrapper.addView(reactedIcon);
 
     CustomTextView reactedText = new CustomTextView(context, tdlib);
     int reactedCount = 0;
@@ -194,7 +200,22 @@ public class ReactionsLayout extends LinearLayout {
       textWidth = TEXT_WIDTH_M;
     }
     reactedText.setLayoutParams(new LinearLayout.LayoutParams(textWidth, ViewGroup.LayoutParams.WRAP_CONTENT));
-    addView(reactedText);
+    reactedWrapper.addView(reactedText);
+
+    addView(reactedWrapper);
+
+    Views.setClickable(reactedWrapper);
+    RippleSupport.setTransparentSelector(reactedWrapper);
+    reactedWrapper.setOnClickListener(view -> {
+      onReactionClick.accept("");
+    });
+    ReactionCategoryListController controller = new ReactionCategoryListController(context, tdlib);
+    controller.setArguments(this);
+    controller.get().setLayoutParams(new LinearLayout.LayoutParams(
+        Screen.currentWidth() - BACK_ICON_SIZE - ICON_SIZE - textWidth,
+        BAR_HEIGHT
+    ));
+    addView(controller.get());
   }
 
   public boolean useDarkMode () {
