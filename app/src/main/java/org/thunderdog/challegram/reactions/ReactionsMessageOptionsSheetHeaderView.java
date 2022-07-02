@@ -217,7 +217,7 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout{
 
 	private void onReactionClick(View v){
 		TdApi.Reaction r=(TdApi.Reaction) v.getTag();
-		controller.sendMessageReaction(message, r.reaction, (ImageView) ((ViewGroup)v).getChildAt(0), popupLayout);
+		controller.sendMessageReaction(message, r.reaction, (ImageView) ((ViewGroup)v).getChildAt(0), null, popupLayout);
 	}
 
 	private static class ChosenReactionBackgroundDrawable extends Drawable{

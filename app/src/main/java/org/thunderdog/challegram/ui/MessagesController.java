@@ -31,6 +31,7 @@ import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.media.MediaMetadataRetriever;
@@ -179,6 +180,8 @@ import org.thunderdog.challegram.navigation.ViewPagerHeaderViewCompact;
 import org.thunderdog.challegram.navigation.ViewPagerTopView;
 import org.thunderdog.challegram.player.RecordAudioVideoController;
 import org.thunderdog.challegram.player.RoundVideoController;
+import org.thunderdog.challegram.reactions.LottieAnimationDrawable;
+import org.thunderdog.challegram.reactions.PreloadedLottieAnimation;
 import org.thunderdog.challegram.reactions.PreloadedReactionAnimations;
 import org.thunderdog.challegram.reactions.ReactionAnimationOverlay;
 import org.thunderdog.challegram.reactions.ReactionListViewController;
@@ -246,7 +249,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
@@ -337,6 +342,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private CounterBadgeView unreadCountView, mentionCountView, reactionCountView;
 
   public boolean sponsoredMessageLoaded = false;
+  private List<TdApi.Reaction> quickReactions=Collections.emptyList();
 
   public MessagesController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -2414,6 +2420,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (contentView != null) {
       updateView();
     }
+    updateQuickReactions();
   }
 
   private boolean isEventLog () {
@@ -10448,7 +10455,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return true;
   }
 
-  public void sendMessageReaction(TGMessage msg, String reaction, ImageView src, PopupLayout popup){
+  public void sendMessageReaction(TGMessage msg, String reaction, ImageView src, Rect srcRect, PopupLayout popup){
     MessageView mv=(MessageView) manager.findMessageView(getChatId(), msg.getMessageForReactions().id);
     ArrayList<TdApi.MessageReaction> reactions=new ArrayList<>(Arrays.asList(msg.getReactions()));
     TdApi.MessageReaction existingReaction=null;
@@ -10510,6 +10517,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
                 if(popup!=null)
                   popup.hideWindow(true);
               }, ()->playReactionEffectAnimation(msg, reaction));
+            }else if(srcRect!=null){
+              LottieAnimationDrawable anim=new LottieAnimationDrawable(tdlib.getReactionAnimations(reaction).appear, srcRect.width(), srcRect.height());
+              anim.setFrame(anim.getTotalFrames()-1);
+              ReactionAnimationOverlay ov=manager.getAnimationOverlay();
+              ov.playFlyingReactionAnimation(outRect -> {
+                return mv.getReactionIconBounds(reaction, outRect);
+              }, srcRect, anim, null, ()->playReactionEffectAnimation(msg, reaction));
             }else{
               playReactionEffectAnimation(msg, reaction);
             }
@@ -10579,5 +10593,24 @@ public class MessagesController extends ViewController<MessagesController.Argume
     popup.init(true);
     ReactionListViewController list=new ReactionListViewController(context, popup, msg, this, null, ()->popup.hideWindow(true));
     list.showForSingleReaction(reaction);
+  }
+
+  @Override
+  public void onChatAvailableReactionsUpdated(long chatId, String[] availableReactions){
+    updateQuickReactions();
+  }
+
+  private void updateQuickReactions(){
+    if(Settings.instance().areQuickReactionsEnabled()){
+      Set<String> enabled=Settings.instance().getQuickReactions();
+      List<String> available=Arrays.asList(chat.availableReactions);
+      quickReactions=tdlib.getSupportedReactions().stream().filter(r->enabled.contains(r.reaction) && available.contains(r.reaction)).collect(Collectors.toList());
+    }else{
+      quickReactions=Collections.emptyList();
+    }
+  }
+
+  public List<TdApi.Reaction> getQuickReactions(){
+    return quickReactions;
   }
 }

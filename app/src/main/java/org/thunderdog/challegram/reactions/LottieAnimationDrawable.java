@@ -130,4 +130,16 @@ public class LottieAnimationDrawable extends Drawable implements Animatable{
 	public void setOnEnd(Runnable onEnd){
 		this.onEnd=onEnd;
 	}
+
+	public void setFrame(int frame){
+		this.frame=frame;
+		if(!drawing){
+			drawing=true;
+			rendererThreadPool.submit(this::getNextFrame);
+		}
+	}
+
+	public int getTotalFrames(){
+		return (int) anim.getFrameCount();
+	}
 }

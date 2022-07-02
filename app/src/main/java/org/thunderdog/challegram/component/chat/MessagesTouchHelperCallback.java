@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.component.chat;
 
 import android.graphics.Canvas;
+import android.graphics.Rect;
 
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
@@ -64,6 +65,9 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
     if (canDragReply() && m.canReplyTo()) {
       int flag = Lang.rtl() ? ItemTouchHelper.RIGHT : ItemTouchHelper.LEFT;
       flags |= flag;
+      if(!controller.getQuickReactions().isEmpty()){
+        flags|=ItemTouchHelper.UP | ItemTouchHelper.DOWN;
+      }
     }
 
     if (canDragShare() && m.canBeForwarded()) {
@@ -98,7 +102,19 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
       Runnable after = null;
       boolean needDelay = false;
       if (direction == (Lang.rtl() ? CustomTouchHelper.RIGHT : CustomTouchHelper.LEFT) && canDragReply()) {
-        after = () -> controller.showReply(msg.getNewestMessage(), true, true);
+        after = () -> {
+          int idx=msg.getQuickReactionIndex();
+          if(idx==0){
+            controller.showReply(msg.getNewestMessage(), true, true);
+          }else{
+            int[] loc={0, 0};
+            holder.itemView.getLocationOnScreen(loc);
+            int size=Screen.dp(20);
+            int x=holder.itemView.getWidth()-Screen.dp(32)+loc[0]-size/2;
+            int y=(msg.getBottomContentEdge()-msg.getTopContentEdge())/2+loc[1]-size/2;
+            controller.sendMessageReaction(msg, controller.getQuickReactions().get(idx-1).reaction, null, new Rect(x, y, x+size, y+size), null);
+          }
+        };
       }
       if (direction == (Lang.rtl() ? CustomTouchHelper.LEFT : CustomTouchHelper.RIGHT) && canDragShare()) {
         after = () -> controller.shareMessages(msg.getChatId(), msg.getAllMessages());
@@ -151,10 +167,15 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
     if (state == ItemTouchHelper.ACTION_STATE_SWIPE && MessagesHolder.isMessageType(holder.getItemViewType())) {
       final MessageView v = MessagesHolder.findMessageView(holder.itemView);
       final TGMessage msg = v.getMessage();
-      msg.translate(dx, true);
+      msg.translate(dx, dy, true);
       if (holder.itemView instanceof MessageViewGroup) {
         ((MessageViewGroup) holder.itemView).setSwipeTranslation(msg.getTranslation());
       }
     }
+  }
+
+  @Override
+  public int interpolateOutOfBoundsScroll(RecyclerView recyclerView, int viewSize, int viewSizeOutOfBounds, int totalSize, long msSinceStartScroll){
+    return 0; // prevents scrolling when dragging vertically
   }
 }

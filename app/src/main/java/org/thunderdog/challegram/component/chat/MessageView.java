@@ -110,6 +110,7 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
   private ComplexReceiver reactionSmallIconsReceiver;
   private ReactionButtonsLayout reactionButtons;
   private boolean isAttachedToWindow;
+  private ComplexReceiver quickReactionsReceiver;
 
   public MessageView (Context context) {
     super(context);
@@ -202,6 +203,9 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
     }
     if(reactionSmallIconsReceiver!=null){
       reactionSmallIconsReceiver.performDestroy();
+    }
+    if(quickReactionsReceiver!=null){
+      quickReactionsReceiver.performDestroy();
     }
     if (msg != null) {
       msg.onDestroy();
@@ -1423,6 +1427,7 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
     if (Lang.rtl()) {
       if ((helperCallback.canDragReply() && diffX > 0) || (helperCallback.canDragShare() && diffX < 0)) {
         if (touchX < m.get().getMeasuredWidth() - MessagesController.getSlideBackBound()) {
+          loadQuickReactionIcons();
           m.startSwipe(findTargetView());
           return true;
         }
@@ -1430,6 +1435,7 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
     } else {
       if ((helperCallback.canDragReply() && diffX < 0) || (helperCallback.canDragShare() && diffX > 0)) {
         if (touchX > MessagesController.getSlideBackBound()) {
+          loadQuickReactionIcons();
           m.startSwipe(findTargetView());
           return true;
         }
@@ -1571,7 +1577,7 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
 
   @Override
   public void onReactionClick(MessageCellReactionButton btn){
-    manager.controller().sendMessageReaction(msg, btn.getReaction().reaction, null, null);
+    manager.controller().sendMessageReaction(msg, btn.getReaction().reaction, null, null, null);
   }
 
   @Override
@@ -1634,6 +1640,22 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
       if(btn!=null){
         btn.getIcon().setAlpha(hidden ? 0f : 1f);
       }
+    }
+  }
+
+  public ComplexReceiver getQuickReactionsReceiver(){
+    if(quickReactionsReceiver==null)
+      quickReactionsReceiver=new ComplexReceiver(this);
+    return quickReactionsReceiver;
+  }
+
+  private void loadQuickReactionIcons(){
+    List<TdApi.Reaction> reactions=manager.controller().getQuickReactions();
+    if(reactions.isEmpty())
+      return;
+    ComplexReceiver receiver=getQuickReactionsReceiver();
+    for(int i=0;i<reactions.size();i++){
+      receiver.getImageReceiver(i).requestFile(TD.toImageFile(msg.tdlib(), reactions.get(i).staticIcon.thumbnail));
     }
   }
 }
