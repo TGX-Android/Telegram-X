@@ -236,10 +236,22 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   protected final MultipleViewProvider currentViews;
   protected final MultipleViewProvider overlayViews;
 
+  // reactions
+
   private List<ReactionBubble> reactionBubbles;
+  private float reactionsHeightMult = 0f;
   private boolean reactionsUpToDate = false;
   private int reactionId = 0;
   private MessageView messageView;
+
+  private final BoolAnimator reactionsVisible = new BoolAnimator(0,
+      (id, factor, fraction, callee) -> {
+        reactionsHeightMult = factor;
+        invalidate();
+      },
+      AnimatorUtils.DECELERATE_INTERPOLATOR,
+      100L
+  );
 
   protected TGMessage (MessagesManager manager, TdApi.Message msg) {
     if (!initialized) {
@@ -400,6 +412,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private void setReactions (TdApi.MessageReaction[] reactions) {
+    int oldSize = reactionBubbles.size();
     List<ReactionBubble> reactionsForRemoval = new ArrayList<>(reactionBubbles);
     for (int i = 0; i < reactions.length; i++) {
       TdApi.MessageReaction reaction = reactions[i];
@@ -414,6 +427,13 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
     for (ReactionBubble reactionBubble: reactionsForRemoval) {
       reactionBubbles.remove(reactionBubble);
+    }
+    int newSize = reactionBubbles.size();
+    if (oldSize == 0 && newSize > 0) {
+      reactionsVisible.setValue(true, true);
+    }
+    if (oldSize > 0 && newSize == 0) {
+      reactionsVisible.setValue(false, true);
     }
   }
 
@@ -672,7 +692,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public boolean hasReactions () {
-    return !reactionBubbles.isEmpty();
+    return reactionsHeightMult > 0;
   }
 
   protected int getSmallestMaxContentWidth () {
@@ -1002,6 +1022,15 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return height;
   }
 
+  private float computeReactionsTotalHeight (float parentWidth, boolean needMarginBottom) {
+    float reactionsTotalHeight = getReactionsLines(parentWidth) * ReactionBubble.getHeightWithMargins();
+    reactionsTotalHeight = reactionsTotalHeight + ReactionBubble.outMarginTop;
+    if (needMarginBottom) {
+      reactionsTotalHeight += ReactionBubble.outMarginBottom;
+    }
+    return  reactionsTotalHeight * reactionsHeightMult;
+  }
+
   private static int getBubbleForwardOffset () {
     return getBubbleNameHeight();
   }
@@ -1236,8 +1265,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         height += getFooterHeight() + getFooterPaddingTop() + getFooterPaddingBottom();
       }
       if (hasReactions()) {
-        float reactionsTotalHeight = getReactionsLines(width - getContentLeft()) * ReactionBubble.getHeightWithMargins();
-        reactionsTotalHeight = reactionsTotalHeight + ReactionBubble.outMarginTop + ReactionBubble.outMarginBottom;
+        float reactionsTotalHeight = computeReactionsTotalHeight(width - getContentLeft(), true);
         height += reactionsTotalHeight;
       }
       return height;
@@ -3140,11 +3168,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         // Adjust bubble height for reactions
         bubbleHeight -= bubblePaddingBottom;
 
-        float reactionsTotalHeight = getReactionsLines(bubbleWidth) * ReactionBubble.getHeightWithMargins();
-        reactionsTotalHeight = reactionsTotalHeight + ReactionBubble.outMarginTop;
-        if (reactionsFitWithTime(bubbleWidth) || drawBubbleTimeOverContent()) {
-          reactionsTotalHeight += ReactionBubble.outMarginBottom;
-        }
+        float reactionsTotalHeight = computeReactionsTotalHeight(bubbleWidth, reactionsFitWithTime(bubbleWidth) || drawBubbleTimeOverContent());
         if (!reactionsFitWithTime(bubbleWidth)) {
           bubbleHeight += reactionsTotalHeight;
           if (drawBubbleTimeOverContent() || contentFitWithTime) {
