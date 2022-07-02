@@ -4081,6 +4081,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     });
   }
 
+  public void setChatAllowedReactions (long chatId, String[] reactions) {
+    client().send(new TdApi.SetChatAvailableReactions(chatId, reactions), okHandler());
+  }
+
   public boolean canRevokeChat (long chatId) {
     return ChatId.isPrivate(chatId) && !isSelfChat(chatId) && !isBotChat(chatId);
   }

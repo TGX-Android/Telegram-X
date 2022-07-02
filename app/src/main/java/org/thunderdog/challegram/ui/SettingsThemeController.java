@@ -1624,7 +1624,8 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
 
   private void showQuickReactionsOptions () {
     EditReactionsController c = new EditReactionsController(context, tdlib);
-    c.setArguments(new EditReactionsController.Args(true, "👍"));
+//    Settings.instance().
+    c.setArguments(new EditReactionsController.Args("👍"));
     navigateTo(c);
   }
 

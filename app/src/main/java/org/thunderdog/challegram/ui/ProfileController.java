@@ -106,8 +106,8 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.DoneListener;
 import org.thunderdog.challegram.util.OptionDelegate;
-import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.SenderPickerDelegate;
+import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextWrapper;
@@ -120,11 +120,11 @@ import org.thunderdog.challegram.widget.DoneButton;
 import org.thunderdog.challegram.widget.EmptySmartView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import org.thunderdog.challegram.widget.ProgressComponentView;
-import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.SliderWrapView;
 import org.thunderdog.challegram.widget.ViewControllerPagerAdapter;
 import org.thunderdog.challegram.widget.ViewPager;
+import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -1878,8 +1878,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
               case MODE_EDIT_SUPERGROUP:
               case MODE_EDIT_CHANNEL:
               case MODE_EDIT_GROUP: {
-                //OKI use real number of possible reactions?
-                //OKI fix R.string.xPermissions
                 view.setData(Lang.plural(R.string.xPermissions, chat.availableReactions.length, TdConstants.CHAT_REACTIONS_COUNT));
                 break;
               }
@@ -3141,10 +3139,16 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     navigateTo(c);
   }
 
-    private void openAllowedReactions () {
+  private void openAllowedReactions () {
     EditReactionsController c = new EditReactionsController(context, tdlib);
-    c.setArguments(new EditReactionsController.Args(chat.id, false, new ArrayList<>()));
+    c.setArguments(new EditReactionsController.Args(chat.id, List.of(chat.availableReactions), () -> {
+      baseAdapter.notifyDataSetChanged();
+    }));
     navigateTo(c);
+  }
+
+  public interface Callback {
+    void onAllowedReactionsUpdated ();
   }
 
   private void openRecentActions () {
@@ -3614,8 +3618,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, mode == MODE_EDIT_CHANNEL ? R.string.RestrictSavingChannelHint : R.string.RestrictSavingGroupHint));
       added = false;
     }
-    //OKI is there any conditions?
-    if (true) {
+    if (tdlib.canChangeInfo(chat)) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_allowedReactions, 0, R.string.Reactions));
       added = true;

@@ -4280,7 +4280,9 @@
   <string name="xPRs_other">%1$s PRs</string>
   <string name="PR">PR #%1$d</string>
 
-  <string name="EnableReactions">Reactions disabled</string>
+  <string name="ReactionsDisabled">Reactions disabled</string>
+  <string name="ReactionsEnabled_one">%1$s Reaction enabled</string>
+  <string name="ReactionsEnabled_other">%1$s Reactions enabled</string>
   <string name="AllowMembersToReact">Allow members to react to group messages</string>
   <string name="AvailableReactions">Available reactions</string>
   <string name="Reactions">Reactions</string>
@@ -4289,7 +4291,6 @@
   <string name="EnableQuickReaction">Enable Quick Reaction</string>
   <string name="BigReactions">Big Reactions</string>
   <string name="BigReactionsAreInteractive">Big reactions are interactive buttons under messages presenting each reaction.</string>
-  <string name="NumberOfReactionsEnabled">%1$ Reactions enabled</string>
 
   <string name="Reaction_ThumbsUp">Thumbs Up</string>
   <string name="Reaction_ThumbsDown">Thumbs Down</string>

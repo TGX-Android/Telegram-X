@@ -4186,6 +4186,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     ViewPagerHeaderViewCompact reactionsHeaderView = new ViewPagerHeaderViewCompact(context);
     reactionsHeaderView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f)));
+    reactionsHeaderView.setBottom(Screen.dp(-4f));
     reactionsHeaderView.setBackgroundColor(Theme.getColor(R.id.theme_color_background));
 
     //OKI avoid duplication of ViewController:2285, rewrite?
@@ -4244,16 +4245,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
       popupContentView.setTranslationX((-Screen.currentWidth()) * factor);
       popupContentView.invalidate();
     }, AnimatorUtils.DECELERATE_INTERPOLATOR, 220l);
-    View.OnClickListener showUsersReactionView = v -> usersReactionsVisible.toggleValue(true);
-    LinearLayout openUserReactionsButton = createTotalReactionCountButton(showUsersReactionView);
+    View.OnClickListener onClickShowReactionsDetails = v -> usersReactionsVisible.toggleValue(true);
+    LinearLayout openUserReactionsButton = createTotalReactionCountButton(message, onClickShowReactionsDetails);
     reactionsHeaderView.addView(openUserReactionsButton);
 
     ViewPagerTopView topView = reactionsHeaderView.getTopView();
     topView.setUseDarkBackground();
     //OKI fix this workaround
-    //OKI fix with available reactions
-//    message.availableReactions?
-    topView.setItems(Arrays.copyOf(reactions, reactions.length+2));
+    TdApi.Chat chat = tdlib.chat(message.getChatId());
+    topView.setItems(Arrays.copyOf(chat.availableReactions, chat.availableReactions.length+2));
     topView.setOnItemClickListener(item -> {
       UI.showToast(reactions[item], Toast.LENGTH_SHORT);
       topView.setSelectionFactor(item);
@@ -4268,14 +4268,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
 //    userReactionsPopupFragment.addView(*);
     popupContentView.addView(optionsWithReactionsPopupFragment);
     popupContentView.addView(userReactionsPopupFragment);
-    popupLayout.showSimplePopupView(popupContentView, shadowView.getLayoutParams().height + Screen.dp(54f) * options.items.length + optionsWrap.getTextHeight() + popupAdditionalHeight);
+    popupLayout.showSimplePopupView(popupContentView, Screen.dp(54f) * options.items.length + optionsWrap.getTextHeight() + popupAdditionalHeight);
     return popupLayout;
   }
 
-  private LinearLayout createTotalReactionCountButton (View.OnClickListener showDetailsListener) {
-    ImageView reactedIcon = new ImageView(context);
+  private LinearLayout createTotalReactionCountButton (TGMessage message, View.OnClickListener showDetailsListener) {
     Drawable iconDrawable = getResources().getDrawable(R.drawable.baseline_favorite_20);
     DrawableCompat.setTint(iconDrawable, ColorUtils.alphaColor(0.6f, Theme.getColor(R.id.theme_color_text)));
+    ImageView reactedIcon = new ImageView(context);
     reactedIcon.setImageDrawable(iconDrawable);
     reactedIcon.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
@@ -4289,8 +4289,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     reactionTitle.setEllipsize(TextUtils.TruncateAt.END);
     reactionTitle.setId(R.id.text_reactionTitle);
-    //OKI bind with real value
-    reactionTitle.setText("12");
+    reactionTitle.setTextColor(ColorUtils.alphaColor(0.6f, Theme.getColor(R.id.theme_color_text)));
+    TdApi.Message msg = tdlib.getMessageLocally(message.getChatId(), message.getId());
+    TdApi.MessageInteractionInfo info = msg.interactionInfo;
+    int totalReactions = info == null ? 0 : info.reactions.length;
+    reactionTitle.setText(String.valueOf(totalReactions));
 
     LinearLayout buttonContainer = new LinearLayout(context);
     LinearLayout.LayoutParams wrapParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT);
@@ -4313,8 +4316,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
       ColorUtils.alphaColor(0.7f, Theme.getColor(R.id.theme_color_background)),
       ColorUtils.alphaColor(0f, Theme.getColor(R.id.theme_color_background))
     });
-    //OKI implement detailed reactions information
-    buttonContainer.setOnClickListener(view -> UI.showToast("Detailed reactions info not implemented", Toast.LENGTH_LONG));
     buttonContainer.setOnClickListener(showDetailsListener);
     ViewUtils.setBackground(buttonContainer, gd);
 

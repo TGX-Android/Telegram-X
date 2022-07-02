@@ -21,6 +21,7 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGFoundChat;
+import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
@@ -28,7 +29,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.BetterChatView;
-import org.thunderdog.challegram.widget.CheckBoxTriStates;
+import org.thunderdog.challegram.widget.DoneButton;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import org.thunderdog.challegram.widget.SelectableReaction;
 
@@ -47,6 +48,9 @@ public class EditReactionsController extends EditBaseController<EditReactionsCon
   private ReactionAdapter reactionAdapter;
   private RecyclerView reactionsGridView;
   public List<ReactionItem> reactionItems;
+
+  private DoneButton doneButton;
+  private boolean doneVisible;
 
   public static class Args {
     public static final String[] reactions = new String[]{
@@ -91,21 +95,25 @@ public class EditReactionsController extends EditBaseController<EditReactionsCon
     public List<String> selectedReactions;
     public boolean quickReactionEnabled;
     public boolean reactionsEnabled;
+    public String infoText;
+    private ProfileController.Callback onUpdateCallback;
 
-    public Args (long chatId, boolean reactionsEnabled, List<String>  selectedReactions) {
+    public Args (long chatId, List<String> selectedReactions, ProfileController.Callback callback) {
       this.chatId = chatId;
       this.mode = MODE_REACTIONS;
-      this.reactionsEnabled = reactionsEnabled;
+      this.reactionsEnabled = selectedReactions != null && !selectedReactions.isEmpty();
       this.selectedReactions = new ArrayList<>(selectedReactions);
+      this.onUpdateCallback = callback;
     }
 
-    public Args (boolean quickReactionEnabled, String selectedReaction) {
+    public Args (String selectedReaction) {
       this.mode = MODE_QUICK_REACTIONS;
-      this.selectedReactions = List.of(selectedReaction);
-      this.quickReactionEnabled = quickReactionEnabled;
+      this.selectedReactions = new ArrayList();
+      this.selectedReactions.add(selectedReaction);
+      this.quickReactionEnabled = selectedReactions != null && !selectedReactions.isEmpty();
     }
 
-    public boolean isSelected(String reaction) {
+    public boolean isSelected (String reaction) {
       return selectedReactions.contains(reaction);
     }
   }
@@ -134,8 +142,29 @@ public class EditReactionsController extends EditBaseController<EditReactionsCon
   protected void onCreateView (Context context, FrameLayoutFix contentView, RecyclerView recyclerView) {
     buildSettingsItems();
     recyclerView.setAdapter(settingsAdapter);
+    settingsAdapter.updateCheckOptionById(R.id.btn_enableReactions, getArgumentsStrict().reactionsEnabled);
 
     buildReactionGridView(context, contentView, recyclerView);
+    contentView.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+    doneButton = new DoneButton(context);
+    doneButton.setId(R.id.btn_done);
+    addThemeInvalidateListener(doneButton);
+    doneButton.setOnClickListener(v -> {
+      if (doneVisible) {
+        String[] selected = reactionItems.stream().filter(item -> item.isSelected).map(item -> item.reactionCode).toArray(String[]::new);
+        tdlib.setChatAllowedReactions(getArgumentsStrict().chatId, selected);
+        doneButton.setIsVisible(false, true);
+        getArgumentsStrict().onUpdateCallback.onAllowedReactionsUpdated();
+        navigateBack();
+      }
+    });
+    FrameLayoutFix.LayoutParams params = FrameLayoutFix.newParams(Screen.dp(56f) + Screen.dp(8f), Screen.dp(56f) + Screen.dp(8f), (Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM);
+    params.rightMargin = params.leftMargin = params.bottomMargin = Screen.dp(16f) - Screen.dp(8f);
+    doneButton.setLayoutParams(params);
+    doneButton.setIsVisible(false, true);
+
+    contentView.addView(doneButton);
     contentView.addView(reactionsGridView);
   }
 
@@ -152,6 +181,9 @@ public class EditReactionsController extends EditBaseController<EditReactionsCon
           clearSelection();
         }
         ((SettingView) view).getToggler().setRadioEnabled(args.quickReactionEnabled, true);
+        doneVisible = hasAnyChanges();
+        reactionAdapter.notifyDataSetChanged();
+        recyclerView.scheduleLayoutAnimation();
         settingsAdapter.updateValuedSettingById(R.id.btn_enableQuickReaction);
         break;
       case R.id.btn_enableReactions: {
@@ -159,10 +191,22 @@ public class EditReactionsController extends EditBaseController<EditReactionsCon
         if (!args.reactionsEnabled) {
           clearSelection();
         }
+        doneVisible = hasAnyChanges();
+        reactionAdapter.notifyDataSetChanged();
+        recyclerView.scheduleLayoutAnimation();
         ((SettingView) view).findCheckBox().setChecked(args.reactionsEnabled, true);
-        settingsAdapter.updateValuedSettingById(R.id.btn_enableReactions);
         break;
       }
+    }
+    settingsAdapter.getItems().stream().filter(obj -> obj.getId() == R.id.btn_enableReactions).findAny().ifPresent(obj -> obj.setString(getInfoText(args)));
+
+  }
+
+  private String getInfoText (Args args) {
+    if (args.reactionsEnabled) {
+      return args.infoText = Lang.plural(R.string.ReactionsEnabled, getArgumentsStrict().selectedReactions.size());
+    } else {
+      return args.infoText = Lang.getString(R.string.ReactionsDisabled);
     }
   }
 
@@ -189,11 +233,11 @@ public class EditReactionsController extends EditBaseController<EditReactionsCon
         v.setDrawModifier(item.getDrawModifier());
         switch (item.getId()) {
           case R.id.btn_enableQuickReaction: {
-            v.getToggler().setRadioEnabled(args.quickReactionEnabled, isUpdate);
+            v.getToggler().setRadioEnabled(args.quickReactionEnabled, true);
             break;
           }
           case R.id.btn_enableReactions: {
-            v.findCheckBox().setChecked(args.reactionsEnabled, isUpdate);
+            v.findCheckBox().setChecked(args.reactionsEnabled, true);
             break;
           }
         }
@@ -201,25 +245,25 @@ public class EditReactionsController extends EditBaseController<EditReactionsCon
     };
     ArrayList<ListItem> items = new ArrayList<>();
     switch (args.mode) {
-        case MODE_REACTIONS: {
-          items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-          items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_enableReactions, 0, R.string.EnableReactions).setBoolValue(args.quickReactionEnabled));
-          items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-          items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AllowMembersToReact));
-          items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.AvailableReactions));
-          items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
-          items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-          break;
-        }
-        case MODE_QUICK_REACTIONS:
-          items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-          items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_enableQuickReaction, 0, R.string.EnableQuickReaction).setBoolValue(args.quickReactionEnabled));
-          items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-          items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AvailabilityOfSpecificReactions));
-          items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_NO_HEAD));
-          items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-          break;
+      case MODE_REACTIONS: {
+        items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+        items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_enableReactions, 0, getInfoText(getArgumentsStrict()), args.reactionsEnabled).setBoolValue(args.reactionsEnabled));
+        items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+        items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AllowMembersToReact));
+        items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.AvailableReactions));
+        items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
+        items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+        break;
       }
+      case MODE_QUICK_REACTIONS:
+        items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+        items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_enableQuickReaction, 0, R.string.EnableQuickReaction).setBoolValue(args.quickReactionEnabled));
+        items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+        items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AvailabilityOfSpecificReactions));
+        items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_NO_HEAD));
+        items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+        break;
+    }
     settingsAdapter.setItems(items, false);
   }
 
@@ -239,6 +283,7 @@ public class EditReactionsController extends EditBaseController<EditReactionsCon
       } else {
         onReactionItemClickSingleSelect(args, view);
       }
+      settingsAdapter.notifyDataSetChanged();
     };
     reactionAdapter = new ReactionAdapter(context, reactionItems, onClickListener);
 
@@ -265,6 +310,7 @@ public class EditReactionsController extends EditBaseController<EditReactionsCon
       item.isSelected = item.reactionCode.equals(((SelectableReaction) view).getReaction());
     }
     view.setSelected(!view.isSelected());
+    doneVisible = hasAnyChanges();
     reactionAdapter.notifyDataSetChanged();
     reaction.holder.invalidateViewAlpha(view);
   }
@@ -276,13 +322,14 @@ public class EditReactionsController extends EditBaseController<EditReactionsCon
         item.isSelected = !view.isSelected();
       }
     }
+    doneVisible = hasAnyChanges();
     reactionAdapter.notifyDataSetChanged();
     reaction.holder.invalidateViewAlpha(view);
   }
 
-  private void clearSelection() {
+  private void clearSelection () {
     for (ReactionItem item : reactionItems) {
-        item.isSelected = false;
+      item.isSelected = false;
     }
     reactionAdapter.notifyDataSetChanged();
   }
@@ -297,7 +344,37 @@ public class EditReactionsController extends EditBaseController<EditReactionsCon
         return Lang.getString(R.string.QuickReaction);
     }
     throw new AssertionError();
+  }
 
+  @Override
+  protected int getBackButton () {
+    return BackHeaderButton.TYPE_BACK;
+  }
+
+  @Override
+  public boolean onBackPressed (boolean fromTop) {
+    if (hasAnyChanges()) {
+      showUnsavedChangesPromptBeforeLeaving(null);
+      return true;
+    }
+    return false;
+  }
+
+  private boolean hasAnyChanges () {
+    EditReactionsController.Args args = getArgumentsStrict();
+    boolean hasChanges = false;
+    for (ReactionItem item : reactionItems) {
+      if ((args.selectedReactions.contains(item.reactionCode) && !item.isSelected) || (!args.selectedReactions.contains(item.reactionCode) && item.isSelected))  {
+        hasChanges = true;
+      }
+    }
+    if (doneButton.getIsVisible() != hasChanges) {
+      doneButton.setIsVisible(hasChanges, true);
+    }
+
+
+
+    return hasChanges;
   }
 
   public static class ReactionAdapter extends RecyclerView.Adapter<ReactionItemHolder> {
