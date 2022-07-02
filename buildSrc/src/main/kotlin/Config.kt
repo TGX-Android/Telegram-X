@@ -15,6 +15,7 @@
 
 object Config {
   const val MIN_SDK_VERSION = 16
+  val JAVA_VERSION = org.gradle.api.JavaVersion.VERSION_11
   val EXOPLAYER_EXTENSIONS = arrayOf("ffmpeg", "flac", "opus", "vp9")
   val SUPPORTED_ABI = arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
 }

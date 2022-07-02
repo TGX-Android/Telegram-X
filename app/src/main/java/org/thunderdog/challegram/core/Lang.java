@@ -432,7 +432,7 @@ public class Lang {
   }
 
   public static CustomTypefaceSpan newUserSpan (TdlibDelegate context, long userId) {
-    return TD.toDisplaySpan(new TdApi.TextEntityTypeMentionName(userId)).setOnClickListener((view, span) -> {
+    return TD.toDisplaySpan(new TdApi.TextEntityTypeMentionName(userId)).setOnClickListener((view, span, clickedText) -> {
       context.tdlib().ui().openPrivateProfile(context, userId, null);
       return true;
     });
