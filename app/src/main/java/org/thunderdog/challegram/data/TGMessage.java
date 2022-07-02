@@ -413,20 +413,24 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   private void setReactions (TdApi.MessageReaction[] reactions) {
     int oldSize = reactionBubbles.size();
-    List<ReactionBubble> reactionsForRemoval = new ArrayList<>(reactionBubbles);
-    for (int i = 0; i < reactions.length; i++) {
-      TdApi.MessageReaction reaction = reactions[i];
-      ReactionBubble reactionBubble = findReactionBubbleWithReaction(reaction.reaction);
-      if (reactionBubble == null) {
-        reactionBubble = addReaction(reaction);
-      } else {
-        reactionBubble.setCount(reaction.totalCount);
-        reactionBubble.setIsChosen(reaction.isChosen);
+    if (reactions == null) {
+      reactionBubbles.clear();
+    } else {
+      List<ReactionBubble> reactionsForRemoval = new ArrayList<>(reactionBubbles);
+      for (int i = 0; i < reactions.length; i++) {
+        TdApi.MessageReaction reaction = reactions[i];
+        ReactionBubble reactionBubble = findReactionBubbleWithReaction(reaction.reaction);
+        if (reactionBubble == null) {
+          reactionBubble = addReaction(reaction);
+        } else {
+          reactionBubble.setCount(reaction.totalCount);
+          reactionBubble.setIsChosen(reaction.isChosen);
+        }
+        reactionsForRemoval.remove(reactionBubble);
       }
-      reactionsForRemoval.remove(reactionBubble);
-    }
-    for (ReactionBubble reactionBubble: reactionsForRemoval) {
-      reactionBubbles.remove(reactionBubble);
+      for (ReactionBubble reactionBubble: reactionsForRemoval) {
+        reactionBubbles.remove(reactionBubble);
+      }
     }
     int newSize = reactionBubbles.size();
     if (oldSize == 0 && newSize > 0) {
@@ -1786,7 +1790,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
 
     if (msg.interactionInfo == null) {
-      reactionBubbles.clear();
+      setReactions(null);
     } else if (!reactionsUpToDate) {
       reactionsUpToDate = true;
       setReactions(msg.interactionInfo.reactions);
