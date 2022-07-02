@@ -93,6 +93,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private String eventLogQuery;
   private long[] eventLogUserIds;
   private TdApi.ChatEventLogFilters eventLogFilters;
+  private boolean doubleTapAllowed;
+  private String quickReaction;
 
   private LongSparseArray<TdApi.ChatAdministrator> chatAdmins;
 
@@ -146,6 +148,14 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   public int getKnownTotalMessageCount () {
     return loader.getKnownTotalMessageCount();
+  }
+
+  public boolean isDoubleTapAllowed() {
+    return doubleTapAllowed;
+  }
+
+  public String getQuickReaction() {
+    return quickReaction;
   }
 
   @Override
@@ -639,6 +649,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       }
     }
     subscribeForUpdates();
+    doubleTapAllowed = Settings.instance().isQuickReactionEnabled();
+    quickReaction = Settings.instance().getQuickReaction();
   }
 
   public void loadPreview () {
@@ -1588,8 +1600,17 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   public void updateMessageInteractionInfo (long messageId, @Nullable TdApi.MessageInteractionInfo interactionInfo) {
     int index = adapter.indexOfMessageContainer(messageId);
-    if (index != -1 && adapter.getItem(index).setMessageInteractionInfo(messageId, interactionInfo)) {
-      invalidateViewAt(index);
+    if (index != -1) {
+      switch (adapter.getItem(index).setMessageInteractionInfo(messageId, interactionInfo)) {
+        case TGMessage.MESSAGE_INVALIDATED: {
+          invalidateViewAt(index);
+          break;
+        }
+        case TGMessage.MESSAGE_CHANGED: {
+          getAdapter().notifyItemChanged(index);
+          break;
+        }
+      }
     }
   }
 

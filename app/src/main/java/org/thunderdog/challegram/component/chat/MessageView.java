@@ -17,6 +17,7 @@ package org.thunderdog.challegram.component.chat;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.os.Build;
+import android.text.TextUtils;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
@@ -87,10 +88,14 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private static final int FLAG_USE_REPLY_RECEIVER = 1 << 5;
   private static final int FLAG_DISABLE_MEASURE = 1 << 6;
   private static final int FLAG_USE_COMPLEX_RECEIVER = 1 << 7;
+  private static final long DOUBLE_TAP_DELAY = ViewConfiguration.getDoubleTapTimeout();
 
   private TGMessage msg;
 
   private int flags;
+  private long lastClickTime;
+  private MotionEvent lastClick;
+  private CancellableRunnable clickRunnable;
 
   private final ImageReceiver avatarReceiver;
   private ImageReceiver contentReceiver;
@@ -133,7 +138,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   }
 
   public void destroy () {
-    if (avatarReceiver != null){
+    if (avatarReceiver != null) {
       avatarReceiver.destroy();
     }
     if (contentReceiver != null) {
@@ -506,6 +511,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     }
 
     if (!isMore) {
+      if (msg.getChat() != null && msg.getChat().availableReactions.length > 0) {
+        ids.append(R.id.btn_messageReactions);
+        strings.append(TextUtils.join(Lang.getConcatSeparator(), msg.getChat().availableReactions));
+        icons.append(R.drawable.baseline_emoticon_24);
+      }
+
       if (msg.isScheduled() && !msg.isNotSent()) {
         ids.append(R.id.btn_messageSendNow);
         strings.append(R.string.SendNow);
@@ -1296,6 +1307,20 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     postDelayed(longPressRunnable, ViewConfiguration.getLongPressTimeout());
   }
 
+  private void postDoubleTap () {
+    String emoji = manager.getQuickReaction();
+    if (msg.getMessage().interactionInfo != null) {
+      for (TdApi.MessageReaction messageReaction : msg.getMessage().interactionInfo.reactions) {
+        if (messageReaction.isChosen) {
+          emoji = "";
+          break;
+        }
+      }
+    }
+
+    msg.tdlib().setMessageReaction(msg.getChatId(), msg.getId(), emoji, false);
+  }
+
   private void preventLongPress () {
     flags &= ~FLAG_WILL_CALL_LONG_PRESS;
     if (longPressRunnable != null) {
@@ -1428,26 +1453,63 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         return false;
       }
       case MotionEvent.ACTION_UP: {
-        if ((flags & FLAG_LONG_PRESSED) != 0) {
-          setLongPressed(false);
-        }
-        if ((flags & FLAG_WILL_CALL_LONG_PRESS) != 0) {
-          preventLongPress();
-        }
-        if ((flags & FLAG_CAUGHT_MESSAGE_TOUCH) != 0) {
-          flags &= ~FLAG_CAUGHT_MESSAGE_TOUCH;
-          return msg.onTouchEvent(this, e);
-        }
-        if ((flags & FLAG_CAUGHT_CLICK) != 0) {
-          flags &= ~FLAG_CAUGHT_CLICK;
-          if (onMessageClick(e.getX(), e.getY())) {
-            ViewUtils.onClick(this);
+        cancelClick();
+        if (manager.isDoubleTapAllowed()) {
+          long now = System.currentTimeMillis();
+          if (now - lastClickTime <= DOUBLE_TAP_DELAY && (flags & FLAG_CAUGHT_CLICK) != 0) {
+            flags &= ~FLAG_CAUGHT_CLICK;
+            postDoubleTap();
             return true;
+          } else {
+            lastClickTime = now;
+            lastClick = e;
+            scheduleClick();
+            return false;
           }
+        } else {
+          return onActionUp(e);
         }
-        return false;
       }
     }
     return false;
+  }
+
+  boolean onActionUp (MotionEvent e) {
+    if ((flags & FLAG_LONG_PRESSED) != 0) {
+      setLongPressed(false);
+    }
+    if ((flags & FLAG_WILL_CALL_LONG_PRESS) != 0) {
+      preventLongPress();
+    }
+    if ((flags & FLAG_CAUGHT_MESSAGE_TOUCH) != 0) {
+      flags &= ~FLAG_CAUGHT_MESSAGE_TOUCH;
+      return msg.onTouchEvent(this, e);
+    }
+    if ((flags & FLAG_CAUGHT_CLICK) != 0) {
+      flags &= ~FLAG_CAUGHT_CLICK;
+      if (onMessageClick(e.getX(), e.getY())) {
+        ViewUtils.onClick(this);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private void scheduleClick () {
+    UI.post(clickRunnable = new CancellableRunnable() {
+      @Override
+      public void act () {
+        lastClickTime = 0;
+        onActionUp(lastClick);
+      }
+    }, DOUBLE_TAP_DELAY);
+  }
+
+  private void cancelClick () {
+    if (clickRunnable != null) {
+      clickRunnable.cancel();
+      clickRunnable = null;
+    }
   }
 }
