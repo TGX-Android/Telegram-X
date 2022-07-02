@@ -346,6 +346,9 @@ public class Settings {
   private static final int FLAG_OTHER_START_ROUND_REAR = 1 << 28;
   private static final int FLAG_OTHER_DISABLE_BIG_EMOJI = 1 << 29;
   private static final int FLAG_OTHER_DISABLE_SECRET_LINK_PREVIEWS = 1 << 30;
+  private static final int FLAG_OTHER_NO_BIG_REACTIONS_IN_CHATS = 1 << 31;
+  private static final int FLAG_OTHER_NO_BIG_REACTIONS_IN_CHANNELS = 1 << 32;
+
 
   public static final long SETTING_FLAG_BATMAN_POLL_TRANSITIONS = 1 << 1;
   public static final long SETTING_FLAG_EDIT_MARKDOWN = 1 << 2;
@@ -2530,10 +2533,25 @@ public class Settings {
     return checkNegativeSetting(FLAG_OTHER_NO_CHAT_QUICK_REPLY);
   }
 
+  public boolean needBigReactionsInChats () {
+    return checkNegativeSetting(FLAG_OTHER_NO_BIG_REACTIONS_IN_CHATS);
+  }
+
+  public boolean needBigReactionsInChannels () {
+    return checkNegativeSetting(FLAG_OTHER_NO_BIG_REACTIONS_IN_CHANNELS);
+  }
+
   public void setDisableChatQuickActions (boolean disableChatQuickShare, boolean disableChatQuickReply) {
     int newSettings = getSettings();
     newSettings = BitwiseUtils.setFlag(newSettings, FLAG_OTHER_NO_CHAT_QUICK_SHARE, disableChatQuickShare);
     newSettings = BitwiseUtils.setFlag(newSettings, FLAG_OTHER_NO_CHAT_QUICK_REPLY, disableChatQuickReply);
+    setSettings(newSettings);
+  }
+
+  public void setDisableBigReactions (boolean disableInChats, boolean disableInChannels) {
+    int newSettings = getSettings();
+    newSettings = BitwiseUtils.setFlag(newSettings, FLAG_OTHER_NO_BIG_REACTIONS_IN_CHATS, disableInChats);
+    newSettings = BitwiseUtils.setFlag(newSettings, FLAG_OTHER_NO_BIG_REACTIONS_IN_CHANNELS, disableInChannels);
     setSettings(newSettings);
   }
 

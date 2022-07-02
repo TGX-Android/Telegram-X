@@ -267,6 +267,23 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
             }
             break;
           }
+          case R.id.btn_bigReactions: {
+            StringBuilder b = new StringBuilder();
+            if (Settings.instance().needBigReactionsInChats()) {
+              b.append(Lang.getString(R.string.Chats));
+            }
+            if (Settings.instance().needBigReactionsInChannels()) {
+              if (b.length() > 0) {
+                b.append(Lang.getConcatSeparator());
+              }
+              b.append(Lang.getString(R.string.Channels));
+            }
+            if (b.length() == 0) {
+              b.append(Lang.getString(R.string.QuickActionSettingNone));
+            }
+            v.setData(b.toString());
+            break;
+          }
           case R.id.btn_stickerSuggestions: {
             switch (Settings.instance().getStickerMode()) {
               case Settings.STICKER_MODE_ALL:
@@ -664,6 +681,8 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.AnimatedEmoji).setLongId(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI).setBoolValue(true));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_useBigEmoji, 0, R.string.BigEmoji));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_bigReactions, 0, R.string.BigReactions));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.LoopAnimatedStickers).setLongId(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP).setBoolValue(true));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -1405,6 +1424,16 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       }
       case R.id.btn_chatListStyle: {
         showChatListOptions();
+        break;
+      }
+      case R.id.btn_bigReactions: {
+        showSettings(R.id.btn_bigReactions, new ListItem[]{
+          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_bigReactionsInChats, 0, R.string.Chats, R.id.btn_bigReactionsInChats, Settings.instance().needBigReactionsInChats()),
+          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_bigReactionsInChannels, 0, R.string.Channels, R.id.btn_bigReactionsInChannels, Settings.instance().needBigReactionsInChannels())
+        }, (id, result) -> {
+          Settings.instance().setDisableBigReactions(result.get(R.id.btn_bigReactionsInChats) != R.id.btn_bigReactionsInChats, result.get(R.id.btn_bigReactionsInChannels) != R.id.btn_bigReactionsInChannels);
+          adapter.updateValuedSettingById(R.id.btn_bigReactions);
+        });
         break;
       }
       case R.id.btn_instantViewMode: {
