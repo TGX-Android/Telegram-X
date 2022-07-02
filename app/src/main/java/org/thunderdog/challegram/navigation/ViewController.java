@@ -2251,7 +2251,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     public final OptionItem[] items;
 
 
-    public Options(CharSequence info, OptionItem[] items) {
+    public Options (CharSequence info, OptionItem[] items) {
       this.info = info;
       this.items = items;
     }
