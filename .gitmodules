@@ -67,4 +67,5 @@
 	url = https://github.com/TGX-Android/tdlib-utils.git
 [submodule "vkryl/android"]
 	path = vkryl/android
-	url = https://github.com/TGX-Android/X-Android.git
+	url = https://github.com/Arseny271/X-Android
+	branch = tgx-contest-pr
