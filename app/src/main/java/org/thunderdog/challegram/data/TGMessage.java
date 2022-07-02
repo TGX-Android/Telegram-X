@@ -239,14 +239,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   // reactions
 
   private List<ReactionBubble> reactionBubbles;
-  private float reactionsHeightMult = 0f;
+  private float reactionsSizeMult = 0f;
   private boolean reactionsUpToDate = false;
   private int reactionId = 0;
   private MessageView messageView;
 
   private final BoolAnimator reactionsVisible = new BoolAnimator(0,
       (id, factor, fraction, callee) -> {
-        reactionsHeightMult = factor;
+        reactionsSizeMult = factor;
         invalidate();
       },
       AnimatorUtils.DECELERATE_INTERPOLATOR,
@@ -696,7 +696,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public boolean hasReactions () {
-    return reactionsHeightMult > 0;
+    return reactionsSizeMult > 0;
   }
 
   protected int getSmallestMaxContentWidth () {
@@ -1032,7 +1032,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (needMarginBottom) {
       reactionsTotalHeight += ReactionBubble.outMarginBottom;
     }
-    return  reactionsTotalHeight * reactionsHeightMult;
+    return  reactionsTotalHeight * reactionsSizeMult;
   }
 
   private static int getBubbleForwardOffset () {
@@ -3166,7 +3166,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         int minReactionsInLine = getMinReactionsInOneLine(bubbleWidth);
         if (minReactionsInLine < reactionBubbles.size() && minReactionsInLine < MINIMUM_REACTIONS_IN_LINE) {
           int maxReactionWidth = getMaxReactionBubbleWidth();
-          bubbleWidth = MINIMUM_REACTIONS_IN_LINE * maxReactionWidth + ReactionBubble.outMarginRight + ReactionBubble.outMarginLeft;
+          int dif = MINIMUM_REACTIONS_IN_LINE * maxReactionWidth + ReactionBubble.outMarginRight + ReactionBubble.outMarginLeft - bubbleWidth;
+          bubbleWidth += dif * reactionsSizeMult;
         }
 
         // Adjust bubble height for reactions
