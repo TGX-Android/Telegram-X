@@ -47,6 +47,11 @@ public class AvailableEmojiView extends View implements ClickHelper.Delegate {
     textPaint.setTextSize(Screen.sp(12f));
   }
 
+  @Override
+  protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+    super.onMeasure(widthMeasureSpec, widthMeasureSpec);
+  }
+
   private boolean dispatchingEvents;
 
   @Override
