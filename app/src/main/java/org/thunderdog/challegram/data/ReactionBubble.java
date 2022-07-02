@@ -129,7 +129,9 @@ public class ReactionBubble {
   }
 
   private void adjustWidthWithCount () {
-    if (count > 99) {
+    if (count > 99999) {
+      width = Screen.dp(60f);
+    } else if (count > 99) {
       width = Screen.dp(52f);
     } else if (count > 9) {
       width = Screen.dp(44f);
@@ -235,8 +237,12 @@ public class ReactionBubble {
     }
 
     // Draw text
-
     String text = String.valueOf(count);
+    if (count > 999999) {
+      text = count / 1000000 + "M";
+    } else if (count > 999) {
+      text = count / 1000 + "K";
+    }
     Rect textBounds = new Rect();
     textPaint.getTextBounds(text, 0, text.length(), textBounds);
     int textHeight = textBounds.height();

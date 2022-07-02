@@ -97,12 +97,39 @@ public class ReactionsLayout extends LinearLayout {
       reactedWrapper.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
       reactedWrapper.setGravity(Gravity.CENTER_VERTICAL);
 
+      ImageView viewedIcon = new ImageView(context);
+      Drawable viewedIconDrawable = getResources().getDrawable(R.drawable.baseline_visibility_24);
+      int viewedIconColor = Theme.getColor(R.id.theme_color_text);
+      viewedIconColor = ColorUtils.alphaColor(0.6f, viewedIconColor);
+      DrawableCompat.setTint(viewedIconDrawable, viewedIconColor);
+      viewedIcon.setImageDrawable(viewedIconDrawable);
+      viewedIcon.setPadding(PADDING, 0, PADDING, 0);
+      viewedIcon.setLayoutParams(new LinearLayout.LayoutParams(ICON_SIZE, ICON_SIZE));
+      reactedWrapper.addView(viewedIcon);
+
+      CustomTextView viewedText = new CustomTextView(context, tdlib);
+      int viewedCount = 0;
+      if (msg.interactionInfo != null) {
+        viewedCount = msg.interactionInfo.viewCount;
+      }
+      viewedText.setBoldText(getFormattedCount(viewedCount), null, false);
+      viewedText.setTextSize(16f);
+      viewedText.setPadding(PADDING, 0, PADDING, 0);
+      int viewedTextWidth = TEXT_WIDTH_S;
+      if (viewedCount > 99) {
+        viewedTextWidth = TEXT_WIDTH_L;
+      } else if (viewedCount > 9) {
+        viewedTextWidth = TEXT_WIDTH_M;
+      }
+      viewedText.setLayoutParams(new LinearLayout.LayoutParams(viewedTextWidth, ViewGroup.LayoutParams.WRAP_CONTENT));
+      reactedWrapper.addView(viewedText);
+
       ImageView reactedIcon = new ImageView(context);
-      Drawable iconDrawable = getResources().getDrawable(R.drawable.baseline_favorite_20);
-      int iconColor = Theme.getColor(R.id.theme_color_text);
-      iconColor = ColorUtils.alphaColor(0.6f, iconColor);
-      DrawableCompat.setTint(iconDrawable, iconColor);
-      reactedIcon.setImageDrawable(iconDrawable);
+      Drawable reactedIconDrawable = getResources().getDrawable(R.drawable.baseline_favorite_20);
+      int reactedIconColor = Theme.getColor(R.id.theme_color_text);
+      reactedIconColor = ColorUtils.alphaColor(0.6f, reactedIconColor);
+      DrawableCompat.setTint(reactedIconDrawable, reactedIconColor);
+      reactedIcon.setImageDrawable(reactedIconDrawable);
       reactedIcon.setPadding(PADDING, 0, PADDING, 0);
       reactedIcon.setLayoutParams(new LinearLayout.LayoutParams(ICON_SIZE, ICON_SIZE));
       reactedWrapper.addView(reactedIcon);
@@ -114,16 +141,16 @@ public class ReactionsLayout extends LinearLayout {
           reactedCount += msg.interactionInfo.reactions[i].totalCount;
         }
       }
-      reactedText.setBoldText(String.valueOf(reactedCount), null, false);
+      reactedText.setBoldText(getFormattedCount(reactedCount), null, false);
       reactedText.setTextSize(16f);
       reactedText.setPadding(PADDING, 0, PADDING, 0);
-      int textWidth = TEXT_WIDTH_S;
+      int reactedTextWidth = TEXT_WIDTH_S;
       if (reactedCount > 99) {
-        textWidth = TEXT_WIDTH_L;
+        reactedTextWidth = TEXT_WIDTH_L;
       } else if (reactedCount > 9) {
-        textWidth = TEXT_WIDTH_M;
+        reactedTextWidth = TEXT_WIDTH_M;
       }
-      reactedText.setLayoutParams(new LinearLayout.LayoutParams(textWidth, ViewGroup.LayoutParams.WRAP_CONTENT));
+      reactedText.setLayoutParams(new LinearLayout.LayoutParams(reactedTextWidth, ViewGroup.LayoutParams.WRAP_CONTENT));
       reactedWrapper.addView(reactedText);
 
       if (msg.canGetAddedReactions) {
@@ -134,7 +161,7 @@ public class ReactionsLayout extends LinearLayout {
         });
       }
 
-      wrapperWidth = ICON_SIZE + textWidth;
+      wrapperWidth = 2 * ICON_SIZE + viewedTextWidth + reactedTextWidth;
     }
 
     ReactionListController controller = new ReactionListController(context, tdlib);
@@ -192,7 +219,7 @@ public class ReactionsLayout extends LinearLayout {
         reactedCount += msg.interactionInfo.reactions[i].totalCount;
       }
     }
-    reactedText.setBoldText(String.valueOf(reactedCount), null, false);
+    reactedText.setBoldText(getFormattedCount(reactedCount), null, false);
     reactedText.setTextSize(16f);
     reactedText.setPadding(PADDING, 0, PADDING, 0);
     int textWidth = TEXT_WIDTH_S;
@@ -219,6 +246,16 @@ public class ReactionsLayout extends LinearLayout {
         BAR_HEIGHT
     ));
     addView(controller.get());
+  }
+
+  private String getFormattedCount (int count) {
+    String text = String.valueOf(count);
+    if (count > 999999) {
+      text = count / 1000000 + "M";
+    } else if (count > 999) {
+      text = count / 1000 + "K";
+    }
+    return text;
   }
 
   public boolean useDarkMode () {
