@@ -58,7 +58,7 @@ public class ReactionAnimationOverlay{
 		windowView=null;
 	}
 
-	public void playLottieAnimation(@NotNull ViewBoundsProvider pos, @NotNull PreloadedLottieAnimation animation, @Nullable Runnable onStarting, @Nullable Runnable onDone){
+	public void playLottieAnimation(@NotNull ViewBoundsProvider pos, @NotNull PreloadedLottieAnimation animation, @Nullable Runnable onStarting, @Nullable AnimationEndCallback onDone){
 		createAndShowWindow();
 		Rect rect=new Rect();
 		if(!pos.getBounds(rect) || rect.isEmpty())
@@ -84,13 +84,17 @@ public class ReactionAnimationOverlay{
 
 				if(!drawable.isRunning() || !pos.getBounds(rect)){
 					img.getViewTreeObserver().removeOnPreDrawListener(this);
-					windowView.removeView(img);
+					Runnable remover=()->{
+						windowView.removeView(img);
+						runningAnimationsCount--;
+						if(runningAnimationsCount==0){
+							removeWindow();
+						}
+					};
 					if(onDone!=null)
-						onDone.run();
-					runningAnimationsCount--;
-					if(runningAnimationsCount==0){
-						removeWindow();
-					}
+						onDone.onAnimationEnd(img, remover);
+					else
+						remover.run();
 					return false;
 				}
 				img.setTranslationX(rect.left);
@@ -187,7 +191,13 @@ public class ReactionAnimationOverlay{
 		return x1*(1f-k)+x2*k;
 	}
 
+	@FunctionalInterface
 	public interface ViewBoundsProvider{
 		boolean getBounds(Rect outRect);
+	}
+
+	@FunctionalInterface
+	public interface AnimationEndCallback{
+		void onAnimationEnd(View view, Runnable remove);
 	}
 }

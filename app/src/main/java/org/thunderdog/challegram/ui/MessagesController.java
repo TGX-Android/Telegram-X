@@ -31,7 +31,6 @@ import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.media.MediaMetadataRetriever;
@@ -89,6 +88,7 @@ import org.thunderdog.challegram.MainActivity;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.charts.CubicBezierInterpolator;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.attach.MediaBottomFilesController;
@@ -181,7 +181,6 @@ import org.thunderdog.challegram.navigation.ViewPagerTopView;
 import org.thunderdog.challegram.player.RecordAudioVideoController;
 import org.thunderdog.challegram.player.RoundVideoController;
 import org.thunderdog.challegram.reactions.LottieAnimationDrawable;
-import org.thunderdog.challegram.reactions.PreloadedLottieAnimation;
 import org.thunderdog.challegram.reactions.PreloadedReactionAnimations;
 import org.thunderdog.challegram.reactions.ReactionAnimationOverlay;
 import org.thunderdog.challegram.reactions.ReactionListViewController;
@@ -10455,7 +10454,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return true;
   }
 
-  public void sendMessageReaction(TGMessage msg, String reaction, ImageView src, Rect srcRect, PopupLayout popup){
+  public void sendMessageReaction(TGMessage msg, String reaction, ImageView src, Rect srcRect, PopupLayout popup, boolean big){
     MessageView mv=(MessageView) manager.findMessageView(getChatId(), msg.getMessageForReactions().id);
     ArrayList<TdApi.MessageReaction> reactions=new ArrayList<>(Arrays.asList(msg.getReactions()));
     TdApi.MessageReaction existingReaction=null;
@@ -10511,12 +10510,24 @@ public class MessagesController extends ViewController<MessagesController.Argume
               src.getLocationOnScreen(loc);
               srcPos.set(loc[0], loc[1], loc[0]+src.getWidth(), loc[1]+src.getHeight());
               ov.playFlyingReactionAnimation(outRect -> {
-                return mv.getReactionIconBounds(reaction, outRect);
+                boolean r=mv.getReactionIconBounds(reaction, outRect);
+                if(big && r){
+                  int sz=-(Screen.dp(64)-outRect.width())/2;
+                  outRect.inset(sz, sz);
+                  return true;
+                }
+                return false;
               }, srcPos, src.getDrawable(), ()->{
                 src.setAlpha(0f);
                 if(popup!=null)
                   popup.hideWindow(true);
-              }, ()->playReactionEffectAnimation(msg, reaction));
+              }, ()->{
+                if(big){
+                  playReactionBigEffectAnimation(msg, reaction);
+                }else{
+                  playReactionEffectAnimation(msg, reaction);
+                }
+              });
             }else if(srcRect!=null){
               LottieAnimationDrawable anim=new LottieAnimationDrawable(tdlib.getReactionAnimations(reaction).appear, srcRect.width(), srcRect.height());
               anim.setFrame(anim.getTotalFrames()-1);
@@ -10536,10 +10547,69 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if(!didAdd && popup!=null){
       popup.hideWindow(true);
     }
-    tdlib.send(new TdApi.SetMessageReaction(getChatId(), msg.getMessageForReactions().id, reaction, false), tdlib.okHandler());
+    tdlib.send(new TdApi.SetMessageReaction(getChatId(), msg.getMessageForReactions().id, reaction, big), tdlib.okHandler());
   }
 
   private long lastHapticEffectTime;
+
+  public void playReactionBigEffectAnimation(TGMessage msg, String reaction){
+    MessageView mv=(MessageView) manager.findMessageView(getChatId(), msg.getMessageForReactions().id);
+    if(mv==null)
+      return;
+
+    mv.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener(){
+      @Override
+      public boolean onPreDraw(){
+        mv.getViewTreeObserver().removeOnPreDrawListener(this);
+
+        ReactionAnimationOverlay ov=manager.getAnimationOverlay();
+        PreloadedReactionAnimations anims=msg.tdlib().getReactionAnimations(reaction);
+        if(anims.effect==null){
+          playReactionEffectAnimation(msg, reaction);
+          return true;
+        }
+
+        ov.playLottieAnimation(outRect->{
+          if(!mv.getReactionIconBounds(reaction, outRect))
+            return false;
+          int sz=-(Screen.dp(64)-outRect.width())/2;
+          outRect.inset(sz, sz);
+
+          int width=outRect.width();
+          int centerX=outRect.centerX();
+          int centerY=outRect.centerY();
+          int size=Math.round(width*2f);
+          outRect.set(centerX-size, centerY-size, centerX+size, centerY+size);
+          return true;
+        }, anims.effect, null, null);
+
+        if(anims.center!=null)
+          ov.playLottieAnimation(outRect->{
+            if(!mv.getReactionIconBounds(reaction, outRect))
+              return false;
+            int sz=-(Screen.dp(64)-outRect.width())/2;
+            outRect.inset(sz, sz);
+
+            int size=outRect.width();
+            int centerX=outRect.centerX();
+            int centerY=outRect.centerY();
+            outRect.set(centerX-size, centerY-size, centerX+size, centerY+size);
+            return true;
+          }, anims.activate, ()->mv.setReactionIconHidden(reaction, true), (v, remove)->{
+            Rect rect=new Rect();
+            mv.getReactionIconBounds(reaction, rect);
+            float scale=rect.width()/(float)v.getWidth();
+            v.animate().scaleX(scale).scaleY(scale).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT).withEndAction(()->{
+              remove.run();
+              playReactionEffectAnimation(msg, reaction);
+            }).start();
+          });
+
+        return true;
+      }
+    });
+    mv.invalidate();
+  }
 
   public void playReactionEffectAnimation(TGMessage msg, String reaction){
     MessageView mv=(MessageView) manager.findMessageView(getChatId(), msg.getMessageForReactions().id);
@@ -10576,7 +10646,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
               int centerY=outRect.centerY();
               outRect.set(centerX-size, centerY-size, centerX+size, centerY+size);
               return true;
-            }, anims.center, ()->mv.setReactionIconHidden(reaction, true), ()->mv.setReactionIconHidden(reaction, false));
+            }, anims.center, ()->mv.setReactionIconHidden(reaction, true), (v, remove)->{
+              remove.run();
+              mv.setReactionIconHidden(reaction, false);
+            });
 
           return true;
     	}

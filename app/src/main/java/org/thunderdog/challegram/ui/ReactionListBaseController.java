@@ -198,7 +198,10 @@ public abstract class ReactionListBaseController<T> extends RecyclerViewControll
 						int size=Math.round(width*2f);
 						outRect.set(centerX-size, centerY-size, centerX+size, centerY+size);
 						return true;
-					}, effect, ()->animating=true, ()->animating=false);
+					}, effect, ()->animating=true, (_v, remove)->{
+						animating=false;
+						remove.run();
+					});
 				}
 			}
 		}

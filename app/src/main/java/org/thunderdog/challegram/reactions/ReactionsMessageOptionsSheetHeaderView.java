@@ -93,6 +93,7 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout{
 			gifView.setImageDrawable(drawable);
 			btn.setTag(r);
 			btn.setOnClickListener(this::onReactionClick);
+			btn.setOnLongClickListener(this::onReactionLongClick);
 			drawable.start();
 			btn.addView(gifView, new FrameLayout.LayoutParams(Screen.dp(24), Screen.dp(24), Gravity.CENTER));
 			if(r.reaction.equals(chosenReaction)){
@@ -217,7 +218,13 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout{
 
 	private void onReactionClick(View v){
 		TdApi.Reaction r=(TdApi.Reaction) v.getTag();
-		controller.sendMessageReaction(message, r.reaction, (ImageView) ((ViewGroup)v).getChildAt(0), null, popupLayout);
+		controller.sendMessageReaction(message, r.reaction, (ImageView) ((ViewGroup)v).getChildAt(0), null, popupLayout, false);
+	}
+
+	private boolean onReactionLongClick(View v){
+		TdApi.Reaction r=(TdApi.Reaction) v.getTag();
+		controller.sendMessageReaction(message, r.reaction, (ImageView) ((ViewGroup)v).getChildAt(0), null, popupLayout, true);
+		return true;
 	}
 
 	private static class ChosenReactionBackgroundDrawable extends Drawable{

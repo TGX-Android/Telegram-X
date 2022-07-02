@@ -112,7 +112,7 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
             int size=Screen.dp(20);
             int x=holder.itemView.getWidth()-Screen.dp(32)+loc[0]-size/2;
             int y=(msg.getBottomContentEdge()-msg.getTopContentEdge())/2+loc[1]-size/2;
-            controller.sendMessageReaction(msg, controller.getQuickReactions().get(idx-1).reaction, null, new Rect(x, y, x+size, y+size), null);
+            controller.sendMessageReaction(msg, controller.getQuickReactions().get(idx-1).reaction, null, new Rect(x, y, x+size, y+size), null, false);
           }
         };
       }
@@ -161,7 +161,7 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
             int size=Screen.dp(20);
             int x=holder.itemView.getWidth()-Screen.dp(32)+loc[0]-size/2;
             int y=(msg.getBottomContentEdge()-msg.getTopContentEdge())/2+loc[1]-size/2;
-            controller.sendMessageReaction(msg, controller.getQuickReactions().get(idx-1).reaction, null, null, null);
+            controller.sendMessageReaction(msg, controller.getQuickReactions().get(idx-1).reaction, null, null, null, false);
           }
         }
       } else {

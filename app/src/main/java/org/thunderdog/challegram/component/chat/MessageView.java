@@ -52,8 +52,6 @@ import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.reactions.MessageCellReactionButton;
-import org.thunderdog.challegram.reactions.PreloadedReactionAnimations;
-import org.thunderdog.challegram.reactions.ReactionAnimationOverlay;
 import org.thunderdog.challegram.reactions.ReactionButtonsLayout;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -1577,7 +1575,7 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
 
   @Override
   public void onReactionClick(MessageCellReactionButton btn){
-    manager.controller().sendMessageReaction(msg, btn.getReaction().reaction, null, null, null);
+    manager.controller().sendMessageReaction(msg, btn.getReaction().reaction, null, null, null, false);
   }
 
   @Override
