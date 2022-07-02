@@ -33,6 +33,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.luckycatlabs.sunrisesunset.SunriseSunsetCalculator;
 
+import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -45,6 +46,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.helper.LocationHelper;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.reactions.ReactionDrawModifier;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -73,7 +75,9 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
@@ -170,6 +174,22 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
           }
           case R.id.btn_icon: {
             v.setData(R.string.IconsBuiltIn);
+            break;
+          }
+          case R.id.btn_quickReaction: {
+            if(Settings.instance().areQuickReactionsEnabled()){
+              Set<String> reactions=Settings.instance().getQuickReactions();
+              v.setData(tdlib.getSupportedReactions().stream().filter(r->reactions.contains(r.reaction)).map(r->r.title).collect(Collectors.joining(Lang.getConcatSeparator())));
+              for(TdApi.Reaction r:tdlib.getSupportedReactions()){
+                if(reactions.contains(r.reaction)){
+                  v.setDrawModifier(new ReactionDrawModifier(r.reaction, tdlib, v));
+                  break;
+                }
+              }
+            }else{
+              v.setData(R.string.QuickReactionsDisabled);
+              v.setDrawModifier(null);
+            }
             break;
           }
           case R.id.btn_reduceMotion: {
@@ -513,6 +533,9 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       }
 
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_quickReaction, 0, R.string.QuickReaction));
+
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_chatListStyle, 0, R.string.ChatListStyle));
 
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -851,6 +874,11 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       adapter.updateValuedSettingById(R.id.btn_icon);
   }
 
+  public void updateQuickReactions(){
+    if(adapter!=null)
+      adapter.updateValuedSettingById(R.id.btn_quickReaction);
+  }
+
   @Override
   public void onEmojiPackChanged () {
     updateSelectedEmoji();
@@ -1110,6 +1138,12 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       case R.id.btn_icon: {
         SettingsCloudIconController c = new SettingsCloudIconController(context, tdlib);
         c.setArguments(new SettingsCloudController.Args<>(this));
+        navigateTo(c);
+        break;
+      }
+      case R.id.btn_quickReaction: {
+        SettingsQuickReactionController c=new SettingsQuickReactionController(context, tdlib);
+        c.setArguments(new SettingsQuickReactionController.Args(this));
         navigateTo(c);
         break;
       }

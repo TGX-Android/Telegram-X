@@ -92,6 +92,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -6253,5 +6254,22 @@ public class Settings {
     if(channels)
       flags|=FLAG_BIG_REACTIONS_CHANNELS;
     pmc.edit().putInt(KEY_BIG_REACTIONS, flags).apply();
+  }
+
+  public Set<String> getQuickReactions(){
+    Set<String> r=pmc.getStringSet("quickReactions", null);
+    return r==null ? Collections.singleton("\uD83D\uDC4D") : r;
+  }
+
+  public boolean areQuickReactionsEnabled(){
+    return pmc.getBoolean("quickReactionsEnabled", true);
+  }
+
+  public void setQuickReactionsEnabled(boolean enabled){
+    pmc.edit().putBoolean("quickReactionsEnabled", enabled).apply();
+  }
+
+  public void setQuickReactions(Set<String> quickReactions){
+    pmc.edit().putStringSet("quickReactions", quickReactions).apply();
   }
 }

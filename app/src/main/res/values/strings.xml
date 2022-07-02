@@ -4292,4 +4292,10 @@
   <string name="ChatReactionsExplanation">Allow members to react to group messages</string>
   <string name="ChannelReactionsExplanation">Allow members to react to channel messages</string>
   <string name="AvailableReactions">Available reactions</string>
+  <string name="QuickReaction">Quick Reaction</string>
+  <string name="EnableQuickReaction">Enable Quick Reaction</string>
+  <string name="QuickReactionExplanation">Availability of specific reactions depends on group\'s and channel\'s settings.</string>
+  <string name="QuickReactionsDisabled">Disabled</string>
+  <string name="QuickReactionsLimit_one">You can choose no more than %1$s reaction.</string>
+  <string name="QuickReactionsLimit_other">You can choose no more than %1$s reactions.</string>
 </resources>

@@ -196,6 +196,7 @@
   <item type="id" name="controller_chatJoinRequests" />
   <item type="id" name="controller_messageSeen" />
   <item type="id" name="controller_joinDialog" />
+  <item type="id" name="controller_quickReaction" />
 
   <item type="id" name="controller_code" />
   <item type="id" name="controller_name" />
@@ -305,6 +306,7 @@
   <item type="id" name="btn_speaker" />
   <item type="id" name="btn_emoji" />
   <item type="id" name="btn_icon" />
+  <item type="id" name="btn_quickReaction"/>
   <item type="id" name="btn_section" />
   <item type="id" name="btn_stickerSet" />
   <item type="id" name="btn_description" />
