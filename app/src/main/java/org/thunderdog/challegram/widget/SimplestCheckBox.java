@@ -20,6 +20,7 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.text.TextPaint;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.FloatRange;
 
 import org.thunderdog.challegram.R;
@@ -63,10 +64,10 @@ public class SimplestCheckBox {
   }
 
   public static SimplestCheckBox newInstance (float initialFactor, String counter) {
-    return newInstance(initialFactor, counter, R.id.theme_color_checkActive, R.id.theme_color_checkContent, false, 0f);
+    return newInstance(initialFactor, counter, Theme.checkFillingColor(), Theme.checkCheckColor(), false, 0f);
   }
 
-  public static SimplestCheckBox newInstance (float initialFactor, String counter, int fillingColor, int contentColor, boolean isNegative, float squareFactor) {
+  public static SimplestCheckBox newInstance (float initialFactor, String counter, @ColorInt int fillingColor, @ColorInt int contentColor, boolean isNegative, float squareFactor) {
     return new SimplestCheckBox(initialFactor, counter, getCounterWidth(counter), fillingColor, contentColor, isNegative, squareFactor);
   }
 

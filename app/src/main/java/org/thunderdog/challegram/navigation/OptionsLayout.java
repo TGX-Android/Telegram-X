@@ -57,6 +57,10 @@ import me.vkryl.core.StringUtils;
 public class OptionsLayout extends LinearLayout implements Animated {
   private final CustomTextView textView;
 
+  public OptionsLayout (Context context, ViewController<?> parent) {
+    this(context, parent, null);
+  }
+
   public OptionsLayout (Context context, ViewController<?> parent, @Nullable ThemeDelegate forcedTheme) {
     super(context);
 

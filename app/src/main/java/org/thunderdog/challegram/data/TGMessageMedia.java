@@ -454,6 +454,22 @@ public class TGMessageMedia extends TGMessage {
     return wrapper != null && Lang.rtl() == wrapper.getLastLineIsRtl() ? wrapper.getLastLineWidth() + (xBubblePaddingSmall + xBubblePadding) * 2 : BOTTOM_LINE_EXPAND_HEIGHT;
   }
 
+  @Override
+  protected int getBigReactionsMaxWidth () {
+    if (wrapper != null) {
+      return useBubbles() ? mosaicWrapper.getWidth() - xBubblePadding * 2 : getRealContentMaxWidth();
+    }
+    return super.getBigReactionsMaxWidth();
+  }
+
+  @Override
+  protected int getBigReactionsPaddingLeft () {
+    if (wrapper != null) {
+      return useBubbles() ? getContentX() + xBubblePadding : getRealContentX();
+    }
+    return super.getBigReactionsPaddingLeft();
+  }
+
   /*@Override
   protected boolean moveBubbleTimePartToLeft () {
     return wrapper != null && wrapper.getLastLineIsRtl();
@@ -462,6 +478,11 @@ public class TGMessageMedia extends TGMessage {
   @Override
   protected boolean drawBubbleTimeOverContent () {
     return wrapper == null && !hasFooter();
+  }
+
+  @Override
+  protected boolean drawBigReactionsInsideBubble () {
+    return useBubble() && (wrapper != null || hasFooter());
   }
 
   @Override

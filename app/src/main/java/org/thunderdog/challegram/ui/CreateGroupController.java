@@ -316,13 +316,13 @@ public class CreateGroupController extends ViewController<Void> implements EditH
 
     public void attachReceiver () {
       if (getItemViewType() == TYPE_USER) {
-        ((UserView) itemView).attachReceiver();
+        ((UserView) itemView).attach();
       }
     }
 
     public void detachReceiver () {
       if (getItemViewType() == TYPE_USER) {
-        ((UserView) itemView).detachReceiver();
+        ((UserView) itemView).detach();
       }
     }
   }

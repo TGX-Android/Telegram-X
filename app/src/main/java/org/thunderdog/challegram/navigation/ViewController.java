@@ -2157,11 +2157,11 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     return showOptions(null, ids, titles, colors, null, delegate);
   }
 
-  public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, int[] colors) {
+  public final PopupLayout showOptions (@Nullable CharSequence info, @NonNull int[] ids, @NonNull String[] titles, @Nullable int[] colors) {
     return showOptions(info, ids, titles, colors, null, null);
   }
 
-  public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons) {
+  public final PopupLayout showOptions (@Nullable CharSequence info, @NonNull int[] ids, @NonNull String[] titles, @Nullable int[] colors, @Nullable int[] icons) {
     return showOptions(info, ids, titles, colors, icons, null);
   }
 
@@ -2180,7 +2180,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     });
   }
 
-  public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, final OptionDelegate delegate) {
+  public final PopupLayout showOptions (@Nullable CharSequence info, @NonNull int[] ids, @NonNull String[] titles, @Nullable int[] colors, @Nullable int[] icons, final @Nullable OptionDelegate delegate) {
     return showOptions(info, ids, titles, colors, icons, delegate, null);
   }
 
@@ -2255,7 +2255,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
     public static class Builder {
       private CharSequence info;
-      private List<OptionItem> items = new ArrayList<>();
+      private final List<OptionItem> items = new ArrayList<>();
 
       public Builder () {
       }
@@ -2282,19 +2282,28 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     }
   }
 
-  public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, final OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme) {
+  public final @NonNull Options buildOptions (@Nullable CharSequence info, @NonNull int[] ids, @NonNull String[] titles, @Nullable int[] colors, @Nullable int[] icons) {
     OptionItem[] items = new OptionItem[ids.length];
     for (int i = 0; i < ids.length; i++) {
-      items[i] = new OptionItem(ids != null ? ids[i] : i, titles[i], colors != null ? colors[i] : OPTION_COLOR_NORMAL, icons != null ? icons[i] : 0);
+      items[i] = new OptionItem(ids[i], titles[i], colors != null ? colors[i] : OPTION_COLOR_NORMAL, icons != null ? icons[i] : 0);
     }
-    return showOptions(new Options(info, items), delegate, forcedTheme);
+    return new Options(info, items);
   }
 
-  public final PopupLayout showOptions (Options options, final OptionDelegate delegate) {
+  public final @Nullable PopupLayout showOptions (@Nullable CharSequence info, @NonNull int[] ids, @NonNull String[] titles, @Nullable int[] colors, @Nullable int[] icons, final @Nullable OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme) {
+    Options options = buildOptions(info, ids, titles, colors, icons);
+    return showOptions(options, delegate, forcedTheme);
+  }
+
+  public final @Nullable PopupLayout showOptions (@NonNull Options options) {
+    return showOptions(options, null);
+  }
+
+  public final @Nullable PopupLayout showOptions (@NonNull Options options, final @Nullable OptionDelegate delegate) {
     return showOptions(options, delegate, null);
   }
 
-  public final PopupLayout showOptions (Options options, final OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme) {
+  public final @Nullable PopupLayout showOptions (@NonNull Options options, final @Nullable OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme) {
     if (isStackLocked()) {
       Log.i("Ignoring options show because stack is locked");
       return null;

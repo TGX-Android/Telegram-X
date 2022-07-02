@@ -473,6 +473,11 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
   }
 
   @Override
+  protected boolean drawBigReactionsInsideBubble () {
+    return false;
+  }
+
+  @Override
   protected int getAbsolutelyRealRightContentEdge (View view, int timePartWidth) {
     if (msg.forwardInfo != null) {
       return super.getAbsolutelyRealRightContentEdge(view, timePartWidth);

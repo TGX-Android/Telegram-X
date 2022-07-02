@@ -42,6 +42,7 @@ import org.thunderdog.challegram.data.TGWebPage;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.loader.ReactionsReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.navigation.NavigationController;
@@ -63,6 +64,7 @@ import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
 import org.thunderdog.challegram.widget.SparseDrawableView;
 
+import java.util.Collections;
 import java.util.List;
 
 import me.vkryl.android.AnimatorUtils;
@@ -97,6 +99,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private DoubleImageReceiver previewReceiver, replyReceiver;
   private GifReceiver gifReceiver;
   private ComplexReceiver complexReceiver;
+  private ReactionsReceiver reactionsReceiver;
   private MessageViewGroup parentMessageViewGroup;
   private MessagesManager manager;
 
@@ -104,6 +107,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     super(context);
     avatarReceiver = new ImageReceiver(this, Screen.dp(20.5f));
     gifReceiver = new GifReceiver(this);
+    reactionsReceiver = new ReactionsReceiver(this);
     setUseReplyReceiver();
     setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     if (Config.HARDWARE_MESSAGE_LAYER) {
@@ -151,6 +155,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     if (complexReceiver != null) {
       complexReceiver.performDestroy();
     }
+    if (reactionsReceiver != null) {
+      reactionsReceiver.performDestroy();
+    }
     if (msg != null) {
       msg.onDestroy();
     }
@@ -184,6 +191,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   public void invalidateReplyReceiver () {
     if ((flags & FLAG_USE_REPLY_RECEIVER) != 0 && msg != null) {
       msg.requestReply(replyReceiver);
+    }
+  }
+
+  public void invalidateReactionsReceiver (long chatId, long messageId) {
+    if (msg != null && msg.getChatId() == chatId && msg.getId() == messageId) {
+      msg.requestReactions(reactionsReceiver);
     }
   }
 
@@ -250,6 +263,8 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     if ((flags & FLAG_USE_COMPLEX_RECEIVER) != 0) {
       message.requestMediaContent(complexReceiver, false, -1);
     }
+
+    message.requestReactions(reactionsReceiver);
 
     if (this.msg != null) {
       msg.onAttachedToView(this);
@@ -330,7 +345,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   @Override
   public void onDraw (Canvas c) {
-    msg.draw(this, c, avatarReceiver, replyReceiver, previewReceiver, contentReceiver, gifReceiver, complexReceiver);
+    msg.draw(this, c, avatarReceiver, replyReceiver, previewReceiver, contentReceiver, gifReceiver, complexReceiver, reactionsReceiver);
   }
 
   public ImageReceiver getAvatarReceiver () {
@@ -357,6 +372,10 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     return previewReceiver;
   }
 
+  public ReactionsReceiver getReactionsReceiver() {
+    return reactionsReceiver;
+  }
+
   private boolean isAttached = true;
 
   public void onAttachedToRecyclerView () {
@@ -364,6 +383,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       isAttached = true;
       avatarReceiver.attach();
       gifReceiver.attach();
+      reactionsReceiver.attach();
       if ((flags & FLAG_USE_REPLY_RECEIVER) != 0) {
         replyReceiver.attach();
       }
@@ -382,6 +402,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       isAttached = false;
       avatarReceiver.detach();
       gifReceiver.detach();
+      reactionsReceiver.detach();
       if ((flags & FLAG_USE_REPLY_RECEIVER) != 0) {
         replyReceiver.detach();
       }
@@ -469,7 +490,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       if (isSent) {
         return showChatOptions(m, (TGMessageChat) msg, sender);
       } else {
-        m.showMessageOptions(msg, new int[] {R.id.btn_messageDelete}, new String[] {Lang.getString(R.string.Delete)}, new int[] {R.drawable.baseline_delete_24}, null, sender, true);
+        m.showMessageOptions(msg, new int[] {R.id.btn_messageDelete}, new String[] {Lang.getString(R.string.Delete)}, new int[] {R.drawable.baseline_delete_24}, null, sender, true, null, null);
         return true;
       }
     }
@@ -478,11 +499,23 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     IntList icons = new IntList(6);
     StringList strings = new StringList(6);
     Object tag = fillMessageOptions(m, msg, sender, ids, icons, strings, false);
-    if (!ids.isEmpty()) {
-      m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), tag, sender, false);
-      return true;
+
+    if (ids.isEmpty()) {
+      return false;
     }
-    return false;
+
+    msg.tdlib().send(new TdApi.GetMessageAvailableReactions(msg.getChatId(), msg.getId()), (obj) -> {
+      final List<TdApi.Reaction> availableReactions;
+      if (obj.getConstructor() == TdApi.AvailableReactions.CONSTRUCTOR) {
+        availableReactions = msg.tdlib().getReactions((TdApi.AvailableReactions) obj);
+      } else {
+        availableReactions = Collections.emptyList();
+      }
+      m.runOnUiThreadOptional(() -> {
+        m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), tag, sender, false, availableReactions, null);
+      });
+    });
+    return true;
   }
 
   public static Object fillMessageOptions (MessagesController m, TGMessage msg, @Nullable TdApi.ChatMember sender, IntList ids, IntList icons, StringList strings, boolean isMore) {
@@ -1040,7 +1073,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       return false;
     }
 
-    m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), null, messageSender, true);
+    m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), null, messageSender, true, null, null);
     return true;
   }
 

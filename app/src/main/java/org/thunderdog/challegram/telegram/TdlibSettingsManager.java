@@ -56,6 +56,13 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   private static final String THEME_GLOBAL_THEME_DAYLIGHT_KEY = "settings_global_theme_daylight";
   private static final String THEME_GLOBAL_THEME_NIGHT_KEY = "settings_global_theme_night";
 
+  private static final String QUICK_REACTION_KEY = "settings_quick_reaction";
+  public static final String QUICK_REACTION_DISABLED = "disabled";
+  public static final String QUICK_REACTION_DEFAULT = "\uD83D\uDC4D"; /* 👍 */
+
+  private static final String USE_BIG_REACTIONS_IN_CHATS_KEY = "settings_use_big_reactions_in_chats";
+  private static final String USE_BIG_REACTIONS_IN_CHANNELS_KEY = "settings_use_big_reactions_in_channels";
+
   @Deprecated
   @SuppressWarnings("DeprecatedIsStillUsed")
   public static final String __PEER_TO_PEER_KEY = "settings_peer_to_peer";
@@ -84,7 +91,13 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   @Nullable
   private @ChatStyle Integer _chatStyle;
   @Nullable
+  private String _quickReaction;
+  @Nullable
   private Boolean _forcePlainModeInChannels;
+  @Nullable
+  private Boolean _useBigReactionsInChats;
+  @Nullable
+  private Boolean _useBigReactionsInChannels;
 
   @Nullable
   private Integer _notificationErrorCount;
@@ -144,6 +157,9 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
 
     Settings.instance().deleteWallpapers(tdlib, editor);
     wallpapers.clear();
+    editor.remove(key(USE_BIG_REACTIONS_IN_CHATS_KEY, accountId));
+    editor.remove(key(USE_BIG_REACTIONS_IN_CHANNELS_KEY, accountId));
+    editor.remove(key(QUICK_REACTION_KEY, accountId));
     editor.remove(key(THEME_CHAT_STYLE_KEY, accountId));
     editor.remove(key(PLAIN_CHANNEL_KEY, accountId));
     editor.remove(key(PREFERENCES_KEY, accountId));
@@ -172,6 +188,8 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     editor.apply();
 
     _globalTheme = _globalThemeDaylight = _globalThemeNight = null;
+    _quickReaction = null;
+    _useBigReactionsInChats = _useBigReactionsInChannels = null;
     _notificationErrorCount = null;
     _chatStyle = null;
     _forcePlainModeInChannels = null;
@@ -514,6 +532,79 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     return _chatStyle;
   }
 
+  public void setQuickReaction(@NonNull String quickReaction) {
+    if (!quickReaction().equals(quickReaction)) {
+      final String key = key(QUICK_REACTION_KEY, tdlib.id());
+      Settings.instance().putString(key, quickReaction);
+      _quickReaction = quickReaction;
+      if (quickReactionChangeListeners != null) {
+        for (QuickReactionChangeListener listener : quickReactionChangeListeners) {
+          listener.onQuickReactionChanged(quickReaction);
+        }
+      }
+    }
+  }
+
+  @NonNull
+  public String quickReaction() {
+    if (_quickReaction == null) {
+      final String key = key(QUICK_REACTION_KEY, tdlib.id());
+      _quickReaction = Settings.instance().getString(key, QUICK_REACTION_DEFAULT);
+      if (_quickReaction.isEmpty()) {
+        _quickReaction = QUICK_REACTION_DEFAULT;
+      }
+    }
+    return _quickReaction;
+  }
+
+  public interface QuickReactionChangeListener {
+    void onQuickReactionChanged (String quickReaction);
+  }
+
+  @Nullable
+  private ReferenceList<QuickReactionChangeListener> quickReactionChangeListeners;
+
+  public void addQuickReactionChangeListener (QuickReactionChangeListener listener) {
+    if (quickReactionChangeListeners == null) {
+      quickReactionChangeListeners = new ReferenceList<>();
+    }
+    quickReactionChangeListeners.add(listener);
+  }
+
+  public void removeQuickReactionChangeListener (QuickReactionChangeListener listener) {
+    if (quickReactionChangeListeners != null) {
+      quickReactionChangeListeners.remove(listener);
+    }
+  }
+
+  public void setUseBigReactionsInChats(boolean useBigReactionsInChats) {
+    _useBigReactionsInChats = useBigReactionsInChats;
+    final String key = key(USE_BIG_REACTIONS_IN_CHATS_KEY, tdlib.id());
+    Settings.instance().putBoolean(key, useBigReactionsInChats);
+  }
+
+  public boolean useBigReactionsInChats() {
+    if (_useBigReactionsInChats == null) {
+      final String key = key(USE_BIG_REACTIONS_IN_CHATS_KEY, tdlib.id());
+      _useBigReactionsInChats = Settings.instance().getBoolean(key, true);
+    }
+    return _useBigReactionsInChats;
+  }
+
+  public void setUseBigReactionsInChannels(boolean useBigReactionsInChannels) {
+    _useBigReactionsInChannels = useBigReactionsInChannels;
+    final String key = key(USE_BIG_REACTIONS_IN_CHANNELS_KEY, tdlib.id());
+    Settings.instance().putBoolean(key, useBigReactionsInChannels);
+  }
+
+  public boolean useBigReactionsInChannels() {
+    if (_useBigReactionsInChannels == null) {
+      final String key = key(USE_BIG_REACTIONS_IN_CHANNELS_KEY, tdlib.id());
+      _useBigReactionsInChannels = Settings.instance().getBoolean(key, true);
+    }
+    return _useBigReactionsInChannels;
+  }
+
   public @Nullable TGBackground getWallpaper (int usageIdentifier) {
     return getWallpaper(usageIdentifier, false);
   }
@@ -734,8 +825,10 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   }
 
   private void notifyPreferenceChanged (long key, boolean value) {
-    for (PreferenceChangeListener listener : preferenceListeners) {
-      listener.onPreferenceChanged(tdlib, key, value);
+    if (preferenceListeners != null) {
+      for (PreferenceChangeListener listener : preferenceListeners) {
+        listener.onPreferenceChanged(tdlib, key, value);
+      }
     }
   }
 

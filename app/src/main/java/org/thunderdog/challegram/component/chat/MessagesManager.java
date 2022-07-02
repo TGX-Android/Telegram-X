@@ -66,6 +66,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -248,6 +249,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private long lastCheckedTopId;
   private long lastCheckedBottomId;
   private long lastViewedMention;
+  private long lastViewedReaction;
   private int lastCheckedCount;
 
   private void viewDisplayedMessages (int first, int last) {
@@ -296,6 +298,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           long id = msg.getBiggestId();
           if (msg.containsUnreadMention() && id > lastViewedMention) {
             lastViewedMention = id;
+          }
+          if (msg.containsUnreadReactions() && id > lastViewedReaction) {
+            lastViewedReaction = id;
           }
           if (list == null) {
             list = new LongSet(last - first);
@@ -461,6 +466,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     unsubscribeFromUpdates();
     mentionsHandler = null;
     closestMentions = null;
+    reactionsHandler = null;
+    closestReactions = null;
     final long chatId = loader.getChatId();
     if (chatId != 0) {
       if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
@@ -835,6 +842,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   public boolean useBubbles () {
     TdlibSettingsManager settings = controller().tdlib().settings();
     return (loader.isChannel() ? !settings.forcePlainModeInChannels() : settings.useBubbles()) || controller.inWallpaperMode();
+  }
+
+  public boolean useBigReactions () {
+    TdlibSettingsManager settings = controller.tdlib().settings();
+    return loader.isChannel() ? settings.useBigReactionsInChannels() : settings.useBigReactionsInChats();
   }
 
   @Nullable
@@ -1586,6 +1598,22 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
+  public void updateMessageUnreadReactions (long messageId, @Nullable TdApi.UnreadReaction[] unreadReactions) {
+    if (closestReactions != null && !closestReactions.isEmpty()) {
+      Iterator<TdApi.Message> iterator = closestReactions.iterator();
+      while (iterator.hasNext()) {
+        TdApi.Message message = iterator.next();
+        if (message.id == messageId && (unreadReactions == null || unreadReactions.length == 0)) {
+          iterator.remove();
+        }
+      }
+    }
+    int index = adapter.indexOfMessageContainer(messageId);
+    if (index != -1) {
+      adapter.getItem(index).updateUnreadReactions(messageId, unreadReactions);
+    }
+  }
+
   public void updateMessageInteractionInfo (long messageId, @Nullable TdApi.MessageInteractionInfo interactionInfo) {
     int index = adapter.indexOfMessageContainer(messageId);
     if (index != -1 && adapter.getItem(index).setMessageInteractionInfo(messageId, interactionInfo)) {
@@ -2096,6 +2124,73 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       view.setText(Lang.getStringBold(R.string.EventLogEmptyTextSearch, eventLogQuery));
     }
   }
+
+  // Reactions
+
+  private ArrayList<TdApi.Message> closestReactions;
+  private CancellableResultHandler reactionsHandler;
+
+  public void scrollToNextReaction () {
+    if (closestReactions != null && !closestReactions.isEmpty()) {
+      TdApi.Message message = closestReactions.remove(0);
+      highlightMessage(new MessageId(message.chatId, message.id), HIGHLIGHT_MODE_NORMAL, null, true);
+      return;
+    }
+    if (reactionsHandler != null) {
+      return;
+    }
+    final long fromMessageId;
+    if (lastViewedReaction != 0)  {
+      fromMessageId = lastViewedReaction;
+    } else {
+      TGMessage message = adapter.getTopMessage();
+      if (message == null) {
+        return;
+      }
+      fromMessageId = message.getBiggestId();
+    }
+    final long chatId = loader.getChatId();
+    final long messageThreadId = loader.getMessageThreadId();
+    final boolean[] isRetry = new boolean[1];
+    reactionsHandler = new CancellableResultHandler() {
+      @Override
+      public void processResult (final TdApi.Object object) {
+        if (object.getConstructor() == TdApi.Messages.CONSTRUCTOR) {
+          TdApi.Messages messages = (TdApi.Messages) object;
+          if (messages.totalCount > 0 && messages.messages.length == 0 && !isRetry[0]) {
+            isRetry[0] = true;
+            tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, 0, 0, 10, new TdApi.SearchMessagesFilterUnreadReaction(), messageThreadId), this);
+          } else {
+            setReactions(this, messages, isRetry[0] ? 0 : fromMessageId);
+          }
+        } else {
+          setReactions(this, null, fromMessageId);
+        }
+      }
+    };
+    tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, fromMessageId, -9, 10, new TdApi.SearchMessagesFilterUnreadReaction(), messageThreadId), reactionsHandler);
+  }
+
+  private void setReactions (final CancellableResultHandler handler, final TdApi.Messages messages, final long fromMessageId) {
+    tdlib.ui().post(() -> {
+      if (handler == reactionsHandler) {
+        reactionsHandler = null;
+        if (messages != null && messages.messages.length > 0) {
+          setReactionsImpl(messages.messages);
+        }
+      }
+    });
+  }
+
+  private void setReactionsImpl (final TdApi.Message[] messages) {
+    ArrayList<TdApi.Message> reactions = new ArrayList<>(messages.length);
+    Collections.addAll(reactions, messages);
+    this.closestReactions = reactions;
+    if (!reactions.isEmpty()) {
+      scrollToNextReaction();
+    }
+  }
+
 
   // Mentions
 
@@ -2747,6 +2842,21 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     tdlib.ui().post(() -> {
       if (loader.getChatId() == chatId) {
         updateMessageMentionRead(messageId);
+      }
+    });
+  }
+
+  @Override
+  public void onMessageUnreadReactionsChanged (long chatId, long messageId, @Nullable TdApi.UnreadReaction[] unreadReactions, int unreadReactionCount) {
+    int sentMessageIndex = indexOfSentMessage(chatId, messageId);
+    if (sentMessageIndex != -1) {
+      TdApi.Message sentMessage = sentMessages.get(sentMessageIndex);
+      sentMessage.unreadReactions = unreadReactions;
+      return;
+    }
+    tdlib.ui().post(() -> {
+      if (loader.getChatId() == chatId) {
+        updateMessageUnreadReactions(messageId, unreadReactions);
       }
     });
   }

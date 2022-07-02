@@ -1884,6 +1884,26 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             }
             break;
           }
+          case R.id.btn_chatReactions: {
+            String[] availableReactions = chat.availableReactions;
+            TdApi.Reaction[] supportedReactions = tdlib().getSupportedReactions();
+            int availableReactionCount = availableReactions != null ? availableReactions.length : 0;
+            int supportedReactionCount = 0;
+            if (supportedReactions != null) {
+              for (TdApi.Reaction supportedReaction : supportedReactions) {
+                if (supportedReaction.isActive) {
+                  supportedReactionCount++;
+                }
+              }
+            }
+            int totalReactionCount = Math.max(availableReactionCount, supportedReactionCount);
+            if (totalReactionCount > 0) {
+              view.setData(Lang.plural(R.string.xReactions, availableReactionCount, totalReactionCount));
+            } else {
+              view.setData(R.string.ReactionsOff);
+            }
+            break;
+          }
           case R.id.btn_chatPermissions: {
             view.setData(Lang.plural(R.string.xPermissions, Td.count(chat.permissions), TdConstants.CHAT_PERMISSIONS_COUNT));
             break;
@@ -3122,6 +3142,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     );
   }
 
+  private void openChatReactions () {
+    SettingsReactionsController c = new SettingsReactionsController(context, tdlib);
+    c.setArguments(new SettingsReactionsController.Arguments(chat.id));
+    navigateTo(c);
+  }
+
   private void openChatPermissions () {
     EditRightsController c = new EditRightsController(context, tdlib);
     c.setArguments(new EditRightsController.Args(chat.id));
@@ -3594,6 +3620,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, mode == MODE_EDIT_CHANNEL ? R.string.RestrictSavingChannelHint : R.string.RestrictSavingGroupHint));
       added = false;
+    }
+    if (tdlib.canChangeInfo(chat)) {
+      items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_chatReactions, 0, R.string.Reactions));
+      added = true;
     }
     if (tdlib.canToggleAllHistory(chat)) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
@@ -4612,6 +4643,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       // EDIT stuff
       case R.id.btn_prehistoryMode: {
         togglePrehistoryMode();
+        break;
+      }
+      case R.id.btn_chatReactions: {
+        openChatReactions();
         break;
       }
       case R.id.btn_chatPermissions: {
@@ -6182,6 +6217,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     tdlib.ui().post(() -> {
       if (!isDestroyed() && chat.id == chatId && baseAdapter != null) {
         updateValuedItem(R.id.btn_chatPermissions);
+      }
+    });
+  }
+
+  @Override
+  public void onChatAvailableReactionsUpdated (long chatId, String[] availableReactions) {
+    tdlib.ui().post(() -> {
+      if (!isDestroyed() && chat.id == chatId && baseAdapter != null) {
+        updateValuedItem(R.id.btn_chatReactions);
       }
     });
   }

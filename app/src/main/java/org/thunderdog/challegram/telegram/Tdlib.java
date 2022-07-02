@@ -448,6 +448,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private String qrLoginCode;
   private String[] diceEmoji;
   private TdApi.Reaction[] supportedReactions;
+  private Map<String, TdApi.Reaction> supportedReactionMap;
   private boolean callsEnabled = true, expectBlocking, isLocationVisible;
   private boolean canIgnoreSensitiveContentRestrictions, ignoreSensitiveContentRestrictions;
   private boolean canArchiveAndMuteNewChatsFromUnknownUsers, archiveAndMuteNewChatsFromUnknownUsers;
@@ -1674,6 +1675,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         client().send(new TdApi.ReadAllChatMentions(chat.id), okHandler);
         read = true;
       }
+      if (chat.unreadReactionCount > 0) {
+        client().send(new TdApi.ReadAllChatReactions(chat.id), okHandler);
+        read = true;
+      }
       if (read) {
         readChatsCount.incrementAndGet();
       }
@@ -2416,6 +2421,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   public @Nullable TdApi.ChatPermissions chatPermissions (long chatId) {
     TdApi.Chat chat = chat(chatId);
     return chat != null ? chat.permissions : null;
+  }
+
+  public @Nullable String[] chatAvailableReactions (long chatId) {
+    TdApi.Chat chat = chat(chatId);
+    return chat != null ? chat.availableReactions : null;
   }
 
   // Data Utils
@@ -3515,6 +3525,51 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
     }
     return false;
+  }
+
+  @Nullable
+  public TdApi.Reaction[] getSupportedReactions() {
+    synchronized (dataLock) {
+      return supportedReactions;
+    }
+  }
+
+  @Nullable
+  public TdApi.Reaction getReaction (@Nullable String reaction) {
+    if (reaction == null) {
+      return null;
+    }
+    synchronized (dataLock) {
+      return supportedReactionMap != null ? supportedReactionMap.get(reaction) : null;
+    }
+  }
+
+  @NonNull
+  public List<TdApi.Reaction> getReactions(@Nullable TdApi.AvailableReactions availableReactions) {
+    if (availableReactions == null) {
+      return Collections.emptyList();
+    }
+    return getReactions(availableReactions.reactions);
+  }
+
+  @NonNull
+  public List<TdApi.Reaction> getReactions(@Nullable String[] reactions) {
+    if (reactions == null || reactions.length == 0) {
+      return Collections.emptyList();
+    }
+    synchronized (dataLock) {
+      if (supportedReactionMap == null || supportedReactionMap.isEmpty()) {
+        return Collections.emptyList();
+      }
+      final List<TdApi.Reaction> reactionList = new ArrayList<>(reactions.length);
+      for (String reaction : reactions) {
+        final TdApi.Reaction supportedReaction = supportedReactionMap.get(reaction);
+        if (supportedReaction != null) {
+          reactionList.add(supportedReaction);
+        }
+      }
+      return reactionList;
+    }
   }
 
   // Chat open/close
@@ -6165,7 +6220,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   @TdlibThread
   private void updateMessageUnreadReactions (TdApi.UpdateMessageUnreadReactions update) {
-    listeners.updateMessageUnreadReactions(update);
+    final boolean counterChanged, availabilityChanged;
+    synchronized (dataLock) {
+      final TdApi.Chat chat = chats.get(update.chatId);
+      if (TdlibUtils.assertChat(update.chatId, chat, update)) {
+        return;
+      }
+      availabilityChanged = (chat.unreadReactionCount > 0) != (update.unreadReactionCount > 0);
+      counterChanged = chat.unreadReactionCount != update.unreadReactionCount;
+      chat.unreadReactionCount = update.unreadReactionCount;
+    }
+
+    listeners.updateMessageUnreadReactions(update, counterChanged, availabilityChanged);
   }
 
   @TdlibThread
@@ -7429,6 +7495,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private void updateReactions (TdApi.UpdateReactions update) {
     synchronized (dataLock) {
       this.supportedReactions = update.reactions;
+      if (update.reactions != null) {
+        if (this.supportedReactionMap == null) {
+          this.supportedReactionMap = new HashMap<>();
+        } else {
+          this.supportedReactionMap.clear();
+        }
+        for (TdApi.Reaction reaction : update.reactions) {
+          this.supportedReactionMap.put(reaction.reaction, reaction);
+        }
+      }
     }
   }
 

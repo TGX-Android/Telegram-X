@@ -63,6 +63,7 @@ public class TGUser implements UserProvider {
   private int role;
   private int flags;
 
+  private boolean forceNeedSeparator;
   private @Nullable ArrayList<TGUser> boundList;
 
   /*public TGUser (int userId) {
@@ -133,8 +134,12 @@ public class TGUser implements UserProvider {
     this.boundList = boundList;
   }
 
+  public void setForceNeedSeparator (boolean forceNeedSeparator) {
+    this.forceNeedSeparator = forceNeedSeparator;
+  }
+
   public boolean needSeparator () {
-    return boundList != null && boundList.size() > 1 && !boundList.get(boundList.size() - 1).equals(this);
+    return forceNeedSeparator || boundList != null && boundList.size() > 1 && !boundList.get(boundList.size() - 1).equals(this);
   }
 
   private void buildContact () {
@@ -364,5 +369,26 @@ public class TGUser implements UserProvider {
 
   public static TGUser createWithUsername (Tdlib tdlib, TdApi.User user) {
     return new TGUser(tdlib, user, false, true);
+  }
+
+  public static @Nullable TGUser fromMessageSender (@NonNull Tdlib tdlib, @Nullable TdApi.MessageSender messageSender) {
+    if (messageSender == null) {
+      return null;
+    }
+    switch (messageSender.getConstructor()) {
+      case TdApi.MessageSenderChat.CONSTRUCTOR: {
+        TdApi.MessageSenderChat messageSenderChat = (TdApi.MessageSenderChat) messageSender;
+        TdApi.Chat chat = tdlib.chat(messageSenderChat.chatId);
+        return chat != null ? new TGUser(tdlib, chat) : null;
+      }
+      case TdApi.MessageSenderUser.CONSTRUCTOR: {
+        TdApi.MessageSenderUser messageSenderUser = (TdApi.MessageSenderUser) messageSender;
+        TdApi.User user = tdlib.cache().user(messageSenderUser.userId);
+        return user != null ? new TGUser(tdlib, user) : null;
+      }
+      default: {
+        throw new UnsupportedOperationException(messageSender.toString());
+      }
+    }
   }
 }

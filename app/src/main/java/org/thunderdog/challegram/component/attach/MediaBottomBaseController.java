@@ -79,7 +79,10 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
 
   public void setName (String name) {
     titleString = name;
-    mediaLayout.getHeaderView().setTitle(this);
+    HeaderView headerView = mediaLayout.getHeaderView();
+    if (headerView != null) {
+      headerView.setTitle(this);
+    }
   }
 
   // Settings
@@ -142,12 +145,16 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
     resetStartHeights(true);
   }
 
+  protected int getHeaderSize (boolean includeOffset) {
+    return HeaderView.getSize(includeOffset);
+  }
+
   private int getBarHeightIfAvailable () {
     return mediaLayout.inSpecificMode() ? 0 : MediaBottomBar.getBarHeight();
   }
 
   private void resetStartHeights (boolean initial) {
-    startHeight = Math.min(contentHeight + getBarHeightIfAvailable() + HeaderView.getSize(false), Math.min(getMaxStartHeight(), getMaxHeight()));
+    startHeight = Math.min(contentHeight + getBarHeightIfAvailable() + getHeaderSize(false), Math.min(getMaxStartHeight(), getMaxHeight()));
     setCurrentHeight(getRecyclerScrollY() > 0 || lastIsExpanded ? getMaxHeight() : startHeight, !initial);
   }
 
@@ -174,12 +181,12 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
   }
 
   protected final int getMaxInitialContentHeight () {
-    return Screen.smallestSide() - HeaderView.getSize(false);
+    return Screen.smallestSide() - getHeaderSize(false);
   }
 
   private int getMaxStartHeight () {
     if (ignoreStartHeightLimits()) return Integer.MAX_VALUE;
-    return Math.min(getContentHeight() + getBarHeightIfAvailable() + HeaderView.getSize(false), Math.min(getCurrentWidth() + getBarHeightIfAvailable(), getMaxStartHeightLimit()));
+    return Math.min(getContentHeight() + getBarHeightIfAvailable() + getHeaderSize(false), Math.min(getCurrentWidth() + getBarHeightIfAvailable(), getMaxStartHeightLimit()));
   }
 
   protected int getMaxStartHeightLimit () {
@@ -250,7 +257,7 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
 
     FrameLayoutFix.LayoutParams params;
     params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-    params.topMargin = HeaderView.getSize(false);
+    params.topMargin = getHeaderSize(false);
     params.bottomMargin = HeaderView.getTopOffset();
 
     recyclerView = new MediaBottomBaseRecyclerView(context());
@@ -282,7 +289,7 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
 
     if (needProgress) {
       params = FrameLayoutFix.newParams(Screen.dp(48f), Screen.dp(48f), Gravity.TOP | Gravity.CENTER_HORIZONTAL);
-      params.topMargin = HeaderView.getSize(false);
+      params.topMargin = getHeaderSize(false);
       progressView = Views.simpleProgressView(context(), params);
       progressView.setTranslationY(findYForStaticView(Screen.dp(48f)));
       contentView.addView(progressView);
@@ -371,7 +378,7 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
   protected void showError (String error, boolean animated) {
     if (emptyView == null) {
       FrameLayoutFix.LayoutParams params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL);
-      params.topMargin = HeaderView.getSize(false);
+      params.topMargin = getHeaderSize(false);
 
       emptyView = new EmptyTextView(context());
       emptyView.setLayoutParams(params);
@@ -703,7 +710,7 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
 
   protected void forceScrollRecyclerToTop () {
     RecyclerView.LayoutManager manager = getLayoutManager();
-    if (manager != null && manager instanceof LinearLayoutManager) {
+    if (manager instanceof LinearLayoutManager) {
       ((LinearLayoutManager) manager).scrollToPositionWithOffset(0, 0);
     }
   }

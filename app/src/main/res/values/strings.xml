@@ -3156,6 +3156,19 @@
   <string name="EmojiSetsInfo">Are you sure you want to clear unused emoji sets?</string>
   <string name="BigEmoji">Big Emoji</string>
 
+  <string name="BigReactions">Big Reactions</string>
+  <string name="BigReactionsOff">Off</string>
+  <string name="BigReactionsInfo">Big reactions are interactive buttons under messages presenting each reaction.</string>
+  <string name="Reactions">Reactions</string>
+  <string name="ReactionsDisabled">Reactions disabled</string>
+  <string name="ReactionsOff">Off</string>
+  <string name="AvailableReactions">Available reactions</string>
+  <string name="EnableQuickReaction">Enable Quick Reaction</string>
+  <string name="QuickReactionInfo">Availability of specific reactions depends on group\'s and channel\'s settings.</string>
+  <string name="QuickReactionDisabled">Disabled</string>
+  <string name="GroupReactionsInfo">Allow members to react to group messages</string>
+  <string name="ChannelReactionsInfo">Allow members to react to channel messages</string>
+
   <string name="error_CHAT_ADMIN_REQUIRED">You do not have enough privileges to perform this action.</string>
   <string name="ChatPermissions">Chat Permissions</string>
   <string name="ChatPermissionsRestrictHint">This permission is disabled for all members without admin privileges.</string>
@@ -3170,6 +3183,13 @@
 
   <string name="xPermissions_one">%1$s of %2$s</string>
   <string name="xPermissions_other">%1$s of %2$s</string>
+
+  <string name="xMessageReactions_one">%1$s reaction</string>
+  <string name="xMessageReactions_other">%1$s reactions</string>
+  <string name="xReactions_one">%1$s of %2$s</string>
+  <string name="xReactions_other">%1$s of %2$s</string>
+  <string name="xReactionsEnabled_one">%1$s Reaction Enabled</string>
+  <string name="xReactionsEnabled_other">%1$s Reactions Enabled</string>
 
   <string name="UserDisabledMessages">You cannot send messages to this user</string>
 
@@ -3297,6 +3317,8 @@
   <string name="IconsUpdate">Update Needed</string>
   <string name="IconsInstalling">Installing…</string>
   <string name="IconsCurrent">Current Set</string>
+
+  <string name="QuickReaction">Quick Reaction</string>
 
   <string name="EmojiSetUpdated">Emoji set %1$s has been updated. Would you like to download a new version to keep using it?</string>
   <string name="EmojiSetUpdate">Download and update</string>
@@ -4191,6 +4213,7 @@
   <string name="MessageSeenNobody">Nobody Viewed</string>
   <string name="MessageSeenNobodyListened">Nobody Listened</string>
   <string name="MessageSeenNobodyPlayed">Nobody Played</string>
+  <string name="NobodyReacted">Nobody Reacted</string>
 
   <string name="ChannelNoCopy">Sorry, copying from this channel is disabled by admins.</string>
   <string name="ChannelNoSave">Sorry, saving media from this channel is disabled by admins.</string>

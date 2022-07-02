@@ -179,6 +179,11 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
   }
 
   @Override
+  protected boolean drawBigReactionsInsideBubble () {
+    return false;
+  }
+
+  @Override
   protected boolean needBubbleCornerFix () {
     return true;
   }

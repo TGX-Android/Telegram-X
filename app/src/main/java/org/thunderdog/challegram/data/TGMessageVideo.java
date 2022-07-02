@@ -334,6 +334,11 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
   }
 
   @Override
+  protected boolean drawBigReactionsInsideBubble () {
+    return false;
+  }
+
+  @Override
   protected int getAbsolutelyRealRightContentEdge (View view, int timePartWidth) {
     // ImageReceiver receiver = view.getPreviewReceiver();
     int left = getContentX();

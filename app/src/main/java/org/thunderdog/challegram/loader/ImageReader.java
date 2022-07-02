@@ -168,6 +168,10 @@ public class ImageReader {
   private static Bitmap readImage (ImageFile file, String path) {
     boolean needSquare = file.needDecodeSquare();
 
+    if (file.toString().equals("account0_268_0")) {
+      file.needBlur();
+    }
+
     ImageFile exifFile;
     if (file instanceof ImageFilteredFile) {
       exifFile = ((ImageFilteredFile) file).getSourceFile();

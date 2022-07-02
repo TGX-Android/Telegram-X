@@ -1127,6 +1127,47 @@ public class TD {
     return interactionInfo != null ? interactionInfo.viewCount : 0;
   }
 
+  public static boolean hasChosenReaction (@Nullable TdApi.MessageReaction[] messageReactions) {
+    if (messageReactions == null || messageReactions.length == 0) {
+      return false;
+    }
+    for (TdApi.MessageReaction messageReaction : messageReactions) {
+      if (messageReaction.isChosen) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public static int getTotalReactionCount (@Nullable TdApi.MessageReaction[] messageReactions) {
+    if (messageReactions == null || messageReactions.length == 0) {
+      return 0;
+    }
+    int totalCount = 0;
+    for (TdApi.MessageReaction messageReaction : messageReactions) {
+      totalCount += messageReaction.totalCount;
+    }
+    return totalCount;
+  }
+
+  @Nullable
+  public static TdApi.MessageReaction findMessageReaction (@NonNull TGMessage message, @Nullable String reaction) {
+    TdApi.MessageReaction[] messageReactions = message.getReactions();
+    if (messageReactions == null || reaction == null) {
+      return null;
+    }
+    for (TdApi.MessageReaction messageReaction : messageReactions) {
+      if (reaction.equals(messageReaction.reaction)) {
+        return messageReaction;
+      }
+    }
+    return null;
+  }
+
+  public static TdApi.MessageReaction[] getReactions (TdApi.MessageInteractionInfo interactionInfo) {
+    return interactionInfo != null ? interactionInfo.reactions : null;
+  }
+
   public static TdApi.MessageReplyInfo getReplyInfo (TdApi.MessageInteractionInfo interactionInfo) {
     return interactionInfo != null ? interactionInfo.replyInfo : null;
   }

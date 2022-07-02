@@ -118,14 +118,14 @@ public class SimpleUsersAdapter extends RecyclerView.Adapter<SimpleUsersAdapter.
   @Override
   public void onViewAttachedToWindow (SimpleUserHolder holder) {
     if (holder.getItemViewType() == SimpleUserHolder.VIEW_TYPE_USER) {
-      ((UserView) holder.itemView).attachReceiver();
+      ((UserView) holder.itemView).attach();
     }
   }
 
   @Override
   public void onViewDetachedFromWindow (SimpleUserHolder holder) {
     if (holder.getItemViewType() == SimpleUserHolder.VIEW_TYPE_USER) {
-      ((UserView) holder.itemView).detachReceiver();
+      ((UserView) holder.itemView).detach();
     }
   }
 

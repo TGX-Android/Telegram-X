@@ -335,8 +335,12 @@ public class MediaLayout extends FrameLayoutFix implements
     return target != null && target.areScheduledOnly();
   }
 
-  public MessagesController getTarget () {
+  public @Nullable MessagesController getTarget () {
     return target;
+  }
+
+  public void setTarget (@Nullable MessagesController target) {
+    this.target = target;
   }
 
   public int getCurrentContentWidth () {

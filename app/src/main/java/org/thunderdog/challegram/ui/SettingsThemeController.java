@@ -33,6 +33,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.luckycatlabs.sunrisesunset.SunriseSunsetCalculator;
 
+import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -48,6 +49,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeCustom;
 import org.thunderdog.challegram.theme.ThemeDelegate;
@@ -62,6 +64,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.AppUpdater;
 import org.thunderdog.challegram.util.DrawableModifier;
 import org.thunderdog.challegram.util.EmojiModifier;
+import org.thunderdog.challegram.util.ReactionModifier;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.RadioView;
@@ -81,7 +84,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.BitwiseUtils;
 
-public class SettingsThemeController extends RecyclerViewController<SettingsThemeController.Args> implements View.OnClickListener, ViewController.SettingsIntDelegate, SliderWrapView.RealTimeChangeListener, View.OnLongClickListener, TGLegacyManager.EmojiLoadListener, AppUpdater.Listener {
+public class SettingsThemeController extends RecyclerViewController<SettingsThemeController.Args> implements View.OnClickListener, ViewController.SettingsIntDelegate, SliderWrapView.RealTimeChangeListener, View.OnLongClickListener, TGLegacyManager.EmojiLoadListener, AppUpdater.Listener, TdlibSettingsManager.QuickReactionChangeListener {
   public SettingsThemeController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
@@ -135,6 +138,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
     super.destroy();
     cancelLocationRequest();
     TGLegacyManager.instance().removeEmojiListener(this);
+    tdlib().settings().removeQuickReactionChangeListener(this);
     context().appUpdater().removeListener(this);
   }
 
@@ -170,6 +174,22 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
           }
           case R.id.btn_icon: {
             v.setData(R.string.IconsBuiltIn);
+            break;
+          }
+          case R.id.btn_quickReaction: {
+            String quickReaction = tdlib().settings().quickReaction();
+            if (!TdlibSettingsManager.QUICK_REACTION_DISABLED.equals(quickReaction)) {
+              TdApi.Reaction reaction = tdlib().getReaction(quickReaction);
+              v.setDrawModifier(new ReactionModifier(tdlib(), reaction));
+              if (reaction != null) {
+                v.setData(reaction.title);
+              } else {
+                v.setData(null);
+              }
+            } else {
+              v.setData(Lang.getString(R.string.QuickReactionDisabled));
+              v.clearDrawModifiers();
+            }
             break;
           }
           case R.id.btn_reduceMotion: {
@@ -379,6 +399,23 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
             v.setData(b.toString());
             break;
           }
+          case R.id.btn_useBigReactions: {
+            StringBuilder b = new StringBuilder();
+            if (tdlib().settings().useBigReactionsInChats()) {
+              b.append(Lang.getString(R.string.Chats));
+            }
+            if (tdlib().settings().useBigReactionsInChannels()) {
+              if (b.length() > 0) {
+                b.append(Lang.getConcatSeparator());
+              }
+              b.append(Lang.getString(R.string.Channels));
+            }
+            if (b.length() == 0) {
+              b.append(Lang.getString(R.string.BigReactionsOff));
+            }
+            v.setData(b.toString());
+            break;
+          }
           case R.id.btn_systemEmoji: {
             v.getToggler().setRadioEnabled(Settings.instance().useSystemEmoji(), isUpdate);
             break;
@@ -502,6 +539,10 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
           items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_icon, 0, R.string.Icons).setDrawModifier(new DrawableModifier(R.drawable.baseline_star_20, R.drawable.baseline_account_balance_wallet_20, R.drawable.baseline_location_on_20, R.drawable.baseline_favorite_20)));
         }
       }
+
+      tdlib().settings().addQuickReactionChangeListener(this);
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_quickReaction, 0, R.string.QuickReaction));
 
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_chatListStyle, 0, R.string.ChatListStyle));
@@ -664,6 +705,8 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.AnimatedEmoji).setLongId(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI).setBoolValue(true));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_useBigEmoji, 0, R.string.BigEmoji));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_useBigReactions, 0, R.string.BigReactions));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.LoopAnimatedStickers).setLongId(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP).setBoolValue(true));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -838,6 +881,13 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
   public void updateSelectedIconPack () {
     if (adapter != null)
       adapter.updateValuedSettingById(R.id.btn_icon);
+  }
+
+  @Override
+  public void onQuickReactionChanged (String reaction) {
+    if (adapter != null) {
+      adapter.updateValuedSettingById(R.id.btn_quickReaction);
+    }
   }
 
   @Override
@@ -1099,6 +1149,11 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       case R.id.btn_icon: {
         SettingsCloudIconController c = new SettingsCloudIconController(context, tdlib);
         c.setArguments(new SettingsCloudController.Args<>(this));
+        navigateTo(c);
+        break;
+      }
+      case R.id.btn_quickReaction: {
+        SettingsReactionsController c = new SettingsReactionsController(context, tdlib);
         navigateTo(c);
         break;
       }
@@ -1419,6 +1474,17 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
           Settings.instance().setDisableChatQuickActions(result.get(R.id.btn_messageShare) != R.id.btn_messageShare, result.get(R.id.btn_messageReply) != R.id.btn_messageReply);
           adapter.updateValuedSettingById(R.id.btn_chatSwipes);
         });
+        break;
+      }
+      case R.id.btn_useBigReactions: {
+        showSettings(new SettingsWrapBuilder(R.id.btn_useBigReactions).setRawItems(new ListItem[]{
+          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_chats, 0, R.string.Chats, R.id.btn_chats, tdlib().settings().useBigReactionsInChats()),
+          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_channels, 0, R.string.Channels, R.id.btn_channels, tdlib().settings().useBigReactionsInChannels())
+        }).setIntDelegate((id, result) -> {
+          tdlib().settings().setUseBigReactionsInChats(result.get(R.id.btn_chats) == R.id.btn_chats);
+          tdlib().settings().setUseBigReactionsInChannels(result.get(R.id.btn_channels) == R.id.btn_channels);
+          adapter.updateValuedSettingById(R.id.btn_useBigReactions);
+        }).setAllowResize(false).addHeaderItem(Lang.getString(R.string.BigReactionsInfo)));
         break;
       }
       case R.id.btn_systemEmoji: {

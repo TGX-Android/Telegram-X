@@ -1223,12 +1223,12 @@ public class ContactsController extends TelegramViewController<ContactsControlle
 
     @Override
     public void attachViewToWindow (SectionedRecyclerView.SectionViewHolder holder) {
-      ((UserView) holder.itemView).attachReceiver();
+      ((UserView) holder.itemView).attach();
     }
 
     @Override
     public void detachViewFromWindow (SectionedRecyclerView.SectionViewHolder holder) {
-      ((UserView) holder.itemView).detachReceiver();
+      ((UserView) holder.itemView).detach();
     }
 
     @Override

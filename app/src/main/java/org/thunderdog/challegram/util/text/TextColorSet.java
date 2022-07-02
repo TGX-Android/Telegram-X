@@ -22,6 +22,14 @@ public interface TextColorSet {
   @ColorInt
   int defaultTextColor ();
   @ColorInt
+  default int mutedTextColor () {
+    return defaultTextColor();
+  }
+  @ColorInt
+  default int failedTextColor () {
+    return defaultTextColor();
+  }
+  @ColorInt
   default int iconColor () {
     return defaultTextColor();
   }

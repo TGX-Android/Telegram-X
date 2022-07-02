@@ -385,6 +385,11 @@ public class TGMessageFile extends TGMessage {
   }
 
   @Override
+  protected boolean drawBigReactionsInsideBubble () {
+    return false;
+  }
+
+  @Override
   protected void buildContent (int maxWidth) {
     for (ListAnimator.Entry<CaptionedFile> entry : files) {
       entry.item.component.buildLayout(maxWidth);

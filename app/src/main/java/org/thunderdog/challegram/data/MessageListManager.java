@@ -259,6 +259,7 @@ public class MessageListManager extends ListManager<TdApi.Message> implements Me
   public static final int CAUSE_OPENED = 5;
   public static final int CAUSE_MENTION_READ = 6;
   public static final int CAUSE_INTERACTION_INFO_CHANGED = 7;
+  public static final int CAUSE_UNREAD_REACTIONS_CHANGED = 8;
 
   @UiThread
   private int indexOfMessage (long messageId) {
@@ -423,6 +424,24 @@ public class MessageListManager extends ListManager<TdApi.Message> implements Me
             } else { // no longer matches the filter
               removeMessageAt(index);
             }
+          }
+        }
+      });
+    }
+  }
+
+  @Override
+  public void onMessageUnreadReactionsChanged (long chatId, long messageId, @Nullable TdApi.UnreadReaction[] unreadReactions, int unreadReactionCount) {
+    if (this.chatId == chatId) {
+      runOnUiThreadIfReady(() -> {
+        int index = indexOfMessage(messageId);
+        if (index != -1) {
+          TdApi.Message message = items.get(index);
+          message.unreadReactions = unreadReactions;
+          if (matchesFilter(message)) {
+            notifyItemChanged(index, CAUSE_UNREAD_REACTIONS_CHANGED);
+          } else { // no longer matches the filter
+            removeMessageAt(index);
           }
         }
       });

@@ -19,7 +19,9 @@ import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.View;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.DrawableRes;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.R;
@@ -183,7 +185,20 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     this.colorSet = colorSet;
   }
 
-  private int getColor (float muteFactor, int mainColorId, int mutedColorId, int failedColorId) {
+  @ColorInt
+  private int getTextColor (float muteFactor, @NonNull TextColorSet colorSet) {
+    return ColorUtils.fromToArgb(
+      ColorUtils.fromToArgb(
+        colorSet.defaultTextColor(),
+        colorSet.mutedTextColor(),
+        muteFactor
+      ),
+      colorSet.failedTextColor(),
+      isFailed.getFloatValue()
+    );
+  }
+
+  private int getColor (float muteFactor, @ThemeColorId int mainColorId, @ThemeColorId int mutedColorId, @ThemeColorId int failedColorId) {
     return ColorUtils.fromToArgb(
       ColorUtils.fromToArgb(
         Theme.getColor(mainColorId),
@@ -298,7 +313,10 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
 
   @Override
   public int defaultTextColor () {
-    return colorSet != null ? colorSet.defaultTextColor() : getColor(getMuteFactor(), textColorId, mutedTextColorId, failedTextColorId);
+    if (colorSet != null) {
+      return getTextColor(getMuteFactor(), colorSet);
+    }
+    return getColor(getMuteFactor(), textColorId, mutedTextColorId, failedTextColorId);
   }
 
   @Override

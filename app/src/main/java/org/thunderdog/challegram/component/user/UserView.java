@@ -41,15 +41,20 @@ import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.util.DrawModifier;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
+import org.thunderdog.challegram.widget.AttachDelegate;
 import org.thunderdog.challegram.widget.BaseView;
 import org.thunderdog.challegram.widget.SimplestCheckBoxHelper;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 
-public class UserView extends BaseView implements Destroyable, RemoveHelper.RemoveDelegate, TooltipOverlayView.LocationProvider {
+public class UserView extends BaseView implements Destroyable, AttachDelegate, RemoveHelper.RemoveDelegate, TooltipOverlayView.LocationProvider {
   /*private static final int ACCENT_COLOR = 0xff569ace;
   private static final int DECENT_COLOR = 0xff8a8a8a;*/
 
@@ -62,14 +67,24 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
   private @Nullable TGUser user;
   private final ImageReceiver receiver;
 
+  private @Nullable ImageReceiver drawModifierImageReceiver;
+
   private int offsetLeft;
+  private boolean isAttached = false;
 
   public static final float HEIGHT = 72f;
 
-  private RemoveHelper removeHelper;
+  private final RemoveHelper removeHelper;
+
+  private final float height;
 
   public UserView (Context context, Tdlib tdlib) {
+    this(context, tdlib, HEIGHT);
+  }
+
+  public UserView (Context context, Tdlib tdlib, float height) {
     super(context, tdlib);
+    this.height = height;
     offsetLeft = Screen.dp(68f);
 
     if (statusPaint == null) {
@@ -94,7 +109,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
   }
 
   private void layoutReceiver () {
-    int centerY = Screen.dp(HEIGHT) / 2;
+    int centerY = Screen.dp(height) / 2;
     if (Lang.rtl()) {
       int viewWidth = getMeasuredWidth();
       receiver.setBounds(viewWidth - offsetLeft - avatarRadius - avatarRadius, centerY - avatarRadius, viewWidth - offsetLeft, centerY + avatarRadius);
@@ -106,7 +121,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
   public void setOffsetLeft (int offset) {
     if (this.offsetLeft != offset) {
       this.offsetLeft = offset;
-      int centerY = Screen.dp(HEIGHT) / 2;
+      int centerY = Screen.dp(height) / 2;
       receiver.setBounds(offsetLeft, centerY - avatarRadius, offsetLeft + avatarRadius * 2, centerY + avatarRadius);
     }
   }
@@ -117,12 +132,33 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
     layoutReceiver();
   }
 
-  public void attachReceiver () {
-    receiver.attach();
+  @NonNull
+  public ImageReceiver getDrawModifierImagerReceiver () {
+    if (drawModifierImageReceiver == null) {
+      drawModifierImageReceiver = new ImageReceiver(this, 0);
+      if (!isAttached) {
+        drawModifierImageReceiver.detach();
+      }
+    }
+    return drawModifierImageReceiver;
   }
 
-  public void detachReceiver () {
+  @Override
+  public void attach () {
+    isAttached = true;
+    receiver.attach();
+    if (drawModifierImageReceiver != null) {
+      drawModifierImageReceiver.attach();
+    }
+  }
+
+  @Override
+  public void detach () {
+    isAttached = false;
     receiver.detach();
+    if (drawModifierImageReceiver != null) {
+      drawModifierImageReceiver.detach();
+    }
   }
 
   @Override
@@ -269,13 +305,21 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
 
   @Override
   public void performDestroy () {
-    receiver.requestFile(null);
+    receiver.destroy();
+    if (drawModifierImageReceiver != null) {
+      drawModifierImageReceiver.destroy();
+    }
   }
 
   @Override
   protected void onDraw (Canvas c) {
+    if (drawModifiers != null) {
+      for (DrawModifier modifier : drawModifiers) {
+        modifier.beforeDraw(this, c);
+      }
+    }
     removeHelper.save(c);
-    int centerY = Screen.dp(HEIGHT) / 2;
+    int centerY = Screen.dp(height) / 2;
     boolean rtl = Lang.rtl();
     int viewWidth = getMeasuredWidth();
     if (trimmedName != null) {
@@ -343,6 +387,11 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
         c.drawRect(offsetLeft + textLeftMargin, top, getMeasuredWidth(), bottom, Paints.fillingPaint(Theme.separatorColor()));
       }
     }
+    if (drawModifiers != null) {
+      for (int i = drawModifiers.size() - 1; i >= 0; i--) {
+        drawModifiers.get(i).afterDraw(this, c);
+      }
+    }
   }
 
   // Selection
@@ -364,6 +413,66 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
   @Override
   public void onRemoveSwipe () {
     removeHelper.onSwipe();
+  }
+
+  // Draw modifier
+
+  @Nullable
+  private List<DrawModifier> drawModifiers;
+
+  public void addDrawModifier (@NonNull DrawModifier drawModifier, boolean inFront) {
+    int index = drawModifiers != null ? drawModifiers.indexOf(drawModifier) : -1;
+    if (index == -1) {
+      if (drawModifiers == null) {
+        drawModifiers = new ArrayList<>();
+      }
+      if (inFront) {
+        drawModifiers.add(0, drawModifier);
+      } else {
+        drawModifiers.add(drawModifier);
+      }
+      invalidate();
+    } else if (inFront && index != 0) {
+      drawModifiers.remove(index);
+      drawModifiers.add(0, drawModifier);
+      invalidate();
+    }
+  }
+
+  public void removeDrawModifier (@NonNull DrawModifier drawModifier) {
+    int index = drawModifiers != null ? drawModifiers.indexOf(drawModifier) : -1;
+    if (index != -1) {
+      drawModifiers.remove(index);
+      invalidate();
+    }
+  }
+
+  public void setDrawModifier (@Nullable DrawModifier drawModifier) {
+    if (drawModifier == null) {
+      clearDrawModifiers();
+    } else {
+      if (drawModifiers != null) {
+        if (drawModifiers.size() == 1 && drawModifiers.get(0) == drawModifier) {
+          return;
+        }
+        drawModifiers.clear();
+      } else {
+        drawModifiers = new ArrayList<>();
+      }
+      drawModifiers.add(drawModifier);
+      invalidate();
+    }
+  }
+
+  public void clearDrawModifiers () {
+    if (drawModifiers != null && !drawModifiers.isEmpty()) {
+      drawModifiers.clear();
+    }
+  }
+
+  @Nullable
+  public List<DrawModifier> getDrawModifiers () {
+    return drawModifiers;
   }
 
   // Paints
