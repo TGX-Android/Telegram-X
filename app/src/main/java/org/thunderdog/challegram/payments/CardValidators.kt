@@ -57,7 +57,9 @@ object CardValidators {
     return normalizeYear(year) == now.get(Calendar.YEAR) && month < (now.get(Calendar.MONTH) + 1)
   }
 
-  fun validateCardNumber(number: String?): Boolean {
+  fun createTgCardName (number: String) = "${guessCardBrand(number)?.humanName} *${number.takeLast(4)}"
+
+  fun validateCardNumber (number: String?): Boolean {
     if (number.isNullOrEmpty() || !isLuhnValid(number)) return false
     return number.length == (guessCardBrand(number)?.maxLength ?: return false)
   }

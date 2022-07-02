@@ -1,9 +1,10 @@
 package org.thunderdog.challegram.payments
 
 import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import okio.ByteString.Companion.encode
 import org.json.JSONObject
-import org.thunderdog.challegram.Log
 import java.io.IOException
 
 sealed class CardTokenizer {
@@ -53,13 +54,58 @@ class StripeCardTokenizer (private val publisherToken: String): CardTokenizer() 
             put("type", result.getString("type"))
           }.toString())
         } else if (result.has("error")) {
-          callback.onError(Exception(
-            "Stripe API error: ${result.getJSONObject("error").getString("message")} (${result.getJSONObject("error").getString("type")})"
-          ))
+          callback.onError(Exception("Stripe API error: ${result.getJSONObject("error").getString("message")} (${result.getJSONObject("error").getString("type")})"))
         } else {
-          callback.onError(Exception(
-            "Unknown Stripe API error"
-          ))
+          callback.onError(Exception("Unknown Stripe API error"))
+        }
+      }
+
+      override fun onFailure(call: Call, e: IOException) {
+        callback.onError(e)
+      }
+    })
+  }
+}
+
+class SmartGlocalTokenizer (private val publicToken: String, private val testMode: Boolean): CardTokenizer() {
+  override fun tokenize(
+    cardNumber: String,
+    cardExpiryMonth: Int,
+    cardExpiryYear: Int,
+    cardCvc: String,
+    cardHolderName: String?,
+    countryCode: String?,
+    postCode: String?,
+    callback: CardTokenizerCallback
+  ) {
+    val parameters = JSONObject().put("card", JSONObject().apply {
+      put("number", cardNumber)
+      put("expiration_month", cardExpiryMonth)
+      put("expiration_year", cardExpiryYear)
+      put("security_code", cardCvc)
+    })
+
+    OkHttpClient.Builder().build().newCall(
+      Request.Builder()
+        .url(if (testMode) {
+          "https://tgb-playground.smart-glocal.com/cds/v1/tokenize/card"
+        } else {
+          "https://tgb.smart-glocal.com/cds/v1/tokenize/card"
+        })
+        .header("X-PUBLIC-TOKEN", publicToken)
+        .post(parameters.toString().toRequestBody("application/json".toMediaType()))
+        .build()
+    ).enqueue(object: Callback {
+      override fun onResponse(call: Call, response: Response) {
+        val result = JSONObject(response.body?.string() ?: "{}")
+        val token = result.optJSONObject("data")?.optString("token")
+        if (token != null) {
+          callback.onSuccess(JSONObject().apply {
+            put("type", "card")
+            put("token", token)
+          }.toString())
+        } else {
+          callback.onError(Exception("Smart Glocal payment error: $result"))
         }
       }
 

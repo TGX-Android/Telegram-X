@@ -309,7 +309,7 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
               public void onSuccess (@NonNull String json) {
                 runOnUiThreadOptional(() -> {
                   navigateBack();
-                  parentController.onPaymentMethodSelected(new TdApi.InputCredentialsNew(json, i_saveInfo), "test");
+                  parentController.onPaymentMethodSelected(new TdApi.InputCredentialsNew(json, i_saveInfo), CardValidators.INSTANCE.createTgCardName(i_cardNumber));
                 });
               }
 
