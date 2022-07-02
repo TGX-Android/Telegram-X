@@ -123,7 +123,7 @@ import org.thunderdog.challegram.component.chat.WallpaperRecyclerView;
 import org.thunderdog.challegram.component.chat.WallpaperView;
 import org.thunderdog.challegram.component.popups.MessageSeenController;
 import org.thunderdog.challegram.component.popups.ModernActionedLayout;
-import org.thunderdog.challegram.component.sticker.ReactionInChatWrapper;
+import org.thunderdog.challegram.component.sticker.ReactionInChatAnimationWrapper;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
@@ -331,7 +331,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private CircleButton scrollToBottomButton, mentionButton;
   private CounterBadgeView unreadCountView, mentionCountView;
 
-  private ReactionInChatWrapper reactionInChatWrapper;
+  private ReactionInChatAnimationWrapper reactionInChatAnimationWrapper;
   public boolean sponsoredMessageLoaded = false;
 
   public MessagesController (Context context, Tdlib tdlib) {
@@ -1241,7 +1241,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     TGLegacyManager.instance().addEmojiListener(this);
 
-    reactionInChatWrapper = new ReactionInChatWrapper(context());
+    reactionInChatAnimationWrapper = new ReactionInChatAnimationWrapper(context());
     if (needTabs()) {
       /*headerCell = new ViewPagerHeaderViewCompact(context);
         FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) ((ViewPagerHeaderViewCompact) headerCell).getRecyclerView().getLayoutParams();
@@ -1303,13 +1303,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
       contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
       contentView.addView(pagerContentView);
 
-      contentView.addView(reactionInChatWrapper);
+      contentView.addView(reactionInChatAnimationWrapper);
 
       return contentView;
 
     }
 
-    contentView.addView(reactionInChatWrapper);
+    contentView.addView(reactionInChatAnimationWrapper);
 
     return contentView;
   }
@@ -4192,9 +4192,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       tdlib.setMessageReaction(message.getChatId(), message.getId(), reaction.reaction, isBig, result -> {});
 
       if (!isUndo) {
-        reactionInChatWrapper.reattach(sticker);
-        reactionInChatWrapper.setTargetXY(message.findCurrentView(), message.getReactionTargetX(), message.getReactionTargetY());
-        reactionInChatWrapper.playAnimation();
+        reactionInChatAnimationWrapper.reattach(sticker);
+        reactionInChatAnimationWrapper.setTargetXY(message.findCurrentView(), message.getReactionTargetX(), message.getReactionTargetY());
+        reactionInChatAnimationWrapper.playAnimation();
       }
 
       layout.hideWindow(true);

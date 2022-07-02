@@ -29,7 +29,7 @@ import org.thunderdog.challegram.tool.Views;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.Destroyable;
 
-public class ReactionInChatWrapper extends FrameLayoutFix implements Destroyable {
+public class ReactionInChatAnimationWrapper extends FrameLayoutFix implements Destroyable {
 
   public static final float PADDING = 8f;
 
@@ -47,7 +47,7 @@ public class ReactionInChatWrapper extends FrameLayoutFix implements Destroyable
 
   private ReactionInChatView reactionInChatView;
 
-  public ReactionInChatWrapper (Context context) {
+  public ReactionInChatAnimationWrapper (Context context) {
     super(context);
   }
 
