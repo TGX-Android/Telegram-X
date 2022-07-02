@@ -4191,9 +4191,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     MessageReactionsBar messageReactionsBar = new MessageReactionsBar(context, this, message, (sticker, reaction, isBig) -> {
       tdlib.setMessageReaction(message.getChatId(), message.getId(), reaction.reaction, isBig, result -> {});
 
-      sticker.setTargetXY(message.findCurrentView(), message.getReactionTargetX(), message.getReactionTargetY(), reactionInChatWrapper.yOffset);
       reactionInChatWrapper.reattach(sticker);
-      sticker.playAnimation();
+      reactionInChatWrapper.setTargetXY(message.findCurrentView(), message.getReactionTargetX(), message.getReactionTargetY());
+      reactionInChatWrapper.playAnimation();
 
       layout.hideWindow(true);
     });

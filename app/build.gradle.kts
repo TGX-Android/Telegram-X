@@ -178,6 +178,7 @@ dependencies {
     implementation("androidx.collection:collection:1.2.0")
     implementation("androidx.interpolator:interpolator:1.0.0")
     implementation("androidx.gridlayout:gridlayout:1.0.0")
+    implementation("androidx.dynamicanimation:dynamicanimation:1.0.0")
     // CameraX: https://developer.android.com/jetpack/androidx/releases/camera
     implementation("androidx.camera:camera-camera2:1.1.0-beta01")
     implementation("androidx.camera:camera-lifecycle:1.1.0-beta01")

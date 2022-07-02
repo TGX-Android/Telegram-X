@@ -18,6 +18,12 @@ import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.dynamicanimation.animation.DynamicAnimation;
+import androidx.dynamicanimation.animation.FloatPropertyCompat;
+import androidx.dynamicanimation.animation.SpringAnimation;
+import androidx.dynamicanimation.animation.SpringForce;
+
+import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 
 import me.vkryl.android.widget.FrameLayoutFix;
@@ -29,7 +35,18 @@ public class ReactionInChatWrapper extends FrameLayoutFix implements Destroyable
 
   private final int[] locationOnScreen = new int[2];
 
+
+  private SpringAnimation translateAnimationX = null;
+  private SpringAnimation translateAnimationY = null;
+  private SpringAnimation scaleAnimationX = null;
+  private SpringAnimation scaleAnimationY = null;
+
   public int yOffset = 0;
+
+  private int targetX = -1;
+  private int targetY = -1;
+
+  private ReactionInChatView reactionInChatView;
 
   public ReactionInChatWrapper (Context context) {
     super(context);
@@ -56,6 +73,8 @@ public class ReactionInChatWrapper extends FrameLayoutFix implements Destroyable
   }
 
   public void reattach (ReactionInChatView reactionInChatView) {
+    this.reactionInChatView = reactionInChatView;
+
     reactionInChatView.detach();
 
     int[] location = new int[2];
@@ -74,4 +93,104 @@ public class ReactionInChatWrapper extends FrameLayoutFix implements Destroyable
 
     reactionInChatView.attach();
   }
+
+  public void setTargetXY (View view, int targetX, int targetY) {
+    if (view == null) return;
+
+    int[] position = new int[2];
+    view.getLocationOnScreen(position);
+
+    int fromLeftMargin = ((MarginLayoutParams) getLayoutParams()).leftMargin;
+    int fromTopMargin = ((MarginLayoutParams) getLayoutParams()).topMargin;
+
+    this.targetX = position[0] + targetX - Screen.dp(10f) - fromLeftMargin;
+    this.targetY = position[1] + targetY - yOffset - Screen.dp(10f) - fromTopMargin;
+  }
+
+  public void playAnimation () {
+    if (targetX == -1 || targetY == -1 || reactionInChatView == null) return;
+
+    translateAnimationX = new SpringAnimation(reactionInChatView, floatPropertyAnimX, targetX);
+    translateAnimationX.getSpring().setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY);
+    translateAnimationX.getSpring().setStiffness(75f);
+    translateAnimationX.addEndListener((animation, canceled, value, velocity) -> {
+      startScaleAnimation();
+    });
+    translateAnimationY = new SpringAnimation(reactionInChatView, floatPropertyAnimY, targetY);
+    translateAnimationY.getSpring().setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY);
+    translateAnimationY.getSpring().setStiffness(SpringForce.STIFFNESS_VERY_LOW);
+    translateAnimationY.addEndListener((animation, canceled, value, velocity) -> {
+      startScaleAnimation();
+    });
+
+    scaleAnimationX = new SpringAnimation(reactionInChatView, DynamicAnimation.SCALE_X, .5f);
+    scaleAnimationX.getSpring().setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY);
+    scaleAnimationX.getSpring().setStiffness(SpringForce.STIFFNESS_MEDIUM);
+    scaleAnimationX.addEndListener((animation, canceled, value, velocity) -> {
+      removeReaction();
+    });
+
+    scaleAnimationY = new SpringAnimation(reactionInChatView, DynamicAnimation.SCALE_Y, .5f);
+    scaleAnimationY.getSpring().setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY);
+    scaleAnimationY.getSpring().setStiffness(SpringForce.STIFFNESS_MEDIUM);
+    scaleAnimationY.addEndListener((animation, canceled, value, velocity) -> {
+      removeReaction();
+    });
+
+    translateAnimationX.start();
+    translateAnimationY.start();
+  }
+
+  private void startScaleAnimation () {
+    if (translateAnimationX != null
+            && translateAnimationY != null
+            && !translateAnimationX.isRunning()
+            && !translateAnimationY.isRunning()) {
+      if (scaleAnimationX != null && scaleAnimationY != null) {
+        scaleAnimationX.start();
+        scaleAnimationY.start();
+      }
+    }
+  }
+
+  private void removeReaction () {
+    if (scaleAnimationX != null
+            && scaleAnimationY != null
+            && !scaleAnimationX.isRunning()
+            && !scaleAnimationY.isRunning()) {
+      if (reactionInChatView != null) {
+        removeView(reactionInChatView);
+        reactionInChatView = null;
+      }
+    }
+  }
+
+
+  private final FloatPropertyCompat<ReactionInChatView> floatPropertyAnimX = new FloatPropertyCompat<>("X") {
+    @Override
+    public float getValue (ReactionInChatView view) {
+      return ((MarginLayoutParams) view.getLayoutParams()).leftMargin;
+    }
+
+    @Override
+    public void setValue (ReactionInChatView view, float value) {
+      MarginLayoutParams layoutParams = (MarginLayoutParams) view.getLayoutParams();
+      layoutParams.leftMargin = (int) value;
+      view.setLayoutParams(layoutParams);
+    }
+  };
+
+  private final FloatPropertyCompat<ReactionInChatView> floatPropertyAnimY = new FloatPropertyCompat<>("Y") {
+    @Override
+    public float getValue (ReactionInChatView view) {
+      return ((MarginLayoutParams) view.getLayoutParams()).topMargin;
+    }
+
+    @Override
+    public void setValue (ReactionInChatView view, float value) {
+      MarginLayoutParams layoutParams = (MarginLayoutParams) view.getLayoutParams();
+      layoutParams.topMargin = (int) value;
+      view.setLayoutParams(layoutParams);
+    }
+  };
 }

@@ -19,7 +19,6 @@ import android.graphics.Canvas;
 import android.graphics.Path;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.OvershootInterpolator;
@@ -44,16 +43,13 @@ public class ReactionInChatView extends View implements FactorAnimator.Target, D
   private static final long LONG_PRESS_DELAY = 1000;
 
   private static final int ON_CLICK_ANIMATION_ID = 100;
-  private static final int TARGET_ANIMATION_ID = 101;
 
   public static final float PADDING = 8f;
   private static final Interpolator OVERSHOOT_INTERPOLATOR = new OvershootInterpolator(3.2f);
-  private static final Interpolator LINEAR_INTERPOLATOR = new LinearInterpolator();
 
   private final ImageReceiver imageReceiver;
   private final GifReceiver gifReceiver;
   private final FactorAnimator longPressAnimator;
-  private final FactorAnimator translateAnimator;
   private @Nullable TGStickerObj sticker;
   private Path contour;
   private float factor;
@@ -66,11 +62,6 @@ public class ReactionInChatView extends View implements FactorAnimator.Target, D
   private boolean longPressScheduled;
   private boolean longPressReady;
 
-  private int targetX = -1;
-  private int targetY = -1;
-  private int fromLeftMargin = -1;
-  private int fromTopMargin = -1;
-
   private OnTouchCallback callback;
 
   public ReactionInChatView (Context context) {
@@ -78,7 +69,6 @@ public class ReactionInChatView extends View implements FactorAnimator.Target, D
     this.imageReceiver = new ImageReceiver(this, 0);
     this.gifReceiver = new GifReceiver(this);
     this.longPressAnimator = new FactorAnimator(ON_CLICK_ANIMATION_ID, this, OVERSHOOT_INTERPOLATOR, CLICK_LIFESPAN);
-    this.translateAnimator = new FactorAnimator(TARGET_ANIMATION_ID, this, LINEAR_INTERPOLATOR, CLICK_LIFESPAN);
   }
 
   public void setSticker (@Nullable TGStickerObj sticker) {
@@ -125,25 +115,6 @@ public class ReactionInChatView extends View implements FactorAnimator.Target, D
         this.factor = factor;
         invalidate();
       }
-    } else {
-      ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) getLayoutParams();
-      float translateX = targetX * factor;
-      float translateY = targetY * factor;
-
-      android.util.Log.d("AKBOLAT", "translate X " + translateX + " Y " + translateY);
-      android.util.Log.d("AKBOLAT", "margin L " + layoutParams.leftMargin + " T " + layoutParams.topMargin);
-
-      layoutParams.leftMargin = (int) (fromLeftMargin + translateX);
-      layoutParams.topMargin = (int) (fromTopMargin + translateY);
-      setLayoutParams(layoutParams);
-    }
-  }
-
-  @Override
-  public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
-    if (id == TARGET_ANIMATION_ID) {
-      android.util.Log.d("AKBOLAT", "onFinished");
-//      ((ViewGroup) getParent()).removeView(this);
     }
   }
 
@@ -273,28 +244,6 @@ public class ReactionInChatView extends View implements FactorAnimator.Target, D
 
   public void setCallback (OnTouchCallback callback) {
     this.callback = callback;
-  }
-
-  public void setTargetXY (View view, int targetX, int targetY, int yOffset) {
-    if (view == null) return;
-
-    int[] position = new int[2];
-    view.getLocationOnScreen(position);
-
-    this.targetX = position[0] + targetX - Screen.dp(10f);
-    this.targetY = position[1] + targetY - yOffset - Screen.dp(10f);
-  }
-
-  public void playAnimation () {
-    if (targetX == -1 || targetY == -1) return;
-
-    fromLeftMargin = ((ViewGroup.MarginLayoutParams) getLayoutParams()).leftMargin;
-    fromTopMargin = ((ViewGroup.MarginLayoutParams) getLayoutParams()).topMargin;
-
-    targetX -= fromLeftMargin;
-    targetY -= fromTopMargin;
-
-    translateAnimator.animateTo(1f);
   }
 
   public interface OnTouchCallback {
