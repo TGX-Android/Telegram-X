@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.util.text;
 
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.View;
@@ -60,6 +61,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
 
   private static final int FLAG_ALL_BOLD = 1;
   private static final int FLAG_NEED_BACKGROUND = 1 << 1;
+  private static final int FLAG_IS_REACTION = 1 << 2;
 
   public static class Builder {
     public Builder () { }
@@ -69,6 +71,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     private Callback callback;
 
     private int drawableRes;
+    private Drawable extendedDrawable;
     private float drawableWidthDp, drawableMarginDp;
     private int drawableGravity = Gravity.NO_GRAVITY;
 
@@ -89,6 +92,11 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
       return this;
     }
 
+    public Builder isReaction () {
+      this.flags = BitwiseUtils.setFlag(flags, FLAG_IS_REACTION, true);
+      return this;
+    }
+
     public Builder textSize (float textSize) {
       this.textSize = textSize;
       return this;
@@ -106,6 +114,13 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     public Builder drawable (int drawableRes, float drawableWidthDp, float drawableMarginDp, int gravity) {
       this.drawableRes = drawableRes;
       this.drawableWidthDp = drawableWidthDp;
+      this.drawableMarginDp = drawableMarginDp;
+      this.drawableGravity = gravity;
+      return this;
+    }
+
+    public Builder drawable (Drawable drawable, float drawableMarginDp, int gravity) {
+      this.extendedDrawable = drawable;
       this.drawableMarginDp = drawableMarginDp;
       this.drawableGravity = gravity;
       return this;
@@ -137,7 +152,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
       return new Counter(textSize, callback, flags,
         textColorId, mutedTextColorId, failedTextColorId, outlineColorId,
         drawableRes, drawableWidthDp, drawableMarginDp, drawableGravity,
-        colorSet
+        colorSet, extendedDrawable
       );
     }
   }
@@ -157,6 +172,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
   private final float textSize;
 
   private final @DrawableRes int drawableRes;
+  private final Drawable extendedDrawable;
   private final float drawableWidthDp, drawableMarginDp;
   private final int drawableGravity;
 
@@ -168,7 +184,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
   private Counter (float textSize, Callback callback, int flags,
                    @ThemeColorId int textColorId, @ThemeColorId int mutedTextColorId, @ThemeColorId int failedTextColorId, @ThemeColorId int outlineColorId,
                    @DrawableRes int drawableRes, float drawableWidthDp, float drawableMarginDp, int drawableGravity,
-                   @Nullable TextColorSet colorSet) {
+                   @Nullable TextColorSet colorSet, Drawable counterDrawable) {
     this.textSize = textSize;
     this.callback = callback;
     this.flags = flags;
@@ -181,9 +197,10 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     this.drawableMarginDp = drawableMarginDp;
     this.drawableGravity = drawableGravity;
     this.colorSet = colorSet;
+    this.extendedDrawable = counterDrawable;
   }
 
-  private int getColor (float muteFactor, int mainColorId, int mutedColorId, int failedColorId) {
+  public int getColor (float muteFactor, int mainColorId, int mutedColorId, int failedColorId) {
     return ColorUtils.fromToArgb(
       ColorUtils.fromToArgb(
         Theme.getColor(mainColorId),
@@ -248,8 +265,32 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
       callback.onCounterAppearanceChanged(this, sizeChanged);
   }
 
-  private float getWidth () {
-    return DrawAlgorithms.getCounterWidth(textSize, BitwiseUtils.getFlag(flags, FLAG_NEED_BACKGROUND), counter, drawableRes != 0 ? Screen.dp(drawableWidthDp) + Screen.dp(drawableMarginDp) : 0);
+  private int getDrawableWidth () {
+    if (drawableRes != 0) {
+      return Screen.dp(drawableWidthDp) + Screen.dp(drawableMarginDp);
+    }
+
+    if (extendedDrawable != null) {
+      return extendedDrawable.getMinimumWidth();
+    }
+
+    return 0;
+  }
+
+  private Drawable getDrawable (DrawableProvider drawableProvider, @PorterDuffThemeColorId int drawableColorId) {
+    if (drawableRes != 0) {
+      return drawableProvider.getSparseDrawable(drawableRes, drawableColorId);
+    }
+
+    return extendedDrawable;
+  }
+
+  public float getWidth () {
+    return DrawAlgorithms.getCounterWidth(textSize, BitwiseUtils.getFlag(flags, FLAG_NEED_BACKGROUND), counter, getDrawableWidth());
+  }
+
+  public float getTargetWidth () {
+    return DrawAlgorithms.getCounterTargetWidth(textSize, BitwiseUtils.getFlag(flags, FLAG_NEED_BACKGROUND), counter, getDrawableWidth());
   }
 
   public float getScaledWidth (int addWidth) {
@@ -274,8 +315,8 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
 
   public void draw (Canvas c, float cx, float cy, int gravity, float alpha, DrawableProvider drawableProvider, @PorterDuffThemeColorId int drawableColorId) {
     if (alpha * getVisibility() > 0f) {
-      Drawable drawable = drawableRes != 0 ? drawableProvider.getSparseDrawable(drawableRes, drawableColorId) : null;
-      DrawAlgorithms.drawCounter(c, cx, cy, gravity, counter, textSize, BitwiseUtils.getFlag(flags, FLAG_NEED_BACKGROUND), this, drawable, drawableGravity, drawableColorId, Screen.dp(drawableMarginDp), alpha * getVisibility(), isVisible.getFloatValue());
+      Drawable drawable = getDrawable(drawableProvider, drawableColorId);
+      DrawAlgorithms.drawCounter(c, cx, cy, gravity, counter, textSize, BitwiseUtils.getFlag(flags, FLAG_NEED_BACKGROUND), BitwiseUtils.getFlag(flags, FLAG_IS_REACTION), this, drawable, drawableGravity, drawableColorId, Screen.dp(drawableMarginDp), alpha * getVisibility(), isVisible.getFloatValue());
     }
   }
 

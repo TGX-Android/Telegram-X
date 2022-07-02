@@ -303,6 +303,10 @@ public class Settings {
   private static final String KEY_EMOJI_OTHER_COLORS = "emoji_other_colors";
   private static final String KEY_EMOJI_DEFAULT_COLOR = "emoji_default";
 
+  private static final String KEY_QUICK_REACTION = "quick_reaction";
+  private static final String KEY_BIG_REACTIONS_IN_CHANNELS = "big_reactions_in_channels";
+  private static final String KEY_BIG_REACTIONS_IN_CHATS = "big_reactions_in_chats";
+
   private static final String KEY_WALLPAPER_PREFIX = "wallpaper";
   private static final String KEY_WALLPAPER_CUSTOM = "_custom";
   private static final String KEY_WALLPAPER_EMPTY = "_empty";
@@ -6071,6 +6075,36 @@ public class Settings {
     int installedVersion = pmc.getInt(KEY_EMOJI_INSTALLED_PREFIX + setting.identifier, 0);
     boolean hasFile = installedVersion > 0 && (fast || new File(Emoji.getEmojiPackDirectory(), setting.identifier).exists());
     return hasFile ? (installedVersion == setting.date ? CloudSetting.STATE_INSTALLED : CloudSetting.STATE_UPDATE_NEEDED) : CloudSetting.STATE_NOT_INSTALLED;
+  }
+
+  private String quickReaction;
+  public void setQuickReaction (String reaction) {
+    pmc.edit().putString(KEY_QUICK_REACTION, reaction).apply();
+    quickReaction = reaction;
+  }
+
+  public String getQuickReaction () {
+    if (quickReaction == null) {
+      quickReaction = pmc.getString(KEY_QUICK_REACTION, "\uD83D\uDC4D");
+    }
+
+    return quickReaction;
+  }
+
+  public void setBigReactionsInChannels (boolean inChannels) {
+    pmc.edit().putBoolean(KEY_BIG_REACTIONS_IN_CHANNELS, inChannels).apply();
+  }
+
+  public void setBigReactionsInChats (boolean inChats) {
+    pmc.edit().putBoolean(KEY_BIG_REACTIONS_IN_CHATS, inChats).apply();
+  }
+
+  public boolean getBigReactionsInChannels () {
+    return getBoolean(KEY_BIG_REACTIONS_IN_CHANNELS, true);
+  }
+
+  public boolean getBigReactionsInChats () {
+    return getBoolean(KEY_BIG_REACTIONS_IN_CHATS, true);
   }
 
   public void markEmojiPackInstalled (EmojiPack emojiPack) {

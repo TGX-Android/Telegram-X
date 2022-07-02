@@ -1,0 +1,852 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014-2022 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 21/11/2016
+ */
+package org.thunderdog.challegram.ui;
+
+import android.animation.Animator;
+import android.content.Context;
+import android.content.res.Resources;
+import android.graphics.Canvas;
+import android.graphics.Point;
+import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
+import android.view.Gravity;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.collection.SparseArrayCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.data.TGMessage;
+import org.thunderdog.challegram.data.TGReaction;
+import org.thunderdog.challegram.navigation.HeaderView;
+import org.thunderdog.challegram.navigation.Menu;
+import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.navigation.ViewPagerController;
+import org.thunderdog.challegram.navigation.ViewPagerHeaderViewReactionsCompact;
+import org.thunderdog.challegram.navigation.ViewPagerTopView;
+import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorState;
+import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.util.DrawableProvider;
+import org.thunderdog.challegram.util.OptionDelegate;
+import org.thunderdog.challegram.util.text.Counter;
+import org.thunderdog.challegram.v.CustomRecyclerView;
+import org.thunderdog.challegram.widget.PopupLayout;
+import org.thunderdog.challegram.widget.ReactionsSelectorRecyclerView;
+import org.thunderdog.challegram.widget.ViewPager;
+
+import java.util.Arrays;
+
+import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.android.widget.FrameLayoutFix;
+
+public class MessageOptionsPagerController extends ViewPagerController<Void> implements
+  FactorAnimator.Target, PopupLayout.PopupHeightProvider,
+  View.OnClickListener, Menu, PopupLayout.TouchSectionProvider,
+  DrawableProvider, Counter.Callback, ReactionsSelectorRecyclerView.ReactionSelectDelegate {
+
+  private Options options;
+  private TGMessage message;
+  private TdApi.Chat chat;
+  private final String defaultReaction;
+
+  private final boolean needShowOptions;
+  private final boolean needShowViews;
+  private final boolean needShowReactions;
+
+  private final TdApi.MessageReaction[] reactions;
+  private final ViewPagerTopView.Item[] counters;
+  private int baseCountersWidth = 0;
+  private int startPage = 0;
+
+  private ViewPagerHeaderViewReactionsCompact headerCell;
+
+
+  public MessageOptionsPagerController (Context context, Tdlib tdlib, TdApi.Chat chat, Options options, TGMessage message, String defaultReaction) {
+    super(context, tdlib);
+    this.options = options;
+    this.message = message;
+    this.chat = chat;
+    this.defaultReaction = defaultReaction;
+
+    this.needShowOptions = options != null;
+    this.needShowViews = !(!message.canGetViewers() || (message.isUnread() && !message.noUnread()));
+    this.needShowReactions = message.canGetAddedReactions() && message.getMessageReactions().getTotalCount() > 0;
+    this.reactions = message.getMessageReactions().getReactions();
+    this.counters = new ViewPagerTopView.Item[getPagerItemCount()];
+    this.baseCountersWidth = 0;
+
+    int i = 0;
+    if (needShowOptions) {
+      OPTIONS_POSITION = i++;
+      counters[OPTIONS_POSITION] = new ViewPagerTopView.Item();
+    } else {
+      OPTIONS_POSITION = -1;
+    }
+
+    if (needShowReactions) {
+      ALL_REACTED_POSITION = i++;
+      counters[ALL_REACTED_POSITION] = new ViewPagerTopView.Item(new Counter.Builder()
+        .noBackground()
+        .allBold(true)
+        .textSize(14f)
+        .textColor(R.id.theme_color_text)
+        .callback(this)
+        .drawable(R.drawable.baseline_favorite_20, 20f, 5f, Gravity.LEFT)
+        .build(), this, Screen.dp(24));
+      counters[ALL_REACTED_POSITION].counter.setCount(message.getMessageReactions().getTotalCount(), false);
+      baseCountersWidth += counters[ALL_REACTED_POSITION].calculateWidth(null);
+    } else {
+      ALL_REACTED_POSITION = -1;
+    }
+
+    if (needShowViews) {
+      SEEN_POSITION = i++;
+      counters[SEEN_POSITION] = new ViewPagerTopView.Item(new Counter.Builder()
+        .noBackground()
+        .allBold(true)
+        .textSize(14f)
+        .textColor(R.id.theme_color_text)
+        .callback(this)
+        .drawable(R.drawable.baseline_visibility_20, 20f, 5f, Gravity.LEFT)
+        .build(), this, Screen.dp(24));
+      counters[SEEN_POSITION].counter.setCount(10, false);
+      int itemWidth = counters[SEEN_POSITION].calculateWidth(null);
+      baseCountersWidth += itemWidth;
+      counters[SEEN_POSITION].setStaticWidth(itemWidth - Screen.dp(24));
+      counters[SEEN_POSITION].counter.setCount(0, false);
+      getMessageOptions();
+    } else {
+      SEEN_POSITION = -1;
+    }
+
+    if (needShowReactions) {
+      REACTED_START_POSITION = i;
+      for (TdApi.MessageReaction reaction : reactions) {
+        counters[i] = new ViewPagerTopView.Item(new Counter.Builder()
+          .noBackground()
+          .allBold(true)
+          .textSize(14f)
+          .textColor(R.id.theme_color_text)
+          .callback(this)
+          .drawable(new TGReaction.ReactionDrawable(null, tdlib.getReaction(reaction.reaction).staticIconSicker(), Screen.dp(20), Screen.dp(18)), 5f, Gravity.LEFT)
+          .build(), this, Screen.dp(24));
+        counters[i].counter.setCount(reaction.totalCount, false);
+        if (reaction.reaction.equals(defaultReaction)) {
+          startPage = i;
+        }
+        i += 1;
+      }
+    } else {
+      REACTED_START_POSITION = -1;
+    }
+  }
+
+  private View pagerInFrameLayoutFix;
+  private FrameLayoutFix wrapView;
+  private RelativeLayout contentView;
+  private View fixView;
+
+  // Create view
+
+  @Override
+  protected View onCreateView (Context context) {
+    headerCell = new ViewPagerHeaderViewReactionsCompact(context, tdlib, chat, message, needShowOptions ? baseCountersWidth : 0, needShowOptions, needShowReactions && needShowViews);
+    headerCell.setReactionsSelectorDelegate(this);
+    addThemeInvalidateListener(headerCell);
+    headerView = new HeaderView(context) {
+      @Override
+      protected void onLayout (boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        if (startPage != 0) {
+          setCurrentPagerPosition(startPage, false);
+          startPage = 0;
+        }
+      }
+    };
+    headerView.initWithSingleController(this, false);
+    headerView.getFilling().setShadowAlpha(0f);
+    headerView.getBackButton().setIsReverse(true);
+    ViewSupport.setThemedBackground(headerView, R.id.theme_color_background, this);
+
+    contentView = new RelativeLayout(context) {
+      @Override
+      protected void onDraw (Canvas canvas) {
+        if (headerView != null) {
+          canvas.drawRect(0, headerView.getTranslationY(), getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(Theme.backgroundColor()));
+        }
+        super.onDraw(canvas);
+      }
+
+      @Override
+      protected boolean drawChild (Canvas canvas, View child, long drawingTime) {
+        if (child == pagerInFrameLayoutFix && headerView != null) {
+          canvas.save();
+          canvas.clipRect(0, headerView.getTranslationY() + HeaderView.getTopOffset(), getMeasuredWidth(), getMeasuredHeight());
+          boolean result = super.drawChild(canvas, child, drawingTime);
+          canvas.restore();
+          return result;
+        } else {
+          return super.drawChild(canvas, child, drawingTime);
+        }
+      }
+    };
+    contentView.setWillNotDraw(false);
+    contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    addThemeInvalidateListener(contentView);
+
+    FrameLayout.LayoutParams fp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(6f));
+    fp.topMargin = HeaderView.getSize(false) - Screen.dp(3f);
+    fixView = new View(context);
+    ViewSupport.setThemedBackground(fixView, R.id.theme_color_background, this);
+    fixView.setLayoutParams(fp);
+
+    wrapView = new FrameLayoutFix(context) {
+      @Override
+      public boolean onInterceptTouchEvent (MotionEvent e) {
+        boolean result = (e.getAction() == MotionEvent.ACTION_DOWN && headerView != null && e.getY() < headerView.getTranslationY()) || super.onInterceptTouchEvent(e);
+        return result;
+      }
+
+      @Override
+      public boolean onTouchEvent (MotionEvent e) {
+        boolean result = !(e.getAction() == MotionEvent.ACTION_DOWN && headerView != null && e.getY() < headerView.getTranslationY()) && super.onTouchEvent(e);
+        return result;
+      }
+    };
+
+    RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+    params.topMargin = HeaderView.getSize(true);
+    pagerInFrameLayoutFix = super.onCreateView(context);
+    pagerInFrameLayoutFix.setLayoutParams(params);
+    contentView.addView(pagerInFrameLayoutFix);
+
+    wrapView.addView(fixView);
+    wrapView.addView(contentView);
+    wrapView.addView(headerView);
+    return wrapView;
+  }
+
+  @Override
+  protected void onCreateView (Context context, FrameLayoutFix contentView, ViewPager pager) {
+    pager.setOffscreenPageLimit(1);
+    prepareControllerForPosition(0, null);
+    tdlib.ui().post(() -> launchOpenAnimation());
+
+
+    headerCell.getTopView().setTextPadding(Screen.dp(0));
+    headerCell.getTopView().setItems(Arrays.asList(counters));
+    headerCell.getTopView().setOnItemClickListener(this);
+    addThemeInvalidateListener(headerCell.getTopView());
+
+    headerCell.getBackButton().setOnClickListener((v) -> {
+      if (needShowOptions) {
+        headerCell.getTopView().getOnItemClickListener().onPagerItemClick(0);
+      } else {
+        popupLayout.hideWindow(true);
+      }
+    });
+  }
+
+
+  //
+
+  private TdApi.Users messageViewers;
+  private void getMessageOptions () {
+    tdlib.client().send(new TdApi.GetMessageViewers(message.getChatId(), message.getId()), (obj) -> {
+      if (obj.getConstructor() != TdApi.Users.CONSTRUCTOR) return;
+      runOnUiThreadOptional(() -> {
+        messageViewers = (TdApi.Users) obj;
+        if (SEEN_POSITION != -1) {
+          counters[SEEN_POSITION].counter.setCount(messageViewers.totalCount, false);
+        }
+      });
+    });
+  }
+
+
+  private int detectTopRecyclerEdge () {
+    /*if (recyclerView == null) {
+      return 0;
+    }
+
+    if (recyclerView.getLayoutManager() instanceof GridLayoutManager) {
+      GridLayoutManager manager = (GridLayoutManager) recyclerView.getLayoutManager();
+      int first = manager.findFirstVisibleItemPosition();
+      int spanCount = manager.getSpanCount();
+      int top = 0;
+      if (first != -1 && first < spanCount) {
+        View topView = manager.findViewByPosition(first);
+        if (topView != null) {
+          final int topViewPos = topView.getTop() - Screen.dp(VERTICAL_PADDING_SIZE);
+          if (topViewPos > 0) {
+            int totalSpanCount = 0;
+            for (int pos = 0; pos < first && totalSpanCount <= spanCount; pos++) {
+              totalSpanCount += manager.getSpanSizeLookup().getSpanSize(pos);
+            }
+            if (totalSpanCount <= spanCount) {
+              top = topViewPos;
+            }
+          }
+        }
+      }
+      return top;
+    }*/
+
+    return 0;
+  }
+
+  private float lastHeaderPosition;
+  private void checkHeaderPosition (RecyclerView recyclerView) {
+    View view = null;
+    if (recyclerView != null) {
+      view = recyclerView.getLayoutManager().findViewByPosition(0);
+    }
+    int top = HeaderView.getTopOffset();
+    if (view != null) {
+      top = Math.max(view.getTop() + (recyclerView != null ? recyclerView.getTop() : 0) + HeaderView.getTopOffset(), HeaderView.getTopOffset());
+    }
+
+    if (headerView != null) {
+      setHeaderPosition(lastHeaderPosition = top);
+    }
+  }
+
+  private void setHeaderPosition (float y) {
+    headerView.setTranslationY(y);
+    fixView.setTranslationY(y);
+    contentView.invalidate();
+  }
+
+
+  private static final boolean PREVENT_HEADER_ANIMATOR = false; // TODO
+
+  @Override
+  protected boolean launchCustomHeaderTransformAnimator (boolean open, int transformMode, Animator.AnimatorListener listener) {
+    return PREVENT_HEADER_ANIMATOR && open && getTopEdge() > 0;
+  }
+
+  private int getTopEdge () {
+    return Math.max(0, (int) (headerView.getTranslationY() - HeaderView.getTopOffset()));
+  }
+
+
+  @Override
+  public boolean shouldTouchOutside (float x, float y) {
+    return headerView != null && y < headerView.getTranslationY() - HeaderView.getSize(true);
+  }
+
+  private PopupLayout popupLayout;
+
+  public void show () {
+    if (tdlib == null) {
+      return;
+    }
+    popupLayout = new PopupLayout(context()) {
+      @Override
+      public void onCustomShowComplete () {
+        super.onCustomShowComplete();
+        isFirstCreation = false;
+        if (!isDestroyed()) {
+          ViewController<?> c = getCurrentPagerItem();
+          if (c instanceof RecyclerViewController<?>) {
+            RecyclerView r = ((RecyclerViewController<?>) c).getRecyclerView();
+            if (r != null) {
+              r.invalidateItemDecorations();
+              checkHeaderPosition(r);
+            }
+          }
+        }
+      }
+    };
+    popupLayout.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+    // popupLayout.set®(View.LAYER_TYPE_HARDWARE, Views.LAYER_PAINT);
+    popupLayout.setBoundController(this);
+    popupLayout.setPopupHeightProvider(this);
+    popupLayout.init(false);
+    popupLayout.setHideKeyboard();
+    popupLayout.setNeedRootInsets();
+    popupLayout.setTouchProvider(this);
+    popupLayout.setIgnoreHorizontal();
+    get();
+    context().addFullScreenView(this, false);
+  }
+
+  private boolean openLaunched;
+
+  private void launchOpenAnimation () {
+    if (!openLaunched) {
+      openLaunched = true;
+      popupLayout.showSimplePopupView(get(), calculateTotalHeight());
+    }
+  }
+
+  private int getTargetHeight () {
+    return Screen.currentHeight();
+  }
+
+  private int getContentOffset () {
+    if (needShowOptions) {
+      return getTargetHeight() - HeaderView.getSize(true) - Screen.dp(54 * options.items.length + 5);
+    } else {
+      return Screen.currentHeight() / 2;
+    }
+  }
+
+  private int calculateTotalHeight () {
+    return getTargetHeight() - (getContentOffset() + HeaderView.getTopOffset());
+  }
+
+  @Override
+  public int getCurrentPopupHeight () {
+    return (getTargetHeight() - detectTopRecyclerEdge() - (int) ((float) HeaderView.getTopOffset()));
+  }
+
+  private boolean ignoreAnyPagerScrollEventsBecauseOfMovements;
+
+  public void setIgnoreAnyPagerScrollEventsBecauseOfMovements (boolean ignore) {
+    this.ignoreAnyPagerScrollEventsBecauseOfMovements = ignore;
+  }
+
+
+  // Pager
+
+  private void setRecyclerView (View v, MessageBottomSheetBaseController<?> controller, int position) {
+    if (v instanceof RecyclerView) {
+      RecyclerView recyclerView = (RecyclerView) v;
+      addThemeInvalidateListener(recyclerView);
+      recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+        @Override
+        public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
+          MessageBottomSheetBaseController<?> controller = findCurrentCachedController();
+          if (controller == null) {
+            return;
+          }
+          if (controller.getRecyclerView() == recyclerView && (!ignoreAnyPagerScrollEventsBecauseOfMovements)) {
+            checkHeaderPosition(recyclerView);
+          }
+        }
+      });
+      recyclerView.addItemDecoration(new ContentDecoration(controller, !(needShowOptions && position == 0)));
+      recyclerView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+        @Override
+        public void onLayoutChange (View view, int i, int i1, int i2, int i3, int i4, int i5, int i6, int i7) {
+          MessageBottomSheetBaseController<?> controller = findCurrentCachedController();
+          if (controller == null) {
+            return;
+          }
+          if (controller.getRecyclerView() == v) {
+            checkHeaderPosition((RecyclerView) v);
+          }
+        }
+      });
+    }
+    checkContentScrollY(controller);
+  }
+
+  private int OPTIONS_POSITION;
+  private int SEEN_POSITION;
+  private int ALL_REACTED_POSITION;
+  private int REACTED_START_POSITION;
+
+  boolean isFirstCreation = true;
+
+  @Override
+  protected ViewController<?> onCreatePagerItemForPosition (Context context, int position) {
+    View v = null;
+
+    if (position == OPTIONS_POSITION) {
+      View.OnClickListener onClickListener = view -> {
+        ViewController<?> c = context().navigation().getCurrentStackItem();
+        if (c instanceof OptionDelegate && ((OptionDelegate) c).onOptionItemPressed(view, view.getId())) {
+          popupLayout.hideWindow(true);
+        }
+      };
+
+      MessageOptionsController c = new MessageOptionsController(context, this.tdlib, getThemeListeners());
+      c.setArguments(new MessageOptionsController.Args(options, onClickListener));
+      c.get();
+      setHeaderPosition(getContentOffset() + HeaderView.getTopOffset());
+      setRecyclerView(c.getRecyclerView(), c, position);
+      return c;
+    }
+
+    if (position == ALL_REACTED_POSITION) {
+      MessageOptionsReactedController c = new MessageOptionsReactedController(context, this.tdlib, popupLayout, message, "");
+      c.get();
+      setRecyclerView(c.getRecyclerView(), c, position);
+      return c;
+    }
+
+    if (position == SEEN_POSITION) {
+      MessageOptionsSeenController c = new MessageOptionsSeenController(context, this.tdlib, popupLayout, message);
+      c.get();
+      setRecyclerView(c.getRecyclerView(), c, position);
+      return c;
+    }
+
+    if (position >= REACTED_START_POSITION && REACTED_START_POSITION != -1) {
+      MessageOptionsReactedController c = new MessageOptionsReactedController(context, this.tdlib, popupLayout, message, reactions[position - REACTED_START_POSITION].reaction);
+      c.get();
+      if (isFirstCreation && !needShowOptions) {
+        setHeaderPosition(getContentOffset() + HeaderView.getTopOffset());
+        isFirstCreation = false;
+      }
+      setRecyclerView(c.getRecyclerView(), c, position);
+      return c;
+    }
+
+    throw new IllegalArgumentException("position == " + position);
+  }
+
+  @Override
+  protected String[] getPagerSections () {
+    return null;
+  }
+
+  @Override
+  protected int getPagerItemCount () {
+    return (needShowOptions ? 1 : 0) + (needShowViews ? 1 : 0) + (needShowReactions ? reactions.length + 1 : 0);
+  }
+
+  @Override
+  public View getCustomHeaderCell () {
+    return headerCell;
+  }
+
+  @Override
+  protected void setCurrentPagerPosition (int position, boolean animated) {
+    if (headerCell != null && animated) {
+      headerCell.getTopView().setFromTo(getViewPager().getCurrentItem(), position);
+    }
+    super.setCurrentPagerPosition(position, animated);
+  }
+
+  private int currentMediaPosition;
+  private float currentPositionOffset;
+  private int checkedPosition = -1, checkedBasePosition = -1;
+
+  @Override
+  public void onPageScrolled (int position, float positionOffset, int positionOffsetPixels) {
+    if (this.checkedBasePosition != position) {
+      checkedBasePosition = position;
+      checkContentScrollY(position);
+    }
+    if (positionOffset == 0f) {
+      checkedPosition = -1;
+    } else {
+      // eventsBelongToSlider = false;
+    }
+    if (positionOffset != 0f) {
+      int checkPosition = position + 1;
+      if (this.checkedPosition != checkPosition) {
+        this.checkedPosition = checkPosition;
+        checkContentScrollY(checkPosition);
+      }
+    }
+    currentMediaPosition = position;
+    currentPositionOffset = positionOffset;
+    setIgnoreAnyPagerScrollEventsBecauseOfMovements(positionOffset != 0f);
+
+    if (headerCell != null) {
+      headerCell.onPageScrolled(position, positionOffset);
+    }
+
+    if (position == 0 && positionOffset == 0f && needShowOptions) {
+      MessageBottomSheetBaseController<?> controller = findCachedControllerByPosition(0);
+      if (controller != null) {
+        controller.onScrollToBottomRequested();
+      }
+    }
+
+    if (position == 0 && needShowOptions) {
+      float targetPosition = getContentOffset() + HeaderView.getTopOffset();
+      float animPosition = targetPosition + (lastHeaderPosition - targetPosition) * positionOffset;
+      setHeaderPosition(animPosition);
+      if (positionOffset == 0f) {
+        lastHeaderPosition = targetPosition;
+      }
+    }
+
+    super.onPageScrolled(position, positionOffset, positionOffsetPixels);
+  }
+
+  @Override
+  public void onPageSelected (int position, int actualPosition) {
+    if (position == 0) {
+      /*MessageBottomSheetBaseController<?> controller = findCachedControllerByPosition(0);
+      if (controller != null) {
+        controller.onScrollToBottomRequested();
+      }*/
+    }
+  }
+
+  private void invalidateCachedPosition () {
+    checkedPosition = -1;
+    checkedBasePosition = -1;
+  }
+
+
+  // Scroll ?
+
+  private void checkContentScrollY (int position) {
+    if (getViewPager().getAdapter() instanceof ViewPagerController.ViewPagerAdapter) {
+      ViewPagerController.ViewPagerAdapter adapter = (ViewPagerController.ViewPagerAdapter) (getViewPager().getAdapter());
+      ViewController<?> controller = adapter.getCachedItemByPosition(position);
+      if (controller instanceof MessageBottomSheetBaseController<?>) {
+        checkContentScrollY((MessageBottomSheetBaseController<?>) controller);
+      }
+    }
+  }
+
+  public int maxItemsScrollYOffset () {
+    return maxItemsScrollY();// - getPagerTopViewHeight() - getTopViewTopPadding();
+  }
+
+  private int maxItemsScrollY () {
+    return getContentOffset();// - getShadowBottomHeight() - getPagerTopViewHeight();
+  }
+
+  public void checkContentScrollY (MessageBottomSheetBaseController<?> c) {
+    int maxScrollY = maxItemsScrollYOffset();
+    int scrollY = (int) (getContentOffset() - headerView.getTranslationY() + HeaderView.getTopOffset()); //();
+    if (c != null) {
+      c.ensureMaxScrollY(scrollY, maxScrollY);
+    }
+  }
+
+
+  // getters
+
+  @Override
+  public int getId () {
+    return R.id.controller_messageOptionsPager;
+  }
+
+  @Override
+  public boolean needsTempUpdates () {
+    return true;
+  }
+
+
+  // listeners
+
+  @Override
+  public void onClick (View v) {
+
+  }
+
+  @Override
+  public boolean onBackPressed (boolean fromTop) {
+    return false;
+  }
+
+  @Override
+  public void onThemeColorsChanged (boolean areTemp, ColorState state) {
+    super.onThemeColorsChanged(areTemp, state);
+    if (headerView != null) {
+      headerView.resetColors(this, null);
+    }
+  }
+
+  @Override
+  public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
+    switch (id) {
+
+    }
+  }
+
+  @Override
+  public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
+    switch (id) {
+
+    }
+  }
+
+  @Override
+  public void onCounterAppearanceChanged (Counter counter, boolean sizeChanged) {
+    if (headerCell != null) {
+      headerCell.getTopView().invalidate();
+    }
+  }
+
+
+  // Settings
+
+  @Override
+  public void destroy () {
+    super.destroy();
+    context().removeFullScreenView(this, false);
+  }
+
+
+  // Sparse drawable function
+  private SparseArrayCompat<Drawable> sparseDrawables;
+
+  @Override
+  public final SparseArrayCompat<Drawable> getSparseDrawableHolder () {
+    return (sparseDrawables != null ? sparseDrawables : (sparseDrawables = new SparseArrayCompat<>()));
+  }
+
+  @Override
+  public final Resources getSparseDrawableResources () {
+    return context().getResources();
+  }
+
+
+  //
+
+  @Nullable
+  private MessageBottomSheetBaseController<?> findCurrentCachedController () {
+    return findCachedControllerByPosition(getViewPager().getCurrentItem());
+  }
+
+  @Nullable
+  private MessageBottomSheetBaseController<?> findCachedControllerByPosition (int position) {
+    if (getViewPager().getAdapter() instanceof ViewPagerController.ViewPagerAdapter) {
+      ViewPagerController.ViewPagerAdapter adapter = (ViewPagerController.ViewPagerAdapter) (getViewPager().getAdapter());
+      ViewController<?> controller = adapter.getCachedItemByPosition(position);
+      if (controller instanceof MessageBottomSheetBaseController<?>) {
+        return (MessageBottomSheetBaseController<?>) controller;
+      }
+    }
+    return null;
+  }
+
+  private class ContentDecoration extends RecyclerView.ItemDecoration {
+    MessageBottomSheetBaseController<?> controller;
+    final boolean needBottomOffsets;
+
+    public ContentDecoration (MessageBottomSheetBaseController<?> controller, boolean needBottomOffsets) {
+      this.controller = controller;
+      this.needBottomOffsets =  needBottomOffsets;
+    }
+
+    @Override
+    public void getItemOffsets (Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
+      final int position = parent.getChildAdapterPosition(view);
+      final int itemCount = parent.getAdapter().getItemCount();
+      final boolean isUnknown = position == RecyclerView.NO_POSITION;
+      int top = 0, bottom = 0;
+
+      if (position == 0 || isUnknown) {
+        top = getContentOffset();
+      }
+      if (position == itemCount - 1 || isUnknown) {
+        final int itemsHeight = isUnknown ? view.getMeasuredHeight() : controller.getItemsHeight();// - SettingHolder.measureHeightForType(ListItem.TYPE_HEADER);
+        final int parentHeight = parent.getMeasuredHeight(); // - getShadowBottomHeight();
+        bottom = Math.max(0, parentHeight - itemsHeight /*- getHiddenContentHeight() - getPagerTopViewHeight()*/);
+      }
+
+      outRect.set(0, top, 0, needBottomOffsets ? bottom : 0);
+    }
+  }
+
+  public static abstract class MessageBottomSheetBaseController<T> extends RecyclerViewController<T> {
+    public MessageBottomSheetBaseController (Context context, Tdlib tdlib) {
+      super(context, tdlib);
+    }
+
+    public abstract int getItemsHeight ();
+
+    public final void ensureMaxScrollY (int scrollY, int maxScrollY) {
+      CustomRecyclerView recyclerView = getRecyclerView();
+      if (recyclerView != null) {
+        LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
+        if (scrollY < maxScrollY) {
+          manager.scrollToPositionWithOffset(0, -scrollY);
+          return;
+        }
+
+        int firstVisiblePosition = manager.findFirstVisibleItemPosition();
+        if (firstVisiblePosition == 0 || firstVisiblePosition == -1) {
+          View view = manager.findViewByPosition(0);
+          if (view != null) {
+            int top = view.getTop();
+            /*if (parent != null) {
+              top -= parent.getItemsBound();
+            }*/
+            if (top > 0) {
+              manager.scrollToPositionWithOffset(0, -maxScrollY);
+            }
+          } else {
+            manager.scrollToPositionWithOffset(0, -maxScrollY);
+          }
+        }
+      }
+    }
+
+    public void onScrollToBottomRequested () {
+      CustomRecyclerView recyclerView = getRecyclerView();
+      if (recyclerView == null) {
+        return;
+      }
+
+      recyclerView.stopScroll();
+      recyclerView.smoothScrollToPosition(0);
+
+      /*LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
+      View view = manager.findViewByPosition(0);
+      recyclerView.stopScroll();
+      if (view != null) {
+        int scrollTop = -view.getTop();
+        getRecyclerView().smoothScrollBy(0, -scrollTop);
+      }*/
+    }
+  }
+
+
+  // Reactions selector delegate
+
+  @Override
+  public void onClick (View v, TGReaction reaction) {
+    int[] positionCords = new int[2];
+    v.getLocationOnScreen(positionCords);
+
+    int startX = positionCords[0] + v.getMeasuredWidth() / 2;
+    int startY = positionCords[1] + v.getMeasuredHeight() / 2;
+
+    boolean needAnimation = message.getMessageReactions().sendReaction(reaction.reaction.reaction, false);
+    if (needAnimation) {
+      message.scheduleSetReactionAnimationFromBottomSheet(reaction, new Point(startX, startY));
+    }
+    popupLayout.hideWindow(true);
+  }
+
+  @Override
+  public void onLongClick (View v, TGReaction reaction) {
+    int[] positionCords = new int[2];
+    v.getLocationOnScreen(positionCords);
+
+    int startX = positionCords[0] + v.getMeasuredWidth() / 2;
+    int startY = positionCords[1] + v.getMeasuredHeight() / 2;
+
+    message.getMessageReactions().sendReaction(reaction.reaction.reaction, true);
+    message.scheduleSetReactionAnimationFullscreenFromBottomSheet(reaction, new Point(startX, startY));
+    popupLayout.hideWindow(true);
+  }
+}

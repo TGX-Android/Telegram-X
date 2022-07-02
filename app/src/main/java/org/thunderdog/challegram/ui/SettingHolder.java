@@ -93,6 +93,7 @@ import org.thunderdog.challegram.widget.PageBlockView;
 import org.thunderdog.challegram.widget.PageBlockWrapView;
 import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.RadioView;
+import org.thunderdog.challegram.widget.ReactionCheckboxSettingsView;
 import org.thunderdog.challegram.widget.ScalableTextView;
 import org.thunderdog.challegram.widget.ScoutFrameLayout;
 import org.thunderdog.challegram.widget.SeparatorView;
@@ -241,6 +242,9 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_EDITTEXT_WITH_PHOTO: {
         return Screen.dp(86f);
       }
+      case ListItem.TYPE_REACTION_CHECKBOX: {
+        return Screen.dp(60f);
+      }
       case ListItem.TYPE_EMBED_STICKER: {
         return Screen.dp(96f);
       }
@@ -295,6 +299,10 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_DOUBLE_TEXTVIEW:
       case ListItem.TYPE_DOUBLE_TEXTVIEW_ROUNDED: {
         ((DoubleTextView) itemView).attach();
+        break;
+      }
+      case ListItem.TYPE_REACTION_CHECKBOX: {
+        ((ReactionCheckboxSettingsView) itemView).attach();
         break;
       }
       case ListItem.TYPE_EMBED_STICKER: {
@@ -381,6 +389,10 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         ((DrawerItemView) ((FrameLayoutFix) itemView).getChildAt(0)).detach();
         break;
       }
+      case ListItem.TYPE_REACTION_CHECKBOX: {
+        ((ReactionCheckboxSettingsView) itemView).detach();
+        break;
+      }
       case ListItem.TYPE_EMBED_STICKER: {
         ((EmbeddableStickerView) itemView).detach();
         break;
@@ -462,6 +474,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
       case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE:
       case ListItem.TYPE_CHECKBOX_OPTION_MULTILINE:
+      case ListItem.TYPE_REACTION_CHECKBOX:
       case ListItem.TYPE_RADIO_OPTION:
       case ListItem.TYPE_RADIO_OPTION_LEFT:
       case ListItem.TYPE_RADIO_OPTION_WITH_AVATAR:
@@ -1134,6 +1147,16 @@ public class SettingHolder extends RecyclerView.ViewHolder {
           stupidView.addThemeListeners(themeProvider);
         }
         return new SettingHolder(stupidView);
+      }
+      case ListItem.TYPE_REACTION_CHECKBOX: {
+        ReactionCheckboxSettingsView view = new ReactionCheckboxSettingsView(context);
+        view.init(tdlib);
+        view.setOnClickListener(onClickListener);
+        view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        if (themeProvider != null) {
+          themeProvider.addThemeInvalidateListener(view);
+        }
+        return new SettingHolder(view);
       }
       case ListItem.TYPE_EMBED_STICKER: {
         EmbeddableStickerView view = new EmbeddableStickerView(context);

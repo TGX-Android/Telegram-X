@@ -479,7 +479,17 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     StringList strings = new StringList(6);
     Object tag = fillMessageOptions(m, msg, sender, ids, icons, strings, false);
     if (!ids.isEmpty()) {
-      m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), tag, sender, false);
+      boolean withReactions = false;
+      TdApi.Chat chat = msg.getChat();
+      if (chat != null) {
+        if (chat.availableReactions != null) {
+          if (chat.availableReactions.length > 0) {
+            withReactions = true;
+          }
+        }
+      }
+
+      m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), tag, sender, false, withReactions);
       return true;
     }
     return false;
@@ -1310,27 +1320,14 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       return false;
     }
     MessagesController m = msg.messagesController();
-    if (diffX < 0f && !m.canWriteMessages()) {
-      return false;
-    }
     MessagesRecyclerView recyclerView = findParentRecyclerView();
     if (recyclerView == null) {
       return false;
     }
-    MessagesTouchHelperCallback helperCallback = recyclerView.getMessagesTouchHelper();
-    if (Lang.rtl()) {
-      if ((helperCallback.canDragReply() && diffX > 0) || (helperCallback.canDragShare() && diffX < 0)) {
-        if (touchX < m.get().getMeasuredWidth() - MessagesController.getSlideBackBound()) {
-          m.startSwipe(findTargetView());
-          return true;
-        }
-      }
-    } else {
-      if ((helperCallback.canDragReply() && diffX < 0) || (helperCallback.canDragShare() && diffX > 0)) {
-        if (touchX > MessagesController.getSlideBackBound()) {
-          m.startSwipe(findTargetView());
-          return true;
-        }
+    if ((msg.getRightQuickReactions().size() > 0 && diffX < 0) || (msg.getLeftQuickReactions().size() > 0 && diffX > 0)) {
+      if (touchX > MessagesController.getSlideBackBound()) {
+        m.startSwipe(findTargetView());
+        return true;
       }
     }
     return false;

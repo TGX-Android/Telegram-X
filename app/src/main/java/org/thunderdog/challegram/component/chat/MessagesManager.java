@@ -142,6 +142,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         }
       }
     };
+
+    this.useReactionBubblesValue = checkReactionBubbles();
   }
 
   public int getKnownTotalMessageCount () {
@@ -292,10 +294,13 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           headerVisible = true;
         }
         maxDate = Math.max(msg.getDate(), maxDate);
-        if (msg.markAsViewed()) {
+        if (msg.markAsViewed() || msg.containsUnreadReactions()) {
           long id = msg.getBiggestId();
           if (msg.containsUnreadMention() && id > lastViewedMention) {
             lastViewedMention = id;
+          }
+          if (msg.containsUnreadReactions() && id > lastViewedReaction) {
+            lastViewedReaction = id;
           }
           if (list == null) {
             list = new LongSet(last - first);
@@ -451,6 +456,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     highlightMessageId = null;
     hasScrolled = false;
     lastViewedMention = 0;
+    lastViewedReaction = 0;
     chatAdmins = null;
     if (pinnedMessages != null) {
       pinnedMessages.performDestroy();
@@ -460,7 +466,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     hasVisibleProtectedContent = false;
     unsubscribeFromUpdates();
     mentionsHandler = null;
+    reactionsHandler = null;
     closestMentions = null;
+    closestUnreadReactions = null;
     final long chatId = loader.getChatId();
     if (chatId != 0) {
       if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
@@ -639,6 +647,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       }
     }
     subscribeForUpdates();
+    this.useReactionBubblesValue = checkReactionBubbles();
   }
 
   public void loadPreview () {
@@ -836,6 +845,29 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     TdlibSettingsManager settings = controller().tdlib().settings();
     return (loader.isChannel() ? !settings.forcePlainModeInChannels() : settings.useBubbles()) || controller.inWallpaperMode();
   }
+
+  private boolean useReactionBubblesValue;
+  private boolean checkReactionBubbles () {
+    if (tdlib.isUserChat(loader.getChatId())) {
+      return false;
+    }
+
+    if (loader.isChannel() && Settings.instance().getBigReactionsInChannels()) {
+      return true;
+    }
+
+    if (!loader.isChannel() && Settings.instance().getBigReactionsInChats()) {
+      return true;
+    }
+
+    return false;
+  }
+
+  public boolean useReactionBubbles () {
+    return useReactionBubblesValue;
+  }
+
+
 
   @Nullable
   @Override
@@ -1586,10 +1618,39 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
+  public void updateMessageReactionRead (long messageId) {
+    if (closestUnreadReactions != null && !closestUnreadReactions.isEmpty()) {
+      int i = 0;
+      for (TdApi.Message message : closestUnreadReactions) {
+        if (message.id == messageId) {
+          closestUnreadReactions.remove(i);
+          break;
+        }
+        i++;
+      }
+    }
+    int index = adapter.indexOfMessageContainer(messageId);
+    if (index != -1) {
+      adapter.getItem(index).readReaction(messageId);
+      // TODO nothing?
+    }
+  }
+
+  public void updateMessageUnreadReactions (long messageId, @Nullable TdApi.UnreadReaction[] unreadReactions) {
+    int index = adapter.indexOfMessageContainer(messageId);
+    if (index != -1 && adapter.getItem(index).setMessageUnreadReactions(messageId, unreadReactions)) {
+      invalidateViewAt(index);
+
+      lastCheckedCount = 0;
+      viewMessages();
+    }
+  }
+
   public void updateMessageInteractionInfo (long messageId, @Nullable TdApi.MessageInteractionInfo interactionInfo) {
     int index = adapter.indexOfMessageContainer(messageId);
     if (index != -1 && adapter.getItem(index).setMessageInteractionInfo(messageId, interactionInfo)) {
-      invalidateViewAt(index);
+      //invalidateViewAt(index);
+      getAdapter().notifyItemChanged(index);
     }
   }
 
@@ -2183,6 +2244,77 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
+
+
+  // Reactions
+
+  private ArrayList<TdApi.Message> closestUnreadReactions;
+  private CancellableResultHandler reactionsHandler;
+  private long lastViewedReaction = 0;
+
+  private void setUnreadReactions (final CancellableResultHandler handler, final TdApi.Messages messages, final long fromMessageId) {
+    tdlib.ui().post(() -> {
+      if (handler == reactionsHandler) {
+        reactionsHandler = null;
+        if (messages != null && messages.messages.length > 0) {
+          setUnreadReactionsImpl(messages.messages, fromMessageId);
+        }
+      }
+    });
+  }
+
+  private void setUnreadReactionsImpl (final TdApi.Message[] messages, final long fromMessageId) {
+    ArrayList<TdApi.Message> reactions = new ArrayList<>(messages.length);
+    Collections.addAll(reactions, messages);
+    this.closestUnreadReactions = reactions;
+    if (!reactions.isEmpty()) {
+      scrollToNextUnreadReaction();
+    }
+  }
+
+  public void scrollToNextUnreadReaction () {
+    if (closestUnreadReactions != null && !closestUnreadReactions.isEmpty()) {
+      TdApi.Message message = closestUnreadReactions.remove(0);
+      highlightMessage(new MessageId(message.chatId, message.id), HIGHLIGHT_MODE_NORMAL, null, true);
+      return;
+    }
+    if (reactionsHandler != null) {
+      return;
+    }
+    final long fromMessageId;
+    if (lastViewedReaction != 0)  {
+      fromMessageId = lastViewedReaction;
+    } else {
+      TGMessage message = adapter.getTopMessage();
+      if (message == null) {
+        return;
+      }
+      fromMessageId = message.getBiggestId();
+    }
+    final long chatId = loader.getChatId();
+    final long messageThreadId = loader.getMessageThreadId();
+    final boolean[] isRetry = new boolean[1];
+    reactionsHandler = new CancellableResultHandler() {
+      @Override
+      public void processResult (final TdApi.Object object) {
+        if (object.getConstructor() == TdApi.Messages.CONSTRUCTOR) {
+          TdApi.Messages messages = (TdApi.Messages) object;
+          if (messages.totalCount > 0 && messages.messages.length == 0 && !isRetry[0]) {
+            isRetry[0] = true;
+            tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, 0, 0, 10, new TdApi.SearchMessagesFilterUnreadReaction(), messageThreadId), this);
+          } else {
+            setUnreadReactions(this, messages, isRetry[0] ? 0 : fromMessageId);
+          }
+        } else {
+          setUnreadReactions(this, null, fromMessageId);
+        }
+      }
+    };
+    tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, fromMessageId, -9, 10, new TdApi.SearchMessagesFilterUnreadReaction(), messageThreadId), reactionsHandler);
+  }
+
+
+
   // Search
 
   public boolean isReadyToSearch () {
@@ -2705,6 +2837,20 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     tdlib.ui().post(() -> {
       if (loader.getChatId() == chatId) {
         updateMessageOpened(messageId);
+      }
+    });
+  }
+
+  @Override
+  public void onMessageUnreadReactionsChanged (long chatId, long messageId, @Nullable TdApi.UnreadReaction[] unreadReactions, int unreadReactionCount) {
+    int sentMessageIndex = indexOfSentMessage(chatId, messageId);
+    if (sentMessageIndex != -1) {
+      sentMessages.get(sentMessageIndex).unreadReactions = unreadReactions;
+      return;
+    }
+    tdlib.ui().post(() -> {
+      if (loader.getChatId() == chatId) {
+        updateMessageUnreadReactions(messageId, unreadReactions);
       }
     });
   }

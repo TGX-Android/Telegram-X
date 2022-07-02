@@ -24,6 +24,8 @@ import androidx.core.view.ViewPropertyAnimatorListener;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.SimpleItemAnimator;
 
+import org.thunderdog.challegram.component.chat.MessageView;
+
 import java.util.ArrayList;
 import java.util.List;
 

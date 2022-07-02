@@ -223,9 +223,12 @@ public class TGMessageText extends TGMessage {
     return xBubblePadding + xBubblePaddingSmall;
   }
 
+  private int maxWidth;
+
   @Override
   protected void buildContent (int maxWidth) {
     wrapper.prepare(maxWidth);
+    this.maxWidth = maxWidth;
 
     int webPageMaxWidth = getSmallestMaxContentWidth();
     if (pendingMessageText != null) {
@@ -408,9 +411,33 @@ public class TGMessageText extends TGMessage {
     }
   }
 
+  /*@Override
+  protected boolean allowBubbleHorizontalExtend () {
+    return messageReactions.getBubblesCount() < 2 || !useReactionBubbles() || replyData != null;
+  }*/
+
   @Override
   protected int getContentWidth () {
-    return webPage != null ? Math.max(wrapper.getWidth(), webPage.getWidth()) : wrapper.getWidth();
+    if (webPage != null) {
+      return Math.max(wrapper.getWidth(), webPage.getWidth());
+    } /* else if (messageReactions.getTotalCount() > 0 && useReactionBubbles()) {
+      int textWidth = Math.max(wrapper.getWidth(), computeBubbleTimePartWidth(false));
+      int reactionsWidth = messageReactions.getWidth();
+      return Math.min(maxWidth, Math.max(textWidth, reactionsWidth));
+    } */
+
+    return wrapper.getWidth();
+  }
+
+  @Override
+  protected void buildReactions (boolean animated) {
+    if (webPage != null || !useBubble() || wrapper == null || !useReactionBubbles()) {
+      super.buildReactions(animated);
+    } else {
+      int textWidth = Math.max(wrapper.getWidth(), computeBubbleTimePartWidth(false));
+      messageReactions.measureReactionBubbles(Math.max(textWidth, (int)(maxWidth * 0.75f)));
+      messageReactions.resetReactionsAnimator(animated);
+    }
   }
 
   public TdApi.WebPage getWebPage () {

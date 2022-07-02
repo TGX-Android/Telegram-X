@@ -169,7 +169,7 @@ public class Paints {
     return filling;
   }
 
-  private static Paint strokeSeparatorPaint, strokeBigPaint;
+  private static Paint strokeSeparatorPaint, strokeBigPaint, strokeSmallPaint;
   private static int lastStrokeSeparatorColor;
 
   public static Paint strokeSeparatorPaint (int color) {
@@ -192,6 +192,16 @@ public class Paints {
     }
     strokeBigPaint.setColor(color);
     return strokeBigPaint;
+  }
+
+  public static Paint strokeSmallPaint (int color) {
+    if (strokeSmallPaint == null) {
+      strokeSmallPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
+      strokeSmallPaint.setStyle(Paint.Style.STROKE);
+      strokeSmallPaint.setStrokeWidth(Screen.dp(1f));
+    }
+    strokeSmallPaint.setColor(color);
+    return strokeSmallPaint;
   }
 
   public static Paint reuseFillingPaint () {

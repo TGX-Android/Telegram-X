@@ -41,10 +41,14 @@ import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.util.DrawModifier;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.widget.BaseView;
 import org.thunderdog.challegram.widget.SimplestCheckBoxHelper;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
@@ -343,6 +347,73 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
         c.drawRect(offsetLeft + textLeftMargin, top, getMeasuredWidth(), bottom, Paints.fillingPaint(Theme.separatorColor()));
       }
     }
+
+    if (drawModifiers != null) {
+      for (int i = drawModifiers.size() - 1; i >= 0; i--) {
+        drawModifiers.get(i).afterDraw(this, c);
+      }
+    }
+  }
+
+  // Draw modifier
+
+  @Nullable
+  private List<DrawModifier> drawModifiers;
+
+  private int indexOfModifier (DrawModifier modifier) {
+    return drawModifiers != null ? drawModifiers.indexOf(modifier) : -1;
+  }
+
+  public void addDrawModifier (@NonNull DrawModifier drawModifier, boolean inFront) {
+    int i = indexOfModifier(drawModifier);
+    if (i == -1) {
+      if (drawModifiers == null)
+        drawModifiers = new ArrayList<>();
+      if (inFront)
+        drawModifiers.add(0, drawModifier);
+      else
+        drawModifiers.add(drawModifier);
+      invalidate();
+    } else if (inFront && i != 0) {
+      drawModifiers.remove(i);
+      drawModifiers.add(0, drawModifier);
+      invalidate();
+    }
+  }
+
+  public void removeDrawModifier (@NonNull DrawModifier drawModifier) {
+    int i = indexOfModifier(drawModifier);
+    if (i != -1) {
+      drawModifiers.remove(i);
+      invalidate();
+    }
+  }
+
+  public void setDrawModifier (@Nullable DrawModifier drawModifier) {
+    if (drawModifier == null) {
+      clearDrawModifiers();
+    } else {
+      if (drawModifiers != null) {
+        if (drawModifiers.size() == 1 && drawModifiers.get(0) == drawModifier)
+          return;
+        drawModifiers.clear();
+      } else {
+        drawModifiers = new ArrayList<>();
+      }
+      drawModifiers.add(drawModifier);
+      invalidate();
+    }
+  }
+
+  public void clearDrawModifiers () {
+    if (drawModifiers != null && !drawModifiers.isEmpty()) {
+      drawModifiers.clear();
+    }
+  }
+
+  @Nullable
+  public List<DrawModifier> getDrawModifiers () {
+    return drawModifiers;
   }
 
   // Selection

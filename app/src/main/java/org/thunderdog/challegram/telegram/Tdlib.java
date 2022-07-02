@@ -43,6 +43,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
+import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.filegen.TdlibFileGenerationManager;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -448,6 +449,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private String qrLoginCode;
   private String[] diceEmoji;
   private TdApi.Reaction[] supportedReactions;
+  private final HashMap<String, TdApi.Reaction> supportedReactionsMap = new HashMap<>();
+  private final HashMap<String, TGReaction> supportedTGReactionsMap = new HashMap<>();
   private boolean callsEnabled = true, expectBlocking, isLocationVisible;
   private boolean canIgnoreSensitiveContentRestrictions, ignoreSensitiveContentRestrictions;
   private boolean canArchiveAndMuteNewChatsFromUnknownUsers, archiveAndMuteNewChatsFromUnknownUsers;
@@ -3499,6 +3502,20 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return null;
   }
 
+  @Nullable
+  public TdApi.Reaction[] getSupportedReactions () {
+    return supportedReactions;
+  }
+
+  public HashMap<String, TdApi.Reaction> getSupportedReactionsMap () {
+    return supportedReactionsMap;
+  }
+
+  @Nullable
+  public TGReaction getReaction (String reaction) {
+    return supportedTGReactionsMap.get(reaction);
+  }
+
   public boolean shouldSendAsDice (TdApi.FormattedText text) {
     return getDiceEmoji(text) != null;
   }
@@ -6173,7 +6190,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   @TdlibThread
   private void updateMessageUnreadReactions (TdApi.UpdateMessageUnreadReactions update) {
-    listeners.updateMessageUnreadReactions(update);
+    final boolean counterChanged, availabilityChanged;
+    synchronized (dataLock) {
+      final TdApi.Chat chat = chats.get(update.chatId);
+      if (TdlibUtils.assertChat(update.chatId, chat, update)) {
+        return;
+      }
+      availabilityChanged = (chat.unreadReactionCount > 0) != (update.unreadReactionCount > 0);
+      counterChanged = chat.unreadReactionCount != update.unreadReactionCount;
+      chat.unreadReactionCount = update.unreadReactionCount;
+    }
+
+
+    listeners.updateMessageUnreadReactions(update, counterChanged, availabilityChanged);
   }
 
   @TdlibThread
@@ -7437,6 +7466,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private void updateReactions (TdApi.UpdateReactions update) {
     synchronized (dataLock) {
       this.supportedReactions = update.reactions;
+      supportedReactionsMap.clear();
+      for (int a = 0; a < supportedReactions.length; a++) {
+        TdApi.Reaction reaction = supportedReactions[a];
+        supportedReactionsMap.put(reaction.reaction, reaction);
+        supportedTGReactionsMap.put(reaction.reaction, new TGReaction(this, reaction, reaction.isActive));
+      }
     }
   }
 
@@ -8474,6 +8509,20 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public boolean canUpgradeChat (long chatId) {
     return ChatId.isBasicGroup(chatId) && TD.isCreator(chatStatus(chatId));
+  }
+
+  public boolean canSendReaction (TdApi.Chat chat, String reaction) {
+    if (chat == null || chat.id == 0 || ChatId.isSecret(chat.id) || chat.availableReactions == null) {
+      return false;
+    }
+
+    for (String r: chat.availableReactions) {
+      if (r.equals(reaction)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   public boolean canPinMessages (TdApi.Chat chat) {
