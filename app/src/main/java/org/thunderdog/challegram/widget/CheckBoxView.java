@@ -36,6 +36,7 @@ public class CheckBoxView extends View {
   private final BoolAnimator isChecked = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 165l);
   private final BoolAnimator isHidden = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 165l);
   private final BoolAnimator isDisabled = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 165l);
+  private final BoolAnimator isIndeterminate = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 165l);
   // TODO isIntermediate state, when check angle smoothly changes from 90 to 180 degrees
 
   private final RectF rect;
@@ -59,8 +60,20 @@ public class CheckBoxView extends View {
     isHidden.setValue(hidden, animated);
   }
 
+  public void setIndeterminate (boolean indeterminate, final boolean animated) {
+    isIndeterminate.setValue(indeterminate, animated);
+  }
+
   public boolean toggle () {
     return isChecked.toggleValue(true);
+  }
+
+  public boolean toggleIndeterminate () {
+    if (isIndeterminate.getValue()) {
+      return isIndeterminate.toggleValue(true);
+    } else {
+      return toggle();
+    }
   }
 
   public void setDisabled (boolean disabled, boolean animated) {
@@ -129,15 +142,21 @@ public class CheckBoxView extends View {
       c.drawRect(left, rect.bottom - offset - h, right, rect.bottom - offset, Paints.fillingPaint(alphaColor));
 
       if (checkFactor != 0f) {
-        c.translate(-Screen.dp(.5f), 0);
-        c.rotate(-45f, cx, cy);
+        if (isIndeterminate.getValue()) {
+          final int checkColor = ColorUtils.alphaColor(showFactor, Theme.radioCheckColor());
+          final float padding = Screen.dp(3f);
+          c.drawRect(padding, (size - lineSize) / 2f,  size - offset - padding, (size + lineSize) / 2f, Paints.fillingPaint(checkColor));
+        } else {
+          c.translate(-Screen.dp(.5f), 0);
+          c.rotate(-45f, cx, cy);
 
-        int w2 = (int) ((float) Screen.dp(12f) * checkFactor);
-        int h1 = (int) ((float) Screen.dp(6f) * checkFactor);
+          int w2 = (int) ((float) Screen.dp(12f) * checkFactor);
+          int h1 = (int) ((float) Screen.dp(6f) * checkFactor);
 
-        final int checkColor = ColorUtils.alphaColor(showFactor, Theme.radioCheckColor());
-        c.drawRect(x1, y1 - h1, x1 + lineSize, y1, Paints.fillingPaint(checkColor));
-        c.drawRect(x1, y1 - lineSize, x1 + w2, y1, Paints.fillingPaint(checkColor));
+          final int checkColor = ColorUtils.alphaColor(showFactor, Theme.radioCheckColor());
+          c.drawRect(x1, y1 - h1, x1 + lineSize, y1, Paints.fillingPaint(checkColor));
+          c.drawRect(x1, y1 - lineSize, x1 + w2, y1, Paints.fillingPaint(checkColor));
+        }
       }
     }
 

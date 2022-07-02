@@ -138,7 +138,7 @@ public class Drawables {
     Rect bounds = d.getBounds();
     int minWidth = d.getMinimumWidth();
     int minHeight = d.getMinimumHeight();
-    if (bounds.top != 0 || bounds.left != 0 || bounds.right != minWidth || bounds.bottom != minHeight) {
+    if (bounds.top == 0 && bounds.left == 0 && bounds.right == 0 && bounds.bottom == 0) {
       d.setBounds(0, 0, minWidth, minHeight);
     }
     prepare(d, paint);

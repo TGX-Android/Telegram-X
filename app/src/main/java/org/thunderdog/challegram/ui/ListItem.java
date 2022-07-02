@@ -27,8 +27,8 @@ import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.util.DrawModifier;
 
 import me.vkryl.core.ArrayUtils;
-import me.vkryl.core.StringUtils;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.StringUtils;
 
 public class ListItem {
   public static final int TYPE_CUSTOM = -1;
@@ -151,6 +151,8 @@ public class ListItem {
   public static final int TYPE_EMBED_STICKER = 130;
   public static final int TYPE_JOIN_REQUEST = 131;
   public static final int TYPE_CHAT_HEADER_LARGE = 132;
+  public static final int TYPE_GRID = 133;
+  public static final int TYPE_CHECKBOX_OPTION_INDETERMINATE = 134;
 
   private static final int FLAG_SELECTED = 1;
   private static final int FLAG_BOOL_VALUE = 1 << 1;

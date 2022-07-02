@@ -929,6 +929,19 @@ public class Emoji {
     }
   }
 
+  public boolean draw (@NonNull Canvas c, EmojiInfo info, Rect outRect, Paint paint) {
+    if (info == null) {
+      return false;
+    }
+    Bitmap bitmap = bitmaps.getBitmap(info.page1, info.page2);
+    if (bitmap != null) {
+      c.drawBitmap(bitmap, info.rect, outRect, paint);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   public static String parseCode (String code, String charset) {
     if (StringUtils.isEmpty(code)) {
       return null;

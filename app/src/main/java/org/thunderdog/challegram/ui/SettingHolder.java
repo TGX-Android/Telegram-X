@@ -36,6 +36,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -188,6 +189,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_CHECKBOX_OPTION_MULTILINE:
       case ListItem.TYPE_CHECKBOX_OPTION_REVERSE:
       case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
+      case ListItem.TYPE_CHECKBOX_OPTION_INDETERMINATE:
       case ListItem.TYPE_RADIO_OPTION:
       case ListItem.TYPE_RADIO_OPTION_LEFT:
       case ListItem.TYPE_RADIO_OPTION_WITH_AVATAR:
@@ -462,6 +464,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
       case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE:
       case ListItem.TYPE_CHECKBOX_OPTION_MULTILINE:
+      case ListItem.TYPE_CHECKBOX_OPTION_INDETERMINATE:
       case ListItem.TYPE_RADIO_OPTION:
       case ListItem.TYPE_RADIO_OPTION_LEFT:
       case ListItem.TYPE_RADIO_OPTION_WITH_AVATAR:
@@ -753,6 +756,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_CHECKBOX_OPTION:
       case ListItem.TYPE_CHECKBOX_OPTION_REVERSE:
       case ListItem.TYPE_CHECKBOX_OPTION_MULTILINE:
+      case ListItem.TYPE_CHECKBOX_OPTION_INDETERMINATE:
       case ListItem.TYPE_RADIO_OPTION:
       case ListItem.TYPE_RADIO_OPTION_LEFT:
       case ListItem.TYPE_RADIO_OPTION_WITH_AVATAR:
@@ -770,6 +774,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
           case ListItem.TYPE_CHECKBOX_OPTION:
           case ListItem.TYPE_CHECKBOX_OPTION_REVERSE:
           case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
+          case ListItem.TYPE_CHECKBOX_OPTION_INDETERMINATE:
           case ListItem.TYPE_CHECKBOX_OPTION_MULTILINE: {
             paddingRight = Screen.dp(32f);
             CheckBoxView checkBox = CheckBoxView.simpleCheckBox(context, (viewType == ListItem.TYPE_CHECKBOX_OPTION_REVERSE) != Lang.rtl());
@@ -1989,6 +1994,16 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         }
         recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, Lang.rtl()));
         recyclerView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(95f)));
+        return new SettingHolder(recyclerView);
+      }
+      case ListItem.TYPE_GRID: {
+        CustomRecyclerView recyclerView = new CustomRecyclerView(context);
+        recyclerView.setBackgroundColor(Theme.fillingColor());
+        if (themeProvider != null) {
+          themeProvider.addThemeBackgroundColorListener(recyclerView, R.id.theme_color_filling);
+        }
+        recyclerView.setLayoutManager(new GridLayoutManager(context, adapter.getSpanCount()));
+        recyclerView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         return new SettingHolder(recyclerView);
       }
       case ListItem.TYPE_CHAT_VERTICAL:

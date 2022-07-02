@@ -106,8 +106,8 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.DoneListener;
 import org.thunderdog.challegram.util.OptionDelegate;
-import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.SenderPickerDelegate;
+import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextWrapper;
@@ -120,11 +120,11 @@ import org.thunderdog.challegram.widget.DoneButton;
 import org.thunderdog.challegram.widget.EmptySmartView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import org.thunderdog.challegram.widget.ProgressComponentView;
-import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.SliderWrapView;
 import org.thunderdog.challegram.widget.ViewControllerPagerAdapter;
 import org.thunderdog.challegram.widget.ViewPager;
+import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -1884,6 +1884,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             }
             break;
           }
+          case R.id.btn_chatReactions: {
+            view.setData(Lang.plural(R.string.xPermissions, chat.availableReactions.length, tdlib.getReactions().length));
+            break;
+          }
           case R.id.btn_chatPermissions: {
             view.setData(Lang.plural(R.string.xPermissions, Td.count(chat.permissions), TdConstants.CHAT_PERMISSIONS_COUNT));
             break;
@@ -3122,6 +3126,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     );
   }
 
+  private void openChatReactions () {
+    EditReactionsController c = new EditReactionsController(context, tdlib);
+    c.setArguments(new EditReactionsController.Args(chat.id, chat.availableReactions));
+    navigateTo(c);
+  }
+
   private void openChatPermissions () {
     EditRightsController c = new EditRightsController(context, tdlib);
     c.setArguments(new EditRightsController.Args(chat.id));
@@ -3594,6 +3604,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, mode == MODE_EDIT_CHANNEL ? R.string.RestrictSavingChannelHint : R.string.RestrictSavingGroupHint));
       added = false;
+    }
+    if (true) {
+      items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_chatReactions, 0, R.string.Reactions));
+      added = true;
     }
     if (tdlib.canToggleAllHistory(chat)) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
@@ -4612,6 +4627,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       // EDIT stuff
       case R.id.btn_prehistoryMode: {
         togglePrehistoryMode();
+        break;
+      }
+      case R.id.btn_chatReactions: {
+        openChatReactions();
         break;
       }
       case R.id.btn_chatPermissions: {
@@ -6182,6 +6201,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     tdlib.ui().post(() -> {
       if (!isDestroyed() && chat.id == chatId && baseAdapter != null) {
         updateValuedItem(R.id.btn_chatPermissions);
+      }
+    });
+  }
+
+  @Override
+  public void onChatAvailableReactionsUpdated (long chatId, String[] availableReactions) {
+    tdlib.ui().post(() -> {
+      if (!isDestroyed() && chat.id == chatId && baseAdapter != null) {
+        updateValuedItem(R.id.btn_chatReactions);
       }
     });
   }

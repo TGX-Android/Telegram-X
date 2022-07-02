@@ -84,6 +84,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.FileUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
@@ -95,7 +96,6 @@ import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableInt;
 import me.vkryl.core.lambda.RunnableLong;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.util.JobList;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
@@ -3497,6 +3497,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
     }
     return null;
+  }
+
+  public TdApi.Reaction[] getReactions () {
+    return supportedReactions;
   }
 
   public boolean shouldSendAsDice (TdApi.FormattedText text) {
@@ -7436,7 +7440,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private void updateReactions (TdApi.UpdateReactions update) {
     synchronized (dataLock) {
-      this.supportedReactions = update.reactions;
+      List<TdApi.Reaction> activeReactions = new ArrayList<>();
+      for (TdApi.Reaction reaction: update.reactions) {
+        if (reaction.isActive) {
+          activeReactions.add(reaction);
+        }
+      }
+      this.supportedReactions = activeReactions.toArray(new TdApi.Reaction[0]);
     }
   }
 
@@ -8790,5 +8800,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
       return suggestedAction;
     }
+  }
+
+  public void setChatAvailableReactions(long chatId, String[] reactions) {
+    send(new TdApi.SetChatAvailableReactions(chatId, reactions), object -> {
+
+    });
+  }
+
+  public void setMessageReaction(long chatId, long messageId, String reaction, boolean isBig) {
+    send(new TdApi.SetMessageReaction(chatId, messageId, reaction, isBig), response -> {
+
+    });
   }
 }

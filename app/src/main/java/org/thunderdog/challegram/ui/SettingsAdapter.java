@@ -541,6 +541,11 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     return checkedIndex;
   }
 
+  public void setItems (final List<ListItem> items) {
+    this.items.clear();
+    this.items.addAll(items);
+  }
+
   public void setItems (final ListItem[] items, boolean hasCheckedItems) {
     int oldItemCount = getItemCount();
     this.items.clear();
@@ -1072,6 +1077,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE:
       case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
       case ListItem.TYPE_CHECKBOX_OPTION_MULTILINE:
+      case ListItem.TYPE_CHECKBOX_OPTION_INDETERMINATE:
       case ListItem.TYPE_DRAWER_ITEM_WITH_RADIO:
       case ListItem.TYPE_DRAWER_ITEM_WITH_RADIO_SEPARATED:
       case ListItem.TYPE_DRAWER_ITEM_WITH_AVATAR:
@@ -1112,6 +1118,9 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
       case ListItem.TYPE_CHECKBOX_OPTION_MULTILINE: {
         return v instanceof SettingView && ((CheckBoxView) ((SettingView) v).getChildAt(0)).toggle();
+      }
+      case ListItem.TYPE_CHECKBOX_OPTION_INDETERMINATE: {
+        return v instanceof SettingView && ((CheckBoxView) ((SettingView) v).getChildAt(0)).toggleIndeterminate();
       }
       case ListItem.TYPE_DRAWER_ITEM_WITH_RADIO:
       case ListItem.TYPE_DRAWER_ITEM_WITH_RADIO_SEPARATED: {
@@ -1549,6 +1558,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_CHECKBOX_OPTION:
       case ListItem.TYPE_CHECKBOX_OPTION_MULTILINE:
       case ListItem.TYPE_CHECKBOX_OPTION_REVERSE:
+      case ListItem.TYPE_CHECKBOX_OPTION_INDETERMINATE:
       case ListItem.TYPE_RADIO_OPTION:
       case ListItem.TYPE_RADIO_OPTION_LEFT:
       case ListItem.TYPE_RADIO_OPTION_WITH_AVATAR:
@@ -1586,6 +1596,16 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
             CheckBoxView checkBox = ((CheckBoxView) ((SettingView) holder.itemView).getChildAt(0));
             checkBox.setChecked(item.isSelected(), false);
             Views.setGravity(checkBox, ((viewType == ListItem.TYPE_CHECKBOX_OPTION_REVERSE) != Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL);
+            break;
+          }
+          case ListItem.TYPE_CHECKBOX_OPTION_INDETERMINATE: {
+            CheckBoxView checkBox = ((CheckBoxView) ((SettingView) holder.itemView).getChildAt(0));
+            if (item.isSelected()) {
+              checkBox.setChecked(true, false);
+              checkBox.setIndeterminate(item.getBoolValue(), false);
+            } else {
+              checkBox.setChecked(false, false);
+            }
             break;
           }
           case ListItem.TYPE_RADIO_OPTION:
@@ -1759,6 +1779,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         setChatData(item, (VerticalChatView) holder.itemView);
         break;
       }
+      case ListItem.TYPE_GRID: {
+        initGrid(item, (CustomRecyclerView) holder.itemView);
+        break;
+      }
       default: {
         if (viewType <= ListItem.TYPE_CUSTOM) {
           modifyCustom(holder, position, item, ListItem.TYPE_CUSTOM - viewType, holder.itemView, false);
@@ -1824,6 +1848,15 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     if (manager.getReverseLayout() != Lang.rtl()) {
       manager.setReverseLayout(Lang.rtl());
     }
+  }
+
+  protected void initGrid (ListItem item, CustomRecyclerView recyclerView) {
+    final boolean isInitialization = recyclerView.getAdapter() == null;
+    setRecyclerViewData(item, recyclerView, isInitialization);
+  }
+
+  protected int getSpanCount () {
+    return 1;
   }
 
   protected void setRecyclerViewData(ListItem item, RecyclerView recyclerView, boolean isInitialization) {
