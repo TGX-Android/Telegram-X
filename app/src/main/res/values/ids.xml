@@ -127,6 +127,8 @@
   <item type="id" name="controller_hashtag" />
   <item type="id" name="controller_camera" />
   <item type="id" name="controller_memberRights" />
+  <item type="id" name="controller_enabledReactions" />
+  <item type="id" name="controller_quickReaction" />
   <item type="id" name="controller_linkChat" />
 
   <item type="id" name="controller_bug_killer" />
@@ -303,6 +305,8 @@
   <item type="id" name="btn_mosaic" />
   <item type="id" name="btn_speaker" />
   <item type="id" name="btn_emoji" />
+  <item type="id" name="btn_quick_emoji" />
+  <item type="id" name="btn_bigReactions" />
   <item type="id" name="btn_icon" />
   <item type="id" name="btn_section" />
   <item type="id" name="btn_stickerSet" />
@@ -442,6 +446,11 @@
   <item type="id" name="btn_toggleNewSetting" />
   <item type="id" name="btn_lottie" />
   <item type="id" name="btn_chatPermissions" />
+  <item type="id" name="btn_chatReactions" />
+  <item type="id" name="btn_toggleAllReactions" />
+  <item type="id" name="btn_toggleSingleReaction" />
+  <item type="id" name="btn_toggleQuickReactions" />
+  <item type="id" name="grid_active_reactions" />
   <item type="id" name="btn_view" />
   <item type="id" name="btn_username" />
   <item type="id" name="btn_prehistoryMode" />
@@ -976,6 +985,7 @@
 
   <item type="id" name="btn_messageMore" />
   <item type="id" name="btn_messageCopy" />
+  <item type="id" name="btn_messageReactions" />
   <item type="id" name="btn_messageCopyLink" />
   <item type="id" name="btn_messageReply" />
   <item type="id" name="btn_messageReplies" />
@@ -987,6 +997,8 @@
   <item type="id" name="btn_messagePin" />
   <item type="id" name="btn_messageUnpin" />
   <item type="id" name="btn_messageShare" />
+  <item type="id" name="btn_bigReactionsInChats" />
+  <item type="id" name="btn_bigReactionsInChannels" />
   <item type="id" name="btn_messageDiscuss" />
   <item type="id" name="btn_messageSelect" />
   <item type="id" name="btn_messageViewList" />

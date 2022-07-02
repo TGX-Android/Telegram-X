@@ -4284,4 +4284,16 @@
   <string name="ExperimentalBuildInfo">This version of **Telegram X** is not designed for long-term use.\n\nIt may completely stop working over a time and you cannot turn notifications on.\n\nIf you are looking for the proper Telegram X APK file, see https://t.me/tgx_log</string>
 
   <string name="format_PRMadeBy">%1$s by %2$s</string>
+  <string name="Reactions">Reactions</string>
+  <string name="AllowToReact">Allow members to react to group messages</string>
+  <string name="AvailableReactions">Available reactions</string>
+  <string name="ReactionsDisabled">Reactions disabled</string>
+  <string name="ReactionsEnabled_one">%1$s Reaction enabled</string>
+  <string name="ReactionsEnabled_other">%1$s Reactions enabled</string>
+  <string name="QuickReaction">Quick Reaction</string>
+  <string name="EnableQuickReaction">Enable Quick Reaction</string>
+  <string name="EnableQuickReactionDescription">Availability of specific reactions depends on group\'s and channel\'s settings.</string>
+  <string name="EnableQuickDisabled">Disabled</string>
+  <string name="BigReactions">Big Reactions</string>
+  <string name="BigReactionsDescription">Big reactions are interactive buttons under messages presenting each reaction</string>
 </resources>
