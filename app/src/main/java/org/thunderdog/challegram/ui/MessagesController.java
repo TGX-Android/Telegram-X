@@ -10516,7 +10516,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
                   outRect.inset(sz, sz);
                   return true;
                 }
-                return false;
+                return r;
               }, srcPos, src.getDrawable(), ()->{
                 src.setAlpha(0f);
                 if(popup!=null)
