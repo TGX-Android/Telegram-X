@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+pushd scripts
+cp ./for-copy/CounterAnimator.java ../vkryl/android/src/main/java/me/vkryl/android/animator
+cp ./for-copy/ListAnimator.java ../vkryl/android/src/main/java/me/vkryl/android/animator
+cp ./for-copy/VariableFloat.java ../vkryl/android/src/main/java/me/vkryl/android/animator
+popd
+
 # == Setup SDK & NDK ==
 if [[ "$1" == "--skip-sdk-setup" ]]; then
   # shellcheck source=set-env.sh
@@ -54,3 +60,4 @@ if [[ ! -f local.properties ]]; then
 fi
 
 echo -e "${STYLE_INFO}Configure finished!${STYLE_END}"
+
