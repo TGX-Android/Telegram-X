@@ -25,6 +25,7 @@ import androidx.core.app.NotificationManagerCompat;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.drinkmore.Tracer;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Passcode;
@@ -81,12 +82,18 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
   }
 
   private static boolean accept (TdApi.NotificationGroupType type) {
+    if (BuildConfig.EXPERIMENTAL) {
+      // Ignore all notifications in experimental builds
+      return false;
+    }
     switch (type.getConstructor()) {
       case TdApi.NotificationGroupTypeMessages.CONSTRUCTOR:
       case TdApi.NotificationGroupTypeMentions.CONSTRUCTOR:
       case TdApi.NotificationGroupTypeSecretChat.CONSTRUCTOR: {
         return true;
       }
+      case TdApi.NotificationGroupTypeCalls.CONSTRUCTOR:
+        break;
     }
     return false;
   }

@@ -1306,7 +1306,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
 
       if (isActive) {
         if (data.isActive) {
-          span.setOnClickListener((view, span12) -> {
+          span.setOnClickListener((view, span12, clickedText) -> {
             if (type == TYPE_SCORE || type == TYPE_PINNED_MESSAGE || type == TYPE_PAYMENT_SUCCESSFUL) {
               long otherMessageId;
               switch (type) {
@@ -1342,7 +1342,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
           if (!useBubbles()) {
             span.setColorId(colorId);
           }
-          span.setOnClickListener((view, span1) -> {
+          span.setOnClickListener((view, span1, clickedText) -> {
             if ((type == TYPE_JOIN_BY_LINK || type == TYPE_EVENT_INVITE_LINK_REVOKED) && inviteLinkValue != null) {
               tdlib.ui().showInviteLinkOptionsPreload(controller(), inviteLinkValue, getChatId(), true, null, null);
             } else if (type == TYPE_EVENT_INVITE_LINK_DELETE && inviteLinkValue != null) {
@@ -1419,7 +1419,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
 
                   span = new CustomTypefaceSpan(needFake ? Fonts.getRobotoRegular() : (useBubbles() ? Fonts.getRobotoBold() : Fonts.getRobotoMedium()), useBubbles() ? 0 : colorId).setTransparencyColorId(colorId, manager.controller().wallpaper());
                   span.setFakeBold(needFake);
-                  span.setOnClickListener((view, span13) -> {
+                  span.setOnClickListener((view, span13, clickedText) -> {
                     tdlib.ui().openPrivateProfile(controller(), userId, openParameters());
                     return true;
                   });
@@ -1664,7 +1664,10 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
             MediaViewController.openFromMessage(this);
             res = true;
           } else if (caughtLink != null) {
-            caughtLink.onClick(view);
+            Spannable spanned = (Spannable) text;
+            int startIndex = spanned.getSpanStart(caughtLink);
+            int endIndex = spanned.getSpanEnd(caughtLink);
+            caughtLink.onClick(view, text.subSequence(startIndex, endIndex).toString());
             res = true;
           }
         }

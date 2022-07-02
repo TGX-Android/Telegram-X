@@ -53,6 +53,7 @@ import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.CallController;
@@ -458,6 +459,27 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
       case Tdlib.STATUS_READY:
         initAuthorizedController();
         break;
+    }
+    if (BuildConfig.EXPERIMENTAL) {
+      ViewController<?> c = navigation.getCurrentStackItem();
+      if (c != null) {
+        c.openAlert(R.string.ExperimentalBuildTitle,
+          Strings.buildMarkdown(c, Lang.getStringSecure(R.string.ExperimentalBuildInfo), (view, span, clickedText) -> {
+            switch (span.getEntityType().getConstructor()) {
+              case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
+                UI.openUrl(clickedText);
+                break;
+              case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
+                UI.openUrl(((TdApi.TextEntityTypeTextUrl) span.getEntityType()).url);
+                break;
+            }
+            return true;
+          }),
+          Lang.getOK(),
+          (dialog, which) -> dialog.dismiss(),
+          ViewController.ALERT_HAS_LINKS | ViewController.ALERT_NO_CANCEL | ViewController.ALERT_NO_CANCELABLE
+        );
+      }
     }
   }
 
