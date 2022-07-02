@@ -4678,8 +4678,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private void updateNotificationParameters (Client client) {
-    final int notificationGroupCountMax = 25;
-    final int notificationGroupSizeMax = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ? 7 : 10;
+    final int notificationGroupCountMax, notificationGroupSizeMax;
+
+    if (BuildConfig.EXPERIMENTAL) {
+      // Disable Notifications API if we are running experimental build
+      notificationGroupCountMax = 0;
+      notificationGroupSizeMax = 0;
+    } else {
+      notificationGroupCountMax = 25;
+      notificationGroupSizeMax = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ? 7 : 10;
+    }
 
     client.send(new TdApi.SetOption("notification_group_count_max", new TdApi.OptionValueInteger(notificationGroupCountMax)), okHandler);
     client.send(new TdApi.SetOption("notification_group_size_max", new TdApi.OptionValueInteger(notificationGroupSizeMax)), okHandler);
