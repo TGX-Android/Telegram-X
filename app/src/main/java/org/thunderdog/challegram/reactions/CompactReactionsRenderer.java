@@ -42,7 +42,7 @@ public class CompactReactionsRenderer implements Counter.Callback{
 	}
 
 	public void update(boolean animated){
-		TdApi.MessageInteractionInfo info=parent.getMessage().interactionInfo;
+		TdApi.MessageInteractionInfo info=parent.getMessageForReactions().interactionInfo;
 		iconizedReactions.clear();
 		totalReactionsCount=0;
 		selfReacted=false;
