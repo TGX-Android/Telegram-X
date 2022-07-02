@@ -65,6 +65,7 @@ public abstract class InlineResult <T> implements MessageSourceProvider, Multipl
   public static final int TYPE_COMMAND = 14;
   public static final int TYPE_BUTTON = 15;
   public static final int TYPE_EMOJI_SUGGESTION = 16;
+  public static final int TYPE_REACTION = 16;
 
   protected final BaseActivity context;
   protected final Tdlib tdlib;

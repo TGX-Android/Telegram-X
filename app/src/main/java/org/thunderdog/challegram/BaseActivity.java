@@ -124,6 +124,7 @@ import org.thunderdog.challegram.util.AppUpdater;
 import org.thunderdog.challegram.util.KonfettiBuilder;
 import org.thunderdog.challegram.widget.BaseRootLayout;
 import org.thunderdog.challegram.widget.DragDropLayout;
+import org.thunderdog.challegram.widget.EmbeddableStickerView;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.NetworkStatusBarView;
 import org.thunderdog.challegram.widget.PopupLayout;
@@ -1768,7 +1769,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     stickerPreviewWindow.setOverlayStatusBar(true);
     stickerPreviewWindow.init(true);
     stickerPreviewWindow.setNeedRootInsets();
-    stickerPreviewWindow.showAnimatedPopupView(stickerPreview, stickerPreview);
+    stickerPreviewWindow.showAnimatedPopupView(stickerPreview, stickerPreview, !stickerView.isReaction());
   }
 
   public void openStickerMenu (StickerSmallView stickerView, TGStickerObj sticker) {
@@ -1980,6 +1981,10 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public void showPopupWindow (PopupLayout window) {
+    showPopupWindow(window, true);
+  }
+
+  public void showPopupWindow (PopupLayout window, boolean hidePreviousPopups) {
     if (isActivityBusyWithSomething()) {
       boolean exit = true;
 
@@ -1997,7 +2002,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         return;
       }
     }
-    hideContextualPopups(false);
+    if (hidePreviousPopups) {
+      hideContextualPopups(false);
+    }
     windows.add(window);
     checkDisallowScreenshots();
     window.showBoundWindow(rootView);
@@ -3340,5 +3347,34 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     konfettiView.start(
       KonfettiBuilder.buildKonfettiParty(pivotX, pivotY)
     );
+  }
+
+  // Reaction API
+
+  private EmbeddableStickerView stickerView;
+
+  // TODO tim need better way or add scroll listener here
+  public void performReactionAnimation (View anchorView, TdApi.Sticker sticker, int pivotX, int pivotY) {
+    if (stickerView == null) {
+      stickerView = new EmbeddableStickerView(this, 60, true);
+      stickerView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+      addToRoot(stickerView, true);
+    }
+
+    int[] pos;
+    pos = Views.getLocationInWindow(rootView);
+
+    int baseX = pos[0];
+    int baseY = pos[1];
+
+    pos = Views.getLocationInWindow(anchorView);
+    // TODO tim investigate about coordinates
+    pivotX += pos[0] - baseX - Screen.dp(20f);
+    pivotY += pos[1] - baseY - Screen.dp(50f);
+    stickerView.setX(pivotX);
+    stickerView.setY(pivotY);
+
+    stickerView.setSticker(null);
+    stickerView.setSticker(new TGStickerObj(tdlib, sticker, null, sticker.type));
   }
 }

@@ -3156,6 +3156,16 @@
   <string name="EmojiSetsInfo">Are you sure you want to clear unused emoji sets?</string>
   <string name="BigEmoji">Big Emoji</string>
 
+  <string name="QuickReaction">Quick Reaction</string>
+  <string name="EnableQuickReaction">Enable Quick Reaction</string>
+  <string name="QuickReactionSetupDescription">Availability of specific reactions depends on group\'s and channel\'s settings.</string>
+
+  <string name="Reactions">Reactions</string>
+  <string name="ReactionsDisabled">Reactions disabled</string>
+  <string name="ReactionsSetupDescription">Allow members to react to group messages</string>
+  <string name="AvailableReactions">Available Reactions</string>
+  <string name="ReactionsEnabled">%1$s Reactions enabled</string>
+
   <string name="error_CHAT_ADMIN_REQUIRED">You do not have enough privileges to perform this action.</string>
   <string name="ChatPermissions">Chat Permissions</string>
   <string name="ChatPermissionsRestrictHint">This permission is disabled for all members without admin privileges.</string>

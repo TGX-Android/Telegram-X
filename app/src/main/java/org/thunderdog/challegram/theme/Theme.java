@@ -875,6 +875,10 @@ public class Theme {
     return Theme.getProperty(ThemeProperty.BUBBLE_DATE_CORNER);
   }
 
+  public static float getReactionRadius() {
+    return 20f;
+  }
+
   public static float getDateRadius () {
     return Theme.getProperty(ThemeProperty.DATE_CORNER);
   }

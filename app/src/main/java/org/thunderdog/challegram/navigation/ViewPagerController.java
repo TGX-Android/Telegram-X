@@ -27,6 +27,7 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.PagerAdapter;
 
 import org.thunderdog.challegram.R;
@@ -38,6 +39,7 @@ import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.ui.RecyclerViewController;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.widget.rtl.RtlViewPager;
@@ -396,6 +398,10 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
   public final ViewController<?> getCurrentPagerItem () {
     return getCachedControllerForPosition(getCurrentPagerItemPosition());
+  }
+
+  public final ViewController<?> getPagerItemForPosition (int pos) {
+    return getCachedControllerForPosition(pos);
   }
 
   protected final void setCurrentPagerPosition (int position, boolean animated) {

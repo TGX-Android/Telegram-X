@@ -199,6 +199,10 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
     return true;
   }
 
+  protected int getHeaderHeight () {
+    return 0;
+  }
+
   public boolean showExitWarning (boolean isExitingSelection) {
     // override
     return false;
@@ -224,8 +228,8 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
     }
   }
 
-  private static int getTargetHeight () {
-    return Screen.currentHeight() - HeaderView.getTopOffset();
+  private int getTargetHeight () {
+    return Screen.currentHeight() - HeaderView.getTopOffset() - getHeaderHeight();
   }
 
   private void updateRecyclerTop (int height) {
@@ -240,7 +244,7 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
 
   protected MediaContentView contentView;
   private View progressView;
-  protected MediaBottomBaseRecyclerView recyclerView;
+  protected RecyclerView recyclerView;
   private EmptyTextView emptyView;
 
   protected final MediaContentView buildContentView (boolean needProgress) {
@@ -293,6 +297,11 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
     return contentView;
   }
 
+  protected void setRecyclerView (RecyclerView recyclerView) {
+    this.recyclerView = recyclerView;
+    updateRecyclerTop();
+  }
+
   public void onRecyclerFirstMovement () {
 
   }
@@ -302,7 +311,9 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
   }
 
   public void dispatchRecyclerTouchEvent (MotionEvent e) {
-    recyclerView.processEvent(e);
+    if (recyclerView instanceof MediaBottomBaseRecyclerView) {
+      ((MediaBottomBaseRecyclerView) recyclerView).processEvent(e);
+    }
   }
 
   public int getRecyclerScrollY () {
@@ -552,7 +563,7 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
     return y >= recyclerView.getTranslationY() && y <= recyclerView.getTranslationY() + recyclerView.getMeasuredHeight();
   }
 
-  public static int getMaxHeight () {
+  public int getMaxHeight () {
     return getTargetHeight(); //  - HeaderView.getSize();
   }
 

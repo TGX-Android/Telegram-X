@@ -92,6 +92,7 @@ import org.thunderdog.challegram.widget.PageBlockView;
 import org.thunderdog.challegram.widget.PageBlockWrapView;
 import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.RadioView;
+import org.thunderdog.challegram.widget.ReactionStickerGridView;
 import org.thunderdog.challegram.widget.ScalableTextView;
 import org.thunderdog.challegram.widget.SeparatorView;
 import org.thunderdog.challegram.widget.SettingStupidView;
@@ -394,6 +395,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
   }
 
   protected void setEmbedSticker (ListItem item, int position, EmbeddableStickerView userView, boolean isUpdate) {
+    // Override
+  }
+
+  protected void setSelectedReaction (ListItem item, int position, ReactionStickerGridView view, boolean isUpdate) {
     // Override
   }
 
@@ -1480,6 +1485,11 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         setEmbedSticker(item, position, (EmbeddableStickerView) holder.itemView, false);
         break;
       }
+      case ListItem.TYPE_QUICK_REACTION_SELECT:
+      case ListItem.TYPE_MULTIPLE_REACTION_SELECT: {
+        setSelectedReaction(item, position, (ReactionStickerGridView) holder.itemView, false);
+        break;
+      }
       case ListItem.TYPE_CHAT_HEADER_LARGE: {
         setChatHeader(item, position, (DetachedChatHeaderView) holder.itemView);
         break;
@@ -1877,7 +1887,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
           break;
         }
       }
-      if (items.length == 1) {
+      if (index == -1) {
+        this.items.add(this.items.size(), items[0]);
+        notifyItemInserted(this.items.size());
+      } else if (items.length == 1) {
         this.items.add(index, items[0]);
         notifyItemInserted(index);
       } else {

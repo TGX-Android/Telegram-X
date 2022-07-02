@@ -13,10 +13,13 @@
 package org.thunderdog.challegram.widget;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.MotionEvent;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -28,24 +31,51 @@ import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeInvalidateListener;
+import org.thunderdog.challegram.tool.Screen;
 
+import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BoolAnimator;
+import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.Destroyable;
 
 public class EmbeddableStickerView extends LinearLayout implements ThemeInvalidateListener, Destroyable {
+  // TODO tim merge to one view and manage animators to one factor producer
+  private final StickerSmallView stickerEffectView;
   private final StickerSmallView stickerSmallView;
   private final TextView captionTextView;
 
+  private final BoolAnimator isChecked = new BoolAnimator(0, (id, factor, fraction, callee) -> invalidate(),
+          AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
+
   public EmbeddableStickerView (Context context) {
-    this(context, null, 0);
+    this(context, null, 0, 0, false);
   }
 
   public EmbeddableStickerView (Context context, @Nullable AttributeSet attrs) {
-    this(context, attrs, 0);
+    this(context, attrs, 0, 0, false);
   }
 
-  public EmbeddableStickerView (Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+  public EmbeddableStickerView (Context context, int stickerSize, boolean withEffect) {
+    this(context, null, 0, stickerSize, withEffect);
+  }
+
+  public EmbeddableStickerView (Context context, @Nullable AttributeSet attrs, int defStyleAttr, int stickerSize, boolean withEffect) {
     super(context, attrs, defStyleAttr);
     setOrientation(LinearLayout.VERTICAL);
+    if (stickerSize == 0) {
+      stickerSize = 128;
+    }
+
+    if (withEffect) {
+      stickerEffectView = new StickerSmallView(context) {
+        @Override
+        public boolean dispatchTouchEvent(MotionEvent event) {
+          return false;
+        }
+      };
+    } else {
+      stickerEffectView = null;
+    }
 
     stickerSmallView = new StickerSmallView(context) {
       @Override
@@ -53,15 +83,29 @@ public class EmbeddableStickerView extends LinearLayout implements ThemeInvalida
         return false;
       }
     };
-    stickerSmallView.setLayoutParams(LayoutHelper.createLinear(128, 128, Gravity.CENTER_HORIZONTAL, 0, 8, 0, 0));
-    addView(stickerSmallView);
+
+    if (stickerEffectView != null) {
+      FrameLayoutFix frameLayoutFix = new FrameLayoutFix(context);
+      FrameLayout.LayoutParams params = LayoutHelper.createFrame(stickerSize, stickerSize, Gravity.CENTER_HORIZONTAL, 0, 8, 0, 0);
+      params.gravity = Gravity.CENTER;
+      frameLayoutFix.addView(stickerSmallView, params);
+      frameLayoutFix.addView(stickerEffectView, params);
+      addView(frameLayoutFix);
+    } else {
+      stickerSmallView.setLayoutParams(LayoutHelper.createLinear(stickerSize, stickerSize, Gravity.CENTER_HORIZONTAL, 0, 8, 0, 0));
+      addView(stickerSmallView);
+    }
 
     captionTextView = new TextView(context);
     captionTextView.setGravity(Gravity.CENTER_HORIZONTAL);
     captionTextView.setTextSize(14);
     captionTextView.setMovementMethod(LinkMovementMethod.getInstance());
     captionTextView.setHighlightColor(Theme.textLinkHighlightColor());
-    addView(captionTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 16, 16, 8, 16, 8));
+    if (withEffect) {
+      captionTextView.setMaxLines(2);
+      captionTextView.setEllipsize(TextUtils.TruncateAt.END);
+    }
+    addView(captionTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 16, 16, 8, 16, 8));
 
     recolor();
   }
@@ -73,36 +117,76 @@ public class EmbeddableStickerView extends LinearLayout implements ThemeInvalida
 
   public void attach () {
     stickerSmallView.attach();
+    if (stickerEffectView != null) {
+      stickerEffectView.attach();
+    }
   }
 
   public void detach () {
     stickerSmallView.detach();
+    if (stickerEffectView != null) {
+      stickerEffectView.detach();
+    }
   }
 
   public void setCaptionText (CharSequence text) {
     captionTextView.setText(text);
   }
 
+  public CharSequence getCaptionText () { return captionTextView.getText(); }
+
   public void init (Tdlib tdlib) {
     stickerSmallView.init(tdlib);
   }
 
   public void setSticker (TGStickerObj tgStickerObj) {
-    if (tgStickerObj != null && !tgStickerObj.isEmpty()) {
-      tgStickerObj.getPreviewAnimation().setPlayOnce(false);
+    if (tgStickerObj != null && !tgStickerObj.isEmpty() && tgStickerObj.isAnimated()) {
+      tgStickerObj.getPreviewAnimation().setPlayOnce(true);
     }
-
     stickerSmallView.setSticker(tgStickerObj);
+  }
+
+  public void setStickerEffect (TGStickerObj tgStickerObj) {
+    if (stickerEffectView != null) {
+      if (tgStickerObj != null && !tgStickerObj.isEmpty() && tgStickerObj.isAnimated()) {
+        tgStickerObj.getPreviewAnimation().setPlayOnce(true);
+      }
+      stickerEffectView.setSticker(null);
+      stickerEffectView.setSticker(tgStickerObj);
+    }
+  }
+
+  public void setChecked(boolean isChecked, boolean animate) {
+    this.isChecked.setValue(isChecked, animate);
+  }
+
+  public void toggle(boolean animate) {
+    this.isChecked.setValue(!this.isChecked.getValue(), animate);
+  }
+
+  public boolean isChecked() {
+    return this.isChecked.getValue();
   }
 
   @Override
   public void performDestroy () {
     stickerSmallView.performDestroy();
+    if (stickerEffectView != null) {
+      stickerEffectView.performDestroy();
+    }
   }
 
   @Override
   public void onThemeInvalidate (boolean isTempUpdate) {
     recolor();
     invalidate();
+  }
+
+  @Override
+  protected void dispatchDraw(Canvas canvas) {
+    super.dispatchDraw(canvas);
+    int x = (int) (stickerSmallView.getX() + stickerSmallView.getWidth() - Screen.dp(10f));
+    int y = stickerSmallView.getHeight() - Screen.dp(2f);
+    SimplestCheckBox.draw(canvas, x, y, isChecked.getFloatValue(), null, null, Theme.checkFillingColor(), Theme.checkCheckColor(), false, 0f, Screen.dp(8f), Screen.dp(11f));
   }
 }

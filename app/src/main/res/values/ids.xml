@@ -172,6 +172,9 @@
   <item type="id" name="controller_newGroup" />
   <item type="id" name="controller_emoji" />
   <item type="id" name="controller_emojiSets" />
+  <item type="id" name="controller_quickReactions" />
+  <item type="id" name="controller_allowedReactions" />
+  <item type="id" name="controller_listReactions" />
   <item type="id" name="controller_iconSets" />
   <item type="id" name="controller_media__new" />
   <item type="id" name="controller_media_simple" />
@@ -221,6 +224,8 @@
   <item type="id" name="controller_chatLinks" />
   <item type="id" name="controller_chatLinkMembers" />
   <item type="id" name="controller_sponsoredMessagesInfo" />
+  <item type="id" name="controller_reactionsView" />
+  <item type="id" name="controller_peopleReactions" />
 
   <item type="id" name="separator" />
 
@@ -237,6 +242,9 @@
 
   <item type="id" name="emoji" />
   <item type="id" name="emoji_recent" />
+
+  <item type="id" name="reaction" />
+  <item type="id" name="reactionGrid" />
 
   <item type="id" name="search_section_top" />
   <item type="id" name="search_section_local" />
@@ -303,6 +311,7 @@
   <item type="id" name="btn_mosaic" />
   <item type="id" name="btn_speaker" />
   <item type="id" name="btn_emoji" />
+  <item type="id" name="btn_quickReaction" />
   <item type="id" name="btn_icon" />
   <item type="id" name="btn_section" />
   <item type="id" name="btn_stickerSet" />
@@ -445,6 +454,7 @@
   <item type="id" name="btn_view" />
   <item type="id" name="btn_username" />
   <item type="id" name="btn_prehistoryMode" />
+  <item type="id" name="btn_availableReactionsSetting" />
   <item type="id" name="btn_slowMode" />
   <item type="id" name="btn_slowModeDescription" />
   <item type="id" name="btn_chatTtl" />
@@ -528,6 +538,8 @@
   <item type="id" name="btn_proxyQr" />
   <item type="id" name="btn_showAdvanced" />
   <item type="id" name="btn_autoplayGIFs" />
+  <item type="id" name="btn_enableQuickReaction" />
+  <item type="id" name="btn_allowedReactions" />
   <item type="id" name="btn_stickerSuggestions" />
   <item type="id" name="btn_stickerSuggestionsAll" />
   <item type="id" name="btn_stickerSuggestionsInstalled" />

@@ -44,6 +44,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
+import androidx.core.util.Pair;
 
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -53,11 +54,14 @@ import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.charts.view_data.ChartHorizontalLinesData;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessageViewGroup;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.chat.MessagesTouchHelperCallback;
 import org.thunderdog.challegram.component.chat.ReplyComponent;
+import org.thunderdog.challegram.component.popups.ModernActionedLayout;
+import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
@@ -101,6 +105,7 @@ import org.thunderdog.challegram.util.text.TextEntityCustom;
 import org.thunderdog.challegram.util.text.TextPart;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
 import org.thunderdog.challegram.util.text.TextWrapper;
+import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.SimplestCheckBox;
 
@@ -108,7 +113,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -224,6 +232,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private final RectF bubblePathRect, bubbleClipPathRect;
 
   private boolean needSponsorSmallPadding;
+  private TdApi.MessageReaction[] reactions;
+  private HashMap<String, RectF> reactionsClickPositions;
+  private final StickerSmallView newAnimatedEmojiView;
 
   protected final MessagesManager manager;
   protected final Tdlib tdlib;
@@ -350,6 +361,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (isHot() && needHotTimer() && msg.ttlExpiresIn < msg.ttl) {
       startHotTimer(false);
     }
+
+    newAnimatedEmojiView = new StickerSmallView(context());
+    newAnimatedEmojiView.init(tdlib);
   }
 
   private static @NonNull <T> T nonNull (@Nullable T value) {
@@ -814,6 +828,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
     if (hasFooter()) {
       height += getFooterHeight() + getFooterPaddingTop() + getFooterPaddingBottom();
+    }
+    if (hasReactions() && !tdlib().isUserChat(getChatId())) {
+      height += getReactionsHeight();
     }
     height += getBubbleReduceHeight();
 
@@ -1768,6 +1785,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           right -= viewCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
         }
       }
+
+      // Reaction
+      if (hasReactions() && tdlib().isUserChat(getChatId())) {
+        c.drawText(getUserReaction(), right - Screen.dp(12f), top + getHeaderPadding(), getReactionPaint());
+      }
     }
 
     // Check box
@@ -1936,6 +1958,75 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       }
 
       replyData.draw(c, startX, top, endX, width, replyReceiver, Lang.rtl());
+    }
+
+    // reactions
+
+    if (useBubbles() && hasReactions() && !tdlib().isUserChat(getChatId())) {
+      // width
+      float leftSpace = Screen.dp(6f);
+      float rightSpace = Screen.dp(12f);
+      float outXSpace = Screen.dp(4f);
+
+      // height
+      float itemHeight = getReactionHeight();
+      float outYSpace = Screen.dp(4f);
+      float bottomReactionsPadding = Screen.dp(18f);
+
+      int timeStampHeight = pContentY + getContentHeight() + getReactionsHeight() + Screen.dp(4f) + getBubbleReduceHeight();
+      float startY = timeStampHeight - getReactionsHeight();
+      float endY = startY + itemHeight;
+
+      float initialX = getContentX();
+      float startX = initialX;
+
+      Paint paint = getReactionTextStyleProvider().getTextPaint();
+      int radius = Screen.dp(Theme.getReactionRadius());
+      for (int i = 0; i < reactions.length; i++) {
+        TdApi.MessageReaction messageReaction = reactions[i];
+        String textCount = ChartHorizontalLinesData.formatWholeNumber(messageReaction.totalCount, 0);
+        String reaction = messageReaction.reaction + " " + textCount;
+
+        float measuredWidth = U.measureText(reaction, paint);
+        float itemWidthWithSpaces = leftSpace + measuredWidth + rightSpace;
+
+        if (startX + itemWidthWithSpaces > getWidth()) {
+          startX = initialX;
+          startY += itemHeight + outYSpace;
+          endY = startY + itemHeight;
+        }
+
+        RectF rectF = Paints.getRectF();
+        rectF.set(startX, startY, startX + itemWidthWithSpaces, endY);
+        reactionsClickPositions.get(messageReaction.reaction).set(startX, startY, startX + itemWidthWithSpaces, endY);
+        if (msg.isOutgoing) {
+          if (messageReaction.isChosen) {
+            c.drawRoundRect(rectF, radius, radius, getReactionOutSelectedPaint());
+          } else {
+            c.drawRoundRect(rectF, radius, radius, getReactionOutUnSelectedPaint());
+          }
+        } else {
+          if (messageReaction.isChosen) {
+            c.drawRoundRect(rectF, radius, radius, getReactionInSelectedPaint());
+          } else {
+            c.drawRoundRect(rectF, radius, radius, getReactionInUnSelectedPaint());
+          }
+        }
+
+        if (reactionText == null) {
+          reactionText = new Text.Builder(textCount, getContentMaxWidth(), getReactionTextStyleProvider(), getTextColorSet())
+                  .allBold()
+                  .build();
+        }
+        reactionText.set(getContentMaxWidth(), reaction);
+
+        if (messageReaction.isChosen) {
+          reactionText.draw(c, (int) (startX + leftSpace), (int) (endY - bottomReactionsPadding), () -> 0xffffffff);
+        } else {
+          reactionText.draw(c, (int) (startX + leftSpace), (int) (endY - bottomReactionsPadding));
+        }
+        startX += itemWidthWithSpaces + outXSpace;
+      }
     }
 
     if (contentOffset != 0) {
@@ -2214,6 +2305,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   public final void performConfettiAnimation (int pivotX, int pivotY) {
     performWithViews(view -> context().performConfetti(view, pivotX, pivotY));
+  }
+
+  public final void performReactionAnimation (int pivotX, int pivotY, TdApi.Sticker sticker) {
+    performWithViews(view -> context().performReactionAnimation(view, sticker, pivotX, pivotY));
   }
 
   private void performWithViews (@NonNull RunnableData<MessageView> act) {
@@ -2857,7 +2952,16 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
       if (!headerDisabled() && !(drawBubbleTimeOverContent() && !useForward()) && useBubbleTime()) {
         final int bubbleTimePartWidth = computeBubbleTimePartWidth(true);
-        final int bottomLineContentWidth = useForward() ? BOTTOM_LINE_EXPAND_HEIGHT : hasFooter() ? footerText.getLastLineWidth() + Screen.dp(10f) : getBottomLineContentWidth();
+        int bottomLineContentWidth;
+        if (hasReactions() && !tdlib().isUserChat(getChatId())) {
+          bottomLineContentWidth = getReactionsLastLineWidth();
+        } else if (useForward()) {
+          bottomLineContentWidth = BOTTOM_LINE_EXPAND_HEIGHT;
+        } else if (hasFooter()) {
+          bottomLineContentWidth = footerText.getLastLineWidth() + Screen.dp(10f);
+        } else {
+          bottomLineContentWidth = getBottomLineContentWidth();
+        }
         final int extendedWidth = bottomLineContentWidth + bubbleTimePartWidth;
         final boolean allowHorizontalExtend = allowBubbleHorizontalExtend();
 
@@ -3092,6 +3196,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     int counterY = startY + Screen.dp(11.5f);
+    if (hasReactions() && tdlib().isUserChat(getChatId())) {
+      // TODO tim рисовать 3 реакции
+      c.drawText(getUserReaction(), startX, startY + Screen.dp(14f), getReactionPaint());
+      startX += Screen.dp(14f);
+    }
     if (getViewCountMode() == VIEW_COUNT_MAIN) {
       if (isSending) {
         final float viewsWidth = viewCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
@@ -3188,6 +3297,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
     if (includePadding) {
       width += Screen.dp(8f);
+    }
+    if (hasReactions() && tdlib().isUserChat(getChatId())) {
+      // TODO tim считать кол-во уникальных реакция для отображения трех
+      width += Screen.dp(14f);
     }
     return width;
   }
@@ -4576,6 +4689,13 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     hasCommentButton.setValue(commentMode == COMMENT_MODE_BUTTON, animated);
     shareCounter.setCount(interactionInfo != null ? interactionInfo.forwardCount : 0, animated);
     isPinned.showHide(isPinned(), animated);
+    reactions = interactionInfo != null ? interactionInfo.reactions : null;
+    if (interactionInfo != null && !tdlib().isUserChat(getChatId())) {
+      reactionsClickPositions = new HashMap<>();
+      for (TdApi.MessageReaction reaction : interactionInfo.reactions) {
+        reactionsClickPositions.put(reaction.reaction, new RectF());
+      }
+    }
   }
 
   private static void copyFlags (TdApi.Message src, TdApi.Message dst) {
@@ -6036,6 +6156,22 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return Theme.getColor(isOutgoingBubble() ? R.id.theme_color_bubbleOut_messageAuthorPsa : R.id.theme_color_messageAuthorPsa);
   }
 
+  protected final Paint getReactionInUnSelectedPaint () {
+    return Paints.alphaPaint(Paints.fillingPaint(Theme.getColor(R.id.theme_color_bubbleIn_time)), 85);
+  }
+
+  protected final Paint getReactionInSelectedPaint () {
+    return Paints.fillingPaint(Theme.getColor(R.id.theme_color_file));
+  }
+
+  protected final Paint getReactionOutSelectedPaint () {
+    return Paints.fillingPaint(Theme.getColor(R.id.theme_color_bubbleOut_file));
+  }
+
+  protected final Paint getReactionOutUnSelectedPaint () {
+    return Paints.alphaPaint(Paints.fillingPaint(Theme.getColor(R.id.theme_color_bubbleOut_time)), 85);
+  }
+
   private void drawCommentButton (MessageView view, Canvas c, int startX, int endX, int y, float alpha) {
     int cy = y + getCommentButtonHeight() / 2;
     int iconColorId = getChatAuthorColorId();
@@ -6068,6 +6204,126 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     c.drawText(trimmedFooterTitle != null ? trimmedFooterTitle : footerTitle, contentX, contentY + Screen.dp(15f), paint);
 
     footerText.draw(c, contentX, contentY + Screen.dp(22f), null, 1f);
+  }
+
+  // Reactions
+  Text reactionText;
+
+  public boolean hasReactions () {
+    return reactions != null && reactions.length > 0;
+  }
+
+  private int getReactionsLastLineWidth () {
+    int reactionsWidth = measureReactions().first;
+    if (getContentWidth() < reactionsWidth) {
+      return getMinReactionWidth() * reactions.length;
+    }
+    return measureReactions().first;
+  }
+
+  private int getReactionsHeight () {
+    if (useBubbles() && hasReactions() && !tdlib().isUserChat(getChatId())) {
+      return measureReactions().second;
+    } else {
+      return 0;
+    }
+  }
+
+  private Pair<Integer, Integer> measureReactions () {
+    // width
+    float leftSpace = Screen.dp(6f);
+    float rightSpace = Screen.dp(12f);
+    float outXSpace = Screen.dp(4f);
+
+    // height
+    float itemHeight = getReactionHeight();
+    float outYSpace = Screen.dp(4f);
+
+    float startY = 0f;
+    float endY = startY + itemHeight;
+
+    float startX = getContentX();
+    Paint paint = getReactionTextStyleProvider().getTextPaint();
+    for (int i = 0; i < reactions.length - 1; i++) {
+      TdApi.MessageReaction messageReaction = reactions[i];
+      String textCount = ChartHorizontalLinesData.formatWholeNumber(messageReaction.totalCount, 0);
+      String reaction = messageReaction.reaction + " " + textCount;
+      float measuredWidth = U.measureText(reaction, paint);
+      float itemWidthWithSpaces = leftSpace + measuredWidth + rightSpace;
+
+      if (startX + itemWidthWithSpaces > getContentWidth()) {
+        startX = getContentX();
+        startY += itemHeight + outYSpace;
+        endY = startY + itemHeight;
+      }
+
+      startX += itemWidthWithSpaces + outXSpace;
+    }
+    return new Pair<>((int) startX + Screen.dp(20f), (int) endY + Screen.dp(6f));
+  }
+
+  private int getMinReactionWidth () {
+    return Screen.dp(44f);
+  }
+
+  private int getReactionHeight () {
+    return Screen.dp(24f);
+  }
+
+  private String getUserReaction () {
+    if (hasReactions()) {
+      return reactions[0].reaction;
+    } else {
+      return null;
+    }
+  }
+
+  public String reactionForClickPosition (float x, float y, boolean sendReaction) {
+    if (reactionsClickPositions != null) {
+      for (Map.Entry<String, RectF> entry : reactionsClickPositions.entrySet()) {
+        boolean isContains = entry.getValue().contains(x, y);
+        if (isContains) {
+          if (sendReaction) {
+            onReactionClick(entry);
+          }
+          return entry.getKey();
+        }
+      }
+    }
+    return null;
+  }
+
+  private void onReactionClick (Map.Entry<String, RectF> entry) {
+    if (entry != null) {
+      for (TdApi.MessageReaction reaction : reactions) {
+        if (Objects.equals(reaction.reaction, entry.getKey())) {
+          tdlib.sendUserReaction(getChatId(), msg.id, reaction.reaction, false);
+          if (!reaction.isChosen) {
+            for (TdApi.Reaction reaction1 : tdlib.getSupportedReactions()) {
+              if (Objects.equals(reaction1.reaction, entry.getKey())) {
+                RectF coordinates = entry.getValue();
+                // TODO tim!! fix move reactions effect animation to TooltipOverlayView
+              /*buildContentHint(findCurrentView(), (targetView, outRect) -> {
+                        outRect.set((int) coordinates.left, (int) coordinates.top, (int) coordinates.right, (int) coordinates.bottom);
+                      }
+              ).show(new TGStickerObj(tdlib, reaction1.effectAnimation, reaction1.reaction, reaction1.effectAnimation.type));*/
+                performReactionAnimation((int) coordinates.left, (int) coordinates.bottom, reaction1.effectAnimation);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  public boolean onReactionLongClick (float x, float y) {
+    String reaction = reactionForClickPosition(x, y, false);
+    ArrayList<String> reactions = new ArrayList<>();
+    for (Map.Entry<String, RectF> entry : reactionsClickPositions.entrySet()) {
+      reactions.add(entry.getKey());
+    }
+    ModernActionedLayout.showMessageReactions(controller(), chat.id, msg.id, reactions.toArray(new String[]{}));
+    return reaction != null;
   }
 
   // Locale change
@@ -6224,6 +6480,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return Paints.getMediumTextPaint(14f, needFakeBold);
   }
 
+  private TextPaint getReactionPaint() {
+    return Paints.getRegularTextPaint(10f);
+  }
+
   protected static TextPaint mTimeBubble () {
     return Paints.getRegularTextPaint(11f);
   }
@@ -6245,7 +6505,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
   }
 
-  private static TextStyleProvider styleProvider, simpleStyleProvider, biggerStyleProvider, smallerStyleProvider, nameProvider, timeProvider;
+  private static TextStyleProvider styleProvider, simpleStyleProvider, biggerStyleProvider, smallerStyleProvider, nameProvider, timeProvider, reactionProvider;
 
   public static TextStyleProvider simpleTextStyleProvider () {
     if (simpleStyleProvider == null) {
@@ -6290,6 +6550,13 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       timeProvider = new TextStyleProvider(Fonts.newRobotoStorage()).setTextSize(11f);
     }
     return timeProvider;
+  }
+
+  public static TextStyleProvider getReactionTextStyleProvider () {
+    if (reactionProvider == null) {
+      reactionProvider = new TextStyleProvider(Fonts.newRobotoStorage()).setTextSize(12f);
+    }
+    return reactionProvider;
   }
 
   // Sizes

@@ -35,6 +35,7 @@ import org.thunderdog.challegram.data.InlineResult;
 import org.thunderdog.challegram.data.InlineResultButton;
 import org.thunderdog.challegram.data.InlineResultGif;
 import org.thunderdog.challegram.data.InlineResultPhoto;
+import org.thunderdog.challegram.data.InlineResultReaction;
 import org.thunderdog.challegram.data.InlineResultSticker;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -112,6 +113,7 @@ public class InlineResultsAdapter extends RecyclerView.Adapter<InlineResultsAdap
   @Override
   public void onViewAttachedToWindow (ViewHolder holder) {
     switch (holder.getItemViewType()) {
+      case ViewHolder.TYPE_REACTION:
       case ViewHolder.TYPE_STICKER: {
         ((StickerSmallView) holder.itemView).attach();
         break;
@@ -134,6 +136,7 @@ public class InlineResultsAdapter extends RecyclerView.Adapter<InlineResultsAdap
   @Override
   public void onViewDetachedFromWindow (ViewHolder holder) {
     switch (holder.getItemViewType()) {
+      case ViewHolder.TYPE_REACTION:
       case ViewHolder.TYPE_STICKER: {
         ((StickerSmallView) holder.itemView).detach();
         break;
@@ -165,6 +168,12 @@ public class InlineResultsAdapter extends RecyclerView.Adapter<InlineResultsAdap
       case ViewHolder.TYPE_STICKER: {
         InlineResult<?> result = items.get(position - 1);
         ((StickerSmallView) holder.itemView).setSticker(((InlineResultSticker) result).getSticker());
+        holder.itemView.setTag(result);
+        break;
+      }
+      case ViewHolder.TYPE_REACTION: {
+        InlineResult<?> result = items.get(position - 1);
+        ((StickerSmallView) holder.itemView).setSticker(((InlineResultReaction) result).getSticker());
         holder.itemView.setTag(result);
         break;
       }
@@ -206,6 +215,9 @@ public class InlineResultsAdapter extends RecyclerView.Adapter<InlineResultsAdap
       return ViewHolder.TYPE_HEADER;
     }
     switch (items.get(position).getType()) {
+      case InlineResult.TYPE_REACTION: {
+        return ViewHolder.TYPE_REACTION;
+      }
       case InlineResult.TYPE_STICKER: {
         return ViewHolder.TYPE_STICKER;
       }
@@ -235,6 +247,7 @@ public class InlineResultsAdapter extends RecyclerView.Adapter<InlineResultsAdap
     public static final int TYPE_STICKER = 3;
     public static final int TYPE_GIF = 4;
     public static final int TYPE_PHOTO = 5;
+    public static final int TYPE_REACTION = 6;
 
     public ViewHolder (View itemView) {
       super(itemView);
@@ -264,6 +277,7 @@ public class InlineResultsAdapter extends RecyclerView.Adapter<InlineResultsAdap
           gifView.setOnClickListener(onClickListener);
           return new ViewHolder(gifView);
         }
+        case TYPE_REACTION:
         case TYPE_STICKER: {
           StickerSmallView stickerView = new StickerSmallView(context);
           stickerView.init(tdlib);

@@ -541,11 +541,15 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
   }
 
   public void showAnimatedPopupView (View view, AnimatedPopupProvider provider) {
+    showAnimatedPopupView(view, provider, true);
+  }
+
+  public void showAnimatedPopupView (View view, AnimatedPopupProvider provider, boolean hidePreviousPopups) {
     this.animationType = ANIMATION_TYPE_CUSTOM;
     this.customAnimatorProvider = provider;
     provider.prepareShowAnimation();
     addView(boundView = view);
-    ((BaseActivity) getContext()).showPopupWindow(this);
+    ((BaseActivity) getContext()).showPopupWindow(this, hidePreviousPopups);
   }
 
   public boolean shouldDisallowScreenshots () {

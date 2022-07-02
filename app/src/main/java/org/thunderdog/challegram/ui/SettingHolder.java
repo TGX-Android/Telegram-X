@@ -93,6 +93,7 @@ import org.thunderdog.challegram.widget.PageBlockView;
 import org.thunderdog.challegram.widget.PageBlockWrapView;
 import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.RadioView;
+import org.thunderdog.challegram.widget.ReactionStickerGridView;
 import org.thunderdog.challegram.widget.ScalableTextView;
 import org.thunderdog.challegram.widget.ScoutFrameLayout;
 import org.thunderdog.challegram.widget.SeparatorView;
@@ -441,6 +442,12 @@ public class SettingHolder extends RecyclerView.ViewHolder {
           ((Destroyable) ((RelativeLayout) itemView).getChildAt(5)).performDestroy();
         }
         break;
+      }
+      case ListItem.TYPE_QUICK_REACTION_SELECT: {
+        ((Destroyable) itemView).performDestroy();
+      }
+      case ListItem.TYPE_MULTIPLE_REACTION_SELECT: {
+        ((Destroyable) itemView).performDestroy();
       }
       default: {
         if (itemView instanceof Destroyable) {
@@ -1137,6 +1144,24 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       }
       case ListItem.TYPE_EMBED_STICKER: {
         EmbeddableStickerView view = new EmbeddableStickerView(context);
+        view.init(tdlib);
+        view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        if (themeProvider != null) {
+          themeProvider.addThemeInvalidateListener(view);
+        }
+        return new SettingHolder(view);
+      }
+      case ListItem.TYPE_QUICK_REACTION_SELECT: {
+        ReactionStickerGridView view = new ReactionStickerGridView(context, 0, onClickListener);
+        view.init(tdlib);
+        view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        if (themeProvider != null) {
+          themeProvider.addThemeInvalidateListener(view);
+        }
+        return new SettingHolder(view);
+      }
+      case ListItem.TYPE_MULTIPLE_REACTION_SELECT: {
+        ReactionStickerGridView view = new ReactionStickerGridView(context, 1, onClickListener);
         view.init(tdlib);
         view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         if (themeProvider != null) {
