@@ -913,7 +913,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       }
     }
     if (accounts.isEmpty()) {
-      TdlibAccount account = new TdlibAccount(this, 0, true);
+      TdlibAccount account = new TdlibAccount(this, 0, false);
       accounts.add(account);
       checkAliveAccount(account);
     }
