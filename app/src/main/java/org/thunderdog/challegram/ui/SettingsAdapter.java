@@ -337,6 +337,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     // Override
   }
 
+  protected void modifyPaymentPricePart (ListItem item, PaymentPricePartView partView) {
+    // Override
+  }
+
   protected void setText (ListItem item, CustomTextView view, boolean isUpdate) {
     view.setBoldText(item.getString(), null, false);
   }
@@ -1684,7 +1688,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         break;
       }
       case ListItem.TYPE_PAYMENT_PRICE_PART: {
-        ((PaymentPricePartView) holder.itemView).setData((PaymentPricePartView.PartData) item.getData());
+        modifyPaymentPricePart(item, ((PaymentPricePartView) holder.itemView));
         break;
       }
       case ListItem.TYPE_PAYMENT_TIP: {

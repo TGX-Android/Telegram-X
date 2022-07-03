@@ -160,9 +160,18 @@ public class PaymentFormController extends ViewController<PaymentFormController.
         tipView.setData(paymentForm.invoice, (tip) -> {
           paymentFormTipAmount = tip;
           updateTotalAmount();
-          adapter.getItem(adapter.indexOfViewById(R.id.btn_paymentFormTotal)).setData(new PaymentPricePartView.PartData(Lang.getString(R.string.PaymentFormTotal), formatCurrency(paymentFormTotalAmount), true));
           adapter.updateValuedSettingById(R.id.btn_paymentFormTotal);
+          bottomBar.setAction(0, Lang.getString(R.string.PaymentFormPay, CurrencyUtils.buildAmount(paymentForm.invoice.currency, paymentFormTotalAmount)), R.drawable.baseline_arrow_downward_24, false);
         });
+      }
+
+      @Override
+      protected void modifyPaymentPricePart (ListItem item, PaymentPricePartView partView) {
+        if (item.getId() == R.id.btn_paymentFormTotal) {
+          partView.setData(new PaymentPricePartView.PartData(Lang.getString(R.string.PaymentFormTotal), formatCurrency(paymentFormTotalAmount), true));
+        } else {
+          partView.setData((PaymentPricePartView.PartData) item.getData());
+        }
       }
     };
 
@@ -347,7 +356,7 @@ public class PaymentFormController extends ViewController<PaymentFormController.
     }
 
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-    items.add(new ListItem(ListItem.TYPE_PAYMENT_PRICE_PART, R.id.btn_paymentFormTotal).setData(new PaymentPricePartView.PartData(Lang.getString(R.string.PaymentFormTotal), formatCurrency(paymentFormTotalAmount), true)));
+    items.add(new ListItem(ListItem.TYPE_PAYMENT_PRICE_PART, R.id.btn_paymentFormTotal));
     items.add(new ListItem(ListItem.TYPE_PADDING).setHeight(Screen.dp(48f)));
 
     adapter.setItems(items, false);
@@ -362,7 +371,7 @@ public class PaymentFormController extends ViewController<PaymentFormController.
   }
 
   private void updateTotalAmount () {
-    paymentFormTotalAmount = 0;
+    paymentFormTotalAmount = paymentFormTipAmount;
     for (TdApi.LabeledPricePart pricePart : paymentForm.invoice.priceParts) paymentFormTotalAmount += pricePart.amount;
   }
 
