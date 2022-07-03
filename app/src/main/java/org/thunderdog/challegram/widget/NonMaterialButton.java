@@ -116,6 +116,14 @@ public class NonMaterialButton extends View implements FactorAnimator.Target, Cl
     this.iconRes = 0;
   }
 
+  public void setText (String txt) {
+    this.text = new Letters(txt.toUpperCase());
+    this.textWidth = (int) U.measureText(text.text, Paints.getBoldPaint15(text.needFakeBold));
+
+    this.icon = null;
+    this.iconRes = 0;
+  }
+
   public void setIcon (@DrawableRes int res) {
     this.icon = res != 0 ? (iconRes == res ? icon : Drawables.get(getResources(), res)) : null;
     this.iconRes = res;

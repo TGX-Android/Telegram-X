@@ -52,6 +52,7 @@ import org.thunderdog.challegram.component.chat.DetachedChatHeaderView;
 import org.thunderdog.challegram.component.chat.MessagePreviewView;
 import org.thunderdog.challegram.component.inline.CustomResultView;
 import org.thunderdog.challegram.component.payments.PaymentPricePartView;
+import org.thunderdog.challegram.component.payments.PaymentTipView;
 import org.thunderdog.challegram.component.sharedmedia.MediaSmallView;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.config.Config;
@@ -265,6 +266,9 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       }
       case ListItem.TYPE_PAYMENT_PRICE_PART: {
         return Screen.dp(24f);
+      }
+      case ListItem.TYPE_PAYMENT_TIP: {
+        return Screen.dp(96f);
       }
       default: {
         // FIXME: This can be used only by ThemeController
@@ -2329,6 +2333,16 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       }
       case ListItem.TYPE_PAYMENT_PRICE_PART: {
         PaymentPricePartView partView = new PaymentPricePartView(context);
+        partView.setPadding(0, Screen.dp(12f), 0, Screen.dp(12f));
+        partView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        ViewSupport.setThemedBackground(partView, R.id.theme_color_filling, themeProvider);
+        if (themeProvider != null) {
+          themeProvider.addThemeInvalidateListener(partView);
+        }
+        return new SettingHolder(partView);
+      }
+      case ListItem.TYPE_PAYMENT_TIP: {
+        PaymentTipView partView = new PaymentTipView(context);
         partView.setPadding(0, Screen.dp(12f), 0, Screen.dp(12f));
         partView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         ViewSupport.setThemedBackground(partView, R.id.theme_color_filling, themeProvider);

@@ -4,12 +4,8 @@ import android.content.Context;
 import android.graphics.Color;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
-import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -17,16 +13,16 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
-import org.thunderdog.challegram.component.chat.ChatBottomBarView;
 import org.thunderdog.challegram.component.payments.PaymentFormBottomBarView;
 import org.thunderdog.challegram.component.payments.PaymentPricePartView;
-import org.thunderdog.challegram.config.Device;
+import org.thunderdog.challegram.component.payments.PaymentTipView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.ComplexHeaderView;
 import org.thunderdog.challegram.navigation.ComplexRecyclerView;
+import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -34,21 +30,15 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Size;
-import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
 import java.util.ArrayList;
-import java.util.Locale;
 
-import me.vkryl.android.AnimatorUtils;
-import me.vkryl.android.animator.BoolAnimator;
-import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.CurrencyUtils;
-import me.vkryl.core.MathUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.td.Td;
 
@@ -68,6 +58,7 @@ public class PaymentFormController extends ViewController<PaymentFormController.
   private TdApi.OrderInfo currentOrderInfo;
 
   private long paymentFormTotalAmount;
+  private long paymentFormTipAmount;
 
   private TdApi.InputCredentials inputCredentials;
   private String inputCredentialsTitle;
@@ -77,8 +68,10 @@ public class PaymentFormController extends ViewController<PaymentFormController.
   private TdApi.ShippingOption selectedShippingOption;
 
   private SettingsAdapter adapter;
-  private ComplexHeaderView headerCell;
   private ComplexRecyclerView contentView;
+
+  private ComplexHeaderView complexHeader;
+  private DoubleHeaderView doubleHeader;
 
   public PaymentFormController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -105,24 +98,32 @@ public class PaymentFormController extends ViewController<PaymentFormController.
 
   @Override
   protected View onCreateView (Context context) {
-    this.headerCell = new ComplexHeaderView(context, tdlib, this);
-    this.headerCell.setAvatarExpandListener((headerView1, expandFactor, byCollapse, allowanceFactor, collapseFactor) -> {
-      if (byCollapse && bottomBar != null) {
-        scrollToBottomVisibleFactor = expandFactor;
-        updateBottomBarStyle();
-      }
+    if (isHeaderFullscreen()) {
+      complexHeader = new ComplexHeaderView(context, tdlib, this);
 
-      updateButtonsColor();
-    });
+      complexHeader.setAvatarExpandListener((headerView1, expandFactor, byCollapse, allowanceFactor, collapseFactor) -> {
+        if (byCollapse && bottomBar != null) {
+          scrollToBottomVisibleFactor = expandFactor;
+          updateBottomBarStyle();
+        }
 
-    this.headerCell.setAllowEmptyClick();
-    this.headerCell.initWithController(this, true);
-    this.headerCell.setInnerMargins(Screen.dp(isHeaderFullscreen() ? 56f : 12f), 0);
+        updateButtonsColor();
+      });
+
+      complexHeader.setAllowEmptyClick();
+      complexHeader.initWithController(this, true);
+      complexHeader.setInnerMargins(Screen.dp(56f), 0);
+    } else {
+      doubleHeader = new DoubleHeaderView(context());
+      doubleHeader.setThemedTextColor(this);
+      doubleHeader.initWithMargin(Screen.dp(49f), true);
+    }
+
     updateHeader();
 
     this.contentView = new ComplexRecyclerView(context, this);
     this.contentView.setHasFixedSize(true);
-    this.contentView.setHeaderView(headerCell, this);
+    this.contentView.setHeaderView(complexHeader, this);
     // this.contentView.setItemAnimator(null);
     ViewSupport.setThemedBackground(contentView, R.id.theme_color_background, this);
     this.contentView.setLayoutManager(new LinearLayoutManager(context, RecyclerView.VERTICAL, false));
@@ -152,6 +153,16 @@ public class PaymentFormController extends ViewController<PaymentFormController.
             view.setData(R.string.PaymentFormMethod);
             break;
         }
+      }
+
+      @Override
+      protected void modifyPaymentTip (ListItem item, PaymentTipView tipView) {
+        tipView.setData(paymentForm.invoice, (tip) -> {
+          paymentFormTipAmount = tip;
+          updateTotalAmount();
+          adapter.getItem(adapter.indexOfViewById(R.id.btn_paymentFormTotal)).setData(new PaymentPricePartView.PartData(Lang.getString(R.string.PaymentFormTotal), formatCurrency(paymentFormTotalAmount), true));
+          adapter.updateValuedSettingById(R.id.btn_paymentFormTotal);
+        });
       }
     };
 
@@ -276,19 +287,22 @@ public class PaymentFormController extends ViewController<PaymentFormController.
 
   private void updateButtonsColor () {
     if (headerView != null) {
-      headerView.getBackButton().setColor(ColorUtils.fromToArgb(Theme.headerBackColor(), Color.WHITE, headerCell != null ? headerCell.getAvatarExpandFactor() : 0f));
+      headerView.getBackButton().setColor(ColorUtils.fromToArgb(Theme.headerBackColor(), Color.WHITE, complexHeader != null ? complexHeader.getAvatarExpandFactor() : 0f));
       headerView.updateButtonsTransform(getMenuId(), this, getTransformFactor());
     }
   }
 
   private void updateHeader () {
-    if (headerCell != null) {
+    if (complexHeader != null) {
       TdApi.PhotoSize size = Td.findBiggest(paymentForm.productPhoto);
       ImageFile sizeFile = size != null ? new ImageFile(tdlib, size.photo) : null;
       if (sizeFile != null) sizeFile.setScaleType(ImageFile.CENTER_CROP);
-      headerCell.setAvatar(size != null ? new ImageFile(tdlib, size.photo) : null, sizeFile);
-      headerCell.setText(paymentForm.productTitle, tdlib.cache().userDisplayName(paymentForm.sellerBotUserId, false, false));
-      headerCell.invalidate();
+      complexHeader.setAvatar(size != null ? new ImageFile(tdlib, size.photo) : null, sizeFile);
+      complexHeader.setText(paymentForm.productTitle, tdlib.cache().userDisplayName(paymentForm.sellerBotUserId, false, false));
+      complexHeader.invalidate();
+    } else if (doubleHeader != null) {
+      doubleHeader.setTitle(paymentForm.productTitle);
+      doubleHeader.setSubtitle(tdlib.cache().userDisplayName(paymentForm.sellerBotUserId, false, false));
     }
   }
 
@@ -328,12 +342,12 @@ public class PaymentFormController extends ViewController<PaymentFormController.
     }
 
     if (paymentForm.invoice.maxTipAmount > 0) {
-      // items.add(new ListItem(ListItem.TYPE_PAYMENT_TIP));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_PAYMENT_TIP));
     }
 
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-    items.add(new ListItem(ListItem.TYPE_PAYMENT_PRICE_PART).setData(new PaymentPricePartView.PartData(Lang.getString(R.string.PaymentFormTotal), formatCurrency(paymentFormTotalAmount), true)));
+    items.add(new ListItem(ListItem.TYPE_PAYMENT_PRICE_PART, R.id.btn_paymentFormTotal).setData(new PaymentPricePartView.PartData(Lang.getString(R.string.PaymentFormTotal), formatCurrency(paymentFormTotalAmount), true)));
     items.add(new ListItem(ListItem.TYPE_PADDING).setHeight(Screen.dp(48f)));
 
     adapter.setItems(items, false);
@@ -418,12 +432,17 @@ public class PaymentFormController extends ViewController<PaymentFormController.
   @Override
   public void destroy () {
     super.destroy();
-    headerCell.performDestroy();
+
+    if (complexHeader != null) {
+      complexHeader.performDestroy();
+    } else if (doubleHeader != null) {
+      doubleHeader.performDestroy();
+    }
   }
 
   @Override
   public View getCustomHeaderCell () {
-    return headerCell;
+    return isHeaderFullscreen() ? complexHeader : doubleHeader;
   }
 
   @Override
@@ -431,7 +450,7 @@ public class PaymentFormController extends ViewController<PaymentFormController.
     if (isHeaderFullscreen()) {
       return (int) (Size.getHeaderPortraitSize() + Size.getHeaderSizeDifference(true) * contentView.getScrollFactor());
     } else {
-      return Size.getHeaderPortraitSize();
+      return super.getHeaderHeight();
     }
   }
 
@@ -440,7 +459,7 @@ public class PaymentFormController extends ViewController<PaymentFormController.
     if (isHeaderFullscreen()) {
       return Size.getHeaderBigPortraitSize(true);
     } else {
-      return Size.getHeaderPortraitSize();
+      return super.getMaximumHeaderHeight();
     }
   }
 
@@ -451,7 +470,7 @@ public class PaymentFormController extends ViewController<PaymentFormController.
 
   @Override
   protected int getHeaderIconColorId () {
-    return headerCell != null && !headerCell.isCollapsed() ? R.id.theme_color_white : R.id.theme_color_headerIcon;
+    return complexHeader != null && !complexHeader.isCollapsed() ? R.id.theme_color_white : R.id.theme_color_headerIcon;
   }
 
   @Override

@@ -49,6 +49,7 @@ import org.thunderdog.challegram.component.chat.DetachedChatHeaderView;
 import org.thunderdog.challegram.component.chat.MessagePreviewView;
 import org.thunderdog.challegram.component.inline.CustomResultView;
 import org.thunderdog.challegram.component.payments.PaymentPricePartView;
+import org.thunderdog.challegram.component.payments.PaymentTipView;
 import org.thunderdog.challegram.component.sharedmedia.MediaSmallView;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
@@ -329,6 +330,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
   }
 
   protected void modifyDescription (ListItem item, TextView textView) {
+    // Override
+  }
+
+  protected void modifyPaymentTip (ListItem item, PaymentTipView tipView) {
     // Override
   }
 
@@ -1680,6 +1685,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       }
       case ListItem.TYPE_PAYMENT_PRICE_PART: {
         ((PaymentPricePartView) holder.itemView).setData((PaymentPricePartView.PartData) item.getData());
+        break;
+      }
+      case ListItem.TYPE_PAYMENT_TIP: {
+        modifyPaymentTip(item, (PaymentTipView) holder.itemView);
         break;
       }
       case ListItem.TYPE_CHART_LINEAR:
