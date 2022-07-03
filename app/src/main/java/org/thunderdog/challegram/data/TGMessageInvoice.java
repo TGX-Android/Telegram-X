@@ -41,35 +41,6 @@ import org.thunderdog.challegram.util.text.TextWrapper;
 import me.vkryl.core.CurrencyUtils;
 
 public class TGMessageInvoice extends TGMessage {
-/*MessageInvoice {
-  title = Working Time Machine
-  description = Want to visit your great-great-great-grandparents? Make a fortune at the races? Shake hands with Hammurabi and take a stroll in the Hanging Gardens? Order our Working Time Machine today!
-  photo = Photo {
-    id = 0
-    hasStickers = false
-    sizes = [PhotoSize {
-  type = u
-  photo = File {
-    id = 378
-    persistentId = AgACAQQAA0podHRwczovL3RlbGVncmFtLm9yZy9maWxlLzgxMTE0MDgyNy8xL04wQWJMeTJCRVdBLjQ5MDMxLzk5ZmIwMzY3MWUzM2MzY2QzYgABzL_wHFTqGfwC
-    size = 0
-    isBeingDownloaded = false
-    localSize = 0
-    isBeingUploaded = false
-    remoteSize = 0
-    path =
-  }
-  width = 650
-  height = 490
-}]
-  }
-  currency = JPY
-  totalAmount = 14322
-  startParameter = buy_tshirt
-  isTest = true
-  needShippingAddress = true
-  receiptMessageId = 0
-}*/
   private static final float MIN_RATIO = .5f;
   private static final float MAX_RATIO = 1.5f;
   private static float TEXT_MARGIN = 10f;
@@ -229,7 +200,7 @@ public class TGMessageInvoice extends TGMessage {
 
   @Override
   protected int getContentHeight () {
-    return (mediaWrapper != null ? mediaWrapper.getCellHeight() : (Screen.dp(TEXT_SMALL_MARGIN))) + Screen.dp(TEXT_MARGIN) + titleWrapper.getHeight() + Screen.dp(TEXT_SMALL_MARGIN) + descriptionWrapper.getHeight() - (useBubbles() ? getBubbleContentPadding() : 0);
+    return (mediaWrapper != null ? mediaWrapper.getCellHeight() : (Screen.dp(TEXT_SMALL_MARGIN))) + Screen.dp(TEXT_MARGIN) + titleWrapper.getHeight() + Screen.dp(TEXT_SMALL_MARGIN) + descriptionWrapper.getHeight();
   }
 
   private static int getImagePaddingLeft () {
