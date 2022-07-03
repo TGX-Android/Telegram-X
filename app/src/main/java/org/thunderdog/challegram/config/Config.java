@@ -70,9 +70,6 @@ public class Config {
   public static final boolean NOTIFICATION_AUTO_CANCEL_SPECIFIC = true;
   public static final int MAX_RUNNING_TDLIBS = 5;
 
-  public static final boolean BETA = false;
-  public static final boolean PRIVATE_BUILD = BuildConfig.DEBUG; // || ABI_VERSION == 0;
-
   public static final boolean NEED_LANGUAGE_WORKAROUND = false;
 
   public static final boolean RTL_BETA = true;
@@ -178,7 +175,7 @@ public class Config {
 
   public static final boolean SEARCH_BY_AVAILABLE = false;
 
-  public static final boolean ALLOW_DEBUG_DC = PRIVATE_BUILD;
+  public static final boolean ALLOW_DEBUG_DC = BuildConfig.DEBUG || BuildConfig.EXPERIMENTAL;
 
   public static final boolean DEBUG_DISABLE_DOWNLOAD = false; // BuildConfig.DEBUG;
   public static final boolean DEBUG_DISABLE_IMAGES = false; // BuildConfig.DEBUG;
