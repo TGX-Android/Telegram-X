@@ -686,7 +686,7 @@ public class TdlibUi extends Handler {
     tdlib.client().send(new TdApi.GetSupportUser(), tdlib.silentHandler());
 
     PopupLayout[] popupFinal = new PopupLayout[1];
-    popupFinal[0] = context.showOptions(Strings.buildMarkdown(context, Lang.getString(R.string.AskAQuestionInfo), (view, span) -> {
+    popupFinal[0] = context.showOptions(Strings.buildMarkdown(context, Lang.getString(R.string.AskAQuestionInfo), (view, span, clickedText) -> {
       if (popupFinal[0] != null) {
         popupFinal[0].hideWindow(true);
       }

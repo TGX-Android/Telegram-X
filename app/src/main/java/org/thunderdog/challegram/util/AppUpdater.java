@@ -302,7 +302,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
 
   private void checkForTelegramChannelUpdates () {
     Tdlib tdlib = context.hasTdlib() ? context.currentTdlib() : null;
-    if (tdlib == null || tdlib.context().inRecoveryMode() || !tdlib.isAuthorized()) {
+    if (BuildConfig.EXPERIMENTAL || tdlib == null || tdlib.context().inRecoveryMode() || !tdlib.isAuthorized()) {
       onUpdateUnavailable();
       return;
     }

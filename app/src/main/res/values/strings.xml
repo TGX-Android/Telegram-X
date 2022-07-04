@@ -4308,4 +4308,9 @@
   <string name="Reaction_StarStruck">Star-Struck</string>
   <string name="Reaction_FaceVomiting">Face Vomiting</string>
   <string name="Reaction_PileOfPoo">Pile of Poo</string>
+
+  <string name="ExperimentalBuildTitle">Caution: experimental build</string>
+  <string name="ExperimentalBuildInfo">This version of **Telegram X** is not designed for long-term use.\n\nIt may completely stop working over a time and you cannot turn notifications on.\n\nIf you are looking for the proper Telegram X APK file, see https://t.me/tgx_log</string>
+
+  <string name="format_PRMadeBy">%1$s by %2$s</string>
 </resources>

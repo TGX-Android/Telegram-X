@@ -32,12 +32,11 @@ task<me.vkryl.task.CheckEmojiKeyboardTask>("checkEmojiKeyboard") {
     description = "Checks that all supported emoji can be entered from the keyboard"
 }
 
+val isExperimentalBuild = extra["experimental"] as Boolean? ?: false
+val properties = extra["properties"] as Properties
+
 android {
-    defaultConfig {
-        val properties = extra["properties"] as Properties
-
-        // Fields
-
+  defaultConfig {
         val versions = extra["versions"] as Properties
         val jniVersion = versions.getIntOrThrow("version.jni")
         val tdlibVersion = versions.getIntOrThrow("version.tdlib")
@@ -112,7 +111,9 @@ android {
 
         val versionCodeOverride = versionCode * 1000 + abi * 10
         val versionNameOverride = "${variant.versionName}.${defaultConfig.versionCode}${if (extra.has("app_version_suffix")) extra["app_version_suffix"] else "" }-${abiVariant.displayName}${if (extra.has("app_name_suffix")) "-" + extra["app_name_suffix"] else ""}${if (variant.buildType.isDebuggable) "-debug" else ""}"
-        val fileName = "Telegram-X-${versionNameOverride.replace("-universal(?=-|\$)", "")}"
+        val projectName = properties.getProperty("app.name", "Telegram X")
+        val outputFileNamePrefix = properties.getProperty("app.file", projectName.replace(" ", "-").replace("#", ""))
+        val fileName = "${outputFileNamePrefix}-${versionNameOverride.replace("-universal(?=-|\$)", "")}"
 
         variant.buildConfigInt("ORIGINAL_VERSION_CODE", versionCode)
         variant.buildConfigString("ORIGINAL_VERSION_NAME", "${variant.versionName}.${defaultConfig.versionCode}")
@@ -153,10 +154,12 @@ gradle.projectsEvaluated {
       "updateExceptions"
     )
     Abi.VARIANTS.forEach { (_, variant) ->
-        tasks.getByName("pre${variant.flavor[0].toUpperCase() + variant.flavor.substring(1)}ReleaseBuild").dependsOn(
-            "updateLanguages",
-            "validateApiTokens"
-        )
+        tasks.getByName("pre${variant.flavor[0].toUpperCase() + variant.flavor.substring(1)}ReleaseBuild").let { task ->
+          task.dependsOn("updateLanguages")
+          if (!isExperimentalBuild) {
+            task.dependsOn("validateApiTokens")
+          }
+        }
     }
 }
 
@@ -224,4 +227,6 @@ dependencies {
     implementation("com.googlecode.mp4parser:isoparser:1.0.6")
 }
 
-apply(plugin = "com.google.gms.google-services")
+if (!isExperimentalBuild) {
+    apply(plugin = "com.google.gms.google-services")
+}
