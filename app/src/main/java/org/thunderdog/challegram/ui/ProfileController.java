@@ -1878,7 +1878,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
               case MODE_EDIT_SUPERGROUP:
               case MODE_EDIT_CHANNEL:
               case MODE_EDIT_GROUP: {
-                view.setData(Lang.plural(R.string.xPermissions, chat.availableReactions.length, TdConstants.CHAT_REACTIONS_COUNT));
+                view.setData(Lang.plural(R.string.xPermissions, chat.availableReactions.length, EditReactionsController.Args.reactions.length));
                 break;
               }
             }
