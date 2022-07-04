@@ -1875,7 +1875,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           }
           case R.id.btn_reactions: {
             int num = chat.availableReactions.length;
-            view.setData(Lang.plural(R.string.xPermissions, num, TdConstants.CHAT_REACTIONS_COUNT));
+            view.setData(Lang.plural(R.string.xPermissions, num, 11));
             break;
           }
           case R.id.btn_prehistoryMode: {
