@@ -862,7 +862,7 @@
   <item type="id" name="btn_inputShipName" />
   <item type="id" name="btn_inputShipEmail" />
   <item type="id" name="btn_inputShipPhone" />
-  <item type="id" name="btn_inputShipInfo" />
+  <item type="id" name="btn_inputShipSaveInfo" />
 
   <item type="id" name="btn_sessionApp" />
   <item type="id" name="btn_sessionPlatform" />

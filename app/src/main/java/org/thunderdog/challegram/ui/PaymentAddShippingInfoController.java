@@ -203,7 +203,7 @@ public class PaymentAddShippingInfoController extends EditBaseController<Payment
     }
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_inputCardSaveInfo, 0, R.string.PaymentFormShipInfoSave, i_saveInfo));
+    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_inputShipSaveInfo, 0, R.string.PaymentFormShipInfoSave, i_saveInfo));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.PaymentFormShipInfoSaveInfo));
 
@@ -225,7 +225,7 @@ public class PaymentAddShippingInfoController extends EditBaseController<Payment
         checkDoneButton();
       }, false));
       navigateTo(c);
-    } else if (v.getId() == R.id.btn_inputShipInfo) {
+    } else if (v.getId() == R.id.btn_inputShipSaveInfo) {
       i_saveInfo = adapter.toggleView(v);
     }
   }
