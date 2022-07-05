@@ -238,6 +238,11 @@ public class PaymentFormController extends ViewController<PaymentFormController.
           openNewCardController();
         }
         break;
+      case R.id.btn_paymentFormShipmentAddress:
+        PaymentAddShippingInfoController c = new PaymentAddShippingInfoController(context, tdlib);
+        c.setArguments(new PaymentAddShippingInfoController.Args(this, paymentForm.invoice, paymentInvoice, currentOrderInfo));
+        navigateTo(c);
+        break;
       case R.id.btn_paymentFormShipmentMethod:
         validateAndRequestShipping(() -> {
           IntList ids = new IntList(0);

@@ -109,7 +109,12 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
             }
             break;
           default:
+            editText.setMaxLength(-1);
+            editText.getEditText().setFilters(new InputFilter.LengthFilter[0]);
             editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+              editText.getEditText().setAutofillHints();
+            }
             break;
         }
       }

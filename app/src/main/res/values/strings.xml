@@ -4295,6 +4295,7 @@
   <string name="PaymentFormNewMethodBillingPostcode">Zip Code</string>
   <string name="PaymentFormNewMethodSave">Save Payment Information</string>
   <string name="PaymentFormNewMethodSaveInfo">You can save your payment info for future use. It will be stored directly with the payment provider. Telegram has no access to your credit card data.</string>
+  <string name="PaymentFormShipInfoHeader">Shipping Information</string>
   <string name="PaymentFormShipInfoAddressSection">Shipping Address</string>
   <string name="PaymentFormShipInfoAddressOne">Address 1</string>
   <string name="PaymentFormShipInfoAddressTwo">Address 2</string>

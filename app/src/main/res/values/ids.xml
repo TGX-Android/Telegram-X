@@ -225,6 +225,7 @@
   <item type="id" name="controller_sponsoredMessagesInfo" />
   <item type="id" name="controller_paymentForm" />
   <item type="id" name="controller_paymentFormNewMethod" />
+  <item type="id" name="controller_paymentFormNewShipInfo" />
   <item type="id" name="controller_selectCountry" />
 
   <item type="id" name="separator" />
@@ -851,6 +852,17 @@
   <item type="id" name="btn_inputCardCountry" />
   <item type="id" name="btn_inputCardPostCode" />
   <item type="id" name="btn_inputCardSaveInfo" />
+
+  <item type="id" name="btn_inputShipAddressOne" />
+  <item type="id" name="btn_inputShipAddressTwo" />
+  <item type="id" name="btn_inputShipCity" />
+  <item type="id" name="btn_inputShipState" />
+  <item type="id" name="btn_inputShipCountry" />
+  <item type="id" name="btn_inputShipPostCode" />
+  <item type="id" name="btn_inputShipName" />
+  <item type="id" name="btn_inputShipEmail" />
+  <item type="id" name="btn_inputShipPhone" />
+  <item type="id" name="btn_inputShipInfo" />
 
   <item type="id" name="btn_sessionApp" />
   <item type="id" name="btn_sessionPlatform" />
