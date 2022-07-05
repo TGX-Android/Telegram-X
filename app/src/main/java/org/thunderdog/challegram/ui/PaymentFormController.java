@@ -198,11 +198,11 @@ public class PaymentFormController extends ViewController<PaymentFormController.
   private void openNewCardController () {
     if (paymentForm.paymentsProvider != null) {
       PaymentAddNewCardController c = new PaymentAddNewCardController(context, tdlib);
-      c.setArguments(new PaymentAddNewCardController.Args(this, paymentForm.paymentsProvider));
+      c.setArguments(new PaymentAddNewCardController.Args(this::onPaymentMethodSelected, paymentForm.paymentsProvider));
       navigateTo(c);
     } else {
       WebPaymentMethodController c = new WebPaymentMethodController(context, tdlib);
-      c.setArguments(new WebPaymentMethodController.Args(getPaymentProcessorName(), paymentForm.url, this));
+      c.setArguments(new WebPaymentMethodController.Args(getPaymentProcessorName(), paymentForm.url, this::onPaymentMethodSelected));
       navigateTo(c);
     }
   }
@@ -240,7 +240,7 @@ public class PaymentFormController extends ViewController<PaymentFormController.
         break;
       case R.id.btn_paymentFormShipmentAddress:
         PaymentAddShippingInfoController c = new PaymentAddShippingInfoController(context, tdlib);
-        c.setArguments(new PaymentAddShippingInfoController.Args(this, paymentForm.invoice, paymentInvoice, currentOrderInfo));
+        c.setArguments(new PaymentAddShippingInfoController.Args(paymentForm.invoice, paymentInvoice, currentOrderInfo, this::onShippingInfoValidated));
         navigateTo(c);
         break;
       case R.id.btn_paymentFormShipmentMethod:
@@ -257,6 +257,14 @@ public class PaymentFormController extends ViewController<PaymentFormController.
         });
         break;
     }
+  }
+
+  private void onShippingInfoValidated (TdApi.OrderInfo newOrderInfo, TdApi.ValidatedOrderInfo validatedOrderInfo) {
+    this.currentOrderInfo = newOrderInfo;
+    this.validatedOrderInfoId = validatedOrderInfo.orderInfoId;
+    this.availableShippingOptions = validatedOrderInfo.shippingOptions;
+    adapter.updateValuedSettingById(R.id.btn_paymentFormShipmentAddress);
+    updateShippingInterface();
   }
 
   private void validateAndRequestShipping (Runnable after) {
@@ -281,6 +289,7 @@ public class PaymentFormController extends ViewController<PaymentFormController.
     int indexOfShippingAddress = adapter.indexOfViewById(R.id.btn_paymentFormShipmentAddress);
 
     if (availableShippingOptions != null && availableShippingOptions.length > 0) {
+      if (adapter.indexOfViewById(R.id.btn_paymentFormShipmentMethod) != -1) return;
       adapter.addItems(
         indexOfShippingAddress + 1,
         new ListItem(ListItem.TYPE_SEPARATOR_FULL),
@@ -497,5 +506,15 @@ public class PaymentFormController extends ViewController<PaymentFormController.
   public void onBlur () {
     super.onBlur();
     contentView.setFactorLocked(true);
+  }
+
+  //
+
+  interface NewPaymentMethodCallback {
+    void onNewMethodCreated (TdApi.InputCredentialsNew credentials, String methodName);
+  }
+
+  interface NewShippingInfoCallback {
+    void onShippingInfoValidated (TdApi.OrderInfo newOrderInfo, TdApi.ValidatedOrderInfo validatedOrderInfo);
   }
 }

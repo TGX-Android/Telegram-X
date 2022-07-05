@@ -33,23 +33,21 @@ import me.vkryl.android.widget.FrameLayoutFix;
 
 public class PaymentAddNewCardController extends EditBaseController<PaymentAddNewCardController.Args> implements SettingsAdapter.TextChangeListener, View.OnClickListener {
   public static class Args {
-    private final PaymentFormController parentController;
+    private final PaymentFormController.NewPaymentMethodCallback callback;
     private final TdApi.PaymentsProviderStripe paymentsProvider;
 
-    public Args (PaymentFormController parentController, TdApi.PaymentsProviderStripe paymentsProvider) {
-      this.parentController = parentController;
+    public Args (PaymentFormController.NewPaymentMethodCallback callback, TdApi.PaymentsProviderStripe paymentsProvider) {
+      this.callback = callback;
       this.paymentsProvider = paymentsProvider;
     }
   }
 
-  private PaymentFormController parentController;
   private TdApi.PaymentsProviderStripe paymentsProvider;
   private SettingsAdapter adapter;
 
   @Override
   public void setArguments (Args args) {
     super.setArguments(args);
-    this.parentController = args.parentController;
     this.paymentsProvider = args.paymentsProvider;
   }
 
@@ -314,7 +312,7 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
               public void onSuccess (@NonNull String json) {
                 runOnUiThreadOptional(() -> {
                   navigateBack();
-                  parentController.onPaymentMethodSelected(new TdApi.InputCredentialsNew(json, i_saveInfo), CardValidators.INSTANCE.createTgCardName(i_cardNumber));
+                  getArgumentsStrict().callback.onNewMethodCreated(new TdApi.InputCredentialsNew(json, i_saveInfo), CardValidators.INSTANCE.createTgCardName(i_cardNumber));
                 });
               }
 

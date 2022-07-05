@@ -25,18 +25,14 @@ import android.widget.Toast;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.navigation.HeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
-import org.thunderdog.challegram.navigation.MoreDelegate;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ThemeDeprecated;
-import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Size;
@@ -44,13 +40,13 @@ import org.thunderdog.challegram.v.WebViewProxy;
 
 public class WebPaymentMethodController extends WebkitController<WebPaymentMethodController.Args> implements Menu {
   public static class Args {
-    public String paymentProcessor, url;
-    public PaymentFormController ownerController;
+    public final String paymentProcessor, url;
+    public final PaymentFormController.NewPaymentMethodCallback callback;
 
-    public Args (String paymentProcessor, String url, PaymentFormController ownerController) {
+    public Args (String paymentProcessor, String url, PaymentFormController.NewPaymentMethodCallback callback) {
       this.paymentProcessor = paymentProcessor;
       this.url = url;
-      this.ownerController = ownerController;
+      this.callback = callback;
     }
   }
 
@@ -97,7 +93,7 @@ public class WebPaymentMethodController extends WebkitController<WebPaymentMetho
         public void submitPaymentForm (String jsonData) {
           try {
             JSONObject obj = new JSONObject(jsonData);
-            getArgumentsStrict().ownerController.onPaymentMethodSelected(
+            getArgumentsStrict().callback.onNewMethodCreated(
               new TdApi.InputCredentialsNew(
                 obj.getJSONObject("credentials").toString(), shouldSavePaymentMethod
               ), obj.getString("title")

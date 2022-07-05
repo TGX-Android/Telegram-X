@@ -3,12 +3,10 @@ package org.thunderdog.challegram.ui;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.os.Build;
-import android.text.InputFilter;
 import android.text.InputType;
 import android.view.View;
 import android.view.ViewGroup;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -17,9 +15,6 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.payments.CardTokenizerCallback;
-import org.thunderdog.challegram.payments.CardValidators;
-import org.thunderdog.challegram.payments.StripeCardTokenizer;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Keyboard;
@@ -35,20 +30,19 @@ import me.vkryl.android.widget.FrameLayoutFix;
 
 public class PaymentAddShippingInfoController extends EditBaseController<PaymentAddShippingInfoController.Args> implements SettingsAdapter.TextChangeListener, View.OnClickListener {
   public static class Args {
-    private final PaymentFormController parentController;
     private final TdApi.Invoice invoice;
     private final TdApi.InputInvoice inputInvoice;
     @Nullable private final TdApi.OrderInfo predefinedOrderInfo;
+    private final PaymentFormController.NewShippingInfoCallback callback;
 
-    public Args (PaymentFormController parentController, TdApi.Invoice invoice, TdApi.InputInvoice inputInvoice, @Nullable TdApi.OrderInfo predefinedOrderInfo) {
-      this.parentController = parentController;
+    public Args (TdApi.Invoice invoice, TdApi.InputInvoice inputInvoice, @Nullable TdApi.OrderInfo predefinedOrderInfo, PaymentFormController.NewShippingInfoCallback callback) {
       this.invoice = invoice;
       this.inputInvoice = inputInvoice;
       this.predefinedOrderInfo = predefinedOrderInfo;
+      this.callback = callback;
     }
   }
 
-  private PaymentFormController parentController;
   private TdApi.Invoice invoice;
   private TdApi.InputInvoice inputInvoice;
   private SettingsAdapter adapter;
@@ -56,7 +50,6 @@ public class PaymentAddShippingInfoController extends EditBaseController<Payment
   @Override
   public void setArguments (Args args) {
     super.setArguments(args);
-    this.parentController = args.parentController;
     this.invoice = args.invoice;
     this.inputInvoice = args.inputInvoice;
 
@@ -327,12 +320,21 @@ public class PaymentAddShippingInfoController extends EditBaseController<Payment
   }
 
   private void verifyOrderInfo () {
+    TdApi.OrderInfo orderInfo = new TdApi.OrderInfo(i_shipName, i_shipPhone, i_shipEmail, new TdApi.Address(i_shipCountry, i_shipState, i_shipCity, i_shipAddressOne, i_shipAddressTwo, i_shipPostcode));
+
     tdlib.client().send(new TdApi.ValidateOrderInfo(
             inputInvoice,
-            new TdApi.OrderInfo(i_shipName, i_shipPhone, i_shipEmail, new TdApi.Address(i_shipCountry, i_shipState, i_shipCity, i_shipAddressOne, i_shipAddressTwo, i_shipPostcode)),
+            orderInfo,
             i_saveInfo
-    ), (result) -> {
-      Log.d(result.toString());
-    });
+    ), (result) -> runOnUiThreadOptional(() -> {
+      setDoneInProgress(false);
+
+      if (result.getConstructor() == TdApi.ValidatedOrderInfo.CONSTRUCTOR) {
+        getArgumentsStrict().callback.onShippingInfoValidated(orderInfo, (TdApi.ValidatedOrderInfo) result);
+        navigateBack();
+      } else {
+        Log.d(result.toString());
+      }
+    }));
   }
 }
