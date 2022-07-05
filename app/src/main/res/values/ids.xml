@@ -377,6 +377,8 @@
   <item type="id" name="session_secret" />
   <item type="id" name="btn_done" />
   <item type="id" name="btn_forgotPassword" />
+  <item type="id" name="btn_cancelReset" />
+  <item type="id" name="btn_cancelResetWait" />
   <item type="id" name="btn_direction" />
   <item type="id" name="btn_layer" />
   <item type="id" name="btn_layerTypeMapDefault" />

@@ -53,6 +53,8 @@ import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.ProgressComponentView;
 
+import java.util.concurrent.TimeUnit;
+
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
@@ -221,6 +223,8 @@ public class PasswordController extends ViewController<PasswordController.Args> 
   private MaterialEditTextGroup editText;
   private CircleButton nextButton;
   private TextView forgotView;
+  private TextView cancelResetView;
+  private TextView resetWaitView;
   private @Nullable ProgressComponentView progressView;
   private TextView hintView;
 
@@ -351,25 +355,42 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     forgotView.setAlpha(0f);
     Views.setClickable(forgotView);
 
+    cancelResetView = new NoScrollTextView(context);
+    cancelResetView.setId(R.id.btn_cancelReset);
+    cancelResetView.setTextColor(Theme.getColor(R.id.theme_color_textNeutral));
+    addThemeTextColorListener(cancelResetView, R.id.theme_color_textNeutral);
+    cancelResetView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
+    cancelResetView.setPadding(Screen.dp(16f), Screen.dp(16f), Screen.dp(16f), Screen.dp(10f));
+    cancelResetView.setOnClickListener(this);
+    Views.setClickable(cancelResetView);
+    cancelResetView.setAlpha(0f);
+
+    resetWaitView = new NoScrollTextView(context);
+    resetWaitView.setId(R.id.btn_cancelResetWait);
+    resetWaitView.setTextColor(Theme.textDecentColor());
+    addThemeTextColorListener(resetWaitView, R.id.theme_color_textLight);
+    resetWaitView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
+    resetWaitView.setPadding(Screen.dp(16f), Screen.dp(16f), Screen.dp(16f), Screen.dp(4f));
+    resetWaitView.setAlpha(0f);
+
     switch (mode) {
       case MODE_TRANSFER_OWNERSHIP_CONFIRM:
       case MODE_CONFIRM:
       case MODE_UNLOCK_EDIT:
-      case MODE_EMAIL_RECOVERY:
-      case MODE_LOGIN_EMAIL_RECOVERY:
       case MODE_LOGIN: {
-        if (mode == MODE_CONFIRM || mode == MODE_UNLOCK_EDIT || mode == MODE_LOGIN || mode == MODE_TRANSFER_OWNERSHIP_CONFIRM) {
-          forgotView.setText(Lang.getString(R.string.ForgotPassword));
-          hint = Lang.getString(mode == MODE_TRANSFER_OWNERSHIP_CONFIRM ? R.string.TransferOwnershipPasswordAlertHint : R.string.LoginPasswordText);
-        } else if ((mode == MODE_EMAIL_RECOVERY || mode == MODE_LOGIN_EMAIL_RECOVERY)) {
-          final String email = getArguments() != null ? getArguments().email : null;
-          if (!StringUtils.isEmpty(email)) {
-            hint = Lang.getStringBold(R.string.RecoveryCodeSent, email);
-            forgotView.setText(Lang.getString(R.string.HavingTroubleAccessing, email));
-          } else {
-            hint = Lang.getString(R.string.RecoveryCodeSentEmailUnknown);
-            forgotView.setText(Lang.getString(R.string.RestoreEmailTroubleUnknown));
-          }
+        updatePasswordResetTextViews();
+        hint = Lang.getString(mode == MODE_TRANSFER_OWNERSHIP_CONFIRM ? R.string.TransferOwnershipPasswordAlertHint : R.string.LoginPasswordText);
+        break;
+      }
+      case MODE_EMAIL_RECOVERY:
+      case MODE_LOGIN_EMAIL_RECOVERY: {
+        final String email = getArguments() != null ? getArguments().email : null;
+        if (!StringUtils.isEmpty(email)) {
+          hint = Lang.getStringBold(R.string.RecoveryCodeSent, email);
+          forgotView.setText(Lang.getString(R.string.HavingTroubleAccessing, email));
+        } else {
+          hint = Lang.getString(R.string.RecoveryCodeSentEmailUnknown);
+          forgotView.setText(Lang.getString(R.string.RestoreEmailTroubleUnknown));
         }
         break;
       }
@@ -395,9 +416,18 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       RelativeLayout.LayoutParams rp;
 
       rp = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-      forgotView.setPadding(Screen.dp(16f), Screen.dp(15f), Screen.dp(12f), Screen.dp(16f));
+      forgotView.setPadding(Screen.dp(16f), Screen.dp(4f), Screen.dp(12f), Screen.dp(16f));
+      rp.addRule(RelativeLayout.BELOW, R.id.btn_cancelReset);
       forgotView.setLayoutParams(rp);
       forgotWrap.addView(forgotView);
+
+      rp = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+      cancelResetView.setLayoutParams(rp);
+      forgotWrap.addView(cancelResetView);
+
+      rp = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+      resetWaitView.setLayoutParams(rp);
+      forgotWrap.addView(resetWaitView);
 
       rp = new RelativeLayout.LayoutParams(Screen.dp(16f), Screen.dp(16f));
       rp.addRule(RelativeLayout.CENTER_VERTICAL);
@@ -561,6 +591,8 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       case FORGET_ANIMATOR: {
         float easeFactor = (AnimatorUtils.DECELERATE_INTERPOLATOR.getInterpolation(.5f + factor * .5f) / AnimatorUtils.DECELERATE_INTERPOLATOR.getInterpolation(.5f)) * factor;
         forgotView.setAlpha(easeFactor);
+        resetWaitView.setAlpha(easeFactor);
+        cancelResetView.setAlpha(easeFactor);
         break;
       }
       case HINT_ANIMATOR: {
@@ -744,8 +776,94 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     }));
   }
 
+  private int getTimeDiff (long futureTimestamp) {
+    return (int) (futureTimestamp - tdlib.currentTime(TimeUnit.SECONDS));
+  }
+
+  private boolean pendingPasswordReset () {
+    return state != null && state.pendingResetDate > 0 && state.pendingResetDate > tdlib.currentTime(TimeUnit.SECONDS);
+  }
+
+  private boolean canResetPassword () {
+    return state != null && state.pendingResetDate > 0 && tdlib.currentTime(TimeUnit.SECONDS) > state.pendingResetDate;
+  }
+
+  private void updatePasswordResetTextViews () {
+    if (pendingPasswordReset()) {
+      forgotView.setText(Lang.getString(R.string.CancelReset));
+      resetWaitView.setText(Lang.getString(R.string.RestorePasswordResetIn, Lang.getDuration(getTimeDiff(state.pendingResetDate))));
+      cancelResetView.setText("");
+    } else {
+      forgotView.setText(Lang.getString(R.string.ForgotPassword));
+      resetWaitView.setText("");
+      if (canResetPassword()) {
+        cancelResetView.setText(Lang.getString(R.string.CancelReset));
+      } else {
+        cancelResetView.setText("");
+      }
+    }
+  }
+
+  private void cancelResetPassword () {
+    setInRecoveryProgress(true);
+    tdlib.client().send(new TdApi.CancelPasswordReset(), object -> runOnUiThreadOptional(() -> {
+      setInRecoveryProgress(false);
+      switch (object.getConstructor()) {
+        case TdApi.Ok.CONSTRUCTOR: {
+          state.pendingResetDate = 0;
+          updatePasswordResetTextViews();
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          UI.showError(object);
+          break;
+        }
+      }
+    }));
+  }
+
+  private void confirmResetPassword () {
+    setInRecoveryProgress(true);
+    tdlib.client().send(new TdApi.ResetPassword(), object -> runOnUiThreadOptional(() -> {
+      setInRecoveryProgress(false);
+      switch (object.getConstructor()) {
+        case TdApi.ResetPasswordResultOk.CONSTRUCTOR: {
+          state.pendingResetDate = 0;
+          ViewController<?> c = findLastStackItemById(R.id.controller_privacySettings);
+          if (c instanceof SettingsPrivacyController) {
+            tdlib.client().send(new TdApi.GetPasswordState(), ((SettingsPrivacyController) c));
+          }
+          navigateBack();
+          openAlert(R.string.ResetPassword, R.string.RestorePasswordResetPasswordOk);
+          break;
+        }
+        case TdApi.ResetPasswordResultPending.CONSTRUCTOR: {
+          TdApi.ResetPasswordResultPending data = (TdApi.ResetPasswordResultPending) object;
+          if (mode == MODE_EMAIL_RECOVERY) {
+            PasswordController prev = (PasswordController) navigationController.getPreviousStackItem();
+            prev.state.pendingResetDate = data.pendingResetDate;
+            prev.updatePasswordResetTextViews();
+            navigateBack();
+          } else {
+            state.pendingResetDate = data.pendingResetDate;
+            updatePasswordResetTextViews();
+          }
+          break;
+        }
+        case TdApi.ResetPasswordResultDeclined.CONSTRUCTOR: {
+          TdApi.ResetPasswordResultDeclined data = (TdApi.ResetPasswordResultDeclined) object;
+          openAlert(R.string.ResetPassword, Lang.getString(R.string.ResetPasswordWait, Lang.getDuration(getTimeDiff(data.retryDate))));
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          UI.showError(object);
+        }
+      }
+    }));
+  }
+
   private void requestRecovery () {
-    if ((state != null && !state.hasRecoveryEmailAddress) || (authState != null && authState.getConstructor() == TdApi.AuthorizationStateWaitPassword.CONSTRUCTOR && !((TdApi.AuthorizationStateWaitPassword) authState).hasRecoveryEmailAddress) || (state == null && authState == null)) {
+    if ((state != null && !state.hasRecoveryEmailAddress && authState != null) || (authState != null && authState.getConstructor() == TdApi.AuthorizationStateWaitPassword.CONSTRUCTOR && !((TdApi.AuthorizationStateWaitPassword) authState).hasRecoveryEmailAddress) || (state == null && authState == null)) {
       openAlert(R.string.RestorePasswordNoEmailTitle, R.string.SinceNotProvided);
       return;
     }
@@ -771,32 +889,40 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         return;
       }
       setStackLocked(true);
-      tdlib.client().send(new TdApi.RequestAuthenticationPasswordRecovery(), object -> tdlib.ui().post(() -> {
-        if (!isDestroyed()) {
-          setStackLocked(false);
-          setInRecoveryProgress(false);
-          switch (object.getConstructor()) {
-            case TdApi.Ok.CONSTRUCTOR: {
-              PasswordController c = new PasswordController(context, tdlib);
-              TdApi.AuthorizationStateWaitPassword state = (TdApi.AuthorizationStateWaitPassword) authState;
-              c.setArguments(new Args(MODE_LOGIN_EMAIL_RECOVERY, state).setEmail(state.recoveryEmailAddressPattern));
-              navigateTo(c);
-              break;
-            }
-            case TdApi.Error.CONSTRUCTOR: {
+      tdlib.client().send(new TdApi.RequestAuthenticationPasswordRecovery(), object -> runOnUiThreadOptional(() -> {
+        setStackLocked(false);
+        setInRecoveryProgress(false);
+        switch (object.getConstructor()) {
+          case TdApi.Ok.CONSTRUCTOR: {
+            PasswordController c = new PasswordController(context, tdlib);
+            TdApi.AuthorizationStateWaitPassword state = (TdApi.AuthorizationStateWaitPassword) authState;
+            c.setArguments(new Args(MODE_LOGIN_EMAIL_RECOVERY, state).setEmail(state.recoveryEmailAddressPattern));
+            navigateTo(c);
+            break;
+          }
+          case TdApi.Error.CONSTRUCTOR: {
+            TdApi.Error error = (TdApi.Error) object;
+            if ("PASSWORD_RECOVERY_NA".equals(error.message)) {
               openAlert(R.string.RestorePasswordNoEmailTitle, R.string.SinceNotProvided);
-              break;
+            } else {
+              UI.showError(object);
             }
-            default: {
-              Log.unexpectedTdlibResponse(object, TdApi.RequestAuthenticationPasswordRecovery.class, TdApi.Ok.class, TdApi.Error.class);
-              break;
-            }
+            break;
           }
         }
       }));
     } else {
-      tdlib.client().send(new TdApi.RequestPasswordRecovery(), object -> tdlib.ui().post(() -> {
-        if (!isDestroyed()) {
+      if (pendingPasswordReset()) {
+        setInRecoveryProgress(false);
+        openAlert(R.string.ResetPassword, R.string.CancelPasswordReset, Lang.getString(R.string.CancelPasswordResetYes), (dialog, which) -> { cancelResetPassword(); });
+      } else if (canResetPassword()) {
+        setInRecoveryProgress(false);
+        confirmResetPassword();
+      } else if (!state.hasRecoveryEmailAddress) {
+        setInRecoveryProgress(false);
+        openAlert(R.string.ResetPassword, R.string.RestorePasswordNoEmailText2, Lang.getString(R.string.Reset), (dialog, which) -> { confirmResetPassword(); });
+      } else {
+        tdlib.client().send(new TdApi.RequestPasswordRecovery(), object -> runOnUiThreadOptional(() -> {
           setInRecoveryProgress(false);
           switch (object.getConstructor()) {
             case TdApi.EmailAddressAuthenticationCodeInfo.CONSTRUCTOR: {
@@ -806,13 +932,18 @@ public class PasswordController extends ViewController<PasswordController.Args> 
               navigateTo(c);
               break;
             }
-            default: {
-              openAlert(R.string.RestorePasswordNoEmailTitle, R.string.SinceNotProvided);
+            case TdApi.Error.CONSTRUCTOR: {
+              TdApi.Error error = (TdApi.Error) object;
+              if ("PASSWORD_RECOVERY_NA".equals(error.message)) {
+                openAlert(R.string.RestorePasswordNoEmailTitle, R.string.SinceNotProvided);
+              } else {
+                UI.showError(object);
+              }
               break;
             }
           }
-        }
-      }));
+        }));
+      }
     }
   }
 
@@ -1298,7 +1429,10 @@ public class PasswordController extends ViewController<PasswordController.Args> 
 
   private void proceedForgot () {
     switch (mode) {
-      case MODE_EMAIL_RECOVERY:
+      case MODE_EMAIL_RECOVERY: {
+        openAlert(R.string.ResetPassword, R.string.RestoreEmailTroubleText2, Lang.getString(R.string.Reset), (dialog, which) -> { confirmResetPassword(); });
+        break;
+      }
       case MODE_LOGIN_EMAIL_RECOVERY: {
         openAlert(R.string.RestorePasswordNoEmailTitle, R.string.RestoreEmailTroubleText);
         break;
@@ -1328,6 +1462,10 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     switch (v.getId()) {
       case R.id.btn_done: {
         proceed();
+        break;
+      }
+      case R.id.btn_cancelReset: {
+        openAlert(R.string.ResetPassword, R.string.CancelPasswordReset, Lang.getString(R.string.CancelPasswordResetYes), (dialog, which) -> { cancelResetPassword(); });
         break;
       }
       case R.id.btn_forgotPassword: {
