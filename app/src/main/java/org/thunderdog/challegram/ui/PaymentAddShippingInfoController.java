@@ -54,8 +54,6 @@ public class PaymentAddShippingInfoController extends EditBaseController<Payment
     this.inputInvoice = args.inputInvoice;
 
     if (args.predefinedOrderInfo != null) {
-      Log.d(args.predefinedOrderInfo.toString());
-
       if (args.predefinedOrderInfo.shippingAddress != null) {
         i_shipAddressOne = args.predefinedOrderInfo.shippingAddress.streetLine1;
         i_shipAddressTwo = args.predefinedOrderInfo.shippingAddress.streetLine2;
@@ -297,7 +295,7 @@ public class PaymentAddShippingInfoController extends EditBaseController<Payment
 
   private void checkDoneButton () {
     boolean isValid = true;
-    if (invoice.needShippingAddress && i_shipAddressOne.isEmpty() && i_shipCity.isEmpty() && i_shipState.isEmpty() && i_shipPostcode.isEmpty() && i_shipCountry.isEmpty()) isValid = false;
+    if (invoice.needShippingAddress && (i_shipAddressOne.isEmpty() || i_shipCity.isEmpty() || i_shipState.isEmpty() || i_shipPostcode.isEmpty() || i_shipCountry.isEmpty())) isValid = false;
     if (invoice.needEmailAddress && i_shipEmail.isEmpty()) isValid = false;
     if (invoice.needPhoneNumber && i_shipPhone.isEmpty()) isValid = false;
     if (invoice.needName && i_shipName.isEmpty()) isValid = false;
@@ -332,8 +330,38 @@ public class PaymentAddShippingInfoController extends EditBaseController<Payment
       if (result.getConstructor() == TdApi.ValidatedOrderInfo.CONSTRUCTOR) {
         getArgumentsStrict().callback.onShippingInfoValidated(orderInfo, (TdApi.ValidatedOrderInfo) result);
         navigateBack();
-      } else {
-        Log.d(result.toString());
+      } else if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+        String errorMessage = ((TdApi.Error) result).message;
+
+        switch (errorMessage) {
+          case "ADDRESS_STREET_LINE1_INVALID":
+            vibrateError(R.id.btn_inputShipAddressOne);
+            break;
+          case "ADDRESS_STREET_LINE2_INVALID":
+            vibrateError(R.id.btn_inputShipAddressTwo);
+            break;
+          case "ADDRESS_STATE_INVALID":
+            vibrateError(R.id.btn_inputShipState);
+            break;
+          case "ADDRESS_POSTCODE_INVALID":
+            vibrateError(R.id.btn_inputShipPostCode);
+            break;
+          case "ADDRESS_CITY_INVALID":
+            vibrateError(R.id.btn_inputShipCity);
+            break;
+          case "REQ_INFO_NAME_INVALID":
+            vibrateError(R.id.btn_inputShipName);
+            break;
+          case "REQ_INFO_PHONE_INVALID":
+            vibrateError(R.id.btn_inputShipPhone);
+            break;
+          case "REQ_INFO_EMAIL_INVALID":
+            vibrateError(R.id.btn_inputShipEmail);
+            break;
+          default:
+            showAlert(new AlertDialog.Builder(context).setTitle(R.string.Error).setMessage(errorMessage).setPositiveButton(Lang.getString(R.string.OK), (a, b) -> {}));
+            break;
+        }
       }
     }));
   }

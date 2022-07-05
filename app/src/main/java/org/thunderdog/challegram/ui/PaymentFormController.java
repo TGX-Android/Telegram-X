@@ -10,7 +10,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.payments.PaymentFormBottomBarView;
@@ -330,8 +329,6 @@ public class PaymentFormController extends ViewController<PaymentFormController.
   }
 
   private void bindItems () {
-    Log.d(paymentForm.toString());
-
     ArrayList<ListItem> items = new ArrayList<>();
 
     if (isHeaderFullscreen()) items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET));
@@ -508,7 +505,7 @@ public class PaymentFormController extends ViewController<PaymentFormController.
     contentView.setFactorLocked(true);
   }
 
-  //
+  // Bridges
 
   interface NewPaymentMethodCallback {
     void onNewMethodCreated (TdApi.InputCredentialsNew credentials, String methodName);
