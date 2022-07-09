@@ -17,6 +17,8 @@ package org.thunderdog.challegram.widget;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PointF;
 import android.graphics.RectF;
 import android.view.Gravity;
 import android.view.View;
@@ -36,10 +38,13 @@ public class CheckBoxView extends View {
   private final BoolAnimator isChecked = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 165l);
   private final BoolAnimator isHidden = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 165l);
   private final BoolAnimator isDisabled = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 165l);
-  // TODO isIntermediate state, when check angle smoothly changes from 90 to 180 degrees
+  private final BoolAnimator isIntermediate = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 165l);
 
+  private final Path path;
   private final RectF rect;
   private final Paint outerPaint;
+
+  private final PointF pointA, pointB, pointC;
 
   public CheckBoxView (Context context) {
     super(context);
@@ -48,11 +53,20 @@ public class CheckBoxView extends View {
     outerPaint.setColor(Theme.radioOutlineColor());
     outerPaint.setStyle(Paint.Style.STROKE);
 
+    path = new Path();
     rect = new RectF();
+
+    pointA = new PointF();
+    pointB = new PointF();
+    pointC = new PointF();
   }
 
   public void setChecked (boolean checked, final boolean animated) {
     isChecked.setValue(checked, animated);
+  }
+
+  public void setIntermediate (boolean intermediate, final boolean animated) {
+    isIntermediate.setValue(intermediate, animated);
   }
 
   public void setHidden (boolean hidden, final boolean animated) {
@@ -83,8 +97,6 @@ public class CheckBoxView extends View {
     final float factor = isChecked.getFloatValue();
     final int alpha = (int) (255f * showFactor);
 
-    final int x1 = Screen.dp(4f);
-    final int y1 = Screen.dp(11f);
     final int lineSize = Screen.dp(1.5f);
 
     float rectFactor = Math.min(factor / FACTOR_DIFF, 1f);
@@ -100,11 +112,11 @@ public class CheckBoxView extends View {
 
     rect.left = offset;
     rect.top = offset;
-    rect.right = size - offset * 2;
-    rect.bottom = size - offset * 2;
+    rect.right = size - offset;
+    rect.bottom = size - offset;
 
-    float cx = (rect.left + rect.right) * .5f;
-    float cy = (rect.top + rect.bottom) * .5f;
+    float cx = rect.centerX();
+    float cy = rect.centerY();
 
     final int restoreToCount = Views.save(c);
     c.scale(scaleFactor, scaleFactor, cx, cy);
@@ -115,8 +127,8 @@ public class CheckBoxView extends View {
     c.drawRoundRect(rect, radius, radius, outerPaint);
 
     if (rectFactor != 0f) {
-      int w = (int) ((rect.right - rect.left - offset * 2) * .5f * rectFactor);
-      int h = (int) ((rect.bottom - rect.top - offset * 2) * .5f * rectFactor);
+      int w = (int) ((rect.width() - offset * 2) * .5f * rectFactor);
+      int h = (int) ((rect.height() - offset * 2) * .5f * rectFactor);
 
       int left = (int) (rect.left + offset + w);
       int right = (int) (rect.right - offset - w);
@@ -129,15 +141,35 @@ public class CheckBoxView extends View {
       c.drawRect(left, rect.bottom - offset - h, right, rect.bottom - offset, Paints.fillingPaint(alphaColor));
 
       if (checkFactor != 0f) {
-        c.translate(-Screen.dp(.5f), 0);
-        c.rotate(-45f, cx, cy);
-
-        int w2 = (int) ((float) Screen.dp(12f) * checkFactor);
-        int h1 = (int) ((float) Screen.dp(6f) * checkFactor);
-
         final int checkColor = ColorUtils.alphaColor(showFactor, Theme.radioCheckColor());
-        c.drawRect(x1, y1 - h1, x1 + lineSize, y1, Paints.fillingPaint(checkColor));
-        c.drawRect(x1, y1 - lineSize, x1 + w2, y1, Paints.fillingPaint(checkColor));
+        final float intermediateFactor = isIntermediate.getFloatValue();
+
+        final Paint strokePaint = Paints.strokeBigPaint(checkColor);
+        final float strokeWidth = strokePaint.getStrokeWidth();
+        strokePaint.setStrokeWidth(lineSize);
+
+        pointA.x = 3f / 16f * size;
+        pointA.y = (17f - intermediateFactor) / 32f * size;
+
+        pointB.x = 13f / 16f * size;
+        pointB.y = (9f + 7f * intermediateFactor) / 32f * size;
+
+        pointC.x = (6f + 2f * intermediateFactor) / 16f * size;
+        pointC.y = (23f - 7f * intermediateFactor) / 32f * size;
+
+        pointA.x = pointC.x + (pointA.x - pointC.x) * checkFactor;
+        pointA.y = pointC.y + (pointA.y - pointC.y) * checkFactor;
+
+        pointB.x = pointC.x + (pointB.x - pointC.x) * checkFactor;
+        pointB.y = pointC.y + (pointB.y - pointC.y) * checkFactor;
+
+        path.rewind();
+        path.moveTo(pointA.x, pointA.y);
+        path.lineTo(pointC.x, pointC.y);
+        path.lineTo(pointB.x, pointB.y);
+        c.drawPath(path, strokePaint);
+
+        strokePaint.setStrokeWidth(strokeWidth);
       }
     }
 
