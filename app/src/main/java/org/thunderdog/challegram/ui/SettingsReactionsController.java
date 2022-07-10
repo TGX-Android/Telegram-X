@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
+import org.thunderdog.challegram.component.reaction.EffectAnimationItemDecoration;
 import org.thunderdog.challegram.component.reaction.SelectableReactionView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -44,6 +45,7 @@ public class SettingsReactionsController extends RecyclerViewController<Argument
   }
 
   private SettingsAdapter adapter;
+  private EffectAnimationItemDecoration effectAnimationItemDecoration;
 
   private int mode;
 
@@ -98,14 +100,17 @@ public class SettingsReactionsController extends RecyclerViewController<Argument
           boolean isEnabled = !quickReaction.equals(TdlibSettingsManager.QUICK_REACTION_DISABLED);
           view.getToggler().setRadioEnabled(isEnabled, isUpdate);
         } else if (item.getId() == R.id.btn_chatReactions) {
-          boolean isChecked = !chatAvailableReactions.isEmpty();
+          int enabledReactionCount = chatAvailableReactions.size();
+          boolean isChecked = enabledReactionCount > 0;
+          boolean isIntermediate = enabledReactionCount < reactionCount;
           CheckBoxView checkBox = view.findCheckBox();
           if (isChecked) {
-            view.setName(Lang.pluralBold(R.string.xReactionsEnabled, chatAvailableReactions.size()));
+            view.setName(Lang.pluralBold(R.string.xReactionsEnabled, enabledReactionCount));
           } else {
             view.setName(R.string.ReactionsDisabled);
           }
           item.setSelected(isChecked);
+          checkBox.setIntermediate(isIntermediate, isUpdate);
           checkBox.setChecked(isChecked, isUpdate);
         }
       }
@@ -121,6 +126,8 @@ public class SettingsReactionsController extends RecyclerViewController<Argument
         return SPAN_COUNT;
       }
     });
+    effectAnimationItemDecoration = new EffectAnimationItemDecoration();
+    recyclerView.addItemDecoration(effectAnimationItemDecoration);
 
     recyclerView.setLayoutManager(gridLayoutManager);
     recyclerView.setAdapter(adapter);
@@ -182,6 +189,14 @@ public class SettingsReactionsController extends RecyclerViewController<Argument
   }
 
   @Override
+  public void destroy () {
+    super.destroy();
+    if (effectAnimationItemDecoration != null) {
+      effectAnimationItemDecoration.performDestroy();
+    }
+  }
+
+  @Override
   public int getId () {
     if (mode == MODE_CHAT_REACTIONS) {
       return R.id.controller_chatReactions;
@@ -229,9 +244,16 @@ public class SettingsReactionsController extends RecyclerViewController<Argument
       updateCheckedState();
     } else if (view instanceof SelectableReactionView) {
       TdApi.Reaction reaction = (TdApi.Reaction) item.getData();
+      SelectableReactionView itemView = (SelectableReactionView) view;
       if (reaction != null) {
         UI.hapticVibrate(view, false);
-        boolean isChecked = ((SelectableReactionView) view).toggle();
+        boolean isChecked = itemView.toggle();
+        if (isChecked) {
+          itemView.playActivateAnimation();
+          if (effectAnimationItemDecoration != null) {
+            effectAnimationItemDecoration.prepareAnimation(getRecyclerView(), tdlib(), reaction);
+          }
+        }
         onCheckedChanged(reaction, isChecked);
       }
     }

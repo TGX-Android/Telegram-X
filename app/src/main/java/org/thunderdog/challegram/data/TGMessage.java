@@ -856,7 +856,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }));
   }
 
-  private void onReactionClick(@NonNull View view, @NonNull TdApi.MessageReaction messageReaction) {
+  private void onReactionClick (@NonNull View view, @NonNull TdApi.MessageReaction messageReaction) {
     ViewUtils.onClick(view);
     if (!messageReaction.isChosen) {
       UI.hapticVibrate(view, false);
@@ -865,6 +865,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     tdlib.send(new TdApi.SetMessageReaction(msg.chatId, msg.id, reaction, false), object -> {
       switch (object.getConstructor()) {
         case TdApi.Ok.CONSTRUCTOR:
+          if (!reaction.isEmpty()) {
+            messagesController().runOnUiThreadOptional(() -> {
+              playReactionAnimation(reaction);
+            });
+          }
           break;
         case TdApi.Error.CONSTRUCTOR:
           UI.showToast(TD.errorText(object), Toast.LENGTH_SHORT);
@@ -2351,6 +2356,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     performWithViews(view -> context().performConfetti(view, pivotX, pivotY));
   }
 
+  public final void playReactionAnimation (String reaction) {
+    performWithViews(view -> view.playReactionAnimation(msg.chatId, msg.id, reaction));
+  }
+
   private void performWithViews (@NonNull RunnableData<MessageView> act) {
     final ReferenceList<View> attachedToViews = currentViews.getViewsList();
     for (View view : attachedToViews) {
@@ -3475,6 +3484,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   public final void requestReactions (@NonNull ReactionsReceiver receiver) {
     receiver.requestFiles(tdlib, getReactions());
+  }
+
+  public final void playReactionAnimation (@NonNull ReactionsReceiver receiver, String reaction) {
+    receiver.playAnimation(tdlib, reaction);
   }
 
   // public static final float IMAGE_CONTENT_DEFAULT_RADIUS = 3f;

@@ -3,7 +3,6 @@ package org.thunderdog.challegram.data;
 import static me.vkryl.android.AnimatorUtils.DECELERATE_INTERPOLATOR;
 
 import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.graphics.RectF;
 import android.view.Gravity;
 
@@ -17,6 +16,9 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.animator.ListAnimator;
 import org.thunderdog.challegram.loader.ReactionsReceiver;
 import org.thunderdog.challegram.loader.Receiver;
+import org.thunderdog.challegram.loader.gif.GifFile;
+import org.thunderdog.challegram.loader.gif.GifReceiver;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -153,15 +155,12 @@ public final class BigReactions implements Counter.Callback {
     return null;
   }
 
-  private static final Paint ROUND_RECT_PAINT = new Paint(Paint.ANTI_ALIAS_FLAG);
-
-  static {
-    ROUND_RECT_PAINT.setStyle(Paint.Style.FILL);
-  }
-
   public void draw (@NonNull Canvas canvas, @Px int x, @Px int y, @NonNull ReactionsReceiver reactionsReceiver) {
     lastX = x;
     lastY = y;
+
+    int iconSize = Screen.dp(REACTION_SIZE);
+
     for (ListAnimator.Entry<Button> entry : buttonListAnimator) {
       Button button = entry.item;
       RectF buttonRect = entry.getRectF();
@@ -172,22 +171,63 @@ public final class BigReactions implements Counter.Callback {
 
       float muteFactor = button.counter.getMuteFactor();
       int backgroundColor = ColorUtils.fromToArgb(colorSet.defaultBackgroundColor(), colorSet.selectedBackgroundColor(), muteFactor);
-      ROUND_RECT_PAINT.setColor(ColorUtils.alphaColor(entry.getVisibility(), backgroundColor));
-      canvas.drawRoundRect(buttonRect, buttonRadius, buttonRadius, ROUND_RECT_PAINT);
+      int fillingColor = ColorUtils.alphaColor(entry.getVisibility(), backgroundColor);
+      canvas.drawRoundRect(buttonRect, buttonRadius, buttonRadius, Paints.fillingPaint(fillingColor));
 
-      int iconSize = Screen.dp(REACTION_SIZE);
-      int iconLeft = Math.round(buttonRect.left) + Screen.dp(6f);
-      int iconTop = Math.round(buttonRect.centerY() - iconSize / 2f);
-      int iconRight = iconLeft + iconSize;
-      int iconBottom = iconTop + iconSize;
-      Receiver staticIcon = reactionsReceiver.getStaticIconReceiver(button.reaction.reaction);
-      staticIcon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
-      staticIcon.setAlpha(entry.getVisibility());
-      staticIcon.draw(canvas);
+      button.iconLeft = Math.round(buttonRect.left) + Screen.dp(6f);
+      button.iconTop = Math.round(buttonRect.centerY() - iconSize / 2f);
+      button.iconRight = button.iconLeft + iconSize;
+      button.iconBottom = button.iconTop + iconSize;
 
-      float counterX = iconRight + Screen.dp(5);
+      String reaction = button.reaction.reaction;
+
+      boolean isCenterAnimationPlaying = false;
+      GifReceiver centerAnimation = reactionsReceiver.getCenterAnimationReceiver(reaction);
+      if (centerAnimation != null) {
+        GifFile centerAnimationFile = centerAnimation.getCurrentFile();
+        if (centerAnimationFile != null && !centerAnimationFile.hasLooped()) {
+          isCenterAnimationPlaying = true;
+          
+          int saveCount = canvas.save();
+
+          canvas.translate(button.iconLeft - iconSize / 2f, button.iconTop - iconSize / 2f);
+          centerAnimation.setBounds(0, 0, iconSize * 2, iconSize * 2);
+          centerAnimation.setAlpha(entry.getVisibility());
+          centerAnimation.draw(canvas);
+
+          canvas.restoreToCount(saveCount);
+        }
+      }
+
+      if (!isCenterAnimationPlaying) {
+        Receiver staticIcon = reactionsReceiver.getStaticIconReceiver(reaction);
+        staticIcon.setBounds(button.iconLeft, button.iconTop, button.iconRight, button.iconBottom);
+        staticIcon.setAlpha(entry.getVisibility());
+        staticIcon.draw(canvas);
+      }
+
+      float counterX = button.iconRight + Screen.dp(5);
       float counterY = buttonRect.centerY();
       button.counter.draw(canvas, counterX, counterY, Gravity.LEFT, entry.getVisibility());
+    }
+
+    for (ListAnimator.Entry<Button> entry : buttonListAnimator) {
+      Button button = entry.item;
+      String reaction = button.reaction.reaction;
+      GifReceiver aroundAnimation = reactionsReceiver.getAroundAnimationReceiver(reaction);
+      if (aroundAnimation != null) {
+        GifFile aroundAnimationFile = aroundAnimation.getCurrentFile();
+        if (aroundAnimationFile != null && !aroundAnimationFile.hasLooped()) {
+          int saveCount = canvas.save();
+
+          canvas.translate(button.iconLeft - iconSize / 2f, button.iconTop - iconSize / 2f);
+          aroundAnimation.setBounds(0, 0, iconSize * 2, iconSize * 2);
+          aroundAnimation.setAlpha(entry.getVisibility());
+          aroundAnimation.draw(canvas);
+
+          canvas.restoreToCount(saveCount);
+        }
+      }
     }
   }
 
@@ -230,6 +270,8 @@ public final class BigReactions implements Counter.Callback {
   }
 
   private static final class Button implements ListAnimator.Measurable {
+    int iconLeft, iconTop, iconRight, iconBottom;
+
     @NonNull
     final Counter counter;
     @Px

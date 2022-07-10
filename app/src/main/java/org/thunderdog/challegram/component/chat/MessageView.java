@@ -200,6 +200,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     }
   }
 
+  public void playReactionAnimation (long chatId, long messageId, String reaction) {
+    if (msg != null && msg.getChatId() == chatId && msg.getId() == messageId) {
+      msg.playReactionAnimation(reactionsReceiver, reaction);
+    }
+  }
+
   private void checkLegacyComponents (MessageView view) {
     if (msg != null) {
       msg.layoutAvatar(view, avatarReceiver);

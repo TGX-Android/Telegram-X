@@ -10,6 +10,7 @@ import androidx.annotation.Px;
 import androidx.core.util.ObjectsCompat;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
@@ -27,6 +28,8 @@ public class ReactionView extends View implements AttachDelegate {
   private final GifReceiver gifReceiver;
   @NonNull
   private final ImageReceiver imageReceiver;
+  @Nullable
+  private GifReceiver activateAnimationReceiver;
   @Nullable
   private TdApi.Reaction reaction;
 
@@ -60,7 +63,7 @@ public class ReactionView extends View implements AttachDelegate {
         TdApi.Sticker appearAnimation = reaction.appearAnimation;
         if (appearAnimation != null && Td.isAnimated(appearAnimation.type)) {
           GifFile gifFile = new GifFile(tdlib, appearAnimation);
-          gifFile.setScaleType(ImageFile.FIT_CENTER);
+          gifFile.setScaleType(GifFile.FIT_CENTER);
           gifFile.setUnique(true);
           gifFile.setPlayOnce(true);
           gifFile.setOptimize(true);
@@ -93,6 +96,68 @@ public class ReactionView extends View implements AttachDelegate {
   }
 
   @Nullable
+  private static TdApi.Sticker getActivateAnimation (@Nullable TdApi.Reaction reaction) {
+    return reaction != null ? reaction.selectAnimation : null; // FIXME select -> activate
+  }
+
+  private void preloadAnimation (@Nullable TdApi.Sticker animation) {
+    TdApi.File sticker = animation != null ? animation.sticker : null;
+    if (sticker == null || TD.isFileLoaded(sticker)) {
+      return;
+    }
+    tdlib.files().downloadFile(sticker);
+  }
+
+  public void preloadActivateAnimation () {
+    if (reaction != null) {
+      preloadAnimation(getActivateAnimation(reaction));
+      preloadAnimation(reaction.effectAnimation);
+    }
+  }
+
+  public void prepareActivateAnimation () {
+    TdApi.Sticker activateAnimation = getActivateAnimation(reaction);
+    if (activateAnimation != null && Td.isAnimated(activateAnimation.type)) {
+      GifFile activateAnimationFile = new GifFile(tdlib, activateAnimation);
+      activateAnimationFile.setScaleType(GifFile.CENTER_CROP);
+      activateAnimationFile.setUnique(true);
+      activateAnimationFile.setPlayOnce(true);
+      activateAnimationFile.setOptimize(true);
+
+      if (activateAnimationReceiver == null) {
+        activateAnimationReceiver = new GifReceiver(this);
+        if (isLaidOut()) {
+          activateAnimationReceiver.setBounds(getPaddingLeft(), getPaddingTop(), getWidth() - getPaddingRight(), getHeight() - getPaddingBottom());
+        }
+      }
+      activateAnimationReceiver.requestFile(activateAnimationFile);
+    } else {
+      if (activateAnimationReceiver != null) {
+        activateAnimationReceiver.clear();
+      }
+    }
+  }
+
+  private boolean isActivateAnimationPlaying;
+
+  public void playActivateAnimation () {
+    if (isActivateAnimationPlaying) {
+      return;
+    }
+    prepareActivateAnimation();
+    if (activateAnimationReceiver == null) {
+      return;
+    }
+    GifFile activateAnimationFile = activateAnimationReceiver.getCurrentFile();
+    if (!TD.isFileLoadedAndExists(activateAnimationFile.getFile())) {
+      return;
+    }
+    isActivateAnimationPlaying = true;
+    activateAnimationFile.setLooped(false);
+    invalidate();
+  }
+
+  @Nullable
   public TdApi.Reaction getReaction () {
     return reaction;
   }
@@ -101,12 +166,25 @@ public class ReactionView extends View implements AttachDelegate {
   public void attach () {
     gifReceiver.attach();
     imageReceiver.attach();
+
+    if (activateAnimationReceiver != null) {
+      activateAnimationReceiver.attach();
+    }
   }
 
   @Override
   public void detach () {
     gifReceiver.detach();
     imageReceiver.detach();
+
+    if (activateAnimationReceiver != null) {
+      activateAnimationReceiver.detach();
+    }
+  }
+
+  @Override
+  public boolean hasOverlappingRendering () {
+    return false;
   }
 
   @Override
@@ -115,26 +193,48 @@ public class ReactionView extends View implements AttachDelegate {
 
     gifReceiver.setBounds(getPaddingLeft(), getPaddingTop(), getWidth() - getPaddingRight(), getHeight() - getPaddingBottom());
     imageReceiver.setBounds(getPaddingLeft(), getPaddingTop(), getWidth() - getPaddingRight(), getHeight() - getPaddingBottom());
+
+    if (activateAnimationReceiver != null) {
+      activateAnimationReceiver.setBounds(getPaddingLeft(), getPaddingTop(), getWidth() - getPaddingRight(), getHeight() - getPaddingBottom());
+    }
   }
 
   @Override
   protected void onDraw (Canvas canvas) {
-    super.onDraw(canvas);
-    if (gifReceiver.isEmpty()) {
-      if (!imageReceiver.isEmpty()) {
-        if (imageReceiver.needPlaceholder()) {
-          imageReceiver.drawPlaceholderRounded(canvas, imageReceiver.getHeight() / 2);
+    if (isActivateAnimationPlaying) {
+      if (activateAnimationReceiver != null) {
+        GifFile currentFile = activateAnimationReceiver.getCurrentFile();
+        if (currentFile != null && !currentFile.hasLooped()) {
+          if (activateAnimationReceiver.needPlaceholder()) {
+            gifReceiver.draw(canvas);
+          } else {
+            activateAnimationReceiver.draw(canvas);
+          }
         } else {
-          imageReceiver.draw(canvas);
-        }
-      }
-    } else {
-      if (gifReceiver.needPlaceholder()) {
-        if (!imageReceiver.isEmpty()) {
-          imageReceiver.drawPlaceholderRounded(canvas, imageReceiver.getHeight() / 2);
+          isActivateAnimationPlaying = false;
         }
       } else {
-        gifReceiver.draw(canvas);
+        isActivateAnimationPlaying = false;
+      }
+    }
+
+    if (!isActivateAnimationPlaying) {
+      if (gifReceiver.isEmpty()) {
+        if (!imageReceiver.isEmpty()) {
+          if (imageReceiver.needPlaceholder()) {
+            imageReceiver.drawPlaceholderRounded(canvas, imageReceiver.getHeight() / 2);
+          } else {
+            imageReceiver.draw(canvas);
+          }
+        }
+      } else {
+        if (gifReceiver.needPlaceholder()) {
+          if (!imageReceiver.isEmpty()) {
+            imageReceiver.drawPlaceholderRounded(canvas, imageReceiver.getHeight() / 2);
+          }
+        } else {
+          gifReceiver.draw(canvas);
+        }
       }
     }
   }

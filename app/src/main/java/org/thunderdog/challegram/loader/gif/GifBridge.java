@@ -256,7 +256,8 @@ public class GifBridge {
       GifRecord record = records.get(file.toString());
 
       if (record != null) {
-        for (GifWatcherReference reference : record.getWatchers()) {
+        GifWatcherReference[] watchers = record.getWatchers().toArray(new GifWatcherReference[0]);
+        for (GifWatcherReference reference : watchers) {
           reference.gifLoaded(file, gif);
         }
         record.getActor().onGifLoaded(gif);

@@ -3188,8 +3188,8 @@
   <string name="xMessageReactions_other">%1$s reactions</string>
   <string name="xReactions_one">%1$s of %2$s</string>
   <string name="xReactions_other">%1$s of %2$s</string>
-  <string name="xReactionsEnabled_one">%1$s Reaction Enabled</string>
-  <string name="xReactionsEnabled_other">%1$s Reactions Enabled</string>
+  <string name="xReactionsEnabled_one">%1$s Reaction enabled</string>
+  <string name="xReactionsEnabled_other">%1$s Reactions enabled</string>
 
   <string name="UserDisabledMessages">You cannot send messages to this user</string>
 

@@ -55,6 +55,7 @@ public class SelectableReactionView extends FrameLayoutFix implements AttachDele
 
     RippleSupport.setSimpleWhiteBackground(this, themeProvider);
     Views.setClickable(this);
+    setClipChildren(false);
 
     checkCheckColor = Theme.fillingColor();
     checkFillingColor = Theme.checkFillingColor();
@@ -75,8 +76,8 @@ public class SelectableReactionView extends FrameLayoutFix implements AttachDele
     titleView.setGravity(Gravity.CENTER_HORIZONTAL);
 
     int reactionSize = Screen.dp(28f);
-    addView(reactionView, newParams(reactionSize, reactionSize, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, Screen.dp(24f), 0, 0));
     addView(titleView, newParams(MATCH_PARENT, WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, Screen.dp(6f), Screen.dp(64f), Screen.dp(6f), 0));
+    addView(reactionView, newParams(reactionSize, reactionSize, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, Screen.dp(24f), 0, 0));
 
     setWillNotDraw(false);
 
@@ -89,6 +90,7 @@ public class SelectableReactionView extends FrameLayoutFix implements AttachDele
 
   public void setReaction (@Nullable TdApi.Reaction reaction) {
     reactionView.setReaction(reaction, true);
+    reactionView.preloadActivateAnimation();
     if (reaction != null) {
       titleView.setText(reaction.title);
     } else {
@@ -96,9 +98,18 @@ public class SelectableReactionView extends FrameLayoutFix implements AttachDele
     }
   }
 
+  public void playActivateAnimation () {
+    reactionView.playActivateAnimation();
+  }
+
   @Nullable
   public TdApi.Reaction getReaction () {
     return reactionView.getReaction();
+  }
+
+  @NonNull
+  public ReactionView getReactionView () {
+    return reactionView;
   }
 
   public void attach () {
