@@ -44,6 +44,7 @@ android {
 
         buildConfigInt("SO_VERSION", (jniVersion + tdlibVersion + leveldbVersion))
         buildConfigInt("TDLIB_VERSION", tdlibVersion)
+        buildConfigString("TDLIB_REMOTE_URL", "https://github.com/tdlib/td")
 
         buildConfigInt("TELEGRAM_API_ID", properties.getIntOrThrow("telegram.api_id"))
         buildConfigString("TELEGRAM_API_HASH", properties.getProperty("telegram.api_hash"))

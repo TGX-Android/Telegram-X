@@ -110,7 +110,7 @@ public class VideoGen {
       if (this.reportedExpectedBytesCount != expectedSize || (uploadBytesCount < this.reportedBytesCount || uploadBytesCount - this.reportedBytesCount >= ByteUnit.KIB.toBytes(5))) {
         this.reportedExpectedBytesCount = expectedSize;
         this.reportedBytesCount = uploadBytesCount;
-        context.tdlib.client().send(new TdApi.SetFileGenerationProgress(generationId, (int) expectedSize, (int) uploadBytesCount), context.tdlib.silentHandler());
+        context.tdlib.client().send(new TdApi.SetFileGenerationProgress(generationId, expectedSize, uploadBytesCount), context.tdlib.silentHandler());
       }
     }
 
@@ -417,7 +417,7 @@ public class VideoGen {
       return;
     }
 
-    int bytesCount = (int) getBytesCount(sourcePath, true);
+    long bytesCount = getBytesCount(sourcePath, true);
     entry.resetProgress(bytesCount);
 
     tdlib.filegen().getContentExecutor().execute(() -> {
@@ -425,7 +425,7 @@ public class VideoGen {
       try {
         File file = new File(sourcePath);
         try (Source in = Okio.source(file)) {
-          success = tdlib.filegen().copy(generationId, sourcePath, in, destinationPath, (int) file.length(), entry.canceled);
+          success = tdlib.filegen().copy(generationId, sourcePath, in, destinationPath, file.length(), entry.canceled);
         }
       } catch (Throwable t) {
         Log.e("Cannot copy file, fromPath: %s", t, sourcePath);

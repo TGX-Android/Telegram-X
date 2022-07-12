@@ -7968,7 +7968,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private boolean sendSticker (View view, TdApi.Sticker sticker, String emoji, boolean allowReply, boolean forceDisableNotification, @Nullable TdApi.MessageSchedulingState schedulingState) {
-    return sticker != null && sendContent(view, R.id.right_sendStickersAndGifs, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil, allowReply, forceDisableNotification, schedulingState, () -> new TdApi.InputMessageSticker(new TdApi.InputFileId(sticker.sticker.id), null, 0, 0, emoji));
+    if (sticker == null) {
+      return false;
+    }
+    if (sticker.premiumAnimation != null && !tdlib.hasPremium()) {
+      tdlib.ui().showPremiumAlert(this, view);
+      return false;
+    }
+    return sendContent(view, R.id.right_sendStickersAndGifs, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil, allowReply, forceDisableNotification, schedulingState, () -> new TdApi.InputMessageSticker(new TdApi.InputFileId(sticker.sticker.id), null, 0, 0, emoji));
   }
 
   private void sendSticker (String path, boolean allowReply, boolean forceDisableNotification, @Nullable TdApi.MessageSchedulingState schedulingState) {

@@ -43,7 +43,6 @@ import androidx.core.content.res.ResourcesCompat;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
@@ -1245,10 +1244,10 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
           twAlternativeHeader = textShort;
           text = Lang.getString(R.string.ProcessingMedia, textShort);
         } else {
-          int progressSize = fileProgress.getProgressSize();
-          int totalSize = fileProgress.getTotalSize();
+          long progressSize = fileProgress.getProgressSize();
+          long totalSize = fileProgress.getTotalSize();
           if (progressSize <= totalSize) {
-            float ratio = (float) progressSize / (float) totalSize;
+            float ratio = (float) ((double) progressSize / (double) totalSize);
             text = Lang.getString(R.string.format_uploadStatus, (int) Math.floor(100f * ratio), textShort);
             twAlternativeHeader = Lang.getString(R.string.format_percentage, (int) Math.floor(100f * ratio));
           } else {

@@ -859,7 +859,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private void editDescription () {
     EditBioController c = new EditBioController(context, tdlib);
-    c.setArguments(new EditBioController.Arguments(getCurrentDescription(), chat.id).setBioChangeListener(this));
+    c.setArguments(new EditBioController.Arguments(getDescriptionValue(), chat.id).setBioChangeListener(this));
     navigateTo(c);
   }
 
@@ -1755,7 +1755,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           }
           case R.id.btn_description: {
             view.setText(aboutWrapper);
-            if (canEditDescription() && StringUtils.isEmpty(getCurrentDescription())) {
+            if (canEditDescription() && !hasDescription()) {
               view.setName(R.string.TapToSetup);
             } else {
               view.setName(isUserMode() && !TD.isBot(user) ? R.string.UserBio : R.string.Description);
@@ -2301,17 +2301,24 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   // User cells
 
   private TextWrapper aboutWrapper;
+  private TdApi.FormattedText currentAbout;
 
   private static int getTextWidth (int width) {
     return Math.max(0, width - Screen.dp(73f) - Screen.dp(17f));
   }
 
   private boolean setDescription (String text) {
-    if (StringUtils.isEmpty(text) && canEditDescription()) {
-      text = Lang.getString(R.string.Description);
+    TdApi.TextEntity[] entities = Td.findEntities(text, (e) -> e.type.getConstructor() != TdApi.TextEntityTypeBotCommand.CONSTRUCTOR);
+    return setDescription(new TdApi.FormattedText(text, entities));
+  }
+
+  private boolean setDescription (TdApi.FormattedText text) {
+    if (Td.isEmpty(text) && canEditDescription()) {
+      text = TD.toFormattedText(Lang.getString(R.string.Description), false);
     }
-    if (this.aboutWrapper == null || !this.aboutWrapper.getText().equals(text)) {
-      aboutWrapper = new TextWrapper(tdlib, text, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, Text.ENTITY_FLAGS_ALL_NO_COMMANDS, new TdlibUi.UrlOpenParameters().sourceChat(getChatId()));
+    if (this.currentAbout == null || !Td.equalsTo(this.currentAbout, text)) {
+      currentAbout = text;
+      aboutWrapper = new TextWrapper(tdlib, text, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, new TdlibUi.UrlOpenParameters().sourceChat(getChatId()));
       aboutWrapper.addTextFlags(Text.FLAG_CUSTOM_LONG_PRESS | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0));
       aboutWrapper.prepare(getTextWidth(Screen.currentWidth()));
       return true;
@@ -2386,7 +2393,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     if (TD.isBot(user)) {
-      if (userFull != null && (!StringUtils.isEmpty(userFull.bio) || (userFull.botInfo != null && !StringUtils.isEmpty(userFull.botInfo.shareText)))) {
+      if (userFull != null && (!Td.isEmpty(userFull.bio) || (userFull.botInfo != null && !StringUtils.isEmpty(userFull.botInfo.shareText)))) {
         items.add(newDescriptionItem());
         addedCount++;
       }
@@ -2429,11 +2436,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @WorkerThread
   private void prepareFullCells (final TdApi.UserFullInfo userFull) {
-    if (!StringUtils.isEmpty(userFull.bio)) {
-      setDescription(userFull.bio);
-    } else if (userFull.botInfo != null && !StringUtils.isEmpty(userFull.botInfo.shareText)) {
-      setDescription(userFull.botInfo.shareText);
-    }
+    setDescription();
   }
 
   private void addFullCells (TdApi.UserFullInfo userFull) {
@@ -2645,33 +2648,58 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     removeTopItem(baseAdapter.indexOfViewById(R.id.btn_inviteLink));
   }
 
-  private String getCurrentDescription () {
-    if (userFull != null)
-      return !StringUtils.isEmpty(userFull.bio) ? userFull.bio : userFull.botInfo != null ? userFull.botInfo.shareText : "";
-    if (supergroupFull != null)
-      return supergroupFull.description;
-    if (groupFull != null)
-      return groupFull.description;
-    return "";
+  private String getDescriptionValue () {
+    if (userFull != null) {
+      return !Td.isEmpty(userFull.bio) ? userFull.bio.text : userFull.botInfo != null && !StringUtils.isEmpty(userFull.botInfo.description) ? userFull.botInfo.description : "";
+    }
+    if (supergroupFull != null) {
+      return !StringUtils.isEmpty(supergroupFull.description) ? supergroupFull.description : "";
+    }
+    if (groupFull != null) {
+      return !StringUtils.isEmpty(groupFull.description) ? groupFull.description : "";
+    }
+    return null;
+  }
+
+  private boolean hasDescription () {
+    return !StringUtils.isEmpty(getDescriptionValue());
+  }
+
+  private boolean setDescription () {
+    if (userFull != null) {
+      if (!Td.isEmpty(userFull.bio)) {
+        return setDescription(userFull.bio);
+      }
+      if (userFull.botInfo != null) {
+        return setDescription(userFull.botInfo.shareText);
+      }
+      return setDescription("");
+    }
+    if (supergroupFull != null) {
+      return setDescription(supergroupFull.description);
+    }
+    if (groupFull != null) {
+      return setDescription(groupFull.description);
+    }
+    return false;
   }
 
   private void checkDescription () {
     if (isEditing())
       return;
-    String about = getCurrentDescription();
     int index = baseAdapter.indexOfViewById(R.id.btn_description);
     boolean hadDescription = index != -1;
-    boolean hasDescription = !StringUtils.isEmpty(about) || canEditDescription();
+    boolean hasDescription = hasDescription() || canEditDescription();
     if (hadDescription != hasDescription) {
       if (hadDescription) {
         removeTopItem(index);
       } else {
         ListItem descriptionItem = newDescriptionItem();
-        setDescription(about);
+        setDescription();
         addTopItem(descriptionItem, baseAdapter.indexOfViewById(R.id.btn_username) != -1 ? 1 : 0);
       }
     } else if (hasDescription) {
-      if (setDescription(about)) {
+      if (setDescription()) {
         updateValuedItem(R.id.btn_description);
       }
     }
@@ -2896,9 +2924,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @WorkerThread
   private void prepareFullCells (TdApi.BasicGroupFullInfo groupFull) {
-    if (!groupFull.description.isEmpty()) {
-      setDescription(groupFull.description);
-    }
+    setDescription();
   }
 
   private void addFullCells (TdApi.BasicGroupFullInfo groupFull) {
@@ -3327,9 +3353,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private boolean hasUnsavedChanges () {
     return
       (chatTitleItem != null && !StringUtils.equalsOrBothEmpty(chat.title, chatTitleItem.getStringValue())) ||
-        (chatDescriptionItem != null && !StringUtils.equalsOrBothEmpty(getCurrentDescription(), chatDescriptionItem.getStringValue())) ||
-        hasTtlChanges() ||
-        hasSlowModeChanges();
+      (chatDescriptionItem != null && !StringUtils.equalsOrBothEmpty(getDescriptionValue(), chatDescriptionItem.getStringValue())) ||
+      hasTtlChanges() ||
+      hasSlowModeChanges();
   }
 
   private boolean hasSlowModeChanges () {
@@ -3400,7 +3426,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
     final String newDescription = chatDescriptionItem != null ? chatDescriptionItem.getStringValue() : null;
     if (chatDescriptionItem != null) {
-      if (!StringUtils.equalsOrBothEmpty(getCurrentDescription(), chatDescriptionItem.getStringValue())) {
+      if (!StringUtils.equalsOrBothEmpty(getDescriptionValue(), chatDescriptionItem.getStringValue())) {
         changes.add(new TdApi.SetChatDescription(chat.id, newDescription));
       }
     }
@@ -3532,7 +3558,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         .setOnEditorActionListener(new EditBaseController.SimpleEditorActionListener(EditorInfo.IME_ACTION_DONE, this));
       items.add(chatTitleItem);
 
-      chatDescriptionItem = new ListItem(ListItem.TYPE_EDITTEXT_CHANNEL_DESCRIPTION, R.id.description, 0, R.string.Description).setStringValue(getCurrentDescription()).setInputFilters(new InputFilter[]{
+      chatDescriptionItem = new ListItem(ListItem.TYPE_EDITTEXT_CHANNEL_DESCRIPTION, R.id.description, 0, R.string.Description).setStringValue(getDescriptionValue()).setInputFilters(new InputFilter[]{
         new InputFilter.LengthFilter(TdConstants.MAX_CHANNEL_DESCRIPTION_LENGTH)
       });
       items.add(chatDescriptionItem);
@@ -4543,7 +4569,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         break;
       }
       case R.id.btn_description: {
-        if (canEditDescription() && StringUtils.isEmpty(getCurrentDescription())) {
+        if (canEditDescription() && !hasDescription()) {
           editDescription();
           break;
         }

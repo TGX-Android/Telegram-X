@@ -104,9 +104,11 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   public static final @DrawableRes int PLAY_ICON = R.drawable.baseline_play_arrow_36_white;
 
   public interface SimpleListener {
-    boolean onClick (FileProgressComponent context, View view, TdApi.File file, long messageId);
-    void onStateChanged (TdApi.File file, @TdlibFilesManager.FileDownloadState int state);
-    void onProgress (TdApi.File file, float progress);
+    default boolean onClick (FileProgressComponent context, View view, TdApi.File file, long messageId) {
+      return false;
+    }
+    default void onStateChanged (TdApi.File file, @TdlibFilesManager.FileDownloadState int state) { }
+    default void onProgress (TdApi.File file, float progress) { }
   }
 
   private static final int FLAG_THEME = 1;
@@ -278,11 +280,11 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     return currentState == TdlibFilesManager.STATE_FAILED;
   }
 
-  public int getTotalSize () {
+  public long getTotalSize () {
     return file != null ? file.expectedSize : 0;
   }
 
-  public int getProgressSize () {
+  public long getProgressSize () {
     return file != null ? file.remote.isUploadingActive ? file.remote.uploadedSize : file.local.downloadedSize : 0;
   }
 

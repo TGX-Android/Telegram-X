@@ -23,7 +23,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -86,6 +85,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
+import me.vkryl.td.Td;
 
 public class SettingsController extends ViewController<Void> implements
   View.OnClickListener, ComplexHeaderView.Callback,
@@ -487,6 +487,10 @@ public class SettingsController extends ViewController<Void> implements
             view.setData(buildInfoShort);
             break;
           }
+          case R.id.btn_tdlib: {
+            view.setData(TdlibUi.getTdlibVersionSignature());
+            break;
+          }
           case R.id.btn_sourceCodeChanges: {
             String previousVersionName = previousBuildInfo.getVersionName();
             int index = previousVersionName.indexOf('-');
@@ -569,11 +573,11 @@ public class SettingsController extends ViewController<Void> implements
             break;
           }
           case R.id.btn_bio: {
-            String text;
+            TdApi.FormattedText text;
             if (about == null) {
-              text = Lang.getString(R.string.LoadingInformation);
-            } else if (StringUtils.isEmpty(about)) {
-              text = Lang.getString(R.string.BioNone);
+              text = TD.toFormattedText(Lang.getString(R.string.LoadingInformation), false);
+            } else if (Td.isEmpty(about)) {
+              text = TD.toFormattedText(Lang.getString(R.string.BioNone), false);
             } else {
               text = about;
             }
@@ -770,15 +774,17 @@ public class SettingsController extends ViewController<Void> implements
   private static final int ID_RATIONALE_PASSWORD = R.id.btn_2fa;
   private static final int ID_RATIONALE_PHONE_NUMBER = R.id.btn_changePhoneNumber;
   private final SparseArrayCompat<TextWrapper> textWrappers = new SparseArrayCompat<>();
+  private final SparseArrayCompat<TdApi.FormattedText> currentTexts = new SparseArrayCompat<>();
 
   private TextWrapper obtainWrapper (CharSequence text, int id) {
+    return obtainWrapper(TD.toFormattedText(text, false), id);
+  }
+
+  private TextWrapper obtainWrapper (TdApi.FormattedText text, int id) {
     TextWrapper textWrapper = textWrappers.get(id);
-    if (textWrapper == null || !StringUtils.equalsOrBothEmpty(textWrapper.getText(), text)) {
-      if (id == ID_BIO) {
-        textWrapper = new TextWrapper(tdlib, text.toString(), TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, Text.ENTITY_FLAGS_ALL_NO_COMMANDS, null);
-      } else {
-        textWrapper = new TextWrapper(text.toString(), TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, Text.toEntities(text, false, tdlib, null));
-      }
+    if (textWrapper == null || !Td.equalsTo(currentTexts.get(id), text)) {
+      currentTexts.put(id, text);
+      textWrapper = new TextWrapper(tdlib, text, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, null);
       textWrapper.addTextFlags(Text.FLAG_CUSTOM_LONG_PRESS | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0));
       textWrappers.put(id, textWrapper);
     }
@@ -796,8 +802,11 @@ public class SettingsController extends ViewController<Void> implements
     });
   }
 
-  private void setBio (@NonNull String about) {
-    if (this.about == null || !StringUtils.equalsOrBothEmpty(this.about, about)) {
+  private void setBio (@Nullable TdApi.FormattedText about) {
+    if (about == null) {
+      about = new TdApi.FormattedText("", new TdApi.TextEntity[0]);
+    }
+    if (this.about == null || !Td.equalsTo(this.about, about)) {
       this.about = about;
       adapter.updateValuedSettingById(R.id.btn_bio);
     }
@@ -854,28 +863,26 @@ public class SettingsController extends ViewController<Void> implements
     if (myUser == null) { // Ignoring log-out update
       return;
     }
-    tdlib.ui().post(() -> {
-      if (!isDestroyed()) {
-        updateHeader();
-        if (setUsername(myUser)) {
-          adapter.updateValuedSettingById(R.id.btn_username);
-        }
-        if (setPhoneNumber(myUser)) {
-          adapter.updateValuedSettingById(R.id.btn_phone);
-          adapter.updateValuedSettingById(R.id.btn_changePhoneNumber);
-        }
+    runOnUiThreadOptional(() -> {
+      updateHeader();
+      if (setUsername(myUser)) {
+        adapter.updateValuedSettingById(R.id.btn_username);
+      }
+      if (setPhoneNumber(myUser)) {
+        adapter.updateValuedSettingById(R.id.btn_phone);
+        adapter.updateValuedSettingById(R.id.btn_changePhoneNumber);
       }
     });
   }
 
   @Override
-  public void onMyUserBioUpdated (String newBio) {
+  public void onMyUserBioUpdated (@Nullable TdApi.FormattedText newBio) {
     setBio(newBio);
   }
 
   private String myUsername;
   private String myPhone, originalPhoneNumber;
-  private @Nullable String about;
+  private @Nullable TdApi.FormattedText about;
 
   private void initMyUser () {
     TdApi.User user = tdlib.myUser();
@@ -912,8 +919,8 @@ public class SettingsController extends ViewController<Void> implements
 
   @Override
   public void onConnectionStateChanged (int newState, int oldState) {
-    tdlib.ui().post(() -> {
-      if (headerCell != null && !isDestroyed()) {
+    runOnUiThreadOptional(() -> {
+      if (headerCell != null) {
         headerCell.setSubtitle(getSubtext());
       }
     });
@@ -939,8 +946,9 @@ public class SettingsController extends ViewController<Void> implements
     tdlib.ui().openUrl(this, BuildConfig.MARKET_URL, new TdlibUi.UrlOpenParameters().disableInstantView());
   }
 
-  private void viewSourceCode () {
-    tdlib.ui().openUrl(this, BuildConfig.COMMIT_URL, new TdlibUi.UrlOpenParameters().disableInstantView());
+  private void viewSourceCode (boolean isTdlib) {
+    AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
+    tdlib.ui().openUrl(this, isTdlib ? appBuildInfo.tdlibCommitUrl() : appBuildInfo.commitUrl(), new TdlibUi.UrlOpenParameters().disableInstantView());
   }
 
   @Override
@@ -952,7 +960,7 @@ public class SettingsController extends ViewController<Void> implements
     switch (v.getId()) {
       case R.id.btn_bio: {
         EditBioController c = new EditBioController(context, tdlib);
-        c.setArguments(new EditBioController.Arguments(about, 0));
+        c.setArguments(new EditBioController.Arguments(about != null ? about.text : "", 0));
         navigateTo(c);
         break;
       }
@@ -978,7 +986,12 @@ public class SettingsController extends ViewController<Void> implements
       }
       case R.id.btn_sourceCodeChanges: {
         // TODO provide an ability to view changes in PRs if they are present in both builds
-        tdlib.ui().openUrl(this, Settings.instance().getCurrentBuildInformation().changesUrlFrom(previousBuildInfo), new TdlibUi.UrlOpenParameters().disableInstantView());
+        AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
+        tdlib.ui().openUrl(this, appBuildInfo.changesUrlFrom(previousBuildInfo), new TdlibUi.UrlOpenParameters().disableInstantView());
+        break;
+      }
+      case R.id.btn_tdlib: {
+        viewSourceCode(true);
         break;
       }
       case R.id.btn_sourceCode: {
@@ -986,25 +999,28 @@ public class SettingsController extends ViewController<Void> implements
         PullRequest specificPullRequest = (PullRequest) ((ListItem) v.getTag()).getData();
         if (specificPullRequest != null) {
           tdlib.ui().openUrl(this, specificPullRequest.getCommitUrl(), new TdlibUi.UrlOpenParameters().disableInstantView());
-        } else if (!appBuildInfo.getPullRequests().isEmpty()) {
-          Options.Builder b = new Options.Builder()
-            .info(Lang.plural(R.string.PullRequestsInfo, appBuildInfo.getPullRequests().size()))
-            .item(new OptionItem(R.id.btn_sourceCode, Lang.getString(R.string.format_commit, Lang.getString(R.string.ViewSourceCode), appBuildInfo.getCommit()), OPTION_COLOR_NORMAL, R.drawable.baseline_github_24));
+        } else if (!appBuildInfo.getPullRequests().isEmpty() || appBuildInfo.getTdlibCommitFull() != null) {
+          Options.Builder b = new Options.Builder();
+          if (!appBuildInfo.getPullRequests().isEmpty()) {
+            b.info(Lang.plural(R.string.PullRequestsInfo, appBuildInfo.getPullRequests().size()));
+          }
+          b.item(new OptionItem(R.id.btn_sourceCode, Lang.getString(R.string.format_commit, Lang.getString(R.string.ViewSourceCode), appBuildInfo.getCommit()), OPTION_COLOR_NORMAL, R.drawable.baseline_github_24));
+          if (appBuildInfo.getTdlibCommitFull() != null) {
+            b.item(new OptionItem(R.id.btn_tdlib, Lang.getCharSequence(R.string.format_commit, "TDLib " + Td.tdlibVersion(), appBuildInfo.tdlibCommit()), OPTION_COLOR_NORMAL, R.drawable.baseline_tdlib_24));
+          }
           int i = 0;
           for (PullRequest pullRequest : appBuildInfo.getPullRequests()) {
             b.item(new OptionItem(i++, Lang.getString(R.string.format_commit, Lang.getString(R.string.PullRequestCommit, pullRequest.getId()), pullRequest.getCommit()), OPTION_COLOR_NORMAL, R.drawable.templarian_baseline_source_merge_24));
           }
           showOptions(b.build(), (view, id) -> {
-            if (id == R.id.btn_sourceCode) {
-              viewSourceCode();
+            if (id == R.id.btn_sourceCode || id == R.id.btn_tdlib) {
+              viewSourceCode(id == R.id.btn_tdlib);
             } else if (id >= 0 && id < appBuildInfo.getPullRequests().size()) {
               PullRequest pullRequest = appBuildInfo.getPullRequests().get(id);
               tdlib.ui().openUrl(this, pullRequest.getCommitUrl(), new TdlibUi.UrlOpenParameters().disableInstantView());
             }
             return true;
           });
-        } else {
-          viewSourceCode();
         }
         break;
       }
@@ -1060,11 +1076,9 @@ public class SettingsController extends ViewController<Void> implements
         if (Settings.instance().hasLogsEnabled()) {
           showBuildOptions(true);
         } else {
-          tdlib.getTesterLevel(testerLevel -> tdlib.ui().post(() -> {
-            if (!isDestroyed()) {
-              showBuildOptions(testerLevel >= Tdlib.TESTER_LEVEL_TESTER);
-            }
-          }));
+          tdlib.getTesterLevel(testerLevel -> runOnUiThreadOptional(() ->
+            showBuildOptions(testerLevel >= Tdlib.TESTER_LEVEL_TESTER)
+          ));
         }
         break;
       }
@@ -1234,11 +1248,9 @@ public class SettingsController extends ViewController<Void> implements
           break;
         }
         case R.id.btn_tdlib: {
-          tdlib.getTesterLevel(level -> runOnUiThread(() -> {
-            if (!isDestroyed()) {
-              openTdlibLogs(level, null);
-            }
-          }));
+          tdlib.getTesterLevel(level -> runOnUiThreadOptional(() ->
+            openTdlibLogs(level, null)
+          ));
           break;
         }
       }
@@ -1249,22 +1261,13 @@ public class SettingsController extends ViewController<Void> implements
   @Override
   public void onInstalledStickerSetsUpdated (long[] stickerSetIds, boolean isMasks) {
     if (!isMasks) {
-      tdlib.ui().post(() -> {
+      runOnUiThreadOptional(() -> {
         allStickerSets = null;
         hasPreloadedStickers = false;
         preloadStickers();
       });
     }
   }
-
-  @Override
-  public void onRecentStickersUpdated (int[] stickerIds, boolean isAttached) { }
-
-  @Override
-  public void onTrendingStickersUpdated (TdApi.StickerSets stickerSets, int unreadCount) { }
-
-  @Override
-  public void onFavoriteStickersUpdated (int[] stickerIds) { }
 
   // Stickers preloading
 
@@ -1308,11 +1311,9 @@ public class SettingsController extends ViewController<Void> implements
               parsedStickerSets.add(new TGStickerSetInfo(tdlib, stickerSet));
             }
             parsedStickerSets.trimToSize();
-            tdlib.ui().post(() -> {
-              if (!isDestroyed()) {
-                setStickerSets(parsedStickerSets);
-              }
-            });
+            runOnUiThreadOptional(() ->
+              setStickerSets(parsedStickerSets)
+            );
             break;
           }
           case TdApi.Error.CONSTRUCTOR: {
