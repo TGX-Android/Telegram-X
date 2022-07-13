@@ -59,9 +59,10 @@ import java.util.Locale;
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.Td;
 
-public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWrapper.OnClickListener, TGInlineKeyboard.ClickListener, Client.ResultHandler {
+public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWrapper.OnClickListener, TGInlineKeyboard.ClickListener, Client.ResultHandler, Destroyable {
   private static final int MAX_TITLE_LINES = 4;
   private static final int MAX_DESCRIPTION_LINES = 8;
 
@@ -120,7 +121,8 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   // private String trimmedName;
   // private int trimmedNameWidth;
 
-  private long chatId, messageId;
+  private final long chatId;
+  private long messageId;
   private final TGMessageText parent;
   private final TdApi.WebPage webPage;
   private final String url;
@@ -400,20 +402,26 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
           switch (mediaBlock.getConstructor()) {
             case TdApi.PageBlockAnimation.CONSTRUCTOR: {
               TdApi.PageBlockAnimation animation = (TdApi.PageBlockAnimation) mediaBlock;
-              String text = TD.getText(animation.caption.text);
-              item = MediaItem.valueOf(parent.context(), parent.tdlib(), animation.animation, new TdApi.FormattedText(text, Text.findEntities(text, Text.ENTITY_FLAGS_EXTERNAL)));
+              if (animation.animation != null) {
+                String text = TD.getText(animation.caption.text);
+                item = MediaItem.valueOf(parent.context(), parent.tdlib(), animation.animation, new TdApi.FormattedText(text, Text.findEntities(text, Text.ENTITY_FLAGS_EXTERNAL)));
+              }
               break;
             }
             case TdApi.PageBlockVideo.CONSTRUCTOR: {
               TdApi.PageBlockVideo video = (TdApi.PageBlockVideo) mediaBlock;
-              String text = TD.getText(video.caption.text);
-              item = MediaItem.valueOf(parent.context(), parent.tdlib(), video.video, new TdApi.FormattedText(text, Text.findEntities(text, Text.ENTITY_FLAGS_EXTERNAL)));
+              if (video.video != null) {
+                String text = TD.getText(video.caption.text);
+                item = MediaItem.valueOf(parent.context(), parent.tdlib(), video.video, new TdApi.FormattedText(text, Text.findEntities(text, Text.ENTITY_FLAGS_EXTERNAL)));
+              }
               break;
             }
             case TdApi.PageBlockPhoto.CONSTRUCTOR: {
               TdApi.PageBlockPhoto photo = (TdApi.PageBlockPhoto) mediaBlock;
-              String text = TD.getText(photo.caption.text);
-              item = MediaItem.valueOf(parent.context(), parent.tdlib(), photo.photo, new TdApi.FormattedText(text, Text.findEntities(text, Text.ENTITY_FLAGS_EXTERNAL)));
+              if (photo.photo != null) {
+                String text = TD.getText(photo.caption.text);
+                item = MediaItem.valueOf(parent.context(), parent.tdlib(), photo.photo, new TdApi.FormattedText(text, Text.findEntities(text, Text.ENTITY_FLAGS_EXTERNAL)));
+              }
               break;
             }
           }
@@ -450,8 +458,14 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     return (flags & FLAG_DESTROYED) != 0;
   }
 
-  public void destroy () {
-    flags |= FLAG_DESTROYED;
+  @Override
+  public void performDestroy () {
+    if (!isDestroyed()) {
+      flags |= FLAG_DESTROYED;
+      if (component != null) {
+        component.performDestroy();
+      }
+    }
   }
 
   public MediaWrapper getMediaWrapper () {

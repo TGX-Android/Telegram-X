@@ -156,8 +156,8 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
   }
 
   private String getTdlibVersionSignature (boolean needBuildNo) {
-    String signature = tdlib != null ? tdlib.tdlibVersionSignature() : null;
-    return (signature != null ? signature : "???") + (needBuildNo ? "." + BuildConfig.ORIGINAL_VERSION_CODE : "");
+    final String signature = TdlibUi.getTdlibVersionSignature().toString();
+    return signature + (needBuildNo ? " (" + BuildConfig.ORIGINAL_VERSION_CODE + ")" : "");
   }
 
   private SettingsAdapter adapter;

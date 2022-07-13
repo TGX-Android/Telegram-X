@@ -66,9 +66,10 @@ import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.Td;
 
-public class FileProgressComponent implements TdlibFilesManager.FileListener, FactorAnimator.Target, TGPlayerController.TrackListener {
+public class FileProgressComponent implements TdlibFilesManager.FileListener, FactorAnimator.Target, TGPlayerController.TrackListener, Destroyable {
   public static final float DEFAULT_RADIUS = 28f;
   public static final float DEFAULT_STREAMING_RADIUS = 18f;
   public static final float DEFAULT_SMALL_STREAMING_RADIUS = 12f;
@@ -104,9 +105,11 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   public static final @DrawableRes int PLAY_ICON = R.drawable.baseline_play_arrow_36_white;
 
   public interface SimpleListener {
-    boolean onClick (FileProgressComponent context, View view, TdApi.File file, long messageId);
-    void onStateChanged (TdApi.File file, @TdlibFilesManager.FileDownloadState int state);
-    void onProgress (TdApi.File file, float progress);
+    default boolean onClick (FileProgressComponent context, View view, TdApi.File file, long messageId) {
+      return false;
+    }
+    default void onStateChanged (TdApi.File file, @TdlibFilesManager.FileDownloadState int state) { }
+    default void onProgress (TdApi.File file, float progress) { }
   }
 
   private static final int FLAG_THEME = 1;
@@ -278,11 +281,11 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     return currentState == TdlibFilesManager.STATE_FAILED;
   }
 
-  public int getTotalSize () {
+  public long getTotalSize () {
     return file != null ? file.expectedSize : 0;
   }
 
-  public int getProgressSize () {
+  public long getProgressSize () {
     return file != null ? file.remote.isUploadingActive ? file.remote.uploadedSize : file.local.downloadedSize : 0;
   }
 
@@ -1535,7 +1538,8 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     }
   }
 
-  public void destroy () {
+  @Override
+  public void performDestroy () {
     if (file != null) {
       tdlib.files().unsubscribe(file.id, this);
     }

@@ -119,6 +119,7 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.TextController;
+import org.thunderdog.challegram.util.AppBuildInfo;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
 import java.io.BufferedReader;
@@ -161,6 +162,7 @@ import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.util.LocalVar;
+import me.vkryl.td.Td;
 import okio.BufferedSink;
 import okio.BufferedSource;
 import okio.Okio;
@@ -2424,7 +2426,12 @@ public class U {
   }
 
   public static CharSequence getUsefulMetadata (Tdlib tdlib) {
-    return Lang.getAppBuildAndVersion(tdlib) + " (" + BuildConfig.COMMIT + ")\nAndroid " + SdkVersion.getPrettyName() + "(" + Build.VERSION.SDK_INT + ")" + "\n" + Build.BRAND + " " + Build.MODEL + " (" + Build.DISPLAY + ")";
+    AppBuildInfo buildInfo = org.thunderdog.challegram.unsorted.Settings.instance().getCurrentBuildInformation();
+    return Lang.getAppBuildAndVersion(tdlib) + " (" + BuildConfig.COMMIT + ")\n" +
+      (!buildInfo.getPullRequests().isEmpty() ? "PRs: " + buildInfo.pullRequestsList() + "\n" : "") +
+      "TDLib: " + Td.tdlibVersion() + " (tdlib/td@" + Td.tdlibCommitHash() + ")" +
+      "Android: " + SdkVersion.getPrettyName() + "(" + Build.VERSION.SDK_INT + ")" + "\n" +
+      "Device: " + Build.BRAND + " " + Build.MODEL + " (" + Build.DISPLAY + ")";
   }
 
   public static String resolveMimeType (String path) {

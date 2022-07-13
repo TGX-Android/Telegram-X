@@ -1458,10 +1458,10 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     });
   }
 
-  private TdApi.StickerSets scheduledFeaturedSets;
+  private TdApi.TrendingStickerSets scheduledFeaturedSets;
 
   @Override
-  public void onTrendingStickersUpdated (final TdApi.StickerSets stickerSets, int unreadCount) {
+  public void onTrendingStickersUpdated (final TdApi.TrendingStickerSets stickerSets, int unreadCount) {
     tdlib.ui().post(() -> {
       if (!isDestroyed()) {
         if (getArguments() != null) {
@@ -1482,7 +1482,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     return unreadCount;
   }
 
-  private void scheduleFeaturedSets (TdApi.StickerSets stickerSets) {
+  private void scheduleFeaturedSets (TdApi.TrendingStickerSets stickerSets) {
     if (currentSection == SECTION_TRENDING) {
       scheduledFeaturedSets = stickerSets;
     } else {
@@ -1498,7 +1498,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     }
   }
 
-  private void applyScheduledFeaturedSets (TdApi.StickerSets sets) {
+  private void applyScheduledFeaturedSets (TdApi.TrendingStickerSets sets) {
     if (sets != null && !isDestroyed() && !trendingLoading) {
       if (trendingSets != null && trendingSets.size() == sets.sets.length && !trendingSets.isEmpty()) {
         boolean equal = true;

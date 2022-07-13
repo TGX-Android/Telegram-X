@@ -27,8 +27,9 @@ import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.widget.FileProgressComponent;
 
 import me.vkryl.android.util.ViewProvider;
+import me.vkryl.core.lambda.Destroyable;
 
-public abstract class BaseComponent {
+public abstract class BaseComponent implements Destroyable {
   protected @Nullable ViewProvider viewProvider;
 
   public void setViewProvider (@Nullable ViewProvider provider) {

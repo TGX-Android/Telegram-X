@@ -69,6 +69,7 @@ import org.thunderdog.challegram.widget.VideoTimelineView;
 import java.lang.ref.Reference;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
@@ -1451,7 +1452,7 @@ public class RecordAudioVideoController implements
   }
 
   private boolean recordingRoundVideo;
-  private int savedRoundDuration;
+  private int savedRoundDurationSeconds;
 
   private void startVideoRecording () {
     this.recordingRoundVideo = true;
@@ -1473,7 +1474,7 @@ public class RecordAudioVideoController implements
   }
 
   @Override
-  public void onVideoRecordProgress (String key, int readyBytesCount) {
+  public void onVideoRecordProgress (String key, long readyBytesCount) {
     if (StringUtils.equalsOrBothEmpty(roundKey, key)) {
       tdlib.client().send(new TdApi.SetFileGenerationProgress(roundGenerationId, 0, readyBytesCount), tdlib.silentHandler());
     }
@@ -1501,7 +1502,7 @@ public class RecordAudioVideoController implements
     cleanupVideoRecording();
   }
 
-  private void finishFileGeneration (int resultFileSize) {
+  private void finishFileGeneration (long resultFileSize) {
     tdlib.client().send(new TdApi.SetFileGenerationProgress(roundGenerationId, resultFileSize, resultFileSize), tdlib.silentHandler());
     tdlib.client().send(new TdApi.FinishFileGeneration(roundGenerationId, null), tdlib.silentHandler());
   }
@@ -1509,18 +1510,18 @@ public class RecordAudioVideoController implements
   private static final int VIDEO_NOTE_LENGTH = 360;
 
   @Override
-  public void onVideoRecordingFinished (String key, int resultFileSize, int resultFileDurationSeconds) {
+  public void onVideoRecordingFinished (String key, long resultFileSize, long resultFileDuration, TimeUnit resultFileDurationUnit) {
     if (StringUtils.equalsOrBothEmpty(roundKey, key)) {
       boolean success = resultFileSize > 0;
       if (awaitingRoundResult()) {
         if (success) {
-          this.savedRoundDuration = resultFileDurationSeconds;
+          this.savedRoundDurationSeconds = (int) resultFileDurationUnit.toSeconds(resultFileDuration);
           if (roundCloseMode == CLOSE_MODE_PREVIEW || roundCloseMode == CLOSE_MODE_PREVIEW_SCHEDULE) {
             awaitRoundVideo();
             finishFileGeneration(resultFileSize);
           } else {
             finishFileGeneration(resultFileSize);
-            sendVideoNote(new TdApi.InputMessageVideoNote(new TdApi.InputFileId(roundFile.id), null, savedRoundDuration, VIDEO_NOTE_LENGTH), TD.defaultSendOptions(), roundFile);
+            sendVideoNote(new TdApi.InputMessageVideoNote(new TdApi.InputFileId(roundFile.id), null, savedRoundDurationSeconds, VIDEO_NOTE_LENGTH), TD.defaultSendOptions(), roundFile);
           }
         } else {
           finishFileGeneration(-1);
@@ -1646,7 +1647,7 @@ public class RecordAudioVideoController implements
         TdApi.InputFileGenerated trimmedFile = new TdApi.InputFileGenerated(roundFile.local.path, conversion, 0);
         sendVideoNote(new TdApi.InputMessageVideoNote(trimmedFile, null, (int) Math.round(endTimeSeconds - startTimeSeconds), VIDEO_NOTE_LENGTH), sendOptions, null);
       } else {
-        sendVideoNote(new TdApi.InputMessageVideoNote(new TdApi.InputFileId(roundFile.id), null, savedRoundDuration, VIDEO_NOTE_LENGTH), sendOptions, roundFile);
+        sendVideoNote(new TdApi.InputMessageVideoNote(new TdApi.InputFileId(roundFile.id), null, savedRoundDurationSeconds, VIDEO_NOTE_LENGTH), sendOptions, roundFile);
       }
     } else {
       tdlib.client().send(new TdApi.DeleteFile(roundFile.id), tdlib.silentHandler());

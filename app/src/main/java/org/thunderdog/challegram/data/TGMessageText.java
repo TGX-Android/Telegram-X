@@ -428,7 +428,7 @@ public class TGMessageText extends TGMessage {
   @Override
   protected void onMessageContainerDestroyed () {
     if (webPage != null) {
-      webPage.destroy();
+      webPage.performDestroy();
     }
   }
 

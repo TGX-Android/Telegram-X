@@ -369,7 +369,7 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
     this.description = Strings.buildSize(entry.getSize());
     this.ignoreDescriptionUpdates = true;
 
-    this.targetFile = TD.newFile(-1, Long.toString(entry.getId()), entry.getData(), (int) entry.getSize());
+    this.targetFile = TD.newFile(-1, Long.toString(entry.getId()), entry.getData(), entry.getSize());
 
     this.fileProgress = new FileProgressComponent(context, tdlib, TdlibFilesManager.DOWNLOAD_FLAG_MUSIC, false, 0, 0);
     this.fileProgress.setViewProvider(currentViews);
@@ -395,8 +395,7 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
     this.description = StringUtils.isEmpty(entry.getArtist()) ? Lang.getString(R.string.AudioUnknownArtist) : entry.getArtist();
     this.ignoreDescriptionUpdates = true;
 
-    final int fileSize = (int) file.length();
-    this.targetFile = TD.newFile(-1, Long.toString(entry.getId()), file.getPath(), fileSize);
+    this.targetFile = TD.newFile(-1, Long.toString(entry.getId()), file.getPath(), file.length());
 
     if (entry.probablyHasArtwork()) {
       ImageFile art = new ImageFileLocal(entry.getArtwork().toString());

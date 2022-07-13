@@ -20,7 +20,7 @@ public interface StickersListener {
   default void onInstalledStickerSetsUpdated (long[] stickerSetIds, boolean isMasks) { }
   default void onRecentStickersUpdated (int[] stickerIds, boolean isAttached) { }
   default void onFavoriteStickersUpdated (int[] stickerIds) { }
-  default void onTrendingStickersUpdated (TdApi.StickerSets stickerSets, int unreadCount) { }
+  default void onTrendingStickersUpdated (TdApi.TrendingStickerSets stickerSets, int unreadCount) { }
   default void onStickerSetUpdated (TdApi.StickerSet stickerSet) { }
   default void onStickerSetArchived (TdApi.StickerSetInfo stickerSet) { }
   default void onStickerSetRemoved (TdApi.StickerSetInfo stickerSet) { }

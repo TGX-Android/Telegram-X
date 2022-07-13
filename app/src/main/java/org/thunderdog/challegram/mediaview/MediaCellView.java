@@ -1573,7 +1573,7 @@ public class MediaCellView extends ViewGroup implements
     void onSeekProgress (MediaItem item, long now, long duration, float progress);
     void onPlayPause (MediaItem item, boolean isPlaying);
     void onPlayStarted (MediaItem item, boolean isPlaying);
-    void onSeekSecondaryProgress (MediaItem item, float progress);
+    void onSeekSecondaryProgress (MediaItem item, float offset, float progress);
   }
 
   private Callback callback;
@@ -1789,8 +1789,7 @@ public class MediaCellView extends ViewGroup implements
   @Override
   public void onProgress (TdApi.File file, float progress) {
     if (callback != null) {
-      float bufferingProgress = TD.getFileOffsetProgress(file) + TD.getFilePrefixProgress(file);
-      callback.onSeekSecondaryProgress(media, bufferingProgress);
+      callback.onSeekSecondaryProgress(media, TD.getFileOffsetProgress(file), TD.getFilePrefixProgress(file));
     }
   }
 }

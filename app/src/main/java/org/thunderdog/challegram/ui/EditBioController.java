@@ -89,7 +89,7 @@ public class EditBioController extends EditBaseController<EditBioController.Argu
       protected void modifyEditText (ListItem item, ViewGroup parent, MaterialEditTextGroup editText) {
         editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         Views.setSingleLine(editText.getEditText(), false);
-        editText.setMaxLength(isDescription() ? TdConstants.MAX_CHANNEL_DESCRIPTION_LENGTH : TdConstants.MAX_BIO_LENGTH);
+        editText.setMaxLength(isDescription() ? TdConstants.MAX_CHANNEL_DESCRIPTION_LENGTH : tdlib.maxBioLength());
       }
     };
 
@@ -102,7 +102,7 @@ public class EditBioController extends EditBaseController<EditBioController.Argu
       items = new ListItem[] {item};
     } else {
       item.setInputFilters(new InputFilter[]{
-        new InputFilter.LengthFilter(TdConstants.MAX_BIO_LENGTH),
+        new InputFilter.LengthFilter(tdlib.maxBioLength()),
         new RestrictFilter(new char[]{'\n'})
           .setListener((filter, source, start, end, index, c) -> {
           if (end - start == 1) {
@@ -164,7 +164,7 @@ public class EditBioController extends EditBaseController<EditBioController.Argu
         tdlib.client().send(new TdApi.SetBio(currentBio), object -> tdlib.ui().post(() -> {
           switch (object.getConstructor()) {
             case TdApi.Ok.CONSTRUCTOR: {
-              tdlib.cache().onUpdateMyUserAbout(currentBio);
+              // Do nothing, as bio should be already updated via updateUserFull
               break;
             }
             case TdApi.Error.CONSTRUCTOR: {

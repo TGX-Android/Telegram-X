@@ -604,7 +604,7 @@ public final class TdlibFileGenerationManager {
           long done;
           while ((done = in.read(out.getBuffer(), 2048)) != -1) {
             totalDone += done;
-            tdlib.client().send(new TdApi.SetFileGenerationProgress(conversionId, (int) contentLength, (int) totalDone), tdlib.silentHandler());
+            tdlib.client().send(new TdApi.SetFileGenerationProgress(conversionId, contentLength, totalDone), tdlib.silentHandler());
           }
         } catch (IOException e) {
           error = true;
@@ -624,7 +624,7 @@ public final class TdlibFileGenerationManager {
 
   private ThreadPoolExecutor _contentExecutor;
 
-  boolean copy (final long conversionId, final String sourcePath, final Source in, final String destinationPath, final int expectedSize, @Nullable AtomicBoolean isCancelled) {
+  boolean copy (final long conversionId, final String sourcePath, final Source in, final String destinationPath, final long expectedSize, @Nullable AtomicBoolean isCancelled) {
     boolean ok = true;
     long totalDone = 0;
     long lastDoneNotify = 0;
@@ -643,7 +643,7 @@ public final class TdlibFileGenerationManager {
           if ((done == 0 && totalDone > 0) || totalDone - lastDoneNotify >= ByteUnit.KIB.toBytes(5)) {
             out.flush();
             lastDoneNotify = totalDone;
-            tdlib.client().send(new TdApi.SetFileGenerationProgress(conversionId, expectedSize, (int) totalDone), tdlib.silentHandler());
+            tdlib.client().send(new TdApi.SetFileGenerationProgress(conversionId, expectedSize, totalDone), tdlib.silentHandler());
           }
         }
         out.flush();
@@ -696,7 +696,7 @@ public final class TdlibFileGenerationManager {
       try {
         File file = new File(fromPath);
         try (Source in = Okio.source(file)) {
-          success = copy(generationId, fromPath, in, destinationPath, (int) file.length(), null);
+          success = copy(generationId, fromPath, in, destinationPath, file.length(), null);
         }
       } catch (Throwable t) {
         Log.e("Cannot copy file, fromPath: %s", t, fromPath);
@@ -954,7 +954,7 @@ public final class TdlibFileGenerationManager {
     final String sourceUri = conversion.substring(0, i);
     String arg = conversion.substring(i + 1);
     int j = arg.indexOf('_');
-    final int expectedSize = StringUtils.parseInt(j != -1 ? arg.substring(0, j) : arg);
+    final long expectedSize = StringUtils.parseInt(j != -1 ? arg.substring(0, j) : arg);
 
     getContentExecutor().execute(() -> {
       boolean success = false;
