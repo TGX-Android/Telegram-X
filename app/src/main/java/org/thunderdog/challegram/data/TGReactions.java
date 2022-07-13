@@ -24,6 +24,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.util.ReactionsListAnimator;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
@@ -56,7 +57,7 @@ public class TGReactions /*implements Destroyable*/ {
   private boolean hasReaction;
   private String chosenReaction;
 
-  private final ListAnimator<MessageReactionEntry> reactionsAnimator;
+  private final ReactionsListAnimator<MessageReactionEntry> reactionsAnimator;
   private int width = 0;
   private int height = 0;
   private int lastLineWidth = 0;
@@ -73,7 +74,7 @@ public class TGReactions /*implements Destroyable*/ {
     this.hasReaction = false;
     this.chosenReaction = "";
     this.tdlib = tdlib;
-    this.reactionsAnimator = new ListAnimator<>((a) -> parent.invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, MessagesRecyclerView.ITEM_ANIMATOR_DURATION + 50L);
+    this.reactionsAnimator = new ReactionsListAnimator<>((a) -> parent.invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, MessagesRecyclerView.ITEM_ANIMATOR_DURATION + 50L);
     setReactions(reactions);
     updateCounterAnimators(false);
     resetReactionsAnimator(false);
@@ -307,27 +308,6 @@ public class TGReactions /*implements Destroyable*/ {
     return reactionsAnimator.getMetadata().getLastLineWidth();
   }
 
-
-
-  // previous values
-
-  public int getPreviousWidth () {
-    return (int) reactionsAnimator.getMetadata().getPreviousTotalWidth();
-  }
-
-  public int getPreviousHeight () {
-    return (int) reactionsAnimator.getMetadata().getPreviousTotalHeight();
-  }
-
-  public float getPreviousLastLineWidth () {
-    return reactionsAnimator.getMetadata().getPreviousLastLineWidth();
-  }
-
-
-
-
-
-
   public float getVisibility () {
     return reactionsAnimator.getMetadata().getVisibility();
   }
@@ -344,7 +324,7 @@ public class TGReactions /*implements Destroyable*/ {
     return reactionsMap;
   }
 
-  public ListAnimator<MessageReactionEntry> getReactionsAnimator () {
+  public ReactionsListAnimator<MessageReactionEntry> getReactionsAnimator () {
     return reactionsAnimator;
   }
 
@@ -354,7 +334,7 @@ public class TGReactions /*implements Destroyable*/ {
     lastDrawX = x;
     lastDrawY = y;
     for (int a = 0; a < reactionsAnimator.size(); a++) {
-      ListAnimator.Entry<TGReactions.MessageReactionEntry> item = reactionsAnimator.getEntry(a);
+      ReactionsListAnimator.Entry<TGReactions.MessageReactionEntry> item = reactionsAnimator.getEntry(a);
       item.item.drawReactionInBubble(view, c, x + item.getRectF().left, y + item.getRectF().top, item.getVisibility());
     }
   }
@@ -385,7 +365,7 @@ public class TGReactions /*implements Destroyable*/ {
 
   public float getReactionPositionInList (String reaction) {
     for (int a = 0; a < reactionsAnimator.size(); a++) {
-      ListAnimator.Entry<TGReactions.MessageReactionEntry> item = reactionsAnimator.getEntry(a);
+      ReactionsListAnimator.Entry<TGReactions.MessageReactionEntry> item = reactionsAnimator.getEntry(a);
       if (item.item.reaction.equals(reaction)) {
         return item.getPosition();
       }
@@ -442,7 +422,7 @@ public class TGReactions /*implements Destroyable*/ {
     return !needUnset;
   }
 
-  public static class MessageReactionEntry implements ListAnimator.Measurable, TextColorSet, FactorAnimator.Target {
+  public static class MessageReactionEntry implements ReactionsListAnimator.Measurable, TextColorSet, FactorAnimator.Target {
     private final Counter counter;
     private final String reaction;
     private final TGReaction reactionObj;
@@ -489,7 +469,7 @@ public class TGReactions /*implements Destroyable*/ {
     public boolean checkTouch (int x, int y) {
       int buttonX = getX();
       int buttonY = getY();
-      int buttonWidth = getTargetWidth();
+      int buttonWidth = getWidth();
       int buttonHeight = getHeight();
 
       if (buttonX < x && x < buttonX + buttonWidth && buttonY < y && y < buttonY + buttonHeight) {
@@ -768,27 +748,8 @@ public class TGReactions /*implements Destroyable*/ {
     }
 
     @Override
-    public int getCordsMethod () {
-      return ListAnimator.GET_CORDS_FROM_CORDS;
-    }
-
-    @Override
-    public int getSpacingStart (boolean isFirst) {
-      return 0;
-    }
-
-    @Override
-    public int getSpacingEnd (boolean isLast) {
-      return 0;
-    }
-
-    @Override
     public int getWidth () {
       return (int) (counter.getWidth() + Screen.dp(20));
-    }
-
-    public int getTargetWidth () {
-      return (int) (counter.getTargetWidth() + Screen.dp(20));
     }
 
     @Override

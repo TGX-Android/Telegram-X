@@ -322,16 +322,11 @@ public class DrawAlgorithms {
   }
 
   public static float getCounterWidth (float textSize, boolean needBackground, CounterAnimator<?> counter, int drawableWidth) {
-    float contentWidth = counter.getWidth() + drawableWidth;
-    if (needBackground) {
-      return Math.max(Screen.dp(textSize - 2f) * 2, contentWidth + Screen.dp(3f) * 2);
-    } else {
-      return contentWidth;
-    }
+    return getCounterWidth(textSize, needBackground, counter.getWidth(), drawableWidth);
   }
 
-  public static float getCounterTargetWidth (float textSize, boolean needBackground, CounterAnimator<?> counter, int drawableWidth) {
-    float contentWidth = counter.getTargetWidth() + drawableWidth;
+  public static float getCounterWidth (float textSize, boolean needBackground, float counterWidth, int drawableWidth) {
+    float contentWidth = counterWidth + drawableWidth;
     if (needBackground) {
       return Math.max(Screen.dp(textSize - 2f) * 2, contentWidth + Screen.dp(3f) * 2);
     } else {

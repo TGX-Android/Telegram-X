@@ -7738,9 +7738,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     int[] positionCords = new int[2];
     view.getLocationOnScreen(positionCords);
 
-    int yCompensation = useReactionBubbles() ? messageReactions.getPreviousHeight() - messageReactions.getHeight() : 0;
-    int finishX = positionCords[0] + reactionPosition.x; //messageReactions.getReactionBubbleX(reactionEmoji) + Screen.dp(18);
-    int finishY = positionCords[1] + reactionPosition.y - (int) view.getTranslationY() + yCompensation; //messageReactions.getReactionBubbleY(reactionEmoji) + Screen.dp(14);
+    int finishX = positionCords[0] + reactionPosition.x;
+    int finishY = positionCords[1] + reactionPosition.y;
 
     android.util.Log.i("ANIMATEREACTION", String.format("%d %d", positionCords[1] + reactionPosition.y, (int) view.getTranslationY()));
 
@@ -7931,18 +7930,21 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private static class QuickReactionAnimatedPositionOffsetProvider implements ReactionsOverlayView.AnimatedPositionOffsetProvider {
     private final int startX;
     private final int startY;
+    private final int startH;
+
     private final TGReactions reactions;
 
     public QuickReactionAnimatedPositionOffsetProvider (TGReactions reactions) {
       this.reactions = reactions;
       this.startX = reactions.getLastDrawX();
       this.startY = reactions.getLastDrawY();
+      this.startH = (int) reactions.getAnimatedHeight();
     }
 
     @Override
     public void getOffset (Point p) {
       p.x = reactions.getLastDrawX() - startX;
-      p.y = reactions.getLastDrawY() - startY;
+      p.y = reactions.getLastDrawY() - startY + (startH - (int) reactions.getAnimatedHeight());
     }
   }
 }

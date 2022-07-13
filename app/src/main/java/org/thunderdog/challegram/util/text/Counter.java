@@ -40,6 +40,7 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.BounceAnimator;
 import me.vkryl.android.animator.CounterAnimator;
 import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.BitwiseUtils;
@@ -290,7 +291,12 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
   }
 
   public float getTargetWidth () {
-    return DrawAlgorithms.getCounterTargetWidth(textSize, BitwiseUtils.getFlag(flags, FLAG_NEED_BACKGROUND), counter, getDrawableWidth());
+    float targetTotalWidth = 0;
+    for (ListAnimator.Entry<CounterAnimator.Part<Text>> entry : counter) {
+      targetTotalWidth += entry.isAffectingList() ? entry.item.getWidth() : 0f;
+    }
+
+    return DrawAlgorithms.getCounterWidth(textSize, BitwiseUtils.getFlag(flags, FLAG_NEED_BACKGROUND), targetTotalWidth, getDrawableWidth());
   }
 
   public float getScaledWidth (int addWidth) {
