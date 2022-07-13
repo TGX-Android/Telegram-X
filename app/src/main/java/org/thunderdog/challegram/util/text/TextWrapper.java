@@ -68,6 +68,11 @@ public class TextWrapper implements ListAnimator.Measurable {
     this.entities = entities;
   }
 
+  public TextWrapper (Tdlib tdlib, @NonNull TdApi.FormattedText text, TextStyleProvider styleProvider, @NonNull TextColorSet colorTheme, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    this(text.text, styleProvider, colorTheme);
+    this.entities = TextEntity.valueOf(tdlib, text, openParameters);
+  }
+
   public TextWrapper (Tdlib tdlib, String text, TextStyleProvider styleProvider, @NonNull TextColorSet colorTheme, int linkFlags, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     this(text, styleProvider, colorTheme);
     this.entities = Text.makeEntities(text, linkFlags, entities, tdlib, openParameters);

@@ -446,7 +446,17 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
   }
 
   public MediaItem (BaseActivity context, Tdlib tdlib, long chatId, TdApi.ChatPhotoInfo chatPhoto) {
-    this(context, tdlib, chatId, 0, new TdApi.ChatPhoto(0, 0, chatPhoto.minithumbnail, new TdApi.PhotoSize[] {new TdApi.PhotoSize("s", chatPhoto.small, 160, 160, null), new TdApi.PhotoSize("m", chatPhoto.big, 640, 640, null)}, null));
+    this(context, tdlib, chatId, 0, new TdApi.ChatPhoto(
+      0,
+      0,
+      chatPhoto.minithumbnail,
+      new TdApi.PhotoSize[] {
+        new TdApi.PhotoSize("s", chatPhoto.small, 160, 160, null),
+        new TdApi.PhotoSize("m", chatPhoto.big, 640, 640, null)
+      },
+      null,
+      null
+    ));
   }
 
   public MediaItem (BaseActivity context, Tdlib tdlib, long chatId, long messageId, TdApi.ChatPhoto photo) {

@@ -438,6 +438,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private long authorizationDate = 0;
   private int supergroupMaxSize = 100000;
+  private int maxBioLength = 70;
   private boolean suggestOnlyApiStickers;
   private int maxGroupCallParticipantCount = 10000;
   private long roundVideoBitrate = 1000, roundAudioBitrate = 64, roundVideoMaxSize = 12582912, roundVideoDiameter = 384;
@@ -475,7 +476,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private long connectionLossTime = SystemClock.uptimeMillis();
 
   private String tMeUrl;
-  private String tdlibVersionSignature;
+  private String tdlibVersionSignature, tdlibCommitHash;
 
   private long callConnectTimeoutMs = 30000;
   private long callPacketTimeoutMs = 10000;
@@ -2135,6 +2136,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   public @Nullable TdApi.User myUser () {
     // TODO move myUser management to TdlibContext
     return cache().myUser();
+  }
+
+  public boolean hasPremium () {
+    TdApi.User user = cache().myUser();
+    return user != null && user.isPremium;
   }
 
   public TdApi.MessageSender mySender () {
@@ -4700,7 +4706,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (BuildConfig.EXPERIMENTAL) {
       // Disable Notifications API if we are running experimental build
       notificationGroupCountMax = 0;
-      notificationGroupSizeMax = 0;
+      notificationGroupSizeMax = 1;
     } else {
       notificationGroupCountMax = 25;
       notificationGroupSizeMax = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ? 7 : 10;
@@ -5455,6 +5461,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return supergroupMaxSize;
   }
 
+  public int maxBioLength () {
+    return maxBioLength;
+  }
+
   public int forwardMaxCount () {
     return forwardMaxCount;
   }
@@ -5534,6 +5544,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public @Nullable String tdlibVersionSignature () {
     return tdlibVersionSignature;
+  }
+
+  public @Nullable String tdlibCommitHash () {
+    return tdlibCommitHash;
+  }
+
+  public @Nullable String tdlibCommitHashShort () {
+    return StringUtils.limit(tdlibCommitHash(), 7);
   }
 
   public String tMeHost () {
@@ -7237,6 +7255,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           case "supergroup_size_max":
             this.supergroupMaxSize = (int) longValue;
             break;
+          case "bio_length_max":
+            this.maxBioLength = (int) longValue;
+            break;
           case "forwarded_messages_count_max":
             this.forwardMaxCount = (int) longValue;
             break;
@@ -7371,6 +7392,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             break;
           case "version":
             this.tdlibVersionSignature = stringValue;
+            break;
+          case "commit_hash":
+            this.tdlibCommitHash = stringValue;
             break;
           case "animation_search_bot_username":
             this.animationSearchBotUsername = stringValue;

@@ -198,14 +198,6 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
   }
 
   @Override
-  public void onStateChanged (TdApi.File file, @TdlibFilesManager.FileDownloadState int state) {
-
-  }
-
-  @Override
-  public void onProgress (TdApi.File file, float progress) { }
-
-  @Override
   public boolean onClick (FileProgressComponent context, View view, TdApi.File file, long messageId) {
     if (Config.ROUND_VIDEOS_PLAYBACK_SUPPORTED) {
       if (view.getParent() instanceof MessageViewGroup) {

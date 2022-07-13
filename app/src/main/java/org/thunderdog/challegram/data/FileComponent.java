@@ -845,4 +845,11 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
   public TdApi.File getFile () {
     return getFileProgress().getFile();
   }
+
+  @Override
+  public void performDestroy () {
+    if (progress != null) {
+      progress.performDestroy();
+    }
+  }
 }

@@ -93,9 +93,6 @@ public class WallpaperView extends View implements ThemeChangeListener, ChatStyl
     });
   }
 
-  @Override
-  public void onMyUserBioUpdated (String newBio) { }
-
   private TGBackground scheduledWallpaper;
   private boolean scheduledWallpaperAnimated;
 

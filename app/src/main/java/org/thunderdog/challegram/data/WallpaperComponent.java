@@ -68,7 +68,7 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
   private ImageFile imageFileMinithumbnail;
   private ImageFile imageFilePrimary;
 
-  private FileProgressComponent progress;
+  private final FileProgressComponent progress;
 
   public WallpaperComponent (@NonNull TGMessage context, @NonNull TdApi.WebPage webPage, @NonNull String wallpaperUrl) {
     this.context = context;
@@ -333,5 +333,10 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
   @Override
   public FileProgressComponent getFileProgress () {
     return progress;
+  }
+
+  @Override
+  public void performDestroy () {
+    progress.performDestroy();
   }
 }

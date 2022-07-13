@@ -87,6 +87,10 @@ public class TGStickerObj {
     return stickerSetId != 0 ? stickerSetId : sticker != null ? sticker.setId : 0;
   }
 
+  public boolean isPremium () {
+    return sticker != null && sticker.premiumAnimation != null;
+  }
+
   public boolean needViewPackButton () {
     // (isFavorite() || isRecent())
     return getStickerSetId() != 0 && (flags & FLAG_NO_VIEW_PACK) == 0;

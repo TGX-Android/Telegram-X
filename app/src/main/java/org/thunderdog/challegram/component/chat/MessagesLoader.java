@@ -808,7 +808,7 @@ public class MessagesLoader implements Client.ResultHandler {
         } else {
           throw new JSONException("Invalid voice value: " + rawItem);
         }
-        voice = new TdApi.VoiceNote(duration, TD.newRandomWaveform(), "audio/ogg", new TdApi.File());
+        voice = new TdApi.VoiceNote(duration, TD.newRandomWaveform(), "audio/ogg", false, "", new TdApi.File());
       }
 
       if (data.has("photo")) {
@@ -853,7 +853,17 @@ public class MessagesLoader implements Client.ResultHandler {
         TdApi.File file = tdlib.getRemoteFile(fileId, new TdApi.FileTypeSticker(), 0);
         if (thumbFile == null || file == null)
           throw new JSONException("sticker.thumbFile == null || sticker.file == null");
-        sticker = new TdApi.Sticker(setId, width, height, null, new TdApi.StickerTypeStatic(), null, new TdApi.Thumbnail(new TdApi.ThumbnailFormatWebp(), width, height, thumbFile), file);
+        sticker = new TdApi.Sticker(
+          setId,
+          width,
+          height,
+          null,
+          new TdApi.StickerTypeStatic(),
+          null,
+          new TdApi.Thumbnail(new TdApi.ThumbnailFormatWebp(), width, height, thumbFile),
+          null,
+          file
+        );
       }
 
       if (data.has("left")) {
@@ -891,7 +901,7 @@ public class MessagesLoader implements Client.ResultHandler {
       if (photo != null)
         content = new TdApi.MessagePhoto(photo, text, false);
       else if (sticker != null)
-        content = new TdApi.MessageSticker(sticker);
+        content = new TdApi.MessageSticker(sticker, false);
       else if (audio != null)
         content = new TdApi.MessageAudio(audio, text);
       else if (voice != null)
