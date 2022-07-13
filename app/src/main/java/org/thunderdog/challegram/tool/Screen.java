@@ -44,6 +44,7 @@ public class Screen {
     RecordDurationView.resetSizes();
     TGWebPage.reset();
     SimplestCheckBox.reset();
+    __statusBarHeight = null;
   }
 
   private static float _lastDensity = -1f;
