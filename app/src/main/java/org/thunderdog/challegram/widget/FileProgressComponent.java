@@ -66,9 +66,10 @@ import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.Td;
 
-public class FileProgressComponent implements TdlibFilesManager.FileListener, FactorAnimator.Target, TGPlayerController.TrackListener {
+public class FileProgressComponent implements TdlibFilesManager.FileListener, FactorAnimator.Target, TGPlayerController.TrackListener, Destroyable {
   public static final float DEFAULT_RADIUS = 28f;
   public static final float DEFAULT_STREAMING_RADIUS = 18f;
   public static final float DEFAULT_SMALL_STREAMING_RADIUS = 12f;
@@ -1537,7 +1538,8 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     }
   }
 
-  public void destroy () {
+  @Override
+  public void performDestroy () {
     if (file != null) {
       tdlib.files().unsubscribe(file.id, this);
     }

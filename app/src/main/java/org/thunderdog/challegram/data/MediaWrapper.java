@@ -1170,7 +1170,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   private boolean destroyed;
 
   public void destroy () {
-    fileProgress.destroy();
+    fileProgress.performDestroy();
     destroyed = true;
   }
 

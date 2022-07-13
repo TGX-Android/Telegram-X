@@ -59,9 +59,10 @@ import java.util.Locale;
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.Td;
 
-public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWrapper.OnClickListener, TGInlineKeyboard.ClickListener, Client.ResultHandler {
+public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWrapper.OnClickListener, TGInlineKeyboard.ClickListener, Client.ResultHandler, Destroyable {
   private static final int MAX_TITLE_LINES = 4;
   private static final int MAX_DESCRIPTION_LINES = 8;
 
@@ -120,7 +121,8 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   // private String trimmedName;
   // private int trimmedNameWidth;
 
-  private long chatId, messageId;
+  private final long chatId;
+  private long messageId;
   private final TGMessageText parent;
   private final TdApi.WebPage webPage;
   private final String url;
@@ -456,8 +458,14 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     return (flags & FLAG_DESTROYED) != 0;
   }
 
-  public void destroy () {
-    flags |= FLAG_DESTROYED;
+  @Override
+  public void performDestroy () {
+    if (!isDestroyed()) {
+      flags |= FLAG_DESTROYED;
+      if (component != null) {
+        component.performDestroy();
+      }
+    }
   }
 
   public MediaWrapper getMediaWrapper () {
