@@ -400,20 +400,26 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
           switch (mediaBlock.getConstructor()) {
             case TdApi.PageBlockAnimation.CONSTRUCTOR: {
               TdApi.PageBlockAnimation animation = (TdApi.PageBlockAnimation) mediaBlock;
-              String text = TD.getText(animation.caption.text);
-              item = MediaItem.valueOf(parent.context(), parent.tdlib(), animation.animation, new TdApi.FormattedText(text, Text.findEntities(text, Text.ENTITY_FLAGS_EXTERNAL)));
+              if (animation.animation != null) {
+                String text = TD.getText(animation.caption.text);
+                item = MediaItem.valueOf(parent.context(), parent.tdlib(), animation.animation, new TdApi.FormattedText(text, Text.findEntities(text, Text.ENTITY_FLAGS_EXTERNAL)));
+              }
               break;
             }
             case TdApi.PageBlockVideo.CONSTRUCTOR: {
               TdApi.PageBlockVideo video = (TdApi.PageBlockVideo) mediaBlock;
-              String text = TD.getText(video.caption.text);
-              item = MediaItem.valueOf(parent.context(), parent.tdlib(), video.video, new TdApi.FormattedText(text, Text.findEntities(text, Text.ENTITY_FLAGS_EXTERNAL)));
+              if (video.video != null) {
+                String text = TD.getText(video.caption.text);
+                item = MediaItem.valueOf(parent.context(), parent.tdlib(), video.video, new TdApi.FormattedText(text, Text.findEntities(text, Text.ENTITY_FLAGS_EXTERNAL)));
+              }
               break;
             }
             case TdApi.PageBlockPhoto.CONSTRUCTOR: {
               TdApi.PageBlockPhoto photo = (TdApi.PageBlockPhoto) mediaBlock;
-              String text = TD.getText(photo.caption.text);
-              item = MediaItem.valueOf(parent.context(), parent.tdlib(), photo.photo, new TdApi.FormattedText(text, Text.findEntities(text, Text.ENTITY_FLAGS_EXTERNAL)));
+              if (photo.photo != null) {
+                String text = TD.getText(photo.caption.text);
+                item = MediaItem.valueOf(parent.context(), parent.tdlib(), photo.photo, new TdApi.FormattedText(text, Text.findEntities(text, Text.ENTITY_FLAGS_EXTERNAL)));
+              }
               break;
             }
           }
