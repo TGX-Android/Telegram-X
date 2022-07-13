@@ -56,7 +56,7 @@ public class SliderView extends View implements FactorAnimator.Target {
   }
 
   private float value; // -1f..0f -- left to center, 0..1f -- center to right
-  private float secondaryValue; // -1f..0f -- left to center, 0..1f -- center to right
+  private float secondaryValue, secondaryValueOffset; // -1f..0f -- left to center, 0..1f -- center to right
 
   public void setValue (float value) {
     if (this.value != value) {
@@ -65,19 +65,16 @@ public class SliderView extends View implements FactorAnimator.Target {
     }
   }
 
-  public void setSecondaryValue (float secondaryValue) {
-    if (this.secondaryValue != secondaryValue) {
-      this.secondaryValue = secondaryValue;
+  public void setSecondaryValue (float offset, float value) {
+    if (this.secondaryValueOffset != offset || this.secondaryValue != value) {
+      this.secondaryValueOffset = offset;
+      this.secondaryValue = value;
       invalidate();
     }
   }
 
   public float getValue () {
     return value;
-  }
-
-  public float getSecondaryValue () {
-    return secondaryValue;
   }
 
   private void changeValue (float value) {
@@ -448,8 +445,9 @@ public class SliderView extends View implements FactorAnimator.Target {
     }
 
     if (secondaryValue > 0f && anchorMode == ANCHOR_MODE_START) {
-      int cx = left + (int) ((float) width * secondaryValue);
-      rectF.set(left, top, cx, bottom);
+      float leftX = left + (float) width * secondaryValueOffset;
+      float rightX = leftX + (float) width * secondaryValue;
+      rectF.set(leftX, top, rightX, bottom);
       c.drawRoundRect(rectF, height, height, Paints.fillingPaint(secondaryColor));
     }
 

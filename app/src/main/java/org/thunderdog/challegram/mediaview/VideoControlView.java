@@ -271,10 +271,9 @@ public class VideoControlView extends FrameLayoutFix implements FactorAnimator.T
     }
   }
 
-  public void updateSecondarySeek (float progressBuffered) {
-    progressBuffered = MathUtils.clamp(progressBuffered);
+  public void updateSecondarySeek (float offset, float progress) {
     if (sliderView != null) {
-      sliderView.setSecondaryValue(progressBuffered);
+      sliderView.setSecondaryValue(offset, progress);
     }
   }
 
