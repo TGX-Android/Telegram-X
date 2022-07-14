@@ -755,6 +755,7 @@
   <item type="id" name="btn_sendByEnter" />
   <item type="id" name="btn_secretLinkPreviews" />
   <item type="id" name="btn_favorite" />
+  <item type="id" name="btn_removeRecent" />
   <item type="id" name="btn_hideChatKeyboard" />
   <item type="id" name="btn_hideAuthor" />
   <item type="id" name="btn_removeCaptions" />
