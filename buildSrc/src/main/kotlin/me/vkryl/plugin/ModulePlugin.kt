@@ -251,7 +251,7 @@ open class ModulePlugin : Plugin<Project> {
                   signingConfig = signingConfigs["release"]
 
                   isMinifyEnabled = !dontObfuscate
-                  isShrinkResources = true
+                  isShrinkResources = !dontObfuscate
 
                   ndk.debugSymbolLevel = "full"
                   ndk.jobs = Runtime.getRuntime().availableProcessors()
