@@ -22,13 +22,10 @@ import com.android.build.gradle.AppExtension
 import com.android.build.gradle.BaseExtension
 import com.android.build.gradle.LibraryExtension
 import com.android.build.gradle.ProguardFiles
-import com.beust.klaxon.JsonObject
-import com.beust.klaxon.Parser
 import getLongOrThrow
 import getOrThrow
 import loadProperties
 import monthYears
-import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.compile.JavaCompile
@@ -69,26 +66,20 @@ open class ModulePlugin : Plugin<Project> {
       add("coreLibraryDesugaring", "com.android.tools:desugar_jdk_libs:${LibraryVersions.DESUGAR}")
     }
 
-    val javaVersion = JavaVersion.VERSION_11
-
     val properties = loadProperties()
-    val keystore = Keystore(properties.getOrThrow("keystore.file"))
+    val keystoreFilePath = properties.getProperty("keystore.file", "")
+    val disableSigning = properties.getProperty("app.disable_signing", "false") == "true"
+    val keystore = if (keystoreFilePath.isNotEmpty() && !disableSigning) {
+      Keystore(keystoreFilePath)
+    } else {
+      null
+    }
     val appVersionOverride = properties.getProperty("app.version", "0").toInt()
     val appId = properties.getOrThrow("app.id")
+    val isExperimentalBuild = keystore == null || properties.getProperty("app.experimental", "false") == "true"
+    val dontObfuscate = properties.getProperty("app.dontobfuscate", "false") == "true"
 
-    val parser: Parser = Parser.default()
-    val googleServices = parser.parse("app/google-services.json") as JsonObject
-    var foundPackageName: String? = null
-    googleServices.array<JsonObject>("client")!!.filter {
-      // client_info.android_client_info.package_name
-      val clientInfo = it.obj("client_info")!!
-      val googleAppId = clientInfo.string("mobilesdk_app_id")!!
-      val clientInfoPackage = clientInfo.obj("android_client_info")?.string("package_name")
-      foundPackageName = clientInfoPackage
-      clientInfoPackage == appId && (googleAppId != "1:1037154859800:android:683d617a5fe76437" || clientInfoPackage == "org.thunderdog.challegram")
-    }.ifEmpty {
-      error("google_services.json is not updated for $appId package. Found: $foundPackageName")
-    }
+    project.extra.set("experimental", isExperimentalBuild)
 
     val versions = loadProperties("version.properties")
     val appVersion = if (appVersionOverride > 0) appVersionOverride else versions.getOrThrow("version.app").toInt()
@@ -112,8 +103,8 @@ open class ModulePlugin : Plugin<Project> {
 
         compileOptions {
           isCoreLibraryDesugaringEnabled = true
-          sourceCompatibility = javaVersion
-          targetCompatibility = javaVersion
+          sourceCompatibility = Config.JAVA_VERSION
+          targetCompatibility = Config.JAVA_VERSION
         }
 
         testOptions {
@@ -127,7 +118,7 @@ open class ModulePlugin : Plugin<Project> {
 
         project.tasks.withType(KotlinCompile::class.java).configureEach {
           kotlinOptions {
-            jvmTarget = javaVersion.toString()
+            jvmTarget = Config.JAVA_VERSION.toString()
             allWarningsAsErrors = true
           }
         }
@@ -155,17 +146,18 @@ open class ModulePlugin : Plugin<Project> {
 
           is AppExtension -> {
             var git: List<String>
-            val process = ProcessBuilder("bash", "-c", "echo \"$(git rev-parse --short HEAD) $(git rev-parse HEAD) $(git show -s --format=%ct) $(git config --get remote.origin.url)\"").start()
+            val process = ProcessBuilder("bash", "-c", "echo \"$(git rev-parse --short HEAD) $(git rev-parse HEAD) $(git show -s --format=%ct) $(git config --get remote.origin.url) $(git log -1 --pretty=format:'%an')\"").start()
             process.inputStream.reader(Charsets.UTF_8).use {
               git = it.readText().trim().split(' ', limit = 5)
             }
             process.waitFor()
-            if (git.size != 4) {
+            if (git.size != 5) {
               error("Source code must be fetched from git repository.")
             }
             val commitHashShort = git[0]
             val commitHashLong = git[1]
             val commitDate = git[2].toLong()
+            val commitAuthor = git[4]
             val remoteUrl = if (git[3].startsWith("git@")) {
               val index = git[3].indexOf(':', 4)
               val domain = git[3].substring(4, index)
@@ -210,6 +202,8 @@ open class ModulePlugin : Plugin<Project> {
               buildConfigLong("COMMIT_DATE", commitDate)
               buildConfigString("SOURCES_URL", properties.getProperty("app.sources_url", remoteUrl))
 
+              buildConfigField("boolean", "EXPERIMENTAL", isExperimentalBuild.toString())
+
               buildConfigField("long[]", "PULL_REQUEST_ID", "{${
                 pullRequests.joinToString(", ") { it.id.toString() }
               }}")
@@ -225,43 +219,55 @@ open class ModulePlugin : Plugin<Project> {
               buildConfigField("String[]", "PULL_REQUEST_URL", "{${
                 pullRequests.joinToString(", ") { "\"${remoteUrl}/pull/${it.id}/files/${it.commitLong}\"" } 
               }}")
+              buildConfigField("String[]", "PULL_REQUEST_AUTHOR", "{${
+                pullRequests.joinToString(", ") { "\"${it.author}\"" }
+              }}")
             }
 
-            signingConfigs {
-              arrayOf(getByName("debug"), maybeCreate("release")).forEach { config ->
-                config.storeFile = keystore.file
-                config.storePassword = keystore.password
-                config.keyAlias = keystore.keyAlias
-                config.keyPassword = keystore.keyPassword
-                config.enableV2Signing = true
+            if (keystore != null) {
+              signingConfigs {
+                arrayOf(getByName("debug"), maybeCreate("release")).forEach { config ->
+                  config.storeFile = keystore.file
+                  config.storePassword = keystore.password
+                  config.keyAlias = keystore.keyAlias
+                  config.keyPassword = keystore.keyPassword
+                  config.enableV2Signing = true
+                }
+              }
+
+              buildTypes {
+                getByName("debug") {
+                  signingConfig = signingConfigs["debug"]
+
+                  isDebuggable = true
+                  isJniDebuggable = true
+                  isMinifyEnabled = false
+
+                  ndk.debugSymbolLevel = "full"
+                  ndk.jobs = Runtime.getRuntime().availableProcessors()
+                }
+
+                getByName("release") {
+                  signingConfig = signingConfigs["release"]
+
+                  isMinifyEnabled = !dontObfuscate
+                  isShrinkResources = !dontObfuscate
+
+                  ndk.debugSymbolLevel = "full"
+                  ndk.jobs = Runtime.getRuntime().availableProcessors()
+
+                  proguardFiles(
+                    getDefaultProguardFile(ProguardFiles.ProguardFile.OPTIMIZE.fileName),
+                    "proguard-rules.pro"
+                  )
+                }
               }
             }
 
             buildTypes {
-              getByName("debug") {
-                signingConfig = signingConfigs["debug"]
-
-                isDebuggable = true
-                isJniDebuggable = true
-                isMinifyEnabled = false
-
-                ndk.debugSymbolLevel = "full"
-                ndk.jobs = Runtime.getRuntime().availableProcessors()
-              }
-
-              getByName("release") {
-                signingConfig = signingConfigs["release"]
-
-                isMinifyEnabled = true
-                isShrinkResources = true
-
-                ndk.debugSymbolLevel = "full"
-                ndk.jobs = Runtime.getRuntime().availableProcessors()
-
-                proguardFiles(
-                  getDefaultProguardFile(ProguardFiles.ProguardFile.OPTIMIZE.fileName),
-                  "proguard-rules.pro"
-                )
+              lintOptions {
+                disable("MissingTranslation")
+                isCheckDependencies = true
               }
             }
 

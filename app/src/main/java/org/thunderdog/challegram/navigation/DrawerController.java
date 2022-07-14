@@ -36,11 +36,11 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.base.TogglerView;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.support.ViewSupport;
@@ -64,7 +64,6 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.ChatsController;
 import org.thunderdog.challegram.ui.ListItem;
-import org.thunderdog.challegram.ui.MainController;
 import org.thunderdog.challegram.ui.PeopleController;
 import org.thunderdog.challegram.ui.SettingsAdapter;
 import org.thunderdog.challegram.ui.SettingsController;
@@ -785,11 +784,8 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     if (item.getId() != R.id.account) {
       switch (item.getId()) {
         case R.id.btn_addAccount: {
-          if (BuildConfig.DEBUG) {
-            if (!UI.inTestMode()) {
-              UI.TEST_MODE = UI.TEST_MODE_USER;
-              context.currentTdlib().ui().addAccount(context, true, true);
-            }
+          if (Config.ALLOW_DEBUG_DC) {
+            context.currentTdlib().ui().addAccount(context, true, true);
           } else {
             context.currentTdlib().getTesterLevel(level -> {
               if (level >= Tdlib.TESTER_LEVEL_ADMIN) {

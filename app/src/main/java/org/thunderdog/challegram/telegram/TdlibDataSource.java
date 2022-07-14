@@ -181,22 +181,22 @@ public final class TdlibDataSource extends BaseDataSource {
     }
   }
 
-  private static int getAvailableSize (TdApi.File file, int offset, int length) {
-    int available;
+  private static int getAvailableSize (TdApi.File file, long offset, int length) {
+    long available;
     if (file.local.isDownloadingCompleted)
       available = file.local.downloadedSize - offset;
     else if (offset >= file.local.downloadOffset && offset < file.local.downloadOffset + file.local.downloadedPrefixSize)
       available = file.local.downloadedPrefixSize - (offset - file.local.downloadOffset);
     else
       return 0;
-    return Math.max(0, Math.min(length, available));
+    return (int) Math.max(0, Math.min(length, available));
   }
 
   private final TdApi.File localFile = new TdApi.File(0, 0, 0, new TdApi.LocalFile(), new TdApi.RemoteFile());
   private CountDownLatch latch;
   private RandomAccessFile openFile;
 
-  private boolean acquireReference (TdApi.File file, int offset) {
+  private boolean acquireReference (TdApi.File file, long offset) {
     if (!referenceAcquired && file.local.canBeDownloaded) {
       referenceAcquired = true;
       tdlib.files().addCloudReference(file, offset, listener, false, true);
@@ -242,7 +242,7 @@ public final class TdlibDataSource extends BaseDataSource {
         }
         if (file == null)
           throw new TdlibDataSourceException("file == null");
-        int offset = (int) bytesRead;
+        final long offset = bytesRead;
         if (file.size != 0 && offset >= file.size)
           return C.RESULT_END_OF_INPUT;
 

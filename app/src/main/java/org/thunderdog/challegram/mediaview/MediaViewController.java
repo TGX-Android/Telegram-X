@@ -3008,9 +3008,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   @Override
-  public void onSeekSecondaryProgress (MediaItem item, float progress) {
+  public void onSeekSecondaryProgress (MediaItem item, float offset, float progress) {
     if (stack.getCurrent() == item && videoSliderView != null) {
-      videoSliderView.updateSecondarySeek(progress);
+      videoSliderView.updateSecondarySeek(offset, progress);
     }
   }
 

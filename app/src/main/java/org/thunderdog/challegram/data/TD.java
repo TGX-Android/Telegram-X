@@ -254,8 +254,8 @@ public class TD {
         case TdApi.TextEntityTypeCashtag.CONSTRUCTOR: {
           String hashtag = Td.substring(text, entity);
           span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
-            .setOnClickListener((view, span1) -> {
-              if (onClickListener == null || !onClickListener.onClick(view, span1)) {
+            .setOnClickListener((view, span1, clickedText) -> {
+              if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 if (context != null) {
                   HashtagController c = new HashtagController(context.context(), context.tdlib());
                   c.setArguments(hashtag);
@@ -269,8 +269,8 @@ public class TD {
         case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR: {
           String emailAddress = Td.substring(text, entity);
           span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
-            .setOnClickListener((view, span1) -> {
-              if (onClickListener == null || !onClickListener.onClick(view, span1)) {
+            .setOnClickListener((view, span1, clickedText) -> {
+              if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 Intents.sendEmail(emailAddress);
               }
               return true;
@@ -280,8 +280,8 @@ public class TD {
         case TdApi.TextEntityTypeMention.CONSTRUCTOR: {
           String username = Td.substring(text, entity);
           span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
-            .setOnClickListener((view, span1) -> {
-              if (onClickListener == null || !onClickListener.onClick(view, span1)) {
+            .setOnClickListener((view, span1, clickedText) -> {
+              if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 if (context != null)
                   context.tdlib().ui().openPublicChat(context, username, null);
               }
@@ -292,8 +292,8 @@ public class TD {
         case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR: {
           String cardNumber = Td.substring(text, entity);
           span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
-            .setOnClickListener((view, span1) -> {
-              if (onClickListener == null || !onClickListener.onClick(view, span1)) {
+            .setOnClickListener((view, span1, clickedText) -> {
+              if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 if (context != null)
                   context.tdlib().ui().openCardNumber(context, cardNumber);
               }
@@ -304,8 +304,8 @@ public class TD {
         case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR: {
           String phoneNumber = Td.substring(text, entity);
           span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
-            .setOnClickListener((view, span1) -> {
-              if (onClickListener == null || !onClickListener.onClick(view, span1)) {
+            .setOnClickListener((view, span1, clickedText) -> {
+              if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 Intents.openNumber(phoneNumber);
               }
               return true;
@@ -315,8 +315,8 @@ public class TD {
         case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
           String url = Td.substring(text, entity);
           span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
-            .setOnClickListener((view, span1) -> {
-              if (onClickListener == null || !onClickListener.onClick(view, span1)) {
+            .setOnClickListener((view, span1, clickedText) -> {
+              if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 if (context != null)
                   context.tdlib().ui().openUrl(context, url, null);
               }
@@ -326,8 +326,8 @@ public class TD {
         case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
           String textUrl = ((TdApi.TextEntityTypeTextUrl) entity.type).url;
           span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
-            .setOnClickListener((view, span1) -> {
-              if (onClickListener == null || !onClickListener.onClick(view, span1)) {
+            .setOnClickListener((view, span1, clickedText) -> {
+              if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 if (context != null)
                   context.tdlib().ui().openUrl(context, textUrl, null);
               }
@@ -348,10 +348,11 @@ public class TD {
         if (b == null)
           b = new SpannableStringBuilder(text);
         if (span.getOnClickListener() != null) {
+          final String entityText = Td.substring(text, entity);
           b.setSpan(new ClickableSpan() {
             @Override
             public void onClick (@NonNull View widget) {
-              span.getOnClickListener().onClick(widget, span);
+              span.getOnClickListener().onClick(widget, span, entityText);
             }
           }, entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
@@ -1982,7 +1983,27 @@ public class TD {
   }
 
   public static TdApi.User newFakeUser (long userId, String firstName, String lastName) {
-    return new TdApi.User(userId, firstName, lastName, "", "", new TdApi.UserStatusEmpty(), null, false, false, false, false, null, false, false, true, new TdApi.UserTypeRegular(), null);
+    return new TdApi.User(
+      userId,
+      firstName,
+      lastName,
+      "",
+      "",
+      new TdApi.UserStatusEmpty(),
+      null,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      false,
+      false,
+      true,
+      new TdApi.UserTypeRegular(),
+      null,
+      false
+    );
   }
 
   public static TdApi.Audio newFakeAudio (TdApi.Document doc) {
@@ -2005,7 +2026,7 @@ public class TD {
     return message;
   }
 
-  public static int getFileSize (TdApi.File file) {
+  public static long getFileSize (TdApi.File file) {
     return file == null ? 0 : file.size;
   }
 
@@ -2741,7 +2762,7 @@ public class TD {
     functions.add(new TdApi.SendMessage(chatId, 0, 0, options, null, content));
   }
 
-  public static boolean withinDistance (TdApi.File file, int offset) {
+  public static boolean withinDistance (TdApi.File file, long offset) {
     return offset >= file.local.downloadOffset && offset <= file.local.downloadOffset + file.local.downloadedPrefixSize + ByteUnit.KIB.toBytes(512);
   }
 
@@ -2878,11 +2899,11 @@ public class TD {
 
   public static TdApi.File newFile (File file) {
     final String path = file.getPath();
-    final int size = (int) file.length();
+    final long size = file.length();
     return newFile(0, path, path, size);
   }
 
-  public static TdApi.File newFile (int id, String remoteId, String path, int size) {
+  public static TdApi.File newFile (int id, String remoteId, String path, long size) {
     return new TdApi.File(id, size, size, new TdApi.LocalFile(path, false, false, false, true, 0, size, size), new TdApi.RemoteFile(remoteId, "", false, false, 0));
   }
 
@@ -3011,13 +3032,14 @@ public class TD {
           int startIndex = spanned.getSpanStart(span);
           int endIndex = spanned.getSpanEnd(span);
           if (span.isClickable()) {
+            String clickedText = spanned.subSequence(startIndex, endIndex).toString();
             if (b == null)
               b = spanned instanceof SpannableStringBuilder ? (SpannableStringBuilder) spanned : new SpannableStringBuilder(spanned);
             b.removeSpan(span);
             b.setSpan(new ClickableSpan() {
               @Override
               public void onClick (@NonNull View widget) {
-                span.onClick(widget);
+                span.onClick(widget, clickedText);
               }
             }, startIndex, endIndex, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             b.setSpan(span, startIndex, endIndex, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -3089,7 +3111,7 @@ public class TD {
     return result;
   }
 
-  public static int calculateUnreadStickerSetCount (TdApi.StickerSets stickerSets) {
+  public static int calculateUnreadStickerSetCount (TdApi.TrendingStickerSets stickerSets) {
     int count = 0;
     for (TdApi.StickerSetInfo info : stickerSets.sets) {
       if (!info.isViewed) {
@@ -4160,7 +4182,7 @@ public class TD {
     private final TdApi.File file;
     private final String fileName;
     private final String mimeType;
-    private final int fileSize;
+    private final long fileSize;
     private final TdApi.FileType fileType;
 
     public DownloadedFile (TdApi.File file, String fileName, String mimeType, TdApi.FileType fileType) {
@@ -4203,7 +4225,7 @@ public class TD {
       return file.id;
     }
 
-    public int getFileSize () {
+    public long getFileSize () {
       return fileSize;
     }
 

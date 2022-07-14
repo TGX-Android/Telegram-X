@@ -129,7 +129,7 @@ import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.StringList;
-import org.thunderdog.challegram.widget.CheckBox;
+import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.InfiniteRecyclerView;
 import org.thunderdog.challegram.widget.PopupLayout;
@@ -687,7 +687,7 @@ public class TdlibUi extends Handler {
     tdlib.client().send(new TdApi.GetSupportUser(), tdlib.silentHandler());
 
     PopupLayout[] popupFinal = new PopupLayout[1];
-    popupFinal[0] = context.showOptions(Strings.buildMarkdown(context, Lang.getString(R.string.AskAQuestionInfo), (view, span) -> {
+    popupFinal[0] = context.showOptions(Strings.buildMarkdown(context, Lang.getString(R.string.AskAQuestionInfo), (view, span, clickedText) -> {
       if (popupFinal[0] != null) {
         popupFinal[0].hideWindow(true);
       }
@@ -2734,7 +2734,7 @@ public class TdlibUi extends Handler {
                     case ListItem.TYPE_CHECKBOX_OPTION:
                     case ListItem.TYPE_CHECKBOX_OPTION_MULTILINE:
                     case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
-                      ((CheckBox) itemView.getChildAt(0)).setChecked(item.isSelected(), isUpdate);
+                      ((CheckBoxView) itemView.getChildAt(0)).setChecked(item.isSelected(), isUpdate);
                       break;
                   }
                 })
@@ -6229,5 +6229,26 @@ public class TdlibUi extends Handler {
         UI.showError(result);
       }
     }));
+  }
+
+  public static CharSequence getTdlibVersionSignature () {
+    return Lang.getStringSecure(R.string.format_commit, Lang.codeCreator(), Td.tdlibVersion(), Td.tdlibCommitHash());
+  }
+
+  public void showPremiumAlert (ViewController<?> context, View view) {
+    // TODO proper alert with sections
+    context
+      .context()
+      .tooltipManager()
+      .builder(view)
+      .icon(R.drawable.baseline_warning_24)
+      .controller(context)
+      .show(tdlib,
+        Strings.buildMarkdown(context,
+          Lang.getString(R.string.PremiumRequiredSticker),
+          null
+        )
+      )
+      .hideDelayed();
   }
 }

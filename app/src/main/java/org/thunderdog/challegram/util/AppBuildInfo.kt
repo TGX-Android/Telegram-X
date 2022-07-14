@@ -12,8 +12,11 @@
  */
 package org.thunderdog.challegram.util
 
+import me.vkryl.core.limit
 import me.vkryl.leveldb.LevelDB
+import me.vkryl.td.tdlibCommitHashFull
 import org.thunderdog.challegram.BuildConfig
+import kotlin.math.max
 
 data class AppBuildInfo(
   val installationId: Long,
@@ -23,6 +26,7 @@ data class AppBuildInfo(
   val commit: String,
   val commitFull: String,
   val commitDate: Long,
+  val tdlibCommitFull: String?,
   val pullRequests: List<PullRequest>
 ) {
   constructor(installationId: Long) : this(
@@ -33,6 +37,7 @@ data class AppBuildInfo(
     BuildConfig.COMMIT,
     BuildConfig.COMMIT_FULL,
     BuildConfig.COMMIT_DATE,
+    tdlibCommitHashFull(),
     builtinPullRequests()
   )
 
@@ -44,6 +49,9 @@ data class AppBuildInfo(
       .putString("${keyPrefix}_commit", commit)
       .putString("${keyPrefix}_full", commitFull)
       .putLong("${keyPrefix}_date", commitDate)
+    if (!tdlibCommitFull.isNullOrEmpty()) {
+      editor.putString("${keyPrefix}_tdlib", tdlibCommitFull)
+    }
     editor
       .putLongArray("${keyPrefix}_prs", pullRequests.map { it.id }.toLongArray())
     if (pullRequests.isNotEmpty()) {
@@ -53,12 +61,40 @@ data class AppBuildInfo(
     }
   }
 
+  fun commitUrl (): String {
+    return "${BuildConfig.REMOTE_URL}/tree/${commitFull}"
+  }
+
   fun changesUrlFrom (previousBuild: AppBuildInfo): String? {
     return if (this.commitDate > previousBuild.commitDate) {
       "${BuildConfig.REMOTE_URL}/compare/${previousBuild.commit}...${this.commit}"
     } else {
       null
     }
+  }
+
+  fun tdlibCommitUrl (): String? {
+    return if (!this.tdlibCommitFull.isNullOrEmpty()) {
+      return "${BuildConfig.TDLIB_REMOTE_URL}/tree/${tdlibCommitFull}"
+    } else {
+      null
+    }
+  }
+
+  fun tdlibChangesUrlFrom (previousBuild: AppBuildInfo): String? {
+    return if (this.commitDate > previousBuild.commitDate && !this.tdlibCommitFull.isNullOrEmpty() && !previousBuild.tdlibCommitFull.isNullOrEmpty()) {
+      "${BuildConfig.TDLIB_REMOTE_URL}/compare/${previousBuild.tdlibCommit()}...${this.tdlibCommit()}"
+    } else {
+      null
+    }
+  }
+
+  fun tdlibCommit (): String? = this.tdlibCommitFull.limit(7)
+
+  fun pullRequestsList (): String? = if (this.pullRequests.isNotEmpty()) {
+    this.pullRequests.joinToString { it -> "#{$it.id} ($it.commit)" }
+  } else {
+    null
   }
   
   companion object {
@@ -79,8 +115,13 @@ data class AppBuildInfo(
         pmc.getString("${keyPrefix}_commit", "")!!,
         pmc.getString("${keyPrefix}_full", "")!!,
         pmc.getLong("${keyPrefix}_date", 0),
+        pmc.getString("${keyPrefix}_tdlib", null),
         pullRequests
       )
+    }
+
+    @JvmStatic fun maxCommitDate (): Long {
+      return max(BuildConfig.COMMIT_DATE, BuildConfig.PULL_REQUEST_COMMIT_DATE.maxOrNull() ?: 0)
     }
   }
 }
@@ -90,7 +131,8 @@ data class PullRequest (
   val commit: String,
   val commitFull: String,
   val commitUrl: String,
-  val commitDate: Long
+  val commitDate: Long,
+  val commitAuthor: String
 ) {
   fun saveTo (editor: LevelDB, keyPrefix: String) {
     editor
@@ -99,6 +141,7 @@ data class PullRequest (
       .putString("${keyPrefix}_full", commitFull)
       .putString("${keyPrefix}_url", commitUrl)
       .putLong("${keyPrefix}_date", commitDate)
+      .putString("${keyPrefix}_author", commitAuthor)
   }
   
   companion object {
@@ -108,7 +151,8 @@ data class PullRequest (
         pmc.getString("${keyPrefix}_commit", "")!!,
         pmc.getString("${keyPrefix}_full", "")!!,
         pmc.getString("${keyPrefix}_url", "")!!,
-        pmc.getLong("${keyPrefix}_date", 0)
+        pmc.getLong("${keyPrefix}_date", 0),
+        pmc.getString("${keyPrefix}_author", "")!!
       )
     } 
   }
@@ -124,7 +168,8 @@ fun builtinPullRequests (): List<PullRequest> {
         BuildConfig.PULL_REQUEST_COMMIT[index],
         BuildConfig.PULL_REQUEST_COMMIT_FULL[index],
         BuildConfig.PULL_REQUEST_URL[index],
-        BuildConfig.PULL_REQUEST_COMMIT_DATE[index]
+        BuildConfig.PULL_REQUEST_COMMIT_DATE[index],
+        BuildConfig.PULL_REQUEST_AUTHOR[index]
       )
     }
   }

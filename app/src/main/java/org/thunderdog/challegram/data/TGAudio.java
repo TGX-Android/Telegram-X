@@ -59,7 +59,7 @@ public class TGAudio {
   public TGAudio (Tdlib tdlib, TGRecord record) {
     this.tdlib = tdlib;
     this.msg = null;
-    this.voice = new TdApi.VoiceNote(record.getDuration(), null, "audio/ogg", TD.newFile(record.getFile()));
+    this.voice = new TdApi.VoiceNote(record.getDuration(), null, "audio/ogg", false, "", TD.newFile(record.getFile()));
   }
 
   public Tdlib tdlib () {
@@ -143,9 +143,9 @@ public class TGAudio {
     }
   }
 
-  public int getSize () {
+  public long getSize () {
     if (note != null) {
-      return Td.getId(note.video);
+      return TD.getFileSize(note.video);
     } else if (voice != null) {
       return TD.getFileSize(voice.voice);
     } else {

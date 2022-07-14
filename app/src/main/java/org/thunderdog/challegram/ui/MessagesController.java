@@ -215,7 +215,7 @@ import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.v.MessagesLayoutManager;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
-import org.thunderdog.challegram.widget.CheckBox;
+import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.CircleButton;
 import org.thunderdog.challegram.widget.CollapseListView;
 import org.thunderdog.challegram.widget.CustomTextView;
@@ -7968,7 +7968,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private boolean sendSticker (View view, TdApi.Sticker sticker, String emoji, boolean allowReply, boolean forceDisableNotification, @Nullable TdApi.MessageSchedulingState schedulingState) {
-    return sticker != null && sendContent(view, R.id.right_sendStickersAndGifs, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil, allowReply, forceDisableNotification, schedulingState, () -> new TdApi.InputMessageSticker(new TdApi.InputFileId(sticker.sticker.id), null, 0, 0, emoji));
+    if (sticker == null) {
+      return false;
+    }
+    if (sticker.premiumAnimation != null && !tdlib.hasPremium()) {
+      tdlib.ui().showPremiumAlert(this, view);
+      return false;
+    }
+    return sendContent(view, R.id.right_sendStickersAndGifs, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil, allowReply, forceDisableNotification, schedulingState, () -> new TdApi.InputMessageSticker(new TdApi.InputFileId(sticker.sticker.id), null, 0, 0, emoji));
   }
 
   private void sendSticker (String path, boolean allowReply, boolean forceDisableNotification, @Nullable TdApi.MessageSchedulingState schedulingState) {
@@ -8280,7 +8287,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             switch (item.getViewType()) {
               case ListItem.TYPE_CHECKBOX_OPTION:
               case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
-                ((CheckBox) view.getChildAt(0)).setChecked(item.isSelected(), isUpdate);
+                ((CheckBoxView) view.getChildAt(0)).setChecked(item.isSelected(), isUpdate);
                 break;
             }
           })
@@ -8292,7 +8299,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
               default:
                 return;
             }
-            final boolean isSelect = ((CheckBox) ((SettingView) view).getChildAt(0)).toggle();
+            final boolean isSelect = ((CheckBoxView) ((SettingView) view).getChildAt(0)).toggle();
             item.setSelected(isSelect);
 
             final List<ListItem> allItems = settingsAdapter.getItems();

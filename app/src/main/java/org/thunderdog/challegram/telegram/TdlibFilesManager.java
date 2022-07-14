@@ -265,7 +265,7 @@ public class TdlibFilesManager implements GlobalConnectionListener {
 
   public static final int CLOUD_PRIORITY = 3;
 
-  public void seekCloudReference (TdApi.File file, FileUpdateListener source, int offset) {
+  public void seekCloudReference (TdApi.File file, FileUpdateListener source, long offset) {
     synchronized (activeCloudReferences) {
       if (TD.withinDistance(file, offset)) {
         return;
@@ -277,7 +277,7 @@ public class TdlibFilesManager implements GlobalConnectionListener {
     }
   }
 
-  private void seekFileInternal (TdApi.File file, int offset, int limit) {
+  private void seekFileInternal (TdApi.File file, long offset, long limit) {
     if (!TD.withinDistance(file, offset) && pendingOperations.get(file.id) == OPERATION_DOWNLOAD) {
       if (!Config.DEBUG_DISABLE_DOWNLOAD) {
         Log.i("FILES: downloadFile %d offset=%d", file.id, offset);
@@ -290,7 +290,7 @@ public class TdlibFilesManager implements GlobalConnectionListener {
     addCloudReference(file, 0, source, allowDuplicates, false);
   }
 
-  public void addCloudReference (TdApi.File file, int offset, FileUpdateListener source, boolean allowDuplicates, boolean offsetImportant) {
+  public void addCloudReference (TdApi.File file, long offset, FileUpdateListener source, boolean allowDuplicates, boolean offsetImportant) {
     synchronized (activeCloudReferences) {
       List<FileUpdateListener> references = activeCloudReferences.get(file.id);
       if (references != null) {
@@ -311,7 +311,7 @@ public class TdlibFilesManager implements GlobalConnectionListener {
           int pendingOperation = pendingOperations.get(file.id);
           if (pendingOperation == OPERATION_NONE) {
             downloadingCloudFiles.put(file.id, 1);
-            downloadFileInternal(file.id, CLOUD_PRIORITY, offset);
+            downloadFileInternal(file.id, CLOUD_PRIORITY, offset, 0, null);
           }
         }
       } else if (offsetImportant) {
@@ -457,11 +457,7 @@ public class TdlibFilesManager implements GlobalConnectionListener {
     }
   }*/
 
-  private void downloadFileInternal (int fileId, int priority, int offset) {
-    downloadFileInternal(fileId, priority, offset, 0, null);
-  }
-
-  private void downloadFileInternal (int fileId, int priority, int offset, int limit, final @Nullable Client.ResultHandler handler) {
+  private void downloadFileInternal (int fileId, int priority, long offset, long limit, final @Nullable Client.ResultHandler handler) {
     int pendingOperation = pendingOperations.get(fileId);
     if (pendingOperation == OPERATION_NONE) {
       pendingOperations.put(fileId, OPERATION_DOWNLOAD);
@@ -501,25 +497,11 @@ public class TdlibFilesManager implements GlobalConnectionListener {
 
   // Download for whatever reason
 
-  /*public void downloadFile (@NonNull TdApi.File file, @NonNull FileListener listener, @IntRange(from = 1, to = 32) int priority) {
-    if (!TD.isFileLoaded(file)) {
-      synchronized (this) {
-        if (addFileListener(file, listener)) {
-          downloadFileInternal(file.id, priority);
-        }
-      }
-    }
-  }
-
-  public void downloadFile (@NonNull TdApi.File file, @NonNull FileListener listener) {
-    downloadFile(file, listener, 1);
-  }*/
-
-  public void downloadFile (@NonNull TdApi.File file, @IntRange(from = 1, to = 32) int priority, int offset, int limit, @Nullable Client.ResultHandler handler) {
+  public void downloadFile (@NonNull TdApi.File file, @IntRange(from = 1, to = 32) int priority, long offset, long limit, @Nullable Client.ResultHandler handler) {
     synchronized (this) {
       manuallyCancelledFiles.remove(file.id);
       if (!TD.isFileLoaded(file)) {
-        downloadFileInternal(file.id, priority, offset, 0, handler);
+        downloadFileInternal(file.id, priority, offset, limit, handler);
       } else if (handler != null) {
         tdlib.client().send(new TdApi.DownloadFile(file.id, priority, offset, limit, false), handler);
       }
@@ -1090,11 +1072,24 @@ public class TdlibFilesManager implements GlobalConnectionListener {
     }
   }
 
+  private static final int VALIDATE_FILE_SIZE_OK = 0;
+  private static final int VALIDATE_FILE_SIZE_NOT_ENOUGH_STORAGE = 1;
+  private static final int VALIDATE_FILE_SIZE_TOO_BIG = 2;
+
+  private int validateDownloadFileSize (@NonNull TdApi.File file) {
+    // TODO: check whether filesystem supports files of that size
+    // TODO (?): async check whether enough disk space available
+    return VALIDATE_FILE_SIZE_OK;
+  }
+
   public boolean canAutomaticallyDownload (@NonNull TdApi.File file, int fileType, @Nullable TdApi.ChatType chatType) {
     if (isDataSaverActive()) {
       return false;
     }
     if (file.remote.isUploadingActive) {
+      return false;
+    }
+    if (validateDownloadFileSize(file) != VALIDATE_FILE_SIZE_OK) {
       return false;
     }
     int limit, excludedTypes;

@@ -58,7 +58,7 @@ public class CustomTypefaceSpan extends MetricAffectingSpan {
   private Object tag;
 
   public interface OnClickListener {
-    boolean onClick (View view, CustomTypefaceSpan span);
+    boolean onClick (View view, CustomTypefaceSpan span, String clickedText);
   }
 
   public CustomTypefaceSpan (final @Nullable Typeface typeface, final int colorId) {
@@ -178,9 +178,9 @@ public class CustomTypefaceSpan extends MetricAffectingSpan {
     apply(paint);
   }
 
-  public void onClick (View view) {
+  public void onClick (View view, String clickedText) {
     if (onClickListener != null) {
-      onClickListener.onClick(view, this);
+      onClickListener.onClick(view, this, clickedText);
     }
   }
 

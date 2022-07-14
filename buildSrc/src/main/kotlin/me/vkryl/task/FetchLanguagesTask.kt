@@ -132,7 +132,10 @@ open class FetchLanguagesTask : BaseTask() {
       "LaunchSubtitleExternalError",
       "LaunchAppGuideExternalError",
       "LaunchSubtitleTdlibIssue",
-      "LaunchAppGuideTdlibIssue"
+      "LaunchAppGuideTdlibIssue",
+
+      "ExperimentalBuildTitle",
+      "ExperimentalBuildInfo"
     )
 
     // 1. Setup OkHttp

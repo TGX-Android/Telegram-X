@@ -42,7 +42,7 @@ import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.v.CustomRecyclerView;
-import org.thunderdog.challegram.widget.CheckBox;
+import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.EmbeddableStickerView;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.ListInfoView;
@@ -216,7 +216,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       }
 
       @Override
-      protected void modifyChatView (ListItem item, SmallChatView chatView, @Nullable CheckBox checkBox, boolean isUpdate) {
+      protected void modifyChatView (ListItem item, SmallChatView chatView, @Nullable CheckBoxView checkBox, boolean isUpdate) {
         DoubleTextWrapper wrapper = new DoubleTextWrapper(tdlib, item.getLongId(), true);
         wrapper.setSubtitle(Lang.pluralBold(R.string.xLinks, item.getIntValue()));
         wrapper.setIgnoreOnline(true);

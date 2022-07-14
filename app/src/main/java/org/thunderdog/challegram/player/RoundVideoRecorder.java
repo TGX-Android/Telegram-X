@@ -50,6 +50,7 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
@@ -71,14 +72,14 @@ public class RoundVideoRecorder {
     /**
      * Called when part of file has been generated
      * */
-    void onVideoRecordProgress (String key, int readyBytesCount);
+    void onVideoRecordProgress (String key, long readyBytesCount);
 
     /**
      * Called when video recording has been completely finished
      *
      * @param resultFileSize Result file size. Negative when recording has been cancelled or failed
      * */
-    void onVideoRecordingFinished (String key, int resultFileSize, int resultDuration);
+    void onVideoRecordingFinished (String key, long resultFileSize, long resultDuration, TimeUnit resultDurationUnit);
   }
 
   private static class RoundHandler extends Handler {
@@ -290,11 +291,13 @@ public class RoundVideoRecorder {
           break;
         }
         case UI_ACTION_DISPATCH_VIDEO_RECORD_FINISHED: {
-          context.dispatchVideoRecordFinished((String) msg.obj, msg.arg1, msg.arg2);
+          Object[] data = (Object[]) msg.obj;
+          context.dispatchVideoRecordFinished((String) data[0], (long) data[1], (long) data[2], (TimeUnit) data[3]);
+          data[0] = data[1] = data[2] = data[3] = null;
           break;
         }
         case UI_ACTION_DISPATCH_VIDEO_RECORD_PROGRESS: {
-          context.dispatchVideoRecordProgress((String) msg.obj, msg.arg1);
+          context.dispatchVideoRecordProgress((String) msg.obj, BitwiseUtils.mergeLong(msg.arg1, msg.arg2));
           break;
         }
       }
@@ -313,19 +316,25 @@ public class RoundVideoRecorder {
     }
   }
 
-  private void dispatchVideoRecordFinished (String key, int resultFileSize, int resultDurationSeconds) {
+  private void dispatchVideoRecordFinished (String key, long resultFileSize, long resultDuration, TimeUnit resultDurationUnit) {
     if (!checkUiThread()) {
-      uiHandler.sendMessage(Message.obtain(uiHandler, UI_ACTION_DISPATCH_VIDEO_RECORD_FINISHED, resultFileSize, resultDurationSeconds, key));
+      uiHandler.sendMessage(Message.obtain(
+        uiHandler,
+        UI_ACTION_DISPATCH_VIDEO_RECORD_FINISHED,
+        new Object[] {
+          key, resultFileSize, resultDuration, resultDurationUnit
+        }
+      ));
       return;
     }
     if (mDelegate != null) {
-      mDelegate.onVideoRecordingFinished(key, resultFileSize, resultDurationSeconds);
+      mDelegate.onVideoRecordingFinished(key, resultFileSize, resultDuration, resultDurationUnit);
     }
   }
 
-  private void dispatchVideoRecordProgress (String key, int readyBytesCount) {
+  private void dispatchVideoRecordProgress (String key, long readyBytesCount) {
     if (!checkUiThread()) {
-      uiHandler.sendMessage(Message.obtain(uiHandler, UI_ACTION_DISPATCH_VIDEO_RECORD_PROGRESS, readyBytesCount, 0, key));
+      uiHandler.sendMessage(Message.obtain(uiHandler, UI_ACTION_DISPATCH_VIDEO_RECORD_PROGRESS, BitwiseUtils.splitLongToFirstInt(readyBytesCount), BitwiseUtils.splitLongToSecondInt(readyBytesCount), key));
       return;
     }
     if (mDelegate != null) {
@@ -1251,7 +1260,7 @@ public class RoundVideoRecorder {
       } else {
         // FileLoader.getInstance().cancelUploadFile(videoFile.getAbsolutePath(), false);
         videoFile.delete();
-        dispatchVideoRecordFinished(workingKey, -1, -1);
+        dispatchVideoRecordFinished(workingKey, -1, -1, null);
       }
       EGL14.eglDestroySurface(eglDisplay, eglSurface);
       eglSurface = EGL14.EGL_NO_SURFACE;
@@ -1440,9 +1449,9 @@ public class RoundVideoRecorder {
       if (videoConvertFirstWrite) {
         videoConvertFirstWrite = false;
       } else if (last) {
-        dispatchVideoRecordFinished(workingKey, (int) file.length(), (int) Math.round((double) (SystemClock.uptimeMillis() - recordStartTime) / 1000.0));
+        dispatchVideoRecordFinished(workingKey, file.length(), SystemClock.uptimeMillis() - recordStartTime, TimeUnit.MILLISECONDS);
       } else {
-        dispatchVideoRecordProgress(workingKey, (int) file.length());
+        dispatchVideoRecordProgress(workingKey, file.length());
       }
     }
 

@@ -79,7 +79,7 @@ import org.thunderdog.challegram.widget.AttachDelegate;
 import org.thunderdog.challegram.widget.AvatarView;
 import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.ChartLayout;
-import org.thunderdog.challegram.widget.CheckBox;
+import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.DoubleTextView;
 import org.thunderdog.challegram.widget.DoubleTextViewWithIcon;
@@ -780,7 +780,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
           case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
           case ListItem.TYPE_CHECKBOX_OPTION_MULTILINE: {
             paddingRight = Screen.dp(32f);
-            CheckBox checkBox = CheckBox.simpleCheckBox(context, (viewType == ListItem.TYPE_CHECKBOX_OPTION_REVERSE) != Lang.rtl());
+            CheckBoxView checkBox = CheckBoxView.simpleCheckBox(context, (viewType == ListItem.TYPE_CHECKBOX_OPTION_REVERSE) != Lang.rtl());
             settingView.addView(checkBox);
             if (themeProvider != null) {
               themeProvider.addThemeInvalidateListener(checkBox);
@@ -903,7 +903,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         settingView.setOnLongClickListener(onLongClickListener);
         switch (viewType) {
           case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE: {
-            CheckBox checkBox = CheckBox.simpleCheckBox(context);
+            CheckBoxView checkBox = CheckBoxView.simpleCheckBox(context);
             settingView.addView(checkBox);
             if (themeProvider != null) {
               themeProvider.addThemeInvalidateListener(checkBox);
@@ -2023,7 +2023,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
           FrameLayoutFix wrapView = new FrameLayoutFix(context);
           wrapView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(62f)));
           wrapView.addView(chatView);
-          wrapView.addView(CheckBox.simpleCheckBox(context, Lang.rtl()));
+          wrapView.addView(CheckBoxView.simpleCheckBox(context, Lang.rtl()));
           wrapView.setOnClickListener(onClickListener);
           wrapView.setOnLongClickListener(onLongClickListener);
           Views.setClickable(wrapView);
