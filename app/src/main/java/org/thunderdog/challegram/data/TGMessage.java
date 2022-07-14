@@ -5104,6 +5104,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   public void onSelectableFactorChanged () {
     invalidate(true);
+    updateReactionButtonsTranslation();
   }
 
   private void setSelectionFactor (float factor) {
@@ -5724,8 +5725,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     invalidate(true);
+    updateReactionButtonsTranslation();
+  }
+
+  private void updateReactionButtonsTranslation(){
     if(hasReactions() && !needDrawReactionsWithTime()){
-      performWithViews(v->v.setReactionButtonsTranslation(translation));
+      performWithViews(v->v.setReactionButtonsTranslation(translation+getSelectableContentOffset(manager.getSelectableFactor())));
     }
   }
 

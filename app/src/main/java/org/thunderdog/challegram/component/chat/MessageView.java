@@ -353,32 +353,43 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
     } else {
       int width = ((View) getParent()).getMeasuredWidth();
       if (msg != null) {
-        if(reactionButtons.getVisibility()!=GONE){
-          if(manager.useBubbles()){
-            msg.setReactionButtonsSize(0, 0); // reset
-            msg.buildLayout(width);
-            int maxW=msg.getActualRightContentEdge()-msg.getActualLeftContentEdge();
-            if(msg.canExpandBubbleWidthForReactions() && maxW<msg.getRealContentMaxWidth())
-              reactionButtons.measure(msg.getRealContentMaxWidth() | MeasureSpec.AT_MOST, MeasureSpec.UNSPECIFIED);
-            else if(msg.drawBubbleTimeOverContent())
-              reactionButtons.measure(msg.getRealContentMaxWidth() | MeasureSpec.AT_MOST, MeasureSpec.UNSPECIFIED);
-            else
-              reactionButtons.measure(maxW | MeasureSpec.EXACTLY, MeasureSpec.UNSPECIFIED);
-            msg.setReactionButtonsSize(reactionButtons.getMeasuredWidth(), reactionButtons.getMeasuredHeight());
-            msg.buildLayout(width); // maybe there's a better way of doing it than building layout twice?
-          }else{
-            reactionButtons.measure((width-Screen.dp(50)) | MeasureSpec.EXACTLY, MeasureSpec.UNSPECIFIED);
-            msg.setReactionButtonsSize(reactionButtons.getMeasuredWidth(), reactionButtons.getMeasuredHeight());
-            msg.buildLayout(width);
-          }
-        }else{
-          msg.setReactionButtonsSize(0, 0);
-          msg.buildLayout(width);
-        }
+        buildMessageLayoutAndMeasureReactionButtons(width);
       }
     }
     setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), getCurrentHeight());
     checkLegacyComponents(this);
+  }
+
+  public void buildMessageLayoutAndMeasureReactionButtons(int width){
+    if(reactionButtons.getVisibility()!=GONE){
+      if(manager.useBubbles()){
+        msg.setReactionButtonsSize(0, 0); // reset
+        msg.buildLayout(width);
+        int maxW=msg.getActualRightContentEdge()-msg.getActualLeftContentEdge();
+        if(msg.canExpandBubbleWidthForReactions() && maxW<msg.getRealContentMaxWidth())
+          reactionButtons.measure(msg.getRealContentMaxWidth() | MeasureSpec.AT_MOST, MeasureSpec.UNSPECIFIED);
+        else if(msg.drawBubbleTimeOverContent())
+          reactionButtons.measure(msg.getRealContentMaxWidth() | MeasureSpec.AT_MOST, MeasureSpec.UNSPECIFIED);
+        else
+          reactionButtons.measure(maxW | MeasureSpec.EXACTLY, MeasureSpec.UNSPECIFIED);
+        msg.setReactionButtonsSize(reactionButtons.getMeasuredWidth(), reactionButtons.getMeasuredHeight());
+        msg.buildLayout(width); // maybe there's a better way of doing it than building layout twice?
+      }else{
+        reactionButtons.measure((width-Screen.dp(50)) | MeasureSpec.EXACTLY, MeasureSpec.UNSPECIFIED);
+        msg.setReactionButtonsSize(reactionButtons.getMeasuredWidth(), reactionButtons.getMeasuredHeight());
+        msg.buildLayout(width);
+      }
+    }else{
+      msg.setReactionButtonsSize(0, 0);
+      msg.buildLayout(width);
+    }
+  }
+
+  public int getReactionButtonsHeight(){
+    if(reactionButtons!=null && reactionButtons.getVisibility()!=GONE)
+      return reactionButtons.getMeasuredHeight();
+    else
+      return 0;
   }
 
   public void updateReactions(){

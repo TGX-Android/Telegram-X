@@ -158,7 +158,7 @@ public class MessageViewGroup extends ViewGroup implements Destroyable, AttachDe
 
     final TGMessage msg = messageView.getMessage();
     if (msg != null) {
-      msg.buildLayout(width);
+      messageView.buildMessageLayoutAndMeasureReactionButtons(width);
     }
     heightMeasureSpec = MeasureSpec.makeMeasureSpec(messageView.getCurrentHeight(), MeasureSpec.EXACTLY);
     setMeasuredDimension(widthMeasureSpec, heightMeasureSpec);
