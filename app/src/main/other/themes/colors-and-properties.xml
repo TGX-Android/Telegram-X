@@ -270,6 +270,7 @@
         <item name="chatListIcon" porterDuff="true" />
         <item name="chatListAction" tinted="true" />
         <item name="chatListVerify" tinted="true" porterDuff="true" />
+        <item name="chatListPremium" tinted="true" porterDuff="true" />
 
         <item name="badge" tinted="true" />
         <item name="badgeText" porterDuff="true" />

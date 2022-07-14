@@ -32,6 +32,7 @@ public class Icons {
     livePinIcon = null;
     chatSelfDrawable = null;
     chatVerifyDrawable = null;
+    chatPremiumDrawable = null;
     secureDrawable = null;
     secureSmallDrawable = null;
     if (sparseDrawables != null)
@@ -55,6 +56,14 @@ public class Icons {
       chatVerifyDrawable = Drawables.get(UI.getResources(), R.drawable.deproko_baseline_verify_chat_24);
     }
     return chatVerifyDrawable;
+  }
+
+  private static Drawable chatPremiumDrawable;
+  public static Drawable getChatPremiumDrawable () {
+    if (chatPremiumDrawable == null) {
+      chatPremiumDrawable = Drawables.get(UI.getResources(), R.drawable.baseline_star_premium_chat_24);
+    }
+    return chatPremiumDrawable;
   }
 
   public static int getEditedIconWidth () {

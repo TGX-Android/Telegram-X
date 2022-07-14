@@ -1499,6 +1499,9 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
       case R.id.theme_color_chatListVerify:
         modifier.setIcons(R.drawable.deproko_baseline_verify_chat_24);
         break;
+      case R.id.theme_color_chatListPremium:
+        modifier.setIcons(R.drawable.baseline_star_premium_chat_24);
+        break;
       case R.id.theme_color_chatSendButton:
         modifier.setIcons(R.drawable.deproko_baseline_send_24);
         break;

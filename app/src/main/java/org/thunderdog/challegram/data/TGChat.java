@@ -74,6 +74,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
   private static final int FLAG_ARCHIVE = 1 << 14;
   private static final int FLAG_SHOW_SCAM = 1 << 15;
   private static final int FLAG_SHOW_FAKE = 1 << 16;
+  private static final int FLAG_SHOW_PREMIUM = 1 << 17;
 
   private int flags, listMode;
 
@@ -113,7 +114,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
   private int textLeft;
   private int timeLeft;
-  private int muteLeft, verifyLeft;
+  private int muteLeft, verifyLeft, premiumLeft;
   private int checkRight;
 
   private Text chatMark;
@@ -745,6 +746,10 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     return (flags & FLAG_SHOW_VERIFY) != 0;
   }
 
+  public boolean showPremium () {
+    return (flags & FLAG_SHOW_PREMIUM) != 0;
+  }
+
   public boolean showScam () {
     return (flags & FLAG_SHOW_SCAM) != 0;
   }
@@ -842,9 +847,14 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
       avail = avail - ChatView.getMuteOffset() - Icons.getChatMuteDrawableWidth();
     }
     boolean showVerify = tdlib.chatVerified(chat);
+    boolean showPremium = tdlib.chatPremium(chat) && !isSelfChat();
     this.flags = BitwiseUtils.setFlag(flags, FLAG_SHOW_VERIFY, showVerify);
+    this.flags = BitwiseUtils.setFlag(flags, FLAG_SHOW_PREMIUM, showPremium);
     if (showVerify) {
       avail = avail - Screen.dp(20f);
+    }
+    if (showPremium) {
+      avail -= Screen.dp(20f);
     }
     this.flags = BitwiseUtils.setFlag(flags, FLAG_SHOW_SCAM, tdlib.chatScam(chat));
     this.flags = BitwiseUtils.setFlag(flags, FLAG_SHOW_FAKE, tdlib.chatFake(chat));
@@ -879,8 +889,13 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     }
     int titleWidth = getTitleWidth();
     verifyLeft = ChatView.getLeftPadding(listMode) + titleWidth;
+    premiumLeft = ChatView.getLeftPadding(listMode) + titleWidth;
     muteLeft = ChatView.getLeftPadding(listMode) + titleWidth + ChatView.getMutePadding();
-    if (showVerify) {
+    if (showVerify || showPremium) {
+      muteLeft += Screen.dp(20f);
+    }
+    if (showVerify && showPremium) {
+      premiumLeft += Screen.dp(20f);
       muteLeft += Screen.dp(20f);
     }
     if (showChatMark) {
@@ -888,6 +903,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     }
     if (isSecret) {
       verifyLeft += Screen.dp(14f);
+      premiumLeft += Screen.dp(14f);
       muteLeft += Screen.dp(14f);
     }
     if (changed && avatarPlaceholder != null) {
@@ -993,6 +1009,10 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
   public int getVerifyLeft () {
     return verifyLeft;
+  }
+
+  public int getPremiumLeft () {
+    return premiumLeft;
   }
 
   public int getChecksRight () {

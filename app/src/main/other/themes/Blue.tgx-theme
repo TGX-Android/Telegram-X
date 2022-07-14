@@ -65,7 +65,7 @@ chatKeyboard: #F5F7F8
 chatKeyboardButton: #E4E7E9
 chatListAction: #039BE5
 chatListIcon, chatListMute: #B1B6BC
-chatListVerify, sliderActive: #51B5F0
+chatListVerify, chatListPremium, sliderActive: #51B5F0
 checkActive: #41A9EE
 circleButtonChatIcon, circleButtonOverlayIcon, controlInactive, headerLightIcon, icon, iv_icon, themeNightBlack: #7D858F
 circleButtonNegative: #D93644

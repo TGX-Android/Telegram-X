@@ -498,11 +498,18 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
       Drawables.drawRtl(c, Icons.getChatVerifyDrawable(), chat.getVerifyLeft(), getMuteTop(chatListMode), Paints.getVerifyPaint(), viewWidth, rtl);
     }
 
+    if (chat.showPremium()) {
+      Drawables.drawRtl(c, Icons.getChatPremiumDrawable(), chat.getPremiumLeft(), getMuteTop(chatListMode) - Screen.dp(1.5f), Paints.getPremiumPaint(), viewWidth, rtl);
+    }
+
     if ((chat.showScam() || chat.showFake()) && chat.getChatMark() != null) {
       int additionalPadding = Screen.dp(4f);
 
-      int chatMarkLeft = chat.getVerifyLeft() + Screen.dp(10f);
-      int chatMarkY = getTitleTop2(chatListMode) + Screen.dp(0.5f);
+      int chatMarkLeft = chat.getPremiumLeft() + Screen.dp(10f);
+      if (chat.showVerify()) {
+        chatMarkLeft += Screen.dp(20f);
+      }
+      int chatMarkY = getTitleTop2(chatListMode) + Screen.dp(1.5f);
 
       RectF rct = Paints.getRectF();
       rct.set(chatMarkLeft - additionalPadding, chatMarkY, chatMarkLeft + chat.getChatMark().getWidth() + additionalPadding, chatMarkY + chat.getChatMark().getLineHeight(true));

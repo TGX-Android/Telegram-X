@@ -109,6 +109,7 @@ public class ChatHeaderView extends ComplexHeaderView {
     } else {
       setChatPhoto(chat, chat.photo);
       setShowVerify(tdlib.chatVerified(chat));
+      setShowPremium(tdlib.chatPremium(chat) && !tdlib.isSelfChat(chat.id));
       setShowScam(tdlib.chatScam(chat));
       setShowFake(tdlib.chatFake(chat));
       setShowMute(TD.needMuteIcon(chat.notificationSettings, tdlib.scopeNotificationSettings(chat.id)));

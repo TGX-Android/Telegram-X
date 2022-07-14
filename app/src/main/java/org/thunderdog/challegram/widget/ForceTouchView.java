@@ -1025,6 +1025,7 @@ public class ForceTouchView extends FrameLayoutFix implements
 
   private void setHeaderUser (TdApi.User user) {
     headerView.setShowVerify(user.isVerified);
+    headerView.setShowPremium(user.isPremium && !tdlib.isSelfChat(user.id));
     headerView.setShowScam(user.isScam);
     headerView.setShowFake(user.isFake);
     headerView.setText(TD.getUserName(user), tdlib.status().getPrivateChatSubtitle(user.id, user, false));
@@ -1044,6 +1045,7 @@ public class ForceTouchView extends FrameLayoutFix implements
 
     headerView.setShowLock(ChatId.isSecret(chatId));
     headerView.setShowVerify(tdlib.chatVerified(chat));
+    headerView.setShowPremium(tdlib.chatPremium(chat) && !tdlib.isSelfChat(chat.id));
     headerView.setShowScam(tdlib.chatScam(chat));
     headerView.setShowFake(tdlib.chatFake(chat));
     headerView.setShowMute(tdlib.chatNeedsMuteIcon(chat.id));

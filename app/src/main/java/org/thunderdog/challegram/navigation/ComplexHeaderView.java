@@ -91,6 +91,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   private static final int FLAG_NO_EXPAND = 1 << 18;
   private static final int FLAG_SHOW_SCAM = 1 << 19;
   private static final int FLAG_SHOW_FAKE = 1 << 20;
+  private static final int FLAG_SHOW_PREMIUM = 1 << 21;
 
   protected float scaleFactor;
 
@@ -363,6 +364,13 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
 
   public void setShowVerify (boolean showVerify) {
     if (setFlags(BitwiseUtils.setFlag(flags, FLAG_SHOW_VERIFY, showVerify))) {
+      layoutTitle();
+      invalidate();
+    }
+  }
+
+  public void setShowPremium (boolean showPremium) {
+    if (setFlags(BitwiseUtils.setFlag(flags, FLAG_SHOW_PREMIUM, showPremium))) {
       layoutTitle();
       invalidate();
     }
@@ -779,6 +787,9 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
     if ((flags & FLAG_SHOW_VERIFY) != 0) {
       right += Screen.dp(20f);
     }
+    if ((flags & FLAG_SHOW_PREMIUM) != 0) {
+      right += Screen.dp(20f);
+    }
     if ((flags & FLAG_SHOW_MUTE) != 0 && (flags & FLAG_IGNORE_MUTE) == 0) {
       right += getMutePadding() + Icons.getChatMuteDrawableWidth();
     }
@@ -796,6 +807,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   }
 
   private static final float VERIFY_ALPHA = .7f;
+  private static final float PREMIUM_ALPHA = .7f;
 
   private static float invert (float x, int viewWidth, float itemWidth) {
     return Lang.rtl() ? viewWidth - x - itemWidth : x;
@@ -833,6 +845,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
       final boolean showLock = (flags & FLAG_SHOW_LOCK) != 0;
       final boolean showMute = (flags & FLAG_SHOW_MUTE) != 0 && (flags & FLAG_IGNORE_MUTE) == 0;
       final boolean showVerify = (flags & FLAG_SHOW_VERIFY) != 0;
+      final boolean showPremium = (flags & FLAG_SHOW_PREMIUM) != 0;
       final boolean showArrow = (flags & FLAG_NEED_ARROW) != 0;
       final boolean showScam = (flags & FLAG_SHOW_SCAM) != 0;
       final boolean showFake = (flags & FLAG_SHOW_FAKE) != 0;
@@ -935,6 +948,16 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
           paint.setAlpha((int) ((float) alpha * (VERIFY_ALPHA + (1f - VERIFY_ALPHA) * avatarExpandFactor)));
           Drawable drawable = getSparseDrawable(R.drawable.deproko_baseline_verify_24, 0);
           Drawables.draw(c, drawable, iconLeft, iconTop + trimmedTitle.getHeight() / 2f - drawable.getMinimumHeight() / 2f, paint);
+          paint.setAlpha(alpha);
+          iconsAdded += drawable.getMinimumWidth();
+        }
+
+        if (showPremium) {
+          Paint paint = Paints.getPorterDuffPaint(titleColor);
+          int alpha = paint.getAlpha();
+          paint.setAlpha((int) ((float) alpha * (PREMIUM_ALPHA + (1f - PREMIUM_ALPHA) * avatarExpandFactor)));
+          Drawable drawable = getSparseDrawable(R.drawable.baseline_star_premium_24, 0);
+          Drawables.draw(c, drawable, iconLeft + iconsAdded, iconTop + trimmedTitle.getHeight() / 2f - drawable.getMinimumHeight() / 2f - Screen.dp(0.5f), paint);
           paint.setAlpha(alpha);
           iconsAdded += drawable.getMinimumWidth();
         }

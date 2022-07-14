@@ -844,6 +844,7 @@ public class SettingsController extends ViewController<Void> implements
         headerCell.setAvatar(user.profilePhoto);
       }
       headerCell.setText(user != null ? TD.getUserName(user) : Lang.getString(R.string.LoadingUser), getSubtext());
+      headerCell.setShowPremium(user != null ? user.isPremium : false);
       headerCell.invalidate();
     }
   }

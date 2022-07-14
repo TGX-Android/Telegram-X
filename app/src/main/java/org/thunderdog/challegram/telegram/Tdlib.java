@@ -3410,6 +3410,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return false;
   }
 
+  public boolean chatPremium (TdApi.Chat chat) {
+    if (chat == null) {
+      return false;
+    }
+    switch (chat.type.getConstructor()) {
+      case TdApi.ChatTypePrivate.CONSTRUCTOR:
+      case TdApi.ChatTypeSecret.CONSTRUCTOR:
+        TdApi.User user = chatUser(chat);
+        return user != null && user.isPremium;
+    }
+    return false;
+  }
+
   public boolean chatScam (TdApi.Chat chat) {
     if (chat == null) {
       return false;

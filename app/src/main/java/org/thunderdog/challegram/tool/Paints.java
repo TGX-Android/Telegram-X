@@ -519,6 +519,10 @@ public class Paints {
     return PorterDuffPaint.get(R.id.theme_color_chatListVerify);
   }
 
+  public static Paint getPremiumPaint () {
+    return PorterDuffPaint.get(R.id.theme_color_chatListPremium);
+  }
+
   public static Paint getHeaderIconPaint () {
     return PorterDuffPaint.get(R.id.theme_color_headerIcon);
   }
