@@ -2429,7 +2429,7 @@ public class U {
     AppBuildInfo buildInfo = org.thunderdog.challegram.unsorted.Settings.instance().getCurrentBuildInformation();
     return Lang.getAppBuildAndVersion(tdlib) + " (" + BuildConfig.COMMIT + ")\n" +
       (!buildInfo.getPullRequests().isEmpty() ? "PRs: " + buildInfo.pullRequestsList() + "\n" : "") +
-      "TDLib: " + Td.tdlibVersion() + " (tdlib/td@" + Td.tdlibCommitHash() + ")" +
+      "TDLib: " + Td.tdlibVersion() + " (tdlib/td@" + Td.tdlibCommitHash() + ")\n" +
       "Android: " + SdkVersion.getPrettyName() + "(" + Build.VERSION.SDK_INT + ")" + "\n" +
       "Device: " + Build.BRAND + " " + Build.MODEL + " (" + Build.DISPLAY + ")";
   }

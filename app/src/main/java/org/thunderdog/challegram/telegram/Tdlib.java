@@ -3822,7 +3822,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public static final int TGX_CREATOR_USER_ID = 163957826;
   public static final int TDLIB_CREATOR_USER_ID = 7736885;
-  // public static final int CEO_USER_ID = 36265675;
 
   public static final long ADMIN_CHAT_ID = ChatId.fromSupergroupId(1112283549); // TGX Alpha and Admins
   public static final long TESTER_CHAT_ID = ChatId.fromSupergroupId(1336679475); // Telegram X Android: t.me/tgandroidtests
