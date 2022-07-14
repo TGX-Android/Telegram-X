@@ -5783,7 +5783,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       reactionCountBadge = reactionCount;
       boolean visible = reactionCount > 0;
       boolean animate = isFocused();
-      reactionsCountView.setCounter(reactionCount, false, animate && reactionButtonFactor > 0f);
+      reactionsCountView.setCounter(reactionCount, true, animate && reactionButtonFactor > 0f);
       setReactionButtonVisible(visible, animate);
     }
   }
