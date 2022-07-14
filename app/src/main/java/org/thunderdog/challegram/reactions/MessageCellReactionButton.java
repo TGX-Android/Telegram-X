@@ -147,9 +147,6 @@ public class MessageCellReactionButton extends FrameLayout implements ThemeInval
 	public void setReactions(TdApi.MessageReaction reaction, boolean animated){
 		boolean countChanged=reactions!=null && currentCount!=reaction.totalCount;
 
-		if(!countChanged && reactions!=null && reactions.reaction.equals(reaction.reaction))
-			return;
-
 		currentCount=reaction.totalCount;
 
 		reactions=reaction;

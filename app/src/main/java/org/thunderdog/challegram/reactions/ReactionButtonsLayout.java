@@ -17,7 +17,9 @@ import org.thunderdog.challegram.tool.Screen;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ReactionButtonsLayout extends ViewGroup{
@@ -138,31 +140,35 @@ public class ReactionButtonsLayout extends ViewGroup{
 		if(sameMessage){
 			if(getLayoutTransition()==null)
 				setLayoutTransition(layoutTransition);
+      Set<String> newReactions=Arrays.stream(message.getReactions()).map(r->r.reaction).collect(Collectors.toSet());
 			HashMap<String, MessageCellReactionButton> existingButtons=new HashMap<>(activeButtons.size());
+      ArrayList<MessageCellReactionButton> buttonsToRemove=new ArrayList<>();
 			for(MessageCellReactionButton btn : activeButtons){
-				existingButtons.put(btn.getReaction().reaction, btn);
+        if(newReactions.contains(btn.getReaction().reaction)){
+          detachViewFromParent(btn);
+          existingButtons.put(btn.getReaction().reaction, btn);
+        }else{
+          buttonsToRemove.add(btn);
+        }
 			}
-			List<TdApi.MessageReaction> addedReactions=Arrays.stream(message.getReactions()).filter(r->{
-				MessageCellReactionButton btn=existingButtons.remove(r.reaction);
-				if(btn==null)
-					return true;
-				btn.setReactions(r, true);
-				btn.setSelected(r.isChosen, true);
-				return false;
-			}).collect(Collectors.toList());
+      for(MessageCellReactionButton btn:buttonsToRemove){
+        recycleButton(btn);
+      }
 
-			if(!existingButtons.isEmpty()){
-				for(MessageCellReactionButton btn : existingButtons.values()){
-					recycleButton(btn);
-				}
-			}
-			if(!addedReactions.isEmpty()){
-				for(TdApi.MessageReaction count : addedReactions){
-					MessageCellReactionButton button=obtainButton();
-					button.setReactions(count, false);
-					button.setSelected(count.isChosen, false);
-				}
-			}
+      int i=0;
+      for(TdApi.MessageReaction mr:message.getReactions()){
+        MessageCellReactionButton btn;
+        if(existingButtons.containsKey(mr.reaction)){
+          btn=existingButtons.get(mr.reaction);
+          attachViewToParent(btn, getChildCount(), btn.getLayoutParams());
+          btn.requestLayout();
+        }else{
+          btn=obtainButton();
+        }
+        btn.setReactions(mr, true);
+        btn.setSelected(mr.isChosen, true);
+        i++;
+      }
 		}else{
 			if(getLayoutTransition()!=null)
 				setLayoutTransition(null);
