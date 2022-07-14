@@ -6,6 +6,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okio.ByteString.Companion.encode
 import org.json.JSONObject
 import java.io.IOException
+import java.util.Locale
 
 sealed class CardTokenizer {
   abstract fun tokenize (
@@ -80,7 +81,7 @@ class SmartGlocalTokenizer (private val publicToken: String, private val testMod
   ) {
     val parameters = JSONObject().put("card", JSONObject().apply {
       put("number", cardNumber)
-      put("expiration_month", cardExpiryMonth)
+      put("expiration_month", String.format(Locale.US, "%02d", cardExpiryMonth))
       put("expiration_year", cardExpiryYear)
       put("security_code", cardCvc)
     })

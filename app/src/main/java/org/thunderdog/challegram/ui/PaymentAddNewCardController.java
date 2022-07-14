@@ -18,6 +18,7 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.payments.CardTokenizerCallback;
 import org.thunderdog.challegram.payments.CardValidators;
+import org.thunderdog.challegram.payments.SmartGlocalTokenizer;
 import org.thunderdog.challegram.payments.StripeCardTokenizer;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
@@ -29,20 +30,43 @@ import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import java.util.ArrayList;
 import java.util.List;
 
+import kotlin.NotImplementedError;
 import me.vkryl.android.widget.FrameLayoutFix;
 
-public class PaymentAddNewCardController extends EditBaseController<PaymentAddNewCardController.Args> implements SettingsAdapter.TextChangeListener, View.OnClickListener {
+public class PaymentAddNewCardController extends EditBaseController<PaymentAddNewCardController.Args> implements SettingsAdapter.TextChangeListener, View.OnClickListener, CardTokenizerCallback {
   public static class Args {
     private final PaymentFormController.NewPaymentMethodCallback callback;
-    private final TdApi.PaymentsProviderStripe paymentsProvider;
+    private final TdApi.PaymentProvider paymentsProvider;
 
-    public Args (PaymentFormController.NewPaymentMethodCallback callback, TdApi.PaymentsProviderStripe paymentsProvider) {
+    private final String apiKey;
+    private final boolean needCardholderName;
+    private final boolean needCountry;
+    private final boolean needPostalCode;
+    private final boolean testMode;
+
+    public Args (PaymentFormController.NewPaymentMethodCallback callback, TdApi.PaymentProvider paymentsProvider, boolean testMode) {
       this.callback = callback;
       this.paymentsProvider = paymentsProvider;
+      this.testMode = testMode;
+
+      if (paymentsProvider.getConstructor() == TdApi.PaymentProviderStripe.CONSTRUCTOR) {
+        TdApi.PaymentProviderStripe provider = (TdApi.PaymentProviderStripe) paymentsProvider;
+        this.apiKey = provider.publishableKey;
+        this.needCardholderName = false;
+        this.needCountry = false;
+        this.needPostalCode = false;
+      } else if (paymentsProvider.getConstructor() == TdApi.PaymentProviderSmartGlocal.CONSTRUCTOR) {
+        this.apiKey = ((TdApi.PaymentProviderSmartGlocal) paymentsProvider).publicToken;
+        this.needCardholderName = false;
+        this.needCountry = false;
+        this.needPostalCode = false;
+      } else {
+        throw new NotImplementedError("Other providers are not supported in native case");
+      }
     }
   }
 
-  private TdApi.PaymentsProviderStripe paymentsProvider;
+  private TdApi.PaymentProvider paymentsProvider;
   private SettingsAdapter adapter;
 
   @Override
@@ -84,7 +108,7 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
         switch (item.getId()) {
           case R.id.btn_inputCardExpireDate:
             editText.setMaxLength(5);
-            editText.getEditText().setFilters(new InputFilter.LengthFilter[] { new InputFilter.LengthFilter(5) });
+            editText.getEditText().setFilters(new InputFilter.LengthFilter[]{new InputFilter.LengthFilter(5)});
             editText.getEditText().setInputType(InputType.TYPE_CLASS_NUMBER);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
               editText.getEditText().setAutofillHints(View.AUTOFILL_HINT_CREDIT_CARD_EXPIRATION_DATE);
@@ -92,7 +116,7 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
             break;
           case R.id.btn_inputCardNumber:
             editText.setMaxLength(16); // 14 - 16
-            editText.getEditText().setFilters(new InputFilter.LengthFilter[] { new InputFilter.LengthFilter(16) });
+            editText.getEditText().setFilters(new InputFilter.LengthFilter[]{new InputFilter.LengthFilter(16)});
             editText.getEditText().setInputType(InputType.TYPE_CLASS_NUMBER);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
               editText.getEditText().setAutofillHints(View.AUTOFILL_HINT_CREDIT_CARD_NUMBER);
@@ -100,7 +124,7 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
             break;
           case R.id.btn_inputCardCVV:
             editText.setMaxLength(4);
-            editText.getEditText().setFilters(new InputFilter.LengthFilter[] { new InputFilter.LengthFilter(4) });
+            editText.getEditText().setFilters(new InputFilter.LengthFilter[]{new InputFilter.LengthFilter(4)});
             editText.getEditText().setInputType(InputType.TYPE_CLASS_NUMBER);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
               editText.getEditText().setAutofillHints(View.AUTOFILL_HINT_CREDIT_CARD_SECURITY_CODE);
@@ -133,7 +157,7 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
     items.add(new ListItem(ListItem.TYPE_EDITTEXT_NO_PADDING, R.id.btn_inputCardExpireDate, 0, R.string.PaymentFormNewMethodExpireDate));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
 
-    if (paymentsProvider.needCardholderName) {
+    if (getArgumentsStrict().needCardholderName) {
       items.add(new ListItem(ListItem.TYPE_EDITTEXT_NO_PADDING, R.id.btn_inputCardHolder, 0, R.string.PaymentFormNewMethodCardHolder));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     }
@@ -141,14 +165,14 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
     items.add(new ListItem(ListItem.TYPE_EDITTEXT_NO_PADDING, R.id.btn_inputCardCVV, 0, R.string.PaymentFormNewMethodCVV));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
-    if (paymentsProvider.needCountry || paymentsProvider.needPostalCode) {
+    if (getArgumentsStrict().needCountry || getArgumentsStrict().needPostalCode) {
       items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.PaymentFormNewMethodBillingSection));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-      if (paymentsProvider.needCountry) {
+      if (getArgumentsStrict().needCountry) {
         items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_inputCardCountry, 0, R.string.PaymentFormNewMethodBillingCountry));
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       }
-      if (paymentsProvider.needPostalCode) {
+      if (getArgumentsStrict().needPostalCode) {
         items.add(new ListItem(ListItem.TYPE_EDITTEXT_NO_PADDING, R.id.btn_inputCardPostCode, 0, R.string.PaymentFormNewMethodBillingPostcode));
       }
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
@@ -258,9 +282,9 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
 
   private void checkDoneButton () {
     boolean isValid = i_cardNumber.length() >= 14 && i_cardCvv.length() >= 3 && i_cardExpireDate.length() == 5;
-    if (paymentsProvider.needCardholderName && i_cardHolder.isEmpty()) isValid = false;
-    if (paymentsProvider.needCountry && i_cardCountry.isEmpty()) isValid = false;
-    if (paymentsProvider.needPostalCode && i_cardPostcode.isEmpty()) isValid = false;
+    if (getArgumentsStrict().needCardholderName && i_cardHolder.isEmpty()) isValid = false;
+    if (getArgumentsStrict().needCountry && i_cardCountry.isEmpty()) isValid = false;
+    if (getArgumentsStrict().needPostalCode && i_cardPostcode.isEmpty()) isValid = false;
     setDoneVisible(isValid);
   }
 
@@ -299,38 +323,41 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
       return;
     }
 
-    new StripeCardTokenizer(paymentsProvider.publishableKey).tokenize(
-            i_cardNumber,
-            expireMonth,
-            expireYear,
-            i_cardCvv,
-            paymentsProvider.needCardholderName ? i_cardHolder : null,
-            paymentsProvider.needCountry ? i_cardCountry : null,
-            paymentsProvider.needPostalCode ? i_cardPostcode : null,
-            new CardTokenizerCallback() {
-              @Override
-              public void onSuccess (@NonNull String json) {
-                runOnUiThreadOptional(() -> {
-                  navigateBack();
-                  getArgumentsStrict().callback.onNewMethodCreated(new TdApi.InputCredentialsNew(json, i_saveInfo), CardValidators.INSTANCE.createTgCardName(i_cardNumber));
-                });
-              }
+    switch (paymentsProvider.getConstructor()) {
+      case TdApi.PaymentProviderStripe.CONSTRUCTOR:
+        TdApi.PaymentProviderStripe stripeProvider = (TdApi.PaymentProviderStripe) paymentsProvider;
+        new StripeCardTokenizer(stripeProvider.publishableKey).tokenize(i_cardNumber, expireMonth, expireYear, i_cardCvv, stripeProvider.needCardholderName ? i_cardHolder : null, stripeProvider.needCountry ? i_cardCountry : null, stripeProvider.needPostalCode ? i_cardPostcode : null, this);
+        break;
+      case TdApi.PaymentProviderSmartGlocal.CONSTRUCTOR:
+        new SmartGlocalTokenizer(getArgumentsStrict().apiKey, getArgumentsStrict().testMode).tokenize(i_cardNumber, expireMonth, expireYear, i_cardCvv, null, null, null, this);
+        break;
+    }
+  }
 
-              @Override
-              public void onError (@NonNull Exception exception) {
-                runOnUiThreadOptional(() -> {
-                  Log.e(exception);
+  // Tokenizer
 
-                  showAlert(
-                          new AlertDialog.Builder(context)
-                                  .setTitle(R.string.Error)
-                                  .setMessage(exception.getMessage())
-                                  .setPositiveButton(Lang.getString(R.string.OK), (a, b) -> {})
-                  );
+  @Override
+  public void onSuccess (@NonNull String json) {
+    runOnUiThreadOptional(() -> {
+      navigateBack();
+      getArgumentsStrict().callback.onNewMethodCreated(new TdApi.InputCredentialsNew(json, i_saveInfo), CardValidators.INSTANCE.createTgCardName(i_cardNumber));
+    });
+  }
 
-                  setDoneInProgress(false);
-                });
-              }
-            });
+  @Override
+  public void onError (@NonNull Exception exception) {
+    runOnUiThreadOptional(() -> {
+      Log.e(exception);
+
+      showAlert(
+        new AlertDialog.Builder(context)
+          .setTitle(R.string.Error)
+          .setMessage(exception.getMessage())
+          .setPositiveButton(Lang.getString(R.string.OK), (a, b) -> {
+          })
+      );
+
+      setDoneInProgress(false);
+    });
   }
 }

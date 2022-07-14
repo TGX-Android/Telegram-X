@@ -133,7 +133,7 @@ public class PaymentFormController extends ViewController<PaymentFormController.
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         switch (item.getId()) {
           case R.id.btn_paymentFormDescription:
-            view.setText(new TextWrapper(paymentForm.productDescription, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, null));
+            view.setText(new TextWrapper(tdlib, paymentForm.productDescription, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, null));
             break;
           case R.id.btn_paymentFormProvider:
             view.setName(getPaymentProcessorName());
@@ -195,14 +195,18 @@ public class PaymentFormController extends ViewController<PaymentFormController.
   }
 
   private void openNewCardController () {
-    if (paymentForm.paymentsProvider != null) {
-      PaymentAddNewCardController c = new PaymentAddNewCardController(context, tdlib);
-      c.setArguments(new PaymentAddNewCardController.Args(this::onPaymentMethodSelected, paymentForm.paymentsProvider));
-      navigateTo(c);
-    } else {
-      WebPaymentMethodController c = new WebPaymentMethodController(context, tdlib);
-      c.setArguments(new WebPaymentMethodController.Args(getPaymentProcessorName(), paymentForm.url, this::onPaymentMethodSelected));
-      navigateTo(c);
+    switch (paymentForm.paymentProvider.getConstructor()) {
+      case TdApi.PaymentProviderStripe.CONSTRUCTOR:
+      case TdApi.PaymentProviderSmartGlocal.CONSTRUCTOR:
+        PaymentAddNewCardController c = new PaymentAddNewCardController(context, tdlib);
+        c.setArguments(new PaymentAddNewCardController.Args(this::onPaymentMethodSelected, paymentForm.paymentProvider, paymentForm.invoice.isTest));
+        navigateTo(c);
+        break;
+      case TdApi.PaymentProviderOther.CONSTRUCTOR:
+        WebPaymentMethodController wc = new WebPaymentMethodController(context, tdlib);
+        wc.setArguments(new WebPaymentMethodController.Args(getPaymentProcessorName(), ((TdApi.PaymentProviderOther) paymentForm.paymentProvider).url, this::onPaymentMethodSelected));
+        navigateTo(wc);
+        break;
     }
   }
 
@@ -300,7 +304,7 @@ public class PaymentFormController extends ViewController<PaymentFormController.
   }
 
   private String getPaymentProcessorName () {
-    return tdlib.cache().userDisplayName(paymentForm.paymentsProviderUserId, false, false);
+    return tdlib.cache().userDisplayName(paymentForm.paymentProviderUserId, false, false);
   }
 
   private boolean isHeaderFullscreen () {
