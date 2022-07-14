@@ -77,6 +77,7 @@ open class ModulePlugin : Plugin<Project> {
     val appVersionOverride = properties.getProperty("app.version", "0").toInt()
     val appId = properties.getOrThrow("app.id")
     val isExperimentalBuild = keystore == null || properties.getProperty("app.experimental", "false") == "true"
+    val dontObfuscate = properties.getProperty("app.dontobfuscate", "false") == "true"
 
     project.extra.set("experimental", isExperimentalBuild)
 
@@ -249,8 +250,8 @@ open class ModulePlugin : Plugin<Project> {
                 getByName("release") {
                   signingConfig = signingConfigs["release"]
 
-                  isMinifyEnabled = true
-                  isShrinkResources = true
+                  isMinifyEnabled = !dontObfuscate
+                  isShrinkResources = !dontObfuscate
 
                   ndk.debugSymbolLevel = "full"
                   ndk.jobs = Runtime.getRuntime().availableProcessors()
