@@ -1894,8 +1894,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             break;
           }
           case R.id.btn_enabledReactions: {
-            TdApi.Reaction[] reactions = tdlib.getSupportedReactions();
-            view.setData(Lang.plural(R.string.xPermissions, chat.availableReactions.length, reactions != null ? reactions.length : 0));
+            view.setData(Lang.plural(R.string.xPermissions, chat.availableReactions.length, tdlib.getTotalActiveReactionsCount()));
             break;
           }
           case R.id.btn_toggleProtection: {

@@ -5894,6 +5894,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     invalidate(true);
   }
 
+  public float getQuickActionVerticalFactor (boolean isLeft) {
+    return (isLeft ? leftActionVerticalFactor : rightActionVerticalFactor) + getQuickDefaultPosition(isLeft);
+  }
+
   public void drawTranslate (View view, Canvas c) {
     float x;
     int quickColor;
@@ -5908,9 +5912,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       mQuickText.setAlpha(255);
     }
 
-    ArrayList<SwipeQuickAction> actions = x > 0 ? getLeftQuickReactions() :getRightQuickReactions();
-    float verticalFactor = (x > 0 ? leftActionVerticalFactor : rightActionVerticalFactor);
-    float readyFactor = x > 0f ? quickLeftReadyFactor : quickRightReadyFactor;
+    boolean isLeft = x > 0;
+    ArrayList<SwipeQuickAction> actions = isLeft ? getLeftQuickReactions() :getRightQuickReactions();
+    float verticalFactor = getQuickActionVerticalFactor(isLeft);
+    float readyFactor = isLeft ? quickLeftReadyFactor : quickRightReadyFactor;
 
     if (useBubbles()) {
       if (translation == 0f) {
@@ -5918,8 +5923,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       }
 
       int height = bottomContentEdge - topContentEdge;
-      float shrinkFactor = 1f - MathUtils.clamp( ((float)(height - Screen.dp(40))) / Screen.dp(40));
-      int shrinkSize = (int) (Screen.dp(24) * shrinkFactor);
+      float shrinkFactor = 1f - MathUtils.clamp( ((float)(height - Screen.dp(40))) / Screen.dp(75));
+      int shrinkSize = (int) (Screen.dp(8) * shrinkFactor);
       int offset = Screen.dp(32) - shrinkSize;
       int positionOffset = -(int)(verticalFactor * offset);
 
@@ -5927,11 +5932,13 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       float cx = translation > 0f ? translation / 2 : view.getMeasuredWidth() + translation / 2;
       for (int a = 0; a < actions.size(); a++) {
         SwipeQuickAction action = actions.get(a);
-        float positionFactor = getTranslatePositionFactor(x > 0, a);
+        float positionFactor = getTranslatePositionFactor(isLeft, a);
         float cy = startY + offset * a;
+        float closenessToBorder = 1f - MathUtils.clamp(Math.min(cy - topContentEdge, bottomContentEdge - cy) / Screen.dp(20));
+        float maxAlpha = Math.max(positionFactor, 1f - closenessToBorder);
         float ncx = cx + shrinkSize * (1f - positionFactor);
         Drawable icon = (!action.isQuickReaction || nextSetReactionAnimation == null) ? action.icon : null;
-        drawTranslateRound(c, ncx, cy, readyFactor, positionFactor, icon);
+        drawTranslateRound(c, ncx, cy, readyFactor, maxAlpha, positionFactor, icon);
       }
       return;
     }
@@ -5969,13 +5976,13 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private float getTranslatePositionFactor (boolean isLeft, int position) {
-    return (1f - (MathUtils.clamp(Math.abs((isLeft ? leftActionVerticalFactor : rightActionVerticalFactor) - position))));
+    return (1f - (MathUtils.clamp(Math.abs(getQuickActionVerticalFactor(isLeft) - position))));
   }
 
-  private void drawTranslateRound (Canvas c, float cx, float cy, float readyFactor, float positionFactor, Drawable icon) {
+  private void drawTranslateRound (Canvas c, float cx, float cy, float readyFactor, float maxAlpha, float positionFactor, Drawable icon) {
     float threshold = Screen.dp(BUBBLE_MOVE_THRESHOLD);
 
-    float alpha = MathUtils.clamp(Math.min(Math.abs(translation / threshold), .6f + 4f * positionFactor)) * readyFactor;
+    float alpha = Math.min(MathUtils.clamp(Math.min(Math.abs(translation / threshold), .6f + 4f * positionFactor)) * readyFactor, maxAlpha);
     float scale = (.6f + .4f * Math.min(readyFactor, positionFactor));
     if (alpha == 0f) {
       return;
@@ -7590,6 +7597,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   private final ArrayList<SwipeQuickAction> leftActions = new ArrayList<>();
   private final ArrayList<SwipeQuickAction> rightActions = new ArrayList<>();
+  private int leftQuickDefaultPosition = 0;
+  private int rightQuickDefaultPosition = 0;
 
   public static class SwipeQuickAction {
     public String text;
@@ -7614,28 +7623,29 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private void computeQuickButtons () {
     boolean canReply = Settings.instance().needChatQuickReply() && messagesController().canWriteMessages() && !messagesController().needTabs() && canReplyTo();
     boolean canShare = Settings.instance().needChatQuickShare() && !messagesController().isSecretChat() && canBeForwarded();
-    boolean canReact = messagesController().canSendReaction(Settings.instance().getQuickReaction());
+
 
     leftActions.clear();
     rightActions.clear();
 
-    if (canReply) {
-      rightActions.add(new SwipeQuickAction(replyText, iQuickReply, () -> {
-        messagesController().showReply(getNewestMessage(), true, true);
-      }, true, false));
-    }
-
-    if (canReact) {
-      String reaction = Settings.instance().getQuickReaction();
-      TGReaction reactionObj = tdlib.getReaction(reaction);
-      if (reactionObj != null) {
+    for (String reactionString: Settings.instance().getQuickReactions()) {
+      boolean canReact = messagesController().canSendReaction(reactionString);
+      TGReaction reactionObj = tdlib.getReaction(reactionString);
+      if (reactionObj != null && canReact) {
         Drawable reactionDrawable = new TGReaction.ReactionDrawable(findCurrentView(), reactionObj.staticIconSicker(), Screen.dp(24), Screen.dp(24));
         rightActions.add(new SwipeQuickAction(reactionObj.getReaction().title, reactionDrawable, () -> {
-          if (messageReactions.sendReaction(reaction, false)) {
+          if (messageReactions.sendReaction(reactionString, false)) {
             scheduleSetReactionAnimation(new NextReactionAnimation(reactionObj, NextReactionAnimation.TYPE_QUICK));
           }
         }, false, true));
       }
+    }
+
+    if (canReply) {
+      rightQuickDefaultPosition = rightActions.size() / 2;
+      rightActions.add(rightQuickDefaultPosition, new SwipeQuickAction(replyText, iQuickReply, () -> {
+        messagesController().showReply(getNewestMessage(), true, true);
+      }, true, false));
     }
 
     if (canShare) {
@@ -7646,11 +7656,19 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public ArrayList<SwipeQuickAction> getLeftQuickReactions () {
-    return Lang.rtl() ? rightActions : leftActions;
+    return /*Lang.rtl() ? rightActions :*/ leftActions;
   }
 
   public ArrayList<SwipeQuickAction> getRightQuickReactions () {
-    return Lang.rtl() ? leftActions : rightActions;
+    return /*Lang.rtl() ? leftActions :*/ rightActions;
+  }
+
+  public int getQuickDefaultPosition (boolean isLeft) {
+    return isLeft ? leftQuickDefaultPosition : rightQuickDefaultPosition;
+  }
+
+  public int getQuickActionsCount (boolean isLeft) {
+    return isLeft ? getLeftQuickReactions().size() : getRightQuickReactions().size();
   }
 
 

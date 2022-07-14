@@ -1152,7 +1152,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         ReactionCheckboxSettingsView view = new ReactionCheckboxSettingsView(context);
         view.init(tdlib);
         view.setOnClickListener(onClickListener);
-        view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(104)));
         if (themeProvider != null) {
           themeProvider.addThemeInvalidateListener(view);
         }

@@ -24,7 +24,6 @@ import me.vkryl.core.lambda.Destroyable;
 public class TGReaction {
   private final Tdlib tdlib;
   public TdApi.Reaction reaction;
-  public boolean canSend;
 
   private final TGStickerObj _staticIconSicker;
   private final TGStickerObj _activateAnimationSicker;
@@ -32,10 +31,9 @@ public class TGReaction {
   private final TGStickerObj _aroundAnimationSicker;
   private final TGStickerObj _centerAnimationSicker;
 
-  public TGReaction (Tdlib tdlib, TdApi.Reaction reaction, boolean canSend) {
+  public TGReaction (Tdlib tdlib, TdApi.Reaction reaction) {
     this.tdlib = tdlib;
     this.reaction = reaction;
-    this.canSend = canSend;
 
     _staticIconSicker = newStaticIconSicker();
     _activateAnimationSicker = newActivateAnimationSicker();

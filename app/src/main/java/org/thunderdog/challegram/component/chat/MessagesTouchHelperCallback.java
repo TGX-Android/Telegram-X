@@ -83,6 +83,10 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
       flags |= ItemTouchHelper.RIGHT;
     }
 
+    if (m.getQuickDefaultPosition(false) > 0 || m.getQuickDefaultPosition(true) > 0) {
+      flags |= ItemTouchHelper.UP;
+    }
+
     if (m.getLeftQuickReactions().size() > 1 || m.getRightQuickReactions().size() > 1) {
       flags |= ItemTouchHelper.DOWN;
     }
@@ -110,9 +114,11 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
       return true;
     }
 
-    int actionsCount = lastDx > 0 ? msg.getLeftQuickReactions().size() : msg.getRightQuickReactions().size();
-    float verticalTranslate = MathUtils.clamp(lastDy / Screen.dp(SWIPE_VERTICAL_HEIGHT), 0, Math.max(actionsCount - 1f, 0f));
-    int actionIndex = Math.round(verticalTranslate);
+    boolean isLeft = lastDx > 0;
+    final int minPosition = -msg.getQuickDefaultPosition(isLeft);
+    final int maxPosition = minPosition + Math.max(msg.getQuickActionsCount(isLeft) - 1, 0);
+    float verticalTranslate = MathUtils.clamp(lastDy / Screen.dp(SWIPE_VERTICAL_HEIGHT), minPosition, maxPosition);
+    int actionIndex = Math.round(verticalTranslate) + msg.getQuickDefaultPosition(lastDx > 0);
 
     if (msg.useBubbles()) {
       final TGMessage.SwipeQuickAction action;
@@ -157,9 +163,11 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
     helper.ignoreSwipe(holder, swipeDir);
 
     TGMessage msg = MessagesHolder.findMessageView(holder.itemView).getMessage();
-    int actionsCount = lastDx > 0 ? msg.getLeftQuickReactions().size() : msg.getRightQuickReactions().size();
-    float verticalTranslate = MathUtils.clamp(lastDy / Screen.dp(SWIPE_VERTICAL_HEIGHT), 0, Math.max(actionsCount - 1f, 0f));
-    int actionIndex = Math.round(verticalTranslate);
+    boolean isLeft = lastDx > 0;
+    final int minPosition = -msg.getQuickDefaultPosition(isLeft);
+    final int maxPosition = minPosition + Math.max(msg.getQuickActionsCount(isLeft) - 1, 0);
+    float verticalTranslate = MathUtils.clamp(lastDy / Screen.dp(SWIPE_VERTICAL_HEIGHT), minPosition, maxPosition);
+    int actionIndex = Math.round(verticalTranslate) + msg.getQuickDefaultPosition(lastDx > 0);
 
     if (msg.getTranslation() != 0f) {
       msg.completeTranslation();
@@ -186,10 +194,11 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
       final MessageView v = MessagesHolder.findMessageView(holder.itemView);
       final TGMessage msg = v.getMessage();
 
+      boolean isLeft = dx > 0;
+      final int minPosition = -msg.getQuickDefaultPosition(isLeft);
+      final int maxPosition = minPosition + Math.max(msg.getQuickActionsCount(isLeft) - 1, 0);
       float newVerticalPosition = (isActive ? dy : lastDy) / Screen.dp(SWIPE_VERTICAL_HEIGHT);
-      int actionsCount = dx > 0 ? msg.getLeftQuickReactions().size() : msg.getRightQuickReactions().size();
-      float verticalPosition = MathUtils.clamp(newVerticalPosition, 0, Math.max(actionsCount - 1f, 0f));
-
+      float verticalPosition = MathUtils.clamp(newVerticalPosition, minPosition, maxPosition);
       msg.translate(dx, verticalPosition, true);
       if (holder.itemView instanceof MessageViewGroup) {
         ((MessageViewGroup) holder.itemView).setSwipeTranslation(msg.getTranslation());

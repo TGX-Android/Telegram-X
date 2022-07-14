@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Rect;
 import android.view.View;
 import android.view.ViewParent;
+import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -21,6 +22,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -28,6 +30,7 @@ import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.ReactionCheckboxSettingsView;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 import me.vkryl.android.widget.FrameLayoutFix;
@@ -51,7 +54,8 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
   private TdApi.Chat chat;
   private int type;
 
-  private HashMap<String, TdApi.Reaction> enabledReactions = new HashMap<>();
+  private final HashMap<String, TdApi.Reaction> enabledReactions = new HashMap<>();
+  private final ArrayList<String> quickReactionsList = new ArrayList<>();
 
   public EditEnabledReactionsController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -72,13 +76,18 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
   @Override
   protected void onCreateView (Context context, FrameLayoutFix contentView, RecyclerView recyclerView) {
     enabledReactions.clear();
+    quickReactionsList.clear();
     if (chat != null && type == TYPE_ENABLED_REACTIONS) {
       for (int a = 0; a < chat.availableReactions.length; a++) {
-        TdApi.Reaction reaction = tdlib.getSupportedReactionsMap().get(chat.availableReactions[a]);
+        TGReaction reaction = tdlib.getReaction(chat.availableReactions[a]);
         if (reaction != null) {
-          enabledReactions.put(reaction.reaction, reaction);
+          enabledReactions.put(reaction.reaction.reaction, reaction.reaction);
         }
       }
+    }
+
+    if (type == TYPE_QUICK_REACTION) {
+      quickReactionsList.addAll(Arrays.asList(Settings.instance().getQuickReactions()));
     }
 
     adapter = new SettingsAdapter(this) {
@@ -94,7 +103,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
               view.setChecked(false, isUpdate);
             } else {
               v.setName(Lang.plural(R.string.ReactionsEnabled, enabledReactions.size()));
-              view.setPartially(enabledReactions.size() != tdlib.getSupportedReactionsMap().size(), isUpdate);
+              view.setPartially(enabledReactions.size() != tdlib.getTotalActiveReactionsCount(), isUpdate);
               view.setChecked(true, isUpdate);
             }
           }
@@ -102,7 +111,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
         if (viewId == R.id.btn_quick_reaction_enabled) {
           TogglerView view = v.getToggler();
           if (view != null) {
-            view.setRadioEnabled(Settings.instance().getQuickReaction().length() > 0, isUpdate);
+            view.setRadioEnabled(quickReactionsList.size() > 0, isUpdate);
           }
         }
       }
@@ -118,8 +127,21 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
           if (type == TYPE_ENABLED_REACTIONS) {
             userView.setChecked(enabledReactions.containsKey(reactionsObj.getReaction().reaction), isUpdate);
           } else if (type == TYPE_QUICK_REACTION) {
-            userView.setChecked(Settings.instance().getQuickReaction().equals(reactionsObj.getReaction().reaction), isUpdate);
+            int index = quickReactionsList.indexOf(reaction);
+            userView.setNumber(index >= 0 ? index + 1: index, isUpdate);
           }
+        }
+      }
+
+      @Override
+      public void onBindViewHolder (SettingHolder holder, int position) {
+        super.onBindViewHolder(holder, position);
+        if (holder.getItemViewType() == ListItem.TYPE_HEADER_WITH_ACTION) {
+          ImageView imageView = (ImageView) ((FrameLayoutFix) holder.itemView).getChildAt(1);
+          imageView.setColorFilter(Theme.getColor(R.id.theme_color_text));
+          holder.itemView.setOnClickListener((v) -> {
+            imageView.performClick();
+          });
         }
       }
     };
@@ -138,7 +160,6 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
       items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.reactions_enabled, 0, R.string.ReactionsDisabled, R.id.reactions_enabled, !enabledReactions.isEmpty()));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.ReactionsDisabledDesc), false));
-      items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.AvailableReactions));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     } else if (type == TYPE_QUICK_REACTION) {
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_quick_reaction_enabled, 0, R.string.QuickReactionEnable));
@@ -147,17 +168,18 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     }
 
-    final TdApi.Reaction[] supportedReactions = tdlib.getSupportedReactions();
-    if (supportedReactions != null) {
-      for (int a = 0; a < supportedReactions.length; a++) {
-        items.add(new ListItem(
-          ListItem.TYPE_REACTION_CHECKBOX,
-          R.id.btn_enabledReactionsCheckboxGroup,
-          0,
-          supportedReactions[a].reaction,
-          false
-        )); //.setStringValue(supportedReactions[a].reaction));
-      }
+    for (TGReaction reaction : tdlib.getNotPremiumReactions()) {
+      items.add(new ListItem(ListItem.TYPE_REACTION_CHECKBOX, R.id.btn_enabledReactionsCheckboxGroup, 0, reaction.reaction.reaction, false));
+    }
+    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    if (!needPremiumRestriction()) {
+      items.add(new ListItem(ListItem.TYPE_HEADER, R.id.reactions_premium_locked, 0, R.string.PremiumReactions));
+    } else {
+      items.add(new ListItem(ListItem.TYPE_HEADER_WITH_ACTION, R.id.reactions_premium_locked, R.drawable.baseline_lock_16, R.string.PremiumReactions));
+    }
+    items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+    for (TGReaction reaction : tdlib.getOnlyPremiumReactions()) {
+      items.add(new ListItem(ListItem.TYPE_REACTION_CHECKBOX, R.id.btn_enabledReactionsCheckboxGroup, 0, reaction.reaction.reaction, false));
     }
 
     adapter.setItems(items, true);
@@ -181,17 +203,33 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
     context().reactionsOverlayManager();
   }
 
+  private boolean needPremiumRestriction () {
+    return type == TYPE_QUICK_REACTION && !tdlib.hasPremium();
+  }
+
+  private void showPremiumLockTooltip (View v) {
+    context().tooltipManager().builder(v).show(tdlib, Lang.getMarkdownString(this, R.string.PremiumReactionsLocked));
+  }
+
+  private void showQuickReactionsLimit (View v) {
+    context().tooltipManager().builder(v).show(tdlib, Lang.getString(R.string.QuickReactionsLimit));
+  }
+
   @Override
   public void onClick (View v) {
     final int viewId = v.getId();
 
+    if (viewId == R.id.reactions_premium_locked && needPremiumRestriction()) {
+      showPremiumLockTooltip(v);
+    }
+
     if (viewId == R.id.reactions_enabled) {
-      if (enabledReactions.isEmpty() && tdlib.getSupportedReactions() != null) {
-        for (TdApi.Reaction reaction : tdlib.getSupportedReactions()) {
-          TGReaction tgReaction = tdlib.getReaction(reaction.reaction);
-          if (tgReaction != null && tgReaction.canSend) {
-            enabledReactions.put(reaction.reaction, reaction);
-          }
+      if (enabledReactions.isEmpty()) {
+        for (TGReaction tgReaction : tdlib.getNotPremiumReactions()) {
+          enabledReactions.put(tgReaction.reaction.reaction, tgReaction.reaction);
+        }
+        for (TGReaction tgReaction : tdlib.getOnlyPremiumReactions()) {
+          enabledReactions.put(tgReaction.reaction.reaction, tgReaction.reaction);
         }
       } else {
         enabledReactions.clear();
@@ -202,12 +240,12 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
     }
 
     if (viewId == R.id.btn_quick_reaction_enabled) {
-      if (Settings.instance().getQuickReaction().length() == 0) {
-        Settings.instance().setQuickReaction("\uD83D\uDC4D");
+      if (quickReactionsList.size() == 0) {
+        quickReactionsList.add("\uD83D\uDC4D");
       } else {
-        Settings.instance().setQuickReaction("");
+        quickReactionsList.clear();
       }
-
+      updateQuickReactionsSettings();
       adapter.updateAllValuedSettingsById(R.id.btn_enabledReactionsCheckboxGroup);
       adapter.updateValuedSettingById(R.id.btn_quick_reaction_enabled);
     }
@@ -223,7 +261,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
           if (type == TYPE_ENABLED_REACTIONS) {
             if (enabledReactions.containsKey(emoji)) {
               enabledReactions.remove(emoji);
-            } else if (tgReaction.canSend) {
+            } else {
               checked = true;
               enabledReactions.put(emoji, tgReaction.getReaction());
             }
@@ -232,12 +270,21 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
             adapter.updateValuedSettingById(R.id.reactions_enabled);
           }
           if (type == TYPE_QUICK_REACTION) {
-            if (Settings.instance().getQuickReaction().equals(emoji)) {
-              Settings.instance().setQuickReaction("");
-            } else if (tgReaction.canSend) {
-              checked = true;
-              Settings.instance().setQuickReaction(emoji);
+            if (quickReactionsList.contains(emoji)) {
+              quickReactionsList.remove(emoji);
+            } else {
+              if (!needPremiumRestriction()|| !tgReaction.reaction.isPremium) {
+                if (quickReactionsList.size() < 4) {
+                  checked = true;
+                  quickReactionsList.add(emoji);
+                } else {
+                  showQuickReactionsLimit(v);
+                }
+              } else {
+                showPremiumLockTooltip(v);
+              }
             }
+            updateQuickReactionsSettings();
             adapter.updateAllValuedSettingsById(R.id.btn_enabledReactionsCheckboxGroup);
             adapter.updateValuedSettingById(R.id.btn_quick_reaction_enabled);
           }
@@ -248,7 +295,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
             int[] positionCords = new int[2];
             v.getLocationOnScreen(positionCords);
             positionCords[0] += v.getMeasuredWidth() / 2;
-            positionCords[1] += Screen.dp(31);
+            positionCords[1] += Screen.dp(40);
 
             context().reactionsOverlayManager().addOverlay(stickerObj, new Rect(
               positionCords[0] - Screen.dp(50),
@@ -270,9 +317,9 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
     enabledReactions.clear();
     if (availableReactions != null) {
       for (int a = 0; a < availableReactions.length; a++) {
-        TdApi.Reaction reaction = tdlib.getSupportedReactionsMap().get(availableReactions[a]);
+        TGReaction reaction = tdlib.getReaction(availableReactions[a]);
         if (reaction != null) {
-          enabledReactions.put(reaction.reaction, reaction);
+          enabledReactions.put(reaction.reaction.reaction, reaction.reaction);
         }
       }
     }
@@ -328,6 +375,9 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
     tdlib.listeners().unsubscribeFromChatUpdates(chatId, this);
   }
 
+  private void updateQuickReactionsSettings () {
+    Settings.instance().setQuickReactions(quickReactionsList.toArray(new String[0]));
+  }
 
   // StickerView Callback
 

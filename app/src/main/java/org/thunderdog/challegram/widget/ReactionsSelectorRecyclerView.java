@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGReaction;
@@ -65,13 +66,14 @@ public class ReactionsSelectorRecyclerView extends CustomRecyclerView {
 
     public void setReaction (TGReaction reaction, boolean isChosen) {
       this.chosen = isChosen;
-      if (reaction.centerAnimationSicker().getPreviewAnimation() != null) {
-        reaction.centerAnimationSicker().getPreviewAnimation().setPlayOnce(true);
+      TGStickerObj centerAnimationSicker = reaction.newCenterAnimationSicker();
+      if (centerAnimationSicker.getPreviewAnimation() != null) {
+        centerAnimationSicker.getPreviewAnimation().setPlayOnce(true);
         stickerView.setPadding(0);
       } else {
         stickerView.setPadding(Screen.dp(4));
       }
-      stickerView.setSticker(reaction.centerAnimationSicker());
+      stickerView.setSticker(centerAnimationSicker);
     }
 
     @Override

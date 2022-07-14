@@ -304,6 +304,7 @@ public class Settings {
   private static final String KEY_EMOJI_DEFAULT_COLOR = "emoji_default";
 
   private static final String KEY_QUICK_REACTION = "quick_reaction";
+  private static final String KEY_QUICK_REACTIONS = "quick_reactions";
   private static final String KEY_BIG_REACTIONS_IN_CHANNELS = "big_reactions_in_channels";
   private static final String KEY_BIG_REACTIONS_IN_CHATS = "big_reactions_in_chats";
 
@@ -6077,18 +6078,21 @@ public class Settings {
     return hasFile ? (installedVersion == setting.date ? CloudSetting.STATE_INSTALLED : CloudSetting.STATE_UPDATE_NEEDED) : CloudSetting.STATE_NOT_INSTALLED;
   }
 
-  private String quickReaction;
-  public void setQuickReaction (String reaction) {
-    pmc.edit().putString(KEY_QUICK_REACTION, reaction).apply();
-    quickReaction = reaction;
+  private String[] quickReactions;
+  public void setQuickReactions (String reactions[]) {
+    pmc.edit().putStringArray(KEY_QUICK_REACTIONS, reactions).apply();
+    quickReactions = reactions;
   }
 
-  public String getQuickReaction () {
-    if (quickReaction == null) {
-      quickReaction = pmc.getString(KEY_QUICK_REACTION, "\uD83D\uDC4D");
+  public String[] getQuickReactions () {
+    if (quickReactions == null) {
+      quickReactions = pmc.getStringArray(KEY_QUICK_REACTIONS);
+      if (quickReactions == null) {
+        quickReactions = new String[]{ "\uD83D\uDC4D" };
+      }
     }
 
-    return quickReaction;
+    return quickReactions;
   }
 
   public void setBigReactionsInChannels (boolean inChannels) {

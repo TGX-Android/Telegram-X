@@ -15,11 +15,11 @@ package org.thunderdog.challegram.widget;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.drawable.Drawable;
+import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.MotionEvent;
+import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -30,6 +30,7 @@ import org.thunderdog.challegram.charts.LayoutHelper;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.data.TGReaction;
+import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeInvalidateListener;
@@ -37,22 +38,25 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.util.text.Counter;
 
 import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BoolAnimator;
+import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
 
-public class ReactionCheckboxSettingsView extends LinearLayout implements ThemeInvalidateListener, Destroyable {
+public class ReactionCheckboxSettingsView extends LinearLayout implements ThemeInvalidateListener, FactorAnimator.Target, Destroyable, TooltipOverlayView.LocationProvider {
   private final StickerSmallView stickerSmallView;
   private final TextView captionTextView;
-  private boolean checked;
-  private float checkedFactor;
+  private final Counter counter;
+  private final BoolAnimator checkedFactor;
+  private int number = -2;
   private TGReaction reaction;
 
   private TGStickerObj activateAnimationSticker;
 
   private final float lineSize;
-  private final Drawable premiumDrawable;
 
   public ReactionCheckboxSettingsView (Context context) {
     this(context, null, 0);
@@ -70,26 +74,41 @@ public class ReactionCheckboxSettingsView extends LinearLayout implements ThemeI
     lineSize = Screen.dp(1.5f);
 
     stickerSmallView = new StickerSmallView(context, Screen.dp(0));
-    stickerSmallView.setLayoutParams(LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 55, Gravity.CENTER_HORIZONTAL, 0, 8, 0, 0));
+    stickerSmallView.setLayoutParams(LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER_HORIZONTAL, 0, 16, 0, 3));
     stickerSmallView.setIsSuggestion();
     addView(stickerSmallView);
 
     captionTextView = new TextView(context);
     captionTextView.setGravity(Gravity.CENTER_HORIZONTAL);
-    captionTextView.setTextSize(13);
+    captionTextView.setTextSize(11);
     captionTextView.setMaxLines(2);
-    addView(captionTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 4, 0, 4, 15));
+    addView(captionTextView, LayoutHelper.createLinear(74, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
 
-    premiumDrawable = Drawables.get(R.drawable.baseline_star_20);
+    counter = new Counter.Builder()
+      .callback(this)
+      .noBackground()
+      .allBold(true)
+      .textSize(9f)
+      .build();
 
     recolor();
 
-    checked = true;
-    checkedFactor = 1f;
+    checkedFactor = new BoolAnimator(0, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 165L);
+    checkedFactor.setValue(true, false);
   }
 
   public StickerSmallView getStickerSmallView () {
     return stickerSmallView;
+  }
+
+  @Override
+  public void getTargetBounds (View targetView, Rect outRect) {
+    final int bound = Screen.dp(2f);
+    outRect.set(
+      getMeasuredWidth() / 2 - bound,
+      Screen.dp(20) - bound,
+      getMeasuredWidth() / 2 + bound,
+      Screen.dp(20) + bound);
   }
 
   @Override
@@ -134,34 +153,26 @@ public class ReactionCheckboxSettingsView extends LinearLayout implements ThemeI
     setCaptionText(reaction.reaction.title);
   }
 
-  public void toggleChecked () {
-    setChecked(!checked, true);
+  public void setChecked (boolean checked, boolean animated) {
+    this.setNumber(checked ? 0 : -1, animated);
   }
 
-  public void setChecked (boolean checked, boolean animated) {
-    if (checked == this.checked) {
+  public void setNumber (int number, boolean animated) {
+    boolean checked = number >= 0;
+    if (number == this.number) {
       return;
     }
 
-    this.checked = checked;
+    this.number = number;
 
     if (!animated) {
-      setCheckedFactor(checked ? 1f : 0f);
+      counter.setCount(Math.max(0, number), false);
+      checkedFactor.setValue(checked, false);
       return;
     }
 
-    ValueAnimator obj;
-    final float startFactor = getCheckedFactor();
-    obj = AnimatorUtils.simpleValueAnimator();
-    if (checked) {
-      final float diffFactor = 1f - startFactor;
-      obj.addUpdateListener(animation -> setCheckedFactor(startFactor + diffFactor * AnimatorUtils.getFraction(animation)));
-    } else {
-      obj.addUpdateListener(animation -> setCheckedFactor(startFactor - startFactor * AnimatorUtils.getFraction(animation)));
-    }
-    obj.setDuration(165l);
-    obj.setInterpolator(AnimatorUtils.DECELERATE_INTERPOLATOR);
-    obj.start();
+    counter.setCount(Math.max(0, number), true);
+    checkedFactor.setValue(checked, true);
 
     if (checked && animated) {
       if (activateAnimationSticker.getPreviewAnimation() != null) {
@@ -169,23 +180,6 @@ public class ReactionCheckboxSettingsView extends LinearLayout implements ThemeI
       }
       stickerSmallView.invalidate();
     }
-  }
-
-  public boolean getChecked () {
-    return checked;
-  }
-
-  public void setCheckedFactor (float factor) {
-    if (this.checkedFactor != factor) {
-      this.checkedFactor = factor;
-      stickerSmallView.setAlpha(this.checkedFactor / 2f + 0.5f);
-      captionTextView.setAlpha(this.checkedFactor / 2f + 0.5f);
-      invalidate();
-    }
-  }
-
-  public float getCheckedFactor () {
-    return this.checkedFactor;
   }
 
   public TGStickerObj getSticker () {
@@ -197,29 +191,29 @@ public class ReactionCheckboxSettingsView extends LinearLayout implements ThemeI
     super.dispatchDraw(c);
 
     c.save();
-    float cx = getWidth() / 2f + Screen.dp(12);
-    float cy = Screen.dp(50);
-    float r1 = Screen.dp(8.6f);
-    float r2 = Screen.dp(6.6f);
 
-    c.drawCircle(cx, cy, r1, Paints.fillingPaint(ColorUtils.alphaColor(checkedFactor, Theme.backgroundColor())));
-    c.drawCircle(cx, cy, r2, Paints.fillingPaint(ColorUtils.alphaColor(checkedFactor, Theme.radioFillingColor())));
+    float cx = getWidth() / 2f + Screen.dp(10);
+    float cy = Screen.dp(47 + 6);
+    float r1 = Screen.dp(7.5f);
+    float r2 = Screen.dp(6f);
 
-    float x1 = cx - Screen.dp(1);
-    float y1 = cy + Screen.dp(3.5f);
-    float w2 = Screen.dp(8.6f) * checkedFactor;
-    float h1 = Screen.dp(4.66f) * checkedFactor;
+    c.drawCircle(cx, cy, r1, Paints.fillingPaint(ColorUtils.alphaColor(checkedFactor.getFloatValue(), Theme.fillingColor())));
+    c.drawCircle(cx, cy, r2, Paints.fillingPaint(ColorUtils.alphaColor(checkedFactor.getFloatValue(), Theme.radioFillingColor())));
 
-    c.rotate(-45f, x1, y1);
-    c.drawRect(x1, y1 - h1, x1 + lineSize, y1, Paints.fillingPaint(ColorUtils.alphaColor(checkedFactor, Theme.backgroundColor())));
-    c.drawRect(x1, y1 - lineSize, x1 + w2, y1, Paints.fillingPaint(ColorUtils.alphaColor(checkedFactor, Theme.backgroundColor())));
+    if (counter.getVisibility() > 0f) {
+      counter.draw(c, cx, cy, Gravity.CENTER, counter.getVisibility());
+    } else {
+      float x1 = cx - Screen.dp(1);
+      float y1 = cy + Screen.dp(3.5f);
+      float w2 = Screen.dp(8f) * checkedFactor.getFloatValue();
+      float h1 = Screen.dp(4f) * checkedFactor.getFloatValue();
+
+      c.rotate(-45f, x1, y1);
+      c.drawRect(x1, y1 - h1, x1 + lineSize, y1, Paints.fillingPaint(ColorUtils.alphaColor(checkedFactor.getFloatValue(), Theme.radioCheckColor())));
+      c.drawRect(x1, y1 - lineSize, x1 + w2, y1, Paints.fillingPaint(ColorUtils.alphaColor(checkedFactor.getFloatValue(), Theme.radioCheckColor())));
+    }
 
     c.restore();
-
-    if (!reaction.canSend) {
-      Paint paint = PorterDuffPaint.get(R.id.theme_color_bubbleOut_file, 1);
-      Drawables.draw(c, premiumDrawable, cx - Screen.dp(10), cy - Screen.dp(10), paint);
-    }
   }
 
   @Override
@@ -230,6 +224,13 @@ public class ReactionCheckboxSettingsView extends LinearLayout implements ThemeI
   @Override
   public void onThemeInvalidate (boolean isTempUpdate) {
     recolor();
+    invalidate();
+  }
+
+  @Override
+  public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
+    stickerSmallView.setAlpha(factor / 2f + 0.5f);
+    captionTextView.setAlpha(factor / 2f + 0.5f);
     invalidate();
   }
 }
