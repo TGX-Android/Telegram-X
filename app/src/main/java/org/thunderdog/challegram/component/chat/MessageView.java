@@ -711,11 +711,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         if (Config.FAVORITE_STICKERS_WITHOUT_SETS || sticker.setId != 0) {
           int stickerId = sticker.sticker.id;
           boolean isFavorite = m.tdlib().isStickerFavorite(stickerId);
-          if (isFavorite || m.tdlib().canFavoriteStickers()) {
-            ids.append(isFavorite ? R.id.btn_messageUnfavoriteContent : R.id.btn_messageFavoriteContent);
-            strings.append(isFavorite ? R.string.RemoveFromFavorites : R.string.AddToFavorites);
-            icons.append(!isFavorite ? R.drawable.baseline_star_border_24 : R.drawable.baseline_star_24);
-          }
+          ids.append(isFavorite ? R.id.btn_messageUnfavoriteContent : R.id.btn_messageFavoriteContent);
+          strings.append(isFavorite ? R.string.RemoveFromFavorites : R.string.AddToFavorites);
+          icons.append(!isFavorite ? R.drawable.baseline_star_border_24 : R.drawable.baseline_star_24);
         }
         if (msg instanceof TGMessageSticker && ((TGMessageSticker) msg).needSuggestOpenStickerPack()) {
           ids.append(R.id.btn_messageStickerSet);

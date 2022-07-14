@@ -5040,12 +5040,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
-  public boolean canFavoriteStickers () {
-    synchronized (dataLock) {
-      return installedStickerSetCount >= 5 || (favoriteStickerIds != null && favoriteStickerIds.length > 0);
-    }
-  }
-
   public int getInstalledStickerSetLimit () {
     synchronized (dataLock) {
       return installedStickerSetLimit;
