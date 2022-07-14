@@ -52,7 +52,7 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout{
 
 	private ThemeListenerList themeListeners=new ThemeListenerList();
 
-	public ReactionsMessageOptionsSheetHeaderView(Context context, MessagesController controller, TGMessage message, PopupLayout popupLayout){
+	public ReactionsMessageOptionsSheetHeaderView(Context context, MessagesController controller, TGMessage message, PopupLayout popupLayout, List<String> availableReactions){
 		super(context);
 		this.popupLayout=popupLayout;
 		setOrientation(HORIZONTAL);
@@ -62,7 +62,7 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout{
 		this.message=message;
 
 		tdlib=controller.tdlib();
-		reactions=Arrays.stream(controller.getChat().availableReactions).map(tdlib::getReaction).collect(Collectors.toList());
+		reactions=availableReactions.stream().map(tdlib::getReaction).collect(Collectors.toList());
 
 		scrollView=new HorizontalScrollView(context){
 			@Override

@@ -138,6 +138,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGAudio;
 import org.thunderdog.challegram.data.TGBotStart;
 import org.thunderdog.challegram.data.TGMessage;
+import org.thunderdog.challegram.data.TGMessageChat;
 import org.thunderdog.challegram.data.TGMessageLocation;
 import org.thunderdog.challegram.data.TGMessageMedia;
 import org.thunderdog.challegram.data.TGMessageSticker;
@@ -4216,18 +4217,31 @@ public class MessagesController extends ViewController<MessagesController.Argume
       b.append(Lang.getString(resId));
     }
     String text = b.toString().trim();
-    patchReactionsAndReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, disableViewCounter);
+    boolean canReact=chat!=null && chat.availableReactions!=null && chat.availableReactions.length>0 && !msg.isSponsored() && msg.allowInteraction() && !(msg instanceof TGMessageChat);
+    if(canReact && !disableViewCounter){
+      tdlib.sendOnUiThread(new TdApi.GetMessageAvailableReactions(getChatId(), msg.getId()), res->{
+        List<String> availableReactions;
+        if(res instanceof TdApi.AvailableReactions){
+          boolean hasPremium=tdlib.hasPremium();
+          availableReactions=Arrays.stream(((TdApi.AvailableReactions) res).reactions).filter(ar->!ar.needsPremium || hasPremium).map(ar->ar.reaction).collect(Collectors.toList());
+        }else{
+          availableReactions=Collections.emptyList();
+        }
+        patchReactionsAndReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, false, availableReactions);
+      });
+    }else{
+      patchReactionsAndReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, disableViewCounter, Collections.emptyList());
+    }
   }
 
-  private void patchReactionsAndReadReceiptsOptions(PopupLayout layout, TGMessage message, boolean disableViewCounter) {
+  private void patchReactionsAndReadReceiptsOptions(PopupLayout layout, TGMessage message, boolean disableViewCounter, List<String> availableReactions) {
     if(!(layout.getChildAt(1) instanceof OptionsLayout))
       return;
 
-    boolean canReact=chat!=null && chat.availableReactions!=null && chat.availableReactions.length>0;
     OptionsLayout optionsLayout = (OptionsLayout) layout.getChildAt(1);
 
-    if(canReact){
-      ReactionsMessageOptionsSheetHeaderView header=new ReactionsMessageOptionsSheetHeaderView(layout.getContext(), this, message, layout);
+    if(!availableReactions.isEmpty()){
+      ReactionsMessageOptionsSheetHeaderView header=new ReactionsMessageOptionsSheetHeaderView(layout.getContext(), this, message, layout, availableReactions);
       optionsLayout.addView(header, 1);
       return;
     }
