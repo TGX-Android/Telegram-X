@@ -278,11 +278,11 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     return currentState == TdlibFilesManager.STATE_FAILED;
   }
 
-  public long getTotalSize () {
+  public int getTotalSize () {
     return file != null ? file.expectedSize : 0;
   }
 
-  public long getProgressSize () {
+  public int getProgressSize () {
     return file != null ? file.remote.isUploadingActive ? file.remote.uploadedSize : file.local.downloadedSize : 0;
   }
 

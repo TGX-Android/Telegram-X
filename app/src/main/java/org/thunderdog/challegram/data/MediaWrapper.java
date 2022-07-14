@@ -1245,8 +1245,8 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
           twAlternativeHeader = textShort;
           text = Lang.getString(R.string.ProcessingMedia, textShort);
         } else {
-          long progressSize = fileProgress.getProgressSize();
-          long totalSize = fileProgress.getTotalSize();
+          int progressSize = fileProgress.getProgressSize();
+          int totalSize = fileProgress.getTotalSize();
           if (progressSize <= totalSize) {
             float ratio = (float) progressSize / (float) totalSize;
             text = Lang.getString(R.string.format_uploadStatus, (int) Math.floor(100f * ratio), textShort);

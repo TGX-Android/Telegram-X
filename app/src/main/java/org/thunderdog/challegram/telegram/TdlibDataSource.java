@@ -181,8 +181,8 @@ public final class TdlibDataSource extends BaseDataSource {
     }
   }
 
-  private static long getAvailableSize (TdApi.File file, int offset, int length) {
-    long available;
+  private static int getAvailableSize (TdApi.File file, int offset, int length) {
+    int available;
     if (file.local.isDownloadingCompleted)
       available = file.local.downloadedSize - offset;
     else if (offset >= file.local.downloadOffset && offset < file.local.downloadOffset + file.local.downloadedPrefixSize)
@@ -254,7 +254,7 @@ public final class TdlibDataSource extends BaseDataSource {
             acquireReference(file, offset);
           }
         }
-        long available = getAvailableSize(file, offset, readLength);
+        int available = getAvailableSize(file, offset, readLength);
         if (available == 0) {
           latch.await();
           continue;
@@ -270,7 +270,7 @@ public final class TdlibDataSource extends BaseDataSource {
           if (opened && offset > 0) {
             openFile.seek(offset);
           }
-          int readCount = openFile.read(buffer, bufferOffset, (int) available); // FIXME
+          int readCount = openFile.read(buffer, bufferOffset, available);
           bytesTransferred(readCount);
           bytesRead += readCount;
           return readCount;

@@ -74,7 +74,6 @@ import org.thunderdog.challegram.util.PullRequest;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
-import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
 import java.util.ArrayList;
@@ -87,7 +86,6 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
-import me.vkryl.td.Td;
 
 public class SettingsController extends ViewController<Void> implements
   View.OnClickListener, ComplexHeaderView.Callback,
@@ -561,12 +559,15 @@ public class SettingsController extends ViewController<Void> implements
             break;
           }
           case R.id.btn_bio: {
-            if (about == null || about.text.isEmpty()) {
-              view.setText(obtainWrapper(Lang.getString(about == null ? R.string.LoadingInformation : R.string.BioNone), ID_BIO));
+            String text;
+            if (about == null) {
+              text = Lang.getString(R.string.LoadingInformation);
+            } else if (StringUtils.isEmpty(about)) {
+              text = Lang.getString(R.string.BioNone);
             } else {
-              view.setText(obtainBioWrapper(about));
+              text = about;
             }
-
+            view.setText(obtainWrapper(text, ID_BIO));
             break;
           }
         }
@@ -749,20 +750,14 @@ public class SettingsController extends ViewController<Void> implements
   private static final int ID_RATIONALE_PHONE_NUMBER = R.id.btn_changePhoneNumber;
   private final SparseArrayCompat<TextWrapper> textWrappers = new SparseArrayCompat<>();
 
-  private TextWrapper obtainBioWrapper (TdApi.FormattedText text) {
-    TextWrapper textWrapper = textWrappers.get(ID_BIO);
-    if (textWrapper == null || !StringUtils.equalsOrBothEmpty(textWrapper.getText(), text.text)) {
-      textWrapper = new TextWrapper(text.text, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, TextEntity.valueOf(tdlib, text, null));
-      textWrapper.addTextFlags(Text.FLAG_CUSTOM_LONG_PRESS | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0));
-      textWrappers.put(ID_BIO, textWrapper);
-    }
-    return textWrapper;
-  }
-
   private TextWrapper obtainWrapper (CharSequence text, int id) {
     TextWrapper textWrapper = textWrappers.get(id);
     if (textWrapper == null || !StringUtils.equalsOrBothEmpty(textWrapper.getText(), text)) {
-      textWrapper = new TextWrapper(text.toString(), TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, Text.toEntities(text, false, tdlib, null));
+      if (id == ID_BIO) {
+        textWrapper = new TextWrapper(tdlib, text.toString(), TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, Text.ENTITY_FLAGS_ALL_NO_COMMANDS, null);
+      } else {
+        textWrapper = new TextWrapper(text.toString(), TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, Text.toEntities(text, false, tdlib, null));
+      }
       textWrapper.addTextFlags(Text.FLAG_CUSTOM_LONG_PRESS | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0));
       textWrappers.put(id, textWrapper);
     }
@@ -780,9 +775,9 @@ public class SettingsController extends ViewController<Void> implements
     });
   }
 
-  private void setBio (TdApi.FormattedText about) {
-    if (this.about == null || !Td.equalsTo(this.about, about) || !(Td.isEmpty(this.about) && Td.isEmpty(about))) {
-      this.about = about == null ? new TdApi.FormattedText("", new TdApi.TextEntity[0]) : about;
+  private void setBio (@NonNull String about) {
+    if (this.about == null || !StringUtils.equalsOrBothEmpty(this.about, about)) {
+      this.about = about;
       adapter.updateValuedSettingById(R.id.btn_bio);
     }
   }
@@ -853,13 +848,13 @@ public class SettingsController extends ViewController<Void> implements
   }
 
   @Override
-  public void onMyUserBioUpdated (TdApi.FormattedText newBio) {
+  public void onMyUserBioUpdated (String newBio) {
     setBio(newBio);
   }
 
   private String myUsername;
   private String myPhone, originalPhoneNumber;
-  private @Nullable TdApi.FormattedText about;
+  private @Nullable String about;
 
   private void initMyUser () {
     TdApi.User user = tdlib.myUser();
@@ -936,7 +931,7 @@ public class SettingsController extends ViewController<Void> implements
     switch (v.getId()) {
       case R.id.btn_bio: {
         EditBioController c = new EditBioController(context, tdlib);
-        c.setArguments(new EditBioController.Arguments(about == null ? "" : about.text, 0));
+        c.setArguments(new EditBioController.Arguments(about, 0));
         navigateTo(c);
         break;
       }
