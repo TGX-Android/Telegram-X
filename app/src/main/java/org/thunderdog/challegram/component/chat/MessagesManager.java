@@ -1229,6 +1229,16 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     return null;
   }
 
+  public MessageView findRealMessageView(long chatId, long messageId){
+    View v=findMessageView(chatId, messageId);
+    if(v instanceof MessageView)
+      return (MessageView) v;
+    else if(v instanceof MessageViewGroup)
+      return ((MessageViewGroup)v).getMessageView();
+    else
+      return null;
+  }
+
   // View utils
 
   private View findTopView () {

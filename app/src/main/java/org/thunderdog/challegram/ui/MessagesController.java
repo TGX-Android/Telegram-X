@@ -10462,7 +10462,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void sendMessageReaction(TGMessage msg, String reaction, ImageView src, Rect srcRect, PopupLayout popup, boolean big){
-    MessageView mv=(MessageView) manager.findMessageView(getChatId(), msg.getMessageForReactions().id);
+    MessageView mv=manager.findRealMessageView(getChatId(), msg.getMessageForReactions().id);
     ArrayList<TdApi.MessageReaction> reactions=new ArrayList<>(Arrays.asList(msg.getReactions()));
     TdApi.MessageReaction existingReaction=null;
     for(TdApi.MessageReaction r:reactions){
@@ -10560,7 +10560,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private long lastHapticEffectTime;
 
   public void playReactionBigEffectAnimation(TGMessage msg, String reaction){
-    MessageView mv=(MessageView) manager.findMessageView(getChatId(), msg.getMessageForReactions().id);
+    MessageView mv=manager.findRealMessageView(getChatId(), msg.getMessageForReactions().id);
     if(mv==null)
       return;
 
@@ -10619,7 +10619,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void playReactionEffectAnimation(TGMessage msg, String reaction){
-    MessageView mv=(MessageView) manager.findMessageView(getChatId(), msg.getMessageForReactions().id);
+    MessageView mv=manager.findRealMessageView(getChatId(), msg.getMessageForReactions().id);
     if(mv==null)
       return;
 
@@ -10681,6 +10681,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void updateQuickReactions(){
+    if(chat==null)
+      return;
     if(Settings.instance().areQuickReactionsEnabled()){
       Set<String> enabled=Settings.instance().getQuickReactions();
       List<String> available=Arrays.asList(chat.availableReactions);
