@@ -10511,7 +10511,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
         newReaction.isChosen=true;
         didAdd=true;
       }
-      Collections.sort(reactions, Comparator.comparingInt(c->c.totalCount));
     }
     TdApi.Message m=msg.getMessageForReactions();
     if(m.interactionInfo==null)
