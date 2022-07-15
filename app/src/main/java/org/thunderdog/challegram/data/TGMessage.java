@@ -4261,6 +4261,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return msg.canBeForwarded && (msg.content.getConstructor() != TdApi.MessageLocation.CONSTRUCTOR || ((TdApi.MessageLocation) msg.content).expiresIn == 0) && !isEventLog();
   }
 
+  public boolean canBeReacted () {
+    return !isSponsored() && !isEventLog() && !(msg.content instanceof TdApi.MessageCall);
+  }
+
   public boolean canBeSaved () {
     return msg.canBeSaved;
   }
@@ -7630,7 +7634,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     rightActions.clear();
 
     for (String reactionString: Settings.instance().getQuickReactions()) {
-      boolean canReact = messagesController().canSendReaction(reactionString);
+      boolean canReact = messagesController().canSendReaction(reactionString) && canBeReacted();
       TGReaction reactionObj = tdlib.getReaction(reactionString);
       if (reactionObj != null && canReact) {
         Drawable reactionDrawable = new TGReaction.ReactionDrawable(findCurrentView(), reactionObj.staticIconSicker(), Screen.dp(24), Screen.dp(24));
