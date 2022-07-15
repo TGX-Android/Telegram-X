@@ -3,9 +3,7 @@ package org.thunderdog.challegram.data;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Path;
-import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -16,9 +14,10 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
-import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
-import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.loader.ReceiversPool;
+import org.thunderdog.challegram.loader.gif.GifFile;
+import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
@@ -37,22 +36,21 @@ import java.util.Map;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.FactorAnimator;
-import me.vkryl.android.animator.ListAnimator;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
-import me.vkryl.core.lambda.Destroyable;
 
-public class TGReactions /*implements Destroyable*/ {
-  private Tdlib tdlib;
+public class TGReactions {
+  public static final int REACTION_BUBBLE_HEIGHT = Screen.dp(26);
+
+  private final Tdlib tdlib;
   private TdApi.MessageReaction[] reactions;
+  private ReceiversPool<String> receiversPool;
 
   private final TGMessage parent;
 
-  private final HashMap<String, TdApi.MessageReaction> reactionsMap;
   private final HashMap<String, TGReactions.MessageReactionEntry> reactionsMapEntry;
   private final ArrayList<TGReactions.MessageReactionEntry> reactionsListEntry;
 
-  private MessageReactionsDelegate delegate;
+  private final MessageReactionsDelegate delegate;
   private int totalCount;
   private boolean hasReaction;
   private String chosenReaction;
@@ -64,7 +62,6 @@ public class TGReactions /*implements Destroyable*/ {
 
   TGReactions (TGMessage parent, Tdlib tdlib, TdApi.MessageReaction[] reactions, MessageReactionsDelegate delegate) {
     this.parent = parent;
-    this.reactionsMap = new HashMap<>();
     this.delegate = delegate;
 
     this.reactionsListEntry = new ArrayList<>();
@@ -80,10 +77,19 @@ public class TGReactions /*implements Destroyable*/ {
     resetReactionsAnimator(false);
   }
 
-  public void setReactions (TdApi.MessageReaction[] reactions) {
-    android.util.Log.i("ANIMATEREACTION", String.format("SET %d", parent.getMessage().id));
+  public void setReceiversPool (ReceiversPool<String> receiversPool) {
+    this.receiversPool = receiversPool;
+    for (Map.Entry<String, MessageReactionEntry> pair : reactionsMapEntry.entrySet()) {
+      String reaction = pair.getKey();
+      if (receiversPool != null) {
+        pair.getValue().setReceivers(receiversPool.getImageReceiver(reaction), receiversPool.getGifReceiver(reaction));
+      } else {
+        pair.getValue().setReceivers(null, null);
+      }
+    }
+  }
 
-    this.reactionsMap.clear();
+  public void setReactions (TdApi.MessageReaction[] reactions) {
     this.reactionsListEntry.clear();
     this.reactions = reactions;
     this.hasReaction = false;
@@ -95,7 +101,6 @@ public class TGReactions /*implements Destroyable*/ {
     }
 
     for (TdApi.MessageReaction reaction : reactions) {
-      reactionsMap.put(reaction.reaction, reaction);
       totalCount += reaction.totalCount;
       hasReaction |= reaction.isChosen;
       if (reaction.isChosen) {
@@ -111,7 +116,6 @@ public class TGReactions /*implements Destroyable*/ {
   }
 
   public void setReactions (ArrayList<TdApi.Message> combinedMessages) {
-    this.reactionsMap.clear();
     this.reactionsListEntry.clear();
     this.hasReaction = false;
     this.chosenReaction = "";
@@ -158,31 +162,6 @@ public class TGReactions /*implements Destroyable*/ {
     setReactions(combinedReactionsArray);
   }
 
-  /*private View view;
-  private boolean attached = false;
-  public void attach (View v) {
-    for (Map.Entry<String, MessageReactionEntry> pair : reactionsMapEntry.entrySet()) {
-      pair.getValue().drawable.init(v);
-      pair.getValue().drawable.attach();
-    }
-    view = v;
-    attached = true;
-  }
-
-  public void detach () {
-    for (Map.Entry<String, MessageReactionEntry> pair : reactionsMapEntry.entrySet()) {
-      pair.getValue().drawable.detach();
-    }
-    attached = false;
-  }
-
-  @Override
-  public void performDestroy () {
-    for (Map.Entry<String, MessageReactionEntry> pair : reactionsMapEntry.entrySet()) {
-      pair.getValue().drawable.performDestroy();
-    }
-  }*/
-
   @Nullable
   public TdApi.MessageReaction[] getReactions () {
     return reactions;
@@ -193,22 +172,21 @@ public class TGReactions /*implements Destroyable*/ {
   }
 
   private MessageReactionEntry getMessageReactionEntry (TGReaction reactionObj) {
+    final String emoji = reactionObj.reaction.reaction;
     final MessageReactionEntry entry;
     if (!reactionsMapEntry.containsKey(reactionObj.reaction.reaction)) {
-      TGReaction.ReactionDrawable drawable = new TGReaction.ReactionDrawable(parent.findCurrentView(), reactionObj.staticIconSicker(), Screen.dp(20), Screen.dp(20));
       Counter.Builder counterBuilder = new Counter.Builder()
         .allBold(false)
         .callback(parent)
-        .textSize(14f)
-        .isReaction()
-        .textColor(R.id.theme_color_badgeText, R.id.theme_color_badgeText, R.id.theme_color_badgeText)
-        .drawable(drawable, 20f, Gravity.LEFT);
-      entry = new MessageReactionEntry(tdlib, delegate, parent, reactionObj.reaction.reaction, counterBuilder, drawable);
+        .textSize(11f)
+        .noBackground()
+        .textColor(R.id.theme_color_badgeText, R.id.theme_color_badgeText, R.id.theme_color_badgeText);
+      entry = new MessageReactionEntry(delegate, parent, reactionObj, counterBuilder);
+      if (receiversPool != null) {
+        entry.setReceivers(receiversPool.getImageReceiver(emoji), receiversPool.getGifReceiver(emoji));
+      }
+
       reactionsMapEntry.put(reactionObj.reaction.reaction, entry);
-      /*if (attached) {
-        drawable.init(view);
-        drawable.attach();
-      }*/
     } else {
       entry = reactionsMapEntry.get(reactionObj.reaction.reaction);
     }
@@ -236,7 +214,7 @@ public class TGReactions /*implements Destroyable*/ {
     if (maxWidth == 0) {
       maxWidth = 1;
     }
-    int bubbleHeight = Screen.dp(28);
+    int bubbleHeight = REACTION_BUBBLE_HEIGHT;
     int padding = Screen.dp(6);
     int x = 0;
     int y = 0;
@@ -248,7 +226,7 @@ public class TGReactions /*implements Destroyable*/ {
     for (TGReactions.MessageReactionEntry entry : reactionsListEntry) {
       Counter counter = entry.counter;
 
-      int bubbleWidth = (int) counter.getTargetWidth() + Screen.dp(20);   // bubble width
+      int bubbleWidth = (int) counter.getTargetWidth() + Screen.dp(36);   // bubble width
       int nextLastLineWidth = lastLineWidth + bubbleWidth + (lastLineWidth > 0 ? padding : 0);
       if (nextLastLineWidth > maxWidth) {
         nextLastLineWidth = bubbleWidth;
@@ -318,10 +296,6 @@ public class TGReactions /*implements Destroyable*/ {
 
   public int getTotalCount () {
     return totalCount;
-  }
-
-  public HashMap<String, TdApi.MessageReaction> getReactionsMap () {
-    return reactionsMap;
   }
 
   public ReactionsListAnimator<MessageReactionEntry> getReactionsAnimator () {
@@ -414,6 +388,13 @@ public class TGReactions /*implements Destroyable*/ {
     return false;
   }
 
+  public void startAnimation (String emoji) {
+    MessageReactionEntry entry = reactionsMapEntry.get(emoji);
+    if (entry != null) {
+      entry.startAnimation();
+    }
+  }
+
   public boolean sendReaction (String reaction, boolean isBig) {
     TdApi.Message message = parent.getFirstMessageInCombined();
     boolean needUnset = reaction.equals(chosenReaction) && !isBig;
@@ -422,61 +403,64 @@ public class TGReactions /*implements Destroyable*/ {
     return !needUnset;
   }
 
-  public static class MessageReactionEntry implements ReactionsListAnimator.Measurable, TextColorSet, FactorAnimator.Target {
+  public static class MessageReactionEntry implements ReactionsListAnimator.Measurable, TextColorSet, FactorAnimator.Target/*, Destroyable*/ {
     private final Counter counter;
     private final String reaction;
     private final TGReaction reactionObj;
-
     private final TGMessage message;
-    private TGStickerObj staticIconSticker;
-    private ImageReceiver staticIconReceiver;
-    private MessageReactionsDelegate delegate;
-    public TGReaction.ReactionDrawable drawable;
+    private final TGStickerObj staticIconSticker;
+
+    @Nullable private ImageReceiver staticIconReceiver;
+    @Nullable private GifReceiver centerAnimationReceiver;
+    @Nullable private final GifFile animation;
+
+    private final MessageReactionsDelegate delegate;
 
     private final Path path;
     private final RectF rect;
 
     private int x;
     private int y;
-    private int count;
 
-    public MessageReactionEntry (Tdlib tdlib, MessageReactionsDelegate delegate, TGMessage message, String reaction, Counter.Builder counter, TGReaction.ReactionDrawable drawable) {
-      this.reactionObj = tdlib.getReaction(reaction);
-      this.reaction = reaction;
+    public MessageReactionEntry (MessageReactionsDelegate delegate, TGMessage message, TGReaction reaction, Counter.Builder counter) {
+      this.reactionObj = reaction;
+      this.reaction = reaction.reaction.reaction;
       this.message = message;
       this.delegate = delegate;
-      this.drawable = drawable;
 
       this.path = new Path();
       this.rect = new RectF();
 
       this.counter = counter.colorSet(this).build();
 
-      if (reactionObj == null) return;
       staticIconSticker = reactionObj.staticIconSicker();
-      ImageFile staticIconFile = staticIconSticker.getFullImage();
-
-      if (staticIconFile == null) return;
-      staticIconReceiver = new ImageReceiver(null, 0);
-      staticIconReceiver.requestFile(staticIconFile);
-    }
-
-    public void setPosition (int x, int y) {
-      this.x = x;
-      this.y = y;
-    }
-
-    public boolean checkTouch (int x, int y) {
-      int buttonX = getX();
-      int buttonY = getY();
-      int buttonWidth = getWidth();
-      int buttonHeight = getHeight();
-
-      if (buttonX < x && x < buttonX + buttonWidth && buttonY < y && y < buttonY + buttonHeight) {
-        return true;
+      animation = reactionObj.newCenterAnimationSicker().getFullAnimation();
+      if (animation != null) {
+        animation.setPlayOnce(true);
+        animation.setLooped(true);
       }
+    }
 
-      return false;
+    // Receivers
+
+    public void setReceivers ( ImageReceiver staticIconReceiver, GifReceiver centerAnimationReceiver ) {
+      this.centerAnimationReceiver = centerAnimationReceiver;
+      this.staticIconReceiver = staticIconReceiver;
+
+      if (staticIconReceiver != null) {
+        staticIconReceiver.requestFile(staticIconSticker.getFullImage());
+      }
+      if (centerAnimationReceiver != null) {
+        centerAnimationReceiver.requestFile(animation);
+      }
+      invalidate();
+    }
+
+    public void startAnimation () {
+      if (animation != null) {
+        animation.setLooped(false);
+      }
+      invalidate();
     }
 
     // Touch
@@ -566,7 +550,20 @@ public class TGReactions /*implements Destroyable*/ {
       delegate.onClick(this);
     }
 
-    //
+    public boolean checkTouch (int x, int y) {
+      int buttonX = getX();
+      int buttonY = getY();
+      int buttonWidth = getWidth();
+      int buttonHeight = getHeight();
+
+      if (buttonX < x && x < buttonX + buttonWidth && buttonY < y && y < buttonY + buttonHeight) {
+        return true;
+      }
+
+      return false;
+    }
+
+    // Animations
 
     private static final long ANIMATION_DURATION = 180l;
     private static final int SELECTION_ANIMATOR = 0;
@@ -632,8 +629,6 @@ public class TGReactions /*implements Destroyable*/ {
       }
     }
 
-    //
-
     private void invalidate () {
       message.invalidate();
     }
@@ -655,10 +650,22 @@ public class TGReactions /*implements Destroyable*/ {
       return staticIconSticker.getId();
     }
 
+    public String getReaction () {
+      return reaction;
+    }
+
+    public void setCount (int count, boolean chosen, boolean animated) {
+      counter.setCount(count, !chosen, animated);
+    }
+
+    // Render
+
     public void drawReaction (Canvas c, float x, float cy, float radDp, final float alpha) {
-      staticIconReceiver.setBounds((int) x, (int) cy - Screen.dp(radDp), (int) x + Screen.dp(radDp * 2), (int) cy + Screen.dp(radDp));
-      staticIconReceiver.setAlpha(alpha);
-      staticIconReceiver.draw(c);
+      if (staticIconReceiver != null) {
+        staticIconReceiver.setBounds((int) x, (int) cy - Screen.dp(radDp), (int) x + Screen.dp(radDp * 2), (int) cy + Screen.dp(radDp));
+        staticIconReceiver.setAlpha(alpha);
+        staticIconReceiver.draw(c);
+      }
     }
 
     public void drawReactionInBubble (MessageView view, Canvas c, float x, float y, float visibility) {
@@ -671,18 +678,21 @@ public class TGReactions /*implements Destroyable*/ {
         c.scale(visibility, visibility, 0, 0);
       }
 
-      counter.draw(c,
-        Screen.dp(14f),
-        Screen.dp(14f),
-        Gravity.LEFT, visibility, view, R.id.theme_color_badgeFailedText);
-
       int width = getWidth();
       int height = getHeight();
       int radius = height / 2;
+      int backgroundColor = backgroundColor(false);
 
       rect.set(0, 0, width, height);
       path.reset();
       path.addRoundRect(rect, radius, radius, Path.Direction.CCW);
+
+      c.drawRoundRect(rect, radius, radius, Paints.fillingPaint(backgroundColor));
+      counter.draw(c, Screen.dp(27), REACTION_BUBBLE_HEIGHT / 2f, Gravity.LEFT, visibility, view, R.id.theme_color_badgeFailedText);
+      if (centerAnimationReceiver != null) {
+        centerAnimationReceiver.setBounds(Screen.dp(-1), Screen.dp(-3), Screen.dp(31), Screen.dp(29));
+        centerAnimationReceiver.draw(c);
+      }
 
       int selectionColor = message.useBubbles() ? message.getBubbleButtonRippleColor() : ColorUtils.alphaColor(0.25f, Theme.getColor(R.id.theme_color_bubbleIn_time));
       if (fadeFactor != 0f) {
@@ -693,23 +703,23 @@ public class TGReactions /*implements Destroyable*/ {
         //if (selectionFactor == 1f || path == null) {
         //  c.drawRoundRect(rounder, radius, radius, Paints.fillingPaint(selectionColor));
         //} else {
-          int anchorX = Math.max(Math.min(this.anchorX, width), 0);
-          int anchorY = Math.max(Math.min(this.anchorY, height), 0);
-          float selectionRadius = (float) Math.sqrt(width * width + height * height) * .5f * selectionFactor;
-          float centerX = width / 2;
-          float centerY = height / 2;
-          float diffX = centerX - anchorX;
-          float diffY = centerY - anchorY;
-          float selectionX = /*x + */anchorX + diffX * selectionFactor;
-          float selectionY = /*y + */anchorY + diffY * selectionFactor;
+        int anchorX = Math.max(Math.min(this.anchorX, width), 0);
+        int anchorY = Math.max(Math.min(this.anchorY, height), 0);
+        float selectionRadius = (float) Math.sqrt(width * width + height * height) * .5f * selectionFactor;
+        float centerX = width / 2f;
+        float centerY = height / 2f;
+        float diffX = centerX - anchorX;
+        float diffY = centerY - anchorY;
+        float selectionX = /*x + */anchorX + diffX * selectionFactor;
+        float selectionY = /*y + */anchorY + diffY * selectionFactor;
 
-          final int saveCount;
-          if ((saveCount = ViewSupport.clipPath(c, path)) != Integer.MIN_VALUE) {
-            c.drawCircle(selectionX, selectionY, selectionRadius, Paints.fillingPaint(selectionColor));
-          } else {
-            //c.drawRoundRect(rounder, radius, radius, Paints.fillingPaint(selectionColor));
-          }
-          ViewSupport.restoreClipPath(c, saveCount);
+        final int saveCount;
+        if ((saveCount = ViewSupport.clipPath(c, path)) != Integer.MIN_VALUE) {
+          c.drawCircle(selectionX, selectionY, selectionRadius, Paints.fillingPaint(selectionColor));
+        } else {
+          //c.drawRoundRect(rounder, radius, radius, Paints.fillingPaint(selectionColor));
+        }
+        ViewSupport.restoreClipPath(c, saveCount);
         //}
       }
 
@@ -720,21 +730,11 @@ public class TGReactions /*implements Destroyable*/ {
       c.restore();
     }
 
-    public String getReaction () {
-      return reaction;
-    }
+    // Measurable
 
-    public Counter getCounter () {
-      return counter;
-    }
-
-    public void setCount (int count, boolean chosen, boolean animated) {
-      this.count = count;
-      counter.setCount(count, !chosen, animated);
-    }
-
-    public int getCount () {
-      return count;
+    public void setPosition (int x, int y) {
+      this.x = x;
+      this.y = y;
     }
 
     @Override
@@ -749,15 +749,13 @@ public class TGReactions /*implements Destroyable*/ {
 
     @Override
     public int getWidth () {
-      return (int) (counter.getWidth() + Screen.dp(20));
+      return (int) (counter.getWidth() + Screen.dp(36));
     }
 
     @Override
     public int getHeight () {
-      return Screen.dp(28);
+      return REACTION_BUBBLE_HEIGHT;
     }
-
-
 
     // ColorSet
 

@@ -69,6 +69,7 @@ import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
+import org.thunderdog.challegram.loader.ReceiversPool;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
@@ -2191,7 +2192,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (currentViews.attachToView(view) && view != null) {
       onMessageAttachedToView(view, true);
     }
-    //messageReactions.attach(view);
   }
 
   public final void onDetachedFromView (@Nullable MessageView view) {
@@ -2199,7 +2199,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       onMessageAttachedToView(view, false);
     }
     setViewAttached(hasAttachedToAnything());
-    //messageReactions.detach();
   }
 
   protected void onMessageAttachedToView (@NonNull MessageView view, boolean attached) { }
@@ -2211,7 +2210,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         onMessageAttachedToOverlayView(view, true);
       }
     }
-    //messageReactions.attach(view);
   }
 
   public final void onDetachedFromOverlayView (@Nullable View view) {
@@ -2219,7 +2217,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       onMessageAttachedToOverlayView(view, false);
     }
     setViewAttached(hasAttachedToAnything());
-    //messageReactions.detach();
   }
 
   protected void onMessageAttachedToOverlayView (@NonNull View view, boolean attached) { }
@@ -3438,6 +3435,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
   }
 
+  public final void requestReactions (ReceiversPool<String> receivers) {
+    messageReactions.setReceiversPool(receivers);
+  }
 
 
   // public static final float IMAGE_CONTENT_DEFAULT_RADIUS = 3f;
@@ -7682,8 +7682,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   private Point getReactionPosition (String reaction) {
     if (useReactionBubbles()) {
-      int x = messageReactions.getReactionBubbleX(reaction) + Screen.dp(18);
-      int y = messageReactions.getReactionBubbleY(reaction) + Screen.dp(14);
+      int x = messageReactions.getReactionBubbleX(reaction) + Screen.dp(15);
+      int y = messageReactions.getReactionBubbleY(reaction) + TGReactions.REACTION_BUBBLE_HEIGHT / 2;
       return new Point(x, y);
     } else if (reactionsCounterDrawable != null) {
       int x = (int) (reactionsCounterDrawable.getLastDrawX() + Screen.dp(7) + Screen.dp(14) * MathUtils.clamp( messageReactions.getReactionPositionInList(reaction), 0, 2));
@@ -7763,8 +7763,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
     int finishX = positionCords[0] + reactionPosition.x;
     int finishY = positionCords[1] + reactionPosition.y;
-
-    android.util.Log.i("ANIMATEREACTION", String.format("%d %d", positionCords[1] + reactionPosition.y, (int) view.getTranslationY()));
 
     if (nextSetReactionAnimation.type == NextReactionAnimation.TYPE_QUICK) {
       int startX = positionCords[0];
@@ -7889,6 +7887,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     int bubbleX = positionCords[0] + reactionPosition.x;
     int bubbleY = positionCords[1] + reactionPosition.y;
 
+    messageReactions.startAnimation(reaction);
     context().reactionsOverlayManager().addOverlay(
       new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
         .setSticker(tgReaction.newAroundAnimationSicker())

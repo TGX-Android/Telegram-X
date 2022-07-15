@@ -4221,7 +4221,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       showMessageOptions(messageOptions, selectedMessage);
     } else {
       PopupLayout popupLayout = showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
-      patchReadReceiptsOptions(popupLayout, msg);
+      patchReadReceiptsOptions(popupLayout, msg, disableViewCounter);
     }
   }
 
@@ -4236,8 +4236,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     r.show();
   }
 
-  private void patchReadReceiptsOptions (PopupLayout layout, TGMessage message) {
-    if (!message.canGetViewers() || (message.isUnread() && !message.noUnread()) || !(layout.getChildAt(1) instanceof OptionsLayout)) {
+  private void patchReadReceiptsOptions (PopupLayout layout, TGMessage message, boolean disableViewCounter) {
+    if (!message.canGetViewers() || disableViewCounter || (message.isUnread() && !message.noUnread()) || !(layout.getChildAt(1) instanceof OptionsLayout)) {
       return;
     }
 
