@@ -455,8 +455,8 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
       removeRecentView.setScaleType(ImageView.ScaleType.CENTER);
       removeRecentView.setOnClickListener(onClickListener);
       removeRecentView.setImageResource(R.drawable.baseline_auto_delete_24);
-      removeRecentView.setColorFilter(Theme.getColor(R.id.theme_color_textNeutral));
-      themeListenerList.addThemeFilterListener(removeRecentView, R.id.theme_color_textNeutral);
+      removeRecentView.setColorFilter(Theme.getColor(R.id.theme_color_textNegative));
+      themeListenerList.addThemeFilterListener(removeRecentView, R.id.theme_color_textNegative);
       removeRecentView.setLayoutParams(new ViewGroup.LayoutParams(Screen.dp(48f), ViewGroup.LayoutParams.MATCH_PARENT));
       removeRecentView.setPadding(Lang.rtl() ? Screen.dp(8f) : 0, 0, Lang.rtl() ? 0 : Screen.dp(8f), 0);
       RippleSupport.setTransparentBlackSelector(removeRecentView);
