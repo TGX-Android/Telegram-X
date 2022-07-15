@@ -7,16 +7,19 @@ import android.util.Log;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.tool.UI;
 
+import java.io.File;
 import java.io.IOException;
 
-public class PreloadedLottieAnimation{
+public class LottieAnimation{
 	private long nativeHandle;
-	private static final String TAG="PreloadedLottieAnimatio";
+	private static final String TAG="LottieAnimation";
 	private long frameCount;
 	private double duration, frameRate;
 
-	public PreloadedLottieAnimation(String filePath) throws IOException{
+	public LottieAnimation (String filePath, int width, int height) throws IOException{
+    long t=System.currentTimeMillis();
 		String json=U.gzipFileToString(filePath);
 		if(TextUtils.isEmpty(json))
 			throw new IOException("Failed to preload lottie animation from "+filePath);
@@ -25,8 +28,16 @@ public class PreloadedLottieAnimation{
 		frameCount=(long)meta[0];
 		frameRate=meta[1];
 		duration=meta[2];
+
+    File cacheDir=new File(UI.getContext().getCacheDir(), "reactionAnims");
+    if(!cacheDir.exists())
+      cacheDir.mkdirs();
+    File cacheFile=new File(cacheDir, new File(filePath).getName()+"_"+width+"_"+height+".cache");
+    Bitmap bitmap=Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+    N.createLottieCache(nativeHandle, cacheFile.getAbsolutePath(), null, bitmap, true, false);
+
 		if(BuildConfig.DEBUG)
-			Log.d(TAG, "PreloadedLottieAnimation: loaded "+filePath+", "+frameCount+" frames, "+frameRate+" fps, "+duration+" seconds");
+			Log.d(TAG, "PreloadedLottieAnimation: loaded "+filePath+", "+frameCount+" frames, "+frameRate+" fps, "+duration+" seconds in "+(System.currentTimeMillis()-t));
 	}
 
 	public void release(){
@@ -49,4 +60,12 @@ public class PreloadedLottieAnimation{
 		}
 		N.getLottieFrame(nativeHandle, bmp, frame);
 	}
+
+  @Override
+  protected void finalize () throws Throwable{
+    super.finalize();
+    if(nativeHandle!=0){
+      release();
+    }
+  }
 }

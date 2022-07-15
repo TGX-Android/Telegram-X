@@ -3,11 +3,9 @@ package org.thunderdog.challegram.ui;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
@@ -15,11 +13,10 @@ import org.thunderdog.challegram.charts.CubicBezierInterpolator;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.reactions.LottieAnimationDrawable;
-import org.thunderdog.challegram.reactions.PreloadedLottieAnimation;
+import org.thunderdog.challegram.reactions.LottieAnimation;
+import org.thunderdog.challegram.reactions.LottieAnimationThreadPool;
 import org.thunderdog.challegram.reactions.ReactionAnimationOverlay;
 import org.thunderdog.challegram.reactions.SimplestCheckboxView;
-import org.thunderdog.challegram.support.RippleSupport;
-import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
@@ -27,7 +24,6 @@ import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.ImageReceiverView;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
@@ -35,7 +31,6 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.ConcatAdapter;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import me.vkryl.android.widget.FrameLayoutFix;
 
 public abstract class ReactionListBaseController<T> extends RecyclerViewController<T>{
 	protected List<TdApi.Reaction> allReactions;
@@ -177,32 +172,34 @@ public abstract class ReactionListBaseController<T> extends RecyclerViewControll
 				onSelectedReactionsChanged();
 				updateState(true);
 
-				PreloadedLottieAnimation center=tdlib.getReactionAnimations(reaction.reaction).center;
-				if(center!=null){
-					icon.setVisibility(View.INVISIBLE);
-					animation.setVisibility(View.VISIBLE);
-					LottieAnimationDrawable anim=new LottieAnimationDrawable(center, animation.getWidth(), animation.getHeight());
-					anim.setOnEnd(this::endAnimation);
-					animation.setBackground(anim);
-					anim.start();
-				}
-				PreloadedLottieAnimation effect=tdlib.getReactionAnimations(reaction.reaction).around;
-				if(effect!=null && !animating){
-					int[] loc={0, 0};
-					animationOverlay.playLottieAnimation(outRect->{
-						icon.getLocationOnScreen(loc);
-						outRect.set(loc[0], loc[1], loc[0]+icon.getWidth(), loc[1]+icon.getHeight());
-						int width=outRect.width();
-						int centerX=outRect.centerX();
-						int centerY=outRect.centerY();
-						int size=Math.round(width*2f);
-						outRect.set(centerX-size, centerY-size, centerX+size, centerY+size);
-						return true;
-					}, effect, ()->animating=true, (_v, remove)->{
-						animating=false;
-						remove.run();
-					});
-				}
+        LottieAnimationThreadPool.loadMultipleAnimations(tdlib, anims->{
+          LottieAnimation center=anims[0];
+          if(center!=null){
+            icon.setVisibility(View.INVISIBLE);
+            animation.setVisibility(View.VISIBLE);
+            LottieAnimationDrawable anim=new LottieAnimationDrawable(center, 500, 500);
+            anim.setOnEnd(this::endAnimation);
+            animation.setBackground(anim);
+            anim.start();
+          }
+          LottieAnimation effect=anims[1];
+          if(effect!=null && !animating){
+            int[] loc={0, 0};
+            animationOverlay.playLottieAnimation(outRect->{
+              icon.getLocationOnScreen(loc);
+              outRect.set(loc[0], loc[1], loc[0]+icon.getWidth(), loc[1]+icon.getHeight());
+              int width=outRect.width();
+              int centerX=outRect.centerX();
+              int centerY=outRect.centerY();
+              int size=Math.round(width*2f);
+              outRect.set(centerX-size, centerY-size, centerX+size, centerY+size);
+              return true;
+            }, effect, ()->animating=true, (_v, remove)->{
+              animating=false;
+              remove.run();
+            });
+          }
+        }, 1000, reaction.centerAnimation, reaction.aroundAnimation);
 			}
 		}
 

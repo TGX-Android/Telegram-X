@@ -182,7 +182,8 @@ import org.thunderdog.challegram.navigation.ViewPagerTopView;
 import org.thunderdog.challegram.player.RecordAudioVideoController;
 import org.thunderdog.challegram.player.RoundVideoController;
 import org.thunderdog.challegram.reactions.LottieAnimationDrawable;
-import org.thunderdog.challegram.reactions.PreloadedReactionAnimations;
+import org.thunderdog.challegram.reactions.LottieAnimation;
+import org.thunderdog.challegram.reactions.LottieAnimationThreadPool;
 import org.thunderdog.challegram.reactions.ReactionAnimationOverlay;
 import org.thunderdog.challegram.reactions.ReactionListViewController;
 import org.thunderdog.challegram.reactions.ReactionsMessageOptionsSheetHeaderView;
@@ -10523,6 +10524,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           @Override
           public boolean onPreDraw(){
             mv.getViewTreeObserver().removeOnPreDrawListener(this);
+            TdApi.Reaction rr=tdlib.getReaction(reaction);
 
             if(src!=null){
               ReactionAnimationOverlay ov=manager.getAnimationOverlay();
@@ -10530,32 +10532,37 @@ public class MessagesController extends ViewController<MessagesController.Argume
               int[] loc={0, 0};
               src.getLocationOnScreen(loc);
               srcPos.set(loc[0], loc[1], loc[0]+src.getWidth(), loc[1]+src.getHeight());
-              ov.playFlyingReactionAnimation(outRect -> {
-                boolean r=mv.getReactionIconBounds(reaction, outRect);
-                if(big && r){
-                  int sz=-(Screen.dp(64)-outRect.width())/2;
-                  outRect.inset(sz, sz);
-                  return true;
-                }
-                return r;
-              }, srcPos, src.getDrawable(), ()->{
-                src.setAlpha(0f);
-                if(popup!=null)
-                  popup.hideWindow(true);
-              }, ()->{
-                if(big){
-                  playReactionBigEffectAnimation(msg, reaction);
-                }else{
-                  playReactionEffectAnimation(msg, reaction);
-                }
-              });
+              TdApi.Sticker[] anims=big ? new TdApi.Sticker[]{rr.effectAnimation, rr.activateAnimation, rr.aroundAnimation, rr.centerAnimation} : new TdApi.Sticker[]{rr.aroundAnimation, rr.centerAnimation};
+              LottieAnimationThreadPool.loadMultipleAnimations(tdlib, a->{
+                ov.playFlyingReactionAnimation(outRect -> {
+                  boolean r=mv.getReactionIconBounds(reaction, outRect);
+                  if(big && r){
+                    int sz=-(Screen.dp(64)-outRect.width())/2;
+                    outRect.inset(sz, sz);
+                    return true;
+                  }
+                  return r;
+                }, srcPos, src.getDrawable(), ()->{
+                  src.setAlpha(0f);
+                  if(popup!=null)
+                    popup.hideWindow(true);
+                }, ()->{
+                  if(big){
+                    playReactionBigEffectAnimation(msg, reaction, a[0], a[1], a[2], a[3]);
+                  }else{
+                    playReactionEffectAnimation(msg, reaction, a[0], a[1]);
+                  }
+                });
+              }, 3000, anims);
             }else if(srcRect!=null){
-              LottieAnimationDrawable anim=new LottieAnimationDrawable(tdlib.getReactionAnimations(reaction).appear, srcRect.width(), srcRect.height());
-              anim.setFrame(anim.getTotalFrames()-1);
-              ReactionAnimationOverlay ov=manager.getAnimationOverlay();
-              ov.playFlyingReactionAnimation(outRect -> {
-                return mv.getReactionIconBounds(reaction, outRect);
-              }, srcRect, anim, null, ()->playReactionEffectAnimation(msg, reaction));
+              LottieAnimationThreadPool.loadOneAnimation(tdlib, rr.appearAnimation, anim->{
+                LottieAnimationDrawable drawable=new LottieAnimationDrawable(anim, Screen.dp(24), Screen.dp(24));
+                drawable.setFrame(drawable.getTotalFrames()-1);
+                ReactionAnimationOverlay ov=manager.getAnimationOverlay();
+                ov.playFlyingReactionAnimation(outRect -> {
+                  return mv.getReactionIconBounds(reaction, outRect);
+                }, srcRect, drawable, null, ()->playReactionEffectAnimation(msg, reaction));
+              }, Screen.dp(24), Screen.dp(24));
             }else{
               playReactionEffectAnimation(msg, reaction);
             }
@@ -10573,7 +10580,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private long lastHapticEffectTime;
 
-  public void playReactionBigEffectAnimation(TGMessage msg, String reaction){
+  public void playReactionBigEffectAnimation(TGMessage msg, String reaction, LottieAnimation effectAnimation, LottieAnimation activateAnimation, LottieAnimation aroundAnimation, LottieAnimation centerAnimation){
     MessageView mv=manager.findRealMessageView(getChatId(), msg.getMessageForReactions().id);
     if(mv==null)
       return;
@@ -10584,9 +10591,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
         mv.getViewTreeObserver().removeOnPreDrawListener(this);
 
         ReactionAnimationOverlay ov=manager.getAnimationOverlay();
-        PreloadedReactionAnimations anims=msg.tdlib().getReactionAnimations(reaction);
-        if(anims.effect==null){
-          playReactionEffectAnimation(msg, reaction);
+        if(effectAnimation==null){
+          playReactionEffectAnimation(msg, reaction, aroundAnimation, centerAnimation);
           return true;
         }
 
@@ -10602,9 +10608,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
           int size=Math.round(width*2f);
           outRect.set(centerX-size, centerY-size, centerX+size, centerY+size);
           return true;
-        }, anims.effect, null, null);
+        }, effectAnimation, null, activateAnimation!=null ? null : (v, remove)->{
+          remove.run();
+          playReactionEffectAnimation(msg, reaction, aroundAnimation, centerAnimation);
+        });
 
-        if(anims.center!=null)
+        if(activateAnimation!=null)
           ov.playLottieAnimation(outRect->{
             if(!mv.getReactionIconBounds(reaction, outRect))
               return false;
@@ -10616,13 +10625,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
             int centerY=outRect.centerY();
             outRect.set(centerX-size, centerY-size, centerX+size, centerY+size);
             return true;
-          }, anims.activate, ()->mv.setReactionIconHidden(reaction, true), (v, remove)->{
+          }, activateAnimation, ()->mv.setReactionIconHidden(reaction, true), (v, remove)->{
             Rect rect=new Rect();
             mv.getReactionIconBounds(reaction, rect);
             float scale=rect.width()/(float)v.getWidth();
             v.animate().scaleX(scale).scaleY(scale).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT).withEndAction(()->{
               remove.run();
-              playReactionEffectAnimation(msg, reaction);
+              playReactionEffectAnimation(msg, reaction, aroundAnimation, centerAnimation);
             }).start();
           });
 
@@ -10633,6 +10642,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void playReactionEffectAnimation(TGMessage msg, String reaction){
+    TdApi.Reaction r=tdlib.getReaction(reaction);
+    LottieAnimationThreadPool.loadMultipleAnimations(tdlib, anims->{
+      playReactionEffectAnimation(msg, reaction, anims[0], anims[1]);
+    }, 1000, r.aroundAnimation, r.centerAnimation);
+  }
+
+  public void playReactionEffectAnimation(TGMessage msg, String reaction, LottieAnimation aroundAnimation, LottieAnimation centerAnimation){
     MessageView mv=manager.findRealMessageView(getChatId(), msg.getMessageForReactions().id);
     if(mv==null)
       return;
@@ -10643,8 +10659,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     		mv.getViewTreeObserver().removeOnPreDrawListener(this);
 
           ReactionAnimationOverlay ov=manager.getAnimationOverlay();
-          PreloadedReactionAnimations anims=msg.tdlib().getReactionAnimations(reaction);
-          if(anims.around==null)
+          if(aroundAnimation==null)
             return true;
 
           ov.playLottieAnimation(outRect->{
@@ -10656,9 +10671,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
             int size=Math.round(width*2f);
             outRect.set(centerX-size, centerY-size, centerX+size, centerY+size);
             return true;
-          }, anims.around, null, null);
+          }, aroundAnimation, null, null);
 
-          if(anims.center!=null)
+          if(centerAnimation!=null)
             ov.playLottieAnimation(outRect->{
               if(!mv.getReactionIconBounds(reaction, outRect))
                 return false;
@@ -10667,9 +10682,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
               int centerY=outRect.centerY();
               outRect.set(centerX-size, centerY-size, centerX+size, centerY+size);
               return true;
-            }, anims.center, ()->mv.setReactionIconHidden(reaction, true), (v, remove)->{
-              remove.run();
+            }, centerAnimation, ()->mv.setReactionIconHidden(reaction, true), (v, remove)->{
               mv.setReactionIconHidden(reaction, false);
+              mv.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener(){
+              	@Override
+              	public boolean onPreDraw(){
+              		mv.getViewTreeObserver().removeOnPreDrawListener(this);
+                  remove.run();
+              		return true;
+              	}
+              });
             });
 
           return true;

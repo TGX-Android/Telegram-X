@@ -3,22 +3,18 @@ package org.thunderdog.challegram.reactions;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
+import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Animatable;
 import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
 
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 public class LottieAnimationDrawable extends Drawable implements Animatable{
-	private static ThreadPoolExecutor rendererThreadPool=new ThreadPoolExecutor(1, 4, 30, TimeUnit.SECONDS, new LinkedBlockingDeque<>());
-
-	private PreloadedLottieAnimation anim;
+  private Paint paint=new Paint(Paint.FILTER_BITMAP_FLAG);
+	private LottieAnimation anim;
 	// [0] is drawn onto the canvas, [1] is rendered into in a background thread
 	private Bitmap[] bitmaps=new Bitmap[2];
 	private int frame;
@@ -29,7 +25,7 @@ public class LottieAnimationDrawable extends Drawable implements Animatable{
 	private long frameDelay;
 	private Runnable onEnd;
 
-	public LottieAnimationDrawable(PreloadedLottieAnimation anim, int width, int height){
+	public LottieAnimationDrawable(LottieAnimation anim, int width, int height){
 		this.anim=anim;
 		for(int i=0;i<2;i++){
 			bitmaps[i]=Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
@@ -59,7 +55,7 @@ public class LottieAnimationDrawable extends Drawable implements Animatable{
 	@Override
 	public void draw(@NonNull Canvas canvas){
 		synchronized(this){
-			canvas.drawBitmap(bitmaps[0], null, getBounds(), null);
+			canvas.drawBitmap(bitmaps[0], null, getBounds(), paint);
 		}
 	}
 
@@ -113,12 +109,12 @@ public class LottieAnimationDrawable extends Drawable implements Animatable{
 			}
 			if(!drawing){
 				drawing=true;
-				rendererThreadPool.submit(this::getNextFrame);
+				LottieAnimationThreadPool.submit(this::getNextFrame);
 			}
 		}
 		invalidateSelf();
 		if(drawing || running)
-			scheduleSelf(this::advance, frameDelay);
+			scheduleSelf(this::advance, SystemClock.uptimeMillis()+frameDelay);
 	}
 
 	private void getNextFrame(){
@@ -135,7 +131,7 @@ public class LottieAnimationDrawable extends Drawable implements Animatable{
 		this.frame=frame;
 		if(!drawing){
 			drawing=true;
-			rendererThreadPool.submit(this::getNextFrame);
+			LottieAnimationThreadPool.submit(this::getNextFrame);
 		}
 	}
 

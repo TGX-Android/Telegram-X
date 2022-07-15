@@ -21,7 +21,6 @@ import android.widget.ImageView;
 import org.jetbrains.annotations.NotNull;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.ui.MessagesController;
 
 import java.util.ArrayList;
 
@@ -58,12 +57,12 @@ public class ReactionAnimationOverlay{
 		windowView=null;
 	}
 
-	public void playLottieAnimation(@NotNull ViewBoundsProvider pos, @NotNull PreloadedLottieAnimation animation, @Nullable Runnable onStarting, @Nullable AnimationEndCallback onDone){
+	public void playLottieAnimation(@NotNull ViewBoundsProvider pos, @NotNull LottieAnimation animation, @Nullable Runnable onStarting, @Nullable AnimationEndCallback onDone){
 		createAndShowWindow();
 		Rect rect=new Rect();
 		if(!pos.getBounds(rect) || rect.isEmpty())
 			return;
-		LottieAnimationDrawable drawable=new LottieAnimationDrawable(animation, rect.width(), rect.height());
+		LottieAnimationDrawable drawable=new LottieAnimationDrawable(animation, 500, 500);
 		ImageView img=new ImageView(activity);
 		img.setImageDrawable(drawable);
 		img.setTranslationX(rect.left);

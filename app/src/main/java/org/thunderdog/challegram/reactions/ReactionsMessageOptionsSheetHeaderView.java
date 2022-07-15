@@ -28,7 +28,8 @@ import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.widget.PopupLayout;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -51,6 +52,10 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout{
 	private ReactionListViewController currentReactionList;
 
 	private ThemeListenerList themeListeners=new ThemeListenerList();
+  private ArrayList<LottieAnimation> animations=new ArrayList<>();
+  private HashMap<String, CancellableRunnable> loadingAnimations=new HashMap<>();
+
+  private boolean reactionAlreadyClicked;
 
 	public ReactionsMessageOptionsSheetHeaderView(Context context, MessagesController controller, TGMessage message, PopupLayout popupLayout, List<String> availableReactions){
 		super(context);
@@ -89,12 +94,17 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout{
 		for(TdApi.Reaction r:reactions){
 			FrameLayout btn=new FrameLayout(context);
 			ImageView gifView=new ImageView(context);
-			LottieAnimationDrawable drawable=new LottieAnimationDrawable(tdlib.getReactionAnimations(r.reaction).appear, Screen.dp(24), Screen.dp(24));
-			gifView.setImageDrawable(drawable);
+      CancellableRunnable cr=LottieAnimationThreadPool.loadOneAnimation(tdlib, tdlib.getReaction(r.reaction).appearAnimation, la->{
+        loadingAnimations.remove(r.reaction);
+        animations.add(la);
+        LottieAnimationDrawable drawable=new LottieAnimationDrawable(la, Screen.dp(24), Screen.dp(24));
+        gifView.setImageDrawable(drawable);
+        drawable.start();
+      }, Screen.dp(24), Screen.dp(24));
+      loadingAnimations.put(r.reaction, cr);
 			btn.setTag(r);
 			btn.setOnClickListener(this::onReactionClick);
 			btn.setOnLongClickListener(this::onReactionLongClick);
-			drawable.start();
 			btn.addView(gifView, new FrameLayout.LayoutParams(Screen.dp(24), Screen.dp(24), Gravity.CENTER));
 			if(r.reaction.equals(chosenReaction)){
 				btn.setBackground(new ChosenReactionBackgroundDrawable());
@@ -155,6 +165,12 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout{
 	@Override
 	protected void onDetachedFromWindow(){
 		controller.context().removeGlobalThemeListeners(themeListeners);
+    for(CancellableRunnable cr : loadingAnimations.values()){
+      cr.cancel();
+    }
+    for(LottieAnimation anim:animations){
+      anim.release();
+    }
 		super.onDetachedFromWindow();
 	}
 
@@ -217,11 +233,17 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout{
 	}
 
 	private void onReactionClick(View v){
+    if(reactionAlreadyClicked)
+      return;
+    reactionAlreadyClicked=true;
 		TdApi.Reaction r=(TdApi.Reaction) v.getTag();
 		controller.sendMessageReaction(message, r.reaction, (ImageView) ((ViewGroup)v).getChildAt(0), null, popupLayout, false);
 	}
 
 	private boolean onReactionLongClick(View v){
+    if(reactionAlreadyClicked)
+      return false;
+    reactionAlreadyClicked=true;
 		TdApi.Reaction r=(TdApi.Reaction) v.getTag();
 		controller.sendMessageReaction(message, r.reaction, (ImageView) ((ViewGroup)v).getChildAt(0), null, popupLayout, true);
 		return true;

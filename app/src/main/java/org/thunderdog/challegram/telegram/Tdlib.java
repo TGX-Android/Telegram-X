@@ -19,7 +19,6 @@ import android.os.Build;
 import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
-import android.text.TextUtils;
 import android.widget.Toast;
 
 import androidx.annotation.AnyThread;
@@ -50,11 +49,11 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageLoader;
 import org.thunderdog.challegram.loader.gif.GifBridge;
 import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.reactions.PreloadedLottieAnimation;
-import org.thunderdog.challegram.reactions.PreloadedReactionAnimations;
+import org.thunderdog.challegram.reactions.LottieAnimationThreadPool;
 import org.thunderdog.challegram.sync.SyncHelper;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Passcode;
@@ -65,7 +64,6 @@ import org.thunderdog.challegram.util.WrapperProvider;
 import org.thunderdog.challegram.util.text.Letters;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -455,7 +453,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private String[] diceEmoji;
   private TdApi.Reaction[] supportedReactions;
   private HashMap<String, TdApi.Reaction> supportedReactionsByEmoji=new HashMap<>();
-  private HashMap<String, PreloadedReactionAnimations> preloadedReactionAnimations=new HashMap<>();
   private boolean callsEnabled = true, expectBlocking, isLocationVisible;
   private boolean canIgnoreSensitiveContentRestrictions, ignoreSensitiveContentRestrictions;
   private boolean canArchiveAndMuteNewChatsFromUnknownUsers, archiveAndMuteNewChatsFromUnknownUsers;
@@ -7472,12 +7469,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     synchronized (dataLock) {
       this.supportedReactions = update.reactions;
       supportedReactionsByEmoji.clear();
-      if(!preloadedReactionAnimations.isEmpty()){
-        for(Map.Entry<String, PreloadedReactionAnimations> entry:preloadedReactionAnimations.entrySet()){
-          entry.getValue().release();
-        }
-      }
-      preloadedReactionAnimations.clear();
       for(TdApi.Reaction r:update.reactions){
         supportedReactionsByEmoji.put(r.reaction, r);
         preloadReactionAnimations(r);
@@ -7504,39 +7495,29 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
-  public PreloadedReactionAnimations getReactionAnimations(String reaction){
-    synchronized(dataLock){
-      return preloadedReactionAnimations.get(reaction);
-    }
-  }
-
   private void preloadReactionAnimations(TdApi.Reaction reaction){
-    PreloadedReactionAnimations anims=new PreloadedReactionAnimations();
-    preloadedReactionAnimations.put(reaction.reaction, anims);
-    loadLottieAnimation(reaction.appearAnimation, anim->anims.appear=anim);
+    loadLottieAnimation(reaction.appearAnimation, true, Screen.dp(24), Screen.dp(24));
     if(reaction.aroundAnimation!=null)
-      loadLottieAnimation(reaction.aroundAnimation, anim->anims.around=anim);
+      loadLottieAnimation(reaction.aroundAnimation, false, 0, 0);
     if(reaction.centerAnimation!=null)
-      loadLottieAnimation(reaction.centerAnimation, anim->anims.center=anim);
+      loadLottieAnimation(reaction.centerAnimation, false, 0, 0);
     if(reaction.effectAnimation!=null)
-      loadLottieAnimation(reaction.effectAnimation, anim->anims.effect=anim);
+      loadLottieAnimation(reaction.effectAnimation, false, 0, 0);
     if(reaction.activateAnimation!=null)
-      loadLottieAnimation(reaction.activateAnimation, anim->anims.activate=anim);
+      loadLottieAnimation(reaction.activateAnimation, false, 0, 0);
   }
 
-  private void loadLottieAnimation(TdApi.Sticker sticker, Consumer<PreloadedLottieAnimation> callback){
-    send(new TdApi.DownloadFile(sticker.sticker.id, 1, 0, 0, true), res->{
-      if(res instanceof TdApi.File){
-        TdApi.File file=(TdApi.File) res;
-        if(file.local!=null && !TextUtils.isEmpty(file.local.path)){
-          try{
-            callback.accept(new PreloadedLottieAnimation(file.local.path));
-          }catch(IOException x){
-            android.util.Log.w("tdlib", x);
-          }
+  private void loadLottieAnimation(TdApi.Sticker sticker, boolean createCache, int cacheWidth, int cacheHeight){
+    if(createCache){
+      send(new TdApi.DownloadFile(sticker.sticker.id, 1, 0, 0, true), res->{
+        if(res instanceof TdApi.File){
+          TdApi.File file=(TdApi.File) res;
+          LottieAnimationThreadPool.createCacheForPreloadedAnimation(new File(file.local.path), cacheWidth, cacheHeight);
         }
-      }
-    });
+      });
+    }else{
+      send(new TdApi.DownloadFile(sticker.sticker.id, 1, 0, 0, false), okHandler);
+    }
   }
 
   // Filegen
