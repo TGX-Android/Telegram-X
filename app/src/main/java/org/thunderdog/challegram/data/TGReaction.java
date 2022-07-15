@@ -40,6 +40,8 @@ public class TGReaction {
     _effectAnimationSicker = newEffectAnimationSicker();
     _aroundAnimationSicker = newAroundAnimationSicker();
     _centerAnimationSicker = newCenterAnimationSicker();
+
+    tdlib.ui().post(this::loadAllAnimationsAndCache);
   }
 
   public TGStickerObj staticIconSicker () {
@@ -61,8 +63,6 @@ public class TGReaction {
   public TGStickerObj centerAnimationSicker () {
     return _centerAnimationSicker;
   }
-
-
 
   public TGStickerObj newStaticIconSicker () {
     return new TGStickerObj(tdlib, reaction.staticIcon, reaction.reaction, reaction.staticIcon.type);
@@ -92,6 +92,30 @@ public class TGReaction {
 
   public TdApi.Reaction getReaction () {
     return this.reaction;
+  }
+
+  public void loadAllAnimationsAndCache () {
+    loadFileAndCache(_staticIconSicker);
+    loadFileAndCache(_activateAnimationSicker);
+    loadFileAndCache(_effectAnimationSicker);
+    loadFileAndCache(_aroundAnimationSicker);
+    loadFileAndCache(_centerAnimationSicker);
+  }
+
+  private void loadFileAndCache (TGStickerObj stickerObj) {
+    loadAnimationAndCache(stickerObj.getPreviewAnimation());
+    loadAnimationAndCache(stickerObj.getFullAnimation());
+  }
+
+  private void loadAnimationAndCache (GifFile gifFile) {
+    if (gifFile == null) {
+      return;
+    }
+
+    TdApi.File file = gifFile.getFile();
+    if (!TD.isFileLoadedAndExists(file)) {
+      tdlib.files().downloadFile(file);
+    }
   }
 
   public static class ReactionDrawable extends Drawable /*implements Destroyable*/ {

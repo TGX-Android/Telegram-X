@@ -18,12 +18,14 @@ import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
@@ -155,6 +157,10 @@ public class ReactionsOverlayView extends ViewGroup {
       ImageFile imageFile = sticker.getImage();
       animation = sticker.getPreviewAnimation();
       if (animation != null) {
+        if (!TD.isFileLoadedAndExists(animation.getFile())) {
+          Log.i("ANIMATION", String.format("NOT LOADED"));
+        }
+
         animation.setPlayOnce(true);
         animation.setLooped(false);
         gifReceiver.requestFile(animation);
