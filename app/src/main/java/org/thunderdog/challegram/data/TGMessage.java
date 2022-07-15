@@ -5788,6 +5788,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         return;
       }
       verticalAnimator.animateTo(factor);
+      vibrate();
     } else {
       if (verticalAnimator != null) {
         verticalAnimator.forceFactor(factor);
@@ -5923,7 +5924,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       }
 
       int height = bottomContentEdge - topContentEdge;
-      float shrinkFactor = 1f - MathUtils.clamp( ((float)(height - Screen.dp(40))) / Screen.dp(75));
+      float shrinkFactor = 0.5f; // 1f - MathUtils.clamp( ((float)(height - Screen.dp(40))) / Screen.dp(75));
       int shrinkSize = (int) (Screen.dp(8) * shrinkFactor);
       int offset = Screen.dp(32) - shrinkSize;
       int positionOffset = -(int)(verticalFactor * offset);
@@ -5934,7 +5935,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         SwipeQuickAction action = actions.get(a);
         float positionFactor = getTranslatePositionFactor(isLeft, a);
         float cy = startY + offset * a;
-        float closenessToBorder = 1f - MathUtils.clamp(Math.min(cy - topContentEdge, bottomContentEdge - cy) / Screen.dp(20));
+        float closenessToBorder = 1f - MathUtils.clamp(Math.min(cy - topContentEdge, bottomContentEdge - cy) / Screen.dp(12));
         float maxAlpha = Math.max(positionFactor, 1f - closenessToBorder);
         float ncx = cx + shrinkSize * (1f - positionFactor);
         Drawable icon = (!action.isQuickReaction || nextSetReactionAnimation == null) ? action.icon : null;
@@ -7865,6 +7866,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       return;
     }
 
+    vibrate();
     startReactionBubbleAnimation(nextSetReactionAnimation.reaction.getReaction().reaction);
     clearSetReactionAnimation();
   }
