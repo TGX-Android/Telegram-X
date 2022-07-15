@@ -1316,6 +1316,15 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
+  public void onUpdateTextSize () {
+    ArrayList<TGMessage> items = adapter.getItems();
+    if (items != null) {
+      for (TGMessage m : items) {
+        m.onUpdateTextSize();
+      }
+    }
+  }
+
   public void modifyRecycler (Context context, RecyclerView recyclerView, LinearLayoutManager manager) {
     this.manager = manager;
     this.adapter = new MessagesAdapter(context, this, this.controller);

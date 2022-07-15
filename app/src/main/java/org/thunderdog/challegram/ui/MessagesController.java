@@ -1147,6 +1147,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             public void onValueChanged (SliderView view, float factor) {
               int index = Math.round(factor * (float) (Settings.CHAT_FONT_SIZES.length - 1));
               if (Settings.instance().setChatFontSize(Settings.CHAT_FONT_SIZES[index])) {
+                manager.onUpdateTextSize();
                 manager.rebuildLayouts();
               }
             }

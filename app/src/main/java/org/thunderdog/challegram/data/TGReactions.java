@@ -39,8 +39,6 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ColorUtils;
 
 public class TGReactions {
-  public static final int REACTION_BUBBLE_HEIGHT = Screen.dp(26);
-
   private final Tdlib tdlib;
   private TdApi.MessageReaction[] reactions;
   private ReceiversPool<String> receiversPool;
@@ -178,7 +176,7 @@ public class TGReactions {
       Counter.Builder counterBuilder = new Counter.Builder()
         .allBold(false)
         .callback(parent)
-        .textSize(11f)
+        .textSize(TGMessage.reactionsTextStyleProvider().getTextSizeInDp())
         .noBackground()
         .textColor(R.id.theme_color_badgeText, R.id.theme_color_badgeText, R.id.theme_color_badgeText);
       entry = new MessageReactionEntry(delegate, parent, reactionObj, counterBuilder);
@@ -191,6 +189,12 @@ public class TGReactions {
       entry = reactionsMapEntry.get(reactionObj.reaction.reaction);
     }
     return entry;
+  }
+
+  public void onUpdateTextSize () {
+    reactionsMapEntry.clear();
+    setReactions(getReactions());
+    updateCounterAnimators(false);
   }
 
   public void updateCounterAnimators (boolean animated) {
@@ -214,7 +218,7 @@ public class TGReactions {
     if (maxWidth == 0) {
       maxWidth = 1;
     }
-    int bubbleHeight = REACTION_BUBBLE_HEIGHT;
+    int bubbleHeight = getReactionBubbleHeight();
     int padding = Screen.dp(6);
     int x = 0;
     int y = 0;
@@ -252,8 +256,13 @@ public class TGReactions {
     return reactionsListEntry.size();
   }
 
+  public static int getReactionBubbleHeight () {
+    return Screen.dp((TGMessage.reactionsTextStyleProvider().getTextSizeInDp() + 1) * 1.25f + 11);
+  }
 
-
+  public static int getReactionImageSize () {
+    return Screen.dp((TGMessage.reactionsTextStyleProvider().getTextSizeInDp() + 1) * 1.25f + 17);
+  }
 
 
   // target values
@@ -680,6 +689,9 @@ public class TGReactions {
 
       int width = getWidth();
       int height = getHeight();
+      int imageSize = getReactionImageSize();
+      int imgY = (height - imageSize) / 2;
+      int textX = height + Screen.dp(1);
       int radius = height / 2;
       int backgroundColor = backgroundColor(false);
 
@@ -688,9 +700,9 @@ public class TGReactions {
       path.addRoundRect(rect, radius, radius, Path.Direction.CCW);
 
       c.drawRoundRect(rect, radius, radius, Paints.fillingPaint(backgroundColor));
-      counter.draw(c, Screen.dp(27), REACTION_BUBBLE_HEIGHT / 2f, Gravity.LEFT, visibility, view, R.id.theme_color_badgeFailedText);
+      counter.draw(c, textX, getReactionBubbleHeight() / 2f, Gravity.LEFT, visibility, view, R.id.theme_color_badgeFailedText);
       if (centerAnimationReceiver != null) {
-        centerAnimationReceiver.setBounds(Screen.dp(-1), Screen.dp(-3), Screen.dp(31), Screen.dp(29));
+        centerAnimationReceiver.setBounds(Screen.dp(-1), imgY, Screen.dp(-1) + imageSize, imgY + imageSize);
         centerAnimationReceiver.draw(c);
       }
 
@@ -749,12 +761,13 @@ public class TGReactions {
 
     @Override
     public int getWidth () {
-      return (int) (counter.getWidth() + Screen.dp(36));
+      int addW = Screen.dp((TGMessage.reactionsTextStyleProvider().getTextSizeInDp() + 1f) / 3f);
+      return (int) (counter.getWidth() + getReactionImageSize() + addW);
     }
 
     @Override
     public int getHeight () {
-      return REACTION_BUBBLE_HEIGHT;
+      return getReactionBubbleHeight();
     }
 
     // ColorSet

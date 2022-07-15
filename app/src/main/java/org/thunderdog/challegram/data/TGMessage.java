@@ -897,6 +897,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
   }
 
+  public void onUpdateTextSize () {
+    messageReactions.onUpdateTextSize();
+  }
+
   public void prepareLayout () {
     if (this.width != 0) {
       rebuildLayout();
@@ -1831,6 +1835,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         right -= Screen.dp(COUNTER_ADD_MARGIN);
       }
 
+      if (!needMetadata && messageReactions.getTotalCount() > 0) {
+        right -= Icons.getEditedIconWidth();
+        Drawables.draw(c, view.getSparseDrawable(R.drawable.baseline_favorite_12, 0), right, pTicksTop, Paints.getIconLightPorterDuffPaint());
+        right -= Screen.dp(COUNTER_ADD_MARGIN);
+      }
+
       isPinned.draw(c, right, top, Gravity.RIGHT, 1f, view, getTimePartIconColorId());
       right -= isPinned.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN)) + Screen.dp(COUNTER_ADD_MARGIN);
       if (needMetadata) {
@@ -1844,12 +1854,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           viewCounter.draw(c, right, top, Gravity.RIGHT, 1f, view, getTimePartIconColorId());
           right -= viewCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
         }
-      }
-      if (reactionsCounter != null) {
-        right -= reactionsCounterDrawable.getMinimumWidth();
-        reactionsCounterDrawable.draw(c, (int) (right + reactionsCounterIconMargin * 2), top);
-        reactionsCounter.draw(c, right, top, Gravity.RIGHT, 1f, view, getTimePartIconColorId());
-        right -= reactionsCounter.getScaledWidth(Screen.dp(reactionsCounterIconMargin + COUNTER_ADD_MARGIN));
+        if (reactionsCounter != null) {
+          right -= reactionsCounterDrawable.getMinimumWidth();
+          reactionsCounterDrawable.draw(c, (int) (right + reactionsCounterIconMargin * 2), top);
+          reactionsCounter.draw(c, right, top, Gravity.RIGHT, 1f, view, getTimePartIconColorId());
+          right -= reactionsCounter.getScaledWidth(Screen.dp(reactionsCounterIconMargin + COUNTER_ADD_MARGIN));
+        }
       }
     }
 
@@ -6575,7 +6585,15 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
   }
 
-  private static TextStyleProvider styleProvider, simpleStyleProvider, biggerStyleProvider, smallerStyleProvider, nameProvider, timeProvider;
+  private static TextStyleProvider styleProvider, simpleStyleProvider, biggerStyleProvider, smallerStyleProvider, nameProvider, timeProvider, reactionBubbleProvider;
+
+  public static TextStyleProvider reactionsTextStyleProvider () {
+    if (reactionBubbleProvider == null) {
+      reactionBubbleProvider = new TextStyleProvider(Fonts.newRobotoStorage()).setTextSizeDiff(-4f).setTextSize(Settings.instance().getChatFontSize()).setAllowSp(true);
+      Settings.instance().addChatFontSizeChangeListener(reactionBubbleProvider);
+    }
+    return reactionBubbleProvider;
+  }
 
   public static TextStyleProvider simpleTextStyleProvider () {
     if (simpleStyleProvider == null) {
@@ -7682,8 +7700,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   private Point getReactionPosition (String reaction) {
     if (useReactionBubbles()) {
-      int x = messageReactions.getReactionBubbleX(reaction) + Screen.dp(15);
-      int y = messageReactions.getReactionBubbleY(reaction) + TGReactions.REACTION_BUBBLE_HEIGHT / 2;
+      int x = messageReactions.getReactionBubbleX(reaction) + TGReactions.getReactionImageSize() / 2 - Screen.dp(1);
+      int y = messageReactions.getReactionBubbleY(reaction) + TGReactions.getReactionBubbleHeight() / 2;
       return new Point(x, y);
     } else if (reactionsCounterDrawable != null) {
       int x = (int) (reactionsCounterDrawable.getLastDrawX() + Screen.dp(7) + Screen.dp(14) * MathUtils.clamp( messageReactions.getReactionPositionInList(reaction), 0, 2));
