@@ -34,7 +34,7 @@ public class LottieAnimation{
       cacheDir.mkdirs();
     File cacheFile=new File(cacheDir, new File(filePath).getName()+"_"+width+"_"+height+".cache");
     Bitmap bitmap=Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-    N.createLottieCache(nativeHandle, cacheFile.getAbsolutePath(), null, bitmap, true, false);
+    N.createLottieCache(nativeHandle, cacheFile.getAbsolutePath(), null, bitmap, false, false);
 
 		if(BuildConfig.DEBUG)
 			Log.d(TAG, "PreloadedLottieAnimation: loaded "+filePath+", "+frameCount+" frames, "+frameRate+" fps, "+duration+" seconds in "+(System.currentTimeMillis()-t));

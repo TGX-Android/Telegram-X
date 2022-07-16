@@ -8,6 +8,7 @@ import android.graphics.PixelFormat;
 import android.graphics.drawable.Animatable;
 import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -23,6 +24,7 @@ public class LottieAnimationDrawable extends Drawable implements Animatable{
 	private boolean drawing;
 	private boolean loop;
 	private long frameDelay;
+  private double frameRate;
 	private Runnable onEnd;
 
 	public LottieAnimationDrawable(LottieAnimation anim, int width, int height){
@@ -31,15 +33,17 @@ public class LottieAnimationDrawable extends Drawable implements Animatable{
 			bitmaps[i]=Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
 		}
 		frameDelay=Math.round(1000/anim.getFrameRate());
+    frameRate=anim.getFrameRate();
+    getNextFrame(); // draw first frame synchronously
 	}
 
 	@Override
 	public void start(){
 		if(running)
 			return;
-		startTime=SystemClock.uptimeMillis();
+		startTime=SystemClock.uptimeMillis()-Math.round(frame*(1000.0/frameRate));
 		running=true;
-		advance();
+		maybeAdvance();
 	}
 
 	@Override
@@ -57,6 +61,7 @@ public class LottieAnimationDrawable extends Drawable implements Animatable{
 		synchronized(this){
 			canvas.drawBitmap(bitmaps[0], null, getBounds(), paint);
 		}
+    maybeAdvance();
 	}
 
 	@Override
@@ -94,14 +99,15 @@ public class LottieAnimationDrawable extends Drawable implements Animatable{
 		bitmaps[1]=tmp;
 	}
 
-	private void advance(){
-		if(running){
-			frame++;
-			if(frame==anim.getFrameCount()){
+	private void maybeAdvance (){
+    double _newFrame=Math.min((SystemClock.uptimeMillis()-startTime)/(1000.0/frameRate), anim.getFrameCount()-1);
+    int newFrame=(int)Math.round(_newFrame);
+		if(newFrame!=frame && running){
+      frame=newFrame;
+			if(frame==anim.getFrameCount()-1){
 				if(loop){
 					frame=0;
 				}else{
-					frame--;
 					running=false;
 					if(onEnd!=null)
 						onEnd.run();
@@ -113,8 +119,6 @@ public class LottieAnimationDrawable extends Drawable implements Animatable{
 			}
 		}
 		invalidateSelf();
-		if(drawing || running)
-			scheduleSelf(this::advance, SystemClock.uptimeMillis()+frameDelay);
 	}
 
 	private void getNextFrame(){

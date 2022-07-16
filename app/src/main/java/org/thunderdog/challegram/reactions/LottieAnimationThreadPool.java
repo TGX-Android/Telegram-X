@@ -1,10 +1,12 @@
 package org.thunderdog.challegram.reactions;
 
 import android.graphics.Bitmap;
+import android.text.TextUtils;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.UI;
 
@@ -130,7 +132,12 @@ public class LottieAnimationThreadPool{
 
   public static void createCacheForPreloadedAnimation(File file, int width, int height){
     threadPool.submit(()->{
-      long ptr=N.createDecoder(file.getAbsolutePath(), null);
+      String json=U.gzipFileToString(file.getAbsolutePath());
+      if(TextUtils.isEmpty(json)){
+        Log.e(Log.TAG_IMAGE_LOADER, "Failed to read "+file.getAbsolutePath()+" for cache");
+        return;
+      }
+      long ptr=N.createLottieDecoder(file.getAbsolutePath(), json, null, 0);
       if(ptr==0){
         Log.e(Log.TAG_IMAGE_LOADER, "Failed to create lottie decoder for "+file.getAbsolutePath());
         return;
@@ -143,6 +150,7 @@ public class LottieAnimationThreadPool{
       Bitmap bitmap=Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
       N.createLottieCache(ptr, cacheFile.getAbsolutePath(), null, bitmap, true, false);
       N.destroyLottieDecoder(ptr);
+      Log.i(Log.TAG_IMAGE_LOADER, "Created cache for lottie animation "+file.getAbsolutePath());
     });
   }
 }
