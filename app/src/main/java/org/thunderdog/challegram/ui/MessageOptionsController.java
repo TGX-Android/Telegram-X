@@ -66,6 +66,7 @@ public class MessageOptionsController extends MessageOptionsPagerController.Mess
     adapter = new OptionsAdapter(context, options, listener, themeProvider);
     LinearLayoutManager manager = new LinearLayoutManager(context);
     addThemeInvalidateListener(recyclerView);
+    recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
     recyclerView.setLayoutManager(manager);
     recyclerView.setAdapter(adapter);
   }

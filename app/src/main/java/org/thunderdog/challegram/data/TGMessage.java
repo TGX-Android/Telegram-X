@@ -69,7 +69,6 @@ import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
-import org.thunderdog.challegram.loader.ReceiversPool;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
@@ -3445,8 +3444,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
   }
 
-  public final void requestReactions (ReceiversPool<String> receivers) {
-    messageReactions.setReceiversPool(receivers);
+  public final void requestReactions (ComplexReceiver complexReceiver) {
+    messageReactions.setReceiversPool(complexReceiver);
   }
 
 

@@ -14,8 +14,8 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
-import org.thunderdog.challegram.loader.ReceiversPool;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.support.ViewSupport;
@@ -41,7 +41,7 @@ import me.vkryl.core.ColorUtils;
 public class TGReactions {
   private final Tdlib tdlib;
   private TdApi.MessageReaction[] reactions;
-  private ReceiversPool<String> receiversPool;
+  private ComplexReceiver complexReceiver;
 
   private final TGMessage parent;
 
@@ -75,14 +75,15 @@ public class TGReactions {
     resetReactionsAnimator(false);
   }
 
-  public void setReceiversPool (ReceiversPool<String> receiversPool) {
-    this.receiversPool = receiversPool;
+  public void setReceiversPool (ComplexReceiver complexReceiver) {
+    this.complexReceiver = complexReceiver;
     for (Map.Entry<String, MessageReactionEntry> pair : reactionsMapEntry.entrySet()) {
       String reaction = pair.getKey();
-      if (receiversPool != null) {
-        pair.getValue().setReceivers(receiversPool.getImageReceiver(reaction), receiversPool.getGifReceiver(reaction));
+      MessageReactionEntry entry = pair.getValue();
+      if (complexReceiver != null) {
+        entry.setReceivers(complexReceiver.getImageReceiver(entry.hashCode()), complexReceiver.getGifReceiver(entry.hashCode()));
       } else {
-        pair.getValue().setReceivers(null, null);
+        entry.setReceivers(null, null);
       }
     }
   }
@@ -179,9 +180,9 @@ public class TGReactions {
         .textSize(TGMessage.reactionsTextStyleProvider().getTextSizeInDp())
         .noBackground()
         .textColor(R.id.theme_color_badgeText, R.id.theme_color_badgeText, R.id.theme_color_badgeText);
-      entry = new MessageReactionEntry(delegate, parent, reactionObj, counterBuilder);
-      if (receiversPool != null) {
-        entry.setReceivers(receiversPool.getImageReceiver(emoji), receiversPool.getGifReceiver(emoji));
+      entry = new MessageReactionEntry(tdlib, delegate, parent, reactionObj, counterBuilder);
+      if (complexReceiver != null) {
+        entry.setReceivers(complexReceiver.getImageReceiver(entry.hashCode()), complexReceiver.getGifReceiver(entry.hashCode()));
       }
 
       reactionsMapEntry.put(reactionObj.reaction.reaction, entry);
@@ -421,7 +422,7 @@ public class TGReactions {
 
     @Nullable private ImageReceiver staticIconReceiver;
     @Nullable private GifReceiver centerAnimationReceiver;
-    @Nullable private final GifFile animation;
+    @Nullable private GifFile animation;
 
     private final MessageReactionsDelegate delegate;
 
@@ -431,7 +432,7 @@ public class TGReactions {
     private int x;
     private int y;
 
-    public MessageReactionEntry (MessageReactionsDelegate delegate, TGMessage message, TGReaction reaction, Counter.Builder counter) {
+    public MessageReactionEntry (Tdlib tdlib, MessageReactionsDelegate delegate, TGMessage message, TGReaction reaction, Counter.Builder counter) {
       this.reactionObj = reaction;
       this.reaction = reaction.reaction.reaction;
       this.message = message;
@@ -443,7 +444,7 @@ public class TGReactions {
       this.counter = counter.colorSet(this).build();
 
       staticIconSticker = reactionObj.staticIconSicker();
-      animation = reactionObj.newCenterAnimationSicker().getFullAnimation();
+      animation = reactionObj.centerAnimationSicker().getFullAnimation();
       if (animation != null) {
         animation.setPlayOnce(true);
         animation.setLooped(true);

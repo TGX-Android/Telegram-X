@@ -43,7 +43,6 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
-import org.thunderdog.challegram.loader.ReceiversPool;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -94,18 +93,18 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private int flags;
 
   private final ImageReceiver avatarReceiver;
-  private final ReceiversPool<String> reactionReceivers;
   private ImageReceiver contentReceiver;
   private DoubleImageReceiver previewReceiver, replyReceiver;
   private GifReceiver gifReceiver;
   private ComplexReceiver complexReceiver;
+  private ComplexReceiver reactionsComplexReceiver;
   private MessageViewGroup parentMessageViewGroup;
   private MessagesManager manager;
 
   public MessageView (Context context) {
     super(context);
     avatarReceiver = new ImageReceiver(this, Screen.dp(20.5f));
-    reactionReceivers = new ReceiversPool<>(this);
+    reactionsComplexReceiver = new ComplexReceiver(this);
     gifReceiver = new GifReceiver(this);
     setUseReplyReceiver();
     setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -136,9 +135,6 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   }
 
   public void destroy () {
-    if (reactionReceivers != null) {
-      reactionReceivers.destroy();
-    }
     if (avatarReceiver != null){
       avatarReceiver.destroy();
     }
@@ -156,6 +152,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     }
     if (complexReceiver != null) {
       complexReceiver.performDestroy();
+    }
+    if (reactionsComplexReceiver != null) {
+      reactionsComplexReceiver.performDestroy();
     }
     if (msg != null) {
       msg.onDestroy();
@@ -239,7 +238,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
     message.resetTransformState();
     message.requestAvatar(avatarReceiver);
-    message.requestReactions(reactionReceivers);
+    message.requestReactions(reactionsComplexReceiver);
 
     if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
       previewReceiver.setRadius(message.getImageContentRadius(true));
@@ -348,10 +347,6 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     return contentReceiver;
   }
 
-  public ReceiversPool<String> getReactionReceivers () {
-    return reactionReceivers;
-  }
-
   public Receiver getAnyReceiver () {
     return contentReceiver != null ? contentReceiver : gifReceiver;
   }
@@ -362,6 +357,10 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   public ComplexReceiver getComplexReceiver () {
     return complexReceiver;
+  }
+
+  public ComplexReceiver getReactionsComplexReceiver () {
+    return reactionsComplexReceiver;
   }
 
   public DoubleImageReceiver getPreviewReceiver () {
@@ -375,7 +374,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       isAttached = true;
       avatarReceiver.attach();
       gifReceiver.attach();
-      reactionReceivers.attach();
+      reactionsComplexReceiver.attach();
       if ((flags & FLAG_USE_REPLY_RECEIVER) != 0) {
         replyReceiver.attach();
       }
@@ -394,7 +393,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       isAttached = false;
       avatarReceiver.detach();
       gifReceiver.detach();
-      reactionReceivers.detach();
+      reactionsComplexReceiver.detach();
       if ((flags & FLAG_USE_REPLY_RECEIVER) != 0) {
         replyReceiver.detach();
       }
