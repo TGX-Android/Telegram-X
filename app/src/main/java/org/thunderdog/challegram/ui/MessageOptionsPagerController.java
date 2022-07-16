@@ -54,6 +54,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.text.Counter;
+import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ReactionsSelectorRecyclerView;
@@ -67,7 +68,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 public class MessageOptionsPagerController extends ViewPagerController<Void> implements
   FactorAnimator.Target, PopupLayout.PopupHeightProvider,
   View.OnClickListener, Menu, PopupLayout.TouchSectionProvider,
-  DrawableProvider, Counter.Callback, ReactionsSelectorRecyclerView.ReactionSelectDelegate {
+  DrawableProvider, Counter.Callback, ReactionsSelectorRecyclerView.ReactionSelectDelegate, TextColorSet {
 
   private Options options;
   private TGMessage message;
@@ -93,10 +94,10 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     this.chat = chat;
     this.defaultReaction = defaultReaction;
 
+    this.reactions = message.getMessageReactions().getReactions();
     this.needShowOptions = options != null;
     this.needShowViews = !(!message.canGetViewers() || (message.isUnread() && !message.noUnread()));
-    this.needShowReactions = message.canGetAddedReactions() && message.getMessageReactions().getTotalCount() > 0;
-    this.reactions = message.getMessageReactions().getReactions();
+    this.needShowReactions = reactions != null && message.canGetAddedReactions() && message.getMessageReactions().getTotalCount() > 0;
     this.counters = new ViewPagerTopView.Item[getPagerItemCount()];
     this.baseCountersWidth = 0;
 
@@ -113,11 +114,11 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
       counters[ALL_REACTED_POSITION] = new ViewPagerTopView.Item(new Counter.Builder()
         .noBackground()
         .allBold(true)
-        .textSize(14f)
-        .textColor(R.id.theme_color_text)
+        .textSize(13f)
+        .colorSet(this)
         .callback(this)
-        .drawable(R.drawable.baseline_favorite_20, 20f, 5f, Gravity.LEFT)
-        .build(), this, Screen.dp(24));
+        .drawable(R.drawable.baseline_favorite_16, 16f, 6f, Gravity.LEFT)
+        .build(), this, Screen.dp(16));
       counters[ALL_REACTED_POSITION].counter.setCount(message.getMessageReactions().getTotalCount(), false);
       baseCountersWidth += counters[ALL_REACTED_POSITION].calculateWidth(null);
     } else {
@@ -129,15 +130,15 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
       counters[SEEN_POSITION] = new ViewPagerTopView.Item(new Counter.Builder()
         .noBackground()
         .allBold(true)
-        .textSize(14f)
-        .textColor(R.id.theme_color_text)
+        .textSize(13f)
+        .colorSet(this)
         .callback(this)
-        .drawable(R.drawable.baseline_visibility_20, 20f, 5f, Gravity.LEFT)
-        .build(), this, Screen.dp(24));
-      counters[SEEN_POSITION].counter.setCount(10, false);
-      int itemWidth = counters[SEEN_POSITION].calculateWidth(null);
+        .drawable(R.drawable.baseline_visibility_16, 16f, 6f, Gravity.LEFT)
+        .build(), this, Screen.dp(16));
+      counters[SEEN_POSITION].counter.setCount(1, false);
+      int itemWidth = counters[SEEN_POSITION].calculateWidth(null); // - Screen.dp(16);
       baseCountersWidth += itemWidth;
-      counters[SEEN_POSITION].setStaticWidth(itemWidth - Screen.dp(24));
+      counters[SEEN_POSITION].setStaticWidth(itemWidth - Screen.dp(16));
       counters[SEEN_POSITION].counter.setCount(0, false);
       getMessageOptions();
     } else {
@@ -147,14 +148,14 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     if (needShowReactions) {
       REACTED_START_POSITION = i;
       for (TdApi.MessageReaction reaction : reactions) {
-        counters[i] = new ViewPagerTopView.Item(new Counter.Builder()
+        TGReaction tgReaction = tdlib.getReaction(reaction.reaction);
+        counters[i] = new ViewPagerTopView.Item(tgReaction, new Counter.Builder()
           .noBackground()
           .allBold(true)
-          .textSize(14f)
-          .textColor(R.id.theme_color_text)
+          .textSize(13f)
+          .colorSet(this)
           .callback(this)
-          .drawable(new TGReaction.ReactionDrawable(null, tdlib.getReaction(reaction.reaction).staticIconSicker(), Screen.dp(20), Screen.dp(18)), 5f, Gravity.LEFT)
-          .build(), this, Screen.dp(24));
+          .build(), this, Screen.dp(9));
         counters[i].counter.setCount(reaction.totalCount, false);
         if (reaction.reaction.equals(defaultReaction)) {
           startPage = i;
@@ -175,10 +176,15 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
 
   @Override
   protected View onCreateView (Context context) {
-    headerCell = new ViewPagerHeaderViewReactionsCompact(context, tdlib, chat, message, needShowOptions ? baseCountersWidth : 0, needShowOptions, needShowReactions && needShowViews);
+    headerCell = new ViewPagerHeaderViewReactionsCompact(context, tdlib, chat, message, needShowOptions ? baseCountersWidth : 0, needShowOptions, needShowReactions, needShowViews);
     headerCell.setReactionsSelectorDelegate(this);
     addThemeInvalidateListener(headerCell);
     headerView = new HeaderView(context) {
+      @Override
+      protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Screen.dp(54f), MeasureSpec.EXACTLY));
+      }
+
       @Override
       protected void onLayout (boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
@@ -438,6 +444,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
   private void setRecyclerView (View v, MessageBottomSheetBaseController<?> controller, int position) {
     if (v instanceof RecyclerView) {
       RecyclerView recyclerView = (RecyclerView) v;
+      recyclerView.setVerticalScrollBarEnabled(false);
       addThemeInvalidateListener(recyclerView);
       recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
         @Override
@@ -735,6 +742,11 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
       }
     }
     return null;
+  }
+
+  @Override
+  public int defaultTextColor () {
+    return Theme.getColor(R.id.theme_color_text);
   }
 
   private class ContentDecoration extends RecyclerView.ItemDecoration {

@@ -4217,7 +4217,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     String text = b.toString().trim();
 
-    if (withReactions && msg.canBeReacted()) {
+    if (withReactions && msg.canBeReacted() && msg.getMessageAvailableReactions().length > 0) {
       Options messageOptions = getOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
       showMessageOptions(messageOptions, selectedMessage);
     } else {

@@ -118,6 +118,10 @@ public class TGReaction {
     }
   }
 
+  public int getId () {
+    return _staticIconSicker.getId();
+  }
+
   public static class ReactionDrawable extends Drawable /*implements Destroyable*/ {
     private final TGStickerObj stickerObj;
     private final int width;

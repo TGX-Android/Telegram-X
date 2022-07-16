@@ -243,6 +243,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   protected final MultipleViewProvider currentViews;
   protected final MultipleViewProvider overlayViews;
 
+  private TdApi.AvailableReaction[] messageAvailableReactions = new TdApi.AvailableReaction[0];
+
   protected TGMessage (MessagesManager manager, TdApi.Message msg) {
     if (!initialized) {
       synchronized (TGMessage.class) {
@@ -406,6 +408,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       startHotTimer(false);
     }
 
+    checkAvailableReactions();
     computeQuickButtons();
   }
 
@@ -3967,6 +3970,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       }
       rebuildAndUpdateContent();
     }
+    checkAvailableReactions();
     computeQuickButtons();
     return true;
   }
@@ -4008,6 +4012,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         TdApi.Message message = combinedMessages.remove(index);
         if (index == combinedMessages.size() && index > 0) {
           msg = combinedMessages.get(index - 1);
+          checkAvailableReactions();
           computeQuickButtons();
         }
         if (combinedMessages.isEmpty()) {
@@ -4247,7 +4252,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public final boolean canGetAddedReactions () {
-    return msg.canGetAddedReactions;
+    boolean result = msg.canGetAddedReactions;
+
+    if (combinedMessages != null) {
+      for (TdApi.Message message: combinedMessages) {
+        result |= message.canGetAddedReactions;
+      }
+    }
+    return result;
   }
 
   public final boolean canBeDeletedOnlyForSelf () {
@@ -4813,6 +4825,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       // }
     }
 
+    checkAvailableReactions();
     computeQuickButtons();
     return replaceRequired ? MESSAGE_REPLACE_REQUIRED : getHeight() == oldHeight ? MESSAGE_INVALIDATED : MESSAGE_CHANGED;
   }
@@ -7613,6 +7626,21 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return manager().useReactionBubbles();
   }
 
+  //
+
+  public final void checkAvailableReactions () {
+    tdlib().client().send(new TdApi.GetMessageAvailableReactions(msg.chatId, msg.id), (TdApi.Object object) -> {
+      if (object.getConstructor() == TdApi.AvailableReactions.CONSTRUCTOR) {
+        TdApi.AvailableReactions reactions = (TdApi.AvailableReactions) object;
+        messageAvailableReactions = reactions.reactions;
+        computeQuickButtons();
+      }
+    });
+  }
+
+  public final TdApi.AvailableReaction[] getMessageAvailableReactions () {
+    return messageAvailableReactions;
+  }
 
 
   // quick action

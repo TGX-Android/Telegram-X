@@ -83,7 +83,7 @@ public class MessageOptionsReactedController extends MessageOptionsPagerControll
       return;
     }
     isLoadingMore = true;
-    tdlib.client().send(new TdApi.GetMessageAddedReactions(message.getChatId(), message.getId(), reaction, offset, 50), (obj) -> {
+    tdlib.client().send(new TdApi.GetMessageAddedReactions(message.getChatId(), message.getSmallestId(), reaction, offset, 50), (obj) -> {
       if (obj.getConstructor() != TdApi.AddedReactions.CONSTRUCTOR) return;
       runOnUiThreadOptional(() -> {
         TdApi.AddedReactions reactions = (TdApi.AddedReactions) obj;

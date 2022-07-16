@@ -44,6 +44,7 @@ import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.widget.ReactionsSelectorRecyclerView;
 
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.MathUtils;
 
 public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implements PagerHeaderView, StretchyHeaderView, ViewPagerTopView.SelectionChangeListener, ThemeInvalidateListener {
   private static class VH extends RecyclerView.ViewHolder {
@@ -118,39 +119,40 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
   private boolean isScrollEnabled = true;
   private int rightOffset;
   private final boolean needReactionSelector;
-  private final boolean needTranslateFirstItem;
+  private final boolean needShowReactions, needShowViews;
 
-  public ViewPagerHeaderViewReactionsCompact (Context context, Tdlib tdlib, TdApi.Chat chat, TGMessage message, int rightOffset, boolean needReactionSelector, boolean needTranslateFirstItem) {
+  public ViewPagerHeaderViewReactionsCompact (Context context, Tdlib tdlib, TdApi.Chat chat, TGMessage message, int rightOffset, boolean needReactionSelector, boolean needShowReactions, boolean needShowViews) {
     super(context);
-    this.rightOffset = rightOffset - (needTranslateFirstItem ? Screen.dp(12) : 0);
+    this.rightOffset = rightOffset; // - (needShowReactions || needShowViews ? Screen.dp(12) : 0);
     this.needReactionSelector = needReactionSelector;
-    this.needTranslateFirstItem = needTranslateFirstItem;
+    this.needShowReactions = needShowReactions;
+    this.needShowViews = needShowViews;
 
     ViewPagerTopView topView = new ViewPagerTopView(context);
     topView.setSelectionColorId(R.id.theme_color_headerTabActive);
     topView.setTextFromToColorId(R.id.theme_color_headerTabInactiveText, R.id.theme_color_headerTabActiveText);
-    topView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(56)));
+    topView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
     topView.setSelectionChangeListener(this);
 
     adapter = new A(topView);
 
     if (needReactionSelector) {
-      reactionsSelectorRecyclerView = new ReactionsSelectorRecyclerView(context, tdlib, chat, message.getMessageReactions().getChosen(), this.rightOffset == 0) {
+      reactionsSelectorRecyclerView = new ReactionsSelectorRecyclerView(context, tdlib, message, message.getMessageReactions().getChosen(), true) {
         @Override
         protected void dispatchDraw (Canvas c) {
           super.dispatchDraw(c);
           int width = getMeasuredWidth();
-          c.drawRect(0, 0, shadowSize, Screen.dp(53), shadowPaint1);
+          //c.drawRect(0, 0, shadowSize, Screen.dp(52), shadowPaint1);
           c.save();
           c.translate(width - shadowSize, 0);
-          c.drawRect(0, 0, shadowSize, Screen.dp(53), shadowPaint2);
+          c.drawRect(0, 0, shadowSize, Screen.dp(52), shadowPaint2);
           c.restore();
         }
       };
       reactionsSelectorRecyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? OVER_SCROLL_IF_CONTENT_SCROLLS : OVER_SCROLL_NEVER);
       reactionsSelectorRecyclerView.setLayoutParams(FrameLayoutFix.newParams(
         ViewGroup.LayoutParams.MATCH_PARENT,
-        Screen.dp(56),
+        ViewGroup.LayoutParams.MATCH_PARENT,
         Gravity.CENTER_VERTICAL, 0, 0, this.rightOffset, 0));
       addView(reactionsSelectorRecyclerView);
     } else {
@@ -158,7 +160,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
     }
 
     backButton = new BackHeaderButton(context);
-    backButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(56f), Screen.dp(56f), Gravity.TOP | Gravity.LEFT));
+    backButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(56f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
     backButton.setButtonFactor(needReactionSelector ? BackHeaderButton.TYPE_BACK : BackHeaderButton.TYPE_CLOSE);
     RippleSupport.setTransparentSelector(backButton);
     Views.setClickable(backButton);
@@ -172,16 +174,21 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
       protected void dispatchDraw (Canvas c) {
         super.dispatchDraw(c);
         int width = getMeasuredWidth();
-        c.drawRect(0, 0, shadowSize, Screen.dp(53), shadowPaint1);
-        c.save();
-        c.translate(width - shadowSize, 0);
-        c.drawRect(0, 0, shadowSize, Screen.dp(53), shadowPaint2);
-        c.restore();
+        float translationX = recyclerView.getTranslationX();
+        int alpha = (int) ((1f - MathUtils.clamp(translationX / (width / 2f))) * 255);
+
+        shadowPaint1.setAlpha(alpha);
+        c.drawRect(0, 0, shadowSize, Screen.dp(52), shadowPaint1);
+        shadowPaint1.setAlpha(255);
+        //c.save();
+        //c.translate(width - shadowSize, 0);
+        //c.drawRect(0, 0, shadowSize, Screen.dp(52), shadowPaint2);
+        //c.restore();
       }
     };
     recyclerView.setLayoutParams(FrameLayoutFix.newParams(
       ViewGroup.LayoutParams.MATCH_PARENT,
-      Size.getHeaderPortraitSize(),
+      ViewGroup.LayoutParams.MATCH_PARENT,
       Gravity.TOP, Screen.dp(56), 0, 0, 0));
     recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? OVER_SCROLL_IF_CONTENT_SCROLLS : OVER_SCROLL_NEVER);
     recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, Lang.rtl()) {
@@ -193,7 +200,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
     recyclerView.setAdapter(adapter);
     addView(recyclerView);
 
-    setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56)));
+    setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(54)));
     updatePaints();
   }
 
@@ -201,7 +208,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
   LinearGradient shader2;
   private Paint shadowPaint1;
   private Paint shadowPaint2;
-  private final int shadowSize = Screen.dp(12);
+  private final int shadowSize = Screen.dp(12); // Screen.dp(35);
 
   public void setReactionsSelectorDelegate (ReactionsSelectorRecyclerView.ReactionSelectDelegate delegate) {
     if (reactionsSelectorRecyclerView != null) {
@@ -229,8 +236,11 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
       int width = getMeasuredWidth();
       if (position == 0) {
         float offset = (width - rightOffset - Screen.dp(56)) * (1f - positionOffset);
-        if (needTranslateFirstItem) {
-          getTopView().setItemTranslationX(2, (int) (Screen.dp(-12) * (1f - positionOffset)));
+        if (needShowReactions && needShowViews) {
+          getTopView().setItemTranslationX(1, (int) (Screen.dp(-8) * (1f - positionOffset)));
+          getTopView().setItemTranslationX(2, (int) (Screen.dp(-8) * (1f - positionOffset)));
+        } else if (needShowReactions || needShowViews) {
+          getTopView().setItemTranslationX(1, (int) (Screen.dp(-8) * (1f - positionOffset)));
         }
         recyclerView.setTranslationX(offset);
         reactionsSelectorRecyclerView.setTranslationX(-width * positionOffset);
@@ -238,6 +248,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
         setBackButtonAlpha(positionOffset);
         isScrollEnabled = false;
       } else {
+        getTopView().setItemTranslationX(1, 0);
         getTopView().setItemTranslationX(2, 0);
         recyclerView.setTranslationX(0);
         reactionsSelectorRecyclerView.setTranslationX(-width);
@@ -245,6 +256,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
         setBackButtonAlpha(1f);
         isScrollEnabled = true;
       }
+      recyclerView.invalidate();
     }
   }
 
