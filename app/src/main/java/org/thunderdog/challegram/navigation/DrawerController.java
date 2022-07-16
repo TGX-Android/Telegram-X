@@ -291,6 +291,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
             view.setChecked(account.id == account.context().preferredAccountId(), isUpdate);
             view.setUnreadCount(badge.getCount(), badge.isMuted(), isUpdate);
             view.setAvatar(account.getAvatarPlaceholderMetadata(), account.getAvatarFile(false));
+            view.setShowPremiumBadge(account.hasPremium());
             view.setText(Lang.getDebugString(account.getName(), account.isDebug()));
             view.setCustomControllerProvider(DrawerController.this);
             view.setPreviewActionListProvider(DrawerController.this);

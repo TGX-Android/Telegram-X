@@ -368,8 +368,15 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
     if (!StringUtils.isEmpty(adminSign)) {
       this.adminSign = new Text.Builder(adminSign, availWidth, Paints.robotoStyleProvider(13), TextColorSets.Regular.LIGHT).singleLine().build();
       availWidth -= this.adminSign.getWidth() + Screen.dp(4f);
+      if ((this.user != null && this.user.isPremium) || chatMark != null) {
+        availWidth -= Screen.dp(4f);
+      }
     } else {
       this.adminSign = null;
+    }
+
+    if (this.user != null && this.user.isPremium) {
+      availWidth -= Screen.dp(28f);
     }
 
     if (chatMark != null) {
@@ -442,6 +449,14 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
 
     if (trimmedSubtitle != null) {
       trimmedSubtitle.draw(c, left, Screen.dp(33f), isOnline ? TextColorSets.Regular.NEUTRAL : null);
+    }
+
+    if (this.user != null && this.user.isPremium) {
+      Drawable premiumIcon = view.getSparseDrawable(R.drawable.baseline_star_premium_chat_24, 0);
+      int trimmedTitleWidth = trimmedTitle != null ? trimmedTitle.getWidth() : 0;
+
+      Drawables.draw(c, premiumIcon, left + trimmedTitleWidth + Screen.dp(2f), view.getMeasuredHeight() / 2 - premiumIcon.getMinimumHeight() + Screen.dp(2f), Paints.getPremiumPaint());
+      left += premiumIcon.getMinimumWidth();
     }
 
     if (trimmedTitle != null && chatMark != null) {

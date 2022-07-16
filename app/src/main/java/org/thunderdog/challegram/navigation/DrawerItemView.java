@@ -154,6 +154,9 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
       trimmedText = null;
       return;
     }
+    if (this.showPremiumBadge) {
+      availWidth -= Screen.dp(24f);
+    }
     if (force || lastAvailTextWidth != availWidth) {
       lastAvailTextWidth = availWidth;
       trimmedText = new Text.Builder(text, availWidth, Paints.robotoStyleProvider(15), TextColorSets.Regular.NORMAL).singleLine().allBold().build();
@@ -193,6 +196,17 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
       avatarPlaceholder = null;
     }
     this.receiver.requestFile(this.imageFile = imageFile);
+    invalidate();
+  }
+
+  private boolean showPremiumBadge;
+
+  public void setShowPremiumBadge (boolean showPremiumBadge) {
+    if (this.showPremiumBadge == showPremiumBadge) {
+      return;
+    }
+    this.showPremiumBadge = showPremiumBadge;
+    trimText(false);
     invalidate();
   }
 
@@ -298,6 +312,11 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
     }
     if (trimmedText != null) {
       trimmedText.draw(c, textLeft, textLeft + trimmedText.getWidth(), 0, Screen.dp(17f));
+
+      if (showPremiumBadge) {
+        Drawable premiumIcon = Drawables.get(getResources(), R.drawable.baseline_star_premium_chat_24);
+        Drawables.draw(c, premiumIcon, textLeft + trimmedText.getWidth() + Screen.dp(2f), Screen.dp(14f), Paints.getPremiumPaint());
+      }
     }
 
     if (receiver != null) {
