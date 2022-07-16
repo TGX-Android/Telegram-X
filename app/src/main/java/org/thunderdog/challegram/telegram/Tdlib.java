@@ -3414,13 +3414,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (chat == null) {
       return false;
     }
-    switch (chat.type.getConstructor()) {
-      case TdApi.ChatTypePrivate.CONSTRUCTOR:
-      case TdApi.ChatTypeSecret.CONSTRUCTOR:
-        TdApi.User user = chatUser(chat);
-        return user != null && user.isPremium;
-    }
-    return false;
+    TdApi.User user = chatUser(chat);
+    return user != null && user.isPremium;
   }
 
   public boolean chatScam (TdApi.Chat chat) {
