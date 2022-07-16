@@ -4854,10 +4854,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  public boolean canSendReaction (String reaction) {
-    return tdlib.canSendReaction(chat, reaction);
-  }
-
   public boolean canWriteMessages () {
     return inputView != null && bottomWrap.getVisibility() == View.VISIBLE && inputView.getVisibility() == View.VISIBLE;
   }

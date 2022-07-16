@@ -7670,16 +7670,29 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
   }
 
+  private boolean canSendReaction (String emoji) {
+    if (!canBeReacted() || tdlib.isSelfChat(msg.chatId)) {
+      return false;
+    }
+
+    for (TdApi.AvailableReaction reaction: messageAvailableReactions) {
+      if (reaction.reaction.equals(emoji)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   private void computeQuickButtons () {
     boolean canReply = Settings.instance().needChatQuickReply() && messagesController().canWriteMessages() && !messagesController().needTabs() && canReplyTo();
     boolean canShare = Settings.instance().needChatQuickShare() && !messagesController().isSecretChat() && canBeForwarded();
-
 
     leftActions.clear();
     rightActions.clear();
 
     for (String reactionString: Settings.instance().getQuickReactions()) {
-      boolean canReact = messagesController().canSendReaction(reactionString) && canBeReacted();
+      boolean canReact = canSendReaction(reactionString); // messagesController().canSendReaction(reactionString) && canBeReacted() && !tdlib.isSelfChat(msg.chatId);
       TGReaction reactionObj = tdlib.getReaction(reactionString);
       if (reactionObj != null && canReact) {
         Drawable reactionDrawable = new TGReaction.ReactionDrawable(findCurrentView(), reactionObj.staticIconSicker(), Screen.dp(24), Screen.dp(24));

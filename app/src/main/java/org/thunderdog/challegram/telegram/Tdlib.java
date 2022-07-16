@@ -8546,20 +8546,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return ChatId.isBasicGroup(chatId) && TD.isCreator(chatStatus(chatId));
   }
 
-  public boolean canSendReaction (TdApi.Chat chat, String reaction) {
-    if (chat == null || chat.id == 0 || ChatId.isSecret(chat.id) || chat.availableReactions == null) {
-      return false;
-    }
-
-    for (String r: chat.availableReactions) {
-      if (r.equals(reaction)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
   public boolean canPinMessages (TdApi.Chat chat) {
     if (chat == null || chat.id == 0 || !hasWritePermission(chat) || ChatId.isSecret(chat.id))
       return false;
