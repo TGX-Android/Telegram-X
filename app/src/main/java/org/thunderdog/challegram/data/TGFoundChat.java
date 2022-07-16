@@ -37,6 +37,8 @@ public class TGFoundChat {
   private static final int FLAG_SELF = 1 << 2;
   private static final int FLAG_USE_TME = 1 << 3;
   private static final int FLAG_FORCE_USERNAME = 1 << 4;
+  private static final int FLAG_VERIFIED = 1 << 5;
+  private static final int FLAG_PREMIUM = 1 << 6;
 
   private int flags;
 
@@ -171,6 +173,8 @@ public class TGFoundChat {
     this.highlight = highlight;
     int flags = this.flags;
     flags = BitwiseUtils.setFlag(flags, FLAG_SECRET, ChatId.isSecret(chat.id));
+    flags = BitwiseUtils.setFlag(flags, FLAG_VERIFIED, tdlib.chatVerified(chat));
+    flags = BitwiseUtils.setFlag(flags, FLAG_PREMIUM, tdlib.chatPremium(chat));
     flags = BitwiseUtils.setFlag(flags, FLAG_SELF, tdlib.isSelfChat(chat.id));
     this.flags = flags;
     this.userId = TD.getUserId(chat.type);
@@ -391,6 +395,14 @@ public class TGFoundChat {
 
   public boolean isSecret () {
     return (flags & FLAG_SECRET) != 0;
+  }
+
+  public boolean isVerified () {
+    return (flags & FLAG_VERIFIED) != 0;
+  }
+
+  public boolean isPremium () {
+    return (flags & FLAG_PREMIUM) != 0;
   }
 
   public boolean isSelfChat () {

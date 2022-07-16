@@ -73,6 +73,8 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
   private static final int FLAG_SECRET = 1 << 1;
   private static final int FLAG_ONLINE = 1 << 2;
   private static final int FLAG_SELF_CHAT = 1 << 3;
+  private static final int FLAG_VERIFIED = 1 << 4;
+  private static final int FLAG_PREMIUM = 1 << 5;
 
   private int flags;
 
@@ -233,6 +235,24 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     }
   }
 
+  public void setIsVerified (boolean isVerified) {
+    int flags = BitwiseUtils.setFlag(this.flags, FLAG_VERIFIED, isVerified);
+    if (this.flags != flags) {
+      this.flags = flags;
+      setTrimmedTitle();
+      invalidate();
+    }
+  }
+
+  public void setIsPremium (boolean isPremium) {
+    int flags = BitwiseUtils.setFlag(this.flags, FLAG_PREMIUM, isPremium);
+    if (this.flags != flags) {
+      this.flags = flags;
+      setTrimmedTitle();
+      invalidate();
+    }
+  }
+
   public void setAvatar (ImageFile avatar, AvatarPlaceholder avatarPlaceholder) {
     this.avatar = avatar;
     this.avatarPlaceholder = avatarPlaceholder;
@@ -265,6 +285,14 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
       }
       if ((flags & FLAG_SECRET) != 0) {
         avail -= Screen.dp(15f);
+      }
+      if ((flags & FLAG_SELF_CHAT) == 0) {
+        if ((flags & FLAG_VERIFIED) != 0) {
+          avail -= Screen.dp(24f);
+        }
+        if ((flags & FLAG_PREMIUM) != 0) {
+          avail -= Screen.dp(24f);
+        }
       }
       avail -= counter.getScaledWidth(Screen.dp(8f) + Screen.dp(23f));
       boolean fakeTitle = (flags & FLAG_SECRET) != 0;
@@ -347,12 +375,25 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     }
     if (trimmedTitle != null) {
       boolean isSecret = (flags & FLAG_SECRET) != 0;
+      boolean isVerified = (flags & FLAG_VERIFIED) != 0;
+      boolean isPremium = (flags & FLAG_PREMIUM) != 0;
+      boolean isSelf = (flags & FLAG_SELF_CHAT) != 0;
       Paint paint = ChatView.getTitlePaint((flags & FLAG_FAKE_TITLE) != 0);
       int titleLeft = Screen.dp(72f);
       if (isSecret) {
         Drawables.drawRtl(c, Icons.getSecureDrawable(), titleLeft - Screen.dp(6f), Screen.dp(12f), Paints.getGreenPorterDuffPaint(), width, rtl);
         titleLeft += Screen.dp(15f);
         paint.setColor(Theme.getColor(R.id.theme_color_textSecure));
+      }
+      int iconsAdded = 0;
+      if (isVerified && !isSelf) {
+        Drawable drawable = Icons.getChatVerifyDrawable();
+        Drawables.drawRtl(c, drawable, titleLeft + trimmedTitleWidth + Screen.dp(2f), Screen.dp(12f), Paints.getVerifyPaint(), width, rtl);
+        iconsAdded += drawable.getMinimumWidth();
+      }
+      if (isPremium && !isSelf) {
+        Drawable drawable = Icons.getChatPremiumDrawable();
+        Drawables.drawRtl(c, drawable, titleLeft + trimmedTitleWidth + Screen.dp(2f) + iconsAdded, Screen.dp(12f), Paints.getPremiumPaint(), width, rtl);
       }
       int titleTop = Screen.dp(28f) + Screen.dp(1f);
       if (titleLayout != null) {
@@ -490,6 +531,8 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     if (chat != null) {
       long chatId = 0;
       setIsSecret(chat.isSecret());
+      setIsVerified(chat.isVerified());
+      setIsPremium(chat.isPremium());
       if (chat.getChat() != null) {
         addListeners(chat.getChat(), true, !chat.isGlobal());
         chatId = chat.getChat().id;
@@ -670,6 +713,8 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     if (message != null) {
       final long chatId = message.getChat().getId();
       setIsSecret(message.getChat().isSecret());
+      setIsVerified(message.getChat().isVerified());
+      setIsPremium(message.getChat().isPremium());
       setPreviewChatId(message.getChat().getList(), chatId, null, new MessageId(chatId, message.getId()), null);
       tdlib.listeners().subscribeToChatUpdates(chatId, this);
     } else {
