@@ -62,7 +62,6 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
 
   private static final int FLAG_ALL_BOLD = 1;
   private static final int FLAG_NEED_BACKGROUND = 1 << 1;
-  private static final int FLAG_IS_REACTION = 1 << 2;
 
   public static class Builder {
     public Builder () { }
@@ -90,11 +89,6 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
 
     public Builder noBackground () {
       this.flags = BitwiseUtils.setFlag(flags, FLAG_NEED_BACKGROUND, false);
-      return this;
-    }
-
-    public Builder isReaction () {
-      this.flags = BitwiseUtils.setFlag(flags, FLAG_IS_REACTION, true);
       return this;
     }
 
@@ -322,7 +316,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
   public void draw (Canvas c, float cx, float cy, int gravity, float alpha, DrawableProvider drawableProvider, @PorterDuffThemeColorId int drawableColorId) {
     if (alpha * getVisibility() > 0f) {
       Drawable drawable = getDrawable(drawableProvider, drawableColorId);
-      DrawAlgorithms.drawCounter(c, cx, cy, gravity, counter, textSize, BitwiseUtils.getFlag(flags, FLAG_NEED_BACKGROUND), BitwiseUtils.getFlag(flags, FLAG_IS_REACTION), this, drawable, drawableGravity, drawableColorId, Screen.dp(drawableMarginDp), alpha * getVisibility(), isVisible.getFloatValue());
+      DrawAlgorithms.drawCounter(c, cx, cy, gravity, counter, textSize, BitwiseUtils.getFlag(flags, FLAG_NEED_BACKGROUND),this, drawable, drawableGravity, drawableColorId, Screen.dp(drawableMarginDp), alpha * getVisibility(), isVisible.getFloatValue());
     }
   }
 

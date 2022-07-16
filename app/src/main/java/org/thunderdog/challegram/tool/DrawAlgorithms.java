@@ -334,15 +334,12 @@ public class DrawAlgorithms {
     }
   }
 
-  public static void drawCounter (Canvas c, float cx, float cy, int gravity, CounterAnimator<Text> counter, float textSize, boolean needBackground, boolean isReaction, TextColorSet colorSet, Drawable drawable, int drawableGravity, int drawableColorId, int drawableMargin, float alpha, float scale) {
+  public static void drawCounter (Canvas c, float cx, float cy, int gravity, CounterAnimator<Text> counter, float textSize, boolean needBackground, TextColorSet colorSet, Drawable drawable, int drawableGravity, int drawableColorId, int drawableMargin, float alpha, float scale) {
     scale = .6f + .4f * scale;
     final boolean needScale = scale != 1f;
 
     final float radius, addRadius;
-    if (isReaction) {
-      radius = Screen.dp(14f);
-      addRadius = Screen.dp(1.5f);
-    } else if (needBackground) {
+    if (needBackground) {
       radius = Screen.dp(textSize - 2f);
       addRadius = Screen.dp(1.5f);
     } else {
@@ -398,9 +395,6 @@ public class DrawAlgorithms {
     }
 
     float startX = rectF.centerX() - contentWidth / 2f;
-    if (isReaction) {
-      startX += drawableMargin / 3f;
-    }
     if (drawable != null) {
       Paint paint = PorterDuffPaint.get(drawableColorId, alpha);
       float iconY = cy - drawable.getMinimumHeight() / 2f;
@@ -416,10 +410,6 @@ public class DrawAlgorithms {
           startX += drawable.getMinimumWidth() + drawableMargin;
           break;
       }
-    }
-
-    if (isReaction) {
-      startX -= drawableMargin / 3f * 2;
     }
 
     for (ListAnimator.Entry<CounterAnimator.Part<Text>> entry : counter) {

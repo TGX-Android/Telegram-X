@@ -4228,12 +4228,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
 
   public void showMessageOptions (Options options, TGMessage message) {
-    MessageOptionsPagerController r = new MessageOptionsPagerController(context, tdlib, chat, options, message, "");
+    MessageOptionsPagerController r = new MessageOptionsPagerController(context, tdlib, options, message, "");
     r.show();
   }
 
   public void showMessageAddedReactions (TGMessage message, String reaction) {
-    MessageOptionsPagerController r = new MessageOptionsPagerController(context, tdlib, chat, null, message, reaction);
+    MessageOptionsPagerController r = new MessageOptionsPagerController(context, tdlib, null, message, reaction);
     r.show();
   }
 

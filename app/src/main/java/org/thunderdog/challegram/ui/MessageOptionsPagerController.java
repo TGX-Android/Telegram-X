@@ -32,6 +32,7 @@ import android.widget.RelativeLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
+import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -70,10 +71,8 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
   View.OnClickListener, Menu, PopupLayout.TouchSectionProvider,
   DrawableProvider, Counter.Callback, ReactionsSelectorRecyclerView.ReactionSelectDelegate, TextColorSet {
 
-  private Options options;
-  private TGMessage message;
-  private TdApi.Chat chat;
-  private final String defaultReaction;
+  private final Options options;
+  private final TGMessage message;
 
   private final boolean needShowOptions;
   private final boolean needShowViews;
@@ -81,18 +80,13 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
 
   private final TdApi.MessageReaction[] reactions;
   private final ViewPagerTopView.Item[] counters;
-  private int baseCountersWidth = 0;
+  private int baseCountersWidth;
   private int startPage = 0;
 
-  private ViewPagerHeaderViewReactionsCompact headerCell;
-
-
-  public MessageOptionsPagerController (Context context, Tdlib tdlib, TdApi.Chat chat, Options options, TGMessage message, String defaultReaction) {
+  public MessageOptionsPagerController (Context context, Tdlib tdlib, Options options, TGMessage message, String defaultReaction) {
     super(context, tdlib);
     this.options = options;
     this.message = message;
-    this.chat = chat;
-    this.defaultReaction = defaultReaction;
 
     this.reactions = message.getMessageReactions().getReactions();
     this.needShowOptions = options != null;
@@ -112,11 +106,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     if (needShowReactions) {
       ALL_REACTED_POSITION = i++;
       counters[ALL_REACTED_POSITION] = new ViewPagerTopView.Item(new Counter.Builder()
-        .noBackground()
-        .allBold(true)
-        .textSize(13f)
-        .colorSet(this)
-        .callback(this)
+        .noBackground().allBold(true).textSize(13f).colorSet(this).callback(this)
         .drawable(R.drawable.baseline_favorite_16, 16f, 6f, Gravity.LEFT)
         .build(), this, Screen.dp(16));
       counters[ALL_REACTED_POSITION].counter.setCount(message.getMessageReactions().getTotalCount(), false);
@@ -128,11 +118,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     if (needShowViews) {
       SEEN_POSITION = i++;
       counters[SEEN_POSITION] = new ViewPagerTopView.Item(new Counter.Builder()
-        .noBackground()
-        .allBold(true)
-        .textSize(13f)
-        .colorSet(this)
-        .callback(this)
+        .noBackground().allBold(true).textSize(13f).colorSet(this).callback(this)
         .drawable(R.drawable.baseline_visibility_16, 16f, 6f, Gravity.LEFT)
         .build(), this, Screen.dp(16));
       counters[SEEN_POSITION].counter.setCount(1, false);
@@ -150,11 +136,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
       for (TdApi.MessageReaction reaction : reactions) {
         TGReaction tgReaction = tdlib.getReaction(reaction.reaction);
         counters[i] = new ViewPagerTopView.Item(tgReaction, new Counter.Builder()
-          .noBackground()
-          .allBold(true)
-          .textSize(13f)
-          .colorSet(this)
-          .callback(this)
+          .noBackground().allBold(true).textSize(13f).colorSet(this).callback(this)
           .build(), this, Screen.dp(9));
         counters[i].counter.setCount(reaction.totalCount, false);
         if (reaction.reaction.equals(defaultReaction)) {
@@ -167,16 +149,25 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     }
   }
 
+  private ViewPagerHeaderViewReactionsCompact headerCell;
   private View pagerInFrameLayoutFix;
   private FrameLayoutFix wrapView;
   private RelativeLayout contentView;
+  private LickView lickView;
   private View fixView;
 
   // Create view
 
   @Override
   protected View onCreateView (Context context) {
-    headerCell = new ViewPagerHeaderViewReactionsCompact(context, tdlib, chat, message, needShowOptions ? baseCountersWidth : 0, needShowOptions, needShowReactions, needShowViews);
+    headerCell = new ViewPagerHeaderViewReactionsCompact(context, tdlib, message, needShowOptions ? baseCountersWidth : 0, needShowOptions, needShowReactions, needShowViews) {
+      @Override
+      public void onThemeInvalidate (boolean isTempUpdate) {
+        setHeaderBackgroundFactor(headerBackgroundFactor);
+        getBackButton().setColor(Theme.getColor(R.id.theme_color_headerLightIcon));
+        super.onThemeInvalidate(isTempUpdate);
+      }
+    };
     headerCell.setReactionsSelectorDelegate(this);
     addThemeInvalidateListener(headerCell);
     headerView = new HeaderView(context) {
@@ -254,21 +245,29 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     wrapView.addView(fixView);
     wrapView.addView(contentView);
     wrapView.addView(headerView);
+    if (HeaderView.getTopOffset() > 0) {
+      lickView = new LickView(context);
+      addThemeInvalidateListener(lickView);
+      lickView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, HeaderView.getTopOffset()));
+      wrapView.addView(lickView);
+    }
+
     return wrapView;
   }
 
   @Override
   protected void onCreateView (Context context, FrameLayoutFix contentView, ViewPager pager) {
     pager.setOffscreenPageLimit(1);
-    prepareControllerForPosition(0, null);
-    tdlib.ui().post(() -> launchOpenAnimation());
-
+    prepareControllerForPosition(startPage, null);
+    tdlib.ui().post(this::launchOpenAnimation);
 
     headerCell.getTopView().setTextPadding(Screen.dp(0));
     headerCell.getTopView().setItems(Arrays.asList(counters));
     headerCell.getTopView().setOnItemClickListener(this);
+    headerCell.getTopView().setSelectionColorId(R.id.theme_color_text);
     addThemeInvalidateListener(headerCell.getTopView());
 
+    headerCell.getBackButton().setColor(Theme.getColor(R.id.theme_color_headerLightIcon));
     headerCell.getBackButton().setOnClickListener((v) -> {
       if (needShowOptions) {
         headerCell.getTopView().getOnItemClickListener().onPagerItemClick(0);
@@ -342,10 +341,34 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     }
   }
 
+  private int headerBackground;
+  private float headerBackgroundFactor;
+
   private void setHeaderPosition (float y) {
     headerView.setTranslationY(y);
     fixView.setTranslationY(y);
     contentView.invalidate();
+
+    if (lickView != null) {
+      final int topOffset = HeaderView.getTopOffset();
+      final float top = y - topOffset;
+      lickView.setTranslationY(top);
+      float factor = top > topOffset ? 0f : 1f - ((float) top / (float) topOffset);
+      lickView.setFactor(factor);
+      headerView.getFilling().setShadowAlpha(factor);
+      setHeaderBackgroundFactor(factor);
+    }
+  }
+
+  public void setHeaderBackgroundFactor (float headerBackgroundFactor) {
+    this.headerBackgroundFactor = headerBackgroundFactor;
+    headerBackground = ColorUtils.blendARGB(
+      Theme.getColor(R.id.theme_color_background),
+      Theme.getColor(R.id.theme_color_headerLightBackground),
+      headerBackgroundFactor
+    );
+    headerView.setBackgroundColor(headerBackground);
+    headerCell.updatePaints(headerBackground);
   }
 
 
@@ -860,5 +883,34 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     message.getMessageReactions().sendReaction(reaction.reaction.reaction, true);
     message.scheduleSetReactionAnimationFullscreenFromBottomSheet(reaction, new Point(startX, startY));
     popupLayout.hideWindow(true);
+  }
+
+
+  private static class LickView extends View {
+    public LickView (Context context) {
+      super(context);
+    }
+
+    private float factor;
+
+    public void setFactor (float factor) {
+      if (this.factor != factor) {
+        this.factor = factor;
+        invalidate();
+      }
+    }
+
+    @Override
+    protected void onDraw (Canvas c) {
+      if (factor > 0f) {
+        int bottom = getMeasuredHeight();
+        int top = bottom - (int) ((float) bottom * factor);
+        c.drawRect(0, top, getMeasuredWidth(), bottom,
+          Paints.fillingPaint(
+            ColorUtils.compositeColors(Theme.getColor(R.id.theme_color_statusBar),
+            Theme.fillingColor())
+          ));
+      }
+    }
   }
 }

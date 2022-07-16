@@ -708,23 +708,27 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
         }
         if (rtl)
           cx -= itemWidth;
-        if (item != null && !item.hidden) {
+        if (!item.hidden) {
           int color = ColorUtils.fromToArgb(textFromColor, textToColor, factor * (1f - disabledFactor));
           if (item.counter != null) {
             float alphaFactor = 1f - MathUtils.clamp(Math.abs(selectionFactor - i));
-            alphaFactor = Math.max(alphaFactor, 1f - MathUtils.clamp(selectionFactor));
-            if (i == 1 && selectionFactor < 1) {
-              alphaFactor = 1f;
+            if (items.get(0).hidden) {
+              alphaFactor = Math.max(alphaFactor, 1f - MathUtils.clamp(selectionFactor));
+              if (i == 1 && selectionFactor < 1) {
+                alphaFactor = 1f;
+              }
             }
+            float counterAlpha = .5f + .5f * alphaFactor;
+            float imageAlpha = .5f + .5f * alphaFactor;
             if (item.imageReceiver != null) {
               int size = item.imageReceiverSize;
               int imgY = (viewHeight - size) / 2;
               item.imageReceiver.setAlpha(.5f + .5f * alphaFactor);
               item.imageReceiver.setBounds(cx, imgY, cx + size, imgY + size);
               item.imageReceiver.draw(c);
-              item.counter.draw(c, cx + size, viewHeight / 2f, Gravity.LEFT, .5f + .5f * alphaFactor, item.provider, R.id.theme_color_iconLight);
+              item.counter.draw(c, cx + size, viewHeight / 2f, Gravity.LEFT, imageAlpha, item.provider, R.id.theme_color_iconLight);
             } else {
-              item.counter.draw(c, cx + itemWidth / 2f, viewHeight / 2f, Gravity.CENTER, .5f + .5f * alphaFactor, item.provider, R.id.theme_color_iconLight);
+              item.counter.draw(c, cx + itemWidth / 2f, viewHeight / 2f, Gravity.CENTER, counterAlpha, item.provider, R.id.theme_color_iconLight);
             }
           } else if (item.ellipsizedString != null) {
             c.drawText(item.ellipsizedString, cx + itemWidth / 2 - item.actualWidth / 2, viewHeight / 2 + Screen.dp(6f), Paints.getViewPagerTextPaint(color, item.needFakeBold));

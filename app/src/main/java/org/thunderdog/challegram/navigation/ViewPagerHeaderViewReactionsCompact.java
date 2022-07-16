@@ -121,7 +121,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
   private final boolean needReactionSelector;
   private final boolean needShowReactions, needShowViews;
 
-  public ViewPagerHeaderViewReactionsCompact (Context context, Tdlib tdlib, TdApi.Chat chat, TGMessage message, int rightOffset, boolean needReactionSelector, boolean needShowReactions, boolean needShowViews) {
+  public ViewPagerHeaderViewReactionsCompact (Context context, Tdlib tdlib, TGMessage message, int rightOffset, boolean needReactionSelector, boolean needShowReactions, boolean needShowViews) {
     super(context);
     this.rightOffset = rightOffset; // - (needShowReactions || needShowViews ? Screen.dp(12) : 0);
     this.needReactionSelector = needReactionSelector;
@@ -141,12 +141,25 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
         @Override
         protected void dispatchDraw (Canvas c) {
           super.dispatchDraw(c);
-          int width = getMeasuredWidth();
-          //c.drawRect(0, 0, shadowSize, Screen.dp(52), shadowPaint1);
-          c.save();
-          c.translate(width - shadowSize, 0);
-          c.drawRect(0, 0, shadowSize, Screen.dp(52), shadowPaint2);
-          c.restore();
+          if (rightOffset > 0) {
+            int width = getMeasuredWidth();
+            float s = computeHorizontalScrollRange() - computeHorizontalScrollOffset() - computeHorizontalScrollExtent();
+            int alpha = (int) (MathUtils.clamp(s / Screen.dp(20f)) * 255);
+
+            shadowPaint2.setAlpha(alpha);
+            c.save();
+            c.translate(width - shadowSize, 0);
+            c.drawRect(0, 0, shadowSize, Screen.dp(52), shadowPaint2);
+            c.restore();
+            shadowPaint2.setAlpha(255);
+          }
+        }
+
+        @Override
+        public void onScrolled (int dx, int dy) {
+          if (rightOffset > 0) {
+            invalidate();
+          }
         }
       };
       reactionsSelectorRecyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? OVER_SCROLL_IF_CONTENT_SCROLLS : OVER_SCROLL_NEVER);
@@ -168,22 +181,23 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
 
     addView(backButton);
 
-
     recyclerView = new RecyclerView(context) {
       @Override
       protected void dispatchDraw (Canvas c) {
         super.dispatchDraw(c);
         int width = getMeasuredWidth();
-        float translationX = recyclerView.getTranslationX();
-        int alpha = (int) ((1f - MathUtils.clamp(translationX / (width / 2f))) * 255);
+        float translationX = getTranslationX();
+        int alpha1 = (int) ((1f - MathUtils.clamp(translationX / (width / 2f))) * 255);
+        int alpha2 = (int) (MathUtils.clamp((float) computeHorizontalScrollOffset() / Screen.dp(20f)) * 255);
 
-        shadowPaint1.setAlpha(alpha);
+        shadowPaint1.setAlpha(Math.min(alpha1, alpha2));
         c.drawRect(0, 0, shadowSize, Screen.dp(52), shadowPaint1);
         shadowPaint1.setAlpha(255);
-        //c.save();
-        //c.translate(width - shadowSize, 0);
-        //c.drawRect(0, 0, shadowSize, Screen.dp(52), shadowPaint2);
-        //c.restore();
+      }
+
+      @Override
+      public void onScrolled (int dx, int dy) {
+        invalidate();
       }
     };
     recyclerView.setLayoutParams(FrameLayoutFix.newParams(
@@ -201,14 +215,14 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
     addView(recyclerView);
 
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(54)));
-    updatePaints();
+    updatePaints(Theme.backgroundColor());
   }
 
   LinearGradient shader1;
   LinearGradient shader2;
   private Paint shadowPaint1;
   private Paint shadowPaint2;
-  private final int shadowSize = Screen.dp(12); // Screen.dp(35);
+  private final int shadowSize = Screen.dp(35);
 
   public void setReactionsSelectorDelegate (ReactionsSelectorRecyclerView.ReactionSelectDelegate delegate) {
     if (reactionsSelectorRecyclerView != null) {
@@ -216,9 +230,9 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
     }
   }
 
-  public void updatePaints () {
-    shader1 = new LinearGradient(0, 0, shadowSize, 0, Theme.backgroundColor(), 0, Shader.TileMode.CLAMP);
-    shader2 = new LinearGradient(0, 0, shadowSize, 0, 0, Theme.backgroundColor(), Shader.TileMode.CLAMP);
+  public void updatePaints (int color) {
+    shader1 = new LinearGradient(0, 0, shadowSize / 2f, 0, color, 0, Shader.TileMode.CLAMP);
+    shader2 = new LinearGradient(0, 0, shadowSize, 0, 0, color, Shader.TileMode.CLAMP);
     if (shadowPaint1 == null) {
       shadowPaint1 = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
     }
@@ -227,6 +241,11 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
     }
     shadowPaint1.setShader(shader1);
     shadowPaint2.setShader(shader2);
+    if (reactionsSelectorRecyclerView != null) {
+      reactionsSelectorRecyclerView.invalidate();
+    }
+    recyclerView.invalidate();
+    invalidate();
   }
 
   public void onPageScrolled (int position, float positionOffset) {
@@ -277,7 +296,6 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
 
   @Override
   public void onThemeInvalidate (boolean isTempUpdate) {
-    updatePaints();
     if (reactionsSelectorRecyclerView != null) {
       reactionsSelectorRecyclerView.invalidate();
     }
