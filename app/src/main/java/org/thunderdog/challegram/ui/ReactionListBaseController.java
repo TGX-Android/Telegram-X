@@ -116,7 +116,7 @@ public abstract class ReactionListBaseController<T> extends RecyclerViewControll
 		}
 	}
 
-	protected class ReactionCellViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
+	protected class ReactionCellViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnAttachStateChangeListener{
 		private ImageReceiverView icon;
 		private TextView text;
 		private SimplestCheckboxView check;
@@ -124,6 +124,7 @@ public abstract class ReactionListBaseController<T> extends RecyclerViewControll
 		private boolean animating;
 
 		private TdApi.Reaction reaction;
+    private boolean isAttached;
 
 		public ReactionCellViewHolder(){
 			super(View.inflate(context, R.layout.item_reaction_settings, null));
@@ -136,6 +137,7 @@ public abstract class ReactionListBaseController<T> extends RecyclerViewControll
 			text.setTextColor(Theme.getColor(R.id.theme_color_text));
 			addThemeTextColorListener(text, R.id.theme_color_text);
 			addThemeInvalidateListener(check);
+      itemView.addOnAttachStateChangeListener(this);
 		}
 
 		public void bind(TdApi.Reaction reaction){
@@ -186,6 +188,8 @@ public abstract class ReactionListBaseController<T> extends RecyclerViewControll
           if(effect!=null && !animating){
             int[] loc={0, 0};
             animationOverlay.playLottieAnimation(outRect->{
+              if(!isAttached)
+                return false;
               icon.getLocationOnScreen(loc);
               outRect.set(loc[0], loc[1], loc[0]+icon.getWidth(), loc[1]+icon.getHeight());
               int width=outRect.width();
@@ -208,5 +212,15 @@ public abstract class ReactionListBaseController<T> extends RecyclerViewControll
 			animation.setVisibility(View.INVISIBLE);
 			icon.setVisibility(View.VISIBLE);
 		}
-	}
+
+    @Override
+    public void onViewAttachedToWindow (View v){
+      isAttached=true;
+    }
+
+    @Override
+    public void onViewDetachedFromWindow (View v){
+      isAttached=false;
+    }
+  }
 }
