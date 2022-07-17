@@ -1488,7 +1488,9 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         break;
       }
       case R.id.btn_cancelReset: {
-        openAlert(R.string.ResetPassword, R.string.CancelPasswordReset, Lang.getString(R.string.CancelPasswordResetYes), (dialog, which) -> { cancelResetPassword(); });
+        if (state != null && state.pendingResetDate > 0) {
+          openAlert(R.string.ResetPassword, R.string.CancelPasswordReset, Lang.getString(R.string.CancelPasswordResetYes), (dialog, which) -> { cancelResetPassword(); });
+        }
         break;
       }
       case R.id.btn_forgotPassword: {
