@@ -62,7 +62,7 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
 
     int flags = 0;
 
-    if (canDragReply() && m.canReplyTo()) {
+    if ((canDragReply() && m.canReplyTo()) || canDragReact()) {
       int flag = Lang.rtl() ? ItemTouchHelper.RIGHT : ItemTouchHelper.LEFT;
       flags |= flag;
       if(!controller.getQuickReactions().isEmpty()){
@@ -79,6 +79,10 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
 
   public boolean canDragReply () {
     return Settings.instance().needChatQuickReply() && controller.canWriteMessages() && !controller.needTabs();
+  }
+
+  public boolean canDragReact(){
+    return !controller.getQuickReactions().isEmpty() && !controller.needTabs();
   }
 
   public boolean canDragShare () {
@@ -101,9 +105,11 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
     if (msg.useBubbles()) {
       Runnable after = null;
       boolean needDelay = false;
-      if (direction == (Lang.rtl() ? CustomTouchHelper.RIGHT : CustomTouchHelper.LEFT) && canDragReply()) {
+      if (direction == (Lang.rtl() ? CustomTouchHelper.RIGHT : CustomTouchHelper.LEFT) && (canDragReply() || canDragReact())) {
         after = () -> {
           int idx=msg.getQuickReactionIndex();
+          if(!canDragReply())
+            idx++;
           if(idx==0){
             controller.showReply(msg.getNewestMessage(), true, true);
           }else{
@@ -151,8 +157,10 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
         ((MessageViewGroup) holder.itemView).setSwipeTranslation(0f);
       }
       if (swipeDir == (Lang.rtl() ? CustomTouchHelper.RIGHT : CustomTouchHelper.LEFT)) {
-        if (canDragReply()) {
+        if (canDragReply() || canDragReact()) {
           int idx=msg.getQuickReactionIndex();
+          if(!canDragReply())
+            idx++;
           if(idx==0){
             controller.showReply(msg.getNewestMessage(), true, true);
           }else{
@@ -177,6 +185,9 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
   @Override
   public void onChildDraw (Canvas c, RecyclerView recyclerView, RecyclerView.ViewHolder holder, float dx, float dy, int state, boolean isActive) {
     if (state == ItemTouchHelper.ACTION_STATE_SWIPE && MessagesHolder.isMessageType(holder.getItemViewType())) {
+      if((Lang.rtl() && dx<0) || (!Lang.rtl() && dx>0)){
+        dy=0;
+      }
       final MessageView v = MessagesHolder.findMessageView(holder.itemView);
       final TGMessage msg = v.getMessage();
       if(isActive)

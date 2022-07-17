@@ -1425,26 +1425,25 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
       return false;
     }
     MessagesController m = msg.messagesController();
-    if (diffX < 0f && !m.canWriteMessages()) {
-      return false;
-    }
     MessagesRecyclerView recyclerView = findParentRecyclerView();
     if (recyclerView == null) {
       return false;
     }
     MessagesTouchHelperCallback helperCallback = recyclerView.getMessagesTouchHelper();
     if (Lang.rtl()) {
-      if ((helperCallback.canDragReply() && diffX > 0) || (helperCallback.canDragShare() && diffX < 0)) {
+      if (((helperCallback.canDragReply() || helperCallback.canDragReact()) && diffX > 0) || (helperCallback.canDragShare() && diffX < 0)) {
         if (touchX < m.get().getMeasuredWidth() - MessagesController.getSlideBackBound()) {
           loadQuickReactionIcons();
+          msg.startSwipe();
           m.startSwipe(findTargetView());
           return true;
         }
       }
     } else {
-      if ((helperCallback.canDragReply() && diffX < 0) || (helperCallback.canDragShare() && diffX > 0)) {
+      if (((helperCallback.canDragReply() || helperCallback.canDragReact()) && diffX < 0) || (helperCallback.canDragShare() && diffX > 0)) {
         if (touchX > MessagesController.getSlideBackBound()) {
           loadQuickReactionIcons();
+          msg.startSwipe();
           m.startSwipe(findTargetView());
           return true;
         }
@@ -1609,7 +1608,7 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
         if(r.reaction.equals(reaction)){
           ImageReceiver receiver=reactionSmallIconsReceiver.getImageReceiver(i);
           getLocationOnScreen(tmpViewLocation);
-          int x=msg.getCompactReactionsX()+receiver.getWidth()*i+tmpViewLocation[0];
+          int x=msg.getCompactReactionsX()+Screen.dp(16)*i+Screen.dp(8)-receiver.getWidth()/2+tmpViewLocation[0]-(msg.useBubbles() ? Screen.dp(2) : 0);
           int y=msg.getCompactReactionsY()+tmpViewLocation[1]-receiver.getHeight()/2;
           outRect.set(x, y, x+receiver.getWidth(), y+receiver.getHeight());
           return true;

@@ -5542,6 +5542,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private int quickReactionIndex, lastQuickReactionIndex;
   private FactorAnimator quickReactionSwitchAnimator;
 
+  public void startSwipe(){
+    lastQuickReactionIndex=quickReactionIndex=0;
+  }
+
   public void resetTransformState () {
     if (highlightFactor == 1f) {
       revokeHighlight();
@@ -5703,8 +5707,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         setReadyFactor(false, 1f, true, true);
       }
     }
-    int actionCount=1+manager.controller().getQuickReactions().size();
-    float actionIdx=Math.min(Math.max(0, translationY/Screen.dp(100f)), actionCount-1);
+    boolean isShare=Lang.rtl() != (translation > 0);
+    int count=isShare ? 1 : manager.controller().getQuickReactions().size();
+    boolean canReply=!isShare && manager.controller().canWriteMessages() && canReplyTo() && Settings.instance().needChatQuickReply();
+    if(canReply)
+      count++;
+    float actionIdx=Math.min(Math.max(0, translationY/Screen.dp(100f)), count-1);
     float diff=actionIdx-quickReactionIndex;
     if(Math.abs(diff)<.5f){
       if(quickReactionSwitchAnimator==null || !quickReactionSwitchAnimator.isAnimating()){
@@ -5831,9 +5839,15 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       if (translation == 0f) {
         return;
       }
-      Drawable icon = Lang.rtl() != (translation > 0) ? iQuickShare : iQuickReply;
+      boolean isShare=Lang.rtl() != (translation > 0);
+      Drawable icon = isShare ? iQuickShare : iQuickReply;
       float initialOffset=quickReactionOffset*Screen.dp(-32)+rawTranslationY;
-      for(int i=0;i<1+manager.controller().getQuickReactions().size();i++){
+      int count=isShare ? 1 : manager.controller().getQuickReactions().size();
+      boolean canReply=!isShare && manager.controller().canWriteMessages() && canReplyTo() && Settings.instance().needChatQuickReply();
+      if(canReply)
+        count++;
+
+      for(int i=0;i<count;i++){
         float selFactor, revealFactor;
         float diff=Math.abs(quickReactionOffset-i);
         if(diff>1f){
@@ -5853,10 +5867,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           }
         }
         ImageReceiver receiver=null;
-        if(i>0){
+        if(!isShare && !canReply){
+          receiver=view.getQuickReactionsReceiver().getImageReceiver(i);
+        }else if(i>0){
           receiver=view.getQuickReactionsReceiver().getImageReceiver(i-1);
         }
-        drawBubbleSwipeCircle(view, c, initialOffset+Screen.dp(32f)*i, selFactor, revealFactor, i==0 ? icon : null, receiver);
+        drawBubbleSwipeCircle(view, c, initialOffset+Screen.dp(32f)*i, selFactor, revealFactor, i==0 && (isShare || canReply) ? icon : null, receiver);
       }
       return;
     }
@@ -5963,6 +5979,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       textWidth = xQuickReplyWidth;
     }
 
+    boolean isShare=Lang.rtl() != (translation > 0);
+    int count=isShare ? 1 : manager.controller().getQuickReactions().size();
+    boolean canReply=!isShare && manager.controller().canWriteMessages() && canReplyTo() && Settings.instance().needChatQuickReply();
+    if(canReply)
+      count++;
+
     if (x > 0) {
       c.drawRect(0, startY, x, endY, Paints.fillingPaint(quickColor));
 
@@ -5993,7 +6015,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       }
     } else {
       float initialOffset=-quickReactionOffset*(endY-startY);
-      for(int i=0;i<1+manager.controller().getQuickReactions().size();i++){
+      for(int i=0;i<count;i++){
         c.save();
         c.clipRect(0, startY, width, endY);
         if(i!=quickReactionIndex){
@@ -6003,17 +6025,18 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         String actualText;
         float actualTextWidth;
         ImageReceiver receiver;
-        if(i==0){
+        if(i==0 && (isShare || canReply)){
           actualText=text;
           actualTextWidth=textWidth;
           receiver=null;
         }else{
-          TdApi.Reaction reaction=manager.controller().getQuickReactions().get(i-1);
+          int offset=canReply ? 1 : 0;
+          TdApi.Reaction reaction=manager.controller().getQuickReactions().get(i-offset);
           actualText=reaction.title;
           actualTextWidth=U.measureText(actualText, mQuickText);
-          receiver=view.getQuickReactionsReceiver().getImageReceiver(i-1);
+          receiver=view.getQuickReactionsReceiver().getImageReceiver(i-offset);
         }
-        drawNonBubbleSwipeAction(view, c, x, rtl, startY, endY, quickColor, cy, actualText, actualTextWidth, i==0 ? icon : null, receiver);
+        drawNonBubbleSwipeAction(view, c, x, rtl, startY, endY, quickColor, cy, actualText, actualTextWidth, i==0 && (isShare || canReply) ? icon : null, receiver);
         if(i!=quickReactionIndex){
           c.restore();
         }
