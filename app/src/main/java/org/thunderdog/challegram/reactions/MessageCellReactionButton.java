@@ -7,6 +7,7 @@ import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.RoundRectShape;
+import android.util.Log;
 import android.util.Property;
 import android.view.Gravity;
 import android.view.View;
@@ -147,10 +148,11 @@ public class MessageCellReactionButton extends FrameLayout implements ThemeInval
 	public void setReactions(TdApi.MessageReaction reaction, boolean animated){
 		boolean countChanged=reactions!=null && currentCount!=reaction.totalCount;
 
-		currentCount=reaction.totalCount;
-
-		reactions=reaction;
-		counter.setCount(reaction.totalCount, animated);
+    reactions=reaction;
+    if(reaction.totalCount!=currentCount){
+      currentCount=reaction.totalCount;
+      counter.setCount(reaction.totalCount, animated);
+    }
 		TdApi.Reaction aReaction=tdlib.getReaction(reaction.reaction);
 		if(aReaction!=null){
 			icon.setVisibility(View.VISIBLE);

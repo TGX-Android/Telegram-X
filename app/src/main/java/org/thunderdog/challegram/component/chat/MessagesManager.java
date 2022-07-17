@@ -1617,8 +1617,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
     int index = adapter.indexOfMessageContainer(messageId);
     if (index != -1) {
-      adapter.getItem(index).updateUnreadReactions(messageId, reactions);
-      // TODO nothing?
+      final TGMessage msg=adapter.getItem(index);
+      msg.updateUnreadReactions(messageId, reactions);
+      viewMessageInternal(loader.getChatId(), loader.getMessageThreadId(), messageId);
+      Arrays.stream(reactions).map(r->r.reaction).distinct().forEach(r->controller.playReactionEffectAnimation(msg, r));
     }
   }
 

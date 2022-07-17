@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.view.Gravity;
 
+import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.widget.SparseDrawableView;
 
@@ -21,7 +22,7 @@ public class CounterView extends SparseDrawableView{
 
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec){
-		setMeasuredDimension(Math.round(counter.getScaledWidth(0)), MeasureSpec.getSize(heightMeasureSpec));
+		setMeasuredDimension(Math.round(counter.getWidth()), MeasureSpec.getSize(heightMeasureSpec));
 	}
 
 	@Override

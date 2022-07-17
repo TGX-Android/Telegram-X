@@ -248,7 +248,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
       callback.onCounterAppearanceChanged(this, sizeChanged);
   }
 
-  private float getWidth () {
+  public float getWidth () {
     return DrawAlgorithms.getCounterWidth(textSize, BitwiseUtils.getFlag(flags, FLAG_NEED_BACKGROUND), counter, drawableRes != 0 ? Screen.dp(drawableWidthDp) + Screen.dp(drawableMarginDp) : 0);
   }
 
