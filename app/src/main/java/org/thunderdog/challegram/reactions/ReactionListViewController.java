@@ -44,6 +44,7 @@ import org.thunderdog.challegram.ui.SettingsAdapter;
 import org.thunderdog.challegram.widget.ListInfoView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ShadowView;
+import org.thunderdog.challegram.widget.ViewPager;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,7 +57,6 @@ import androidx.annotation.NonNull;
 import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.viewpager.widget.ViewPager;
 
 public class ReactionListViewController{
 	private final Context context;
