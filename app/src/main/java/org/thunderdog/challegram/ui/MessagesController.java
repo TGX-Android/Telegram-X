@@ -247,7 +247,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -10480,6 +10479,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     MessageView mv=manager.findRealMessageView(getChatId(), msg.getMessageForReactions().id);
     ArrayList<TdApi.MessageReaction> reactions=new ArrayList<>(Arrays.asList(msg.getReactions()));
     TdApi.MessageReaction existingReaction=null;
+    final boolean[] cancelAnimation={false};
     for(TdApi.MessageReaction r:reactions){
       if(r.isChosen){
         existingReaction=r;
@@ -10494,6 +10494,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         reactions.remove(existingReaction);
       }
     }
+    TdApi.MessageReaction messageReaction;
     if(existingReaction==null || !existingReaction.reaction.equals(reaction)){
       TdApi.MessageReaction newReaction=null;
       for(TdApi.MessageReaction r:reactions){
@@ -10511,6 +10512,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         newReaction.isChosen=true;
         didAdd=true;
       }
+      messageReaction=newReaction;
+    }else{
+      messageReaction=existingReaction;
     }
     TdApi.Message m=msg.getMessageForReactions();
     if(m.interactionInfo==null)
@@ -10532,6 +10536,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
               return true;
             }
 
+            if(cancelAnimation[0]){
+              if(popup!=null)
+                popup.hideWindow(true);
+              return true;
+            }
+
             if(src!=null){
               ReactionAnimationOverlay ov=manager.getAnimationOverlay();
               Rect srcPos=new Rect();
@@ -10540,7 +10550,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
               srcPos.set(loc[0], loc[1], loc[0]+src.getWidth(), loc[1]+src.getHeight());
               TdApi.Sticker[] anims=big ? new TdApi.Sticker[]{rr.effectAnimation, rr.activateAnimation, rr.aroundAnimation, rr.centerAnimation} : new TdApi.Sticker[]{rr.aroundAnimation, rr.centerAnimation};
               LottieAnimationThreadPool.loadMultipleAnimations(tdlib, a->{
+                if(cancelAnimation[0]){
+                  if(popup!=null)
+                    popup.hideWindow(true);
+                  return;
+                }
                 ov.playFlyingReactionAnimation(outRect -> {
+                  if(cancelAnimation[0]){
+                    if(popup!=null)
+                      popup.hideWindow(true);
+                    return false;
+                  }
                   boolean r=mv.getReactionIconBounds(reaction, outRect);
                   if(big && r){
                     int sz=-(Screen.dp(64)-outRect.width())/2;
@@ -10562,10 +10582,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
               }, 3000, anims);
             }else if(srcRect!=null){
               LottieAnimationThreadPool.loadOneAnimation(tdlib, rr.appearAnimation, anim->{
+                if(cancelAnimation[0])
+                  return;
                 LottieAnimationDrawable drawable=new LottieAnimationDrawable(anim, Screen.dp(24), Screen.dp(24));
                 drawable.setFrame(drawable.getTotalFrames()-1);
                 ReactionAnimationOverlay ov=manager.getAnimationOverlay();
                 ov.playFlyingReactionAnimation(outRect -> {
+                  if(cancelAnimation[0])
+                    return false;
                   return mv.getReactionIconBounds(reaction, outRect);
                 }, srcRect, drawable, null, ()->playReactionEffectAnimation(msg, reaction));
               }, Screen.dp(24), Screen.dp(24));
@@ -10581,7 +10605,24 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if(!didAdd && popup!=null){
       popup.hideWindow(true);
     }
-    tdlib.send(new TdApi.SetMessageReaction(getChatId(), msg.getMessageForReactions().id, reaction, big), tdlib.okHandler());
+    boolean finalDidAdd=didAdd;
+    tdlib.sendOnUiThread(new TdApi.SetMessageReaction(getChatId(), msg.getMessageForReactions().id, reaction, big), res->{
+      if(res instanceof TdApi.Error){
+        UI.showError(res);
+        if(finalDidAdd){
+          manager.getAnimationOverlay().endAllAnimations();
+          cancelAnimation[0]=true;
+          messageReaction.totalCount--;
+          if(messageReaction.totalCount==0){
+            reactions.remove(messageReaction);
+            m.interactionInfo.reactions=reactions.toArray(new TdApi.MessageReaction[0]);
+          }
+          if(mv!=null){
+            mv.updateReactions();
+          }
+        }
+      }
+    });
   }
 
   private long lastHapticEffectTime;

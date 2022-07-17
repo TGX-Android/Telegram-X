@@ -198,6 +198,13 @@ public class ReactionAnimationOverlay{
 		return x1*(1f-k)+x2*k;
 	}
 
+  public void endAllAnimations (){
+    if(windowView!=null){
+      removeWindow();
+      runningAnimationsCount=0;
+    }
+  }
+
 	@FunctionalInterface
 	public interface ViewBoundsProvider{
 		boolean getBounds(Rect outRect);
