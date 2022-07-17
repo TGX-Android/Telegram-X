@@ -10524,6 +10524,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
           public boolean onPreDraw(){
             mv.getViewTreeObserver().removeOnPreDrawListener(this);
             TdApi.Reaction rr=tdlib.getReaction(reaction);
+            if(!mv.getReactionIconBounds(reaction, new Rect())){
+              // Icon for this reaction is not displayed. Don't play animation at all I guess?
+              if(popup!=null){
+                popup.hideWindow(true);
+              }
+              return true;
+            }
 
             if(src!=null){
               ReactionAnimationOverlay ov=manager.getAnimationOverlay();

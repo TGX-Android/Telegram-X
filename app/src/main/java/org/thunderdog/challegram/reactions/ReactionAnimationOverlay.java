@@ -71,8 +71,12 @@ public class ReactionAnimationOverlay{
 		runningAnimationsCount++;
 		img.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener(){
 			private boolean started;
+      private boolean removed;
 			@Override
 			public boolean onPreDraw(){
+        if(removed){
+          return false;
+        }
 
 				if(!started){
 					if(onStarting!=null)
@@ -81,16 +85,20 @@ public class ReactionAnimationOverlay{
 					started=true;
 				}
 
-				if(!drawable.isRunning() || !pos.getBounds(rect)){
+        boolean boundsValid=true;
+				if(!drawable.isRunning() || !(boundsValid=pos.getBounds(rect))){
 					img.getViewTreeObserver().removeOnPreDrawListener(this);
 					Runnable remover=()->{
+            if(removed)
+              return;
+            removed=true;
 						windowView.removeView(img);
 						runningAnimationsCount--;
 						if(runningAnimationsCount==0){
 							removeWindow();
 						}
 					};
-					if(onDone!=null)
+					if(onDone!=null && boundsValid)
 						onDone.onAnimationEnd(img, remover);
 					else
 						remover.run();

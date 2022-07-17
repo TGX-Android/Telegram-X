@@ -9,6 +9,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.text.Counter;
 
@@ -30,7 +31,7 @@ public class CompactReactionsRenderer implements Counter.Callback{
 				.textSize(parent.useBubbles() ? 11f : 12f)
 //				.textColor(getCounterDefaultColor())
 				.allBold(false)
-				.colorSet(parent::getTimePartTextColor)
+				.colorSet(this::getCounterColor)
 				.build();
 	}
 
@@ -63,7 +64,7 @@ public class CompactReactionsRenderer implements Counter.Callback{
 	public int getWidth(){
 		if(iconizedReactions.isEmpty())
 			return 0;
-		return iconizedReactions.size()*Screen.dp(16)+Math.round(counter.getScaledWidth(Screen.dp(3)))+(parent.useBubbles() ? Screen.dp(6) : 0);
+		return iconizedReactions.size()*Screen.dp(16)+Math.round(counter.getScaledWidth(Screen.dp(6)))+(parent.useBubbles() ? Screen.dp(3) : 0);
 	}
 
 	// Canvas must be translated as needed
@@ -100,4 +101,14 @@ public class CompactReactionsRenderer implements Counter.Callback{
 	public boolean needAnimateChanges(Counter counter){
 		return parent.needAnimateChanges(counter);
 	}
+
+  private int getCounterColor(){
+    if(selfReacted){
+      if(parent.useBubbles()){
+        return Theme.getColor(parent.isOutgoing() ? R.id.theme_color_bubbleOut_inlineText : R.id.theme_color_inlineText);
+      }
+      return Theme.getColor(R.id.theme_color_inlineText);
+    }
+    return parent.getTimePartTextColor();
+  }
 }
