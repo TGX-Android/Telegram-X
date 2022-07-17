@@ -10602,23 +10602,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
           return true;
         }
 
-        ov.playLottieAnimation(outRect->{
-          if(!mv.getReactionIconBounds(reaction, outRect))
-            return false;
-          int sz=-(Screen.dp(64)-outRect.width())/2;
-          outRect.inset(sz, sz);
-
-          int width=outRect.width();
-          int centerX=outRect.centerX();
-          int centerY=outRect.centerY();
-          int size=Math.round(width*2f);
-          outRect.set(centerX-size, centerY-size, centerX+size, centerY+size);
-          return true;
-        }, effectAnimation, null, activateAnimation!=null ? null : (v, remove)->{
-          remove.run();
-          playReactionEffectAnimation(msg, reaction, aroundAnimation, centerAnimation);
-        });
-
         if(activateAnimation!=null)
           ov.playLottieAnimation(outRect->{
             if(!mv.getReactionIconBounds(reaction, outRect))
@@ -10640,6 +10623,23 @@ public class MessagesController extends ViewController<MessagesController.Argume
               playReactionEffectAnimation(msg, reaction, aroundAnimation, centerAnimation);
             }).start();
           });
+
+        ov.playLottieAnimation(outRect->{
+          if(!mv.getReactionIconBounds(reaction, outRect))
+            return false;
+          int sz=-(Screen.dp(64)-outRect.width())/2;
+          outRect.inset(sz, sz);
+
+          int width=outRect.width();
+          int centerX=outRect.centerX()-width;
+          int centerY=outRect.centerY();
+          int size=Math.round(width*2f);
+          outRect.set(centerX-size, centerY-size, centerX+size, centerY+size);
+          return true;
+        }, effectAnimation, null, activateAnimation!=null ? null : (v, remove)->{
+          remove.run();
+          playReactionEffectAnimation(msg, reaction, aroundAnimation, centerAnimation);
+        });
 
         return true;
       }
