@@ -360,7 +360,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     cancelResetView.setTextColor(Theme.getColor(R.id.theme_color_textNeutral));
     addThemeTextColorListener(cancelResetView, R.id.theme_color_textNeutral);
     cancelResetView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
-    cancelResetView.setPadding(Screen.dp(16f), Screen.dp(16f), Screen.dp(16f), Screen.dp(10f));
+    cancelResetView.setPadding(Screen.dp(16f), Screen.dp(16f), Screen.dp(16f), Screen.dp(6f));
     cancelResetView.setOnClickListener(this);
     Views.setClickable(cancelResetView);
     cancelResetView.setAlpha(0f);
@@ -370,7 +370,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     resetWaitView.setTextColor(Theme.textDecentColor());
     addThemeTextColorListener(resetWaitView, R.id.theme_color_textLight);
     resetWaitView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
-    resetWaitView.setPadding(Screen.dp(16f), Screen.dp(16f), Screen.dp(16f), Screen.dp(4f));
+    resetWaitView.setPadding(Screen.dp(16f), Screen.dp(16f), Screen.dp(16f), Screen.dp(6f));
     resetWaitView.setAlpha(0f);
 
     switch (mode) {
@@ -416,7 +416,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       RelativeLayout.LayoutParams rp;
 
       rp = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-      forgotView.setPadding(Screen.dp(16f), Screen.dp(4f), Screen.dp(12f), Screen.dp(16f));
+      forgotView.setPadding(Screen.dp(16f), Screen.dp(6f), Screen.dp(12f), Screen.dp(16f));
       rp.addRule(RelativeLayout.BELOW, R.id.btn_cancelReset);
       forgotView.setLayoutParams(rp);
       forgotWrap.addView(forgotView);
