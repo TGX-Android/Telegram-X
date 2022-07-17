@@ -7466,14 +7466,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private void updateReactions (TdApi.UpdateReactions update) {
-    synchronized (dataLock) {
-      this.supportedReactions = update.reactions;
+    synchronized (dataLock){
+      this.supportedReactions=update.reactions;
       supportedReactionsByEmoji.clear();
-      for(TdApi.Reaction r:update.reactions){
+    }
+    for(TdApi.Reaction r:update.reactions){
+      synchronized(dataLock){
         supportedReactionsByEmoji.put(r.reaction, r);
-        preloadReactionAnimations(r);
-        send(new TdApi.DownloadFile(r.staticIcon.thumbnail.file.id, 1, 0, 0, false), okHandler);
       }
+      preloadReactionAnimations(r);
+      send(new TdApi.DownloadFile(r.staticIcon.thumbnail.file.id, 1, 0, 0, false), okHandler);
     }
   }
 
