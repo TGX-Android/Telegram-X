@@ -189,6 +189,10 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
     NavigationController navigation = UI.getContext(getContext()).navigation();
     if (navigation != null) {
       ViewController<?> c = navigation.getCurrentStackItem();
+      if (c != null && sticker.isPremium() && !tdlib.hasPremium()) {
+        tdlib.ui().showPremiumAlert(c, view);
+        return false;
+      }
       if (c instanceof MessagesController && ((MessagesController) c).canWriteMessages()) {
         if (((MessagesController) c).onSendSticker(view, sticker, forceDisableNotification, schedulingState)) {
           popupLayout.hideWindow(true);

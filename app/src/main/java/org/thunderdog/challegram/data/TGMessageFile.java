@@ -52,6 +52,7 @@ import me.vkryl.android.animator.VariableFloat;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.Td;
 
 public class TGMessageFile extends TGMessage {
@@ -397,6 +398,13 @@ public class TGMessageFile extends TGMessage {
   }
 
   @Override
+  protected void onMessageContainerDestroyed () {
+    for (CaptionedFile file : filesList) {
+      file.component.performDestroy();
+    }
+  }
+
+  @Override
   protected void drawContent (MessageView view, Canvas c, final int startX, final int startY, int maxWidth, ComplexReceiver receiver) {
     final int backgroundColor = getContentBackgroundColor();
     final int contentReplaceColor = getContentReplaceColor();
@@ -519,7 +527,8 @@ public class TGMessageFile extends TGMessage {
 
   @Override
   protected void onMessageCombinationRemoved (TdApi.Message message, int index) {
-    filesList.remove(index);
+    CaptionedFile file = filesList.remove(index);
+    file.component.performDestroy();
     files.reset(filesList, needAnimateChanges());
   }
 

@@ -33,9 +33,7 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
-import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibUi;
-import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -430,7 +428,7 @@ public class TGMessageText extends TGMessage {
   @Override
   protected void onMessageContainerDestroyed () {
     if (webPage != null) {
-      webPage.destroy();
+      webPage.performDestroy();
     }
   }
 

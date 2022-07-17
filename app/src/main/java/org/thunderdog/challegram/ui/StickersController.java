@@ -334,19 +334,6 @@ public class StickersController extends RecyclerViewController<StickersControlle
     }
   }
 
-  @Override
-  public void onRecentStickersUpdated (int[] stickerIds, boolean isAttached) {
-
-  }
-
-  @Override
-  public void onTrendingStickersUpdated (TdApi.StickerSets stickerSets, int unreadCount) {
-
-  }
-
-  @Override
-  public void onFavoriteStickersUpdated (int[] stickerIds) { }
-
   private boolean isLoading, isLoadingMore, endReached;
 
   private void loadData (boolean isMore) {

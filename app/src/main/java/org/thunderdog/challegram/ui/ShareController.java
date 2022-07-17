@@ -475,7 +475,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       this.file = Td.copyOf(file);
     }
 
-    public int size () {
+    public long size () {
       return (file.local != null && file.local.isDownloadingActive) ? file.expectedSize : file.size;
     }
   }

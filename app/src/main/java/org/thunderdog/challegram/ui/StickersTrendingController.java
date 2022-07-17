@@ -201,7 +201,7 @@ public class StickersTrendingController extends ViewController<Void> implements 
   }
 
   @Override
-  public void onTrendingStickersUpdated (final TdApi.StickerSets stickerSets, int unreadCount) {
+  public void onTrendingStickersUpdated (final TdApi.TrendingStickerSets stickerSets, int unreadCount) {
     tdlib.ui().post(() -> {
       if (!loadingTrending && (StickersTrendingController.this.stickerSets == null || StickersTrendingController.this.stickerSets.isEmpty()) && stickerSets.sets.length > 0) {
         loadTrending(0, 20, 0);

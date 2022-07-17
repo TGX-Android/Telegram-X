@@ -76,7 +76,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
 
   public interface MyUserDataChangeListener {
     void onMyUserUpdated (TdApi.User myUser);
-    void onMyUserBioUpdated (String newBio);
+    default void onMyUserBioUpdated (@Nullable TdApi.FormattedText newBio) { }
   }
 
   public interface BasicGroupDataChangeListener {
@@ -411,7 +411,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   // Update
 
   @UiThread
-  public void onUpdateMyUserAbout (final String newAbout) {
+  public void onUpdateMyUserAbout (final TdApi.FormattedText newAbout) {
     if (myUserId != 0) {
       notifyMyUserBioListeners(myUserListeners.iterator(), newAbout);
     }
@@ -1568,7 +1568,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     }
   }
 
-  private static void notifyMyUserBioListeners (@Nullable Iterator<MyUserDataChangeListener> list, String newBio) {
+  private static void notifyMyUserBioListeners (@Nullable Iterator<MyUserDataChangeListener> list, @Nullable TdApi.FormattedText newBio) {
     if (list != null) {
       while (list.hasNext()) {
         list.next().onMyUserBioUpdated(newBio);
