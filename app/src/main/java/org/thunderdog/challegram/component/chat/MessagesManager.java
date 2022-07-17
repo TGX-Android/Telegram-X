@@ -1658,8 +1658,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   public void updateMessageInteractionInfo (long messageId, @Nullable TdApi.MessageInteractionInfo interactionInfo) {
     int index = adapter.indexOfMessageContainer(messageId);
     if (index != -1 && adapter.getItem(index).setMessageInteractionInfo(messageId, interactionInfo)) {
-      //invalidateViewAt(index);
-      getAdapter().notifyItemChanged(index);
+      invalidateViewAt(index);
     }
   }
 

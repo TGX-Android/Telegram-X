@@ -31,17 +31,8 @@ import org.thunderdog.challegram.unsorted.Settings;
 import me.vkryl.core.MathUtils;
 
 public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
-  // public static final float SWIPE_MINIMUM_HEIGHT = 55f;
-  public static final float SWIPE_THRESHOLD_WIDTH = 124f;
-  public static final float SWIPE_VERTICAL_HEIGHT = 80f;
-
   private CustomTouchHelper helper;
   private MessagesController controller;
-
-  private float currentDx = 0f;
-  private float currentDy = 0f;
-  private float lastDx = 0f;
-  private float lastDy = 0f;
 
   public void setTouchHelper (CustomTouchHelper helper) {
     this.helper = helper;
@@ -83,11 +74,8 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
       flags |= ItemTouchHelper.RIGHT;
     }
 
-    if (m.getQuickDefaultPosition(false) > 0 || m.getQuickDefaultPosition(true) > 0) {
-      flags |= ItemTouchHelper.UP;
-    }
-
     if (m.getLeftQuickReactions().size() > 1 || m.getRightQuickReactions().size() > 1) {
+      flags |= ItemTouchHelper.UP;
       flags |= ItemTouchHelper.DOWN;
     }
 
@@ -107,30 +95,12 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
   @Override
   public boolean onBeforeSwipe (RecyclerView.ViewHolder holder, int direction) {
     final TGMessage msg = MessagesHolder.findMessageView(holder.itemView).getMessage();
-    lastDx = currentDx;
-    lastDy = currentDy;
-
     if (direction == CustomTouchHelper.DOWN || direction == CustomTouchHelper.UP) {
       return true;
     }
 
-    boolean isLeft = lastDx > 0;
-    final int minPosition = -msg.getQuickDefaultPosition(isLeft);
-    final int maxPosition = minPosition + Math.max(msg.getQuickActionsCount(isLeft) - 1, 0);
-    float verticalTranslate = MathUtils.clamp(lastDy / Screen.dp(SWIPE_VERTICAL_HEIGHT), minPosition, maxPosition);
-    int actionIndex = Math.round(verticalTranslate) + msg.getQuickDefaultPosition(lastDx > 0);
-
     if (msg.useBubbles()) {
-      final TGMessage.SwipeQuickAction action;
-
-      if (direction == CustomTouchHelper.LEFT && msg.getRightQuickReactions().size() > actionIndex) {
-        action = msg.getRightQuickReactions().get(actionIndex);
-      } else if (direction == CustomTouchHelper.RIGHT && msg.getLeftQuickReactions().size() > actionIndex) {
-        action = msg.getLeftQuickReactions().get(actionIndex);
-      } else {
-        action = null;
-      }
-
+      final TGMessage.SwipeQuickAction action = msg.getSwipeHelper().getChosenQuickAction();
       Runnable after = () -> {
         if (action != null) {
           action.onSwipe();
@@ -140,6 +110,8 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
       msg.normalizeTranslation(holder.itemView, after, action == null || action.needDelay);
       return true;
     }
+
+    msg.getSwipeHelper().onBeforeSwipe();
     return false;
   }
 
@@ -149,7 +121,7 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
     if (controller.getManager().useBubbles()) {
       return (float) Screen.dp(TGMessage.BUBBLE_MOVE_THRESHOLD) / itemWidth;
     } else {
-      return (float) Screen.dp(SWIPE_THRESHOLD_WIDTH) / itemWidth * (Settings.instance().needChatQuickShare() ? 1 : 3);
+      return (float) Screen.dp(MessageQuickActionSwipeHelper.SWIPE_THRESHOLD_WIDTH) / itemWidth;  /*(Settings.instance().needChatQuickShare() ? 1 : 3);*/
     }
   }
 
@@ -163,24 +135,15 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
     helper.ignoreSwipe(holder, swipeDir);
 
     TGMessage msg = MessagesHolder.findMessageView(holder.itemView).getMessage();
-    boolean isLeft = lastDx > 0;
-    final int minPosition = -msg.getQuickDefaultPosition(isLeft);
-    final int maxPosition = minPosition + Math.max(msg.getQuickActionsCount(isLeft) - 1, 0);
-    float verticalTranslate = MathUtils.clamp(lastDy / Screen.dp(SWIPE_VERTICAL_HEIGHT), minPosition, maxPosition);
-    int actionIndex = Math.round(verticalTranslate) + msg.getQuickDefaultPosition(lastDx > 0);
-
     if (msg.getTranslation() != 0f) {
+      TGMessage.SwipeQuickAction action = msg.getSwipeHelper().getChosenQuickAction();
       msg.completeTranslation();
       if (holder.itemView instanceof MessageViewGroup) {
         ((MessageViewGroup) holder.itemView).setSwipeTranslation(0f);
       }
 
-      if (swipeDir == CustomTouchHelper.LEFT && msg.getRightQuickReactions().size() > actionIndex) {
-        msg.getRightQuickReactions().get(actionIndex).onSwipe();
-      }
-
-      if (swipeDir == CustomTouchHelper.RIGHT && msg.getLeftQuickReactions().size() > actionIndex) {
-        msg.getLeftQuickReactions().get(actionIndex).onSwipe();
+      if (action != null) {
+        action.onSwipe();
       }
     }
   }
@@ -188,18 +151,10 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
   @Override
   public void onChildDraw (Canvas c, RecyclerView recyclerView, RecyclerView.ViewHolder holder, float dx, float dy, int state, boolean isActive) {
     if (state == ItemTouchHelper.ACTION_STATE_SWIPE && MessagesHolder.isMessageType(holder.getItemViewType())) {
-      currentDx = dx;
-      currentDy = dy;
-
       final MessageView v = MessagesHolder.findMessageView(holder.itemView);
       final TGMessage msg = v.getMessage();
 
-      boolean isLeft = dx > 0;
-      final int minPosition = -msg.getQuickDefaultPosition(isLeft);
-      final int maxPosition = minPosition + Math.max(msg.getQuickActionsCount(isLeft) - 1, 0);
-      float newVerticalPosition = (isActive ? dy : lastDy) / Screen.dp(SWIPE_VERTICAL_HEIGHT);
-      float verticalPosition = MathUtils.clamp(newVerticalPosition, minPosition, maxPosition);
-      msg.translate(dx, verticalPosition, true);
+      msg.getSwipeHelper().translate(dx, dy, true);
       if (holder.itemView instanceof MessageViewGroup) {
         ((MessageViewGroup) holder.itemView).setSwipeTranslation(msg.getTranslation());
       }

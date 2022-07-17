@@ -56,6 +56,7 @@ import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.component.chat.MessageQuickActionSwipeHelper;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessageViewGroup;
 import org.thunderdog.challegram.component.chat.MessagesManager;
@@ -193,6 +194,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   protected ReplyComponent replyData;
   protected TGInlineKeyboard inlineKeyboard;
   protected TGReactions messageReactions;
+  protected MessageQuickActionSwipeHelper swipeHelper;
 
   // header values
 
@@ -263,6 +265,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     this.bubbleClipPath = new Path();
     this.bubbleClipPathRect = new RectF();
 
+    this.swipeHelper = new MessageQuickActionSwipeHelper(this);
     this.currentViews = new MultipleViewProvider();
     this.currentViews.setContentProvider(this);
     this.msg = msg;
@@ -1491,7 +1494,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public final void drawBackground (MessageView view, Canvas c) {
-    if (moveFactor != 0f) {
+    final float moveFactor = swipeHelper.getMoveFactor();
+
+    if (moveFactor != 0f && !useBubbles()) {
       c.drawRect(0, findTopEdge(), view.getMeasuredWidth(), findBottomEdge(), Paints.fillingPaint(getSelectionColor(moveFactor)));
     }
     if (selectionFactor != 0f) {
@@ -2458,10 +2463,18 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     manager.controller().highlightMessage(new MessageId(msg.chatId, otherMessageId), toMessageId());
   }
 
+  private float mInitialTouchX;
+  private float mInitialTouchY;
+
   public boolean onTouchEvent (MessageView view, MotionEvent e) {
     /*if ((flags & FLAG_HEADER_ENABLED) == 0 && (msg.forwardInfo == null || forwardInfo == null) && replyData == null && (inlineKeyboard == null || inlineKeyboard.isEmpty())) {
       return false;
     }*/
+    if (e.getAction() == MotionEvent.ACTION_DOWN) {
+      mInitialTouchX = e.getX();
+      mInitialTouchY = e.getY();
+    }
+
     if (hasHeader() && needName(true)) {
       if (hAuthorNameT != null && hAuthorNameT.onTouchEvent(view, e))
         return true;
@@ -5224,7 +5237,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   // Selection
 
   private float highlightFactor = 0f;
-  private float moveFactor, selectionFactor;
+  private float selectionFactor;
   private SelectionInfo selection;
 
   public int getSelectionColor (float factor) {
@@ -5785,7 +5798,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private static final int ANIMATOR_QUICK_VERTICAL_LEFT = -6;
   private static final int ANIMATOR_QUICK_VERTICAL_RIGHT = -7;
 
-  private void vibrate () {
+  public void vibrate () {
     UI.hapticVibrate(findCurrentView(), true);
   }
 
@@ -5803,7 +5816,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         if (verticalFactor == factor) {
           return;
         }
-        verticalAnimator = new FactorAnimator(isLeft ? ANIMATOR_QUICK_VERTICAL_LEFT : ANIMATOR_QUICK_VERTICAL_RIGHT, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 110l, verticalFactor);
+        verticalAnimator = new FactorAnimator(isLeft ? ANIMATOR_QUICK_VERTICAL_LEFT : ANIMATOR_QUICK_VERTICAL_RIGHT, this, AnimatorUtils.DECELERATE_INTERPOLATOR, useBubbles() ? 110L: 220L, verticalFactor);
         if (isLeft) {
           leftActionVerticalAnimator = verticalAnimator;
         } else {
@@ -5814,7 +5827,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         return;
       }
       verticalAnimator.animateTo(factor);
-      vibrate();
+      // vibrate();
     } else {
       if (verticalAnimator != null) {
         verticalAnimator.forceFactor(factor);
@@ -5879,12 +5892,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
     if (translation == dx && translationOption == verticalPosition) {
       return;
-    }
-
-    if (dx == 0f || useBubbles) {
-      moveFactor = 0f;
-    } else {
-      moveFactor = Math.min(1f, Math.abs(dx) / (float) xQuickWidth);
     }
 
     translation = dx;
@@ -5997,7 +6004,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       drawTranslateReact(c,
         x, startY + positionOffset + height * a,
         view.getMeasuredWidth(), height, positionFactor,
-        quickColor, icon, action.text, (int) textWidth);
+        quickColor, icon, action.text, (int) textWidth,
+        height > Screen.dp(256) ? (int) (mInitialTouchY - getHeaderPadding() + xHeaderPadding) : (height / 2)
+      );
     }
     c.restore();
   }
@@ -6035,7 +6044,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
   }
 
-  private void drawTranslateReact (Canvas c, float x, float y, int width, int height, float positionFactor, int quickColor, Drawable icon, String text, int textWidth) {
+  private void drawTranslateReact (Canvas c, float x, float y, int width, int height, float positionFactor, int quickColor, Drawable icon, String text, int textWidth, int textY) {
     final Paint iconPaint = Paints.getInlineBubbleIconPaint(
       ColorUtils.alphaColor((float) mQuickText.getAlpha() / 255f,
       Theme.getColor(R.id.theme_color_messageSwipeContent)));
@@ -6069,12 +6078,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
     if (icon != null) {
       icon.setAlpha(255);
-      Drawables.draw(c, icon, iconX, cy - (int) ((float) iconHeight * .5f) + Screen.dp((x > 0) ? 0f : 0.5f), iconPaint);
+      Drawables.draw(c, icon, iconX, y + textY - (int) ((float) iconHeight * .5f) + Screen.dp((x > 0) ? 0f : 0.5f), iconPaint);
     }
     if (rtl) {
       c.restore();
     }
-    c.drawText(text, textX, cy + xQuickTextOffset, mQuickText);
+    c.drawText(text, textX, y + textY + xQuickTextOffset, mQuickText);
     if (check > height) {
       c.restore();
     }
@@ -6122,7 +6131,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   public void completeTranslation () {
     float startDismiss = Math.signum(translation);
     translation = 0f;
-    moveFactor = 0f;
+    swipeHelper.reset();
 
     animateDismiss(startDismiss, 0f);
   }
@@ -6674,7 +6683,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   protected static int xViewsPaddingRight, xViewsOffset, xViewsPaddingLeft;
 
-  protected static int xQuickWidth, xQuickPadding, xQuickTextPadding, xQuickTextOffset, xQuickShareWidth, xQuickReplyWidth;
+  protected static int xQuickPadding, xQuickTextPadding, xQuickTextOffset, xQuickShareWidth, xQuickReplyWidth;
 
   // protected static int xCaptionTouchOffset, xCaptionAddition;
 
@@ -6748,7 +6757,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     xBadgeHeight = Screen.dp(26f);
     xBadgePadding = Screen.dp(4f);
 
-    xQuickWidth = Screen.dp(MessagesTouchHelperCallback.SWIPE_THRESHOLD_WIDTH);
     xQuickPadding = Screen.dp(19f);
     xQuickTextPadding = Screen.dp(22f);
     xQuickTextOffset = Screen.dp(5.5f);
@@ -7719,11 +7727,15 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public ArrayList<SwipeQuickAction> getLeftQuickReactions () {
-    return /*Lang.rtl() ? rightActions :*/ leftActions;
+    return leftActions;
   }
 
   public ArrayList<SwipeQuickAction> getRightQuickReactions () {
-    return /*Lang.rtl() ? leftActions :*/ rightActions;
+    return rightActions;
+  }
+
+  @Nullable public SwipeQuickAction getQuickAction (boolean isLeft, int index) {
+    return (isLeft ? leftActions : rightActions).get(index);
   }
 
   public int getQuickDefaultPosition (boolean isLeft) {
@@ -7734,7 +7746,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return isLeft ? getLeftQuickReactions().size() : getRightQuickReactions().size();
   }
 
-
+  public MessageQuickActionSwipeHelper getSwipeHelper () {
+    return swipeHelper;
+  }
 
   // Reaction positions
 

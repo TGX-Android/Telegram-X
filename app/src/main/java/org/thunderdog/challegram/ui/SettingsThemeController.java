@@ -175,16 +175,18 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
           }
           case R.id.btn_quick_reaction: {
             final String[] reactions = Settings.instance().getQuickReactions();
+            String name = "";
             if (reactions.length > 0) {
               final TGStickerObj[] stickers = new TGStickerObj[reactions.length];
               for (int a = 0; a < stickers.length; a++) {
                 final TGReaction tgReaction = tdlib.getReaction(reactions[a]);
                 if (tgReaction != null) {
                   stickers[a] = tgReaction.staticIconSicker();
+                  name = tgReaction.getReaction().title;
                 }
               }
               v.setDrawModifier(new ReactionModifier(v, stickers));
-              v.setData(Lang.plural(R.string.xQuickReactionCount, stickers.length));
+              v.setData(reactions.length > 1 ? Lang.plural(R.string.xQuickReactionCount, stickers.length): name);
             } else {
               v.setDrawModifier(null);
               v.setData(R.string.QuickReactionDisabled);
