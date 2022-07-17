@@ -789,7 +789,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
   }
 
   private boolean canResetPassword () {
-    return state != null && state.pendingResetDate > 0 && tdlib.currentTime(TimeUnit.SECONDS) > state.pendingResetDate;
+    return state != null && state.pendingResetDate > 0 && tdlib.currentTime(TimeUnit.SECONDS) >= state.pendingResetDate;
   }
 
   private static final int UPDATE_TEXT_VIEWS_TIMER = 0;
