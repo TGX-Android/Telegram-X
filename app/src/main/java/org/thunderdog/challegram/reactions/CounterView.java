@@ -22,7 +22,7 @@ public class CounterView extends SparseDrawableView{
 
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec){
-		setMeasuredDimension(Math.round(counter.getWidth()), MeasureSpec.getSize(heightMeasureSpec));
+		setMeasuredDimension(Math.round(counter.getRealWidthWithoutAnimationBullshit()), MeasureSpec.getSize(heightMeasureSpec));
 	}
 
 	@Override

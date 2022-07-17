@@ -159,6 +159,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
   private final @DrawableRes int drawableRes;
   private final float drawableWidthDp, drawableMarginDp;
   private final int drawableGravity;
+  private String currentText;
 
   @ThemeColorId
   private final int textColorId, mutedTextColorId, failedTextColorId, outlineColorId;
@@ -234,11 +235,12 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     isFailed.setValue(count == Tdlib.CHAT_FAILED, animateChanges);
     boolean hasCounter = count > 0 || count == Tdlib.CHAT_MARKED_AS_UNREAD || count == Tdlib.CHAT_FAILED;
     if (count == Tdlib.CHAT_FAILED && drawableRes == 0) {
-      counter.setCounter(count, "!", animateChanges);
+      counter.setCounter(count, currentText="!", animateChanges);
     } else if (count > 0) {
-      counter.setCounter(count, Strings.buildCounter(count), animateChanges);
+      counter.setCounter(count, currentText=Strings.buildCounter(count), animateChanges);
     } else {
       counter.hideCounter(animateChanges);
+      currentText="";
     }
     isVisible.setValue(hasCounter, animated);
   }
@@ -250,6 +252,10 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
 
   public float getWidth () {
     return DrawAlgorithms.getCounterWidth(textSize, BitwiseUtils.getFlag(flags, FLAG_NEED_BACKGROUND), counter, drawableRes != 0 ? Screen.dp(drawableWidthDp) + Screen.dp(drawableMarginDp) : 0);
+  }
+
+  public int getRealWidthWithoutAnimationBullshit(){
+    return Math.round(Paints.getRegularTextPaint(textSize).measureText(currentText));
   }
 
   public float getScaledWidth (int addWidth) {
