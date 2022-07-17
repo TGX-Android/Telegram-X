@@ -3,7 +3,7 @@
 	android:layout_width="match_parent"
 	android:layout_height="wrap_content">
 	
-	<org.thunderdog.challegram.widget.ImageReceiverView
+	<org.thunderdog.challegram.reactions.StickerReceiverView
 		android:id="@+id/reaction"
 		android:layout_width="25dp"
 		android:layout_height="25dp"

@@ -82,8 +82,8 @@ public class ReactionsTabBar extends HorizontalScrollView implements ViewPager.O
 				LinearLayout tab=new LinearLayout(context);
 				tab.setOrientation(LinearLayout.HORIZONTAL);
 				tab.setGravity(Gravity.CENTER_VERTICAL);
-				ImageReceiverView icon=new ImageReceiverView(context);
-				icon.getReceiver().requestFile(TD.toImageFile(tdlib, tdlib.getReaction(r.reaction).staticIcon.thumbnail));
+				StickerReceiverView icon=new StickerReceiverView(context);
+        icon.loadSticker(tdlib, tdlib.getReaction(r.reaction).staticIcon, true);
 				tab.addView(icon, new LinearLayout.LayoutParams(Screen.dp(14), Screen.dp(14)));
 				CounterView counter=new CounterView(context, new Counter.Builder().noBackground().allBold(true).textColor(R.id.theme_color_text), 0);
 				counter.counter.setCount(r.totalCount, false);

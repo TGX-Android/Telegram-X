@@ -35,7 +35,7 @@ import androidx.annotation.NonNull;
 
 public class MessageCellReactionButton extends FrameLayout implements ThemeInvalidateListener{
 
-	private ImageReceiverView icon;
+	private StickerReceiverView icon;
 	private CounterView counter;
 	private boolean selected;
 	private Animator currentSelectionAnim;
@@ -70,7 +70,7 @@ public class MessageCellReactionButton extends FrameLayout implements ThemeInval
 
 		setPadding(Screen.dp(7), 0, 0, 0);
 
-		icon=new ImageReceiverView(context);
+		icon=new StickerReceiverView(context);
 		addView(icon, LayoutHelper.createFrame(14, 14, Gravity.LEFT | Gravity.CENTER_VERTICAL));
 
 		counter=new CounterView(context, new Counter.Builder().allBold(false).noBackground().textSize(10.5f).colorSet(()->currentTextColor), 0);
@@ -93,7 +93,7 @@ public class MessageCellReactionButton extends FrameLayout implements ThemeInval
 		super.onDetachedFromWindow();
 	}
 
-	public ImageReceiverView getIcon(){
+	public StickerReceiverView getIcon(){
 		return icon;
 	}
 
@@ -156,7 +156,7 @@ public class MessageCellReactionButton extends FrameLayout implements ThemeInval
 		TdApi.Reaction aReaction=tdlib.getReaction(reaction.reaction);
 		if(aReaction!=null){
 			icon.setVisibility(View.VISIBLE);
-			icon.getReceiver().requestFile(TD.toImageFile(tdlib, aReaction.staticIcon.thumbnail));
+      icon.loadSticker(tdlib, aReaction.staticIcon, true);
 		}else{
 			icon.setVisibility(INVISIBLE);
 		}

@@ -17,6 +17,7 @@ import org.thunderdog.challegram.reactions.LottieAnimation;
 import org.thunderdog.challegram.reactions.LottieAnimationThreadPool;
 import org.thunderdog.challegram.reactions.ReactionAnimationOverlay;
 import org.thunderdog.challegram.reactions.SimplestCheckboxView;
+import org.thunderdog.challegram.reactions.StickerReceiverView;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
@@ -117,7 +118,7 @@ public abstract class ReactionListBaseController<T> extends RecyclerViewControll
 	}
 
 	protected class ReactionCellViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnAttachStateChangeListener{
-		private ImageReceiverView icon;
+		private StickerReceiverView icon;
 		private TextView text;
 		private SimplestCheckboxView check;
 		private View animation;
@@ -142,8 +143,7 @@ public abstract class ReactionListBaseController<T> extends RecyclerViewControll
 
 		public void bind(TdApi.Reaction reaction){
 			this.reaction=reaction;
-			TGStickerObj sticker=new TGStickerObj(tdlib, reaction.staticIcon, null, reaction.staticIcon.type);
-			icon.getReceiver().requestFile(sticker.getFullImage());
+      icon.loadSticker(tdlib, reaction.staticIcon, false);
 			text.setText(reaction.title);
 			endAnimation();
 			updateState(false);
