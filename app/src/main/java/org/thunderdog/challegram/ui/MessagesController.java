@@ -4228,12 +4228,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
 
   public void showMessageOptions (Options options, TGMessage message) {
-    MessageOptionsPagerController r = new MessageOptionsPagerController(context, tdlib, options, message, "");
-    r.show();
+    showMessageOptions(options, message, "");
   }
 
   public void showMessageAddedReactions (TGMessage message, String reaction) {
-    MessageOptionsPagerController r = new MessageOptionsPagerController(context, tdlib, null, message, reaction);
+    showMessageOptions(null, message, reaction);
+  }
+
+  public void showMessageOptions (Options options, TGMessage message, String reaction) {
+    if (context().isKeyboardVisible()) {
+      hideAllKeyboards();
+      tdlib().ui().postDelayed(() -> showMessageOptions(options, message, reaction), 100);
+      return;
+    }
+
+    MessageOptionsPagerController r = new MessageOptionsPagerController(context, tdlib, options, message, reaction);
     r.show();
   }
 
