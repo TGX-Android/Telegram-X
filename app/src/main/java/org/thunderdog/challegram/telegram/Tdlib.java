@@ -85,6 +85,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.FileUtils;
@@ -7475,7 +7476,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         supportedReactionsByEmoji.put(r.reaction, r);
       }
       preloadReactionAnimations(r);
-      send(new TdApi.DownloadFile(r.staticIcon.thumbnail.file.id, 1, 0, 0, false), okHandler);
+      send(new TdApi.DownloadFile(r.staticIcon.thumbnail.file.id, 1, 0, 0, false), res->{
+        if(BuildConfig.DEBUG){
+          android.util.Log.i("tdlib", "Preload reaction thumbnail result: "+res);
+        }
+      });
     }
   }
 
@@ -7493,11 +7498,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public List<TdApi.Reaction> getSupportedReactions(){
     synchronized(dataLock){
-      return new ArrayList<>(Arrays.asList(supportedReactions));
+      return Arrays.stream(supportedReactions).filter(r->r.isActive).collect(Collectors.toList());
     }
   }
 
   private void preloadReactionAnimations(TdApi.Reaction reaction){
+    if(BuildConfig.DEBUG){
+      android.util.Log.i("tdlib", "Preloading animations for reaction '"+reaction+"'");
+    }
     loadLottieAnimation(reaction.appearAnimation, true, Screen.dp(24), Screen.dp(24));
     if(reaction.aroundAnimation!=null)
       loadLottieAnimation(reaction.aroundAnimation, false, 0, 0);
@@ -7512,13 +7520,20 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private void loadLottieAnimation(TdApi.Sticker sticker, boolean createCache, int cacheWidth, int cacheHeight){
     if(createCache){
       send(new TdApi.DownloadFile(sticker.sticker.id, 1, 0, 0, true), res->{
+        if(BuildConfig.DEBUG){
+          android.util.Log.i("tdlib", "Preload reaction animation result: "+res);
+        }
         if(res instanceof TdApi.File){
           TdApi.File file=(TdApi.File) res;
           LottieAnimationThreadPool.createCacheForPreloadedAnimation(new File(file.local.path), cacheWidth, cacheHeight);
         }
       });
     }else{
-      send(new TdApi.DownloadFile(sticker.sticker.id, 1, 0, 0, false), okHandler);
+      send(new TdApi.DownloadFile(sticker.sticker.id, 1, 0, 0, false), res->{
+        if(BuildConfig.DEBUG){
+          android.util.Log.i("tdlib", "Preload reaction animation result: "+res);
+        }
+      });
     }
   }
 

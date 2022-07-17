@@ -255,7 +255,11 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
   }
 
   public int getRealWidthWithoutAnimationBullshit(){
-    return Math.round(Paints.getRegularTextPaint(textSize).measureText(currentText));
+    int width=Math.round(Paints.getRegularTextPaint(textSize).measureText(currentText));
+    if(drawableRes!=0){
+      width+=Screen.dp(drawableWidthDp)+Screen.dp(drawableMarginDp);
+    }
+    return width;
   }
 
   public float getScaledWidth (int addWidth) {
