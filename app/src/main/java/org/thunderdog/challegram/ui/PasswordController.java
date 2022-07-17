@@ -23,6 +23,8 @@ import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.os.Handler;
+import android.os.Message;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -61,7 +63,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
 
-public class PasswordController extends ViewController<PasswordController.Args> implements View.OnClickListener, FactorAnimator.Target, MaterialEditTextGroup.EmptyListener, MaterialEditTextGroup.DoneListener, MaterialEditTextGroup.TextChangeListener, AuthorizationListener {
+public class PasswordController extends ViewController<PasswordController.Args> implements View.OnClickListener, FactorAnimator.Target, MaterialEditTextGroup.EmptyListener, MaterialEditTextGroup.DoneListener, MaterialEditTextGroup.TextChangeListener, AuthorizationListener, Handler.Callback {
   public static final int MODE_EDIT = 0;
   public static final int MODE_NEW = 1;
   public static final int MODE_UNLOCK_EDIT = 2;
@@ -74,6 +76,8 @@ public class PasswordController extends ViewController<PasswordController.Args> 
   public static final int MODE_CODE_PHONE_CONFIRM = 9;
   public static final int MODE_TRANSFER_OWNERSHIP_CONFIRM = 10;
   public static final int MODE_CONFIRM = 11;
+
+  private final Handler handler = new Handler(this);
 
   public static class Args {
     public final int mode;
@@ -788,11 +792,26 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     return state != null && state.pendingResetDate > 0 && tdlib.currentTime(TimeUnit.SECONDS) > state.pendingResetDate;
   }
 
+  private static final int UPDATE_TEXT_VIEWS_TIMER = 0;
+
+  @Override
+  public boolean handleMessage (Message msg) {
+    switch (msg.what) {
+      case UPDATE_TEXT_VIEWS_TIMER: {
+        updatePasswordResetTextViews();
+        break;
+      }
+    }
+    return true;
+  }
+
   private void updatePasswordResetTextViews () {
     if (pendingPasswordReset()) {
       forgotView.setText(Lang.getString(R.string.CancelReset));
       resetWaitView.setText(Lang.getString(R.string.RestorePasswordResetIn, Lang.getDuration(getTimeDiff(state.pendingResetDate))));
       cancelResetView.setText("");
+
+      handler.sendMessageDelayed(Message.obtain(handler, UPDATE_TEXT_VIEWS_TIMER), 1000);
     } else {
       forgotView.setText(Lang.getString(R.string.ForgotPassword));
       resetWaitView.setText("");
