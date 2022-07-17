@@ -3156,7 +3156,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if(needDrawReactionsWithTime()){
       c.save();
       c.translate(startX, counterY);
-      compactReactionsX=startX;
+      compactReactionsX=startX+Screen.dp(2);
       compactReactionsY=counterY;
       compactReactions.draw(c, view.getReactionSmallIconsReceiver());
       c.restore();

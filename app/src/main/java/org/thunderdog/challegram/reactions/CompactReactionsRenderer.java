@@ -68,13 +68,14 @@ public class CompactReactionsRenderer implements Counter.Callback{
 
 	// Canvas must be translated as needed
 	public void draw(Canvas c, ComplexReceiver receiver){
-		int iconSize=Screen.dp(16);
+		int iconOffset=Screen.dp(16);
+    int iconSize=Screen.dp(12);
 		for(int i=0;i<iconizedReactions.size();i++){
 			ImageReceiver icon=receiver.getImageReceiver(i);
-			icon.setBounds(iconSize*i, -iconSize/2, iconSize*(i+1), iconSize/2);
+			icon.setBounds(iconOffset*i+iconOffset/2-iconSize/2, -iconSize/2, iconOffset*i+iconOffset/2+iconSize/2, iconSize/2);
 			icon.draw(c);
 		}
-		counter.draw(c, iconSize*iconizedReactions.size()+Screen.dp(3), 0, Gravity.LEFT, 1f);
+		counter.draw(c, iconOffset*iconizedReactions.size()+Screen.dp(3), 0, Gravity.LEFT, 1f);
 	}
 
 	public Counter getCounter(){
