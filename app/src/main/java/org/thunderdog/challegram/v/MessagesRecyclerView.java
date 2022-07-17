@@ -98,7 +98,7 @@ public class MessagesRecyclerView extends RecyclerView implements FactorAnimator
     setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? OVER_SCROLL_IF_CONTENT_SCROLLS : OVER_SCROLL_NEVER);
     itemAnimator = new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, ITEM_ANIMATOR_DURATION);
     itemAnimator.setSupportsChangeAnimations(false);
-    setItemAnimator(itemAnimator);
+    setItemAnimator(null);
     callback = new MessagesTouchHelperCallback();
     touchHelper = new CustomTouchHelper(callback);
     callback.setTouchHelper(touchHelper);
@@ -384,7 +384,7 @@ public class MessagesRecyclerView extends RecyclerView implements FactorAnimator
         if (position < state.getItemCount()) {
           final TGMessage msg = adapter.getMessage(position);
           if (msg != null) {
-            int viewTop = (int) (view.getTop() + view.getTranslationY());
+            int viewTop = view.getTop();
             if (msg.hasDate()) {
               viewTop += msg.getDrawDateY();
             }
@@ -439,21 +439,6 @@ public class MessagesRecyclerView extends RecyclerView implements FactorAnimator
             }
           }
         }
-
-        /*if (view instanceof MessageView) {
-          MessageView messageView = (MessageView) view;
-          TGMessage msg = messageView.getMessage();
-          int viewTop = (int) (view.getTop() + view.getTranslationY());
-          if (msg.hasDate()) {
-            viewTop += msg.getDrawDateY();
-          }
-          int top = viewTop;
-
-          c.save();
-          c.translate(0, viewTop);
-          msg.drawTranslate(view, c);
-          c.restore();
-        }*/
       }
     }
   }

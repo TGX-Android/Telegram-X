@@ -440,7 +440,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
 
   private int getContentOffset () {
     if (needShowOptions) {
-      return getTargetHeight() - HeaderView.getSize(true) - Screen.dp(54 * options.items.length + 5);
+      return (getTargetHeight() - (Screen.dp(54) + HeaderView.getTopOffset()) - (Screen.dp(54 * options.items.length) + Screen.dp(5)));
     } else {
       return Screen.currentHeight() / 2;
     }
