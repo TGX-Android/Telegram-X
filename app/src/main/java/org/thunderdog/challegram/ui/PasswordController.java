@@ -834,7 +834,11 @@ public class PasswordController extends ViewController<PasswordController.Args> 
           break;
         }
         case TdApi.Error.CONSTRUCTOR: {
-          UI.showError(object);
+          if (cancelResetView.getText().length() > 0) {
+            context().tooltipManager().builder(cancelResetView).offset(outRect -> outRect.offset(0, Screen.dp(10f))).show(tdlib, TD.toErrorString(object));
+          } else {
+            context().tooltipManager().builder(forgotView).show(tdlib, TD.toErrorString(object));
+          }
           break;
         }
       }
@@ -875,7 +879,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
           break;
         }
         case TdApi.Error.CONSTRUCTOR: {
-          UI.showError(object);
+          context().tooltipManager().builder(forgotView).show(tdlib, TD.toErrorString(object));
         }
       }
     }));
