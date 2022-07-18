@@ -968,7 +968,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
         avatarLetters = userLetters(user);
         avatarColorId = userAvatarColorId(user);
       }
-      extraDrawableRes = tdlib.isSelfUserId(user.id) ? R.drawable.ic_add_a_photo_black_56 :
+      extraDrawableRes = tdlib.isSelfUserId(user.id) ? R.drawable.baseline_add_a_photo_56 :
         tdlib.isRepliesChat(ChatId.fromUserId(user.id)) ? R.drawable.baseline_reply_56 :
         TD.isBot(user) ? R.drawable.deproko_baseline_bots_56 :
           R.drawable.baseline_person_56;

@@ -1508,6 +1508,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   }
 
   public synchronized void checkDeviceToken () {
+    if (BuildConfig.EXPERIMENTAL) {
+      setTokenState(TOKEN_STATE_ERROR, "Experimental build " + BuildConfig.APPLICATION_ID);
+      return;
+    }
     setTokenState(TOKEN_STATE_INITIALIZING, null);
     OnFailureListener onFailureListener = e -> {
       Log.e(Log.TAG_FCM, "Failed to retrieve firebase token", e);

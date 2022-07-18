@@ -563,11 +563,11 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
         final ArrayList<MediaStickersAdapter.StickerItem> items = new ArrayList<>();
         final int unreadItemCount;
 
-        if (object.getConstructor() == TdApi.StickerSets.CONSTRUCTOR) {
-          TdApi.StickerSetInfo[] stickerSets = ((TdApi.StickerSets) object).sets;
+        if (object.getConstructor() == TdApi.TrendingStickerSets.CONSTRUCTOR) {
+          TdApi.TrendingStickerSets trendingStickerSets = (TdApi.TrendingStickerSets) object;
           if (offset == 0)
             items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_KEYBOARD_TOP));
-          unreadItemCount = parseTrending(tdlib, parsedStickerSets, items,  cellCount, stickerSets, EmojiMediaListController.this, EmojiMediaListController.this, false);
+          unreadItemCount = parseTrending(tdlib, parsedStickerSets, items,  cellCount, trendingStickerSets.sets, EmojiMediaListController.this, EmojiMediaListController.this, false);
         } else {
           if (offset == 0)
             items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_COME_AGAIN_LATER));
