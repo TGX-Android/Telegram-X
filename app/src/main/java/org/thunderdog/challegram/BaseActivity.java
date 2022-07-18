@@ -310,6 +310,15 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     // override
   }
 
+  public float windowRefreshRate () {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+      Display display = getWindowManager().getDefaultDisplay();
+      Display.Mode displayMode = display.getMode();
+      return displayMode.getRefreshRate();
+    }
+    return 60.0f;
+  }
+
   @Override
   public void onCreate (Bundle savedInstanceState) {
     UI.setContext(this);

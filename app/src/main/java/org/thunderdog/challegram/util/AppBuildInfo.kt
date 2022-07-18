@@ -92,7 +92,7 @@ data class AppBuildInfo(
   fun tdlibCommit (): String? = this.tdlibCommitFull.limit(7)
 
   fun pullRequestsList (): String? = if (this.pullRequests.isNotEmpty()) {
-    this.pullRequests.joinToString { it -> "#{$it.id} ($it.commit)" }
+    this.pullRequests.joinToString { "#${it.id} (${it.commit})" }
   } else {
     null
   }

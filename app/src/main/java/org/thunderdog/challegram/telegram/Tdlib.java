@@ -2572,10 +2572,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       avatarLetters = chatLetters(chat);
       switch (chat.type.getConstructor()) {
         case TdApi.ChatTypeBasicGroup.CONSTRUCTOR:
-          extraDrawableRes = canChangeInfo(chat) ? R.drawable.ic_add_a_photo_black_56 : R.drawable.baseline_group_56;
+          extraDrawableRes = canChangeInfo(chat) ? R.drawable.baseline_add_a_photo_56 : R.drawable.baseline_group_56;
           break;
         case TdApi.ChatTypeSupergroup.CONSTRUCTOR:
-          extraDrawableRes = canChangeInfo(chat) ? R.drawable.ic_add_a_photo_black_56 : isChannelChat(chat) ? R.drawable.baseline_bullhorn_56 : R.drawable.baseline_group_56;
+          extraDrawableRes = canChangeInfo(chat) ? R.drawable.baseline_add_a_photo_56 : isChannelChat(chat) ? R.drawable.baseline_bullhorn_56 : R.drawable.baseline_group_56;
           break;
       }
     }

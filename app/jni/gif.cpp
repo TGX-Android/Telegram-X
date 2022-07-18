@@ -53,6 +53,8 @@ typedef struct LottieInfo {
   FILE *cacheFile = nullptr;
   uint8_t *cacheBuffer = nullptr;
   size_t cacheBufferSize = 0;
+  uint32_t maxCompressedFrameSize = 0;
+  bool hadCacheFileErrors = false;
 
   volatile bool canceled = false;
 
@@ -312,11 +314,14 @@ JNI_FUNC(void, destroyDecoder, jlong ptr) {
   }
 }
 
-JNI_FUNC(void, destroyLottieDecoder, jlong ptr) {
+JNI_FUNC(jboolean, destroyLottieDecoder, jlong ptr) {
   if (ptr != 0) {
     LottieInfo *info = jni::jlong_to_ptr<LottieInfo *>(ptr);
+    bool needDeleteCacheFile = info->hadCacheFileErrors;
     delete info;
+    return needDeleteCacheFile ? JNI_TRUE : JNI_FALSE;
   }
+  return JNI_FALSE;
 }
 
 JNI_FUNC(jboolean, seekVideoToStart, jlong ptr) {
@@ -601,6 +606,8 @@ JNI_FUNC(void, getLottieSize, jlong ptr, jintArray data) {
   env->ReleaseIntArrayElements(data, dataArr, 0);
 }
 
+#define MAX_COMPRESSED_BUFFER_SIZE (1024 * 1024 * 15 /*15 MiB*/)
+
 JNI_FUNC(jint, createLottieCache, jlong ptr, jstring jCachePath, jobject firstFrame, jobject bitmap, jboolean allowCreate, jboolean limitFps) {
   if (jCachePath == nullptr) {
     return 2;
@@ -639,7 +646,7 @@ JNI_FUNC(jint, createLottieCache, jlong ptr, jstring jCachePath, jobject firstFr
       uint32_t frameCountCheck = 0;
       if (fread(&frameCountCheck, sizeof(frameCountCheck), 1, cacheFile) == 1 && frameCountCheck == frameCount) {
         // logi(TAG_GIF_LOADER, "frameCount ok: %d", frameCountCheck);
-        if (fread(&maxCompressedFrameSize, sizeof(maxCompressedFrameSize), 1, cacheFile) == 1 && maxCompressedFrameSize > 0) {
+        if (fread(&maxCompressedFrameSize, sizeof(maxCompressedFrameSize), 1, cacheFile) == 1 && maxCompressedFrameSize > 0 && maxCompressedFrameSize <= MAX_COMPRESSED_BUFFER_SIZE) {
           // logi(TAG_GIF_LOADER, "maxCompressedFrameSize ok: %d", maxCompressedFrameSize);
           uint32_t readFrameCount = 0;
           do {
@@ -739,6 +746,8 @@ JNI_FUNC(jint, createLottieCache, jlong ptr, jstring jCachePath, jobject firstFr
       return 3;
     }
 
+    info->maxCompressedFrameSize = maxCompressedFrameSize;
+
     fseek(cacheFile, sizeof(magic) + sizeof(frameCount), SEEK_SET);
     fwrite(&maxCompressedFrameSize, sizeof(maxCompressedFrameSize), 1, cacheFile);
     // logi(TAG_GIF_LOADER, "wrote maxCompressedFrameSize:%d", maxCompressedFrameSize);
@@ -759,6 +768,7 @@ JNI_FUNC(jint, createLottieCache, jlong ptr, jstring jCachePath, jobject firstFr
 
     AndroidBitmap_unlockPixels(env, bitmap);
   } else if (cacheExists) {
+    info->maxCompressedFrameSize = maxCompressedFrameSize;
     info->getBuffer(maxCompressedFrameSize);
     info->cacheFile = cacheFile;
 
@@ -807,23 +817,41 @@ JNI_FUNC(jboolean, getLottieFrame, jlong ptr, jobject bitmap, jlong jFrameNo) {
     }
     if (info->nextFrameNo == frameNo && !fileError) {
       uint32_t compressedSize;
-      if (fread(&compressedSize, sizeof(compressedSize), 1, info->cacheFile) == 1 &&
-          (compressedSize == 0 || fread(info->getBuffer(compressedSize), sizeof(uint8_t), compressedSize, info->cacheFile) == compressedSize)) {
-        info->nextFrameNo++;
-        if (compressedSize > 0) {
-          LZ4_decompress_safe((const char *) info->cacheBuffer, (char *) pixels, (int) compressedSize, bitmapInfo.height * bitmapInfo.stride);
-          success = true;
+      if (fread(&compressedSize, sizeof(compressedSize), 1, info->cacheFile) == 1) {
+        // limit compressed frame size to be <= than maxCompressedFrameSize. when it's unset, limit to MAX_COMPRESSED_BUFFER_SIZE
+        if (compressedSize <= info->maxCompressedFrameSize || (info->maxCompressedFrameSize == 0 && compressedSize <= MAX_COMPRESSED_BUFFER_SIZE)) {
+          if (compressedSize == 0) {
+            info->nextFrameNo++;
+          } else {
+            uint8_t *buffer = info->getBuffer(compressedSize);
+            if (buffer != nullptr &&
+                fread(buffer, sizeof(uint8_t), compressedSize, info->cacheFile) == compressedSize) {
+              info->nextFrameNo++;
+              LZ4_decompress_safe((const char *) info->cacheBuffer, (char *) pixels,
+                                  (int) compressedSize,
+                                  (int) (bitmapInfo.height * bitmapInfo.stride));
+              success = true;
+            } else {
+              // Failed to allocate buffer or read desired amount of bytes / EOF
+              fileError = true;
+            }
+          }
+        } else {
+          loge(TAG_GIF_LOADER, "sticker cache file size verification failed: %d, max: %d", compressedSize, info->maxCompressedFrameSize);
+          fileError = true;
         }
       } else {
+        loge(TAG_GIF_LOADER, "sticker cache file corrupted");
         fileError = true;
       }
     }
     if (fileError) {
+      info->hadCacheFileErrors = true;
       if (fseek(info->cacheFile, info->headerSize, SEEK_SET) == 0) {
         // loge(TAG_GIF_LOADER, "file error, moving to the first frame, frameNo:%d, nextFrameNo:%d", frameNo, info->nextFrameNo);
         info->nextFrameNo = 0;
       } else {
-        loge(TAG_GIF_LOADER, "file error, switching to direct mode");
+        loge(TAG_GIF_LOADER, "cache file error, switching to direct mode");
         fclose(info->cacheFile);
         info->cacheFile = nullptr;
       }

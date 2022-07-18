@@ -73,7 +73,7 @@ public final class N {
   public static native void cancelLottieDecoder (long ptr);
   public static native int createLottieCache (long ptr, String cachePath, Bitmap firstFrame, Bitmap bitmap, boolean allowCreate, boolean limitFps); // 0 = ok, 1 = need create, 2 = error
   public static native void destroyDecoder (long ptr);
-  public static native void destroyLottieDecoder (long ptr);
+  public static native boolean destroyLottieDecoder (long ptr);
   public static native int getVideoFrame (long ptr, Bitmap bitmap, int[] metadata);
   public static native boolean getLottieFrame (long ptr, Bitmap bitmap, long frameNo);
   public static native boolean isVideoBroken (long ptr);
