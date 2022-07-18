@@ -5,8 +5,6 @@ import android.graphics.Canvas;
 import android.graphics.Path;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.component.user.SortedUsersAdapter;
-import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageReceiver;
@@ -14,7 +12,6 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.SmallChatView;
 
 import me.vkryl.td.Td;
@@ -27,6 +24,7 @@ public class UserReactionView extends SmallChatView{
   public UserReactionView (Context context, Tdlib tdlib){
     super(context, tdlib);
     reactionReceiver=new ImageReceiver(this, 0);
+    setPadding(0, 0, Screen.dp(54), 0);
   }
 
   @Override
@@ -47,11 +45,6 @@ public class UserReactionView extends SmallChatView{
       c.drawRect(Screen.dp(72), getHeight()-sHeight, getWidth(), getHeight(), Paints.fillingPaint(Theme.separatorColor()));
     }
   }
-
-//   @Override
-//   protected int getContentPaddingRight(){
-//     return Screen.dp(54);
-//   }
 
   public void setReaction (String reaction){
     TdApi.Reaction r=tdlib.getReaction(reaction);
