@@ -697,7 +697,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return width; //  + getBubblePaddingLeft() + getBubblePaddingRight();
   }
 
-  protected final boolean useForward () {
+  public final boolean useForward () {
     // && !((flags & FLAG_SELF_CHAT) == 0 && msg.forwardInfo.origin.getConstructor() != TdApi.MessageForwardOriginChannel.CONSTRUCTOR && msg.content != null && msg.content.getConstructor() == TdApi.MessageAudio.CONSTRUCTOR)
     return msg.forwardInfo != null && (!useBubbles() || !separateReplyFromBubble()) && !forceForwardedInfo();
   }
@@ -1057,7 +1057,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       if (inlineKeyboard != null && !inlineKeyboard.isEmpty()) {
         height += inlineKeyboard.getHeight() + TGInlineKeyboard.getButtonSpacing();
       }
-      if(hasReactions() && !needDrawReactionsWithTime() && drawBubbleTimeOverContent()){
+      if(hasReactions() && !needDrawReactionsWithTime() && (drawBubbleTimeOverContent() && !useForward())){
         height+=reactionButtonsHeight;
       }
       return height;
@@ -2951,7 +2951,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       final int bubblePaddingRight = getBubblePaddingRight();
       final int bubblePaddingBottom = getBubblePaddingBottom();
 
-      if(!needDrawReactionsWithTime() && hasReactions() && !drawBubbleTimeOverContent()){
+      if(!needDrawReactionsWithTime() && hasReactions() && (!drawBubbleTimeOverContent() || useForward())){
         bubbleHeight+=reactionButtonsHeight;
         if(canExpandBubbleWidthForReactions())
           bubbleWidth=Math.max(reactionButtonsWidth, bubbleWidth);

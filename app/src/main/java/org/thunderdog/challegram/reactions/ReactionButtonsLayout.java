@@ -127,7 +127,7 @@ public class ReactionButtonsLayout extends ViewGroup{
 		boolean sameMessage=this.message!=null && this.message.getChatId()==message.getChatId() && this.message.getId()==message.getId();
 		this.message=message;
 		if(message.useBubbles()){
-			if(message.drawBubbleTimeOverContent())
+			if(message.drawBubbleTimeOverContent() && !message.useForward())
 				buttonStyle=MessageCellReactionButton.BackgroundStyle.BUBBLE_OUTSIDE;
 			else if(message.isOutgoing())
 				buttonStyle=MessageCellReactionButton.BackgroundStyle.BUBBLE_OUTGOING;

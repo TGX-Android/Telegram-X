@@ -129,13 +129,13 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
   protected void onLayout(boolean changed, int l, int t, int r, int b){
     if(reactionButtons.getVisibility()!=GONE){
       int bottom;
-      if(!manager.useBubbles() || msg.drawBubbleTimeOverContent())
+      if(!manager.useBubbles() || (msg.drawBubbleTimeOverContent() && !msg.useForward()))
         bottom=b-t;
       else
         bottom=msg.getBottomContentEdge();
 
       if(manager.useBubbles()){
-        if(msg.drawBubbleTimeOverContent()){
+        if(msg.drawBubbleTimeOverContent() && !msg.useForward()){
           int width=Math.max(reactionButtons.getMeasuredWidth(), msg.getActualRightContentEdge()-msg.getActualLeftContentEdge());
           if(msg.isOutgoing()){
             reactionButtons.layout(msg.getActualRightContentEdge()-width, bottom-reactionButtons.getMeasuredHeight(), msg.getActualRightContentEdge(), bottom);
@@ -368,7 +368,7 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
         int maxW=msg.getActualRightContentEdge()-msg.getActualLeftContentEdge();
         if(msg.canExpandBubbleWidthForReactions() && maxW<msg.getRealContentMaxWidth())
           reactionButtons.measure(msg.getRealContentMaxWidth() | MeasureSpec.AT_MOST, MeasureSpec.UNSPECIFIED);
-        else if(msg.drawBubbleTimeOverContent())
+        else if(msg.drawBubbleTimeOverContent() && !msg.useForward())
           reactionButtons.measure(msg.getRealContentMaxWidth() | MeasureSpec.AT_MOST, MeasureSpec.UNSPECIFIED);
         else
           reactionButtons.measure(maxW | MeasureSpec.EXACTLY, MeasureSpec.UNSPECIFIED);
@@ -397,7 +397,7 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
       reactionButtons.setVisibility(VISIBLE);
       reactionButtons.setMessage(msg);
       reactionButtons.setBottomRightIndentWidth(manager.useBubbles() ? msg.getBubbleTimePartWidth() : 0);
-      if(manager.useBubbles() && msg.drawBubbleTimeOverContent()){
+      if(manager.useBubbles() && msg.drawBubbleTimeOverContent() && !msg.useForward()){
         reactionButtons.setPadding(0, Screen.dp(6), 0, Screen.dp(10));
       }else{
         reactionButtons.setPadding(Screen.dp(10), 0, Screen.dp(10), Screen.dp(10));
