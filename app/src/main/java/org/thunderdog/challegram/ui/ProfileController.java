@@ -153,7 +153,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   ViewControllerPagerAdapter.ControllerProvider,
   ViewPager.OnPageChangeListener,
   View.OnClickListener,
-  View.OnLongClickListener,
   Client.ResultHandler,
   MessageListener,
   ChatListener,
@@ -163,7 +162,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   TdlibCache.SecretChatDataChangeListener,
   TdlibCache.BasicGroupDataChangeListener,
   TdlibCache.SupergroupDataChangeListener,
-  TdlibCache.ChatMemberStatusChangeListener,
   ComplexHeaderView.Callback,
   InviteLinkController.Callback,
   SenderPickerDelegate,
@@ -258,7 +256,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   TdApi.Supergroup supergroup;
   TdApi.SupergroupFullInfo supergroupFull;
 
-  private SortedUsersAdapter membersAdapter;
   private int inviteLinksCount = -1, inviteLinksRevokedCount = -1;
 
   @Override
@@ -1701,13 +1698,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
 
       @Override
-      protected void setMembersList (ListItem item, int position, RecyclerView recyclerView) {
-        if (recyclerView.getAdapter() != membersAdapter) {
-          recyclerView.setAdapter(membersAdapter);
-        }
-      }
-
-      @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         switch (item.getId()) {
           case R.id.btn_useExplicitDice: {
@@ -2021,9 +2011,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   public void destroy () {
     super.destroy();
     unsubscribeFromUpdates();
-    if (membersAdapter != null) {
-      membersAdapter.destroy();
-    }
     pagerAdapter.performDestroy();
     Views.destroyRecyclerView(baseRecyclerView);
   }
@@ -2252,20 +2239,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         break;
       }
     }
-
-    tdlib.ui().post(() -> {
-      if (!isDestroyed()) {
-        switch (object.getConstructor()) {
-          case TdApi.ChatMembers.CONSTRUCTOR: {
-            TdApi.ChatMembers members = (TdApi.ChatMembers) object;
-            if (membersAdapter != null) {
-              membersAdapter.setMembers(members.members);
-            }
-            break;
-          }
-        }
-      }
-    });
   }
 
   // Base adapter stuff
@@ -2878,10 +2851,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private void buildGroupCells () { // MODE_GROUP, MODE_SUPERGROUP
-    if (this.membersAdapter == null) {
-      this.membersAdapter = new SortedUsersAdapter(this, SortedUsersAdapter.MODE_HORIZONTAL, this, this);
-    }
-
     final boolean isPublic = isPublicGroup();
 
     ArrayList<ListItem> items = new ArrayList<>(20);
@@ -2929,7 +2898,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private void addFullCells (TdApi.BasicGroupFullInfo groupFull) {
     this.groupFull = groupFull;
-    this.membersAdapter.setMembers(groupFull.members);
 
     checkDescription();
 
@@ -4029,16 +3997,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         }
       }
     };
-    if (membersAdapter != null) {
-      TdApi.ChatMember member = membersAdapter.getChatMember(senderId);
-      if (member != null) {
-        result.set(member);
-        act.run();
-        return;
-      }
-    }
-    context().showProgressDelayed(Lang.getString(R.string.LoadingInformation), act::cancel, 1000l);
-    hideSoftwareKeyboard();
     tdlib.client().send(new TdApi.GetChatMember(chat.id, senderId), object -> {
       result.set(object);
       tdlib.ui().post(act);
@@ -4348,94 +4306,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (chat.photo != null && !TD.isFileEmpty(chat.photo.small)) {
       MediaViewController.openFromChat(this, chat, headerCell);
     }
-  }
-
-  private boolean canKickMember (long userId) {
-    switch (mode) {
-      case MODE_GROUP: {
-        if (membersAdapter == null || tdlib.isSelfUserId(userId) || groupFull == null) {
-          return false;
-        }
-        TdApi.ChatMember member = membersAdapter.getChatMember(userId);
-        if (member == null || TD.isCreator(member.status)) {
-          return false;
-        }
-        long meId = tdlib.myUserId();
-        return TD.isCreator(group.status) || groupFull.creatorUserId == meId || member.inviterUserId == meId ||
-          (TD.isAdmin(group.status) && !TD.isAdmin(member.status));
-      }
-      case MODE_CHANNEL:
-      case MODE_SUPERGROUP: {
-        if (membersAdapter == null || tdlib.isSelfUserId(userId)) {
-          return false;
-        }
-        TdApi.ChatMember member = membersAdapter.getChatMember(userId);
-        if (member == null || TD.isCreator(member.status)) {
-          return false;
-        }
-
-        long meId = tdlib.myUserId();
-        return TD.isCreator(supergroup.status) || member.inviterUserId == meId ||
-          (TD.isAdmin(supergroup.status) && !TD.isAdmin(member.status));
-
-      }
-    }
-    return false;
-  }
-
-  @Override
-  public boolean onLongClick (View v) {
-    if (v.getId() == R.id.user) {
-      final TdApi.User user = (TdApi.User) v.getTag();
-      if (user != null && (mode == MODE_GROUP || mode == MODE_SUPERGROUP)) {
-        IntList ids = new IntList(3);
-        StringList strings = new StringList(3);
-        IntList colors = new IntList(3);
-
-        if (canKickMember(user.id)) {
-          ids.append(R.id.btn_deleteMember);
-          strings.append(R.string.KickFromGroup);
-          colors.append(OPTION_COLOR_RED);
-        }
-
-        if (!tdlib.isSelfUserId(user.id)) {
-          ids.append(R.id.btn_groupsInCommon);
-          strings.append(R.string.ViewGroupsInCommon);
-          colors.append(OPTION_COLOR_NORMAL);
-        }
-
-        if (ids.isEmpty()) {
-          ids.append(R.id.btn_openChat);
-          strings.append(R.string.OpenChat);
-          colors.append(OPTION_COLOR_NORMAL);
-        }
-
-        ids.append(R.id.btn_cancel);
-        strings.append(R.string.Cancel);
-        colors.append(OPTION_COLOR_NORMAL);
-
-        showOptions(ids.get(), strings.get(), colors.get(), (itemView, id) -> {
-          switch (id) {
-            case R.id.btn_deleteMember: {
-              tdlib.client().send(new TdApi.SetChatMemberStatus(chat.id, new TdApi.MessageSenderUser(user.id), new TdApi.ChatMemberStatusBanned()), tdlib.okHandler());
-              break;
-            }
-            case R.id.btn_cancel: {
-              break;
-            }
-            case R.id.btn_openChat: {
-              tdlib.ui().openPrivateChat(ProfileController.this, user.id, null);
-              break;
-            }
-          }
-          return true;
-        });
-
-
-        return true;
-      }
-    }
-    return false;
   }
 
   private boolean hasMoreItems () {
@@ -5746,7 +5616,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       case MODE_GROUP:
       case MODE_EDIT_GROUP: {
         tdlib.cache().subscribeToGroupUpdates(group.id, this);
-        tdlib.cache().addChatMemberStatusListener(chat.id, this);
         break;
       }
       case MODE_SUPERGROUP:
@@ -5754,7 +5623,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       case MODE_EDIT_CHANNEL:
       case MODE_EDIT_SUPERGROUP: {
         tdlib.cache().subscribeToSupergroupUpdates(supergroup.id, this);
-        tdlib.cache().addChatMemberStatusListener(chat.id, this);
         break;
       }
     }
@@ -5779,7 +5647,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       case MODE_GROUP:
       case MODE_EDIT_GROUP: {
         tdlib.cache().unsubscribeFromGroupUpdates(group.id, this);
-        tdlib.cache().removeChatMemberStatusListener(chat.id, this);
         break;
       }
       case MODE_CHANNEL:
@@ -5787,7 +5654,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       case MODE_EDIT_CHANNEL:
       case MODE_EDIT_SUPERGROUP: {
         tdlib.cache().unsubscribeFromSupergroupUpdates(supergroup.id, this);
-        tdlib.cache().removeChatMemberStatusListener(chat.id, this);
         break;
       }
     }
@@ -5981,9 +5847,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     tdlib.uiExecute(() -> {
       if (!isDestroyed()) {
         if (isUpdate) {
-          if (membersAdapter != null) {
-            membersAdapter.resetWithMembers(groupFull.members);
-          }
           setHeaderText();
           checkDescription();
         } else {
@@ -6008,15 +5871,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   // Channels
-
-  @Override
-  public void onChatMemberStatusChange (long chatId, TdApi.ChatMember member) {
-    runOnUiThreadOptional(() -> {
-      if (chat.id == chatId && membersAdapter != null) {
-        membersAdapter.updateChatMember(member);
-      }
-    });
-  }
 
   @Override
   public void onSupergroupUpdated (final TdApi.Supergroup supergroup) {
