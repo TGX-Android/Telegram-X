@@ -24,10 +24,8 @@ import android.widget.LinearLayout;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.charts.CubicBezierInterpolator;
-import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGMessage;
-import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.OptionsLayout;
@@ -548,9 +546,10 @@ public class ReactionListViewController{
 			list=new RecyclerView(context);
 			adapter=new SettingsAdapter(chatController){
 				@Override
-				protected void setUser(ListItem item, int position, UserView userView, boolean isUpdate){
-					userView.setUser(new TGUser(tdlib, tdlib.chatUser(item.getLongId())));
-					if(!isViewers){
+				protected void setUserAndReaction(ListItem item, int position, UserReactionView userView, boolean isUpdate){
+					userView.setUser(item.getLongId());
+          userView.setNeedSeparator(position<listItems.size()-1);
+					if(!isViewers && reaction==null){
 						((UserReactionView)userView).setReaction(item.getStringValue());
 					}
 				}

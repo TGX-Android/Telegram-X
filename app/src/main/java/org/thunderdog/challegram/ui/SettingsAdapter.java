@@ -60,6 +60,7 @@ import org.thunderdog.challegram.mediaview.paint.ColorPaletteView;
 import org.thunderdog.challegram.mediaview.paint.widget.ColorToneView;
 import org.thunderdog.challegram.navigation.DrawerItemView;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.reactions.UserReactionView;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
@@ -391,6 +392,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
 
   protected void setUser (ListItem item, int position, UserView userView, boolean isUpdate) {
     // Override
+  }
+
+  protected void setUserAndReaction(ListItem item, int position, UserReactionView userView, boolean isUpdate){
+
   }
 
   protected void setEmbedSticker (ListItem item, int position, EmbeddableStickerView userView, boolean isUpdate) {
@@ -1466,9 +1471,12 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         ((JoinedUsersView) group.getChildAt(0)).setJoinedText(item.getString());
         break;
       }
-      case ListItem.TYPE_USER:
-      case ListItem.TYPE_USER_REACTION: {
+      case ListItem.TYPE_USER: {
         setUser(item, position, (UserView) holder.itemView, false);
+        break;
+      }
+      case ListItem.TYPE_USER_REACTION: {
+        setUserAndReaction(item, position, (UserReactionView) holder.itemView, false);
         break;
       }
       case ListItem.TYPE_JOIN_REQUEST: {

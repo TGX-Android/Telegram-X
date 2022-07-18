@@ -9,6 +9,7 @@ import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
@@ -91,6 +92,7 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout{
 				break;
 			}
 		}
+    View _chosenButton=null;
 		for(TdApi.Reaction r:reactions){
 			FrameLayout btn=new FrameLayout(context);
 			ImageView gifView=new ImageView(context);
@@ -109,10 +111,26 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout{
 			if(r.reaction.equals(chosenReaction)){
 				btn.setBackground(new ChosenReactionBackgroundDrawable());
 				themeListeners.addThemeInvalidateListener(btn);
+        _chosenButton=btn;
 			}
 
 			scrollContent.addView(btn, new LinearLayout.LayoutParams(Screen.dp(36), Screen.dp(48)));
 		}
+
+    final View chosenButton=_chosenButton;
+    if(chosenButton!=null){
+      scrollView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener(){
+      	@Override
+      	public boolean onPreDraw(){
+      		scrollView.getViewTreeObserver().removeOnPreDrawListener(this);
+
+          int scrollX=chosenButton.getLeft()+chosenButton.getWidth()/2-scrollView.getWidth()/2;
+          scrollView.scrollTo(Math.max(0, scrollX), 0);
+
+      		return true;
+      	}
+      });
+    }
 
 		countersView=new LinearLayout(context);
 		countersView.setOrientation(HORIZONTAL);

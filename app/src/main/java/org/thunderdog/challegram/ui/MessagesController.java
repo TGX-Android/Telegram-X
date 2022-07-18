@@ -184,6 +184,7 @@ import org.thunderdog.challegram.player.RoundVideoController;
 import org.thunderdog.challegram.reactions.LottieAnimationDrawable;
 import org.thunderdog.challegram.reactions.LottieAnimation;
 import org.thunderdog.challegram.reactions.LottieAnimationThreadPool;
+import org.thunderdog.challegram.reactions.MessageCellReactionButton;
 import org.thunderdog.challegram.reactions.ReactionAnimationOverlay;
 import org.thunderdog.challegram.reactions.ReactionListViewController;
 import org.thunderdog.challegram.reactions.ReactionsMessageOptionsSheetHeaderView;
@@ -10608,7 +10609,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     boolean finalDidAdd=didAdd;
     tdlib.sendOnUiThread(new TdApi.SetMessageReaction(getChatId(), msg.getMessageForReactions().id, reaction, big), res->{
       if(res instanceof TdApi.Error){
-        UI.showError(res);
+        boolean needToast=true;
         if(finalDidAdd){
           manager.getAnimationOverlay().endAllAnimations();
           cancelAnimation[0]=true;
@@ -10616,11 +10617,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
           if(messageReaction.totalCount==0){
             reactions.remove(messageReaction);
             m.interactionInfo.reactions=reactions.toArray(new TdApi.MessageReaction[0]);
+          }else{
+            if(mv!=null){
+              MessageCellReactionButton btn=mv.getReactionButton(reaction);
+              if(btn!=null){
+                needToast=false;
+                context.tooltipManager().builder(btn).show(tdlib, TD.errorText(res)).hideDelayed();
+              }
+            }
           }
           if(mv!=null){
             mv.updateReactions();
           }
         }
+        if(needToast)
+          UI.showError(res);
       }
     });
   }
@@ -10643,6 +10654,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
           return true;
         }
 
+        boolean[] didStart={false};
+
         if(activateAnimation!=null)
           ov.playLottieAnimation(outRect->{
             if(!mv.getReactionIconBounds(reaction, outRect))
@@ -10655,7 +10668,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
             int centerY=outRect.centerY();
             outRect.set(centerX-size, centerY-size, centerX+size, centerY+size);
             return true;
-          }, activateAnimation, ()->mv.setReactionIconHidden(reaction, true), (v, remove)->{
+          }, activateAnimation, ()->{
+            didStart[0]=true;
+            mv.setHasTransientState(true);
+            mv.setReactionIconHidden(reaction, true);
+          }, (v, remove)->{
+            if(didStart[0])
+              mv.setHasTransientState(false);
+            mv.setReactionIconHidden(reaction, false);
             Rect rect=new Rect();
             mv.getReactionIconBounds(reaction, rect);
             float scale=rect.width()/(float)v.getWidth();
@@ -10720,6 +10740,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
             return true;
           }, aroundAnimation, null, null);
 
+          boolean[] didStart={false};
+
           if(centerAnimation!=null)
             ov.playLottieAnimation(outRect->{
               if(!mv.getReactionIconBounds(reaction, outRect))
@@ -10729,7 +10751,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
               int centerY=outRect.centerY();
               outRect.set(centerX-size, centerY-size, centerX+size, centerY+size);
               return true;
-            }, centerAnimation, ()->mv.setReactionIconHidden(reaction, true), (v, remove)->{
+            }, centerAnimation, ()->{
+              didStart[0]=true;
+              mv.setHasTransientState(true);
+              mv.setReactionIconHidden(reaction, true);
+            }, (v, remove)->{
+              if(didStart[0])
+                mv.setHasTransientState(false);
               mv.setReactionIconHidden(reaction, false);
               mv.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener(){
               	@Override

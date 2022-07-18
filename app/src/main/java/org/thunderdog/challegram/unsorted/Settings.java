@@ -3116,6 +3116,10 @@ public class Settings {
     ReferenceUtils.addReference(chatFontSizeChangeListeners, listener);
   }
 
+  public float getChatFontSizeMultiplier(){
+    return getChatFontSize()/CHAT_FONT_SIZE_DEFAULT;
+  }
+
   // Logs
 
   public boolean hasLogsEnabled () {

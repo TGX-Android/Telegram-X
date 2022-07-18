@@ -29,17 +29,9 @@ public class CompactReactionsRenderer implements Counter.Callback{
 		counter=new Counter.Builder()
 				.noBackground()
 				.textSize(parent.useBubbles() ? 11f : 12f)
-//				.textColor(getCounterDefaultColor())
 				.allBold(false)
 				.colorSet(this::getCounterColor)
 				.build();
-	}
-
-	@IdRes
-	private int getCounterDefaultColor(){
-		if(parent.useBubbles())
-			return parent.isOutgoingBubble() ? R.id.theme_color_bubbleOut_time : R.id.theme_color_bubbleIn_time;
-		return R.id.theme_color_bubbleIn_time;
 	}
 
 	public void update(boolean animated){
@@ -51,14 +43,14 @@ public class CompactReactionsRenderer implements Counter.Callback{
 			counter.setCount(0, animated);
 			return;
 		}
-		for(TdApi.MessageReaction reaction:info.reactions){
-			totalReactionsCount+=reaction.totalCount;
-			selfReacted=selfReacted || reaction.isChosen;
-			if(iconizedReactions.size()<3){
-				iconizedReactions.add(parent.tdlib().getReaction(reaction.reaction));
-			}
-		}
-		counter.setCount(totalReactionsCount>3 ? totalReactionsCount : 0, !selfReacted, animated);
+    for(TdApi.MessageReaction reaction : info.reactions){
+      totalReactionsCount+=reaction.totalCount;
+      selfReacted=selfReacted || reaction.isChosen;
+      if(iconizedReactions.size()<3){
+        iconizedReactions.add(parent.tdlib().getReaction(reaction.reaction));
+      }
+    }
+    counter.setCount(totalReactionsCount>1 ? totalReactionsCount : 0, !selfReacted, animated);
 	}
 
 	public int getWidth(){

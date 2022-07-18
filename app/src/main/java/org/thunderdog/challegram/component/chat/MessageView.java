@@ -392,6 +392,12 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
       return 0;
   }
 
+  public MessageCellReactionButton getReactionButton(String reaction){
+    if(reactionButtons==null)
+      return null;
+    return reactionButtons.getReactionButton(reaction);
+  }
+
   public void updateReactions(){
     if(msg.hasReactions() && !msg.needDrawReactionsWithTime()){
       reactionButtons.setVisibility(VISIBLE);

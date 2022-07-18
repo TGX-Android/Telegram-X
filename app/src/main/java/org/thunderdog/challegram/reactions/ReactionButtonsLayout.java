@@ -13,12 +13,11 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.charts.CubicBezierInterpolator;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.unsorted.Settings;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -65,7 +64,7 @@ public class ReactionButtonsLayout extends ViewGroup{
 		int curX=getPaddingLeft();
 		int maxX=0;
 		int gap=Screen.dp(6);
-		int rowHeight=Screen.dp(24);
+		int rowHeight=getRowHeight();
 		int curY=0;
 
 		for(int i=0; i<getChildCount(); i++){
@@ -104,7 +103,7 @@ public class ReactionButtonsLayout extends ViewGroup{
 		int width=r-l-getPaddingLeft()-getPaddingRight();
 		int curX=getPaddingLeft();
 		int gap=Screen.dp(6);
-		int rowHeight=Screen.dp(24);
+		int rowHeight=getRowHeight();
 		int curY=getPaddingTop();
 
 		if(message==null)
@@ -122,6 +121,10 @@ public class ReactionButtonsLayout extends ViewGroup{
 			 curX+=child.getMeasuredWidth()+gap;
 		}
 	}
+
+  private int getRowHeight(){
+    return Screen.dp(24f*Settings.instance().getChatFontSizeMultiplier());
+  }
 
 	public void setMessage(TGMessage message){
 		boolean sameMessage=this.message!=null && this.message.getChatId()==message.getChatId() && this.message.getId()==message.getId();

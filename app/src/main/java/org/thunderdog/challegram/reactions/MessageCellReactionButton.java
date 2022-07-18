@@ -26,6 +26,7 @@ import org.thunderdog.challegram.theme.ThemeInvalidateListener;
 import org.thunderdog.challegram.theme.ThemeListenerEntry;
 import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.widget.ImageReceiverView;
 
@@ -71,10 +72,11 @@ public class MessageCellReactionButton extends FrameLayout implements ThemeInval
 		setPadding(Screen.dp(7), 0, 0, 0);
 
 		icon=new StickerReceiverView(context);
-		addView(icon, LayoutHelper.createFrame(14, 14, Gravity.LEFT | Gravity.CENTER_VERTICAL));
+    float iconSize=14f*Settings.instance().getChatFontSizeMultiplier();
+		addView(icon, LayoutHelper.createFrame(iconSize, iconSize, Gravity.LEFT | Gravity.CENTER_VERTICAL));
 
-		counter=new CounterView(context, new Counter.Builder().allBold(false).noBackground().textSize(10.5f).colorSet(()->currentTextColor), 0);
-		addView(counter, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 4+14, 0, 9, 0));
+		counter=new CounterView(context, new Counter.Builder().allBold(false).noBackground().textSize(10.5f*Settings.instance().getChatFontSizeMultiplier()).colorSet(()->currentTextColor), 0);
+		addView(counter, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL, (4+14)*Settings.instance().getChatFontSizeMultiplier(), 0, 9, 0));
 
 		themeListeners.add(new ThemeListenerEntry(ThemeListenerEntry.MODE_INVALIDATE, 0, this));
 	}
@@ -103,7 +105,7 @@ public class MessageCellReactionButton extends FrameLayout implements ThemeInval
 
 	private ShapeDrawable makeRoundRectDrawable(){
 		float[] radius=new float[8];
-		Arrays.fill(radius, Screen.dp(12));
+		Arrays.fill(radius, Screen.dp(12f*Settings.instance().getChatFontSizeMultiplier()));
 		ShapeDrawable sd=new ShapeDrawable(new RoundRectShape(radius, null, null));
 		return sd;
 	}

@@ -1110,14 +1110,19 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         }
         return holder;
       }
-      case ListItem.TYPE_USER:
-      case ListItem.TYPE_USER_REACTION: {
+      case ListItem.TYPE_USER: {
         UserView userView;
-        if(viewType==ListItem.TYPE_USER)
-          userView=new UserView(context, tdlib); // FIXME theme
-        else
-          userView=new UserReactionView(context, tdlib);
+        userView=new UserView(context, tdlib); // FIXME theme
         userView.setOffsetLeft(Screen.dp(11f));
+        userView.setOnClickListener(onClickListener);
+        Views.setClickable(userView);
+        // RippleSupport.setTransparentSelector(userView);
+        RippleSupport.setSimpleWhiteBackground(userView, themeProvider);
+        return new SettingHolder(userView);
+      }
+      case ListItem.TYPE_USER_REACTION: {
+        UserReactionView userView;
+        userView=new UserReactionView(context, tdlib);
         userView.setOnClickListener(onClickListener);
         Views.setClickable(userView);
         // RippleSupport.setTransparentSelector(userView);

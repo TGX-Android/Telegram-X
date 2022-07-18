@@ -31,6 +31,8 @@ public class ReactionAnimationOverlay{
 	private WindowManager wm;
 	private FrameLayout windowView;
 	private int runningAnimationsCount;
+  private ArrayList<CallbackRecord> pendingEndCallbacks=new ArrayList<>();
+  private ArrayList<Runnable> pendingEndRunnables=new ArrayList<>();
 
 	public ReactionAnimationOverlay(ViewController<?> chat){
 		activity=chat.context();
@@ -69,6 +71,11 @@ public class ReactionAnimationOverlay{
 		img.setTranslationY(rect.top);
 		windowView.addView(img, new FrameLayout.LayoutParams(rect.width(), rect.height(), Gravity.TOP | Gravity.LEFT));
 		runningAnimationsCount++;
+    CallbackRecord cbRecord;
+    if(onDone!=null)
+      pendingEndCallbacks.add(cbRecord=new CallbackRecord(onDone, img));
+    else
+      cbRecord=null;
 		img.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener(){
 			private boolean started;
       private boolean removed;
@@ -98,6 +105,8 @@ public class ReactionAnimationOverlay{
 							removeWindow();
 						}
 					};
+          if(cbRecord!=null)
+            pendingEndCallbacks.remove(cbRecord);
 					if(onDone!=null && boundsValid)
 						onDone.onAnimationEnd(img, remover);
 					else
@@ -124,6 +133,9 @@ public class ReactionAnimationOverlay{
 		windowView.addView(wrapper);
 		runningAnimationsCount++;
 
+    if(onDone!=null)
+      pendingEndRunnables.add(onDone);
+
 		iv.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener(){
 			private boolean started;
 			private int startX, startY;
@@ -134,8 +146,10 @@ public class ReactionAnimationOverlay{
 				if(!dstPos.getBounds(rect)){
 					iv.getViewTreeObserver().removeOnPreDrawListener(this);
 					windowView.removeView(wrapper);
-					if(onDone!=null)
-						onDone.run();
+					if(onDone!=null){
+            pendingEndRunnables.remove(onDone);
+            onDone.run();
+          }
 					runningAnimationsCount--;
 					if(runningAnimationsCount==0){
 						removeWindow();
@@ -175,8 +189,10 @@ public class ReactionAnimationOverlay{
 						@Override
 						public void onAnimationEnd(Animator animation){
 							windowView.removeView(wrapper);
-							if(onDone!=null)
-								onDone.run();
+							if(onDone!=null){
+                pendingEndRunnables.remove(onDone);
+                onDone.run();
+              }
 							runningAnimationsCount--;
 							if(runningAnimationsCount==0){
 								removeWindow();
@@ -200,6 +216,14 @@ public class ReactionAnimationOverlay{
 
   public void endAllAnimations (){
     if(windowView!=null){
+      for(Runnable r:pendingEndRunnables){
+        r.run();
+      }
+      pendingEndRunnables.clear();
+      for(CallbackRecord cb:pendingEndCallbacks){
+        cb.callback.onAnimationEnd(cb.view, ()->{});
+      }
+      pendingEndCallbacks.clear();
       removeWindow();
       runningAnimationsCount=0;
     }
@@ -214,4 +238,14 @@ public class ReactionAnimationOverlay{
 	public interface AnimationEndCallback{
 		void onAnimationEnd(View view, Runnable remove);
 	}
+
+  private static class CallbackRecord{
+    public AnimationEndCallback callback;
+    public View view;
+
+    public CallbackRecord (AnimationEndCallback callback, View view){
+      this.callback=callback;
+      this.view=view;
+    }
+  }
 }
