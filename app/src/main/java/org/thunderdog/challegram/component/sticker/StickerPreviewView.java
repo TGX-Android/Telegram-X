@@ -252,8 +252,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     }
   }
 
-  private @Nullable
-  EmojiString emojiString;
+  private @Nullable EmojiString emojiString;
   private boolean disableEmojis;
   private Path contour;
 
@@ -301,6 +300,45 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
   public void hideMenu () {
     if (menu != null) {
       setMenuVisible(false, true);
+    }
+  }
+
+  private int calculateMaximumMenuItemWidth () {
+    if (menu == null) {
+      return Integer.MAX_VALUE;
+    }
+    final int availableWidth = getMeasuredWidth() - menu.getPaddingLeft() - menu.getPaddingRight();
+    if (availableWidth > 0) {
+      int imageButtonsWidth = 0;
+      int textButtonsCount = 0;
+      for (int i = 0; i < menu.getChildCount(); i++) {
+        View view = menu.getChildAt(i);
+        if (view instanceof ImageView) {
+          imageButtonsWidth += view.getPaddingLeft() + view.getPaddingRight() + Math.max(0, view.getLayoutParams().width);
+        } else if (view instanceof TextView) {
+          textButtonsCount++;
+        }
+      }
+      if (textButtonsCount > 0) {
+        final int result = Math.max(0, (availableWidth - imageButtonsWidth) / textButtonsCount);
+        return result > 0 ? result : Integer.MAX_VALUE;
+      }
+    }
+    return Integer.MAX_VALUE;
+  }
+
+  private void applyMaximumMenuItemsWidth () {
+    if (menu != null) {
+      final int maximumItemWidth = calculateMaximumMenuItemWidth();
+      for (int i = 0; i < menu.getChildCount(); i++) {
+        View view = menu.getChildAt(i);
+        if (view instanceof TextView) {
+          TextView textView = (TextView) view;
+          if (textView.getMaxWidth() != maximumItemWidth) { // Avoid unnecessary requestLayout
+            textView.setMaxWidth(maximumItemWidth);
+          }
+        }
+      }
     }
   }
 
@@ -446,6 +484,8 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     menu.setAlpha(0f);
     addView(menu);
 
+    applyMaximumMenuItemsWidth();
+
     setMenuVisible(true, true);
   }
 
@@ -529,6 +569,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     layoutReceivers();
+    applyMaximumMenuItemsWidth();
   }
 
   private float appearFactor;
