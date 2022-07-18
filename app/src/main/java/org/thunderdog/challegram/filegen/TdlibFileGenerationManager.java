@@ -58,6 +58,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.xmlpull.v1.XmlSerializer;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -1248,7 +1249,7 @@ public final class TdlibFileGenerationManager {
         opts.inSampleSize = ImageReader.calculateInSampleSize(opts, resolution, resolution);
         bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, opts);
       }
-    } catch (RuntimeException ex) {
+    } catch (RuntimeException | FileNotFoundException ex) {
       // Assume this is a corrupt video file
     }
     U.closeRetriever(retriever);
