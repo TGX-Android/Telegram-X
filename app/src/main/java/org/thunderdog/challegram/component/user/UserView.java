@@ -185,7 +185,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
     }
   }
 
-  protected int getContentPaddingRight(){
+  protected int getContentPaddingRight () {
     return paddingRight;
   }
 
@@ -342,7 +342,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
         }
       }
       if (rtl) {
-        c.drawRect(0,  top, viewWidth - offsetLeft - textLeftMargin, bottom, Paints.fillingPaint(Theme.separatorColor()));
+        c.drawRect(0, top, viewWidth - offsetLeft - textLeftMargin, bottom, Paints.fillingPaint(Theme.separatorColor()));
       } else {
         c.drawRect(offsetLeft + textLeftMargin, top, getMeasuredWidth(), bottom, Paints.fillingPaint(Theme.separatorColor()));
       }

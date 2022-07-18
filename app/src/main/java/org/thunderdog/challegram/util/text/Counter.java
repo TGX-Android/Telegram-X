@@ -43,7 +43,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.BitwiseUtils;
 
-public final class Counter implements FactorAnimator.Target, CounterAnimator.Callback<Text>, TextColorSet  {
+public final class Counter implements FactorAnimator.Target, CounterAnimator.Callback<Text>, TextColorSet {
   public static Callback newCallback (View view) {
     return new Callback() {
       @Override
@@ -62,7 +62,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
   private static final int FLAG_NEED_BACKGROUND = 1 << 1;
 
   public static class Builder {
-    public Builder () { }
+    public Builder () {}
 
     private float textSize = 13f;
     private int flags = FLAG_ALL_BOLD | FLAG_NEED_BACKGROUND;
@@ -149,7 +149,8 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
 
   public interface Callback {
     void onCounterAppearanceChanged (Counter counter, boolean sizeChanged);
-    default boolean needAnimateChanges (Counter counter) { return true; }
+
+    default boolean needAnimateChanges (Counter counter) {return true;}
   }
 
   private final Callback callback;
@@ -163,7 +164,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
 
   @ThemeColorId
   private final int textColorId, mutedTextColorId, failedTextColorId, outlineColorId;
-  
+
   private final TextColorSet colorSet;
 
   private Counter (float textSize, Callback callback, int flags,
@@ -235,12 +236,12 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     isFailed.setValue(count == Tdlib.CHAT_FAILED, animateChanges);
     boolean hasCounter = count > 0 || count == Tdlib.CHAT_MARKED_AS_UNREAD || count == Tdlib.CHAT_FAILED;
     if (count == Tdlib.CHAT_FAILED && drawableRes == 0) {
-      counter.setCounter(count, currentText="!", animateChanges);
+      counter.setCounter(count, currentText = "!", animateChanges);
     } else if (count > 0) {
-      counter.setCounter(count, currentText=Strings.buildCounter(count), animateChanges);
+      counter.setCounter(count, currentText = Strings.buildCounter(count), animateChanges);
     } else {
       counter.hideCounter(animateChanges);
-      currentText="";
+      currentText = "";
     }
     isVisible.setValue(hasCounter, animated);
   }
@@ -254,10 +255,10 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     return DrawAlgorithms.getCounterWidth(textSize, BitwiseUtils.getFlag(flags, FLAG_NEED_BACKGROUND), counter, drawableRes != 0 ? Screen.dp(drawableWidthDp) + Screen.dp(drawableMarginDp) : 0);
   }
 
-  public int getRealWidthWithoutAnimationBullshit(){
-    int width=Math.round(Paints.getRegularTextPaint(textSize).measureText(currentText));
-    if(drawableRes!=0){
-      width+=Screen.dp(drawableWidthDp)+Screen.dp(drawableMarginDp);
+  public int getRealWidthWithoutAnimationBullshit () {
+    int width = Math.round(Paints.getRegularTextPaint(textSize).measureText(currentText));
+    if (drawableRes != 0) {
+      width += Screen.dp(drawableWidthDp) + Screen.dp(drawableMarginDp);
     }
     return width;
   }

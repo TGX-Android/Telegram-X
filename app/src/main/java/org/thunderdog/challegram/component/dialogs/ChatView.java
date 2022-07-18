@@ -456,7 +456,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   }
 
   @Override
-  public void onPreferenceChanged(Tdlib tdlib, long key, boolean value) {
+  public void onPreferenceChanged (Tdlib tdlib, long key, boolean value) {
     if (chat != null && chat.isArchive() && key == TdlibSettingsManager.PREFERENCE_HIDE_ARCHIVE) {
       isPinnedArchive.setValue(!value, true);
     }

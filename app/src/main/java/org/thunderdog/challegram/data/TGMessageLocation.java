@@ -174,7 +174,7 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
     return UI.isPortrait() && !UI.isTablet() && isChannel();
   }
 
-  public boolean drawBubbleTimeOverContent() {
+  public boolean drawBubbleTimeOverContent () {
     return venue == null;
   }
 
@@ -636,7 +636,7 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
     switch (what) {
       case SCHEDULE_FLAG_PULSE: {
         int maxRadius = Screen.dp(MAX_PULSE_RADIUS);
-        invalidate(pulseCenterX - maxRadius, pulseCenterY - maxRadius, pulseCenterX + maxRadius, pulseCenterY+ maxRadius);
+        invalidate(pulseCenterX - maxRadius, pulseCenterY - maxRadius, pulseCenterX + maxRadius, pulseCenterY + maxRadius);
         break;
       }
       case SCHEDULE_FLAG_SUBTITLE:
@@ -936,7 +936,7 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
               if (type != Settings.MAP_PROVIDER_GOOGLE) {
                 double latitude = point.latitude;
                 double longitude = point.longitude;
-                controller().showOptions(latitudeStr(latitude) + " " + longitudeStr(longitude), new int[] {R.id.btn_open, R.id.btn_copyText, R.id.btn_openIn}, new String[] {Lang.getString(R.string.OpenMap), Lang.getString(R.string.CopyCoordinates), Lang.getString(R.string.OpenInExternalApp)}, null, new int[] {R.drawable.baseline_map_24, R.drawable.baseline_content_copy_24, R.drawable.baseline_open_in_browser_24}, (itemView, id) -> {
+                controller().showOptions(latitudeStr(latitude) + " " + longitudeStr(longitude), new int[]{R.id.btn_open, R.id.btn_copyText, R.id.btn_openIn}, new String[]{Lang.getString(R.string.OpenMap), Lang.getString(R.string.CopyCoordinates), Lang.getString(R.string.OpenInExternalApp)}, null, new int[]{R.drawable.baseline_map_24, R.drawable.baseline_content_copy_24, R.drawable.baseline_open_in_browser_24}, (itemView, id) -> {
                   switch (id) {
                     case R.id.btn_copyText:
                       UI.copyText(String.format(Locale.US, "%f,%f", latitude, longitude), R.string.CopiedCoordinates);
@@ -987,7 +987,7 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
     return str;
   }
 
-  private static String replaceDelimiters(String str, int decimalPlace) {
+  private static String replaceDelimiters (String str, int decimalPlace) {
     str = str.replaceFirst(":", "°");
     str = str.replaceFirst(":", "'");
     int pointIndex = str.indexOf(".");

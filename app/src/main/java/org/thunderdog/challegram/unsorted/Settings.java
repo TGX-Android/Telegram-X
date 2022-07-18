@@ -116,7 +116,7 @@ import me.vkryl.td.Td;
 
 /**
  * All app-related settings.
- *
+ * <p>
  * SharedPreferences is no longer used at all for the following reasons:
  * 1. Application launch speed;
  * 2. Storage usage;
@@ -234,6 +234,7 @@ public class Settings {
   public static final String KEY_ACCOUNT_INFO_SUFFIX_PHOTO = "photo"; // path, if loaded
   public static final String KEY_ACCOUNT_INFO_SUFFIX_PHOTO_FULL = "photo_full"; // path, if loaded
   public static final String KEY_ACCOUNT_INFO_SUFFIX_COUNTER = "counter_"; // counter
+
   public static String accountInfoPrefix (int accountId) {
     return KEY_ACCOUNT_INFO + accountId + "_";
   }
@@ -365,8 +366,8 @@ public class Settings {
 
   public static final long SETTING_FLAG_NO_EMBEDS = 1 << 13;
 
-  public static final int FLAG_BIG_REACTIONS_CHATS=1;
-  public static final int FLAG_BIG_REACTIONS_CHANNELS=2;
+  public static final int FLAG_BIG_REACTIONS_CHATS = 1;
+  public static final int FLAG_BIG_REACTIONS_CHANNELS = 2;
 
   private static final @Deprecated int DISABLED_FLAG_OTHER_NEED_RAISE_TO_SPEAK = 1 << 2;
   private static final @Deprecated int DISABLED_FLAG_OTHER_AUTODOWNLOAD_IN_BACKGROUND = 1 << 3;
@@ -566,7 +567,7 @@ public class Settings {
           return value[0];
         } else {
           int defaultLogVerbosity = queryLogVerbosityLevel(module);
-          _modules.put(module, new int[] {defaultLogVerbosity, defaultLogVerbosity});
+          _modules.put(module, new int[]{defaultLogVerbosity, defaultLogVerbosity});
           return defaultLogVerbosity;
         }
       }
@@ -577,7 +578,7 @@ public class Settings {
       int[] value = _modules != null ? _modules.get(module) : null;
       if (value == null) {
         int defaultLogVerbosity = queryLogVerbosityLevel(module);
-        _modules.put(module, new int[] {defaultLogVerbosity, defaultLogVerbosity});
+        _modules.put(module, new int[]{defaultLogVerbosity, defaultLogVerbosity});
         return defaultLogVerbosity;
       }
       return value[1];
@@ -647,7 +648,7 @@ public class Settings {
             if (value != null) {
               value[0] = verbosityLevel;
             } else {
-              _modules.put(module, new int[] {verbosityLevel, defaultVerbosityLevel});
+              _modules.put(module, new int[]{verbosityLevel, defaultVerbosityLevel});
             }
           }
         }
@@ -801,51 +802,67 @@ public class Settings {
   public LevelDB edit () {
     return pmc.edit();
   }
+
   public void remove (String key) {
     pmc.remove(key);
   }
+
   public void putLong (String key, long value) {
     pmc.putLong(key, value);
   }
+
   public long getLong (String key, long defValue) {
     return pmc.getLong(key, defValue);
   }
+
   public long[] getLongArray (String key) {
     return pmc.getLongArray(key);
   }
+
   public void putLongArray (String key, long[] value) {
     pmc.putLongArray(key, value);
   }
+
   public void putInt (String key, int value) {
     pmc.putInt(key, value);
   }
+
   public int getInt (String key, int defValue) {
     return pmc.getInt(key, defValue);
   }
+
   public void putFloat (String key, float value) {
     pmc.putFloat(key, value).apply();
   }
+
   public void putBoolean (String key, boolean value) {
     pmc.putBoolean(key, value);
   }
+
   public boolean getBoolean (String key, boolean defValue) {
     return pmc.getBoolean(key, defValue);
   }
+
   public void putVoid (String key) {
     pmc.putVoid(key);
   }
+
   public boolean containsKey (String key) {
     return pmc.contains(key);
   }
+
   public void putString (String key, @NonNull String value) {
     pmc.putString(key, value);
   }
+
   public String getString (String key, String defValue) {
     return pmc.getString(key, defValue);
   }
+
   public void removeByPrefix (String prefix, @Nullable SharedPreferences.Editor editor) {
     pmc.removeByPrefix(prefix); // editor
   }
+
   public void removeByAnyPrefix (String[] prefixes, @Nullable SharedPreferences.Editor editor) {
     pmc.removeByAnyPrefix(prefixes); // , editor
   }
@@ -1390,14 +1407,16 @@ public class Settings {
           if (type == MAP_PROVIDER_GOOGLE) {
             editor.remove(KEY_MAP_PROVIDER_TYPE_CLOUD);
           }
-        } catch (FileNotFoundException ignored) { }
+        } catch (FileNotFoundException ignored) {
+        }
         // Removing secret chat map provider setting, if it's equal to Google
         try {
           int type = pmc.tryGetInt(KEY_MAP_PROVIDER_TYPE);
           if (type == MAP_PROVIDER_GOOGLE) {
             editor.remove(KEY_MAP_PROVIDER_TYPE);
           }
-        } catch (FileNotFoundException ignored) { }
+        } catch (FileNotFoundException ignored) {
+        }
         break;
       }
       case VERSION_17: {
@@ -1483,7 +1502,8 @@ public class Settings {
           if (newBadgeMode != 0)
             editor.putInt(KEY_BADGE_FLAGS, newBadgeMode);
           editor.remove(KEY_BADGE_MODE);
-        } catch (Throwable ignored) { }
+        } catch (Throwable ignored) {
+        }
         changeDefaultOtherFlag(pmc, editor, FLAG_OTHER_SPLIT_CHAT_NOTIFICATIONS, true);
         break;
       }
@@ -1493,13 +1513,15 @@ public class Settings {
           if (file.exists() && !file.delete()) {
             // nothing?
           }
-        } catch (Throwable ignored) { }
+        } catch (Throwable ignored) {
+        }
         try {
           File file = new File(TdlibManager.getLegacyLogFilePath(true));
           if (file.exists() && !file.delete()) {
             // nothing?
           }
-        } catch (Throwable ignored) { }
+        } catch (Throwable ignored) {
+        }
         break;
       }
       case VERSION_21: {
@@ -1627,7 +1649,8 @@ public class Settings {
             setNewSetting(SETTING_FLAG_EDIT_MARKDOWN, true);
           }
           editor.remove(KEY_MARKDOWN_MODE);
-        } catch (FileNotFoundException ignored) { }
+        } catch (FileNotFoundException ignored) {
+        }
         break;
       }
       case VERSION_30: {
@@ -1673,7 +1696,7 @@ public class Settings {
               editor.remove(entry.key());
               if (returnToMessageId != 0) {
                 String newKey = entry.key().replace(KEY_SCROLL_CHAT_RETURN_TO_MESSAGE_ID, KEY_SCROLL_CHAT_RETURN_TO_MESSAGE_IDS_STACK);
-                pmc.putLongArray(newKey, new long[] {returnToMessageId});
+                pmc.putLongArray(newKey, new long[]{returnToMessageId});
               }
             }
           }
@@ -1809,7 +1832,8 @@ public class Settings {
       if (settings != newSettings) {
         editor.putInt(KEY_OTHER, newSettings);
       }
-    } catch (FileNotFoundException ignored) { }
+    } catch (FileNotFoundException ignored) {
+    }
   }
 
   private boolean needProxyLegacyMigrateCheck;
@@ -2033,7 +2057,7 @@ public class Settings {
 
           default:
             if (key.startsWith(KEY_SCROLL_CHAT_PREFIX) ||
-                key.startsWith(TdlibNotificationManager._NOTIFICATIONS_STACK_KEY)) {
+              key.startsWith(TdlibNotificationManager._NOTIFICATIONS_STACK_KEY)) {
               continue;
             }
             break;
@@ -2094,7 +2118,7 @@ public class Settings {
           Log.e(e);
         }
         if (proxy != null) {
-          addOrUpdateProxy(proxy.server, proxy.port, proxy.type,null, true);
+          addOrUpdateProxy(proxy.server, proxy.port, proxy.type, null, true);
         }
       }
       if (!proxyFile.delete()) {
@@ -2463,7 +2487,8 @@ public class Settings {
 
   public interface VideoModePreferenceListener {
     void onPreferVideoModeChanged (boolean preferVideoMode);
-    default void onRecordAudioVideoError (boolean preferVideoMode) { }
+
+    default void onRecordAudioVideoError (boolean preferVideoMode) {}
   }
 
   private final List<Reference<VideoModePreferenceListener>> videoPreferenceChangeListeners = new ArrayList<>();
@@ -2624,7 +2649,7 @@ public class Settings {
       return defaultLimits;
     }
     int maxTextureSize = U.getMaxTextureSize();
-    VideoLimit[] limits = new VideoLimit[] {
+    VideoLimit[] limits = new VideoLimit[]{
       new VideoLimit(new VideoSize(256, 144)), // 144p
       new VideoLimit(new VideoSize(480, 360)), // 360p
       new VideoLimit(new VideoSize(854, 480)), // 480p
@@ -2678,7 +2703,7 @@ public class Settings {
       if (o == null || getClass() != o.getClass()) return false;
       VideoSize videoSize = (VideoSize) o;
       return majorSize == videoSize.majorSize &&
-             minorSize == videoSize.minorSize;
+        minorSize == videoSize.minorSize;
     }
 
     public boolean isDefault () {
@@ -2721,8 +2746,8 @@ public class Settings {
     public boolean isDefault () {
       return
         size.isDefault() &&
-        fps == DEFAULT_FRAME_RATE &&
-        bitrate == DefaultVideoStrategy.BITRATE_UNKNOWN;
+          fps == DEFAULT_FRAME_RATE &&
+          bitrate == DefaultVideoStrategy.BITRATE_UNKNOWN;
     }
 
     @Override
@@ -2731,8 +2756,8 @@ public class Settings {
       if (o == null || getClass() != o.getClass()) return false;
       VideoLimit that = (VideoLimit) o;
       return fps == that.fps &&
-             bitrate == that.bitrate &&
-             size.equals(that.size);
+        bitrate == that.bitrate &&
+        size.equals(that.size);
     }
 
     @Override
@@ -2797,8 +2822,8 @@ public class Settings {
       int dataSize =
         /*bitrate != DefaultVideoStrategy.BITRATE_UNKNOWN ? 4 :*/ // never saving the bitrate as it is calculated automatically
         fps != DEFAULT_FRAME_RATE ? 3 :
-        size.majorSize != size.minorSize ? 2 :
-        size.majorSize != 0 ? 1 : 0;
+          size.majorSize != size.minorSize ? 2 :
+            size.majorSize != 0 ? 1 : 0;
       if (dataSize == 0)
         return null;
       int[] result = new int[dataSize];
@@ -3117,8 +3142,8 @@ public class Settings {
     ReferenceUtils.addReference(chatFontSizeChangeListeners, listener);
   }
 
-  public float getChatFontSizeMultiplier(){
-    return getChatFontSize()/CHAT_FONT_SIZE_DEFAULT;
+  public float getChatFontSizeMultiplier () {
+    return getChatFontSize() / CHAT_FONT_SIZE_DEFAULT;
   }
 
   // Logs
@@ -3177,12 +3202,15 @@ public class Settings {
   public int getEmojiPosition () {
     return getInt(KEY_EMOJI_POSITION, 0);
   }
+
   public int getEmojiMediaSection () {
     return getInt(KEY_EMOJI_MEDIA_SECTION, EMOJI_MEDIA_SECTION_STICKERS);
   }
+
   public void setEmojiPosition (int position) {
     putInt(KEY_EMOJI_POSITION, position);
   }
+
   public void setEmojiMediaSection (int section) {
     putInt(KEY_EMOJI_MEDIA_SECTION, section);
   }
@@ -3287,7 +3315,7 @@ public class Settings {
     public double longitude;
     public float zoomOrAccuracy;
 
-    public LastLocation () { }
+    public LastLocation () {}
 
     public LastLocation (double latitude, double longitude, float zoomOrAccuracy) {
       this.latitude = latitude;
@@ -3918,7 +3946,7 @@ public class Settings {
 
   /**
    * @return Identifier of proxy to be applied to TDLib client instances.
-   *         Returns {@link #PROXY_ID_NONE} in case {@link #PROXY_FLAG_ENABLED} is not set.
+   * Returns {@link #PROXY_ID_NONE} in case {@link #PROXY_FLAG_ENABLED} is not set.
    */
   public int getEffectiveProxyId () {
     if ((getProxySettings() & PROXY_FLAG_ENABLED) != 0) {
@@ -3940,7 +3968,7 @@ public class Settings {
 
   /**
    * @return Identifier of proxy to be applied to TDLib client instances.
-   *         Returns proxy identifier even when {@link #PROXY_FLAG_ENABLED} is not set.
+   * Returns proxy identifier even when {@link #PROXY_FLAG_ENABLED} is not set.
    */
   public int getAvailableProxyId () {
     return pmc.getInt(KEY_PROXY_CURRENT, PROXY_ID_NONE);
@@ -4016,7 +4044,8 @@ public class Settings {
       settings &= ~setting;
     }
     if (setting == PROXY_FLAG_ENABLED) {
-      int proxyId; Proxy proxy;
+      int proxyId;
+      Proxy proxy;
       if (enabled) {
         proxyId = getAvailableProxyId();
         if (proxyId <= PROXY_ID_NONE) {
@@ -4270,12 +4299,12 @@ public class Settings {
   /**
    * Adds proxy configuration or returns identifier of existing one.
    *
-   * @param server Proxy server
-   * @param port   Proxy port
-   * @param type   Proxy type
+   * @param server           Proxy server
+   * @param port             Proxy port
+   * @param type             Proxy type
    * @param proxyDescription Nullable alias for the proxy.
-   * @param setAsCurrent If set to false, proxy will be saved for later use.
-   * @param existingProxyId Existing proxy identifier to be modified or {@link #PROXY_ID_NONE}
+   * @param setAsCurrent     If set to false, proxy will be saved for later use.
+   * @param existingProxyId  Existing proxy identifier to be modified or {@link #PROXY_ID_NONE}
    * @return proxy identifier
    */
   public int addOrUpdateProxy (@NonNull String server, int port, @NonNull TdApi.ProxyType type, @Nullable String proxyDescription, boolean setAsCurrent, int existingProxyId) {
@@ -4396,11 +4425,11 @@ public class Settings {
   /**
    * Trace proxy connection time.
    * Call this method periodically when TDLib connection is established
-   *
+   * <p>
    * See {@link #PROXY_UPDATE_PERIOD_SECONDS}
    *
    * @param proxyId Proxy identifier. {@link #PROXY_ID_NONE} means connection without proxy.
-   * @param time Last successful connection time. Seconds
+   * @param time    Last successful connection time. Seconds
    */
   @Deprecated
   public void traceProxyConnected (int proxyId, int accountId, int time) {
@@ -4430,7 +4459,8 @@ public class Settings {
       TYPE_MTPROTO,
       TYPE_HTTP
     })
-    public @interface Type {}
+    public @interface Type {
+    }
 
     private static final int TYPE_SOCKS5 = 1;
     private static final int TYPE_MTPROTO = 2;
@@ -4520,6 +4550,7 @@ public class Settings {
 
   /**
    * Sets order of proxy list
+   *
    * @param proxyIds Array of proxy identifiers
    */
   public void setProxyOrder (@Nullable int[] proxyIds) {
@@ -4532,7 +4563,7 @@ public class Settings {
 
   /**
    * Get list of all available proxies in the descending order (last added first).
-   *
+   * <p>
    * This operation may take time, if there are too many proxies,
    * maybe it's good idea to invoke this method on background thread.
    *
@@ -4579,10 +4610,12 @@ public class Settings {
                 int accountId = U.parseInt(key.substring(split + 1));
                 lastProxy.connectionTime.put(accountId, entry.asInt());
               }
-            } else*/if (key.startsWith(KEY_PROXY_PREFIX_DESCRIPTION)) {
+            } else*/
+            if (key.startsWith(KEY_PROXY_PREFIX_DESCRIPTION)) {
               lastProxy.description = entry.asString();
             }
-          } catch (IllegalArgumentException ignored) { }
+          } catch (IllegalArgumentException ignored) {
+          }
         }
       }
     }
@@ -4592,7 +4625,9 @@ public class Settings {
 
   public interface ProxyChangeListener {
     void onProxyConfigurationChanged (int proxyId, @Nullable String server, int port, @Nullable TdApi.ProxyType type, @Nullable String description, boolean isCurrent, boolean isNewAdd);
+
     void onProxyAvailabilityChanged (boolean isAvailable);
+
     void onProxyAdded (Proxy proxy, boolean isCurrent);
   }
 
@@ -4608,10 +4643,11 @@ public class Settings {
 
   /**
    * Notifies that all TDLib instances must change proxy configuration.
-   *  @param id     Proxy identifier
-   * @param server Proxy server
-   * @param port   Proxy port
-   * @param type   Proxy type
+   *
+   * @param id        Proxy identifier
+   * @param server    Proxy server
+   * @param port      Proxy port
+   * @param type      Proxy type
    * @param isCurrent True when this proxy is applied to TDLib instances
    * @param isNewAdd
    */
@@ -4647,7 +4683,8 @@ public class Settings {
 
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({EARPIECE_MODE_NEVER, EARPIECE_MODE_PROXIMITY, EARPIECE_MODE_ALWAYS})
-  public @interface EarpieceMode {}
+  public @interface EarpieceMode {
+  }
 
   public static final int EARPIECE_MODE_NEVER = 0;
   public static final int EARPIECE_MODE_PROXIMITY = 1;
@@ -4817,7 +4854,7 @@ public class Settings {
     int num = 0;
     String errorHash = error != null ? Passcode.getPasscodeHash(error) : null;
     for (LevelDB.Entry entry : pmc.find(key)) {
-      if (errorHash != null && StringUtils.equalsOrBothEmpty(errorHash, entry.asString())){
+      if (errorHash != null && StringUtils.equalsOrBothEmpty(errorHash, entry.asString())) {
         entry.release();
         return;
       }
@@ -5441,7 +5478,7 @@ public class Settings {
 
   public static final int THEME_FLAG_INSTALLED = 1;
   public static final int THEME_FLAG_COPY = 1 << 1;
-  
+
   public int getCustomThemeFlags (int customThemeId) {
     return pmc.getByte(KEY_THEME_FLAGS + customThemeId, (byte) 0);
   }
@@ -5450,7 +5487,7 @@ public class Settings {
     int flags = getCustomThemeFlags(customThemeId);
     return (flags & THEME_FLAG_INSTALLED) == 0 || (flags & THEME_FLAG_COPY) != 0;
   }
-  
+
   public String getThemeAuthor (int customThemeId) {
     return pmc.getString(KEY_THEME_AUTHOR + customThemeId, null);
   }
@@ -5812,10 +5849,10 @@ public class Settings {
   })
   public @interface CrashType {
     int UNKNOWN = 0,
-        TDLIB = 1,
-        DISK_FULL = 2,
-        EXTERNAL_ERROR = 3,
-        DATABASE_BROKEN = 4;
+      TDLIB = 1,
+      DISK_FULL = 2,
+      EXTERNAL_ERROR = 3,
+      DATABASE_BROKEN = 4;
   }
 
   public static class CrashInfo {
@@ -5845,7 +5882,8 @@ public class Settings {
           return CrashType.DISK_FULL;
         } else if (Client.isDatabaseBrokenError(message)) {
           return CrashType.DATABASE_BROKEN;
-        } if (Client.isExternalError(message)) {
+        }
+        if (Client.isExternalError(message)) {
           return CrashType.EXTERNAL_ERROR;
         } else {
           return CrashType.TDLIB;
@@ -5950,10 +5988,12 @@ public class Settings {
     public final TdApi.File getFile () {
       return file;
     }
+
     @Nullable
     public final ImageFile getPreviewFile () {
       return previewFile;
     }
+
     public final String getDisplayName () {
       return displayName;
     }
@@ -5994,11 +6034,13 @@ public class Settings {
     }
 
     public abstract void install (@NonNull RunnableBool callback);
+
     public abstract boolean isBuiltIn ();
 
     public static final int STATE_NOT_INSTALLED = 0;
     public static final int STATE_INSTALLED = 1;
     public static final int STATE_UPDATE_NEEDED = 2;
+
     public abstract int getInstallState (boolean fast);
 
     public final boolean isInstalled () {
@@ -6199,7 +6241,7 @@ public class Settings {
   }
 
   public void putKnownSize (String path, long length, long lastModified, int width, int height) {
-    pmc.putLongArray(KEY_KNOWN_SIZE + path, new long[] {length, lastModified, BitwiseUtils.mergeLong(width, height)});
+    pmc.putLongArray(KEY_KNOWN_SIZE + path, new long[]{length, lastModified, BitwiseUtils.mergeLong(width, height)});
   }
 
   private long nextInstallationId () {
@@ -6251,34 +6293,34 @@ public class Settings {
     }
   }
 
-  public boolean getUseBigReactions(boolean channel){
-    int flag=channel ? FLAG_BIG_REACTIONS_CHANNELS : FLAG_BIG_REACTIONS_CHATS;
-    return (pmc.getInt(KEY_BIG_REACTIONS, 3) & flag)==flag;
+  public boolean getUseBigReactions (boolean channel) {
+    int flag = channel ? FLAG_BIG_REACTIONS_CHANNELS : FLAG_BIG_REACTIONS_CHATS;
+    return (pmc.getInt(KEY_BIG_REACTIONS, 3) & flag) == flag;
   }
 
-  public void setUseBigReactions(boolean chats, boolean channels){
-    int flags=0;
-    if(chats)
-      flags|=FLAG_BIG_REACTIONS_CHATS;
-    if(channels)
-      flags|=FLAG_BIG_REACTIONS_CHANNELS;
+  public void setUseBigReactions (boolean chats, boolean channels) {
+    int flags = 0;
+    if (chats)
+      flags |= FLAG_BIG_REACTIONS_CHATS;
+    if (channels)
+      flags |= FLAG_BIG_REACTIONS_CHANNELS;
     pmc.edit().putInt(KEY_BIG_REACTIONS, flags).apply();
   }
 
-  public List<String> getQuickReactions(){
-    String[] r=pmc.getStringArray("quickReactions");
-    return r==null ? Collections.singletonList("\uD83D\uDC4D") : Arrays.asList(r);
+  public List<String> getQuickReactions () {
+    String[] r = pmc.getStringArray("quickReactions");
+    return r == null ? Collections.singletonList("\uD83D\uDC4D") : Arrays.asList(r);
   }
 
-  public boolean areQuickReactionsEnabled(){
+  public boolean areQuickReactionsEnabled () {
     return pmc.getBoolean("quickReactionsEnabled", true);
   }
 
-  public void setQuickReactionsEnabled(boolean enabled){
+  public void setQuickReactionsEnabled (boolean enabled) {
     pmc.edit().putBoolean("quickReactionsEnabled", enabled).apply();
   }
 
-  public void setQuickReactions(List<String> quickReactions){
+  public void setQuickReactions (List<String> quickReactions) {
     pmc.edit().putStringArray("quickReactions", quickReactions.toArray(new String[0])).apply();
   }
 }

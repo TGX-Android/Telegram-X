@@ -31,15 +31,15 @@ public class ImageReceiverView extends View implements Destroyable, AttachDelega
 
   private Bitmap overlayBitmap;
 
-  public ImageReceiverView(Context context){
+  public ImageReceiverView (Context context) {
     this(context, null);
   }
 
-  public ImageReceiverView(Context context, AttributeSet attrs){
+  public ImageReceiverView (Context context, AttributeSet attrs) {
     this(context, attrs, 0);
   }
 
-  public ImageReceiverView(Context context, AttributeSet attrs, int defStyle){
+  public ImageReceiverView (Context context, AttributeSet attrs, int defStyle) {
     super(context, attrs, defStyle);
     this.receiver = new ImageReceiver(this, 0);
   }

@@ -62,6 +62,7 @@ public class ChatsRecyclerView extends CustomRecyclerView implements ClickHelper
 
   public interface LoadMoreCallback {
     boolean ableToLoadMore ();
+
     void requestLoadMore ();
   }
 

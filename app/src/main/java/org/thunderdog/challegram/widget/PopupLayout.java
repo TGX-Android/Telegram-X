@@ -72,7 +72,8 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
 
   public interface DismissListener {
     void onPopupDismiss (PopupLayout popup);
-    default void onPopupDismissPrepare (PopupLayout popup) { }
+
+    default void onPopupDismissPrepare (PopupLayout popup) {}
   }
 
   public interface ShowListener {
@@ -240,7 +241,8 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
     } else if (window != null) {
       try {
         window.dismiss();
-      } catch (Throwable ignored) { }
+      } catch (Throwable ignored) {
+      }
     }
   }
 
@@ -294,10 +296,10 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
           if (needFullScreen) {
             patchPopupWindow(window);
           }
-          if(Build.VERSION.SDK_INT>=28){
-            View view=window.getContentView().getRootView();
-            WindowManager.LayoutParams lp=(WindowManager.LayoutParams) view.getLayoutParams();
-            lp.layoutInDisplayCutoutMode=WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+          if (Build.VERSION.SDK_INT >= 28) {
+            View view = window.getContentView().getRootView();
+            WindowManager.LayoutParams lp = (WindowManager.LayoutParams) view.getLayoutParams();
+            lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
             context.getWindowManager().updateViewLayout(view, lp);
           }
           return;
@@ -537,7 +539,9 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
 
   public interface AnimatedPopupProvider {
     void prepareShowAnimation ();
+
     void launchShowAnimation (PopupLayout popup);
+
     boolean launchHideAnimation (PopupLayout popup, FactorAnimator originalAnimator);
   }
 
@@ -870,7 +874,6 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
   }
 
   // Drawing
-
 
 
   // We're going deeper: popups inside popups

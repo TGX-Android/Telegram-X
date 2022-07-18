@@ -320,7 +320,7 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
   }
 
   @Override
-  public boolean drawBubbleTimeOverContent() {
+  public boolean drawBubbleTimeOverContent () {
     return true;
   }
 

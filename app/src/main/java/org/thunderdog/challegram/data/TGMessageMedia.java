@@ -460,7 +460,7 @@ public class TGMessageMedia extends TGMessage {
   }*/
 
   @Override
-  public boolean drawBubbleTimeOverContent() {
+  public boolean drawBubbleTimeOverContent () {
     return wrapper == null && !hasFooter();
   }
 

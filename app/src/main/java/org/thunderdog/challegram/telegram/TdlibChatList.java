@@ -164,7 +164,7 @@ public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterCh
     }
   }
 
-  public boolean hasUnreadReactions() {
+  public boolean hasUnreadReactions () {
     synchronized (list) {
       for (Entry entry : list) {
         if (entry.chat.unreadReactionCount > 0)

@@ -913,7 +913,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
             break;
           }
           case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO: {
-            RadioView radioView = RadioView.simpleRadioView(context,  !Lang.rtl());
+            RadioView radioView = RadioView.simpleRadioView(context, !Lang.rtl());
             settingView.addView(radioView);
             if (themeProvider != null) {
               themeProvider.addThemeInvalidateListener(radioView);
@@ -1112,7 +1112,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       }
       case ListItem.TYPE_USER: {
         UserView userView;
-        userView=new UserView(context, tdlib); // FIXME theme
+        userView = new UserView(context, tdlib); // FIXME theme
         userView.setOffsetLeft(Screen.dp(11f));
         userView.setOnClickListener(onClickListener);
         Views.setClickable(userView);
@@ -1122,7 +1122,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       }
       case ListItem.TYPE_USER_REACTION: {
         UserReactionView userView;
-        userView=new UserReactionView(context, tdlib);
+        userView = new UserReactionView(context, tdlib);
         userView.setOnClickListener(onClickListener);
         Views.setClickable(userView);
         // RippleSupport.setTransparentSelector(userView);
@@ -1159,6 +1159,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_MEMBERS_LIST: {
         RecyclerView recyclerView = new RecyclerView(context) {
           private int oldWidth;
+
           @Override
           protected void onMeasure (int widthSpec, int heightSpec) {
             super.onMeasure(widthSpec, heightSpec);
@@ -2104,7 +2105,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         LinearLayout.LayoutParams lParams;
         MaterialEditTextGroup editText;
 
-        int[][][] data = new int[][][] {
+        int[][][] data = new int[][][]{
           {
             {
               R.id.color_hex,
@@ -2256,7 +2257,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
 
         // Buttons
 
-        int[][] buttonIds = new int[][] {
+        int[][] buttonIds = new int[][]{
           {
             R.id.btn_colorUndo,
             R.id.btn_colorRedo,

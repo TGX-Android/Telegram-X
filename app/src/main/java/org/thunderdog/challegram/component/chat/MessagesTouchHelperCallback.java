@@ -46,17 +46,17 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
   @Override
   public int getMovementFlags (RecyclerView recyclerView, RecyclerView.ViewHolder holder) {
     if (controller == null ||
-        controller.inSelectMode() ||
-        controller.navigationController() == null ||
-        !MessagesHolder.isMessageType(holder.getItemViewType())) {
+      controller.inSelectMode() ||
+      controller.navigationController() == null ||
+      !MessagesHolder.isMessageType(holder.getItemViewType())) {
       return 0;
     }
     TGMessage m = MessagesHolder.findMessageView(holder.itemView).getMessage();
     if (!m.canSwipe() ||
-        m instanceof TGMessageChat ||
-        m instanceof TGMessageBotInfo ||
-        m.isSending() ||
-        m.getChatId() == 0) {
+      m instanceof TGMessageChat ||
+      m instanceof TGMessageBotInfo ||
+      m.isSending() ||
+      m.getChatId() == 0) {
       return 0;
     }
 
@@ -65,8 +65,8 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
     if ((canDragReply() && m.canReplyTo()) || canDragReact()) {
       int flag = Lang.rtl() ? ItemTouchHelper.RIGHT : ItemTouchHelper.LEFT;
       flags |= flag;
-      if(!controller.getQuickReactions().isEmpty()){
-        flags|=ItemTouchHelper.UP | ItemTouchHelper.DOWN;
+      if (!controller.getQuickReactions().isEmpty()) {
+        flags |= ItemTouchHelper.UP | ItemTouchHelper.DOWN;
       }
     }
 
@@ -81,7 +81,7 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
     return Settings.instance().needChatQuickReply() && controller.canWriteMessages() && !controller.needTabs();
   }
 
-  public boolean canDragReact(){
+  public boolean canDragReact () {
     return !controller.getQuickReactions().isEmpty() && !controller.needTabs();
   }
 
@@ -107,18 +107,18 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
       boolean needDelay = false;
       if (direction == (Lang.rtl() ? CustomTouchHelper.RIGHT : CustomTouchHelper.LEFT) && (canDragReply() || canDragReact())) {
         after = () -> {
-          int idx=msg.getQuickReactionIndex();
-          if(!canDragReply())
+          int idx = msg.getQuickReactionIndex();
+          if (!canDragReply())
             idx++;
-          if(idx==0){
+          if (idx == 0) {
             controller.showReply(msg.getNewestMessage(), true, true);
-          }else{
-            int[] loc={0, 0};
+          } else {
+            int[] loc = {0, 0};
             holder.itemView.getLocationOnScreen(loc);
-            int size=Screen.dp(20);
-            int x=holder.itemView.getWidth()-Screen.dp(32)+loc[0]-size/2;
-            int y=(msg.getBottomContentEdge()-msg.getTopContentEdge())/2+loc[1]-size/2;
-            controller.sendMessageReaction(msg, controller.getQuickReactions().get(idx-1).reaction, null, new Rect(x, y, x+size, y+size), null, false);
+            int size = Screen.dp(20);
+            int x = holder.itemView.getWidth() - Screen.dp(32) + loc[0] - size / 2;
+            int y = (msg.getBottomContentEdge() - msg.getTopContentEdge()) / 2 + loc[1] - size / 2;
+            controller.sendMessageReaction(msg, controller.getQuickReactions().get(idx - 1).reaction, null, new Rect(x, y, x + size, y + size), null, false);
           }
         };
       }
@@ -158,18 +158,18 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
       }
       if (swipeDir == (Lang.rtl() ? CustomTouchHelper.RIGHT : CustomTouchHelper.LEFT)) {
         if (canDragReply() || canDragReact()) {
-          int idx=msg.getQuickReactionIndex();
-          if(!canDragReply())
+          int idx = msg.getQuickReactionIndex();
+          if (!canDragReply())
             idx++;
-          if(idx==0){
+          if (idx == 0) {
             controller.showReply(msg.getNewestMessage(), true, true);
-          }else{
-            int[] loc={0, 0};
+          } else {
+            int[] loc = {0, 0};
             holder.itemView.getLocationOnScreen(loc);
-            int size=Screen.dp(20);
-            int x=holder.itemView.getWidth()-Screen.dp(32)+loc[0]-size/2;
-            int y=(msg.getBottomContentEdge()-msg.getTopContentEdge())/2+loc[1]-size/2;
-            controller.sendMessageReaction(msg, controller.getQuickReactions().get(idx-1).reaction, null, null, null, false);
+            int size = Screen.dp(20);
+            int x = holder.itemView.getWidth() - Screen.dp(32) + loc[0] - size / 2;
+            int y = (msg.getBottomContentEdge() - msg.getTopContentEdge()) / 2 + loc[1] - size / 2;
+            controller.sendMessageReaction(msg, controller.getQuickReactions().get(idx - 1).reaction, null, null, null, false);
           }
         }
       } else {
@@ -185,13 +185,13 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
   @Override
   public void onChildDraw (Canvas c, RecyclerView recyclerView, RecyclerView.ViewHolder holder, float dx, float dy, int state, boolean isActive) {
     if (state == ItemTouchHelper.ACTION_STATE_SWIPE && MessagesHolder.isMessageType(holder.getItemViewType())) {
-      if((Lang.rtl() && dx<0) || (!Lang.rtl() && dx>0)){
-        dy=0;
+      if ((Lang.rtl() && dx < 0) || (!Lang.rtl() && dx > 0)) {
+        dy = 0;
       }
       final MessageView v = MessagesHolder.findMessageView(holder.itemView);
       final TGMessage msg = v.getMessage();
-      if(isActive)
-        lastActiveDY=dy;
+      if (isActive)
+        lastActiveDY = dy;
       msg.translate(dx, isActive ? dy : lastActiveDY, true);
       if (holder.itemView instanceof MessageViewGroup) {
         ((MessageViewGroup) holder.itemView).setSwipeTranslation(msg.getTranslation());
@@ -200,7 +200,7 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
   }
 
   @Override
-  public int interpolateOutOfBoundsScroll(RecyclerView recyclerView, int viewSize, int viewSizeOutOfBounds, int totalSize, long msSinceStartScroll){
+  public int interpolateOutOfBoundsScroll (RecyclerView recyclerView, int viewSize, int viewSizeOutOfBounds, int totalSize, long msSinceStartScroll) {
     return 0; // prevents scrolling when dragging vertically
   }
 }

@@ -468,7 +468,7 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
     context.tdlib().client().send(new TdApi.SetPinnedChats(context.chatList(), ArrayUtils.asArray(chatIds)), context.tdlib().okHandler());
   }
 
-  public void savePinnedChats () { }
+  public void savePinnedChats () {}
 
   public int refreshLastMessage (long chatId, long messageId, boolean needRebuild) {
     int index = indexOfChat(chatId);

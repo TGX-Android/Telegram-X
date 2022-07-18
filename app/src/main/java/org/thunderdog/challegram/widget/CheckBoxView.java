@@ -56,7 +56,7 @@ public class CheckBoxView extends View {
     isChecked.setValue(checked, animated);
   }
 
-  public void setIndeterminate(boolean indeterminate, boolean animated){
+  public void setIndeterminate (boolean indeterminate, boolean animated) {
     isIndeterminate.setValue(indeterminate, animated);
   }
 
@@ -76,8 +76,8 @@ public class CheckBoxView extends View {
 
   private static final float FACTOR_DIFF = .65f;
   private static final float SCALE_DIFF = .15f;
-  private Path path=new Path();
-  private Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
+  private Path path = new Path();
+  private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
   @Override
   protected void onDraw (Canvas c) {
@@ -137,13 +137,13 @@ public class CheckBoxView extends View {
 
       if (checkFactor != 0f) {
         final int checkColor = ColorUtils.alphaColor(showFactor, Theme.radioCheckColor());
-        float indFactor=isIndeterminate.getFloatValue();
-        float x1=Screen.dp(3);
-        float y1=interpolate(Screen.dp(8.5f), Screen.dp(8.5f), indFactor);
-        float x2=interpolate(Screen.dp(6.5f), Screen.dp(8.5f), indFactor);
-        float y2=interpolate(Screen.dp(12), Screen.dp(8.5f), indFactor);
-        float x3=Screen.dp(14.25f);
-        float y3=interpolate(Screen.dp(4.5f), Screen.dp(8.5f), indFactor);
+        float indFactor = isIndeterminate.getFloatValue();
+        float x1 = Screen.dp(3);
+        float y1 = interpolate(Screen.dp(8.5f), Screen.dp(8.5f), indFactor);
+        float x2 = interpolate(Screen.dp(6.5f), Screen.dp(8.5f), indFactor);
+        float y2 = interpolate(Screen.dp(12), Screen.dp(8.5f), indFactor);
+        float x3 = Screen.dp(14.25f);
+        float y3 = interpolate(Screen.dp(4.5f), Screen.dp(8.5f), indFactor);
 
         path.rewind();
         path.moveTo(interpolate(x2, x1, checkFactor), interpolate(y2, y1, checkFactor));
@@ -159,8 +159,8 @@ public class CheckBoxView extends View {
     Views.restore(c, restoreToCount);
   }
 
-  private static float interpolate(float x1, float x2, float k){
-    return x1*(1f-k)+x2*k;
+  private static float interpolate (float x1, float x2, float k) {
+    return x1 * (1f - k) + x2 * k;
   }
 
   public static CheckBoxView simpleCheckBox (Context context) {

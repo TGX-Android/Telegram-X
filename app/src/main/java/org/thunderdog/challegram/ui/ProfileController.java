@@ -716,7 +716,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
               final boolean needBlock = !tdlib.chatBlocked(chat.id);
               final boolean isBot = tdlib.isBotChat(chat.id);
               if (needBlock) {
-                showOptions(Lang.getStringBold(isBot ? R.string.BlockBotConfirm : R.string.BlockUserConfirm, tdlib.chatTitle(chat.id)), new int[] {R.id.btn_blockSender, R.id.btn_cancel}, new String[]{Lang.getString(isBot ? R.string.BlockBot : R.string.BlockContact), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_block_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
+                showOptions(Lang.getStringBold(isBot ? R.string.BlockBotConfirm : R.string.BlockUserConfirm, tdlib.chatTitle(chat.id)), new int[]{R.id.btn_blockSender, R.id.btn_cancel}, new String[]{Lang.getString(isBot ? R.string.BlockBot : R.string.BlockContact), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_block_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
                   if (!isDestroyed() && id1 == R.id.btn_blockSender) {
                     tdlib.blockSender(tdlib.sender(chat.id), true, result -> {
                       if (TD.isOk(result)) {
@@ -1864,7 +1864,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             break;
           }
           case R.id.btn_reactions: {
-            view.setData(Lang.getString(R.string.XofY, chat.availableReactions==null ? 0 : chat.availableReactions.length, tdlib.getSupportedReactions().size()));
+            view.setData(Lang.getString(R.string.XofY, chat.availableReactions == null ? 0 : chat.availableReactions.length, tdlib.getSupportedReactions().size()));
             break;
           }
           case R.id.btn_prehistoryMode: {
@@ -3120,8 +3120,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     );
   }
 
-  private void openChatReactions(){
-    EditReactionsController c=new EditReactionsController(context, tdlib);
+  private void openChatReactions () {
+    EditReactionsController c = new EditReactionsController(context, tdlib);
     c.setArguments(chat);
     navigateTo(c);
   }
@@ -3331,9 +3331,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private boolean hasUnsavedChanges () {
     return
       (chatTitleItem != null && !StringUtils.equalsOrBothEmpty(chat.title, chatTitleItem.getStringValue())) ||
-      (chatDescriptionItem != null && !StringUtils.equalsOrBothEmpty(getDescriptionValue(), chatDescriptionItem.getStringValue())) ||
-      hasTtlChanges() ||
-      hasSlowModeChanges();
+        (chatDescriptionItem != null && !StringUtils.equalsOrBothEmpty(getDescriptionValue(), chatDescriptionItem.getStringValue())) ||
+        hasTtlChanges() ||
+        hasSlowModeChanges();
   }
 
   private boolean hasSlowModeChanges () {
@@ -3599,7 +3599,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, mode == MODE_EDIT_CHANNEL ? R.string.RestrictSavingChannelHint : R.string.RestrictSavingGroupHint));
       added = false;
     }
-    if(tdlib.canChangeInfo(chat, false)){
+    if (tdlib.canChangeInfo(chat, false)) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_reactions, 0, R.string.ChatReactions));
       added = true;
@@ -4145,7 +4145,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           return;
         }
         if (isBasicGroup() || isChannel()) {
-          showOptions(Lang.getStringBold(isBasicGroup() ? R.string.MemberCannotJoinGroup : R.string.MemberCannotJoinChannel, memberName), new int[] {R.id.btn_blockSender, R.id.btn_cancel}, new String[]{Lang.getString(R.string.BlockUser), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+          showOptions(Lang.getStringBold(isBasicGroup() ? R.string.MemberCannotJoinGroup : R.string.MemberCannotJoinChannel, memberName), new int[]{R.id.btn_blockSender, R.id.btn_cancel}, new String[]{Lang.getString(R.string.BlockUser), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
             if (id == R.id.btn_blockSender) {
               tdlib.setChatMemberStatus(chat.id, member.memberId, new TdApi.ChatMemberStatusBanned(), member.status, (success, error) -> {
                 if (success) {
@@ -6086,7 +6086,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   @Override
-  public void onChatAvailableReactionsUpdated(long chatId, String[] availableReactions){
+  public void onChatAvailableReactionsUpdated (long chatId, String[] availableReactions) {
     tdlib.ui().post(() -> {
       if (!isDestroyed() && chat.id == chatId) {
         updateValuedItem(R.id.btn_reactions);

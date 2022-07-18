@@ -177,11 +177,11 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
             break;
           }
           case R.id.btn_quickReaction: {
-            if(Settings.instance().areQuickReactionsEnabled()){
-              List<String> reactions=Settings.instance().getQuickReactions();
-              v.setData(reactions.stream().map(r->tdlib.getReaction(r).title).collect(Collectors.joining(Lang.getConcatSeparator())));
+            if (Settings.instance().areQuickReactionsEnabled()) {
+              List<String> reactions = Settings.instance().getQuickReactions();
+              v.setData(reactions.stream().map(r -> tdlib.getReaction(r).title).collect(Collectors.joining(Lang.getConcatSeparator())));
               v.setDrawModifier(new ReactionDrawModifier(reactions.get(0), tdlib, v));
-            }else{
+            } else {
               v.setData(R.string.QuickReactionsDisabled);
               v.setDrawModifier(null);
             }
@@ -296,11 +296,11 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
             }
             break;
           }
-          case R.id.btn_useBigReactions:{
-            ArrayList<String> options=new ArrayList<>();
-            if(Settings.instance().getUseBigReactions(false))
+          case R.id.btn_useBigReactions: {
+            ArrayList<String> options = new ArrayList<>();
+            if (Settings.instance().getUseBigReactions(false))
               options.add(Lang.getString(R.string.Chats));
-            if(Settings.instance().getUseBigReactions(true))
+            if (Settings.instance().getUseBigReactions(true))
               options.add(Lang.getString(R.string.Channels));
             v.setData(options.isEmpty() ? Lang.getString(R.string.BigReactionsNone) : TextUtils.join(Lang.getConcatSeparator(), options));
             break;
@@ -842,7 +842,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
     if (oldState == AppUpdater.State.CHECKING && state == AppUpdater.State.NONE) {
       // Slight delay
       runOnUiThread(() ->
-        adapter.updateValuedSettingById(R.id.btn_checkUpdates),
+          adapter.updateValuedSettingById(R.id.btn_checkUpdates),
         250
       );
     } else {
@@ -869,8 +869,8 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       adapter.updateValuedSettingById(R.id.btn_icon);
   }
 
-  public void updateQuickReactions(){
-    if(adapter!=null)
+  public void updateQuickReactions () {
+    if (adapter != null)
       adapter.updateValuedSettingById(R.id.btn_quickReaction);
   }
 
@@ -1137,7 +1137,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         break;
       }
       case R.id.btn_quickReaction: {
-        SettingsQuickReactionController c=new SettingsQuickReactionController(context, tdlib);
+        SettingsQuickReactionController c = new SettingsQuickReactionController(context, tdlib);
         c.setArguments(new SettingsQuickReactionController.Args(this));
         navigateTo(c);
         break;
@@ -1160,17 +1160,17 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         break;
       }
       case R.id.btn_cameraRatio: {
-        showOptions(Lang.boldify(Lang.getString(R.string.CameraRatio)), new int[] {
+        showOptions(Lang.boldify(Lang.getString(R.string.CameraRatio)), new int[]{
           R.id.btn_cameraRatio_16_9,
           R.id.btn_cameraRatio_4_3,
           // R.id.btn_cameraRatio_1_1,
           R.id.btn_cameraRatio_fullScreen
-        }, new String[] {
+        }, new String[]{
           "16:9",
           "4:3",
           // "1:1",
           Lang.getString(R.string.CameraRatioFull)
-        }, null, new int[] {
+        }, null, new int[]{
           R.drawable.baseline_crop_16_9_24,
           R.drawable.baseline_crop_3_2_24,
           // R.drawable.baseline_crop_square_24,
@@ -1199,15 +1199,15 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         break;
       }
       case R.id.btn_cameraVolume: {
-        showOptions(Lang.boldify(Lang.getString(R.string.CameraVolume)), new int[] {
+        showOptions(Lang.boldify(Lang.getString(R.string.CameraVolume)), new int[]{
           R.id.btn_cameraVolumeShoot,
           R.id.btn_cameraVolumeZoom,
           R.id.btn_cameraVolumeNone
-        }, new String[] {
+        }, new String[]{
           Lang.getString(R.string.CameraVolumeShoot),
           Lang.getString(R.string.CameraVolumeZoom),
           Lang.getString(R.string.CameraVolumeNone),
-        }, null, new int[] {
+        }, null, new int[]{
           R.drawable.baseline_camera_enhance_24,
           R.drawable.baseline_zoom_in_24,
           R.drawable.baseline_volume_up_24
@@ -1234,7 +1234,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       case R.id.btn_cameraType: {
         if (Config.CAMERA_X_AVAILABLE) {
           int type = Settings.instance().getCameraType();
-          showSettings(R.id.btn_cameraType, new ListItem[] {
+          showSettings(R.id.btn_cameraType, new ListItem[]{
             new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_cameraTypeX, 0, R.string.CameraTypeXBeta, R.id.btn_cameraType, type == Settings.CAMERA_TYPE_X),
             new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_cameraTypeLegacy, 0, R.string.CameraTypeLegacy, R.id.btn_cameraType, type == Settings.CAMERA_TYPE_LEGACY),
             new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_cameraTypeSystem, 0, R.string.CameraTypeSystem, R.id.btn_cameraType, type == Settings.CAMERA_TYPE_SYSTEM),
@@ -1435,11 +1435,11 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         Settings.instance().setUseBigEmoji(adapter.toggleView(v));
         break;
       }
-      case R.id.btn_useBigReactions:{
+      case R.id.btn_useBigReactions: {
         showSettings(
           new SettingsWrapBuilder(R.id.btn_useBigReactions).setRawItems(new ListItem[]{
-                new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_chats, 0, R.string.Chats, R.id.btn_chats, Settings.instance().getUseBigReactions(false)),
-                new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_channels, 0, R.string.Channels, R.id.btn_channels, Settings.instance().getUseBigReactions(true))
+            new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_chats, 0, R.string.Chats, R.id.btn_chats, Settings.instance().getUseBigReactions(false)),
+            new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_channels, 0, R.string.Channels, R.id.btn_channels, Settings.instance().getUseBigReactions(true))
           }).addHeaderItem(Lang.getString(R.string.BigReactionsExplanation)).setIntDelegate((id, result) -> {
             Settings.instance().setUseBigReactions(result.get(R.id.btn_chats) == R.id.btn_chats, result.get(R.id.btn_channels) == R.id.btn_channels);
             adapter.updateValuedSettingById(R.id.btn_useBigReactions);
@@ -1669,7 +1669,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
 
   private void showUpdateOptions () {
     int autoUpdateMode = Settings.instance().getAutoUpdateMode();
-    showSettings(new SettingsWrapBuilder(R.id.btn_updateAutomatically).setRawItems(new ListItem[] {
+    showSettings(new SettingsWrapBuilder(R.id.btn_updateAutomatically).setRawItems(new ListItem[]{
       new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_updateAutomaticallyPrompt, 0, R.string.AutoUpdatePrompt, R.id.btn_updateAutomatically, autoUpdateMode == Settings.AUTO_UPDATE_MODE_PROMPT),
       new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_updateAutomaticallyAlways, 0, R.string.AutoUpdateAlways, R.id.btn_updateAutomatically, autoUpdateMode == Settings.AUTO_UPDATE_MODE_ALWAYS),
       new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_updateAutomaticallyWiFi, 0, R.string.AutoUpdateWiFi, R.id.btn_updateAutomatically, autoUpdateMode == Settings.AUTO_UPDATE_MODE_WIFI_ONLY),
@@ -1713,7 +1713,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
     int customThemeId = ThemeManager.resolveCustomThemeId(themeId);
     boolean canEdit = isCustom && Settings.instance().hasThemeOwnership(customThemeId);
     boolean isCurrent = ThemeManager.instance().isCurrentTheme(themeId);
-    int size = isCustom ? (isCurrent ? 3 : 4): 1;
+    int size = isCustom ? (isCurrent ? 3 : 4) : 1;
     IntList ids = new IntList(size);
     IntList icons = new IntList(size);
     StringList strings = new StringList(size);
@@ -2073,7 +2073,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
     int settingId = isVideo ? R.id.btn_earpieceModeVideo : R.id.btn_earpieceMode;
     ListItem item1 = new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_earpieceMode_never, 0, R.string.EarpieceModeNever, settingId, earpieceMode == Settings.EARPIECE_MODE_NEVER);
     ListItem item2 = new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_earpieceMode_proximity, 0, R.string.EarpieceModeProximity, settingId, earpieceMode == Settings.EARPIECE_MODE_PROXIMITY);
-    ListItem[] items = isVideo ? new ListItem[] {item1, item2} : new ListItem[] {
+    ListItem[] items = isVideo ? new ListItem[]{item1, item2} : new ListItem[]{
       item1, item2, new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_earpieceMode_always, 0, R.string.EarpieceModeAlways, settingId, earpieceMode == Settings.EARPIECE_MODE_ALWAYS)
     };
     showSettings(new SettingsWrapBuilder(settingId).setRawItems(items).setAllowResize(false).setIntDelegate((id, result) -> {
@@ -2096,7 +2096,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
 
   private void showInstantViewOptions () {
     int instantViewOption = Settings.instance().getInstantViewMode();
-    showSettings(new SettingsWrapBuilder(R.id.btn_instantViewMode).setRawItems(new ListItem[] {
+    showSettings(new SettingsWrapBuilder(R.id.btn_instantViewMode).setRawItems(new ListItem[]{
       new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_instantViewModeAll, 0, R.string.AutoInstantViewAll, R.id.btn_instantViewMode, instantViewOption == Settings.INSTANT_VIEW_MODE_ALL),
       new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_instantViewModeTelegram, 0, R.string.AutoInstantViewTelegram, R.id.btn_instantViewMode, instantViewOption == Settings.INSTANT_VIEW_MODE_INTERNAL),
       new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_instantViewModeNone, 0, R.string.AutoInstantViewNone, R.id.btn_instantViewMode, instantViewOption == Settings.INSTANT_VIEW_MODE_NONE),

@@ -178,8 +178,11 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   public interface PickerDelegate {
     boolean onChatPicked (TdApi.Chat chat, Runnable onDone);
-    default Object getShareItem () { return null; }
-    default void modifyChatOpenParams (TdlibUi.ChatOpenParameters params) { }
+
+    default Object getShareItem ()                                        {return null;}
+
+    default void modifyChatOpenParams (TdlibUi.ChatOpenParameters params) {}
+
     default int getTitleStringRes () {
       return R.string.SelectChat;
     }
@@ -510,7 +513,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       }
 
       @Override
-      public void onSwiped (@NonNull RecyclerView.ViewHolder viewHolder, int direction) { }
+      public void onSwiped (@NonNull RecyclerView.ViewHolder viewHolder, int direction) {}
     });
     touchHelper.attachToRecyclerView(chatsView);
 
@@ -1031,17 +1034,17 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
         mode = canPinUnpinSelectedChats();
         header.addButton(menu, R.id.menu_btn_pinUnpin, mode == ACTION_MODE_ALL_ENABLED ? R.drawable.deproko_baseline_pin_undo_24 : R.drawable.deproko_baseline_pin_24, iconColorId, this, Screen.dp(52f))
-                .setVisibility((value = shouldShowPin(mode)) ? View.VISIBLE : View.GONE);
+          .setVisibility((value = shouldShowPin(mode)) ? View.VISIBLE : View.GONE);
         if (value) totalButtonsCount++;
 
         mode = canMuteUnmuteSelectedChats();
         header.addButton(menu, R.id.menu_btn_muteUnmute, mode == ACTION_MODE_ALL_ENABLED ? R.drawable.baseline_notifications_off_24 : R.drawable.baseline_notifications_24, iconColorId, this, Screen.dp(52f))
-                .setVisibility((value = mode != ACTION_MODE_NONE) ? View.VISIBLE : View.GONE);
+          .setVisibility((value = mode != ACTION_MODE_NONE) ? View.VISIBLE : View.GONE);
         if (value) totalButtonsCount++;
 
         mode = canDeleteSelectedChats();
         header.addDeleteButton(menu, this, iconColorId)
-                .setVisibility((value = mode != ACTION_MODE_NONE && mode != ACTION_MODE_MIXED) ? View.VISIBLE : View.GONE);
+          .setVisibility((value = mode != ACTION_MODE_NONE && mode != ACTION_MODE_MIXED) ? View.VISIBLE : View.GONE);
         if (value) totalButtonsCount++;
 
         header.addMoreButton(menu, this, getSelectHeaderIconColorId());
@@ -1252,13 +1255,13 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
             context.tooltipManager().builder(view).controller(getParentOrSelf()).icon(R.drawable.baseline_error_24).show(tdlib, message);
             return;
           }
-          showOptions((secretPinCount + cloudPinCount) == 1 ? tdlib.chatTitle(lastChatId) : Lang.pluralBold(isUnpin ? R.string.UnpinXChats : R.string.PinXChats, secretPinCount + cloudPinCount), new int[] {
+          showOptions((secretPinCount + cloudPinCount) == 1 ? tdlib.chatTitle(lastChatId) : Lang.pluralBold(isUnpin ? R.string.UnpinXChats : R.string.PinXChats, secretPinCount + cloudPinCount), new int[]{
             R.id.btn_pinUnpinChat,
             R.id.btn_cancel
-          }, new String[] {
+          }, new String[]{
             Lang.getString(isUnpin ? R.string.UnpinFromTop : R.string.PinToTop),
             Lang.getString(R.string.Cancel)
-          }, null, new int[] {isUnpin ? R.drawable.deproko_baseline_pin_undo_24 : R.drawable.deproko_baseline_pin_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
+          }, null, new int[]{isUnpin ? R.drawable.deproko_baseline_pin_undo_24 : R.drawable.deproko_baseline_pin_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
             if (optionId == R.id.btn_pinUnpinChat) {
               if (isUnpin) {
                 int remainingCount = selectedChats.size();
@@ -1489,7 +1492,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     String actionStr = Lang.plural(clearHistory ? R.string.ClearXHistories : R.string.DeleteXChats, selectedChats.size());
 
     RunnableBool deleter = needRevoke -> {
-      showOptions(Lang.getString(R.string.NoUndoWarn), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {actionStr, Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {clearHistory ? R.drawable.templarian_baseline_broom_24 : R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
+      showOptions(Lang.getString(R.string.NoUndoWarn), new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{actionStr, Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{clearHistory ? R.drawable.templarian_baseline_broom_24 : R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
         if (optionId == R.id.btn_delete) {
           final int size = selectedChats.size();
           AtomicInteger remaining = new AtomicInteger(size);
@@ -1617,9 +1620,9 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
             boolean isUnarchvie = chatList().getConstructor() == TdApi.ChatListArchive.CONSTRUCTOR;
             showOptions(
               Lang.pluralBold(isUnarchvie ? R.string.UnarchiveXChats : R.string.ArchiveXChats, selectedChats.size()),
-              new int[] { R.id.btn_archiveUnarchiveChat, R.id.btn_cancel },
-              new String[] {Lang.getString(isUnarchvie ? R.string.Unarchive : R.string.Archive), Lang.getString(R.string.Cancel) }, null,
-              new int[] {isUnarchvie ? R.drawable.baseline_unarchive_24 : R.drawable.baseline_archive_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
+              new int[]{R.id.btn_archiveUnarchiveChat, R.id.btn_cancel},
+              new String[]{Lang.getString(isUnarchvie ? R.string.Unarchive : R.string.Archive), Lang.getString(R.string.Cancel)}, null,
+              new int[]{isUnarchvie ? R.drawable.baseline_unarchive_24 : R.drawable.baseline_archive_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
                 if (optionId == R.id.btn_archiveUnarchiveChat) {
                   TdApi.ChatList chatList = isUnarchvie ? new TdApi.ChatListMain() : new TdApi.ChatListArchive();
                   for (int i = 0; i < selectedChats.size(); i++) {
@@ -1657,7 +1660,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
               showOptions(
                 Lang.pluralBold(botCount == count ? R.string.BlockXBots : R.string.BlockXUsers, count),
                 new int[]{R.id.btn_blockSender, R.id.btn_cancel},
-                new String[] {Lang.getString(R.string.BlockContact), Lang.getString(R.string.Cancel)},
+                new String[]{Lang.getString(R.string.BlockContact), Lang.getString(R.string.Cancel)},
                 new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL},
                 new int[]{R.drawable.baseline_block_24, R.drawable.baseline_cancel_24},
                 (v, optionId) -> {
@@ -1739,32 +1742,32 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       }
       case R.id.more_btn_clearCache: {
         showOptions(Lang.pluralBold(R.string.ClearXChats, selectedChats.size()),
-          new int[] {R.id.btn_clearCache, R.id.btn_cancel},
-          new String[] {Lang.getString(R.string.DeleteChatCache), Lang.getString(R.string.Cancel)}, null,
-          new int[] {R.drawable.templarian_baseline_broom_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
-          if (optionId == R.id.btn_clearCache) {
-            long[] chatIds = ArrayUtils.keys(selectedChats);
-            UI.showToast(Lang.plural(R.string.ClearingXChats, chatIds.length), Toast.LENGTH_SHORT);
-            tdlib.client().send(new TdApi.OptimizeStorage(0, 0, 0, 0, null, chatIds, null, true, 0), result -> {
-              switch (result.getConstructor()) {
-                case TdApi.StorageStatistics.CONSTRUCTOR: {
-                  long totalSize = ((TdApi.StorageStatistics) result).size;
-                  if (totalSize > 0) {
-                    UI.showToast(Lang.plural(R.string.ClearedSizeChats, chatIds.length, Strings.buildSize(totalSize)), Toast.LENGTH_SHORT);
-                  } else {
-                    UI.showToast(Lang.plural(R.string.ClearedNoneChats, chatIds.length), Toast.LENGTH_SHORT);
+          new int[]{R.id.btn_clearCache, R.id.btn_cancel},
+          new String[]{Lang.getString(R.string.DeleteChatCache), Lang.getString(R.string.Cancel)}, null,
+          new int[]{R.drawable.templarian_baseline_broom_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
+            if (optionId == R.id.btn_clearCache) {
+              long[] chatIds = ArrayUtils.keys(selectedChats);
+              UI.showToast(Lang.plural(R.string.ClearingXChats, chatIds.length), Toast.LENGTH_SHORT);
+              tdlib.client().send(new TdApi.OptimizeStorage(0, 0, 0, 0, null, chatIds, null, true, 0), result -> {
+                switch (result.getConstructor()) {
+                  case TdApi.StorageStatistics.CONSTRUCTOR: {
+                    long totalSize = ((TdApi.StorageStatistics) result).size;
+                    if (totalSize > 0) {
+                      UI.showToast(Lang.plural(R.string.ClearedSizeChats, chatIds.length, Strings.buildSize(totalSize)), Toast.LENGTH_SHORT);
+                    } else {
+                      UI.showToast(Lang.plural(R.string.ClearedNoneChats, chatIds.length), Toast.LENGTH_SHORT);
+                    }
+                    break;
                   }
-                  break;
+                  case TdApi.Error.CONSTRUCTOR:
+                    UI.showError(result);
+                    break;
                 }
-                case TdApi.Error.CONSTRUCTOR:
-                  UI.showError(result);
-                  break;
-              }
-            });
-            onSelectionActionComplete();
-          }
-          return true;
-        });
+              });
+              onSelectionActionComplete();
+            }
+            return true;
+          });
         break;
       }
       case R.id.more_btn_clearHistory: {
@@ -2374,17 +2377,17 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       case 2:
         // Mike and Olga are using Telegram
         return Lang.getStringBold(R.string.ContactsOnTelegramSeveral, tdlib.cache().userFirstName(userIds[0]),
-                                                                    tdlib.cache().userFirstName(userIds[1]));
+          tdlib.cache().userFirstName(userIds[1]));
       case 3:
         // Mike, Paul and Olga are using Telegram
         return Lang.getStringBold(R.string.ContactsOnTelegramSeveral, Strings.join(Lang.getConcatSeparator(),
-                                                                    tdlib.cache().userFirstName(userIds[0]), tdlib.cache().userFirstName(userIds[1])),
-                                                                    tdlib.cache().userFirstName(userIds[2]));
+            tdlib.cache().userFirstName(userIds[0]), tdlib.cache().userFirstName(userIds[1])),
+          tdlib.cache().userFirstName(userIds[2]));
       case 4:
         // Mike, Paul, Olga and Igor are using Telegram
         return Lang.getStringBold(R.string.ContactsOnTelegramSeveral, Strings.join(Lang.getConcatSeparator(),
-                                                                      tdlib.cache().userFirstName(userIds[0]), tdlib.cache().userFirstName(userIds[1]), tdlib.cache().userFirstName(userIds[2])),
-                                                                    tdlib.cache().userFirstName(userIds[3]));
+            tdlib.cache().userFirstName(userIds[0]), tdlib.cache().userFirstName(userIds[1]), tdlib.cache().userFirstName(userIds[2])),
+          tdlib.cache().userFirstName(userIds[3]));
     }
     if (count >= 5) {
       // Mike, Paul, Olga and X others are using Telegram
@@ -2465,7 +2468,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   @Override
-  public void onUnregisteredContactsChanged (int oldTotalCount, ArrayList<TdlibContactManager.UnregisteredContact> contacts, int totalCount) { }
+  public void onUnregisteredContactsChanged (int oldTotalCount, ArrayList<TdlibContactManager.UnregisteredContact> contacts, int totalCount) {}
 
   // Data load
 
@@ -2658,7 +2661,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   @Override
-  public void onChatUnreadMentionCount(final long chatId, final int unreadMentionCount, boolean availabilityChanged) {
+  public void onChatUnreadMentionCount (final long chatId, final int unreadMentionCount, boolean availabilityChanged) {
     runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.updateChatUnreadMentionCount(chatId, unreadMentionCount);
@@ -2667,7 +2670,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   @Override
-  public void onChatUnreadReactionCount(long chatId, int unreadReactionCount, boolean availabilityChanged){
+  public void onChatUnreadReactionCount (long chatId, int unreadReactionCount, boolean availabilityChanged) {
     runOnUiThreadOptional(() -> {
       if (chatsView != null) {
         chatsView.updateChatUnreadReactionCount(chatId, unreadReactionCount);
@@ -2742,7 +2745,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   @Override
-  public void onPreferenceChanged(Tdlib tdlib, long key, boolean value) {
+  public void onPreferenceChanged (Tdlib tdlib, long key, boolean value) {
     if (this.tdlib.id() == tdlib.id() && key == TdlibSettingsManager.PREFERENCE_HIDE_ARCHIVE) {
       setHideArchive(value);
     }

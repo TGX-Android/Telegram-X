@@ -280,8 +280,8 @@ public class TGMessageText extends TGMessage {
   @Override
   protected boolean onMessageContentChanged (TdApi.Message message, TdApi.MessageContent oldContent, TdApi.MessageContent newContent, boolean isBottomMessage) {
     if (!Td.equalsTo(Td.textOrCaption(oldContent), Td.textOrCaption(newContent)) ||
-        !Td.equalsTo(oldContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR ? ((TdApi.MessageText) oldContent).webPage : null,
-                     newContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR ? ((TdApi.MessageText) newContent).webPage : null)
+      !Td.equalsTo(oldContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR ? ((TdApi.MessageText) oldContent).webPage : null,
+        newContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR ? ((TdApi.MessageText) newContent).webPage : null)
     ) {
       updateMessageContent(msg, newContent, isBottomMessage);
       return true;
@@ -537,7 +537,7 @@ public class TGMessageText extends TGMessage {
   }
 
   @Override
-  public boolean canExpandBubbleWidthForReactions(){
+  public boolean canExpandBubbleWidthForReactions () {
     return true;
   }
 }

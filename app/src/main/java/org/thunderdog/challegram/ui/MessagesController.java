@@ -343,7 +343,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private CounterBadgeView unreadCountView, mentionCountView, reactionCountView;
 
   public boolean sponsoredMessageLoaded = false;
-  private List<TdApi.Reaction> quickReactions=Collections.emptyList();
+  private List<TdApi.Reaction> quickReactions = Collections.emptyList();
 
   public MessagesController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -799,7 +799,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
     };
 
-    topBar.initWithList(new CollapseListView.Item[] {
+    topBar.initWithList(new CollapseListView.Item[]{
       // TODO voice chat bar
       pinnedMessagesItem,
       requestsItem = new CollapseListView.ViewItem(requestsView, requestsViewHeight),
@@ -1806,9 +1806,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
 
         tdlib().client().send(new TdApi.SetBackground(
-                new TdApi.InputBackgroundRemote(getArgumentsStrict().wallpaperObject.id),
-                newBackgroundType,
-                Theme.isDark()
+          new TdApi.InputBackgroundRemote(getArgumentsStrict().wallpaperObject.id),
+          newBackgroundType,
+          Theme.isDark()
         ), result -> {
           if (result.getConstructor() == TdApi.Background.CONSTRUCTOR) {
             runOnUiThread(() -> {
@@ -1989,7 +1989,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (user == null) {
           break;
         }
-        showOptions(TD.getUserName(user) + ", " + Strings.formatPhone(user.phoneNumber), new int[] {R.id.btn_shareMyContact, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ShareMyContactInfo), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_BLUE, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_contact_phone_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
+        showOptions(TD.getUserName(user) + ", " + Strings.formatPhone(user.phoneNumber), new int[]{R.id.btn_shareMyContact, R.id.btn_cancel}, new String[]{Lang.getString(R.string.ShareMyContactInfo), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_BLUE, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_contact_phone_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
           if (id1 == R.id.btn_shareMyContact) {
             sendContact(tdlib.myUser(), true, TD.defaultSendOptions());
           }
@@ -2314,7 +2314,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       this.highlightMessageId = null;
     }
 
-    public Arguments (TdApi.ChatList chatList, TdApi.Chat chat, @Nullable String query, @Nullable TdApi.MessageSender sender, @Nullable TdApi.SearchMessagesFilter filter,  MessageId highlightMessageId, int highlightMode) {
+    public Arguments (TdApi.ChatList chatList, TdApi.Chat chat, @Nullable String query, @Nullable TdApi.MessageSender sender, @Nullable TdApi.SearchMessagesFilter filter, MessageId highlightMessageId, int highlightMode) {
       this.constructor = 4;
       this.chat = chat;
       this.chatList = chatList;
@@ -2599,7 +2599,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           manager.openEventLog(chat);
           messagesView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 120l));
           if (getArgumentsStrict().eventLogUserId != 0 && headerCell != null) {
-            manager.applyEventLogFilters(new TdApi.ChatEventLogFilters(true, true, true, true, true, true, true, true, true, true, true, true), new long[] { getArgumentsStrict().eventLogUserId });
+            manager.applyEventLogFilters(new TdApi.ChatEventLogFilters(true, true, true, true, true, true, true, true, true, true, true, true), new long[]{getArgumentsStrict().eventLogUserId});
           }
           break;
         case PREVIEW_MODE_SEARCH:
@@ -3296,10 +3296,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
           .setVisibility((value = canEditSelectedMessages()) ? View.VISIBLE : View.GONE);
         if (value) totalButtonsCount++;
         header.addButton(menu, R.id.menu_btn_clearCache, R.drawable.templarian_baseline_broom_24, iconColorId, this, Screen.dp(52f))
-        .setVisibility((value = canClearCacheSelectedMessages()) ? View.VISIBLE : View.GONE);
+          .setVisibility((value = canClearCacheSelectedMessages()) ? View.VISIBLE : View.GONE);
         if (value) totalButtonsCount++;
         header.addButton(menu, R.id.menu_btn_unpinAll, R.drawable.deproko_baseline_pin_undo_24, iconColorId, this, Screen.dp(52f))
-        .setVisibility((value = canUnpinSelectedMessages()) ? View.VISIBLE : View.GONE);
+          .setVisibility((value = canUnpinSelectedMessages()) ? View.VISIBLE : View.GONE);
         if (value) totalButtonsCount++;
         header.addRetryButton(menu, this, iconColorId)
           .setVisibility((value = canResendSelectedMessages()) ? View.VISIBLE : View.GONE);
@@ -3503,7 +3503,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.menu_btn_send: {
         if (selectedMessageIds != null && selectedMessageIds.size() > 0) {
-          showOptions(Lang.pluralBold(R.string.SendXMessagesNow, selectedMessageIds.size()), new int[] {R.id.btn_send, R.id.btn_cancel}, new String[] {Lang.getString(R.string.SendNow), Lang.getString(R.string.Cancel)}, null, new int[] {R.drawable.baseline_send_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
+          showOptions(Lang.pluralBold(R.string.SendXMessagesNow, selectedMessageIds.size()), new int[]{R.id.btn_send, R.id.btn_cancel}, new String[]{Lang.getString(R.string.SendNow), Lang.getString(R.string.Cancel)}, null, new int[]{R.drawable.baseline_send_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
             if (optionId == R.id.btn_send && selectedMessageIds != null) {
               for (int i = selectedMessageIds.size() - 1; i >= 0; i--) {
                 long messageId = selectedMessageIds.keyAt(i);
@@ -3540,7 +3540,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.menu_btn_unpinAll: {
         if (selectedMessageIds != null && selectedMessageIds.size() > 0) {
-          showOptions(Lang.pluralBold(R.string.UnpinXMessages, selectedMessageIds.size()), new int[] {R.id.btn_unpinAll, R.id.btn_cancel}, new String[] {Lang.getString(R.string.Unpin), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.deproko_baseline_pin_undo_24, R.drawable.baseline_cancel_24}, (itemView, viewId) -> {
+          showOptions(Lang.pluralBold(R.string.UnpinXMessages, selectedMessageIds.size()), new int[]{R.id.btn_unpinAll, R.id.btn_cancel}, new String[]{Lang.getString(R.string.Unpin), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.deproko_baseline_pin_undo_24, R.drawable.baseline_cancel_24}, (itemView, viewId) -> {
             if (viewId == R.id.btn_unpinAll) {
               final int size = selectedMessageIds.size();
               for (int i = 0; i < size; i++) {
@@ -3589,7 +3589,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             }
           }
           if (count > 0) {
-            showOptions(new int[] {R.id.btn_messageResend, R.id.btn_cancel}, new String[] {Lang.plural(R.string.ResendXMessages, count), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_BLUE, OPTION_COLOR_NORMAL}, (v, optionId) -> {
+            showOptions(new int[]{R.id.btn_messageResend, R.id.btn_cancel}, new String[]{Lang.plural(R.string.ResendXMessages, count), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_BLUE, OPTION_COLOR_NORMAL}, (v, optionId) -> {
               if (optionId == R.id.btn_messageResend) {
                 resendSelectedMessages();
                 finishSelectMode(-1);
@@ -4218,31 +4218,31 @@ public class MessagesController extends ViewController<MessagesController.Argume
       b.append(Lang.getString(resId));
     }
     String text = b.toString().trim();
-    boolean canReact=chat!=null && chat.availableReactions!=null && chat.availableReactions.length>0 && !msg.isSponsored() && msg.allowInteraction() && !(msg instanceof TGMessageChat);
-    if(canReact && !disableViewCounter){
-      tdlib.sendOnUiThread(new TdApi.GetMessageAvailableReactions(getChatId(), msg.getId()), res->{
+    boolean canReact = chat != null && chat.availableReactions != null && chat.availableReactions.length > 0 && !msg.isSponsored() && msg.allowInteraction() && !(msg instanceof TGMessageChat);
+    if (canReact && !disableViewCounter) {
+      tdlib.sendOnUiThread(new TdApi.GetMessageAvailableReactions(getChatId(), msg.getId()), res -> {
         List<String> availableReactions;
-        if(res instanceof TdApi.AvailableReactions){
-          boolean hasPremium=tdlib.hasPremium();
-          availableReactions=Arrays.stream(((TdApi.AvailableReactions) res).reactions).filter(ar->!ar.needsPremium || hasPremium).map(ar->ar.reaction).collect(Collectors.toList());
-        }else{
-          availableReactions=Collections.emptyList();
+        if (res instanceof TdApi.AvailableReactions) {
+          boolean hasPremium = tdlib.hasPremium();
+          availableReactions = Arrays.stream(((TdApi.AvailableReactions) res).reactions).filter(ar -> !ar.needsPremium || hasPremium).map(ar -> ar.reaction).collect(Collectors.toList());
+        } else {
+          availableReactions = Collections.emptyList();
         }
         patchReactionsAndReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, false, availableReactions);
       });
-    }else{
+    } else {
       patchReactionsAndReadReceiptsOptions(showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons), msg, disableViewCounter, Collections.emptyList());
     }
   }
 
-  private void patchReactionsAndReadReceiptsOptions(PopupLayout layout, TGMessage message, boolean disableViewCounter, List<String> availableReactions) {
-    if(!(layout.getChildAt(1) instanceof OptionsLayout))
+  private void patchReactionsAndReadReceiptsOptions (PopupLayout layout, TGMessage message, boolean disableViewCounter, List<String> availableReactions) {
+    if (!(layout.getChildAt(1) instanceof OptionsLayout))
       return;
 
     OptionsLayout optionsLayout = (OptionsLayout) layout.getChildAt(1);
 
-    if(!availableReactions.isEmpty()){
-      ReactionsMessageOptionsSheetHeaderView header=new ReactionsMessageOptionsSheetHeaderView(layout.getContext(), this, message, layout, availableReactions);
+    if (!availableReactions.isEmpty()) {
+      ReactionsMessageOptionsSheetHeaderView header = new ReactionsMessageOptionsSheetHeaderView(layout.getContext(), this, message, layout, availableReactions);
       optionsLayout.addView(header, 1);
       return;
     }
@@ -4935,7 +4935,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           TdApi.Message message = selectedMessage.getMessage();
           TdApi.Poll poll = ((TdApi.MessagePoll) message.content).poll;
           boolean isQuiz = poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR;
-          showOptions(Lang.getStringBold(isQuiz ? R.string.StopQuizWarn : R.string.StopPollWarn, poll.question), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(isQuiz ? R.string.StopQuiz : R.string.StopPoll), Lang.getString(R.string.Cancel)}, new int [] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_poll_24, R.drawable.baseline_cancel_24}, (optionItemView, optionId) -> {
+          showOptions(Lang.getStringBold(isQuiz ? R.string.StopQuizWarn : R.string.StopPollWarn, poll.question), new int[]{R.id.btn_done, R.id.btn_cancel}, new String[]{Lang.getString(isQuiz ? R.string.StopQuiz : R.string.StopPoll), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_poll_24, R.drawable.baseline_cancel_24}, (optionItemView, optionId) -> {
             if (optionId == R.id.btn_done) {
               tdlib.client().send(new TdApi.StopPoll(message.chatId, message.id, message.replyMarkup), tdlib.okHandler());
             }
@@ -5011,7 +5011,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             }
             case TdApi.MessageLocation.CONSTRUCTOR: {
               TdApi.Location location = ((TdApi.MessageLocation) content).location;
-              Intents.openDirections(location.latitude, location.longitude, null,null);
+              Intents.openDirections(location.latitude, location.longitude, null, null);
               break;
             }
           }
@@ -5386,7 +5386,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     boolean animateButtonContent = animated && bottomBarVisible.getFloatValue() > 0f;
     switch (bottomButtonAction) {
       case BOTTOM_ACTION_FOLLOW:
-        bottomBar.setAction(R.id.btn_follow, Lang.getString(R.string.Follow),  R.drawable.baseline_group_add_24, animateButtonContent);
+        bottomBar.setAction(R.id.btn_follow, Lang.getString(R.string.Follow), R.drawable.baseline_group_add_24, animateButtonContent);
         bottomBar.clearPreviewChat();
         break;
       case BOTTOM_ACTION_DISCUSS:
@@ -6114,7 +6114,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private float getReactionButtonY () {
     int moveY = Screen.dp(74f) - Screen.dp(16f);
-    float y = -getButtonsOffset() - moveY * scrollToBottomVisible.getFloatValue() - moveY*mentionButtonFactor;
+    float y = -getButtonsOffset() - moveY * scrollToBottomVisible.getFloatValue() - moveY * mentionButtonFactor;
     if (isInForceTouchMode()) {
       y += -Screen.dp(16f) + Screen.dp(4f);
     }
@@ -6800,8 +6800,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
           Location location = null;
           try {
             location = LocationServices.FusedLocationApi.getLastLocation(client);
-          } catch (SecurityException ignored) { }
-            catch (Throwable t) {
+          } catch (SecurityException ignored) {
+          } catch (Throwable t) {
             Log.w("getLastLocation error", t);
           }
           if (location == null && USE_LAST_KNOWN_LOCATION) {
@@ -6841,8 +6841,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
           timeout[0].cancel();
           try {
             manager.removeUpdates(this);
-          } catch (SecurityException ignored) { }
-            catch (Throwable t) {
+          } catch (SecurityException ignored) {
+          } catch (Throwable t) {
             Log.w("removeUpdates failed. Probable resource leak", t);
           }
           if (!sent[0]) {
@@ -6852,13 +6852,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
 
         @Override
-        public void onStatusChanged (String provider, int status, Bundle extras) { }
+        public void onStatusChanged (String provider, int status, Bundle extras) {}
 
         @Override
-        public void onProviderEnabled (String provider) { }
+        public void onProviderEnabled (String provider) {}
 
         @Override
-        public void onProviderDisabled (String provider) { }
+        public void onProviderDisabled (String provider) {}
       };
       timeout[0] = new CancellableRunnable() {
         @Override
@@ -6971,7 +6971,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         boolean onlyForSelf = isUserChat && !checkbox;
         tdlib.client().send(new TdApi.PinChatMessage(chatId, m.getSmallestId(), disableNotification, onlyForSelf), tdlib.okHandler());
       })
-    .setRawItems(new ListItem[] {item}).setSaveStr(R.string.Pin));
+      .setRawItems(new ListItem[]{item}).setSaveStr(R.string.Pin));
   }
 
   public void showHidePinnedMessages (boolean show, MessageListManager messageList) {
@@ -6996,21 +6996,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
     showOptions(new Options.Builder()
-      .info(pinnedCount > 1 ? Lang.pluralBold(R.string.UnpinXMessages, pinnedCount) : null)
-      .item(canPinAnyMessage(false) ? new OptionItem.Builder()
-        .id(R.id.btn_unpinMessage)
-        .name(Lang.getString(pinnedCount == 1 ? R.string.UnpinMessage : R.string.UnpinMessagesConfirm))
-        .color(OPTION_COLOR_RED)
-        .icon(R.drawable.deproko_baseline_pin_undo_24)
-        .build() : null
-      )
-      .item(!isSelfChat() ? new OptionItem.Builder()
-        .id(R.id.btn_dismissForSelf)
-        .name(R.string.HideForYourself)
-        .icon(R.drawable.baseline_close_24)
-        .build() : null)
-      .cancelItem()
-      .build(),
+        .info(pinnedCount > 1 ? Lang.pluralBold(R.string.UnpinXMessages, pinnedCount) : null)
+        .item(canPinAnyMessage(false) ? new OptionItem.Builder()
+          .id(R.id.btn_unpinMessage)
+          .name(Lang.getString(pinnedCount == 1 ? R.string.UnpinMessage : R.string.UnpinMessagesConfirm))
+          .color(OPTION_COLOR_RED)
+          .icon(R.drawable.deproko_baseline_pin_undo_24)
+          .build() : null
+        )
+        .item(!isSelfChat() ? new OptionItem.Builder()
+          .id(R.id.btn_dismissForSelf)
+          .name(R.string.HideForYourself)
+          .icon(R.drawable.baseline_close_24)
+          .build() : null)
+        .cancelItem()
+        .build(),
       (itemView, id) -> {
         switch (id) {
           case R.id.btn_unpinMessage: {
@@ -7152,11 +7152,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return new TopBarView.Item(R.id.btn_reportChat, isBlock ? R.string.BlockContact : R.string.ReportSpam, v -> {
       showSettings(new SettingsWrapBuilder(R.id.btn_reportSpam)
         .setHeaderItem(new ListItem(ListItem.TYPE_INFO, 0, 0, Lang.getStringBold(R.string.ReportChatSpam, chat.title), false))
-        .setRawItems(getChatUserId() != 0 ? new ListItem[] {
+        .setRawItems(getChatUserId() != 0 ? new ListItem[]{
           new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_reportSpam, 0, R.string.ReportSpam, true),
           new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_removeChatFromList, 0, R.string.DeleteChat, true),
           new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_blockSender, 0, R.string.BlockUser, true),
-        } : new ListItem[] {
+        } : new ListItem[]{
           new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_reportSpam, 0, R.string.ReportSpam, true),
           new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_removeChatFromList, 0, R.string.DeleteChat, true)
         })
@@ -7227,7 +7227,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
               Lang.getString(R.string.ReportLocationTitle),
               Lang.getStringBold(R.string.ReportLocationDesc, location.address)
             );
-            showOptions(title, new int[] {R.id.btn_reportChat, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ReportLocationAction), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_report_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
+            showOptions(title, new int[]{R.id.btn_reportChat, R.id.btn_cancel}, new String[]{Lang.getString(R.string.ReportLocationAction), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_report_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
               if (optionId == R.id.btn_reportChat) {
                 tdlib.client().send(new TdApi.ReportChat(chatId, null, new TdApi.ChatReportReasonUnrelatedLocation(), null), tdlib.okHandler());
                 dismissActionBar();
@@ -7596,7 +7596,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       addThemeSpecialFilterListener(stickerSuggestionArrowView, R.id.theme_color_overlayFilling);
       stickerSuggestionArrowView.setLayoutParams(fparams);
       stickerSuggestionsWrap.addView(stickerSuggestionArrowView);
-    } else if (isMore && stickerSuggestionAdapter.hasStickers() ) {
+    } else if (isMore && stickerSuggestionAdapter.hasStickers()) {
       stickerSuggestionAdapter.addStickers(stickers);
     } else {
       stickerSuggestionAdapter.setStickers(stickers);
@@ -8230,295 +8230,295 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void openEventLogSettings () {
     loadChannelAdmins(result -> {
-        if (!isFocused()) {
-          return;
-        }
+      if (!isFocused()) {
+        return;
+      }
 
-        TdApi.ChatEventLogFilters filters = manager.getEventLogFilters();
-        long[] userIds = manager.getEventLogUserIds();
+      TdApi.ChatEventLogFilters filters = manager.getEventLogFilters();
+      long[] userIds = manager.getEventLogUserIds();
 
-        ArrayList<ListItem> items = new ArrayList<>();
+      ArrayList<ListItem> items = new ArrayList<>();
 
-        final int[] ids;
-        final String[] strings;
+      final int[] ids;
+      final String[] strings;
 
-        final boolean isChannel = tdlib.isChannel(chat.id);
+      final boolean isChannel = tdlib.isChannel(chat.id);
 
-        if (isChannel) {
-          ids = new int[] {
-            R.id.btn_filterAll,
-            R.id.btn_filterAdmins,
-            R.id.btn_filterMembers,
-            R.id.btn_filterInviteLinks,
-            R.id.btn_filterInfo,
-            R.id.btn_filterSettings,
-            R.id.btn_filterDeletedMessages,
-            R.id.btn_filterEditedMessages,
-            R.id.btn_filterPinnedMessages,
-            R.id.btn_filterLeavingMembers,
-            R.id.btn_filterVideoChats
-          };
-          strings = new String[] {
-            Lang.getString(R.string.EventLogFilterAll),
-            Lang.getString(R.string.EventLogFilterNewAdmins),
-            Lang.getString(R.string.EventLogFilterNewMembers),
-            Lang.getString(R.string.EventLogFilterInviteLinks),
-            Lang.getString(R.string.EventLogFilterChannelInfo),
-            Lang.getString(R.string.EventLogFilterChannelSettings),
-            Lang.getString(R.string.EventLogFilterDeletedMessages),
-            Lang.getString(R.string.EventLogFilterEditedMessages),
-            Lang.getString(R.string.EventLogFilterPinnedMessages),
-            Lang.getString(R.string.EventLogFilterLeavingMembers),
-            Lang.getString(R.string.EventLogFilterLiveStreams)
-          };
+      if (isChannel) {
+        ids = new int[]{
+          R.id.btn_filterAll,
+          R.id.btn_filterAdmins,
+          R.id.btn_filterMembers,
+          R.id.btn_filterInviteLinks,
+          R.id.btn_filterInfo,
+          R.id.btn_filterSettings,
+          R.id.btn_filterDeletedMessages,
+          R.id.btn_filterEditedMessages,
+          R.id.btn_filterPinnedMessages,
+          R.id.btn_filterLeavingMembers,
+          R.id.btn_filterVideoChats
+        };
+        strings = new String[]{
+          Lang.getString(R.string.EventLogFilterAll),
+          Lang.getString(R.string.EventLogFilterNewAdmins),
+          Lang.getString(R.string.EventLogFilterNewMembers),
+          Lang.getString(R.string.EventLogFilterInviteLinks),
+          Lang.getString(R.string.EventLogFilterChannelInfo),
+          Lang.getString(R.string.EventLogFilterChannelSettings),
+          Lang.getString(R.string.EventLogFilterDeletedMessages),
+          Lang.getString(R.string.EventLogFilterEditedMessages),
+          Lang.getString(R.string.EventLogFilterPinnedMessages),
+          Lang.getString(R.string.EventLogFilterLeavingMembers),
+          Lang.getString(R.string.EventLogFilterLiveStreams)
+        };
+      } else {
+        ids = new int[]{
+          R.id.btn_filterAll,
+          R.id.btn_filterRestrictions,
+          R.id.btn_filterAdmins,
+          R.id.btn_filterMembers,
+          R.id.btn_filterInviteLinks,
+          R.id.btn_filterInfo,
+          R.id.btn_filterSettings,
+          R.id.btn_filterDeletedMessages,
+          R.id.btn_filterEditedMessages,
+          R.id.btn_filterPinnedMessages,
+          R.id.btn_filterLeavingMembers,
+          R.id.btn_filterVideoChats
+        };
+        strings = new String[]{
+          Lang.getString(R.string.EventLogFilterAll),
+          Lang.getString(R.string.EventLogFilterNewRestrictions),
+          Lang.getString(R.string.EventLogFilterNewAdmins),
+          Lang.getString(R.string.EventLogFilterNewMembers),
+          Lang.getString(R.string.EventLogFilterInviteLinks),
+          Lang.getString(R.string.EventLogFilterGroupInfo),
+          Lang.getString(R.string.EventLogFilterGroupSettings),
+          Lang.getString(R.string.EventLogFilterDeletedMessages),
+          Lang.getString(R.string.EventLogFilterEditedMessages),
+          Lang.getString(R.string.EventLogFilterPinnedMessages),
+          Lang.getString(R.string.EventLogFilterLeavingMembers),
+          Lang.getString(R.string.EventLogFilterVoiceChats)
+        };
+      }
+
+      boolean isFirst = true;
+      int i = 0;
+
+      for (int id : ids) {
+        if (isFirst) {
+          isFirst = false;
         } else {
-          ids = new int[] {
-            R.id.btn_filterAll,
-            R.id.btn_filterRestrictions,
-            R.id.btn_filterAdmins,
-            R.id.btn_filterMembers,
-            R.id.btn_filterInviteLinks,
-            R.id.btn_filterInfo,
-            R.id.btn_filterSettings,
-            R.id.btn_filterDeletedMessages,
-            R.id.btn_filterEditedMessages,
-            R.id.btn_filterPinnedMessages,
-            R.id.btn_filterLeavingMembers,
-            R.id.btn_filterVideoChats
-          };
-          strings = new String[] {
-            Lang.getString(R.string.EventLogFilterAll),
-            Lang.getString(R.string.EventLogFilterNewRestrictions),
-            Lang.getString(R.string.EventLogFilterNewAdmins),
-            Lang.getString(R.string.EventLogFilterNewMembers),
-            Lang.getString(R.string.EventLogFilterInviteLinks),
-            Lang.getString(R.string.EventLogFilterGroupInfo),
-            Lang.getString(R.string.EventLogFilterGroupSettings),
-            Lang.getString(R.string.EventLogFilterDeletedMessages),
-            Lang.getString(R.string.EventLogFilterEditedMessages),
-            Lang.getString(R.string.EventLogFilterPinnedMessages),
-            Lang.getString(R.string.EventLogFilterLeavingMembers),
-            Lang.getString(R.string.EventLogFilterVoiceChats)
-          };
-        }
-
-        boolean isFirst = true;
-        int i = 0;
-
-        for (int id : ids) {
-          if (isFirst) {
-            isFirst = false;
-          } else {
-            items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-          }
-          items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, id == R.id.btn_filterAll ? id : R.id.btn_filter, 0, strings[i], id, checkFilter(id, filters)).setData(filters));
-          i++;
-        }
-        items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM).setTextColorId(R.id.theme_color_background));
-
-        items.add(new ListItem(ListItem.TYPE_SHADOW_TOP).setTextColorId(R.id.theme_color_background));
-
-        items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_members, 0, R.string.EventLogAllAdmins, userIds == null));
-
-        for (TdApi.ChatAdministrator admin : chatAdmins.administrators) {
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-          items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR, R.id.user, 0, tdlib.cache().userName(admin.userId), userIds == null || ArrayUtils.indexOf(userIds, admin.userId) != -1).setLongId(admin.userId).setLongValue(admin.userId));
         }
+        items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, id == R.id.btn_filterAll ? id : R.id.btn_filter, 0, strings[i], id, checkFilter(id, filters)).setData(filters));
+        i++;
+      }
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM).setTextColorId(R.id.theme_color_background));
+
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP).setTextColorId(R.id.theme_color_background));
+
+      items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_members, 0, R.string.EventLogAllAdmins, userIds == null));
+
+      for (TdApi.ChatAdministrator admin : chatAdmins.administrators) {
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR, R.id.user, 0, tdlib.cache().userName(admin.userId), userIds == null || ArrayUtils.indexOf(userIds, admin.userId) != -1).setLongId(admin.userId).setLongValue(admin.userId));
+      }
 
 
-        ListItem[] array = new ListItem[items.size()];
-        items.toArray(array);
+      ListItem[] array = new ListItem[items.size()];
+      items.toArray(array);
 
-        final SettingsWrapBuilder b = new SettingsWrapBuilder(R.id.btn_filter);
-        showSettings(b
-          .setNeedSeparators(false)
-          .setNeedRootInsets(true)
-          .setRawItems(array)
-          .setSaveStr(R.string.Apply)
-          .setAllowResize(true)
-          .setDisableToggles(true)
-          .setOnActionButtonClick((wrap, view, isCancel) -> {
-            if (isCancel) {
-              return false;
-            }
-
-            final TdApi.ChatEventLogFilters filter = new TdApi.ChatEventLogFilters(
-              true,
-              true,
-              true,
-              true,
-              true,
-              true,
-              true,
-              true,
-              true,
-              true,
-              true,
-              true
-            );
-            final LongList userIds1;
-
-
-            int i12 = wrap.adapter.indexOfViewById(R.id.btn_members);
-            if (i12 != -1 && wrap.adapter.getItems().get(i12).isSelected()) {
-              userIds1 = null;
-            } else {
-              userIds1 = new LongList(chatAdmins != null ? chatAdmins.administrators.length : 10);
-            }
-
-            int filterCount = 0;
-
-            final List<ListItem> listItems = wrap.adapter.getItems();
-            final int totalCount = listItems.size();
-            for (i12 = 0; i12 < totalCount; i12++) {
-              ListItem item = listItems.get(i12);
-
-              switch (item.getId()) {
-                case R.id.btn_filter: {
-                  boolean isSelected = item.isSelected();
-                  if (isSelected) {
-                    filterCount++;
-                  }
-                  switch (item.getCheckId()) {
-                    case R.id.btn_filterRestrictions:
-                      filter.memberRestrictions = isSelected;
-                      break;
-                    case R.id.btn_filterAdmins:
-                      filter.memberPromotions = isSelected;
-                      break;
-                    case R.id.btn_filterMembers:
-                      filter.memberJoins = filter.memberInvites = isSelected;
-                      break;
-                    case R.id.btn_filterInviteLinks:
-                      filter.inviteLinkChanges = isSelected;
-                      break;
-                    case R.id.btn_filterInfo:
-                      filter.infoChanges = isSelected;
-                      break;
-                    case R.id.btn_filterDeletedMessages:
-                      filter.messageDeletions = isSelected;
-                      break;
-                    case R.id.btn_filterSettings:
-                      filter.settingChanges = isSelected;
-                      break;
-                    case R.id.btn_filterEditedMessages:
-                      filter.messageEdits = isSelected;
-                      break;
-                    case R.id.btn_filterPinnedMessages:
-                      filter.messagePins = isSelected;
-                      break;
-                    case R.id.btn_filterLeavingMembers:
-                      filter.memberLeaves = isSelected;
-                      break;
-                    case R.id.btn_filterVideoChats:
-                      filter.videoChatChanges = isSelected;
-                      break;
-                  }
-                  break;
-                }
-
-                case R.id.user: {
-                  if (item.isSelected() && userIds1 != null) {
-                    userIds1.append(item.getLongValue());
-                  }
-                  break;
-                }
-              }
-            }
-
-            if (filterCount == 0 || (userIds1 != null && userIds1.size() == 0)) {
-              context.tooltipManager().builder(view).show(null, tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.EventLogEmptyFilter));
-              return true;
-            }
-
-            manager.applyEventLogFilters(filter, userIds1 != null ? userIds1.get() : null);
-
+      final SettingsWrapBuilder b = new SettingsWrapBuilder(R.id.btn_filter);
+      showSettings(b
+        .setNeedSeparators(false)
+        .setNeedRootInsets(true)
+        .setRawItems(array)
+        .setSaveStr(R.string.Apply)
+        .setAllowResize(true)
+        .setDisableToggles(true)
+        .setOnActionButtonClick((wrap, view, isCancel) -> {
+          if (isCancel) {
             return false;
-          })
-          .setSettingProcessor((item, view, isUpdate) -> {
-            switch (item.getViewType()) {
-              case ListItem.TYPE_CHECKBOX_OPTION:
-              case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
-                ((CheckBoxView) view.getChildAt(0)).setChecked(item.isSelected(), isUpdate);
-                break;
-            }
-          })
-          .setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter) -> {
-            switch (item.getViewType()) {
-              case ListItem.TYPE_CHECKBOX_OPTION:
-              case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
-                break;
-              default:
-                return;
-            }
-            final boolean isSelect = ((CheckBoxView) ((SettingView) view).getChildAt(0)).toggle();
-            item.setSelected(isSelect);
+          }
 
-            final List<ListItem> allItems = settingsAdapter.getItems();
-            final int size = allItems.size();
+          final TdApi.ChatEventLogFilters filter = new TdApi.ChatEventLogFilters(
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          );
+          final LongList userIds1;
+
+
+          int i12 = wrap.adapter.indexOfViewById(R.id.btn_members);
+          if (i12 != -1 && wrap.adapter.getItems().get(i12).isSelected()) {
+            userIds1 = null;
+          } else {
+            userIds1 = new LongList(chatAdmins != null ? chatAdmins.administrators.length : 10);
+          }
+
+          int filterCount = 0;
+
+          final List<ListItem> listItems = wrap.adapter.getItems();
+          final int totalCount = listItems.size();
+          for (i12 = 0; i12 < totalCount; i12++) {
+            ListItem item = listItems.get(i12);
 
             switch (item.getId()) {
-              // Select/unselect all admins
-              case R.id.btn_members: {
-                for (int i1 = 0; i1 < size; i1++) {
-                  ListItem userItem = allItems.get(i1);
-                  if (userItem.getId() == R.id.user && userItem.isSelected() != isSelect) {
-                    userItem.setSelected(isSelect);
-                    settingsAdapter.updateValuedSettingByPosition(i1);
-                  }
-                }
-                break;
-              }
-              // Select/unselect user, unselect "All admins"
-              case R.id.user: {
-                int i1 = settingsAdapter.indexOfViewById(R.id.btn_members);
-                if (i1 != -1) {
-                  ListItem allItem = allItems.get(i1);
-                  if (allItem.isSelected()) {
-                    allItem.setSelected(false);
-                    settingsAdapter.updateValuedSettingByPosition(i1);
-                  }
-                }
-                break;
-              }
-
-              // Select/Unselect all filters
-              case R.id.btn_filterAll: {
-                for (int i1 = 0; i1 < size; i1++) {
-                  ListItem filterItem = allItems.get(i1);
-                  if (filterItem.getId() == R.id.btn_filter && filterItem.isSelected() != isSelect) {
-                    filterItem.setSelected(isSelect);
-                    settingsAdapter.updateValuedSettingByPosition(i1);
-                  }
-                }
-                break;
-              }
-
               case R.id.btn_filter: {
-                int selectedFilters = 0;
-                for (int i1 = 0; i1 < size; i1++) {
-                  ListItem filterItem = allItems.get(i1);
-                  if (filterItem.getId() == R.id.btn_filter && filterItem.isSelected()) {
-                    selectedFilters++;
-                  }
+                boolean isSelected = item.isSelected();
+                if (isSelected) {
+                  filterCount++;
                 }
-
-                boolean allSelected = selectedFilters == ids.length - 1;
-
-                int i1 = settingsAdapter.indexOfViewById(R.id.btn_filterAll);
-                if (i1 != -1) {
-                  ListItem allItem = allItems.get(i1);
-                  if (allItem.isSelected() != allSelected) {
-                    allItem.setSelected(allSelected);
-                    settingsAdapter.updateValuedSettingByPosition(i1);
-                  }
+                switch (item.getCheckId()) {
+                  case R.id.btn_filterRestrictions:
+                    filter.memberRestrictions = isSelected;
+                    break;
+                  case R.id.btn_filterAdmins:
+                    filter.memberPromotions = isSelected;
+                    break;
+                  case R.id.btn_filterMembers:
+                    filter.memberJoins = filter.memberInvites = isSelected;
+                    break;
+                  case R.id.btn_filterInviteLinks:
+                    filter.inviteLinkChanges = isSelected;
+                    break;
+                  case R.id.btn_filterInfo:
+                    filter.infoChanges = isSelected;
+                    break;
+                  case R.id.btn_filterDeletedMessages:
+                    filter.messageDeletions = isSelected;
+                    break;
+                  case R.id.btn_filterSettings:
+                    filter.settingChanges = isSelected;
+                    break;
+                  case R.id.btn_filterEditedMessages:
+                    filter.messageEdits = isSelected;
+                    break;
+                  case R.id.btn_filterPinnedMessages:
+                    filter.messagePins = isSelected;
+                    break;
+                  case R.id.btn_filterLeavingMembers:
+                    filter.memberLeaves = isSelected;
+                    break;
+                  case R.id.btn_filterVideoChats:
+                    filter.videoChatChanges = isSelected;
+                    break;
                 }
+                break;
+              }
 
+              case R.id.user: {
+                if (item.isSelected() && userIds1 != null) {
+                  userIds1.append(item.getLongValue());
+                }
                 break;
               }
             }
-          })
-        );
+          }
+
+          if (filterCount == 0 || (userIds1 != null && userIds1.size() == 0)) {
+            context.tooltipManager().builder(view).show(null, tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.EventLogEmptyFilter));
+            return true;
+          }
+
+          manager.applyEventLogFilters(filter, userIds1 != null ? userIds1.get() : null);
+
+          return false;
+        })
+        .setSettingProcessor((item, view, isUpdate) -> {
+          switch (item.getViewType()) {
+            case ListItem.TYPE_CHECKBOX_OPTION:
+            case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
+              ((CheckBoxView) view.getChildAt(0)).setChecked(item.isSelected(), isUpdate);
+              break;
+          }
+        })
+        .setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter) -> {
+          switch (item.getViewType()) {
+            case ListItem.TYPE_CHECKBOX_OPTION:
+            case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
+              break;
+            default:
+              return;
+          }
+          final boolean isSelect = ((CheckBoxView) ((SettingView) view).getChildAt(0)).toggle();
+          item.setSelected(isSelect);
+
+          final List<ListItem> allItems = settingsAdapter.getItems();
+          final int size = allItems.size();
+
+          switch (item.getId()) {
+            // Select/unselect all admins
+            case R.id.btn_members: {
+              for (int i1 = 0; i1 < size; i1++) {
+                ListItem userItem = allItems.get(i1);
+                if (userItem.getId() == R.id.user && userItem.isSelected() != isSelect) {
+                  userItem.setSelected(isSelect);
+                  settingsAdapter.updateValuedSettingByPosition(i1);
+                }
+              }
+              break;
+            }
+            // Select/unselect user, unselect "All admins"
+            case R.id.user: {
+              int i1 = settingsAdapter.indexOfViewById(R.id.btn_members);
+              if (i1 != -1) {
+                ListItem allItem = allItems.get(i1);
+                if (allItem.isSelected()) {
+                  allItem.setSelected(false);
+                  settingsAdapter.updateValuedSettingByPosition(i1);
+                }
+              }
+              break;
+            }
+
+            // Select/Unselect all filters
+            case R.id.btn_filterAll: {
+              for (int i1 = 0; i1 < size; i1++) {
+                ListItem filterItem = allItems.get(i1);
+                if (filterItem.getId() == R.id.btn_filter && filterItem.isSelected() != isSelect) {
+                  filterItem.setSelected(isSelect);
+                  settingsAdapter.updateValuedSettingByPosition(i1);
+                }
+              }
+              break;
+            }
+
+            case R.id.btn_filter: {
+              int selectedFilters = 0;
+              for (int i1 = 0; i1 < size; i1++) {
+                ListItem filterItem = allItems.get(i1);
+                if (filterItem.getId() == R.id.btn_filter && filterItem.isSelected()) {
+                  selectedFilters++;
+                }
+              }
+
+              boolean allSelected = selectedFilters == ids.length - 1;
+
+              int i1 = settingsAdapter.indexOfViewById(R.id.btn_filterAll);
+              if (i1 != -1) {
+                ListItem allItem = allItems.get(i1);
+                if (allItem.isSelected() != allSelected) {
+                  allItem.setSelected(allSelected);
+                  settingsAdapter.updateValuedSettingByPosition(i1);
+                }
+              }
+
+              break;
+            }
+          }
+        })
+      );
     });
   }
 
@@ -8977,7 +8977,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             MediaStack stack = new MediaStack(context, tdlib);
             stack.set(new MediaItem(context, tdlib, galleryFile));
             MediaViewController controller = new MediaViewController(context, tdlib);
-            controller.setArguments(MediaViewController.Args.fromGallery(this, null, null, (images, options, disableMarkdown, asFiles) -> sendPhotosAndVideosCompressed(new ImageGalleryFile[] {galleryFile}, false, options, disableMarkdown, asFiles), stack, areScheduledOnly()).setReceiverChatId(getChatId()).setDeleteOnExit(isSecretChat() || !Settings.instance().getNewSetting(Settings.SETTING_FLAG_CAMERA_KEEP_DISCARDED_MEDIA)));
+            controller.setArguments(MediaViewController.Args.fromGallery(this, null, null, (images, options, disableMarkdown, asFiles) -> sendPhotosAndVideosCompressed(new ImageGalleryFile[]{galleryFile}, false, options, disableMarkdown, asFiles), stack, areScheduledOnly()).setReceiverChatId(getChatId()).setDeleteOnExit(isSecretChat() || !Settings.instance().getNewSetting(Settings.SETTING_FLAG_CAMERA_KEEP_DISCARDED_MEDIA)));
             controller.open();
           });
         }
@@ -9081,7 +9081,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void sendCompressed (final ImageGalleryFile image, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles) {
-    sendPhotosAndVideosCompressed(new ImageGalleryFile[] {image}, false, options, disableMarkdown, asFiles);
+    sendPhotosAndVideosCompressed(new ImageGalleryFile[]{image}, false, options, disableMarkdown, asFiles);
   }
 
   public void sendPhotosAndVideosCompressed (final ImageGalleryFile[] files, final boolean needGroupMedia, final TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles) {
@@ -9544,7 +9544,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public void onChatReadInbox(final long chatId, final long lastReadInboxMessageId, final int unreadCount, boolean availabilityChanged) {
+  public void onChatReadInbox (final long chatId, final long lastReadInboxMessageId, final int unreadCount, boolean availabilityChanged) {
     tdlib.ui().post(() -> {
       if (getChatId() == chatId) {
         updateCounters(true);
@@ -9553,7 +9553,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public void onChatUnreadMentionCount(final long chatId, final int unreadMentionCount, boolean availabilityChanged) {
+  public void onChatUnreadMentionCount (final long chatId, final int unreadMentionCount, boolean availabilityChanged) {
     tdlib.ui().post(() -> {
       if (getChatId() == chatId) {
         updateCounters(true);
@@ -9562,11 +9562,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public void onChatUnreadReactionCount(long chatId, int unreadReactionCount, boolean availabilityChanged){
+  public void onChatUnreadReactionCount (long chatId, int unreadReactionCount, boolean availabilityChanged) {
     tdlib.ui().post(() -> {
       if (getChatId() == chatId) {
-        if(chat!=null)
-          chat.unreadReactionCount=unreadReactionCount;
+        if (chat != null)
+          chat.unreadReactionCount = unreadReactionCount;
         updateCounters(true);
       }
     });
@@ -9635,7 +9635,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public void onUserUpdated (TdApi.User user) { }
+  public void onUserUpdated (TdApi.User user) {}
 
   @Override
   public void onUserFullUpdated (final long userId, final TdApi.UserFullInfo userFull) {
@@ -10003,7 +10003,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       datePickerDialog.getDatePicker().setMinDate(minDate);
     } catch (Throwable ignored) {
       if (minDate != sourceMinDate) {
-        try { datePickerDialog.getDatePicker().setMinDate(sourceMinDate); } catch (Throwable ignored1) { }
+        try {
+          datePickerDialog.getDatePicker().setMinDate(sourceMinDate);
+        } catch (Throwable ignored1) {
+        }
       }
     }
 
@@ -10476,125 +10479,125 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return true;
   }
 
-  public void sendMessageReaction(TGMessage msg, String reaction, ImageView src, Rect srcRect, PopupLayout popup, boolean big){
-    MessageView mv=manager.findRealMessageView(getChatId(), msg.getMessageForReactions().id);
-    ArrayList<TdApi.MessageReaction> reactions=new ArrayList<>(Arrays.asList(msg.getReactions()));
-    TdApi.MessageReaction existingReaction=null;
-    final boolean[] cancelAnimation={false};
-    for(TdApi.MessageReaction r:reactions){
-      if(r.isChosen){
-        existingReaction=r;
+  public void sendMessageReaction (TGMessage msg, String reaction, ImageView src, Rect srcRect, PopupLayout popup, boolean big) {
+    MessageView mv = manager.findRealMessageView(getChatId(), msg.getMessageForReactions().id);
+    ArrayList<TdApi.MessageReaction> reactions = new ArrayList<>(Arrays.asList(msg.getReactions()));
+    TdApi.MessageReaction existingReaction = null;
+    final boolean[] cancelAnimation = {false};
+    for (TdApi.MessageReaction r : reactions) {
+      if (r.isChosen) {
+        existingReaction = r;
         break;
       }
     }
-    boolean didAdd=false;
-    if(existingReaction!=null){
+    boolean didAdd = false;
+    if (existingReaction != null) {
       existingReaction.totalCount--;
-      existingReaction.isChosen=false;
-      if(existingReaction.totalCount==0){
+      existingReaction.isChosen = false;
+      if (existingReaction.totalCount == 0) {
         reactions.remove(existingReaction);
       }
     }
     TdApi.MessageReaction messageReaction;
-    if(existingReaction==null || !existingReaction.reaction.equals(reaction)){
-      TdApi.MessageReaction newReaction=null;
-      for(TdApi.MessageReaction r:reactions){
-        if(r.reaction.equals(reaction)){
-          newReaction=r;
+    if (existingReaction == null || !existingReaction.reaction.equals(reaction)) {
+      TdApi.MessageReaction newReaction = null;
+      for (TdApi.MessageReaction r : reactions) {
+        if (r.reaction.equals(reaction)) {
+          newReaction = r;
           break;
         }
       }
-      if(newReaction==null){
-        newReaction=new TdApi.MessageReaction(reaction, 1, true, null);
+      if (newReaction == null) {
+        newReaction = new TdApi.MessageReaction(reaction, 1, true, null);
         reactions.add(newReaction);
-        didAdd=true;
-      }else{
+        didAdd = true;
+      } else {
         newReaction.totalCount++;
-        newReaction.isChosen=true;
-        didAdd=true;
+        newReaction.isChosen = true;
+        didAdd = true;
       }
-      messageReaction=newReaction;
-    }else{
-      messageReaction=existingReaction;
+      messageReaction = newReaction;
+    } else {
+      messageReaction = existingReaction;
     }
-    TdApi.Message m=msg.getMessageForReactions();
-    if(m.interactionInfo==null)
-      m.interactionInfo=new TdApi.MessageInteractionInfo();
-    m.interactionInfo.reactions=reactions.toArray(new TdApi.MessageReaction[0]);
-    if(mv!=null){
+    TdApi.Message m = msg.getMessageForReactions();
+    if (m.interactionInfo == null)
+      m.interactionInfo = new TdApi.MessageInteractionInfo();
+    m.interactionInfo.reactions = reactions.toArray(new TdApi.MessageReaction[0]);
+    if (mv != null) {
       mv.updateReactions();
-      if(didAdd){
-        mv.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener(){
+      if (didAdd) {
+        mv.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
           @Override
-          public boolean onPreDraw(){
+          public boolean onPreDraw () {
             mv.getViewTreeObserver().removeOnPreDrawListener(this);
-            TdApi.Reaction rr=tdlib.getReaction(reaction);
-            if(!mv.getReactionIconBounds(reaction, new Rect())){
+            TdApi.Reaction rr = tdlib.getReaction(reaction);
+            if (!mv.getReactionIconBounds(reaction, new Rect())) {
               // Icon for this reaction is not displayed. Don't play animation at all I guess?
-              if(popup!=null){
+              if (popup != null) {
                 popup.hideWindow(true);
               }
               return true;
             }
 
-            if(cancelAnimation[0]){
-              if(popup!=null)
+            if (cancelAnimation[0]) {
+              if (popup != null)
                 popup.hideWindow(true);
               return true;
             }
 
-            if(src!=null){
-              ReactionAnimationOverlay ov=manager.getAnimationOverlay();
-              Rect srcPos=new Rect();
-              int[] loc={0, 0};
+            if (src != null) {
+              ReactionAnimationOverlay ov = manager.getAnimationOverlay();
+              Rect srcPos = new Rect();
+              int[] loc = {0, 0};
               src.getLocationOnScreen(loc);
-              srcPos.set(loc[0], loc[1], loc[0]+src.getWidth(), loc[1]+src.getHeight());
-              TdApi.Sticker[] anims=big ? new TdApi.Sticker[]{rr.effectAnimation, rr.activateAnimation, rr.aroundAnimation, rr.centerAnimation} : new TdApi.Sticker[]{rr.aroundAnimation, rr.centerAnimation};
-              LottieAnimationThreadPool.loadMultipleAnimations(tdlib, a->{
-                if(cancelAnimation[0]){
-                  if(popup!=null)
+              srcPos.set(loc[0], loc[1], loc[0] + src.getWidth(), loc[1] + src.getHeight());
+              TdApi.Sticker[] anims = big ? new TdApi.Sticker[]{rr.effectAnimation, rr.activateAnimation, rr.aroundAnimation, rr.centerAnimation} : new TdApi.Sticker[]{rr.aroundAnimation, rr.centerAnimation};
+              LottieAnimationThreadPool.loadMultipleAnimations(tdlib, a -> {
+                if (cancelAnimation[0]) {
+                  if (popup != null)
                     popup.hideWindow(true);
                   return;
                 }
                 ov.playFlyingReactionAnimation(outRect -> {
-                  if(cancelAnimation[0]){
-                    if(popup!=null)
+                  if (cancelAnimation[0]) {
+                    if (popup != null)
                       popup.hideWindow(true);
                     return false;
                   }
-                  boolean r=mv.getReactionIconBounds(reaction, outRect);
-                  if(big && r){
-                    int sz=-(Screen.dp(64)-outRect.width())/2;
+                  boolean r = mv.getReactionIconBounds(reaction, outRect);
+                  if (big && r) {
+                    int sz = -(Screen.dp(64) - outRect.width()) / 2;
                     outRect.inset(sz, sz);
                     return true;
                   }
                   return r;
-                }, srcPos, src.getDrawable(), ()->{
+                }, srcPos, src.getDrawable(), () -> {
                   src.setAlpha(0f);
-                  if(popup!=null)
+                  if (popup != null)
                     popup.hideWindow(true);
-                }, ()->{
-                  if(big){
+                }, () -> {
+                  if (big) {
                     playReactionBigEffectAnimation(msg, reaction, a[0], a[1], a[2], a[3]);
-                  }else{
+                  } else {
                     playReactionEffectAnimation(msg, reaction, a[0], a[1]);
                   }
                 });
               }, 3000, anims);
-            }else if(srcRect!=null){
-              LottieAnimationThreadPool.loadOneAnimation(tdlib, rr.appearAnimation, anim->{
-                if(cancelAnimation[0])
+            } else if (srcRect != null) {
+              LottieAnimationThreadPool.loadOneAnimation(tdlib, rr.appearAnimation, anim -> {
+                if (cancelAnimation[0])
                   return;
-                LottieAnimationDrawable drawable=new LottieAnimationDrawable(anim, Screen.dp(24), Screen.dp(24));
-                drawable.setFrame(drawable.getTotalFrames()-1);
-                ReactionAnimationOverlay ov=manager.getAnimationOverlay();
+                LottieAnimationDrawable drawable = new LottieAnimationDrawable(anim, Screen.dp(24), Screen.dp(24));
+                drawable.setFrame(drawable.getTotalFrames() - 1);
+                ReactionAnimationOverlay ov = manager.getAnimationOverlay();
                 ov.playFlyingReactionAnimation(outRect -> {
-                  if(cancelAnimation[0])
+                  if (cancelAnimation[0])
                     return false;
                   return mv.getReactionIconBounds(reaction, outRect);
-                }, srcRect, drawable, null, ()->playReactionEffectAnimation(msg, reaction));
+                }, srcRect, drawable, null, () -> playReactionEffectAnimation(msg, reaction));
               }, Screen.dp(24), Screen.dp(24));
-            }else{
+            } else {
               playReactionEffectAnimation(msg, reaction);
             }
 
@@ -10603,34 +10606,34 @@ public class MessagesController extends ViewController<MessagesController.Argume
         });
       }
     }
-    if(!didAdd && popup!=null){
+    if (!didAdd && popup != null) {
       popup.hideWindow(true);
     }
-    boolean finalDidAdd=didAdd;
-    tdlib.sendOnUiThread(new TdApi.SetMessageReaction(getChatId(), msg.getMessageForReactions().id, reaction, big), res->{
-      if(res instanceof TdApi.Error){
-        boolean needToast=true;
-        if(finalDidAdd){
+    boolean finalDidAdd = didAdd;
+    tdlib.sendOnUiThread(new TdApi.SetMessageReaction(getChatId(), msg.getMessageForReactions().id, reaction, big), res -> {
+      if (res instanceof TdApi.Error) {
+        boolean needToast = true;
+        if (finalDidAdd) {
           manager.getAnimationOverlay().endAllAnimations();
-          cancelAnimation[0]=true;
+          cancelAnimation[0] = true;
           messageReaction.totalCount--;
-          if(messageReaction.totalCount==0){
+          if (messageReaction.totalCount == 0) {
             reactions.remove(messageReaction);
-            m.interactionInfo.reactions=reactions.toArray(new TdApi.MessageReaction[0]);
-          }else{
-            if(mv!=null){
-              MessageCellReactionButton btn=mv.getReactionButton(reaction);
-              if(btn!=null){
-                needToast=false;
+            m.interactionInfo.reactions = reactions.toArray(new TdApi.MessageReaction[0]);
+          } else {
+            if (mv != null) {
+              MessageCellReactionButton btn = mv.getReactionButton(reaction);
+              if (btn != null) {
+                needToast = false;
                 context.tooltipManager().builder(btn).show(tdlib, TD.errorText(res)).hideDelayed();
               }
             }
           }
-          if(mv!=null){
+          if (mv != null) {
             mv.updateReactions();
           }
         }
-        if(needToast)
+        if (needToast)
           UI.showError(res);
       }
     });
@@ -10638,66 +10641,66 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private long lastHapticEffectTime;
 
-  public void playReactionBigEffectAnimation(TGMessage msg, String reaction, LottieAnimation effectAnimation, LottieAnimation activateAnimation, LottieAnimation aroundAnimation, LottieAnimation centerAnimation){
-    MessageView mv=manager.findRealMessageView(getChatId(), msg.getMessageForReactions().id);
-    if(mv==null)
+  public void playReactionBigEffectAnimation (TGMessage msg, String reaction, LottieAnimation effectAnimation, LottieAnimation activateAnimation, LottieAnimation aroundAnimation, LottieAnimation centerAnimation) {
+    MessageView mv = manager.findRealMessageView(getChatId(), msg.getMessageForReactions().id);
+    if (mv == null)
       return;
 
-    mv.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener(){
+    mv.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
       @Override
-      public boolean onPreDraw(){
+      public boolean onPreDraw () {
         mv.getViewTreeObserver().removeOnPreDrawListener(this);
 
-        ReactionAnimationOverlay ov=manager.getAnimationOverlay();
-        if(effectAnimation==null){
+        ReactionAnimationOverlay ov = manager.getAnimationOverlay();
+        if (effectAnimation == null) {
           playReactionEffectAnimation(msg, reaction, aroundAnimation, centerAnimation);
           return true;
         }
 
-        boolean[] didStart={false};
+        boolean[] didStart = {false};
 
-        if(activateAnimation!=null)
-          ov.playLottieAnimation(outRect->{
-            if(!mv.getReactionIconBounds(reaction, outRect))
+        if (activateAnimation != null)
+          ov.playLottieAnimation(outRect -> {
+            if (!mv.getReactionIconBounds(reaction, outRect))
               return false;
-            int sz=-(Screen.dp(64)-outRect.width())/2;
+            int sz = -(Screen.dp(64) - outRect.width()) / 2;
             outRect.inset(sz, sz);
 
-            int size=outRect.width();
-            int centerX=outRect.centerX();
-            int centerY=outRect.centerY();
-            outRect.set(centerX-size, centerY-size, centerX+size, centerY+size);
+            int size = outRect.width();
+            int centerX = outRect.centerX();
+            int centerY = outRect.centerY();
+            outRect.set(centerX - size, centerY - size, centerX + size, centerY + size);
             return true;
-          }, activateAnimation, ()->{
-            didStart[0]=true;
+          }, activateAnimation, () -> {
+            didStart[0] = true;
             mv.setHasTransientState(true);
             mv.setReactionIconHidden(reaction, true);
-          }, (v, remove)->{
-            if(didStart[0])
+          }, (v, remove) -> {
+            if (didStart[0])
               mv.setHasTransientState(false);
             mv.setReactionIconHidden(reaction, false);
-            Rect rect=new Rect();
+            Rect rect = new Rect();
             mv.getReactionIconBounds(reaction, rect);
-            float scale=rect.width()/(float)v.getWidth();
-            v.animate().scaleX(scale).scaleY(scale).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT).withEndAction(()->{
+            float scale = rect.width() / (float) v.getWidth();
+            v.animate().scaleX(scale).scaleY(scale).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT).withEndAction(() -> {
               remove.run();
               playReactionEffectAnimation(msg, reaction, aroundAnimation, centerAnimation);
             }).start();
           });
 
-        ov.playLottieAnimation(outRect->{
-          if(!mv.getReactionIconBounds(reaction, outRect))
+        ov.playLottieAnimation(outRect -> {
+          if (!mv.getReactionIconBounds(reaction, outRect))
             return false;
-          int sz=-(Screen.dp(64)-outRect.width())/2;
+          int sz = -(Screen.dp(64) - outRect.width()) / 2;
           outRect.inset(sz, sz);
 
-          int width=outRect.width();
-          int centerX=outRect.centerX()-width;
-          int centerY=outRect.centerY();
-          int size=Math.round(width*2f);
-          outRect.set(centerX-size, centerY-size, centerX+size, centerY+size);
+          int width = outRect.width();
+          int centerX = outRect.centerX() - width;
+          int centerY = outRect.centerY();
+          int size = Math.round(width * 2f);
+          outRect.set(centerX - size, centerY - size, centerX + size, centerY + size);
           return true;
-        }, effectAnimation, null, activateAnimation!=null ? null : (v, remove)->{
+        }, effectAnimation, null, activateAnimation != null ? null : (v, remove) -> {
           remove.run();
           playReactionEffectAnimation(msg, reaction, aroundAnimation, centerAnimation);
         });
@@ -10708,102 +10711,102 @@ public class MessagesController extends ViewController<MessagesController.Argume
     mv.invalidate();
   }
 
-  public void playReactionEffectAnimation(TGMessage msg, String reaction){
-    TdApi.Reaction r=tdlib.getReaction(reaction);
-    LottieAnimationThreadPool.loadMultipleAnimations(tdlib, anims->{
+  public void playReactionEffectAnimation (TGMessage msg, String reaction) {
+    TdApi.Reaction r = tdlib.getReaction(reaction);
+    LottieAnimationThreadPool.loadMultipleAnimations(tdlib, anims -> {
       playReactionEffectAnimation(msg, reaction, anims[0], anims[1]);
     }, 1000, r.aroundAnimation, r.centerAnimation);
   }
 
-  public void playReactionEffectAnimation(TGMessage msg, String reaction, LottieAnimation aroundAnimation, LottieAnimation centerAnimation){
-    MessageView mv=manager.findRealMessageView(getChatId(), msg.getMessageForReactions().id);
-    if(mv==null)
+  public void playReactionEffectAnimation (TGMessage msg, String reaction, LottieAnimation aroundAnimation, LottieAnimation centerAnimation) {
+    MessageView mv = manager.findRealMessageView(getChatId(), msg.getMessageForReactions().id);
+    if (mv == null)
       return;
 
-    mv.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener(){
-    	@Override
-    	public boolean onPreDraw(){
-    		mv.getViewTreeObserver().removeOnPreDrawListener(this);
+    mv.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+      @Override
+      public boolean onPreDraw () {
+        mv.getViewTreeObserver().removeOnPreDrawListener(this);
 
-          ReactionAnimationOverlay ov=manager.getAnimationOverlay();
-          if(aroundAnimation==null)
-            return true;
-
-          ov.playLottieAnimation(outRect->{
-            if(!mv.getReactionIconBounds(reaction, outRect))
-              return false;
-            int width=outRect.width();
-            int centerX=outRect.centerX();
-            int centerY=outRect.centerY();
-            int size=Math.round(width*2f);
-            outRect.set(centerX-size, centerY-size, centerX+size, centerY+size);
-            return true;
-          }, aroundAnimation, null, null);
-
-          boolean[] didStart={false};
-
-          if(centerAnimation!=null)
-            ov.playLottieAnimation(outRect->{
-              if(!mv.getReactionIconBounds(reaction, outRect))
-                return false;
-              int size=outRect.width();
-              int centerX=outRect.centerX();
-              int centerY=outRect.centerY();
-              outRect.set(centerX-size, centerY-size, centerX+size, centerY+size);
-              return true;
-            }, centerAnimation, ()->{
-              didStart[0]=true;
-              mv.setHasTransientState(true);
-              mv.setReactionIconHidden(reaction, true);
-            }, (v, remove)->{
-              if(didStart[0])
-                mv.setHasTransientState(false);
-              mv.setReactionIconHidden(reaction, false);
-              mv.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener(){
-              	@Override
-              	public boolean onPreDraw(){
-              		mv.getViewTreeObserver().removeOnPreDrawListener(this);
-                  remove.run();
-              		return true;
-              	}
-              });
-            });
-
+        ReactionAnimationOverlay ov = manager.getAnimationOverlay();
+        if (aroundAnimation == null)
           return true;
-    	}
+
+        ov.playLottieAnimation(outRect -> {
+          if (!mv.getReactionIconBounds(reaction, outRect))
+            return false;
+          int width = outRect.width();
+          int centerX = outRect.centerX();
+          int centerY = outRect.centerY();
+          int size = Math.round(width * 2f);
+          outRect.set(centerX - size, centerY - size, centerX + size, centerY + size);
+          return true;
+        }, aroundAnimation, null, null);
+
+        boolean[] didStart = {false};
+
+        if (centerAnimation != null)
+          ov.playLottieAnimation(outRect -> {
+            if (!mv.getReactionIconBounds(reaction, outRect))
+              return false;
+            int size = outRect.width();
+            int centerX = outRect.centerX();
+            int centerY = outRect.centerY();
+            outRect.set(centerX - size, centerY - size, centerX + size, centerY + size);
+            return true;
+          }, centerAnimation, () -> {
+            didStart[0] = true;
+            mv.setHasTransientState(true);
+            mv.setReactionIconHidden(reaction, true);
+          }, (v, remove) -> {
+            if (didStart[0])
+              mv.setHasTransientState(false);
+            mv.setReactionIconHidden(reaction, false);
+            mv.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+              @Override
+              public boolean onPreDraw () {
+                mv.getViewTreeObserver().removeOnPreDrawListener(this);
+                remove.run();
+                return true;
+              }
+            });
+          });
+
+        return true;
+      }
     });
     mv.invalidate();
-    if(SystemClock.uptimeMillis()-lastHapticEffectTime>500L){
+    if (SystemClock.uptimeMillis() - lastHapticEffectTime > 500L) {
       mv.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
-      lastHapticEffectTime=SystemClock.uptimeMillis();
+      lastHapticEffectTime = SystemClock.uptimeMillis();
     }
   }
 
-  public void showMessageReactions(TGMessage msg, String reaction){
-    PopupLayout popup=new PopupLayout(context);
+  public void showMessageReactions (TGMessage msg, String reaction) {
+    PopupLayout popup = new PopupLayout(context);
     popup.init(true);
-    ReactionListViewController list=new ReactionListViewController(context, popup, msg, this, null, ()->popup.hideWindow(true));
+    ReactionListViewController list = new ReactionListViewController(context, popup, msg, this, null, () -> popup.hideWindow(true));
     list.showForSingleReaction(reaction);
   }
 
   @Override
-  public void onChatAvailableReactionsUpdated(long chatId, String[] availableReactions){
+  public void onChatAvailableReactionsUpdated (long chatId, String[] availableReactions) {
     updateQuickReactions();
   }
 
-  private void updateQuickReactions(){
-    if(chat==null)
+  private void updateQuickReactions () {
+    if (chat == null)
       return;
-    if(Settings.instance().areQuickReactionsEnabled()){
-      List<String> enabled=Settings.instance().getQuickReactions();
-      List<String> available=Arrays.asList(chat.availableReactions);
-      quickReactions=enabled.stream().filter(available::contains).map(tdlib::getReaction).collect(Collectors.toList());
-    }else{
-      quickReactions=Collections.emptyList();
+    if (Settings.instance().areQuickReactionsEnabled()) {
+      List<String> enabled = Settings.instance().getQuickReactions();
+      List<String> available = Arrays.asList(chat.availableReactions);
+      quickReactions = enabled.stream().filter(available::contains).map(tdlib::getReaction).collect(Collectors.toList());
+    } else {
+      quickReactions = Collections.emptyList();
     }
   }
 
-  public List<TdApi.Reaction> getQuickReactions(){
+  public List<TdApi.Reaction> getQuickReactions () {
     return quickReactions;
   }
 }

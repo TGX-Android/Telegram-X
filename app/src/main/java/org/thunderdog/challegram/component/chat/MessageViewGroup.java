@@ -329,6 +329,7 @@ class VideoPlayerView extends CircleFrameLayout implements Destroyable, AttachDe
     mutedVideoView.performDestroy();
   }
 }
+
 class MutedVideoView extends View implements AttachDelegate, Destroyable {
   private final GifReceiver receiver;
 
