@@ -290,13 +290,14 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
   private void destroyDecoder () {
     if (nativePtr != 0) {
       if (isLottie) {
+        final boolean deleteLottieCacheFile;
         N.cancelLottieDecoder(nativePtr);
         synchronized (nativeSync) {
-          N.destroyLottieDecoder(nativePtr);
+          deleteLottieCacheFile = N.destroyLottieDecoder(nativePtr);
           nativePtr = 0;
         }
         if (lottieCacheFile != null) {
-          LottieCache.instance().checkFile(file, lottieCacheFile, file.needOptimize(), lottieCacheFileSize, file.getFitzpatrickType());
+          LottieCache.instance().checkFile(file, lottieCacheFile, deleteLottieCacheFile || file.needOptimize(), lottieCacheFileSize, file.getFitzpatrickType());
         }
       } else {
         N.destroyDecoder(nativePtr);
