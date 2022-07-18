@@ -1473,7 +1473,10 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       }
 
       if (mimeType.startsWith("video/")) {
-        MediaMetadataRetriever media = U.openRetriever(filePath);
+        MediaMetadataRetriever media = null;
+        try {
+          media = U.openRetriever(filePath);
+        } catch (Throwable ignored) { }
         if (media != null) {
 
           String rawDuration = media.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
