@@ -6260,9 +6260,9 @@ public class Settings {
     pmc.edit().putInt(KEY_BIG_REACTIONS, flags).apply();
   }
 
-  public Set<String> getQuickReactions(){
-    Set<String> r=pmc.getStringSet("quickReactions", null);
-    return r==null ? Collections.singleton("\uD83D\uDC4D") : r;
+  public List<String> getQuickReactions(){
+    String[] r=pmc.getStringArray("quickReactions");
+    return r==null ? Collections.singletonList("\uD83D\uDC4D") : Arrays.asList(r);
   }
 
   public boolean areQuickReactionsEnabled(){
@@ -6273,7 +6273,7 @@ public class Settings {
     pmc.edit().putBoolean("quickReactionsEnabled", enabled).apply();
   }
 
-  public void setQuickReactions(Set<String> quickReactions){
-    pmc.edit().putStringSet("quickReactions", quickReactions).apply();
+  public void setQuickReactions(List<String> quickReactions){
+    pmc.edit().putStringArray("quickReactions", quickReactions.toArray(new String[0])).apply();
   }
 }

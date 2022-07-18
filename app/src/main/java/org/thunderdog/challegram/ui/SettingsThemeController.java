@@ -178,14 +178,9 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
           }
           case R.id.btn_quickReaction: {
             if(Settings.instance().areQuickReactionsEnabled()){
-              Set<String> reactions=Settings.instance().getQuickReactions();
-              v.setData(tdlib.getSupportedReactions().stream().filter(r->reactions.contains(r.reaction)).map(r->r.title).collect(Collectors.joining(Lang.getConcatSeparator())));
-              for(TdApi.Reaction r:tdlib.getSupportedReactions()){
-                if(reactions.contains(r.reaction)){
-                  v.setDrawModifier(new ReactionDrawModifier(r.reaction, tdlib, v));
-                  break;
-                }
-              }
+              List<String> reactions=Settings.instance().getQuickReactions();
+              v.setData(reactions.stream().map(r->tdlib.getReaction(r).title).collect(Collectors.joining(Lang.getConcatSeparator())));
+              v.setDrawModifier(new ReactionDrawModifier(reactions.get(0), tdlib, v));
             }else{
               v.setData(R.string.QuickReactionsDisabled);
               v.setDrawModifier(null);

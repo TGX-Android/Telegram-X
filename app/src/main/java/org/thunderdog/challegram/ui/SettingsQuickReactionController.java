@@ -11,7 +11,6 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.util.List;
-import java.util.Set;
 
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -21,6 +20,8 @@ public class SettingsQuickReactionController extends ReactionListBaseController<
 	public SettingsQuickReactionController(Context context, Tdlib tdlib){
 		super(context, tdlib);
 		selectedReactions.addAll(Settings.instance().getQuickReactions());
+    useCounter=true;
+    allowPremiumReactionsAnyway=false;
 	}
 
 	@Override
@@ -63,6 +64,7 @@ public class SettingsQuickReactionController extends ReactionListBaseController<
 
 	@Override
 	protected void setValuedSetting(ListItem item, SettingView view, boolean isUpdate){
+    super.setValuedSetting(item, view, isUpdate);
 		if(item.getId()==R.id.btn_menu_enable){
 			view.getToggler().setRadioEnabled(item.isSelected(), isUpdate);
 		}
@@ -75,7 +77,7 @@ public class SettingsQuickReactionController extends ReactionListBaseController<
 			sw.setSelected(!sw.isSelected());
 			topAdapter.updateValuedSettingByPosition(0);
 			if(sw.isSelected() && selectedReactions.isEmpty()){
-				selectedReactions.add(allReactions.get(0).reaction);
+				selectedReactions.add(regularReactions.get(0).reaction);
 				RecyclerView rv=getRecyclerView();
 				for(int i=0;i<rv.getChildCount();i++){
 					RecyclerView.ViewHolder holder=rv.getChildViewHolder(rv.getChildAt(i));

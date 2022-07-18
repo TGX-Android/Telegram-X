@@ -24,6 +24,7 @@ public class SimplestCheckboxView extends View{
 	private boolean isChecked;
 	private Animator currentAnim;
 	private Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
+  private String counter;
 
 	private static Property<SimplestCheckboxView, Float> FACTOR=new Property<>(Float.class, "Fdfsafdsa"){
 		@Override
@@ -70,12 +71,17 @@ public class SimplestCheckboxView extends View{
 			canvas.save();
 			canvas.scale(scale, scale, getWidth()/2f, getHeight()/2f);
 		}
-		SimplestCheckBox.draw(canvas, getWidth()/2, getHeight()/2, factor, null, null, Theme.togglerActiveColor(), Theme.fillingColor(), false, 0f);
+		SimplestCheckBox.draw(canvas, getWidth()/2, getHeight()/2, factor, counter, cb, Theme.togglerActiveColor(), Theme.fillingColor(), false, 0f);
 		if(scale!=1f)
 			canvas.restore();
 	}
 
-	public void setChecked(boolean checked, boolean animated){
+  public void setCounter (String counter){
+    this.counter=counter;
+    invalidate();
+  }
+
+  public void setChecked(boolean checked, boolean animated){
 		if(isChecked!=checked){
 			isChecked=checked;
 			if(currentAnim!=null)

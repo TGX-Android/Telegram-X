@@ -4303,4 +4303,6 @@
   <string name="QuickReactionsDisabled">Disabled</string>
   <string name="QuickReactionsLimit_one">You can choose no more than %1$s reaction.</string>
   <string name="QuickReactionsLimit_other">You can choose no more than %1$s reactions.</string>
+  <string name="PremiumReactions">Premium reactions</string>
+  <string name="PremiumReactionsTooltip">Subscribe to **Telegram Premium** to be able to use reactions below.</string>
 </resources>

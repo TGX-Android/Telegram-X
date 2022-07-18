@@ -10767,9 +10767,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if(chat==null)
       return;
     if(Settings.instance().areQuickReactionsEnabled()){
-      Set<String> enabled=Settings.instance().getQuickReactions();
+      List<String> enabled=Settings.instance().getQuickReactions();
       List<String> available=Arrays.asList(chat.availableReactions);
-      quickReactions=tdlib.getSupportedReactions().stream().filter(r->enabled.contains(r.reaction) && available.contains(r.reaction)).collect(Collectors.toList());
+      quickReactions=enabled.stream().filter(available::contains).map(tdlib::getReaction).collect(Collectors.toList());
     }else{
       quickReactions=Collections.emptyList();
     }

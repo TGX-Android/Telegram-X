@@ -3,15 +3,18 @@ package org.thunderdog.challegram.ui;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.charts.CubicBezierInterpolator;
 import org.thunderdog.challegram.component.base.SettingView;
-import org.thunderdog.challegram.component.sticker.TGStickerObj;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.reactions.LottieAnimationDrawable;
 import org.thunderdog.challegram.reactions.LottieAnimation;
 import org.thunderdog.challegram.reactions.LottieAnimationThreadPool;
@@ -20,13 +23,16 @@ import org.thunderdog.challegram.reactions.SimplestCheckboxView;
 import org.thunderdog.challegram.reactions.StickerReceiverView;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.Drawables;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.v.CustomRecyclerView;
-import org.thunderdog.challegram.widget.ImageReceiverView;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.ConcatAdapter;
@@ -34,17 +40,22 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 public abstract class ReactionListBaseController<T> extends RecyclerViewController<T>{
-	protected List<TdApi.Reaction> allReactions;
-	protected SettingsAdapter topAdapter;
-	protected ReactionsAdapter reactionsAdapter=new ReactionsAdapter();
+	protected List<TdApi.Reaction> regularReactions, premiumReactions;
+	protected SettingsAdapter topAdapter, premiumSectionHeaderAdapter;
+	protected ReactionsAdapter reactionsAdapter, premiumReactionsAdapter;
 	protected ConcatAdapter actualAdapter;
-	protected HashSet<String> selectedReactions=new HashSet<>();
+	protected ArrayList<String> selectedReactions=new ArrayList<>();
 	protected ReactionAnimationOverlay animationOverlay;
+  protected boolean useCounter, allowPremiumReactionsAnyway;
 
 	public ReactionListBaseController(Context context, Tdlib tdlib){
 		super(context, tdlib);
-		allReactions=tdlib.getSupportedReactions();
+		List<TdApi.Reaction> reactions=tdlib.getSupportedReactions();
+    regularReactions=reactions.stream().filter(r->!r.isPremium).collect(Collectors.toList());
+    premiumReactions=reactions.stream().filter(r->r.isPremium).collect(Collectors.toList());
 		animationOverlay=new ReactionAnimationOverlay(this);
+    reactionsAdapter=new ReactionsAdapter(regularReactions);
+    premiumReactionsAdapter=new ReactionsAdapter(premiumReactions);
 	}
 
 	@Override
@@ -59,26 +70,76 @@ public abstract class ReactionListBaseController<T> extends RecyclerViewControll
 		onPopulateTopItems(items);
 		topAdapter.setItems(items, false);
 
+    premiumSectionHeaderAdapter=new SettingsAdapter(this){
+      @Override
+      protected void setHeaderText (ListItem item, TextView view, boolean isUpdate){
+        super.setHeaderText(item, view, isUpdate);
+        view.setPadding(view.getPaddingLeft(), view.getPaddingTop(), Screen.dp(48), view.getPaddingBottom());
+      }
+    };
+    ListItem premiumHeader;
+    premiumSectionHeaderAdapter.setItems(Arrays.asList(
+      new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
+      premiumHeader=new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.PremiumReactions),
+      new ListItem(ListItem.TYPE_SHADOW_TOP)
+    ), false);
+
 		GridLayoutManager glm=new GridLayoutManager(context, 4);
 		glm.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup(){
 			@Override
 			public int getSpanSize(int position){
-				return position<topAdapter.getItemCount() ? glm.getSpanCount() : 1;
+				return actualAdapter.getItemViewType(position)>=0 ? glm.getSpanCount() : 1;
 			}
 		});
 		recyclerView.setLayoutManager(glm);
-		actualAdapter=new ConcatAdapter(new ConcatAdapter.Config.Builder().setIsolateViewTypes(false).build(), topAdapter, reactionsAdapter);
+		actualAdapter=new ConcatAdapter(new ConcatAdapter.Config.Builder().setIsolateViewTypes(false).build(), topAdapter, reactionsAdapter, premiumSectionHeaderAdapter, premiumReactionsAdapter);
 		recyclerView.setAdapter(actualAdapter);
 
 		recyclerView.addItemDecoration(new RecyclerView.ItemDecoration(){
 			private Paint paint=new Paint();
+      private Rect rect=new Rect();
 			@Override
 			public void onDraw(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state){
 				paint.setColor(Theme.fillingColor());
-				RecyclerView.ViewHolder holder=parent.findViewHolderForAdapterPosition(topAdapter.getItemCount());
-				c.drawRect(0, holder==null ? 0 : holder.itemView.getY(), parent.getWidth(), parent.getHeight(), paint);
+				RecyclerView.ViewHolder top=parent.findViewHolderForAdapterPosition(topAdapter.getItemCount());
+        RecyclerView.ViewHolder bottom=parent.findViewHolderForAdapterPosition(topAdapter.getItemCount()+reactionsAdapter.getItemCount()-1);
+        if(top!=null || bottom!=null){
+          if(bottom!=null)
+            parent.getDecoratedBoundsWithMargins(bottom.itemView, rect);
+          c.drawRect(0, top==null ? 0 : top.itemView.getTop(), parent.getWidth(), bottom==null ? parent.getHeight() : rect.bottom, paint);
+        }
+        top=parent.findViewHolderForAdapterPosition(topAdapter.getItemCount()+reactionsAdapter.getItemCount()+premiumSectionHeaderAdapter.getItemCount());
+        bottom=parent.findViewHolderForAdapterPosition(actualAdapter.getItemCount()-1);
+        if(top!=null || bottom!=null){
+          c.drawRect(0, top==null ? 0 : top.itemView.getTop(), parent.getWidth(), parent.getHeight(), paint);
+        }
 			}
-		});
+
+      @Override
+      public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state){
+        int pos=parent.getChildAdapterPosition(view);
+        if(pos>topAdapter.getItemCount() && pos<topAdapter.getItemCount()+reactionsAdapter.getItemCount()){
+          pos-=topAdapter.getItemCount();
+          if(pos>=reactionsAdapter.getItemCount()/4*4){
+            outRect.bottom=Screen.dp(16);
+          }
+        }
+      }
+    });
+
+    if(!tdlib.hasPremium() && !allowPremiumReactionsAnyway){
+      recyclerView.addItemDecoration(new RecyclerView.ItemDecoration(){
+        private Drawable lockIcon=Drawables.get(R.drawable.baseline_lock_16);
+        @Override
+        public void onDrawOver (@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state){
+          RecyclerView.ViewHolder holder=parent.findViewHolderForAdapterPosition(topAdapter.getItemCount()+reactionsAdapter.getItemCount()+1);
+          if(holder!=null){
+            Paint paint=PorterDuffPaint.get(R.id.theme_color_text);
+            Drawables.drawCentered(c, lockIcon, parent.getWidth()-Screen.dp(24), holder.itemView.getTop()+holder.itemView.getHeight()/2f, paint);
+          }
+        }
+      });
+    }
 
 		recyclerView.setPadding(0, 0, 0, Screen.dp(16));
 		recyclerView.setClipToPadding(false);
@@ -91,11 +152,18 @@ public abstract class ReactionListBaseController<T> extends RecyclerViewControll
 	protected abstract void onSelectedReactionsChanged();
 	protected void onReactionUnselected(String reaction){ }
 
-	protected void setValuedSetting(ListItem item, SettingView view, boolean isUpdate){ }
+	protected void setValuedSetting(ListItem item, SettingView view, boolean isUpdate){
+    view.setDrawModifier(item.getDrawModifier());
+  }
 
 	protected class ReactionsAdapter extends RecyclerView.Adapter<ReactionCellViewHolder>{
+    private final List<TdApi.Reaction> reactions;
 
-		@NonNull
+    public ReactionsAdapter (List<TdApi.Reaction> reactions){
+      this.reactions=reactions;
+    }
+
+    @NonNull
 		@Override
 		public ReactionCellViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType){
 			return new ReactionCellViewHolder();
@@ -103,12 +171,12 @@ public abstract class ReactionListBaseController<T> extends RecyclerViewControll
 
 		@Override
 		public void onBindViewHolder(@NonNull ReactionCellViewHolder holder, int position){
-			holder.bind(allReactions.get(position));
+			holder.bind(reactions.get(position));
 		}
 
 		@Override
 		public int getItemCount(){
-			return allReactions.size();
+			return reactions.size();
 		}
 
 		@Override
@@ -159,17 +227,47 @@ public abstract class ReactionListBaseController<T> extends RecyclerViewControll
 				icon.setAlpha(selected ? 1f : .45f);
 				text.setAlpha(selected ? 1f : .45f);
 			}
+      if(selected && useCounter){
+        check.setCounter(Strings.buildCounter(selectedReactions.indexOf(reaction.reaction)+1));
+      }
 			check.setChecked(selected, animated);
 		}
 
 		@Override
 		public void onClick(View v){
+      if(reaction.isPremium && !tdlib.hasPremium() && !allowPremiumReactionsAnyway){
+        RecyclerView.ViewHolder headerHolder=getRecyclerView().findViewHolderForAdapterPosition(topAdapter.getItemCount()+reactionsAdapter.getItemCount()+1);
+        CharSequence str=Strings.buildMarkdown(ReactionListBaseController.this, Lang.getString(R.string.PremiumReactionsTooltip), null);
+        if(headerHolder!=null){
+          context.tooltipManager().builder(headerHolder.itemView).locate((targetView, outRect)->{
+            int x=targetView.getWidth()-Screen.dp(32);
+            int y=targetView.getHeight()/2-Screen.dp(14);
+            outRect.set(x, y, x+Screen.dp(16), y+Screen.dp(16));
+          }).show(tdlib, str).hideDelayed();
+        }else{
+          Toast.makeText(context, str, Toast.LENGTH_SHORT).show();
+        }
+        return;
+      }
 			if(selectedReactions.contains(reaction.reaction)){
 				selectedReactions.remove(reaction.reaction);
 				onSelectedReactionsChanged();
 				updateState(true);
 				endAnimation();
-			}else if(onReactionSelected(reaction.reaction)){
+
+        if(useCounter){
+          RecyclerView list=getRecyclerView();
+          for(int i=0;i<list.getChildCount();i++){
+            RecyclerView.ViewHolder holder=list.getChildViewHolder(list.getChildAt(i));
+            if(holder instanceof ReactionListBaseController.ReactionCellViewHolder){
+              ReactionCellViewHolder vh=(ReactionCellViewHolder) holder;
+              if(selectedReactions.contains(vh.reaction.reaction)){
+                vh.updateState(false);
+              }
+            }
+          }
+        }
+      }else if(onReactionSelected(reaction.reaction)){
 				selectedReactions.add(reaction.reaction);
 				onSelectedReactionsChanged();
 				updateState(true);

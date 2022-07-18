@@ -1,9 +1,7 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
-import android.util.Log;
 import android.view.View;
-import android.widget.Toast;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
@@ -17,7 +15,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import androidx.recyclerview.widget.RecyclerView;
-import me.vkryl.android.widget.FrameLayoutFix;
 
 public class EditReactionsController extends ReactionListBaseController<TdApi.Chat> implements View.OnClickListener{
 	private boolean isChannel;
@@ -33,6 +30,7 @@ public class EditReactionsController extends ReactionListBaseController<TdApi.Ch
 		if(args.availableReactions!=null){
 			selectedReactions.addAll(Arrays.asList(args.availableReactions));
 		}
+    allowPremiumReactionsAnyway=true;
 	}
 
 	@Override
@@ -40,7 +38,6 @@ public class EditReactionsController extends ReactionListBaseController<TdApi.Ch
 		outItems.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_menu_enable));
 		outItems.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 		outItems.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, isChannel ? R.string.ChannelReactionsExplanation : R.string.ChatReactionsExplanation));
-		outItems.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.AvailableReactions));
 		outItems.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
 	}
 
@@ -76,7 +73,7 @@ public class EditReactionsController extends ReactionListBaseController<TdApi.Ch
 			CheckBoxView cb=(CheckBoxView) view.getChildAt(0);
 			if(selectedReactions.isEmpty()){
 				cb.setChecked(false, isUpdate);
-			}else if(selectedReactions.size()==allReactions.size()){
+			}else if(selectedReactions.size()==regularReactions.size()+premiumReactions.size()){
 				cb.setChecked(true, isUpdate);
 				cb.setIndeterminate(false, isUpdate);
 			}else{
@@ -92,15 +89,21 @@ public class EditReactionsController extends ReactionListBaseController<TdApi.Ch
 			if(!selectedReactions.isEmpty()){
 				selectedReactions.clear();
 			}else{
-				selectedReactions.addAll(allReactions.stream().map(r->r.reaction).collect(Collectors.toList()));
+				selectedReactions.addAll(regularReactions.stream().map(r->r.reaction).collect(Collectors.toList()));
+        selectedReactions.addAll(premiumReactions.stream().map(r->r.reaction).collect(Collectors.toList()));
 			}
 			RecyclerView rv=getRecyclerView();
+      int lastUpdatedPos=-1;
 			for(int i=0;i<rv.getChildCount();i++){
 				RecyclerView.ViewHolder holder=rv.getChildViewHolder(rv.getChildAt(i));
 				if(holder instanceof ReactionListBaseController.ReactionCellViewHolder){
 					((ReactionCellViewHolder) holder).updateState(true);
+          lastUpdatedPos=Math.max(lastUpdatedPos, holder.getAbsoluteAdapterPosition());
 				}
 			}
+      if(lastUpdatedPos<actualAdapter.getItemCount()-1){
+        actualAdapter.notifyItemRangeChanged(lastUpdatedPos+1, actualAdapter.getItemCount()-lastUpdatedPos);
+      }
 			topAdapter.updateValuedSettingByPosition(0);
 		}
 	}
