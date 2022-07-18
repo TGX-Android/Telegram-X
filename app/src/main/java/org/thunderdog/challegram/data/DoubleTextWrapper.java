@@ -365,17 +365,18 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
         }
       }
     }
+    final boolean isPremium = this.user != null && this.user.isPremium;
     if (!StringUtils.isEmpty(adminSign)) {
       this.adminSign = new Text.Builder(adminSign, availWidth, Paints.robotoStyleProvider(13), TextColorSets.Regular.LIGHT).singleLine().build();
       availWidth -= this.adminSign.getWidth() + Screen.dp(4f);
-      if ((this.user != null && this.user.isPremium) || chatMark != null) {
+      if (isPremium || chatMark != null) {
         availWidth -= Screen.dp(4f);
       }
     } else {
       this.adminSign = null;
     }
 
-    if (this.user != null && this.user.isPremium) {
+    if (isPremium) {
       availWidth -= Screen.dp(28f);
     }
 
