@@ -482,8 +482,9 @@ public class Settings {
     private Map<String, int[]> _modules;
 
     private int getSettings () {
-      if (_settings == null)
-        _settings = pmc.getInt(settingsKey, 0);
+      if (_settings == null) {
+        _settings = pmc.getInt(settingsKey, BuildConfig.DEBUG || BuildConfig.EXPERIMENTAL ? FLAG_TDLIB_OTHER_ENABLE_ANDROID_LOG : 0);
+      }
       return _settings;
     }
 
