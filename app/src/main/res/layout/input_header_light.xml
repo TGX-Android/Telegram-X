@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <org.thunderdog.challegram.v.HeaderEditText xmlns:android="http://schemas.android.com/apk/res/android"
-                                            xmlns:tools="http://schemas.android.com/tools"
-                                            android:layout_width="match_parent"
-                                            android:layout_height="match_parent"
-                                            android:textColorHint="#ffadcae0"
-                                            android:textSize="19dp"
-                                            android:maxLines="1"
-                                            android:background="@drawable/transparent"
-                                            android:textColor="#ffffffff"
-                                            tools:ignore="SpUsage" />
+  xmlns:tools="http://schemas.android.com/tools"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:textColorHint="#ffadcae0"
+  android:textSize="19dp"
+  android:maxLines="1"
+  android:background="@drawable/transparent"
+  android:textColor="#ffffffff"
+  tools:ignore="SpUsage" />
