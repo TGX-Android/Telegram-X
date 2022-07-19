@@ -5,7 +5,10 @@ import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,21 +17,28 @@ import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import me.vkryl.android.util.InvalidateDelegate;
+
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.charts.LayoutHelper;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.navigation.BackListener;
 import org.thunderdog.challegram.navigation.OptionsLayout;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ThemeListenerEntry;
 import org.thunderdog.challegram.theme.ThemeListenerList;
+import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.widget.PopupLayout;
@@ -86,15 +96,18 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout {
     int vpad = Screen.dp(12), hpad = Screen.dp(6);
     scrollContent.setPadding(hpad, 0, hpad, 0);
     String chosenReaction = null;
+    HashMap<String, Integer> reactionCounts=new HashMap<>();
     for (TdApi.MessageReaction mr : message.getReactions()) {
       if (mr.isChosen) {
         chosenReaction = mr.reaction;
-        break;
       }
+      reactionCounts.put(mr.reaction, mr.totalCount);
     }
     View _chosenButton = null;
+    boolean needCounters=message.needDrawReactionsWithTime();
     for (TdApi.Reaction r : reactions) {
-      FrameLayout btn = new FrameLayout(context);
+      LinearLayout btn = new LinearLayout(context);
+      btn.setOrientation(HORIZONTAL);
       ImageView gifView = new ImageView(context);
       CancellableRunnable cr = LottieAnimationThreadPool.loadOneAnimation(tdlib, tdlib.getReaction(r.reaction).appearAnimation, la -> {
         loadingAnimations.remove(r.reaction);
@@ -107,14 +120,26 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout {
       btn.setTag(r);
       btn.setOnClickListener(this::onReactionClick);
       btn.setOnLongClickListener(this::onReactionLongClick);
-      btn.addView(gifView, new FrameLayout.LayoutParams(Screen.dp(24), Screen.dp(24), Gravity.CENTER));
-      if (r.reaction.equals(chosenReaction)) {
+      btn.addView(gifView, LayoutHelper.createLinear(24, 24, Gravity.CENTER_VERTICAL, 6, 0, 6, 0));
+      boolean isChosen=r.reaction.equals(chosenReaction);
+      if (isChosen) {
         btn.setBackground(new ChosenReactionBackgroundDrawable());
         themeListeners.addThemeInvalidateListener(btn);
         _chosenButton = btn;
       }
 
-      scrollContent.addView(btn, new LinearLayout.LayoutParams(Screen.dp(36), Screen.dp(48)));
+      int count=reactionCounts.containsKey(r.reaction) ? reactionCounts.get(r.reaction) : 0;
+      if(needCounters && count>0){
+        TextView counter=new TextView(context);
+        counter.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        counter.setTextColor(Theme.getColor(isChosen ? R.id.theme_color_fillingPositiveContent : R.id.theme_color_text));
+        themeListeners.add(new ThemeListenerEntry(ThemeListenerEntry.MODE_TEXT_COLOR, isChosen ? R.id.theme_color_fillingPositiveContent : R.id.theme_color_text, counter));
+        counter.setTypeface(Fonts.getRobotoMedium());
+        counter.setText(Strings.buildCounter(count));
+        btn.addView(counter, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, -2, 0, 9, 0));
+      }
+
+      scrollContent.addView(btn, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(48)));
     }
 
     final View chosenButton = _chosenButton;
@@ -269,11 +294,15 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout {
 
   private static class ChosenReactionBackgroundDrawable extends Drawable {
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RectF rect=new RectF();
 
     @Override
     public void draw (@NonNull Canvas canvas) {
       paint.setColor(Theme.getColor(R.id.theme_color_file));
-      canvas.drawCircle(getBounds().centerX(), getBounds().centerY(), Screen.dp(17.25f), paint);
+      int radius=Screen.dp(18);
+      Rect bounds=getBounds();
+      rect.set(bounds.left, bounds.centerY()-radius, bounds.right, bounds.centerY()+radius);
+      canvas.drawRoundRect(rect, radius, radius, paint);
     }
 
     @Override

@@ -1807,7 +1807,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         c.translate(right - compactReactions.getWidth(), top);
         compactReactionsX = right - compactReactions.getWidth();
         compactReactionsY = top;
-        compactReactions.draw(c, smallReactionsReceiver);
+        compactReactions.draw(c, view, smallReactionsReceiver);
         c.restore();
       }
     }
@@ -3088,7 +3088,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
   }
 
-  protected int getTimePartIconColorId () {
+  public int getTimePartIconColorId () {
     if (!useBubbles()) {
       return getDecentIconColorId();
     }
@@ -3164,7 +3164,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       c.translate(startX, counterY);
       compactReactionsX = startX + Screen.dp(2);
       compactReactionsY = counterY;
-      compactReactions.draw(c, view.getReactionSmallIconsReceiver());
+      compactReactions.draw(c, view, view.getReactionSmallIconsReceiver());
       c.restore();
       startX += compactReactions.getWidth();
     }

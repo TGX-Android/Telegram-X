@@ -4190,6 +4190,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         b.append(Lang.plural(R.string.xViews, msg.getViewCount()));
       }
+      if(isChannel || msg.needDrawReactionsWithTime()){
+        if (b.length() > 0) {
+          b.append(", ");
+        }
+        b.append(Lang.plural(R.string.xReactions, msg.getTotalReactionCount()));
+      }
     }
     if (msg.isFailed()) {
       String[] errors = msg.getFailureMessages();

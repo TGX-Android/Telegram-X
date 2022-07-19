@@ -137,7 +137,7 @@
     <item name="inputNegative" />
 
     <item name="inlineOutline" tinted="true" />
-    <item name="inlineText" tinted="true" />
+    <item name="inlineText" tinted="true" porterDuff="true" />
     <item name="inlineIcon" porterDuff="true" tinted="true" />
     <item name="inlineContentActive" />
 
@@ -398,7 +398,7 @@
     <item name="bubbleOut_chatCorrectChosenFillingContent" />
     <item name="bubbleOut_chatNegativeFilling" />
     <item name="bubbleOut_chatNegativeFillingContent" />
-    <item name="bubbleOut_inlineText" tinted="true" />
+    <item name="bubbleOut_inlineText" porterDuff="true" tinted="true" />
     <item name="bubbleOut_inlineOutline" tinted="true" />
     <item name="bubbleOut_inlineIcon" porterDuff="true" tinted="true" />
     <item name="bubbleOut_waveformActive" porterDuff="true" tinted="true" />
