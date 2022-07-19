@@ -58,6 +58,7 @@ import org.thunderdog.challegram.theme.ThemeInfo;
 import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -180,7 +181,8 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
             if (Settings.instance().areQuickReactionsEnabled()) {
               List<String> reactions = Settings.instance().getQuickReactions();
               v.setData(reactions.stream().map(r -> tdlib.getReaction(r).title).collect(Collectors.joining(Lang.getConcatSeparator())));
-              v.setDrawModifier(new ReactionDrawModifier(reactions.get(0), tdlib, v));
+              v.setDrawModifier(new ReactionDrawModifier(reactions, tdlib, v));
+              v.forcePadding(0, Screen.dp(56));
             } else {
               v.setData(R.string.QuickReactionsDisabled);
               v.setDrawModifier(null);

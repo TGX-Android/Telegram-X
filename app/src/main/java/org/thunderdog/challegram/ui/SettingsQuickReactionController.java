@@ -15,7 +15,7 @@ import java.util.List;
 import androidx.recyclerview.widget.RecyclerView;
 
 public class SettingsQuickReactionController extends ReactionListBaseController<SettingsQuickReactionController.Args> implements View.OnClickListener {
-  private static final int MAX_REACTIONS = 3;
+  private static final int MAX_REACTIONS = 4;
 
   public SettingsQuickReactionController (Context context, Tdlib tdlib) {
     super(context, tdlib);
