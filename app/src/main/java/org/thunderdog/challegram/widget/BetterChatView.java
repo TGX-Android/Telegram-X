@@ -393,7 +393,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
       }
       if (isPremium && !isSelf) {
         Drawable drawable = Icons.getChatPremiumDrawable();
-        Drawables.drawRtl(c, drawable, titleLeft + trimmedTitleWidth + Screen.dp(2f) + iconsAdded, Screen.dp(12f), Paints.getPremiumPaint(), width, rtl);
+        Drawables.drawRtl(c, drawable, titleLeft + trimmedTitleWidth + Screen.dp(2f) + iconsAdded, Screen.dp(11.5f), Paints.getPremiumPaint(), width, rtl);
       }
       int titleTop = Screen.dp(28f) + Screen.dp(1f);
       if (titleLayout != null) {
