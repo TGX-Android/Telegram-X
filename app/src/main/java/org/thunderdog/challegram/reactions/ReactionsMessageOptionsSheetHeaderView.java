@@ -96,7 +96,7 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout {
     int vpad = Screen.dp(12), hpad = Screen.dp(6);
     scrollContent.setPadding(hpad, 0, hpad, 0);
     String chosenReaction = null;
-    HashMap<String, Integer> reactionCounts=new HashMap<>();
+    HashMap<String, Integer> reactionCounts = new HashMap<>();
     for (TdApi.MessageReaction mr : message.getReactions()) {
       if (mr.isChosen) {
         chosenReaction = mr.reaction;
@@ -104,7 +104,7 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout {
       reactionCounts.put(mr.reaction, mr.totalCount);
     }
     View _chosenButton = null;
-    boolean needCounters=message.needDrawReactionsWithTime();
+    boolean needCounters = message.needDrawReactionsWithTime();
     for (TdApi.Reaction r : reactions) {
       LinearLayout btn = new LinearLayout(context);
       btn.setOrientation(HORIZONTAL);
@@ -121,16 +121,16 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout {
       btn.setOnClickListener(this::onReactionClick);
       btn.setOnLongClickListener(this::onReactionLongClick);
       btn.addView(gifView, LayoutHelper.createLinear(24, 24, Gravity.CENTER_VERTICAL, 6, 0, 6, 0));
-      boolean isChosen=r.reaction.equals(chosenReaction);
+      boolean isChosen = r.reaction.equals(chosenReaction);
       if (isChosen) {
         btn.setBackground(new ChosenReactionBackgroundDrawable());
         themeListeners.addThemeInvalidateListener(btn);
         _chosenButton = btn;
       }
 
-      int count=reactionCounts.containsKey(r.reaction) ? reactionCounts.get(r.reaction) : 0;
-      if(needCounters && count>0){
-        TextView counter=new TextView(context);
+      int count = reactionCounts.containsKey(r.reaction) ? reactionCounts.get(r.reaction) : 0;
+      if (needCounters && count > 0) {
+        TextView counter = new TextView(context);
         counter.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         counter.setTextColor(Theme.getColor(isChosen ? R.id.theme_color_fillingPositiveContent : R.id.theme_color_text));
         themeListeners.add(new ThemeListenerEntry(ThemeListenerEntry.MODE_TEXT_COLOR, isChosen ? R.id.theme_color_fillingPositiveContent : R.id.theme_color_text, counter));
@@ -294,14 +294,14 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout {
 
   private static class ChosenReactionBackgroundDrawable extends Drawable {
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final RectF rect=new RectF();
+    private final RectF rect = new RectF();
 
     @Override
     public void draw (@NonNull Canvas canvas) {
       paint.setColor(Theme.getColor(R.id.theme_color_file));
-      int radius=Screen.dp(18);
-      Rect bounds=getBounds();
-      rect.set(bounds.left, bounds.centerY()-radius, bounds.right, bounds.centerY()+radius);
+      int radius = Screen.dp(18);
+      Rect bounds = getBounds();
+      rect.set(bounds.left, bounds.centerY() - radius, bounds.right, bounds.centerY() + radius);
       canvas.drawRoundRect(rect, radius, radius, paint);
     }
 

@@ -36,11 +36,11 @@ public class CompactReactionsRenderer implements Counter.Callback {
       .callback(this)
       .colorSet(this::getCounterColor);
 
-    if(iconOnlyMode){
+    if (iconOnlyMode) {
       b.drawable(R.drawable.baseline_favorite_14, 14, 0, Gravity.LEFT);
     }
 
-    counter=b.build();
+    counter = b.build();
   }
 
   public void update (boolean animated) {
@@ -52,13 +52,13 @@ public class CompactReactionsRenderer implements Counter.Callback {
       counter.setCount(0, animated);
       return;
     }
-    if(iconOnlyMode){
+    if (iconOnlyMode) {
       for (TdApi.MessageReaction reaction : info.reactions) {
         totalReactionsCount += reaction.totalCount;
         selfReacted = selfReacted || reaction.isChosen;
       }
-      counter.setCount(totalReactionsCount>0 ? Tdlib.CHAT_MARKED_AS_UNREAD : 0, !selfReacted, animated);
-    }else {
+      counter.setCount(totalReactionsCount > 0 ? Tdlib.CHAT_MARKED_AS_UNREAD : 0, !selfReacted, animated);
+    } else {
       for (TdApi.MessageReaction reaction : info.reactions) {
         totalReactionsCount += reaction.totalCount;
         selfReacted = selfReacted || reaction.isChosen;
@@ -71,7 +71,7 @@ public class CompactReactionsRenderer implements Counter.Callback {
   }
 
   public int getWidth () {
-    if(iconOnlyMode)
+    if (iconOnlyMode)
       return Math.round(counter.getScaledWidth(Screen.dp(3)));
     if (iconizedReactions.isEmpty())
       return 0;
@@ -87,7 +87,7 @@ public class CompactReactionsRenderer implements Counter.Callback {
       icon.setBounds(iconOffset * i + iconOffset / 2 - iconSize / 2, -iconSize / 2, iconOffset * i + iconOffset / 2 + iconSize / 2, iconSize / 2);
       icon.draw(c);
     }
-    if(iconOnlyMode)
+    if (iconOnlyMode)
       counter.draw(c, 0, 0, Gravity.LEFT, 1f, (DrawableProvider) view, getCounterColorID());
     else
       counter.draw(c, iconOffset * iconizedReactions.size() + Screen.dp(3), 0, Gravity.LEFT, 1f, (DrawableProvider) view, getCounterColorID());
@@ -116,7 +116,7 @@ public class CompactReactionsRenderer implements Counter.Callback {
     return parent.needAnimateChanges(counter);
   }
 
-  private int getCounterColorID(){
+  private int getCounterColorID () {
     if (selfReacted) {
       if (parent.useBubbles()) {
         return parent.isOutgoing() ? R.id.theme_color_bubbleOut_inlineText : R.id.theme_color_inlineText;

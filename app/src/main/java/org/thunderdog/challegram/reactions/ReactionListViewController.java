@@ -217,7 +217,7 @@ public class ReactionListViewController {
     }
     if (viewers != null) {
       viewControllers.add(viewersTab = new TabViewController(true, null));
-      viewersTab.listItems.addAll(Arrays.stream(viewers.userIds).mapToObj(id -> new ListItem(ListItem.TYPE_USER).setLongId(id)).collect(Collectors.toList()));
+      viewersTab.listItems.addAll(Arrays.stream(viewers.userIds).mapToObj(id -> new ListItem(ListItem.TYPE_USER_REACTION).setLongId(id)).collect(Collectors.toList()));
       viewersTab.adapter.notifyItemRangeInserted(0, viewersTab.listItems.size());
     }
     if (message.getMessageForReactions().interactionInfo != null) {

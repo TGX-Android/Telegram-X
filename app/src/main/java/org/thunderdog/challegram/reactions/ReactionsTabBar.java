@@ -13,6 +13,8 @@ import android.widget.LinearLayout;
 
 import androidx.viewpager.widget.ViewPager;
 
+import me.vkryl.core.ColorUtils;
+
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.data.TGMessage;
@@ -33,16 +35,17 @@ public class ReactionsTabBar extends HorizontalScrollView implements ViewPager.O
   private View selectedTab, otherSelectedTab;
   private int currentPosition;
   private float currentPositionOffset;
+  private int selectorAlpha;
 
   public static final Property<ReactionsTabBar, Integer> SELECTOR_ALPHA = new Property<ReactionsTabBar, Integer>(Integer.class, "whatever") {
     @Override
     public Integer get (ReactionsTabBar object) {
-      return object.strip.paint.getAlpha();
+      return object.selectorAlpha;
     }
 
     @Override
     public void set (ReactionsTabBar object, Integer value) {
-      object.strip.paint.setAlpha(value);
+      object.selectorAlpha = value;
       object.strip.invalidate();
     }
   };
@@ -168,6 +171,7 @@ public class ReactionsTabBar extends HorizontalScrollView implements ViewPager.O
     protected void onDraw (Canvas canvas) {
       super.onDraw(canvas);
       paint.setColor(Theme.getColor(R.id.theme_color_text));
+      paint.setAlpha(Math.round(selectorAlpha / 255f * paint.getAlpha()));
       float x = selectedTab.getX(), width;
       if (currentPositionOffset > 0f) {
         x += selectedTab.getWidth() * currentPositionOffset;
