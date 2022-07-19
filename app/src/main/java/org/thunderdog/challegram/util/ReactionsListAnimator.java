@@ -6,6 +6,8 @@ import android.view.animation.Interpolator;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.thunderdog.challegram.data.TGReactions;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -20,16 +22,16 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.Destroyable;
 
-public final class ReactionsListAnimator<T> implements Iterable<ReactionsListAnimator.Entry<T>> {
-  public static class Entry<T> implements Comparable<ReactionsListAnimator.Entry<T>>/*, Animatable*/ {
-    public final T item;
+public final class ReactionsListAnimator implements Iterable<ReactionsListAnimator.Entry> {
+  public static class Entry implements Comparable<Entry> {
+    public final TGReactions.MessageReactionEntry item;
     private int index;
 
     private final VariableFloat position;
     private final VariableFloat visibility;
     private final VariableRect measuredPositionRect;
 
-    public Entry (T item, int index, boolean isVisible) {
+    public Entry (TGReactions.MessageReactionEntry item, int index, boolean isVisible) {
       this.item = item;
       this.index = index;
       this.visibility = new VariableFloat(isVisible ? 1f : 0f);
@@ -55,7 +57,7 @@ public final class ReactionsListAnimator<T> implements Iterable<ReactionsListAni
     }
 
     @Override
-    public int compareTo(ReactionsListAnimator.Entry<T> o) {
+    public int compareTo(Entry o) {
       return Integer.compare(index, o.index);
     }
 
@@ -112,48 +114,38 @@ public final class ReactionsListAnimator<T> implements Iterable<ReactionsListAni
     }
   }
 
-  public interface Measurable {
-    default int getX () { return 0; };
-    default int getY () { return 0; }
-    int getWidth ();
-    int getHeight ();
-  }
-
   public interface Callback {
-    void onItemsChanged (ReactionsListAnimator<?> animator);
+    void onItemsChanged (ReactionsListAnimator animator);
   }
 
   public static class Metadata {
     private final VariableFloat size = new VariableFloat(0);
     private final VariableFloat visibility = new VariableFloat(0);
-    private final VariableFloat maxItemWidth = new VariableFloat(0f);
-    private final VariableFloat maxItemHeight = new VariableFloat(0f);
     private final VariableFloat totalWidth = new VariableFloat(0f);
-    private final VariableFloat lastLineWidth = new VariableFloat(0f);
     private final VariableFloat totalHeight = new VariableFloat(0f);
+    private final VariableFloat lastLineWidth = new VariableFloat(0f);
+    private final VariableFloat timeHeightExpand = new VariableFloat(0f);
 
     private Metadata () { }
 
     public boolean applyAnimation (float factor) {
       boolean haveChanges;
       haveChanges = size.applyAnimation(factor);
-      haveChanges = maxItemWidth.applyAnimation(factor) || haveChanges;
-      haveChanges = maxItemHeight.applyAnimation(factor) || haveChanges;
       haveChanges = totalWidth.applyAnimation(factor) || haveChanges;
       haveChanges = lastLineWidth.applyAnimation(factor) || haveChanges;
       haveChanges = totalHeight.applyAnimation(factor) || haveChanges;
       haveChanges = visibility.applyAnimation(factor) || haveChanges;
+      haveChanges = timeHeightExpand.applyAnimation(factor) || haveChanges;
       return haveChanges;
     }
 
     public void finishAnimation (boolean applyFuture) {
       size.finishAnimation(applyFuture);
-      maxItemWidth.finishAnimation(applyFuture);
-      maxItemHeight.finishAnimation(applyFuture);
       totalWidth.finishAnimation(applyFuture);
       lastLineWidth.finishAnimation(applyFuture);
       totalHeight.finishAnimation(applyFuture);
       visibility.finishAnimation(applyFuture);
+      timeHeightExpand.finishAnimation(applyFuture);
     }
 
     private void setSize (int size, boolean animated) {
@@ -164,14 +156,6 @@ public final class ReactionsListAnimator<T> implements Iterable<ReactionsListAni
         this.size.set(size);
         this.visibility.set(size > 0 ? 1.0f : 0.0f);
       }
-    }
-
-    public float getMaximumItemWidth () {
-      return maxItemWidth.get();
-    }
-
-    public float getMaximumItemHeight () {
-      return maxItemHeight.get();
     }
 
     public float getTotalWidth () {
@@ -193,26 +177,30 @@ public final class ReactionsListAnimator<T> implements Iterable<ReactionsListAni
     public float getVisibility () {
       return visibility.get();
     }
+
+    public float getTimeHeightExpand () {
+      return timeHeightExpand.get();
+    }
   }
 
-  private final ReactionsListAnimator.Callback callback;
-  private final ArrayList<ReactionsListAnimator.Entry<T>> entries;
+  private final Callback callback;
+  private final ArrayList<Entry> entries;
   private final @Nullable
   FactorAnimator animator;
-  private final ReactionsListAnimator.Metadata metadata;
-  private final ArrayList<ReactionsListAnimator.Entry<T>> actualList; // list after all animations finished
+  private final Metadata metadata;
+  private final ArrayList<Entry> actualList; // list after all animations finished
 
   public ReactionsListAnimator (@NonNull ViewProvider provider) {
     this(animator -> provider.invalidate());
   }
 
-  public ReactionsListAnimator (@NonNull ReactionsListAnimator.Callback callback) {
+  public ReactionsListAnimator (@NonNull Callback callback) {
     this(callback, null, 0);
   }
 
-  public ReactionsListAnimator (@NonNull ReactionsListAnimator.Callback callback, @Nullable Interpolator interpolator, long duration) {
+  public ReactionsListAnimator (@NonNull Callback callback, @Nullable Interpolator interpolator, long duration) {
     this.callback = callback;
-    this.metadata = new ReactionsListAnimator.Metadata();
+    this.metadata = new Metadata();
     this.entries = new ArrayList<>();
     this.actualList = new ArrayList<>();
     if (interpolator != null && duration > 0) {
@@ -236,17 +224,17 @@ public final class ReactionsListAnimator<T> implements Iterable<ReactionsListAni
     return entries.size();
   }
 
-  public ReactionsListAnimator.Entry<T> getEntry (int index) {
+  public Entry getEntry (int index) {
     return entries.get(index);
   }
 
-  public ReactionsListAnimator.Metadata getMetadata () {
+  public Metadata getMetadata () {
     return metadata;
   }
 
   public void applyAnimation (float factor) {
     boolean haveChanges = metadata.applyAnimation(factor);
-    for (ReactionsListAnimator.Entry<T> entry : entries) {
+    for (Entry entry : entries) {
       haveChanges = entry.applyAnimation(factor) || haveChanges;
     }
     if (haveChanges) {
@@ -259,14 +247,14 @@ public final class ReactionsListAnimator<T> implements Iterable<ReactionsListAni
 
   @NonNull
   @Override
-  public Iterator<ReactionsListAnimator.Entry<T>> iterator() {
+  public Iterator<Entry> iterator() {
     return entries.iterator();
   }
 
   private void removeJunk (boolean applyFuture) {
     boolean haveRemovedEntries = false;
     for (int i = entries.size() - 1; i >= 0; i--) {
-      ReactionsListAnimator.Entry<T> entry = entries.get(i);
+      Entry entry = entries.get(i);
       entry.finishAnimation(applyFuture);
       if (entry.isJunk()) {
         entries.remove(i);
@@ -290,16 +278,16 @@ public final class ReactionsListAnimator<T> implements Iterable<ReactionsListAni
     }
   }
 
-  private int indexOfItem (T item) {
+  private int indexOfItem (TGReactions.MessageReactionEntry item) {
     int index = 0;
     if (item == null) {
-      for (ReactionsListAnimator.Entry<T> entry : entries) {
+      for (Entry entry : entries) {
         if (entry.item == null)
           return index;
         index++;
       }
     } else {
-      for (ReactionsListAnimator.Entry<T> entry : entries) {
+      for (Entry entry : entries) {
         if (item.equals(entry.item))
           return index;
         index++;
@@ -329,12 +317,25 @@ public final class ReactionsListAnimator<T> implements Iterable<ReactionsListAni
       }
     } else {
       if (animator == null) {
-        for (ReactionsListAnimator.Entry<T> entry : entries) {
+        for (Entry entry : entries) {
           entry.visibility.setFrom(entry.visibility.get());
           entry.position.setFrom(entry.position.get());
         }
       }
     }
+  }
+
+  private int reactionsMaxWidth, timeWidth;
+  private boolean forceExpand;
+
+  public void setLayoutParams (int reactionsMaxWidth, int timeWidth, boolean forceExpand) {
+    this.reactionsMaxWidth = reactionsMaxWidth;
+    this.timeWidth = timeWidth;
+    this.forceExpand = forceExpand;
+  }
+
+  public int getReactionsMaxWidth () {
+    return reactionsMaxWidth;
   }
 
   public void measure (boolean animated) {
@@ -349,50 +350,44 @@ public final class ReactionsListAnimator<T> implements Iterable<ReactionsListAni
 
   public void measureImpl (boolean animated) {
     int totalWidth = 0, totalHeight = 0;
-    int maxItemWidth = 0, maxItemHeight = 0;
     int maxTop = -1;
     int lastLineWidth = 0;
-    for (ReactionsListAnimator.Entry<T> entry : actualList) {
-      if (entry.item instanceof ReactionsListAnimator.Measurable) {
-        ReactionsListAnimator.Measurable measurable = (ReactionsListAnimator.Measurable) entry.item;
+    for (Entry entry : actualList) {
+      TGReactions.MessageReactionEntry item = entry.item;
 
-        int itemWidth = measurable.getWidth();
-        int itemHeight = measurable.getHeight();
+      int itemWidth = item.getBubbleWidth();
+      int itemHeight = item.getBubbleHeight();
 
-        int left = measurable.getX();
-        int top = measurable.getY();
+      int left = item.getX();
+      int top = item.getY();
 
-        int width = itemWidth;
-        int height = itemHeight;
-        int right, bottom;
+      int width = itemWidth;
+      int height = itemHeight;
+      int right, bottom;
 
-        right = left + width;
-        bottom = top + height;
-        totalWidth = Math.max(totalWidth, right);
-        totalHeight = Math.max(totalHeight, bottom);
+      right = left + width;
+      bottom = top + height;
+      totalWidth = Math.max(totalWidth, right);
+      totalHeight = Math.max(totalHeight, bottom);
 
-        if (top == maxTop) {
-          lastLineWidth = Math.max(lastLineWidth, right);
-        } else if (top > maxTop) {
-          lastLineWidth = width;
-          maxTop = top;
+      if (top == maxTop) {
+        lastLineWidth = Math.max(lastLineWidth, right);
+      } else if (top > maxTop) {
+        lastLineWidth = width;
+        maxTop = top;
+      }
+
+      if (animated && entry.getVisibility() > 0f) {
+        if (entry.measuredPositionRect.differs(left, top, right, bottom)) {
+          onBeforeListChanged();
+          entry.measuredPositionRect.setTo(left, top, right, bottom);
         }
-
-        if (animated && entry.getVisibility() > 0f) {
-          if (entry.measuredPositionRect.differs(left, top, right, bottom)) {
-            onBeforeListChanged();
-            entry.measuredPositionRect.setTo(left, top, right, bottom);
-          }
-        } else {
-          entry.measuredPositionRect.set(left, top, right, bottom);
-        }
-
-        maxItemWidth = Math.max(maxItemWidth, itemWidth);
-        maxItemHeight = Math.max(maxItemHeight, itemHeight);
+      } else {
+        entry.measuredPositionRect.set(left, top, right, bottom);
       }
     }
 
-    for (ReactionsListAnimator.Entry<T> entry : entries) {
+    for (Entry entry : entries) {
       if (entry.item instanceof Animatable) {
         Animatable animatable = (Animatable) entry.item;
         if (animated) {
@@ -404,6 +399,14 @@ public final class ReactionsListAnimator<T> implements Iterable<ReactionsListAni
           animatable.applyChanges();
         }
       }
+    }
+
+    final float timeHeightExpand;
+    if ((lastLineWidth + timeWidth > reactionsMaxWidth) || forceExpand) {
+      timeHeightExpand = 1f;
+    } else {
+      timeHeightExpand = 0f;
+      totalWidth = Math.max(totalWidth, lastLineWidth + timeWidth);
     }
 
     if (animated) {
@@ -419,33 +422,28 @@ public final class ReactionsListAnimator<T> implements Iterable<ReactionsListAni
         onBeforeListChanged();
         metadata.totalHeight.setTo(totalHeight);
       }
-      if (metadata.maxItemWidth.differs(maxItemWidth)) {
+      if (metadata.timeHeightExpand.differs(timeHeightExpand)) {
         onBeforeListChanged();
-        metadata.maxItemWidth.setTo(maxItemWidth);
-      }
-      if (metadata.maxItemHeight.differs(maxItemHeight)) {
-        onBeforeListChanged();
-        metadata.maxItemHeight.setTo(maxItemHeight);
+        metadata.timeHeightExpand.setTo(timeHeightExpand);
       }
     } else {
       metadata.totalWidth.set(totalWidth);
       metadata.lastLineWidth.set(lastLineWidth);
       metadata.totalHeight.set(totalHeight);
-      metadata.maxItemWidth.set(maxItemWidth);
-      metadata.maxItemHeight.set(maxItemHeight);
+      metadata.timeHeightExpand.set(timeHeightExpand);
     }
   }
 
-  public interface ResetCallback<T> {
-    void onItemRemoved (T item); // item is now removing
-    void onItemAdded (T item, boolean isReturned); // item is now adding
+  public interface ResetCallback {
+    void onItemRemoved (TGReactions.MessageReactionEntry item); // item is now removing
+    void onItemAdded (TGReactions.MessageReactionEntry item, boolean isReturned); // item is now adding
   }
 
-  public void reset (@Nullable List<T> newItems, boolean animated) {
+  public void reset (@Nullable List<TGReactions.MessageReactionEntry> newItems, boolean animated) {
     reset(newItems, animated, null);
   }
 
-  public boolean compareContents (@Nullable List<T> items) {
+  public boolean compareContents (@Nullable List<TGReactions.MessageReactionEntry> items) {
     if (items == null || items.isEmpty()) {
       return this.actualList.isEmpty();
     } else {
@@ -459,7 +457,7 @@ public final class ReactionsListAnimator<T> implements Iterable<ReactionsListAni
     }
   }
 
-  public void reset (@Nullable List<T> newItems, boolean animated, @Nullable ReactionsListAnimator.ResetCallback<T> resetCallback) {
+  public void reset (@Nullable List<TGReactions.MessageReactionEntry> newItems, boolean animated, @Nullable ResetCallback resetCallback) {
     if (!animated) {
       stopAnimation(false);
       for (int i = entries.size() - 1; i >= 0; i--) {
@@ -471,8 +469,8 @@ public final class ReactionsListAnimator<T> implements Iterable<ReactionsListAni
       if (size > 0) {
         entries.ensureCapacity(size);
         actualList.ensureCapacity(size);
-        for (T item : newItems) {
-          ReactionsListAnimator.Entry<T> entry = new ReactionsListAnimator.Entry<>(item, actualList.size(), true);
+        for (TGReactions.MessageReactionEntry item : newItems) {
+          Entry entry = new Entry(item, actualList.size(), true);
           entries.add(entry);
           actualList.add(entry);
         }
@@ -498,7 +496,7 @@ public final class ReactionsListAnimator<T> implements Iterable<ReactionsListAni
 
       boolean needSortActual = false;
       for (int i = 0; i < entries.size(); i++) {
-        ReactionsListAnimator.Entry<T> entry = entries.get(i);
+        Entry entry = entries.get(i);
         int newIndex = newItems.indexOf(entry.item);
         if (newIndex != -1) {
           foundItemCount++;
@@ -546,14 +544,14 @@ public final class ReactionsListAnimator<T> implements Iterable<ReactionsListAni
       if (foundItemCount < newItems.size()) {
         entries.ensureCapacity(entries.size() + (newItems.size() - foundItemCount));
         int index = 0;
-        for (T newItem : newItems) {
+        for (TGReactions.MessageReactionEntry newItem : newItems) {
           int existingIndex = indexOfItem(newItem);
           if (existingIndex == -1) {
             if (index != entries.size()) {
               needSort = true;
             }
             onBeforeListChanged();
-            ReactionsListAnimator.Entry<T> entry = new ReactionsListAnimator.Entry<>(newItem, index, false);
+            Entry entry = new Entry(newItem, index, false);
             entry.onPrepareAppear();
             entries.add(entry);
             ArrayUtils.addSorted(actualList, entry);
@@ -568,7 +566,7 @@ public final class ReactionsListAnimator<T> implements Iterable<ReactionsListAni
     } else {
       if (!foundListChanges) {
         // Triggering the removeJunk call
-        for (ReactionsListAnimator.Entry<T> entry : entries) {
+        for (Entry entry : entries) {
           if (entry.visibility.differs(0f)) {
             onBeforeListChanged();
             break;
@@ -576,7 +574,7 @@ public final class ReactionsListAnimator<T> implements Iterable<ReactionsListAni
         }
       }
       if (foundListChanges) {
-        for (ReactionsListAnimator.Entry<T> entry : entries) {
+        for (Entry entry : entries) {
           if (entry.visibility.differs(0f)) {
             onBeforeListChanged();
             entry.onPrepareRemove();

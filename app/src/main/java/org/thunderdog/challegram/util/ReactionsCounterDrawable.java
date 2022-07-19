@@ -14,9 +14,9 @@ import org.thunderdog.challegram.tool.Screen;
 import me.vkryl.android.animator.ListAnimator;
 
 public class ReactionsCounterDrawable extends Drawable {
-  private final ReactionsListAnimator<TGReactions.MessageReactionEntry> topReactions;
+  private final ReactionsListAnimator topReactions;
 
-  public ReactionsCounterDrawable (ReactionsListAnimator<TGReactions.MessageReactionEntry> topReactions) {
+  public ReactionsCounterDrawable (ReactionsListAnimator topReactions) {
     this.topReactions = topReactions;
   }
 
@@ -35,7 +35,7 @@ public class ReactionsCounterDrawable extends Drawable {
     return PixelFormat.UNKNOWN;
   }
 
-  private float getVisibility (ReactionsListAnimator.Entry<TGReactions.MessageReactionEntry> item) {
+  private float getVisibility (ReactionsListAnimator.Entry item) {
     float position = item.getPosition();
     float visibility = item.getVisibility();
     if (position > 3f) {
@@ -51,7 +51,7 @@ public class ReactionsCounterDrawable extends Drawable {
   public int getMinimumWidth () {
     float width = 0f;
     for (int a = 0; a < topReactions.size(); a++) {
-      ReactionsListAnimator.Entry<TGReactions.MessageReactionEntry> item = topReactions.getEntry(a);
+      ReactionsListAnimator.Entry item = topReactions.getEntry(a);
       width += Screen.dp(14) * getVisibility(item);
     }
     return (int) width;
@@ -60,7 +60,7 @@ public class ReactionsCounterDrawable extends Drawable {
   @Override
   public void draw (@NonNull Canvas c) {
     for (int a = 0; a < topReactions.size(); a++) {
-      ReactionsListAnimator.Entry<TGReactions.MessageReactionEntry> item = topReactions.getEntry(a);
+      ReactionsListAnimator.Entry item = topReactions.getEntry(a);
       item.item.drawReaction(c, item.getPosition() * Screen.dp(14), 0, 6f, getVisibility(item));
     }
   }
@@ -69,7 +69,7 @@ public class ReactionsCounterDrawable extends Drawable {
     lastDrawX = x;
     lastDrawY = y;
     for (int a = 0; a < topReactions.size(); a++) {
-      ReactionsListAnimator.Entry<TGReactions.MessageReactionEntry> item = topReactions.getEntry(a);
+      ReactionsListAnimator.Entry item = topReactions.getEntry(a);
       item.item.drawReaction(c, x + item.getPosition() * Screen.dp(14), y, 6f, getVisibility(item));
     }
   }

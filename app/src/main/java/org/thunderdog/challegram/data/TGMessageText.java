@@ -427,15 +427,23 @@ public class TGMessageText extends TGMessage {
     return wrapper.getWidth();
   }
 
+  private boolean forceExpand = false;
+
   @Override
   protected void buildReactions (boolean animated) {
-    if (webPage != null || !useBubble() || wrapper == null || !useReactionBubbles()) {
+    if (webPage != null || !useBubble() || wrapper == null || !useReactionBubbles() || replyData != null) {
       super.buildReactions(animated);
     } else {
       int textWidth = Math.max(wrapper.getWidth(), computeBubbleTimePartWidth(false));
-      messageReactions.measureReactionBubbles(Math.max(textWidth, (int)(maxWidth * 0.75f)));
+      forceExpand = (textWidth < (int)(maxWidth * 0.75f)) && messageReactions.getBubblesCount() > 1 && messageReactions.getHeight() <= TGReactions.getReactionBubbleHeight();
+      messageReactions.measureReactionBubbles(Math.max(textWidth, (int)(maxWidth * 0.75f)), computeBubbleTimePartWidth(true));
       messageReactions.resetReactionsAnimator(animated);
     }
+  }
+
+  @Override
+  public boolean getForceTimeExpandHeightByReactions () {
+    return forceExpand;
   }
 
   public TdApi.WebPage getWebPage () {

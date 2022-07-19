@@ -30,6 +30,7 @@ import org.thunderdog.challegram.charts.LayoutHelper;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.data.TGReaction;
+import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
@@ -48,6 +49,7 @@ import me.vkryl.core.lambda.Destroyable;
 
 public class ReactionCheckboxSettingsView extends LinearLayout implements ThemeInvalidateListener, FactorAnimator.Target, Destroyable, TooltipOverlayView.LocationProvider {
   private final StickerSmallView stickerSmallView;
+  private final GifReceiver gifReceiver;
   private final TextView captionTextView;
   private final Counter counter;
   private final BoolAnimator checkedFactor;
@@ -77,6 +79,8 @@ public class ReactionCheckboxSettingsView extends LinearLayout implements ThemeI
     stickerSmallView.setLayoutParams(LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER_HORIZONTAL, 0, 16, 0, 3));
     stickerSmallView.setIsSuggestion();
     addView(stickerSmallView);
+
+    gifReceiver = new GifReceiver(this);
 
     captionTextView = new TextView(context);
     captionTextView.setGravity(Gravity.CENTER_HORIZONTAL);

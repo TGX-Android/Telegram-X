@@ -53,7 +53,7 @@ public class TGReactions {
   private boolean hasReaction;
   private String chosenReaction;
 
-  private final ReactionsListAnimator<MessageReactionEntry> reactionsAnimator;
+  private final ReactionsListAnimator reactionsAnimator;
   private int width = 0;
   private int height = 0;
   private int lastLineWidth = 0;
@@ -69,7 +69,7 @@ public class TGReactions {
     this.hasReaction = false;
     this.chosenReaction = "";
     this.tdlib = tdlib;
-    this.reactionsAnimator = new ReactionsListAnimator<>((a) -> parent.invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, MessagesRecyclerView.ITEM_ANIMATOR_DURATION + 50L);
+    this.reactionsAnimator = new ReactionsListAnimator((a) -> parent.invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, MessagesRecyclerView.ITEM_ANIMATOR_DURATION + 50L);
     setReactions(reactions);
     updateCounterAnimators(false);
     resetReactionsAnimator(false);
@@ -78,13 +78,8 @@ public class TGReactions {
   public void setReceiversPool (ComplexReceiver complexReceiver) {
     this.complexReceiver = complexReceiver;
     for (Map.Entry<String, MessageReactionEntry> pair : reactionsMapEntry.entrySet()) {
-      String reaction = pair.getKey();
       MessageReactionEntry entry = pair.getValue();
-      if (complexReceiver != null) {
-        entry.setReceivers(complexReceiver.getImageReceiver(entry.hashCode()), complexReceiver.getGifReceiver(entry.hashCode()));
-      } else {
-        entry.setReceivers(null, null);
-      }
+      entry.setComplexReceiver(complexReceiver);
     }
   }
 
@@ -171,7 +166,6 @@ public class TGReactions {
   }
 
   private MessageReactionEntry getMessageReactionEntry (TGReaction reactionObj) {
-    final String emoji = reactionObj.reaction.reaction;
     final MessageReactionEntry entry;
     if (!reactionsMapEntry.containsKey(reactionObj.reaction.reaction)) {
       Counter.Builder counterBuilder = new Counter.Builder()
@@ -182,7 +176,7 @@ public class TGReactions {
         .textColor(R.id.theme_color_badgeText, R.id.theme_color_badgeText, R.id.theme_color_badgeText);
       entry = new MessageReactionEntry(tdlib, delegate, parent, reactionObj, counterBuilder);
       if (complexReceiver != null) {
-        entry.setReceivers(complexReceiver.getImageReceiver(entry.hashCode()), complexReceiver.getGifReceiver(entry.hashCode()));
+        entry.setComplexReceiver(complexReceiver);
       }
 
       reactionsMapEntry.put(reactionObj.reaction.reaction, entry);
@@ -216,6 +210,10 @@ public class TGReactions {
   }
 
   public void measureReactionBubbles (int maxWidth) {
+    measureReactionBubbles(maxWidth, 0);
+  }
+
+  public void measureReactionBubbles (int maxWidth, int timeWidth) {
     if (maxWidth == 0) {
       maxWidth = 1;
     }
@@ -247,6 +245,7 @@ public class TGReactions {
       width = Math.max(width, lastLineWidth);
       height = y + bubbleHeight;
     }
+    reactionsAnimator.setLayoutParams(maxWidth, timeWidth, parent.getForceTimeExpandHeightByReactions());
   }
 
   public static int getButtonsPadding () {
@@ -300,6 +299,10 @@ public class TGReactions {
     return reactionsAnimator.getMetadata().getVisibility();
   }
 
+  public float getTimeHeightExpand () {
+    return reactionsAnimator.getMetadata().getTimeHeightExpand();
+  }
+
   public boolean hasChosen () {
     return hasReaction;
   }
@@ -308,7 +311,7 @@ public class TGReactions {
     return totalCount;
   }
 
-  public ReactionsListAnimator<MessageReactionEntry> getReactionsAnimator () {
+  public ReactionsListAnimator getReactionsAnimator () {
     return reactionsAnimator;
   }
 
@@ -317,8 +320,15 @@ public class TGReactions {
   public void drawReactionBubbles (Canvas c, MessageView view, int x, int y) {
     lastDrawX = x;
     lastDrawY = y;
+/*
+    c.drawRect(x - Screen.dp(10), y - Screen.dp(9), x + getWidth() + Screen.dp(10), y + getHeight() + Screen.dp(10), Paints.strokeSmallPaint(Color.RED));
+    c.drawRect(x, y, x + getAnimatedWidth(), y + getAnimatedHeight(), Paints.strokeSmallPaint(Color.GREEN));
+    c.drawRect(x, y - Screen.dp(20), x, y + getAnimatedHeight() + Screen.dp(20), Paints.strokeSmallPaint(Color.GREEN));
+    c.drawRect(x, y, x + reactionsAnimator.getReactionsMaxWidth(), y + getHeight(), Paints.strokeSmallPaint(Color.MAGENTA));
+*/
+
     for (int a = 0; a < reactionsAnimator.size(); a++) {
-      ReactionsListAnimator.Entry<TGReactions.MessageReactionEntry> item = reactionsAnimator.getEntry(a);
+      ReactionsListAnimator.Entry item = reactionsAnimator.getEntry(a);
       item.item.drawReactionInBubble(view, c, x + item.getRectF().left, y + item.getRectF().top, item.getVisibility());
     }
   }
@@ -349,7 +359,7 @@ public class TGReactions {
 
   public float getReactionPositionInList (String reaction) {
     for (int a = 0; a < reactionsAnimator.size(); a++) {
-      ReactionsListAnimator.Entry<TGReactions.MessageReactionEntry> item = reactionsAnimator.getEntry(a);
+      ReactionsListAnimator.Entry item = reactionsAnimator.getEntry(a);
       if (item.item.reaction.equals(reaction)) {
         return item.getPosition();
       }
@@ -413,7 +423,7 @@ public class TGReactions {
     return !needUnset;
   }
 
-  public static class MessageReactionEntry implements ReactionsListAnimator.Measurable, TextColorSet, FactorAnimator.Target/*, Destroyable*/ {
+  public static class MessageReactionEntry implements TextColorSet, FactorAnimator.Target {
     private final Counter counter;
     private final String reaction;
     private final TGReaction reactionObj;
@@ -422,7 +432,7 @@ public class TGReactions {
 
     @Nullable private ImageReceiver staticIconReceiver;
     @Nullable private GifReceiver centerAnimationReceiver;
-    @Nullable private GifFile animation;
+    @Nullable private final GifFile animation;
 
     private final MessageReactionsDelegate delegate;
 
@@ -444,7 +454,7 @@ public class TGReactions {
       this.counter = counter.colorSet(this).build();
 
       staticIconSticker = reactionObj.staticIconSicker();
-      animation = reactionObj.centerAnimationSicker().getFullAnimation();
+      animation = reactionObj.newCenterAnimationSicker().getFullAnimation();
       if (animation != null) {
         animation.setPlayOnce(true);
         animation.setLooped(true);
@@ -453,9 +463,15 @@ public class TGReactions {
 
     // Receivers
 
-    public void setReceivers ( ImageReceiver staticIconReceiver, GifReceiver centerAnimationReceiver ) {
-      this.centerAnimationReceiver = centerAnimationReceiver;
-      this.staticIconReceiver = staticIconReceiver;
+    public void setComplexReceiver (ComplexReceiver complexReceiver) {
+      if (complexReceiver == null) {
+        this.centerAnimationReceiver = null;
+        this.staticIconReceiver = null;
+        return;
+      }
+
+      centerAnimationReceiver = animation != null ? complexReceiver.getGifReceiver(reactionObj.centerAnimationSicker().getId()) : null;
+      staticIconReceiver = complexReceiver.getImageReceiver(reactionObj.staticIconSicker().getId());
 
       if (staticIconReceiver != null) {
         staticIconReceiver.requestFile(staticIconSticker.getFullImage());
@@ -563,8 +579,8 @@ public class TGReactions {
     public boolean checkTouch (int x, int y) {
       int buttonX = getX();
       int buttonY = getY();
-      int buttonWidth = getWidth();
-      int buttonHeight = getHeight();
+      int buttonWidth = getBubbleWidth();
+      int buttonHeight = getBubbleHeight();
 
       if (buttonX < x && x < buttonX + buttonWidth && buttonY < y && y < buttonY + buttonHeight) {
         return true;
@@ -575,7 +591,7 @@ public class TGReactions {
 
     // Animations
 
-    private static final long ANIMATION_DURATION = 180l;
+    private static final long ANIMATION_DURATION = 180L;
     private static final int SELECTION_ANIMATOR = 0;
     private static final int ACTIVE_ANIMATOR = 1;
     private static final int FADE_ANIMATOR = 2;
@@ -688,8 +704,8 @@ public class TGReactions {
         c.scale(visibility, visibility, 0, 0);
       }
 
-      int width = getWidth();
-      int height = getHeight();
+      int width = getBubbleWidth();
+      int height = getBubbleHeight();
       int imageSize = getReactionImageSize();
       int imgY = (height - imageSize) / 2;
       int textX = height + Screen.dp(1);
@@ -750,24 +766,20 @@ public class TGReactions {
       this.y = y;
     }
 
-    @Override
     public int getX () {
       return x;
     }
 
-    @Override
     public int getY () {
       return y;
     }
 
-    @Override
-    public int getWidth () {
+    public int getBubbleWidth () {
       int addW = Screen.dp((TGMessage.reactionsTextStyleProvider().getTextSizeInDp() + 1f) / 3f);
       return (int) (counter.getWidth() + getReactionImageSize() + addW);
     }
 
-    @Override
-    public int getHeight () {
+    public int getBubbleHeight () {
       return getReactionBubbleHeight();
     }
 
