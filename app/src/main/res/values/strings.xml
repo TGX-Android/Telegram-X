@@ -740,8 +740,6 @@
   <string name="SelectedRoundVideoSuffix_one">" message"</string>
   <string name="SelectedRoundVideoSuffix_other">" messages"</string>
 
-
-
   <string name="Locating">Waiting for location…</string>
   <string name="NearbyPlaces">Nearby Places</string>
   <string name="FoundPlaces">Found Places</string>
