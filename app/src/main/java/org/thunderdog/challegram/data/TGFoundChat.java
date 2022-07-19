@@ -174,7 +174,7 @@ public class TGFoundChat {
     int flags = this.flags;
     flags = BitwiseUtils.setFlag(flags, FLAG_SECRET, ChatId.isSecret(chat.id));
     flags = BitwiseUtils.setFlag(flags, FLAG_VERIFIED, tdlib.chatVerified(chat));
-    flags = BitwiseUtils.setFlag(flags, FLAG_PREMIUM, tdlib.chatPremium(chat));
+    flags = BitwiseUtils.setFlag(flags, FLAG_PREMIUM, tdlib.chatPremium(chat) && !tdlib.isSelfChat(chat.id));
     flags = BitwiseUtils.setFlag(flags, FLAG_SELF, tdlib.isSelfChat(chat.id));
     this.flags = flags;
     this.userId = TD.getUserId(chat.type);

@@ -33,6 +33,8 @@ public class Icons {
     chatSelfDrawable = null;
     chatVerifyDrawable = null;
     chatPremiumDrawable = null;
+    chatVerifySmallDrawable = null;
+    chatPremiumSmallDrawable = null;
     secureDrawable = null;
     secureSmallDrawable = null;
     if (sparseDrawables != null)
@@ -56,6 +58,22 @@ public class Icons {
       chatVerifyDrawable = Drawables.get(UI.getResources(), R.drawable.deproko_baseline_verify_chat_24);
     }
     return chatVerifyDrawable;
+  }
+
+  private static Drawable chatPremiumSmallDrawable;
+  public static Drawable getChatPremiumSmallDrawable () {
+    if (chatPremiumSmallDrawable == null) {
+      chatPremiumSmallDrawable = Drawables.get(UI.getResources(), R.drawable.baseline_star_premium_18);
+    }
+    return chatPremiumSmallDrawable;
+  }
+
+  private static Drawable chatVerifySmallDrawable;
+  public static Drawable getChatVerifySmallDrawable () {
+    if (chatVerifySmallDrawable == null) {
+      chatVerifySmallDrawable = Drawables.get(UI.getResources(), R.drawable.deproko_baseline_verify_18);
+    }
+    return chatVerifySmallDrawable;
   }
 
   private static Drawable chatPremiumDrawable;
