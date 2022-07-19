@@ -92,7 +92,7 @@ public class MessageQuickActionSwipeHelper {
     final int newQuickActionNumber = Math.round(verticalPosition);
     if (quickActionNumber != newQuickActionNumber) {
       quickActionNumber = newQuickActionNumber;
-      vibrate();
+
     }
   }
 
@@ -105,9 +105,5 @@ public class MessageQuickActionSwipeHelper {
   private boolean isLockedVerticalSwipe () {
     boolean lockedBecauseReadyInFlatMode = !useBubbles && Math.abs(actualDx) > Screen.dp(SWIPE_VERTICAL_LOCK_WIDTH);
     return lockedBecauseNotReadyInBubbleMode || lockedBecauseReadyInFlatMode || lockedBecauseSmallDy || lockedBecauseSwipeStarted;
-  }
-
-  private void vibrate () {
-    message.vibrate();
   }
 }

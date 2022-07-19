@@ -431,12 +431,13 @@ public class TGMessageText extends TGMessage {
 
   @Override
   protected void buildReactions (boolean animated) {
-    if (webPage != null || !useBubble() || wrapper == null || !useReactionBubbles() || replyData != null) {
+    if (webPage != null || !useBubble() || wrapper == null || !useReactionBubbles() /*|| replyData != null*/) {
       super.buildReactions(animated);
     } else {
-      int textWidth = Math.max(wrapper.getWidth(), computeBubbleTimePartWidth(false));
-      forceExpand = (textWidth < (int)(maxWidth * 0.75f)) && messageReactions.getBubblesCount() > 1 && messageReactions.getHeight() <= TGReactions.getReactionBubbleHeight();
-      messageReactions.measureReactionBubbles(Math.max(textWidth, (int)(maxWidth * 0.75f)), computeBubbleTimePartWidth(true));
+      final float maxWidthMultiply = replyData != null ? 1f : 0.7f;
+      final int textWidth = Math.max(wrapper.getWidth(), computeBubbleTimePartWidth(false));
+      forceExpand = (textWidth < (int)(maxWidth * maxWidthMultiply)) && messageReactions.getBubblesCount() > 1 && messageReactions.getHeight() <= TGReactions.getReactionBubbleHeight();
+      messageReactions.measureReactionBubbles(Math.max(textWidth, (int)(maxWidth * maxWidthMultiply)), computeBubbleTimePartWidth(true));
       messageReactions.resetReactionsAnimator(animated);
     }
   }

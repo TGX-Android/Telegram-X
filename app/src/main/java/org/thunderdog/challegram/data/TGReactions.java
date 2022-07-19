@@ -36,6 +36,7 @@ import java.util.Map;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 
 public class TGReactions {
@@ -105,7 +106,9 @@ public class TGReactions {
       if (reactionObj == null) {
         continue;
       }
-      reactionsListEntry.add(getMessageReactionEntry(reactionObj));
+      MessageReactionEntry entry = getMessageReactionEntry(reactionObj);
+      entry.setMessageReaction(reaction);
+      reactionsListEntry.add(entry);
     }
   }
 
@@ -320,16 +323,41 @@ public class TGReactions {
   public void drawReactionBubbles (Canvas c, MessageView view, int x, int y) {
     lastDrawX = x;
     lastDrawY = y;
-/*
+
+    /*
     c.drawRect(x - Screen.dp(10), y - Screen.dp(9), x + getWidth() + Screen.dp(10), y + getHeight() + Screen.dp(10), Paints.strokeSmallPaint(Color.RED));
     c.drawRect(x, y, x + getAnimatedWidth(), y + getAnimatedHeight(), Paints.strokeSmallPaint(Color.GREEN));
     c.drawRect(x, y - Screen.dp(20), x, y + getAnimatedHeight() + Screen.dp(20), Paints.strokeSmallPaint(Color.GREEN));
     c.drawRect(x, y, x + reactionsAnimator.getReactionsMaxWidth(), y + getHeight(), Paints.strokeSmallPaint(Color.MAGENTA));
-*/
+    */
+
+    float oldChosenPosition = -1f;
+    float newChosenPosition = -2f;
+    for (int a = 0; a < reactionsAnimator.size(); a++) {
+      ReactionsListAnimator.Entry item = reactionsAnimator.getEntry(a);
+      TdApi.MessageReaction messageReaction = item.item.getMessageReaction();
+      if (messageReaction.isChosen) {
+        if (!item.isAffectingList()) {
+          oldChosenPosition = item.getPosition();
+        } else {
+          newChosenPosition = item.getPosition();
+        }
+      }
+    }
+
 
     for (int a = 0; a < reactionsAnimator.size(); a++) {
       ReactionsListAnimator.Entry item = reactionsAnimator.getEntry(a);
-      item.item.drawReactionInBubble(view, c, x + item.getRectF().left, y + item.getRectF().top, item.getVisibility());
+      TdApi.MessageReaction messageReaction = item.item.getMessageReaction();
+      int appearFlags = MessageReactionEntry.TYPE_APPEAR_NONE_FLAG;
+
+      if (oldChosenPosition == newChosenPosition && messageReaction.isChosen && item.getPosition() == oldChosenPosition) {
+        appearFlags |= MessageReactionEntry.TYPE_APPEAR_OPACITY_FLAG;
+      } else {
+        appearFlags |= MessageReactionEntry.TYPE_APPEAR_SCALE_FLAG;
+      }
+
+      item.item.drawReactionInBubble(view, c, x + item.getRectF().left, y + item.getRectF().top, item.getVisibility(), appearFlags);
     }
   }
 
@@ -412,7 +440,15 @@ public class TGReactions {
     MessageReactionEntry entry = reactionsMapEntry.get(emoji);
     if (entry != null) {
       entry.startAnimation();
+      entry.setHidden(false);
     }
+  }
+
+  @Nullable
+  public MessageReactionEntry getMessageReactionEntry (String emoji) {
+    MessageReactionEntry entry = reactionsMapEntry.get(emoji);
+
+    return entry;
   }
 
   public boolean sendReaction (String reaction, boolean isBig) {
@@ -424,6 +460,10 @@ public class TGReactions {
   }
 
   public static class MessageReactionEntry implements TextColorSet, FactorAnimator.Target {
+    public static final int TYPE_APPEAR_NONE_FLAG = 0;
+    public static final int TYPE_APPEAR_SCALE_FLAG = 1;
+    public static final int TYPE_APPEAR_OPACITY_FLAG = 2;
+
     private final Counter counter;
     private final String reaction;
     private final TGReaction reactionObj;
@@ -694,8 +734,13 @@ public class TGReactions {
       }
     }
 
-    public void drawReactionInBubble (MessageView view, Canvas c, float x, float y, float visibility) {
-      boolean hasScaleSaved = visibility != 1f;
+    private TdApi.MessageReaction messageReaction;
+    private boolean isHidden;
+
+    public void drawReactionInBubble (MessageView view, Canvas c, float x, float y, float visibility, int appearTypeFlags) {
+      final boolean hasScaleSaved = visibility != 1f && (BitwiseUtils.getFlag(appearTypeFlags, TYPE_APPEAR_SCALE_FLAG));
+      final float alpha = BitwiseUtils.getFlag(appearTypeFlags, TYPE_APPEAR_OPACITY_FLAG) ? visibility : 1f;
+
       c.save();
       c.translate(x, y);
 
@@ -716,11 +761,14 @@ public class TGReactions {
       path.reset();
       path.addRoundRect(rect, radius, radius, Path.Direction.CCW);
 
-      c.drawRoundRect(rect, radius, radius, Paints.fillingPaint(backgroundColor));
-      counter.draw(c, textX, getReactionBubbleHeight() / 2f, Gravity.LEFT, visibility, view, R.id.theme_color_badgeFailedText);
-      if (centerAnimationReceiver != null) {
-        centerAnimationReceiver.setBounds(Screen.dp(-1), imgY, Screen.dp(-1) + imageSize, imgY + imageSize);
-        centerAnimationReceiver.draw(c);
+      if (visibility > 0f) {
+        c.drawRoundRect(rect, radius, radius, Paints.fillingPaint( ColorUtils.alphaColor(alpha, backgroundColor)));
+        counter.draw(c, textX, getReactionBubbleHeight() / 2f, Gravity.LEFT, alpha, view, R.id.theme_color_badgeFailedText);
+        if (centerAnimationReceiver != null && !isHidden) {
+          centerAnimationReceiver.setBounds(Screen.dp(-1), imgY, Screen.dp(-1) + imageSize, imgY + imageSize);
+          centerAnimationReceiver.setAlpha(alpha);
+          centerAnimationReceiver.draw(c);
+        }
       }
 
       int selectionColor = message.useBubbles() ? message.getBubbleButtonRippleColor() : ColorUtils.alphaColor(0.25f, Theme.getColor(R.id.theme_color_bubbleIn_time));
@@ -757,6 +805,19 @@ public class TGReactions {
       }
 
       c.restore();
+    }
+
+    public void setHidden (boolean isHidden) {
+      this.isHidden = isHidden;
+      invalidate();
+    }
+
+    public void setMessageReaction (TdApi.MessageReaction messageReaction) {
+      this.messageReaction = messageReaction;
+    }
+
+    public TdApi.MessageReaction getMessageReaction () {
+      return messageReaction;
     }
 
     // Measurable

@@ -5838,7 +5838,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         return;
       }
       verticalAnimator.animateTo(factor);
-      // vibrate();
+      vibrate();
     } else {
       if (verticalAnimator != null) {
         verticalAnimator.forceFactor(factor);
@@ -7849,6 +7849,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
     int finishX = positionCords[0] + reactionPosition.x;
     int finishY = positionCords[1] + reactionPosition.y;
+
+    TGReactions.MessageReactionEntry entry = messageReactions.getMessageReactionEntry(reactionEmoji);
+    TdApi.MessageReaction messageReaction = entry.getMessageReaction();
+    if (entry != null && messageReaction.totalCount == 1 && messageReaction.isChosen) {
+      entry.setHidden(true);
+    }
 
     if (nextSetReactionAnimation.type == NextReactionAnimation.TYPE_QUICK) {
       int startX = positionCords[0];
