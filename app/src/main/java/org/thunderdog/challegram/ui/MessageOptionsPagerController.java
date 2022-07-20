@@ -36,8 +36,10 @@ import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.navigation.HeaderView;
@@ -62,6 +64,7 @@ import org.thunderdog.challegram.widget.ReactionsSelectorRecyclerView;
 import org.thunderdog.challegram.widget.ViewPager;
 
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
@@ -866,8 +869,8 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     int startX = positionCords[0] + v.getMeasuredWidth() / 2;
     int startY = positionCords[1] + v.getMeasuredHeight() / 2;
 
-    boolean needAnimation = message.getMessageReactions().sendReaction(reaction.reaction.reaction, false);
-    if (needAnimation) {
+    final String emoji = reaction.reaction.reaction;
+    if (message.getMessageReactions().sendReaction(emoji, false, handler(v, () -> {}))) {
       message.scheduleSetReactionAnimationFromBottomSheet(reaction, new Point(startX, startY));
     }
     popupLayout.hideWindow(true);
@@ -881,9 +884,28 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     int startX = positionCords[0] + v.getMeasuredWidth() / 2;
     int startY = positionCords[1] + v.getMeasuredHeight() / 2;
 
-    message.getMessageReactions().sendReaction(reaction.reaction.reaction, true);
+    final String emoji = reaction.reaction.reaction;
+    message.getMessageReactions().sendReaction(emoji, true, handler(v, () -> {}));
     message.scheduleSetReactionAnimationFullscreenFromBottomSheet(reaction, new Point(startX, startY));
     popupLayout.hideWindow(true);
+  }
+
+  private Client.ResultHandler handler (View v, Runnable onSuccess) {
+    return object -> {
+      switch (object.getConstructor()) {
+        case TdApi.Ok.CONSTRUCTOR:
+          tdlib.ui().post(onSuccess);
+          break;
+        case TdApi.Error.CONSTRUCTOR:
+          tdlib.ui().post(() -> onSendError(v, (TdApi.Error) object));
+          break;
+      }
+    };
+  }
+
+  private void onSendError (View v, TdApi.Error error) {
+    context().tooltipManager().builder(v).show(tdlib, TD.toErrorString(error)).hideDelayed(3500, TimeUnit.MILLISECONDS);
+    message.cancelScheduledSetReactionAnimation();
   }
 
 

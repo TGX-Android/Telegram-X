@@ -272,18 +272,20 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     this.msg = msg;
     this.messageReactions = new TGReactions(this, tdlib, msg.interactionInfo != null ? msg.interactionInfo.reactions : null, new TGReactions.MessageReactionsDelegate() {
       @Override
-      public void onClick (TGReactions.MessageReactionEntry entry) {
-        boolean needAnimation = messageReactions.sendReaction(entry.getReaction(), false);
+      public void onClick (View v, TGReactions.MessageReactionEntry entry) {
+        boolean needAnimation = messageReactions.sendReaction(entry.getReaction(), false, handler(v, entry, () -> {}));
         if (needAnimation) {
           startReactionBubbleAnimation(entry.getReaction());
         }
       }
 
       @Override
-      public void onLongClick(TGReactions.MessageReactionEntry entry) {
+      public void onLongClick(View v, TGReactions.MessageReactionEntry entry) {
         if (canGetAddedReactions()) {
           MessagesController m = messagesController();
           m.showMessageAddedReactions(TGMessage.this, entry.getReaction());
+        } else {
+          showReactionBubbleTooltip(v, entry, Lang.getString(R.string.ChannelReactionsAnonymous));
         }
       }
     });
@@ -7736,12 +7738,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     rightActions.clear();
 
     for (String reactionString: Settings.instance().getQuickReactions()) {
-      boolean canReact = canSendReaction(reactionString); // messagesController().canSendReaction(reactionString) && canBeReacted() && !tdlib.isSelfChat(msg.chatId);
+      boolean canReact = canSendReaction(reactionString);
       TGReaction reactionObj = tdlib.getReaction(reactionString);
       if (reactionObj != null && canReact) {
         Drawable reactionDrawable = new TGReaction.ReactionDrawable(findCurrentView(), reactionObj.staticIconSicker(), Screen.dp(24), Screen.dp(24));
         rightActions.add(new SwipeQuickAction(reactionObj.getReaction().title, reactionDrawable, () -> {
-          if (messageReactions.sendReaction(reactionString, false)) {
+          if (messageReactions.sendReaction(reactionString, false, handler(findCurrentView(), null, () -> {}))) {
             scheduleSetReactionAnimation(new NextReactionAnimation(reactionObj, NextReactionAnimation.TYPE_QUICK));
           }
         }, false, true));
@@ -7832,6 +7834,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     nextSetReactionAnimation = animation;
   }
 
+  public void cancelScheduledSetReactionAnimation () {
+    clearSetReactionAnimation();
+  }
+
   private void clearSetReactionAnimation () {
     setReactionAnimationNowPlaying = false;
     setReactionAnimationReadyToPlay = false;
@@ -7875,9 +7881,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     int finishY = positionCords[1] + reactionPosition.y;
 
     TGReactions.MessageReactionEntry entry = messageReactions.getMessageReactionEntry(reactionEmoji);
-    TdApi.MessageReaction messageReaction = entry.getMessageReaction();
-    if (entry != null && messageReaction.totalCount == 1 && messageReaction.isChosen) {
-      entry.setHidden(true);
+    if (entry != null) {
+      TdApi.MessageReaction messageReaction = entry.getMessageReaction();
+      if (messageReaction.totalCount == 1 && messageReaction.isChosen) {
+        entry.setHidden(true);
+      }
     }
 
     if (nextSetReactionAnimation.type == NextReactionAnimation.TYPE_QUICK) {
@@ -8118,5 +8126,43 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       p.x = reactions.getLastDrawX() - startX;
       p.y = reactions.getLastDrawY() - startY + (startH - (int) reactions.getAnimatedHeight());
     }
+  }
+
+  // Set reaction handlers
+
+  private Client.ResultHandler handler (@Nullable View v, @Nullable TGReactions.MessageReactionEntry entry, Runnable onSuccess) {
+    return object -> {
+      switch (object.getConstructor()) {
+        case TdApi.Ok.CONSTRUCTOR:
+          tdlib.ui().post(onSuccess);
+          break;
+        case TdApi.Error.CONSTRUCTOR:
+          tdlib.ui().post(() -> onSendError(v, entry, (TdApi.Error) object));
+          cancelScheduledSetReactionAnimation();
+          break;
+      }
+    };
+  }
+
+  private void onSendError (@Nullable View v, @Nullable TGReactions.MessageReactionEntry entry, TdApi.Error error) {
+    showReactionBubbleTooltip(v, entry, TD.toErrorString(error));
+  }
+
+  private void showReactionBubbleTooltip (View v, TGReactions.MessageReactionEntry entry, String text) {
+    context().tooltipManager().builder(v)
+      .locate(getReactionBubbleLocationProvider(entry))
+      .show(tdlib, text).hideDelayed(3500, TimeUnit.MILLISECONDS);
+  }
+
+  @Nullable
+  private TooltipOverlayView.LocationProvider getReactionBubbleLocationProvider (TGReactions.MessageReactionEntry entry) {
+    if (entry == null) {
+      return null;
+    }
+
+    return (targetView, outRect) -> {
+      outRect.set(entry.getX(), entry.getY(), entry.getX() + entry.getBubbleWidth(), entry.getY() + entry.getBubbleHeight());
+      outRect.offset(messageReactions.getLastDrawX(), messageReactions.getLastDrawY());
+    };
   }
 }

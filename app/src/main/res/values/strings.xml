@@ -1688,7 +1688,7 @@
   <string name="BigReactionsChats">Chats</string>
   <string name="BigReactionsChannels">Channels</string>
   <string name="BigReactionsNone">None</string>
-
+  <string name="ChannelReactionsAnonymous">Reactions in channels are anonymous</string>
 
   <string name="UserRestrictions">User Permissions</string>
   <string name="GroupRestrictions">Group Permissions</string>

@@ -10,6 +10,7 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 
+import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessageView;
@@ -462,11 +463,10 @@ public class TGReactions {
     return new TdApi.MessageReaction(emoji, 0, false, new TdApi.MessageSender[0]);
   }
 
-  public boolean sendReaction (String reaction, boolean isBig) {
+  public boolean sendReaction (String reaction, boolean isBig, Client.ResultHandler handler) {
     TdApi.Message message = parent.getFirstMessageInCombined();
     boolean needUnset = reaction.equals(chosenReaction) && !isBig;
-    tdlib.client().send(new TdApi.SetMessageReaction(parent.getChatId(), message.id, needUnset ? "" : reaction, isBig), tdlib.okHandler());
-
+    tdlib.client().send(new TdApi.SetMessageReaction(parent.getChatId(), message.id, needUnset ? "" : reaction, isBig), handler);
     return !needUnset;
   }
 
@@ -609,7 +609,7 @@ public class TGReactions {
         flags &= ~FLAG_CAUGHT;
         if (!isActive()) {
           cancelSelection();
-          delegate.onLongClick(this);
+          delegate.onLongClick(view,this);
         }
       }
       return true;
@@ -629,7 +629,7 @@ public class TGReactions {
     }
 
     private void performAction (View view) {
-      delegate.onClick(this);
+      delegate.onClick(view, this);
     }
 
     public boolean checkTouch (int x, int y) {
@@ -883,7 +883,7 @@ public class TGReactions {
   }
 
   public interface MessageReactionsDelegate {
-    default void onClick (MessageReactionEntry entry) {}
-    default void onLongClick (MessageReactionEntry entry) {}
+    default void onClick (View v, MessageReactionEntry entry) {}
+    default void onLongClick (View v, MessageReactionEntry entry) {}
   }
 }
