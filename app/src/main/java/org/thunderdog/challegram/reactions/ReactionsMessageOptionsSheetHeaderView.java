@@ -104,7 +104,7 @@ public class ReactionsMessageOptionsSheetHeaderView extends LinearLayout {
       reactionCounts.put(mr.reaction, mr.totalCount);
     }
     View _chosenButton = null;
-    boolean needCounters = message.needDrawReactionsWithTime();
+    boolean needCounters = message.needDrawReactionsWithTime() && !tdlib.isUserChat(controller.getChatId());
     for (TdApi.Reaction r : reactions) {
       LinearLayout btn = new LinearLayout(context);
       btn.setOrientation(HORIZONTAL);

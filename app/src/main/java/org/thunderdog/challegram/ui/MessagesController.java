@@ -4190,7 +4190,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         b.append(Lang.plural(R.string.xViews, msg.getViewCount()));
       }
-      if (isChannel || msg.needDrawReactionsWithTime()) {
+      if ((isChannel || (msg.needDrawReactionsWithTime() && !tdlib.isUserChat(chat.id))) && msg.hasReactions()) {
         if (b.length() > 0) {
           b.append(", ");
         }
