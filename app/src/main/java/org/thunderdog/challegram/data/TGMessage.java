@@ -327,7 +327,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       .drawable(R.drawable.baseline_share_arrow_14, 14f, 3f, Gravity.LEFT)
       .build();
 
-    settingsUseBigReactions = Settings.instance().getUseBigReactions(this.sender.isChannel());
+    settingsUseBigReactions = Settings.instance().getUseBigReactions(tdlib.isChannel(controller().getChatId()));
     if (needDrawReactionsWithTime())
       compactReactions = new CompactReactionsRenderer(this);
 
@@ -3284,7 +3284,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public boolean needDrawReactionsWithTime () {
-    return msg.chatId > 0 || !settingsUseBigReactions;
+    return tdlib.isUserChat(messagesController().getChatId()) || !settingsUseBigReactions;
   }
 
   protected static final int BOTTOM_LINE_EXPAND_HEIGHT = -1;
