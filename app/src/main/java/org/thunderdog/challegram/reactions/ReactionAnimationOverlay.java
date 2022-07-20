@@ -33,6 +33,7 @@ public class ReactionAnimationOverlay {
   private int runningAnimationsCount;
   private ArrayList<CallbackRecord> pendingEndCallbacks = new ArrayList<>();
   private ArrayList<Runnable> pendingEndRunnables = new ArrayList<>();
+  private boolean endingAllAnimations;
 
   public ReactionAnimationOverlay (ViewController<?> chat) {
     activity = chat.context();
@@ -60,6 +61,8 @@ public class ReactionAnimationOverlay {
   }
 
   public void playLottieAnimation (@NotNull ViewBoundsProvider pos, @NotNull LottieAnimation animation, @Nullable Runnable onStarting, @Nullable AnimationEndCallback onDone) {
+    if (endingAllAnimations)
+      return;
     createAndShowWindow();
     Rect rect = new Rect();
     if (!pos.getBounds(rect) || rect.isEmpty())
@@ -97,7 +100,7 @@ public class ReactionAnimationOverlay {
         if (!drawable.isRunning() || !(boundsValid = pos.getBounds(rect))) {
           img.getViewTreeObserver().removeOnPreDrawListener(this);
           Runnable remover = () -> {
-            if (removed)
+            if (removed || windowView == null)
               return;
             removed = true;
             windowView.removeView(img);
@@ -189,6 +192,8 @@ public class ReactionAnimationOverlay {
           set.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd (Animator animation) {
+              if (windowView == null)
+                return;
               windowView.removeView(wrapper);
               if (onDone != null) {
                 pendingEndRunnables.remove(onDone);
@@ -217,6 +222,7 @@ public class ReactionAnimationOverlay {
 
   public void endAllAnimations () {
     if (windowView != null) {
+      endingAllAnimations = true;
       for (Runnable r : pendingEndRunnables) {
         r.run();
       }
@@ -228,7 +234,12 @@ public class ReactionAnimationOverlay {
       pendingEndCallbacks.clear();
       removeWindow();
       runningAnimationsCount = 0;
+      endingAllAnimations = false;
     }
+  }
+
+  public boolean isEndingAllAnimations () {
+    return endingAllAnimations;
   }
 
   @FunctionalInterface

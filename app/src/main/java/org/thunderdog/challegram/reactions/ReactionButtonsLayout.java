@@ -257,16 +257,6 @@ public class ReactionButtonsLayout extends ViewGroup {
     return clickListener.onReactionLongClick(btn);
   }
 
-  public boolean willHandleTouchEventBecauseOfFuckedUpCustomEventDispatch (MotionEvent ev) {
-    for (MessageCellReactionButton child : activeButtons) {
-      rect.set(0, 0, child.getWidth(), child.getHeight());
-      rect.offset(getLeft() + child.getLeft(), getTop() + child.getTop());
-      if (rect.contains((int) ev.getX(), (int) ev.getY()))
-        return true;
-    }
-    return false;
-  }
-
   public void invalidateButtons () {
     for (MessageCellReactionButton btn : activeButtons)
       btn.invalidate();

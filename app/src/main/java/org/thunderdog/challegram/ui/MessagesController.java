@@ -10526,6 +10526,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     } else {
       messageReaction = existingReaction;
     }
+    manager.getAnimationOverlay().endAllAnimations();
     TdApi.Message m = msg.getMessageForReactions();
     if (m.interactionInfo == null)
       m.interactionInfo = new TdApi.MessageInteractionInfo();
@@ -10583,6 +10584,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
                   if (popup != null)
                     popup.hideWindow(true);
                 }, () -> {
+                  if (ov.isEndingAllAnimations())
+                    return;
                   if (big) {
                     playReactionBigEffectAnimation(msg, reaction, a[0], a[1], a[2], a[3]);
                   } else {
@@ -10591,18 +10594,24 @@ public class MessagesController extends ViewController<MessagesController.Argume
                 });
               }, 3000, anims);
             } else if (srcRect != null) {
-              LottieAnimationThreadPool.loadOneAnimation(tdlib, rr.appearAnimation, anim -> {
-                if (cancelAnimation[0])
-                  return;
-                LottieAnimationDrawable drawable = new LottieAnimationDrawable(anim, Screen.dp(24), Screen.dp(24));
-                drawable.setFrame(drawable.getTotalFrames() - 1);
-                ReactionAnimationOverlay ov = manager.getAnimationOverlay();
-                ov.playFlyingReactionAnimation(outRect -> {
+              LottieAnimationThreadPool.loadMultipleAnimations(tdlib, anims-> {
+                LottieAnimationThreadPool.loadOneAnimation(tdlib, rr.appearAnimation, anim -> {
                   if (cancelAnimation[0])
-                    return false;
-                  return mv.getReactionIconBounds(reaction, outRect);
-                }, srcRect, drawable, null, () -> playReactionEffectAnimation(msg, reaction));
-              }, Screen.dp(24), Screen.dp(24));
+                    return;
+                  LottieAnimationDrawable drawable = new LottieAnimationDrawable(anim, Screen.dp(24), Screen.dp(24));
+                  drawable.setFrame(drawable.getTotalFrames() - 1);
+                  ReactionAnimationOverlay ov = manager.getAnimationOverlay();
+                  ov.playFlyingReactionAnimation(outRect -> {
+                    if (cancelAnimation[0])
+                      return false;
+                    return mv.getReactionIconBounds(reaction, outRect);
+                  }, srcRect, drawable, null, () -> {
+                    if (ov.isEndingAllAnimations())
+                      return;
+                    playReactionEffectAnimation(msg, reaction, anims[0], anims[1]);
+                  });
+                }, Screen.dp(24), Screen.dp(24));
+              }, 3000, rr.aroundAnimation, rr.centerAnimation);
             } else {
               playReactionEffectAnimation(msg, reaction);
             }
@@ -10684,6 +10693,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
           }, (v, remove) -> {
             if (didStart[0])
               mv.setHasTransientState(false);
+            if (ov.isEndingAllAnimations())
+              return;
             mv.setReactionIconHidden(reaction, false);
             Rect rect = new Rect();
             mv.getReactionIconBounds(reaction, rect);
@@ -10708,6 +10719,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
           return true;
         }, effectAnimation, null, activateAnimation != null ? null : (v, remove) -> {
           remove.run();
+          if (ov.isEndingAllAnimations())
+            return;
           playReactionEffectAnimation(msg, reaction, aroundAnimation, centerAnimation);
         });
 
