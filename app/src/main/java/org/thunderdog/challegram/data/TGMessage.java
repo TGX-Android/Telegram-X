@@ -275,7 +275,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       public void onClick (View v, TGReactions.MessageReactionEntry entry) {
         boolean needAnimation = messageReactions.sendReaction(entry.getReaction(), false, handler(v, entry, () -> {}));
         if (needAnimation) {
-          startReactionBubbleAnimation(entry.getReaction());
+          scheduleSetReactionAnimation(new NextReactionAnimation(entry.getTGReaction(), NextReactionAnimation.TYPE_CLICK));
+          //startReactionBubbleAnimation(entry.getReaction());
         }
       }
 
@@ -7888,7 +7889,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       }
     }
 
-    if (nextSetReactionAnimation.type == NextReactionAnimation.TYPE_QUICK) {
+    if (nextSetReactionAnimation.type == NextReactionAnimation.TYPE_CLICK) {
+      onQuickReactionAnimationFinish();
+    } else if (nextSetReactionAnimation.type == NextReactionAnimation.TYPE_QUICK) {
       int startX = positionCords[0];
       int startY = positionCords[1] + view.getMeasuredHeight() / 2;
       if (useBubbles()) {
@@ -7918,9 +7921,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           )
           .setAnimatedPositionOffsetProvider(useReactionBubbles() ? new QuickReactionAnimatedPositionOffsetProvider(messageReactions) : null)
       );
-    }
-
-    if (nextSetReactionAnimation.type == NextReactionAnimation.TYPE_BOTTOM_SHEET && nextSetReactionAnimation.startPosition != null) {
+    } else if (nextSetReactionAnimation.type == NextReactionAnimation.TYPE_BOTTOM_SHEET && nextSetReactionAnimation.startPosition != null) {
       int startX = nextSetReactionAnimation.startPosition.x;
       int startY = nextSetReactionAnimation.startPosition.y;
       context().reactionsOverlayManager().addOverlay(
@@ -7936,9 +7937,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           )
           .setAnimatedPositionOffsetProvider(useReactionBubbles() ? new QuickReactionAnimatedPositionOffsetProvider(messageReactions) : null)
       );
-    }
-
-    if (nextSetReactionAnimation.type == NextReactionAnimation.TYPE_BOTTOM_SHEET_FULLSCREEN && nextSetReactionAnimation.startPosition != null) {
+    } else if (nextSetReactionAnimation.type == NextReactionAnimation.TYPE_BOTTOM_SHEET_FULLSCREEN && nextSetReactionAnimation.startPosition != null) {
       int startX = nextSetReactionAnimation.startPosition.x;
       int startY = nextSetReactionAnimation.startPosition.y;
       context().openReactionPreview(tdlib, null, nextSetReactionAnimation.reaction, startX, startY, Screen.dp(30), -1, true);
@@ -8054,6 +8053,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   private static class NextReactionAnimation {
     public static final int TYPE_QUICK = 0;
+    public static final int TYPE_CLICK = 3;
     public static final int TYPE_BOTTOM_SHEET = 1;
     public static final int TYPE_BOTTOM_SHEET_FULLSCREEN = 2;
     public final int type;

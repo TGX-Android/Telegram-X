@@ -736,6 +736,10 @@ public class TGReactions {
       return reaction;
     }
 
+    public TGReaction getTGReaction () {
+      return reactionObj;
+    }
+
     public void setCount (int count, boolean chosen, boolean animated) {
       counter.setCount(count, !chosen, animated);
     }
