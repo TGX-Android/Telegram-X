@@ -381,7 +381,7 @@ public class AudioController extends BasePlaybackController implements TGAudio.P
 
   @Override
   public void onPlayerError (@NonNull PlaybackException e) {
-    displayPlaybackError(e);
+    super.onPlayerError(e);
     if (playbackMode != PLAYBACK_MODE_UNSET) {
       context.player().playNextMessageInQueue();
     }

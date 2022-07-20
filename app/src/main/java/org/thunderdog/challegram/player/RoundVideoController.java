@@ -924,6 +924,12 @@ public class RoundVideoController extends BasePlaybackController implements
   }
 
   @Override
+  public void onPlayerError (@NonNull PlaybackException e) {
+    super.onPlayerError(e);
+    stopPlayback();
+  }
+
+  @Override
   public void onRenderedFirstFrame () {
     Log.i(Log.TAG_VIDEO, "onRenderedFirstFrame");
     this.hasRenderedAnyFrame = true;
