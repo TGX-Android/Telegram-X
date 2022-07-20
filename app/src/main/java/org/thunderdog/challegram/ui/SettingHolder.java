@@ -225,6 +225,9 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_INFO: {
         return Screen.dp(64f);
       }
+      case ListItem.TYPE_USER_SMALL: {
+        return Screen.dp(63);
+      }
       case ListItem.TYPE_CHAT_BETTER:
       case ListItem.TYPE_USER: {
         return Screen.dp(72f);
@@ -1121,10 +1124,12 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         }
         return holder;
       }
+      case ListItem.TYPE_USER_SMALL:
       case ListItem.TYPE_USER: {
         UserView userView = new UserView(context, tdlib); // FIXME theme
         userView.setOffsetLeft(Screen.dp(11f));
         userView.setOnClickListener(onClickListener);
+        userView.setHeight(measureHeightForType(viewType));
         Views.setClickable(userView);
         // RippleSupport.setTransparentSelector(userView);
         RippleSupport.setSimpleWhiteBackground(userView, themeProvider);

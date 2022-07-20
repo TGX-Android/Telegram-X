@@ -18,9 +18,6 @@ import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 
-import me.vkryl.android.animator.FactorAnimator;
-import me.vkryl.core.lambda.Destroyable;
-
 public class TGReaction {
   private final Tdlib tdlib;
   public TdApi.Reaction reaction;
@@ -31,6 +28,8 @@ public class TGReaction {
   private final TGStickerObj _aroundAnimationSicker;
   private final TGStickerObj _centerAnimationSicker;
 
+  private final TGStickerObj _staticCenterAnimationSicker;
+
   public TGReaction (Tdlib tdlib, TdApi.Reaction reaction) {
     this.tdlib = tdlib;
     this.reaction = reaction;
@@ -40,6 +39,12 @@ public class TGReaction {
     _effectAnimationSicker = newEffectAnimationSicker();
     _aroundAnimationSicker = newAroundAnimationSicker();
     _centerAnimationSicker = newCenterAnimationSicker();
+
+    _staticCenterAnimationSicker = newCenterAnimationSicker();
+    if (_staticCenterAnimationSicker.getPreviewAnimation() != null) {
+      _staticCenterAnimationSicker.getPreviewAnimation().setPlayOnce(true);
+      _staticCenterAnimationSicker.getPreviewAnimation().setLooped(true);
+    }
 
     tdlib.ui().post(this::loadAllAnimationsAndCache);
   }
@@ -62,6 +67,10 @@ public class TGReaction {
 
   public TGStickerObj centerAnimationSicker () {
     return _centerAnimationSicker;
+  }
+
+  public TGStickerObj staticCenterAnimationSicker () {
+    return _staticCenterAnimationSicker;
   }
 
   public TGStickerObj newStaticIconSicker () {
@@ -95,24 +104,20 @@ public class TGReaction {
   }
 
   public void loadAllAnimationsAndCache () {
-    loadFileAndCache(_staticIconSicker);
-    loadFileAndCache(_activateAnimationSicker);
-    loadFileAndCache(_effectAnimationSicker);
-    loadFileAndCache(_aroundAnimationSicker);
-    loadFileAndCache(_centerAnimationSicker);
-  }
+    loadAnimationAndCache(reaction.staticIcon.sticker);
+    loadAnimationAndCache(reaction.effectAnimation.sticker);
+    loadAnimationAndCache(reaction.activateAnimation.sticker);
 
-  private void loadFileAndCache (TGStickerObj stickerObj) {
-    loadAnimationAndCache(stickerObj.getPreviewAnimation());
-    loadAnimationAndCache(stickerObj.getFullAnimation());
-  }
-
-  private void loadAnimationAndCache (GifFile gifFile) {
-    if (gifFile == null) {
-      return;
+    if (reaction.aroundAnimation != null) {
+      loadAnimationAndCache(reaction.aroundAnimation.sticker);
     }
 
-    TdApi.File file = gifFile.getFile();
+    if (reaction.centerAnimation != null) {
+      loadAnimationAndCache(reaction.centerAnimation.sticker);
+    }
+  }
+
+  private void loadAnimationAndCache (TdApi.File file) {
     if (!TD.isFileLoadedAndExists(file)) {
       tdlib.files().downloadFile(file);
     }
@@ -122,23 +127,18 @@ public class TGReaction {
     return _staticIconSicker.getId();
   }
 
-  public static class ReactionDrawable extends Drawable /*implements Destroyable*/ {
-    private final TGStickerObj stickerObj;
+  public static class ReactionDrawable extends Drawable {
     private final int width;
     private final int height;
-    private final boolean isAnimation;
+    private boolean isAnimation;
 
-    @Nullable private final ImageFile imageFile;
-    @Nullable private final GifFile gifFile;
+    @Nullable private ImageFile imageFile;
+    @Nullable private GifFile gifFile;
 
     @Nullable private ImageReceiver imageReceiver;
     @Nullable private GifReceiver gifReceiver;
 
-
-
-
     public ReactionDrawable (View view, TGStickerObj sticker, int width, int height) {
-      this.stickerObj = sticker;
       this.width = width;
       this.height = height;
       this.imageFile = sticker != null && !sticker.isEmpty() ? sticker.getImage() : null;
@@ -200,21 +200,5 @@ public class TGReaction {
     public int getOpacity () {
       return PixelFormat.UNKNOWN;
     }
-
-    /*public void attach () {
-      if (imageReceiver != null) imageReceiver.attach();
-      if (gifReceiver != null) gifReceiver.attach();
-    }
-
-    public void detach () {
-      if (imageReceiver != null) imageReceiver.detach();
-      if (gifReceiver != null) gifReceiver.detach();
-    }
-
-    @Override
-    public void performDestroy () {
-      if (imageReceiver != null) imageReceiver.destroy();
-      if (gifReceiver != null) gifReceiver.destroy();
-    }*/
   }
 }

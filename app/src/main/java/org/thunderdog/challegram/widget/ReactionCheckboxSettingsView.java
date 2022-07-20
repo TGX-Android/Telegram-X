@@ -16,6 +16,7 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -86,6 +87,7 @@ public class ReactionCheckboxSettingsView extends LinearLayout implements ThemeI
     captionTextView.setGravity(Gravity.CENTER_HORIZONTAL);
     captionTextView.setTextSize(11);
     captionTextView.setMaxLines(2);
+    captionTextView.setEllipsize(TextUtils.TruncateAt.END);
     addView(captionTextView, LayoutHelper.createLinear(74, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
 
     counter = new Counter.Builder()

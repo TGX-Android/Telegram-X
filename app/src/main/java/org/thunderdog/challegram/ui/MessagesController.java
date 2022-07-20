@@ -4164,7 +4164,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     StringBuilder b = new StringBuilder();
     if (chat != null) {
       final boolean isChannel = tdlib.isChannel(chat.id);
-      if (msg.getMessage().content != null) {
+      if (!isChannel && msg.getMessage().content != null) {
         switch (msg.getMessage().content.getConstructor()) {
           case TdApi.MessageSticker.CONSTRUCTOR: {
             String from = tdlib.messageAuthor(msg.getMessage(), true, true);
@@ -4187,6 +4187,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
           b.append(", ");
         }
         b.append(Lang.plural(R.string.xViews, msg.getViewCount()));
+      }
+      if (isChannel && msg.getMessageReactions().getTotalCount() > 0 && !msg.isScheduled()) {
+        if (b.length() > 0) {
+          b.append(", ");
+        }
+        b.append(Lang.plural(R.string.xReacted, msg.getMessageReactions().getTotalCount()));
       }
     }
     if (msg.isFailed()) {

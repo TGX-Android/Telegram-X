@@ -50,7 +50,7 @@ public class MessageOptionsReactedController extends MessageOptionsPagerControll
         final TGReaction reactionObj = tdlib.getReaction(item.getStringValue());
         userView.setUser(new TGUser(tdlib, tdlib.chatUser(item.getLongId())));
         if (item.getStringValue().length() > 0 && reactionObj != null && reaction.length() == 0) {
-          userView.setDrawModifier(new ReactionModifier(userView, reactionObj.staticIconSicker()));
+          userView.setDrawModifier(new ReactionModifier(userView.getComplexReceiver(), reactionObj));
         } else {
           userView.setDrawModifier(null);
         }
@@ -104,7 +104,7 @@ public class MessageOptionsReactedController extends MessageOptionsPagerControll
       if (!items.isEmpty()) {
         items.add(new ListItem(ListItem.TYPE_SEPARATOR));
       }
-      ListItem item = new ListItem(ListItem.TYPE_USER, R.id.user)
+      ListItem item = new ListItem(ListItem.TYPE_USER_SMALL, R.id.user)
         .setLongId(((TdApi.MessageSenderUser) reaction.senderId).userId)
         .setStringValue(reaction.reaction);
       items.add(item);

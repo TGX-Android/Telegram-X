@@ -3,31 +3,39 @@ package org.thunderdog.challegram.util;
 import android.graphics.Canvas;
 import android.view.View;
 
-import org.thunderdog.challegram.component.sticker.TGStickerObj;
+import org.thunderdog.challegram.data.TGReaction;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.loader.gif.GifFile;
+import org.thunderdog.challegram.loader.gif.GifReceiver;
+import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Screen;
 
 public class ReactionModifier implements DrawModifier {
-  private final ImageReceiver[] imageReceivers;
+  private final ImageReceiver[] previewReceivers;
+  private final GifReceiver[] gifReceivers;
   private final int size;
-  private final int width;
+  private final int totalWidth;
+  private final int totalHeight;
   private final int padding;
 
-  public ReactionModifier (View view, TGStickerObj... reactions) {
-    size = Screen.dp(reactions.length == 1 ? 22 : 20);
-    width = Screen.dp(reactions.length == 1 ? 22 : 40);
-    padding = Screen.dp(reactions.length == 1 ? 0 : 1);
+  public ReactionModifier (ComplexReceiver complexReceiver, TGReaction... reactions) {
+    size = Screen.dp(reactions.length == 1 ? 40 : 20);
+    totalWidth = Screen.dp(40);
+    totalHeight = reactions.length > 2 ? totalWidth : size;
+    padding = Screen.dp(reactions.length == 1 ? 0 : -8);
 
+    previewReceivers = new ImageReceiver[reactions.length];
+    gifReceivers = new GifReceiver[reactions.length];
 
-    imageReceivers = new ImageReceiver[reactions.length];
     for (int a = 0; a < reactions.length; a++) {
-      ImageFile imageFile = !reactions[a].isEmpty() ? reactions[a].getImage() : null;
-      ImageReceiver imageReceiver = new ImageReceiver(view, 0);
-      imageReceivers[a] = imageReceiver;
-      if (imageFile != null) {
-        imageReceiver.requestFile(imageFile);
-      }
+      ImageFile previewImage = reactions[a].staticCenterAnimationSicker().getImage();
+      GifFile gifFile = reactions[a].staticCenterAnimationSicker().getPreviewAnimation();
+      previewReceivers[a] = complexReceiver.getImageReceiver(a * 2L + 1);
+      gifReceivers[a] = complexReceiver.getGifReceiver(a * 2L);
+      previewReceivers[a].requestFile(previewImage);
+      gifReceivers[a].requestFile(gifFile);
     }
   }
 
@@ -37,30 +45,34 @@ public class ReactionModifier implements DrawModifier {
     int sy = 0;
 
     c.save();
-    c.translate(view.getMeasuredWidth() - Screen.dp(18f) - width, view.getMeasuredHeight() / 2f - width / 2f);
-    if (imageReceivers.length > 0) {
-      imageReceivers[0].setBounds(padding, padding, size - padding, size - padding);
-      imageReceivers[0].draw(c);
+    c.translate(view.getMeasuredWidth() - Screen.dp(18f) - totalWidth, view.getMeasuredHeight() / 2f - totalHeight / 2f);
+    if (gifReceivers.length > 0) {
+      DrawAlgorithms.drawReceiver(c, previewReceivers[0], gifReceivers[0], false, true,
+        padding, padding, size - padding, size - padding);
       sx += size;
     }
 
-    if (imageReceivers.length > 1) {
-      imageReceivers[1].setBounds(sx + padding, sy + padding, size + sx - padding, size + sy- padding);
-      imageReceivers[1].draw(c);
-      sx = 0; sy += size;
+    if (gifReceivers.length > 1) {
+      DrawAlgorithms.drawReceiver(c, previewReceivers[1], gifReceivers[1], false, true,
+        sx + padding, sy + padding, size + sx - padding, size + sy- padding);
+      sx = gifReceivers.length == 4 ? 0 : size / 2 ; sy += size;
     }
 
-    if (imageReceivers.length > 2) {
-      imageReceivers[2].setBounds(sx + padding, sy + padding, size + sx - padding, size + sy- padding);
-      imageReceivers[2].draw(c);
+    if (gifReceivers.length > 2) {
+      DrawAlgorithms.drawReceiver(c, previewReceivers[2], gifReceivers[2], false, true,
+        sx + padding, sy + padding, size + sx - padding, size + sy- padding);
       sx += size;
     }
 
-    if (imageReceivers.length > 3) {
-      imageReceivers[3].setBounds(sx + padding, sy + padding, size + sx- padding, size + sy - padding);
-      imageReceivers[3].draw(c);
+    if (gifReceivers.length > 3) {
+      DrawAlgorithms.drawReceiver(c, previewReceivers[3], gifReceivers[3], false, true,
+        sx + padding, sy + padding, size + sx- padding, size + sy - padding);
     }
 
     c.restore();
+  }
+
+  @Override public int getWidth () {
+    return Screen.dp(48);
   }
 }

@@ -52,25 +52,24 @@ public class ReactionsCounterDrawable extends Drawable {
     float width = 0f;
     for (int a = 0; a < topReactions.size(); a++) {
       ReactionsListAnimator.Entry item = topReactions.getEntry(a);
-      width += Screen.dp(14) * getVisibility(item);
+      width += Screen.dp(15) * getVisibility(item);
     }
-    return (int) width;
+    return Math.max((int) width - Screen.dp(3), 0);
   }
 
   @Override
-  public void draw (@NonNull Canvas c) {
-    for (int a = 0; a < topReactions.size(); a++) {
-      ReactionsListAnimator.Entry item = topReactions.getEntry(a);
-      item.item.drawReaction(c, item.getPosition() * Screen.dp(14), 0, 6f, getVisibility(item));
-    }
+  public void draw (@NonNull Canvas c) {  // Never use
+    draw(c, 0, 0);
   }
 
   public void draw (@NonNull Canvas c, int x, int y) {
     lastDrawX = x;
     lastDrawY = y;
+    //c.drawRect(x, y - Screen.dp(6), x + getMinimumWidth(), y + Screen.dp(6), Paints.strokeSmallPaint(Color.RED));
+
     for (int a = 0; a < topReactions.size(); a++) {
       ReactionsListAnimator.Entry item = topReactions.getEntry(a);
-      item.item.drawReaction(c, x + item.getPosition() * Screen.dp(14), y, 6f, getVisibility(item));
+      item.item.drawReactionNonBubble(c, x + item.getPosition() * Screen.dp(15) + Screen.dp(6), y, 12f, getVisibility(item));
     }
   }
 

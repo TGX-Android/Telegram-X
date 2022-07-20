@@ -46,6 +46,7 @@ import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.helper.LocationHelper;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
@@ -175,18 +176,21 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
           }
           case R.id.btn_quick_reaction: {
             final String[] reactions = Settings.instance().getQuickReactions();
-            String name = "";
+            StringBuilder stringBuilder = new StringBuilder();
             if (reactions.length > 0) {
-              final TGStickerObj[] stickers = new TGStickerObj[reactions.length];
-              for (int a = 0; a < stickers.length; a++) {
+              final TGReaction[] tgReactions = new TGReaction[reactions.length];
+              for (int a = 0; a < reactions.length; a++) {
                 final TGReaction tgReaction = tdlib.getReaction(reactions[a]);
+                tgReactions[a] = tgReaction;
                 if (tgReaction != null) {
-                  stickers[a] = tgReaction.staticIconSicker();
-                  name = tgReaction.getReaction().title;
+                  if (stringBuilder.length() > 0) {
+                    stringBuilder.append(Lang.getConcatSeparator());
+                  }
+                  stringBuilder.append(tgReaction.getReaction().title);
                 }
               }
-              v.setDrawModifier(new ReactionModifier(v, stickers));
-              v.setData(reactions.length > 1 ? Lang.plural(R.string.xQuickReactionCount, stickers.length): name);
+              v.setDrawModifier(new ReactionModifier(v.getComplexReceiver(), tgReactions));
+              v.setData(stringBuilder);
             } else {
               v.setDrawModifier(null);
               v.setData(R.string.QuickReactionDisabled);

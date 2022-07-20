@@ -79,7 +79,7 @@ public class MessageOptionsSeenController extends MessageOptionsPagerController.
       } else {
         items.add(new ListItem(ListItem.TYPE_SEPARATOR));
       }
-      items.add(new ListItem(ListItem.TYPE_USER, R.id.user).setLongId(userId));
+      items.add(new ListItem(ListItem.TYPE_USER_SMALL, R.id.user).setLongId(userId));
     }
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     //items.add(new ListItem(ListItem.TYPE_DESCRIPTION, R.id.description, 0, R.string.MessageSeenPrivacy));

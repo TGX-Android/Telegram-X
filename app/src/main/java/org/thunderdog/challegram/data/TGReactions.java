@@ -46,6 +46,7 @@ public class TGReactions {
 
   private final TGMessage parent;
 
+  private final HashMap<String, TdApi.MessageReaction> tdReactionsMap;
   private final HashMap<String, TGReactions.MessageReactionEntry> reactionsMapEntry;
   private final ArrayList<TGReactions.MessageReactionEntry> reactionsListEntry;
 
@@ -65,6 +66,7 @@ public class TGReactions {
 
     this.reactionsListEntry = new ArrayList<>();
     this.reactionsMapEntry = new HashMap<>();
+    this.tdReactionsMap = new HashMap<>();
 
     this.totalCount = 0;
     this.hasReaction = false;
@@ -86,6 +88,7 @@ public class TGReactions {
 
   public void setReactions (TdApi.MessageReaction[] reactions) {
     this.reactionsListEntry.clear();
+    this.tdReactionsMap.clear();
     this.reactions = reactions;
     this.hasReaction = false;
     this.chosenReaction = "";
@@ -96,6 +99,7 @@ public class TGReactions {
     }
 
     for (TdApi.MessageReaction reaction : reactions) {
+      tdReactionsMap.put(reaction.reaction, reaction);
       totalCount += reaction.totalCount;
       hasReaction |= reaction.isChosen;
       if (reaction.isChosen) {
@@ -447,8 +451,15 @@ public class TGReactions {
   @Nullable
   public MessageReactionEntry getMessageReactionEntry (String emoji) {
     MessageReactionEntry entry = reactionsMapEntry.get(emoji);
-
     return entry;
+  }
+
+  public TdApi.MessageReaction getTdMessageReaction (String emoji) {
+    TdApi.MessageReaction reaction = tdReactionsMap.get(emoji);
+    if (reaction != null) {
+      return reaction;
+    }
+    return new TdApi.MessageReaction(emoji, 0, false, new TdApi.MessageSender[0]);
   }
 
   public boolean sendReaction (String reaction, boolean isBig) {
@@ -471,6 +482,7 @@ public class TGReactions {
     private final TGStickerObj staticIconSticker;
 
     @Nullable private ImageReceiver staticIconReceiver;
+    @Nullable private GifReceiver staticCenterAnimationReceiver;
     @Nullable private GifReceiver centerAnimationReceiver;
     @Nullable private final GifFile animation;
 
@@ -510,11 +522,15 @@ public class TGReactions {
         return;
       }
 
-      centerAnimationReceiver = animation != null ? complexReceiver.getGifReceiver(reactionObj.centerAnimationSicker().getId()) : null;
+      centerAnimationReceiver = animation != null ? complexReceiver.getGifReceiver(reactionObj.getId()) : null;
+      staticCenterAnimationReceiver = animation != null ? complexReceiver.getGifReceiver(((long) reactionObj.getId()) << 32) : null;
       staticIconReceiver = complexReceiver.getImageReceiver(reactionObj.staticIconSicker().getId());
 
       if (staticIconReceiver != null) {
         staticIconReceiver.requestFile(staticIconSticker.getFullImage());
+      }
+      if (staticCenterAnimationReceiver != null) {
+        staticCenterAnimationReceiver.requestFile(reactionObj.staticCenterAnimationSicker().getPreviewAnimation());
       }
       if (centerAnimationReceiver != null) {
         centerAnimationReceiver.requestFile(animation);
@@ -726,11 +742,12 @@ public class TGReactions {
 
     // Render
 
-    public void drawReaction (Canvas c, float x, float cy, float radDp, final float alpha) {
-      if (staticIconReceiver != null) {
-        staticIconReceiver.setBounds((int) x, (int) cy - Screen.dp(radDp), (int) x + Screen.dp(radDp * 2), (int) cy + Screen.dp(radDp));
-        staticIconReceiver.setAlpha(alpha);
-        staticIconReceiver.draw(c);
+    public void drawReactionNonBubble (Canvas c, float x, float cy, float radDp, final float alpha) {
+      int radius = Screen.dp(radDp);
+      if (centerAnimationReceiver != null) {
+        centerAnimationReceiver.setBounds((int) x - radius, (int) cy - radius, (int) x + radius, (int) cy + radius);
+        centerAnimationReceiver.setAlpha(alpha);
+        centerAnimationReceiver.draw(c);
       }
     }
 

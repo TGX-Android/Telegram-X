@@ -65,6 +65,7 @@ import java.util.Arrays;
 
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.StringUtils;
 
 public class MessageOptionsPagerController extends ViewPagerController<Void> implements
   FactorAnimator.Target, PopupLayout.PopupHeightProvider,
@@ -440,7 +441,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
 
   private int getContentOffset () {
     if (needShowOptions) {
-      return (getTargetHeight() - (Screen.dp(54) + HeaderView.getTopOffset()) - (Screen.dp(54 * options.items.length) + Screen.dp(5)));
+      return (getTargetHeight() - (Screen.dp(54) + HeaderView.getTopOffset()) - (Screen.dp(54 * options.items.length + (StringUtils.isEmpty(options.info) ? 0 : 40)) + Screen.dp(5)));
     } else {
       return Screen.currentHeight() / 2;
     }
@@ -886,7 +887,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
   }
 
 
-  private static class LickView extends View {
+  private class LickView extends View {
     public LickView (Context context) {
       super(context);
     }
@@ -905,11 +906,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
       if (factor > 0f) {
         int bottom = getMeasuredHeight();
         int top = bottom - (int) ((float) bottom * factor);
-        c.drawRect(0, top, getMeasuredWidth(), bottom,
-          Paints.fillingPaint(
-            ColorUtils.compositeColors(Theme.getColor(R.id.theme_color_statusBar),
-            Theme.fillingColor())
-          ));
+        c.drawRect(0, top, getMeasuredWidth(), bottom, Paints.fillingPaint(headerBackground));
       }
     }
   }

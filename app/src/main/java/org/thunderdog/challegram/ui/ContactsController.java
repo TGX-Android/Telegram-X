@@ -1199,7 +1199,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
 
     @Override
     public int getItemHeight () {
-      return Screen.dp(UserView.HEIGHT);
+      return Screen.dp(UserView.DEFAULT_HEIGHT);
     }
 
     @Override

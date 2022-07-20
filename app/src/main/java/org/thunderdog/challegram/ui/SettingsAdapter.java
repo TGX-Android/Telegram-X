@@ -1479,6 +1479,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         ((JoinedUsersView) group.getChildAt(0)).setJoinedText(item.getString());
         break;
       }
+      case ListItem.TYPE_USER_SMALL:
       case ListItem.TYPE_USER: {
         setUser(item, position, (UserView) holder.itemView, false);
         break;

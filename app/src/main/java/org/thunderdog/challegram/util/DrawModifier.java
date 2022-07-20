@@ -20,4 +20,5 @@ import android.view.View;
 public interface DrawModifier {
   default void beforeDraw (View view, Canvas c) { }
   default void afterDraw (View view, Canvas c) { }
+  default int getWidth () { return 0; }
 }

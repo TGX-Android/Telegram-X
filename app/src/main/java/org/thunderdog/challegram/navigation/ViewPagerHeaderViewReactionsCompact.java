@@ -137,7 +137,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
     adapter = new A(topView);
 
     if (needReactionSelector) {
-      reactionsSelectorRecyclerView = new ReactionsSelectorRecyclerView(context, tdlib, message, message.getMessageReactions().getChosen(), true) {
+      reactionsSelectorRecyclerView = new ReactionsSelectorRecyclerView(context, message) {
         @Override
         protected void dispatchDraw (Canvas c) {
           super.dispatchDraw(c);
