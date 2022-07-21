@@ -478,12 +478,11 @@ public class TGReactions {
     private final String reaction;
     private final TGReaction reactionObj;
     private final TGMessage message;
-    private final TGStickerObj staticIconSticker;
 
-    @Nullable private ImageReceiver staticIconReceiver;
     @Nullable private GifReceiver staticCenterAnimationReceiver;
     @Nullable private GifReceiver centerAnimationReceiver;
     @Nullable private final GifFile animation;
+    private final GifFile staticAnimationFile;
 
     private final MessageReactionsDelegate delegate;
 
@@ -504,8 +503,8 @@ public class TGReactions {
 
       this.counter = counter.colorSet(this).build();
 
-      staticIconSticker = reactionObj.staticIconSicker();
       animation = reactionObj.newCenterAnimationSicker().getFullAnimation();
+      staticAnimationFile = reactionObj.staticCenterAnimationSicker().getPreviewAnimation();
       if (animation != null) {
         animation.setPlayOnce(true);
         animation.setLooped(true);
@@ -516,30 +515,36 @@ public class TGReactions {
 
     public void setComplexReceiver (ComplexReceiver complexReceiver) {
       if (complexReceiver == null) {
-        this.centerAnimationReceiver = null;
-        this.staticIconReceiver = null;
+        if (centerAnimationReceiver != null) {
+          this.centerAnimationReceiver.clear();
+          this.centerAnimationReceiver = null;
+        }
+        if (this.staticCenterAnimationReceiver == null) {
+          this.staticCenterAnimationReceiver.clear();
+          this.staticCenterAnimationReceiver = null;
+        }
         return;
       }
 
-      centerAnimationReceiver = animation != null ? complexReceiver.getGifReceiver(reactionObj.getId()) : null;
-      staticCenterAnimationReceiver = animation != null ? complexReceiver.getGifReceiver(((long) reactionObj.getId()) << 32) : null;
-      staticIconReceiver = complexReceiver.getImageReceiver(reactionObj.staticIconSicker().getId());
+      centerAnimationReceiver = complexReceiver.getGifReceiver(reactionObj.getId());
+      staticCenterAnimationReceiver = complexReceiver.getGifReceiver(((long) reactionObj.getId()) << 32);
 
-      if (staticIconReceiver != null) {
-        staticIconReceiver.requestFile(staticIconSticker.getFullImage());
-      }
       if (staticCenterAnimationReceiver != null) {
-        staticCenterAnimationReceiver.requestFile(reactionObj.staticCenterAnimationSicker().getPreviewAnimation());
+        staticCenterAnimationReceiver.requestFile(staticAnimationFile);
       }
       if (centerAnimationReceiver != null) {
-        centerAnimationReceiver.requestFile(animation);
+        //centerAnimationReceiver.requestFile(animation);
       }
       invalidate();
     }
 
     public void startAnimation () {
       if (animation != null) {
+        inAnimation = true;
         animation.setLooped(false);
+        if (centerAnimationReceiver != null) {
+          centerAnimationReceiver.requestFile(animation);
+        }
       }
       invalidate();
     }
@@ -717,9 +722,7 @@ public class TGReactions {
     @Override
     public boolean equals (@Nullable Object obj) {
       if (obj instanceof MessageReactionEntry) {
-        if (((MessageReactionEntry) obj).staticIconSticker == null || this.staticIconSticker == null)
-          return false;
-        return ((MessageReactionEntry) obj).staticIconSticker.getId() == this.staticIconSticker.getId();
+        return ((MessageReactionEntry) obj).reactionObj.getId() == this.reactionObj.getId();
       }
 
       return false;
@@ -727,8 +730,7 @@ public class TGReactions {
 
     @Override
     public int hashCode () {
-      if (staticIconSticker == null) return 0;
-      return staticIconSticker.getId();
+      return reactionObj.getId();
     }
 
     public String getReaction () {
@@ -747,15 +749,30 @@ public class TGReactions {
 
     public void drawReactionNonBubble (Canvas c, float x, float cy, float radDp, final float alpha) {
       int radius = Screen.dp(radDp);
-      if (centerAnimationReceiver != null && !isHidden) {
-        centerAnimationReceiver.setBounds((int) x - radius, (int) cy - radius, (int) x + radius, (int) cy + radius);
-        centerAnimationReceiver.setAlpha(alpha);
-        centerAnimationReceiver.draw(c);
+      if (!isHidden) {
+        drawReceiver(c, (int) x - radius, (int) cy - radius, (int) x + radius, (int) cy + radius, alpha);
       }
     }
 
     private TdApi.MessageReaction messageReaction;
     private boolean isHidden;
+    private boolean inAnimation;
+
+    private void drawReceiver (Canvas c, int l, int t, int r, int b, float alpha) {
+      GifReceiver receiver = inAnimation ? centerAnimationReceiver : staticCenterAnimationReceiver;
+      if (receiver != null) {
+        receiver.setBounds(l, t, r, b);
+        receiver.setAlpha(alpha);
+        receiver.draw(c);
+      }
+
+      /*GifReceiver receiver2 = !inAnimation ? centerAnimationReceiver : staticCenterAnimationReceiver;
+      if (receiver2 != null) {
+        receiver2.setBounds(l, t, r, b);
+        receiver2.setAlpha(alpha);
+        receiver2.draw(c);
+      }*/
+    }
 
     public void drawReactionInBubble (MessageView view, Canvas c, float x, float y, float visibility, int appearTypeFlags) {
       final boolean hasScaleSaved = visibility != 1f && (BitwiseUtils.getFlag(appearTypeFlags, TYPE_APPEAR_SCALE_FLAG));
@@ -784,10 +801,8 @@ public class TGReactions {
       if (visibility > 0f) {
         c.drawRoundRect(rect, radius, radius, Paints.fillingPaint( ColorUtils.alphaColor(alpha, backgroundColor)));
         counter.draw(c, textX, getReactionBubbleHeight() / 2f, Gravity.LEFT, alpha, view, R.id.theme_color_badgeFailedText);
-        if (centerAnimationReceiver != null && !isHidden) {
-          centerAnimationReceiver.setBounds(Screen.dp(-1), imgY, Screen.dp(-1) + imageSize, imgY + imageSize);
-          centerAnimationReceiver.setAlpha(alpha);
-          centerAnimationReceiver.draw(c);
+        if (!isHidden) {
+          drawReceiver(c, Screen.dp(-1), imgY, Screen.dp(-1) + imageSize, imgY + imageSize, alpha);
         }
       }
 
@@ -813,8 +828,6 @@ public class TGReactions {
         final int saveCount;
         if ((saveCount = ViewSupport.clipPath(c, path)) != Integer.MIN_VALUE) {
           c.drawCircle(selectionX, selectionY, selectionRadius, Paints.fillingPaint(selectionColor));
-        } else {
-          //c.drawRoundRect(rounder, radius, radius, Paints.fillingPaint(selectionColor));
         }
         ViewSupport.restoreClipPath(c, saveCount);
         //}

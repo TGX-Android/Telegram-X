@@ -73,15 +73,15 @@ public class TGReaction {
     return _staticCenterAnimationSicker;
   }
 
-  public TGStickerObj newStaticIconSicker () {
+  private TGStickerObj newStaticIconSicker () {
     return new TGStickerObj(tdlib, reaction.staticIcon, reaction.reaction, reaction.staticIcon.type);
   }
 
-  public TGStickerObj newActivateAnimationSicker () {
+  private TGStickerObj newActivateAnimationSicker () {
     return new TGStickerObj(tdlib, reaction.activateAnimation, reaction.reaction, reaction.activateAnimation.type);
   }
 
-  public TGStickerObj newEffectAnimationSicker () {
+  private TGStickerObj newEffectAnimationSicker () {
     return new TGStickerObj(tdlib, reaction.effectAnimation, reaction.reaction, reaction.effectAnimation.type);
   }
 
@@ -130,20 +130,13 @@ public class TGReaction {
   public static class ReactionDrawable extends Drawable {
     private final int width;
     private final int height;
-    private boolean isAnimation;
 
     @Nullable private ImageFile imageFile;
-    @Nullable private GifFile gifFile;
-
     @Nullable private ImageReceiver imageReceiver;
-    @Nullable private GifReceiver gifReceiver;
 
     public ReactionDrawable (View view, TGStickerObj sticker, int width, int height) {
       this.width = width;
       this.height = height;
-      this.imageFile = sticker != null && !sticker.isEmpty() ? sticker.getImage() : null;
-      this.gifFile = sticker != null && !sticker.isEmpty() ? sticker.getPreviewAnimation() : null;
-      this.isAnimation = sticker != null && sticker.isAnimated();
       init(view);
     }
 
@@ -151,23 +144,12 @@ public class TGReaction {
       imageReceiver = new ImageReceiver(view, 0);
       imageReceiver.setBounds(0, 0, width, height);
       imageReceiver.requestFile(imageFile);
-      if (view != null) {
-        gifReceiver = new GifReceiver(view);
-        gifReceiver.setBounds(0, 0, width, height);
-        gifReceiver.requestFile(gifFile);
-      }
     }
 
     @Override
     public void draw (@NonNull Canvas c) {
-      if (isAnimation) {
-        if (gifReceiver != null) {
-          gifReceiver.draw(c);
-        }
-      } else {
-        if (imageReceiver != null) {
-          imageReceiver.draw(c);
-        }
+      if (imageReceiver != null) {
+        imageReceiver.draw(c);
       }
     }
 
@@ -175,9 +157,6 @@ public class TGReaction {
     public void setAlpha (int i) {
       if (imageReceiver != null) {
         imageReceiver.setAlpha(i / 255f);
-      }
-      if (gifReceiver != null) {
-        gifReceiver.setAlpha(i / 255f);
       }
     }
 
