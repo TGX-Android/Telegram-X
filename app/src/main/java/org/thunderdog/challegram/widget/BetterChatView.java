@@ -385,17 +385,8 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
         titleLeft += Screen.dp(15f);
         paint.setColor(Theme.getColor(R.id.theme_color_textSecure));
       }
-      int iconsAdded = 0;
-      if (isVerified && !isSelf) {
-        Drawable drawable = Icons.getChatVerifyDrawable();
-        Drawables.drawRtl(c, drawable, titleLeft + trimmedTitleWidth + Screen.dp(2f), Screen.dp(12f), Paints.getVerifyPaint(), width, rtl);
-        iconsAdded += drawable.getMinimumWidth();
-      }
-      if (isPremium && !isSelf) {
-        Drawable drawable = Icons.getChatPremiumDrawable();
-        Drawables.drawRtl(c, drawable, titleLeft + trimmedTitleWidth + Screen.dp(2f) + iconsAdded, Screen.dp(11.5f), Paints.getPremiumPaint(), width, rtl);
-      }
       int titleTop = Screen.dp(28f) + Screen.dp(1f);
+      float textEnd;
       if (titleLayout != null) {
         // titleTop -= Screen.dp(14.5f);
         int originalColor = titleLayout.getPaint().getColor();
@@ -410,8 +401,26 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
         titleLayout.draw(c);
         c.restore();
         titleLayout.getPaint().setColor(originalColor);
+
+        float textWidth = titleLayout.getLineCount() > 0 ? titleLayout.getLineWidth(0) : 0;
+        textEnd = left + textWidth * (rtl ? -1 : 1);
       } else {
+        float textX = rtl ? width - titleLeft - trimmedTitleWidth : titleLeft;
         c.drawText((String) trimmedTitle, rtl ? width - titleLeft - trimmedTitleWidth : titleLeft, titleTop, paint);
+        textEnd = textX + trimmedTitleWidth * (rtl ? -1 : 1);
+      }
+      if (!isSelf && (isVerified || isPremium)) {
+        float addedIconsWidth = Screen.dp(2f);
+
+        if (isVerified) {
+          Drawable drawable = Icons.getChatVerifyDrawable();
+          Drawables.drawRtl(c, drawable, textEnd + addedIconsWidth * (rtl ? -1 : 1), Screen.dp(12f), Paints.getVerifyPaint(), width, rtl);
+          addedIconsWidth += drawable.getMinimumWidth();
+        }
+        if (isPremium) {
+          Drawable drawable = Icons.getChatPremiumDrawable();
+          Drawables.drawRtl(c, drawable, textEnd + addedIconsWidth * (rtl ? -1 : 1), Screen.dp(11.5f), Paints.getPremiumPaint(), width, rtl);
+        }
       }
       if (isSecret || titleLayout != null) {
         paint.setColor(Theme.textAccentColor());
