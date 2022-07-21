@@ -180,9 +180,13 @@ public class ReactionsOverlayView extends ViewGroup {
     }
 
     public ReactionInfo setAnimatedPosition (Point startPosition, Point finishPosition, int size, AnimatedPositionProvider animatedPositionProvider, long duration) {
+      return setAnimatedPosition(startPosition, finishPosition, size, size, animatedPositionProvider, duration);
+    }
+
+    public ReactionInfo setAnimatedPosition (Point startPosition, Point finishPosition, int startSize, int endSize, AnimatedPositionProvider animatedPositionProvider, long duration) {
       this.animatedPositionProvider = animatedPositionProvider;
-      this.startPosition = new Rect(startPosition.x - size / 2, startPosition.y - size / 2, startPosition.x + size / 2, startPosition.y + size / 2);
-      this.finishPosition = new Rect(finishPosition.x - size / 2, finishPosition.y - size / 2, finishPosition.x + size / 2, finishPosition.y + size / 2);
+      this.startPosition = new Rect(startPosition.x - startSize / 2, startPosition.y - startSize / 2, startPosition.x + startSize / 2, startPosition.y + startSize / 2);
+      this.finishPosition = new Rect(finishPosition.x - endSize / 2, finishPosition.y - endSize / 2, finishPosition.x + endSize / 2, finishPosition.y + endSize / 2);
       this.duration = duration;
       this.positionAnimator = new FactorAnimator(POSITION_ANIMATOR, this, AnimatorUtils.DECELERATE_INTERPOLATOR, duration, 0f);
       return setPosition(new Rect(this.startPosition));

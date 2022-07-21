@@ -366,20 +366,12 @@ public class TGReactions {
     }
   }
 
-  public int getLastDrawX () {
-    return lastDrawX;
-  }
-
-  public int getLastDrawY () {
-    return lastDrawY;
-  }
-
   public int getReactionBubbleX (String reaction) {
     TGReactions.MessageReactionEntry entry = reactionsMapEntry.get(reaction);
     if (entry == null) {
       return 0;
     }
-    return lastDrawX + entry.getX();
+    return entry.getX();
   }
 
   public int getReactionBubbleY (String reaction) {
@@ -387,7 +379,7 @@ public class TGReactions {
     if (entry == null) {
       return 0;
     }
-    return lastDrawY + entry.getY();
+    return entry.getY();
   }
 
   public float getReactionPositionInList (String reaction) {

@@ -211,7 +211,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private final Counter reactionsCounter;
   private final Counter shrinkedReactionsCounter;     // For channels in flat mode
   private final ReactionsCounterDrawable reactionsCounterDrawable;
-  private final float reactionsCounterIconMargin;
 
   // forward values
 
@@ -223,7 +222,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   private int pBadgeX, pBadgeIconX;
 
-  private int targetReactionsX, targetReactionsY;
   private int pRealContentX, pRealContentMaxWidth;
   private int leftContentEdge, topContentEdge, bottomContentEdge, rightContentEdge;
   private float lastMergeRadius, lastDefaultRadius;
@@ -234,6 +232,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private int pClockLeft, pClockTop;
   private int pTicksLeft, pTicksTop;
   private int pDateWidth;
+  private int lastDrawReactionsX, lastDrawReactionsY;
 
   private final Path bubblePath, bubbleClipPath;
   private float topRightRadius, topLeftRadius, bottomLeftRadius, bottomRightRadius;
@@ -359,7 +358,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       .drawable(R.drawable.baseline_share_arrow_14, 14f, 3f, Gravity.LEFT)
       .build();
     this.reactionsCounterDrawable = new ReactionsCounterDrawable(messageReactions.getReactionsAnimator());
-    this.reactionsCounterIconMargin = 3f;
     if (!useReactionBubbles() && (!isChannel() || useBubbles())) {
       Counter.Builder reactionsCounterBuilder = new Counter.Builder()
         .noBackground()
@@ -1865,13 +1863,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         if (reactionsCounter != null) {
           reactionsCounter.draw(c, right, top, Gravity.RIGHT, 1f, view, getTimePartIconColorId());
           right -= reactionsCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN));
-          right -= reactionsCounterDrawable.getMinimumWidth(); // + Screen.dp(3) * messageReactions.getVisibility();
-          reactionsCounterDrawable.draw(c, right, top);
+          right -= reactionsCounterDrawable.getMinimumWidth();
+          drawReactionsWithoutBubbles(c, right, top);
           right -= Screen.dp(5) * reactionsCounter.getVisibility();
         }
       }
       if (shrinkedReactionsCounter != null && (reactionsCounter == null || !needMetadata) && !tdlib.isUserChat(getChatId())) {
         shrinkedReactionsCounter.draw(c, right, top, Gravity.RIGHT, 1f, view, 0);
+        setLastDrawReactionsPosition(right, top);
         right -= shrinkedReactionsCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN)) + Screen.dp(COUNTER_ADD_MARGIN);
       }
     }
@@ -1933,19 +1932,19 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (useReactionBubbles) {
       int top = (int) (this.height - messageReactions.getAnimatedHeight() - getExtraPadding());
       if (!useBubbles) {
-        messageReactions.drawReactionBubbles(c, view, xContentLeft, top - Screen.dp(9));
+        drawReactionsWithBubbles(c, view, xContentLeft, top - Screen.dp(9));
       } else {
         if (useMediaBubbleReactions()) {
-          messageReactions.drawReactionBubbles(c, view, (int) bubblePathRect.left, top - Screen.dp(6));
+          drawReactionsWithBubbles(c, view, (int) bubblePathRect.left, top - Screen.dp(6));
         } else if (useStickerBubbleReactions()) {
           int left = isOutgoingBubble() ? (useBubble() ? getContentX() : getActualRightContentEdge() - getContentWidth()) : getContentX();
           if (isOutgoingBubble() && messageReactions.getAnimatedWidth() > getContentWidth()) {
             left = (int) (getActualRightContentEdge() - messageReactions.getAnimatedWidth());
           }
-          messageReactions.drawReactionBubbles(c, view, left, top - Screen.dp(6));
+          drawReactionsWithBubbles(c, view, left, top - Screen.dp(6));
         } else {
           // c.drawRect(bubblePathRect.left, bottomContentEdge - timeAddedHeight, bubblePathRect.right, bottomContentEdge - timeAddedHeight, Paints.strokeSmallPaint(Color.BLUE));
-          messageReactions.drawReactionBubbles(c, view, (int) bubblePathRect.left + xReactionBubblePadding, (bottomContentEdge - (int) messageReactions.getAnimatedHeight() - timeAddedHeight - xReactionBubblePaddingBottom));
+          drawReactionsWithBubbles(c, view, (int) bubblePathRect.left + xReactionBubblePadding, (bottomContentEdge - (int) messageReactions.getAnimatedHeight() - timeAddedHeight - xReactionBubblePaddingBottom));
         }
       }
     }
@@ -3305,7 +3304,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     int counterY = startY + Screen.dp(11.5f);
 
     if (reactionsCounter != null) {
-      reactionsCounterDrawable.draw(c, startX, counterY);
+      drawReactionsWithoutBubbles(c, startX, counterY);
       startX += reactionsCounterDrawable.getMinimumWidth() + Screen.dp(COUNTER_ADD_MARGIN) * messageReactions.getVisibility();
       reactionsCounter.draw(c, startX, counterY, Gravity.LEFT, 1f, view, iconColorId);
       startX += reactionsCounter.getScaledWidth(Screen.dp(5));
@@ -7789,16 +7788,37 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return swipeHelper;
   }
 
-  // Reaction positions
+
+
+  // Reaction positions and draw
+
+  private void drawReactionsWithBubbles (Canvas c, MessageView v, int x, int y) {
+    messageReactions.drawReactionBubbles(c, v, x, y);
+    setLastDrawReactionsPosition(x, y);
+  }
+
+  private void drawReactionsWithoutBubbles (Canvas c, int x, int y) {
+    setLastDrawReactionsPosition(x, y);
+    reactionsCounterDrawable.draw(c, x, y);
+  }
+
+  private void setLastDrawReactionsPosition (int lastDrawReactionsX, int lastDrawReactionsY) {
+    this.lastDrawReactionsX = lastDrawReactionsX;
+    this.lastDrawReactionsY = lastDrawReactionsY;
+  }
 
   private Point getReactionPosition (String reaction) {
     if (useReactionBubbles()) {
-      int x = messageReactions.getReactionBubbleX(reaction) + TGReactions.getReactionImageSize() / 2 - Screen.dp(1);
-      int y = messageReactions.getReactionBubbleY(reaction) + TGReactions.getReactionBubbleHeight() / 2;
+      int x = lastDrawReactionsX + messageReactions.getReactionBubbleX(reaction) + TGReactions.getReactionImageSize() / 2 - Screen.dp(1);
+      int y = lastDrawReactionsY + messageReactions.getReactionBubbleY(reaction) + TGReactions.getReactionBubbleHeight() / 2;
+      return new Point(x, y);
+    } else if (shrinkedReactionsCounter != null && (reactionsCounter == null || !BitwiseUtils.getFlag(flags, FLAG_HEADER_ENABLED)) && !tdlib.isUserChat(getChatId())) {
+      int x = lastDrawReactionsX - Screen.dp(7);
+      int y = lastDrawReactionsY;
       return new Point(x, y);
     } else if (reactionsCounterDrawable != null) {
-      int x = (int) (reactionsCounterDrawable.getLastDrawX() + Screen.dp(7) + Screen.dp(14) * MathUtils.clamp( messageReactions.getReactionPositionInList(reaction), 0, 2));
-      int y = (int) (reactionsCounterDrawable.getLastDrawY());
+      int x = (int) (lastDrawReactionsX + Screen.dp(6) + Screen.dp(15) * MathUtils.clamp( messageReactions.getReactionPositionInList(reaction), 0, 2));
+      int y = lastDrawReactionsY;
       return new Point(x, y);
     }
 
@@ -7915,11 +7935,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           .setAnimatedPosition(
             new Point(startX, startY),
             new Point(finishX, finishY),
-            Screen.dp(43),
+            Screen.dp(40),
+            Screen.dp(useReactionBubbles() ? 32 : 24),
             new QuickReactionAnimatedPositionProvider(),
             MessagesRecyclerView.ITEM_ANIMATOR_DURATION + 210
           )
-          .setAnimatedPositionOffsetProvider(useReactionBubbles() ? new QuickReactionAnimatedPositionOffsetProvider(messageReactions) : null)
+          .setAnimatedPositionOffsetProvider(new QuickReactionAnimatedPositionOffsetProvider())
       );
     } else if (nextSetReactionAnimation.type == NextReactionAnimation.TYPE_BOTTOM_SHEET && nextSetReactionAnimation.startPosition != null) {
       int startX = nextSetReactionAnimation.startPosition.x;
@@ -7931,11 +7952,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           .setAnimatedPosition(
             new Point(startX, startY),
             new Point(finishX, finishY),
-            Screen.dp(43),
+            Screen.dp(40),
+            Screen.dp(useReactionBubbles() ? 32 : 24),
             new QuickReactionAnimatedPositionProvider(Screen.dp(80)),
             MessagesRecyclerView.ITEM_ANIMATOR_DURATION + 210
           )
-          .setAnimatedPositionOffsetProvider(useReactionBubbles() ? new QuickReactionAnimatedPositionOffsetProvider(messageReactions) : null)
+          .setAnimatedPositionOffsetProvider(new QuickReactionAnimatedPositionOffsetProvider())
       );
     } else if (nextSetReactionAnimation.type == NextReactionAnimation.TYPE_BOTTOM_SHEET_FULLSCREEN && nextSetReactionAnimation.startPosition != null) {
       int startX = nextSetReactionAnimation.startPosition.x;
@@ -8014,7 +8036,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     context().reactionsOverlayManager().addOverlay(
       new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
         .setSticker(tgReaction.newAroundAnimationSicker())
-        .setPosition(new Point(bubbleX, bubbleY), Screen.dp(120))
+        .setPosition(new Point(bubbleX, bubbleY), Screen.dp(90))
     );
   }
 
@@ -8107,24 +8129,21 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
   }
 
-  private static class QuickReactionAnimatedPositionOffsetProvider implements ReactionsOverlayView.AnimatedPositionOffsetProvider {
+  private class QuickReactionAnimatedPositionOffsetProvider implements ReactionsOverlayView.AnimatedPositionOffsetProvider {
     private final int startX;
     private final int startY;
     private final int startH;
 
-    private final TGReactions reactions;
-
-    public QuickReactionAnimatedPositionOffsetProvider (TGReactions reactions) {
-      this.reactions = reactions;
-      this.startX = reactions.getLastDrawX();
-      this.startY = reactions.getLastDrawY();
-      this.startH = (int) reactions.getAnimatedHeight();
+    public QuickReactionAnimatedPositionOffsetProvider () {
+      this.startX = lastDrawReactionsX;
+      this.startY = lastDrawReactionsY;
+      this.startH = height;
     }
 
     @Override
     public void getOffset (Point p) {
-      p.x = reactions.getLastDrawX() - startX;
-      p.y = reactions.getLastDrawY() - startY + (startH - (int) reactions.getAnimatedHeight());
+      p.x = lastDrawReactionsX - startX;
+      p.y = lastDrawReactionsY - startY + (startH - height);
     }
   }
 
@@ -8162,7 +8181,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
     return (targetView, outRect) -> {
       outRect.set(entry.getX(), entry.getY(), entry.getX() + entry.getBubbleWidth(), entry.getY() + entry.getBubbleHeight());
-      outRect.offset(messageReactions.getLastDrawX(), messageReactions.getLastDrawY());
+      outRect.offset(lastDrawReactionsX, lastDrawReactionsY);
     };
   }
 }

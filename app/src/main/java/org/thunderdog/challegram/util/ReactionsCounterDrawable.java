@@ -63,24 +63,11 @@ public class ReactionsCounterDrawable extends Drawable {
   }
 
   public void draw (@NonNull Canvas c, int x, int y) {
-    lastDrawX = x;
-    lastDrawY = y;
     //c.drawRect(x, y - Screen.dp(6), x + getMinimumWidth(), y + Screen.dp(6), Paints.strokeSmallPaint(Color.RED));
 
     for (int a = 0; a < topReactions.size(); a++) {
       ReactionsListAnimator.Entry item = topReactions.getEntry(a);
       item.item.drawReactionNonBubble(c, x + item.getPosition() * Screen.dp(15) + Screen.dp(6), y, 12f, getVisibility(item));
     }
-  }
-
-  private float lastDrawX;
-  private float lastDrawY;
-
-  public float getLastDrawX () {
-    return lastDrawX;
-  }
-
-  public float getLastDrawY () {
-    return lastDrawY;
   }
 }

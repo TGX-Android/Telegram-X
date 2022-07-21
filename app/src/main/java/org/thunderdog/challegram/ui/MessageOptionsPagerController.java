@@ -456,7 +456,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
 
   @Override
   public int getCurrentPopupHeight () {
-    return (getTargetHeight() - detectTopRecyclerEdge() - (int) ((float) HeaderView.getTopOffset()));
+    return (getTargetHeight() - getTopEdge() - (int) ((float) HeaderView.getTopOffset()));
   }
 
   private boolean ignoreAnyPagerScrollEventsBecauseOfMovements;
@@ -493,7 +493,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
           if (controller == null) {
             return;
           }
-          if (controller.getRecyclerView() == v) {
+          if (controller.getRecyclerView() == v && currentPositionOffset == 0f) {
             checkHeaderPosition((RecyclerView) v);
           }
         }
