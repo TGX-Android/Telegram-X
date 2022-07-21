@@ -84,6 +84,7 @@ public class ReactionListViewController {
   private boolean scrolledToBottom;
   private Animator statusBarBgAnimator;
   private boolean loadingMore = true;
+  private boolean isFromOptions;
 
   private ThemeListenerList themeListeners = new ThemeListenerList();
 
@@ -275,6 +276,7 @@ public class ReactionListViewController {
   }
 
   public void showFromOptionsSheet (CounterView reactionsCounter, CounterView seenCounter, OptionsLayout optionsLayout, View countersButton, Runnable onTransitionDone) {
+    isFromOptions = true;
     int sheetContentH = optionsLayout.getHeight() - optionsLayout.getChildAt(0).getHeight();
     View bg = new View(context);
     bg.setBackgroundColor(Theme.fillingColor());
@@ -398,6 +400,7 @@ public class ReactionListViewController {
   }
 
   public void showForSingleReaction (String reaction) {
+    isFromOptions = false;
     popup.showSimplePopupView(scrollView, Screen.currentHeight());
     topPadding.getLayoutParams().height = Screen.currentHeight() / 3 - HeaderView.getTopOffset();
     for (int i = 0; i < viewControllers.size(); i++) {
@@ -605,6 +608,9 @@ public class ReactionListViewController {
     }
 
     private void onViewClick (View v) {
+      if (!isFromOptions) {
+        popup.hideWindow(true);
+      }
       tdlib.ui().openPrivateProfile(chatController, ((ListItem) v.getTag()).getLongId(), new TdlibUi.UrlOpenParameters());
     }
   }
