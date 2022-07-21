@@ -368,6 +368,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     cancelResetView.setOnClickListener(this);
     Views.setClickable(cancelResetView);
     cancelResetView.setAlpha(0f);
+    cancelResetView.setVisibility(View.GONE);
 
     resetWaitView = new NoScrollTextView(context);
     resetWaitView.setId(R.id.btn_cancelResetWait);
@@ -376,6 +377,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     resetWaitView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
     resetWaitView.setPadding(Screen.dp(16f), Screen.dp(16f), Screen.dp(16f), Screen.dp(6f));
     resetWaitView.setAlpha(0f);
+    resetWaitView.setVisibility(View.GONE);
 
     switch (mode) {
       case MODE_TRANSFER_OWNERSHIP_CONFIRM:
@@ -421,15 +423,17 @@ public class PasswordController extends ViewController<PasswordController.Args> 
 
       rp = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
       forgotView.setPadding(Screen.dp(16f), Screen.dp(6f), Screen.dp(12f), Screen.dp(16f));
-      rp.addRule(RelativeLayout.BELOW, R.id.btn_cancelReset);
+      rp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
       forgotView.setLayoutParams(rp);
       forgotWrap.addView(forgotView);
 
       rp = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+      rp.addRule(RelativeLayout.ABOVE, R.id.btn_forgotPassword);
       cancelResetView.setLayoutParams(rp);
       forgotWrap.addView(cancelResetView);
 
       rp = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+      rp.addRule(RelativeLayout.ABOVE, R.id.btn_forgotPassword);
       resetWaitView.setLayoutParams(rp);
       forgotWrap.addView(resetWaitView);
 
@@ -806,20 +810,26 @@ public class PasswordController extends ViewController<PasswordController.Args> 
   }
 
   private void updatePasswordResetTextViews () {
+    if (state != null && state.pendingResetDate == 0) {
+      forgotView.setPadding(Screen.dp(16f), Screen.dp(15f), Screen.dp(12f), Screen.dp(16f));
+    } else {
+      forgotView.setPadding(Screen.dp(16f), Screen.dp(6f), Screen.dp(12f), Screen.dp(16f));
+    }
+    if (canResetPassword()) {
+      cancelResetView.setVisibility(View.VISIBLE);
+      cancelResetView.setText(Lang.getString(R.string.CancelReset));
+    } else {
+      cancelResetView.setVisibility(View.GONE);
+    }
     if (pendingPasswordReset()) {
       forgotView.setText(Lang.getString(R.string.CancelReset));
+      resetWaitView.setVisibility(View.VISIBLE);
       resetWaitView.setText(Lang.getString(R.string.RestorePasswordResetIn, Lang.getDuration(getTimeDiff(state.pendingResetDate))));
-      cancelResetView.setText("");
 
       handler.sendMessageDelayed(Message.obtain(handler, UPDATE_TEXT_VIEWS_TIMER), 1000);
     } else {
       forgotView.setText(Lang.getString(R.string.ForgotPassword));
-      resetWaitView.setText("");
-      if (canResetPassword()) {
-        cancelResetView.setText(Lang.getString(R.string.CancelReset));
-      } else {
-        cancelResetView.setText("");
-      }
+      resetWaitView.setVisibility(View.GONE);
     }
   }
 
@@ -834,7 +844,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
           break;
         }
         case TdApi.Error.CONSTRUCTOR: {
-          if (cancelResetView.getText().length() > 0) {
+          if (cancelResetView.getVisibility() == View.VISIBLE) {
             context().tooltipManager().builder(cancelResetView).offset(outRect -> outRect.offset(0, Screen.dp(10f))).show(tdlib, TD.toErrorString(object));
           } else {
             context().tooltipManager().builder(forgotView).show(tdlib, TD.toErrorString(object));
@@ -1488,9 +1498,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         break;
       }
       case R.id.btn_cancelReset: {
-        if (state != null && state.pendingResetDate > 0) {
-          openAlert(R.string.ResetPassword, R.string.CancelPasswordReset, Lang.getString(R.string.CancelPasswordResetYes), (dialog, which) -> { cancelResetPassword(); });
-        }
+        openAlert(R.string.ResetPassword, R.string.CancelPasswordReset, Lang.getString(R.string.CancelPasswordResetYes), (dialog, which) -> { cancelResetPassword(); });
         break;
       }
       case R.id.btn_forgotPassword: {
