@@ -95,7 +95,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     this.reactions = message.getMessageReactions().getReactions();
     this.needShowOptions = options != null;
     this.needShowViews = !(!message.canGetViewers() || (message.isUnread() && !message.noUnread()));
-    this.needShowReactions = reactions != null && message.canGetAddedReactions() && message.getMessageReactions().getTotalCount() > 0;
+    this.needShowReactions = reactions != null && message.canGetAddedReactions() && message.getMessageReactions().getTotalCount() > 0 && !tdlib.isUserChat(message.getChatId());
     this.counters = new ViewPagerTopView.Item[getPagerItemCount()];
     this.baseCountersWidth = 0;
 
@@ -221,7 +221,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     addThemeInvalidateListener(contentView);
 
     FrameLayout.LayoutParams fp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(6f));
-    fp.topMargin = HeaderView.getSize(false) - Screen.dp(3f);
+    fp.topMargin = Screen.dp(54);
     fixView = new View(context);
     ViewSupport.setThemedBackground(fixView, R.id.theme_color_background, this);
     fixView.setLayoutParams(fp);
@@ -241,7 +241,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     };
 
     RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-    params.topMargin = HeaderView.getSize(true);
+    params.topMargin = Screen.dp(54) + HeaderView.getTopOffset();
     pagerInFrameLayoutFix = super.onCreateView(context);
     pagerInFrameLayoutFix.setLayoutParams(params);
     contentView.addView(pagerInFrameLayoutFix);
@@ -295,38 +295,6 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
         }
       });
     });
-  }
-
-
-  private int detectTopRecyclerEdge () {
-    /*if (recyclerView == null) {
-      return 0;
-    }
-
-    if (recyclerView.getLayoutManager() instanceof GridLayoutManager) {
-      GridLayoutManager manager = (GridLayoutManager) recyclerView.getLayoutManager();
-      int first = manager.findFirstVisibleItemPosition();
-      int spanCount = manager.getSpanCount();
-      int top = 0;
-      if (first != -1 && first < spanCount) {
-        View topView = manager.findViewByPosition(first);
-        if (topView != null) {
-          final int topViewPos = topView.getTop() - Screen.dp(VERTICAL_PADDING_SIZE);
-          if (topViewPos > 0) {
-            int totalSpanCount = 0;
-            for (int pos = 0; pos < first && totalSpanCount <= spanCount; pos++) {
-              totalSpanCount += manager.getSpanSizeLookup().getSpanSize(pos);
-            }
-            if (totalSpanCount <= spanCount) {
-              top = topViewPos;
-            }
-          }
-        }
-      }
-      return top;
-    }*/
-
-    return 0;
   }
 
   private float lastHeaderPosition;
@@ -416,15 +384,16 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
         }
       }
     };
-    popupLayout.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+    // popupLayout.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
     // popupLayout.set®(View.LAYER_TYPE_HARDWARE, Views.LAYER_PAINT);
     popupLayout.setBoundController(this);
     popupLayout.setPopupHeightProvider(this);
     popupLayout.init(false);
-    popupLayout.setHideKeyboard();
-    popupLayout.setNeedRootInsets();
+    //popupLayout.setHideKeyboard();
+    //popupLayout.setNeedRootInsets();
     popupLayout.setTouchProvider(this);
     popupLayout.setIgnoreHorizontal();
+    popupLayout.setNeedFullScreen(true);
     get();
     context().addFullScreenView(this, false);
   }
@@ -439,12 +408,20 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
   }
 
   private int getTargetHeight () {
+    if (context.isKeyboardVisible()) {
+      return Screen.currentActualHeight() + HeaderView.getTopOffset();
+    }
     return Screen.currentHeight();
   }
 
   private int getContentOffset () {
     if (needShowOptions) {
-      return (getTargetHeight() - (Screen.dp(54) + HeaderView.getTopOffset()) - (Screen.dp(54 * options.items.length + (StringUtils.isEmpty(options.info) ? 0 : 40)) + Screen.dp(5)));
+      return (
+        getTargetHeight()
+          - (Screen.dp(54) + HeaderView.getTopOffset())
+          - (Screen.dp(54 * options.items.length + (StringUtils.isEmpty(options.info) ? 0 : 40)))
+          - Screen.dp(1)
+      );
     } else {
       return Screen.currentHeight() / 2;
     }
@@ -474,6 +451,18 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
       recyclerView.setVerticalScrollBarEnabled(false);
       addThemeInvalidateListener(recyclerView);
       recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+        @Override
+        public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
+          super.onScrollStateChanged(recyclerView, newState);
+          if (newState == RecyclerView.SCROLL_STATE_IDLE && lickView != null && lickView.getFactor() != 0f && lickView.getFactor() != 1f) {
+            MessageBottomSheetBaseController<?> controller = findCurrentCachedController();
+            if (controller != null && controller.getRecyclerView() == recyclerView && (!ignoreAnyPagerScrollEventsBecauseOfMovements)) {
+              controller.onScrollToTopRequested();
+            }
+
+          }
+        }
+
         @Override
         public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
           MessageBottomSheetBaseController<?> controller = findCurrentCachedController();
@@ -916,6 +905,10 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
 
     private float factor;
 
+    public float getFactor () {
+      return factor;
+    }
+
     public void setFactor (float factor) {
       if (this.factor != factor) {
         this.factor = factor;
@@ -928,7 +921,9 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
       if (factor > 0f) {
         int bottom = getMeasuredHeight();
         int top = bottom - (int) ((float) bottom * factor);
-        c.drawRect(0, top, getMeasuredWidth(), bottom, Paints.fillingPaint(headerBackground));
+        c.drawRect(0, top, getMeasuredWidth(), bottom, Paints.fillingPaint(
+          ColorUtils.compositeColors(Theme.getColor(R.id.theme_color_statusBar), headerBackground)
+        ));
       }
     }
   }

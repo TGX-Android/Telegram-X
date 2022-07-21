@@ -298,11 +298,12 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
     boolean rtl = Lang.rtl();
     int viewWidth = getMeasuredWidth();
     if (trimmedName != null) {
-      trimmedName.draw(c, offsetLeft + textLeftMargin, Screen.dp(17f));
+      trimmedName.draw(c, offsetLeft + textLeftMargin, (int) ((height - Screen.dp(DEFAULT_HEIGHT)) / 2f + Screen.dp(17f)));
     }
     if (trimmedStatus != null) {
       statusPaint.setColor(Theme.getColor(user != null && user.isOnline() ? R.id.theme_color_textNeutral : R.id.theme_color_textLight));
-      c.drawText(trimmedStatus, rtl ? viewWidth - offsetLeft - textLeftMargin - trimmedStatusWidth : offsetLeft + textLeftMargin, statusTop, statusPaint);
+      c.drawText(trimmedStatus, rtl ? viewWidth - offsetLeft - textLeftMargin - trimmedStatusWidth : offsetLeft + textLeftMargin,
+        statusTop + (height - Screen.dp(DEFAULT_HEIGHT)) / 2f, statusPaint);
     }
     if (user != null) {
       layoutReceiver();

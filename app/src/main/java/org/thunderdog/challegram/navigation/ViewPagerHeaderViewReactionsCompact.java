@@ -242,7 +242,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
     shadowPaint1.setShader(shader1);
     shadowPaint2.setShader(shader2);
     if (reactionsSelectorRecyclerView != null) {
-      reactionsSelectorRecyclerView.invalidate();
+      reactionsSelectorRecyclerView.invalidateAll();
     }
     recyclerView.invalidate();
     invalidate();

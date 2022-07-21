@@ -50,7 +50,7 @@ public class MessageOptionsReactedController extends MessageOptionsPagerControll
         final TGReaction reactionObj = tdlib.getReaction(item.getStringValue());
         userView.setUser(new TGUser(tdlib, tdlib.chatUser(item.getLongId())));
         if (item.getStringValue().length() > 0 && reactionObj != null && reaction.length() == 0) {
-          userView.setDrawModifier(new ReactionModifier(userView.getComplexReceiver(), reactionObj));
+          userView.setDrawModifier(new ReactionModifier(userView.getComplexReceiver(), 8, reactionObj));
         } else {
           userView.setDrawModifier(null);
         }

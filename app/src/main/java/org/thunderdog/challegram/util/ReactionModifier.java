@@ -15,16 +15,22 @@ import org.thunderdog.challegram.tool.Screen;
 public class ReactionModifier implements DrawModifier {
   private final ImageReceiver[] previewReceivers;
   private final GifReceiver[] gifReceivers;
+  private final int offset;
   private final int size;
   private final int totalWidth;
   private final int totalHeight;
   private final int padding;
 
   public ReactionModifier (ComplexReceiver complexReceiver, TGReaction... reactions) {
+    this(complexReceiver, 18, reactions);
+  }
+
+  public ReactionModifier (ComplexReceiver complexReceiver, int offsetInDp, TGReaction... reactions) {
     size = Screen.dp(reactions.length == 1 ? 40 : 20);
     totalWidth = Screen.dp(40);
     totalHeight = reactions.length > 2 ? totalWidth : size;
     padding = Screen.dp(reactions.length == 1 ? 0 : -8);
+    offset = offsetInDp;
 
     previewReceivers = new ImageReceiver[reactions.length];
     gifReceivers = new GifReceiver[reactions.length];
@@ -45,7 +51,7 @@ public class ReactionModifier implements DrawModifier {
     int sy = 0;
 
     c.save();
-    c.translate(view.getMeasuredWidth() - Screen.dp(18f) - totalWidth, view.getMeasuredHeight() / 2f - totalHeight / 2f);
+    c.translate(view.getMeasuredWidth() - Screen.dp(offset) - totalWidth, view.getMeasuredHeight() / 2f - totalHeight / 2f);
     if (gifReceivers.length > 0) {
       DrawAlgorithms.drawReceiver(c, previewReceivers[0], gifReceivers[0], false, true,
         padding, padding, size - padding, size - padding);

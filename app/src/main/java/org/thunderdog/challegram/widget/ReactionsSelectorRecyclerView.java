@@ -85,6 +85,7 @@ public class ReactionsSelectorRecyclerView extends CustomRecyclerView {
       rectF = new RectF();
       counter = new Counter.Builder()
         .noBackground()
+        .textColor(R.id.theme_color_fillingPositiveContent, R.id.theme_color_text, R.id.theme_color_text)
         .textSize(13f)
         .allBold(false)
         .callback(this)
@@ -101,7 +102,7 @@ public class ReactionsSelectorRecyclerView extends CustomRecyclerView {
       }
       stickerView.setSticker(centerAnimationSicker);
       if (useCounter) {
-        counter.setCount(messageReaction.totalCount, false);
+        counter.setCount(messageReaction.totalCount, !messageReaction.isChosen, false);
       }
       requestLayout();
     }
@@ -122,7 +123,7 @@ public class ReactionsSelectorRecyclerView extends CustomRecyclerView {
     @Override
     protected void dispatchDraw (Canvas c) {
       if (chosen) {
-        c.drawRoundRect(rectF, Screen.dp(18), Screen.dp(18), Paints.fillingPaint(Theme.getColor(R.id.theme_color_badge)));
+        c.drawRoundRect(rectF, Screen.dp(18), Screen.dp(18), Paints.fillingPaint(Theme.getColor(R.id.theme_color_fillingPositive)));
       }
       if (useCounter) {
         counter.draw(c, Screen.dp(35), getMeasuredHeight() / 2f, Gravity.LEFT, 1f);

@@ -740,7 +740,7 @@ public class TGReactions {
 
     public void drawReactionNonBubble (Canvas c, float x, float cy, float radDp, final float alpha) {
       int radius = Screen.dp(radDp);
-      if (centerAnimationReceiver != null) {
+      if (centerAnimationReceiver != null && !isHidden) {
         centerAnimationReceiver.setBounds((int) x - radius, (int) cy - radius, (int) x + radius, (int) cy + radius);
         centerAnimationReceiver.setAlpha(alpha);
         centerAnimationReceiver.draw(c);
@@ -861,7 +861,7 @@ public class TGReactions {
 
     @Override
     public int defaultTextColor () {
-      return counter.getColor(counter.getMuteFactor(), R.id.theme_color_badgeText, R.id.theme_color_text, R.id.theme_color_badgeText);
+      return counter.getColor(counter.getMuteFactor(), R.id.theme_color_white, R.id.theme_color_text, R.id.theme_color_badgeText);
     }
 
     @Override
