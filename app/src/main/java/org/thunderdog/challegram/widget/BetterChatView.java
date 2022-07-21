@@ -226,31 +226,24 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     }
   }
 
-  public void setIsSecret (boolean isSecret) {
-    int flags = BitwiseUtils.setFlag(this.flags, FLAG_SECRET, isSecret);
+  private void setFlags (int flags) {
     if (this.flags != flags) {
       this.flags = flags;
       setTrimmedTitle();
       invalidate();
     }
+  }
+
+  public void setIsSecret (boolean isSecret) {
+    setFlags(BitwiseUtils.setFlag(this.flags, FLAG_SECRET, isSecret));
   }
 
   public void setIsVerified (boolean isVerified) {
-    int flags = BitwiseUtils.setFlag(this.flags, FLAG_VERIFIED, isVerified);
-    if (this.flags != flags) {
-      this.flags = flags;
-      setTrimmedTitle();
-      invalidate();
-    }
+    setFlags(BitwiseUtils.setFlag(this.flags, FLAG_VERIFIED, isVerified));
   }
 
   public void setIsPremium (boolean isPremium) {
-    int flags = BitwiseUtils.setFlag(this.flags, FLAG_PREMIUM, isPremium);
-    if (this.flags != flags) {
-      this.flags = flags;
-      setTrimmedTitle();
-      invalidate();
-    }
+    setFlags(BitwiseUtils.setFlag(this.flags, FLAG_PREMIUM, isPremium));
   }
 
   public void setAvatar (ImageFile avatar, AvatarPlaceholder avatarPlaceholder) {
