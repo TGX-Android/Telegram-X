@@ -180,6 +180,15 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     flags |= FLAG_USE_REPLY_RECEIVER;
   }
 
+  @Override
+  public void invalidate () {
+    super.invalidate();
+    if (msg.needViewGroup()) {
+      msg.invalidateParent();
+      msg.invalidateOverlay();
+    }
+  }
+
   public void invalidateReplyReceiver (long chatId, long messageId) {
     if ((flags * FLAG_USE_REPLY_RECEIVER) != 0 && msg != null && msg.getChatId() == chatId && msg.getId() == messageId) {
       msg.requestReply(replyReceiver);

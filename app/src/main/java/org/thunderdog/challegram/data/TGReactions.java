@@ -441,6 +441,13 @@ public class TGReactions {
     }
   }
 
+  public void setHidden (String emoji, boolean hidden) {
+    MessageReactionEntry entry = reactionsMapEntry.get(emoji);
+    if (entry != null) {
+      entry.setHidden(hidden);
+    }
+  }
+
   @Nullable
   public MessageReactionEntry getMessageReactionEntry (String emoji) {
     MessageReactionEntry entry = reactionsMapEntry.get(emoji);

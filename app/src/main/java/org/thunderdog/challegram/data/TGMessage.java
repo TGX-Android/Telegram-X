@@ -2125,6 +2125,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (useBubbles()) {
       if (useBubbleTime()) {
         drawBubbleTimePart(c, view);
+        com.google.android.exoplayer2.util.Log.i("OVERLAYWTF_DRAWOVR", "");
       }
     }
     if (contentOffset != 0) {
@@ -3402,8 +3403,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
     width += isPinned.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN));
     if (reactionsCounter != null) {
-      width += reactionsCounterDrawable.getMinimumWidth();
-      width += reactionsCounter.getScaledWidth(Screen.dp(8));
+      width += reactionsCounterDrawable.getMinimumWidth() + messageReactions.getVisibility() * Screen.dp(3);
+      width += reactionsCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
     }
     if (!isFailed() && (isOutgoingBubble() || (isSending && getViewCountMode() != VIEW_COUNT_MAIN))) {
       width += /*Screen.dp(3.5f) +*/ Icons.getSingleTickWidth() /*- Screen.dp(3.5f)*/; // singleTick bitmap contains padding
@@ -7853,6 +7854,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     nextSetReactionAnimation = animation;
+    invalidate(true);
   }
 
   public void cancelScheduledSetReactionAnimation () {
@@ -8032,7 +8034,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     int bubbleX = positionCords[0] + reactionPosition.x;
     int bubbleY = positionCords[1] + reactionPosition.y;
 
-    messageReactions.startAnimation(reaction);
+    if (!needViewGroup()) {
+      messageReactions.startAnimation(reaction);
+    } else {
+      messageReactions.setHidden(reaction, false);
+    }
     context().reactionsOverlayManager().addOverlay(
       new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
         .setSticker(tgReaction.newAroundAnimationSicker())
