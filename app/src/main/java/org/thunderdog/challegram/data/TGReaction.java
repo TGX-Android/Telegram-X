@@ -134,9 +134,12 @@ public class TGReaction {
     @Nullable private ImageFile imageFile;
     @Nullable private ImageReceiver imageReceiver;
 
-    public ReactionDrawable (View view, TGStickerObj sticker, int width, int height) {
+    public ReactionDrawable (View view, TGReaction reaction, int width, int height) {
       this.width = width;
       this.height = height;
+
+      imageFile = reaction.staticCenterAnimationSicker().getImage();
+
       init(view);
     }
 

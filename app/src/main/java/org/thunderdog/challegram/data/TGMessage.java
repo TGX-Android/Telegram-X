@@ -7742,7 +7742,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       boolean canReact = canSendReaction(reactionString);
       TGReaction reactionObj = tdlib.getReaction(reactionString);
       if (reactionObj != null && canReact) {
-        Drawable reactionDrawable = new TGReaction.ReactionDrawable(findCurrentView(), reactionObj.staticIconSicker(), Screen.dp(24), Screen.dp(24));
+        Drawable reactionDrawable = new TGReaction.ReactionDrawable(findCurrentView(), reactionObj, Screen.dp(48), Screen.dp(48));
         rightActions.add(new SwipeQuickAction(reactionObj.getReaction().title, reactionDrawable, () -> {
           if (messageReactions.sendReaction(reactionString, false, handler(findCurrentView(), null, () -> {}))) {
             scheduleSetReactionAnimation(new NextReactionAnimation(reactionObj, NextReactionAnimation.TYPE_QUICK));
