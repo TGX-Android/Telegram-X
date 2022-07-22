@@ -7737,32 +7737,47 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private void computeQuickButtons () {
-    boolean canReply = Settings.instance().needChatQuickReply() && messagesController().canWriteMessages() && !messagesController().needTabs() && canReplyTo();
-    boolean canShare = Settings.instance().needChatQuickShare() && !messagesController().isSecretChat() && canBeForwarded();
+    final boolean canReply = Settings.instance().needChatQuickReply() && messagesController().canWriteMessages() && !messagesController().needTabs() && canReplyTo();
+    final boolean canShare = Settings.instance().needChatQuickShare() && !messagesController().isSecretChat() && canBeForwarded();
 
     leftActions.clear();
     rightActions.clear();
+    rightQuickDefaultPosition = 0;
 
-    for (String reactionString: Settings.instance().getQuickReactions()) {
-      boolean canReact = canSendReaction(reactionString);
-      TGReaction reactionObj = tdlib.getReaction(reactionString);
+    SwipeQuickAction replyButton = null;
+    if (canReply) {
+      replyButton = new SwipeQuickAction(replyText, iQuickReply, () -> {
+        messagesController().showReply(getNewestMessage(), true, true);
+      }, true, false);
+      rightActions.add(replyButton);
+    }
+
+    final String[] quickReactions = Settings.instance().getQuickReactions();
+    for (int a = 0; a < quickReactions.length; a++) {
+      final String reactionString = quickReactions[a];
+      final boolean canReact = canSendReaction(reactionString);
+      final TGReaction reactionObj = tdlib.getReaction(reactionString);
       if (reactionObj != null && canReact) {
-        TGReaction.ReactionDrawable reactionDrawable = new TGReaction.ReactionDrawable(reactionObj, Screen.dp(48), Screen.dp(48));
+        final TGReaction.ReactionDrawable reactionDrawable = new TGReaction.ReactionDrawable(reactionObj, Screen.dp(48), Screen.dp(48));
         reactionDrawable.setComplexReceiver(currentComplexReceiver);
-        rightActions.add(new SwipeQuickAction(reactionObj.getReaction().title, reactionDrawable, () -> {
+
+        final boolean isOdd = a % 2 == 1;
+        final SwipeQuickAction quickReaction = new SwipeQuickAction(reactionObj.getReaction().title, reactionDrawable, () -> {
           if (messageReactions.sendReaction(reactionString, false, handler(findCurrentView(), null, () -> {}))) {
             scheduleSetReactionAnimation(new NextReactionAnimation(reactionObj, NextReactionAnimation.TYPE_QUICK));
           }
-        }, false, true));
+        }, false, true);
+
+        if (isOdd) {
+          rightQuickDefaultPosition += 1;
+          rightActions.add(0, quickReaction);
+        } else {
+          rightActions.add(quickReaction);
+        }
       }
     }
 
-    if (canReply) {
-      rightQuickDefaultPosition = rightActions.size() / 2;
-      rightActions.add(rightQuickDefaultPosition, new SwipeQuickAction(replyText, iQuickReply, () -> {
-        messagesController().showReply(getNewestMessage(), true, true);
-      }, true, false));
-    }
+
 
     if (canShare) {
       leftActions.add(new SwipeQuickAction(shareText, iQuickShare, () -> {
