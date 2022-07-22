@@ -80,6 +80,7 @@ import org.thunderdog.challegram.ui.SettingsNotificationController;
 import org.thunderdog.challegram.ui.SettingsPrivacyController;
 import org.thunderdog.challegram.ui.SettingsPrivacyKeyController;
 import org.thunderdog.challegram.ui.SettingsThemeController;
+import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.widget.GearView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
@@ -122,11 +123,12 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
 
     tempSavedInstanceState = savedInstanceState;
 
-    Settings.CrashInfo crashInfo = TdlibManager.instance().getRecoveryCrashInfo();
-    if (crashInfo != null) {
+    Crash crash = TdlibManager.instance().getRecoveryCrashInfo();
+    if (crash != null) {
       SettingsBugController c = new SettingsBugController(this, tdlib);
-      c.setArguments(new SettingsBugController.Args(crashInfo));
+      c.setArguments(new SettingsBugController.Args(crash));
       navigation.initController(c);
+      showExperimentalAlert();
     } else {
       initController(account.tdlib(), account.tdlib().authorizationStatus());
     }
@@ -460,6 +462,10 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
         initAuthorizedController();
         break;
     }
+    showExperimentalAlert();
+  }
+
+  private void showExperimentalAlert () {
     if (BuildConfig.EXPERIMENTAL) {
       ViewController<?> c = navigation.getCurrentStackItem();
       if (c != null) {

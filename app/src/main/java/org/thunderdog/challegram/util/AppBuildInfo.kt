@@ -15,6 +15,7 @@ package org.thunderdog.challegram.util
 import me.vkryl.core.limit
 import me.vkryl.leveldb.LevelDB
 import me.vkryl.td.tdlibCommitHashFull
+import me.vkryl.td.tdlibVersion
 import org.thunderdog.challegram.BuildConfig
 import kotlin.math.max
 
@@ -27,6 +28,7 @@ data class AppBuildInfo(
   val commitFull: String,
   val commitDate: Long,
   val tdlibCommitFull: String?,
+  val tdlibVersion: String?,
   val pullRequests: List<PullRequest>
 ) {
   constructor(installationId: Long) : this(
@@ -38,6 +40,7 @@ data class AppBuildInfo(
     BuildConfig.COMMIT_FULL,
     BuildConfig.COMMIT_DATE,
     tdlibCommitHashFull(),
+    tdlibVersion(),
     builtinPullRequests()
   )
 
@@ -116,6 +119,7 @@ data class AppBuildInfo(
         pmc.getString("${keyPrefix}_full", "")!!,
         pmc.getLong("${keyPrefix}_date", 0),
         pmc.getString("${keyPrefix}_tdlib", null),
+        pmc.getString("${keyPrefix}_td_version", null),
         pullRequests
       )
     }

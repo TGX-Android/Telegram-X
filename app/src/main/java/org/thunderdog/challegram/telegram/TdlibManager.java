@@ -46,6 +46,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.player.AudioController;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.io.File;
@@ -76,6 +77,7 @@ import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.util.FilteredIterator;
+import me.vkryl.td.Td;
 
 public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   // Util
@@ -210,13 +212,13 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   private static TdlibManager instance;
 
-  public static TdlibManager instanceForAccountId (int firstAccountId) {
+  private static TdlibManager instance (int firstAccountId, boolean forceService) {
     if (instance == null) {
       synchronized (TdlibManager.class) {
         if (instance == null) {
           if (hasInstance.getAndSet(true))
             throw new AssertionError();
-          instance = new TdlibManager(firstAccountId);
+          instance = new TdlibManager(firstAccountId, forceService);
         }
       }
     }
@@ -227,8 +229,20 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return instanceForAccountId(TdlibAccount.NO_ID);
   }
 
+  public static TdlibManager instanceForAccountId (int firstAccountId) {
+    return instance(firstAccountId, false);
+  }
+
+  public static TdlibManager serviceInstance () {
+    return instance(TdlibAccount.NO_ID, true);
+  }
+
   public static Tdlib getTdlib (int accountId) {
-    return instanceForAccountId(accountId).account(accountId).tdlib();
+    return instanceForAccountId(accountId).tdlib(accountId);
+  }
+
+  public static Tdlib getServiceTdlib () {
+    return serviceInstance().serviceTdlib();
   }
 
   // Handler
@@ -279,7 +293,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   };
 
   private @Nullable
-  Settings.CrashInfo crashInfo;
+  Crash crashInfo;
   private final WatchDogContext watchDog;
 
   private final String languageDatabasePath;
@@ -289,10 +303,16 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   private boolean hasUi;
 
-  private TdlibManager (int firstInstanceId) {
+  private @Nullable String tdlibCommitHash, tdlibVersion;
+
+  private TdlibManager (int firstInstanceId, boolean forceService) {
     Client.setFatalErrorHandler((client, errorMessage, isLayerError) -> {
-      int accountId = findAccountIdByClient(client);
-      Settings.instance().storeCrash(accountId, errorMessage, Settings.CRASH_FLAG_SOURCE_TDLIB);
+      final int accountId = findAccountIdByClient(client);
+      Crash.Builder b = new Crash.Builder()
+        .accountId(accountId)
+        .message(StringUtils.isEmpty(errorMessage) ? "empty" : errorMessage)
+        .flags(Crash.Flags.SOURCE_TDLIB);
+      Settings.instance().storeCrash(b);
       if (isLayerError) {
         Tracer.onTdlibLostPromiseError(errorMessage);
       }
@@ -306,7 +326,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     this.audio = new AudioController(this, player);
 
     this.crashInfo = Settings.instance().findRecoveryCrash();
-    load(firstInstanceId);
+    load(firstInstanceId, forceService);
     Settings.instance().addProxyListener(proxyChangeListener);
     notificationQueue().init();
 
@@ -317,6 +337,30 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     onUiStateChanged(UI.getUiState());
 
     checkDeviceToken();
+  }
+
+  void setTdlibCommitHash (@NonNull String commitHash) {
+    // called by children Tdlib instances
+    this.tdlibCommitHash = commitHash;
+  }
+
+  void setTdlibVersion (@NonNull String version) {
+    // called by children Tdlib instances
+    this.tdlibVersion = version;
+  }
+
+  public String tdlibCommitHash () {
+    if (!StringUtils.isEmpty(tdlibCommitHash)) {
+      return this.tdlibCommitHash;
+    }
+    return Td.tdlibCommitHash();
+  }
+
+  public String tdlibVersion () {
+    if (!StringUtils.isEmpty(tdlibVersion)) {
+      return this.tdlibVersion;
+    }
+    return Td.tdlibVersion();
   }
 
   private int findAccountIdByClient (Client client) {
@@ -379,7 +423,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return crashInfo != null;
   }
 
-  public Settings.CrashInfo getRecoveryCrashInfo () {
+  public Crash getRecoveryCrashInfo () {
     return crashInfo;
   }
 
@@ -413,9 +457,13 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return notificationQueue;
   }
 
-  private void load (int specificAccountId) {
+  private void load (int specificAccountId, boolean forceService) {
     readAccountConfig();
-    TdlibAccount firstAccount = specificAccountId != TdlibAccount.NO_ID ? accounts.get(specificAccountId) : currentAccount;
+    TdlibAccount selectedAccount = specificAccountId != TdlibAccount.NO_ID ? accounts.get(specificAccountId) : currentAccount;
+    if (forceService && !selectedAccount.isService()) {
+      selectedAccount = accounts.get(serviceAccountId());
+    }
+    final TdlibAccount firstAccount = selectedAccount;
     if (firstAccount.launch(specificAccountId != TdlibAccount.NO_ID)) {
       firstAccount.tdlib().awaitInitialization(() -> {
         for (TdlibAccount account : accounts) {
@@ -617,7 +665,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   public Iterator<TdlibAccount> iterator () {
     List<TdlibAccount> accounts = new ArrayList<>(this.accounts);
     Collections.sort(accounts, (a, b) -> (a == currentAccount) != (b == currentAccount) ? Boolean.compare(b == currentAccount, a == currentAccount) : a.compareTo(b));
-    return new FilteredIterator<>(accounts.iterator(), account -> !account.isUnauthorized());
+    return new FilteredIterator<>(accounts.iterator(), account -> !account.isUnauthorized() && account.tdlibInstanceMode() != Tdlib.Mode.SERVICE);
   }
 
   // Network type
@@ -889,7 +937,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     AccountConfig config = null;
     if (file.exists()) {
       try (RandomAccessFile r = new RandomAccessFile(file, MODE_R)) {
-        config = readAccountConfig(this, r, TdlibAccount.VERSION);
+        config = readAccountConfig(this, r, TdlibAccount.VERSION, true);
       } catch (IOException e) {
         Log.e(e);
       }
@@ -913,7 +961,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       }
     }
     if (accounts.isEmpty()) {
-      TdlibAccount account = new TdlibAccount(this, 0, false);
+      TdlibAccount account = new TdlibAccount(this, 0, Tdlib.Mode.NORMAL);
       accounts.add(account);
       checkAliveAccount(account);
     }
@@ -939,7 +987,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }
   }
 
-  public static AccountConfig readAccountConfig (@Nullable TdlibManager context, RandomAccessFile r, int version) throws IOException {
+  public static AccountConfig readAccountConfig (@Nullable TdlibManager context, RandomAccessFile r, int version, boolean allowIntegrityChecks) throws IOException {
     long ms = SystemClock.uptimeMillis();
 
     long binlogSize = r.length();
@@ -955,7 +1003,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     final int preferredAccountId = r.readInt();
     final List<TdlibAccount> accounts = new ArrayList<>(accountNum);
     for (int accountId = 0; accountId < accountNum; accountId++) {
-      TdlibAccount account = new TdlibAccount(context, accountId, r, version);
+      TdlibAccount account = new TdlibAccount(context, accountId, r, version, allowIntegrityChecks);
       if (!account.isUnauthorized()) {
         if (accountId == preferredAccountId || currentAccount == null || currentAccount.id < preferredAccountId) {
           currentAccount = account;
@@ -1134,8 +1182,9 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   }
 
   public int hasAccountWithPhoneNumber (String phoneNumber, boolean isDebug) {
+    final int targetInstanceMode = isDebug ? Tdlib.Mode.DEBUG : Tdlib.Mode.NORMAL;
     for (TdlibAccount account : accounts) {
-      if (account.isDebug() == isDebug && account.comparePhoneNumber(phoneNumber) && !account.isUnauthorized() && !account.isLoggingOut()) {
+      if (account.tdlibInstanceMode() == targetInstanceMode && account.comparePhoneNumber(phoneNumber) && !account.isUnauthorized() && !account.isLoggingOut()) {
         return account.id;
       }
     }
@@ -1182,7 +1231,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     if (accountId < 0 || accountId >= accounts.size()) {
       throw new IllegalArgumentException("accountId == " + accountId);
     }
-    if (accounts.get(accountId).isUnauthorized()) {
+    TdlibAccount newPreferredAccount = accounts.get(accountId);
+    if (newPreferredAccount.isUnauthorized() || newPreferredAccount.tdlibInstanceMode() == Tdlib.Mode.SERVICE) {
       if (after != null) after.runWithBool(false);
       return;
     }
@@ -1242,6 +1292,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return account(accountId).tdlib();
   }
 
+  public Tdlib serviceTdlib () {
+    return account(serviceAccountId()).tdlib();
+  }
+
   public TdlibAccount account (int accountId) {
     if (accountId == TdlibAccount.NO_ID)
       throw new IllegalArgumentException();
@@ -1279,9 +1333,9 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }
   }
 
-  void unregisterDevices (boolean isDebug, int excludeAccountId, long[] excludeUserIds) {
+  void unregisterDevices (@Tdlib.Mode int instanceMode, int excludeAccountId, long[] excludeUserIds) {
     for (TdlibAccount account : this) {
-      if (account.isDebug() != isDebug || account.id == excludeAccountId)
+      if (account.tdlibInstanceMode() != instanceMode || account.id == excludeAccountId)
         continue;
       long knownUserId = account.getKnownUserId();
       if (knownUserId == 0 || Arrays.binarySearch(excludeUserIds, knownUserId) < 0) {
@@ -1327,16 +1381,23 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }
   }
 
-  void setIsDebug (TdlibAccount account, boolean isDebug) {
-    if (account.setIsDebug(isDebug)) {
-      saveAccountFlags(account);
-    }
+  public int newAccount (boolean isDebug) {
+    return newAccount(isDebug ? Tdlib.Mode.DEBUG : Tdlib.Mode.NORMAL);
   }
 
-  public int newAccount (boolean isDebug) {
+  public int serviceAccountId () {
+    return newAccount(Tdlib.Mode.SERVICE);
+  }
+
+  public int newAccount (@Tdlib.Mode int instanceMode) {
     for (TdlibAccount account : accounts) {
       if (account.id != currentAccount.id && account.isUnauthorized() && !account.isLoggingOut()) {
-        if (account.setIsDebug(isDebug)) {
+        if ((instanceMode == Tdlib.Mode.SERVICE) != (account.tdlibInstanceMode() == Tdlib.Mode.SERVICE)) {
+          // ignore all other types of TdlibAccount, if we are looking for Mode.SERVICE account
+          // and ignore service TdlibAccount, if we are looking for non-serivce TdlibAccount
+          continue;
+        }
+        if (account.setInstanceMode(instanceMode)) {
           saveAccountFlags(account);
         }
         return account.id;
@@ -1346,7 +1407,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     if (tdlibId >= TdlibAccount.ID_MAX) {
       return TdlibAccount.NO_ID;
     }
-    TdlibAccount newAccount = new TdlibAccount(this, accounts.size(), isDebug);
+    TdlibAccount newAccount = new TdlibAccount(this, accounts.size(), instanceMode);
     accounts.add(newAccount);
     newAccount.markAsUsed();
     newAccount.tdlib();
@@ -1468,7 +1529,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   private String tokenError;
 
   private static Filter<TdlibAccount> loggedOutFilter () {
-    return account -> account.isUnauthorized() && account.hasPrivateData();
+    return account -> account.isUnauthorized() && account.hasPrivateData() && !account.isService();
   }
 
   private synchronized void setTokenState (int newState, @Nullable String error) {
@@ -1532,16 +1593,20 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     long[] debugUserIds = null, productionUserIds = null;
     boolean hasNonRegistered = false;
     for (TdlibAccount account : this) {
+      final @Tdlib.Mode int mode = account.tdlibInstanceMode();
+      if (mode != Tdlib.Mode.NORMAL && mode != Tdlib.Mode.DEBUG) {
+        continue;
+      }
       if (!account.isUnauthorized() || account.hasTdlib(false)) {
         long[] otherUserIds;
         long myUserId = account.getKnownUserId();
-        if (account.isDebug()) {
+        if (mode == Tdlib.Mode.DEBUG) {
           if (debugUserIds == null)
-            debugUserIds = availableUserIds(true);
+            debugUserIds = availableUserIds(mode);
           otherUserIds = ArrayUtils.removeElement(debugUserIds, ArrayUtils.indexOf(debugUserIds, myUserId));
         } else {
           if (productionUserIds == null)
-            productionUserIds = availableUserIds(false);
+            productionUserIds = availableUserIds(mode);
           otherUserIds = ArrayUtils.removeElement(productionUserIds, ArrayUtils.indexOf(productionUserIds, myUserId));
         }
         boolean needRegister = !TdlibSettingsManager.checkRegisteredDeviceToken(account.id, account.getKnownUserId(), token, otherUserIds, true);
@@ -1742,10 +1807,15 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   // Event managements
 
   @NonNull
-  long[] availableUserIds (boolean debug) {
+  long[] availableUserIds (boolean isDebug) {
+    return availableUserIds(isDebug ? Tdlib.Mode.DEBUG : Tdlib.Mode.NORMAL);
+  }
+
+  @NonNull
+  long[] availableUserIds (@Tdlib.Mode int instanceMode) {
     SortedSet<Long> userIds = new TreeSet<>();
     for (TdlibAccount account : accounts) {
-      if (!account.isUnauthorized() && account.isDebug() == debug) {
+      if (!account.isUnauthorized() && account.tdlibInstanceMode() == instanceMode) {
         long knownUserId = account.getKnownUserId();
         if (knownUserId != 0)
           userIds.add(knownUserId);
@@ -1855,24 +1925,6 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   public static String getTdlibDirectory (int accountId, boolean allowExternal) {
     return getTdlibDirectory(accountId, allowExternal, true);
-  }
-
-  public static String getTonDirectory (int id, boolean isAttachedToAccount) {
-    return getTonDirectory(id, isAttachedToAccount, true);
-  }
-
-  public static String getTonDirectory (int id, boolean isAttachedToAccount, boolean createIfNotFound) {
-    String prefix = isAttachedToAccount ? "wallet" : "ton";
-    File file = new File(UI.getContext().getFilesDir(), id != 0 ? prefix + id : prefix);
-    if (!file.exists()) {
-      if (createIfNotFound) {
-        if (!file.mkdir())
-          throw new IllegalStateException("Cannot create working directory: " + file.getPath());
-      } else {
-        return null;
-      }
-    }
-    return TD.normalizePath(file.getPath());
   }
 
   private static String[] getTdlibDirectories (boolean internal, boolean onlyPublic) {
