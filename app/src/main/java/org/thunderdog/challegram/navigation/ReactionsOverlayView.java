@@ -234,6 +234,10 @@ public class ReactionsOverlayView extends ViewGroup {
     }
 
     public void draw (Canvas canvas) {
+      if (animatedPositionOffsetProvider != null) {
+        animatedPositionOffsetProvider.getOffset(animationOffsetPoint);
+      }
+
       canvas.save();
       canvas.translate(scrollOffsetX + animationOffsetPoint.x, scrollOffsetY + animationOffsetPoint.y);
       gifReceiver.draw(canvas);
@@ -275,11 +279,6 @@ public class ReactionsOverlayView extends ViewGroup {
           animatedPositionProvider.getPosition(this, factor, position);
         }
         setPosition(position);
-
-        if (animatedPositionOffsetProvider != null) {
-          animatedPositionOffsetProvider.getOffset(animationOffsetPoint);
-        }
-
         parentView.invalidate();
       }
     }

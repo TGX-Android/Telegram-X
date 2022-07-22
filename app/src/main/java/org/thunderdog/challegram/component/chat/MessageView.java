@@ -184,7 +184,14 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   public void invalidate () {
     super.invalidate();
     if (msg.needViewGroup()) {
-      msg.invalidateParent();
+      msg.invalidateOverlay();
+    }
+  }
+
+  @Override
+  public void invalidate (int l, int t, int r, int b) {
+    super.invalidate(l, t, r, b);
+    if (msg.needViewGroup()) {
       msg.invalidateOverlay();
     }
   }

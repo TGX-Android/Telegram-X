@@ -515,14 +515,8 @@ public class TGReactions {
 
     public void setComplexReceiver (ComplexReceiver complexReceiver) {
       if (complexReceiver == null) {
-        if (centerAnimationReceiver != null) {
-          this.centerAnimationReceiver.clear();
-          this.centerAnimationReceiver = null;
-        }
-        if (this.staticCenterAnimationReceiver == null) {
-          this.staticCenterAnimationReceiver.clear();
-          this.staticCenterAnimationReceiver = null;
-        }
+        this.centerAnimationReceiver = null;
+        this.staticCenterAnimationReceiver = null;
         return;
       }
 

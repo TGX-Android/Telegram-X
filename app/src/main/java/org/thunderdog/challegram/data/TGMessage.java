@@ -5030,7 +5030,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       int i = indexOfMessageInternal(messageId);
       if (i >= 0) {
         combinedMessages.get(i).unreadReactions = unreadReactions;
-        changed = i == combinedMessages.size() - 1;
+        changed = i == combinedMessages.size() - 1 || i == 0;
       } else if (i == MESSAGE_INDEX_SELF) {
         msg.unreadReactions = unreadReactions;
         changed = true;
@@ -5038,7 +5038,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         return false;
       }
       if (unreadReactions != null && unreadReactions.length > 0) {
-        highlightUnreadReactions();
+        highlightUnreadReactions(unreadReactions);
       }
     }
     return changed;
@@ -8039,15 +8039,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     int bubbleX = positionCords[0] + reactionPosition.x;
     int bubbleY = positionCords[1] + reactionPosition.y;
 
-    if (!needViewGroup()) {
-      messageReactions.startAnimation(reaction);
-    } else {
-      messageReactions.setHidden(reaction, false);
-    }
+    messageReactions.startAnimation(reaction);
     context().reactionsOverlayManager().addOverlay(
       new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
         .setSticker(tgReaction.newAroundAnimationSicker())
         .setPosition(new Point(bubbleX, bubbleY), Screen.dp(90))
+        .setAnimatedPositionOffsetProvider(new QuickReactionAnimatedPositionOffsetProvider())
     );
   }
 
@@ -8060,8 +8057,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private void highlightUnreadReactions () {
+    highlightUnreadReactions(msg.unreadReactions);
+  }
+  
+  private void highlightUnreadReactions (TdApi.UnreadReaction[] unreadReactions) {
     needHighlightUnreadReactions = true;
-    savedUnreadReactions = msg.unreadReactions;
+    savedUnreadReactions = unreadReactions;
   }
 
   private void highlightUnreadReactionsImpl () {
