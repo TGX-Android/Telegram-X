@@ -236,6 +236,10 @@ public class TGFoundChat {
       this.title = Strings.highlightWords(TD.getUserName(user), highlight, 0, InlineResultEmojiSuggestion.SPECIAL_SPLITTERS);
     }
     setPhoto(user.profilePhoto != null ? user.profilePhoto.small : null);
+    int flags = this.flags;
+    flags = BitwiseUtils.setFlag(flags, FLAG_PREMIUM, user.isPremium);
+    flags = BitwiseUtils.setFlag(flags, FLAG_VERIFIED, user.isVerified);
+    this.flags = flags;
   }
 
   private void updateUser (TdApi.User user) {
@@ -244,6 +248,10 @@ public class TGFoundChat {
       this.title = Strings.highlightWords(TD.getUserName(user), highlight, 0, InlineResultEmojiSuggestion.SPECIAL_SPLITTERS);
       setPhoto(user.profilePhoto != null ? user.profilePhoto.small : null);
     }
+    int flags = this.flags;
+    flags = BitwiseUtils.setFlag(flags, FLAG_PREMIUM, user.isPremium);
+    flags = BitwiseUtils.setFlag(flags, FLAG_VERIFIED, user.isVerified);
+    this.flags = flags;
   }
 
   public @Nullable TdApi.Chat getChat () {
@@ -296,6 +304,10 @@ public class TGFoundChat {
     this.notificationsEnabled = tdlib.chatNotificationsEnabled(chatId);
     this.avatarPlaceholderMetadata = isSelfChat ? tdlib.cache().selfPlaceholderMetadata() : tdlib.chatPlaceholderMetadata(chat, true);
     setPhoto(!isSelfChat && chat.photo != null ? chat.photo.small : null);
+    int flags = this.flags;
+    flags = BitwiseUtils.setFlag(flags, FLAG_PREMIUM, tdlib.chatPremium(chat));
+    flags = BitwiseUtils.setFlag(flags, FLAG_VERIFIED, tdlib.chatVerified(chat));
+    this.flags = flags;
   }
 
   public void updateMuted () {
