@@ -5928,6 +5928,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     translation = dx;
+    context().reactionsOverlayManager().invalidate();
     translationOption = verticalPosition;
     if (translation == 0f) {
       translationOption = 0f;
