@@ -229,13 +229,20 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     wrapView = new FrameLayoutFix(context) {
       @Override
       public boolean onInterceptTouchEvent (MotionEvent e) {
-        boolean result = (e.getAction() == MotionEvent.ACTION_DOWN && headerView != null && e.getY() < headerView.getTranslationY()) || super.onInterceptTouchEvent(e);
-        return result;
+        return (e.getAction() == MotionEvent.ACTION_DOWN && headerView != null && e.getY() < headerView.getTranslationY()) || super.onInterceptTouchEvent(e);
       }
 
       @Override
       public boolean onTouchEvent (MotionEvent e) {
-        boolean result = !(e.getAction() == MotionEvent.ACTION_DOWN && headerView != null && e.getY() < headerView.getTranslationY()) && super.onTouchEvent(e);
+        return !(e.getAction() == MotionEvent.ACTION_DOWN && headerView != null && e.getY() < headerView.getTranslationY()) && super.onTouchEvent(e);
+      }
+
+      @Override
+      protected boolean drawChild (Canvas canvas, View child, long drawingTime) {
+        canvas.save();
+        canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight()/* - Screen.getNavigationBarHeight()*/);
+        boolean result = super.drawChild(canvas, child, drawingTime);
+        canvas.restore();
         return result;
       }
     };
@@ -320,6 +327,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     headerView.setTranslationY(y);
     fixView.setTranslationY(y);
     contentView.invalidate();
+    fixView.invalidate();
 
     if (lickView != null) {
       final int topOffset = HeaderView.getTopOffset();
@@ -409,7 +417,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
 
   private int getTargetHeight () {
     if (context.isKeyboardVisible()) {
-      return Screen.currentActualHeight() + HeaderView.getTopOffset();
+      return Screen.currentActualHeight() + Screen.getStatusBarHeight(); // - Screen.getNavigationBarHeight();
     }
     return Screen.currentHeight();
   }

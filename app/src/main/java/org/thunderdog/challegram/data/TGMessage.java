@@ -4295,17 +4295,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public final boolean canGetAddedReactions () {
-    return !isChannel() && messageReactions.getTotalCount() > 0;
-    /*
-    boolean result = msg.canGetAddedReactions;
-
-    if (combinedMessages != null) {
-      for (TdApi.Message message: combinedMessages) {
-        result |= message.canGetAddedReactions;
-      }
-    }
-    return result;
-    */
+    return !isChannel() && messageReactions.getTotalCount() > 0 && (msg.forwardInfo == null || msg.forwardInfo.origin.getConstructor() != TdApi.MessageForwardOriginChannel.CONSTRUCTOR);
   }
 
   public final boolean canBeDeletedOnlyForSelf () {
@@ -7683,7 +7673,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   //
 
   public final void checkAvailableReactions () {
-    tdlib().client().send(new TdApi.GetMessageAvailableReactions(msg.chatId, msg.id), (TdApi.Object object) -> {
+    tdlib().client().send(new TdApi.GetMessageAvailableReactions(msg.chatId, getSmallestId()), (TdApi.Object object) -> {
       if (object.getConstructor() == TdApi.AvailableReactions.CONSTRUCTOR) {
         TdApi.AvailableReactions reactions = (TdApi.AvailableReactions) object;
         messageAvailableReactions = reactions.reactions;
