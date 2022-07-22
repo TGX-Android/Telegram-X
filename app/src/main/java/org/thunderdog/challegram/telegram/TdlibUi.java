@@ -1342,7 +1342,7 @@ public class TdlibUi extends Handler {
   }
 
   public void addAccount (BaseActivity context, boolean allowConfirm, boolean isDebug) {
-    int accountId = TdlibManager.instance().newAccount(isDebug);
+    final int accountId = TdlibManager.instance().newAccount(isDebug);
     if (accountId == TdlibAccount.NO_ID) {
       return;
     }

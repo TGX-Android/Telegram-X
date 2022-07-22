@@ -74,6 +74,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.AppBuildInfo;
+import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 
 import java.io.File;
@@ -96,6 +97,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.StringUtils;
@@ -104,7 +106,6 @@ import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceUtils;
 import me.vkryl.core.unit.BitUnit;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.unit.ByteUnit;
 import me.vkryl.core.util.Blob;
 import me.vkryl.core.util.BlobEntry;
@@ -163,7 +164,8 @@ public class Settings {
   private static final int VERSION_36 = 36; // removed TON
   private static final int VERSION_37 = 37; // removed weird "wallpaper_" + file.remote.id unused legacy cache
   private static final int VERSION_38 = 38; // int32 -> int64
-  private static final int VERSION = VERSION_38;
+  private static final int VERSION_39 = 39; // drop all previously stored crashes
+  private static final int VERSION = VERSION_39;
 
   private static final AtomicBoolean hasInstance = new AtomicBoolean(false);
   private static volatile Settings instance;
@@ -238,19 +240,10 @@ public class Settings {
 
   private static final String KEY_TDLIB_AUTHENTICATION_TOKENS = "settings_authentication_token";
   private static final String KEY_TDLIB_CRASH_PREFIX = "settings_tdlib_crash";
-  private static final String KEY_TDLIB_CRASH_SUFFIX_APP_VERSION = "app";
-  private static final String KEY_TDLIB_CRASH_SUFFIX_FLAGS = "flags";
-  private static final String KEY_TDLIB_CRASH_SUFFIX_DATE = "time";
-  private static final String KEY_TDLIB_CRASH_SUFFIX_UPTIME = "uptime";
-  private static final String KEY_TDLIB_CRASH_SUFFIX_MESSAGE = "rip";
-  private static final String KEY_TDLIB_CRASH_SUFFIX_ACCOUNT_ID = "id";
 
   private static final String KEY_APP_COMMIT_DATE = "app_commit_date";
   private static final String KEY_APP_INSTALLATION_ID = "app_install_id";
   private static final String KEY_APP_INSTALLATION_PREFIX = "installation";
-
-  private static final String KEY_INSTALLATION_SUFFIX_FIRST_RUN = "first_run";
-  private static final String KEY_INSTALLATION_SUFFIX_COMMIT = "first_run";
 
   private static final String KEY_KNOWN_SIZE = "known_size_for_";
   private static final String KEY_LANGUAGE_CURRENT = "settings_language_code";
@@ -290,6 +283,7 @@ public class Settings {
   private static final @Deprecated String KEY_PUSH_USER_IDS = "push_user_ids";
   private static final @Deprecated String KEY_PUSH_USER_ID = "push_user_id";
   private static final String KEY_PUSH_DEVICE_TOKEN = "push_device_token";
+  private static final String KEY_CRASH_DEVICE_ID = "crash_device_id";
   public static final String KEY_IS_EMULATOR = "is_emulator";
 
   private static final @Deprecated String KEY_EMOJI_COUNTERS_OLD = "counters_v2";
@@ -657,7 +651,7 @@ public class Settings {
       }
       TdApi.Object result = Client.execute(new TdApi.SetLogStream(stream));
       if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
-        Tracer.onTdlibFatalError(TdlibAccount.NO_ID, TdApi.SetLogStream.class, (TdApi.Error) result, new RuntimeException().getStackTrace());
+        Tracer.onTdlibFatalError(null, TdApi.SetLogStream.class, (TdApi.Error) result, new RuntimeException().getStackTrace());
       }
     }
   }
@@ -1767,7 +1761,7 @@ public class Settings {
         if (oldConfigFile.exists() && !backupFile.exists()) {
           TdlibManager.AccountConfig config = null;
           try (RandomAccessFile r = new RandomAccessFile(oldConfigFile, TdlibManager.MODE_R)) {
-            config = TdlibManager.readAccountConfig(null, r, TdlibAccount.VERSION_1);
+            config = TdlibManager.readAccountConfig(null, r, TdlibAccount.VERSION_1, false);
           } catch (IOException e) {
             Log.e(e);
           }
@@ -1792,6 +1786,10 @@ public class Settings {
             }
           }
         }
+        break;
+      }
+      case VERSION_39: {
+        pmc.removeByPrefix(KEY_TDLIB_CRASH_PREFIX);
         break;
       }
     }
@@ -3147,16 +3145,19 @@ public class Settings {
     return tdlibLogSettings;
   }
 
-  public void setAllowDebug (int accountId, boolean allow) {
+  public void setAllowSpecialTdlibInstanceMode (int accountId, @Tdlib.Mode int instanceMode) {
+    // Additional protection against corrupted accounts list file
+    final boolean allowSpecialInstanceMode =
+      instanceMode == Tdlib.Mode.SERVICE || instanceMode == Tdlib.Mode.DEBUG;
     String key = KEY_TDLIB_DEBUG_PREFIX + accountId;
-    if (allow) {
+    if (allowSpecialInstanceMode) {
       pmc.putVoid(key);
     } else {
       pmc.remove(key);
     }
   }
 
-  public boolean allowDebug (int accountId) {
+  public boolean allowSpecialTdlibInstanceMode (int accountId) {
     return pmc.contains(KEY_TDLIB_DEBUG_PREFIX + accountId);
   }
 
@@ -4648,7 +4649,7 @@ public class Settings {
     void onEarpieceModeChanged (boolean isVideo, @EarpieceMode int newMode);
   }
 
-  private ReferenceList<RaiseToSpeakListener> raiseToSpeakListeners = new ReferenceList<>();
+  private final ReferenceList<RaiseToSpeakListener> raiseToSpeakListeners = new ReferenceList<>();
 
   public void addRaiseToSpeakListener (RaiseToSpeakListener listener) {
     raiseToSpeakListeners.add(listener);
@@ -5671,7 +5672,7 @@ public class Settings {
 
   private long startupMs = SystemClock.uptimeMillis();
 
-  public CrashInfo findRecoveryCrash () {
+  public Crash findRecoveryCrash () {
     long lastCrashId = pmc.getLong(KEY_TDLIB_CRASH_PREFIX, 0) - 1;
     return getCrash(lastCrashId, true);
   }
@@ -5680,173 +5681,85 @@ public class Settings {
     this.startupMs = SystemClock.uptimeMillis();
   }
 
-  public void storeTdlibTestCrash (int accountId, String message) {
+  public void storeTestCrash (Crash.Builder builder) {
     resetUptime();
-    storeCrash(accountId, message, CRASH_FLAG_SOURCE_TDLIB);
+    storeCrash(builder);
   }
-
-  public static final int CRASH_FLAG_RESOLVED = 1; // User pressed "Launch App". No need to show the screen the second time for the same crash.
-  public static final int CRASH_FLAG_INTERACTED = 2; // User interacted with the recovery screen. Giving him an ability to set-up everything properly.
-  public static final int CRASH_FLAG_SOURCE_TDLIB = 1 << 2; // Crash originally came from TDLib
-  public static final int CRASH_FLAG_SOURCE_TDLIB_PARAMETERS = 1 << 3; // Crash originally came from TDLib setTdlibParameters
-  public static final int CRASH_FLAG_SOURCE_TON_PARAMETERS = 1 << 4; // Crash originally came from TonLib setTdlibParameters
 
   private static String makeCrashPrefix (long crashId) {
     return KEY_TDLIB_CRASH_PREFIX + crashId + "_";
   }
 
-  public void storeCrash (int accountId, String message, int flags) {
+  public void storeCrash (Crash.Builder crashBuilder) {
     final long uptime = SystemClock.uptimeMillis() - startupMs;
     final long crashId = pmc.getLong(KEY_TDLIB_CRASH_PREFIX, 0);
+    final Crash crash = crashBuilder
+      .id(crashId)
+      .uptime(uptime)
+      .appBuildInfo(Settings.instance().getCurrentBuildInformation())
+      .build();
 
-    String prefix = makeCrashPrefix(crashId);
+    final String keyPrefix = makeCrashPrefix(crashId);
 
     pmc.edit();
     // increment crashId
     pmc.putLong(KEY_TDLIB_CRASH_PREFIX, crashId + 1);
-    // crash data
-    pmc.putInt(prefix + KEY_TDLIB_CRASH_SUFFIX_APP_VERSION, BuildConfig.VERSION_CODE);
-    pmc.putInt(prefix + KEY_TDLIB_CRASH_SUFFIX_FLAGS, flags);
-    pmc.putInt(prefix + KEY_TDLIB_CRASH_SUFFIX_ACCOUNT_ID, accountId);
-    pmc.putLong(prefix + KEY_TDLIB_CRASH_SUFFIX_UPTIME, uptime);
-    pmc.putLong(prefix + KEY_TDLIB_CRASH_SUFFIX_DATE, System.currentTimeMillis());
-    pmc.putString(prefix + KEY_TDLIB_CRASH_SUFFIX_MESSAGE, message);
+    // save crash
+    crash.saveTo(pmc, keyPrefix);
     // apply & flush
     pmc.apply();
     pmc.flush();
   }
 
-  public boolean setCrashFlag (CrashInfo info, int flag, boolean enabled) {
-    int newFlags = BitwiseUtils.setFlag(info.flags, flag, enabled);
-    if (info.flags != newFlags) {
-      pmc.putInt(makeCrashPrefix(info.id) + KEY_TDLIB_CRASH_SUFFIX_FLAGS, newFlags);
-      info.flags = newFlags;
+  public boolean setCrashFlag (Crash info, int flag, boolean enabled) {
+    if (info.setFlag(flag, enabled)) {
+      info.saveFlags(pmc, makeCrashPrefix(info.id));
       return true;
     }
     return false;
   }
 
-  public void markCrashAsResolved (CrashInfo info) {
-    if (setCrashFlag(info, CRASH_FLAG_RESOLVED, true)) {
+  public void markCrashAsResolved (Crash info) {
+    if (setCrashFlag(info, Crash.Flags.RESOLVED, true)) {
       resetUptime();
     }
   }
 
-  public CrashInfo getCrash (long crashId, boolean onlyRecent) {
+  public void markCrashAsReported (Crash info) {
+    setCrashFlag(info, Crash.Flags.SENT, true);
+  }
+
+  public Crash getCrash (long crashId, boolean forApplicationStart) {
     if (crashId < 0)
       return null;
-    String message = null;
-    int flags = 0;
-    long date = 0;
-    long uptime = 0;
-    int appVersion = 0;
-    int accountId = TdlibAccount.NO_ID;
-    String prefix = makeCrashPrefix(crashId);
-    for (LevelDB.Entry entry : pmc.find(prefix)) {
-      switch (entry.key().substring(prefix.length())) {
-        case KEY_TDLIB_CRASH_SUFFIX_APP_VERSION: {
-          appVersion = entry.asInt();
-          if (onlyRecent && appVersion != BuildConfig.VERSION_CODE) {
-            entry.release();
-            return null;
-          }
-          break;
-        }
-        case KEY_TDLIB_CRASH_SUFFIX_FLAGS:
-          flags = entry.asInt();
-          if (onlyRecent) {
-            if ((flags & CRASH_FLAG_RESOLVED) != 0) {
-              entry.release();
-              return null;
-            }
-            if ((flags & CRASH_FLAG_INTERACTED) != 0) {
-              onlyRecent = false;
-            }
-          }
-          break;
-        case KEY_TDLIB_CRASH_SUFFIX_DATE:
-          date = entry.asLong();
-          if (onlyRecent && TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - date) > 15) {
-            entry.release();
-            return null;
-          }
-          break;
-        case KEY_TDLIB_CRASH_SUFFIX_UPTIME:
-          uptime = entry.asLong();
-          if (onlyRecent && uptime > TimeUnit.MINUTES.toMillis(1)) {
-            entry.release();
-            return null;
-          }
-          break;
-        case KEY_TDLIB_CRASH_SUFFIX_MESSAGE:
-          message = entry.asString();
-          if (StringUtils.isEmpty(message)) {
-            entry.release();
-            return null;
-          }
-          break;
-        case KEY_TDLIB_CRASH_SUFFIX_ACCOUNT_ID:
-          accountId = entry.asInt();
-          break;
+    final String keyPrefix = makeCrashPrefix(crashId);
+    if (forApplicationStart) {
+      @Crash.Flags int flags = Crash.restoreFlags(pmc, keyPrefix);
+      if (BitwiseUtils.getFlag(flags, Crash.Flags.RESOLVED)) {
+        // Do not attempt to read any other fields, if user pressed "Launch App"
+        return null;
+      }
+      final long crashedInstallationId = Crash.restoreInstallationId(pmc, keyPrefix);
+      final AppBuildInfo currentBuildInformation = getCurrentBuildInformation();
+      if (crashedInstallationId != 0 && currentBuildInformation.getInstallationId() > crashedInstallationId) {
+        // User has installed a newer version. Ignore crashes from previous APKs
+        return null;
       }
     }
-    CrashInfo crash = new CrashInfo(crashId, message, date, uptime, flags, appVersion, accountId);
-    return onlyRecent && crash.getType() == CrashType.UNKNOWN ? null : crash;
-  }
-
-  @Retention(RetentionPolicy.SOURCE)
-  @IntDef({
-    CrashType.TDLIB,
-    CrashType.DISK_FULL,
-    CrashType.EXTERNAL_ERROR,
-    CrashType.DATABASE_BROKEN,
-  })
-  public @interface CrashType {
-    int UNKNOWN = 0,
-        TDLIB = 1,
-        DISK_FULL = 2,
-        EXTERNAL_ERROR = 3,
-        DATABASE_BROKEN = 4;
-  }
-
-  public static class CrashInfo {
-    public final long id;
-    public final String message;
-    public final long date;
-    public final long uptime;
-    public final int appVersion;
-    public final int accountId;
-
-    private int flags;
-
-    public CrashInfo (long id, String message, long date, long uptime, int flags, int appVersion, int accountId) {
-      this.id = id;
-      this.message = message;
-      this.date = date;
-      this.uptime = uptime;
-      this.flags = flags;
-      this.appVersion = appVersion;
-      this.accountId = accountId;
-    }
-
-    @CrashType
-    public int getType () {
-      if ((flags & CRASH_FLAG_SOURCE_TDLIB) != 0) {
-        if (Client.isDiskFullError(message)) {
-          return CrashType.DISK_FULL;
-        } else if (Client.isDatabaseBrokenError(message)) {
-          return CrashType.DATABASE_BROKEN;
-        } if (Client.isExternalError(message)) {
-          return CrashType.EXTERNAL_ERROR;
-        } else {
-          return CrashType.TDLIB;
-        }
+    Crash.Builder builder = new Crash.Builder();
+    boolean nonEmpty = false;
+    for (LevelDB.Entry entry : pmc.find(keyPrefix)) {
+      if (builder.restoreField(entry, keyPrefix, this::getBuildInformation)) {
+        nonEmpty = true;
       }
-      if ((flags & CRASH_FLAG_SOURCE_TDLIB_PARAMETERS) != 0 || (flags & CRASH_FLAG_SOURCE_TON_PARAMETERS) != 0) {
-        return CrashType.EXTERNAL_ERROR;
-      }
-      return CrashType.UNKNOWN;
     }
+    if (nonEmpty) {
+      Crash crash = builder.build();
+      if (crash.getType() != Crash.Type.UNKNOWN && (!forApplicationStart || crash.shouldShowAtApplicationStart())) {
+        return crash;
+      }
+    }
+    return null;
   }
 
   // Sync
@@ -5867,6 +5780,25 @@ public class Settings {
 
   public String getDeviceToken () {
     return pmc.getString(KEY_PUSH_DEVICE_TOKEN, null);
+  }
+
+  // Device ID used to anonymously identify crashes from the same client
+
+  private String crashDeviceId;
+
+  public String crashDeviceId () {
+    if (crashDeviceId == null) {
+      crashDeviceId = pmc.getString(KEY_CRASH_DEVICE_ID, null);
+    }
+    if (StringUtils.isEmpty(crashDeviceId)) {
+      crashDeviceId = U.sha256(
+        U.getUsefulMetadata(null) + "\n" +
+        StringUtils.random("abcdefABCDEF0123456789", 16) + "\n" +
+        (long) ((double) Long.MAX_VALUE * Math.random())
+      );
+      pmc.putString(KEY_CRASH_DEVICE_ID, crashDeviceId);
+    }
+    return crashDeviceId;
   }
 
   // Interface
@@ -6199,6 +6131,16 @@ public class Settings {
 
   private AppBuildInfo currentBuildInformation;
 
+  public long installationId () {
+    if (BuildConfig.DEBUG) {
+      return 0;
+    }
+    if (currentBuildInformation != null) {
+      return currentBuildInformation.getInstallationId();
+    }
+    return pmc.getLong(KEY_APP_INSTALLATION_ID, 0);
+  }
+
   public void trackInstalledApkVersion () {
     if (BuildConfig.DEBUG) {
       // Track only published builds
@@ -6219,6 +6161,11 @@ public class Settings {
     this.currentBuildInformation = buildInfo;
   }
 
+  public AppBuildInfo getFirstBuildInformation () {
+    AppBuildInfo appBuildInfo = getBuildInformation(1);
+    return appBuildInfo != null ? appBuildInfo : getCurrentBuildInformation();
+  }
+
   public AppBuildInfo getCurrentBuildInformation () {
     if (currentBuildInformation == null) {
       long installationId = pmc.getLong(KEY_APP_INSTALLATION_ID, 0);
@@ -6232,13 +6179,14 @@ public class Settings {
   }
 
   @Nullable
+  public AppBuildInfo getBuildInformation (long installationId) {
+    return installationId > 0 ? AppBuildInfo.restoreFrom(pmc, installationId, KEY_APP_INSTALLATION_PREFIX + installationId) : null;
+  }
+
+  @Nullable
   public AppBuildInfo getPreviousBuildInformation () {
     AppBuildInfo currentBuild = getCurrentBuildInformation();
     long previousInstallationId = (currentBuild.getInstallationId() - 1);
-    if (previousInstallationId > 0) {
-      return AppBuildInfo.restoreFrom(pmc, previousInstallationId, KEY_APP_INSTALLATION_PREFIX + previousInstallationId);
-    } else {
-      return null;
-    }
+    return getBuildInformation(previousInstallationId);
   }
 }

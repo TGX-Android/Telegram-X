@@ -877,6 +877,7 @@
 
   <item type="id" name="btn_test_database" />
   <item type="id" name="btn_test_recovery_tdlib" />
+  <item type="id" name="btn_test_recovery" />
   <item type="id" name="btn_test_crash1" />
   <item type="id" name="btn_test_crash2" />
   <item type="id" name="btn_test_crashDirect" />
