@@ -2897,6 +2897,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       final int bubblePaddingBottom = getBubblePaddingBottom();
 
       bubbleWidth += bubblePaddingLeft + bubblePaddingRight;
+      if (inlineKeyboard != null && bubbleWidth < inlineKeyboard.getWidth()) {
+        bubbleWidth = inlineKeyboard.getWidth();
+      }
+
       bubbleHeight += bubblePaddingTop + bubblePaddingBottom;
 
       int leftContentEdge = centerBubble() ? width / 2 - bubbleWidth / 2 : computeBubbleLeft();
