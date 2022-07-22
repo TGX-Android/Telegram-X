@@ -3925,9 +3925,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           }
         }
       }
-    }
-    if (msg.id == messageId) {
-      msg.unreadReactions = new TdApi.UnreadReaction[0];
+      if (msg.id == messageId) {
+        msg.unreadReactions = new TdApi.UnreadReaction[0];
+      }
     }
   }
 
@@ -4384,10 +4384,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       if (msg.containsUnreadMention) {
         highlight(true);
       }
-      if (msg.unreadReactions != null && msg.unreadReactions.length > 0) {
-        highlightUnreadReactions();
-        highlight(true);
-      }
+      return true;
+    }
+    if (containsUnreadReactions()) {
+      highlightUnreadReactions();
+      highlight(true);
       return true;
     }
     return false;
@@ -5037,9 +5038,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       } else {
         return false;
       }
-      if (unreadReactions != null && unreadReactions.length > 0) {
+      /*if (unreadReactions != null && unreadReactions.length > 0 && hasAttachedToAnything()) {
         highlightUnreadReactions(unreadReactions);
-      }
+      }*/
     }
     return changed;
   }
@@ -8057,12 +8058,17 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private void highlightUnreadReactions () {
-    highlightUnreadReactions(msg.unreadReactions);
-  }
-  
-  private void highlightUnreadReactions (TdApi.UnreadReaction[] unreadReactions) {
     needHighlightUnreadReactions = true;
-    savedUnreadReactions = unreadReactions;
+    if (combinedMessages != null) {
+      for (TdApi.Message message : combinedMessages) {
+        if (message.unreadReactions != null && message.unreadReactions.length > 0) {
+          savedUnreadReactions = message.unreadReactions;
+          break;
+        }
+      }
+    } else {
+      savedUnreadReactions = msg.unreadReactions;
+    }
   }
 
   private void highlightUnreadReactionsImpl () {

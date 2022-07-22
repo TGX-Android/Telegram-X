@@ -526,8 +526,8 @@ public class TGReactions {
       if (staticCenterAnimationReceiver != null) {
         staticCenterAnimationReceiver.requestFile(staticAnimationFile);
       }
-      if (centerAnimationReceiver != null) {
-        //centerAnimationReceiver.requestFile(animation);
+      if (centerAnimationReceiver != null && inAnimation) {
+        centerAnimationReceiver.requestFile(animation);
       }
       invalidate();
     }
