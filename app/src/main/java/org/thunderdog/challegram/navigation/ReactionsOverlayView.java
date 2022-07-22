@@ -157,10 +157,6 @@ public class ReactionsOverlayView extends ViewGroup {
       ImageFile imageFile = sticker.getImage();
       animation = sticker.getPreviewAnimation();
       if (animation != null) {
-        if (!TD.isFileLoadedAndExists(animation.getFile())) {
-          Log.i("ANIMATION", String.format("NOT LOADED"));
-        }
-
         animation.setPlayOnce(true);
         animation.setLooped(false);
         gifReceiver.requestFile(animation);

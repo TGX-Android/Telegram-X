@@ -55,8 +55,6 @@ public class MessageQuickActionSwipeHelper {
     final float verticalPosition = actualDy / Screen.dp(SWIPE_VERTICAL_HEIGHT);
     updateVerticalPosition(verticalPosition);
 
-    Log.i("NEWQUICKSWIPE", String.format("%f %f %f", currentDy, actualDy, verticalPosition));
-
     message.translate(dx, verticalPosition, true);
     message.invalidate(true);
   }
