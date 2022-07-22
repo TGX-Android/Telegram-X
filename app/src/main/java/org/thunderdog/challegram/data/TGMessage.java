@@ -4589,6 +4589,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     dst.canBeForwarded = src.canBeForwarded;
     dst.canBeSaved = src.canBeSaved;
     dst.canBeEdited = src.canBeEdited;
+    dst.canGetAddedReactions = src.canGetAddedReactions;
     dst.canGetStatistics = src.canGetStatistics;
     dst.canGetViewers = src.canGetViewers;
     dst.canGetMediaTimestampLinks = src.canGetMediaTimestampLinks;
