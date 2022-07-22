@@ -3484,8 +3484,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
   }
 
+  ComplexReceiver currentComplexReceiver;
+
   public final void requestReactions (ComplexReceiver complexReceiver) {
+    currentComplexReceiver = complexReceiver;
     messageReactions.setReceiversPool(complexReceiver);
+    computeQuickButtons();
   }
 
 
@@ -7742,7 +7746,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       boolean canReact = canSendReaction(reactionString);
       TGReaction reactionObj = tdlib.getReaction(reactionString);
       if (reactionObj != null && canReact) {
-        Drawable reactionDrawable = new TGReaction.ReactionDrawable(findCurrentView(), reactionObj, Screen.dp(48), Screen.dp(48));
+        TGReaction.ReactionDrawable reactionDrawable = new TGReaction.ReactionDrawable(reactionObj, Screen.dp(48), Screen.dp(48));
+        reactionDrawable.setComplexReceiver(currentComplexReceiver);
         rightActions.add(new SwipeQuickAction(reactionObj.getReaction().title, reactionDrawable, () -> {
           if (messageReactions.sendReaction(reactionString, false, handler(findCurrentView(), null, () -> {}))) {
             scheduleSetReactionAnimation(new NextReactionAnimation(reactionObj, NextReactionAnimation.TYPE_QUICK));

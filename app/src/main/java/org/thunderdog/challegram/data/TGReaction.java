@@ -12,10 +12,9 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
-import org.thunderdog.challegram.loader.gif.GifFile;
-import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 
 public class TGReaction {
@@ -128,25 +127,30 @@ public class TGReaction {
   }
 
   public static class ReactionDrawable extends Drawable {
+    private final TGReaction reaction;
     private final int width;
     private final int height;
 
     @Nullable private ImageFile imageFile;
     @Nullable private ImageReceiver imageReceiver;
 
-    public ReactionDrawable (View view, TGReaction reaction, int width, int height) {
+    public ReactionDrawable (TGReaction reaction, int width, int height) {
       this.width = width;
       this.height = height;
+      this.reaction = reaction;
 
       imageFile = reaction.staticCenterAnimationSicker().getImage();
-
-      init(view);
     }
 
-    private void init (View view) {
-      imageReceiver = new ImageReceiver(view, 0);
-      imageReceiver.setBounds(0, 0, width, height);
-      imageReceiver.requestFile(imageFile);
+    public void setComplexReceiver (ComplexReceiver complexReceiver) {
+      if (complexReceiver != null) {
+        imageReceiver = complexReceiver.getImageReceiver(reaction.getId());
+        imageReceiver.setBounds(0, 0, width, height);
+        imageReceiver.requestFile(imageFile);
+      } else if (imageReceiver != null) {
+        imageReceiver.clear();
+        imageReceiver = null;
+      }
     }
 
     @Override
