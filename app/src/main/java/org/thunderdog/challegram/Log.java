@@ -754,7 +754,7 @@ public class Log {
           if (b.length() > 0) {
             b.append('\n');
           }
-          toStringBuilder(t, b);
+          toStringBuilder(t, 10, b);
           fileMessage = b.toString();
         } else {
           fileMessage = sourceMessage;
@@ -1003,15 +1003,21 @@ public class Log {
 
   public static String toString (Throwable t) {
     StringBuilder b = new StringBuilder();
-    toStringBuilder(t, b);
+    toStringBuilder(t, 10, b);
     return b.toString();
   }
 
-  public static void toStringBuilder (Throwable t, StringBuilder b) {
-    toStringBuilder(t, b, 0);
+  public static String toString (Throwable t, int limitCauseNum) {
+    StringBuilder b = new StringBuilder();
+    toStringBuilder(t, limitCauseNum, b);
+    return b.toString();
   }
 
-  private static void toStringBuilder (Throwable t, StringBuilder b, int causeNo) {
+  public static void toStringBuilder (Throwable t, int limitCauseNum, StringBuilder b) {
+    toStringBuilder(t, limitCauseNum, b, 0);
+  }
+
+  private static void toStringBuilder (Throwable t, int limitCauseNum, StringBuilder b, int causeNo) {
     if (causeNo != 0) {
       b.append('\n');
     }
@@ -1031,9 +1037,9 @@ public class Log {
 
     b.append(getStackTrace(t));
     Throwable cause = t.getCause();
-    if (cause != null) {
+    if (cause != null && causeNo + 1 < limitCauseNum) {
       if (b.length() > 0) {
-        toStringBuilder(cause, b, causeNo + 1);
+        toStringBuilder(cause, limitCauseNum, b, causeNo + 1);
       }
     }
   }

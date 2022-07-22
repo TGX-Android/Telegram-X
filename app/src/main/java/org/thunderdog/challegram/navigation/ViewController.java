@@ -96,6 +96,7 @@ import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.ui.SettingsAdapter;
 import org.thunderdog.challegram.ui.SettingsBugController;
 import org.thunderdog.challegram.ui.camera.CameraController;
+import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
@@ -2644,7 +2645,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     return tdlib != null ? tdlib.id() : TdlibAccount.NO_ID;
   }
 
-  public final void openTdlibLogs (int testerLevel, Settings.CrashInfo crashInfo) {
+  public final void openTdlibLogs (int testerLevel, Crash crashInfo) {
     showWarning(Lang.getMarkdownString(this, R.string.TdlibLogsWarning), proceed -> {
       if (proceed) {
         SettingsBugController c = new SettingsBugController(context, tdlib);

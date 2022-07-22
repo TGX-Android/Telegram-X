@@ -7553,7 +7553,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
     b.append("\n");
 
-    Log.toStringBuilder(error, b);
+    Log.toStringBuilder(error, 2, b);
 
     logEntity.length = b.length() - logEntity.offset;
 
