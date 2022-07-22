@@ -143,6 +143,8 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     setSubtitle(item.getSubtitle());
     boolean hasAvatar = user != null && user.profilePhoto != null;
     setAvatar(hasAvatar ? user.profilePhoto.small : null, hasAvatar || user == null ? null : tdlib.cache().userPlaceholder(user, true, ChatView.getAvatarSizeDp(Settings.CHAT_MODE_2LINE) / 2f, null));
+    setIsPremium(user.isPremium);
+    setIsVerified(user.isVerified);
     invalidate();
   }
 
