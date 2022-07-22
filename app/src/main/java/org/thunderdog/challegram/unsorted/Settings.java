@@ -6013,7 +6013,7 @@ public class Settings {
 
   private String[] quickReactions;
   public void setQuickReactions (String reactions[]) {
-    pmc.edit().putStringArray(KEY_QUICK_REACTIONS, reactions).apply();
+    pmc.putStringArray(KEY_QUICK_REACTIONS, reactions);
     quickReactions = reactions;
   }
 
