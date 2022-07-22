@@ -592,7 +592,7 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
       if (isSent) {
         return showChatOptions(m, (TGMessageChat) msg, sender);
       } else {
-        m.showMessageOptions(msg, new int[]{R.id.btn_messageDelete}, new String[]{Lang.getString(R.string.Delete)}, new int[]{R.drawable.baseline_delete_24}, null, sender, true);
+        m.showMessageOptions(msg, new int[] {R.id.btn_messageDelete}, new String[] {Lang.getString(R.string.Delete)}, new int[] {R.drawable.baseline_delete_24}, null, sender, true);
         return true;
       }
     }
@@ -1616,7 +1616,7 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
         if (r.reaction.equals(reaction)) {
           ImageReceiver receiver = reactionSmallIconsReceiver.getImageReceiver(i);
           getLocationOnScreen(tmpViewLocation);
-          int x = msg.getCompactReactionsX() + Screen.dp(16) * i + Screen.dp(8) - receiver.getWidth() / 2 + tmpViewLocation[0] - (msg.useBubbles() ? Screen.dp(2) : 0);
+          int x = msg.getCompactReactionsX() + Screen.dp(16) * i + Screen.dp(8) - receiver.getWidth() / 2 + tmpViewLocation[0] - (msg.useBubbles() ? Screen.dp(2) : 0) + (int) msg.getTranslation();
           int y = msg.getCompactReactionsY() + tmpViewLocation[1] - receiver.getHeight() / 2;
           outRect.set(x, y, x + receiver.getWidth(), y + receiver.getHeight());
           return true;
