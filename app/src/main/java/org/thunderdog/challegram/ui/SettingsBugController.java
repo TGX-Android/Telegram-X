@@ -50,6 +50,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.camera.CameraController;
+import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Test;
 import org.thunderdog.challegram.util.StringList;
@@ -81,7 +82,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
 
   public static class Args {
     public final int section;
-    public final Settings.CrashInfo crash;
+    public final Crash crash;
     private int testerLevel = Tdlib.TESTER_LEVEL_NONE;
     private boolean mainCrash;
 
@@ -89,17 +90,17 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       this(section, null);
     }
 
-    public Args (Settings.CrashInfo crash) {
+    public Args (Crash crash) {
       this.crash = crash;
       this.mainCrash = true;
-      if (crash.getType() == Settings.CrashType.TDLIB) {
+      if (crash.getType() == Crash.Type.TDLIB) {
         this.section = SECTION_TDLIB;
       } else {
         this.section = SECTION_ERROR;
       }
     }
 
-    public Args (int section, Settings.CrashInfo crash) {
+    public Args (int section, Crash crash) {
       this.section = section;
       this.crash = crash;
     }
@@ -116,7 +117,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
 
   private int section = SECTION_MAIN;
   private int testerLevel = Tdlib.TESTER_LEVEL_NONE;
-  private Settings.CrashInfo crash;
+  private Crash crash;
   private boolean isMainCrash;
 
   @Override
@@ -297,33 +298,43 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
 
   private String getCrashName () {
     switch (crash.getType()) {
-      case Settings.CrashType.EXTERNAL_ERROR:
+      case Crash.Type.TDLIB_EXTERNAL_ERROR:
         return Lang.getString(R.string.LaunchSubtitleExternalError);
-      case Settings.CrashType.DISK_FULL:
+      case Crash.Type.DISK_FULL:
         return Lang.getString(R.string.LaunchSubtitleDiskFull);
-      case Settings.CrashType.TDLIB:
+      case Crash.Type.TDLIB:
+      case Crash.Type.TDLIB_INITIALIZATION_FAILURE:
         return Lang.getString(R.string.LaunchSubtitleTdlibIssue, getTdlibVersionSignature(true));
-      case Settings.CrashType.DATABASE_BROKEN:
+      case Crash.Type.TDLIB_DATABASE_BROKEN:
         return Lang.getString(R.string.LaunchSubtitleDatabaseBroken);
+      case Crash.Type.UNCAUGHT_EXCEPTION:
+        return Lang.getString(R.string.LaunchSubtitleFatalError);
+      case Crash.Type.UNKNOWN:
+      default:
+        return null;
     }
-    return null;
   }
 
   private CharSequence getCrashGuide () {
     int resId;
     switch (crash.getType()) {
-      case Settings.CrashType.EXTERNAL_ERROR:
+      case Crash.Type.TDLIB_EXTERNAL_ERROR:
         resId = R.string.LaunchAppGuideExternalError;
         break;
-      case Settings.CrashType.DISK_FULL:
+      case Crash.Type.DISK_FULL:
         resId = R.string.LaunchAppGuideDiskFull;
         break;
-      case Settings.CrashType.TDLIB:
+      case Crash.Type.TDLIB:
+      case Crash.Type.TDLIB_INITIALIZATION_FAILURE:
         resId = R.string.LaunchAppGuideTdlibIssue;
         break;
-      case Settings.CrashType.DATABASE_BROKEN:
+      case Crash.Type.TDLIB_DATABASE_BROKEN:
         resId = R.string.LaunchAppGuideDatabaseBroken;
         break;
+      case Crash.Type.UNCAUGHT_EXCEPTION:
+        resId = R.string.LaunchAppGuideFatalError;
+        break;
+      case Crash.Type.UNKNOWN:
       default:
         return null;
     }
@@ -543,26 +554,29 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         }
       }
 
-      if (crash.getType() == Settings.CrashType.TDLIB && !StringUtils.isEmpty(crash.message)) {
+      if (crash.getType() == Crash.Type.TDLIB && !StringUtils.isEmpty(crash.message)) {
         items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, crash.message, false));
       }
 
       if (!items.isEmpty())
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_launchApp, R.drawable.baseline_warning_24, R.string.LaunchApp).setTextColorId(R.id.theme_color_textNeutral));
-      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_update, R.drawable.baseline_system_update_24, R.string.LaunchAppCheckUpdate));
+      if (!(BuildConfig.DEBUG || BuildConfig.EXPERIMENTAL)) {
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_update, R.drawable.baseline_system_update_24, R.string.LaunchAppCheckUpdate));
+      }
       if (section != SECTION_TDLIB) {
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-        if (crash.getType() == Settings.CrashType.DISK_FULL) {
+        if (crash.getType() == Crash.Type.DISK_FULL) {
           items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showError, R.drawable.baseline_info_24, R.string.LaunchAppViewError)/*.setTextColorId(R.id.theme_color_textNegative)*/);
         } else {
           items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_shareError, R.drawable.baseline_share_24, R.string.LaunchAppShareError)/*.setTextColorId(R.id.theme_color_textNegative)*/);
         }
       }
       switch (crash.getType()) {
-        case Settings.CrashType.DATABASE_BROKEN:
-        case Settings.CrashType.TDLIB: {
+        case Crash.Type.TDLIB_INITIALIZATION_FAILURE:
+        case Crash.Type.TDLIB_DATABASE_BROKEN:
+        case Crash.Type.TDLIB: {
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_eraseDatabase, R.drawable.baseline_delete_forever_24, R.string.LaunchAppEraseDatabase).setTextColorId(R.id.theme_color_textNegative));
           break;
@@ -723,6 +737,8 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
         items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_test_database, 0, "Test database", false));
         if (testerLevel >= Tdlib.TESTER_LEVEL_ADMIN) {
+          items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_test_recovery, 0, "Crash & enter recovery (uncaught exception)", false).setData(new Crash.Builder("Test error", Thread.currentThread(), Log.generateException())));
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_test_recovery_tdlib, 0, "Crash & enter recovery mode (TDLib error)", false));
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -911,7 +927,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         break;
       }
       case R.id.btn_shareError: {
-        Intents.shareText(getCrashName() + "\n" + crash.message);
+        Intents.shareText(U.getUsefulMetadata(null) + "\n" + crash.message);
         break;
       }
       case R.id.btn_eraseDatabase: {
@@ -1018,12 +1034,20 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         runTest(TEST_DATABASE, true);
         break;
       }
+      case R.id.btn_test_recovery: {
+        Crash.Builder crash = (Crash.Builder) ((ListItem) v.getTag()).getData();
+        Settings.instance().storeTestCrash(crash);
+        System.exit(0);
+        break;
+      }
       case R.id.btn_test_recovery_tdlib: {
         String text = ((ListItem) v.getTag()).getStringValue();
         if (StringUtils.isEmpty(text)) {
           text = "some tdlib bug";
         }
-        Settings.instance().storeTdlibTestCrash(tdlib.id(), text);
+        Settings.instance().storeTestCrash(new Crash.Builder(tdlib.id(), text)
+          .flags(Crash.Flags.SOURCE_TDLIB)
+        );
         System.exit(0);
         break;
       }

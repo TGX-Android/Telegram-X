@@ -3068,6 +3068,9 @@
   <string name="LaunchSubtitleTdlibIssue">TDLib fatal error. Version: %1$s</string>
   <string name="LaunchAppGuideTdlibIssue">Telegram X has previously failed to launch because of TDLib fatal error.\n\nPress **Launch App** to try again. If application continues to fail, follow these steps:\n\n• [Verify](%2$s) you have the latest Telegram X version installed.\n• Restart your device.\n\n**If the steps above do not help**\n\n1. Share error details with TDLib developers using one of the following ways:\n— Privately via [@tdlib_bot](https://t.me/tdlib_bot) by using another device or [Telegram Web](https://web.telegram.org/).\n— Publicly via [GitHub page](https://github.com/tdlib/td/issues). **Do not** share **tdlib_log.txt** publicly.\n2. Kindly wait for the response.\n3. Change log settings below as requested by TDLib developers.\n4. Press **Launch App** to make app force stop again.\n5. Share **tdlib_log.txt** with TDLib developers and wait for the problem to be resolved.\n6. Once updated, you\'ll be able to launch app normally.\n\n**Alternative options**\n\n• Search for similar issues on [GitHub](https://github.com/tdlib/td/issues) to see if there are common solutions.\n• Reinstall the app. Secret chats will be lost. If you use same phone number you were logged in, all other chats and data will be restored from the Telegram cloud.</string>
 
+  <string name="LaunchSubtitleFatalError">Unexpected error</string>
+  <string name="LaunchAppGuideFatalError">Telegram X has closed unexpectedly the last time you were using it.\n\nPress **Launch App** to try again.</string>
+
   <string name="SelfDestructPhoto">Self-Destruct Photo</string>
   <string name="SelfDestructVideo">Self-Destruct Video</string>
 

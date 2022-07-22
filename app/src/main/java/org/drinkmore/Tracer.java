@@ -23,6 +23,9 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccount;
+import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.lang.annotation.Retention;
@@ -178,9 +181,13 @@ public class Tracer {
     onOtherError(otherError);
   }
 
-  public static void onTdlibFatalError (int accountId, @Nullable Class<? extends TdApi.Function<?>> function, TdApi.Error error, @Nullable StackTraceElement[] stackTrace) {
+  public static void onTdlibFatalError (@Nullable Tdlib tdlib, @Nullable Class<? extends TdApi.Function<?>> function, TdApi.Error error, @Nullable StackTraceElement[] stackTrace) {
     String message = (function != null ? function.getSimpleName() : "unknown") + ": " + TD.toErrorString(error);
-    Settings.instance().storeCrash(accountId, message, Settings.CRASH_FLAG_SOURCE_TDLIB_PARAMETERS);
+    Settings.instance().storeCrash(new Crash.Builder()
+      .message(message)
+      .accountId(tdlib != null ? tdlib.accountId() : TdlibAccount.NO_ID)
+      .flags(Crash.Flags.SOURCE_TDLIB_PARAMETERS)
+    );
     if (stackTrace != null) {
       Throwable t = new ClientException.TdlibLaunchError(message);
       t.setStackTrace(stackTrace);
@@ -189,18 +196,6 @@ public class Tracer {
       onFatalError(new ClientException.TdlibLaunchError(message), Cause.TDLIB_HANDLER_ERROR);
     }
   }
-
-  /*public static void onTonFatalError (@Nullable Class<? extends TonApi.Function> function, TonApi.Error error, @Nullable StackTraceElement[] stackTrace) {
-    String message = (function != null ? function.getSimpleName() : "unknown") + ": " + TD.makeErrorString(error);
-    Settings.instance().storeCrash(message, Settings.CRASH_FLAG_SOURCE_TON_PARAMETERS);
-    if (stackTrace != null) {
-      Throwable t = new TdlibLaunchError(message);
-      t.setStackTrace(stackTrace);
-      onFatalError(t, Cause.TDLIB_HANDLER_ERROR);
-    } else {
-      onFatalError(new TdlibLaunchError(message), Cause.TDLIB_HANDLER_ERROR);
-    }
-  }*/
 
   public static void onTdlibHandlerError (Throwable throwable) {
     onFatalError(throwable, Cause.TDLIB_HANDLER_ERROR);

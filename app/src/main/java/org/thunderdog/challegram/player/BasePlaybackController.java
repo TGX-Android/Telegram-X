@@ -55,7 +55,7 @@ public abstract class BasePlaybackController implements TGPlayerController.Track
     }
   }
 
-  private void stopPlayback () {
+  protected final void stopPlayback () {
     if (object != null) {
       TdApi.Message oldObject = this.object;
       this.object = null;
@@ -111,7 +111,6 @@ public abstract class BasePlaybackController implements TGPlayerController.Track
     Log.e(Log.TAG_PLAYER, "onPlayerError", e);
     if (object != null) {
       displayPlaybackError(e);
-      stopPlayback();
     }
   }
 }
