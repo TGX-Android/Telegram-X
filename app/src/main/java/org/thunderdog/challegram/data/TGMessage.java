@@ -8167,7 +8167,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
     @Override
     public void getOffset (Point p) {
-      p.x = lastDrawReactionsX - startX;
+      p.x = lastDrawReactionsX - startX + (int) translation;
       p.y = lastDrawReactionsY - startY + (startH - height);
     }
   }

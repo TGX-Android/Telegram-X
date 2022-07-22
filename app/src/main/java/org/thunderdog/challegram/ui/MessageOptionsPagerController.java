@@ -52,6 +52,7 @@ import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.DrawableProvider;
@@ -237,14 +238,15 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
         return !(e.getAction() == MotionEvent.ACTION_DOWN && headerView != null && e.getY() < headerView.getTranslationY()) && super.onTouchEvent(e);
       }
 
-      @Override
+      /*@Override
       protected boolean drawChild (Canvas canvas, View child, long drawingTime) {
         canvas.save();
-        canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight()/* - Screen.getNavigationBarHeight()*/);
+        canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight());
         boolean result = super.drawChild(canvas, child, drawingTime);
         canvas.restore();
+        // canvas.drawRect(0, 0, getMeasuredWidth(), getTargetHeight(), Paints.strokeSmallPaint(Color.RED));
         return result;
-      }
+      }*/
     };
 
     RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
@@ -396,7 +398,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     // popupLayout.set®(View.LAYER_TYPE_HARDWARE, Views.LAYER_PAINT);
     popupLayout.setBoundController(this);
     popupLayout.setPopupHeightProvider(this);
-    popupLayout.init(false);
+    popupLayout.init(true);
     //popupLayout.setHideKeyboard();
     //popupLayout.setNeedRootInsets();
     popupLayout.setTouchProvider(this);
@@ -416,10 +418,9 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
   }
 
   private int getTargetHeight () {
-    if (context.isKeyboardVisible()) {
-      return Screen.currentActualHeight() + Screen.getStatusBarHeight(); // - Screen.getNavigationBarHeight();
-    }
-    return Screen.currentHeight();
+    return Screen.currentHeight()
+      + (context.isKeyboardVisible() ? Keyboard.getSize() : 0)
+      -(Screen.needsKeyboardPadding(context) ? Screen.getNavigationBarFrameDifference() : 0);
   }
 
   private int getContentOffset () {
