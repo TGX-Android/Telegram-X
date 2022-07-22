@@ -2505,8 +2505,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (!isEventLog() && inlineKeyboard != null && !inlineKeyboard.isEmpty() && inlineKeyboard.onTouchEvent(view, e)) {
       return true;
     }
-    if (messageReactions.onTouchEvent(view, e)) {
-      return true;
+    if (useReactionBubbles()) {
+      if (messageReactions.onTouchEvent(view, e)) {
+        return true;
+      }
     }
     return clickHelper.onTouchEvent(view, e);
   }
