@@ -1332,6 +1332,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       protected void setChatData (ListItem item, VerticalChatView chatView) {
         TGFoundChat chat = (TGFoundChat) item.getData();
         chatView.setPreviewActionListProvider(ShareController.this);
+        chatView.setDisableBadges(chat.isSelfChat());
         chatView.setChat(chat);
         chatView.setIsChecked(isChecked(chat.getAnyId()), false);
       }

@@ -204,6 +204,12 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     }
   }
 
+  private boolean disableBadges;
+
+  public void setBadgesDisabled (boolean disable) {
+    disableBadges = disable;
+  }
+
   private String title;
   private Text trimmedTitle;
 
@@ -428,15 +434,17 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
       } else {
         startX = getMeasuredWidth() / 2 - trimmedTitle.getWidth() / 2;
       }
-      if (isVerified) {
-        Drawable d = Icons.getChatVerifySmallDrawable();
-        startX -= Screen.dp(7f);
-        Drawables.draw(c, d, startX + trimmedTitle.getWidth(), startY - Screen.dp(0.5f), Paints.getVerifyPaint());
-      }
-      if (isPremium) {
-        Drawable d = Icons.getChatPremiumSmallDrawable();
-        startX -= Screen.dp(7f);
-        Drawables.draw(c, d, startX + trimmedTitle.getWidth() + Screen.dp(1f), startY - Screen.dp(1f), Paints.getPremiumPaint());
+      if (!disableBadges) {
+        if (isVerified) {
+          Drawable d = Icons.getChatVerifySmallDrawable();
+          startX -= Screen.dp(7f);
+          Drawables.draw(c, d, startX + trimmedTitle.getWidth(), startY - Screen.dp(0.5f), Paints.getVerifyPaint());
+        }
+        if (isPremium) {
+          Drawable d = Icons.getChatPremiumSmallDrawable();
+          startX -= Screen.dp(7f);
+          Drawables.draw(c, d, startX + trimmedTitle.getWidth() + Screen.dp(1f), startY - Screen.dp(1f), Paints.getPremiumPaint());
+        }
       }
       trimmedTitle.draw(c, startX, startY);
       paint.setColor(sourceColor);
