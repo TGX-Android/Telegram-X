@@ -16,6 +16,7 @@ package org.thunderdog.challegram.widget;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
 import android.graphics.Path;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -43,7 +44,9 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
+import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
@@ -68,8 +71,17 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
       subtitleView.setGravity(Lang.gravity());
     int leftMargin = Screen.dp(72f) - (ignoreStartOffset ? currentStartOffset / 2 : 0);
     int rightMargin = Screen.dp(16f);
-    updateLayoutParams(titleView, leftMargin, rightMargin, Screen.dp(15f));
     updateLayoutParams(subtitleView, leftMargin, rightMargin, Screen.dp(38f));
+    if (isVerified || isPremium) {
+      rightMargin += Screen.dp(2f);
+      if (isVerified) {
+        rightMargin += Screen.dp(20f);
+      }
+      if (isPremium) {
+        rightMargin += Screen.dp(20f);
+      }
+    }
+    updateLayoutParams(titleView, leftMargin, rightMargin, Screen.dp(15f));
   }
 
   private static void updateLayoutParams (View view, int leftMargin, int rightMargin, int topMargin) {
@@ -226,6 +238,15 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
     button.setPadding(Screen.dp(6f), 0, Screen.dp(6f), 0);
   }
 
+  private boolean isPremium;
+  private boolean isVerified;
+
+  public void setShowBadges (boolean verified, boolean premium) {
+    isVerified = verified;
+    isPremium = premium;
+    ignoreStartOffset(ignoreStartOffset);
+  }
+
   public @Nullable NonMaterialButton getButton () {
     return button;
   }
@@ -312,6 +333,28 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
       } else {
         c.drawRect(0, 0, offset, height, Paints.fillingPaint(Theme.fillingColor()));
         c.drawRect(offset, 0, getMeasuredWidth(), height, Paints.fillingPaint(Theme.separatorColor()));
+      }
+    }
+
+    if ((isVerified || isPremium) && titleView.getWidth() > Screen.dp(20f)) {
+      float realTitleLength = titleView.getPaint().measureText(titleView.getText(), 0, titleView.getText().length());
+
+      float badgeOffset = realTitleLength > titleView.getWidth() ? titleView.getWidth() : realTitleLength;
+      badgeOffset += imageReceiver.getWidth() + Screen.dp(18f);
+
+      float addedIconsWidth = 0;
+      Drawable d;
+
+      if (isVerified) {
+        d = Icons.getChatVerifyDrawable();
+        Drawables.draw(c, d, badgeOffset, Screen.dp(14.5f), Paints.getVerifyPaint());
+        addedIconsWidth += Screen.dp(20f);
+      }
+
+      if (isPremium) {
+        d = Icons.getChatPremiumDrawable();
+        Drawables.draw(c, d, badgeOffset + addedIconsWidth, Screen.dp(14.5f), Paints.getPremiumPaint());
+        addedIconsWidth += Screen.dp(20f);
       }
     }
   }

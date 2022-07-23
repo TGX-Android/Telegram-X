@@ -206,7 +206,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
 
   private boolean disableBadges;
 
-  public void setBadgesDisabled (boolean disable) {
+  public void setDisableBadges (boolean disable) {
     disableBadges = disable;
   }
 
