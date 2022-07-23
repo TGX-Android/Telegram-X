@@ -183,13 +183,13 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
     }
     float availWidth = getMeasuredWidth() - textLeftMargin - offsetLeft - paddingRight - (unregisteredContact != null ? Screen.dp(32f) : 0);
     if (user != null) {
-      TdApi.User rawUser = user.getUser();
-      if (rawUser != null) {
+      TdApi.Chat rawChat = tdlib.chat(user.getChatId());
+      if (rawChat != null) {
         availWidth -= Screen.dp(2f);
-        if (rawUser.isVerified) {
+        if (tdlib.chatVerified(rawChat)) {
           availWidth -= Screen.dp(20f);
         }
-        if (rawUser.isPremium) {
+        if (tdlib.chatPremium(rawChat)) {
           availWidth -= Screen.dp(20f);
         }
       }
@@ -310,15 +310,15 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
       } else if (avatarPlaceholder != null) {
         avatarPlaceholder.draw(c, receiver.centerX(), receiver.centerY());
       }
-      TdApi.User rawUser = user.getUser();
-      if (rawUser != null && trimmedName != null) {
-        float badgeOffset = offsetLeft + textLeftMargin + trimmedName.getWidth() + Screen.dp(2f);
+      TdApi.Chat rawChat = tdlib.chat(user.getChatId());
+      if (rawChat != null && trimmedName != null) {
         float addedIconsWidth = 0;
-        if (rawUser.isVerified) {
+        float badgeOffset = offsetLeft + textLeftMargin + trimmedName.getWidth() + Screen.dp(2f);
+        if (tdlib.chatVerified(rawChat)) {
           Drawables.draw(c, Icons.getChatVerifyDrawable(), badgeOffset, Screen.dp(14f), Paints.getVerifyPaint());
           addedIconsWidth += Screen.dp(20f);
         }
-        if (rawUser.isPremium) {
+        if (tdlib.chatPremium(rawChat)) {
           Drawables.draw(c, Icons.getChatPremiumDrawable(), badgeOffset + addedIconsWidth, Screen.dp(14f), Paints.getPremiumPaint());
           addedIconsWidth += Screen.dp(20f);
         }
