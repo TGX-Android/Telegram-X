@@ -26,6 +26,7 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
@@ -37,8 +38,10 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContactManager;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeManager;
+import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Fonts;
+import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.text.Text;
@@ -179,6 +182,18 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
       name = null;
     }
     float availWidth = getMeasuredWidth() - textLeftMargin - offsetLeft - paddingRight - (unregisteredContact != null ? Screen.dp(32f) : 0);
+    if (user != null) {
+      TdApi.User rawUser = user.getUser();
+      if (rawUser != null) {
+        availWidth -= Screen.dp(2f);
+        if (rawUser.isVerified) {
+          availWidth -= Screen.dp(20f);
+        }
+        if (rawUser.isPremium) {
+          availWidth -= Screen.dp(20f);
+        }
+      }
+    }
     if (availWidth > 0) {
       sourceName = name;
       trimmedName = StringUtils.isEmpty(name) ? null : new Text.Builder(name, (int) availWidth, Paints.robotoStyleProvider(16), TextColorSets.Regular.NORMAL).singleLine().allBold().build();
@@ -294,6 +309,19 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
         receiver.draw(c);
       } else if (avatarPlaceholder != null) {
         avatarPlaceholder.draw(c, receiver.centerX(), receiver.centerY());
+      }
+      TdApi.User rawUser = user.getUser();
+      if (rawUser != null && trimmedName != null) {
+        float badgeOffset = offsetLeft + textLeftMargin + trimmedName.getWidth() + Screen.dp(2f);
+        float addedIconsWidth = 0;
+        if (rawUser.isVerified) {
+          Drawables.draw(c, Icons.getChatVerifyDrawable(), badgeOffset, Screen.dp(14f), Paints.getVerifyPaint());
+          addedIconsWidth += Screen.dp(20f);
+        }
+        if (rawUser.isPremium) {
+          Drawables.draw(c, Icons.getChatPremiumDrawable(), badgeOffset + addedIconsWidth, Screen.dp(14f), Paints.getPremiumPaint());
+          addedIconsWidth += Screen.dp(20f);
+        }
       }
     } else if (unregisteredContact != null) {
       layoutReceiver();
