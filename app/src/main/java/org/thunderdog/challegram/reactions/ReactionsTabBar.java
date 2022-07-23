@@ -35,7 +35,7 @@ public class ReactionsTabBar extends HorizontalScrollView implements ViewPager.O
   private View selectedTab, otherSelectedTab;
   private int currentPosition;
   private float currentPositionOffset;
-  private int selectorAlpha;
+  private int selectorAlpha = 255;
 
   public static final Property<ReactionsTabBar, Integer> SELECTOR_ALPHA = new Property<ReactionsTabBar, Integer>(Integer.class, "whatever") {
     @Override

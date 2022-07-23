@@ -8,6 +8,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.util.List;
@@ -38,9 +39,9 @@ public class SettingsQuickReactionController extends ReactionListBaseController<
   }
 
   @Override
-  protected boolean onReactionSelected (String reaction) {
+  protected boolean onReactionSelected (String reaction, View view) {
     if (selectedReactions.size() == MAX_REACTIONS) {
-      Toast.makeText(context, Lang.pluralBold(R.string.QuickReactionsLimit, MAX_REACTIONS), Toast.LENGTH_SHORT).show();
+      context.tooltipManager().builder((View) view.findViewById(R.id.reaction)).offset(rect -> rect.offset(0, Screen.dp(-8))).show(tdlib, Lang.pluralBold(R.string.QuickReactionsLimit, MAX_REACTIONS)).hideDelayed();
       return false;
     }
     return true;

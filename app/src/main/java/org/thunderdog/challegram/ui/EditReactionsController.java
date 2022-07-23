@@ -42,7 +42,7 @@ public class EditReactionsController extends ReactionListBaseController<TdApi.Ch
   }
 
   @Override
-  protected boolean onReactionSelected (String reaction) {
+  protected boolean onReactionSelected (String reaction, View view) {
     return true;
   }
 

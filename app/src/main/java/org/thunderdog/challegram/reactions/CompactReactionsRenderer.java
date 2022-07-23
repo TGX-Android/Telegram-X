@@ -66,7 +66,7 @@ public class CompactReactionsRenderer implements Counter.Callback {
           iconizedReactions.add(parent.tdlib().getReaction(reaction.reaction));
         }
       }
-      counter.setCount(totalReactionsCount > 1 ? totalReactionsCount : 0, !selfReacted, animated);
+      counter.setCount(totalReactionsCount > iconizedReactions.size() ? totalReactionsCount : 0, !selfReacted, animated);
     }
   }
 

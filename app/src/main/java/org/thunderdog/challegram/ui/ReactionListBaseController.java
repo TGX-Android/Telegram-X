@@ -151,7 +151,7 @@ public abstract class ReactionListBaseController<T> extends RecyclerViewControll
 
   protected abstract void onPopulateTopItems (List<ListItem> outItems);
 
-  protected abstract boolean onReactionSelected (String reaction);
+  protected abstract boolean onReactionSelected (String reaction, View view);
 
   protected abstract void onSelectedReactionsChanged ();
 
@@ -272,7 +272,7 @@ public abstract class ReactionListBaseController<T> extends RecyclerViewControll
             }
           }
         }
-      } else if (onReactionSelected(reaction.reaction)) {
+      } else if (onReactionSelected(reaction.reaction, v)) {
         selectedReactions.add(reaction.reaction);
         onSelectedReactionsChanged();
         updateState(true);
