@@ -875,12 +875,16 @@ public class TGReactions {
 
     @Override
     public int defaultTextColor () {
-      return counter.getColor(counter.getMuteFactor(), R.id.theme_color_white, R.id.theme_color_text, R.id.theme_color_badgeText);
+      return counter.getColor(counter.getMuteFactor(), R.id.theme_color_white, message.isOutgoing() && message.useBubbles() ? R.id.theme_color_bubbleOut_text : R.id.theme_color_bubbleIn_text, R.id.theme_color_badgeText);
     }
 
     @Override
     public int backgroundColor (boolean isPressed) {
-      if (message.isOutgoing()) {
+      if (!message.useBubbles()) {
+        return ColorUtils.alphaColor(
+          Math.max(1f - counter.getMuteFactor(), 0.15f),
+          counter.getColor(counter.getMuteFactor(), R.id.theme_color_fillingPositive, R.id.theme_color_bubbleIn_time, R.id.theme_color_badgeFailed));
+      } else if (message.isOutgoing()) {
         return ColorUtils.alphaColor(
           Math.max(1f - counter.getMuteFactor(), 0.15f),
           counter.getColor(counter.getMuteFactor(), R.id.theme_color_bubbleOut_file, R.id.theme_color_bubbleOut_time, R.id.theme_color_badgeFailed));
