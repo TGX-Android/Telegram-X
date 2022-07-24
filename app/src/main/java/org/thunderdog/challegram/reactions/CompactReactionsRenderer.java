@@ -17,6 +17,7 @@ import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.text.Counter;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class CompactReactionsRenderer implements Counter.Callback {
   private Counter counter;
@@ -25,6 +26,7 @@ public class CompactReactionsRenderer implements Counter.Callback {
   private ArrayList<TdApi.Reaction> iconizedReactions = new ArrayList<>(3);
   private boolean selfReacted;
   private boolean iconOnlyMode;
+  private HashSet<String> hiddenReactions = new HashSet<>();
 
   public CompactReactionsRenderer (TGMessage parent) {
     this.parent = parent;
@@ -85,7 +87,8 @@ public class CompactReactionsRenderer implements Counter.Callback {
     for (int i = 0; i < iconizedReactions.size(); i++) {
       ImageReceiver icon = receiver.getImageReceiver(i);
       icon.setBounds(iconOffset * i + iconOffset / 2 - iconSize / 2, -iconSize / 2, iconOffset * i + iconOffset / 2 + iconSize / 2, iconSize / 2);
-      icon.draw(c);
+      if (!hiddenReactions.contains(iconizedReactions.get(i).reaction))
+        icon.draw(c);
     }
     if (iconOnlyMode)
       counter.draw(c, 0, 0, Gravity.LEFT, 1f, (DrawableProvider) view, getCounterColorID());
@@ -134,5 +137,12 @@ public class CompactReactionsRenderer implements Counter.Callback {
       return Theme.getColor(R.id.theme_color_inlineText);
     }
     return parent.getTimePartTextColor();
+  }
+
+  public void setReactionHidden (String reaction, boolean hidden) {
+    if (hidden)
+      hiddenReactions.add(reaction);
+    else
+      hiddenReactions.remove(reaction);
   }
 }

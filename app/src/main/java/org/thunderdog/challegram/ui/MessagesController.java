@@ -10502,6 +10502,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       existingReaction.isChosen = false;
       if (existingReaction.totalCount == 0) {
         reactions.remove(existingReaction);
+        manager.getAnimationOverlay().endAllAnimations();
       }
     }
     TdApi.MessageReaction messageReaction;
@@ -10526,7 +10527,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     } else {
       messageReaction = existingReaction;
     }
-    manager.getAnimationOverlay().endAllAnimations();
     TdApi.Message m = msg.getMessageForReactions();
     if (m.interactionInfo == null)
       m.interactionInfo = new TdApi.MessageInteractionInfo();
@@ -10559,6 +10559,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
               int[] loc = {0, 0};
               src.getLocationOnScreen(loc);
               srcPos.set(loc[0], loc[1], loc[0] + src.getWidth(), loc[1] + src.getHeight());
+              mv.setReactionIconHidden(reaction, true);
               TdApi.Sticker[] anims = big ? new TdApi.Sticker[]{rr.effectAnimation, rr.activateAnimation, rr.aroundAnimation, rr.centerAnimation} : new TdApi.Sticker[]{rr.aroundAnimation, rr.centerAnimation};
               LottieAnimationThreadPool.loadMultipleAnimations(tdlib, a -> {
                 if (cancelAnimation[0]) {
@@ -10570,6 +10571,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
                   if (cancelAnimation[0]) {
                     if (popup != null)
                       popup.hideWindow(true);
+                    mv.setReactionIconHidden(reaction, false);
                     return false;
                   }
                   boolean r = mv.getReactionIconBounds(reaction, outRect);

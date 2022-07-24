@@ -1637,18 +1637,8 @@ public class MessageView extends SparseDrawableViewGroup implements Destroyable,
 
   public void setReactionIconHidden (String reaction, boolean hidden) {
     if (msg.needDrawReactionsWithTime()) {
-      int i = 0;
-      for (TdApi.MessageReaction r : msg.getReactions()) {
-        if (r.reaction.equals(reaction)) {
-          ImageReceiver receiver = reactionSmallIconsReceiver.getImageReceiver(i);
-          receiver.setAlpha(hidden ? 0f : 1f);
-          postInvalidate();
-          return;
-        }
-        i++;
-        if (i == 3)
-          return;
-      }
+      msg.getCompactReactions().setReactionHidden(reaction, hidden);
+      postInvalidate();
     } else {
       MessageCellReactionButton btn = reactionButtons.getReactionButton(reaction);
       if (btn != null) {

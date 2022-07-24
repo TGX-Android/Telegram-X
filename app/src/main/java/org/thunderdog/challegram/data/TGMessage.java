@@ -2109,6 +2109,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return false;
   }
 
+  public CompactReactionsRenderer getCompactReactions () {
+    return compactReactions;
+  }
+
   // Touch
 
   private void setViewAttached (boolean isAttached) {
