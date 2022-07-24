@@ -6,7 +6,7 @@ tinted: true
 @
 parentTheme: 1
 #
-badge, bubbleIn_textLink, bubbleOut_file, bubbleOut_messageAuthor, bubbleOut_textLink, bubbleOut_ticks, bubbleOut_ticksRead, chatListAction, chatSendButton, circleButtonActive, circleButtonRegular, circleButtonTheme, file, headerBarCallActive, iconActive, iv_textLink, iv_textMarkedLink, messageAuthor, online, playerButtonActive, snackbarUpdate, textLink, ticks, ticksRead, togglerActive: #F4511E
+badge, bubbleIn_textLink, bubbleOut_file, bubbleOut_messageAuthor, bubbleOut_textLink, bubbleOut_ticks, bubbleOut_ticksRead, chatListAction, chatSendButton, circleButtonActive, circleButtonRegular, circleButtonTheme, file, headerBarCallActive, iconActive, iv_textLink, iv_textMarkedLink, messageAuthor, online, playerButtonActive, snackbarUpdate, textLink, ticks, ticksRead, togglerActive, bubbleOut_fillingPositive, bubbleIn_fillingPositive, bubbleIn_fillingPositive_overlay, bubbleOut_fillingPositive_overlay: #F4511E
 bubbleIn_progress, bubbleOut_inlineOutline, bubbleOut_waveformActive, checkActive, inlineOutline, inputActive, profileSectionActiveContent, progress, textNeutral, unreadText, waveformActive: #FF5722
 bubbleIn_textLinkPressHighlight, bubbleOut_textLinkPressHighlight, iv_textLinkPressHighlight, iv_textMarkedLinkPressHighlight, textLinkPressHighlight, tooltip_textLinkPressHighlight: #F4511E40
 bubbleOut_background: #FBE2E0

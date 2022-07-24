@@ -464,6 +464,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private int forwardMaxCount = 100;
   private int groupMaxSize = 200;
   private int pinnedChatsMaxCount = 5, pinnedArchivedChatsMaxCount = 100;
+  private int favoriteStickersMaxCount = 5;
   private double emojiesAnimatedZoom = .75f;
   private boolean youtubePipDisabled, qrLoginCamera, dialogFiltersTooltip, dialogFiltersEnabled;
   private String qrLoginCode;
@@ -5106,12 +5107,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
-  public boolean canFavoriteStickers () {
-    synchronized (dataLock) {
-      return installedStickerSetCount >= 5 || (favoriteStickerIds != null && favoriteStickerIds.length > 0);
-    }
-  }
-
   public int getInstalledStickerSetLimit () {
     synchronized (dataLock) {
       return installedStickerSetLimit;
@@ -5527,6 +5522,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public int pinnedArchivedChatsMaxCount () {
     return pinnedArchivedChatsMaxCount;
+  }
+
+  public int favoriteStickersMaxCount () {
+    return favoriteStickersMaxCount;
   }
 
   public double emojiesAnimatedZoom () {
@@ -7314,6 +7313,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             break;
           case "telegram_service_notifications_chat_id":
             this.telegramServiceNotificationsChatId = longValue;
+            break;
+          case "favorite_stickers_limit":
+            this.favoriteStickersMaxCount = (int) longValue;
             break;
         }
 

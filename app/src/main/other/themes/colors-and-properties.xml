@@ -54,8 +54,7 @@
     <item name="background" /> <!-- solid color below filling -->
     <item name="separator" /> <!-- separator color between items -->
     <item name="fillingPressed" />  <!-- same as filling, but pressed. Not transparent -->
-    <item
-      name="placeholder" />  <!-- solid color for space where image will be loaded, usually very transparent #fff or #000 -->
+    <item name="placeholder" />  <!-- solid color for space where image will be loaded, usually very transparent #fff or #000 -->
     <item name="previewBackground" />
     <item name="overlayFilling" />
 
@@ -66,6 +65,9 @@
     <item name="fillingNegative" />
     <item name="fillingPositive" tinted="true" />
     <item name="fillingPositiveContent" />
+
+    <item name="fillingActive" />
+    <item name="fillingActiveContent" />
 
     <!-- TOOLTIP -->
 
@@ -378,6 +380,13 @@
     <item name="bubbleIn_separator" />
     <item name="bubbleIn_pressed" />
 
+    <item name="bubbleIn_fillingActive" />
+    <item name="bubbleIn_fillingActiveContent" />
+    <item name="bubbleIn_fillingPositive" tinted="true" />
+    <item name="bubbleIn_fillingPositiveContent" />
+    <item name="bubbleIn_fillingPositive_overlay" tinted="true" />
+    <item name="bubbleIn_fillingPositiveContent_overlay" />
+
     <!-- BUBBLE OUTGOING -->
 
     <item name="bubbleOut_background" tinted="true" />
@@ -404,11 +413,19 @@
     <item name="bubbleOut_waveformActive" porterDuff="true" tinted="true" />
     <item name="bubbleOut_waveformInactive" tinted="true" />
     <item name="bubbleOut_file" porterDuff="true" tinted="true" />
+    <item name="bubbleOut_fileContent" porterDuff="true" />
 
     <item name="bubbleOut_ticks" porterDuff="true" tinted="true" />
     <item name="bubbleOut_ticksRead" porterDuff="true" tinted="true" />
     <item name="bubbleOut_messageAuthor" porterDuff="true" tinted="true" />
     <item name="bubbleOut_messageAuthorPsa" />
+
+    <item name="bubbleOut_fillingActive" />
+    <item name="bubbleOut_fillingActiveContent" />
+    <item name="bubbleOut_fillingPositive" tinted="true" />
+    <item name="bubbleOut_fillingPositiveContent" />
+    <item name="bubbleOut_fillingPositive_overlay" tinted="true" />
+    <item name="bubbleOut_fillingPositiveContent_overlay" />
 
     <!-- ATTACH MENU -->
 
@@ -423,6 +440,7 @@
     <!-- MEDIA & FILES -->
 
     <item name="file" porterDuff="true" tinted="true" />
+    <item name="fileContent" porterDuff="true" />
     <item name="fileYellow" />
     <item name="fileGreen" />
     <item name="fileRed" />

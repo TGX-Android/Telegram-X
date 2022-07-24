@@ -401,6 +401,12 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
           }
           break;
         }
+        case R.id.btn_removeRecent: {
+          final int stickerId = sticker.getId();
+          tdlib.client().send(new TdApi.RemoveRecentSticker(false, new TdApi.InputFileId(stickerId)), tdlib.okHandler());
+          closePreviewIfNeeded();
+          break;
+        }
         default: {
           closePreviewIfNeeded();
           break;
@@ -409,27 +415,23 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     };
     themeListenerList.addThemeInvalidateListener(menu);
 
-    boolean hasFavoriteButton = false;
     boolean isFavorite = tdlib.isStickerFavorite(sticker.getId());
 
-    if (isFavorite || tdlib.canFavoriteStickers()) {
-      hasFavoriteButton = true;
-      ImageView imageView = new ImageView(getContext());
-      imageView.setId(R.id.btn_favorite);
-      imageView.setScaleType(ImageView.ScaleType.CENTER);
-      imageView.setOnClickListener(onClickListener);
-      imageView.setImageResource(isFavorite ? R.drawable.baseline_star_24 : R.drawable.baseline_star_border_24);
-      imageView.setColorFilter(Theme.getColor(R.id.theme_color_textNeutral));
-      themeListenerList.addThemeFilterListener(imageView, R.id.theme_color_textNeutral);
-      imageView.setLayoutParams(new ViewGroup.LayoutParams(Screen.dp(48f), ViewGroup.LayoutParams.MATCH_PARENT));
-      imageView.setPadding(Lang.rtl() ? 0 : Screen.dp(8f), 0, Lang.rtl() ? Screen.dp(8f) : 0, 0);
-      RippleSupport.setTransparentBlackSelector(imageView);
-      Views.setClickable(imageView);
-      if (Lang.rtl())
-        menu.addView(imageView, 0);
-      else
-        menu.addView(imageView);
-    }
+    ImageView imageView = new ImageView(getContext());
+    imageView.setId(R.id.btn_favorite);
+    imageView.setScaleType(ImageView.ScaleType.CENTER);
+    imageView.setOnClickListener(onClickListener);
+    imageView.setImageResource(isFavorite ? R.drawable.baseline_star_24 : R.drawable.baseline_star_border_24);
+    imageView.setColorFilter(Theme.getColor(R.id.theme_color_textNeutral));
+    themeListenerList.addThemeFilterListener(imageView, R.id.theme_color_textNeutral);
+    imageView.setLayoutParams(new ViewGroup.LayoutParams(Screen.dp(48f), ViewGroup.LayoutParams.MATCH_PARENT));
+    imageView.setPadding(Lang.rtl() ? 0 : Screen.dp(8f), 0, Lang.rtl() ? Screen.dp(8f) : 0, 0);
+    RippleSupport.setTransparentBlackSelector(imageView);
+    Views.setClickable(imageView);
+    if (Lang.rtl())
+      menu.addView(imageView, 0);
+    else
+      menu.addView(imageView);
 
     boolean needViewPackButton = sticker.needViewPackButton();
 
@@ -442,7 +444,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     Views.setMediumText(sendView, Lang.getString(R.string.SendSticker).toUpperCase());
     sendView.setOnClickListener(onClickListener);
     RippleSupport.setTransparentBlackSelector(sendView);
-    int paddingLeft = Screen.dp(hasFavoriteButton ? 12f : 16f);
+    int paddingLeft = Screen.dp(12f);
     int paddingRight = Screen.dp(needViewPackButton ? 12f : 16f);
     sendView.setPadding(Lang.rtl() ? paddingRight : paddingLeft, 0, Lang.rtl() ? paddingLeft : paddingRight, 0);
     sendView.setGravity(Gravity.CENTER);
@@ -479,6 +481,24 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
         menu.addView(viewView, 0);
       else
         menu.addView(viewView);
+    }
+
+    if (sticker.isRecent()) {
+      ImageView removeRecentView = new ImageView(getContext());
+      removeRecentView.setId(R.id.btn_removeRecent);
+      removeRecentView.setScaleType(ImageView.ScaleType.CENTER);
+      removeRecentView.setOnClickListener(onClickListener);
+      removeRecentView.setImageResource(R.drawable.baseline_auto_delete_24);
+      removeRecentView.setColorFilter(Theme.getColor(R.id.theme_color_textNegative));
+      themeListenerList.addThemeFilterListener(removeRecentView, R.id.theme_color_textNegative);
+      removeRecentView.setLayoutParams(new ViewGroup.LayoutParams(Screen.dp(48f), ViewGroup.LayoutParams.MATCH_PARENT));
+      removeRecentView.setPadding(Lang.rtl() ? Screen.dp(8f) : 0, 0, Lang.rtl() ? 0 : Screen.dp(8f), 0);
+      RippleSupport.setTransparentBlackSelector(removeRecentView);
+      Views.setClickable(removeRecentView);
+      if (Lang.rtl())
+        menu.addView(removeRecentView, 0);
+      else
+        menu.addView(removeRecentView);
     }
 
     menu.setAlpha(0f);

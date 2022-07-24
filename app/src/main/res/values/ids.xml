@@ -384,6 +384,8 @@
   <item type="id" name="session_secret" />
   <item type="id" name="btn_done" />
   <item type="id" name="btn_forgotPassword" />
+  <item type="id" name="btn_cancelReset" />
+  <item type="id" name="btn_cancelResetWait" />
   <item type="id" name="btn_direction" />
   <item type="id" name="btn_layer" />
   <item type="id" name="btn_layerTypeMapDefault" />
@@ -763,6 +765,7 @@
   <item type="id" name="btn_sendByEnter" />
   <item type="id" name="btn_secretLinkPreviews" />
   <item type="id" name="btn_favorite" />
+  <item type="id" name="btn_removeRecent" />
   <item type="id" name="btn_hideChatKeyboard" />
   <item type="id" name="btn_hideAuthor" />
   <item type="id" name="btn_removeCaptions" />

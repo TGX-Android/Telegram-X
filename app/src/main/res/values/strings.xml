@@ -4281,6 +4281,16 @@
   <string name="xPRs_other">%1$s PRs</string>
   <string name="PR">PR #%1$d</string>
 
+  <string name="ResetPasswordWait">You recently requested a password reset that was canceled. Please wait %1$s before making a new request.</string>
+  <string name="RestorePasswordNoEmailText2">Since you didn’t provide a recovery email when setting up your password, your remaining options are either to remember your password or wait 7 days until your password is reset.</string>
+  <string name="RestoreEmailTroubleText2">If you don’t have access to your recovery email, your remaining options are either to remember your password or wait 7 days until your password is reset.</string>
+  <string name="RestorePasswordResetIn">You can reset your password in %1$s.</string>
+  <string name="ResetPassword">Reset password</string>
+  <string name="CancelReset">Cancel reset</string>
+  <string name="RestorePasswordResetPasswordOk">Your 2-Step Verification password was reset.</string>
+  <string name="CancelPasswordReset">Cancel the password reset process? If you request a new reset later, it will take another 7 days.</string>
+  <string name="CancelPasswordResetYes">YES</string>
+
   <string name="ExperimentalBuildTitle">Caution: experimental build</string>
   <string name="ExperimentalBuildInfo">This version of **Telegram X** is not designed for long-term use.\n\nIt may completely stop working over a time and you cannot turn notifications on.\n\nIf you are looking for the proper Telegram X APK file, see https://t.me/tgx_log</string>
 
