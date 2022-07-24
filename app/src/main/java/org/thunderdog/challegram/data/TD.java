@@ -3973,6 +3973,10 @@ public class TD {
     return msg != null ? getTextFromMessage(msg.content) : null;
   }
 
+  public static String getTextFromMessageSpoilerless (TdApi.Message msg) {
+    return msg != null ? getTextFromMessageSpoilerless(msg.content) : null;
+  }
+
   public static boolean suggestSharingContact (TdApi.User user) {
     return false; // TODO?
   }
@@ -4045,6 +4049,11 @@ public class TD {
   public static String getTextFromMessage (TdApi.MessageContent content) {
     TdApi.FormattedText formattedText = Td.textOrCaption(content);
     return formattedText != null ? formattedText.text : null;
+  }
+
+  public static String getTextFromMessageSpoilerless (TdApi.MessageContent content) {
+    TdApi.FormattedText formattedText = Td.textOrCaption(content);
+    return formattedText != null ? TD.toCharSequence(formattedText, false, false).toString() : null;
   }
 
   public static @TdApi.MessageContent.Constructors int convertToMessageContent (TdApi.WebPage webPage) {
