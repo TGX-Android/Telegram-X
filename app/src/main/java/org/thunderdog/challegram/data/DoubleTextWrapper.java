@@ -67,6 +67,8 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
   private String title;
   private Text trimmedTitle;
   private Text chatMark;
+  private boolean isPremium;
+  private boolean isVerified;
 
   private CharSequence subtitle;
   private Text trimmedSubtitle;
@@ -93,6 +95,8 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
     } else {
       setChatMark(false, false);
     }
+    this.isPremium = tdlib.chatPremium(chat);
+    this.isVerified = tdlib.chatVerified(chat);
 
     setTitle(chat.title);
     this.avatarPlaceholder = tdlib.chatPlaceholder(chat, false, AVATAR_PLACEHOLDER_RADIUS, null);
@@ -109,7 +113,11 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
     this.userId = userId;
     this.user = tdlib.cache().user(userId);
 
-    setChatMark(this.user != null && this.user.isScam, this.user != null && this.user.isFake);
+    if (this.user != null) {
+      setChatMark(this.user.isScam, this.user.isFake);
+      this.isPremium = this.user.isPremium;
+      this.isVerified = this.user.isVerified;
+    }
     setTitle(TD.getUserName(user));
     this.avatarPlaceholder = tdlib.cache().userPlaceholder(user, false, AVATAR_PLACEHOLDER_RADIUS, null);
     if (user != null && user.profilePhoto != null) {
@@ -365,19 +373,21 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
         }
       }
     }
-    final boolean isPremium = this.user != null && this.user.isPremium;
     if (!StringUtils.isEmpty(adminSign)) {
       this.adminSign = new Text.Builder(adminSign, availWidth, Paints.robotoStyleProvider(13), TextColorSets.Regular.LIGHT).singleLine().build();
       availWidth -= this.adminSign.getWidth() + Screen.dp(4f);
-      if (isPremium || chatMark != null) {
-        availWidth -= Screen.dp(4f);
+      if (isPremium || isVerified || chatMark != null) {
+        availWidth -= Screen.dp(5f);
       }
     } else {
       this.adminSign = null;
     }
 
     if (isPremium) {
-      availWidth -= Screen.dp(28f);
+      availWidth -= Screen.dp(20f);
+    }
+    if (isVerified) {
+      availWidth -= Screen.dp(20f);
     }
 
     if (chatMark != null) {
@@ -452,21 +462,27 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
       trimmedSubtitle.draw(c, left, Screen.dp(33f), isOnline ? TextColorSets.Regular.NEUTRAL : null);
     }
 
-    if (this.user != null && this.user.isPremium) {
-      Drawable premiumIcon = view.getSparseDrawable(R.drawable.baseline_star_premium_chat_24, 0);
-      int trimmedTitleWidth = trimmedTitle != null ? trimmedTitle.getWidth() : 0;
-
-      Drawables.draw(c, premiumIcon, left + trimmedTitleWidth + Screen.dp(2f), view.getMeasuredHeight() / 2 - premiumIcon.getMinimumHeight() + Screen.dp(2f), Paints.getPremiumPaint());
-      left += premiumIcon.getMinimumWidth();
-    }
-
-    if (trimmedTitle != null && chatMark != null) {
-      int cmLeft = left + trimmedTitle.getWidth() + Screen.dp(6f);
-      RectF rct = Paints.getRectF();
-      rct.set(cmLeft, Screen.dp(13f), cmLeft + chatMark.getWidth() + Screen.dp(8f), Screen.dp(13f) + trimmedTitle.getLineHeight(false));
-      c.drawRoundRect(rct, Screen.dp(2f), Screen.dp(2f), Paints.getProgressPaint(Theme.getColor(R.id.theme_color_textNegative), Screen.dp(1.5f)));
-      cmLeft += Screen.dp(4f);
-      chatMark.draw(c, cmLeft, cmLeft + chatMark.getWidth(), 0, Screen.dp(13f) + ((trimmedTitle.getLineHeight(false) - chatMark.getLineHeight(false)) / 2));
+    if (trimmedTitle != null) {
+      float addedIconsWidth = Screen.dp(2f);
+      if (chatMark != null) {
+        int cmLeft = left + trimmedTitle.getWidth() + Screen.dp(6f);
+        RectF rct = Paints.getRectF();
+        rct.set(cmLeft, Screen.dp(13f), cmLeft + chatMark.getWidth() + Screen.dp(8f), Screen.dp(13f) + trimmedTitle.getLineHeight(false));
+        c.drawRoundRect(rct, Screen.dp(2f), Screen.dp(2f), Paints.getProgressPaint(Theme.getColor(R.id.theme_color_textNegative), Screen.dp(1.5f)));
+        cmLeft += Screen.dp(4f);
+        chatMark.draw(c, cmLeft, cmLeft + chatMark.getWidth(), 0, Screen.dp(13f) + ((trimmedTitle.getLineHeight(false) - chatMark.getLineHeight(false)) / 2));
+        addedIconsWidth += chatMark.getWidth() + Screen.dp(14f);
+      }
+      if (isVerified) {
+        Drawable d = view.getSparseDrawable(R.drawable.deproko_baseline_verify_chat_24, 0);
+        Drawables.draw(c, d, left + trimmedTitle.getWidth() + addedIconsWidth, view.getMeasuredHeight() / 2 - d.getMinimumHeight() + Screen.dp(2f), Paints.getPremiumPaint());
+        addedIconsWidth += Screen.dp(20f);
+      }
+      if (isPremium) {
+        Drawable d = view.getSparseDrawable(R.drawable.baseline_star_premium_chat_24, 0);
+        Drawables.draw(c, d, left + trimmedTitle.getWidth() + addedIconsWidth, view.getMeasuredHeight() / 2 - d.getMinimumHeight() + Screen.dp(2f), Paints.getPremiumPaint());
+        addedIconsWidth += Screen.dp(20f);
+      }
     }
   }
 
