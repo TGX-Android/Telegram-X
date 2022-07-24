@@ -73,7 +73,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       this.needFakeBold = Text.needFakeBold(string);
       this.iconRes = 0;
       this.counter = null;
-      this.provider =null;
+      this.provider = null;
       this.hidden = false;
     }
 
