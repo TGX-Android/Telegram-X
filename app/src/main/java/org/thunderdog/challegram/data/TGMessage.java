@@ -4295,7 +4295,17 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public final boolean canGetAddedReactions () {
-    return !isChannel() && messageReactions.getTotalCount() > 0 && (msg.forwardInfo == null || msg.forwardInfo.origin.getConstructor() != TdApi.MessageForwardOriginChannel.CONSTRUCTOR);
+    if (combinedMessages != null) {
+      for (TdApi.Message message: combinedMessages) {
+        if (message.canGetAddedReactions) {
+          return true;
+        }
+      }
+    }
+
+    return msg.canGetAddedReactions;
+
+    //return !isChannel() && messageReactions.getTotalCount() > 0 && (msg.forwardInfo == null || msg.forwardInfo.origin.getConstructor() != TdApi.MessageForwardOriginChannel.CONSTRUCTOR);
   }
 
   public final boolean canBeDeletedOnlyForSelf () {
@@ -4903,6 +4913,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     isPinned.showHide(isPinned(), animated);
+    updateMessageFlags(msg, () -> {});
     if (animated) {
       startReactionAnimationIfNeeded();
     }
@@ -7679,6 +7690,16 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         TdApi.AvailableReactions reactions = (TdApi.AvailableReactions) object;
         messageAvailableReactions = reactions.reactions;
         computeQuickButtons();
+      }
+    });
+  }
+
+  private void updateMessageFlags (TdApi.Message msg, Runnable onUpdate) {
+    tdlib().client().send(new TdApi.GetMessageLocally(msg.chatId, msg.id), (TdApi.Object object) -> {
+      if (object.getConstructor() == TdApi.Message.CONSTRUCTOR) {
+        TdApi.Message message = (TdApi.Message) object;
+        copyFlags(message, msg);
+        onUpdate.run();
       }
     });
   }
