@@ -713,7 +713,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private int getAuthorWidth () {
-    return hAuthorNameT != null ? hAuthorNameT.getWidth() + (hAuthorChatMark != null ? hAuthorChatMark.getWidth() + Screen.dp(8f) : 0) : needName(true) ? -Screen.dp(3f) : 0;
+    return hAuthorNameT != null ? hAuthorNameT.getWidth() + (hAuthorChatMark != null ? hAuthorChatMark.getWidth() + Screen.dp(16f) : 0) : needName(true) ? -Screen.dp(3f) : 0;
   }
 
   private int computeBubbleWidth () {
@@ -2867,10 +2867,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       nameMaxWidth = max;
     }
     if (nameMaxWidth > 0) {
-      hAuthorNameT = makeName(authorName, !(forceForwardedInfo() && forwardInfo instanceof TGSourceHidden), isPsa, !needName(false), msg.forwardInfo == null || forceForwardedInfo() ? msg.viaBotUserId : 0, nameMaxWidth, false);
       if (!forceForwardedInfo() && sender.hasChatMark()) {
         hAuthorChatMark = makeChatMark(totalMaxWidth);
+        nameMaxWidth -= hAuthorChatMark.getWidth() + Screen.dp(8f);
       }
+
+      hAuthorNameT = makeName(authorName, !(forceForwardedInfo() && forwardInfo instanceof TGSourceHidden), isPsa, !needName(false), msg.forwardInfo == null || forceForwardedInfo() ? msg.viaBotUserId : 0, nameMaxWidth, false);
     } else {
       hAuthorNameT = null;
       hAuthorChatMark = null;
@@ -4938,6 +4940,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     dst.canBeForwarded = src.canBeForwarded;
     dst.canBeSaved = src.canBeSaved;
     dst.canBeEdited = src.canBeEdited;
+    dst.canGetAddedReactions = src.canGetAddedReactions;
     dst.canGetStatistics = src.canGetStatistics;
     dst.canGetViewers = src.canGetViewers;
     dst.canGetAddedReactions = src.canGetAddedReactions;

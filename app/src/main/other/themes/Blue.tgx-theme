@@ -53,6 +53,11 @@ bubbleOut_background: #E4F4FE
 bubbleOut_chatCorrectChosenFilling, bubbleOut_chatCorrectFilling, bubbleOut_chatVerticalLine, bubbleOut_inlineIcon, inlineIcon, messageCorrectChosenFilling, messageCorrectFilling, messageVerticalLine: #50AADF
 bubbleOut_chatNegativeFilling, fillingNegative, messageNegativeLine: #EC5454
 bubbleOut_file, file: #54A6E6
+bubbleOut_fileContent, fileContent: #FFF
+bubbleOut_fillingPositive, bubbleIn_fillingPositive, bubbleIn_fillingPositive_overlay: #54A6E6
+bubbleOut_fillingPositiveContent, bubbleIn_fillingPositiveContent, bubbleIn_fillingPositiveContent_overlay: #FFF
+fillingActive: #26838C96
+fillingActiveContent: #000
 bubbleOut_inlineOutline, inlineOutline: #24A2DC
 bubbleOut_inlineText, bubbleOut_messageAuthor, inlineText, messageAuthor: #2894D7
 bubbleOut_progress, bubbleOut_separator, bubbleOut_time: #81A4BE
