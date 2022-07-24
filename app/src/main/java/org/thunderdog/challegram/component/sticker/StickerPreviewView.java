@@ -401,6 +401,12 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
           }
           break;
         }
+        case R.id.btn_removeRecent: {
+          final int stickerId = sticker.getId();
+          tdlib.client().send(new TdApi.RemoveRecentSticker(false, new TdApi.InputFileId(stickerId)), tdlib.okHandler());
+          closePreviewIfNeeded();
+          break;
+        }
         default: {
           closePreviewIfNeeded();
           break;
@@ -475,6 +481,24 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
         menu.addView(viewView, 0);
       else
         menu.addView(viewView);
+    }
+
+    if (sticker.isRecent()) {
+      ImageView removeRecentView = new ImageView(getContext());
+      removeRecentView.setId(R.id.btn_removeRecent);
+      removeRecentView.setScaleType(ImageView.ScaleType.CENTER);
+      removeRecentView.setOnClickListener(onClickListener);
+      removeRecentView.setImageResource(R.drawable.baseline_auto_delete_24);
+      removeRecentView.setColorFilter(Theme.getColor(R.id.theme_color_textNegative));
+      themeListenerList.addThemeFilterListener(removeRecentView, R.id.theme_color_textNegative);
+      removeRecentView.setLayoutParams(new ViewGroup.LayoutParams(Screen.dp(48f), ViewGroup.LayoutParams.MATCH_PARENT));
+      removeRecentView.setPadding(Lang.rtl() ? Screen.dp(8f) : 0, 0, Lang.rtl() ? 0 : Screen.dp(8f), 0);
+      RippleSupport.setTransparentBlackSelector(removeRecentView);
+      Views.setClickable(removeRecentView);
+      if (Lang.rtl())
+        menu.addView(removeRecentView, 0);
+      else
+        menu.addView(removeRecentView);
     }
 
     menu.setAlpha(0f);
