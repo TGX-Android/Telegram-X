@@ -783,7 +783,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
   }
 
   private void setCounter (boolean allowAnimation) {
-    boolean hasReactions = chat != null && chat.unreadReactionCount > 0;
+    boolean hasReactions = hasUnreadReactions();
     boolean hasMentions = hasUnreadMentions();
     int unreadCount = getUnreadCount();
 
@@ -807,6 +807,14 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
       return 0;
     } else {
       return chat.unreadCount > 0 ? chat.unreadCount : chat.isMarkedAsUnread ? Tdlib.CHAT_MARKED_AS_UNREAD : 0;
+    }
+  }
+
+  public boolean hasUnreadReactions () {
+    if (isArchive()) {
+      return archive != null && archive.hasUnreadReactions();
+    } else {
+      return chat != null && chat.unreadReactionCount > 0;
     }
   }
 
