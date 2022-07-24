@@ -22,7 +22,7 @@ bubbleIn_textLink, circleButtonActive, circleButtonRegular, circleButtonTheme, h
 bubbleIn_textLinkPressHighlight, iv_textLinkPressHighlight, textLinkPressHighlight: #61A9E144
 bubbleOut_background, messageSwipeBackground: #456A93
 bubbleOut_chatCorrectChosenFilling, bubbleOut_chatCorrectFilling, bubbleOut_chatVerticalLine, bubbleOut_inlineIcon, bubbleOut_inlineOutline, bubbleOut_inlineText, bubbleOut_messageAuthor, bubbleOut_textLink, bubbleOut_ticks, messageCorrectChosenFilling, messageCorrectFilling: #86CAFF
-bubbleOut_file, bubbleOut_waveformActive, file, bubbleIn_fillingPositive, bubbleOut_fillingPositive: #61A8E1
+bubbleOut_file, bubbleOut_waveformActive, file, bubbleIn_fillingPositive, bubbleIn_fillingPositive_overlay, bubbleOut_fillingPositive, bubbleOut_fillingPositive_overlay: #61A8E1
 bubbleOut_progress, bubbleOut_separator, bubbleOut_time: #91AFC8
 bubbleOut_textLinkPressHighlight: #86CAFF40
 bubbleOut_waveformInactive, waveformInactive: #6B91AD
@@ -61,3 +61,7 @@ tooltip_outline: #456A9320
 waveformActive: #254C5E
 fillingActive: #267D8E98
 fillingActiveContent: #FFF
+bubbleIn_fillingActive: #267D8E98
+bubbleIn_fillingActiveContent: #FFF
+bubbleOut_fillingActive: #2691AFC8
+bubbleOut_fillingActiveContent: #FFF

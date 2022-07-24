@@ -49,18 +49,22 @@ bubbleIn_separator, chatSeparator, inputInactive, iv_separator, separator: #DEE3
 bubbleIn_textLink, bubbleOut_textLink, iv_textLink, iv_textMarkedLink, textLink: #569ACE
 bubbleIn_textLinkPressHighlight, bubbleOut_textLinkPressHighlight, iv_textLinkPressHighlight, textLinkPressHighlight: #569ACE30
 bubbleIn_time, textPlaceholder: #A1AAB3
+bubbleIn_fillingActive: #26A1AAB3
+bubbleIn_fillingActiveContent: #000
 bubbleOut_background: #E4F4FE
 bubbleOut_chatCorrectChosenFilling, bubbleOut_chatCorrectFilling, bubbleOut_chatVerticalLine, bubbleOut_inlineIcon, inlineIcon, messageCorrectChosenFilling, messageCorrectFilling, messageVerticalLine: #50AADF
 bubbleOut_chatNegativeFilling, fillingNegative, messageNegativeLine: #EC5454
 bubbleOut_file, file: #54A6E6
 bubbleOut_fileContent, fileContent: #FFF
-bubbleOut_fillingPositive, bubbleIn_fillingPositive, bubbleIn_fillingPositive_overlay: #54A6E6
+bubbleOut_fillingPositive, bubbleOut_fillingPositive_overlay, bubbleIn_fillingPositive, bubbleIn_fillingPositive_overlay: #54A6E6
 bubbleOut_fillingPositiveContent, bubbleIn_fillingPositiveContent, bubbleIn_fillingPositiveContent_overlay: #FFF
 fillingActive: #26838C96
 fillingActiveContent: #000
 bubbleOut_inlineOutline, inlineOutline: #24A2DC
 bubbleOut_inlineText, bubbleOut_messageAuthor, inlineText, messageAuthor: #2894D7
 bubbleOut_progress, bubbleOut_separator, bubbleOut_time: #81A4BE
+bubbleOut_fillingActive: #2681A4BE
+bubbleOut_fillingActiveContent: #000
 bubbleOut_ticks, bubbleOut_ticksRead: #4292D3
 bubbleOut_waveformActive, waveformActive: #68ADE1
 bubbleOut_waveformInactive, waveformInactive: #D5E5EF
