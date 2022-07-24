@@ -6033,7 +6033,7 @@ public class Settings {
   }
 
   public void setBigReactionsInChats (boolean inChats) {
-    pmc.edit().putBoolean(KEY_BIG_REACTIONS_IN_CHATS, inChats).apply();
+    pmc.putBoolean(KEY_BIG_REACTIONS_IN_CHATS, inChats);
   }
 
   public boolean getBigReactionsInChannels () {
