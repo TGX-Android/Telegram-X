@@ -55,6 +55,8 @@ public class Paints {
       strokeSeparatorPaint.setStrokeWidth(Screen.separatorSize());
     if (strokeBigPaint != null)
       strokeBigPaint.setStrokeWidth(Screen.dp(2f));
+    if (strokeSmallPaint != null)
+      strokeSmallPaint.setStrokeWidth(Screen.dp(1f));
     if (shadowFillingPaint != null) {
       float radius = Math.max(1, Screen.dpf(.5f));
       shadowFillingPaint.setShadowLayer(radius, 0f, radius, 0x5a000000);
