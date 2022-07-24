@@ -409,27 +409,23 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     };
     themeListenerList.addThemeInvalidateListener(menu);
 
-    boolean hasFavoriteButton = false;
     boolean isFavorite = tdlib.isStickerFavorite(sticker.getId());
 
-    if (isFavorite || tdlib.canFavoriteStickers()) {
-      hasFavoriteButton = true;
-      ImageView imageView = new ImageView(getContext());
-      imageView.setId(R.id.btn_favorite);
-      imageView.setScaleType(ImageView.ScaleType.CENTER);
-      imageView.setOnClickListener(onClickListener);
-      imageView.setImageResource(isFavorite ? R.drawable.baseline_star_24 : R.drawable.baseline_star_border_24);
-      imageView.setColorFilter(Theme.getColor(R.id.theme_color_textNeutral));
-      themeListenerList.addThemeFilterListener(imageView, R.id.theme_color_textNeutral);
-      imageView.setLayoutParams(new ViewGroup.LayoutParams(Screen.dp(48f), ViewGroup.LayoutParams.MATCH_PARENT));
-      imageView.setPadding(Lang.rtl() ? 0 : Screen.dp(8f), 0, Lang.rtl() ? Screen.dp(8f) : 0, 0);
-      RippleSupport.setTransparentBlackSelector(imageView);
-      Views.setClickable(imageView);
-      if (Lang.rtl())
-        menu.addView(imageView, 0);
-      else
-        menu.addView(imageView);
-    }
+    ImageView imageView = new ImageView(getContext());
+    imageView.setId(R.id.btn_favorite);
+    imageView.setScaleType(ImageView.ScaleType.CENTER);
+    imageView.setOnClickListener(onClickListener);
+    imageView.setImageResource(isFavorite ? R.drawable.baseline_star_24 : R.drawable.baseline_star_border_24);
+    imageView.setColorFilter(Theme.getColor(R.id.theme_color_textNeutral));
+    themeListenerList.addThemeFilterListener(imageView, R.id.theme_color_textNeutral);
+    imageView.setLayoutParams(new ViewGroup.LayoutParams(Screen.dp(48f), ViewGroup.LayoutParams.MATCH_PARENT));
+    imageView.setPadding(Lang.rtl() ? 0 : Screen.dp(8f), 0, Lang.rtl() ? Screen.dp(8f) : 0, 0);
+    RippleSupport.setTransparentBlackSelector(imageView);
+    Views.setClickable(imageView);
+    if (Lang.rtl())
+      menu.addView(imageView, 0);
+    else
+      menu.addView(imageView);
 
     boolean needViewPackButton = sticker.needViewPackButton();
 
@@ -442,7 +438,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     Views.setMediumText(sendView, Lang.getString(R.string.SendSticker).toUpperCase());
     sendView.setOnClickListener(onClickListener);
     RippleSupport.setTransparentBlackSelector(sendView);
-    int paddingLeft = Screen.dp(hasFavoriteButton ? 12f : 16f);
+    int paddingLeft = Screen.dp(12f);
     int paddingRight = Screen.dp(needViewPackButton ? 12f : 16f);
     sendView.setPadding(Lang.rtl() ? paddingRight : paddingLeft, 0, Lang.rtl() ? paddingLeft : paddingRight, 0);
     sendView.setGravity(Gravity.CENTER);
