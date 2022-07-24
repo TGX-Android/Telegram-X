@@ -6,7 +6,7 @@ tinted: true
 @
 parentTheme: 1
 #
-badge, bubbleIn_progress, bubbleOut_file, bubbleOut_waveformActive, chatListAction, chatSendButton, circleButtonActive, circleButtonRegular, circleButtonTheme, controlActive, file, fileRed, headerBarCallActive, playerButtonActive, profileSectionActive, progress, promo, snackbarUpdate, textSearchQueryHighlight, waveformActive, tooltip_textLink, avatarArchive, avatarSavedMessages, avatarSavedMessages_big, avatarReplies, avatarReplies_big: #F44336
+badge, bubbleIn_progress, bubbleOut_file, bubbleOut_waveformActive, chatListAction, chatSendButton, circleButtonActive, circleButtonRegular, circleButtonTheme, controlActive, file, fileRed, headerBarCallActive, playerButtonActive, profileSectionActive, progress, promo, snackbarUpdate, textSearchQueryHighlight, waveformActive, tooltip_textLink, avatarArchive, avatarSavedMessages, avatarSavedMessages_big, avatarReplies, avatarReplies_big, bubbleOut_fillingPositive, bubbleIn_fillingPositive, bubbleIn_fillingPositive_overlay, bubbleOut_fillingPositive_overlay: #F44336
 bubbleIn_textLink, bubbleOut_chatCorrectChosenFilling, bubbleOut_chatCorrectFilling, bubbleOut_chatVerticalLine, bubbleOut_textLink, chatListVerify, inputActive, iv_textLink, iv_textMarkedLink, messageCorrectChosenFilling, messageCorrectFilling, messageVerticalLine, seekDone, sliderActive, textLink, textNeutral: #EF5350
 bubbleIn_textLinkPressHighlight, bubbleOut_textLinkPressHighlight, iv_textLinkPressHighlight, iv_textMarkedLinkPressHighlight, textLinkPressHighlight, tooltip_textLinkPressHighlight: #EF535040
 bubbleOut_background: #FEE3E3
