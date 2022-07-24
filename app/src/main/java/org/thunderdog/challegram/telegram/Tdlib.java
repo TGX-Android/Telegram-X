@@ -465,9 +465,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private boolean youtubePipDisabled, qrLoginCamera, dialogFiltersTooltip, dialogFiltersEnabled;
   private String qrLoginCode;
   private String[] diceEmoji;
-  private final ArrayList<TGReaction> notPremiumReactions = new ArrayList<>();
-  private final ArrayList<TGReaction> onlyPremiumReactions = new ArrayList<>();
-  private final HashMap<String, TGReaction> supportedTGReactionsMap = new HashMap<>();
+  private ArrayList<TGReaction> notPremiumReactions = new ArrayList<>();
+  private ArrayList<TGReaction> onlyPremiumReactions = new ArrayList<>();
+  private HashMap<String, TGReaction> supportedTGReactionsMap = new HashMap<>();
   private boolean callsEnabled = true, expectBlocking, isLocationVisible;
   private boolean canIgnoreSensitiveContentRestrictions, ignoreSensitiveContentRestrictions;
   private boolean canArchiveAndMuteNewChatsFromUnknownUsers, archiveAndMuteNewChatsFromUnknownUsers;
@@ -3556,20 +3556,28 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public ArrayList<TGReaction> getNotPremiumReactions () {
-    return notPremiumReactions;
+    synchronized (dataLock) {
+      return notPremiumReactions;
+    }
   }
 
   public ArrayList<TGReaction> getOnlyPremiumReactions () {
-    return onlyPremiumReactions;
+    synchronized (dataLock) {
+      return onlyPremiumReactions;
+    }
   }
 
   public int getTotalActiveReactionsCount () {
-    return notPremiumReactions.size() + onlyPremiumReactions.size();
+    synchronized (dataLock) {
+      return notPremiumReactions.size() + onlyPremiumReactions.size();
+    }
   }
 
   @Nullable
   public TGReaction getReaction (String reaction) {
-    return supportedTGReactionsMap.get(reaction);
+    synchronized (dataLock) {
+      return supportedTGReactionsMap.get(reaction);
+    }
   }
 
   public boolean shouldSendAsDice (TdApi.FormattedText text) {
@@ -7534,9 +7542,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private void updateReactions (TdApi.UpdateReactions update) {
     synchronized (dataLock) {
-      supportedTGReactionsMap.clear();
-      notPremiumReactions.clear();
-      onlyPremiumReactions.clear();
+      HashMap<String, TGReaction> supportedTGReactionsMap = new HashMap<>();
+      ArrayList<TGReaction> notPremiumReactions = new ArrayList<>();
+      ArrayList<TGReaction> onlyPremiumReactions = new ArrayList<>();
 
       for (int a = 0; a < update.reactions.length; a++) {
         TdApi.Reaction reaction = update.reactions[a];
@@ -7550,6 +7558,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           }
         }
       }
+
+      this.supportedTGReactionsMap = supportedTGReactionsMap;
+      this.notPremiumReactions = notPremiumReactions;
+      this.onlyPremiumReactions = onlyPremiumReactions;
     }
   }
 
