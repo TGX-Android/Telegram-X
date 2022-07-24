@@ -7980,8 +7980,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       int startY = nextSetReactionAnimation.startPosition.y;
       context().openReactionPreview(tdlib, null, nextSetReactionAnimation.reaction, startX, startY, Screen.dp(30), -1, true);
 
+      final QuickReactionAnimatedPositionOffsetProvider offsetProvider = new QuickReactionAnimatedPositionOffsetProvider();
       final Runnable finishRunnable = () -> {
-        context().replaceReactionPreviewCords(finishX, finishY);
+        Point p = new Point();
+        offsetProvider.getOffset(p);
+        context().replaceReactionPreviewCords(finishX + p.x, finishY + p.y);
         context().closeStickerPreview();
         onQuickReactionAnimationFinish();
       };
