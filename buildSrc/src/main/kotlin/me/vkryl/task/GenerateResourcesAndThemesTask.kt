@@ -417,7 +417,7 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
     }?.forEach { themeFile ->
       val theme = Theme(themeFile)
 
-      val missingKeys = if (theme.isTinted) tintedColors.toMutableList() else ArrayList<String>(themeColors)
+      val missingKeys = if (theme.isTinted) tintedColors.toMutableList() else ArrayList(themeColors)
       missingKeys.removeAll(theme.colorByName.keys.toList())
       if (missingKeys.isNotEmpty()) {
         missingMap[theme.id] = missingKeys.toSet()
@@ -446,7 +446,7 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
       for (entry in missingMap) {
         val theme = themesMap[entry.key]!!
         val warning = "\"${theme.name}\" theme ${if (theme.isTinted) "(tinted) misses" else "does not define"} ${entry.value.size} color(s): ${entry.value}"
-        val b = if (theme.isTinted) fatal else warn
+        val b = if (theme.isTinted || theme.parentTheme == 0) fatal else warn
         if (b.isNotEmpty())
           b.append("\n\n")
         b.append(warning)

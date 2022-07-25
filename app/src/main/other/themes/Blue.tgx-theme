@@ -57,7 +57,7 @@ bubbleOut_chatNegativeFilling, fillingNegative, messageNegativeLine: #EC5454
 bubbleOut_file, file: #54A6E6
 bubbleOut_fileContent, fileContent: #FFF
 bubbleOut_fillingPositive, bubbleOut_fillingPositive_overlay, bubbleIn_fillingPositive, bubbleIn_fillingPositive_overlay: #54A6E6
-bubbleOut_fillingPositiveContent, bubbleIn_fillingPositiveContent, bubbleIn_fillingPositiveContent_overlay: #FFF
+bubbleOut_fillingPositiveContent, bubbleOut_fillingPositiveContent_overlay, bubbleIn_fillingPositiveContent, bubbleIn_fillingPositiveContent_overlay: #FFF
 fillingActive: #26838C96
 fillingActiveContent: #000
 bubbleOut_inlineOutline, inlineOutline: #24A2DC
