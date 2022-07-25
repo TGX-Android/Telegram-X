@@ -29,7 +29,7 @@ bubbleIn_textLink, bubbleOut_messageAuthor, bubbleOut_textLink, iv_textLink, iv_
 bubbleIn_textLinkPressHighlight, bubbleOut_textLinkPressHighlight, iv_textLinkPressHighlight, iv_textMarkedLinkPressHighlight, seekReady, textLinkPressHighlight, tooltip_textLinkPressHighlight: #7A7A7A40
 bubbleOut_file, file, fileAttach, inputInactive: #3A3A3A
 bubbleOut_waveformActive, waveformActive: #CACACA
-bubbleOut_waveformInactive, fillingPositive, waveformInactive: #303030
+bubbleOut_waveformInactive, waveformInactive: #303030
 chatBackground, filling: #141414
 chatListIcon, chatListMute: #71767C
 circleButtonChat, circleButtonOverlay, circleButtonRegular, circleButtonTheme, headerButton, overlayFilling, seekEmpty: #1E1E1E
@@ -63,5 +63,5 @@ togglerActiveBackground, togglerPositiveBackground: #8A8A8A
 togglerInactive: #A8A8A8
 bubbleIn_fillingActive, bubbleOut_fillingActive, fillingActive: #A0A0A026
 bubbleIn_fillingActiveContent, bubbleOut_fillingActiveContent, fillingActiveContent: #fff
-bubbleOut_fillingPositive, bubbleIn_fillingPositive, bubbleOut_fillingPositive_overlay, bubbleIn_fillingPositive_overlay: #fff
-bubbleOut_fillingPositiveContent, bubbleIn_fillingPositiveContent, bubbleOut_fillingPositiveContent_overlay, bubbleIn_fillingPositiveContent_overlay: #000
+fillingPositive, bubbleOut_fillingPositive, bubbleIn_fillingPositive, bubbleOut_fillingPositive_overlay, bubbleIn_fillingPositive_overlay: #fff
+fillingPositiveContent, bubbleOut_fillingPositiveContent, bubbleIn_fillingPositiveContent, bubbleOut_fillingPositiveContent_overlay, bubbleIn_fillingPositiveContent_overlay: #000
