@@ -219,11 +219,12 @@ public class StickersTrendingController extends ViewController<Void> implements 
       loadingTrending = true;
       tdlib.client().send(new TdApi.GetTrendingStickerSets(offset, limit), result -> {
         switch (result.getConstructor()) {
-          case TdApi.StickerSets.CONSTRUCTOR: {
+          case TdApi.TrendingStickerSets.CONSTRUCTOR: {
+            final TdApi.TrendingStickerSets trendingStickerSets = (TdApi.TrendingStickerSets) result;
             final ArrayList<MediaStickersAdapter.StickerItem> stickerItems = new ArrayList<>();
             final ArrayList<TGStickerSetInfo> stickerSets;
 
-            TdApi.StickerSetInfo[] sets = ((TdApi.StickerSets) result).sets;
+            TdApi.StickerSetInfo[] sets = trendingStickerSets.sets;
             if (sets.length > 0) {
               stickerSets = new ArrayList<>(sets.length);
               EmojiMediaListController.parseTrending(tdlib, stickerSets, stickerItems, cellCount, sets, this, this, true);
