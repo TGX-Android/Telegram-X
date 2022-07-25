@@ -59,9 +59,9 @@ togglerActiveBackground, togglerPositiveBackground: #417597
 tooltip: #000E
 tooltip_outline: #456A9320
 waveformActive: #254C5E
-fillingActive: #267D8E98
+fillingActive: #7D8E9826
 fillingActiveContent: #FFF
-bubbleIn_fillingActive: #267D8E98
+bubbleIn_fillingActive: #7D8E9826
 bubbleIn_fillingActiveContent: #FFF
-bubbleOut_fillingActive: #2691AFC8
+bubbleOut_fillingActive: #91AFC826
 bubbleOut_fillingActiveContent: #FFF

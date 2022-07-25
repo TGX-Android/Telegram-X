@@ -107,34 +107,34 @@ data class AppBuildInfo(
   }
 
   fun toMap (): Map<String, Any?> {
-    return mapOf(
-      "installation_id" to installationId,
-      "first_run_date" to firstRunDate,
-      "version" to mapOf(
-        "code" to versionCode,
-        "name" to versionName,
-        "flavor" to flavor,
-        "commit" to commit,
-        "date" to maxCommitDate()
-      ),
+    return linkedMapOf(
       "tdlib" to if (tdlibVersion != null || tdlibCommitFull != null) {
-        mapOf(
+        linkedMapOf(
           "version" to tdlibVersion,
           "commit" to tdlibCommit()
         )
       } else {
         null
       },
+      "version" to linkedMapOf(
+        "code" to versionCode,
+        "name" to versionName,
+        "flavor" to flavor,
+        "commit" to commit,
+        "date" to maxCommitDate()
+      ),
       "pull_requests" to if (pullRequests.isNotEmpty()) {
         pullRequests.map {
-          mapOf(
+          linkedMapOf(
             "id" to it.id,
             "commit" to it.commit
           )
         }
       } else {
         null
-      }
+      },
+      "first_run_date" to firstRunDate,
+      "installation_id" to installationId
     )
   }
 

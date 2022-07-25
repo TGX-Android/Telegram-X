@@ -30,7 +30,7 @@ import org.thunderdog.challegram.unsorted.AppState;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -236,19 +236,19 @@ public class Crash {
   }
 
   public Map<String, Object> toMap (final String crashDeviceId) {
-    Map<String, Object> result = new HashMap<>();
-    result.put("device_id", crashDeviceId);
-    result.put("package_id", BuildConfig.APPLICATION_ID);
-    result.put("crash_id", id);
+    Map<String, Object> result = new LinkedHashMap<>();
+    result.put("message", message);
+    result.put("running_tdlib_count", runningTdlibCount);
     result.put("date", date);
     result.put("uptime", uptime);
-    result.put("running_tdlib_count", runningTdlibCount);
-    result.put("cpu", U.getCpuArchitecture());
     result.put("sdk", sdkVersion);
     if (appBuildInfo != null) {
       result.put("app", appBuildInfo.toMap());
     }
-    result.put("message", message);
+    result.put("cpu", U.getCpuArchitecture());
+    result.put("crash_id", id);
+    result.put("package_id", BuildConfig.APPLICATION_ID);
+    result.put("device_id", crashDeviceId);
     return result;
   }
 
