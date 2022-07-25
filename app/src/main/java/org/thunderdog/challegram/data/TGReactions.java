@@ -875,8 +875,6 @@ public class TGReactions {
 
     @Override
     public int defaultTextColor () {
-      // return counter.getColor(counter.getMuteFactor(), R.id.theme_color_white, message.isOutgoing() && message.useBubbles() ? R.id.theme_color_bubbleOut_text : R.id.theme_color_bubbleIn_text);
-
       if (!message.useBubbles()) {
         return counter.getColor(counter.getMuteFactor(), R.id.theme_color_fillingPositiveContent, R.id.theme_color_fillingActiveContent);
       } else if (message.useStickerBubbleReactions() || message.useMediaBubbleReactions()) {
@@ -894,35 +892,18 @@ public class TGReactions {
 
     @Override
     public int backgroundColor (boolean isPressed) {
-      /*if (!message.useBubbles()) {
-        return ColorUtils.alphaColor(
-          Math.max(1f - counter.getMuteFactor(), 0.15f),
-          counter.getColor(counter.getMuteFactor(), R.id.theme_color_fillingPositive, R.id.theme_color_bubbleIn_time));
-      } else if (message.isOutgoing()) {
-        return ColorUtils.alphaColor(
-          Math.max(1f - counter.getMuteFactor(), 0.15f),
-          counter.getColor(counter.getMuteFactor(), R.id.theme_color_bubbleOut_file, R.id.theme_color_bubbleOut_time));
-      } else {
-        return ColorUtils.alphaColor(
-          Math.max(1f - counter.getMuteFactor(), 0.15f),
-          counter.getColor(counter.getMuteFactor(), R.id.theme_color_file, R.id.theme_color_bubbleIn_time));
-      }*/
-
       if (!message.useBubbles()) {
-        return ColorUtils.alphaColor(Math.max(1f - counter.getMuteFactor(), 0.15f),
-          counter.getColor(counter.getMuteFactor(), R.id.theme_color_fillingPositive, R.id.theme_color_fillingActive));
+        return counter.getColor(counter.getMuteFactor(), R.id.theme_color_fillingPositive, R.id.theme_color_fillingActive);
       } else if (message.useStickerBubbleReactions() || message.useMediaBubbleReactions()) {
-        return ColorUtils.alphaColor(Math.max(1f - counter.getMuteFactor(), 0.15f), ColorUtils.fromToArgb(
+        return ColorUtils.fromToArgb(
           Theme.getColor(message.isOutgoing() ? R.id.theme_color_bubbleOut_fillingPositive_overlay : R.id.theme_color_bubbleIn_fillingPositive_overlay),
           message.getBubbleDateBackgroundColor(),
           counter.getMuteFactor()
-        ));
+        );
       } else if (message.isOutgoing()) {
-        return ColorUtils.alphaColor(Math.max(1f - counter.getMuteFactor(), 0.15f),
-          counter.getColor(counter.getMuteFactor(), R.id.theme_color_bubbleOut_fillingPositive, R.id.theme_color_bubbleOut_fillingActive));
+        return counter.getColor(counter.getMuteFactor(), R.id.theme_color_bubbleOut_fillingPositive, R.id.theme_color_bubbleOut_fillingActive);
       } else {
-        return ColorUtils.alphaColor(Math.max(1f - counter.getMuteFactor(), 0.15f),
-          counter.getColor(counter.getMuteFactor(), R.id.theme_color_bubbleIn_fillingPositive, R.id.theme_color_bubbleIn_fillingActive));
+        return counter.getColor(counter.getMuteFactor(), R.id.theme_color_bubbleIn_fillingPositive, R.id.theme_color_bubbleIn_fillingActive);
       }
     }
   }
