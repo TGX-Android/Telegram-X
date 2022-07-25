@@ -422,7 +422,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     return Screen.currentHeight()
       + (context.isKeyboardVisible() ? Keyboard.getSize() : 0)
       - (Screen.needsKeyboardPadding(context) ? Screen.getNavigationBarFrameDifference() : 0)
-      + (Screen.needsKeyboardPadding(context) && Device.NEED_ADD_KEYBOARD_SIZE ? Screen.getNavigationBarHeight() : 0);
+      + (context.isKeyboardVisible() && Device.NEED_ADD_KEYBOARD_SIZE ? Screen.getNavigationBarHeight() : 0);
   }
 
   private int getContentOffset () {
