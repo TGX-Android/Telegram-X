@@ -40,6 +40,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
+import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.WatchDog;
 import org.thunderdog.challegram.core.WatchDogContext;
 import org.thunderdog.challegram.data.TD;
@@ -77,6 +78,7 @@ import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.util.FilteredIterator;
+import me.vkryl.td.JSON;
 import me.vkryl.td.Td;
 
 public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
@@ -292,8 +294,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     public void onProxyAdded (Settings.Proxy proxy, boolean isCurrent) { }
   };
 
-  private @Nullable
-  Crash crashInfo;
+  private @Nullable Crash crashInfo;
   private final WatchDogContext watchDog;
 
   private final String languageDatabasePath;
@@ -311,7 +312,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       Crash.Builder b = new Crash.Builder()
         .accountId(accountId)
         .message(StringUtils.isEmpty(errorMessage) ? "empty" : errorMessage)
-        .flags(Crash.Flags.SOURCE_TDLIB);
+        .flags(Crash.Flags.SOURCE_TDLIB | Crash.Flags.SAVE_APPLICATION_LOG_EVENT);
       Settings.instance().storeCrash(b);
       if (isLayerError) {
         Tracer.onTdlibLostPromiseError(errorMessage);
@@ -337,6 +338,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     onUiStateChanged(UI.getUiState());
 
     checkDeviceToken();
+    saveCrashes();
   }
 
   void setTdlibCommitHash (@NonNull String commitHash) {
@@ -1624,6 +1626,63 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
         account.tdlib().checkDeviceTokenImpl(onDone);
       }, Config.MAX_RUNNING_TDLIBS, account -> !account.isUnauthorized() || account.hasTdlib(false), null);
     }
+  }
+
+  // Crash reporting
+
+  public void saveCrashes () {
+    final List<Crash> savingCrashes = Settings.instance().getCrashesToSave();
+    if (savingCrashes == null || savingCrashes.isEmpty())
+      return;
+    Background.instance().post(() -> {
+      final Tdlib tdlib = serviceTdlib();
+      final String deviceId = Settings.instance().crashDeviceId();
+      tdlib.awaitConnection(() -> {
+        AtomicInteger pendingRequests = new AtomicInteger();
+        Runnable check = () -> {
+          synchronized (pendingRequests) {
+            if (pendingRequests.get() != 0)
+              return;
+          }
+          tdlib.decrementJobReferenceCount();
+        };
+        boolean isEmpty = true;
+        for (Crash crash : savingCrashes) {
+          TdApi.SaveApplicationLogEvent saveFunction = crash.toSaveFunction(deviceId);
+          if (saveFunction != null) {
+            if (isEmpty) {
+              isEmpty = false;
+              tdlib.incrementJobReferenceCount();
+            }
+            synchronized (pendingRequests) {
+              pendingRequests.incrementAndGet();
+            }
+            TDLib.Tag.td_init("Reporting crash %d: %s", crash.id, saveFunction);
+            tdlib.send(saveFunction, result -> {
+              switch (result.getConstructor()) {
+                case TdApi.Ok.CONSTRUCTOR: {
+                  Settings.instance().markCrashAsSaved(crash);
+                  break;
+                }
+                case TdApi.Error.CONSTRUCTOR: {
+                  TDLib.Tag.td_init("Can't report crash %d: %s", crash.id, TD.toErrorString(result));
+                  break;
+                }
+              }
+              synchronized (pendingRequests) {
+                pendingRequests.decrementAndGet();
+              }
+              check.run();
+            });
+          } else {
+            Settings.instance().markCrashAsSaved(crash);
+          }
+        }
+        if (!isEmpty) {
+          check.run();
+        }
+      });
+    });
   }
 
   // Account list
