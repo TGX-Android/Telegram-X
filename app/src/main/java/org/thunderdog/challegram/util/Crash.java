@@ -14,6 +14,8 @@
  */
 package org.thunderdog.challegram.util;
 
+import android.os.Build;
+
 import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringDef;
@@ -22,15 +24,20 @@ import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.telegram.TdlibAccount;
+import org.thunderdog.challegram.unsorted.AppState;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.leveldb.LevelDB;
+import me.vkryl.td.JSON;
 
 public class Crash {
   @Retention(RetentionPolicy.SOURCE)
@@ -40,7 +47,8 @@ public class Crash {
     Flags.SOURCE_TDLIB,
     Flags.SOURCE_TDLIB_PARAMETERS,
     Flags.SOURCE_UNCAUGHT_EXCEPTION,
-    Flags.SENT
+    Flags.SAVE_APPLICATION_LOG_EVENT,
+    Flags.APPLICATION_LOG_EVENT_SAVED,
   })
   public @interface Flags {
     int
@@ -49,12 +57,14 @@ public class Crash {
       SOURCE_TDLIB = 1 << 2, // Crash originally came from TDLib
       SOURCE_TDLIB_PARAMETERS = 1 << 3, // Crash originally came from TDLib setTdlibParameters
       SOURCE_UNCAUGHT_EXCEPTION = 1 << 4,
-      SENT = 1 << 5; // Crash sent through saveApplicationLogEvent
+      SAVE_APPLICATION_LOG_EVENT = 1 << 5, // Crash has to be sent through saveApplicationLogEvent
+      APPLICATION_LOG_EVENT_SAVED = 1 << 6; // Crash sent through saveApplicationLogEvent
   }
 
   @Retention(RetentionPolicy.SOURCE)
   @StringDef({
-    CacheKey.APP_VERSION,
+    CacheKey.APP_VERSION_CODE,
+    CacheKey.SDK_VERSION,
     CacheKey.INSTALLATION_ID,
     CacheKey.FLAGS,
     CacheKey.DATE,
@@ -65,7 +75,8 @@ public class Crash {
   })
   private @interface CacheKey {
     String
-      APP_VERSION = "app",
+      APP_VERSION_CODE = "app",
+      SDK_VERSION = "sdk",
       INSTALLATION_ID = "iid",
       FLAGS = "flags",
       DATE = "time",
@@ -99,20 +110,21 @@ public class Crash {
   public final String message;
   public final long date;
   public final long uptime;
-  public final int appVersion;
+  public final int appVersionCode, sdkVersion;
   public final @Nullable AppBuildInfo appBuildInfo;
   public final int accountId;
   public final int runningTdlibCount;
 
   private @Flags int flags;
 
-  private Crash (long id, String message, long date, long uptime, @Flags int flags, int appVersion, @Nullable AppBuildInfo appBuildInfo, int accountId, int runningTdlibCount) {
+  private Crash (long id, String message, long date, long uptime, @Flags int flags, int appVersionCode, int sdkVersion, @Nullable AppBuildInfo appBuildInfo, int accountId, int runningTdlibCount) {
     this.id = id;
     this.message = message;
     this.date = date;
     this.uptime = uptime;
     this.flags = flags;
-    this.appVersion = appVersion;
+    this.appVersionCode = appVersionCode;
+    this.sdkVersion = sdkVersion;
     this.appBuildInfo = appBuildInfo;
     this.accountId = accountId;
     this.runningTdlibCount = runningTdlibCount;
@@ -139,7 +151,7 @@ public class Crash {
   }
 
   public boolean shouldShowAtApplicationStart () {
-    if (appVersion != BuildConfig.VERSION_CODE || BitwiseUtils.getFlag(flags, Flags.RESOLVED)) {
+    if (appVersionCode != BuildConfig.VERSION_CODE || BitwiseUtils.getFlag(flags, Flags.RESOLVED)) {
       // User has installed a new APK or pressed "Launch App". Forgetting the last error.
       return false;
     }
@@ -213,18 +225,36 @@ public class Crash {
         type += "_" + appBuildInfo.getTdlibVersion();
       }
       if (!StringUtils.isEmpty(appBuildInfo.getTdlibCommitFull())) {
-        type += "_" + appBuildInfo.getTdlibCommitFull();
+        type += "_" + appBuildInfo.tdlibCommit();
       }
     }
-    return new TdApi.SaveApplicationLogEvent(type, 0, toJsonData(crashDeviceId));
+    return new TdApi.SaveApplicationLogEvent(type, appBuildInfo.maxCommitDate(), toJsonData(crashDeviceId));
   }
 
   public TdApi.JsonValue toJsonData (final String crashDeviceId) {
-    throw new RuntimeException();
+    return JSON.toObject(toMap(crashDeviceId));
+  }
+
+  public Map<String, Object> toMap (final String crashDeviceId) {
+    Map<String, Object> result = new HashMap<>();
+    result.put("device_id", crashDeviceId);
+    result.put("package_id", BuildConfig.APPLICATION_ID);
+    result.put("crash_id", id);
+    result.put("date", date);
+    result.put("uptime", uptime);
+    result.put("running_tdlib_count", runningTdlibCount);
+    result.put("cpu", U.getCpuArchitecture());
+    result.put("sdk", sdkVersion);
+    if (appBuildInfo != null) {
+      result.put("app", appBuildInfo.toMap());
+    }
+    result.put("message", message);
+    return result;
   }
 
   public void saveTo (LevelDB pmc, String keyPrefix) {
-    pmc.putInt(keyPrefix + CacheKey.APP_VERSION, appVersion);
+    pmc.putInt(keyPrefix + CacheKey.APP_VERSION_CODE, appVersionCode);
+    pmc.putInt(keyPrefix + CacheKey.SDK_VERSION, sdkVersion);
     if (appBuildInfo != null) {
       pmc.putLong(keyPrefix + CacheKey.INSTALLATION_ID, appBuildInfo.getInstallationId());
     }
@@ -248,33 +278,19 @@ public class Crash {
     return pmc.getLong(keyPrefix + CacheKey.INSTALLATION_ID, 0);
   }
 
-  public static Crash restoreFrom (LevelDB pmc, String keyPrefix, @Nullable AppBuildInfoRestorer appBuildInfoRestorer) {
-    Crash.Builder builder = new Crash.Builder();
-    boolean nonEmpty = false;
-    for (LevelDB.Entry entry : pmc.find(keyPrefix)) {
-      if (builder.restoreField(entry, keyPrefix, appBuildInfoRestorer)) {
-        nonEmpty = true;
-      }
-    }
-    if (nonEmpty) {
-      return builder.build();
-    } else {
-      return null;
-    }
-  }
-
   public interface AppBuildInfoRestorer {
     @Nullable AppBuildInfo restoreBuildInformation (long installationId);
   }
 
   public static class Builder {
     private String message = "empty";
-    private long uptime;
+    private long uptime = AppState.uptime();
     private int flags;
     private int accountId = TdlibAccount.NO_ID;
     private long id = 0;
     private long date = System.currentTimeMillis();
-    private int appVersion = BuildConfig.VERSION_CODE;
+    private int appVersionCode = BuildConfig.ORIGINAL_VERSION_CODE;
+    private int sdkVersion = Build.VERSION.SDK_INT;
     private int runningTdlibCount = (int) Math.min(Integer.MAX_VALUE, Client.getClientCount());
     private @Nullable AppBuildInfo appBuildInfo;
 
@@ -332,8 +348,13 @@ public class Crash {
       return this;
     }
 
-    public Builder appVersion (int appVersion) {
-      this.appVersion = appVersion;
+    public Builder appVersionCode (int appVersionCode) {
+      this.appVersionCode = appVersionCode;
+      return this;
+    }
+
+    public Builder sdkVersion (int sdkVersion) {
+      this.sdkVersion = sdkVersion;
       return this;
     }
 
@@ -348,14 +369,17 @@ public class Crash {
     }
 
     public Crash build () {
-      return new Crash(id, message, date, uptime, flags, appVersion, appBuildInfo, accountId, runningTdlibCount);
+      return new Crash(id, message, date, uptime, flags, appVersionCode, sdkVersion, appBuildInfo, accountId, runningTdlibCount);
     }
 
     public boolean restoreField (LevelDB.Entry entry, String keyPrefix, @Nullable AppBuildInfoRestorer appBuildInfoRestorer) {
       final @CacheKey String key = entry.key().substring(keyPrefix.length());
       switch (key) {
-        case CacheKey.APP_VERSION:
-          appVersion(entry.asInt());
+        case CacheKey.APP_VERSION_CODE:
+          appVersionCode(entry.asInt());
+          break;
+        case CacheKey.SDK_VERSION:
+          sdkVersion(entry.asInt());
           break;
         case CacheKey.INSTALLATION_ID:
           appBuildInfo(appBuildInfoRestorer != null ? appBuildInfoRestorer.restoreBuildInformation(entry.asLong()) : null);

@@ -23,6 +23,7 @@ data class AppBuildInfo(
   val installationId: Long,
   val versionCode: Int,
   val versionName: String,
+  val flavor: String,
   val firstRunDate: Long,
   val commit: String,
   val commitFull: String,
@@ -35,6 +36,7 @@ data class AppBuildInfo(
     installationId,
     BuildConfig.ORIGINAL_VERSION_CODE,
     BuildConfig.ORIGINAL_VERSION_NAME,
+    BuildConfig.FLAVOR,
     System.currentTimeMillis(),
     BuildConfig.COMMIT,
     BuildConfig.COMMIT_FULL,
@@ -48,12 +50,16 @@ data class AppBuildInfo(
     editor
       .putInt("${keyPrefix}_code", versionCode)
       .putString("${keyPrefix}_name", versionName)
+      .putString("${keyPrefix}_flavor", flavor)
       .putLong("${keyPrefix}_started", firstRunDate)
       .putString("${keyPrefix}_commit", commit)
       .putString("${keyPrefix}_full", commitFull)
       .putLong("${keyPrefix}_date", commitDate)
     if (!tdlibCommitFull.isNullOrEmpty()) {
       editor.putString("${keyPrefix}_tdlib", tdlibCommitFull)
+    }
+    if (!tdlibVersion.isNullOrEmpty()) {
+      editor.putString("${keyPrefix}_td_version", tdlibVersion)
     }
     editor
       .putLongArray("${keyPrefix}_prs", pullRequests.map { it.id }.toLongArray())
@@ -99,6 +105,42 @@ data class AppBuildInfo(
   } else {
     null
   }
+
+  fun toMap (): Map<String, Any?> {
+    return mapOf(
+      "installation_id" to installationId,
+      "first_run_date" to firstRunDate,
+      "version" to mapOf(
+        "code" to versionCode,
+        "name" to versionName,
+        "flavor" to flavor,
+        "commit" to commit,
+        "date" to maxCommitDate()
+      ),
+      "tdlib" to if (tdlibVersion != null || tdlibCommitFull != null) {
+        mapOf(
+          "version" to tdlibVersion,
+          "commit" to tdlibCommit()
+        )
+      } else {
+        null
+      },
+      "pull_requests" to if (pullRequests.isNotEmpty()) {
+        pullRequests.map {
+          mapOf(
+            "id" to it.id,
+            "commit" to it.commit
+          )
+        }
+      } else {
+        null
+      }
+    )
+  }
+
+  fun maxCommitDate (): Long {
+    return max(commitDate, pullRequests.maxOfOrNull { it.commitDate } ?: 0)
+  }
   
   companion object {
     @JvmStatic fun restoreFrom (pmc: LevelDB, installationId: Long, keyPrefix: String): AppBuildInfo {
@@ -114,6 +156,7 @@ data class AppBuildInfo(
         installationId,
         pmc.getInt("${keyPrefix}_code", 0),
         pmc.getString("${keyPrefix}_name", "")!!,
+        pmc.getString("${keyPrefix}_flavor", "")!!,
         pmc.getLong("${keyPrefix}_started", 0),
         pmc.getString("${keyPrefix}_commit", "")!!,
         pmc.getString("${keyPrefix}_full", "")!!,
@@ -124,7 +167,7 @@ data class AppBuildInfo(
       )
     }
 
-    @JvmStatic fun maxCommitDate (): Long {
+    @JvmStatic fun maxBuiltInCommitDate (): Long {
       return max(BuildConfig.COMMIT_DATE, BuildConfig.PULL_REQUEST_COMMIT_DATE.maxOrNull() ?: 0)
     }
   }
