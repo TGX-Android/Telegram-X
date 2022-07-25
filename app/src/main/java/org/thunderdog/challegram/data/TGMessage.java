@@ -1535,11 +1535,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return Screen.dp(useBubbles() ? 8f : 10f);
   }
 
-  protected final int getBubbleDateBackgroundColor () {
+  public final int getBubbleDateBackgroundColor () {
     return manager.getOverlayColor(0, R.id.theme_color_bubble_date, R.id.theme_color_bubble_date_noWallpaper, ThemeProperty.WALLPAPER_OVERRIDE_DATE);
   }
 
-  protected final int getBubbleDateTextColor () {
+  public final int getBubbleDateTextColor () {
     return manager.getColor(0, R.id.theme_color_bubble_dateText, R.id.theme_color_bubble_dateText_noWallpaper, ThemeProperty.WALLPAPER_OVERRIDE_DATE);
   }
 

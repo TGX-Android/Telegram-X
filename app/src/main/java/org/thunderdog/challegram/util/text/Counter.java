@@ -207,6 +207,14 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     );
   }
 
+  public int getColor (float muteFactor, int mainColorId, int mutedColorId) {
+    return ColorUtils.fromToArgb(
+      Theme.getColor(mainColorId),
+      Theme.getColor(mutedColorId),
+      muteFactor
+    );
+  }
+
   @Override
   public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
     invalidate(id == 0);
