@@ -912,6 +912,8 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
             names = mutableSetOf()
             for (name in color.value) {
               if (color.key != parentTheme.effectiveColor(name, themesMap, sourceTheme)) {
+                if (!themeColors.contains(name))
+                  error("Unknown color id ${name} in ${theme.name} theme")
                 names.add(name)
               }
             }
