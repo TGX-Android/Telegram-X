@@ -39,6 +39,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGReaction;
@@ -420,7 +421,8 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
   private int getTargetHeight () {
     return Screen.currentHeight()
       + (context.isKeyboardVisible() ? Keyboard.getSize() : 0)
-      -(Screen.needsKeyboardPadding(context) ? Screen.getNavigationBarFrameDifference() : 0);
+      - (Screen.needsKeyboardPadding(context) ? Screen.getNavigationBarFrameDifference() : 0)
+      + (Screen.needsKeyboardPadding(context) && Device.NEED_ADD_KEYBOARD_SIZE ? Screen.getNavigationBarHeight() : 0);
   }
 
   private int getContentOffset () {
