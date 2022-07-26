@@ -252,8 +252,10 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     boolean animateChanges = animated && getVisibility() > 0f;
     isMuted.setValue(muted, animateChanges);
     isFailed.setValue(count == Tdlib.CHAT_FAILED, animateChanges);
-    boolean hasCounter = count > 0 || count == Tdlib.CHAT_MARKED_AS_UNREAD || count == Tdlib.CHAT_FAILED;
-    if (count == Tdlib.CHAT_FAILED && drawableRes == 0) {
+    boolean hasCounter = count > 0 || count == Tdlib.CHAT_MARKED_AS_UNREAD || count == Tdlib.CHAT_FAILED || count == Tdlib.CHAT_LOADING;
+    if (count == Tdlib.CHAT_LOADING) {
+      counter.setCounter(count, "?", animateChanges);
+    } else if (count == Tdlib.CHAT_FAILED && drawableRes == 0) {
       counter.setCounter(count, "!", animateChanges);
     } else if (count > 0) {
       counter.setCounter(count, Strings.buildCounter(count), animateChanges);

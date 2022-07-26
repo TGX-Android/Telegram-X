@@ -131,7 +131,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
       int itemWidth = counters[SEEN_POSITION].calculateWidth(null); // - Screen.dp(16);
       baseCountersWidth += itemWidth;
       counters[SEEN_POSITION].setStaticWidth(itemWidth - Screen.dp(16));
-      counters[SEEN_POSITION].counter.setCount(0, false);
+      counters[SEEN_POSITION].counter.setCount(Tdlib.CHAT_LOADING, false);
       getMessageOptions();
     } else {
       SEEN_POSITION = -1;

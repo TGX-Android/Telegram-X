@@ -7966,6 +7966,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         } else {
           startX += view.getMeasuredWidth() - Screen.dp(BUBBLE_MOVE_MAX) / 2;
         }
+
+        final int height = findBottomEdge() - (getHeaderPadding() - xHeaderPadding);
+        if (height > 256) {
+          startY = (int) (positionCords[1] + (mInitialTouchY - getHeaderPadding() + xHeaderPadding));
+        }
       }
 
       context().reactionsOverlayManager().addOverlay(

@@ -6400,6 +6400,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public static int CHAT_MARKED_AS_UNREAD = -1;
   public static int CHAT_FAILED = -2;
+  public static int CHAT_LOADING = -3;
 
   static class ChatListChange {
     public final TdlibChatList list;

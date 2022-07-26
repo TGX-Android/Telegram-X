@@ -230,7 +230,13 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
     }
   }
 
+  private int oldPaintsColor = 0;
+
   public void updatePaints (int color) {
+    if (oldPaintsColor != color) {
+      oldPaintsColor = color;
+    } else return;
+
     shader1 = new LinearGradient(0, 0, shadowSize / 2f, 0, color, 0, Shader.TileMode.CLAMP);
     shader2 = new LinearGradient(0, 0, shadowSize, 0, 0, color, Shader.TileMode.CLAMP);
     if (shadowPaint1 == null) {
@@ -243,6 +249,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
     shadowPaint2.setShader(shader2);
     if (reactionsSelectorRecyclerView != null) {
       reactionsSelectorRecyclerView.invalidateAll();
+      reactionsSelectorRecyclerView.invalidate();
     }
     recyclerView.invalidate();
     invalidate();
