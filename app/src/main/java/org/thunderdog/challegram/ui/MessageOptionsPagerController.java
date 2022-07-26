@@ -239,6 +239,21 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
         return !(e.getAction() == MotionEvent.ACTION_DOWN && headerView != null && e.getY() < headerView.getTranslationY()) && super.onTouchEvent(e);
       }
 
+      private int oldHeight = -1;
+
+      @Override
+      protected void onLayout (boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        post(() -> {
+          final int height = getTargetHeight();
+          if (height != oldHeight) {
+            invalidateAllItemDecorations();
+            onPageScrolled(currentMediaPosition, currentPositionOffset, 0);
+            oldHeight = height;
+          }
+        });
+      }
+
       /*@Override
       protected boolean drawChild (Canvas canvas, View child, long drawingTime) {
         canvas.save();
@@ -327,11 +342,12 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
   private float headerBackgroundFactor;
 
   private void setHeaderPosition (float y) {
+    y = Math.max(y, HeaderView.getTopOffset());
+
     headerView.setTranslationY(y);
     fixView.setTranslationY(y);
     contentView.invalidate();
     fixView.invalidate();
-
     if (lickView != null) {
       final int topOffset = HeaderView.getTopOffset();
       final float top = y - topOffset;
@@ -754,6 +770,18 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
 
   //
 
+  private void invalidateAllItemDecorations () {
+    for (int i = 0; i < getPagerItemCount(); i++) {
+      MessageBottomSheetBaseController<?> controller = findCachedControllerByPosition(i);
+      if (controller != null) {
+        CustomRecyclerView customRecyclerView = controller.getRecyclerView();
+        if (customRecyclerView != null) {
+          customRecyclerView.invalidateItemDecorations();
+        }
+      }
+    }
+  }
+
   @Nullable
   private MessageBottomSheetBaseController<?> findCurrentCachedController () {
     return findCachedControllerByPosition(getViewPager().getCurrentItem());
@@ -801,7 +829,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
         bottom = Math.max(0, parentHeight - itemsHeight /*- getHiddenContentHeight() - getPagerTopViewHeight()*/);
       }
 
-      outRect.set(0, top, 0, needBottomOffsets ? bottom : 0);
+      outRect.set(0, Math.max(top, 0), 0, needBottomOffsets ? Math.max(bottom, 0) : 0);
     }
   }
 
