@@ -304,6 +304,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     wrapView.addView(contentView);
     wrapView.addView(headerView);
     wrapView.setWillNotDraw(false);
+    addThemeInvalidateListener(wrapView);
     if (HeaderView.getTopOffset() > 0) {
       lickView = new LickView(context);
       addThemeInvalidateListener(lickView);
