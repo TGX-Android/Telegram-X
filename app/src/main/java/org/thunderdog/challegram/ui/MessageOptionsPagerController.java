@@ -18,6 +18,7 @@ import android.animation.Animator;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
@@ -254,15 +255,43 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
         });
       }
 
-      /*@Override
+      @Override
+      public void setTranslationY (float translationY) {
+        super.setTranslationY(translationY);
+        invalidate();
+      }
+
+      @Override
+      protected void onDraw (Canvas canvas) {
+        final int diff = Math.max(wrapView.getMeasuredHeight() - getTargetHeight(), 0);
+        final int y = (int) (getMeasuredHeight() - getTranslationY() - diff);
+        if (diff > 0) {
+          canvas.drawRect(0, y, getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(Theme.backgroundColor()));
+        }
+        super.onDraw(canvas);
+      }
+
+      @Override
       protected boolean drawChild (Canvas canvas, View child, long drawingTime) {
-        canvas.save();
-        canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight());
+        final int diff = Math.max(wrapView.getMeasuredHeight() - getTargetHeight(), 0);
+        final int y = (int) (getMeasuredHeight() - getTranslationY() - diff);
+        if (diff > 0) {
+          canvas.save();
+          canvas.clipRect(0, 0, getMeasuredWidth(), y);
+        }
         boolean result = super.drawChild(canvas, child, drawingTime);
-        canvas.restore();
-        // canvas.drawRect(0, 0, getMeasuredWidth(), getTargetHeight(), Paints.strokeSmallPaint(Color.RED));
+        if (diff > 0) {
+          canvas.restore();
+        }
+
+
+        // canvas.drawRect(0, 0, getMeasuredWidth(), getTargetHeight(), Paints.strokeBigPaint(Color.RED));
+        // canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), Paints.strokeBigPaint(Color.GREEN));
+        // canvas.drawRect(0, 0, getMeasuredWidth(), y, Paints.strokeBigPaint(Color.BLUE));
+        // canvas.drawRect(0, getMeasuredHeight() - getCurrentPopupHeight(), getMeasuredWidth(), getMeasuredHeight(), Paints.strokeBigPaint(Color.MAGENTA));
+
         return result;
-      }*/
+      }
     };
 
     RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
@@ -274,6 +303,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     wrapView.addView(fixView);
     wrapView.addView(contentView);
     wrapView.addView(headerView);
+    wrapView.setWillNotDraw(false);
     if (HeaderView.getTopOffset() > 0) {
       lickView = new LickView(context);
       addThemeInvalidateListener(lickView);
@@ -460,7 +490,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
 
   @Override
   public int getCurrentPopupHeight () {
-    return (getTargetHeight() - getTopEdge() - (int) ((float) HeaderView.getTopOffset()));
+    return (getTargetHeight() - getTopEdge() - (int) ((float) HeaderView.getTopOffset())) + Math.max(wrapView.getMeasuredHeight() - getTargetHeight(), 0);
   }
 
   private boolean ignoreAnyPagerScrollEventsBecauseOfMovements;
