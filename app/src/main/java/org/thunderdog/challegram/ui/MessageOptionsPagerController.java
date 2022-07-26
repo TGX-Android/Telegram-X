@@ -255,7 +255,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
         });
       }
 
-      @Override
+      /*@Override
       public void setTranslationY (float translationY) {
         super.setTranslationY(translationY);
         invalidate();
@@ -285,13 +285,13 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
         }
 
 
-        // canvas.drawRect(0, 0, getMeasuredWidth(), getTargetHeight(), Paints.strokeBigPaint(Color.RED));
-        // canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), Paints.strokeBigPaint(Color.GREEN));
-        // canvas.drawRect(0, 0, getMeasuredWidth(), y, Paints.strokeBigPaint(Color.BLUE));
-        // canvas.drawRect(0, getMeasuredHeight() - getCurrentPopupHeight(), getMeasuredWidth(), getMeasuredHeight(), Paints.strokeBigPaint(Color.MAGENTA));
+        canvas.drawRect(0, 0, getMeasuredWidth(), getTargetHeight(), Paints.strokeBigPaint(Color.RED));
+        canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), Paints.strokeBigPaint(Color.GREEN));
+        canvas.drawRect(0, 0, getMeasuredWidth(), y, Paints.strokeBigPaint(Color.BLUE));
+        canvas.drawRect(0, getMeasuredHeight() - getCurrentPopupHeight(), getMeasuredWidth(), getMeasuredHeight(), Paints.strokeBigPaint(Color.MAGENTA));
 
         return result;
-      }
+      }*/
     };
 
     RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
@@ -450,8 +450,8 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     //popupLayout.setHideKeyboard();
     //popupLayout.setNeedRootInsets();
     popupLayout.setTouchProvider(this);
-    popupLayout.setIgnoreHorizontal();
-    popupLayout.setNeedFullScreen(true);
+    //popupLayout.setIgnoreHorizontal();
+    //popupLayout.setNeedFullScreen(true);
     get();
     context().addFullScreenView(this, false);
   }
