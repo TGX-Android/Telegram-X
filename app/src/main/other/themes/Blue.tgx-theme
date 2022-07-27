@@ -63,7 +63,7 @@ fillingActiveContent: #000
 bubbleOut_inlineOutline, inlineOutline: #24A2DC
 bubbleOut_inlineText, bubbleOut_messageAuthor, inlineText, messageAuthor: #2894D7
 bubbleOut_progress, bubbleOut_separator, bubbleOut_time: #81A4BE
-bubbleOut_fillingActive: #81A4BE26
+bubbleOut_fillingActive: #4198D81A
 bubbleOut_fillingActiveContent: #000
 bubbleOut_ticks, bubbleOut_ticksRead: #4292D3
 bubbleOut_waveformActive, waveformActive: #68ADE1
