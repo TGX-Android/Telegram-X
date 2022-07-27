@@ -182,7 +182,8 @@ public class ReactionsSelectorRecyclerView extends CustomRecyclerView {
       ReactionView view = (ReactionView) holder.itemView;
       if (reaction == null) return;
 
-      view.setReaction(reaction, tdReaction, message.isChannel() && !message.useReactionBubbles());
+      final boolean needUseCounter = (message.isChannel() || !message.canGetAddedReactions()) && !message.useReactionBubbles();
+      view.setReaction(reaction, tdReaction, needUseCounter);
       view.setOnClickListener((v) -> {
         if (delegate != null) {
           delegate.onClick(v, reaction);
