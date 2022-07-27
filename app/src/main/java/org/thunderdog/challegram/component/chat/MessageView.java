@@ -25,6 +25,7 @@ import android.view.ViewGroup;
 import android.view.ViewParent;
 
 import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -279,6 +280,8 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         invalidateOutline();
       }
     }
+
+    oldHeight = -1;
   }
 
   public void invalidatePreviewReceiver (long chatId, long messageId) {
@@ -324,6 +327,33 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       setMeasuredDimension(widthMeasureSpec, MeasureSpec.makeMeasureSpec(getCurrentHeight(), MeasureSpec.EXACTLY));
     }
     checkLegacyComponents(this);
+  }
+
+  int oldHeight = -1;
+
+  @Override
+  protected void onLayout (boolean changed, int left, int top, int right, int bottom) {
+    super.onLayout(changed, left, top, right, bottom);
+    final int height = bottom - top;
+    if (oldHeight != -1 && oldHeight != height) {
+      final MessagesRecyclerView recyclerView = findParentRecyclerView();
+      if (recyclerView != null) {
+        final RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
+        if (layoutManager instanceof LinearLayoutManager) {
+          final LinearLayoutManager linearLayoutManager = (LinearLayoutManager) layoutManager;
+          final int parentHeight = recyclerView.getMeasuredHeight();
+          if (bottom > parentHeight) {
+            final int heightDiff = oldHeight - height;
+            if (heightDiff < 0) {
+              recyclerView.scrollBy(0, heightDiff);
+            }
+            android.util.Log.i("BUILD_LAYOUT", String.format("height layout %d %d %d %b", height, top, heightDiff, changed));
+          }
+        }
+      }
+    }
+
+    oldHeight = height;
   }
 
   public final @Nullable MessagesRecyclerView findParentRecyclerView () {
