@@ -2597,11 +2597,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (useReactionBubbles()) {
       if (useBubbles()) {
         if (useMediaBubbleReactions()) {
-          messageReactions.measureReactionBubbles(computeBubbleWidth());
+          messageReactions.measureReactionBubbles(computeBubbleWidth() + getBubblePaddingLeft() + getBubblePaddingRight());
         } else if (useStickerBubbleReactions()) {
           messageReactions.measureReactionBubbles(Math.max(getContentWidth(), (int)(getEstimatedContentMaxWidth() * 0.85f)));
         } else {
-          messageReactions.measureReactionBubbles((computeBubbleWidth() - xReactionBubblePadding * 2), computeBubbleTimePartWidth(true));
+          messageReactions.measureReactionBubbles((computeBubbleWidth() + getBubblePaddingLeft() + getBubblePaddingRight() - xReactionBubblePadding * 2), computeBubbleTimePartWidth(true));
         }
       } else {
         messageReactions.measureReactionBubbles(getEstimatedContentMaxWidth(), 0);

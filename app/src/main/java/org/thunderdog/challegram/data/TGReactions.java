@@ -328,14 +328,13 @@ public class TGReactions {
   public void drawReactionBubbles (Canvas c, MessageView view, int x, int y) {
     lastDrawX = x;
     lastDrawY = y;
-
-    /*
+/*
+    c.drawRect(x - Screen.dp(10), y, x + reactionsAnimator.getReactionsMaxWidth() + Screen.dp(10), y + getHeight(), Paints.strokeSmallPaint(Color.MAGENTA));
     c.drawRect(x - Screen.dp(10), y - Screen.dp(9), x + getWidth() + Screen.dp(10), y + getHeight() + Screen.dp(10), Paints.strokeSmallPaint(Color.RED));
     c.drawRect(x, y, x + getAnimatedWidth(), y + getAnimatedHeight(), Paints.strokeSmallPaint(Color.GREEN));
     c.drawRect(x, y - Screen.dp(20), x, y + getAnimatedHeight() + Screen.dp(20), Paints.strokeSmallPaint(Color.GREEN));
     c.drawRect(x, y, x + reactionsAnimator.getReactionsMaxWidth(), y + getHeight(), Paints.strokeSmallPaint(Color.MAGENTA));
-    */
-
+*/
     float oldChosenPosition = -1f;
     float newChosenPosition = -2f;
     for (int a = 0; a < reactionsAnimator.size(); a++) {
