@@ -4372,19 +4372,21 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   public boolean markAsViewed () {
+    boolean result = false;
+
     if (canMarkAsViewed()) {
       flags |= FLAG_VIEWED;
       if (msg.containsUnreadMention) {
         highlight(true);
       }
-      return true;
+      result = true;
     }
     if (containsUnreadReactions()) {
       highlightUnreadReactions();
       highlight(true);
-      return true;
+      result = true;
     }
-    return false;
+    return result;
   }
 
   public boolean needRefreshViewCount () {
