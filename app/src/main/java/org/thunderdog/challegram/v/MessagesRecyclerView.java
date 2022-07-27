@@ -20,6 +20,7 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -268,6 +269,12 @@ public class MessagesRecyclerView extends RecyclerView implements FactorAnimator
   private float listenClickX, listenClickY;
 
   @Override
+  public boolean dispatchTouchEvent (MotionEvent ev) {
+    wasTouched = true;
+    return super.dispatchTouchEvent(ev);
+  }
+
+  @Override
   public boolean onTouchEvent (MotionEvent e) {
     switch (e.getAction()) {
       case MotionEvent.ACTION_DOWN: {
@@ -300,6 +307,12 @@ public class MessagesRecyclerView extends RecyclerView implements FactorAnimator
       }
     }
     return super.onTouchEvent(e);
+  }
+
+  private boolean wasTouched = false;
+
+  public boolean wasTouched () {
+    return wasTouched;
   }
 
   private int jumpToBeginningOfTheDay;
