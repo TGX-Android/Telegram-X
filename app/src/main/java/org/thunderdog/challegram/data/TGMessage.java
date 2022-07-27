@@ -3034,14 +3034,13 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       timeAddedHeight = 0;
 
       if (!headerDisabled() && !(drawBubbleTimeOverContent() && !useForward()) && useBubbleTime()) {
-        final int bubbleTimePartWidth = computeBubbleTimePartWidth(false);
+        final int bubbleTimePartWidthWithoutPadding = computeBubbleTimePartWidth(false);
+        final int bubbleTimePartWidth = computeBubbleTimePartWidth(true);
         final int bottomLineContentWidth = useForward() ? BOTTOM_LINE_EXPAND_HEIGHT : hasFooter() ? footerText.getLastLineWidth() + Screen.dp(10f) : getBottomLineContentWidth();
         final int extendedWidth = bottomLineContentWidth + bubbleTimePartWidth;
-        //final int bottomLineContentWidth = (useForward() && (messageReactions.getTotalCount() == 0 || !useReactionBubbles())) ? BOTTOM_LINE_EXPAND_HEIGHT : hasFooter() ? footerText.getLastLineWidth() + Screen.dp(10f) : getBottomLineContentWidth();
-        //final int extendedWidth = (messageReactions.getTotalCount() == 0 || !useReactionBubbles()) ? (bottomLineContentWidth + bubbleTimePartWidth) : ( messageReactions.getLastLineWidth() + bubbleTimePartWidth ) ;
         final boolean allowHorizontalExtend = allowBubbleHorizontalExtend();
 
-        final int expandedBubbleWidth = allowHorizontalExtend ? Math.max(bubbleWidth, bubbleTimePartWidth) : bubbleWidth;
+        final int expandedBubbleWidth = allowHorizontalExtend ? Math.max(bubbleWidth, bubbleTimePartWidthWithoutPadding) : bubbleWidth;
         final int expandedBubbleHeight = bubbleHeight + getBubbleTimePartHeight();
         final int maxLineWidth = allowHorizontalExtend ? pRealContentMaxWidth : Math.min(pRealContentMaxWidth, bubbleWidth);
         final int fitBubbleWidth = Math.max(bubbleWidth, extendedWidth);
@@ -3071,20 +3070,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
         if (messageReactions.getVisibility() > 0f && useReactionBubbles()) {
           final int reactionsWidth = (int) messageReactions.getAnimatedWidth() + xReactionBubblePadding * 2 - getBubblePaddingLeft() - getBubblePaddingRight();
-          final int reactionsFitBubbleWidth = Math.max(Math.max(defaultBubbleWidth, reactionsWidth), bubbleTimePartWidth);
+          final int reactionsFitBubbleWidth = Math.max(Math.max(defaultBubbleWidth, reactionsWidth), bubbleTimePartWidthWithoutPadding);
 
           final int reactionsFinalCorrectedWidth;
           final int reactionsFinalCorrectedHeight;
-
-          //if (reactionsExtendedWidth > maxLineWidth) {
-            //reactionsFinalCorrectedWidth = (int) Math.max(expandedBubbleWidth, messageReactions.getAnimatedWidth());
-            //reactionsFinalCorrectedHeight = expandedBubbleHeight;
-            //timeAddedHeight = getBubbleTimePartHeight();
-          //} else {
-            //reactionsFinalCorrectedWidth = reactionsFitBubbleWidth;
-            //reactionsFinalCorrectedHeight = defaultBubbleHeight;
-            //timeAddedHeight = 0;
-          //}
 
           reactionsFinalCorrectedWidth = MathUtils.fromTo(reactionsFitBubbleWidth,
             Math.max(expandedBubbleWidth, reactionsWidth),
