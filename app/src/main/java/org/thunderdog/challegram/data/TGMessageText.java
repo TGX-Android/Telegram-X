@@ -225,6 +225,8 @@ public class TGMessageText extends TGMessage {
 
   @Override
   protected void buildContent (int maxWidth) {
+    maxWidth = Math.max(maxWidth, computeBubbleTimePartWidth(false));
+
     wrapper.prepare(maxWidth);
     this.maxWidth = maxWidth;
 

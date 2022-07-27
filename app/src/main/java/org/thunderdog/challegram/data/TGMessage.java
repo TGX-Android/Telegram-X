@@ -3034,7 +3034,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       timeAddedHeight = 0;
 
       if (!headerDisabled() && !(drawBubbleTimeOverContent() && !useForward()) && useBubbleTime()) {
-        final int bubbleTimePartWidth = computeBubbleTimePartWidth(true);
+        final int bubbleTimePartWidth = computeBubbleTimePartWidth(false);
         final int bottomLineContentWidth = useForward() ? BOTTOM_LINE_EXPAND_HEIGHT : hasFooter() ? footerText.getLastLineWidth() + Screen.dp(10f) : getBottomLineContentWidth();
         final int extendedWidth = bottomLineContentWidth + bubbleTimePartWidth;
         //final int bottomLineContentWidth = (useForward() && (messageReactions.getTotalCount() == 0 || !useReactionBubbles())) ? BOTTOM_LINE_EXPAND_HEIGHT : hasFooter() ? footerText.getLastLineWidth() + Screen.dp(10f) : getBottomLineContentWidth();
