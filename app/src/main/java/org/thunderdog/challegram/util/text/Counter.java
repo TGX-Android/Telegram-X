@@ -79,6 +79,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     private int mutedTextColorId = R.id.theme_color_badgeMutedText;
     private int failedTextColorId = R.id.theme_color_badgeFailedText;
     private int outlineColorId;
+    private boolean visibleIfZero;
 
     private TextColorSet colorSet;
 
@@ -143,11 +144,16 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
       return this;
     }
 
+    public Builder visibleIfZero () {
+      this.visibleIfZero = true;
+      return this;
+    }
+
     public Counter build () {
       return new Counter(textSize, callback, flags,
         textColorId, mutedTextColorId, failedTextColorId, outlineColorId,
         drawableRes, drawableWidthDp, drawableMarginDp, drawableGravity,
-        colorSet, extendedDrawable
+        colorSet, extendedDrawable, visibleIfZero
       );
     }
   }
@@ -170,6 +176,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
   private final Drawable extendedDrawable;
   private final float drawableWidthDp, drawableMarginDp;
   private final int drawableGravity;
+  private boolean visibleIfZero;
 
   @ThemeColorId
   private final int textColorId, mutedTextColorId, failedTextColorId, outlineColorId;
@@ -179,7 +186,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
   private Counter (float textSize, Callback callback, int flags,
                    @ThemeColorId int textColorId, @ThemeColorId int mutedTextColorId, @ThemeColorId int failedTextColorId, @ThemeColorId int outlineColorId,
                    @DrawableRes int drawableRes, float drawableWidthDp, float drawableMarginDp, int drawableGravity,
-                   @Nullable TextColorSet colorSet, Drawable counterDrawable) {
+                   @Nullable TextColorSet colorSet, Drawable counterDrawable, boolean visibleIfZero) {
     this.textSize = textSize;
     this.callback = callback;
     this.flags = flags;
@@ -193,6 +200,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     this.drawableGravity = drawableGravity;
     this.colorSet = colorSet;
     this.extendedDrawable = counterDrawable;
+    this.visibleIfZero = visibleIfZero;
   }
 
   public int getColor (float muteFactor, int mainColorId, int mutedColorId, int failedColorId) {
@@ -252,12 +260,12 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     boolean animateChanges = animated && getVisibility() > 0f;
     isMuted.setValue(muted, animateChanges);
     isFailed.setValue(count == Tdlib.CHAT_FAILED, animateChanges);
-    boolean hasCounter = count > 0 || count == Tdlib.CHAT_MARKED_AS_UNREAD || count == Tdlib.CHAT_FAILED || count == Tdlib.CHAT_LOADING;
+    boolean hasCounter = count > 0 || count == Tdlib.CHAT_MARKED_AS_UNREAD || count == Tdlib.CHAT_FAILED || count == Tdlib.CHAT_LOADING || (visibleIfZero && count == 0);
     if (count == Tdlib.CHAT_LOADING) {
       counter.setCounter(count, "?", animateChanges);
     } else if (count == Tdlib.CHAT_FAILED && drawableRes == 0) {
       counter.setCounter(count, "!", animateChanges);
-    } else if (count > 0) {
+    } else if (count > 0 || (visibleIfZero && count == 0)) {
       counter.setCounter(count, Strings.buildCounter(count), animateChanges);
     } else {
       counter.hideCounter(animateChanges);

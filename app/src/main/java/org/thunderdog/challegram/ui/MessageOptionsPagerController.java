@@ -95,9 +95,10 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     this.options = options;
     this.message = message;
 
+    final boolean needHideViews = !message.canGetViewers() || message.isUnread() || message.noUnread();
     this.reactions = message.getMessageReactions().getReactions();
     this.needShowOptions = options != null;
-    this.needShowViews = !(!message.canGetViewers() || (message.isUnread() && !message.noUnread()));
+    this.needShowViews = !needHideViews;
     this.needShowReactions = reactions != null && message.canGetAddedReactions() && message.getMessageReactions().getTotalCount() > 0 && !tdlib.isUserChat(message.getChatId());
     this.counters = new ViewPagerTopView.Item[getPagerItemCount()];
     this.baseCountersWidth = 0;
@@ -125,7 +126,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     if (needShowViews) {
       SEEN_POSITION = i++;
       counters[SEEN_POSITION] = new ViewPagerTopView.Item(new Counter.Builder()
-        .noBackground().allBold(true).textSize(13f).colorSet(this).callback(this)
+        .noBackground().allBold(true).textSize(13f).colorSet(this).callback(this).visibleIfZero()
         .drawable(R.drawable.baseline_visibility_16, 16f, 6f, Gravity.LEFT)
         .build(), this, Screen.dp(16));
       counters[SEEN_POSITION].counter.setCount(1, false);
