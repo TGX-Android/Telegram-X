@@ -210,6 +210,26 @@ public class PaymentFormController extends ViewController<PaymentFormController.
     }
   }
 
+  private void openShipmentAddressController () {
+    PaymentAddShippingInfoController c = new PaymentAddShippingInfoController(context, tdlib);
+    c.setArguments(new PaymentAddShippingInfoController.Args(paymentForm.invoice, paymentInvoice, currentOrderInfo, this::onShippingInfoValidated));
+    navigateTo(c);
+  }
+
+  private void openShipmentMethodAlert () {
+    validateAndRequestShipping(() -> {
+      IntList ids = new IntList(0);
+      StringList titles = new StringList(0);
+
+      for (TdApi.ShippingOption so : availableShippingOptions) {
+        ids.append(so.id.hashCode());
+        titles.append(so.id + " - " + so.title);
+      }
+
+      showOptions("Choose", ids.get(), titles.get());
+    });
+  }
+
   private int getCredentialsDescription () {
     if (inputCredentials.getConstructor() == TdApi.InputCredentialsSaved.CONSTRUCTOR) {
       return R.string.PaymentMethodSaved;
@@ -242,22 +262,10 @@ public class PaymentFormController extends ViewController<PaymentFormController.
         }
         break;
       case R.id.btn_paymentFormShipmentAddress:
-        PaymentAddShippingInfoController c = new PaymentAddShippingInfoController(context, tdlib);
-        c.setArguments(new PaymentAddShippingInfoController.Args(paymentForm.invoice, paymentInvoice, currentOrderInfo, this::onShippingInfoValidated));
-        navigateTo(c);
+        openShipmentAddressController();
         break;
       case R.id.btn_paymentFormShipmentMethod:
-        validateAndRequestShipping(() -> {
-          IntList ids = new IntList(0);
-          StringList titles = new StringList(0);
-
-          for (TdApi.ShippingOption so : availableShippingOptions) {
-            ids.append(so.id.hashCode());
-            titles.append(so.id + " - " + so.title);
-          }
-
-          showOptions("Choose", ids.get(), titles.get());
-        });
+        openShipmentMethodAlert();
         break;
     }
   }
@@ -344,7 +352,7 @@ public class PaymentFormController extends ViewController<PaymentFormController.
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_paymentFormProvider, R.drawable.themanuz_cash_register_24, 0, false));
 
-    if (paymentForm.invoice.needShippingAddress) {
+    if (isShipmentInfoRequired()) {
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_paymentFormShipmentAddress, R.drawable.baseline_location_on_24, 0, false));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -419,12 +427,31 @@ public class PaymentFormController extends ViewController<PaymentFormController.
     bottomBar.setLayoutParams(params);
     bottomBar.setAction(0, Lang.getString(R.string.PaymentFormPay, CurrencyUtils.buildAmount(paymentForm.invoice.currency, paymentFormTotalAmount)), R.drawable.baseline_arrow_downward_24, false);
     bottomBar.setOnClickListener(view -> {
-      // TODO check if expanded
-      contentView.smoothScrollToPosition(adapter.getItemCount() - 1);
+      if (scrollToBottomVisibleFactor == 0f) {
+        onPayButtonPressed();
+      } else {
+        contentView.smoothScrollToPosition(adapter.getItemCount() - 1);
+      }
     });
 
     addThemeInvalidateListener(bottomBar);
     updateBottomBarStyle();
+  }
+
+  private void onPayButtonPressed () {
+    if (inputCredentials == null) {
+      openNewCardController();
+    } else if (isShipmentInfoRequired() && (currentOrderInfo == null || currentOrderInfo.shippingAddress == null)) {
+      openShipmentAddressController();
+    } else if (validatedOrderInfoId != null && paymentForm.invoice.needShippingAddress && selectedShippingOption == null) {
+      openShipmentMethodAlert();
+    } else {
+      // nothing else needed, we can show final payment UI
+    }
+  }
+
+  private boolean isShipmentInfoRequired () {
+    return paymentForm.invoice.needShippingAddress || paymentForm.invoice.needEmailAddress || paymentForm.invoice.needName || paymentForm.invoice.needPhoneNumber;
   }
 
   private void updateBottomBarStyle () {
