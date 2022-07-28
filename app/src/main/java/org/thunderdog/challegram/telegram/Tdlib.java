@@ -22,6 +22,7 @@ import android.os.SystemClock;
 import android.widget.Toast;
 
 import androidx.annotation.AnyThread;
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -62,6 +63,8 @@ import org.thunderdog.challegram.util.WrapperProvider;
 import org.thunderdog.challegram.util.text.Letters;
 
 import java.io.File;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -114,6 +117,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   @Override
   public final Tdlib tdlib () {
     return this;
+  }
+
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    Mode.NORMAL,
+    Mode.DEBUG,
+    Mode.SERVICE
+  })
+  public @interface Mode {
+    int
+      NORMAL = 0,
+      DEBUG = 1,
+      SERVICE = 2;
   }
 
   public static final int STATE_UNKNOWN = -1;
@@ -242,7 +258,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     public ClientHolder (Tdlib tdlib) {
       Log.i(Log.TAG_ACCOUNTS, "Creating client #%d", runningClients.incrementAndGet());
       this.tdlib = tdlib;
-      this.client = Client.create(this, this, this, tdlib.debugInstance);
+      this.client = Client.create(this, this, this, tdlib.isDebugInstance());
       tdlib.updateParameters(client);
       if (Config.NEED_ONLINE) {
         if (tdlib.isOnline) {
@@ -252,7 +268,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       tdlib.context.modifyClient(tdlib, client);
       this.resources = new TdlibResourceManager(tdlib, BuildConfig.TELEGRAM_RESOURCES_CHANNEL);
       this.updates = new TdlibResourceManager(tdlib, BuildConfig.TELEGRAM_UPDATES_CHANNEL);
-      if (!tdlib.context.inRecoveryMode()) {
+      if (!tdlib.inRecoveryMode()) {
         init();
       }
     }
@@ -302,7 +318,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       StackTraceElement[] stackTrace = new RuntimeException().getStackTrace();
       client.send(new TdApi.SetTdlibParameters(tdlib.parameters), result -> {
         if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
-          Tracer.onTdlibFatalError(tdlib.id(), TdApi.SetTdlibParameters.class, (TdApi.Error) result, stackTrace);
+          Tracer.onTdlibFatalError(tdlib, TdApi.SetTdlibParameters.class, (TdApi.Error) result, stackTrace);
         }
       });
       long time = SystemClock.uptimeMillis();
@@ -311,7 +327,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         TDLib.Tag.td_init("CheckDatabaseEncryptionKey response in %dms, accountId:%d", elapsed, tdlib.accountId);
         onDatabaseOpened();
         if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
-          Tracer.onTdlibFatalError(tdlib.id(), TdApi.CheckDatabaseEncryptionKey.class, (TdApi.Error) result, stackTrace);
+          Tracer.onTdlibFatalError(tdlib, TdApi.CheckDatabaseEncryptionKey.class, (TdApi.Error) result, stackTrace);
         }
       });
       scheduleOptimizationCheck();
@@ -444,6 +460,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private int forwardMaxCount = 100;
   private int groupMaxSize = 200;
   private int pinnedChatsMaxCount = 5, pinnedArchivedChatsMaxCount = 100;
+  private int favoriteStickersMaxCount = 5;
   private double emojiesAnimatedZoom = .75f;
   private boolean youtubePipDisabled, qrLoginCamera, dialogFiltersTooltip, dialogFiltersEnabled;
   private String qrLoginCode;
@@ -473,7 +490,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private long connectionLossTime = SystemClock.uptimeMillis();
 
   private String tMeUrl;
-  private String tdlibVersionSignature, tdlibCommitHash;
 
   private long callConnectTimeoutMs = 30000;
   private long callPacketTimeoutMs = 10000;
@@ -507,30 +523,46 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private int[] favoriteStickerIds;
   private int unreadTrendingStickerSetsCount;
 
-  private boolean debugInstance;
+  private @Mode int instanceMode;
   private boolean instancePaused;
   private final AtomicInteger referenceCount = new AtomicInteger(0);
 
-  /*package*/ Tdlib (TdlibAccount account, boolean debug) {
+  /*package*/ Tdlib (TdlibAccount account, @Mode int mode) {
     this.context = account.context;
     this.accountId = account.id;
-    this.debugInstance = debug;
+    this.instanceMode = mode;
     this.hasUnprocessedPushes = account.hasUnprocessedPushes();
     this.isLoggingOut = account.isLoggingOut();
 
-    this.parameters = new TdApi.TdlibParameters(
-      false, null, null, // updateParameters
-      true,
-      true,
-      true,
-      true,
-      BuildConfig.TELEGRAM_API_ID,
-      BuildConfig.TELEGRAM_API_HASH,
-      null, null, null, // updateParameters
-      BuildConfig.VERSION_NAME,
-      false,
-      false
-    );
+    if (mode == Mode.SERVICE) {
+      this.parameters = new TdApi.TdlibParameters(
+        false, null, null, // updateParameters
+        false,
+        false,
+        false,
+        false,
+        BuildConfig.TELEGRAM_API_ID,
+        BuildConfig.TELEGRAM_API_HASH,
+        null, null, null, // updateParameters
+        BuildConfig.VERSION_NAME,
+        false,
+        false
+      );
+    } else {
+      this.parameters = new TdApi.TdlibParameters(
+        false, null, null, // updateParameters
+        true,
+        true,
+        true,
+        true,
+        BuildConfig.TELEGRAM_API_ID,
+        BuildConfig.TELEGRAM_API_HASH,
+        null, null, null, // updateParameters
+        BuildConfig.VERSION_NAME,
+        false,
+        false
+      );
+    }
 
     boolean needMeasure = Log.needMeasureLaunchSpeed();
     long ms = needMeasure ? SystemClock.uptimeMillis() : 0;
@@ -631,7 +663,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     long myUserId = myUserId();
     if (myUserId == 0)
       return;
-    long[] availableUserIds = context.availableUserIds(debugInstance);
+    long[] availableUserIds = context.availableUserIds(instanceMode);
     long[] otherUserIds = ArrayUtils.removeElement(availableUserIds, Arrays.binarySearch(availableUserIds, myUserId));
     if (TdlibSettingsManager.checkRegisteredDeviceToken(id(), myUserId, deviceToken, otherUserIds, false)) {
       Log.i(Log.TAG_FCM, "Device token already registered. accountId:%d", accountId);
@@ -650,7 +682,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           Settings.instance().putNotificationReceiverId(((TdApi.PushReceiverId) result).id, accountId);
           TdlibSettingsManager.setRegisteredDevice(accountId, myUserId, deviceToken, otherUserIds);
           context().setDeviceRegistered(accountId, true);
-          context().unregisterDevices(debugInstance, accountId, availableUserIds);
+          context().unregisterDevices(instanceMode, accountId, availableUserIds);
           U.run(onDone);
           break;
         case TdApi.Error.CONSTRUCTOR: {
@@ -1004,7 +1036,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     synchronized (clientLock) {
       if (pendingEraseActor != null)
         return;
-      if (client != null && !instancePaused && !context.inRecoveryMode()) {
+      if (client != null && !instancePaused && !inRecoveryMode()) {
         pendingEraseActor = onDelete;
         client.sendClose();
         return;
@@ -1094,6 +1126,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public boolean isCurrent () {
     return context().preferredAccountId() == accountId;
+  }
+
+  public String tdlibCommitHash () {
+    return context().tdlibCommitHash();
+  }
+
+  public String tdlibVersion () {
+    return context().tdlibVersion();
   }
 
   public boolean isAuthorized () {
@@ -1498,24 +1538,32 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private boolean isDebugInstance () {
-    return debugInstance;
+    return instanceMode == Mode.DEBUG;
   }
 
-  /*public void toggleDebug (boolean isDebug) {
-    context.setIsDebug(account(), isDebug);
-  }*/
+  private boolean isServiceInstance () {
+    return instanceMode == Mode.SERVICE;
+  }
 
-  void setIsDebugInstance (boolean isDebug) {
+  public boolean inRecoveryMode () {
+    return !isServiceInstance() && context.inRecoveryMode();
+  }
+
+  void setInstanceMode (@Mode int mode) {
     synchronized (clientLock) {
-      if (this.debugInstance != isDebug) {
-        this.debugInstance = isDebug;
-        if (instancePaused)
-          return;
-        int referenceCount = this.referenceCount.get();
-        if (referenceCount > 0)
-          throw new IllegalStateException("referenceCount == " + referenceCount);
-        client.sendClose();
-      }
+      setInstanceModeImpl(mode);
+    }
+  }
+
+  private void setInstanceModeImpl (@Mode int mode) {
+    if (this.instanceMode != mode) {
+      this.instanceMode = mode;
+      if (instancePaused)
+        return;
+      int referenceCount = this.referenceCount.get();
+      if (referenceCount > 0)
+        throw new IllegalStateException("referenceCount == " + referenceCount);
+      client.sendClose();
     }
   }
 
@@ -2572,10 +2620,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       avatarLetters = chatLetters(chat);
       switch (chat.type.getConstructor()) {
         case TdApi.ChatTypeBasicGroup.CONSTRUCTOR:
-          extraDrawableRes = canChangeInfo(chat) ? R.drawable.ic_add_a_photo_black_56 : R.drawable.baseline_group_56;
+          extraDrawableRes = canChangeInfo(chat) ? R.drawable.baseline_add_a_photo_56 : R.drawable.baseline_group_56;
           break;
         case TdApi.ChatTypeSupergroup.CONSTRUCTOR:
-          extraDrawableRes = canChangeInfo(chat) ? R.drawable.ic_add_a_photo_black_56 : isChannelChat(chat) ? R.drawable.baseline_bullhorn_56 : R.drawable.baseline_group_56;
+          extraDrawableRes = canChangeInfo(chat) ? R.drawable.baseline_add_a_photo_56 : isChannelChat(chat) ? R.drawable.baseline_bullhorn_56 : R.drawable.baseline_group_56;
           break;
       }
     }
@@ -3841,7 +3889,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public void getTesterLevel (@NonNull RunnableInt callback) {
-    if (context.inRecoveryMode() || isDebugInstance()) {
+    if (inRecoveryMode() || isDebugInstance()) {
       callback.runWithInt(TESTER_LEVEL_TESTER);
       return;
     }
@@ -4685,7 +4733,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private void updateNotificationParameters (Client client) {
     final int notificationGroupCountMax, notificationGroupSizeMax;
 
-    if (BuildConfig.EXPERIMENTAL) {
+    if (BuildConfig.EXPERIMENTAL || isServiceInstance()) {
       // Disable Notifications API if we are running experimental build
       notificationGroupCountMax = 0;
       notificationGroupSizeMax = 1;
@@ -4711,6 +4759,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private void checkConnectionParams (Client client, boolean force) {
+    if (BuildConfig.EXPERIMENTAL || isServiceInstance()) {
+      return;
+    }
     int state = context().getTokenState();
     final String deviceToken = getRegisteredDeviceToken();
     if (!StringUtils.isEmpty(deviceToken) && (state == TdlibManager.TOKEN_STATE_NONE || state == TdlibManager.TOKEN_STATE_INITIALIZING)) {
@@ -4749,14 +4800,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private void updateParameters (Client client) {
-    updateLanguageParameters(client, true);
+    final boolean isService = isServiceInstance();
     client.send(new TdApi.SetOption("use_quick_ack", new TdApi.OptionValueBoolean(true)), okHandler);
     client.send(new TdApi.SetOption("use_pfs", new TdApi.OptionValueBoolean(true)), okHandler);
-    updateNotificationParameters(client);
     client.send(new TdApi.SetOption("is_emulator", new TdApi.OptionValueBoolean(isEmulator = Settings.instance().isEmulator())), okHandler);
-    client.send(new TdApi.SetOption("storage_max_files_size", new TdApi.OptionValueInteger(Integer.MAX_VALUE)), okHandler);
-    client.send(new TdApi.SetOption("ignore_default_disable_notification", new TdApi.OptionValueBoolean(true)), okHandler);
-    client.send(new TdApi.SetOption("ignore_platform_restrictions", new TdApi.OptionValueBoolean(U.isAppSideLoaded())), okHandler);
+    if (isService) {
+      updateNotificationParameters(client);
+    } else {
+      updateLanguageParameters(client, true);
+      updateNotificationParameters(client);
+      client.send(new TdApi.SetOption("storage_max_files_size", new TdApi.OptionValueInteger(Integer.MAX_VALUE)), okHandler);
+      client.send(new TdApi.SetOption("ignore_default_disable_notification", new TdApi.OptionValueBoolean(true)), okHandler);
+      client.send(new TdApi.SetOption("ignore_platform_restrictions", new TdApi.OptionValueBoolean(U.isAppSideLoaded())), okHandler);
+    }
     checkConnectionParams(client, true);
 
     if (needDropNotificationIdentifiers) {
@@ -4768,7 +4824,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
     parameters.useTestDc = isDebugInstance();
     parameters.databaseDirectory = TdlibManager.getTdlibDirectory(accountId, false);
-    parameters.filesDirectory = TdlibManager.getTdlibDirectory(accountId, true);
+    parameters.filesDirectory = TdlibManager.getTdlibDirectory(accountId, !isService);
     parameters.systemLanguageCode = TdlibManager.getSystemLanguageCode();
     parameters.deviceModel = TdlibManager.getDeviceModel();
     parameters.systemVersion = TdlibManager.getSystemVersion();
@@ -5037,12 +5093,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   public boolean isStickerFavorite (int stickerId) {
     synchronized (dataLock) {
       return favoriteStickerIds != null && ArrayUtils.indexOf(favoriteStickerIds, stickerId) != -1;
-    }
-  }
-
-  public boolean canFavoriteStickers () {
-    synchronized (dataLock) {
-      return installedStickerSetCount >= 5 || (favoriteStickerIds != null && favoriteStickerIds.length > 0);
     }
   }
 
@@ -5463,6 +5513,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return pinnedArchivedChatsMaxCount;
   }
 
+  public int favoriteStickersMaxCount () {
+    return favoriteStickersMaxCount;
+  }
+
   public double emojiesAnimatedZoom () {
     return emojiesAnimatedZoom;
   }
@@ -5522,18 +5576,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public String tMeLanguageUrl (String languagePackId) {
     return tMeUrl("setlanguage/" + languagePackId);
-  }
-
-  public @Nullable String tdlibVersionSignature () {
-    return tdlibVersionSignature;
-  }
-
-  public @Nullable String tdlibCommitHash () {
-    return tdlibCommitHash;
-  }
-
-  public @Nullable String tdlibCommitHashShort () {
-    return StringUtils.limit(tdlibCommitHash(), 7);
   }
 
   public String tMeHost () {
@@ -6072,7 +6114,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
     context.global().notifyUpdateNewMessage(this, update);
 
-    if (!debugInstance && update.message.chatId == ChatId.fromUserId(TdConstants.TELEGRAM_ACCOUNT_ID)) {
+    if (!isDebugInstance() && update.message.chatId == ChatId.fromUserId(TdConstants.TELEGRAM_ACCOUNT_ID)) {
       listeners.notifySessionListPossiblyChanged(true);
     }
   }
@@ -7261,6 +7303,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           case "telegram_service_notifications_chat_id":
             this.telegramServiceNotificationsChatId = longValue;
             break;
+          case "favorite_stickers_limit":
+            this.favoriteStickersMaxCount = (int) longValue;
+            break;
         }
 
         break;
@@ -7361,10 +7406,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             this.tMeUrl = stringValue;
             break;
           case "version":
-            this.tdlibVersionSignature = stringValue;
+            context().setTdlibVersion(stringValue);
             break;
           case "commit_hash":
-            this.tdlibCommitHash = stringValue;
+            context().setTdlibCommitHash(stringValue);
             break;
           case "animation_search_bot_username":
             this.animationSearchBotUsername = stringValue;

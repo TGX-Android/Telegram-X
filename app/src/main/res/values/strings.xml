@@ -740,8 +740,6 @@
   <string name="SelectedRoundVideoSuffix_one">" message"</string>
   <string name="SelectedRoundVideoSuffix_other">" messages"</string>
 
-
-
   <string name="Locating">Waiting for location…</string>
   <string name="NearbyPlaces">Nearby Places</string>
   <string name="FoundPlaces">Found Places</string>
@@ -3072,6 +3070,9 @@
   <string name="LaunchSubtitleTdlibIssue">TDLib fatal error. Version: %1$s</string>
   <string name="LaunchAppGuideTdlibIssue">Telegram X has previously failed to launch because of TDLib fatal error.\n\nPress **Launch App** to try again. If application continues to fail, follow these steps:\n\n• [Verify](%2$s) you have the latest Telegram X version installed.\n• Restart your device.\n\n**If the steps above do not help**\n\n1. Share error details with TDLib developers using one of the following ways:\n— Privately via [@tdlib_bot](https://t.me/tdlib_bot) by using another device or [Telegram Web](https://web.telegram.org/).\n— Publicly via [GitHub page](https://github.com/tdlib/td/issues). **Do not** share **tdlib_log.txt** publicly.\n2. Kindly wait for the response.\n3. Change log settings below as requested by TDLib developers.\n4. Press **Launch App** to make app force stop again.\n5. Share **tdlib_log.txt** with TDLib developers and wait for the problem to be resolved.\n6. Once updated, you\'ll be able to launch app normally.\n\n**Alternative options**\n\n• Search for similar issues on [GitHub](https://github.com/tdlib/td/issues) to see if there are common solutions.\n• Reinstall the app. Secret chats will be lost. If you use same phone number you were logged in, all other chats and data will be restored from the Telegram cloud.</string>
 
+  <string name="LaunchSubtitleFatalError">Unexpected error</string>
+  <string name="LaunchAppGuideFatalError">Telegram X has closed unexpectedly the last time you were using it.\n\nPress **Launch App** to try again.</string>
+
   <string name="SelfDestructPhoto">Self-Destruct Photo</string>
   <string name="SelfDestructVideo">Self-Destruct Video</string>
 
@@ -4335,6 +4336,16 @@
   <string name="xPRs_one">%1$s PR</string>
   <string name="xPRs_other">%1$s PRs</string>
   <string name="PR">PR #%1$d</string>
+
+  <string name="ResetPasswordWait">You recently requested a password reset that was canceled. Please wait %1$s before making a new request.</string>
+  <string name="RestorePasswordNoEmailText2">Since you didn’t provide a recovery email when setting up your password, your remaining options are either to remember your password or wait 7 days until your password is reset.</string>
+  <string name="RestoreEmailTroubleText2">If you don’t have access to your recovery email, your remaining options are either to remember your password or wait 7 days until your password is reset.</string>
+  <string name="RestorePasswordResetIn">You can reset your password in %1$s.</string>
+  <string name="ResetPassword">Reset password</string>
+  <string name="CancelReset">Cancel reset</string>
+  <string name="RestorePasswordResetPasswordOk">Your 2-Step Verification password was reset.</string>
+  <string name="CancelPasswordReset">Cancel the password reset process? If you request a new reset later, it will take another 7 days.</string>
+  <string name="CancelPasswordResetYes">YES</string>
 
   <string name="ExperimentalBuildTitle">Caution: experimental build</string>
   <string name="ExperimentalBuildInfo">This version of **Telegram X** is not designed for long-term use.\n\nIt may completely stop working over a time and you cannot turn notifications on.\n\nIf you are looking for the proper Telegram X APK file, see https://t.me/tgx_log</string>

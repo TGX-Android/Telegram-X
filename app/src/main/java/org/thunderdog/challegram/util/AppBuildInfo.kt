@@ -15,6 +15,7 @@ package org.thunderdog.challegram.util
 import me.vkryl.core.limit
 import me.vkryl.leveldb.LevelDB
 import me.vkryl.td.tdlibCommitHashFull
+import me.vkryl.td.tdlibVersion
 import org.thunderdog.challegram.BuildConfig
 import kotlin.math.max
 
@@ -22,22 +23,26 @@ data class AppBuildInfo(
   val installationId: Long,
   val versionCode: Int,
   val versionName: String,
+  val flavor: String,
   val firstRunDate: Long,
   val commit: String,
   val commitFull: String,
   val commitDate: Long,
   val tdlibCommitFull: String?,
+  val tdlibVersion: String?,
   val pullRequests: List<PullRequest>
 ) {
   constructor(installationId: Long) : this(
     installationId,
     BuildConfig.ORIGINAL_VERSION_CODE,
     BuildConfig.ORIGINAL_VERSION_NAME,
+    BuildConfig.FLAVOR,
     System.currentTimeMillis(),
     BuildConfig.COMMIT,
     BuildConfig.COMMIT_FULL,
     BuildConfig.COMMIT_DATE,
     tdlibCommitHashFull(),
+    tdlibVersion(),
     builtinPullRequests()
   )
 
@@ -45,12 +50,16 @@ data class AppBuildInfo(
     editor
       .putInt("${keyPrefix}_code", versionCode)
       .putString("${keyPrefix}_name", versionName)
+      .putString("${keyPrefix}_flavor", flavor)
       .putLong("${keyPrefix}_started", firstRunDate)
       .putString("${keyPrefix}_commit", commit)
       .putString("${keyPrefix}_full", commitFull)
       .putLong("${keyPrefix}_date", commitDate)
     if (!tdlibCommitFull.isNullOrEmpty()) {
       editor.putString("${keyPrefix}_tdlib", tdlibCommitFull)
+    }
+    if (!tdlibVersion.isNullOrEmpty()) {
+      editor.putString("${keyPrefix}_td_version", tdlibVersion)
     }
     editor
       .putLongArray("${keyPrefix}_prs", pullRequests.map { it.id }.toLongArray())
@@ -92,9 +101,45 @@ data class AppBuildInfo(
   fun tdlibCommit (): String? = this.tdlibCommitFull.limit(7)
 
   fun pullRequestsList (): String? = if (this.pullRequests.isNotEmpty()) {
-    this.pullRequests.joinToString { it -> "#{$it.id} ($it.commit)" }
+    this.pullRequests.joinToString { "#${it.id} (${it.commit})" }
   } else {
     null
+  }
+
+  fun toMap (): Map<String, Any?> {
+    return linkedMapOf(
+      "tdlib" to if (tdlibVersion != null || tdlibCommitFull != null) {
+        linkedMapOf(
+          "version" to tdlibVersion,
+          "commit" to tdlibCommit()
+        )
+      } else {
+        null
+      },
+      "version" to linkedMapOf(
+        "code" to versionCode,
+        "name" to versionName,
+        "flavor" to flavor,
+        "commit" to commit,
+        "date" to maxCommitDate()
+      ),
+      "pull_requests" to if (pullRequests.isNotEmpty()) {
+        pullRequests.map {
+          linkedMapOf(
+            "id" to it.id,
+            "commit" to it.commit
+          )
+        }
+      } else {
+        null
+      },
+      "first_run_date" to firstRunDate,
+      "installation_id" to installationId
+    )
+  }
+
+  fun maxCommitDate (): Long {
+    return max(commitDate, pullRequests.maxOfOrNull { it.commitDate } ?: 0)
   }
   
   companion object {
@@ -111,16 +156,18 @@ data class AppBuildInfo(
         installationId,
         pmc.getInt("${keyPrefix}_code", 0),
         pmc.getString("${keyPrefix}_name", "")!!,
+        pmc.getString("${keyPrefix}_flavor", "")!!,
         pmc.getLong("${keyPrefix}_started", 0),
         pmc.getString("${keyPrefix}_commit", "")!!,
         pmc.getString("${keyPrefix}_full", "")!!,
         pmc.getLong("${keyPrefix}_date", 0),
         pmc.getString("${keyPrefix}_tdlib", null),
+        pmc.getString("${keyPrefix}_td_version", null),
         pullRequests
       )
     }
 
-    @JvmStatic fun maxCommitDate (): Long {
+    @JvmStatic fun maxBuiltInCommitDate (): Long {
       return max(BuildConfig.COMMIT_DATE, BuildConfig.PULL_REQUEST_COMMIT_DATE.maxOrNull() ?: 0)
     }
   }

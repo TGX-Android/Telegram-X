@@ -126,6 +126,7 @@ import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -2425,12 +2426,12 @@ public class U {
     return i * -1 - 1;
   }
 
-  public static CharSequence getUsefulMetadata (Tdlib tdlib) {
+  public static CharSequence getUsefulMetadata (@Nullable Tdlib tdlib) {
     AppBuildInfo buildInfo = org.thunderdog.challegram.unsorted.Settings.instance().getCurrentBuildInformation();
     return Lang.getAppBuildAndVersion(tdlib) + " (" + BuildConfig.COMMIT + ")\n" +
       (!buildInfo.getPullRequests().isEmpty() ? "PRs: " + buildInfo.pullRequestsList() + "\n" : "") +
       "TDLib: " + Td.tdlibVersion() + " (tdlib/td@" + Td.tdlibCommitHash() + ")\n" +
-      "Android: " + SdkVersion.getPrettyName() + "(" + Build.VERSION.SDK_INT + ")" + "\n" +
+      "Android: " + SdkVersion.getPrettyName() + " (" + Build.VERSION.SDK_INT + ")" + "\n" +
       "Device: " + Build.BRAND + " " + Build.MODEL + " (" + Build.DISPLAY + ")";
   }
 
@@ -2590,7 +2591,7 @@ public class U {
       }
     } catch (IllegalArgumentException ignored) {
       // Assume this is a corrupt video file
-    } catch (RuntimeException ignored) {
+    } catch (RuntimeException | FileNotFoundException ignored) {
       // Assume this is a corrupt video file.
     }
     U.closeRetriever(retriever);
@@ -2708,13 +2709,17 @@ public class U {
     }
   }
 
-  public static MediaMetadataRetriever openRetriever (String path) throws RuntimeException {
+  public static MediaMetadataRetriever openRetriever (String path) throws RuntimeException, FileNotFoundException {
     MediaMetadataRetriever retriever = null;
     try {
       retriever = new MediaMetadataRetriever();
       if (path.startsWith("content://")) {
         retriever.setDataSource(UI.getContext(), Uri.parse(path));
       } else {
+        File file = new File(path);
+        if (!file.exists()) {
+          throw new FileNotFoundException();
+        }
         retriever.setDataSource(path);
       }
     } catch (Throwable t) {
@@ -3487,5 +3492,9 @@ public class U {
     } catch (Throwable ignored2) {
       return false;
     }
+  }
+
+  public static String getCpuArchitecture () {
+    return System.getProperty("os.arch");
   }
 }

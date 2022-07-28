@@ -61,6 +61,8 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   private static final int FLAG_NO_PRIVATE_DATA = 1 << 6;
   private static final int FLAG_FORCE_DISABLE_NOTIFICATIONS = 1 << 7;
   private static final int FLAG_NO_PENDING_NOTIFICATIONS = 1 << 8;
+  private static final int FLAG_SERVICE = 1 << 9;
+  private static final int FLAG_HAVE_UNFINISHED_SERVICE_WORK = 1 << 10;
 
   final TdlibManager context;
 
@@ -76,22 +78,24 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
 
   private long lastUsageTime;
 
-  TdlibAccount (TdlibManager context, int id, boolean isDebug) {
+  TdlibAccount (TdlibManager context, int id, @Tdlib.Mode int instanceMode) {
     this.context = context;
     this.id = id;
     this.order = -1;
     this.modificationTime = System.currentTimeMillis();
     this.flags = FLAG_UNAUTHORIZED;
-    if (isDebug) {
-      this.flags |= FLAG_DEBUG;
-      Settings.instance().setAllowDebug(id, true);
+    Settings.instance().setAllowSpecialTdlibInstanceMode(id, instanceMode);
+    if (instanceMode == Tdlib.Mode.DEBUG) {
+      this.flags |= Tdlib.Mode.DEBUG;
+    } else if (instanceMode == Tdlib.Mode.SERVICE) {
+      this.flags |= FLAG_SERVICE | FLAG_NO_PRIVATE_DATA;
     }
   }
 
-  TdlibAccount (TdlibManager context, int id, RandomAccessFile r, int version) throws IOException {
+  TdlibAccount (TdlibManager context, int id, RandomAccessFile r, int version, boolean allowIntegrityChecks) throws IOException {
     this.context = context;
     this.id = id;
-    restore(r, version);
+    restore(r, version, allowIntegrityChecks);
   }
 
   void markAsUsed () {
@@ -120,12 +124,21 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
     return Integer.compare(this.id, o.id);
   }
 
-  private void restore (RandomAccessFile r, int version) throws IOException {
+  private void restore (RandomAccessFile r, int version, boolean allowIntegrityChecks) throws IOException {
     this.flags            = r.readByte();
     this.knownUserId      = version == VERSION_2 ? r.readLong() : r.readInt();
     this.modificationTime = r.readLong();
     this.order            = r.readInt();
-    Log.i(Log.TAG_ACCOUNTS, "restored accountId:%d flags:%d userId:%d time:%d order:%d", id, flags, knownUserId, modificationTime, order);
+    boolean integrityCheckFailed = false;
+    if (allowIntegrityChecks) {
+      if (BitwiseUtils.getFlag(flags, FLAG_SERVICE | FLAG_DEBUG) && !Settings.instance().allowSpecialTdlibInstanceMode(id)) {
+        int flags = this.flags & ~FLAG_DEBUG;
+        flags &= ~FLAG_SERVICE;
+        this.flags = flags;
+        integrityCheckFailed = true;
+      }
+    }
+    Log.i(Log.TAG_ACCOUNTS, "restored accountId:%d flags:%d userId:%d time:%d order:%d integrity_check_failed:%b", id, flags, knownUserId, modificationTime, order, integrityCheckFailed);
   }
 
   static final int SIZE_PER_ENTRY = 1 /*flags*/ + 8 /*knownUserId*/ + 8 /*modification_time*/ + 4 /*order*/;
@@ -174,6 +187,8 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   boolean keepAlive () {
     if (isLoggingOut())
       return true;
+    if (isService())
+      return BitwiseUtils.getFlag(flags, FLAG_HAVE_UNFINISHED_SERVICE_WORK);
     if (isUnauthorized())
       return false;
     return !BitwiseUtils.getFlag(flags, FLAG_NO_KEEP_ALIVE) || hasUnprocessedPushes() || !hasUserInformation() /*|| !isDeviceRegistered()*/;
@@ -244,11 +259,13 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
 
   // is_debug
 
-  boolean setIsDebug (boolean isDebug) {
-    if (changeFlag(FLAG_DEBUG, isDebug)) {
-      Settings.instance().setAllowDebug(id, isDebug);
+  boolean setInstanceMode (@Tdlib.Mode int instanceMode) {
+    int flags = BitwiseUtils.setFlag(this.flags, FLAG_DEBUG, instanceMode == Tdlib.Mode.DEBUG);
+    flags = BitwiseUtils.setFlag(flags, FLAG_SERVICE, instanceMode == Tdlib.Mode.SERVICE);
+    if (setFlags(flags)) {
+      Settings.instance().setAllowSpecialTdlibInstanceMode(id, instanceMode);
       if (hasTdlib(false)) {
-        tdlib.setIsDebugInstance(isDebug());
+        tdlib.setInstanceMode(instanceMode);
       }
       return true;
     }
@@ -256,7 +273,23 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   }
 
   public boolean isDebug () {
-    return BitwiseUtils.getFlag(flags, FLAG_DEBUG) && Settings.instance().allowDebug(id);
+    return tdlibInstanceMode() == Tdlib.Mode.DEBUG;
+  }
+
+  boolean isService () {
+    return tdlibInstanceMode() == Tdlib.Mode.SERVICE;
+  }
+
+  public int tdlibInstanceMode () {
+    if (BitwiseUtils.getFlag(flags, FLAG_SERVICE | FLAG_DEBUG)) {
+      if (BitwiseUtils.getFlag(flags, FLAG_SERVICE)) {
+        return Tdlib.Mode.SERVICE;
+      } else {
+        return Tdlib.Mode.DEBUG;
+      }
+    } else {
+      return Tdlib.Mode.NORMAL;
+    }
   }
 
   // is_registered
@@ -336,7 +369,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
       throw new AssertionError();
     Throwable error = null;
     try {
-      tdlib = new Tdlib(this, isDebug());
+      tdlib = new Tdlib(this, tdlibInstanceMode());
     } catch (Throwable t) {
       if (t instanceof InterruptedException || t.getCause() instanceof InterruptedException) {
         throw t;

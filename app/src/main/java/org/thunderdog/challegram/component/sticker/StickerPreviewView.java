@@ -252,8 +252,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     }
   }
 
-  private @Nullable
-  EmojiString emojiString;
+  private @Nullable EmojiString emojiString;
   private boolean disableEmojis;
   private Path contour;
 
@@ -301,6 +300,45 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
   public void hideMenu () {
     if (menu != null) {
       setMenuVisible(false, true);
+    }
+  }
+
+  private int calculateMaximumMenuItemWidth () {
+    if (menu == null) {
+      return Integer.MAX_VALUE;
+    }
+    final int availableWidth = getMeasuredWidth() - menu.getPaddingLeft() - menu.getPaddingRight();
+    if (availableWidth > 0) {
+      int imageButtonsWidth = 0;
+      int textButtonsCount = 0;
+      for (int i = 0; i < menu.getChildCount(); i++) {
+        View view = menu.getChildAt(i);
+        if (view instanceof ImageView) {
+          imageButtonsWidth += view.getPaddingLeft() + view.getPaddingRight() + Math.max(0, view.getLayoutParams().width);
+        } else if (view instanceof TextView) {
+          textButtonsCount++;
+        }
+      }
+      if (textButtonsCount > 0) {
+        final int result = Math.max(0, (availableWidth - imageButtonsWidth) / textButtonsCount);
+        return result > 0 ? result : Integer.MAX_VALUE;
+      }
+    }
+    return Integer.MAX_VALUE;
+  }
+
+  private void applyMaximumMenuItemsWidth () {
+    if (menu != null) {
+      final int maximumItemWidth = calculateMaximumMenuItemWidth();
+      for (int i = 0; i < menu.getChildCount(); i++) {
+        View view = menu.getChildAt(i);
+        if (view instanceof TextView) {
+          TextView textView = (TextView) view;
+          if (textView.getMaxWidth() != maximumItemWidth) { // Avoid unnecessary requestLayout
+            textView.setMaxWidth(maximumItemWidth);
+          }
+        }
+      }
     }
   }
 
@@ -363,6 +401,12 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
           }
           break;
         }
+        case R.id.btn_removeRecent: {
+          final int stickerId = sticker.getId();
+          tdlib.client().send(new TdApi.RemoveRecentSticker(false, new TdApi.InputFileId(stickerId)), tdlib.okHandler());
+          closePreviewIfNeeded();
+          break;
+        }
         default: {
           closePreviewIfNeeded();
           break;
@@ -371,27 +415,23 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     };
     themeListenerList.addThemeInvalidateListener(menu);
 
-    boolean hasFavoriteButton = false;
     boolean isFavorite = tdlib.isStickerFavorite(sticker.getId());
 
-    if (isFavorite || tdlib.canFavoriteStickers()) {
-      hasFavoriteButton = true;
-      ImageView imageView = new ImageView(getContext());
-      imageView.setId(R.id.btn_favorite);
-      imageView.setScaleType(ImageView.ScaleType.CENTER);
-      imageView.setOnClickListener(onClickListener);
-      imageView.setImageResource(isFavorite ? R.drawable.baseline_star_24 : R.drawable.baseline_star_border_24);
-      imageView.setColorFilter(Theme.getColor(R.id.theme_color_textNeutral));
-      themeListenerList.addThemeFilterListener(imageView, R.id.theme_color_textNeutral);
-      imageView.setLayoutParams(new ViewGroup.LayoutParams(Screen.dp(48f), ViewGroup.LayoutParams.MATCH_PARENT));
-      imageView.setPadding(Lang.rtl() ? 0 : Screen.dp(8f), 0, Lang.rtl() ? Screen.dp(8f) : 0, 0);
-      RippleSupport.setTransparentBlackSelector(imageView);
-      Views.setClickable(imageView);
-      if (Lang.rtl())
-        menu.addView(imageView, 0);
-      else
-        menu.addView(imageView);
-    }
+    ImageView imageView = new ImageView(getContext());
+    imageView.setId(R.id.btn_favorite);
+    imageView.setScaleType(ImageView.ScaleType.CENTER);
+    imageView.setOnClickListener(onClickListener);
+    imageView.setImageResource(isFavorite ? R.drawable.baseline_star_24 : R.drawable.baseline_star_border_24);
+    imageView.setColorFilter(Theme.getColor(R.id.theme_color_textNeutral));
+    themeListenerList.addThemeFilterListener(imageView, R.id.theme_color_textNeutral);
+    imageView.setLayoutParams(new ViewGroup.LayoutParams(Screen.dp(48f), ViewGroup.LayoutParams.MATCH_PARENT));
+    imageView.setPadding(Lang.rtl() ? 0 : Screen.dp(8f), 0, Lang.rtl() ? Screen.dp(8f) : 0, 0);
+    RippleSupport.setTransparentBlackSelector(imageView);
+    Views.setClickable(imageView);
+    if (Lang.rtl())
+      menu.addView(imageView, 0);
+    else
+      menu.addView(imageView);
 
     boolean needViewPackButton = sticker.needViewPackButton();
 
@@ -404,7 +444,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     Views.setMediumText(sendView, Lang.getString(R.string.SendSticker).toUpperCase());
     sendView.setOnClickListener(onClickListener);
     RippleSupport.setTransparentBlackSelector(sendView);
-    int paddingLeft = Screen.dp(hasFavoriteButton ? 12f : 16f);
+    int paddingLeft = Screen.dp(12f);
     int paddingRight = Screen.dp(needViewPackButton ? 12f : 16f);
     sendView.setPadding(Lang.rtl() ? paddingRight : paddingLeft, 0, Lang.rtl() ? paddingLeft : paddingRight, 0);
     sendView.setGravity(Gravity.CENTER);
@@ -443,8 +483,28 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
         menu.addView(viewView);
     }
 
+    if (sticker.isRecent()) {
+      ImageView removeRecentView = new ImageView(getContext());
+      removeRecentView.setId(R.id.btn_removeRecent);
+      removeRecentView.setScaleType(ImageView.ScaleType.CENTER);
+      removeRecentView.setOnClickListener(onClickListener);
+      removeRecentView.setImageResource(R.drawable.baseline_auto_delete_24);
+      removeRecentView.setColorFilter(Theme.getColor(R.id.theme_color_textNegative));
+      themeListenerList.addThemeFilterListener(removeRecentView, R.id.theme_color_textNegative);
+      removeRecentView.setLayoutParams(new ViewGroup.LayoutParams(Screen.dp(48f), ViewGroup.LayoutParams.MATCH_PARENT));
+      removeRecentView.setPadding(Lang.rtl() ? Screen.dp(8f) : 0, 0, Lang.rtl() ? 0 : Screen.dp(8f), 0);
+      RippleSupport.setTransparentBlackSelector(removeRecentView);
+      Views.setClickable(removeRecentView);
+      if (Lang.rtl())
+        menu.addView(removeRecentView, 0);
+      else
+        menu.addView(removeRecentView);
+    }
+
     menu.setAlpha(0f);
     addView(menu);
+
+    applyMaximumMenuItemsWidth();
 
     setMenuVisible(true, true);
   }
@@ -529,6 +589,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     layoutReceivers();
+    applyMaximumMenuItemsWidth();
   }
 
   private float appearFactor;

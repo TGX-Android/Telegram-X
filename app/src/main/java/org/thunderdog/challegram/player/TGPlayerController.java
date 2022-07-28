@@ -457,8 +457,8 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
     }
   }
 
-  public static @Nullable PlaybackParameters newPlaybackParameters (boolean isVoice, int speedValue) {
-    PlaybackParameters parameters = null;
+  public static @NonNull PlaybackParameters newPlaybackParameters (boolean isVoice, int speedValue) {
+    PlaybackParameters parameters = PlaybackParameters.DEFAULT;
     if (speedValue != TGPlayerController.PLAY_SPEED_NORMAL) {
       float speed;
       float pitch = 1f;

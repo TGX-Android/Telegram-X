@@ -563,11 +563,11 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
         final ArrayList<MediaStickersAdapter.StickerItem> items = new ArrayList<>();
         final int unreadItemCount;
 
-        if (object.getConstructor() == TdApi.StickerSets.CONSTRUCTOR) {
-          TdApi.StickerSetInfo[] stickerSets = ((TdApi.StickerSets) object).sets;
+        if (object.getConstructor() == TdApi.TrendingStickerSets.CONSTRUCTOR) {
+          TdApi.TrendingStickerSets trendingStickerSets = (TdApi.TrendingStickerSets) object;
           if (offset == 0)
             items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_KEYBOARD_TOP));
-          unreadItemCount = parseTrending(tdlib, parsedStickerSets, items,  cellCount, stickerSets, EmojiMediaListController.this, EmojiMediaListController.this, false);
+          unreadItemCount = parseTrending(tdlib, parsedStickerSets, items,  cellCount, trendingStickerSets.sets, EmojiMediaListController.this, EmojiMediaListController.this, false);
         } else {
           if (offset == 0)
             items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_COME_AGAIN_LATER));
@@ -856,8 +856,6 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
 
     if (getArguments() != null) {
       if (getArguments().sendSticker(clickView, sticker, forceDisableNotification, schedulingState)) {
-        if (sticker.isRecent())
-          ignoreNextRecentsUpdate = true;
         return true;
       }
     }
@@ -1045,8 +1043,8 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     }
   }
 
-  private static int getMaxCount (boolean areFavorite) {
-    return areFavorite ? 5 : 20;
+  private int getMaxCount (boolean areFavorite) {
+    return areFavorite ? tdlib.favoriteStickersMaxCount() : 20;
   }
 
   private void processStickersImpl (final TdApi.Object object, final boolean areFavorite) {
@@ -1412,30 +1410,18 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   }
 
   public void applyScheduledChanges () {
-    if (scheduledRecentStickerIds != null) {
-      applyRecentStickers(scheduledRecentStickerIds);
-      scheduledRecentStickerIds = null;
-    }
     if (scheduledFeaturedSets != null) {
       applyScheduledFeaturedSets(scheduledFeaturedSets);
       scheduledFeaturedSets = null;
     }
   }
 
-  private int[] scheduledRecentStickerIds;
-  private boolean ignoreNextRecentsUpdate;
-
   @Override
   public void onRecentStickersUpdated (final int[] stickerIds, boolean isAttached) {
     if (!isAttached) {
       tdlib.ui().post(() -> {
         if (!isDestroyed() && !loadingStickers) {
-          if (ignoreNextRecentsUpdate) {
-            ignoreNextRecentsUpdate = false;
-            scheduledRecentStickerIds = stickerIds;
-          } else {
-            applyRecentStickers(stickerIds);
-          }
+          applyRecentStickers(stickerIds);
         }
       });
     }
