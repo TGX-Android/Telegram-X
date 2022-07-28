@@ -91,7 +91,7 @@ public class PaymentReceiptController extends ViewController<PaymentReceiptContr
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         switch (item.getId()) {
           case R.id.btn_paymentFormDescription:
-            view.setText(new TextWrapper(paymentReceipt.description, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, null));
+            view.setText(new TextWrapper(tdlib, paymentReceipt.description, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, null));
             break;
           case R.id.btn_paymentFormProvider:
             view.setName(getPaymentProcessorName());
@@ -129,7 +129,7 @@ public class PaymentReceiptController extends ViewController<PaymentReceiptContr
   }
 
   private String getPaymentProcessorName () {
-    return tdlib.cache().userDisplayName(paymentReceipt.paymentsProviderUserId, false, false);
+    return tdlib.cache().userDisplayName(paymentReceipt.paymentProviderUserId, false, false);
   }
 
   private boolean isHeaderFullscreen () {

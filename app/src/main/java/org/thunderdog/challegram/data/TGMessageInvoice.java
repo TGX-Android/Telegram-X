@@ -82,7 +82,7 @@ public class TGMessageInvoice extends TGMessage {
 
   private void setText (TdApi.MessageInvoice invoice) {
     titleWrapper = new TextWrapper(invoice.title, Paints.robotoStyleProvider(14f), getLinkColorSet(), null).setTextFlagEnabled(Text.FLAG_ALL_BOLD, true);
-    descriptionWrapper = new TextWrapper(invoice.description, Paints.robotoStyleProvider(14f), getTextColorSet(), null);
+    descriptionWrapper = new TextWrapper(tdlib, invoice.description, Paints.robotoStyleProvider(14f), getTextColorSet(), null);
     invoiceInfoWrapper = buildInvoiceInfoWrapper(invoice);
   }
 

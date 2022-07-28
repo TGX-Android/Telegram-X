@@ -960,6 +960,7 @@ public class Theme {
   public static TdApi.ThemeParameters tdlibThemeParameters () {
     return new TdApi.ThemeParameters(
       Theme.getColor(R.id.theme_color_background),
+      Theme.getColor(R.id.theme_color_filling),
       Theme.getColor(R.id.theme_color_text),
       Theme.getColor(R.id.theme_color_textLight),
       Theme.getColor(R.id.theme_color_textLink),
