@@ -440,6 +440,13 @@ public class TGReactions {
     }
   }
 
+  public void prepareAnimation (String emoji) {
+    MessageReactionEntry entry = reactionsMapEntry.get(emoji);
+    if (entry != null) {
+      entry.prepareAnimation();
+    }
+  }
+
   public void setHidden (String emoji, boolean hidden) {
     MessageReactionEntry entry = reactionsMapEntry.get(emoji);
     if (entry != null) {
@@ -540,6 +547,14 @@ public class TGReactions {
         }
       }
       invalidate();
+    }
+
+    public void prepareAnimation () {
+      if (animation != null) {
+        if (centerAnimationReceiver != null) {
+          centerAnimationReceiver.requestFile(animation);
+        }
+      }
     }
 
     // Touch

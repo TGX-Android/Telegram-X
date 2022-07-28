@@ -154,11 +154,17 @@ public class ReactionsOverlayView extends ViewGroup {
     }
 
     public ReactionInfo setSticker (TGStickerObj sticker) {
+      return setSticker(sticker, true);
+    }
+
+    public ReactionInfo setSticker (TGStickerObj sticker, boolean animated) {
       ImageFile imageFile = sticker.getImage();
       animation = sticker.getPreviewAnimation();
       if (animation != null) {
-        animation.setPlayOnce(true);
-        animation.setLooped(false);
+        if (animated) {
+          animation.setPlayOnce(true);
+          animation.setLooped(false);
+        }
         gifReceiver.requestFile(animation);
       }
       imageReceiver.requestFile(imageFile);

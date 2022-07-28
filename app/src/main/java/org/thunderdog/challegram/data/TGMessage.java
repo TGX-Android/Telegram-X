@@ -7937,6 +7937,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       TdApi.MessageReaction messageReaction = entry.getMessageReaction();
       if (messageReaction.totalCount == 1 && messageReaction.isChosen) {
         entry.setHidden(true);
+        entry.prepareAnimation();
       }
     }
 
@@ -7946,11 +7947,16 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       int startX = positionCords[0];
       int startY = positionCords[1] + view.getMeasuredHeight() / 2;
       if (useBubbles()) {
+        final int top = topContentEdge;
+        final int bottom = bottomContentEdge;
+        final int height = bottom - top;
         if (!Lang.rtl()) {
           startX += view.getMeasuredWidth() - Screen.dp(BUBBLE_MOVE_MAX) / 2;
         } else {
           startX += Screen.dp(BUBBLE_MOVE_MAX) / 2;
         }
+        startX -= translation;
+        startY = positionCords[1] + top + height / 2;
       } else {
         if (!Lang.rtl()) {
           startX += Screen.dp(BUBBLE_MOVE_MAX) / 2;
@@ -7958,7 +7964,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           startX += view.getMeasuredWidth() - Screen.dp(BUBBLE_MOVE_MAX) / 2;
         }
 
-        final int height = findBottomEdge() - (getHeaderPadding() - xHeaderPadding);
         if (height > 256) {
           startY = (int) (positionCords[1] + (mInitialTouchY - getHeaderPadding() + xHeaderPadding));
         }
@@ -7966,7 +7971,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
       context().reactionsOverlayManager().addOverlay(
         new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
-          .setSticker(nextSetReactionAnimation.reaction.newCenterAnimationSicker())
+          .setSticker(nextSetReactionAnimation.reaction.staticCenterAnimationSicker(), false)
           .setAnimationEndListener(this::onQuickReactionAnimationFinish)
           .setAnimatedPosition(
             new Point(startX, startY),
@@ -7983,7 +7988,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       int startY = nextSetReactionAnimation.startPosition.y;
       context().reactionsOverlayManager().addOverlay(
         new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
-          .setSticker(nextSetReactionAnimation.reaction.newCenterAnimationSicker())
+          .setSticker(nextSetReactionAnimation.reaction.staticCenterAnimationSicker(), false)
           .setAnimationEndListener(this::onQuickReactionAnimationFinish)
           .setAnimatedPosition(
             new Point(startX, startY),
