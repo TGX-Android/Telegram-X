@@ -344,15 +344,20 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           final LinearLayoutManager linearLayoutManager = (LinearLayoutManager) layoutManager;
           final MessagesAdapter messagesAdapter = (MessagesAdapter) adapter;
           final int parentHeight = recyclerView.getMeasuredHeight();
-          final boolean needScrollCompensation = (bottom > parentHeight) || (messagesAdapter.hasUnreadSeparator() && !recyclerView.wasTouched());
+
+          final int index = messagesAdapter.indexOfMessageContainer(getMessageId());
+          final int unreadBadgeIndex = messagesAdapter.indexOfMessageWithUnreadSeparator();
+          final boolean needScrollCompensation = (bottom > parentHeight) || (unreadBadgeIndex != -1 && index <= unreadBadgeIndex && !recyclerView.wasTouched());
+          final int heightDiff = oldHeight - height;
 
           if (needScrollCompensation) {
-            final int heightDiff = oldHeight - height;
             if (heightDiff < 0) {
               recyclerView.scrollBy(0, heightDiff);
+              // recyclerView.post(() -> linearLayoutManager.scrollToPositionWithOffset(index, top + heightDiff));
+              // ;
             }
-            android.util.Log.i("BUILD_LAYOUT", String.format("height layout %d %d %d %b", height, top, heightDiff, changed));
           }
+          android.util.Log.i("BUILD_LAYOUT", String.format("height layout %d %d %d %b %d %d %b", height, top, heightDiff, changed, index, unreadBadgeIndex, needScrollCompensation));
         }
       }
     }

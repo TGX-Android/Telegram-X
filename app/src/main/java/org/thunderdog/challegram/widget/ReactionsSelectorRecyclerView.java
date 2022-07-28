@@ -157,9 +157,7 @@ public class ReactionsSelectorRecyclerView extends CustomRecyclerView {
     ReactionsAdapter (Context context, TGMessage message) {
       this.context = context;
       this.tdlib = message.tdlib();
-      this.reactions = Arrays.stream(message.getMessageAvailableReactions())
-        .filter(x -> (!x.needsPremium || tdlib.hasPremium()))
-        .toArray(TdApi.AvailableReaction[]::new);
+      this.reactions = message.getMessageAvailableReactions();
       this.message = message;
       this.chosen = message.getMessageReactions().getChosen();
     }

@@ -7682,7 +7682,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     tdlib().client().send(new TdApi.GetMessageAvailableReactions(msg.chatId, getSmallestId()), (TdApi.Object object) -> {
       if (object.getConstructor() == TdApi.AvailableReactions.CONSTRUCTOR) {
         TdApi.AvailableReactions reactions = (TdApi.AvailableReactions) object;
-        messageAvailableReactions = reactions.reactions;
+        messageAvailableReactions = Arrays.stream(reactions.reactions)
+          .filter(x -> (!x.needsPremium || tdlib.hasPremium()))
+          .toArray(TdApi.AvailableReaction[]::new);
         computeQuickButtons();
       }
     });
