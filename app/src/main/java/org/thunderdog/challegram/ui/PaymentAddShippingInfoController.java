@@ -61,7 +61,9 @@ public class PaymentAddShippingInfoController extends EditBaseController<Payment
         i_shipCity = args.predefinedOrderInfo.shippingAddress.city;
         i_shipPostcode = args.predefinedOrderInfo.shippingAddress.postalCode;
         i_shipCountry = args.predefinedOrderInfo.shippingAddress.countryCode;
-        i_shipCountryUI = TGCountry.instance().find(i_shipCountry)[2];
+        if (!i_shipCountry.isEmpty()) {
+          i_shipCountryUI = TGCountry.instance().find(i_shipCountry)[2];
+        }
       }
 
       i_shipName = args.predefinedOrderInfo.name;

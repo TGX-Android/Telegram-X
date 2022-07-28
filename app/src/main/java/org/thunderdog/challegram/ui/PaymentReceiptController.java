@@ -22,6 +22,7 @@ import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.ComplexHeaderView;
 import org.thunderdog.challegram.navigation.ComplexRecyclerView;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.payments.PaymentsSubtitleFormatter;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
@@ -120,12 +121,7 @@ public class PaymentReceiptController extends ViewController<PaymentReceiptContr
   }
 
   private String formatShippingAddressSubtitle () {
-    if (paymentReceipt.orderInfo == null || paymentReceipt.orderInfo.shippingAddress == null) return Lang.getString(R.string.PaymentFormNotSet);
-    if (paymentReceipt.orderInfo.shippingAddress.streetLine2.isEmpty()) {
-      return Lang.getString(R.string.format_paymentFormAddress, paymentReceipt.orderInfo.shippingAddress.streetLine1, paymentReceipt.orderInfo.shippingAddress.city, paymentReceipt.orderInfo.shippingAddress.state, paymentReceipt.orderInfo.shippingAddress.countryCode, paymentReceipt.orderInfo.shippingAddress.postalCode);
-    } else {
-      return Lang.getString(R.string.format_paymentFormAddressWithSecondLine, paymentReceipt.orderInfo.shippingAddress.streetLine1, paymentReceipt.orderInfo.shippingAddress.streetLine2, paymentReceipt.orderInfo.shippingAddress.city, paymentReceipt.orderInfo.shippingAddress.state, paymentReceipt.orderInfo.shippingAddress.countryCode, paymentReceipt.orderInfo.shippingAddress.postalCode);
-    }
+    return PaymentsSubtitleFormatter.format(paymentReceipt.orderInfo, paymentReceipt.invoice);
   }
 
   private String getPaymentProcessorName () {

@@ -4319,8 +4319,6 @@
   <string name="PaymentFormMethodToastNotSaved">This payment method won\'t be saved for future use</string>
   <string name="PaymentFormMethodError">An error occurred when processing a new payment method</string>
   <string name="ShowReceipt">Show Receipt</string>
-  <string name="format_paymentFormAddressWithSecondLine">%1$s %2$s, %3$s, %4$s, %5$s, %6$s</string>
-  <string name="format_paymentFormAddress">%1$s, %2$s, %3$s, %4$s, %5$s</string>
 
   <string name="format_paymentMethod">**%1$s**\n%2$s</string>
   <string name="PaymentMethodSaved">saved payment method</string>

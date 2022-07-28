@@ -23,6 +23,7 @@ import org.thunderdog.challegram.navigation.ComplexHeaderView;
 import org.thunderdog.challegram.navigation.ComplexRecyclerView;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.payments.PaymentsSubtitleFormatter;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
@@ -186,12 +187,7 @@ public class PaymentFormController extends ViewController<PaymentFormController.
   }
 
   private String formatShippingAddressSubtitle () {
-    if (currentOrderInfo == null || currentOrderInfo.shippingAddress == null) return Lang.getString(R.string.PaymentFormNotSet);
-    if (currentOrderInfo.shippingAddress.streetLine2.isEmpty()) {
-      return Lang.getString(R.string.format_paymentFormAddress, currentOrderInfo.shippingAddress.streetLine1, currentOrderInfo.shippingAddress.city, currentOrderInfo.shippingAddress.state, currentOrderInfo.shippingAddress.countryCode, currentOrderInfo.shippingAddress.postalCode);
-    } else {
-      return Lang.getString(R.string.format_paymentFormAddressWithSecondLine, currentOrderInfo.shippingAddress.streetLine1, currentOrderInfo.shippingAddress.streetLine2, currentOrderInfo.shippingAddress.city, currentOrderInfo.shippingAddress.state, currentOrderInfo.shippingAddress.countryCode, currentOrderInfo.shippingAddress.postalCode);
-    }
+    return PaymentsSubtitleFormatter.format(currentOrderInfo, paymentForm.invoice);
   }
 
   private void openNewCardController () {
@@ -298,16 +294,16 @@ public class PaymentFormController extends ViewController<PaymentFormController.
 
   private void updateShippingInterface () {
     int indexOfShippingAddress = adapter.indexOfViewById(R.id.btn_paymentFormShipmentAddress);
+    int indexOfShipmentMethod = adapter.indexOfViewById(R.id.btn_paymentFormShipmentMethod);
 
-    if (availableShippingOptions != null && availableShippingOptions.length > 0) {
-      if (adapter.indexOfViewById(R.id.btn_paymentFormShipmentMethod) != -1) return;
+    if (availableShippingOptions != null && availableShippingOptions.length > 0 && indexOfShipmentMethod == -1) {
       adapter.addItems(
         indexOfShippingAddress + 1,
         new ListItem(ListItem.TYPE_SEPARATOR_FULL),
         new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_paymentFormShipmentMethod, R.drawable.baseline_local_shipping_24, 0, false)
       );
-    } else {
-      adapter.removeRange(indexOfShippingAddress + 1, 2);
+    } else if (indexOfShipmentMethod != -1) {
+      adapter.removeRange(indexOfShipmentMethod - 1, 2);
     }
   }
 
@@ -355,13 +351,6 @@ public class PaymentFormController extends ViewController<PaymentFormController.
     if (isShipmentInfoRequired()) {
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_paymentFormShipmentAddress, R.drawable.baseline_location_on_24, 0, false));
-      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_paymentFormShipmentMethod, R.drawable.baseline_local_shipping_24, 0, false));
-    }
-
-    if (availableShippingOptions != null && availableShippingOptions.length > 0) {
-      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_paymentFormShipmentMethod, R.drawable.baseline_local_shipping_24, 0, false));
     }
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
