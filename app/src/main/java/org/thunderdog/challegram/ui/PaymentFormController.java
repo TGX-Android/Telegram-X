@@ -2,6 +2,9 @@ package org.thunderdog.challegram.ui;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
@@ -30,11 +33,13 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Size;
+import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
@@ -159,9 +164,7 @@ public class PaymentFormController extends ViewController<PaymentFormController.
       protected void modifyPaymentTip (ListItem item, PaymentTipView tipView) {
         tipView.setData(paymentForm.invoice, (tip) -> {
           paymentFormTipAmount = tip;
-          updateTotalAmount();
-          adapter.updateValuedSettingById(R.id.btn_paymentFormTotal);
-          bottomBar.setAction(0, Lang.getString(R.string.PaymentFormPay, CurrencyUtils.buildAmount(paymentForm.invoice.currency, paymentFormTotalAmount)), R.drawable.baseline_arrow_downward_24, false);
+          updateTotalAmountWithUI();
         });
       }
 
@@ -214,15 +217,38 @@ public class PaymentFormController extends ViewController<PaymentFormController.
 
   private void openShipmentMethodAlert () {
     validateAndRequestShipping(() -> {
-      IntList ids = new IntList(0);
-      StringList titles = new StringList(0);
+      ArrayList<OptionItem> options = new ArrayList<>();
 
-      for (TdApi.ShippingOption so : availableShippingOptions) {
-        ids.append(so.id.hashCode());
-        titles.append(so.id + " - " + so.title);
+      for (int i = 0; i < availableShippingOptions.length; i++) {
+        TdApi.ShippingOption so = availableShippingOptions[i];
+
+        SpannableStringBuilder ssb = new SpannableStringBuilder();
+
+        ssb.append(so.title);
+
+        long totalCost = 0;
+
+        for (TdApi.LabeledPricePart lpp : so.priceParts) {
+          totalCost += lpp.amount;
+        }
+
+        int initialStart = ssb.length();
+
+        ssb.append(" ").append(formatCurrency(totalCost));
+        ssb.setSpan(new ForegroundColorSpan(Theme.getColor(R.id.theme_color_textLight)), initialStart, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        options.add(
+          new OptionItem.Builder()
+            .id(i)
+            .name(ssb)
+            .build()
+        );
       }
 
-      showOptions("Choose", ids.get(), titles.get());
+      showOptions(new Options(Lang.getString(R.string.ChooseShipmentMethod), options.toArray(new OptionItem[0])), (optionItemView, id) -> {
+        setShipmentOption(availableShippingOptions[id]);
+        return true;
+      }, null);
     });
   }
 
@@ -292,6 +318,33 @@ public class PaymentFormController extends ViewController<PaymentFormController.
     });
   }
 
+  private void setShipmentOption (TdApi.ShippingOption newShippingOption) {
+    if (selectedShippingOption != null) {
+      if (selectedShippingOption.id.equals(newShippingOption.id)) return;
+
+      int removeIndex = adapter.indexOfViewById(R.id.btn_paymentFormTotal) - 1 - (paymentForm.invoice.maxTipAmount > 0 ? 2 : 0);
+      int count = selectedShippingOption.priceParts.length;
+      adapter.removeRange(removeIndex - count, count);
+    }
+
+    selectedShippingOption = newShippingOption;
+
+    if (selectedShippingOption != null) {
+      int additionalIndex = adapter.indexOfViewById(R.id.btn_paymentFormTotal) - 1 - (paymentForm.invoice.maxTipAmount > 0 ? 2 : 0);
+
+      ArrayList<ListItem> newItems = new ArrayList<>();
+
+      for (TdApi.LabeledPricePart pricePart: newShippingOption.priceParts) {
+        newItems.add(new ListItem(ListItem.TYPE_PAYMENT_PRICE_PART).setData(new PaymentPricePartView.PartData(pricePart.label, formatCurrency(pricePart.amount), false)));
+      }
+
+      adapter.addItems(additionalIndex, newItems.toArray(new ListItem[0]));
+    }
+
+    adapter.updateValuedSettingById(R.id.btn_paymentFormShipmentMethod);
+    updateTotalAmountWithUI();
+  }
+
   private void updateShippingInterface () {
     int indexOfShippingAddress = adapter.indexOfViewById(R.id.btn_paymentFormShipmentAddress);
     int indexOfShipmentMethod = adapter.indexOfViewById(R.id.btn_paymentFormShipmentMethod);
@@ -351,6 +404,11 @@ public class PaymentFormController extends ViewController<PaymentFormController.
     if (isShipmentInfoRequired()) {
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_paymentFormShipmentAddress, R.drawable.baseline_location_on_24, 0, false));
+
+      if (currentOrderInfo != null) {
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_paymentFormShipmentMethod, R.drawable.baseline_local_shipping_24, 0, false));
+      }
     }
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
@@ -385,6 +443,15 @@ public class PaymentFormController extends ViewController<PaymentFormController.
   private void updateTotalAmount () {
     paymentFormTotalAmount = paymentFormTipAmount;
     for (TdApi.LabeledPricePart pricePart : paymentForm.invoice.priceParts) paymentFormTotalAmount += pricePart.amount;
+    if (selectedShippingOption != null) {
+      for (TdApi.LabeledPricePart pricePart : selectedShippingOption.priceParts) paymentFormTotalAmount += pricePart.amount;
+    }
+  }
+
+  private void updateTotalAmountWithUI() {
+    updateTotalAmount();
+    adapter.updateValuedSettingById(R.id.btn_paymentFormTotal);
+    bottomBar.setAction(0, Lang.getString(R.string.PaymentFormPay, CurrencyUtils.buildAmount(paymentForm.invoice.currency, paymentFormTotalAmount)), R.drawable.baseline_arrow_downward_24, false);
   }
 
   private String formatCurrency (long amount) {
@@ -432,11 +499,15 @@ public class PaymentFormController extends ViewController<PaymentFormController.
       openNewCardController();
     } else if (isShipmentInfoRequired() && (currentOrderInfo == null || currentOrderInfo.shippingAddress == null)) {
       openShipmentAddressController();
-    } else if (validatedOrderInfoId != null && paymentForm.invoice.needShippingAddress && selectedShippingOption == null) {
+    } else if (currentOrderInfo != null && paymentForm.invoice.needShippingAddress && selectedShippingOption == null) {
       openShipmentMethodAlert();
     } else {
-      // nothing else needed, we can show final payment UI
+      initPaymentProcess();
     }
+  }
+
+  private void initPaymentProcess () {
+    // TODO: check if 2fa is needed + disclaimer + payment confirmation
   }
 
   private boolean isShipmentInfoRequired () {

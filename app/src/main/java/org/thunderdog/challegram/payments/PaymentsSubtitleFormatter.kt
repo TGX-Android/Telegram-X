@@ -17,7 +17,7 @@ object PaymentsSubtitleFormatter {
         from.shippingAddress?.state,
         from.shippingAddress?.countryCode,
         from.shippingAddress?.postalCode
-      ).filterNotNull().joinToString()
+      ).filterNot { it.isNullOrEmpty() }.joinToString()
     }
 
     else -> arrayOf(

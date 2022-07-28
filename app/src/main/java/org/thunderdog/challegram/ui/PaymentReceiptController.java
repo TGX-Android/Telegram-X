@@ -112,6 +112,11 @@ public class PaymentReceiptController extends ViewController<PaymentReceiptContr
             break;
         }
       }
+
+      @Override
+      protected void modifyPaymentPricePart (ListItem item, PaymentPricePartView partView) {
+        partView.setData((PaymentPricePartView.PartData) item.getData());
+      }
     };
 
     bindItems();
