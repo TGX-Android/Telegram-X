@@ -43,11 +43,15 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
     private final boolean needCountry;
     private final boolean needPostalCode;
     private final boolean testMode;
+    private final boolean canSaveCredentials;
+    private final boolean needPassword;
 
-    public Args (PaymentFormController.NewPaymentMethodCallback callback, TdApi.PaymentProvider paymentsProvider, boolean testMode) {
+    public Args (PaymentFormController.NewPaymentMethodCallback callback, TdApi.PaymentProvider paymentsProvider, boolean testMode, boolean canSaveCredentials, boolean needPassword) {
       this.callback = callback;
       this.paymentsProvider = paymentsProvider;
       this.testMode = testMode;
+      this.canSaveCredentials = canSaveCredentials;
+      this.needPassword = needPassword;
 
       if (paymentsProvider.getConstructor() == TdApi.PaymentProviderStripe.CONSTRUCTOR) {
         TdApi.PaymentProviderStripe provider = (TdApi.PaymentProviderStripe) paymentsProvider;
@@ -145,6 +149,9 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         if (item.getId() == R.id.btn_inputCardCountry) {
           view.setData(i_cardCountryUI.isEmpty() ? Lang.getString(R.string.PaymentFormNotSet) : i_cardCountryUI);
+        } else if (item.getId() == R.id.btn_inputCardSaveInfo) {
+          view.setEnabled(getArgumentsStrict().canSaveCredentials && !getArgumentsStrict().needPassword);
+          view.getToggler().setRadioEnabled(!getArgumentsStrict().needPassword && i_saveInfo, isUpdate);
         }
       }
     };
@@ -178,10 +185,12 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     }
 
-    items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_inputCardSaveInfo, 0, R.string.PaymentFormNewMethodSave, i_saveInfo));
-    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.PaymentFormNewMethodSaveInfo));
+    if (!(!getArgumentsStrict().canSaveCredentials && !getArgumentsStrict().needPassword)) {
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_inputCardSaveInfo, 0, R.string.PaymentFormNewMethodSave, i_saveInfo));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, getArgumentsStrict().needPassword ? R.string.PaymentFormNewMethodSaveInfoTFARequired : R.string.PaymentFormNewMethodSaveInfo));
+    }
 
     adapter.setItems(items, false);
 
@@ -340,7 +349,7 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
   public void onSuccess (@NonNull String json) {
     runOnUiThreadOptional(() -> {
       navigateBack();
-      getArgumentsStrict().callback.onNewMethodCreated(new TdApi.InputCredentialsNew(json, i_saveInfo), CardValidators.INSTANCE.createTgCardName(i_cardNumber));
+      getArgumentsStrict().callback.onNewMethodCreated(new TdApi.InputCredentialsNew(json, getArgumentsStrict().canSaveCredentials && !getArgumentsStrict().needPassword && i_saveInfo), CardValidators.INSTANCE.createTgCardName(i_cardNumber));
     });
   }
 

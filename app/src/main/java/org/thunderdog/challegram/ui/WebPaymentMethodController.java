@@ -42,11 +42,13 @@ public class WebPaymentMethodController extends WebkitController<WebPaymentMetho
   public static class Args {
     public final String paymentProcessor, url;
     public final PaymentFormController.NewPaymentMethodCallback callback;
+    public final boolean canSaveInfo;
 
-    public Args (String paymentProcessor, String url, PaymentFormController.NewPaymentMethodCallback callback) {
+    public Args (PaymentFormController.NewPaymentMethodCallback callback, String paymentProcessor, String url, boolean canSaveInfo) {
+      this.callback = callback;
       this.paymentProcessor = paymentProcessor;
       this.url = url;
-      this.callback = callback;
+      this.canSaveInfo = canSaveInfo;
     }
   }
 
@@ -64,7 +66,7 @@ public class WebPaymentMethodController extends WebkitController<WebPaymentMetho
 
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
-    if (id == R.id.menu_newPaymentMethodWeb) {
+    if (getArgumentsStrict().canSaveInfo && id == R.id.menu_newPaymentMethodWeb) {
       toggleSaveButton = header.genButton(R.id.menu_btn_savePaymentMethod, R.drawable.hansbohm_content_save_minus_24, getHeaderIconColorId(), this, Screen.dp(52f), ThemeDeprecated.headerSelector(), header);
       header.addButton(menu, toggleSaveButton);
     }
@@ -95,7 +97,7 @@ public class WebPaymentMethodController extends WebkitController<WebPaymentMetho
             JSONObject obj = new JSONObject(jsonData);
             getArgumentsStrict().callback.onNewMethodCreated(
               new TdApi.InputCredentialsNew(
-                obj.getJSONObject("credentials").toString(), shouldSavePaymentMethod
+                obj.getJSONObject("credentials").toString(), getArgumentsStrict().canSaveInfo && shouldSavePaymentMethod
               ), obj.getString("title")
             );
           } catch (JSONException e) {

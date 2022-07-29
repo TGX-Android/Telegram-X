@@ -33,18 +33,14 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Size;
-import org.thunderdog.challegram.util.OptionDelegate;
-import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.CurrencyUtils;
-import me.vkryl.core.collection.IntList;
 import me.vkryl.td.Td;
 
 public class PaymentFormController extends ViewController<PaymentFormController.Args> implements View.OnClickListener {
@@ -198,12 +194,12 @@ public class PaymentFormController extends ViewController<PaymentFormController.
       case TdApi.PaymentProviderStripe.CONSTRUCTOR:
       case TdApi.PaymentProviderSmartGlocal.CONSTRUCTOR:
         PaymentAddNewCardController c = new PaymentAddNewCardController(context, tdlib);
-        c.setArguments(new PaymentAddNewCardController.Args(this::onPaymentMethodSelected, paymentForm.paymentProvider, paymentForm.invoice.isTest));
+        c.setArguments(new PaymentAddNewCardController.Args(this::onPaymentMethodSelected, paymentForm.paymentProvider, paymentForm.invoice.isTest, paymentForm.canSaveCredentials, paymentForm.needPassword));
         navigateTo(c);
         break;
       case TdApi.PaymentProviderOther.CONSTRUCTOR:
         WebPaymentMethodController wc = new WebPaymentMethodController(context, tdlib);
-        wc.setArguments(new WebPaymentMethodController.Args(getPaymentProcessorName(), ((TdApi.PaymentProviderOther) paymentForm.paymentProvider).url, this::onPaymentMethodSelected));
+        wc.setArguments(new WebPaymentMethodController.Args(this::onPaymentMethodSelected, getPaymentProcessorName(), ((TdApi.PaymentProviderOther) paymentForm.paymentProvider).url, paymentForm.canSaveCredentials));
         navigateTo(wc);
         break;
     }
@@ -508,6 +504,17 @@ public class PaymentFormController extends ViewController<PaymentFormController.
 
   private void initPaymentProcess () {
     // TODO: check if 2fa is needed + disclaimer + payment confirmation
+
+    if (isCredsSavable()) {
+      tdlib.client().send(new TdApi.GetTemporaryPasswordState(), (state) -> {
+
+      });
+    }
+
+  }
+
+  private boolean isCredsSavable() {
+    return inputCredentials.getConstructor() == TdApi.InputCredentialsSaved.CONSTRUCTOR || (inputCredentials.getConstructor() == TdApi.InputCredentialsNew.CONSTRUCTOR && ((TdApi.InputCredentialsNew) inputCredentials).allowSave);
   }
 
   private boolean isShipmentInfoRequired () {
