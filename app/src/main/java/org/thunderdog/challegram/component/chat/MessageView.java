@@ -234,6 +234,8 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   }
 
   public void setMessage (TGMessage message) {
+    oldHeight = -1;
+
     int desiredHeight = message.getHeight();
     int currentHeight = getCurrentHeight();
 
@@ -280,8 +282,6 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         invalidateOutline();
       }
     }
-
-    oldHeight = -1;
   }
 
   public void invalidatePreviewReceiver (long chatId, long messageId) {
@@ -332,6 +332,43 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   int oldHeight = -1;
 
   @Override
+  public void requestLayout () {
+    if (msg != null) {
+      final int top = getTop();
+      final int bottom = getBottom();
+
+      final MessagesRecyclerView recyclerView = findParentRecyclerView();
+      final int height = msg.computeHeight();
+
+      if (oldHeight != -1 && oldHeight != height && recyclerView != null && !recyclerView.isComputingLayout()) {
+        final RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
+        final RecyclerView.Adapter<?> adapter = recyclerView.getAdapter();
+        if (layoutManager instanceof LinearLayoutManager && adapter instanceof MessagesAdapter) {
+          final LinearLayoutManager linearLayoutManager = (LinearLayoutManager) layoutManager;
+          final MessagesAdapter messagesAdapter = (MessagesAdapter) adapter;
+          final int parentHeight = recyclerView.getMeasuredHeight();
+
+          final int index = messagesAdapter.indexOfMessageContainer(getMessageId());
+          final int unreadBadgeIndex = messagesAdapter.indexOfMessageWithUnreadSeparator();
+          final boolean needScrollCompensation = (bottom > parentHeight) || (unreadBadgeIndex != -1 && index <= unreadBadgeIndex && !recyclerView.getManager().isWasScrollByUser());
+          final int heightDiff = oldHeight - height;
+
+          android.util.Log.i("BUILD_LAYOUT", String.format("height layout %d %d %d %d %d %b", height, top, heightDiff, index, unreadBadgeIndex, needScrollCompensation));
+
+          if (needScrollCompensation) {
+            linearLayoutManager.scrollToPositionWithOffset(index, parentHeight - bottom + heightDiff);
+          }
+        }
+      }
+
+      oldHeight = height;
+    }
+
+    super.requestLayout();
+  }
+
+  /*
+  @Override
   protected void onLayout (boolean changed, int left, int top, int right, int bottom) {
     super.onLayout(changed, left, top, right, bottom);
     final int height = bottom - top;
@@ -368,6 +405,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
     oldHeight = height;
   }
+  */
 
   public final @Nullable MessagesRecyclerView findParentRecyclerView () {
     ViewParent parent = getParent();
