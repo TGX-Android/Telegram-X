@@ -734,6 +734,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     } else {
       scrollToBottom(true);
     }
+    wasScrollByUser = false;
   }
 
   public TGMessage findTopMessage () {
