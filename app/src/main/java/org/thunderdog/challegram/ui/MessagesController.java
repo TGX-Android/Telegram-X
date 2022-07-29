@@ -601,12 +601,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     messagesView.setHasFixedSize(true);
     messagesView.setLayoutManager(messagesManager);
     messagesView.setLayoutParams(params);
-    messagesView.setOnScrollListener(new RecyclerView.OnScrollListener() {
-      @Override
-      public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
-        context().reactionsOverlayManager().addOffset(0, -dy);
-      }
-    });
     Views.setScrollBarPosition(messagesView);
     if (Config.HARDWARE_MESSAGES_LIST) {
       Views.setLayerType(messagesView, View.LAYER_TYPE_HARDWARE);

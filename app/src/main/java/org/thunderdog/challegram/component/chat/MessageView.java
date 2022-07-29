@@ -354,6 +354,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
             if (heightDiff < 0) {
               recyclerView.scrollBy(0, heightDiff);
             }
+
+            // It works, but with a delay. If you remove ui.post scrolling will not work
+            // manager.controller().tdlib().ui().post(() -> {
+            //   linearLayoutManager.scrollToPositionWithOffset(index, parentHeight - bottom + heightDiff);
+            // });
+
           }
           android.util.Log.i("BUILD_LAYOUT", String.format("height layout %d %d %d %b %d %d %b", height, top, heightDiff, changed, index, unreadBadgeIndex, needScrollCompensation));
         }

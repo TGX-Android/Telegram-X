@@ -142,6 +142,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           controller.onInteractedWithContent();
           controller.onFirstChatScroll();
         }
+        controller.context().reactionsOverlayManager().addOffset(0, -dy);
       }
     };
 
