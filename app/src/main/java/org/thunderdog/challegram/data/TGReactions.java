@@ -773,13 +773,6 @@ public class TGReactions {
         receiver.setAlpha(alpha);
         receiver.draw(c);
       }
-
-      /*GifReceiver receiver2 = !inAnimation ? centerAnimationReceiver : staticCenterAnimationReceiver;
-      if (receiver2 != null) {
-        receiver2.setBounds(l, t, r, b);
-        receiver2.setAlpha(alpha);
-        receiver2.draw(c);
-      }*/
     }
 
     public void drawReactionInBubble (MessageView view, Canvas c, float x, float y, float visibility, int appearTypeFlags) {

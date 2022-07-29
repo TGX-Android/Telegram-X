@@ -100,6 +100,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private static final int BOTTOM_PRELOAD_COUNT = 7;
 
   private boolean isScrolling;
+  private boolean wasScrollByUser;
 
   public MessagesManager (final MessagesController controller) {
     this.controller = controller;
@@ -114,6 +115,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           if (Settings.instance().needHideChatKeyboardOnScroll() && controller != null) {
             controller.hideAllKeyboards();
           }
+          wasScrollByUser = true;
         }
         boolean isScrolling = newState != RecyclerView.SCROLL_STATE_IDLE;
         if (MessagesManager.this.isScrolling != isScrolling) {
@@ -481,6 +483,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     clearHeaderMessage();
     lastCheckedBottomId = lastCheckedTopId = 0;
     awaitingForPinnedMessages = false;
+    wasScrollByUser = false;
   }
 
   public void checkItemAnimatorEnabled () {
@@ -648,6 +651,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
     subscribeForUpdates();
     this.useReactionBubblesValue = checkReactionBubbles();
+    this.wasScrollByUser = false;
   }
 
   public void loadPreview () {
@@ -1218,6 +1222,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (getActiveMessageCount() == 0 && !loader.canLoadTop() && !loader.canLoadBottom() && !loader.isLoading()) {
       controller.showActionBotButton();
     }
+  }
+
+  public boolean isWasScrollByUser () {
+    return wasScrollByUser;
   }
 
   // Utils
@@ -2477,6 +2485,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
     if (highlightMode == HIGHLIGHT_MODE_UNREAD || highlightMode == HIGHLIGHT_MODE_UNREAD_NEXT || fullHeight + scrollMessage.findTopEdge() >= height) {
       scrollToPositionWithOffset(index, height - fullHeight, smooth);
+      wasScrollByUser = false;
     } else {
       scrollToPositionWithOffset(index, height / 2 - fullHeight / 2 + scrollMessage.findTopEdge(), smooth);
     }

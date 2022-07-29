@@ -162,6 +162,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private static final int FLAG_SHOW_BADGE = 1 << 10;
   private static final int FLAG_SHOW_DATE = 1 << 11;
   private static final int FLAG_EXTRA_PADDING = 1 << 12;
+  private static final int FLAG_IGNORE_REACTIONS_VIEW = 1 << 13;
   private static final int FLAG_HIDE_MEDIA = 1 << 17;
   private static final int FLAG_VIEWED = 1 << 18;
   private static final int FLAG_DATE_FAKE_BOLD = 1 << 19;
@@ -4382,8 +4383,15 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       result = true;
     }
     if (containsUnreadReactions()) {
-      highlightUnreadReactions();
-      highlight(true);
+      if (!BitwiseUtils.getFlag(flags, FLAG_IGNORE_REACTIONS_VIEW)) {
+        highlightUnreadReactions();
+        highlightUnreadReactionsIfNeeded();
+        highlight(true);
+        tdlib.ui().postDelayed(() -> {
+          flags = BitwiseUtils.setFlag(flags, FLAG_IGNORE_REACTIONS_VIEW, false);
+        }, 500L);
+      }
+      flags |= FLAG_IGNORE_REACTIONS_VIEW;
       result = true;
     }
     return result;
@@ -5035,9 +5043,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       } else {
         return false;
       }
-      /*if (unreadReactions != null && unreadReactions.length > 0 && hasAttachedToAnything()) {
-        highlightUnreadReactions(unreadReactions);
-      }*/
     }
     return changed;
   }
@@ -8107,6 +8112,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     } else {
       savedUnreadReactions = msg.unreadReactions;
     }
+    invalidate();
   }
 
   private void highlightUnreadReactionsImpl () {
