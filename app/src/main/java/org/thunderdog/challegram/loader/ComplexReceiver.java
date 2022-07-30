@@ -173,12 +173,16 @@ public class ComplexReceiver implements Destroyable {
     if (attach) {
       for (int i = 0; i < count; i++) {
         Receiver receiver = receivers.valueAt(i);
-        receiver.attach();
+        if (receiver != null) {
+          receiver.attach();
+        }
       }
     } else {
       for (int i = 0; i < count; i++) {
         Receiver receiver = receivers.valueAt(i);
-        receiver.detach();
+        if (receiver != null) {
+          receiver.detach();
+        }
       }
     }
   }
