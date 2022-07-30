@@ -1335,6 +1335,36 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
+  public void onMessageHeightChanged (final long chatId, final long messageId, final int oldHeight, final int newHeight) {
+    final int heightDiff = oldHeight - newHeight;
+    final int recyclerHeight = getRecyclerHeight();
+    final View view = findMessageView(chatId, messageId);
+    if (view == null) {
+      return;
+    }
+
+    final int bottom = view.getBottom();
+    int index = -1;
+
+    boolean needScrollCompensation = (bottom > recyclerHeight);
+    if (needScrollCompensation) {
+      tdlib.ui().post(() -> controller.getMessagesView().scrollBy(0, heightDiff));
+      return;
+      // index = adapter.indexOfMessageContainer(messageId);
+    }
+
+    if (!needScrollCompensation && !isWasScrollByUser()) {
+      final int unreadBadgeIndex = adapter.indexOfMessageWithUnreadSeparator();
+      index = adapter.indexOfMessageContainer(messageId);
+      needScrollCompensation = (unreadBadgeIndex != -1 && index <= unreadBadgeIndex);
+    }
+
+    if (needScrollCompensation && index != -1) {
+      tdlib.ui().post(() -> controller.getMessagesView().scrollBy(0, heightDiff));
+      // manager.scrollToPositionWithOffset(index, recyclerHeight - bottom + heightDiff);
+    }
+  }
+
   public void modifyRecycler (Context context, RecyclerView recyclerView, LinearLayoutManager manager) {
     this.manager = manager;
     this.adapter = new MessagesAdapter(context, this, this.controller);

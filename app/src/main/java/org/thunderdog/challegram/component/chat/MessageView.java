@@ -331,6 +331,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   int oldHeight = -1;
 
+  /*
   @Override
   public void requestLayout () {
     if (msg != null) {
@@ -374,6 +375,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
     super.requestLayout();
   }
+  */
 
   /*
   @Override

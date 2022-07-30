@@ -3183,6 +3183,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     onBubbleHasChanged();
     if (height != oldHeight) {
       // FIXME?
+      if (hasAnyTargetToInvalidate()) {
+        manager.onMessageHeightChanged(getChatId(), getId(), oldHeight, height);
+      }
       requestLayout();
     }
   }
