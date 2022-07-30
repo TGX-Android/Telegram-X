@@ -334,29 +334,37 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   @Override
   public void requestLayout () {
     if (msg != null) {
-      final int top = getTop();
-      final int bottom = getBottom();
+      final int height = msg.getHeight();
+      if (oldHeight != -1 && oldHeight != height) {
+        final MessagesRecyclerView recyclerView = findParentRecyclerView();
+        if (recyclerView != null && !recyclerView.isComputingLayout()) {
+          final RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
+          final RecyclerView.Adapter<?> adapter = recyclerView.getAdapter();
+          if (layoutManager instanceof LinearLayoutManager && adapter instanceof MessagesAdapter) {
+            final LinearLayoutManager linearLayoutManager = (LinearLayoutManager) layoutManager;
+            final MessagesAdapter messagesAdapter = (MessagesAdapter) adapter;
+            final int parentHeight = recyclerView.getMeasuredHeight();
+            final int heightDiff = oldHeight - height;
+            final int bottom = getBottom();
+            int index = -1;
 
-      final MessagesRecyclerView recyclerView = findParentRecyclerView();
-      final int height = msg.computeHeight();
+            boolean needScrollCompensation = (bottom > parentHeight);
+            if (needScrollCompensation) {
+              index = messagesAdapter.indexOfMessageContainer(getMessageId());
+            }
 
-      if (oldHeight != -1 && oldHeight != height && recyclerView != null && !recyclerView.isComputingLayout()) {
-        final RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
-        final RecyclerView.Adapter<?> adapter = recyclerView.getAdapter();
-        if (layoutManager instanceof LinearLayoutManager && adapter instanceof MessagesAdapter) {
-          final LinearLayoutManager linearLayoutManager = (LinearLayoutManager) layoutManager;
-          final MessagesAdapter messagesAdapter = (MessagesAdapter) adapter;
-          final int parentHeight = recyclerView.getMeasuredHeight();
+            if (!needScrollCompensation && !recyclerView.getManager().isWasScrollByUser()) {
+              final int unreadBadgeIndex = messagesAdapter.indexOfMessageWithUnreadSeparator();
+              index = messagesAdapter.indexOfMessageContainer(getMessageId());
+              needScrollCompensation = (unreadBadgeIndex != -1 && index <= unreadBadgeIndex);
+            }
 
-          final int index = messagesAdapter.indexOfMessageContainer(getMessageId());
-          final int unreadBadgeIndex = messagesAdapter.indexOfMessageWithUnreadSeparator();
-          final boolean needScrollCompensation = (bottom > parentHeight) || (unreadBadgeIndex != -1 && index <= unreadBadgeIndex && !recyclerView.getManager().isWasScrollByUser());
-          final int heightDiff = oldHeight - height;
+            //android.util.Log.i("BUILD_LAYOUT", String.format("height layout %d %d %d %d %d %b", height, top, heightDiff, index, unreadBadgeIndex, needScrollCompensation));
 
-          android.util.Log.i("BUILD_LAYOUT", String.format("height layout %d %d %d %d %d %b", height, top, heightDiff, index, unreadBadgeIndex, needScrollCompensation));
-
-          if (needScrollCompensation) {
-            linearLayoutManager.scrollToPositionWithOffset(index, parentHeight - bottom + heightDiff);
+            if (needScrollCompensation && index != -1) {
+              // recyclerView.scrollBy(0, heightDiff);
+              linearLayoutManager.scrollToPositionWithOffset(index, parentHeight - bottom + heightDiff);
+            }
           }
         }
       }
