@@ -345,14 +345,18 @@ public class PaymentFormController extends ViewController<PaymentFormController.
     int indexOfShippingAddress = adapter.indexOfViewById(R.id.btn_paymentFormShipmentAddress);
     int indexOfShipmentMethod = adapter.indexOfViewById(R.id.btn_paymentFormShipmentMethod);
 
-    if (availableShippingOptions != null && availableShippingOptions.length > 0 && indexOfShipmentMethod == -1) {
-      adapter.addItems(
-        indexOfShippingAddress + 1,
-        new ListItem(ListItem.TYPE_SEPARATOR_FULL),
-        new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_paymentFormShipmentMethod, R.drawable.baseline_local_shipping_24, 0, false)
-      );
-    } else if (indexOfShipmentMethod != -1) {
-      adapter.removeRange(indexOfShipmentMethod - 1, 2);
+    if (availableShippingOptions != null && availableShippingOptions.length > 0) {
+      if (indexOfShipmentMethod == -1) {
+        adapter.addItems(
+          indexOfShippingAddress + 1,
+          new ListItem(ListItem.TYPE_SEPARATOR_FULL),
+          new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_paymentFormShipmentMethod, R.drawable.baseline_local_shipping_24, 0, false)
+        );
+      }
+    } else {
+      if (indexOfShipmentMethod != -1) {
+        adapter.removeRange(indexOfShipmentMethod - 1, 2);
+      }
     }
   }
 
