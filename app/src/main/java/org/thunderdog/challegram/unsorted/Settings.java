@@ -303,6 +303,8 @@ public class Settings {
   private static final String KEY_WALLPAPER_PATH = "_path";
   private static final String KEY_WALLPAPER_ID = "_id";
 
+  private static final String KEY_PAYMENT_DISCLAIMER_PREFIX = "payments_disclaimer_";
+
   private static String key (String key, int accountId) {
     return accountId != 0 ? accountId + "_" + key : key;
   }
@@ -6226,5 +6228,13 @@ public class Settings {
     AppBuildInfo currentBuild = getCurrentBuildInformation();
     long previousInstallationId = (currentBuild.getInstallationId() - 1);
     return getBuildInformation(previousInstallationId);
+  }
+
+  public boolean isPaymentDisclaimerNeededFor (long sellerId) {
+    return pmc.getBoolean(KEY_PAYMENT_DISCLAIMER_PREFIX + sellerId, true);
+  }
+
+  public void setPaymentDisclaimerShownFor (long sellerId) {
+    pmc.putBoolean(KEY_PAYMENT_DISCLAIMER_PREFIX + sellerId, false);
   }
 }

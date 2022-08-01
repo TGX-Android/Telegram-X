@@ -884,6 +884,7 @@
   <item type="id" name="btn_paymentFormShipmentMethod" />
   <item type="id" name="btn_paymentFormShipmentAddress" />
   <item type="id" name="btn_paymentFormTotal" />
+  <item type="id" name="btn_paymentFormConfirm" />
 
   <item type="id" name="btn_secret_dontReadMessages" />
   <item type="id" name="btn_secret_dropSavedScrollPositions" />

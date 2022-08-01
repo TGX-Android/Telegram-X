@@ -33,7 +33,9 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
+import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
@@ -67,7 +69,7 @@ public class PaymentFormController extends ViewController<PaymentFormController.
 
   private String validatedOrderInfoId;
   private TdApi.ShippingOption[] availableShippingOptions;
-  private TdApi.ShippingOption selectedShippingOption;
+  private @Nullable TdApi.ShippingOption selectedShippingOption;
 
   private SettingsAdapter adapter;
   private ComplexRecyclerView contentView;
@@ -365,6 +367,10 @@ public class PaymentFormController extends ViewController<PaymentFormController.
     return tdlib.cache().userDisplayName(paymentForm.paymentProviderUserId, false, false);
   }
 
+  private String getSellerName () {
+    return tdlib.cache().userDisplayName(paymentForm.sellerBotUserId, false, false);
+  }
+
   private boolean isHeaderFullscreen () {
     return paymentForm.productPhoto != null;
   }
@@ -382,11 +388,11 @@ public class PaymentFormController extends ViewController<PaymentFormController.
       ImageFile sizeFile = size != null ? new ImageFile(tdlib, size.photo) : null;
       if (sizeFile != null) sizeFile.setScaleType(ImageFile.CENTER_CROP);
       complexHeader.setAvatar(size != null ? new ImageFile(tdlib, size.photo) : null, sizeFile);
-      complexHeader.setText(paymentForm.productTitle, tdlib.cache().userDisplayName(paymentForm.sellerBotUserId, false, false));
+      complexHeader.setText(paymentForm.productTitle, getSellerName());
       complexHeader.invalidate();
     } else if (doubleHeader != null) {
       doubleHeader.setTitle(paymentForm.productTitle);
-      doubleHeader.setSubtitle(tdlib.cache().userDisplayName(paymentForm.sellerBotUserId, false, false));
+      doubleHeader.setSubtitle(getSellerName());
     }
   }
 
@@ -452,7 +458,11 @@ public class PaymentFormController extends ViewController<PaymentFormController.
   private void updateTotalAmountWithUI() {
     updateTotalAmount();
     adapter.updateValuedSettingById(R.id.btn_paymentFormTotal);
-    bottomBar.setAction(0, Lang.getString(R.string.PaymentFormPay, CurrencyUtils.buildAmount(paymentForm.invoice.currency, paymentFormTotalAmount)), R.drawable.baseline_arrow_downward_24, false);
+    bottomBar.setAction(0, Lang.getString(R.string.PaymentFormPay, formatTotalAmount()), R.drawable.baseline_arrow_downward_24, false);
+  }
+
+  private String formatTotalAmount () {
+    return CurrencyUtils.buildAmount(paymentForm.invoice.currency, paymentFormTotalAmount);
   }
 
   private String formatCurrency (long amount) {
@@ -482,7 +492,7 @@ public class PaymentFormController extends ViewController<PaymentFormController.
 
     bottomBar.setOnClickListener(this);
     bottomBar.setLayoutParams(params);
-    bottomBar.setAction(0, Lang.getString(R.string.PaymentFormPay, CurrencyUtils.buildAmount(paymentForm.invoice.currency, paymentFormTotalAmount)), R.drawable.baseline_arrow_downward_24, false);
+    bottomBar.setAction(0, Lang.getString(R.string.PaymentFormPay, formatTotalAmount()), R.drawable.baseline_arrow_downward_24, false);
     bottomBar.setOnClickListener(view -> {
       if (scrollToBottomVisibleFactor == 0f) {
         onPayButtonPressed();
@@ -508,13 +518,62 @@ public class PaymentFormController extends ViewController<PaymentFormController.
   }
 
   private void initPaymentProcess () {
-    // TODO: check if 2fa is needed + disclaimer + payment confirmation
+    // TODO: 2FA + post-payment alert
 
+    showDisclaimer(() -> showConfirmation(() -> {
+       /*
     if (isCredsSavable()) {
       tdlib.client().send(new TdApi.GetTemporaryPasswordState(), (state) -> {
 
       });
+    } else {
+      internalPaymentProcess();
     }
+    */
+    }));
+  }
+
+  private void showDisclaimer (Runnable onConfirm) {
+    if (Settings.instance().isPaymentDisclaimerNeededFor(paymentForm.sellerBotUserId)) {
+      showOptions(
+        Lang.getStringBold(R.string.PaymentFormWarningText, getSellerName(), getPaymentProcessorName()),
+        new int[] { R.id.btn_paymentFormConfirm, R.id.btn_cancel },
+        new String[] { Lang.getString(R.string.Confirm), Lang.getString(R.string.Cancel) },
+        new int[] { ViewController.OPTION_COLOR_BLUE, ViewController.OPTION_COLOR_NORMAL },
+        new int[] { R.drawable.baseline_check_circle_24, R.drawable.baseline_cancel_24 },
+        (optionItemView, id) -> {
+          if (id == R.id.btn_paymentFormConfirm) {
+            Settings.instance().setPaymentDisclaimerShownFor(paymentForm.sellerBotUserId);
+            onConfirm.run();
+          }
+
+          return true;
+        }
+      );
+    } else {
+      onConfirm.run();
+    }
+  }
+
+  private void showConfirmation (Runnable onConfirm) {
+    showOptions(
+      Lang.getStringBold(R.string.PaymentFormConfirmationText, formatTotalAmount(), getSellerName(), paymentForm.productTitle),
+      new int[] { R.id.btn_paymentFormConfirm, R.id.btn_cancel },
+      new String[] { Lang.getString(R.string.PaymentFormPay, formatTotalAmount()), Lang.getString(R.string.Cancel) },
+      new int[] { ViewController.OPTION_COLOR_BLUE, ViewController.OPTION_COLOR_NORMAL },
+      new int[] { R.drawable.themanuz_cash_register_24, R.drawable.baseline_cancel_24 },
+      (optionItemView, id) -> {
+        if (id == R.id.btn_paymentFormConfirm) onConfirm.run();
+        return true;
+      }
+    );
+  }
+
+  private void internalPaymentProcess () {
+    // InputInvoice inputInvoice, long paymentFormId, String orderInfoId, String shippingOptionId, InputCredentials credentials, long tipAmount
+    tdlib.client().send(new TdApi.SendPaymentForm(paymentInvoice, paymentForm.id, validatedOrderInfoId != null ? validatedOrderInfoId : "", selectedShippingOption != null ? selectedShippingOption.id : null, inputCredentials, paymentFormTipAmount), (state) -> {
+
+    });
   }
 
   private boolean isCredsSavable() {
