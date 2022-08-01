@@ -1344,25 +1344,27 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
 
     final int bottom = view.getBottom();
-    int index = -1;
-
-    boolean needScrollCompensation = (bottom > recyclerHeight);
-    if (needScrollCompensation) {
-      tdlib.ui().post(() -> controller.getMessagesView().scrollBy(0, heightDiff));
+    if (bottom > recyclerHeight) {
+      scrollCompensation(heightDiff, -1, recyclerHeight, bottom);
       return;
-      // index = adapter.indexOfMessageContainer(messageId);
     }
 
-    if (!needScrollCompensation && !isWasScrollByUser() && loader.canLoadBottom()) {
+    if (!isWasScrollByUser()) {
       final int unreadBadgeIndex = adapter.indexOfMessageWithUnreadSeparator();
-      index = adapter.indexOfMessageContainer(messageId);
-      needScrollCompensation = (unreadBadgeIndex != -1 && index <= unreadBadgeIndex);
+      final int index = adapter.indexOfMessageContainer(messageId);
+      if (unreadBadgeIndex != -1 && index != -1 && index <= unreadBadgeIndex) {
+        View unreadBadgeView = manager.findViewByPosition(unreadBadgeIndex);
+        if (unreadBadgeView != null && unreadBadgeView.getTop() <= controller.getTopOffset()) {
+          scrollCompensation(heightDiff, index, recyclerHeight, bottom);
+          return;
+        }
+      }
     }
+  }
 
-    if (needScrollCompensation && index != -1) {
-      tdlib.ui().post(() -> controller.getMessagesView().scrollBy(0, heightDiff));
-      // manager.scrollToPositionWithOffset(index, recyclerHeight - bottom + heightDiff);
-    }
+  private void scrollCompensation (int heightDiff, int index, int recyclerHeight, int bottom) {
+    tdlib.ui().post(() -> controller.getMessagesView().scrollBy(0, heightDiff));
+    // manager.scrollToPositionWithOffset(index, recyclerHeight - bottom + heightDiff);
   }
 
   public void modifyRecycler (Context context, RecyclerView recyclerView, LinearLayoutManager manager) {
