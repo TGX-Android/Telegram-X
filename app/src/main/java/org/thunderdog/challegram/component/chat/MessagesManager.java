@@ -1353,7 +1353,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       // index = adapter.indexOfMessageContainer(messageId);
     }
 
-    if (!needScrollCompensation && !isWasScrollByUser()) {
+    if (!needScrollCompensation && !isWasScrollByUser() && loader.canLoadBottom()) {
       final int unreadBadgeIndex = adapter.indexOfMessageWithUnreadSeparator();
       index = adapter.indexOfMessageContainer(messageId);
       needScrollCompensation = (unreadBadgeIndex != -1 && index <= unreadBadgeIndex);
