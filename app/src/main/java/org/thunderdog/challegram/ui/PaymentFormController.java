@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -205,9 +206,9 @@ public class PaymentFormController extends ViewController<PaymentFormController.
     }
   }
 
-  private void openShipmentAddressController () {
+  private void openShipmentAddressController (@Nullable String withError) {
     PaymentAddShippingInfoController c = new PaymentAddShippingInfoController(context, tdlib);
-    c.setArguments(new PaymentAddShippingInfoController.Args(paymentForm.invoice, paymentInvoice, currentOrderInfo, this::onShippingInfoValidated));
+    c.setArguments(new PaymentAddShippingInfoController.Args(paymentForm.invoice, paymentInvoice, currentOrderInfo, withError, this::onShippingInfoValidated));
     navigateTo(c);
   }
 
@@ -280,7 +281,7 @@ public class PaymentFormController extends ViewController<PaymentFormController.
         }
         break;
       case R.id.btn_paymentFormShipmentAddress:
-        openShipmentAddressController();
+        openShipmentAddressController(null);
         break;
       case R.id.btn_paymentFormShipmentMethod:
         openShipmentMethodAlert();
@@ -308,8 +309,8 @@ public class PaymentFormController extends ViewController<PaymentFormController.
         this.validatedOrderInfoId = validatedOrderInfo.orderInfoId;
         this.availableShippingOptions = validatedOrderInfo.shippingOptions;
         runOnUiThreadOptional(after);
-      } else {
-        UI.showError(obj);
+      } else if (obj.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+        runOnUiThreadOptional(() -> openShipmentAddressController(((TdApi.Error) obj).message));
       }
     });
   }
@@ -498,7 +499,7 @@ public class PaymentFormController extends ViewController<PaymentFormController.
     if (inputCredentials == null) {
       openNewCardController();
     } else if (isShipmentInfoRequired() && (currentOrderInfo == null || currentOrderInfo.shippingAddress == null)) {
-      openShipmentAddressController();
+      openShipmentAddressController(null);
     } else if (currentOrderInfo != null && paymentForm.invoice.needShippingAddress && selectedShippingOption == null) {
       openShipmentMethodAlert();
     } else {
@@ -514,7 +515,6 @@ public class PaymentFormController extends ViewController<PaymentFormController.
 
       });
     }
-
   }
 
   private boolean isCredsSavable() {

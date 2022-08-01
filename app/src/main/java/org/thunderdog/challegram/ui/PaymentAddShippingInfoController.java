@@ -33,12 +33,14 @@ public class PaymentAddShippingInfoController extends EditBaseController<Payment
     private final TdApi.Invoice invoice;
     private final TdApi.InputInvoice inputInvoice;
     @Nullable private final TdApi.OrderInfo predefinedOrderInfo;
+    @Nullable private final String showErrorOnStart;
     private final PaymentFormController.NewShippingInfoCallback callback;
 
-    public Args (TdApi.Invoice invoice, TdApi.InputInvoice inputInvoice, @Nullable TdApi.OrderInfo predefinedOrderInfo, PaymentFormController.NewShippingInfoCallback callback) {
+    public Args (TdApi.Invoice invoice, TdApi.InputInvoice inputInvoice, @Nullable TdApi.OrderInfo predefinedOrderInfo, @Nullable String showErrorOnStart, PaymentFormController.NewShippingInfoCallback callback) {
       this.invoice = invoice;
       this.inputInvoice = inputInvoice;
       this.predefinedOrderInfo = predefinedOrderInfo;
+      this.showErrorOnStart = showErrorOnStart;
       this.callback = callback;
     }
   }
@@ -214,6 +216,10 @@ public class PaymentAddShippingInfoController extends EditBaseController<Payment
     recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
     recyclerView.setAdapter(adapter);
     checkDoneButton();
+
+    if (getArgumentsStrict().showErrorOnStart != null) {
+      vibrateOnTgError(getArgumentsStrict().showErrorOnStart);
+    }
   }
 
   @Override
@@ -319,6 +325,38 @@ public class PaymentAddShippingInfoController extends EditBaseController<Payment
     }
   }
 
+  private void vibrateOnTgError (String tgErrorCode) {
+    switch (tgErrorCode) {
+      case "ADDRESS_STREET_LINE1_INVALID":
+        vibrateError(R.id.btn_inputShipAddressOne);
+        break;
+      case "ADDRESS_STREET_LINE2_INVALID":
+        vibrateError(R.id.btn_inputShipAddressTwo);
+        break;
+      case "ADDRESS_STATE_INVALID":
+        vibrateError(R.id.btn_inputShipState);
+        break;
+      case "ADDRESS_POSTCODE_INVALID":
+        vibrateError(R.id.btn_inputShipPostCode);
+        break;
+      case "ADDRESS_CITY_INVALID":
+        vibrateError(R.id.btn_inputShipCity);
+        break;
+      case "REQ_INFO_NAME_INVALID":
+        vibrateError(R.id.btn_inputShipName);
+        break;
+      case "REQ_INFO_PHONE_INVALID":
+        vibrateError(R.id.btn_inputShipPhone);
+        break;
+      case "REQ_INFO_EMAIL_INVALID":
+        vibrateError(R.id.btn_inputShipEmail);
+        break;
+      default:
+        showAlert(new AlertDialog.Builder(context).setTitle(R.string.Error).setMessage(tgErrorCode).setPositiveButton(Lang.getString(R.string.OK), (a, b) -> {}));
+        break;
+    }
+  }
+
   private void verifyOrderInfo () {
     TdApi.OrderInfo orderInfo = new TdApi.OrderInfo(i_shipName, i_shipPhone, i_shipEmail, new TdApi.Address(i_shipCountry, i_shipState, i_shipCity, i_shipAddressOne, i_shipAddressTwo, i_shipPostcode));
 
@@ -333,37 +371,7 @@ public class PaymentAddShippingInfoController extends EditBaseController<Payment
         getArgumentsStrict().callback.onShippingInfoValidated(orderInfo, (TdApi.ValidatedOrderInfo) result);
         navigateBack();
       } else if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
-        String errorMessage = ((TdApi.Error) result).message;
-
-        switch (errorMessage) {
-          case "ADDRESS_STREET_LINE1_INVALID":
-            vibrateError(R.id.btn_inputShipAddressOne);
-            break;
-          case "ADDRESS_STREET_LINE2_INVALID":
-            vibrateError(R.id.btn_inputShipAddressTwo);
-            break;
-          case "ADDRESS_STATE_INVALID":
-            vibrateError(R.id.btn_inputShipState);
-            break;
-          case "ADDRESS_POSTCODE_INVALID":
-            vibrateError(R.id.btn_inputShipPostCode);
-            break;
-          case "ADDRESS_CITY_INVALID":
-            vibrateError(R.id.btn_inputShipCity);
-            break;
-          case "REQ_INFO_NAME_INVALID":
-            vibrateError(R.id.btn_inputShipName);
-            break;
-          case "REQ_INFO_PHONE_INVALID":
-            vibrateError(R.id.btn_inputShipPhone);
-            break;
-          case "REQ_INFO_EMAIL_INVALID":
-            vibrateError(R.id.btn_inputShipEmail);
-            break;
-          default:
-            showAlert(new AlertDialog.Builder(context).setTitle(R.string.Error).setMessage(errorMessage).setPositiveButton(Lang.getString(R.string.OK), (a, b) -> {}));
-            break;
-        }
+        vibrateOnTgError(((TdApi.Error) result).message);
       }
     }));
   }
