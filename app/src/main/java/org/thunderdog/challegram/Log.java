@@ -620,7 +620,7 @@ public class Log {
                 }
               }
             };
-            String osArch = System.getProperty("os.arch");
+            String osArch = U.getCpuArchitecture();
             if (osArch == null) {
               osArch = "";
             }

@@ -3493,4 +3493,8 @@ public class U {
       return false;
     }
   }
+
+  public static String getCpuArchitecture () {
+    return System.getProperty("os.arch");
+  }
 }

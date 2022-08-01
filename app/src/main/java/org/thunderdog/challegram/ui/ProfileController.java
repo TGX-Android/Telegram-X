@@ -536,6 +536,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         showCommonMore();
         break;
       }
+      case MODE_EDIT_GROUP:
       case MODE_EDIT_CHANNEL:
       case MODE_EDIT_SUPERGROUP: {
         int count = 0;
@@ -4309,34 +4310,45 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private boolean hasMoreItems () {
-    return canDestroyChat();
+    return canDestroyChat() && !tdlib.isUserChat(chat);
   }
 
   private boolean canDestroyChat () {
-    return supergroupFull != null && supergroupFull.memberCount < 1000 && supergroup != null && TD.isCreator(supergroup.status);
+    return chat != null && chat.canBeDeletedForAllUsers;
   }
 
   private void destroyChat () {
     if (!canDestroyChat()) {
       return;
     }
-    int memberCount = supergroup.memberCount;
+    final boolean isChannel = isChannel();
+    int memberCount = supergroup != null ? supergroup.memberCount : group.memberCount;
     if (tdlib.chatAvailable(chat)) {
       memberCount--;
     }
     CharSequence msg = memberCount > 0 ? Lang.plural(R.string.DestroyX, memberCount, Lang.boldCreator(), tdlib.chatTitle(getChatId())) : Lang.getStringBold(R.string.DestroyXNoMembers, tdlib.chatTitle(getChatId()));
-    showOptions(msg, new int[]{R.id.btn_destroyChat, R.id.btn_cancel}, new String[]{Lang.getString(supergroup.isChannel ? R.string.DestroyChannel : R.string.DestroyGroup), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-      if (id == R.id.btn_destroyChat) {
-        showOptions(Lang.getString(supergroup.isChannel ? R.string.DestroyChannelHint : R.string.DestroyGroupHint), new int[]{R.id.btn_destroyChat, R.id.btn_cancel}, new String[]{Lang.getString(supergroup.isChannel ? R.string.DestroyChannel : R.string.DestroyGroup), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
-          if (resultId == R.id.btn_destroyChat) {
-            tdlib.client().send(new TdApi.DeleteChat(ChatId.fromSupergroupId(supergroup.id)), tdlib.okHandler());
-            tdlib.ui().exitToChatScreen(this, getChatId());
-          }
-          return true;
-        });
+    showOptions(msg,
+      new int[] {R.id.btn_destroyChat, R.id.btn_cancel},
+      new String[] {Lang.getString(isChannel ? R.string.DestroyChannel : R.string.DestroyGroup), Lang.getString(R.string.Cancel)},
+      new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL},
+      new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24},
+      (itemView, id) -> {
+        if (id == R.id.btn_destroyChat) {
+          showOptions(Lang.getString(isChannel ? R.string.DestroyChannelHint : R.string.DestroyGroupHint),
+            new int[] {R.id.btn_destroyChat, R.id.btn_cancel},
+            new String[] {Lang.getString(supergroup.isChannel ? R.string.DestroyChannel : R.string.DestroyGroup), Lang.getString(R.string.Cancel)},
+            new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL},
+            new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
+            if (resultId == R.id.btn_destroyChat) {
+              tdlib.client().send(new TdApi.DeleteChat(getChatId()), tdlib.okHandler());
+              tdlib.ui().exitToChatScreen(this, getChatId());
+            }
+            return true;
+          });
+        }
+        return true;
       }
-      return true;
-    });
+    );
   }
 
   @Override

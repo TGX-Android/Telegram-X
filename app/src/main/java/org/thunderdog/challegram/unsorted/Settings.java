@@ -5670,19 +5670,17 @@ public class Settings {
 
   // Tdlib crash
 
-  private long startupMs = SystemClock.uptimeMillis();
+  private long getLastCrashId () {
+    return pmc.getLong(KEY_TDLIB_CRASH_PREFIX, 0) - 1;
+  }
 
   public Crash findRecoveryCrash () {
-    long lastCrashId = pmc.getLong(KEY_TDLIB_CRASH_PREFIX, 0) - 1;
+    long lastCrashId = getLastCrashId();
     return getCrash(lastCrashId, true);
   }
 
-  public void resetUptime () {
-    this.startupMs = SystemClock.uptimeMillis();
-  }
-
   public void storeTestCrash (Crash.Builder builder) {
-    resetUptime();
+    AppState.resetUptime();
     storeCrash(builder);
   }
 
@@ -5691,11 +5689,10 @@ public class Settings {
   }
 
   public void storeCrash (Crash.Builder crashBuilder) {
-    final long uptime = SystemClock.uptimeMillis() - startupMs;
     final long crashId = pmc.getLong(KEY_TDLIB_CRASH_PREFIX, 0);
     final Crash crash = crashBuilder
       .id(crashId)
-      .uptime(uptime)
+      .uptime(AppState.uptime())
       .appBuildInfo(Settings.instance().getCurrentBuildInformation())
       .build();
 
@@ -5721,12 +5718,61 @@ public class Settings {
 
   public void markCrashAsResolved (Crash info) {
     if (setCrashFlag(info, Crash.Flags.RESOLVED, true)) {
-      resetUptime();
+      AppState.resetUptime();
     }
   }
 
-  public void markCrashAsReported (Crash info) {
-    setCrashFlag(info, Crash.Flags.SENT, true);
+  public void markCrashAsSaved (Crash info) {
+    setCrashFlag(info, Crash.Flags.APPLICATION_LOG_EVENT_SAVED, true);
+  }
+
+  public @Nullable List<Crash> getCrashesToSave () {
+    final long lastCrashId = getLastCrashId();
+    if (lastCrashId < 0)
+      return null;
+
+    final long currentInstallationId = getCurrentBuildInformation().getInstallationId();
+    List<Crash> result = null;
+
+    AppBuildInfo crashedBuildInfo = null;
+
+    for (long crashId = lastCrashId; crashId >= 0; crashId--) {
+      final String keyPrefix = makeCrashPrefix(crashId);
+      @Crash.Flags int flags = Crash.restoreFlags(pmc, keyPrefix);
+      final long crashedInstallationId = Crash.restoreInstallationId(pmc, keyPrefix);
+      if (crashedInstallationId != currentInstallationId) {
+        if (crashedBuildInfo == null || crashedInstallationId != crashedBuildInfo.getInstallationId()) {
+          crashedBuildInfo = getBuildInformation(crashedInstallationId);
+        }
+        // Forget about crashes from previously installed versions, except if it's the same TDLib commit
+        String crashedTdlibCommit = crashedBuildInfo != null ? crashedBuildInfo.getTdlibCommitFull() : null;
+        if (StringUtils.isEmpty(crashedTdlibCommit) ||
+          !crashedTdlibCommit.equalsIgnoreCase(getCurrentBuildInformation().getTdlibCommitFull()) ||
+          !BitwiseUtils.getFlag(flags, Crash.Flags.SOURCE_TDLIB | Crash.Flags.SOURCE_TDLIB_PARAMETERS)) {
+          break;
+        }
+      }
+      if (!BitwiseUtils.getFlag(flags, Crash.Flags.SAVE_APPLICATION_LOG_EVENT)) {
+        continue;
+      }
+      if (BitwiseUtils.getFlag(flags, Crash.Flags.APPLICATION_LOG_EVENT_SAVED)) {
+        break;
+      }
+      Crash crash = getCrash(crashId, false);
+      if (crash != null) {
+        if (result == null) {
+          result = new ArrayList<>();
+        }
+        result.add(crash);
+      }
+    }
+
+    if (result != null) {
+      // Sort crashes from older to newer
+      Collections.reverse(result);
+    }
+
+    return result;
   }
 
   public Crash getCrash (long crashId, boolean forApplicationStart) {
@@ -5746,7 +5792,7 @@ public class Settings {
         return null;
       }
     }
-    Crash.Builder builder = new Crash.Builder();
+    Crash.Builder builder = new Crash.Builder().id(crashId);
     boolean nonEmpty = false;
     for (LevelDB.Entry entry : pmc.find(keyPrefix)) {
       if (builder.restoreField(entry, keyPrefix, this::getBuildInformation)) {
@@ -6142,12 +6188,8 @@ public class Settings {
   }
 
   public void trackInstalledApkVersion () {
-    if (BuildConfig.DEBUG) {
-      // Track only published builds
-      return;
-    }
     final long knownCommitDate = pmc.getLong(KEY_APP_COMMIT_DATE, 0);
-    if (AppBuildInfo.maxCommitDate() <= knownCommitDate) {
+    if (AppBuildInfo.maxBuiltInCommitDate() <= knownCommitDate) {
       // Track only updates with more recent commits.
       return;
     }
@@ -6169,11 +6211,7 @@ public class Settings {
   public AppBuildInfo getCurrentBuildInformation () {
     if (currentBuildInformation == null) {
       long installationId = pmc.getLong(KEY_APP_INSTALLATION_ID, 0);
-      if (BuildConfig.DEBUG) {
-        this.currentBuildInformation = new AppBuildInfo(0);
-      } else {
-        this.currentBuildInformation = AppBuildInfo.restoreFrom(pmc, installationId, KEY_APP_INSTALLATION_PREFIX + installationId);
-      }
+      this.currentBuildInformation = AppBuildInfo.restoreFrom(pmc, installationId, KEY_APP_INSTALLATION_PREFIX + installationId);
     }
     return this.currentBuildInformation;
   }

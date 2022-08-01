@@ -63,6 +63,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
@@ -740,6 +741,10 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_test_recovery, 0, "Crash & enter recovery (uncaught exception)", false).setData(new Crash.Builder("Test error", Thread.currentThread(), Log.generateException())));
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_test_recovery, 0, "Crash & save server log event (tdlib error)", false).setData(
+            new Crash.Builder("test tdlib fatal error message").flags(Crash.Flags.SOURCE_TDLIB | Crash.Flags.SAVE_APPLICATION_LOG_EVENT)
+          ));
+          items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_test_recovery_tdlib, 0, "Crash & enter recovery mode (TDLib error)", false));
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_test_recovery_tdlib, 0, "Crash & enter recovery mode (disk full)", false).setStringValue("database or disk is full"));
@@ -1037,7 +1042,11 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       case R.id.btn_test_recovery: {
         Crash.Builder crash = (Crash.Builder) ((ListItem) v.getTag()).getData();
         Settings.instance().storeTestCrash(crash);
-        System.exit(0);
+        if (BitwiseUtils.getFlag(crash.build().getFlags(), Crash.Flags.SAVE_APPLICATION_LOG_EVENT)) {
+          TdlibManager.instance().saveCrashes();
+        } else{
+          System.exit(0);
+        }
         break;
       }
       case R.id.btn_test_recovery_tdlib: {
