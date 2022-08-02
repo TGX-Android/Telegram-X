@@ -6905,6 +6905,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
+  protected void onTranslationChanged (float newTranslationX) {
+    context().reactionsOverlayManager().setControllerTranslationX((int) newTranslationX);
+  }
+
+  @Override
   public void onResizeCommandKeyboard (int size) {
     // updateButtonsY();
   }

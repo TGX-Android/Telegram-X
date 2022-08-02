@@ -2,6 +2,7 @@ package org.thunderdog.challegram.ui;
 
 import android.content.Context;
 import android.graphics.Rect;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewParent;
 import android.widget.ImageView;
@@ -213,6 +214,11 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
 
   private void showQuickReactionsLimit (View v) {
     context().tooltipManager().builder(v).show(tdlib, Lang.getString(R.string.QuickReactionsLimit));
+  }
+
+  @Override
+  protected void onTranslationChanged (float newTranslationX) {
+    context().reactionsOverlayManager().setControllerTranslationX((int) newTranslationX);
   }
 
   @Override

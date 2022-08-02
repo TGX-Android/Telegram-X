@@ -80,6 +80,13 @@ public class ReactionsOverlayView extends ViewGroup {
     invalidate();
   }
 
+  public void setControllerTranslationX (int x) {
+    for (ReactionInfo info : activePopups) {
+      info.setControllerTranslationX(x);
+    }
+    invalidate();
+  }
+
   public void reposition () {
     int viewWidth = getMeasuredWidth();
     int viewHeight = getMeasuredHeight();
@@ -222,6 +229,13 @@ public class ReactionsOverlayView extends ViewGroup {
       return this;
     }
 
+    int controllerTranslationX;
+
+    public ReactionInfo setControllerTranslationX (int x) {
+      controllerTranslationX = x;
+      return this;
+    }
+
     private ReactionInfo setRemoveListener (Runnable listener) {
       if (animation != null && positionAnimator == null) {
         animation.addLoopListener(() -> {
@@ -241,7 +255,7 @@ public class ReactionsOverlayView extends ViewGroup {
       }
 
       canvas.save();
-      canvas.translate(scrollOffsetX + animationOffsetPoint.x, scrollOffsetY + animationOffsetPoint.y);
+      canvas.translate(scrollOffsetX + controllerTranslationX + animationOffsetPoint.x, scrollOffsetY + animationOffsetPoint.y);
       gifReceiver.draw(canvas);
       //canvas.drawRect(position, Paints.strokeBigPaint(Color.RED));
       canvas.restore();

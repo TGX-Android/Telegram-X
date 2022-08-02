@@ -3323,6 +3323,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     // Override
   }
 
+  protected void onTranslationChanged (float newTranslationX) {
+    // Override
+  }
+
   @Override
   public void onPrepareToExitForceTouch (ForceTouchView.ForceTouchContext context) {
     onBlur();
