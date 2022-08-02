@@ -948,7 +948,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
             int alpha = paint.getAlpha();
             paint.setAlpha((int) ((float) alpha * (VERIFY_ALPHA + (1f - VERIFY_ALPHA) * avatarExpandFactor)));
             Drawable drawable = getSparseDrawable(R.drawable.deproko_baseline_verify_24, 0);
-            Drawables.draw(c, drawable, iconLeft, iconTop + trimmedTitle.getHeight() / 2f - drawable.getMinimumHeight() / 2f, paint);
+            Drawables.draw(c, drawable, iconLeft + Screen.dp(1.5f), iconTop + trimmedTitle.getHeight() / 2f - drawable.getMinimumHeight() / 2f, paint);
             paint.setAlpha(alpha);
             iconsAdded += drawable.getMinimumWidth();
           }
@@ -958,7 +958,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
             int alpha = paint.getAlpha();
             paint.setAlpha((int) ((float) alpha * (PREMIUM_ALPHA + (1f - PREMIUM_ALPHA) * avatarExpandFactor)));
             Drawable drawable = getSparseDrawable(R.drawable.baseline_star_premium_24, 0);
-            Drawables.draw(c, drawable, iconLeft + iconsAdded, iconTop + trimmedTitle.getHeight() / 2f - drawable.getMinimumHeight() / 2f - Screen.dp(0.5f), paint);
+            Drawables.draw(c, drawable, iconLeft + iconsAdded + Screen.dp(1.5f), iconTop + trimmedTitle.getHeight() / 2f - drawable.getMinimumHeight() / 2f - Screen.dp(0.5f), paint);
             paint.setAlpha(alpha);
             iconsAdded += drawable.getMinimumWidth();
           }
