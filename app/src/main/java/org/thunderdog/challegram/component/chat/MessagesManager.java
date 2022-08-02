@@ -16,6 +16,7 @@ package org.thunderdog.challegram.component.chat;
 
 import android.content.Context;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -1345,7 +1346,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
     final int bottom = view.getBottom();
     if (bottom > recyclerHeight) {
-      scrollCompensation(heightDiff, -1, recyclerHeight, bottom);
+      final int index = adapter.indexOfMessageContainer(messageId);
+      scrollCompensation(view, heightDiff, index, recyclerHeight, bottom);
       return;
     }
 
@@ -1355,15 +1357,26 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       if (unreadBadgeIndex != -1 && index != -1 && index <= unreadBadgeIndex) {
         View unreadBadgeView = manager.findViewByPosition(unreadBadgeIndex);
         if (unreadBadgeView != null && unreadBadgeView.getTop() <= controller.getTopOffset()) {
-          scrollCompensation(heightDiff, index, recyclerHeight, bottom);
+          scrollCompensation(view, heightDiff, index, recyclerHeight, bottom);
           return;
         }
       }
     }
   }
 
-  private void scrollCompensation (int heightDiff, int index, int recyclerHeight, int bottom) {
-    tdlib.ui().post(() -> controller.getMessagesView().scrollBy(0, heightDiff));
+  private void scrollCompensation (View view, int heightDiff, int index, int recyclerHeight, int bottom) {
+    //tdlib.ui().post(() -> controller.getMessagesView().scrollBy(0, heightDiff));
+
+    ViewTreeObserver.OnGlobalLayoutListener listener = new ViewTreeObserver.OnGlobalLayoutListener() {
+      @Override
+      public void onGlobalLayout () {
+        controller.getMessagesView().scrollBy(0, heightDiff);
+        view.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+      }
+    };
+    view.getViewTreeObserver().addOnGlobalLayoutListener(listener);
+
+    // controller.getMessagesView().scrollBy(0, heightDiff);
     // manager.scrollToPositionWithOffset(index, recyclerHeight - bottom + heightDiff);
   }
 

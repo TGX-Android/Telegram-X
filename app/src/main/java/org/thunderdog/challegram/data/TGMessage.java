@@ -282,12 +282,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
       @Override
       public void onLongClick(View v, TGReactions.MessageReactionEntry entry) {
-        if (canGetAddedReactions()) {
-          MessagesController m = messagesController();
-          m.showMessageAddedReactions(TGMessage.this, entry.getReaction());
-        } else {
-          showReactionBubbleTooltip(v, entry, Lang.getString(R.string.ChannelReactionsAnonymous));
-        }
+        checkMessageFlags(() -> {
+          if (canGetAddedReactions()) {
+            MessagesController m = messagesController();
+            m.showMessageAddedReactions(TGMessage.this, entry.getReaction());
+          } else {
+            showReactionBubbleTooltip(v, entry, Lang.getString(R.string.ChannelReactionsAnonymous));
+          }
+        });
       }
     });
 
@@ -4917,7 +4919,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     isPinned.showHide(isPinned(), animated);
-    updateMessageFlags(msg, () -> {});
     if (animated) {
       startReactionAnimationIfNeeded();
     }
@@ -7687,6 +7688,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   //
 
   public final void checkAvailableReactions () {
+    checkAvailableReactions(() -> {});
+  }
+
+  public final void checkAvailableReactions (Runnable r) {
     tdlib().client().send(new TdApi.GetMessageAvailableReactions(msg.chatId, getSmallestId()), (TdApi.Object object) -> {
       if (object.getConstructor() == TdApi.AvailableReactions.CONSTRUCTOR) {
         TdApi.AvailableReactions reactions = (TdApi.AvailableReactions) object;
@@ -7694,16 +7699,23 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           .filter(x -> (!x.needsPremium || tdlib.hasPremium()))
           .toArray(TdApi.AvailableReaction[]::new);
         computeQuickButtons();
+        tdlib().ui().post(r);
       }
     });
   }
 
-  private void updateMessageFlags (TdApi.Message msg, Runnable onUpdate) {
+  public final void checkMessageFlags (Runnable r) {
+    TdApi.Message msg = getMessage(getSmallestId());
+    if (msg == null) {
+      r.run();
+      return;
+    }
+
     tdlib().client().send(new TdApi.GetMessageLocally(msg.chatId, msg.id), (TdApi.Object object) -> {
       if (object.getConstructor() == TdApi.Message.CONSTRUCTOR) {
         TdApi.Message message = (TdApi.Message) object;
         copyFlags(message, msg);
-        onUpdate.run();
+        tdlib().ui().post(r);
       }
     });
   }
