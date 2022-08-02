@@ -1371,7 +1371,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       @Override
       public void onGlobalLayout () {
         controller.getMessagesView().scrollBy(0, heightDiff);
-        view.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+        view.getViewTreeObserver().removeOnGlobalLayoutListener(this);
       }
     };
     view.getViewTreeObserver().addOnGlobalLayoutListener(listener);
