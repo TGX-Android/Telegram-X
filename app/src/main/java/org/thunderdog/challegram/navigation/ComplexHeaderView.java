@@ -942,31 +942,33 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
         float iconTop = trimmedTitleExpanded != null ? (trimmedTitleExpanded.getHeight() - trimmedTitle.getHeight()) * avatarExpandFactor : 0;
         float iconsAdded = 0;
 
-        if (showVerify) {
-          Paint paint = Paints.getPorterDuffPaint(titleColor);
-          int alpha = paint.getAlpha();
-          paint.setAlpha((int) ((float) alpha * (VERIFY_ALPHA + (1f - VERIFY_ALPHA) * avatarExpandFactor)));
-          Drawable drawable = getSparseDrawable(R.drawable.deproko_baseline_verify_24, 0);
-          Drawables.draw(c, drawable, iconLeft, iconTop + trimmedTitle.getHeight() / 2f - drawable.getMinimumHeight() / 2f, paint);
-          paint.setAlpha(alpha);
-          iconsAdded += drawable.getMinimumWidth();
-        }
+        if (this.subtitle != null && !this.subtitle.equals(Lang.lowercase(Lang.getString(R.string.ChatWithYourself)))) {
+          if (showVerify) {
+            Paint paint = Paints.getPorterDuffPaint(titleColor);
+            int alpha = paint.getAlpha();
+            paint.setAlpha((int) ((float) alpha * (VERIFY_ALPHA + (1f - VERIFY_ALPHA) * avatarExpandFactor)));
+            Drawable drawable = getSparseDrawable(R.drawable.deproko_baseline_verify_24, 0);
+            Drawables.draw(c, drawable, iconLeft, iconTop + trimmedTitle.getHeight() / 2f - drawable.getMinimumHeight() / 2f, paint);
+            paint.setAlpha(alpha);
+            iconsAdded += drawable.getMinimumWidth();
+          }
 
-        if (showPremium) {
-          Paint paint = Paints.getPorterDuffPaint(titleColor);
-          int alpha = paint.getAlpha();
-          paint.setAlpha((int) ((float) alpha * (PREMIUM_ALPHA + (1f - PREMIUM_ALPHA) * avatarExpandFactor)));
-          Drawable drawable = getSparseDrawable(R.drawable.baseline_star_premium_24, 0);
-          Drawables.draw(c, drawable, iconLeft + iconsAdded, iconTop + trimmedTitle.getHeight() / 2f - drawable.getMinimumHeight() / 2f - Screen.dp(0.5f), paint);
-          paint.setAlpha(alpha);
-          iconsAdded += drawable.getMinimumWidth();
-        }
+          if (showPremium) {
+            Paint paint = Paints.getPorterDuffPaint(titleColor);
+            int alpha = paint.getAlpha();
+            paint.setAlpha((int) ((float) alpha * (PREMIUM_ALPHA + (1f - PREMIUM_ALPHA) * avatarExpandFactor)));
+            Drawable drawable = getSparseDrawable(R.drawable.baseline_star_premium_24, 0);
+            Drawables.draw(c, drawable, iconLeft + iconsAdded, iconTop + trimmedTitle.getHeight() / 2f - drawable.getMinimumHeight() / 2f - Screen.dp(0.5f), paint);
+            paint.setAlpha(alpha);
+            iconsAdded += drawable.getMinimumWidth();
+          }
 
-        if (showFake || showScam) {
-          int baseX = (int) (iconLeft + iconsAdded + Screen.dp(10f));
-          int baseY = (int) (iconTop - Screen.dp(1.5f));
-          drawOutlinedText(c, Lang.getString(showFake ? R.string.FakeMark : R.string.ScamMark), baseX, baseY, trimmedTitleExpanded != null ? MathUtils.fromTo(trimmedTitle.getLineHeight(), trimmedTitleExpanded.getLineHeight(), avatarExpandFactor) : trimmedTitle.getLineHeight());
-          iconsAdded += additionalTextEndPadding;
+          if (showFake || showScam) {
+            int baseX = (int) (iconLeft + iconsAdded + Screen.dp(10f));
+            int baseY = (int) (iconTop - Screen.dp(1.5f));
+            drawOutlinedText(c, Lang.getString(showFake ? R.string.FakeMark : R.string.ScamMark), baseX, baseY, trimmedTitleExpanded != null ? MathUtils.fromTo(trimmedTitle.getLineHeight(), trimmedTitleExpanded.getLineHeight(), avatarExpandFactor) : trimmedTitle.getLineHeight());
+            iconsAdded += additionalTextEndPadding;
+          }
         }
 
         if (showMute) {
