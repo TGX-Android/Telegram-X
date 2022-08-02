@@ -6049,7 +6049,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       SwipeQuickAction action = actions.get(a);
       float positionFactor = getTranslatePositionFactor(x > 0, a);
       Drawable icon = (!action.isQuickReaction || nextSetReactionAnimation == null) ? action.icon : null;
-      drawTranslateReact(c,
+      drawTranslateRect(c,
         x, startY + positionOffset + height * a,
         view.getMeasuredWidth(), height, positionFactor,
         quickColor, icon, action.text, (int) textWidth,
@@ -6092,7 +6092,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
   }
 
-  private void drawTranslateReact (Canvas c, float x, float y, int width, int height, float positionFactor, int quickColor, Drawable icon, String text, int textWidth, int textY) {
+  private void drawTranslateRect (Canvas c, float x, float y, int width, int height, float positionFactor, int quickColor, Drawable icon, String text, int textWidth, int textY) {
     final Paint iconPaint = Paints.getInlineBubbleIconPaint(
       ColorUtils.alphaColor((float) mQuickText.getAlpha() / 255f,
       Theme.getColor(R.id.theme_color_messageSwipeContent)));
