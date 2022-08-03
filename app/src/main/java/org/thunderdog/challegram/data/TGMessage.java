@@ -7803,6 +7803,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private void computeQuickButtons () {
+    if (!UI.inUiThread()) {
+      tdlib.ui().post(this::computeQuickButtons);
+      return;
+    }
+
     final boolean canReply = Settings.instance().needChatQuickReply() && messagesController().canWriteMessages() && !messagesController().needTabs() && canReplyTo();
     final boolean canShare = Settings.instance().needChatQuickShare() && !messagesController().isSecretChat() && canBeForwarded();
 
