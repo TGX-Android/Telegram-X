@@ -2989,7 +2989,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (useBubbles()) {
       buildBubble(false);
     }
-    notifyBubbleChanged();  // костыль ?
+
+    if (!useBubbles() || useMediaBubbleReactions() || useStickerBubbleReactions()) {
+      notifyBubbleChanged();  // не костыль ?
+    }
   }
 
   protected boolean useCircleBubble () {
