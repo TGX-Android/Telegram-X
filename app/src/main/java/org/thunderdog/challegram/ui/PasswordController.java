@@ -76,6 +76,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
   public static final int MODE_CODE_PHONE_CONFIRM = 9;
   public static final int MODE_TRANSFER_OWNERSHIP_CONFIRM = 10;
   public static final int MODE_CONFIRM = 11;
+  public static final int MODE_PAYMENT_METHOD_SAVED = 12;
 
   private final Handler handler = new Handler(this);
 
@@ -84,6 +85,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     public final TdApi.PasswordState state;
     public final TdApi.AuthorizationState authState;
     public @Nullable String phoneNumber;
+    public @Nullable String paymentCardSavedName;
 
     public Args (int mode, TdApi.PasswordState state) {
       this.mode = mode;
@@ -109,6 +111,13 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       this.state = null;
       this.authState = new TdApi.AuthorizationStateWaitCode(codeInfo);
       this.phoneNumber = phoneNumber;
+    }
+
+    public Args (int mode, @NonNull String paymentCardSavedName) {
+      this.mode = mode;
+      this.state = null;
+      this.authState = null;
+      this.paymentCardSavedName = paymentCardSavedName;
     }
 
     public @Nullable String email;
@@ -193,6 +202,9 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       case MODE_TRANSFER_OWNERSHIP_CONFIRM: {
         return Lang.getString(R.string.TransferOwnershipPasswordAlert);
       }
+      case MODE_PAYMENT_METHOD_SAVED: {
+        return Lang.getString(R.string.PaymentMethodRestoreTfaTitle);
+      }
       case MODE_LOGIN: {
         return Lang.getString(R.string.TwoStepVerification);
       }
@@ -239,6 +251,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       case MODE_CODE_PHONE_CONFIRM:
       case MODE_CONFIRM:
       case MODE_TRANSFER_OWNERSHIP_CONFIRM:
+      case MODE_PAYMENT_METHOD_SAVED:
         return R.drawable.baseline_check_24;
     }
     return R.drawable.baseline_arrow_forward_24;
@@ -310,6 +323,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         editText.setHint(R.string.EnterAPassword);
         break;
       }
+      case MODE_PAYMENT_METHOD_SAVED:
       case MODE_TRANSFER_OWNERSHIP_CONFIRM:
       case MODE_CONFIRM:
       case MODE_UNLOCK_EDIT: {
@@ -381,11 +395,16 @@ public class PasswordController extends ViewController<PasswordController.Args> 
 
     switch (mode) {
       case MODE_TRANSFER_OWNERSHIP_CONFIRM:
+      case MODE_PAYMENT_METHOD_SAVED:
       case MODE_CONFIRM:
       case MODE_UNLOCK_EDIT:
       case MODE_LOGIN: {
         updatePasswordResetTextViews();
-        hint = Lang.getString(mode == MODE_TRANSFER_OWNERSHIP_CONFIRM ? R.string.TransferOwnershipPasswordAlertHint : R.string.LoginPasswordText);
+        if (mode == MODE_PAYMENT_METHOD_SAVED) {
+          hint = Lang.getString(R.string.PaymentMethodRestoreTfaText, getArgumentsStrict().paymentCardSavedName);
+        } else {
+          hint = Lang.getString(mode == MODE_TRANSFER_OWNERSHIP_CONFIRM ? R.string.TransferOwnershipPasswordAlertHint : R.string.LoginPasswordText);
+        }
         break;
       }
       case MODE_EMAIL_RECOVERY:
@@ -415,7 +434,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       }
     }
 
-    if (mode == MODE_TRANSFER_OWNERSHIP_CONFIRM || mode == MODE_UNLOCK_EDIT || mode == MODE_CONFIRM || mode == MODE_LOGIN || mode == MODE_CODE || mode == MODE_CODE_CHANGE || mode == MODE_CODE_PHONE_CONFIRM) {
+    if (mode == MODE_PAYMENT_METHOD_SAVED || mode == MODE_TRANSFER_OWNERSHIP_CONFIRM || mode == MODE_UNLOCK_EDIT || mode == MODE_CONFIRM || mode == MODE_LOGIN || mode == MODE_CODE || mode == MODE_CODE_CHANGE || mode == MODE_CODE_PHONE_CONFIRM) {
       RelativeLayout forgotWrap = new RelativeLayout(context);
       forgotWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM));
 
@@ -1091,7 +1110,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
             Settings2FAController c = new Settings2FAController(context, tdlib);
             c.setArguments(new Settings2FAController.Args((SettingsPrivacyController) prev, password, recoveryEmail));
             navigateTo(c);
-          } else if ((mode == MODE_CONFIRM || mode == MODE_TRANSFER_OWNERSHIP_CONFIRM) && getArguments() != null && getArguments().onSuccessListener != null) {
+          } else if ((mode == MODE_CONFIRM || mode == MODE_PAYMENT_METHOD_SAVED || mode == MODE_TRANSFER_OWNERSHIP_CONFIRM) && getArguments() != null && getArguments().onSuccessListener != null) {
             navigateBack();
             getArgumentsStrict().onSuccessListener.runWithData(password);
           }
@@ -1410,6 +1429,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     String input = editText.getText().toString();
     switch (mode) {
       case MODE_CONFIRM:
+      case MODE_PAYMENT_METHOD_SAVED:
       case MODE_TRANSFER_OWNERSHIP_CONFIRM:
       case MODE_UNLOCK_EDIT: {
         if (!input.isEmpty()) {
@@ -1478,6 +1498,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       }
       case MODE_CONFIRM:
       case MODE_TRANSFER_OWNERSHIP_CONFIRM:
+      case MODE_PAYMENT_METHOD_SAVED:
       case MODE_UNLOCK_EDIT:
       case MODE_LOGIN: {
         requestRecovery();

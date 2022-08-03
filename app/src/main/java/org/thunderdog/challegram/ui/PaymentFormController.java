@@ -35,7 +35,6 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
-import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
@@ -521,16 +520,55 @@ public class PaymentFormController extends ViewController<PaymentFormController.
     // TODO: 2FA + post-payment alert
 
     showDisclaimer(() -> showConfirmation(() -> {
-       /*
-    if (isCredsSavable()) {
-      tdlib.client().send(new TdApi.GetTemporaryPasswordState(), (state) -> {
+      if (isSavedCreds()) {
+        tdlib.client().send(new TdApi.GetTemporaryPasswordState(), (state) -> {
+          if (state.getConstructor() == TdApi.TemporaryPasswordState.CONSTRUCTOR) {
+            TdApi.TemporaryPasswordState passwordState = (TdApi.TemporaryPasswordState) state;
 
-      });
-    } else {
-      internalPaymentProcess();
-    }
-    */
+            if (passwordState.hasPassword && passwordState.validFor > 0) {
+              sendPaymentForm();
+            } else {
+              requestTfaAndSendForm();
+            }
+
+          } else {
+            UI.showError(state);
+          }
+        });
+      } else {
+        sendPaymentForm();
+      }
     }));
+  }
+
+  private void requestTfaAndSendForm () {
+    PasswordController pc = new PasswordController(context, tdlib);
+    pc.setArguments(new PasswordController.Args(PasswordController.MODE_PAYMENT_METHOD_SAVED, paymentForm.savedCredentials.title).setSuccessListener((password) -> {
+      tdlib.client().send(new TdApi.CreateTemporaryPassword(password, 30 * 60), (state) -> {
+        if (state.getConstructor() == TdApi.TemporaryPasswordState.CONSTRUCTOR) {
+          // password created, can go to next step
+          sendPaymentForm();
+        } else {
+          UI.showError(state);
+        }
+      });
+    }));
+    navigateTo(pc);
+  }
+
+  private void sendPaymentForm () {
+    tdlib.client().send(new TdApi.SendPaymentForm(paymentInvoice, paymentForm.id, validatedOrderInfoId != null ? validatedOrderInfoId : "", selectedShippingOption != null ? selectedShippingOption.id : null, inputCredentials, paymentFormTipAmount), (state) -> {
+      if (state.getConstructor() == TdApi.PaymentResult.CONSTRUCTOR) {
+        TdApi.PaymentResult paymentResult = (TdApi.PaymentResult) state;
+        if (paymentResult.success) {
+          // show post-payment popup and go back
+        } else {
+          // open webview
+        }
+      } else {
+        UI.showError(state);
+      }
+    });
   }
 
   private void showDisclaimer (Runnable onConfirm) {
@@ -569,15 +607,8 @@ public class PaymentFormController extends ViewController<PaymentFormController.
     );
   }
 
-  private void internalPaymentProcess () {
-    // InputInvoice inputInvoice, long paymentFormId, String orderInfoId, String shippingOptionId, InputCredentials credentials, long tipAmount
-    tdlib.client().send(new TdApi.SendPaymentForm(paymentInvoice, paymentForm.id, validatedOrderInfoId != null ? validatedOrderInfoId : "", selectedShippingOption != null ? selectedShippingOption.id : null, inputCredentials, paymentFormTipAmount), (state) -> {
-
-    });
-  }
-
-  private boolean isCredsSavable() {
-    return inputCredentials.getConstructor() == TdApi.InputCredentialsSaved.CONSTRUCTOR || (inputCredentials.getConstructor() == TdApi.InputCredentialsNew.CONSTRUCTOR && ((TdApi.InputCredentialsNew) inputCredentials).allowSave);
+  private boolean isSavedCreds () {
+    return inputCredentials.getConstructor() == TdApi.InputCredentialsSaved.CONSTRUCTOR;
   }
 
   private boolean isShipmentInfoRequired () {
