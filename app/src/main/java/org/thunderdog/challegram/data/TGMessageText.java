@@ -439,7 +439,7 @@ public class TGMessageText extends TGMessage {
       final float maxWidthMultiply = replyData != null ? 1f : 0.7f;
       final int textWidth = Math.max(wrapper.getWidth(), computeBubbleTimePartWidth(false));
       forceExpand = replyData == null && (textWidth < (int)(maxWidth * maxWidthMultiply)) && messageReactions.getBubblesCount() > 1 && messageReactions.getHeight() <= TGReactions.getReactionBubbleHeight();
-      messageReactions.measureReactionBubbles(Math.max(textWidth, (int)(maxWidth * maxWidthMultiply)), computeBubbleTimePartWidth(true));
+      messageReactions.measureReactionBubbles(Math.max(textWidth, (int)(maxWidth * maxWidthMultiply)), computeBubbleTimePartWidth(true, true));
       messageReactions.resetReactionsAnimator(animated);
     }
   }

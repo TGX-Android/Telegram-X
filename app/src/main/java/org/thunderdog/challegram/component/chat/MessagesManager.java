@@ -1365,19 +1365,46 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   private void scrollCompensation (View view, int heightDiff, int index, int recyclerHeight, int bottom) {
+    OnGlobalLayoutListener listener = new OnGlobalLayoutListener(controller.getMessagesView(), view, heightDiff);
+    listener.add();
+
     //tdlib.ui().post(() -> controller.getMessagesView().scrollBy(0, heightDiff));
-
-    ViewTreeObserver.OnGlobalLayoutListener listener = new ViewTreeObserver.OnGlobalLayoutListener() {
-      @Override
-      public void onGlobalLayout () {
-        controller.getMessagesView().scrollBy(0, heightDiff);
-        view.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-      }
-    };
-    view.getViewTreeObserver().addOnGlobalLayoutListener(listener);
-
     // controller.getMessagesView().scrollBy(0, heightDiff);
     // manager.scrollToPositionWithOffset(index, recyclerHeight - bottom + heightDiff);
+  }
+
+  private static class OnGlobalLayoutListener implements ViewTreeObserver.OnGlobalLayoutListener {
+    private MessagesRecyclerView recyclerView;
+    private ViewTreeObserver observer;
+    private int offset;
+
+    OnGlobalLayoutListener (MessagesRecyclerView r, View v, int offset) {
+      this.recyclerView = r;
+      this.observer = v.getViewTreeObserver();
+      this.offset = offset;
+    }
+
+    public void add () {
+      add(observer, this);
+    }
+
+    @Override
+    public void onGlobalLayout () {
+      if (offset != 0) {
+        recyclerView.scrollBy(0, offset);
+        offset = 0;
+      }
+
+      remove(observer, this);
+    }
+
+    public static void add (ViewTreeObserver v, OnGlobalLayoutListener listener) {
+      v.addOnGlobalLayoutListener(listener);
+    }
+
+    public static void remove (ViewTreeObserver v, OnGlobalLayoutListener listener) {
+      v.removeOnGlobalLayoutListener(listener);
+    }
   }
 
   public void modifyRecycler (Context context, RecyclerView recyclerView, LinearLayoutManager manager) {

@@ -162,6 +162,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
   private final BounceAnimator isVisible = new BounceAnimator(this);
   private final BoolAnimator isMuted = new BoolAnimator(1, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 120l);
   private final BoolAnimator isFailed = new BoolAnimator(2, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 120l);
+  private boolean isVisibleTarget = false;
 
   public interface Callback {
     void onCounterAppearanceChanged (Counter counter, boolean sizeChanged);
@@ -271,6 +272,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
       counter.hideCounter(animateChanges);
     }
     isVisible.setValue(hasCounter, animated);
+    isVisibleTarget = hasCounter;
   }
 
   public void invalidate (boolean sizeChanged) {
@@ -313,6 +315,10 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
 
   public float getScaledWidth (int addWidth) {
     return (getWidth() + addWidth) * getVisibility();
+  }
+
+  public float getScaledOrTargetWidth (int addWidth, boolean isTarget) {
+    return isTarget ? (isVisibleTarget ? getTargetWidth() + addWidth : 0) : getScaledWidth(addWidth);
   }
 
   public float getVisibility () {

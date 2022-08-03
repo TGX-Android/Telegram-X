@@ -2604,7 +2604,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         } else if (useStickerBubbleReactions()) {
           messageReactions.measureReactionBubbles(Math.max(getContentWidth(), (int)(getEstimatedContentMaxWidth() * 0.85f)));
         } else {
-          messageReactions.measureReactionBubbles((computeBubbleWidth() + getBubblePaddingLeft() + getBubblePaddingRight() - xReactionBubblePadding * 2), computeBubbleTimePartWidth(true));
+          messageReactions.measureReactionBubbles((computeBubbleWidth() + getBubblePaddingLeft() + getBubblePaddingRight() - xReactionBubblePadding * 2), computeBubbleTimePartWidth(true, true));
         }
       } else {
         messageReactions.measureReactionBubbles(getEstimatedContentMaxWidth(), 0);
@@ -3372,6 +3372,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   protected final int computeBubbleTimePartWidth (boolean includePadding) {
+    return computeBubbleTimePartWidth(includePadding, false);
+  }
+
+  protected final int computeBubbleTimePartWidth (boolean includePadding, boolean isTarget) {
     int width = 0;
     /*if (shouldShowTicks()) {
       width += Screen.dp(3f) + Icons.getSingleTick().getWidth() + Screen.dp(3f);
@@ -3388,22 +3392,22 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
     boolean isSending = isSending();
     if (getViewCountMode() == VIEW_COUNT_MAIN) {
-      final float viewsWidth = viewCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
+      final float viewsWidth = viewCounter.getScaledOrTargetWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN), isTarget);
       final int clockWidth = Icons.getClockIconWidth() + Screen.dp(3f);
       if (isSending && (drawBubbleTimeOverContent() || !useBubble())) {
         width += clockWidth;
       } else {
         width += viewsWidth;
       }
-      width += shareCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
+      width += shareCounter.getScaledOrTargetWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN), isTarget);
     }
     if (getCommentMode() == COMMENT_MODE_NONE) {
-      width += replyCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
+      width += replyCounter.getScaledOrTargetWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN), isTarget);
     }
-    width += isPinned.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN));
+    width += isPinned.getScaledOrTargetWidth(Screen.dp(COUNTER_ICON_MARGIN), isTarget);
     if (reactionsCounter != null) {
       width += reactionsCounterDrawable.getMinimumWidth() + messageReactions.getVisibility() * Screen.dp(3);
-      width += reactionsCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
+      width += reactionsCounter.getScaledOrTargetWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN), isTarget);
     }
     if (!isFailed() && (isOutgoingBubble() || (isSending && getViewCountMode() != VIEW_COUNT_MAIN))) {
       width += /*Screen.dp(3.5f) +*/ Icons.getSingleTickWidth() /*- Screen.dp(3.5f)*/; // singleTick bitmap contains padding
@@ -4896,6 +4900,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     replyCounter.setCount(getReplyCount(), commentMode == COMMENT_MODE_NONE && animated);
     hasCommentButton.setValue(commentMode == COMMENT_MODE_BUTTON, animated);
     shareCounter.setCount(interactionInfo != null ? interactionInfo.forwardCount : 0, animated);
+    isPinned.showHide(isPinned(), animated);
+
     if (combinedMessages != null) {
       messageReactions.setReactions(combinedMessages);
     } else {
@@ -4918,7 +4924,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       shrinkedReactionsCounter.setMuted(!messageReactions.hasChosen(), animated);
     }
 
-    isPinned.showHide(isPinned(), animated);
     if (animated) {
       startReactionAnimationIfNeeded();
     }
@@ -5097,6 +5102,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
     if (changed) {
       this.isPinned.showHide(isPinned, needAnimateChanges());
+      this.buildReactions(needAnimateChanges());
       return true;
     }
     return false;

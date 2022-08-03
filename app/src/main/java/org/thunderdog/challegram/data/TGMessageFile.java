@@ -502,7 +502,7 @@ public class TGMessageFile extends TGMessage {
       super.buildReactions(animated);
     } else {
       int contentWidth = Math.round(files.getMetadata().getMaximumItemWidth());
-      messageReactions.measureReactionBubbles(Math.max(contentWidth, (int)(getEstimatedContentMaxWidth() * 0.75f)), computeBubbleTimePartWidth(true));
+      messageReactions.measureReactionBubbles(Math.max(contentWidth, (int)(getEstimatedContentMaxWidth() * 0.75f)), computeBubbleTimePartWidth(true, true));
       messageReactions.resetReactionsAnimator(animated);
     }
   }
