@@ -228,6 +228,21 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   private float lastMergeRadius, lastDefaultRadius;
   private int pContentX, pContentY, pContentMaxWidth;
   private int timeAddedHeight;
+  private FactorAnimator timeExpandValue = new FactorAnimator(0, new FactorAnimator.Target() {
+    @Override
+    public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
+      if (BitwiseUtils.getFlag(flags, FLAG_LAYOUT_BUILT)) {
+        if (useBubbles() && !useReactionBubbles()) {
+          int height = getHeight();
+          buildBubble(false);
+          if (getHeight() != height) {
+            requestLayout();
+          }
+        }
+      }
+      invalidate();
+    }
+  }, AnimatorUtils.DECELERATE_INTERPOLATOR, 200l);
 
   private int pTimeLeft, pTimeWidth;
   private int pClockLeft, pClockTop;
@@ -1946,7 +1961,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           }
           drawReactionsWithBubbles(c, view, left, top - Screen.dp(6));
         } else {
-          // c.drawRect(bubblePathRect.left, bottomContentEdge - timeAddedHeight, bubblePathRect.right, bottomContentEdge - timeAddedHeight, Paints.strokeSmallPaint(Color.BLUE));
           drawReactionsWithBubbles(c, view, (int) bubblePathRect.left + xReactionBubblePadding, (bottomContentEdge - (int) messageReactions.getAnimatedHeight() - timeAddedHeight - xReactionBubblePaddingBottom));
         }
       }
@@ -3037,6 +3051,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       final int defaultBubbleHeight = computeBubbleHeight();
       int bubbleWidth = defaultBubbleWidth;
       int bubbleHeight = defaultBubbleHeight;
+      boolean needAnimateTimeExpand = true;
       timeAddedHeight = 0;
 
       if (!headerDisabled() && !(drawBubbleTimeOverContent() && !useForward()) && useBubbleTime()) {
@@ -3060,6 +3075,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
             int newBubbleHeight = MathUtils.fromTo(bubbleHeight, expandedBubbleHeight, factor);
             timeAddedHeight = newBubbleHeight - bubbleHeight;
             bubbleHeight = newBubbleHeight;
+            needAnimateTimeExpand = false;
             break;
           }
           default: {
@@ -3086,6 +3102,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
             messageReactions.getTimeHeightExpand());
           reactionsFinalCorrectedHeight = MathUtils.fromTo(defaultBubbleHeight, expandedBubbleHeight, messageReactions.getTimeHeightExpand());
           timeAddedHeight = (int) (getBubbleTimePartHeight() * messageReactions.getTimeHeightExpand());
+          needAnimateTimeExpand = false;
 
           bubbleWidth = MathUtils.fromTo(bubbleWidth, reactionsFinalCorrectedWidth, messageReactions.getVisibility());
           bubbleHeight = MathUtils.fromTo(bubbleHeight, reactionsFinalCorrectedHeight, messageReactions.getVisibility());
@@ -3096,6 +3113,16 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       } else {
         this.bubbleTimePartWidth = 0;
       }
+
+      if (timeExpandValue.getToFactor() != timeAddedHeight) {
+        if (needAnimateChanges() && needAnimateTimeExpand) {
+          timeExpandValue.animateTo(timeAddedHeight);
+        } else {
+          timeExpandValue.forceFactor(timeAddedHeight);
+        }
+      }
+
+      bubbleHeight = (int) (bubbleHeight - timeAddedHeight + timeExpandValue.getFactor());
 
       final int bubblePaddingLeft = getBubblePaddingLeft();
       final int bubblePaddingTop = getBubblePaddingTop();
