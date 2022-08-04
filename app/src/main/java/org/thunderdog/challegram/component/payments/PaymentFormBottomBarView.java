@@ -33,11 +33,13 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.SimpleDrawable;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.widget.BaseView;
+import org.thunderdog.challegram.widget.ProgressComponent;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
@@ -135,10 +137,21 @@ public class PaymentFormBottomBarView extends BaseView {
     private Drawable drawable;
     private Text drawingText;
 
+    private ProgressComponent progress;
+
     public State (String text, @DrawableRes int iconRes) {
       this.text = text;
       this.iconRes = iconRes;
       this.drawable = Drawables.get(iconRes);
+    }
+
+    public State (Context context) {
+      text = "";
+      progress = new ProgressComponent(UI.getContext(context), Screen.dp(8f));
+      progress.forceColor(Theme.getColor(R.id.theme_color_fillingPositiveContent));
+      progress.setUseLargerPaint();
+      progress.setSlowerDurations();
+      progress.setAlpha(1f);
     }
 
     public void layout (int width) {
@@ -149,6 +162,12 @@ public class PaymentFormBottomBarView extends BaseView {
           return R.id.theme_color_fillingPositiveContent;
         }
       }).allBold().singleLine().build() : null;
+    }
+
+    public void layoutProgress (View view) {
+      if (progress != null) {
+        progress.setBounds(view.getPaddingLeft(), view.getPaddingTop(), view.getMeasuredWidth(), view.getMeasuredHeight());
+      }
     }
 
     private static final float SCALE = .8f;
@@ -174,6 +193,10 @@ public class PaymentFormBottomBarView extends BaseView {
         c.scale(scale, scale, cx, cy);
       } else {
         saveCount = -1;
+      }
+      if (progress != null) {
+        progress.setAlpha(factor * (1f - collapseFactor));
+        progress.draw(c);
       }
       if (drawingText != null && collapseFactor < 1f) {
         drawingText.draw(c, cx - drawingText.getWidth() / 2, cy - drawingText.getHeight() / 2, null, factor * (1f - collapseFactor));
@@ -202,8 +225,40 @@ public class PaymentFormBottomBarView extends BaseView {
     }
   }, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
 
+  public boolean isProgress () {
+    return state != null && state.progress != null;
+  }
+
+  public void setProgress (boolean animated) {
+    if (this.state != null && this.state.progress != null) {
+      return;
+    }
+    setId(0);
+
+    State newState = new State(getContext());
+    newState.layout(getMeasuredWidth());
+    newState.layoutProgress(this);
+    newState.progress.attachToView(this);
+
+    if (!animated || this.state == null) {
+      replaceAnimator.setValue(false, false);
+      this.state = newState;
+      this.state.factor = 1f;
+      invalidate();
+      return;
+    }
+
+    State prevState = this.state;
+    if (prevState.progress != null) prevState.progress.detachFromView(this);
+    this.state = null;
+    replaceAnimator.setValue(false, false);
+    newState.prevState = prevState;
+    this.state = newState;
+    replaceAnimator.setValue(true, true);
+  }
+
   public void setAction (int id, String text, @DrawableRes int iconRes, boolean animated) {
-    if (this.state != null && this.state.text.equals(text) && this.state.iconRes == iconRes) {
+    if (this.state != null && (this.state.text != null && this.state.text.equals(text)) && this.state.iconRes == iconRes) {
       return;
     }
     setId(id);
@@ -220,6 +275,7 @@ public class PaymentFormBottomBarView extends BaseView {
     }
 
     State prevState = this.state;
+    if (prevState.progress != null) prevState.progress.detachFromView(this);
     this.state = null;
     replaceAnimator.setValue(false, false);
     newState.prevState = prevState;
@@ -232,6 +288,7 @@ public class PaymentFormBottomBarView extends BaseView {
     super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     if (state != null) {
       state.layout(getMeasuredWidth());
+      state.layoutProgress(this);
     }
   }
 

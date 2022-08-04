@@ -798,7 +798,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
         if (otherMessage != null && otherMessage.content.getConstructor() == TdApi.MessageInvoice.CONSTRUCTOR) {
           makeText(isFirstRecurring ? R.string.PaymentSuccessfullyPaidRecurring : R.string.PaymentSuccessfullyPaid, new Arg(stringValue), new Arg(botName, botUser), new Arg(((TdApi.MessageInvoice) otherMessage.content).title).setActive(true));
         } else {
-          makeText(isFirstRecurring ? R.string.PaymentSuccessfullyPaidNoItemRecurring : R.string.PaymentSuccessfullyPaidNoItem, new Arg(stringValue), new Arg(botName, botUser));
+          makeText(isRecurring ? R.string.PaymentSuccessfullyPaidNoItemRecurring : R.string.PaymentSuccessfullyPaidNoItem, new Arg(stringValue), new Arg(botName, botUser));
         }
         break;
       }

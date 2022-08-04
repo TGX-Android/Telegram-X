@@ -33,6 +33,7 @@ import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
@@ -305,7 +306,9 @@ public class PaymentFormController extends ViewController<PaymentFormController.
       return;
     }
 
+    showBottomBarProgressAnimated();
     tdlib.client().send(new TdApi.ValidateOrderInfo(paymentInvoice, currentOrderInfo, true), (obj) -> {
+      runOnUiThreadOptional(this::hideBottomBarProgressAnimated);
       if (obj.getConstructor() == TdApi.ValidatedOrderInfo.CONSTRUCTOR) {
         TdApi.ValidatedOrderInfo validatedOrderInfo = (TdApi.ValidatedOrderInfo) obj;
         this.validatedOrderInfoId = validatedOrderInfo.orderInfoId;
@@ -455,10 +458,26 @@ public class PaymentFormController extends ViewController<PaymentFormController.
     }
   }
 
-  private void updateTotalAmountWithUI() {
+  private void updateTotalAmountWithUI () {
     updateTotalAmount();
     adapter.updateValuedSettingById(R.id.btn_paymentFormTotal);
-    bottomBar.setAction(0, Lang.getString(R.string.PaymentFormPay, formatTotalAmount()), R.drawable.baseline_arrow_downward_24, false);
+    hideBottomBarProgressAnimated();
+  }
+
+  private void setBottomBarProgress (boolean inProgress, boolean animated) {
+    if (inProgress) {
+      bottomBar.setProgress(animated);
+    } else {
+      bottomBar.setAction(0, Lang.getString(R.string.PaymentFormPay, formatTotalAmount()), R.drawable.baseline_arrow_downward_24, animated);
+    }
+  }
+
+  private void showBottomBarProgressAnimated () {
+    setBottomBarProgress(true, true);
+  }
+
+  private void hideBottomBarProgressAnimated () {
+    setBottomBarProgress(false, true);
   }
 
   private String formatTotalAmount () {
@@ -492,9 +511,11 @@ public class PaymentFormController extends ViewController<PaymentFormController.
 
     bottomBar.setOnClickListener(this);
     bottomBar.setLayoutParams(params);
-    bottomBar.setAction(0, Lang.getString(R.string.PaymentFormPay, formatTotalAmount()), R.drawable.baseline_arrow_downward_24, false);
+    setBottomBarProgress(false, false);
     bottomBar.setOnClickListener(view -> {
-      if (scrollToBottomVisibleFactor == 0f) {
+      if (bottomBar.isProgress()) {
+        // nothing
+      } else if (scrollToBottomVisibleFactor == 0f) {
         onPayButtonPressed();
       } else {
         contentView.smoothScrollToPosition(adapter.getItemCount() - 1);
@@ -518,10 +539,9 @@ public class PaymentFormController extends ViewController<PaymentFormController.
   }
 
   private void initPaymentProcess () {
-    // TODO: 2FA + post-payment alert
-
     showDisclaimer(() -> showConfirmation(() -> {
       if (isSavedCreds()) {
+        showBottomBarProgressAnimated();
         tdlib.client().send(new TdApi.GetTemporaryPasswordState(), (state) -> {
           if (state.getConstructor() == TdApi.TemporaryPasswordState.CONSTRUCTOR) {
             TdApi.TemporaryPasswordState passwordState = (TdApi.TemporaryPasswordState) state;
@@ -529,9 +549,11 @@ public class PaymentFormController extends ViewController<PaymentFormController.
             if (passwordState.hasPassword && passwordState.validFor > 0) {
               sendPaymentForm();
             } else {
-              requestTfaAndSendForm();
+              runOnUiThreadOptional(() -> {
+                hideBottomBarProgressAnimated();
+                requestTfaAndSendForm();
+              });
             }
-
           } else {
             UI.showError(state);
           }
@@ -558,12 +580,16 @@ public class PaymentFormController extends ViewController<PaymentFormController.
   }
 
   private void sendPaymentForm () {
+    runOnUiThreadOptional(this::showBottomBarProgressAnimated);
     tdlib.client().send(new TdApi.SendPaymentForm(paymentInvoice, paymentForm.id, validatedOrderInfoId != null ? validatedOrderInfoId : "", selectedShippingOption != null ? selectedShippingOption.id : null, inputCredentials, paymentFormTipAmount), (state) -> {
       if (state.getConstructor() == TdApi.PaymentResult.CONSTRUCTOR) {
         TdApi.PaymentResult paymentResult = (TdApi.PaymentResult) state;
         if (paymentResult.success) {
           // show post-payment popup and go back
-          closeWithSuccessToast();
+          runOnUiThreadOptional(() -> {
+            hideBottomBarProgressAnimated();
+            closeWithSuccessToast();
+          });
         } else if (paymentResult.verificationUrl != null) {
           // open webview
           runOnUiThreadOptional(() -> {
@@ -572,6 +598,7 @@ public class PaymentFormController extends ViewController<PaymentFormController.
           });
         }
       } else {
+        runOnUiThreadOptional(this::hideBottomBarProgressAnimated);
         UI.showError(state);
       }
     });
@@ -606,7 +633,9 @@ public class PaymentFormController extends ViewController<PaymentFormController.
 
   private void showConfirmation (Runnable onConfirm) {
     showOptions(
-      Lang.getStringBold(R.string.PaymentFormConfirmationText, formatTotalAmount(), getSellerName(), paymentForm.productTitle),
+      !paymentForm.invoice.recurringPaymentTermsOfServiceUrl.isEmpty() ? Strings.buildMarkdown(this, Lang.getString(
+        R.string.PaymentFormConfirmationTextRecurrent, formatTotalAmount(), getSellerName(), paymentForm.productTitle, paymentForm.invoice.recurringPaymentTermsOfServiceUrl
+      ), (view, span, clickedText) -> false) : Lang.getStringBold(R.string.PaymentFormConfirmationText, formatTotalAmount(), getSellerName(), paymentForm.productTitle),
       new int[] { R.id.btn_paymentFormConfirm, R.id.btn_cancel },
       new String[] { Lang.getString(R.string.PaymentFormPay, formatTotalAmount()), Lang.getString(R.string.Cancel) },
       new int[] { ViewController.OPTION_COLOR_BLUE, ViewController.OPTION_COLOR_NORMAL },

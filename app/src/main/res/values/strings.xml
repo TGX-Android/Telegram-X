@@ -1946,7 +1946,7 @@
   <string name="PaymentSuccessfullyPaid">You successfully transferred %1$s to %2$s for %3$s</string>
   <string name="PaymentSuccessfullyPaidNoItem">You successfully transferred %1$s to %2$s</string>
   <string name="PaymentSuccessfullyPaidRecurring">You successfully transferred %1$s to %2$s for %3$s and allowed future recurring payments</string>
-  <string name="PaymentSuccessfullyPaidNoItemRecurring">You successfully transferred %1$s to %2$s and allowed future recurring payments</string>
+  <string name="PaymentSuccessfullyPaidNoItemRecurring">You successfully transferred %1$s to %2$s via recurrent payments</string>
   <string name="OpenMessage">View Message</string>
   <string name="SavedMessages">Saved Messages</string>
   <string name="Saved">Saved</string>
@@ -4313,6 +4313,7 @@
   <string name="PaymentFormShipInfoSaveInfo">You can save your shipping information for future use.</string>
   <string name="PaymentFormWarningText">Neither Telegram, nor %1$s will have access to your credit card information. Credit card details will be handled only by the payment system, %2$s.\n\nPayments will go directly to the developer of %1$s. Telegram cannot provide any guarantees, so proceed at your own risk. In case of problems, please contact the developer of %1$s or your bank.</string>
   <string name="PaymentFormConfirmationText">Transfer %1$s to %2$s for \"%3$s\"?</string>
+  <string name="PaymentFormConfirmationTextRecurrent">Transfer **%1$s** to **%2$s** for \"**%3$s**\" and allow future recurring payments?\n\nClick \"Pay\" only if you accept [Terms of Service](%4$s) of **%2$s**.</string>
   <string name="PaymentFormPay">Pay %1$s</string>
   <string name="PaymentFormNotSet">Not set</string>
   <string name="PaymentFormMethodToastSaved">This payment method will be saved for future use. It will be stored directly with the payment provider, and Telegram has no access to your credit card data.</string>
