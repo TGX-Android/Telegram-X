@@ -4312,7 +4312,6 @@
   <string name="PaymentFormShipInfoSave">Save Info</string>
   <string name="PaymentFormShipInfoSaveInfo">You can save your shipping information for future use.</string>
   <string name="PaymentFormWarningText">Neither Telegram, nor %1$s will have access to your credit card information. Credit card details will be handled only by the payment system, %2$s.\n\nPayments will go directly to the developer of %1$s. Telegram cannot provide any guarantees, so proceed at your own risk. In case of problems, please contact the developer of %1$s or your bank.</string>
-  <string name="PaymentFormConfirmationTitle">Transaction Review</string>
   <string name="PaymentFormConfirmationText">Transfer %1$s to %2$s for \"%3$s\"?</string>
   <string name="PaymentFormPay">Pay %1$s</string>
   <string name="PaymentFormNotSet">Not set</string>
