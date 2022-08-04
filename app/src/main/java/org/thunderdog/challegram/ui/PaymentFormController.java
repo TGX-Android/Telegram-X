@@ -8,6 +8,7 @@ import android.text.style.ForegroundColorSpan;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -562,13 +563,23 @@ public class PaymentFormController extends ViewController<PaymentFormController.
         TdApi.PaymentResult paymentResult = (TdApi.PaymentResult) state;
         if (paymentResult.success) {
           // show post-payment popup and go back
-        } else {
+          closeWithSuccessToast();
+        } else if (paymentResult.verificationUrl != null) {
           // open webview
+          runOnUiThreadOptional(() -> {
+            PaymentFormVerificationController c = new PaymentFormVerificationController(context, tdlib);
+            c.setArguments(new PaymentFormVerificationController.Args(paymentResult.verificationUrl, getPaymentProcessorName(), this::closeWithSuccessToast));
+          });
         }
       } else {
         UI.showError(state);
       }
     });
+  }
+
+  private void closeWithSuccessToast () {
+    UI.showCustomToast(Lang.getString(R.string.PaymentFormSuccessToast, formatTotalAmount(), getSellerName(), paymentForm.productTitle), Toast.LENGTH_LONG, 0);
+    navigateBack();
   }
 
   private void showDisclaimer (Runnable onConfirm) {
