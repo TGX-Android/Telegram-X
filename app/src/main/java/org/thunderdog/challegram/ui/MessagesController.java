@@ -109,6 +109,7 @@ import org.thunderdog.challegram.component.chat.MessagesAdapter;
 import org.thunderdog.challegram.component.chat.MessagesHolder;
 import org.thunderdog.challegram.component.chat.MessagesLayout;
 import org.thunderdog.challegram.component.chat.MessagesManager;
+import org.thunderdog.challegram.component.chat.MessagesSearchManager;
 import org.thunderdog.challegram.component.chat.PinnedMessagesBar;
 import org.thunderdog.challegram.component.chat.RaiseHelper;
 import org.thunderdog.challegram.component.chat.ReplyView;
@@ -2514,7 +2515,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     forceHideToast();
     topBar.hideAll(false);
 
-    resetSearhControls();
+    resetSearchControls();
 
     tdlib.ui().updateTTLButton(R.id.menu_secretChat, headerView, chat, true);
     messagesView.setMessageAnimatorEnabled(false);
@@ -3877,7 +3878,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     cancelJumpToDate();
     cancelAdminsRequest();
-    resetSearhControls();
+    resetSearchControls();
     triggerOneShot = true;
 
     if (manager != null) {
@@ -9947,6 +9948,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
       }
     };
+    final View.OnLongClickListener onLongClickListener = v -> {
+      switch (v.getId()) {
+        case R.id.btn_search_prev: {
+          manager.moveToNextResult(false, MessagesSearchManager.SEARCH_LOAD_LIMIT);
+          break;
+        }
+        case R.id.btn_search_next: {
+          manager.moveToNextResult(true, MessagesSearchManager.SEARCH_LOAD_LIMIT);
+          break;
+        }
+      }
+      return true;
+    };
 
     Context context = context();
 
@@ -10001,6 +10015,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     searchNextButton = Views.newImageButton(context, R.drawable.baseline_keyboard_arrow_up_24, R.id.theme_color_icon, this);
     searchNextButton.setId(R.id.btn_search_next);
     searchNextButton.setOnClickListener(onClickListener);
+    searchNextButton.setOnLongClickListener(onLongClickListener);
     searchNextButton.setLayoutParams(fp);
     searchNextButton.setEnabled(false);
     searchControlsLayout.addView(searchNextButton);
@@ -10009,6 +10024,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     searchPrevButton = Views.newImageButton(context, R.drawable.baseline_keyboard_arrow_down_24, R.id.theme_color_icon, this);
     searchPrevButton.setId(R.id.btn_search_prev);
     searchPrevButton.setOnClickListener(onClickListener);
+    searchPrevButton.setOnLongClickListener(onLongClickListener);
     searchPrevButton.setPadding(0, 0, Screen.dp(12f), 0);
     searchPrevButton.setLayoutParams(fp);
     searchPrevButton.setEnabled(false);
@@ -10052,7 +10068,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private boolean searchControlsForChannel;
 
-  private void resetSearhControls () {
+  private void resetSearchControls() {
     if (searchControlsLayout != null) {
       searchCounterView.setText("");
       searchPrevButton.setEnabled(false);
@@ -10223,7 +10239,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onChatSearchFinished (String counter, int index, int totalCount) {
     lastSearchIndex = index;
     lastSearchTotalCount = totalCount;
-    searchNextButton.setEnabled(index < totalCount);
+    searchNextButton.setEnabled(index < totalCount - 1);
     searchPrevButton.setEnabled(index > 0);
     searchCounterView.setText(counter);
     setSearchInProgress(false, true);

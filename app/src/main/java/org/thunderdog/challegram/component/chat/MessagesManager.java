@@ -2217,6 +2217,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     searchManager.moveToNext(next);
   }
 
+  public void moveToNextResult (boolean next, int byHowMuch) {
+    searchManager.moveToNext(next, byHowMuch);
+  }
+
   // Delegate
 
   public int getRecyclerHeight () {
