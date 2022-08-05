@@ -3101,7 +3101,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
             Math.max(expandedBubbleWidth, reactionsWidth),
             messageReactions.getTimeHeightExpand());
           reactionsFinalCorrectedHeight = MathUtils.fromTo(defaultBubbleHeight, expandedBubbleHeight, messageReactions.getTimeHeightExpand());
-          timeAddedHeight = (int) (getBubbleTimePartHeight() * messageReactions.getTimeHeightExpand());
+          timeAddedHeight = (int) MathUtils.fromTo(timeAddedHeight, getBubbleTimePartHeight() * messageReactions.getTimeHeightExpand(), messageReactions.getVisibility());
           needAnimateTimeExpand = false;
 
           bubbleWidth = MathUtils.fromTo(bubbleWidth, reactionsFinalCorrectedWidth, messageReactions.getVisibility());
