@@ -29,6 +29,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.MessagesController;
@@ -89,7 +90,7 @@ public class TGMessageInvoice extends TGMessage {
   private TextWrapper buildInvoiceInfoWrapper (TdApi.MessageInvoice invoice) {
     CharSequence text = Lang.getStringBold(invoice.isTest ? R.string.InvoiceFmtTest : R.string.InvoiceFmt, CurrencyUtils.buildAmount(invoice.currency, invoice.totalAmount));
     TdApi.TextEntity[] entities = TD.toEntities(text, false);
-    return new TextWrapper(text.toString(), Paints.robotoStyleProvider(mediaWrapper != null ? 13f : 14f), getTextColorSet(), TextEntity.valueOf(tdlib, text.toString(), entities, null));
+    return new TextWrapper(text.toString(), Paints.robotoStyleProvider(mediaWrapper != null ? 13f : 14f), invoice.photo != null ? () -> Color.WHITE : getTextColorSet(), TextEntity.valueOf(tdlib, text.toString(), entities, null));
   }
 
   @Override
