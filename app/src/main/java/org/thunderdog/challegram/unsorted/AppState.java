@@ -26,6 +26,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.telegram.TdlibManager;
+import org.thunderdog.challegram.telegram.TdlibNotificationUtils;
 import org.thunderdog.challegram.util.Crash;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -66,6 +67,7 @@ public class AppState {
 
     N.init();
     Settings.instance();
+    TdlibNotificationUtils.initialize();
 
     if (BuildConfig.DEBUG || BuildConfig.EXPERIMENTAL) {
       Thread.UncaughtExceptionHandler defaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();

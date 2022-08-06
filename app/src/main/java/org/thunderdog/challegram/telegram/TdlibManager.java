@@ -27,10 +27,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.firebase.FirebaseApp;
-import com.google.firebase.messaging.FirebaseMessaging;
-
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.drinkmore.Tracer;
@@ -47,8 +43,8 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.player.AudioController;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.tool.UI;
-import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.Crash;
 
 import java.io.File;
 import java.io.IOException;
@@ -78,7 +74,6 @@ import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.util.FilteredIterator;
-import me.vkryl.td.JSON;
 import me.vkryl.td.Td;
 
 public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
@@ -1576,19 +1571,19 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       return;
     }
     setTokenState(TOKEN_STATE_INITIALIZING, null);
-    OnFailureListener onFailureListener = e -> {
-      Log.e(Log.TAG_FCM, "Failed to retrieve firebase token", e);
-      setTokenState(TOKEN_STATE_ERROR, StringUtils.isEmpty(e.getMessage()) ? Log.toString(e) : e.getClass().getSimpleName() + ": " + e.getMessage());
-    };
-    try {
-      FirebaseApp.initializeApp(UI.getAppContext());
-      FirebaseMessaging.getInstance().getToken().addOnSuccessListener(token -> {
-        TDLib.Tag.notifications("FirebaseMessaging.getInstance().getToken(): \"%s\"", token);
-        setDeviceToken(token);
-      }).addOnFailureListener(onFailureListener);
-    } catch (Exception e) {
-      onFailureListener.onFailure(e);
-    }
+    TdlibNotificationUtils.getDeviceToken(new TdlibNotificationUtils.RegisterCallback() {
+      @Override
+      public void onSuccess (TdApi.DeviceTokenFirebaseCloudMessaging token) {
+        // TODO: use TdApi.DeviceToken instead of taking token's String value directly
+        setDeviceToken(token.token);
+      }
+
+      @Override
+      public void onError (Throwable e) {
+        Log.e(Log.TAG_FCM, "Failed to retrieve push token", e);
+        setTokenState(TOKEN_STATE_ERROR, StringUtils.isEmpty(e.getMessage()) ? Log.toString(e) : e.getClass().getSimpleName() + ": " + e.getMessage());
+      }
+    });
   }
 
   private void dispatchDeviceToken (String token) {
