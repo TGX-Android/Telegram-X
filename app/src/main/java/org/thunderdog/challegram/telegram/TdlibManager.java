@@ -313,7 +313,6 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
         Tracer.onTdlibLostPromiseError(errorMessage);
       }
     });
-    Settings.instance().applyLogSettings();
 
     this.languageDatabasePath = getLanguageDatabasePath();
     this.watchDog = new WatchDogContext(UI.getAppContext(), this);
