@@ -762,6 +762,7 @@ public class Settings {
     trackInstalledApkVersion();
     Log.i("Opened database in %dms", SystemClock.uptimeMillis() - ms);
     checkPendingPasscodeLocks();
+    applyLogSettings();
   }
 
   // Schedule

@@ -202,8 +202,6 @@ open class ModulePlugin : Plugin<Project> {
               buildConfigLong("COMMIT_DATE", commitDate)
               buildConfigString("SOURCES_URL", properties.getProperty("app.sources_url", remoteUrl))
 
-              buildConfigField("boolean", "EXPERIMENTAL", isExperimentalBuild.toString())
-
               buildConfigField("long[]", "PULL_REQUEST_ID", "{${
                 pullRequests.joinToString(", ") { it.id.toString() }
               }}")

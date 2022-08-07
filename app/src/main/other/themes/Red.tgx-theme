@@ -6,7 +6,7 @@ tinted: true
 @
 parentTheme: 1
 #
-badge, bubbleIn_progress, bubbleOut_file, bubbleOut_waveformActive, chatListAction, chatSendButton, circleButtonActive, circleButtonRegular, circleButtonTheme, controlActive, file, fileRed, headerBarCallActive, playerButtonActive, profileSectionActive, progress, promo, snackbarUpdate, textSearchQueryHighlight, waveformActive, tooltip_textLink, avatarArchive, avatarSavedMessages, avatarSavedMessages_big, avatarReplies, avatarReplies_big, bubbleOut_fillingPositive, bubbleIn_fillingPositive, bubbleIn_fillingPositive_overlay, bubbleOut_fillingPositive_overlay: #F44336
+badge, bubbleIn_progress, bubbleOut_file, bubbleOut_waveformActive, chatListAction, chatSendButton, circleButtonActive, circleButtonRegular, circleButtonTheme, controlActive, file, fileRed, headerBarCallActive, playerButtonActive, profileSectionActive, progress, promo, snackbarUpdate, textSearchQueryHighlight, waveformActive, tooltip_textLink, avatarArchive, avatarSavedMessages, avatarSavedMessages_big, avatarReplies, avatarReplies_big, bubbleOut_fillingPositive, bubbleIn_fillingPositive, bubbleIn_fillingPositive_overlay, bubbleOut_fillingPositive_overlay, fillingPositive: #F44336
 bubbleIn_textLink, bubbleOut_chatCorrectChosenFilling, bubbleOut_chatCorrectFilling, bubbleOut_chatVerticalLine, bubbleOut_textLink, chatListVerify, inputActive, iv_textLink, iv_textMarkedLink, messageCorrectChosenFilling, messageCorrectFilling, messageVerticalLine, seekDone, sliderActive, textLink, textNeutral: #EF5350
 bubbleIn_textLinkPressHighlight, bubbleOut_textLinkPressHighlight, iv_textLinkPressHighlight, iv_textMarkedLinkPressHighlight, textLinkPressHighlight, tooltip_textLinkPressHighlight: #EF535040
 bubbleOut_background: #FEE3E3
@@ -15,7 +15,7 @@ bubbleOut_inlineOutline, bubbleOut_inlineText, bubbleOut_messageAuthor, checkAct
 bubbleOut_progress, bubbleOut_separator, bubbleOut_time: #BE8081
 bubbleOut_ticks, bubbleOut_ticksRead, iconActive, ticks, ticksRead: #EA3935
 bubbleOut_waveformInactive: #FABDC2
-headerBackground, notification, notificationLink, notificationPlayer, passcode, fillingPositive: #C62828
+headerBackground, notification, notificationLink, notificationPlayer, passcode: #C62828
 messageSelection: #B71C1C10
 seekReady: #FBD4D3
 textNegative: #B71C1C
@@ -24,3 +24,4 @@ togglerActiveBackground: #EF9A9A
 unread: #FFEBEE
 waveformInactive: #FFCDD2
 bubble_messageSelection, bubble_messageSelectionNoWallpaper: #E5393533
+bubbleOut_fillingActive: #D340401A
