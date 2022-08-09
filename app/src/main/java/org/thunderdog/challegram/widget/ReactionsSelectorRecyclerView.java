@@ -38,7 +38,7 @@ public class ReactionsSelectorRecyclerView extends CustomRecyclerView {
     String chosen = message.getMessageReactions().getChosen();
     TdApi.AvailableReaction[] reactions = message.getMessageAvailableReactions();
 
-    LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, Lang.rtl());
+    LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false);
     setHasFixedSize(true);
     setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? OVER_SCROLL_IF_CONTENT_SCROLLS : OVER_SCROLL_NEVER);
     setLayoutManager(linearLayoutManager);
