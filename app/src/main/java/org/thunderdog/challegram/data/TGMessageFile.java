@@ -497,6 +497,17 @@ public class TGMessageFile extends TGMessage {
   }
 
   @Override
+  protected void buildReactions (boolean animated) {
+    if (!useBubble() || !useReactionBubbles()) {
+      super.buildReactions(animated);
+    } else {
+      int contentWidth = Math.round(files.getMetadata().getMaximumItemWidth());
+      messageReactions.measureReactionBubbles(Math.max(contentWidth, (int)(getEstimatedContentMaxWidth() * 0.75f)), computeBubbleTimePartWidth(true, true));
+      messageReactions.resetReactionsAnimator(animated);
+    }
+  }
+
+  @Override
   protected int getContentHeight () {
     return Math.round(files.getMetadata().getTotalHeight());
   }

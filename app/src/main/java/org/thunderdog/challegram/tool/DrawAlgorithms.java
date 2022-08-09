@@ -322,7 +322,11 @@ public class DrawAlgorithms {
   }
 
   public static float getCounterWidth (float textSize, boolean needBackground, CounterAnimator<?> counter, int drawableWidth) {
-    float contentWidth = counter.getWidth() + drawableWidth;
+    return getCounterWidth(textSize, needBackground, counter.getWidth(), drawableWidth);
+  }
+
+  public static float getCounterWidth (float textSize, boolean needBackground, float counterWidth, int drawableWidth) {
+    float contentWidth = counterWidth + drawableWidth;
     if (needBackground) {
       return Math.max(Screen.dp(textSize - 2f) * 2, contentWidth + Screen.dp(3f) * 2);
     } else {
@@ -330,7 +334,7 @@ public class DrawAlgorithms {
     }
   }
 
-  public static void drawCounter (Canvas c, float cx, float cy, int gravity, CounterAnimator<Text> counter, float textSize, boolean needBackground, TextColorSet colorSet, Drawable drawable, int drawableGravity, int drawableColorId, int drawableMargin, float alpha, float scale) {
+  public static void drawCounter (Canvas c, float cx, float cy, int gravity, CounterAnimator<Text> counter, float textSize, boolean needBackground, TextColorSet colorSet, Drawable drawable, int drawableGravity, int drawableColorId, int drawableMargin, float alpha, float drawableAlpha, float scale) {
     scale = .6f + .4f * scale;
     final boolean needScale = scale != 1f;
 
@@ -392,7 +396,9 @@ public class DrawAlgorithms {
 
     float startX = rectF.centerX() - contentWidth / 2f;
     if (drawable != null) {
-      Paint paint = PorterDuffPaint.get(drawableColorId, alpha);
+      Paint paint = drawableColorId != 0 ?
+        PorterDuffPaint.get(drawableColorId, drawableAlpha):
+        Paints.getPorterDuffPaint(ColorUtils.alphaColor(drawableAlpha, colorSet.iconColor()));
       float iconY = cy - drawable.getMinimumHeight() / 2f;
       switch (drawableGravity) {
         case Gravity.RIGHT:

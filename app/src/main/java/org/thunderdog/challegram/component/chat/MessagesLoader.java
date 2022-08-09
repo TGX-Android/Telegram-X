@@ -924,13 +924,21 @@ public class MessagesLoader implements Client.ResultHandler {
       int minDate = maxDate - afterSum;
       long maxId = 1000;
       int i = 0;
-      for (PreviewMessage message : messages) {
+      for (int a = 0; a < messages.size(); a++) {
+        PreviewMessage message = messages.get(a);
         TdApi.Message msg = new TdApi.Message();
+        boolean isLast = a == messages.size() - 1;
         msg.id = maxId - messages.size() + i;
         msg.date = message.date != 0 ? message.date : (minDate = minDate + message.after);
         msg.isOutgoing = message.out;
         msg.senderId = new TdApi.MessageSenderUser(message.out ? myUserId : message.senderUserId);
         msg.content = message.content;
+        if (isLast) {
+          msg.interactionInfo = new TdApi.MessageInteractionInfo();
+          msg.interactionInfo.reactions = new TdApi.MessageReaction[]{
+            new TdApi.MessageReaction("\uD83D\uDC4D", 5, true, new TdApi.MessageSender[0])
+          };
+        }
         out.add(msg);
         i++;
       }

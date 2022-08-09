@@ -426,6 +426,20 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
     return false;
   }
 
+  public int indexOfMessageWithUnreadSeparator () {
+    if (items == null) {
+      return -1;
+    }
+    int i = 0;
+    for (TGMessage item : items) {
+      if (item.hasUnreadBadge()) {
+        return i;
+      }
+      i++;
+    }
+    return -1;
+  }
+
   public boolean addMessage (TGMessage message, boolean top, boolean needScrollToBottom) {
     if (manager.needRemoveDuplicates() && indexOfMessageContainer(message.getId()) != -1)
       return false;

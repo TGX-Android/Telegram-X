@@ -128,6 +128,12 @@
   <item type="id" name="controller_camera" />
   <item type="id" name="controller_memberRights" />
   <item type="id" name="controller_linkChat" />
+  <item type="id" name="controller_enabledReactions"/>
+
+  <item type="id" name="controller_messageOptionsPager" />
+  <item type="id" name="controller_messageOptions" />
+  <item type="id" name="controller_messageOptionsSeen" />
+  <item type="id" name="controller_messageOptionsReacted" />
 
   <item type="id" name="controller_bug_killer" />
   <item type="id" name="controller_logs" />
@@ -306,6 +312,7 @@
   <item type="id" name="btn_icon" />
   <item type="id" name="btn_section" />
   <item type="id" name="btn_stickerSet" />
+  <item type="id" name="btn_reactionSelector" />
   <item type="id" name="btn_description" />
   <item type="id" name="btn_contactsRegistered" />
   <item type="id" name="btn_contactsUnregistered" />
@@ -345,6 +352,7 @@
   <item type="id" name="btn_routingSpeaker" />
   <item type="id" name="btn_scroll" />
   <item type="id" name="btn_mention" />
+  <item type="id" name="btn_reaction" />
   <item type="id" name="btn_deleteProfilePhoto" />
   <item type="id" name="btn_setProfilePhoto" />
   <item type="id" name="btn_addToGroup" />
@@ -444,6 +452,7 @@
   <item type="id" name="btn_toggleNewSetting" />
   <item type="id" name="btn_lottie" />
   <item type="id" name="btn_chatPermissions" />
+  <item type="id" name="btn_enabledReactions" />
   <item type="id" name="btn_view" />
   <item type="id" name="btn_username" />
   <item type="id" name="btn_prehistoryMode" />
@@ -916,6 +925,10 @@
 
   <item type="id" name="maximize" />
 
+  <item type="id" name="reactions_enabled_classic" />
+  <item type="id" name="reactions_enabled" />
+  <item type="id" name="reactions_premium_locked" />
+
   <item type="id" name="theme_chat" />
   <item type="id" name="theme_chat_modern" />
   <item type="id" name="theme_chat_classic" />
@@ -972,6 +985,14 @@
 
   <item type="id" name="btn_repeatNotifications" />
   <item type="id" name="btn_resetNotifications" />
+
+  <item type="id" name="btn_quick_reaction" />
+  <item type="id" name="btn_big_reactions" />
+  <item type="id" name="btn_bigReactionsChats" />
+  <item type="id" name="btn_bigReactionsChannels" />
+
+  <item type="id" name="btn_enabledReactionsCheckboxGroup" />
+  <item type="id" name="btn_quick_reaction_enabled" />
 
   <item type="id" name="icon_additionalPassword" />
   <item type="id" name="icon_email" />

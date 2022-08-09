@@ -2284,11 +2284,15 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, final OptionDelegate delegate, final @Nullable ThemeDelegate forcedTheme) {
+    return showOptions(getOptions(info, ids, titles, colors, icons), delegate, forcedTheme);
+  }
+
+  public final Options getOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons) {
     OptionItem[] items = new OptionItem[ids.length];
     for (int i = 0; i < ids.length; i++) {
       items[i] = new OptionItem(ids != null ? ids[i] : i, titles[i], colors != null ? colors[i] : OPTION_COLOR_NORMAL, icons != null ? icons[i] : 0);
     }
-    return showOptions(new Options(info, items), delegate, forcedTheme);
+    return new Options(info, items);
   }
 
   public final PopupLayout showOptions (Options options, final OptionDelegate delegate) {
@@ -3316,6 +3320,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   protected void onForceTouchModeChanged (boolean inForceTouchMode) {
+    // Override
+  }
+
+  protected void onTranslationChanged (float newTranslationX) {
     // Override
   }
 

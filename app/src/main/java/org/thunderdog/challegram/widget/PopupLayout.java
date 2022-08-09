@@ -19,6 +19,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Canvas;
+import android.os.Build;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -292,6 +293,12 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
           window.setBackgroundDrawable(new RootDrawable(UI.getContext(getContext())));
           if (needFullScreen) {
             patchPopupWindow(window);
+          }
+          if (Build.VERSION.SDK_INT >= 28) {
+            View view = window.getContentView().getRootView();
+            WindowManager.LayoutParams lp = (WindowManager.LayoutParams) view.getLayoutParams();
+            lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+            context.getWindowManager().updateViewLayout(view, lp);
           }
           return;
         } catch (Throwable t) {

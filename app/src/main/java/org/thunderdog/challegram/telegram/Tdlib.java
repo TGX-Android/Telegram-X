@@ -44,6 +44,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
+import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.filegen.TdlibFileGenerationManager;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -465,7 +466,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private boolean youtubePipDisabled, qrLoginCamera, dialogFiltersTooltip, dialogFiltersEnabled;
   private String qrLoginCode;
   private String[] diceEmoji;
-  private TdApi.Reaction[] supportedReactions;
+  private ArrayList<TGReaction> notPremiumReactions = new ArrayList<>();
+  private ArrayList<TGReaction> onlyPremiumReactions = new ArrayList<>();
+  private HashMap<String, TGReaction> supportedTGReactionsMap = new HashMap<>();
   private boolean callsEnabled = true, expectBlocking, isLocationVisible;
   private boolean canIgnoreSensitiveContentRestrictions, ignoreSensitiveContentRestrictions;
   private boolean canArchiveAndMuteNewChatsFromUnknownUsers, archiveAndMuteNewChatsFromUnknownUsers;
@@ -3553,6 +3556,31 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return null;
   }
 
+  public ArrayList<TGReaction> getNotPremiumReactions () {
+    synchronized (dataLock) {
+      return notPremiumReactions;
+    }
+  }
+
+  public ArrayList<TGReaction> getOnlyPremiumReactions () {
+    synchronized (dataLock) {
+      return onlyPremiumReactions;
+    }
+  }
+
+  public int getTotalActiveReactionsCount () {
+    synchronized (dataLock) {
+      return notPremiumReactions.size() + onlyPremiumReactions.size();
+    }
+  }
+
+  @Nullable
+  public TGReaction getReaction (String reaction) {
+    synchronized (dataLock) {
+      return supportedTGReactionsMap.get(reaction);
+    }
+  }
+
   public boolean shouldSendAsDice (TdApi.FormattedText text) {
     return getDiceEmoji(text) != null;
   }
@@ -6232,7 +6260,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   @TdlibThread
   private void updateMessageUnreadReactions (TdApi.UpdateMessageUnreadReactions update) {
-    listeners.updateMessageUnreadReactions(update);
+    final boolean counterChanged, availabilityChanged;
+    synchronized (dataLock) {
+      final TdApi.Chat chat = chats.get(update.chatId);
+      if (TdlibUtils.assertChat(update.chatId, chat, update)) {
+        return;
+      }
+      availabilityChanged = (chat.unreadReactionCount > 0) != (update.unreadReactionCount > 0);
+      counterChanged = chat.unreadReactionCount != update.unreadReactionCount;
+      chat.unreadReactionCount = update.unreadReactionCount;
+    }
+
+
+    listeners.updateMessageUnreadReactions(update, counterChanged, availabilityChanged);
   }
 
   @TdlibThread
@@ -6327,15 +6367,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   @TdlibThread
   private void updateChatUnreadReactionCount (TdApi.UpdateChatUnreadReactionCount update) {
     final boolean availabilityChanged;
+    final TdApi.Chat chat;
+    final TdlibChatList[] chatLists;
     synchronized (dataLock) {
-      final TdApi.Chat chat = chats.get(update.chatId);
+      chat = chats.get(update.chatId);
       if (TdlibUtils.assertChat(update.chatId, chat, update)) {
         return;
       }
       availabilityChanged = (chat.unreadReactionCount > 0) != (update.unreadReactionCount > 0);
       chat.unreadReactionCount = update.unreadReactionCount;
+      chatLists = chatListsImpl(chat.positions);
     }
-    listeners.updateChatUnreadReactionCount(update, availabilityChanged);
+    listeners.updateChatUnreadReactionCount(update, availabilityChanged, chat, chatLists);
   }
 
   @TdlibThread
@@ -6357,6 +6400,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public static int CHAT_MARKED_AS_UNREAD = -1;
   public static int CHAT_FAILED = -2;
+  public static int CHAT_LOADING = -3;
 
   static class ChatListChange {
     public final TdlibChatList list;
@@ -7504,7 +7548,26 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private void updateReactions (TdApi.UpdateReactions update) {
     synchronized (dataLock) {
-      this.supportedReactions = update.reactions;
+      HashMap<String, TGReaction> supportedTGReactionsMap = new HashMap<>();
+      ArrayList<TGReaction> notPremiumReactions = new ArrayList<>();
+      ArrayList<TGReaction> onlyPremiumReactions = new ArrayList<>();
+
+      for (int a = 0; a < update.reactions.length; a++) {
+        TdApi.Reaction reaction = update.reactions[a];
+        TGReaction tgReaction = new TGReaction(this, reaction);
+        supportedTGReactionsMap.put(reaction.reaction, tgReaction);
+        if (reaction.isActive) {
+          if (reaction.isPremium) {
+            onlyPremiumReactions.add(tgReaction);
+          } else {
+            notPremiumReactions.add(tgReaction);
+          }
+        }
+      }
+
+      this.supportedTGReactionsMap = supportedTGReactionsMap;
+      this.notPremiumReactions = notPremiumReactions;
+      this.onlyPremiumReactions = onlyPremiumReactions;
     }
   }
 

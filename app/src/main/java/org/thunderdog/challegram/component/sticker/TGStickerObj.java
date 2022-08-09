@@ -34,7 +34,7 @@ public class TGStickerObj {
   private TdApi.StickerType stickerType;
   private ImageFile preview;
   private ImageFile fullImage;
-  private GifFile previewAnimation, fullAnimation;
+  private GifFile previewAnimation, fullAnimation, premiumFullAnimation;
   private String foundByEmoji;
 
   private int flags;
@@ -67,6 +67,7 @@ public class TGStickerObj {
       this.fullImage = null;
       this.previewAnimation = null;
       this.fullAnimation = null;
+      this.premiumFullAnimation = null;
       this.stickerType = stickerType;
       if (sticker != null && (sticker.thumbnail != null || !Td.isAnimated(sticker.type))) {
         this.preview = TD.toImageFile(tdlib, sticker.thumbnail);
@@ -170,6 +171,15 @@ public class TGStickerObj {
       this.fullAnimation.setUnique(true);
     }
     return fullAnimation;
+  }
+
+  public GifFile getPremiumFullAnimation () {
+    if (premiumFullAnimation == null && sticker != null && Td.isAnimated(sticker.type) && tdlib != null && sticker.premiumAnimation != null) {
+      this.premiumFullAnimation = new GifFile(tdlib, sticker.premiumAnimation, sticker.type);
+      this.premiumFullAnimation.setScaleType(ImageFile.FIT_CENTER);
+      this.premiumFullAnimation.setUnique(true);
+    }
+    return premiumFullAnimation;
   }
 
   public void setIsRecent () {

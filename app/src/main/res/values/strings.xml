@@ -201,6 +201,10 @@
   <string name="xVideos_other">%1$s videos</string>
   <string name="xViews_one">%1$s view</string>
   <string name="xViews_other">%1$s views</string>
+  <string name="xReacted_one">%1$s reaction</string>
+  <string name="xReacted_other">%1$s reactions</string>
+  <string name="xQuickReactionCount_one">%1$s reaction</string>
+  <string name="xQuickReactionCount_other">%1$s reactions</string>
   <string name="xOtherPeopleNames_one">and %1$s other</string>
   <string name="xOtherPeopleNames_other">and %1$s others</string>
   <string name="xOtherChatTitles_one">and %1$s other</string>
@@ -1663,6 +1667,29 @@
   <string name="OnlyAdminsSpecific">Only admins with privilege</string>
   <string name="EditAdmin">Edit Admin</string>
   <string name="AdminRights">Admin Rights</string>
+
+  <string name="Reactions">Reactions</string>
+  <string name="ReactionsDisabled">Reactions disabled</string>
+  <string name="ReactionsEnabled_one">%1$s Reaction enabled</string>
+  <string name="ReactionsEnabled_other">%1$s Reactions enabled</string>
+
+  <string name="QuickReactionEnable">Enable Quick Reaction</string>
+  <string name="QuickReactionEnableDesc">Availability of specific reactions depends on group\'s and channel\'s settings.</string>
+
+  <string name="ReactionsDisabledDesc">Allow members to react to group messages</string>
+  <string name="AvailableReactions">Available reactions</string>
+  <string name="PremiumReactions">Premium reactions</string>
+  <string name="PremiumReactionsLocked">Subscribe to **Telegram Premium** to be able to use reactions below.</string>
+  <string name="QuickReactionsLimit">Reached the limit of quick reactions</string>
+  <string name="QuickReaction">Quick Reaction</string>
+  <string name="QuickReactionDisabled">Disabled</string>
+  <string name="BigReactionsInfo">Big reactions are interactive buttons under messages presenting each reaction</string>
+  <string name="BigReactions">Big Reactions</string>
+  <string name="BigReactionsChats">Chats</string>
+  <string name="BigReactionsChannels">Channels</string>
+  <string name="BigReactionsNone">None</string>
+  <string name="ChannelReactionsAnonymous">Reactions in channels are anonymous</string>
+
   <string name="UserRestrictions">User Permissions</string>
   <string name="GroupRestrictions">Group Permissions</string>
   <string name="ChannelRestrictions">Channel Permissions</string>
@@ -3159,6 +3186,7 @@
 
   <string name="error_CHAT_ADMIN_REQUIRED">You do not have enough privileges to perform this action.</string>
   <string name="ChatPermissions">Chat Permissions</string>
+  <string name="EnabledReactions">Reactions</string>
   <string name="ChatPermissionsRestrictHint">This permission is disabled for all members without admin privileges.</string>
   <string name="WhatMembersCanDo">What can members of this group do?</string>
   <string name="MemberSince">Member since %1$s at %2$s</string>
@@ -3171,6 +3199,8 @@
 
   <string name="xPermissions_one">%1$s of %2$s</string>
   <string name="xPermissions_other">%1$s of %2$s</string>
+  <string name="xReactions_one">%1$s of %2$s</string>
+  <string name="xReactions_other">%1$s of %2$s</string>
 
   <string name="UserDisabledMessages">You cannot send messages to this user</string>
 

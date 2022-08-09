@@ -126,7 +126,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
   }
 
   @Override
-  protected final View onCreateView (Context context) {
+  protected View onCreateView (Context context) {
     FrameLayoutFix contentView = new FrameLayoutFix(context) {
       @Override
       protected void onDraw (Canvas c) {
@@ -352,7 +352,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
   }
 
   @Override
-  public final void onPageScrolled (int position, float positionOffset, int positionOffsetPixels) {
+  public void onPageScrolled (int position, float positionOffset, int positionOffsetPixels) {
     if (headerCell != null) {
       headerCell.getTopView().setSelectionFactor((float) position + positionOffset);
     }
@@ -398,7 +398,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     return getCachedControllerForPosition(getCurrentPagerItemPosition());
   }
 
-  protected final void setCurrentPagerPosition (int position, boolean animated) {
+  protected void setCurrentPagerPosition (int position, boolean animated) {
     if (headerCell != null && animated) {
       headerCell.getTopView().setFromTo(pager.getCurrentItem(), position);
     }

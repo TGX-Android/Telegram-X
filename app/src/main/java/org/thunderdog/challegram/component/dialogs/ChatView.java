@@ -546,6 +546,10 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     mentionCounter.draw(c, counterRight - counterRadius, counterCenterY, Gravity.RIGHT, 1f, this, R.id.theme_color_badgeText);
     counterRight -= mentionCounter.getScaledWidth(getTimePaddingLeft());
 
+    Counter reactionCounter = chat.getReactionsCounter();
+    reactionCounter.draw(c, counterRight - counterRadius, counterCenterY, Gravity.RIGHT, 1f, this, chat.notificationsEnabled() ? R.id.theme_color_badgeText: R.id.theme_color_badgeMutedText);
+    counterRight -= reactionCounter.getScaledWidth(getTimePaddingLeft());
+
     TdlibStatusManager.Helper status = chat.statusHelper();
     TdlibStatusManager.ChatState state = status != null ? status.drawingState() : null;
     float statusVisibility = state != null ? state.visibility() : 0f;

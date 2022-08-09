@@ -92,6 +92,7 @@ import org.thunderdog.challegram.widget.PageBlockView;
 import org.thunderdog.challegram.widget.PageBlockWrapView;
 import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.RadioView;
+import org.thunderdog.challegram.widget.ReactionCheckboxSettingsView;
 import org.thunderdog.challegram.widget.ScalableTextView;
 import org.thunderdog.challegram.widget.SeparatorView;
 import org.thunderdog.challegram.widget.SettingStupidView;
@@ -397,6 +398,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     // Override
   }
 
+  protected void setReaction (ListItem item, int position, ReactionCheckboxSettingsView userView, boolean isUpdate) {
+    // Override
+  }
+
   protected void setChatHeader (ListItem item, int position, DetachedChatHeaderView headerView) {
     // Override
   }
@@ -692,6 +697,13 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
           } else {
             boolean ok = false;
             switch (item.getViewType()) {
+              case ListItem.TYPE_REACTION_CHECKBOX: {
+                if (ok = view instanceof ReactionCheckboxSettingsView) {
+                  setReaction(item, position, ((ReactionCheckboxSettingsView) view), true);
+                }
+                break;
+              }
+
               case ListItem.TYPE_BUTTON: {
                 if (ok = view instanceof ViewGroup && ((ViewGroup) view).getChildAt(0) instanceof ScalableTextView) {
                   setButtonText(item, (ScalableTextView) ((ViewGroup) view).getChildAt(0), true);
@@ -1075,6 +1087,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_DRAWER_ITEM_WITH_RADIO:
       case ListItem.TYPE_DRAWER_ITEM_WITH_RADIO_SEPARATED:
       case ListItem.TYPE_DRAWER_ITEM_WITH_AVATAR:
+      case ListItem.TYPE_REACTION_CHECKBOX:
         return true;
     }
     return false;
@@ -1466,6 +1479,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         ((JoinedUsersView) group.getChildAt(0)).setJoinedText(item.getString());
         break;
       }
+      case ListItem.TYPE_USER_SMALL:
       case ListItem.TYPE_USER: {
         setUser(item, position, (UserView) holder.itemView, false);
         break;
@@ -1474,6 +1488,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         DoubleTextViewWithIcon viewGroup = (DoubleTextViewWithIcon) holder.itemView;
         viewGroup.checkRtl();
         setJoinRequest(item, position, viewGroup,false);
+        break;
+      }
+      case ListItem.TYPE_REACTION_CHECKBOX: {
+        setReaction(item, position, (ReactionCheckboxSettingsView) holder.itemView, false);
         break;
       }
       case ListItem.TYPE_EMBED_STICKER: {

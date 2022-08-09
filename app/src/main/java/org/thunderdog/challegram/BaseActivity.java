@@ -78,6 +78,7 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.InlineResult;
+import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.navigation.ActivityResultHandler;
 import org.thunderdog.challegram.navigation.DrawerController;
@@ -88,6 +89,7 @@ import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.NavigationGestureController;
 import org.thunderdog.challegram.navigation.OptionsLayout;
 import org.thunderdog.challegram.navigation.OverlayView;
+import org.thunderdog.challegram.navigation.ReactionsOverlayView;
 import org.thunderdog.challegram.navigation.RootDrawable;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -1538,6 +1540,27 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     return tooltipOverlayView;
   }
 
+  private ReactionsOverlayView reactionsOverlayView;
+
+  public ReactionsOverlayView reactionsOverlayManager () {
+    if (reactionsOverlayView == null) {
+      reactionsOverlayView = new ReactionsOverlayView(this);
+      reactionsOverlayView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+      /*reactionsOverlayView.setAvailabilityListener((overlayView, hasChildren) -> {
+        if (hasChildren) {
+          if (tooltipOverlayView.getParent() != null)
+            return;
+          addToRoot(tooltipOverlayView, true);
+        } else {
+          removeFromRoot(tooltipOverlayView);
+        }
+      });*/
+      addToRoot(reactionsOverlayView, true);
+    }
+    return reactionsOverlayView;
+  }
+
+
   // Progress view
 
   private boolean isProgressShowing, isProgressAnimating;
@@ -1806,6 +1829,39 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
   }
 
+  // ReactionPreview
+
+  public void openReactionPreview (Tdlib tdlib, StickerSmallView stickerView, TGReaction reaction, int cx, int cy, int maxWidth, int viewportHeight, boolean disableEmojis) {
+    if (stickerPreview != null) {
+      return;
+    }
+
+    stickerPreviewControllerView = stickerView;
+
+    stickerPreview = new StickerPreviewView(this);
+    stickerPreview.setControllerView(stickerPreviewControllerView);
+    stickerPreview.setReaction(tdlib, reaction, cx, cy, maxWidth, viewportHeight, disableEmojis);
+
+    stickerPreviewWindow = new PopupLayout(this);
+    stickerPreviewWindow.setBackListener(stickerPreview);
+    stickerPreviewWindow.setOverlayStatusBar(true);
+    stickerPreviewWindow.init(true);
+    stickerPreviewWindow.setNeedRootInsets();
+    stickerPreviewWindow.showAnimatedPopupView(stickerPreview, stickerPreview);
+  }
+
+  public void replaceReactionPreview (TGReaction reaction, int cx, int cy) {
+    if (stickerPreview != null) {
+      stickerPreview.replaceReaction(reaction, cx, cy);
+    }
+  }
+
+  public void replaceReactionPreviewCords (int cx, int cy) {
+    if (stickerPreview != null) {
+      stickerPreview.replaceStartCords(cx, cy);
+    }
+  }
+
   // Force touch
 
   private PopupLayout forceTouchWindow;
@@ -1865,6 +1921,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     roundVideoController.checkLayout();
     if (tooltipOverlayView != null) {
       tooltipOverlayView.reposition();
+    }
+    if (reactionsOverlayView != null) {
+      reactionsOverlayView.reposition();
     }
   }
 
@@ -2991,6 +3050,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       statusBar.invalidate();
     if (tooltipOverlayView != null) {
       tooltipOverlayView.invalidate();
+    }
+    if (reactionsOverlayView != null) {
+      reactionsOverlayView.invalidate();
     }
     for (ThemeListenerList list : globalThemeListeners) {
       list.onThemeColorsChanged(areTemp);

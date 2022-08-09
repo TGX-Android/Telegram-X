@@ -38,6 +38,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -119,10 +120,12 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
 
   private TextWrapper text;
   private IconOverlay overlay;
+  private final ComplexReceiver complexReceiver;
 
   public SettingView (Context context, Tdlib tdlib) {
     super(context);
     this.tdlib = tdlib;
+    this.complexReceiver = new ComplexReceiver(this);
     setWillNotDraw(false);
   }
 
@@ -190,6 +193,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     flags |= FLAG_ATTACHED;
     if (receiver != null)
       receiver.attach();
+    complexReceiver.attach();
   }
 
   @Override
@@ -198,6 +202,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     flags &= ~FLAG_ATTACHED;
     if (receiver != null)
       receiver.detach();
+    complexReceiver.detach();
   }
 
   @Override
@@ -205,6 +210,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     Views.destroy(this);
     if (receiver != null)
       receiver.destroy();
+    complexReceiver.performDestroy();
     if (subscribedToEmojiUpdates) {
       TGLegacyManager.instance().removeEmojiListener(this);
       subscribedToEmojiUpdates = false;
@@ -218,6 +224,10 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
         receiver.detach();
     }
     return receiver;
+  }
+
+  public ComplexReceiver getComplexReceiver () {
+    return complexReceiver;
   }
 
   public void setTextColorId (@ThemeColorId int textColorId) {
@@ -502,6 +512,14 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
       availWidth = totalWidth - paddingLeft - paddingRight - paddingRight - Screen.dp(38f);
     } else {
       availWidth = totalWidth - paddingLeft - paddingRight;
+    }
+
+    if (drawModifiers != null) {
+      int maxWidth = 0;
+      for (DrawModifier modifier : drawModifiers) {
+        maxWidth = Math.max(maxWidth, modifier.getWidth());
+      }
+      availWidth -= maxWidth;
     }
 
     if (counter != null) {
