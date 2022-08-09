@@ -56,7 +56,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
 
   @Override
   public void checkRtl () {
-    LinearLayoutManager manager = (LinearLayoutManager) getRecyclerView().getLayoutManager();
+    /*LinearLayoutManager manager = (LinearLayoutManager) getRecyclerView().getLayoutManager();
     if (manager.getReverseLayout() != Lang.rtl()) {
       View view = manager.findViewByPosition(0);
       boolean needScroll = false;
@@ -81,7 +81,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
       if (needScroll) {
         manager.scrollToPositionWithOffset(0, scrollOffset);
       }
-    }
+    }*/
     getTopView().checkRtl();
   }
 
@@ -128,7 +128,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
     this.needShowReactions = needShowReactions;
     this.needShowViews = needShowViews;
 
-    ViewPagerTopView topView = new ViewPagerTopView(context);
+    ViewPagerTopView topView = new ViewPagerTopView(context, true);
     topView.setSelectionColorId(R.id.theme_color_headerTabActive);
     topView.setTextFromToColorId(R.id.theme_color_headerTabInactiveText, R.id.theme_color_headerTabActiveText);
     topView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -205,7 +205,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
       ViewGroup.LayoutParams.MATCH_PARENT,
       Gravity.TOP, Screen.dp(56), 0, 0, 0));
     recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? OVER_SCROLL_IF_CONTENT_SCROLLS : OVER_SCROLL_NEVER);
-    recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, Lang.rtl()) {
+    recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false) {
       @Override
       public boolean canScrollHorizontally () {
         return isScrollEnabled && super.canScrollHorizontally();
@@ -327,18 +327,14 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
 
     final int availScrollX = viewWidth - parentWidth;
     final int scrolledX;
-    if (Lang.rtl()) {
-      scrolledX = availScrollX + view.getLeft();
-    } else {
-      scrolledX = -view.getLeft();
-    }
+    scrolledX = -view.getLeft();
     int viewX = -scrolledX;
 
     if ((getParent() != null && ((View) getParent()).getMeasuredWidth() > getMeasuredWidth()) || (viewWidth - parentWidth) < lastItemWidth / 2) {
       int desiredViewLeft = (int) ((float) -(viewWidth - parentWidth) * totalFactor);
       if (viewX != desiredViewLeft) {
         recyclerView.stopScroll();
-        int diff = (desiredViewLeft - viewX) * (Lang.rtl() ? 1 : -1);
+        int diff = (desiredViewLeft - viewX) * -1;
         if (animated) {
           recyclerView.smoothScrollBy(diff, 0);
         } else {
@@ -357,7 +353,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
         }
         if (newViewX != viewX) {
           recyclerView.stopScroll();
-          int offset = (viewX - newViewX) * (Lang.rtl() ? -1 : 1);
+          int offset = (viewX - newViewX);
           if (animated) {
             recyclerView.smoothScrollBy(offset, 0);
           } else {
