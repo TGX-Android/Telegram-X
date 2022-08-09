@@ -17,6 +17,7 @@ package org.thunderdog.challegram.navigation;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
 import android.text.TextUtils;
@@ -186,7 +187,6 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
   private int textPadding;
   private ComplexReceiver complexReceiver;
-  private final boolean alwaysLtr;
 
   private @ThemeColorId int fromTextColorId, toTextColorId = R.id.theme_color_headerText;
   private @ThemeColorId int selectionColorId;
@@ -195,15 +195,6 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     super(context);
     this.textPadding = Screen.dp(19f);
     this.complexReceiver = new ComplexReceiver(this);
-    this.alwaysLtr = false;
-    setWillNotDraw(false);
-  }
-
-  public ViewPagerTopView (Context context, boolean alwaysLtr) {
-    super(context);
-    this.textPadding = Screen.dp(19f);
-    this.complexReceiver = new ComplexReceiver(this);
-    this.alwaysLtr = alwaysLtr;
     setWillNotDraw(false);
   }
 
@@ -674,7 +665,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       int textFromColor = fromTextColorId != 0 ? Theme.getColor(fromTextColorId) : ColorUtils.alphaColor(Theme.getSubtitleAlpha(), Theme.getColor(R.id.theme_color_headerText));
       int selectionColor = selectionColorId != 0 ? Theme.getColor(selectionColorId) : ColorUtils.alphaColor(.9f, Theme.getColor(R.id.theme_color_headerText));
 
-      boolean rtl = Lang.rtl() && !alwaysLtr;
+      boolean rtl = Lang.rtl();
 
       int selectionLeft = rtl ? this.totalWidth - this.selectionLeft - this.selectionWidth : this.selectionLeft;
 

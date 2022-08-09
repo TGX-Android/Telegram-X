@@ -19,6 +19,7 @@ import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Shader;
+import android.os.Build;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -56,7 +57,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
 
   @Override
   public void checkRtl () {
-    /*LinearLayoutManager manager = (LinearLayoutManager) getRecyclerView().getLayoutManager();
+    LinearLayoutManager manager = (LinearLayoutManager) getRecyclerView().getLayoutManager();
     if (manager.getReverseLayout() != Lang.rtl()) {
       View view = manager.findViewByPosition(0);
       boolean needScroll = false;
@@ -81,7 +82,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
       if (needScroll) {
         manager.scrollToPositionWithOffset(0, scrollOffset);
       }
-    }*/
+    }
     getTopView().checkRtl();
   }
 
@@ -128,7 +129,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
     this.needShowReactions = needShowReactions;
     this.needShowViews = needShowViews;
 
-    ViewPagerTopView topView = new ViewPagerTopView(context, true);
+    ViewPagerTopView topView = new ViewPagerTopView(context);
     topView.setSelectionColorId(R.id.theme_color_headerTabActive);
     topView.setTextFromToColorId(R.id.theme_color_headerTabInactiveText, R.id.theme_color_headerTabActiveText);
     topView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -167,6 +168,9 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
         ViewGroup.LayoutParams.MATCH_PARENT,
         ViewGroup.LayoutParams.MATCH_PARENT,
         Gravity.CENTER_VERTICAL, 0, 0, this.rightOffset, 0));
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+        reactionsSelectorRecyclerView.setLayoutDirection(LAYOUT_DIRECTION_LTR);
+      }
       addView(reactionsSelectorRecyclerView);
     } else {
       reactionsSelectorRecyclerView = null;
@@ -211,6 +215,9 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
         return isScrollEnabled && super.canScrollHorizontally();
       }
     });
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+      recyclerView.setLayoutDirection(LAYOUT_DIRECTION_LTR);
+    }
     recyclerView.setAdapter(adapter);
     addView(recyclerView);
 
