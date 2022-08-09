@@ -2287,14 +2287,22 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private boolean setDescription (TdApi.FormattedText text) {
-    if (Td.isEmpty(text) && canEditDescription()) {
-      text = TD.toFormattedText(Lang.getString(R.string.Description), false);
+    if (Td.isEmpty(text)) {
+      if (canEditDescription()) {
+        text = TD.toFormattedText(Lang.getString(R.string.Description), false);
+      } else {
+        text = null;
+      }
     }
     if (this.currentAbout == null || !Td.equalsTo(this.currentAbout, text)) {
       currentAbout = text;
-      aboutWrapper = new TextWrapper(tdlib, text, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, new TdlibUi.UrlOpenParameters().sourceChat(getChatId()));
-      aboutWrapper.addTextFlags(Text.FLAG_CUSTOM_LONG_PRESS | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0));
-      aboutWrapper.prepare(getTextWidth(Screen.currentWidth()));
+      if (text != null) {
+        aboutWrapper = new TextWrapper(tdlib, text, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, new TdlibUi.UrlOpenParameters().sourceChat(getChatId()));
+        aboutWrapper.addTextFlags(Text.FLAG_CUSTOM_LONG_PRESS | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0));
+        aboutWrapper.prepare(getTextWidth(Screen.currentWidth()));
+      } else {
+        aboutWrapper = null;
+      }
       return true;
     }
     return false;
@@ -2624,7 +2632,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private String getDescriptionValue () {
     if (userFull != null) {
-      return !Td.isEmpty(userFull.bio) ? userFull.bio.text : userFull.botInfo != null && !StringUtils.isEmpty(userFull.botInfo.description) ? userFull.botInfo.description : "";
+      return !Td.isEmpty(userFull.bio) ? userFull.bio.text : userFull.botInfo != null && !StringUtils.isEmpty(userFull.botInfo.shareText) ? userFull.botInfo.shareText : "";
     }
     if (supergroupFull != null) {
       return !StringUtils.isEmpty(supergroupFull.description) ? supergroupFull.description : "";
