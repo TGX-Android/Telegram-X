@@ -434,7 +434,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       }
     }
 
-    if (mode == MODE_PAYMENT_METHOD_SAVED || mode == MODE_TRANSFER_OWNERSHIP_CONFIRM || mode == MODE_UNLOCK_EDIT || mode == MODE_CONFIRM || mode == MODE_LOGIN || mode == MODE_CODE || mode == MODE_CODE_CHANGE || mode == MODE_CODE_PHONE_CONFIRM) {
+    if (mode == MODE_TRANSFER_OWNERSHIP_CONFIRM || mode == MODE_UNLOCK_EDIT || mode == MODE_CONFIRM || mode == MODE_LOGIN || mode == MODE_CODE || mode == MODE_CODE_CHANGE || mode == MODE_CODE_PHONE_CONFIRM) {
       RelativeLayout forgotWrap = new RelativeLayout(context);
       forgotWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM));
 
@@ -470,6 +470,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
 
       contentView.addView(forgotWrap);
     } else {
+      forgotView.setVisibility(mode == MODE_PAYMENT_METHOD_SAVED ? View.GONE : View.VISIBLE); // force-"kill" the view
       forgotView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM));
       contentView.addView(forgotView);
     }
