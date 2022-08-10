@@ -282,7 +282,14 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
       tokenizeCard();
     } catch (Exception e) {
       Log.e(e);
-      showAlert(new AlertDialog.Builder(context).setTitle(R.string.Error).setMessage(e.getMessage()));
+
+      showAlert(
+        new AlertDialog.Builder(context)
+          .setTitle(Lang.getString(R.string.Error))
+          .setMessage(e.getMessage())
+          .setPositiveButton(Lang.getString(R.string.OK), (dialog, which) -> dialog.dismiss())
+      );
+
       setDoneInProgress(false);
     }
 
@@ -362,8 +369,7 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
         new AlertDialog.Builder(context)
           .setTitle(R.string.Error)
           .setMessage(exception.getMessage())
-          .setPositiveButton(Lang.getString(R.string.OK), (a, b) -> {
-          })
+          .setPositiveButton(Lang.getString(R.string.OK), (dialog, which) -> dialog.dismiss())
       );
 
       setDoneInProgress(false);

@@ -4325,6 +4325,7 @@
   <string name="ChooseShipmentMethod">Choose shipment method</string>
   <string name="PaymentFormMethodVerification">Payment Method Verification</string>
   <string name="PaymentFormSuccessToast">You paid %1$s to %2$s for \"%3$s\"</string>
+  <string name="PaymentFormErrorGeneric">An error occurred while processing your payment.\n\nYour card has not been billed.</string>
 
   <string name="format_paymentMethod">**%1$s**\n%2$s</string>
   <string name="PaymentMethodSaved">saved payment method</string>

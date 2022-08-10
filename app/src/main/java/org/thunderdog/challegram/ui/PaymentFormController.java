@@ -1,5 +1,6 @@
 package org.thunderdog.challegram.ui;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.Color;
 import android.text.SpannableStringBuilder;
@@ -598,8 +599,15 @@ public class PaymentFormController extends ViewController<PaymentFormController.
           });
         }
       } else {
-        runOnUiThreadOptional(this::hideBottomBarProgressAnimated);
-        UI.showError(state);
+        runOnUiThreadOptional(() -> {
+          hideBottomBarProgressAnimated();
+          showAlert(
+            new AlertDialog.Builder(context)
+              .setTitle(Lang.getString(R.string.Error))
+              .setMessage(Lang.getString(R.string.PaymentFormErrorGeneric))
+              .setPositiveButton(Lang.getString(R.string.OK), (dialog, which) -> dialog.dismiss())
+          );
+        });
       }
     });
   }
