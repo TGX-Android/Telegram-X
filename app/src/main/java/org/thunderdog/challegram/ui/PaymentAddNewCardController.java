@@ -56,9 +56,9 @@ public class PaymentAddNewCardController extends EditBaseController<PaymentAddNe
       if (paymentsProvider.getConstructor() == TdApi.PaymentProviderStripe.CONSTRUCTOR) {
         TdApi.PaymentProviderStripe provider = (TdApi.PaymentProviderStripe) paymentsProvider;
         this.apiKey = provider.publishableKey;
-        this.needCardholderName = false;
-        this.needCountry = false;
-        this.needPostalCode = false;
+        this.needCardholderName = provider.needCardholderName;
+        this.needCountry = provider.needCountry;
+        this.needPostalCode = provider.needPostalCode;
       } else if (paymentsProvider.getConstructor() == TdApi.PaymentProviderSmartGlocal.CONSTRUCTOR) {
         this.apiKey = ((TdApi.PaymentProviderSmartGlocal) paymentsProvider).publicToken;
         this.needCardholderName = false;
