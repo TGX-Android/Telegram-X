@@ -3948,19 +3948,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return msg.unreadReactions != null && msg.unreadReactions.length > 0;
   }
 
-  public final void readReaction (long messageId) {
+  public final void readReactions () {
     synchronized (this) {
       if (combinedMessages != null) {
         for (TdApi.Message message : combinedMessages) {
-          if (message.id == messageId) {
-            message.unreadReactions = new TdApi.UnreadReaction[0];
-            return;
-          }
+          message.unreadReactions = new TdApi.UnreadReaction[0];
         }
       }
-      if (msg.id == messageId) {
-        msg.unreadReactions = new TdApi.UnreadReaction[0];
-      }
+      msg.unreadReactions = new TdApi.UnreadReaction[0];
     }
   }
 
@@ -4429,6 +4424,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         tdlib.ui().postDelayed(() -> {
           flags = BitwiseUtils.setFlag(flags, FLAG_IGNORE_REACTIONS_VIEW, false);
         }, 500L);
+        tdlib().ui().post(this::readReactions);
       }
       flags |= FLAG_IGNORE_REACTIONS_VIEW;
       result = true;
@@ -5075,7 +5071,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       int i = indexOfMessageInternal(messageId);
       if (i >= 0) {
         combinedMessages.get(i).unreadReactions = unreadReactions;
-        changed = i == combinedMessages.size() - 1 || i == 0;
+        changed = true; // i == combinedMessages.size() - 1 || i == 0;
       } else if (i == MESSAGE_INDEX_SELF) {
         msg.unreadReactions = unreadReactions;
         changed = true;
