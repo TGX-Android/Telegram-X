@@ -6362,6 +6362,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
           String newString = newText.text.trim();
           if (newString.length() == 0)
             return;
+          final int maxLength = tdlib.maxMessageTextLength();
+          final int newTextLength = newString.codePointCount(0, newString.length());
+          if (newTextLength > maxLength) {
+            showBottomHint(Lang.pluralBold(R.string.EditMessageTextTooLong, newTextLength - maxLength), true);
+            return;
+          }
           tdlib.editMessageText(editingMessage.chatId, editingMessage.id, newInputMessageText, attachedPreview, Emoji.instance().isSingleEmoji(newString));
         }
         break;
@@ -6374,6 +6380,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case TdApi.MessageAnimation.CONSTRUCTOR: {
         TdApi.FormattedText oldText = Td.textOrCaption(editingMessage.content);
         if (!Td.equalsTo(oldText, newText)) {
+          String newString = newText.text.trim();
+          final int maxLength = tdlib.maxCaptionLength();
+          final int newCaptionLength = newString.codePointCount(0, newString.length());
+          if (newCaptionLength > maxLength) {
+            showBottomHint(Lang.pluralBold(R.string.EditMessageCaptionTooLong, newCaptionLength - maxLength), true);
+            return;
+          }
           tdlib.editMessageCaption(editingMessage.chatId, editingMessage.id, newText);
         }
         break;

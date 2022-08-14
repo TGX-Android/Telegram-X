@@ -2025,6 +2025,10 @@
   <string name="PaintModeArrow">Arrow</string>
   <string name="PaintModeRect">Rectangle</string>
   <string name="PaintModeFill">Fill color</string>
+  <string name="EditMessageTextTooLong_one">Text exceeds the limit by %1$s character.</string>
+  <string name="EditMessageTextTooLong_other">Text exceeds the limit by %1$s characters.</string>
+  <string name="EditMessageCaptionTooLong_one">Caption exceeds the limit by %1$s character.</string>
+  <string name="EditMessageCaptionTooLong_other">Caption exceeds the limit by %1$s characters.</string>
   <string name="ChatAccessFailed">Cannot access this chat</string>
   <string name="ChatAccessRestrictedGroup">You were banned in this group</string>
   <string name="ChatAccessRestrictedChannel">You were banned in this channel</string>
