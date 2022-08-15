@@ -4217,13 +4217,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     String text = b.toString().trim();
 
-    if (withReactions && msg.canBeReacted() && msg.getMessageAvailableReactions().length > 0) {
-      Options messageOptions = getOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
-      showMessageOptions(messageOptions, selectedMessage);
-    } else {
-      PopupLayout popupLayout = showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
-      patchReadReceiptsOptions(popupLayout, msg, disableViewCounter);
-    }
+    msg.checkMessageFlags(() -> {
+      msg.checkAvailableReactions(() -> {
+        if (withReactions && msg.canBeReacted() && msg.getMessageAvailableReactions().length > 0) {
+          Options messageOptions = getOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
+          showMessageOptions(messageOptions, selectedMessage);
+        } else {
+          PopupLayout popupLayout = showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
+          patchReadReceiptsOptions(popupLayout, msg, disableViewCounter);
+        }
+      });
+    });
   }
 
 
@@ -4235,13 +4239,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     showMessageOptions(null, message, reaction);
   }
 
-  public void showMessageOptions (Options options, TGMessage message, String reaction) {
-    message.checkMessageFlags(() -> {
-      message.checkAvailableReactions(() -> {
-        MessageOptionsPagerController r = new MessageOptionsPagerController(context, tdlib, options, message, reaction);
-        r.show();
-      });
-    });
+  private void showMessageOptions (Options options, TGMessage message, String reaction) {
+    MessageOptionsPagerController r = new MessageOptionsPagerController(context, tdlib, options, message, reaction);
+    r.show();
   }
 
   private void patchReadReceiptsOptions (PopupLayout layout, TGMessage message, boolean disableViewCounter) {

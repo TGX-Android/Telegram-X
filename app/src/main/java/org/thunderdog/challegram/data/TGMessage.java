@@ -297,13 +297,15 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
       @Override
       public void onLongClick(View v, TGReactions.MessageReactionEntry entry) {
-        checkMessageFlags(() -> {
-          if (canGetAddedReactions()) {
-            MessagesController m = messagesController();
-            m.showMessageAddedReactions(TGMessage.this, entry.getReaction());
-          } else {
-            showReactionBubbleTooltip(v, entry, Lang.getString(R.string.ChannelReactionsAnonymous));
-          }
+        checkAvailableReactions(() -> {
+          checkMessageFlags(() -> {
+            if (canGetAddedReactions()) {
+              MessagesController m = messagesController();
+              m.showMessageAddedReactions(TGMessage.this, entry.getReaction());
+            } else {
+              showReactionBubbleTooltip(v, entry, Lang.getString(R.string.ChannelReactionsAnonymous));
+            }
+          });
         });
       }
     });
@@ -434,7 +436,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       startHotTimer(false);
     }
 
-    checkAvailableReactions();
     computeQuickButtons();
   }
 
@@ -4039,7 +4040,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       }
       rebuildAndUpdateContent();
     }
-    checkAvailableReactions();
     computeQuickButtons();
     return true;
   }
@@ -4081,7 +4081,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         TdApi.Message message = combinedMessages.remove(index);
         if (index == combinedMessages.size() && index > 0) {
           msg = combinedMessages.get(index - 1);
-          checkAvailableReactions();
           computeQuickButtons();
         }
         if (combinedMessages.isEmpty()) {
@@ -4911,7 +4910,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       // }
     }
 
-    checkAvailableReactions();
     computeQuickButtons();
     return replaceRequired ? MESSAGE_REPLACE_REQUIRED : getHeight() == oldHeight ? MESSAGE_INVALIDATED : MESSAGE_CHANGED;
   }
@@ -7718,10 +7716,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   //
-
-  public final void checkAvailableReactions () {
-    checkAvailableReactions(() -> {});
-  }
 
   public final void checkAvailableReactions (Runnable r) {
     tdlib().client().send(new TdApi.GetMessageAvailableReactions(msg.chatId, getSmallestId()), (TdApi.Object object) -> {
