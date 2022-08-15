@@ -291,7 +291,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         boolean needAnimation = messageReactions.sendReaction(entry.getReaction(), false, handler(v, entry, () -> {}));
         if (needAnimation) {
           scheduleSetReactionAnimation(new NextReactionAnimation(entry.getTGReaction(), NextReactionAnimation.TYPE_CLICK));
-          //startReactionBubbleAnimation(entry.getReaction());
         }
       }
 
@@ -4418,7 +4417,6 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (containsUnreadReactions()) {
       if (!BitwiseUtils.getFlag(flags, FLAG_IGNORE_REACTIONS_VIEW)) {
         highlightUnreadReactions();
-        highlightUnreadReactionsIfNeeded();
         highlight(true);
         tdlib.ui().postDelayed(() -> {
           flags = BitwiseUtils.setFlag(flags, FLAG_IGNORE_REACTIONS_VIEW, false);
@@ -8139,10 +8137,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
 
-
+  private boolean readyHighlightUnreadReactions = false;
   private void highlightUnreadReactionsIfNeeded () {
-    if (needHighlightUnreadReactions) {
+    if (readyHighlightUnreadReactions) {
       highlightUnreadReactionsImpl();
+      readyHighlightUnreadReactions = false;
+    } else if (needHighlightUnreadReactions) {
+      readyHighlightUnreadReactions = true;
+      invalidate();
     }
   }
 
