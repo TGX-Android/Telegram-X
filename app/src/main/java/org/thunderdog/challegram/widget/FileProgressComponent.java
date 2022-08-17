@@ -524,6 +524,8 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
       if (c != null && c.tdlib() == tdlib) {
         tdlib.files().downloadFile(file, TdlibFilesManager.DEFAULT_DOWNLOAD_PRIORITY, 0, 0, result -> {
           c.runOnUiThreadOptional(() -> {
+            if (isDestroyed)
+              return;
             switch (result.getConstructor()) {
               case TdApi.File.CONSTRUCTOR: {
                 if (TD.isFileLoaded(((TdApi.File) result))) {

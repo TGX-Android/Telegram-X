@@ -6980,7 +6980,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         switch (event.event.action.getConstructor()) {
           case TdApi.ChatEventMemberJoined.CONSTRUCTOR: {
             final long userId = Td.getSenderUserId(event.event.memberId);
-            content = new TdApi.MessageChatAddMembers(new long[]{userId});
+            content = new TdApi.MessageChatAddMembers(new long[] {userId});
             break;
           }
           case TdApi.ChatEventMemberLeft.CONSTRUCTOR: {
@@ -7011,6 +7011,36 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
             }
             break;
           }
+          case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
+          case TdApi.ChatEventDescriptionChanged.CONSTRUCTOR:
+          case TdApi.ChatEventHasProtectedContentToggled.CONSTRUCTOR:
+          case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
+          case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR:
+          case TdApi.ChatEventInviteLinkRevoked.CONSTRUCTOR:
+          case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
+          case TdApi.ChatEventIsAllHistoryAvailableToggled.CONSTRUCTOR:
+          case TdApi.ChatEventLinkedChatChanged.CONSTRUCTOR:
+          case TdApi.ChatEventLocationChanged.CONSTRUCTOR:
+          case TdApi.ChatEventMemberInvited.CONSTRUCTOR:
+          case TdApi.ChatEventMemberJoinedByInviteLink.CONSTRUCTOR:
+          case TdApi.ChatEventMemberJoinedByRequest.CONSTRUCTOR:
+          case TdApi.ChatEventMemberPromoted.CONSTRUCTOR:
+          case TdApi.ChatEventMemberRestricted.CONSTRUCTOR:
+          case TdApi.ChatEventMessageDeleted.CONSTRUCTOR:
+          case TdApi.ChatEventMessageEdited.CONSTRUCTOR:
+          case TdApi.ChatEventMessagePinned.CONSTRUCTOR:
+          case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
+          case TdApi.ChatEventPermissionsChanged.CONSTRUCTOR:
+          case TdApi.ChatEventPollStopped.CONSTRUCTOR:
+          case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
+          case TdApi.ChatEventSlowModeDelayChanged.CONSTRUCTOR:
+          case TdApi.ChatEventStickerSetChanged.CONSTRUCTOR:
+          case TdApi.ChatEventUsernameChanged.CONSTRUCTOR:
+          case TdApi.ChatEventVideoChatMuteNewParticipantsToggled.CONSTRUCTOR:
+          case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
+          case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
+            // No native message interpretation.
+            break;
         }
       }
 
@@ -7036,7 +7066,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
                 if (!StringUtils.isEmpty(e.oldUsername)) {
                   String link = TD.getLink(e.oldUsername);
-                  parsedMessage.setFooter(Lang.getString(R.string.EventLogPreviousLink), link, new TdApi.TextEntity[]{new TdApi.TextEntity(0, link.length(), new TdApi.TextEntityTypeUrl())});
+                  parsedMessage.setFooter(Lang.getString(R.string.EventLogPreviousLink), link, new TdApi.TextEntity[] {new TdApi.TextEntity(0, link.length(), new TdApi.TextEntityTypeUrl())});
                 }
 
                 return parsedMessage;
@@ -7192,7 +7222,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                 appendRight(b, R.string.EventLogPermissionPinMessages, permissions.oldPermissions.canPinMessages, permissions.newPermissions.canPinMessages, true);
                 appendRight(b, R.string.EventLogPermissionChangeInfo, permissions.oldPermissions.canChangeInfo, permissions.newPermissions.canChangeInfo, true);
 
-                TdApi.FormattedText formattedText = new TdApi.FormattedText(b.toString().trim(), new TdApi.TextEntity[]{new TdApi.TextEntity(0, length, new TdApi.TextEntityTypeItalic())});
+                TdApi.FormattedText formattedText = new TdApi.FormattedText(b.toString().trim(), new TdApi.TextEntity[] {new TdApi.TextEntity(0, length, new TdApi.TextEntityTypeItalic())});
                 TGMessageText m = new TGMessageText(context, msg, formattedText);
                 m.setIsEventLog(event, 0);
 
@@ -7446,6 +7476,38 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
                 return m;
               }
+              case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR: {
+                // TODO
+                // changed chat reactions to %1$s
+                // Added %1$s
+                // Removed %2$s
+                break;
+              }
+              case TdApi.ChatEventHasProtectedContentToggled.CONSTRUCTOR:
+              case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
+              case TdApi.ChatEventInviteLinkRevoked.CONSTRUCTOR:
+              case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
+              case TdApi.ChatEventIsAllHistoryAvailableToggled.CONSTRUCTOR:
+              case TdApi.ChatEventLinkedChatChanged.CONSTRUCTOR:
+              case TdApi.ChatEventLocationChanged.CONSTRUCTOR:
+              case TdApi.ChatEventMemberJoined.CONSTRUCTOR:
+              case TdApi.ChatEventMemberJoinedByInviteLink.CONSTRUCTOR:
+              case TdApi.ChatEventMemberJoinedByRequest.CONSTRUCTOR:
+              case TdApi.ChatEventMemberLeft.CONSTRUCTOR:
+              case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
+              case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
+              case TdApi.ChatEventPhotoChanged.CONSTRUCTOR:
+              case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
+              case TdApi.ChatEventSlowModeDelayChanged.CONSTRUCTOR:
+              case TdApi.ChatEventStickerSetChanged.CONSTRUCTOR:
+              case TdApi.ChatEventTitleChanged.CONSTRUCTOR:
+              case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
+              case TdApi.ChatEventVideoChatEnded.CONSTRUCTOR:
+              case TdApi.ChatEventVideoChatMuteNewParticipantsToggled.CONSTRUCTOR:
+              case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
+              case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
+                // Only TGMessageChat is displayed for these events
+                break;
             }
             throw new IllegalArgumentException("unsupported: " + event.event.action);
           }

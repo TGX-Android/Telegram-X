@@ -327,6 +327,7 @@ public class SettingsController extends ViewController<Void> implements
       case TdlibNotificationManager.Status.DISABLED_SYNC:
       case TdlibNotificationManager.Status.DISABLED_APP_SYNC:
       case TdlibNotificationManager.Status.FIREBASE_MISSING:
+      case TdlibNotificationManager.Status.FIREBASE_ERROR:
         return R.string.NotificationsErrorBackground;
       case TdlibNotificationManager.Status.INTERNAL_ERROR: {
         this.problematicChatId = tdlib.settings().getLastNotificationProblematicChat();

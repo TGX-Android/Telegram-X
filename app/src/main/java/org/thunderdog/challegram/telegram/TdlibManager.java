@@ -1523,15 +1523,21 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   private int tokenState = TOKEN_STATE_NONE;
   private String tokenError;
+  private Throwable tokenFullError;
 
   private static Filter<TdlibAccount> loggedOutFilter () {
     return account -> account.isUnauthorized() && account.hasPrivateData() && !account.isService();
   }
 
-  private synchronized void setTokenState (int newState, @Nullable String error) {
+  private synchronized void setTokenState (int newState) {
+    setTokenState(newState, null, null);
+  }
+
+  private synchronized void setTokenState (int newState, @Nullable String error, @Nullable Throwable fullError) {
     if (this.tokenState != TOKEN_STATE_OK || newState == TOKEN_STATE_OK) {
       this.tokenState = newState;
       this.tokenError = error;
+      this.tokenFullError = fullError;
       for (TdlibAccount account : accountsQueue(loggedOutFilter())) {
         if (account.launch(false)) {
           account.tdlib().checkConnectionParams();
@@ -1549,6 +1555,11 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return tokenError;
   }
 
+  @Nullable
+  public Throwable getTokenFullError () {
+    return tokenFullError;
+  }
+
   private String token;
 
   public String getToken () {
@@ -1559,17 +1570,17 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     if (!StringUtils.equalsOrBothEmpty(this.token, token)) {
       Settings.instance().setDeviceToken(token);
       this.token = token;
-      setTokenState(TOKEN_STATE_OK, null);
+      setTokenState(TOKEN_STATE_OK);
       dispatchDeviceToken(token);
     }
   }
 
   public synchronized void checkDeviceToken () {
     if (BuildConfig.EXPERIMENTAL) {
-      setTokenState(TOKEN_STATE_ERROR, "Experimental build " + BuildConfig.APPLICATION_ID);
+      setTokenState(TOKEN_STATE_ERROR, "I use `" + BuildConfig.APPLICATION_ID + "` and acknowledge that notifications do not work intentionally.", null);
       return;
     }
-    setTokenState(TOKEN_STATE_INITIALIZING, null);
+    setTokenState(TOKEN_STATE_INITIALIZING);
     TdlibNotificationUtils.getDeviceToken(new TdlibNotificationUtils.RegisterCallback() {
       @Override
       public void onSuccess (TdApi.DeviceTokenFirebaseCloudMessaging token) {
@@ -1580,7 +1591,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       @Override
       public void onError (Throwable e) {
         Log.e(Log.TAG_FCM, "Failed to retrieve push token", e);
-        setTokenState(TOKEN_STATE_ERROR, StringUtils.isEmpty(e.getMessage()) ? Log.toString(e) : e.getClass().getSimpleName() + ": " + e.getMessage());
+        setTokenState(TOKEN_STATE_ERROR, StringUtils.isEmpty(e.getMessage()) ? Log.toString(e) : e.getClass().getSimpleName() + ": " + e.getMessage(), e);
       }
     });
   }
