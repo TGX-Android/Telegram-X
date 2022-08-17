@@ -1494,12 +1494,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
         TdApi.Chat chat = tdlib.chat(item.getSourceChatId());
 
-        if (item.isVideo() && !item.isGifType() && item.isLoaded()) {
-          ids.append(R.id.btn_open);
-          strings.append(R.string.OpenInExternalApp);
-        }
-
         if (item.isLoaded() && item.canBeSaved()) {
+          if (item.isVideo() && !item.isGifType()) {
+            ids.append(R.id.btn_open);
+            strings.append(R.string.OpenInExternalApp);
+          }
           ids.append(R.id.btn_saveToGallery);
           strings.append(R.string.SaveToGallery);
         }
