@@ -6111,23 +6111,25 @@ public class TdlibUi extends Handler {
           case TdApi.CanTransferOwnershipResultOk.CONSTRUCTOR:
             tdlib.client().send(new TdApi.GetPasswordState(), state -> {
               if (state.getConstructor() != TdApi.PasswordState.CONSTRUCTOR) return;
-              PasswordController controller = new PasswordController(context.context(), context.tdlib());
-              controller.setArguments(new PasswordController.Args(PasswordController.MODE_TRANSFER_OWNERSHIP_CONFIRM, (TdApi.PasswordState) state).setSuccessListener(password -> {
-                // Ask if the user REALLY wants to transfer ownership, because this operation is serious
-                context.addOneShotFocusListener(() ->
-                  context.showOptions(new ViewController.Options.Builder()
-                    .info(Strings.getTitleAndText(Lang.getString(R.string.TransferOwnershipAlert), finalAlertMessageText))
-                    .item(new ViewController.OptionItem(R.id.btn_next, Lang.getString(R.string.TransferOwnershipConfirm), ViewController.OPTION_COLOR_RED, R.drawable.templarian_baseline_account_switch_24))
-                    .cancelItem()
-                    .build(), (optionView, id) -> {
-                    if (id == R.id.btn_next) {
-                      listener.onOwnershipTransferConfirmed(password);
-                    }
-                    return true;
-                  })
-                );
-              }));
-              context.navigateTo(controller);
+              post(() -> {
+                PasswordController controller = new PasswordController(context.context(), context.tdlib());
+                controller.setArguments(new PasswordController.Args(PasswordController.MODE_TRANSFER_OWNERSHIP_CONFIRM, (TdApi.PasswordState) state).setSuccessListener(password -> {
+                  // Ask if the user REALLY wants to transfer ownership, because this operation is serious
+                  context.addOneShotFocusListener(() ->
+                    context.showOptions(new ViewController.Options.Builder()
+                      .info(Strings.getTitleAndText(Lang.getString(R.string.TransferOwnershipAlert), finalAlertMessageText))
+                      .item(new ViewController.OptionItem(R.id.btn_next, Lang.getString(R.string.TransferOwnershipConfirm), ViewController.OPTION_COLOR_RED, R.drawable.templarian_baseline_account_switch_24))
+                      .cancelItem()
+                      .build(), (optionView, id) -> {
+                      if (id == R.id.btn_next) {
+                        listener.onOwnershipTransferConfirmed(password);
+                      }
+                      return true;
+                    })
+                  );
+                }));
+                context.navigateTo(controller);
+              });
             });
             break;
           case TdApi.CanTransferOwnershipResultPasswordNeeded.CONSTRUCTOR:
