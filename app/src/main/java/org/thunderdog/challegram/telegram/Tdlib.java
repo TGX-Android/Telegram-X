@@ -6343,6 +6343,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   @TdlibThread
   private void updateChatState (TdApi.Chat chat) {
+    boolean notificationSettingsChanged;
     synchronized (dataLock) {
       TdApi.Chat existingChat = chats.get(chat.id);
       if (TdlibUtils.assertChat(chat.id, chat)) {
@@ -6351,6 +6352,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       existingChat.canBeDeletedForAllUsers = chat.canBeDeletedForAllUsers;
       existingChat.canBeDeletedOnlyForSelf = chat.canBeDeletedOnlyForSelf;
       existingChat.canBeReported = chat.canBeReported;
+      notificationSettingsChanged = !existingChat.notificationSettings.useDefaultMuteFor && !chat.notificationSettings.useDefaultMuteFor && existingChat.notificationSettings.muteFor != chat.notificationSettings.muteFor;
+    }
+    if (notificationSettingsChanged) {
+      listeners.updateNotificationSettings(new TdApi.UpdateChatNotificationSettings(chat.id, chat.notificationSettings));
     }
   }
 
