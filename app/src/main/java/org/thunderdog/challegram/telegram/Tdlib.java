@@ -6326,6 +6326,34 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  public void refreshChatState (long chatId) {
+    client().send(new TdApi.GetChat(chatId), result -> {
+      switch (result.getConstructor()) {
+        case TdApi.Chat.CONSTRUCTOR: {
+          updateChatState((TdApi.Chat) result);
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          Log.v("Unable to refresh chat state: %s", TD.toErrorString(result));
+          break;
+        }
+      }
+    });
+  }
+
+  @TdlibThread
+  private void updateChatState (TdApi.Chat chat) {
+    synchronized (dataLock) {
+      TdApi.Chat existingChat = chats.get(chat.id);
+      if (TdlibUtils.assertChat(chat.id, chat)) {
+        return;
+      }
+      existingChat.canBeDeletedForAllUsers = chat.canBeDeletedForAllUsers;
+      existingChat.canBeDeletedOnlyForSelf = chat.canBeDeletedOnlyForSelf;
+      existingChat.canBeReported = chat.canBeReported;
+    }
+  }
+
   @TdlibThread
   private void updateChatDefaultDisableNotifications (TdApi.UpdateChatDefaultDisableNotification update) {
     synchronized (dataLock) {
@@ -7959,7 +7987,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         break;
       }
       case TdApi.UpdateBasicGroupFullInfo.CONSTRUCTOR: {
-        cache.onUpdateBasicGroupFull((TdApi.UpdateBasicGroupFullInfo) update);
+        TdApi.UpdateBasicGroupFullInfo updateBasicGroupFullInfo = (TdApi.UpdateBasicGroupFullInfo) update;
+        cache.onUpdateBasicGroupFull(updateBasicGroupFullInfo);
+        refreshChatState(ChatId.fromBasicGroupId(updateBasicGroupFullInfo.basicGroupId));
         break;
       }
 
@@ -7969,7 +7999,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         break;
       }
       case TdApi.UpdateSupergroupFullInfo.CONSTRUCTOR: {
-        cache.onUpdateSupergroupFull((TdApi.UpdateSupergroupFullInfo) update);
+        TdApi.UpdateSupergroupFullInfo updateSupergroupFullInfo = (TdApi.UpdateSupergroupFullInfo) update;
+        cache.onUpdateSupergroupFull(updateSupergroupFullInfo);
+        refreshChatState(ChatId.fromSupergroupId(updateSupergroupFullInfo.supergroupId));
         break;
       }
 
