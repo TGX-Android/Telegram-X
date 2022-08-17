@@ -548,7 +548,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           StringList strings = new StringList(count);
           if (canDestroyChat()) {
             ids.append(R.id.btn_destroyChat);
-            strings.append(supergroup.isChannel ? R.string.DestroyChannel : R.string.DestroyGroup);
+            strings.append(isChannel() ? R.string.DestroyChannel : R.string.DestroyGroup);
           }
           showMore(ids.get(), strings.get(), 0);
         }
@@ -685,7 +685,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
     switch (mode) {
       case MODE_EDIT_CHANNEL:
-      case MODE_EDIT_SUPERGROUP: {
+      case MODE_EDIT_SUPERGROUP:
+      case MODE_EDIT_GROUP: {
         switch (id) {
           case R.id.btn_destroyChat: {
             destroyChat();
@@ -4367,7 +4368,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         if (id == R.id.btn_destroyChat) {
           showOptions(Lang.getString(isChannel ? R.string.DestroyChannelHint : R.string.DestroyGroupHint),
             new int[] {R.id.btn_destroyChat, R.id.btn_cancel},
-            new String[] {Lang.getString(supergroup.isChannel ? R.string.DestroyChannel : R.string.DestroyGroup), Lang.getString(R.string.Cancel)},
+            new String[] {Lang.getString(isChannel ? R.string.DestroyChannel : R.string.DestroyGroup), Lang.getString(R.string.Cancel)},
             new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL},
             new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
             if (resultId == R.id.btn_destroyChat) {
