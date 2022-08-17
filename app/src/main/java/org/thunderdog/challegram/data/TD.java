@@ -2748,6 +2748,11 @@ public class TD {
       if (sliceSize == 1) {
         functions.add(new TdApi.SendMessage(chatId, messageThreadId, functions.isEmpty() ? replyToMessageId : 0, options, null, slice[0]));
       } else {
+        for (TdApi.InputMessageContent inputContent : slice) {
+          if (inputContent.getConstructor() == TdApi.InputMessageDocument.CONSTRUCTOR) {
+            ((TdApi.InputMessageDocument) inputContent).disableContentTypeDetection = true;
+          }
+        }
         functions.add(new TdApi.SendMessageAlbum(chatId, messageThreadId, functions.isEmpty() ? replyToMessageId : 0, options, slice, false));
       }
 
