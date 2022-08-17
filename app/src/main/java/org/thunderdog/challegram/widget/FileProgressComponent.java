@@ -121,7 +121,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   private @Nullable String mimeType;
   private boolean invalidateContentReceiver;
   private boolean useGenerationProgress;
-  private boolean isDownloaded;
+  private boolean isDownloaded, isDestroyed;
   private int flags;
 
   private int backgroundColor;
@@ -510,9 +510,9 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   // File opening
 
   private boolean openFile () {
-    if (mimeType == null)
+    if (mimeType == null || file == null || fileType != TdlibFilesManager.DOWNLOAD_FLAG_FILE)
       return false;
-    ViewController<?> c = UI.getCurrentStackItem(context);
+    ViewController<?> c = context.navigation().getCurrentStackItem();
     if (c == null)
       return false;
     Runnable after = () -> U.openFile(c, U.getFileName(file.local.path), new File(file.local.path), mimeType, 0);
@@ -522,11 +522,27 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   public boolean openFile (ViewController<?> c, Runnable defaultOpen) {
     if (file != null && fileType == TdlibFilesManager.DOWNLOAD_FLAG_FILE) {
       if (c != null && c.tdlib() == tdlib) {
-        if ((flags & FLAG_THEME) != 0) {
-          c.tdlib().ui().readCustomTheme(c, file, null, defaultOpen);
-        } else {
-          defaultOpen.run();
-        }
+        tdlib.files().downloadFile(file, TdlibFilesManager.DEFAULT_DOWNLOAD_PRIORITY, 0, 0, result -> {
+          c.runOnUiThreadOptional(() -> {
+            switch (result.getConstructor()) {
+              case TdApi.File.CONSTRUCTOR: {
+                if (TD.isFileLoaded(((TdApi.File) result))) {
+                  if (BitwiseUtils.getFlag(flags, FLAG_THEME)) {
+                    c.tdlib().ui().readCustomTheme(c, file, null, defaultOpen);
+                  } else {
+                    defaultOpen.run();
+                  }
+                }
+                break;
+              }
+              case TdApi.Error.CONSTRUCTOR: {
+                // TODO show tooltip instead
+                UI.showError(result);
+                break;
+              }
+            }
+          });
+        });
       }
       return true;
     }
@@ -1540,6 +1556,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
 
   @Override
   public void performDestroy () {
+    isDestroyed = true;
     if (file != null) {
       tdlib.files().unsubscribe(file.id, this);
     }

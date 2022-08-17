@@ -509,8 +509,10 @@ public class TdlibFilesManager implements GlobalConnectionListener {
   }
 
   public void downloadFile (@NonNull TdApi.File file) {
-    downloadFile(file, 1, 0, 0, null);
+    downloadFile(file, DEFAULT_DOWNLOAD_PRIORITY, 0, 0, null);
   }
+
+  public static final int DEFAULT_DOWNLOAD_PRIORITY = 1;
 
   // Cancellation
 
@@ -599,9 +601,14 @@ public class TdlibFilesManager implements GlobalConnectionListener {
     synchronized (this) {
       int pendingOperation = pendingOperations.get(update.file.id);
 
-      if (pendingOperation != OPERATION_NONE && !update.file.remote.isUploadingActive && !update.file.local.isDownloadingActive && !update.file.remote.isUploadingCompleted && !update.file.local.isDownloadingCompleted) {
-        removePendingOperation(update.file.id);
-        notifyFileState(update.file.id, STATE_PAUSED, null);
+      if (pendingOperation != OPERATION_NONE) {
+        if (!update.file.remote.isUploadingActive && !update.file.local.isDownloadingActive && !update.file.remote.isUploadingCompleted && !update.file.local.isDownloadingCompleted) {
+          removePendingOperation(update.file.id);
+          notifyFileState(update.file.id, STATE_PAUSED, null);
+        }
+      } else if (update.file.local.isDownloadingActive) {
+        pendingOperations.put(update.file.id, OPERATION_DOWNLOAD);
+        notifyFileState(update.file.id, STATE_IN_PROGRESS, null);
       }
 
       final Iterator<SimpleListener> list = simpleListeners.iterator(update.file.id);
