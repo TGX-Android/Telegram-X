@@ -5122,33 +5122,44 @@ public class TD {
     return -1;
   }
 
-  public static List<TdApi.SendMessage> sendTextMessage (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions sendOptions, @NonNull TdApi.InputMessageContent content, int maxLength) {
+  public static List<TdApi.SendMessage> sendTextMessage (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions sendOptions, @NonNull TdApi.InputMessageContent content, int maxCodePointCount) {
     if (content.getConstructor() != TdApi.InputMessageText.CONSTRUCTOR) {
       return Collections.singletonList(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, sendOptions, null, content));
     }
     TdApi.InputMessageText textContent = (TdApi.InputMessageText) content;
     TdApi.FormattedText text = textContent.text;
-    int textLength = text.text.length();
+    final int codePointCount = text.text.codePointCount(0, text.text.length());
     List<TdApi.SendMessage> list = new ArrayList<>();
-    if (textLength <= maxLength) {
+    if (codePointCount <= maxCodePointCount) {
       // Nothing to split, send as is
       list.add(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, sendOptions, null, textContent));
       return list;
     }
-    int startIndex = 0;
-    while (startIndex < textLength) {
-      int length = Math.min(maxLength, textLength - startIndex);
-      int endIndex = startIndex + length;
-      if (length == maxLength) {
-        int lastSplitterIndex = Text.lastIndexOfSplitter(text.text, endIndex - length / 4 /*look only within the last quarter of the text*/, endIndex, null);
-        if (lastSplitterIndex != -1 && lastSplitterIndex > startIndex && lastSplitterIndex < endIndex) {
-          endIndex = lastSplitterIndex;
+    final int textLength = text.text.length();
+    int start = 0, end = 0;
+    int currentCodePointCount = 0;
+    while (start < textLength) {
+      final int codePoint = text.text.codePointAt(end);
+      currentCodePointCount++;
+      end += Character.charCount(codePoint);
+      if (currentCodePointCount == maxCodePointCount || end == textLength) {
+        TdApi.FormattedText substring;
+        if (!Text.isSplitterCodePoint(codePoint, true)) {
+          // Find any splitter code point withing the last 25% of the start ... index
+          // to avoid breaking words
+          int betterEnd = Text.lastIndexOfSplitter(text.text, end - (end - start) / 4, end, null);
+          if (betterEnd != -1) {
+            end = betterEnd;
+          }
         }
+        // Send chunk between start ... index
+        substring = Td.substring(text, start, end);
+        boolean first = list.isEmpty();
+        list.add(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, sendOptions, null, new TdApi.InputMessageText(substring, first && textContent.disableWebPagePreview, first && textContent.clearDraft)));
+        // Reset loop state
+        start = end;
+        currentCodePointCount = 0;
       }
-      TdApi.FormattedText substring = Td.substring(text, startIndex, endIndex);
-      boolean first = startIndex == 0;
-      list.add(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, sendOptions, null, new TdApi.InputMessageText(substring, first && textContent.disableWebPagePreview, first && textContent.clearDraft)));
-      startIndex += length;
     }
     return list;
   }
