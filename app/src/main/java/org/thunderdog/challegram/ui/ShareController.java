@@ -2907,11 +2907,11 @@ public class ShareController extends TelegramViewController<ShareController.Args
       }
       TdApi.MessageSendOptions sendOptions = ChatId.isSecret(chatId) ? secretSendOptions : cloudSendOptions;
       if (hasComment) {
-        functions.add(new TdApi.SendMessage(chatId, 0, 0, sendOptions, null, new TdApi.InputMessageText(comment, false, false)));
+        functions.addAll(TD.sendMessageText(chatId, 0, 0, sendOptions, new TdApi.InputMessageText(comment, false, false), tdlib.maxMessageTextLength()));
       }
       switch (mode) {
         case MODE_TEXT: {
-          functions.add(new TdApi.SendMessage(chatId, 0, 0, sendOptions, null, new TdApi.InputMessageText(args.text, false, false)));
+          functions.addAll(TD.sendMessageText(chatId, 0, 0, sendOptions, new TdApi.InputMessageText(args.text, false, false), tdlib.maxMessageTextLength()));
           break;
         }
         case MODE_MESSAGES: {
@@ -2940,7 +2940,11 @@ public class ShareController extends TelegramViewController<ShareController.Args
           break;
         }
         case MODE_CUSTOM_CONTENT: {
-          functions.add(new TdApi.SendMessage(chatId, 0, 0, sendOptions, null, args.customContent));
+          if (args.customContent.getConstructor() == TdApi.InputMessageText.CONSTRUCTOR) {
+            functions.addAll(TD.sendMessageText(chatId, 0,0, sendOptions, args.customContent, tdlib.maxMessageTextLength()));
+          } else {
+            functions.add(new TdApi.SendMessage(chatId, 0, 0, sendOptions, null, args.customContent));
+          }
           break;
         }
         case MODE_TELEGRAM_FILES: {

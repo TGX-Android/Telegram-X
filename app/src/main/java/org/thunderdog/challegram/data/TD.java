@@ -5122,17 +5122,26 @@ public class TD {
     return -1;
   }
 
-  public static List<TdApi.SendMessage> sendTextMessage (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions sendOptions, @NonNull TdApi.InputMessageContent content, int maxCodePointCount) {
+  public static List<TdApi.SendMessage> sendMessageText (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions sendOptions, @NonNull TdApi.InputMessageContent content, int maxCodePointCount) {
+    List<TdApi.InputMessageContent> list = explodeText(content, maxCodePointCount);
+    List<TdApi.SendMessage> result = new ArrayList<>(list.size());
+    for (TdApi.InputMessageContent item : list) {
+      result.add(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, sendOptions, null, item));
+    }
+    return result;
+  }
+
+  public static List<TdApi.InputMessageContent> explodeText (@NonNull TdApi.InputMessageContent content, int maxCodePointCount) {
     if (content.getConstructor() != TdApi.InputMessageText.CONSTRUCTOR) {
-      return Collections.singletonList(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, sendOptions, null, content));
+      return Collections.singletonList(content);
     }
     TdApi.InputMessageText textContent = (TdApi.InputMessageText) content;
     TdApi.FormattedText text = textContent.text;
     final int codePointCount = text.text.codePointCount(0, text.text.length());
-    List<TdApi.SendMessage> list = new ArrayList<>();
+    List<TdApi.InputMessageContent> list = new ArrayList<>();
     if (codePointCount <= maxCodePointCount) {
       // Nothing to split, send as is
-      list.add(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, sendOptions, null, textContent));
+      list.add(textContent);
       return list;
     }
     final int textLength = text.text.length();
@@ -5179,7 +5188,7 @@ public class TD {
         // Send chunk between start ... end
         substring = Td.substring(text, start, end);
         boolean first = list.isEmpty();
-        list.add(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, sendOptions, null, new TdApi.InputMessageText(substring, first && textContent.disableWebPagePreview, first && textContent.clearDraft)));
+        list.add(new TdApi.InputMessageText(substring, textContent.disableWebPagePreview, first && textContent.clearDraft));
         // Reset loop state
         start = end;
         currentCodePointCount = 0;
@@ -5187,20 +5196,6 @@ public class TD {
     }
     return list;
   }
-
-  public static int getForwardDate (TdApi.MessageForwardInfo forward) {
-    return forward.date;
-  }
-
-  /*public static String addEmoji (Emoji emoji, int stringRes, String text) {
-    if (Strings.isEmpty(text)) {
-      return stringRes != 0 ? emoji + " " + Lang.getString(stringRes) : emoji.textRepresentation;
-    } else if (text.startsWith(emoji.textRepresentation)) {
-      return text;
-    } else {
-      return emoji + " " + text;
-    }
-  }*/
 
   public static class ContentPreview {
     public final @Nullable Emoji emoji, parentEmoji;
