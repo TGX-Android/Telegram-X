@@ -30,6 +30,7 @@ public class TdlibListenersGlobal {
   private final ReferenceList<GlobalAccountListener> accountListeners = new ReferenceList<>(true);
   private final ReferenceList<GlobalCallListener> callListeners = new ReferenceList<>(true);
   private final ReferenceList<GlobalCountersListener> countersListeners = new ReferenceList<>();
+  private final ReferenceList<GlobalTokenStateListener> tokenStateListeners = new ReferenceList<>(true);
 
   /*package*/ TdlibListenersGlobal (TdlibManager context) {
     this.context = context;
@@ -43,6 +44,22 @@ public class TdlibListenersGlobal {
 
   public void removeCountersListener (GlobalCountersListener listener) {
     countersListeners.remove(listener);
+  }
+
+  // Token State
+
+  public void addTokenStateListener (GlobalTokenStateListener listener) {
+    tokenStateListeners.add(listener);
+  }
+
+  public void removeTokenStateListener (GlobalTokenStateListener listener) {
+    tokenStateListeners.remove(listener);
+  }
+
+  void notifyTokenStateChanged (int newState, @Nullable String error, @Nullable Throwable fullError) {
+    for (GlobalTokenStateListener listener : tokenStateListeners) {
+      listener.onTokenStateChanged(newState, error, fullError);
+    }
   }
 
   // Messages

@@ -1543,6 +1543,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
           account.tdlib().checkConnectionParams();
         }
       }
+      global().notifyTokenStateChanged(newState, error, fullError);
     }
   }
 

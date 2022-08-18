@@ -46,6 +46,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.GlobalAccountListener;
 import org.thunderdog.challegram.telegram.GlobalCountersListener;
+import org.thunderdog.challegram.telegram.GlobalTokenStateListener;
 import org.thunderdog.challegram.telegram.SessionListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
@@ -89,7 +90,7 @@ import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.td.ChatId;
 
-public class DrawerController extends ViewController<Void> implements View.OnClickListener, Settings.ProxyChangeListener, GlobalAccountListener, GlobalCountersListener, BaseView.CustomControllerProvider, BaseView.ActionListProvider, View.OnLongClickListener, TdlibSettingsManager.NotificationProblemListener, TdlibOptionListener, SessionListener {
+public class DrawerController extends ViewController<Void> implements View.OnClickListener, Settings.ProxyChangeListener, GlobalAccountListener, GlobalCountersListener, BaseView.CustomControllerProvider, BaseView.ActionListProvider, View.OnLongClickListener, TdlibSettingsManager.NotificationProblemListener, TdlibOptionListener, SessionListener, GlobalTokenStateListener {
   private int currentWidth, shadowWidth;
 
   private boolean isVisible;
@@ -178,24 +179,25 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   }
 
   @Override
+  public void onTokenStateChanged (int newState, @Nullable String error, @Nullable Throwable fullError) {
+    checkSettingsError();
+  }
+
+  @Override
   public void onNotificationProblemsAvailabilityChanged (Tdlib tdlib, boolean available) {
-    tdlib.ui().post(() -> {
-      if (!isDestroyed()) {
-        checkSettingsError();
-      }
-    });
+    checkSettingsError();
   }
 
   @Override
   public void onSuggestedActionsChanged (TdApi.SuggestedAction[] addedActions, TdApi.SuggestedAction[] removedActions) {
-    context.currentTdlib().ui().post(() -> {
-      if (!isDestroyed()) {
-        checkSettingsError();
-      }
-    });
+    checkSettingsError();
   }
 
   public void checkSettingsError () {
+    if (!UI.inUiThread()) {
+      runOnUiThreadOptional(this::checkSettingsError);
+      return;
+    }
     int settingsErrorIcon = getSettingsErrorIcon();
     if (this.settingsErrorIcon != settingsErrorIcon) {
       this.settingsErrorIcon = settingsErrorIcon;
@@ -499,6 +501,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     Settings.instance().addProxyListener(this);
     TdlibManager.instance().global().addAccountListener(this);
     TdlibManager.instance().global().addCountersListener(this);
+    TdlibManager.instance().global().addTokenStateListener(this);
 
     return contentView;
   }
@@ -513,6 +516,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     Settings.instance().removeProxyListener(this);
     TdlibManager.instance().global().removeAccountListener(this);
     TdlibManager.instance().global().removeCountersListener(this);
+    TdlibManager.instance().global().removeTokenStateListener(this);
   }
 
   @Override

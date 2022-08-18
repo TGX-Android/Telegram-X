@@ -57,6 +57,7 @@ import org.thunderdog.challegram.navigation.MoreDelegate;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.sync.SyncAdapter;
+import org.thunderdog.challegram.telegram.GlobalTokenStateListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
@@ -97,7 +98,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   ViewController.SettingsIntDelegate,
   ViewController.SettingsStringDelegate,
   NotificationSettingsListener, TdlibOptionListener, ActivityResultHandler,
-  PopupLayout.DismissListener, MoreDelegate, TdlibSettingsManager.NotificationProblemListener {
+  PopupLayout.DismissListener, MoreDelegate, TdlibSettingsManager.NotificationProblemListener, GlobalTokenStateListener {
   public static class Args {
     public final long chatId;
     public final TdApi.NotificationSettingsScope scope;
@@ -363,6 +364,12 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         return R.drawable.baseline_system_update_24;
       case TdlibNotificationManager.Status.FIREBASE_ERROR:
         return R.drawable.baseline_bug_report_24;
+      case TdlibNotificationManager.Status.ACCOUNT_NOT_SELECTED:
+      case TdlibNotificationManager.Status.BLOCKED_ALL:
+      case TdlibNotificationManager.Status.BLOCKED_CATEGORY:
+      case TdlibNotificationManager.Status.INTERNAL_ERROR:
+      case TdlibNotificationManager.Status.NOT_BLOCKED:
+        break;
     }
     return R.drawable.baseline_notification_important_24;
   }
@@ -378,6 +385,11 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       case TdlibNotificationManager.Status.INTERNAL_ERROR:
       case TdlibNotificationManager.Status.FIREBASE_ERROR:
         return R.string.ShareNotificationError;
+      case TdlibNotificationManager.Status.ACCOUNT_NOT_SELECTED:
+      case TdlibNotificationManager.Status.BLOCKED_ALL:
+      case TdlibNotificationManager.Status.BLOCKED_CATEGORY:
+      case TdlibNotificationManager.Status.NOT_BLOCKED:
+        break;
     }
     return R.string.SystemNotificationSettings;
   }
@@ -415,6 +427,9 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         guideRes = R.string.NotificationsGuideError;
         break;
       }
+      case TdlibNotificationManager.Status.ACCOUNT_NOT_SELECTED:
+      case TdlibNotificationManager.Status.NOT_BLOCKED:
+        break;
     }
     CharSequence text = Lang.getMarkdownString(this, guideRes);
     if (guideRes == R.string.NotificationsGuideBlockedCategory) {
@@ -1292,6 +1307,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
 
     tdlib.listeners().subscribeToSettingsUpdates(this);
     tdlib.settings().addNotificationProblemAvailabilityChangeListener(this);
+    tdlib.context().global().addTokenStateListener(this);
 
     if (isCommonScreen()) {
       tdlib.listeners().addOptionsListener(this);
@@ -2247,6 +2263,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     stopSounds();
     tdlib.listeners().unsubscribeFromSettingsUpdates(this);
     tdlib.settings().removeNotificationProblemAvailabilityChangeListener(this);
+    tdlib.context().global().removeTokenStateListener(this);
     if (isCommonScreen()) {
       tdlib.listeners().removeOptionListener(this);
     }
@@ -2463,10 +2480,11 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
 
   @Override
   public void onNotificationProblemsAvailabilityChanged (Tdlib tdlib, boolean available) {
-    tdlib.ui().post(() -> {
-      if (!isDestroyed()) {
-        checkInErrorMode();
-      }
-    });
+    runOnUiThreadOptional(this::checkInErrorMode);
+  }
+
+  @Override
+  public void onTokenStateChanged (int newState, @Nullable String error, @Nullable Throwable fullError) {
+    runOnUiThreadOptional(this::checkInErrorMode);
   }
 }
