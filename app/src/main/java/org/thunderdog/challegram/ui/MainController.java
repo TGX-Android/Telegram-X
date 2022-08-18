@@ -1341,7 +1341,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
       // If sendingText still unused, then add it to the beginning of send queue
       if (!StringUtils.isEmpty(sendingText)) {
-        out.add(0, new TdApi.InputMessageText(new TdApi.FormattedText(sendingText, null), false, false));
+        out.addAll(0, TD.explodeText(new TdApi.InputMessageText(new TdApi.FormattedText(sendingText, null), false, false), tdlib.maxMessageTextLength()));
       }
     }
     shareContents(tdlib, type, out, false);
@@ -1356,7 +1356,8 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       }
     }
     String subject = intent.getStringExtra(Intent.EXTRA_SUBJECT);
-    return getShareText(subject, text);
+    String result = getShareText(subject, text);
+    return result != null ? result.trim() : null;
   }
 
   private void shareIntentImplMultiple (Tdlib tdlib, Intent intent) {
@@ -1378,7 +1379,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     }
     // If sendingText still unused, then add it to the beginning of send queue
     if (!StringUtils.isEmpty(sendingText)) {
-      out.add(0, new TdApi.InputMessageText(new TdApi.FormattedText(sendingText, null), false, false));
+      out.addAll(0, TD.explodeText(new TdApi.InputMessageText(new TdApi.FormattedText(sendingText, null), false, false), tdlib.maxMessageTextLength()));
     }
 
     shareContents(tdlib, type, out, true);
@@ -1432,28 +1433,20 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       }
     }
 
-    final int captionLen = rawCaption != null ? rawCaption.trim().length() : 0;
-    final TdApi.FormattedText formattedText = captionLen > 0 ? new TdApi.FormattedText(rawCaption, null) : null;
-    final TdApi.FormattedText messageCaption = formattedText != null && captionLen <= tdlib.maxCaptionLength() ? formattedText : null;
-    final TdApi.InputMessageContent messageText = formattedText != null ? new TdApi.InputMessageText(formattedText, false, false) : null;
+    final int captionCodePointCount = rawCaption != null ? rawCaption.codePointCount(0, rawCaption.length()) : 0;
+    final TdApi.FormattedText messageCaption = captionCodePointCount > 0 && captionCodePointCount <= tdlib.maxCaptionLength() ? new TdApi.FormattedText(rawCaption, null) : null;
 
     if (!StringUtils.isEmpty(mimeType)) {
       if (mimeType.equals("image/webp")) {
         BitmapFactory.Options options = ImageReader.getImageWebpSize(filePath);
         out.add(new TdApi.InputMessageSticker(TD.createInputFile(filePath), null, options.outWidth, options.outHeight, null));
-        if (messageText != null) {
-          out.add(messageText);
-        }
         return false;
       }
 
       if (mimeType.equals("image/gif")) {
         BitmapFactory.Options options = ImageReader.getImageSize(filePath);
         out.add(new TdApi.InputMessageAnimation(TD.createInputFile(filePath), null, null, 0, options.outWidth, options.outHeight, messageCaption));
-        if (messageCaption == null && messageText != null) {
-          out.add(messageText);
-        }
-        return true;
+        return messageCaption != null;
       }
 
       if (mimeType.startsWith("image/")) {
@@ -1466,10 +1459,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
         TdApi.InputFileGenerated inputFile = PhotoGenerationInfo.newFile(filePath, rotation);
         out.add(new TdApi.InputMessagePhoto(inputFile, null, null, width, height, messageCaption, 0));
-        if (messageCaption == null && messageText != null) {
-          out.add(messageText);
-        }
-        return true;
+        return messageCaption != null;
       }
 
       if (mimeType.startsWith("video/")) {
@@ -1507,12 +1497,8 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
           U.closeRetriever(media);
 
           out.add(new TdApi.InputMessageVideo(inputVideo, null, null, duration, width, height, U.canStreamVideo(inputVideo), messageCaption, 0));
-          if (messageCaption == null && messageText != null) {
-            out.add(messageText);
-          }
+          return messageCaption != null;
         }
-
-        return true;
       }
     }
 
@@ -1520,10 +1506,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     TdApi.InputFile file = TD.createInputFile(filePath, mimeType, info);
 
     out.add(TD.toInputMessageContent(filePath, file, info, messageCaption));
-    if (messageCaption == null && messageText != null) {
-      out.add(messageText);
-    }
-    return true;
+    return messageCaption != null;
   }
 
   private void shareContents (final Tdlib tdlib, final String type, final ArrayList<TdApi.InputMessageContent> contents, boolean mergeAlbum) {

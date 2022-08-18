@@ -8715,7 +8715,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       content = new TdApi.InputMessageText(msg, !allowLinkPreview, clearInput);
     }
 
-    List<TdApi.SendMessage> functions = TD.sendTextMessage(chatId, messageThreadId, replyToMessageId, new TdApi.MessageSendOptions(disableNotification, false, false, schedule), content, tdlib.maxMessageTextLength());
+    List<TdApi.SendMessage> functions = TD.sendMessageText(chatId, messageThreadId, replyToMessageId, new TdApi.MessageSendOptions(disableNotification, false, false, schedule), content, tdlib.maxMessageTextLength());
 
     if (clearInput) {
       final int expectedCount = functions.size();
