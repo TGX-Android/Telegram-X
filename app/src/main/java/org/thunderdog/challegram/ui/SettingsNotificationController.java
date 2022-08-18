@@ -1452,6 +1452,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
               report = "#firebase_error " + tdlib.context().getTokenError();
             }
             if (!StringUtils.isEmpty(report)) {
+              report += "\n" + U.getUsefulMetadata(tdlib);
               tdlib.ui().shareText(this, report);
             }
             break;
