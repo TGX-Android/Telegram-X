@@ -1194,7 +1194,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return false;
   }
 
-  private static boolean isSplitterCodePoint (int codePoint, boolean allowWhitespace) {
+  public static boolean isSplitterCodePoint (int codePoint, boolean allowWhitespace) {
     final int codePointType = Character.getType(codePoint);
     return isSplitterCodePointType(codePoint, codePointType, allowWhitespace);
   }

@@ -359,6 +359,8 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         return R.drawable.baseline_sync_problem_24;
       case TdlibNotificationManager.Status.FIREBASE_MISSING:
         return R.drawable.baseline_system_update_24;
+      case TdlibNotificationManager.Status.FIREBASE_ERROR:
+        return R.drawable.baseline_bug_report_24;
     }
     return R.drawable.baseline_notification_important_24;
   }
@@ -372,6 +374,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       case TdlibNotificationManager.Status.FIREBASE_MISSING:
         return R.string.InstallGooglePlayServices;
       case TdlibNotificationManager.Status.INTERNAL_ERROR:
+      case TdlibNotificationManager.Status.FIREBASE_ERROR:
         return R.string.ShareNotificationError;
     }
     return R.string.SystemNotificationSettings;
@@ -396,6 +399,9 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         break;
       case TdlibNotificationManager.Status.FIREBASE_MISSING:
         guideRes = R.string.NotificationsGuideFirebaseUnavailable;
+        break;
+      case TdlibNotificationManager.Status.FIREBASE_ERROR:
+        guideRes = R.string.NotificationsGuideFirebaseError;
         break;
       case TdlibNotificationManager.Status.INTERNAL_ERROR: {
         long chatId = tdlib.settings().getLastNotificationProblematicChat();
@@ -1432,6 +1438,19 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           }
           case TdlibNotificationManager.Status.INTERNAL_ERROR: {
             String report = tdlib.settings().buildNotificationReport();
+            if (!StringUtils.isEmpty(report)) {
+              tdlib.ui().shareText(this, report);
+            }
+            break;
+          }
+          case TdlibNotificationManager.Status.FIREBASE_ERROR: {
+            Throwable fullError = tdlib.context().getTokenFullError();
+            String report;
+            if (fullError != null) {
+              report = "#firebase_error\n" + fullError.getClass().getSimpleName() + ": " + tdlib.context().getTokenError() + "\n" + Log.toString(fullError);
+            } else {
+              report = "#firebase_error " + tdlib.context().getTokenError();
+            }
             if (!StringUtils.isEmpty(report)) {
               tdlib.ui().shareText(this, report);
             }

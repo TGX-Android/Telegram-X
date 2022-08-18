@@ -156,6 +156,7 @@ import me.vkryl.android.ScrimUtil;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.android.widget.FrameLayoutFix;
@@ -1493,12 +1494,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
         TdApi.Chat chat = tdlib.chat(item.getSourceChatId());
 
-        if (item.isVideo() && !item.isGifType() && item.isLoaded()) {
-          ids.append(R.id.btn_open);
-          strings.append(R.string.OpenInExternalApp);
-        }
-
         if (item.isLoaded() && item.canBeSaved()) {
+          if (item.isVideo() && !item.isGifType()) {
+            ids.append(R.id.btn_open);
+            strings.append(R.string.OpenInExternalApp);
+          }
           ids.append(R.id.btn_saveToGallery);
           strings.append(R.string.SaveToGallery);
         }
@@ -4836,7 +4836,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         captionView.setHighlightColor(ColorUtils.alphaColor(0.2f, Theme.fillingTextSelectionColor()));
         captionView.setHighlightColor(getForcedTheme().getColor(R.id.theme_color_textSelectionHighlight));
         // addThemeHighlightColorListener(captionView, R.id.theme_color_textSelectionHighlight);
-        captionView.setFilters(new InputFilter[] {new InputFilter.LengthFilter(tdlib.maxCaptionLength())});
+        captionView.setFilters(new InputFilter[] {new CodePointCountFilter(tdlib.maxCaptionLength())});
         captionView.setIgnoreCustomStuff(false);
         captionView.getInlineSearchContext().setIsCaption(true);
         captionView.setInputListener(this);

@@ -32,6 +32,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 
+import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.android.text.RestrictFilter;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.td.TdConstants;
@@ -97,12 +98,12 @@ public class EditBioController extends EditBaseController<EditBioController.Argu
     ListItem[] items;
     if (isDescription()) {
       item.setInputFilters(new InputFilter[]{
-        new InputFilter.LengthFilter(TdConstants.MAX_CHANNEL_DESCRIPTION_LENGTH)
+        new CodePointCountFilter(TdConstants.MAX_CHANNEL_DESCRIPTION_LENGTH)
       });
       items = new ListItem[] {item};
     } else {
       item.setInputFilters(new InputFilter[]{
-        new InputFilter.LengthFilter(tdlib.maxBioLength()),
+        new CodePointCountFilter(tdlib.maxBioLength()),
         new RestrictFilter(new char[]{'\n'})
           .setListener((filter, source, start, end, index, c) -> {
           if (end - start == 1) {

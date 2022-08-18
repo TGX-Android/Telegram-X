@@ -135,6 +135,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.ColorUtils;
@@ -153,7 +154,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   ViewControllerPagerAdapter.ControllerProvider,
   ViewPager.OnPageChangeListener,
   View.OnClickListener,
-  Client.ResultHandler,
   MessageListener,
   ChatListener,
   NotificationSettingsListener,
@@ -547,7 +547,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           StringList strings = new StringList(count);
           if (canDestroyChat()) {
             ids.append(R.id.btn_destroyChat);
-            strings.append(supergroup.isChannel ? R.string.DestroyChannel : R.string.DestroyGroup);
+            strings.append(isChannel() ? R.string.DestroyChannel : R.string.DestroyGroup);
           }
           showMore(ids.get(), strings.get(), 0);
         }
@@ -684,7 +684,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
     switch (mode) {
       case MODE_EDIT_CHANNEL:
-      case MODE_EDIT_SUPERGROUP: {
+      case MODE_EDIT_SUPERGROUP:
+      case MODE_EDIT_GROUP: {
         switch (id) {
           case R.id.btn_destroyChat: {
             destroyChat();
@@ -1930,7 +1931,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     subscribeToUpdates();
 
     if (!isEditing()) {
-      tdlib.client().send(new TdApi.GetChat(chat.id), this); // For app_notification "Unmutes in"
+      // For app_notification "Unmutes in"
+      tdlib.refreshChatState(chat.id);
 
       switch (mode) {
         case MODE_USER:
@@ -1942,16 +1944,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           processGroupFull(tdlib.cache().basicGroupFull(group.id));
           break;
         }
-        case MODE_SUPERGROUP: {
-          tdlib.client().send(new TdApi.GetSupergroupMembers(supergroup.id, new TdApi.SupergroupMembersFilterRecent(), 0, Screen.calculateLoadingItems(Screen.dp(84f), 0)), this);
-          processChannelFull(tdlib.cache().supergroupFull(supergroup.id));
-          break;
-        }
+        case MODE_SUPERGROUP:
         case MODE_CHANNEL: {
           processChannelFull(tdlib.cache().supergroupFull(supergroup.id));
-          if (TD.isCreator(supergroup.status)) {
-            tdlib.client().send(new TdApi.GetSupergroupMembers(supergroup.id, new TdApi.SupergroupMembersFilterAdministrators(), 0, Screen.calculateLoadingItems(Screen.dp(84f), 0)), this);
-          }
           break;
         }
       }
@@ -2232,25 +2227,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
   }
 
-  // Result handler
-
-  @Override
-  public void onResult (final TdApi.Object object) {
-    switch (object.getConstructor()) {
-      case TdApi.Chat.CONSTRUCTOR: { // Notifications
-        tdlib.ui().post(() -> {
-          if (!isDestroyed()) {
-            baseAdapter.updateValuedSettingById(R.id.btn_notifications);
-          }
-        });
-        break;
-      }
-      case TdApi.UserFullInfo.CONSTRUCTOR: {
-        break;
-      }
-    }
-  }
-
   // Base adapter stuff
 
   private int baseHeaderItemCount;
@@ -2296,14 +2272,22 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private boolean setDescription (TdApi.FormattedText text) {
-    if (Td.isEmpty(text) && canEditDescription()) {
-      text = TD.toFormattedText(Lang.getString(R.string.Description), false);
+    if (Td.isEmpty(text)) {
+      if (canEditDescription()) {
+        text = TD.toFormattedText(Lang.getString(R.string.Description), false);
+      } else {
+        text = null;
+      }
     }
     if (this.currentAbout == null || !Td.equalsTo(this.currentAbout, text)) {
       currentAbout = text;
-      aboutWrapper = new TextWrapper(tdlib, text, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, new TdlibUi.UrlOpenParameters().sourceChat(getChatId()));
-      aboutWrapper.addTextFlags(Text.FLAG_CUSTOM_LONG_PRESS | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0));
-      aboutWrapper.prepare(getTextWidth(Screen.currentWidth()));
+      if (text != null) {
+        aboutWrapper = new TextWrapper(tdlib, text, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, new TdlibUi.UrlOpenParameters().sourceChat(getChatId()));
+        aboutWrapper.addTextFlags(Text.FLAG_CUSTOM_LONG_PRESS | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0));
+        aboutWrapper.prepare(getTextWidth(Screen.currentWidth()));
+      } else {
+        aboutWrapper = null;
+      }
       return true;
     }
     return false;
@@ -2633,7 +2617,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private String getDescriptionValue () {
     if (userFull != null) {
-      return !Td.isEmpty(userFull.bio) ? userFull.bio.text : userFull.botInfo != null && !StringUtils.isEmpty(userFull.botInfo.description) ? userFull.botInfo.description : "";
+      return !Td.isEmpty(userFull.bio) ? userFull.bio.text : userFull.botInfo != null && !StringUtils.isEmpty(userFull.botInfo.shareText) ? userFull.botInfo.shareText : "";
     }
     if (supergroupFull != null) {
       return !StringUtils.isEmpty(supergroupFull.description) ? supergroupFull.description : "";
@@ -3537,13 +3521,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       chatTitleItem = new ListItem(mode == MODE_EDIT_GROUP ? ListItem.TYPE_EDITTEXT_WITH_PHOTO : ListItem.TYPE_EDITTEXT_WITH_PHOTO_SMALLER, R.id.title, 0, mode == MODE_EDIT_CHANNEL ? R.string.ChannelName : R.string.GroupName)
         .setStringValue(chat.title)
         .setInputFilters(new InputFilter[]{
-          new InputFilter.LengthFilter(TdConstants.MAX_CHAT_TITLE_LENGTH)
+          new CodePointCountFilter(TdConstants.MAX_CHAT_TITLE_LENGTH)
         })
         .setOnEditorActionListener(new EditBaseController.SimpleEditorActionListener(EditorInfo.IME_ACTION_DONE, this));
       items.add(chatTitleItem);
 
       chatDescriptionItem = new ListItem(ListItem.TYPE_EDITTEXT_CHANNEL_DESCRIPTION, R.id.description, 0, R.string.Description).setStringValue(getDescriptionValue()).setInputFilters(new InputFilter[]{
-        new InputFilter.LengthFilter(TdConstants.MAX_CHANNEL_DESCRIPTION_LENGTH)
+        new CodePointCountFilter(TdConstants.MAX_CHANNEL_DESCRIPTION_LENGTH)
       });
       items.add(chatDescriptionItem);
 
@@ -4358,7 +4342,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         if (id == R.id.btn_destroyChat) {
           showOptions(Lang.getString(isChannel ? R.string.DestroyChannelHint : R.string.DestroyGroupHint),
             new int[] {R.id.btn_destroyChat, R.id.btn_cancel},
-            new String[] {Lang.getString(supergroup.isChannel ? R.string.DestroyChannel : R.string.DestroyGroup), Lang.getString(R.string.Cancel)},
+            new String[] {Lang.getString(isChannel ? R.string.DestroyChannel : R.string.DestroyGroup), Lang.getString(R.string.Cancel)},
             new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL},
             new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
             if (resultId == R.id.btn_destroyChat) {
@@ -5441,10 +5425,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           getMessageCount(filter, false);
         }
       } else {
-        tdlib.ui().post(() -> {
-          if (!isDestroyed()) {
-            setMediaCount(filter, count);
-          }
+        runOnUiThreadOptional(() -> {
+          setMediaCount(filter, count);
         });
       }
     });
@@ -5704,13 +5686,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   @Override
   public void onUserUpdated (final TdApi.User user) {
     if (isUserMode() && this.user != null && this.user.id == user.id) {
-      tdlib.ui().post(() -> {
-        if (!isDestroyed()) {
-          ProfileController.this.user = user;
-          updateHeader(true);
-          checkUsername();
-          checkPhone();
-        }
+      runOnUiThreadOptional(() -> {
+        ProfileController.this.user = user;
+        updateHeader(true);
+        checkUsername();
+        checkPhone();
       });
     }
   }
@@ -5863,8 +5843,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   @Override
   public void onBasicGroupUpdated (final TdApi.BasicGroup basicGroup, boolean migratedToSupergroup) {
     if (mode == MODE_GROUP || mode == MODE_EDIT_GROUP) {
-      tdlib.ui().post(() -> {
-        if (!isDestroyed() && ProfileController.this.group != null && ProfileController.this.group.id == basicGroup.id) {
+      runOnUiThreadOptional(() -> {
+        if (ProfileController.this.group != null && ProfileController.this.group.id == basicGroup.id) {
           setHeaderText();
           if (migratedToSupergroup) {
             replaceWithSupergroup(basicGroup.upgradedToSupergroupId);
@@ -5905,8 +5885,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onChatOnlineMemberCountChanged (long chatId, int onlineMemberCount) {
-    tdlib.ui().post(() -> {
-      if (!isDestroyed() && getChatId() == chatId) {
+    runOnUiThreadOptional(() -> {
+      if (getChatId() == chatId) {
         setHeaderText();
       }
     });
@@ -5917,8 +5897,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   @Override
   public void onSupergroupUpdated (final TdApi.Supergroup supergroup) {
     if (mode == MODE_CHANNEL || mode == MODE_SUPERGROUP) {
-      tdlib.ui().post(() -> {
-        if (!isDestroyed() && ProfileController.this.supergroup != null && ProfileController.this.supergroup.id == supergroup.id) {
+      runOnUiThreadOptional(() -> {
+        if (ProfileController.this.supergroup != null && ProfileController.this.supergroup.id == supergroup.id) {
           ProfileController.this.supergroup = supergroup;
           checkUsername();
           checkEasterEggs();
@@ -5926,8 +5906,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         }
       });
     } else if (mode == MODE_EDIT_CHANNEL || mode == MODE_EDIT_SUPERGROUP) {
-      tdlib.ui().post(() -> {
-        if (!isDestroyed() && ProfileController.this.supergroup != null && ProfileController.this.supergroup.id == supergroup.id) {
+      runOnUiThreadOptional(() -> {
+        if (ProfileController.this.supergroup != null && ProfileController.this.supergroup.id == supergroup.id) {
           processEditContentChanged(supergroup);
         }
       });
@@ -6042,8 +6022,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   // Notifications and mute
 
   private void invalidateChatSettings (long chatId) {
-    tdlib.ui().post(() -> {
-      if (!isDestroyed() && chat.id == chatId) {
+    runOnUiThreadOptional(() -> {
+      if (chat.id == chatId) {
         setHeaderMute(true);
         baseAdapter.updateValuedSettingById(R.id.btn_notifications);
       }
@@ -6051,8 +6031,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private void invalidateChatSettings (TdApi.NotificationSettingsScope scope) {
-    tdlib.ui().post(() -> {
-      if (!isDestroyed() && scope.getConstructor() == tdlib.notifications().scope(chat.id).getConstructor()) {
+    runOnUiThreadOptional(() -> {
+      if (scope.getConstructor() == tdlib.notifications().scope(chat.id).getConstructor()) {
         setHeaderMute(true);
         baseAdapter.updateValuedSettingById(R.id.btn_notifications);
       }
@@ -6083,8 +6063,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onChatAvailableReactionsUpdated (long chatId, String[] availableReactions) {
-    tdlib.ui().post(() -> {
-      if (!isDestroyed() && chat.id == chatId) {
+    runOnUiThreadOptional(() -> {
+      if (chat.id == chatId) {
         updateAvailableReactions();
       }
     });
@@ -6092,8 +6072,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onChatTitleChanged (final long chatId, final String title) {
-    tdlib.ui().post(() -> {
-      if (!isDestroyed() && chat.id == chatId) {
+    runOnUiThreadOptional(() -> {
+      if (chat.id == chatId) {
         updateHeader(false);
       }
     });
@@ -6101,8 +6081,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onChatPhotoChanged (final long chatId, final @Nullable TdApi.ChatPhotoInfo photo) {
-    tdlib.ui().post(() -> {
-      if (!isDestroyed() && chat.id == chatId) {
+    runOnUiThreadOptional(() -> {
+      if (chat.id == chatId) {
         setHeaderPhoto(true);
       }
     });
@@ -6110,8 +6090,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onChatPermissionsChanged (long chatId, TdApi.ChatPermissions permissions) {
-    tdlib.ui().post(() -> {
-      if (!isDestroyed() && chat.id == chatId && baseAdapter != null) {
+    runOnUiThreadOptional(() -> {
+      if (chat.id == chatId && baseAdapter != null) {
         updateValuedItem(R.id.btn_chatPermissions);
       }
     });
@@ -6175,40 +6155,16 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   @Override
   public void onNewMessage (final TdApi.Message message) {
     if (filterMediaMessage(message)) {
-      tdlib.ui().post(() -> {
-        if (!isDestroyed()) {
-          addMessage(message);
-        }
+      runOnUiThreadOptional(() -> {
+        addMessage(message);
       });
     }
   }
 
-  /*@Override
-  public void __onNewMessages (final TdApi.Message[] messages) {
-    boolean found = false;
-    for (TdApi.Message message : messages) {
-      if (filter(message)) {
-        found = true;
-        break;
-      }
-    }
-    if (found) {
-      tdlib.ui().post(() -> {
-        if (!isDestroyed()) {
-          for (TdApi.Message message : messages) {
-            if (filter(message)) {
-              addMessage(message);
-            }
-          }
-        }
-      });
-    }
-  }*/
-
   @Override
   public void onMessageSendSucceeded (final TdApi.Message message, long oldMessageId) {
-    tdlib.ui().post(() -> {
-      if (!isDestroyed() && chat.id == message.chatId) {
+    runOnUiThreadOptional(() -> {
+      if (chat.id == message.chatId) {
         addMessage(message);
       }
     });
@@ -6216,8 +6172,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onMessageSendFailed (final TdApi.Message message, final long oldMessageId, int errorCode, String errorMessage) {
-    tdlib.ui().post(() -> {
-      if (!isDestroyed() && chat.id == message.chatId) {
+    runOnUiThreadOptional(() -> {
+      if (chat.id == message.chatId) {
         removeMessages(new long[]{oldMessageId});
       }
     });
@@ -6225,8 +6181,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onMessageContentChanged (final long chatId, final long messageId, final TdApi.MessageContent newContent) {
-    tdlib.ui().post(() -> {
-      if (!isDestroyed() && chat.id == chatId) {
+    runOnUiThreadOptional(() -> {
+      if (chat.id == chatId) {
         editMessage(messageId, newContent);
       }
     });
@@ -6234,8 +6190,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onMessagesDeleted (final long chatId, final long[] messageIds) {
-    tdlib.ui().post(() -> {
-      if (!isDestroyed() && chat.id == chatId) {
+    runOnUiThreadOptional(() -> {
+      if (chat.id == chatId) {
         removeMessages(messageIds);
       }
     });

@@ -1155,7 +1155,9 @@ public class MessagesLoader implements Client.ResultHandler {
         case TdApi.ChatEventPermissionsChanged.CONSTRUCTOR:
         case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
         case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR:
+        // TODO case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
         case TdApi.ChatEventVideoChatEnded.CONSTRUCTOR: {
+          // Only full message
           m = newMessage(chatId, isChannel, event);
           m.content = new TdApiExt.MessageChatEvent(event, true, false); // new TdApi.MessageChatAddMembers(new int[] {event.userId});
           break;
@@ -1192,6 +1194,8 @@ public class MessagesLoader implements Client.ResultHandler {
         case TdApi.ChatEventMessagePinned.CONSTRUCTOR:
         case TdApi.ChatEventUsernameChanged.CONSTRUCTOR:
         case TdApi.ChatEventPollStopped.CONSTRUCTOR: {
+          // Service + full message
+
           m = newMessage(chatId, isChannel, event);
           m.content = new TdApiExt.MessageChatEvent(event, true, true);
           out.add(m);
@@ -1217,6 +1221,7 @@ public class MessagesLoader implements Client.ResultHandler {
         case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
         case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
         case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR: {
+          // Only service message
           m = newMessage(chatId, isChannel, event);
           m.content = new TdApiExt.MessageChatEvent(event, false, false);
           break;

@@ -43,6 +43,7 @@ import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
@@ -114,7 +115,7 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
     ArrayList<ListItem> items = new ArrayList<>();
     items.add(new ListItem(ListItem.TYPE_EDITTEXT, R.id.input, 0, chatId != 0 ? tdlib.tMeHost() : Lang.getString(R.string.Username), false).setStringValue(currentUsername)
       .setInputFilters(new InputFilter[] {
-        new InputFilter.LengthFilter(TdConstants.MAX_USERNAME_LENGTH),
+        new CodePointCountFilter(TdConstants.MAX_USERNAME_LENGTH),
         new TD.UsernameFilter()
       }).setOnEditorActionListener(new SimpleEditorActionListener(EditorInfo.IME_ACTION_DONE, this)));
     items.add((description = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.description, 0, genDescription(), false)

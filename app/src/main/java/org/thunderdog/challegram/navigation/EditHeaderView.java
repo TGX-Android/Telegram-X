@@ -41,6 +41,7 @@ import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.v.HeaderEditText;
 
 import me.vkryl.android.ViewUtils;
+import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.TdConstants;
@@ -84,7 +85,7 @@ public class EditHeaderView extends FrameLayoutFix implements RtlCheckListener, 
     input.addTextChangedListener(this);
     input.checkRtl();
     input.setLayoutParams(params);
-    input.setFilters(new InputFilter[] {new InputFilter.LengthFilter(TdConstants.MAX_CHAT_TITLE_LENGTH)});
+    input.setFilters(new InputFilter[] {new CodePointCountFilter(TdConstants.MAX_CHAT_TITLE_LENGTH)});
     addView(input);
   }
 

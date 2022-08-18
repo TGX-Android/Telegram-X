@@ -494,6 +494,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       case Status.DISABLED_APP_SYNC:
       case Status.DISABLED_SYNC:
       case Status.FIREBASE_MISSING:
+      case Status.FIREBASE_ERROR:
 
       case Status.INTERNAL_ERROR:
         return true;
@@ -530,7 +531,8 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     Status.DISABLED_APP_SYNC,
     Status.FIREBASE_MISSING,
     Status.INTERNAL_ERROR,
-    Status.ACCOUNT_NOT_SELECTED
+    Status.ACCOUNT_NOT_SELECTED,
+    Status.FIREBASE_ERROR
   })
   public @interface Status {
     int NOT_BLOCKED = 0;
@@ -541,6 +543,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     int FIREBASE_MISSING = 5;
     int INTERNAL_ERROR = 6;
     int ACCOUNT_NOT_SELECTED = 7;
+    int FIREBASE_ERROR = 8;
   }
 
   public @Status
@@ -569,6 +572,8 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       return Status.INTERNAL_ERROR;
     if (!tdlib.account().forceEnableNotifications() && Settings.instance().checkNotificationFlag(Settings.NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS))
       return Status.ACCOUNT_NOT_SELECTED;
+    if (tdlib.context().getTokenState() == TdlibManager.TOKEN_STATE_ERROR)
+      return Status.FIREBASE_ERROR;
     return Status.NOT_BLOCKED;
   }
 

@@ -65,6 +65,7 @@ import java.lang.reflect.Field;
 import java.util.LinkedList;
 
 import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.lambda.Destroyable;
@@ -222,10 +223,10 @@ public class Views {
     return top;
   }
 
-  public static void setLengthLimit (EditText editText, final int maxLenght) {
+  public static void setLengthLimit (EditText editText, final int maxLength, boolean calculateByCodePoints) {
     if (editText != null) {
       editText.setFilters(new InputFilter[] {
-         new InputFilter.LengthFilter(maxLenght)
+         calculateByCodePoints ? new CodePointCountFilter(maxLength) : new InputFilter.LengthFilter(maxLength)
       });
     }
   }

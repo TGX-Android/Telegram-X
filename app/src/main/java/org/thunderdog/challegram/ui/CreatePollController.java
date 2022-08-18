@@ -52,6 +52,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.android.text.RestrictFilter;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
@@ -240,7 +241,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
 
     items.add(createNewOption());
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-    items.add(addItem = new ListItem(ListItem.TYPE_EDITTEXT_POLL_OPTION_ADD, R.id.optionAdd).setInputFilters(new InputFilter[]{new InputFilter.LengthFilter(0)}));
+    items.add(addItem = new ListItem(ListItem.TYPE_EDITTEXT_POLL_OPTION_ADD, R.id.optionAdd).setInputFilters(new InputFilter[] {new CodePointCountFilter(0)}));
     decoration.addRange(items.size() - 3, items.size());
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));

@@ -40,6 +40,7 @@ import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.TdConstants;
@@ -168,8 +169,8 @@ public class EditNameController extends EditBaseController<EditNameController.Ar
         )
       );
     }
-    items.add((firstName = new ListItem(items.isEmpty() ? ListItem.TYPE_EDITTEXT : ListItem.TYPE_EDITTEXT_NO_PADDING, R.id.edit_first_name, 0, R.string.login_FirstName).setStringValue(firstNameValue).setInputFilters(new InputFilter[]{ new InputFilter.LengthFilter(TdConstants.MAX_NAME_LENGTH) })));
-    items.add((lastName = new ListItem(ListItem.TYPE_EDITTEXT_NO_PADDING, R.id.edit_last_name, 0, mode == MODE_RENAME_CONTACT || mode == MODE_ADD_CONTACT ? R.string.LastName : R.string.login_LastName).setStringValue(lastNameValue).setInputFilters(new InputFilter[] {new InputFilter.LengthFilter(TdConstants.MAX_NAME_LENGTH)}).setOnEditorActionListener(new SimpleEditorActionListener(EditorInfo.IME_ACTION_DONE, this))));
+    items.add((firstName = new ListItem(items.isEmpty() ? ListItem.TYPE_EDITTEXT : ListItem.TYPE_EDITTEXT_NO_PADDING, R.id.edit_first_name, 0, R.string.login_FirstName).setStringValue(firstNameValue).setInputFilters(new InputFilter[] {new CodePointCountFilter(TdConstants.MAX_NAME_LENGTH) })));
+    items.add((lastName = new ListItem(ListItem.TYPE_EDITTEXT_NO_PADDING, R.id.edit_last_name, 0, mode == MODE_RENAME_CONTACT || mode == MODE_ADD_CONTACT ? R.string.LastName : R.string.login_LastName).setStringValue(lastNameValue).setInputFilters(new InputFilter[] {new CodePointCountFilter(TdConstants.MAX_NAME_LENGTH)}).setOnEditorActionListener(new SimpleEditorActionListener(EditorInfo.IME_ACTION_DONE, this))));
     TdApi.TermsOfService termsOfService = mode == MODE_SIGNUP ? getArgumentsStrict().authState.termsOfService : null;
     if (termsOfService != null && termsOfService.minUserAge != 0) {
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.plural(R.string.AgeVerification, termsOfService.minUserAge), false));
