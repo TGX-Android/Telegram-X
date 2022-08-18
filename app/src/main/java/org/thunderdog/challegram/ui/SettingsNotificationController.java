@@ -383,8 +383,9 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       case TdlibNotificationManager.Status.FIREBASE_MISSING:
         return R.string.InstallGooglePlayServices;
       case TdlibNotificationManager.Status.INTERNAL_ERROR:
-      case TdlibNotificationManager.Status.FIREBASE_ERROR:
         return R.string.ShareNotificationError;
+      case TdlibNotificationManager.Status.FIREBASE_ERROR:
+        return R.string.FirebaseErrorResolve;
       case TdlibNotificationManager.Status.ACCOUNT_NOT_SELECTED:
       case TdlibNotificationManager.Status.BLOCKED_ALL:
       case TdlibNotificationManager.Status.BLOCKED_CATEGORY:
@@ -451,6 +452,8 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     return text;
   }
 
+  private int errorItemCount;
+
   private void checkInErrorMode () {
     boolean need = needErrorMode();
     if (this.inErrorMode != need) {
@@ -469,6 +472,8 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         itemsToAdd.add(errorButton = new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, getErrorIcon(status), getErrorText(status)).setTextColorId(R.id.theme_color_textNegative));
         itemsToAdd.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         itemsToAdd.add(errorHint = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, makeErrorDescription(status), false));
+        errorItemCount = itemsToAdd.size();
+
         if (viewType != ListItem.TYPE_HEADER_PADDED) {
           itemsToAdd.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
         }
@@ -482,7 +487,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         }
       } else {
         boolean keepHeader = notificationModeHint != null;
-        adapter.removeRange(0, keepHeader ? 3 : 4);
+        adapter.removeRange(0, errorItemCount + (keepHeader ? 0 : 1));
 
         int index = adapter.getItems().size();
         adapter.getItems().addAll(Arrays.asList(
@@ -1365,6 +1370,34 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     return false;
   }
 
+  private void shareTokenError () {
+    if (!tdlib.context().hasTokenError()) {
+      return;
+    }
+    Throwable fullError = tdlib.context().getTokenFullError();
+    String report;
+    if (fullError != null) {
+      report = tdlib.context().getTokenError() + "\n" + Log.toString(fullError);
+    } else {
+      report = tdlib.context().getTokenError();
+    }
+    if (!StringUtils.isEmpty(report)) {
+      report = "#firebase_error\n" +
+        report + "\n\n";
+      final String firebaseApiKey = TdlibNotificationUtils.getBuiltInFirebaseApiKey();
+      final String firebaseAppId = TdlibNotificationUtils.getBuiltInFirebaseAppId();
+      if (firebaseApiKey != null) {
+        report += "Firebase API_KEY: " + firebaseApiKey + "\n";
+      }
+      if (firebaseAppId != null) {
+        report += "Firebase APP_ID: " + firebaseAppId + "\n";
+      }
+      report += "APK fingerprint: " + U.getApkFingerprint("SHA1") + "\n";
+      report += "\n" + U.getUsefulMetadata(tdlib);
+      tdlib.ui().shareText(this, report);
+    }
+  }
+
   @Override
   public void onClick (View v) {
     final ListItem item = (ListItem) v.getTag();
@@ -1461,28 +1494,22 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
             break;
           }
           case TdlibNotificationManager.Status.FIREBASE_ERROR: {
-            Throwable fullError = tdlib.context().getTokenFullError();
-            String report;
-            if (fullError != null) {
-              report = tdlib.context().getTokenError() + "\n" + Log.toString(fullError);
-            } else {
-              report = tdlib.context().getTokenError();
-            }
-            if (!StringUtils.isEmpty(report)) {
-              report = "#firebase_error\n" +
-                report + "\n\n";
-              final String firebaseApiKey = TdlibNotificationUtils.getBuiltInFirebaseApiKey();
-              final String firebaseAppId = TdlibNotificationUtils.getBuiltInFirebaseAppId();
-              if (firebaseApiKey != null) {
-                report += "Firebase API_KEY: " + firebaseApiKey + "\n";
+            showOptions(new Options.Builder()
+              .item(new OptionItem(R.id.btn_retry, Lang.getString(R.string.FirebaseErrorResolveTryAgain), OPTION_COLOR_BLUE, R.drawable.baseline_sync_problem_24))
+              .item(new OptionItem(R.id.btn_share, Lang.getString(R.string.FirebaseErrorResolveShareError), OPTION_COLOR_NORMAL, R.drawable.baseline_forward_24))
+              .build(), (optionView, optionId) -> {
+              switch (optionId) {
+                case R.id.btn_retry: {
+                  TdlibManager.instance().checkDeviceToken();
+                  break;
+                }
+                case R.id.btn_share: {
+                  shareTokenError();
+                  break;
+                }
               }
-              if (firebaseAppId != null) {
-                report += "Firebase APP_ID: " + firebaseAppId + "\n";
-              }
-              report += "APK fingerprint: " + U.getApkFingerprint("SHA1") + "\n";
-              report += "\n" + U.getUsefulMetadata(tdlib);
-              tdlib.ui().shareText(this, report);
-            }
+              return true;
+            });
             break;
           }
           case TdlibNotificationManager.Status.FIREBASE_MISSING: {

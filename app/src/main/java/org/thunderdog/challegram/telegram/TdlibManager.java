@@ -1547,6 +1547,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }
   }
 
+  public boolean hasTokenError () {
+    return tokenState == TOKEN_STATE_ERROR;
+  }
+
   public int getTokenState () {
     return tokenState;
   }

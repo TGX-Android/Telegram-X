@@ -648,6 +648,7 @@
   <item type="id" name="btn_sendScreenshotNotification" />
   <item type="id" name="btn_debugShowHideBottomBar" />
   <item type="id" name="btn_share" />
+  <item type="id" name="btn_retry" />
   <item type="id" name="btn_editProxy" />
   <item type="id" name="share_bottom" />
   <item type="id" name="share_comment_stub" />
