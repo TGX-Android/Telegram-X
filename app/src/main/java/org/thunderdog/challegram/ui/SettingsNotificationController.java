@@ -62,6 +62,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibNotificationManager;
+import org.thunderdog.challegram.telegram.TdlibNotificationUtils;
 import org.thunderdog.challegram.telegram.TdlibOptionListener;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -402,8 +403,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         guideRes = R.string.NotificationsGuideFirebaseUnavailable;
         break;
       case TdlibNotificationManager.Status.FIREBASE_ERROR:
-        guideRes = R.string.NotificationsGuideFirebaseError;
-        break;
+        return Lang.getMarkdownString(this, R.string.NotificationsGuideFirebaseError, Lang.boldCreator(), tdlib.context().getTokenError());
       case TdlibNotificationManager.Status.INTERNAL_ERROR: {
         long chatId = tdlib.settings().getLastNotificationProblematicChat();
         if (chatId != 0) {
@@ -1455,21 +1455,16 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
             if (!StringUtils.isEmpty(report)) {
               report = "#firebase_error\n" +
                 report + "\n\n";
-              if (!BuildConfig.EXPERIMENTAL) {
-                int apiKeyResId = UI.getResources().getIdentifier("google_api_key", "string", UI.getAppContext().getPackageName());
-                if (apiKeyResId != 0) {
-                  report +=
-                    "Firebase API_KEY: " + Lang.getString(apiKeyResId) + "\n";
-                }
-                int appIdResId = UI.getResources().getIdentifier("google_app_id", "string", UI.getAppContext().getPackageName());
-                if (appIdResId != 0) {
-                  report +=
-                    "Firebase APP_ID: " + Lang.getString(appIdResId) + "\n";
-                }
+              final String firebaseApiKey = TdlibNotificationUtils.getBuiltInFirebaseApiKey();
+              final String firebaseAppId = TdlibNotificationUtils.getBuiltInFirebaseAppId();
+              if (firebaseApiKey != null) {
+                report += "Firebase API_KEY: " + firebaseApiKey + "\n";
               }
-              report +=
-                "APK fingerprint: " + U.getApkFingerprint("SHA1") + "\n" +
-                "\n" + U.getUsefulMetadata(tdlib);
+              if (firebaseAppId != null) {
+                report += "Firebase APP_ID: " + firebaseAppId + "\n";
+              }
+              report += "APK fingerprint: " + U.getApkFingerprint("SHA1") + "\n";
+              report += "\n" + U.getUsefulMetadata(tdlib);
               tdlib.ui().shareText(this, report);
             }
             break;

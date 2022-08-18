@@ -1577,21 +1577,21 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   public synchronized void checkDeviceToken () {
     if (BuildConfig.EXPERIMENTAL) {
-      setTokenState(TOKEN_STATE_ERROR, "I use `" + BuildConfig.APPLICATION_ID + "` and acknowledge that notifications do not work intentionally.", null);
+      setTokenState(TOKEN_STATE_ERROR, "EXPERIMENTAL_BUILD_DETECTED", null);
       return;
     }
     setTokenState(TOKEN_STATE_INITIALIZING);
     TdlibNotificationUtils.getDeviceToken(new TdlibNotificationUtils.RegisterCallback() {
       @Override
-      public void onSuccess (TdApi.DeviceTokenFirebaseCloudMessaging token) {
+      public void onSuccess (@NonNull TdApi.DeviceTokenFirebaseCloudMessaging token) {
         // TODO: use TdApi.DeviceToken instead of taking token's String value directly
         setDeviceToken(token.token);
       }
 
       @Override
-      public void onError (Throwable e) {
+      public void onError (@NonNull String errorKey, @Nullable Throwable e) {
         Log.e(Log.TAG_FCM, "Failed to retrieve push token", e);
-        setTokenState(TOKEN_STATE_ERROR, StringUtils.isEmpty(e.getMessage()) ? Log.toString(e) : e.getClass().getSimpleName() + ": " + e.getMessage(), e);
+        setTokenState(TOKEN_STATE_ERROR, errorKey, e);
       }
     });
   }
