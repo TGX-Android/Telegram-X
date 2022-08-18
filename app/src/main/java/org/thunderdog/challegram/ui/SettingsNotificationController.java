@@ -452,8 +452,6 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     return text;
   }
 
-  private int errorItemCount;
-
   private void checkInErrorMode () {
     boolean need = needErrorMode();
     if (this.inErrorMode != need) {
@@ -472,7 +470,6 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         itemsToAdd.add(errorButton = new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, getErrorIcon(status), getErrorText(status)).setTextColorId(R.id.theme_color_textNegative));
         itemsToAdd.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         itemsToAdd.add(errorHint = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, makeErrorDescription(status), false));
-        errorItemCount = itemsToAdd.size();
 
         if (viewType != ListItem.TYPE_HEADER_PADDED) {
           itemsToAdd.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -487,7 +484,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         }
       } else {
         boolean keepHeader = notificationModeHint != null;
-        adapter.removeRange(0, errorItemCount + (keepHeader ? 0 : 1));
+        adapter.removeRange(0, keepHeader ? 3 : 4);
 
         int index = adapter.getItems().size();
         adapter.getItems().addAll(Arrays.asList(
