@@ -1940,6 +1940,13 @@
   <string name="EventLogLocationRemoved">%1$s removed group location</string>
   <string name="EventLogTransferredOwnership">transferred ownership to %1$s</string>
   <string name="EventLogNoLongerCreator">is no longer an owner</string>
+
+  <string name="EventLogReactionsEnabled">Enabled chat reactions</string>
+  <string name="EventLogReactionsDisabled">Disabled chat reactions</string>
+  <string name="EventLogReactionsChanged">Changed available chat reactions</string>
+  <string name="EventLogReactionsAdded">+ Added:\n%1$s</string>
+  <string name="EventLogReactionsRemoved">– Removed:\n%1$s</string>
+
   <string name="UntilX">Until %1$s</string>
   <string name="NetworkUsage">Network Usage</string>
   <string name="RecentStickers">Recently Used</string>
