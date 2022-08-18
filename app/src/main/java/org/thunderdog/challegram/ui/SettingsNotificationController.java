@@ -42,6 +42,7 @@ import androidx.collection.SparseArrayCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
@@ -1447,12 +1448,28 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
             Throwable fullError = tdlib.context().getTokenFullError();
             String report;
             if (fullError != null) {
-              report = "#firebase_error\n" + tdlib.context().getTokenError() + "\n" + Log.toString(fullError);
+              report = tdlib.context().getTokenError() + "\n" + Log.toString(fullError);
             } else {
-              report = "#firebase_error " + tdlib.context().getTokenError();
+              report = tdlib.context().getTokenError();
             }
             if (!StringUtils.isEmpty(report)) {
-              report += "\n" + U.getUsefulMetadata(tdlib);
+              report = "#firebase_error\n" +
+                report + "\n\n";
+              if (!BuildConfig.EXPERIMENTAL) {
+                int apiKeyResId = UI.getResources().getIdentifier("google_api_key", "string", UI.getAppContext().getPackageName());
+                if (apiKeyResId != 0) {
+                  report +=
+                    "Firebase API_KEY: " + Lang.getString(apiKeyResId) + "\n";
+                }
+                int appIdResId = UI.getResources().getIdentifier("google_app_id", "string", UI.getAppContext().getPackageName());
+                if (appIdResId != 0) {
+                  report +=
+                    "Firebase APP_ID: " + Lang.getString(appIdResId) + "\n";
+                }
+              }
+              report +=
+                "APK fingerprint: " + U.getApkFingerprint("SHA1") + "\n" +
+                "\n" + U.getUsefulMetadata(tdlib);
               tdlib.ui().shareText(this, report);
             }
             break;
