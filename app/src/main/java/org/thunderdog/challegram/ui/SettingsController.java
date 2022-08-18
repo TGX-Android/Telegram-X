@@ -651,6 +651,8 @@ public class SettingsController extends ViewController<Void> implements
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_faq, R.drawable.baseline_help_24, R.string.TelegramFAQ));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_privacyPolicy, R.drawable.baseline_policy_24, R.string.PrivacyPolicy));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_telegramTips, R.drawable.ic_baseline_telegramtips, R.string.TelegramTips));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -1063,6 +1065,10 @@ public class SettingsController extends ViewController<Void> implements
       }
       case R.id.btn_privacyPolicy: {
         tdlib.ui().openUrl(this, Lang.getStringSecure(R.string.url_privacyPolicy), new TdlibUi.UrlOpenParameters().forceInstantView());
+        break;
+      }
+      case R.id.btn_telegramTips: {
+        tdlib.ui().openPublicChat(this, "TelegramTips", null);
         break;
       }
       case R.id.btn_changePhoneNumber: {

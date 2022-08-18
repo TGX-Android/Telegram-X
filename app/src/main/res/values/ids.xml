@@ -431,6 +431,7 @@
   <item type="id" name="btn_tweakSettings" />
   <item type="id" name="btn_faq" />
   <item type="id" name="btn_privacyPolicy" />
+  <item type="id" name="btn_telegramTips" />
   <item type="id" name="btn_build" />
   <item type="id" name="btn_back" />
   <item type="id" name="btn_crop" />

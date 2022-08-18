@@ -4337,4 +4337,5 @@
   <string name="ExperimentalBuildInfo">This version of **Telegram X** is not designed for long-term use.\n\nIt may completely stop working over a time and you cannot turn notifications on.\n\nIf you are looking for the proper Telegram X APK file, see https://t.me/tgx_log</string>
 
   <string name="format_PRMadeBy">%1$s by %2$s</string>
+  <string name="TelegramTips">Telegram Tips</string>
 </resources>
