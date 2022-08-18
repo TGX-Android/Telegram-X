@@ -1447,7 +1447,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
             Throwable fullError = tdlib.context().getTokenFullError();
             String report;
             if (fullError != null) {
-              report = "#firebase_error\n" + fullError.getClass().getSimpleName() + ": " + tdlib.context().getTokenError() + "\n" + Log.toString(fullError);
+              report = "#firebase_error\n" + tdlib.context().getTokenError() + "\n" + Log.toString(fullError);
             } else {
               report = "#firebase_error " + tdlib.context().getTokenError();
             }
