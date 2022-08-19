@@ -41,6 +41,8 @@ import androidx.annotation.StringRes;
 import androidx.collection.SparseArrayCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.google.firebase.FirebaseOptions;
+
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
@@ -1381,13 +1383,11 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     if (!StringUtils.isEmpty(report)) {
       report = "#firebase_error\n" +
         report + "\n\n";
-      final String firebaseApiKey = TdlibNotificationUtils.getBuiltInFirebaseApiKey();
-      final String firebaseAppId = TdlibNotificationUtils.getBuiltInFirebaseAppId();
-      if (firebaseApiKey != null) {
-        report += "Firebase API_KEY: " + firebaseApiKey + "\n";
-      }
-      if (firebaseAppId != null) {
-        report += "Firebase APP_ID: " + firebaseAppId + "\n";
+      FirebaseOptions firebaseOptions = FirebaseOptions.fromResource(UI.getAppContext());
+      if (firebaseOptions != null) {
+        report += "Firebase options:\n" + firebaseOptions;
+      } else {
+        report += "Firebase options unavailable!";
       }
       report += "APK fingerprint: " + U.getApkFingerprint("SHA1") + "\n";
       report += "\n" + U.getUsefulMetadata(tdlib);

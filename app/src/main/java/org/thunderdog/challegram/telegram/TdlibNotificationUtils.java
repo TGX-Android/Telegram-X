@@ -295,23 +295,4 @@ public class TdlibNotificationUtils {
       callback.onError("FIREBASE_INITIALIZATION_ERROR", new NotificationInitializationFailedError());
     }
   }
-
-  @Nullable
-  public static String getBuiltInFirebaseApiKey () {
-    int apiKeyResId = UI.getResources().getIdentifier("google_api_key", "string", UI.getAppContext().getPackageName());
-    if (apiKeyResId != 0) {
-      return UI.getAppContext().getString(apiKeyResId);
-    } else {
-      return null;
-    }
-  }
-
-  public static String getBuiltInFirebaseAppId () {
-    int appIdResId = UI.getResources().getIdentifier("google_app_id", "string", UI.getAppContext().getPackageName());
-    if (appIdResId != 0) {
-      return UI.getAppContext().getString(appIdResId);
-    } else {
-      return null;
-    }
-  }
 }
