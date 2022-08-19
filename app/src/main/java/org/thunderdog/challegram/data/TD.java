@@ -5153,37 +5153,39 @@ public class TD {
       end += Character.charCount(codePoint);
       if (currentCodePointCount == maxCodePointCount || end == textLength) {
         TdApi.FormattedText substring;
-        // Find a good place to split message within last 33% of the text to avoid word breaking:
-        // If newline is present, text will be split at the last newline
-        // otherwise, if whitespace is present, text will be split at the last whitespace
-        // otherwise, text will be split at the last "splitter".
-        // otherwise, if none of the above found, maximum chunk that fits the limit will be sent.
-        int lastNewLineIndex = -1;
-        int lastWhitespaceIndex = -1;
-        int lastSplitterIndex = -1;
-        int subStart = end - (end - start) / 3;
-        int subEnd = end;
-        do {
-          subEnd = Text.lastIndexOfSplitter(text.text, subStart, subEnd, null);
-          if (subEnd != -1) {
-            int endCodePoint = text.text.codePointAt(subEnd);
-            if (lastSplitterIndex == -1) {
-              lastSplitterIndex = subEnd;
+        if (end < textLength) {
+          // Find a good place to split message within last 33% of the text to avoid word breaking:
+          // If newline is present, text will be split at the last newline
+          // otherwise, if whitespace is present, text will be split at the last whitespace
+          // otherwise, text will be split at the last "splitter".
+          // otherwise, if none of the above found, maximum chunk that fits the limit will be sent.
+          int lastNewLineIndex = -1;
+          int lastWhitespaceIndex = -1;
+          int lastSplitterIndex = -1;
+          int subStart = end - (end - start) / 3;
+          int subEnd = end;
+          do {
+            subEnd = Text.lastIndexOfSplitter(text.text, subStart, subEnd, null);
+            if (subEnd != -1) {
+              int endCodePoint = text.text.codePointAt(subEnd);
+              if (lastSplitterIndex == -1) {
+                lastSplitterIndex = subEnd;
+              }
+              if (endCodePoint == (int) '\n') {
+                lastNewLineIndex = subEnd;
+                break;
+              } else if (lastWhitespaceIndex == -1 && Character.isWhitespace(endCodePoint)) {
+                lastWhitespaceIndex = subEnd;
+              }
             }
-            if (endCodePoint == (int) '\n') {
-              lastNewLineIndex = subEnd;
-              break;
-            } else if (lastWhitespaceIndex == -1 && Character.isWhitespace(endCodePoint)) {
-              lastWhitespaceIndex = subEnd;
-            }
+          } while (subEnd != -1 && subEnd > subStart);
+          if (lastNewLineIndex != -1) {
+            end = lastNewLineIndex;
+          } else if (lastWhitespaceIndex != -1) {
+            end = lastWhitespaceIndex;
+          } else if (lastSplitterIndex != -1) {
+            end = lastSplitterIndex;
           }
-        } while (subEnd != -1 && subEnd > subStart);
-        if (lastNewLineIndex != -1) {
-          end = lastNewLineIndex;
-        } else if (lastWhitespaceIndex != -1) {
-          end = lastWhitespaceIndex;
-        } else if (lastSplitterIndex != -1) {
-          end = lastSplitterIndex;
         }
         // Send chunk between start ... end
         substring = Td.substring(text, start, end);
