@@ -4792,26 +4792,26 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
     int state = context().getTokenState();
     final String deviceToken = getRegisteredDeviceToken();
-    if (!StringUtils.isEmpty(deviceToken) && (state == TdlibManager.TOKEN_STATE_NONE || state == TdlibManager.TOKEN_STATE_INITIALIZING)) {
-      state = TdlibManager.TOKEN_STATE_OK;
+    if (!StringUtils.isEmpty(deviceToken) && (state == TdlibManager.TokenState.NONE || state == TdlibManager.TokenState.INITIALIZING)) {
+      state = TdlibManager.TokenState.OK;
     }
-    if (state == TdlibManager.TOKEN_STATE_NONE)
+    if (state == TdlibManager.TokenState.NONE)
       return;
     String error = context().getTokenError();
     List<TdApi.JsonObjectMember> members = new ArrayList<>();
     switch (state) {
-      case TdlibManager.TOKEN_STATE_ERROR: {
+      case TdlibManager.TokenState.ERROR: {
         members.add(new TdApi.JsonObjectMember(DEVICE_TOKEN_KEY, new TdApi.JsonValueString("FIREBASE_ERROR")));
         if (!StringUtils.isEmpty(error)) {
           members.add(new TdApi.JsonObjectMember("firebase_error", new TdApi.JsonValueString(error)));
         }
         break;
       }
-      case TdlibManager.TOKEN_STATE_INITIALIZING: {
+      case TdlibManager.TokenState.INITIALIZING: {
         members.add(new TdApi.JsonObjectMember(DEVICE_TOKEN_KEY, new TdApi.JsonValueString("FIREBASE_INITIALIZING")));
         break;
       }
-      case TdlibManager.TOKEN_STATE_OK: {
+      case TdlibManager.TokenState.OK: {
         members.add(new TdApi.JsonObjectMember(DEVICE_TOKEN_KEY, new TdApi.JsonValueString(deviceToken)));
         break;
       }

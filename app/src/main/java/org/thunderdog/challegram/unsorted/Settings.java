@@ -283,6 +283,11 @@ public class Settings {
   private static final @Deprecated String KEY_PUSH_USER_IDS = "push_user_ids";
   private static final @Deprecated String KEY_PUSH_USER_ID = "push_user_id";
   private static final String KEY_PUSH_DEVICE_TOKEN = "push_device_token";
+  private static final String KEY_PUSH_STATS_TOTAL_COUNT = "push_stats_total";
+  private static final String KEY_PUSH_STATS_CURRENT_APP_VERSION_COUNT = "push_stats_app";
+  private static final String KEY_PUSH_STATS_CURRENT_TOKEN_COUNT = "push_stats_token";
+  private static final String KEY_PUSH_LAST_RECEIVED_TIME = "push_last_received_time";
+  private static final String KEY_PUSH_LAST_SENT_TIME = "push_last_sent_time";
   private static final String KEY_CRASH_DEVICE_ID = "crash_device_id";
   public static final String KEY_IS_EMULATOR = "is_emulator";
 
@@ -5824,10 +5829,12 @@ public class Settings {
   // Push token
 
   public void setDeviceToken (String token) {
-    if (StringUtils.isEmpty(token))
+    if (StringUtils.isEmpty(token)) {
       pmc.remove(KEY_PUSH_DEVICE_TOKEN);
-    else
+    } else if (!token.equals(getDeviceToken())) {
+      resetTokenPushMessageCount();
       pmc.putString(KEY_PUSH_DEVICE_TOKEN, token);
+    }
   }
 
   public String getDeviceToken () {
@@ -6240,6 +6247,7 @@ public class Settings {
     buildInfo.saveTo(pmc, KEY_APP_INSTALLATION_PREFIX + installationId);
     pmc.apply();
     this.currentBuildInformation = buildInfo;
+    resetAppVersionPushMessageCount();
   }
 
   public AppBuildInfo getFirstBuildInformation () {
@@ -6266,4 +6274,61 @@ public class Settings {
     long previousInstallationId = (currentBuild.getInstallationId() - 1);
     return getBuildInformation(previousInstallationId);
   }
+
+  public String getPushMessageStats () {
+    return "total: " + getReceivedPushMessageCountTotal() + " " +
+      "current: " + getReceivedPushMessageCountByAppVersion() + " " +
+      "token: " + getReceivedPushMessageCountByToken();
+  }
+
+  public long getReceivedPushMessageCountTotal () {
+    return pmc.getLong(KEY_PUSH_STATS_TOTAL_COUNT, 0);
+  }
+
+  public long getReceivedPushMessageCountByAppVersion () {
+    return pmc.getLong(KEY_PUSH_STATS_CURRENT_APP_VERSION_COUNT, 0);
+  }
+
+  public long getReceivedPushMessageCountByToken () {
+    return pmc.getLong(KEY_PUSH_STATS_CURRENT_TOKEN_COUNT, 0);
+  }
+
+  public long getLastReceivedPushMessageSentTime () {
+    return pmc.getLong(KEY_PUSH_LAST_SENT_TIME, 0);
+  }
+
+  public long getLastReceivedPushMessageReceivedTime () {
+    return pmc.getLong(KEY_PUSH_LAST_RECEIVED_TIME, 0);
+  }
+
+  public interface PushStatsListener {
+    void onNewPushReceived ();
+  }
+
+  private final ReferenceList<PushStatsListener> pushStatsListeners = new ReferenceList<>(true);
+
+  public void trackPushMessageReceived (long sentTime, long receivedTime) {
+    final long totalReceivedCount = getReceivedPushMessageCountTotal() + 1;
+    final long currentVersionReceivedCount = getReceivedPushMessageCountByAppVersion() + 1;
+    final long currentTokenReceivedCount = getReceivedPushMessageCountByToken() + 1;
+    pmc.edit()
+      .putLong(KEY_PUSH_STATS_TOTAL_COUNT, totalReceivedCount)
+      .putLong(KEY_PUSH_STATS_CURRENT_APP_VERSION_COUNT, currentVersionReceivedCount)
+      .putLong(KEY_PUSH_STATS_CURRENT_TOKEN_COUNT, currentTokenReceivedCount)
+      .putLong(KEY_PUSH_LAST_SENT_TIME, sentTime)
+      .putLong(KEY_PUSH_LAST_RECEIVED_TIME, receivedTime)
+      .apply();
+    for (PushStatsListener listener : pushStatsListeners) {
+      listener.onNewPushReceived();
+    }
+  }
+
+  public void resetAppVersionPushMessageCount () {
+    pmc.remove(KEY_PUSH_STATS_CURRENT_APP_VERSION_COUNT);
+  }
+
+  public void resetTokenPushMessageCount () {
+    pmc.remove(KEY_PUSH_STATS_CURRENT_TOKEN_COUNT);
+  }
+
 }

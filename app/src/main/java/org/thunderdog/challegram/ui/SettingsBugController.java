@@ -24,6 +24,8 @@ import android.widget.Toast;
 import androidx.annotation.IdRes;
 import androidx.annotation.Nullable;
 
+import com.google.firebase.FirebaseOptions;
+
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.BuildConfig;
@@ -61,6 +63,7 @@ import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import me.vkryl.core.BitwiseUtils;
@@ -80,6 +83,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
   public static final int SECTION_UTILITIES = 1;
   public static final int SECTION_TDLIB = 2;
   public static final int SECTION_ERROR = 3;
+  public static final int SECTION_PUSH = 4;
 
   public static class Args {
     public final int section;
@@ -145,6 +149,8 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         return BuildConfig.VERSION_NAME;
       case SECTION_UTILITIES:
         return Lang.getString(R.string.TestMode);
+      case SECTION_PUSH:
+        return Lang.getString(R.string.PushServices);
       case SECTION_TDLIB: {
         return "TDLib " + getTdlibVersionSignature(false);
       }
@@ -439,6 +445,55 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
             view.getToggler().setRadioEnabled(Lang.rtl(), isUpdate);
             break;
           }
+          case R.id.btn_secret_pushToken: {
+            switch (tdlib.context().getTokenState()) {
+              case TdlibManager.TokenState.ERROR:
+                view.setData("Error: " + tdlib.context().getTokenError());
+                break;
+              case TdlibManager.TokenState.INITIALIZING:
+                view.setData("Initializing...");
+                break;
+              case TdlibManager.TokenState.OK:
+                view.setData("Firebase: " + tdlib.context().getToken());
+                break;
+              case TdlibManager.TokenState.NONE:
+              default:
+                view.setData("Unknown");
+                break;
+            }
+            break;
+          }
+          case R.id.btn_secret_pushConfig: {
+            FirebaseOptions options = FirebaseOptions.fromResource(UI.getAppContext());
+            view.setData(options != null ? options.toString() : "Unavailable");
+            break;
+          }
+          case R.id.btn_secret_appFingerprint: {
+            view.setData(U.getApkFingerprint("SHA1"));
+            break;
+          }
+          case R.id.btn_secret_pushStats: {
+            view.setData(Settings.instance().getPushMessageStats());
+            break;
+          }
+          case R.id.btn_secret_pushDate: {
+            long time = Settings.instance().getLastReceivedPushMessageReceivedTime();
+            if (time != 0) {
+              view.setData(Lang.getTimestamp(time, TimeUnit.MILLISECONDS));
+            } else {
+              view.setData("No data");
+            }
+            break;
+          }
+          case R.id.btn_secret_pushDuration: {
+            long durationMs = Settings.instance().getLastReceivedPushMessageReceivedTime() - Settings.instance().getLastReceivedPushMessageSentTime();
+            if (durationMs != 0) {
+              view.setData(Lang.getDuration((int) (durationMs / 1000)));
+            } else {
+              view.setData("No data");
+            }
+            break;
+          }
           case R.id.btn_secret_dontReadMessages: {
             view.getToggler().setRadioEnabled(Settings.instance().dontReadMessages(), isUpdate);
             break;
@@ -617,8 +672,28 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
           items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.Other));
           items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
           items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_tdlib, 0, R.string.TdlibLogs, false));
+          items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_pushService, 0, R.string.PushServices, false));
           items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         }
+        break;
+      }
+      case SECTION_PUSH: {
+        if (!items.isEmpty()) {
+          items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+        }
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_secret_pushToken, 0, "Token", false));
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_secret_pushStats, 0, "Received count", false));
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_secret_pushDate, 0, "Last received", false));
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_secret_pushDuration, 0, "Received within", false));
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_secret_pushConfig, 0, "App config", false));
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_secret_appFingerprint, 0, "App fingerprint", false));
+        items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         break;
       }
       case SECTION_UTILITIES: {
@@ -839,7 +914,10 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
               this.testerLevel = level;
               tdlib.uiExecute(() -> {
                 if (!isDestroyed()) {
-                  int i = adapter.indexOfViewById(/*Config.NEED_TON ? R.id.btn_ton :*/ R.id.btn_tdlib);
+                  int i = adapter.indexOfViewById(R.id.btn_pushService);
+                  if (i == -1) {
+                    i = adapter.indexOfViewById(R.id.btn_tdlib);
+                  }
                   if (i == -1)
                     return;
                   if (level > Tdlib.TESTER_LEVEL_NONE) {
@@ -998,6 +1076,27 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         Settings.instance().setNeedRtl(Lang.packId(), adapter.toggleView(v));
         break;
       }
+      case R.id.btn_secret_pushToken: {
+        if (tdlib.context().getTokenState() == TdlibManager.TokenState.OK) {
+          UI.copyText("Firebase: " + tdlib.context().getToken(), R.string.CopiedText);
+        }
+        break;
+      }
+      case R.id.btn_secret_pushConfig: {
+        FirebaseOptions options = FirebaseOptions.fromResource(UI.getAppContext());
+        if (options != null) {
+          UI.copyText("Firebase config: " + options.toString(), R.string.CopiedText);
+        }
+        break;
+      }
+      case R.id.btn_secret_appFingerprint: {
+        UI.copyText(U.getApkFingerprint("SHA1"), R.string.CopiedText);
+        break;
+      }
+      case R.id.btn_secret_pushStats: {
+        UI.copyText(Settings.instance().getPushMessageStats(), R.string.CopiedText);
+        break;
+      }
       case R.id.btn_debugSwitchRtl: {
         context.addRemoveRtlSwitch();
         break;
@@ -1090,6 +1189,12 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       // case R.id.btn_ton:
       case R.id.btn_tdlib: {
         openTdlibLogs(testerLevel, crash);
+        break;
+      }
+      case R.id.btn_pushService: {
+        SettingsBugController c = new SettingsBugController(context, tdlib);
+        c.setArguments(new Args(SECTION_PUSH, crash).setTesterLevel(testerLevel));
+        navigateTo(c);
         break;
       }
       case R.id.btn_appLogs: {

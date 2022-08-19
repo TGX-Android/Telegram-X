@@ -2612,6 +2612,8 @@
   <string name="SignOutAltHelpHint">Tell us about any issues; logging out doesn\'t usually help.</string>
   <string name="SignOutAltHint2">Remember, logging out kills all your Secret Chats. Downloaded media will be erased from this device.</string>
 
+  <string name="PushServices">Push Services</string>
+
   <string name="TdlibLogs">TDLib Logs</string>
   <string name="TdlibLogsWarning">**Warning:** TDLib Logs may contain **private data**.\n\nDo not share them with anyone, unless you know what you are doing.</string>
   <string name="TdlibLogsWarningConfirm">Proceed</string>
