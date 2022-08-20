@@ -494,6 +494,15 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
             }
             break;
           }
+          case R.id.btn_secret_pushTtl: {
+            int ttl = Settings.instance().getLastReceivedPushMessageTtl();
+            if (ttl != 0) {
+              view.setData(Lang.getDuration(ttl));
+            } else {
+              view.setData("No data");
+            }
+            break;
+          }
           case R.id.btn_secret_dontReadMessages: {
             view.getToggler().setRadioEnabled(Settings.instance().dontReadMessages(), isUpdate);
             break;
@@ -684,11 +693,13 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         }
         items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_secret_pushToken, 0, "Token", false));
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_secret_pushStats, 0, "Received count", false));
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_secret_pushStats, 0, "Packages received", false));
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_secret_pushDate, 0, "Last received", false));
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_secret_pushDate, 0, "Last received on", false));
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_secret_pushDuration, 0, "Received within", false));
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_secret_pushDuration, 0, "Time from being sent", false));
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_secret_pushTtl, 0, "TTL", false));
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_secret_pushConfig, 0, "App config", false));
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));

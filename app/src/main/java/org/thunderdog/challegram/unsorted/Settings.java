@@ -288,6 +288,7 @@ public class Settings {
   private static final String KEY_PUSH_STATS_CURRENT_TOKEN_COUNT = "push_stats_token";
   private static final String KEY_PUSH_LAST_RECEIVED_TIME = "push_last_received_time";
   private static final String KEY_PUSH_LAST_SENT_TIME = "push_last_sent_time";
+  private static final String KEY_PUSH_LAST_TTL = "push_last_ttl";
   private static final String KEY_CRASH_DEVICE_ID = "crash_device_id";
   public static final String KEY_IS_EMULATOR = "is_emulator";
 
@@ -6276,9 +6277,10 @@ public class Settings {
   }
 
   public String getPushMessageStats () {
-    return "total: " + getReceivedPushMessageCountTotal() + " " +
-      "current: " + getReceivedPushMessageCountByAppVersion() + " " +
-      "token: " + getReceivedPushMessageCountByToken();
+    return
+      "total: " + getReceivedPushMessageCountTotal() + " " +
+      "by_token: " + getReceivedPushMessageCountByToken() + " " +
+      "by_app_version: " + getReceivedPushMessageCountByAppVersion() + " ";
   }
 
   public long getReceivedPushMessageCountTotal () {
@@ -6301,13 +6303,17 @@ public class Settings {
     return pmc.getLong(KEY_PUSH_LAST_RECEIVED_TIME, 0);
   }
 
+  public int getLastReceivedPushMessageTtl () {
+    return pmc.getInt(KEY_PUSH_LAST_TTL, 0);
+  }
+
   public interface PushStatsListener {
     void onNewPushReceived ();
   }
 
   private final ReferenceList<PushStatsListener> pushStatsListeners = new ReferenceList<>(true);
 
-  public void trackPushMessageReceived (long sentTime, long receivedTime) {
+  public void trackPushMessageReceived (long sentTime, long receivedTime, int ttl) {
     final long totalReceivedCount = getReceivedPushMessageCountTotal() + 1;
     final long currentVersionReceivedCount = getReceivedPushMessageCountByAppVersion() + 1;
     final long currentTokenReceivedCount = getReceivedPushMessageCountByToken() + 1;
@@ -6317,6 +6323,7 @@ public class Settings {
       .putLong(KEY_PUSH_STATS_CURRENT_TOKEN_COUNT, currentTokenReceivedCount)
       .putLong(KEY_PUSH_LAST_SENT_TIME, sentTime)
       .putLong(KEY_PUSH_LAST_RECEIVED_TIME, receivedTime)
+      .putInt(KEY_PUSH_LAST_TTL, ttl)
       .apply();
     for (PushStatsListener listener : pushStatsListeners) {
       listener.onNewPushReceived();

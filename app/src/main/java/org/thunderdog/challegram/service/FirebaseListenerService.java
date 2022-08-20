@@ -79,7 +79,7 @@ public class FirebaseListenerService extends FirebaseMessagingService {
     final String payload = makePayload(remoteMessage);
     final long sentTime = remoteMessage.getSentTime();
     UI.initApp(getApplicationContext());
-    Settings.instance().trackPushMessageReceived(sentTime, System.currentTimeMillis());
+    Settings.instance().trackPushMessageReceived(sentTime, System.currentTimeMillis(), remoteMessage.getTtl());
     final long pushId = Settings.instance().newPushId();
 
     // Trying to find accountId for the push
