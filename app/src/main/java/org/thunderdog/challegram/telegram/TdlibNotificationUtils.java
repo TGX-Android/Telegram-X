@@ -25,6 +25,9 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.TextPaint;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.messaging.FirebaseMessaging;
 
@@ -48,6 +51,11 @@ import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.text.Letters;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import me.vkryl.core.StringUtils;
 
 public class TdlibNotificationUtils {
   private static TextPaint lettersPaint;
@@ -224,8 +232,8 @@ public class TdlibNotificationUtils {
 
   public interface RegisterCallback {
     // TODO: change type to TdApi.DeviceToken and support more push platforms
-    void onSuccess (TdApi.DeviceTokenFirebaseCloudMessaging token);
-    void onError (Throwable e);
+    void onSuccess (@NonNull TdApi.DeviceTokenFirebaseCloudMessaging token);
+    void onError (@NonNull String errorKey, @Nullable Throwable e);
   }
 
   public static class NotificationInitializationFailedError extends RuntimeException {
@@ -255,6 +263,17 @@ public class TdlibNotificationUtils {
     return false;
   }
 
+  private static String extractFirebaseErrorName (Throwable e) {
+    String message = e.getMessage();
+    if (!StringUtils.isEmpty(message)) {
+      Matcher matcher = Pattern.compile("(?<=: )[A-Z_]+$").matcher(message);
+      if (matcher.find()) {
+        return matcher.group();
+      }
+    }
+    return e.getClass().getSimpleName();
+  }
+
   public static void getDeviceToken (RegisterCallback callback) {
     // TODO: support alternative push platforms
     if (initialize()) {
@@ -265,15 +284,15 @@ public class TdlibNotificationUtils {
           callback.onSuccess(new TdApi.DeviceTokenFirebaseCloudMessaging(token, true));
         }).addOnFailureListener(e -> {
           TDLib.Tag.notifications("FirebaseMessaging: token fetch failed with remote error: %s", Log.toString(e));
-          callback.onError(e);
+          callback.onError(extractFirebaseErrorName(e), e);
         });
       } catch (Throwable e) {
         TDLib.Tag.notifications("FirebaseMessaging: token fetch failed with error: %s", Log.toString(e));
-        callback.onError(e);
+        callback.onError("FIREBASE_REQUEST_ERROR", e);
       }
     } else {
       TDLib.Tag.notifications("FirebaseMessaging: token fetch failed because FirebaseApp was not initialized");
-      callback.onError(new NotificationInitializationFailedError());
+      callback.onError("FIREBASE_INITIALIZATION_ERROR", new NotificationInitializationFailedError());
     }
   }
 }

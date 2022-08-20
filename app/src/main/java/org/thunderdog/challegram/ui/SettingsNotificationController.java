@@ -41,7 +41,10 @@ import androidx.annotation.StringRes;
 import androidx.collection.SparseArrayCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.google.firebase.FirebaseOptions;
+
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
@@ -56,11 +59,13 @@ import org.thunderdog.challegram.navigation.MoreDelegate;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.sync.SyncAdapter;
+import org.thunderdog.challegram.telegram.GlobalTokenStateListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibNotificationManager;
+import org.thunderdog.challegram.telegram.TdlibNotificationUtils;
 import org.thunderdog.challegram.telegram.TdlibOptionListener;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -95,7 +100,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   ViewController.SettingsIntDelegate,
   ViewController.SettingsStringDelegate,
   NotificationSettingsListener, TdlibOptionListener, ActivityResultHandler,
-  PopupLayout.DismissListener, MoreDelegate, TdlibSettingsManager.NotificationProblemListener {
+  PopupLayout.DismissListener, MoreDelegate, TdlibSettingsManager.NotificationProblemListener, GlobalTokenStateListener {
   public static class Args {
     public final long chatId;
     public final TdApi.NotificationSettingsScope scope;
@@ -361,6 +366,12 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         return R.drawable.baseline_system_update_24;
       case TdlibNotificationManager.Status.FIREBASE_ERROR:
         return R.drawable.baseline_bug_report_24;
+      case TdlibNotificationManager.Status.ACCOUNT_NOT_SELECTED:
+      case TdlibNotificationManager.Status.BLOCKED_ALL:
+      case TdlibNotificationManager.Status.BLOCKED_CATEGORY:
+      case TdlibNotificationManager.Status.INTERNAL_ERROR:
+      case TdlibNotificationManager.Status.NOT_BLOCKED:
+        break;
     }
     return R.drawable.baseline_notification_important_24;
   }
@@ -374,8 +385,14 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       case TdlibNotificationManager.Status.FIREBASE_MISSING:
         return R.string.InstallGooglePlayServices;
       case TdlibNotificationManager.Status.INTERNAL_ERROR:
-      case TdlibNotificationManager.Status.FIREBASE_ERROR:
         return R.string.ShareNotificationError;
+      case TdlibNotificationManager.Status.FIREBASE_ERROR:
+        return R.string.FirebaseErrorResolve;
+      case TdlibNotificationManager.Status.ACCOUNT_NOT_SELECTED:
+      case TdlibNotificationManager.Status.BLOCKED_ALL:
+      case TdlibNotificationManager.Status.BLOCKED_CATEGORY:
+      case TdlibNotificationManager.Status.NOT_BLOCKED:
+        break;
     }
     return R.string.SystemNotificationSettings;
   }
@@ -401,8 +418,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         guideRes = R.string.NotificationsGuideFirebaseUnavailable;
         break;
       case TdlibNotificationManager.Status.FIREBASE_ERROR:
-        guideRes = R.string.NotificationsGuideFirebaseError;
-        break;
+        return Lang.getMarkdownString(this, R.string.NotificationsGuideFirebaseError, Lang.boldCreator(), tdlib.context().getTokenError());
       case TdlibNotificationManager.Status.INTERNAL_ERROR: {
         long chatId = tdlib.settings().getLastNotificationProblematicChat();
         if (chatId != 0) {
@@ -414,6 +430,9 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         guideRes = R.string.NotificationsGuideError;
         break;
       }
+      case TdlibNotificationManager.Status.ACCOUNT_NOT_SELECTED:
+      case TdlibNotificationManager.Status.NOT_BLOCKED:
+        break;
     }
     CharSequence text = Lang.getMarkdownString(this, guideRes);
     if (guideRes == R.string.NotificationsGuideBlockedCategory) {
@@ -453,6 +472,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         itemsToAdd.add(errorButton = new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, getErrorIcon(status), getErrorText(status)).setTextColorId(R.id.theme_color_textNegative));
         itemsToAdd.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         itemsToAdd.add(errorHint = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, makeErrorDescription(status), false));
+
         if (viewType != ListItem.TYPE_HEADER_PADDED) {
           itemsToAdd.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
         }
@@ -1291,6 +1311,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
 
     tdlib.listeners().subscribeToSettingsUpdates(this);
     tdlib.settings().addNotificationProblemAvailabilityChangeListener(this);
+    tdlib.context().global().addTokenStateListener(this);
 
     if (isCommonScreen()) {
       tdlib.listeners().addOptionsListener(this);
@@ -1346,6 +1367,32 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       }
     }
     return false;
+  }
+
+  private void shareTokenError () {
+    if (!tdlib.context().hasTokenError()) {
+      return;
+    }
+    Throwable fullError = tdlib.context().getTokenFullError();
+    String report;
+    if (fullError != null) {
+      report = tdlib.context().getTokenError() + "\n" + Log.toString(fullError);
+    } else {
+      report = tdlib.context().getTokenError();
+    }
+    if (!StringUtils.isEmpty(report)) {
+      report = "#firebase_error\n" +
+        report + "\n\n";
+      FirebaseOptions firebaseOptions = FirebaseOptions.fromResource(UI.getAppContext());
+      if (firebaseOptions != null) {
+        report += "Firebase options:\n" + firebaseOptions;
+      } else {
+        report += "Firebase options unavailable!";
+      }
+      report += "APK fingerprint: " + U.getApkFingerprint("SHA1") + "\n";
+      report += "\n" + U.getUsefulMetadata(tdlib);
+      tdlib.ui().shareText(this, report);
+    }
   }
 
   @Override
@@ -1444,17 +1491,22 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
             break;
           }
           case TdlibNotificationManager.Status.FIREBASE_ERROR: {
-            Throwable fullError = tdlib.context().getTokenFullError();
-            String report;
-            if (fullError != null) {
-              report = "#firebase_error\n" + tdlib.context().getTokenError() + "\n" + Log.toString(fullError);
-            } else {
-              report = "#firebase_error " + tdlib.context().getTokenError();
-            }
-            if (!StringUtils.isEmpty(report)) {
-              report += "\n" + U.getUsefulMetadata(tdlib);
-              tdlib.ui().shareText(this, report);
-            }
+            showOptions(new Options.Builder()
+              .item(new OptionItem(R.id.btn_retry, Lang.getString(R.string.FirebaseErrorResolveTryAgain), OPTION_COLOR_BLUE, R.drawable.baseline_sync_problem_24))
+              .item(new OptionItem(R.id.btn_share, Lang.getString(R.string.FirebaseErrorResolveShareError), OPTION_COLOR_NORMAL, R.drawable.baseline_forward_24))
+              .build(), (optionView, optionId) -> {
+              switch (optionId) {
+                case R.id.btn_retry: {
+                  TdlibManager.instance().checkDeviceToken();
+                  break;
+                }
+                case R.id.btn_share: {
+                  shareTokenError();
+                  break;
+                }
+              }
+              return true;
+            });
             break;
           }
           case TdlibNotificationManager.Status.FIREBASE_MISSING: {
@@ -2235,6 +2287,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     stopSounds();
     tdlib.listeners().unsubscribeFromSettingsUpdates(this);
     tdlib.settings().removeNotificationProblemAvailabilityChangeListener(this);
+    tdlib.context().global().removeTokenStateListener(this);
     if (isCommonScreen()) {
       tdlib.listeners().removeOptionListener(this);
     }
@@ -2451,10 +2504,11 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
 
   @Override
   public void onNotificationProblemsAvailabilityChanged (Tdlib tdlib, boolean available) {
-    tdlib.ui().post(() -> {
-      if (!isDestroyed()) {
-        checkInErrorMode();
-      }
-    });
+    runOnUiThreadOptional(this::checkInErrorMode);
+  }
+
+  @Override
+  public void onTokenStateChanged (int newState, @Nullable String error, @Nullable Throwable fullError) {
+    runOnUiThreadOptional(this::checkInErrorMode);
   }
 }
