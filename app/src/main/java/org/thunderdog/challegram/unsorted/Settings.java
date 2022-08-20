@@ -289,6 +289,8 @@ public class Settings {
   private static final String KEY_PUSH_LAST_RECEIVED_TIME = "push_last_received_time";
   private static final String KEY_PUSH_LAST_SENT_TIME = "push_last_sent_time";
   private static final String KEY_PUSH_LAST_TTL = "push_last_ttl";
+  private static final String KEY_PUSH_REPORTED_ERROR = "push_reported_error";
+  private static final String KEY_PUSH_REPORTED_ERROR_DATE = "push_reported_error_date";
   private static final String KEY_CRASH_DEVICE_ID = "crash_device_id";
   public static final String KEY_IS_EMULATOR = "is_emulator";
 
@@ -6346,4 +6348,26 @@ public class Settings {
     pmc.remove(KEY_PUSH_STATS_CURRENT_TOKEN_COUNT);
   }
 
+  public void setReportedPushServiceError (@Nullable String error) {
+    if (!StringUtils.isEmpty(error)) {
+      pmc.edit()
+        .putString(KEY_PUSH_REPORTED_ERROR, error)
+        .putLong(KEY_PUSH_REPORTED_ERROR_DATE, System.currentTimeMillis())
+        .apply();
+    } else {
+      pmc.edit()
+        .remove(KEY_PUSH_REPORTED_ERROR)
+        .remove(KEY_PUSH_REPORTED_ERROR_DATE)
+        .apply();
+    }
+  }
+
+  @Nullable
+  public String getReportedPushServiceError () {
+    return pmc.getString(KEY_PUSH_REPORTED_ERROR, null);
+  }
+
+  public long getReportedPushServiceErrorDate () {
+    return pmc.getLong(KEY_PUSH_REPORTED_ERROR_DATE, 0);
+  }
 }

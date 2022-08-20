@@ -45,6 +45,7 @@ import org.thunderdog.challegram.player.AudioController;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.AppBuildInfo;
 import org.thunderdog.challegram.util.Crash;
 
 import java.io.File;
@@ -58,8 +59,10 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -77,6 +80,7 @@ import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.util.FilteredIterator;
+import me.vkryl.td.JSON;
 import me.vkryl.td.Td;
 
 public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
@@ -1556,6 +1560,20 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
         }
       }
       global().notifyTokenStateChanged(newState, error, fullError);
+      if (newState == TokenState.ERROR && !StringUtils.isEmpty(error)) {
+        String reportedError = Settings.instance().getReportedPushServiceError();
+        if (reportedError == null || !reportedError.equals(error)) {
+          Settings.instance().setReportedPushServiceError(error);
+          reportPushServiceError(error, fullError);
+        }
+      } else if (newState == TokenState.OK) {
+        String reportedError = Settings.instance().getReportedPushServiceError();
+        if (!StringUtils.isEmpty(reportedError)) {
+          reportPushServiceRestored(reportedError, Settings.instance().getReportedPushServiceErrorDate());
+          // forget the error, so it would be reported again when it happens
+          Settings.instance().setReportedPushServiceError(null);
+        }
+      }
     }
   }
 
@@ -1593,9 +1611,11 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }
   }
 
+  private static final String EXPERIMENTAL_BUILD_ERROR = "EXPERIMENTAL_BUILD_DETECTED";
+
   public synchronized void checkDeviceToken () {
     if (BuildConfig.EXPERIMENTAL) {
-      setTokenState(TokenState.ERROR, "EXPERIMENTAL_BUILD_DETECTED", null);
+      setTokenState(TokenState.ERROR, EXPERIMENTAL_BUILD_ERROR, null);
       return;
     }
     setTokenState(TokenState.INITIALIZING);
@@ -1651,7 +1671,49 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }
   }
 
-  // Crash reporting
+  // Service reporting
+
+  public void reportPushServiceError (@Nullable String error, @Nullable Throwable fullError) {
+    if (EXPERIMENTAL_BUILD_ERROR.equals(error)) {
+      return;
+    }
+    Map<String, Object> event = new LinkedHashMap<>();
+    if (!StringUtils.isEmpty(error)) {
+      event.put("error", error);
+    }
+    if (fullError != null) {
+      event.put("stack_trace", Log.toString(fullError));
+    }
+    reportEvent("PUSH_SERVICE_ERROR", event);
+  }
+
+  public void reportPushServiceRestored (String reportedErrorType, long reportedDate) {
+    Map<String, Object> event = new LinkedHashMap<>();
+    if (!StringUtils.isEmpty(reportedErrorType)) {
+      event.put("error", reportedErrorType);
+    }
+    if (reportedDate != 0) {
+      event.put("recovered_within", System.currentTimeMillis() - reportedDate);
+    }
+    reportEvent("PUSH_SERVICE_RECOVERED", event);
+  }
+
+  private void reportEvent (String type, Map<String, Object> event) {
+    AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
+
+    event.put("sdk", Build.VERSION.SDK_INT);
+    event.put("app", appBuildInfo.toMap());
+    event.put("cpu", U.getCpuArchitecture());
+    event.put("package_id", UI.getAppContext().getPackageName());
+    event.put("fingerprint", U.getApkFingerprint("SHA1"));
+    event.put("device_id", Settings.instance().crashDeviceId());
+
+    Tdlib tdlib = serviceTdlib();
+    tdlib.incrementJobReferenceCount();
+    tdlib.client().send(new TdApi.SaveApplicationLogEvent(type, appBuildInfo.maxCommitDate(), JSON.toObject(event)), result -> {
+      tdlib.decrementJobReferenceCount();
+    });
+  }
 
   public void saveCrashes () {
     final List<Crash> savingCrashes = Settings.instance().getCrashesToSave();
