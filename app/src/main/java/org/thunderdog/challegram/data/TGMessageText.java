@@ -221,9 +221,14 @@ public class TGMessageText extends TGMessage {
     return xBubblePadding + xBubblePaddingSmall;
   }
 
+  private int maxWidth;
+
   @Override
   protected void buildContent (int maxWidth) {
+    maxWidth = Math.max(maxWidth, computeBubbleTimePartWidth(false));
+
     wrapper.prepare(maxWidth);
+    this.maxWidth = maxWidth;
 
     int webPageMaxWidth = getSmallestMaxContentWidth();
     if (pendingMessageText != null) {
@@ -406,9 +411,42 @@ public class TGMessageText extends TGMessage {
     }
   }
 
+  /*@Override
+  protected boolean allowBubbleHorizontalExtend () {
+    return messageReactions.getBubblesCount() < 2 || !useReactionBubbles() || replyData != null;
+  }*/
+
   @Override
   protected int getContentWidth () {
-    return webPage != null ? Math.max(wrapper.getWidth(), webPage.getWidth()) : wrapper.getWidth();
+    if (webPage != null) {
+      return Math.max(wrapper.getWidth(), webPage.getWidth());
+    } /* else if (messageReactions.getTotalCount() > 0 && useReactionBubbles()) {
+      int textWidth = Math.max(wrapper.getWidth(), computeBubbleTimePartWidth(false));
+      int reactionsWidth = messageReactions.getWidth();
+      return Math.min(maxWidth, Math.max(textWidth, reactionsWidth));
+    } */
+
+    return wrapper.getWidth();
+  }
+
+  private boolean forceExpand = false;
+
+  @Override
+  protected void buildReactions (boolean animated) {
+    if (webPage != null || !useBubble() || wrapper == null || !useReactionBubbles() /*|| replyData != null*/) {
+      super.buildReactions(animated);
+    } else {
+      final float maxWidthMultiply = replyData != null ? 1f : 0.7f;
+      final int textWidth = Math.max(wrapper.getWidth(), computeBubbleTimePartWidth(false));
+      forceExpand = replyData == null && (textWidth < (int)(maxWidth * maxWidthMultiply)) && messageReactions.getBubblesCount() > 1 && messageReactions.getHeight() <= TGReactions.getReactionBubbleHeight();
+      messageReactions.measureReactionBubbles(Math.max(textWidth, (int)(maxWidth * maxWidthMultiply)), computeBubbleTimePartWidth(true, true));
+      messageReactions.resetReactionsAnimator(animated);
+    }
+  }
+
+  @Override
+  public boolean getForceTimeExpandHeightByReactions () {
+    return forceExpand;
   }
 
   public TdApi.WebPage getWebPage () {

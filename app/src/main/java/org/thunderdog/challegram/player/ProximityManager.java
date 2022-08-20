@@ -336,7 +336,7 @@ public class ProximityManager implements Settings.RaiseToSpeakListener, SensorEv
 
   public void modifyExoPlayer (ExoPlayer exoPlayer, @C.AudioContentType int contentType) {
     if (needPlayThroughEarpiece()) {
-      exoPlayer.setAudioAttributes(new AudioAttributes.Builder().setContentType(C.CONTENT_TYPE_SPEECH).setUsage(C.USAGE_VOICE_COMMUNICATION).build(), false);
+      exoPlayer.setAudioAttributes(new AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_SPEECH).setUsage(C.USAGE_VOICE_COMMUNICATION).build(), false);
     } else {
       exoPlayer.setAudioAttributes(new AudioAttributes.Builder().setContentType(contentType).setUsage(C.USAGE_MEDIA).build(), false);
     }

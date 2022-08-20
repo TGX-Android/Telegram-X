@@ -16,6 +16,7 @@ package org.thunderdog.challegram;
 
 import android.Manifest;
 import android.animation.ValueAnimator;
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Notification;
@@ -26,6 +27,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.Signature;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -135,6 +137,7 @@ import java.io.RandomAccessFile;
 import java.lang.ref.SoftReference;
 import java.net.URI;
 import java.net.URLDecoder;
+import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -2433,6 +2436,36 @@ public class U {
       "TDLib: " + Td.tdlibVersion() + " (tdlib/td@" + Td.tdlibCommitHash() + ")\n" +
       "Android: " + SdkVersion.getPrettyName() + " (" + Build.VERSION.SDK_INT + ")" + "\n" +
       "Device: " + Build.BRAND + " " + Build.MODEL + " (" + Build.DISPLAY + ")";
+  }
+
+  /**
+   * @param algorithm string like: SHA1, SHA256, MD5.
+   */
+  @SuppressWarnings("PackageManagerGetSignatures")
+  public static String getApkFingerprint (String algorithm) {
+    try {
+      final PackageInfo info = UI.getAppContext().getPackageManager()
+        .getPackageInfo(BuildConfig.APPLICATION_ID, PackageManager.GET_SIGNATURES);
+
+      for (Signature signature : info.signatures) {
+        final MessageDigest md = MessageDigest.getInstance(algorithm);
+        md.update(signature.toByteArray());
+
+        final byte[] digest = md.digest();
+        final StringBuilder toRet = new StringBuilder();
+        for (int i = 0; i < digest.length; i++) {
+          if (i != 0) toRet.append(":");
+          int b = digest[i] & 0xff;
+          String hex = Integer.toHexString(b);
+          if (hex.length() == 1) toRet.append("0");
+          toRet.append(hex);
+        }
+        return toRet.toString();
+      }
+    } catch (Throwable e) {
+      Log.e("Unable to get app fingerprint");
+    }
+    return null;
   }
 
   public static String resolveMimeType (String path) {

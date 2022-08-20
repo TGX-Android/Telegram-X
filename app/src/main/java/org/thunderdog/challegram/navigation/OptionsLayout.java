@@ -119,7 +119,7 @@ public class OptionsLayout extends LinearLayout implements Animated {
     }
   }
 
-  private static @ThemeColorId int getOptionColorId (int color) {
+  public static @ThemeColorId int getOptionColorId (int color) {
     switch (color) {
       case ViewController.OPTION_COLOR_NORMAL: {
         return R.id.theme_color_text;

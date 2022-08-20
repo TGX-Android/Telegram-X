@@ -1307,15 +1307,19 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
         if (Lang.rtl()) {
           rightWrap.setTranslationX(-px);
+          currentRight.onTranslationChanged(-px);
 
           if (USE_PREVIEW_TRANSLATION) {
             currentLeft.get().setTranslationX(-px2);
+            currentLeft.onTranslationChanged(-px2);
           }
         } else {
           rightWrap.setTranslationX(px);
+          currentRight.onTranslationChanged(px);
 
           if (USE_PREVIEW_TRANSLATION) {
             currentLeft.get().setTranslationX(px2);
+            currentLeft.onTranslationChanged(px2);
           }
         }
 

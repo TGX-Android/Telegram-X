@@ -430,6 +430,20 @@ public class MessageListManager extends ListManager<TdApi.Message> implements Me
   }
 
   @Override
+  public void onMessageUnreadReactionsChanged (long chatId, long messageId, @Nullable TdApi.UnreadReaction[] unreadReactions, int unreadReactionCount) {
+    if (this.chatId == chatId) {
+      runOnUiThreadIfReady(() -> {
+        int index = indexOfMessage(messageId);
+        if (index != -1) {
+          TdApi.Message message = items.get(index);
+          message.unreadReactions = unreadReactions;
+          notifyItemChanged(index, CAUSE_INTERACTION_INFO_CHANGED);
+        }
+      });
+    }
+  }
+
+  @Override
   public void onMessageInteractionInfoChanged (long chatId, long messageId, @Nullable TdApi.MessageInteractionInfo interactionInfo) {
     if (this.chatId == chatId) {
       runOnUiThreadIfReady(() -> {

@@ -182,7 +182,7 @@ public class Intents {
       String[] blackList = {BuildConfig.APPLICATION_ID, "org.telegram.messenger"};
       for (ResolveInfo currentInfo : activities) {
         String packageName = currentInfo.activityInfo.packageName;
-        if (ArrayUtils.indexOf(blackList, packageName) == -1) {
+        if (ArrayUtils.indexOf(blackList, packageName) == -1 && !packageName.startsWith("com.contest.")) {
           Intent targetIntent = new Intent(android.content.Intent.ACTION_VIEW);
           targetIntent.setPackage(packageName);
           targetIntent.setData(uri);

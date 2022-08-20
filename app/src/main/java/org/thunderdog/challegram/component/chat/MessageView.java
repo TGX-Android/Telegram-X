@@ -25,6 +25,7 @@ import android.view.ViewGroup;
 import android.view.ViewParent;
 
 import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -97,12 +98,14 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private DoubleImageReceiver previewReceiver, replyReceiver;
   private GifReceiver gifReceiver;
   private ComplexReceiver complexReceiver;
+  private ComplexReceiver reactionsComplexReceiver;
   private MessageViewGroup parentMessageViewGroup;
   private MessagesManager manager;
 
   public MessageView (Context context) {
     super(context);
     avatarReceiver = new ImageReceiver(this, Screen.dp(20.5f));
+    reactionsComplexReceiver = new ComplexReceiver(this);
     gifReceiver = new GifReceiver(this);
     setUseReplyReceiver();
     setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -151,6 +154,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     if (complexReceiver != null) {
       complexReceiver.performDestroy();
     }
+    if (reactionsComplexReceiver != null) {
+      reactionsComplexReceiver.performDestroy();
+    }
     if (msg != null) {
       msg.onDestroy();
     }
@@ -173,6 +179,22 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     //noinspection ContantConditions
     replyReceiver = new DoubleImageReceiver(this, Config.USE_SCALED_ROUNDINGS ? Screen.dp(Theme.getImageRadius()) : 0);
     flags |= FLAG_USE_REPLY_RECEIVER;
+  }
+
+  @Override
+  public void invalidate () {
+    super.invalidate();
+    if (msg.needViewGroup()) {
+      msg.invalidateOverlay();
+    }
+  }
+
+  @Override
+  public void invalidate (int l, int t, int r, int b) {
+    super.invalidate(l, t, r, b);
+    if (msg.needViewGroup()) {
+      msg.invalidateOverlay();
+    }
   }
 
   public void invalidateReplyReceiver (long chatId, long messageId) {
@@ -212,6 +234,8 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   }
 
   public void setMessage (TGMessage message) {
+    oldHeight = -1;
+
     int desiredHeight = message.getHeight();
     int currentHeight = getCurrentHeight();
 
@@ -233,6 +257,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
     message.resetTransformState();
     message.requestAvatar(avatarReceiver);
+    message.requestReactions(reactionsComplexReceiver);
 
     if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
       previewReceiver.setRadius(message.getImageContentRadius(true));
@@ -304,6 +329,94 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     checkLegacyComponents(this);
   }
 
+  int oldHeight = -1;
+
+  /*
+  @Override
+  public void requestLayout () {
+    if (msg != null) {
+      final int height = msg.getHeight();
+      if (oldHeight != -1 && oldHeight != height) {
+        final MessagesRecyclerView recyclerView = findParentRecyclerView();
+        if (recyclerView != null && !recyclerView.isComputingLayout()) {
+          final RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
+          final RecyclerView.Adapter<?> adapter = recyclerView.getAdapter();
+          if (layoutManager instanceof LinearLayoutManager && adapter instanceof MessagesAdapter) {
+            final LinearLayoutManager linearLayoutManager = (LinearLayoutManager) layoutManager;
+            final MessagesAdapter messagesAdapter = (MessagesAdapter) adapter;
+            final int parentHeight = recyclerView.getMeasuredHeight();
+            final int heightDiff = oldHeight - height;
+            final int bottom = getBottom();
+            int index = -1;
+
+            boolean needScrollCompensation = (bottom > parentHeight);
+            if (needScrollCompensation) {
+              index = messagesAdapter.indexOfMessageContainer(getMessageId());
+            }
+
+            if (!needScrollCompensation && !recyclerView.getManager().isWasScrollByUser()) {
+              final int unreadBadgeIndex = messagesAdapter.indexOfMessageWithUnreadSeparator();
+              index = messagesAdapter.indexOfMessageContainer(getMessageId());
+              needScrollCompensation = (unreadBadgeIndex != -1 && index <= unreadBadgeIndex);
+            }
+
+            //android.util.Log.i("BUILD_LAYOUT", String.format("height layout %d %d %d %d %d %b", height, top, heightDiff, index, unreadBadgeIndex, needScrollCompensation));
+
+            if (needScrollCompensation && index != -1) {
+              // recyclerView.scrollBy(0, heightDiff);
+              linearLayoutManager.scrollToPositionWithOffset(index, parentHeight - bottom + heightDiff);
+            }
+          }
+        }
+      }
+
+      oldHeight = height;
+    }
+
+    super.requestLayout();
+  }
+  */
+
+  /*
+  @Override
+  protected void onLayout (boolean changed, int left, int top, int right, int bottom) {
+    super.onLayout(changed, left, top, right, bottom);
+    final int height = bottom - top;
+    if (oldHeight != -1 && oldHeight != height) {
+      final MessagesRecyclerView recyclerView = findParentRecyclerView();
+      if (recyclerView != null) {
+        final RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
+        final RecyclerView.Adapter<?> adapter = recyclerView.getAdapter();
+        if (layoutManager instanceof LinearLayoutManager && adapter instanceof MessagesAdapter) {
+          final LinearLayoutManager linearLayoutManager = (LinearLayoutManager) layoutManager;
+          final MessagesAdapter messagesAdapter = (MessagesAdapter) adapter;
+          final int parentHeight = recyclerView.getMeasuredHeight();
+
+          final int index = messagesAdapter.indexOfMessageContainer(getMessageId());
+          final int unreadBadgeIndex = messagesAdapter.indexOfMessageWithUnreadSeparator();
+          final boolean needScrollCompensation = (bottom > parentHeight) || (unreadBadgeIndex != -1 && index <= unreadBadgeIndex && !recyclerView.getManager().isWasScrollByUser());
+          final int heightDiff = oldHeight - height;
+
+          if (needScrollCompensation) {
+            if (heightDiff < 0) {
+              recyclerView.scrollBy(0, heightDiff);
+            }
+
+            // It works, but with a delay. If you remove ui.post scrolling will not work
+            // manager.controller().tdlib().ui().post(() -> {
+            //   linearLayoutManager.scrollToPositionWithOffset(index, parentHeight - bottom + heightDiff);
+            // });
+
+          }
+          android.util.Log.i("BUILD_LAYOUT", String.format("height layout %d %d %d %b %d %d %b", height, top, heightDiff, changed, index, unreadBadgeIndex, needScrollCompensation));
+        }
+      }
+    }
+
+    oldHeight = height;
+  }
+  */
+
   public final @Nullable MessagesRecyclerView findParentRecyclerView () {
     ViewParent parent = getParent();
     while (parent != null) {
@@ -353,6 +466,10 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     return complexReceiver;
   }
 
+  public ComplexReceiver getReactionsComplexReceiver () {
+    return reactionsComplexReceiver;
+  }
+
   public DoubleImageReceiver getPreviewReceiver () {
     return previewReceiver;
   }
@@ -364,6 +481,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       isAttached = true;
       avatarReceiver.attach();
       gifReceiver.attach();
+      reactionsComplexReceiver.attach();
       if ((flags & FLAG_USE_REPLY_RECEIVER) != 0) {
         replyReceiver.attach();
       }
@@ -382,6 +500,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       isAttached = false;
       avatarReceiver.detach();
       gifReceiver.detach();
+      reactionsComplexReceiver.detach();
       if ((flags & FLAG_USE_REPLY_RECEIVER) != 0) {
         replyReceiver.detach();
       }
@@ -479,7 +598,17 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     StringList strings = new StringList(6);
     Object tag = fillMessageOptions(m, msg, sender, ids, icons, strings, false);
     if (!ids.isEmpty()) {
-      m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), tag, sender, false);
+      boolean withReactions = false;
+      TdApi.Chat chat = msg.getChat();
+      if (chat != null) {
+        if (chat.availableReactions != null) {
+          if (chat.availableReactions.length > 0) {
+            withReactions = true;
+          }
+        }
+      }
+
+      m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), tag, sender, false, withReactions);
       return true;
     }
     return false;
@@ -1308,27 +1437,14 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       return false;
     }
     MessagesController m = msg.messagesController();
-    if (diffX < 0f && !m.canWriteMessages()) {
-      return false;
-    }
     MessagesRecyclerView recyclerView = findParentRecyclerView();
     if (recyclerView == null) {
       return false;
     }
-    MessagesTouchHelperCallback helperCallback = recyclerView.getMessagesTouchHelper();
-    if (Lang.rtl()) {
-      if ((helperCallback.canDragReply() && diffX > 0) || (helperCallback.canDragShare() && diffX < 0)) {
-        if (touchX < m.get().getMeasuredWidth() - MessagesController.getSlideBackBound()) {
-          m.startSwipe(findTargetView());
-          return true;
-        }
-      }
-    } else {
-      if ((helperCallback.canDragReply() && diffX < 0) || (helperCallback.canDragShare() && diffX > 0)) {
-        if (touchX > MessagesController.getSlideBackBound()) {
-          m.startSwipe(findTargetView());
-          return true;
-        }
+    if ((msg.getRightQuickReactions().size() > 0 && diffX < 0) || (msg.getLeftQuickReactions().size() > 0 && diffX > 0)) {
+      if (touchX > MessagesController.getSlideBackBound()) {
+        m.startSwipe(findTargetView());
+        return true;
       }
     }
     return false;

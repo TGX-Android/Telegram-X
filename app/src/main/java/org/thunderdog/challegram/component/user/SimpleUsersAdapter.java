@@ -196,13 +196,13 @@ public class SimpleUsersAdapter extends RecyclerView.Adapter<SimpleUsersAdapter.
     if (getItemCount() == 0) {
       return 0;
     }
-    int fullHeight = Screen.dp(UserView.HEIGHT) * users.size() + (needCounter ? Screen.dp(42f) : 0);
+    int fullHeight = Screen.dp(UserView.DEFAULT_HEIGHT) * users.size() + (needCounter ? Screen.dp(42f) : 0);
     return maxHeight < 0 ? fullHeight : Math.min(maxHeight, fullHeight);
   }
 
   @Override
   public int measureScrollTop (int position) {
-    return Screen.dp(UserView.HEIGHT) * position;
+    return Screen.dp(UserView.DEFAULT_HEIGHT) * position;
   }
 
   static class SimpleUserHolder extends RecyclerView.ViewHolder {

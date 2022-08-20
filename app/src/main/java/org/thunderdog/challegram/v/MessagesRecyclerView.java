@@ -20,6 +20,7 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -42,6 +43,8 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.MathUtils;
 
 public class MessagesRecyclerView extends RecyclerView implements FactorAnimator.Target {
+  public static final long ITEM_ANIMATOR_DURATION = 140L;
+
   private MessagesManager manager;
   private CustomTouchHelper touchHelper;
   private MessagesTouchHelperCallback callback;
@@ -94,7 +97,7 @@ public class MessagesRecyclerView extends RecyclerView implements FactorAnimator
 
   private void init () {
     setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? OVER_SCROLL_IF_CONTENT_SCROLLS : OVER_SCROLL_NEVER);
-    itemAnimator = new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 140l);
+    itemAnimator = new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, ITEM_ANIMATOR_DURATION);
     itemAnimator.setSupportsChangeAnimations(false);
     setItemAnimator(null);
     callback = new MessagesTouchHelperCallback();

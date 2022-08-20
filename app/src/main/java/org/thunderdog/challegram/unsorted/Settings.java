@@ -283,6 +283,14 @@ public class Settings {
   private static final @Deprecated String KEY_PUSH_USER_IDS = "push_user_ids";
   private static final @Deprecated String KEY_PUSH_USER_ID = "push_user_id";
   private static final String KEY_PUSH_DEVICE_TOKEN = "push_device_token";
+  private static final String KEY_PUSH_STATS_TOTAL_COUNT = "push_stats_total";
+  private static final String KEY_PUSH_STATS_CURRENT_APP_VERSION_COUNT = "push_stats_app";
+  private static final String KEY_PUSH_STATS_CURRENT_TOKEN_COUNT = "push_stats_token";
+  private static final String KEY_PUSH_LAST_RECEIVED_TIME = "push_last_received_time";
+  private static final String KEY_PUSH_LAST_SENT_TIME = "push_last_sent_time";
+  private static final String KEY_PUSH_LAST_TTL = "push_last_ttl";
+  private static final String KEY_PUSH_REPORTED_ERROR = "push_reported_error";
+  private static final String KEY_PUSH_REPORTED_ERROR_DATE = "push_reported_error_date";
   private static final String KEY_CRASH_DEVICE_ID = "crash_device_id";
   public static final String KEY_IS_EMULATOR = "is_emulator";
 
@@ -296,6 +304,11 @@ public class Settings {
   private static final String KEY_EMOJI_COLORS = "emoji_colors";
   private static final String KEY_EMOJI_OTHER_COLORS = "emoji_other_colors";
   private static final String KEY_EMOJI_DEFAULT_COLOR = "emoji_default";
+
+  private static final String KEY_QUICK_REACTION = "quick_reaction";
+  private static final String KEY_QUICK_REACTIONS = "quick_reactions";
+  private static final String KEY_BIG_REACTIONS_IN_CHANNELS = "big_reactions_in_channels";
+  private static final String KEY_BIG_REACTIONS_IN_CHATS = "big_reactions_in_chats";
 
   private static final String KEY_WALLPAPER_PREFIX = "wallpaper";
   private static final String KEY_WALLPAPER_CUSTOM = "_custom";
@@ -757,6 +770,7 @@ public class Settings {
     trackInstalledApkVersion();
     Log.i("Opened database in %dms", SystemClock.uptimeMillis() - ms);
     checkPendingPasscodeLocks();
+    applyLogSettings();
   }
 
   // Schedule
@@ -5818,10 +5832,12 @@ public class Settings {
   // Push token
 
   public void setDeviceToken (String token) {
-    if (StringUtils.isEmpty(token))
+    if (StringUtils.isEmpty(token)) {
       pmc.remove(KEY_PUSH_DEVICE_TOKEN);
-    else
+    } else if (!token.equals(getDeviceToken())) {
+      resetTokenPushMessageCount();
       pmc.putString(KEY_PUSH_DEVICE_TOKEN, token);
+    }
   }
 
   public String getDeviceToken () {
@@ -6052,6 +6068,39 @@ public class Settings {
     return hasFile ? (installedVersion == setting.date ? CloudSetting.STATE_INSTALLED : CloudSetting.STATE_UPDATE_NEEDED) : CloudSetting.STATE_NOT_INSTALLED;
   }
 
+  private String[] quickReactions;
+  public void setQuickReactions (String reactions[]) {
+    pmc.putStringArray(KEY_QUICK_REACTIONS, reactions);
+    quickReactions = reactions;
+  }
+
+  public String[] getQuickReactions () {
+    if (quickReactions == null) {
+      quickReactions = pmc.getStringArray(KEY_QUICK_REACTIONS);
+      if (quickReactions == null) {
+        quickReactions = new String[]{ "\uD83D\uDC4D" };
+      }
+    }
+
+    return quickReactions;
+  }
+
+  public void setBigReactionsInChannels (boolean inChannels) {
+    pmc.putBoolean(KEY_BIG_REACTIONS_IN_CHANNELS, inChannels);
+  }
+
+  public void setBigReactionsInChats (boolean inChats) {
+    pmc.putBoolean(KEY_BIG_REACTIONS_IN_CHATS, inChats);
+  }
+
+  public boolean getBigReactionsInChannels () {
+    return getBoolean(KEY_BIG_REACTIONS_IN_CHANNELS, true);
+  }
+
+  public boolean getBigReactionsInChats () {
+    return getBoolean(KEY_BIG_REACTIONS_IN_CHATS, true);
+  }
+
   public void markEmojiPackInstalled (EmojiPack emojiPack) {
     pmc.putInt(KEY_EMOJI_INSTALLED_PREFIX + emojiPack.identifier, emojiPack.date);
   }
@@ -6201,6 +6250,7 @@ public class Settings {
     buildInfo.saveTo(pmc, KEY_APP_INSTALLATION_PREFIX + installationId);
     pmc.apply();
     this.currentBuildInformation = buildInfo;
+    resetAppVersionPushMessageCount();
   }
 
   public AppBuildInfo getFirstBuildInformation () {
@@ -6226,5 +6276,98 @@ public class Settings {
     AppBuildInfo currentBuild = getCurrentBuildInformation();
     long previousInstallationId = (currentBuild.getInstallationId() - 1);
     return getBuildInformation(previousInstallationId);
+  }
+
+  public String getPushMessageStats () {
+    return
+      "total: " + getReceivedPushMessageCountTotal() + " " +
+      "by_token: " + getReceivedPushMessageCountByToken() + " " +
+      "by_app_version: " + getReceivedPushMessageCountByAppVersion() + " ";
+  }
+
+  public long getReceivedPushMessageCountTotal () {
+    return pmc.getLong(KEY_PUSH_STATS_TOTAL_COUNT, 0);
+  }
+
+  public long getReceivedPushMessageCountByAppVersion () {
+    return pmc.getLong(KEY_PUSH_STATS_CURRENT_APP_VERSION_COUNT, 0);
+  }
+
+  public long getReceivedPushMessageCountByToken () {
+    return pmc.getLong(KEY_PUSH_STATS_CURRENT_TOKEN_COUNT, 0);
+  }
+
+  public long getLastReceivedPushMessageSentTime () {
+    return pmc.getLong(KEY_PUSH_LAST_SENT_TIME, 0);
+  }
+
+  public long getLastReceivedPushMessageReceivedTime () {
+    return pmc.getLong(KEY_PUSH_LAST_RECEIVED_TIME, 0);
+  }
+
+  public int getLastReceivedPushMessageTtl () {
+    return pmc.getInt(KEY_PUSH_LAST_TTL, 0);
+  }
+
+  public interface PushStatsListener {
+    void onNewPushReceived ();
+  }
+
+  private final ReferenceList<PushStatsListener> pushStatsListeners = new ReferenceList<>(true);
+
+  public void addPushStatsListener (PushStatsListener listener) {
+    pushStatsListeners.add(listener);
+  }
+
+  public void removePushStatsListener (PushStatsListener listener) {
+    pushStatsListeners.remove(listener);
+  }
+
+  public void trackPushMessageReceived (long sentTime, long receivedTime, int ttl) {
+    final long totalReceivedCount = getReceivedPushMessageCountTotal() + 1;
+    final long currentVersionReceivedCount = getReceivedPushMessageCountByAppVersion() + 1;
+    final long currentTokenReceivedCount = getReceivedPushMessageCountByToken() + 1;
+    pmc.edit()
+      .putLong(KEY_PUSH_STATS_TOTAL_COUNT, totalReceivedCount)
+      .putLong(KEY_PUSH_STATS_CURRENT_APP_VERSION_COUNT, currentVersionReceivedCount)
+      .putLong(KEY_PUSH_STATS_CURRENT_TOKEN_COUNT, currentTokenReceivedCount)
+      .putLong(KEY_PUSH_LAST_SENT_TIME, sentTime)
+      .putLong(KEY_PUSH_LAST_RECEIVED_TIME, receivedTime)
+      .putInt(KEY_PUSH_LAST_TTL, ttl)
+      .apply();
+    for (PushStatsListener listener : pushStatsListeners) {
+      listener.onNewPushReceived();
+    }
+  }
+
+  public void resetAppVersionPushMessageCount () {
+    pmc.remove(KEY_PUSH_STATS_CURRENT_APP_VERSION_COUNT);
+  }
+
+  public void resetTokenPushMessageCount () {
+    pmc.remove(KEY_PUSH_STATS_CURRENT_TOKEN_COUNT);
+  }
+
+  public void setReportedPushServiceError (@Nullable String error) {
+    if (!StringUtils.isEmpty(error)) {
+      pmc.edit()
+        .putString(KEY_PUSH_REPORTED_ERROR, error)
+        .putLong(KEY_PUSH_REPORTED_ERROR_DATE, System.currentTimeMillis())
+        .apply();
+    } else {
+      pmc.edit()
+        .remove(KEY_PUSH_REPORTED_ERROR)
+        .remove(KEY_PUSH_REPORTED_ERROR_DATE)
+        .apply();
+    }
+  }
+
+  @Nullable
+  public String getReportedPushServiceError () {
+    return pmc.getString(KEY_PUSH_REPORTED_ERROR, null);
+  }
+
+  public long getReportedPushServiceErrorDate () {
+    return pmc.getLong(KEY_PUSH_REPORTED_ERROR_DATE, 0);
   }
 }

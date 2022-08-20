@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.component.chat;
 
 import android.graphics.Canvas;
+import android.util.Log;
 
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
@@ -27,10 +28,9 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.unsorted.Settings;
 
-public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
-  // public static final float SWIPE_MINIMUM_HEIGHT = 55f;
-  public static final float SWIPE_THRESHOLD_WIDTH = 124f;
+import me.vkryl.core.MathUtils;
 
+public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
   private CustomTouchHelper helper;
   private MessagesController controller;
 
@@ -40,6 +40,11 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
 
   public void setController (MessagesController controller) {
     this.controller = controller;
+  }
+
+  @Override
+  public boolean canScroll () {
+    return false;
   }
 
   @Override
@@ -61,24 +66,20 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
 
     int flags = 0;
 
-    if (canDragReply() && m.canReplyTo()) {
-      int flag = Lang.rtl() ? ItemTouchHelper.RIGHT : ItemTouchHelper.LEFT;
-      flags |= flag;
+    if (m.getRightQuickReactions().size() > 0) {
+      flags |= ItemTouchHelper.LEFT;
     }
 
-    if (canDragShare() && m.canBeForwarded()) {
-      flags |= Lang.rtl() ? ItemTouchHelper.LEFT : ItemTouchHelper.RIGHT;
+    if (m.getLeftQuickReactions().size() > 0) {
+      flags |= ItemTouchHelper.RIGHT;
+    }
+
+    if (m.getLeftQuickReactions().size() > 1 || m.getRightQuickReactions().size() > 1) {
+      flags |= ItemTouchHelper.UP;
+      flags |= ItemTouchHelper.DOWN;
     }
 
     return makeMovementFlags(0, flags);
-  }
-
-  public boolean canDragReply () {
-    return Settings.instance().needChatQuickReply() && controller.canWriteMessages() && !controller.needTabs();
-  }
-
-  public boolean canDragShare () {
-    return Settings.instance().needChatQuickShare() && !controller.isSecretChat();
   }
 
   @Override
@@ -94,19 +95,23 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
   @Override
   public boolean onBeforeSwipe (RecyclerView.ViewHolder holder, int direction) {
     final TGMessage msg = MessagesHolder.findMessageView(holder.itemView).getMessage();
-    if (msg.useBubbles()) {
-      Runnable after = null;
-      boolean needDelay = false;
-      if (direction == (Lang.rtl() ? CustomTouchHelper.RIGHT : CustomTouchHelper.LEFT) && canDragReply()) {
-        after = () -> controller.showReply(msg.getNewestMessage(), true, true);
-      }
-      if (direction == (Lang.rtl() ? CustomTouchHelper.LEFT : CustomTouchHelper.RIGHT) && canDragShare()) {
-        after = () -> controller.shareMessages(msg.getChatId(), msg.getAllMessages());
-        needDelay = true;
-      }
-      msg.normalizeTranslation(holder.itemView, after, needDelay);
+    if (direction == CustomTouchHelper.DOWN || direction == CustomTouchHelper.UP) {
       return true;
     }
+
+    if (msg.useBubbles()) {
+      final TGMessage.SwipeQuickAction action = msg.getSwipeHelper().getChosenQuickAction();
+      Runnable after = () -> {
+        if (action != null) {
+          action.onSwipe();
+        }
+      };
+
+      msg.normalizeTranslation(holder.itemView, after, action == null || action.needDelay);
+      return true;
+    }
+
+    msg.getSwipeHelper().onBeforeSwipe();
     return false;
   }
 
@@ -116,7 +121,7 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
     if (controller.getManager().useBubbles()) {
       return (float) Screen.dp(TGMessage.BUBBLE_MOVE_THRESHOLD) / itemWidth;
     } else {
-      return (float) Screen.dp(SWIPE_THRESHOLD_WIDTH) / itemWidth * (Settings.instance().needChatQuickShare() ? 1 : 3);
+      return (float) Screen.dp(MessageQuickActionSwipeHelper.SWIPE_THRESHOLD_WIDTH) / itemWidth;  /*(Settings.instance().needChatQuickShare() ? 1 : 3);*/
     }
   }
 
@@ -128,20 +133,17 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
   @Override
   public void onSwiped (RecyclerView.ViewHolder holder, int swipeDir) {
     helper.ignoreSwipe(holder, swipeDir);
+
     TGMessage msg = MessagesHolder.findMessageView(holder.itemView).getMessage();
     if (msg.getTranslation() != 0f) {
+      TGMessage.SwipeQuickAction action = msg.getSwipeHelper().getChosenQuickAction();
       msg.completeTranslation();
       if (holder.itemView instanceof MessageViewGroup) {
         ((MessageViewGroup) holder.itemView).setSwipeTranslation(0f);
       }
-      if (swipeDir == (Lang.rtl() ? CustomTouchHelper.RIGHT : CustomTouchHelper.LEFT)) {
-        if (canDragReply()) {
-          controller.showReply(msg.getNewestMessage(), true, true);
-        }
-      } else {
-        if (canDragShare()) {
-          controller.shareMessages(msg.getChatId(), msg.getAllMessages());
-        }
+
+      if (action != null) {
+        action.onSwipe();
       }
     }
   }
@@ -151,7 +153,8 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
     if (state == ItemTouchHelper.ACTION_STATE_SWIPE && MessagesHolder.isMessageType(holder.getItemViewType())) {
       final MessageView v = MessagesHolder.findMessageView(holder.itemView);
       final TGMessage msg = v.getMessage();
-      msg.translate(dx, true);
+
+      msg.getSwipeHelper().translate(dx, dy, true);
       if (holder.itemView instanceof MessageViewGroup) {
         ((MessageViewGroup) holder.itemView).setSwipeTranslation(msg.getTranslation());
       }

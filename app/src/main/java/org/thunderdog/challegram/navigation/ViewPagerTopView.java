@@ -14,11 +14,13 @@
  */
 package org.thunderdog.challegram.navigation;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,9 +29,13 @@ import android.view.ViewParent;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 
+import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TGReaction;
+import org.thunderdog.challegram.loader.ComplexReceiver;
+import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeColorId;
@@ -37,6 +43,8 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.DrawableProvider;
+import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.Text;
 
 import java.util.ArrayList;
@@ -44,24 +52,68 @@ import java.util.List;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.Destroyable;
 
-public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener, View.OnClickListener, View.OnLongClickListener {
-  private static class Item {
+public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener, View.OnClickListener, View.OnLongClickListener, Destroyable {
+  public static class Item {
     public final String string;
     public final boolean needFakeBold;
     public final @DrawableRes int iconRes;
+    public ImageReceiver imageReceiver;
+    public int imageReceiverSize = 0;
+    public TGReaction reaction;
+    public final Counter counter;
+    public final DrawableProvider provider;
+    public final boolean hidden;
 
     public Item (String string) {
       this.string = string;
       this.needFakeBold = Text.needFakeBold(string);
       this.iconRes = 0;
+      this.counter = null;
+      this.provider = null;
+      this.hidden = false;
     }
 
     public Item (int iconRes) {
       this.string = null;
       this.needFakeBold = false;
       this.iconRes = iconRes;
+      this.counter = null;
+      this.provider =null;
+      this.hidden = false;
+    }
+
+    public Item (Counter counter, DrawableProvider provider, int addWidth) {
+      this.string = null;
+      this.needFakeBold = false;
+      this.iconRes = 0;
+      this.counter = counter;
+      this.provider = provider;
+      this.addWidth = addWidth;
+      this.hidden = false;
+    }
+
+    public Item (TGReaction reaction, Counter counter, DrawableProvider provider, int addWidth) {
+      this.string = null;
+      this.needFakeBold = false;
+      this.iconRes = 0;
+      this.counter = counter;
+      this.provider = provider;
+      this.addWidth = addWidth;
+      this.reaction = reaction;
+      this.hidden = false;
+    }
+
+    public Item () {
+      this.string = null;
+      this.needFakeBold = false;
+      this.iconRes = 0;
+      this.counter = null;
+      this.provider = null;
+      this.hidden = true;
     }
 
     private Drawable icon;
@@ -74,21 +126,41 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
     @Override
     public boolean equals (Object obj) {
-      return obj instanceof Item && ((Item) obj).iconRes == iconRes && StringUtils.equalsOrBothEmpty(((Item) obj).string, string);
+      return obj instanceof Item && ((Item) obj).iconRes == iconRes && StringUtils.equalsOrBothEmpty(((Item) obj).string, string) && (((Item) obj).counter == counter);
     }
 
     private int width;
+    private int addWidth = 0;
+    private int staticWidth = -1;
+    private int translationX = 0;
 
-    public void calculateWidth (TextPaint paint) {
+    public void setStaticWidth (int staticWidth) {
+      this.staticWidth = staticWidth;
+    }
+
+    public int calculateWidth (TextPaint paint) {
       final int width;
-      if (string != null) {
+      if (staticWidth != -1) {
+        width = staticWidth;
+      } else if (counter != null) {
+        if (imageReceiver != null) {
+          width = (int) counter.getWidth() + imageReceiverSize;
+        } else {
+          width = (int) counter.getWidth() + Screen.dp(6f);
+        }
+      } else if (string != null) {
         width = (int) U.measureText(string, paint);
       } else if (iconRes != 0) {
         width = Screen.dp(24f) + Screen.dp(6f);
       } else {
         width = 0;
       }
-      this.width = width;
+      this.width = width + addWidth;
+      return this.width;
+    }
+
+    public void setTranslationX (int translationX) {
+      this.translationX = translationX;
     }
 
     private String ellipsizedString;
@@ -113,6 +185,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   private int maxItemWidth;
 
   private int textPadding;
+  private ComplexReceiver complexReceiver;
 
   private @ThemeColorId int fromTextColorId, toTextColorId = R.id.theme_color_headerText;
   private @ThemeColorId int selectionColorId;
@@ -120,6 +193,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   public ViewPagerTopView (Context context) {
     super(context);
     this.textPadding = Screen.dp(19f);
+    this.complexReceiver = new ComplexReceiver(this);
     setWillNotDraw(false);
   }
 
@@ -148,6 +222,10 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
   public void setOnItemClickListener (OnItemClickListener listener) {
     this.listener = listener;
+  }
+
+  public OnItemClickListener getOnItemClickListener () {
+    return listener;
   }
 
   @Override
@@ -206,6 +284,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     Item oldItem = this.items.get(index);
     Item item = new Item(text);
     this.items.set(index, item);
+    onUpdateItems();
     totalWidth -= oldItem.width + textPadding * 2;
 
     int textColor = Theme.headerTextColor();
@@ -217,6 +296,17 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     this.lastMeasuredWidth = 0;
     requestLayout();
     invalidate();
+  }
+
+  public void setItemTranslationX (int index, int x) {
+    if (index < getItemsCount()) {
+      this.items.get(index).setTranslationX(x);
+      invalidate();
+    }
+  }
+
+  public int getItemsCount () {
+    return items.size();
   }
 
   public void setItems (@NonNull List<Item> items) {
@@ -235,6 +325,8 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     }
     removeAllViews();
     this.items = items;
+    onUpdateItems();
+
     this.totalWidth = 0;
     this.lastMeasuredWidth = 0;
     int i = 0;
@@ -276,6 +368,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       items.add(index, item);
     }
 
+    onUpdateItems();
     int textColor = Theme.headerTextColor();
     TextPaint paint = Paints.getViewPagerTextPaint(textColor, item.needFakeBold);
 
@@ -312,6 +405,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     }
 
     items.remove(index);
+    onUpdateItems();
 
     if ((int) selectionFactor >= items.size()) {
       selectionFactor--;
@@ -331,6 +425,17 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       sum += item.width;
     }
     return sum;
+  }
+
+  private void onUpdateItems () {
+    for (Item item : items) {
+      if (item.reaction != null) {
+        TGReaction reaction = item.reaction;
+        item.imageReceiver = complexReceiver.getImageReceiver(reaction.getId());
+        item.imageReceiver.requestFile(reaction.centerAnimationSicker().getImage());
+        item.imageReceiverSize = Screen.dp(34);
+      }
+    }
   }
 
   @Override
@@ -542,6 +647,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   private int lastCallSelectionLeft, lastCallSelectionWidth;
   private float lastCallSelectionFactor;
 
+  @SuppressLint("WrongConstant")
   @Override
   public void draw (Canvas c) {
     super.draw(c);
@@ -569,6 +675,12 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       int itemCount = items.size();
       for (int i = 0; i < itemCount; i++) {
         Item item = items.get(i);
+        boolean hasTranslate = item.translationX != 0;
+        if (hasTranslate) {
+          c.save();
+          c.translate(item.translationX, 0f);
+        }
+
         float factor;
         if (fromIndex != -1 && toIndex != -1) {
           int diff = Math.abs(toIndex - fromIndex);
@@ -596,9 +708,29 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
         }
         if (rtl)
           cx -= itemWidth;
-        if (item != null) {
+        if (!item.hidden) {
           int color = ColorUtils.fromToArgb(textFromColor, textToColor, factor * (1f - disabledFactor));
-          if (item.ellipsizedString != null) {
+          if (item.counter != null) {
+            float alphaFactor = 1f - MathUtils.clamp(Math.abs(selectionFactor - i));
+            float imageAlpha = .5f + .5f * alphaFactor;
+            if (items.get(0).hidden) {
+              alphaFactor = Math.max(alphaFactor, 1f - MathUtils.clamp(selectionFactor));
+              if (i == 1 && selectionFactor < 1) {
+                alphaFactor = 1f;
+              }
+            }
+            float counterAlpha = .5f + .5f * alphaFactor;
+            if (item.imageReceiver != null) {
+              int size = item.imageReceiverSize;
+              int imgY = (viewHeight - size) / 2;
+              item.imageReceiver.setAlpha(imageAlpha);
+              item.imageReceiver.setBounds(cx, imgY, cx + size, imgY + size);
+              item.imageReceiver.draw(c);
+              item.counter.draw(c, cx + size, viewHeight / 2f, Gravity.LEFT, counterAlpha, item.provider, 0);
+            } else {
+              item.counter.draw(c, cx + itemWidth / 2f, viewHeight / 2f, Gravity.CENTER, counterAlpha, imageAlpha, item.provider, 0);
+            }
+          } else if (item.ellipsizedString != null) {
             c.drawText(item.ellipsizedString, cx + itemWidth / 2 - item.actualWidth / 2, viewHeight / 2 + Screen.dp(6f), Paints.getViewPagerTextPaint(color, item.needFakeBold));
           } else if (item.iconRes != 0) {
             Drawable drawable = item.getIcon();
@@ -608,6 +740,10 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
         if (!rtl)
           cx += itemWidth;
         itemIndex++;
+
+        if (hasTranslate) {
+          c.restore();
+        }
       }
     }
 
@@ -649,6 +785,23 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
   public void setOnSlideOffListener (OnSlideOffListener onSlideOffListener) {
     this.onSlideOffListener = onSlideOffListener;
+  }
+
+  @Override
+  protected void onAttachedToWindow () {
+    super.onAttachedToWindow();
+    complexReceiver.attach();
+  }
+
+  @Override
+  protected void onDetachedFromWindow () {
+    super.onDetachedFromWindow();
+    complexReceiver.detach();
+  }
+
+  @Override
+  public void performDestroy () {
+    complexReceiver.performDestroy();
   }
 
   private static class BackgroundView extends View {

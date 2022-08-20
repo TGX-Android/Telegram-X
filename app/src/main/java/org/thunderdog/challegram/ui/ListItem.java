@@ -152,6 +152,10 @@ public class ListItem {
   public static final int TYPE_JOIN_REQUEST = 131;
   public static final int TYPE_CHAT_HEADER_LARGE = 132;
 
+  public static final int TYPE_REACTION_CHECKBOX = 140;
+
+  public static final int TYPE_USER_SMALL = 141;
+
   private static final int FLAG_SELECTED = 1;
   private static final int FLAG_BOOL_VALUE = 1 << 1;
   private static final int FLAG_USE_SELECTION_INDEX = 1 << 2;

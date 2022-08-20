@@ -25,9 +25,16 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.TextPaint;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.messaging.FirebaseMessaging;
+
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
@@ -44,6 +51,11 @@ import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.text.Letters;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import me.vkryl.core.StringUtils;
 
 public class TdlibNotificationUtils {
   private static TextPaint lettersPaint;
@@ -216,5 +228,71 @@ public class TdlibNotificationUtils {
 
   static Intent newCoreIntent (int accountId, long forLocalChatId, long specificMessageId) {
     return forLocalChatId != 0 ? Intents.valueOfLocalChatId(accountId, forLocalChatId, specificMessageId) : Intents.valueOfMain(accountId);
+  }
+
+  public interface RegisterCallback {
+    // TODO: change type to TdApi.DeviceToken and support more push platforms
+    void onSuccess (@NonNull TdApi.DeviceTokenFirebaseCloudMessaging token);
+    void onError (@NonNull String errorKey, @Nullable Throwable e);
+  }
+
+  public static class NotificationInitializationFailedError extends RuntimeException {
+    public NotificationInitializationFailedError () {
+      super("Notifications not initialized");
+    }
+  }
+
+  private static boolean initialized;
+
+  public static synchronized boolean initialize () {
+    if (initialized) {
+      return true;
+    }
+    try {
+      TDLib.Tag.notifications("FirebaseApp is initializing...");
+      if (FirebaseApp.initializeApp(UI.getAppContext()) != null) {
+        TDLib.Tag.notifications("FirebaseApp initialization finished successfully");
+        initialized = true;
+        return true;
+      } else {
+        TDLib.Tag.notifications("FirebaseApp initialization failed");
+      }
+    } catch (Throwable e) {
+      TDLib.Tag.notifications("FirebaseApp initialization failed with error: %s", Log.toString(e));
+    }
+    return false;
+  }
+
+  private static String extractFirebaseErrorName (Throwable e) {
+    String message = e.getMessage();
+    if (!StringUtils.isEmpty(message)) {
+      Matcher matcher = Pattern.compile("(?<=: )[A-Z_]+$").matcher(message);
+      if (matcher.find()) {
+        return matcher.group();
+      }
+    }
+    return e.getClass().getSimpleName();
+  }
+
+  public static void getDeviceToken (RegisterCallback callback) {
+    // TODO: support alternative push platforms
+    if (initialize()) {
+      try {
+        TDLib.Tag.notifications("FirebaseMessaging: requesting token...");
+        FirebaseMessaging.getInstance().getToken().addOnSuccessListener(token -> {
+          TDLib.Tag.notifications("FirebaseMessaging: successfully fetched token: \"%s\"", token);
+          callback.onSuccess(new TdApi.DeviceTokenFirebaseCloudMessaging(token, true));
+        }).addOnFailureListener(e -> {
+          TDLib.Tag.notifications("FirebaseMessaging: token fetch failed with remote error: %s", Log.toString(e));
+          callback.onError(extractFirebaseErrorName(e), e);
+        });
+      } catch (Throwable e) {
+        TDLib.Tag.notifications("FirebaseMessaging: token fetch failed with error: %s", Log.toString(e));
+        callback.onError("FIREBASE_REQUEST_ERROR", e);
+      }
+    } else {
+      TDLib.Tag.notifications("FirebaseMessaging: token fetch failed because FirebaseApp was not initialized");
+      callback.onError("FIREBASE_INITIALIZATION_ERROR", new NotificationInitializationFailedError());
+    }
   }
 }

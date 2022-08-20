@@ -55,6 +55,7 @@ import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.widget.EditText;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
+import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.TdConstants;
@@ -114,7 +115,7 @@ public class CreateChannelController extends ViewController<String[]> implements
     descView.setHint(Lang.getString(R.string.Description));
     descView.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
     descView.setGravity(Lang.gravity());
-    descView.setFilters(new InputFilter[]{new InputFilter.LengthFilter(TdConstants.MAX_CHANNEL_DESCRIPTION_LENGTH)});
+    descView.setFilters(new InputFilter[] {new CodePointCountFilter(TdConstants.MAX_CHANNEL_DESCRIPTION_LENGTH)});
     descView.setInputType(descView.getInputType() | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
     descView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.NO_GRAVITY, Lang.rtl() ? marginRight : marginLeft, 0, Lang.rtl() ? marginLeft : marginRight, 0));
     frameLayout.addView(descView);

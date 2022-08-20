@@ -54,3 +54,4 @@ if [[ ! -f local.properties ]]; then
 fi
 
 echo -e "${STYLE_INFO}Configure finished!${STYLE_END}"
+

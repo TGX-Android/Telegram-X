@@ -208,13 +208,23 @@ public class MaterialEditTextGroup extends FrameLayoutFix implements View.OnFocu
   }
 
   private int maxLength = -1;
+  private boolean calculateMaxLengthInCodePoints;
+
+  private int getTextLength () {
+    if (calculateMaxLengthInCodePoints) {
+      CharSequence text = editText.getText();
+      return Character.codePointCount(text, 0, text.length());
+    } else {
+      return editText.getText().length();
+    }
+  }
 
   private void updateRemainingCharCount () {
     if (lengthCounter != null) {
       if (maxLength == -1) {
         lengthCounter.setText("");
       } else {
-        int remaining = maxLength - editText.getText().length();
+        final int remaining = maxLength - getTextLength();
         if (remaining > 50) {
           lengthCounter.setText("");
         } else {
@@ -226,8 +236,13 @@ public class MaterialEditTextGroup extends FrameLayoutFix implements View.OnFocu
   }
 
   public void setMaxLength (int maxLength) {
-    if (this.maxLength != maxLength) {
+    setMaxLength(maxLength, true);
+  }
+
+  public void setMaxLength (int maxLength, boolean calculateMaxLengthInCodePoints) {
+    if (this.maxLength != maxLength || this.calculateMaxLengthInCodePoints != calculateMaxLengthInCodePoints) {
       this.maxLength = maxLength;
+      this.calculateMaxLengthInCodePoints = calculateMaxLengthInCodePoints;
       addLengthCounter(false);
       updateRemainingCharCount();
     }

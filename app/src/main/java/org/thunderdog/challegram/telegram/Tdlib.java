@@ -44,6 +44,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
+import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.filegen.TdlibFileGenerationManager;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -72,6 +73,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -465,7 +467,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private boolean youtubePipDisabled, qrLoginCamera, dialogFiltersTooltip, dialogFiltersEnabled;
   private String qrLoginCode;
   private String[] diceEmoji;
-  private TdApi.Reaction[] supportedReactions;
+  private ArrayList<TGReaction> notPremiumReactions = new ArrayList<>();
+  private ArrayList<TGReaction> onlyPremiumReactions = new ArrayList<>();
+  private HashMap<String, TGReaction> supportedTGReactionsMap = new HashMap<>();
   private boolean callsEnabled = true, expectBlocking, isLocationVisible;
   private boolean canIgnoreSensitiveContentRestrictions, ignoreSensitiveContentRestrictions;
   private boolean canArchiveAndMuteNewChatsFromUnknownUsers, archiveAndMuteNewChatsFromUnknownUsers;
@@ -3561,6 +3565,31 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return null;
   }
 
+  public ArrayList<TGReaction> getNotPremiumReactions () {
+    synchronized (dataLock) {
+      return notPremiumReactions;
+    }
+  }
+
+  public ArrayList<TGReaction> getOnlyPremiumReactions () {
+    synchronized (dataLock) {
+      return onlyPremiumReactions;
+    }
+  }
+
+  public int getTotalActiveReactionsCount () {
+    synchronized (dataLock) {
+      return notPremiumReactions.size() + onlyPremiumReactions.size();
+    }
+  }
+
+  @Nullable
+  public TGReaction getReaction (String reaction) {
+    synchronized (dataLock) {
+      return supportedTGReactionsMap.get(reaction);
+    }
+  }
+
   public boolean shouldSendAsDice (TdApi.FormattedText text) {
     return getDiceEmoji(text) != null;
   }
@@ -4772,35 +4801,35 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
     int state = context().getTokenState();
     final String deviceToken = getRegisteredDeviceToken();
-    if (!StringUtils.isEmpty(deviceToken) && (state == TdlibManager.TOKEN_STATE_NONE || state == TdlibManager.TOKEN_STATE_INITIALIZING)) {
-      state = TdlibManager.TOKEN_STATE_OK;
+    if (!StringUtils.isEmpty(deviceToken) && (state == TdlibManager.TokenState.NONE || state == TdlibManager.TokenState.INITIALIZING)) {
+      state = TdlibManager.TokenState.OK;
     }
-    if (state == TdlibManager.TOKEN_STATE_NONE)
+    if (state == TdlibManager.TokenState.NONE)
       return;
     String error = context().getTokenError();
-    List<TdApi.JsonObjectMember> members = new ArrayList<>();
+    Map<String, Object> members = new LinkedHashMap<>();
     switch (state) {
-      case TdlibManager.TOKEN_STATE_ERROR: {
-        members.add(new TdApi.JsonObjectMember(DEVICE_TOKEN_KEY, new TdApi.JsonValueString("FIREBASE_ERROR")));
+      case TdlibManager.TokenState.ERROR: {
+        members.put(DEVICE_TOKEN_KEY, "FIREBASE_ERROR");
         if (!StringUtils.isEmpty(error)) {
-          members.add(new TdApi.JsonObjectMember("firebase_error", new TdApi.JsonValueString(error)));
+          members.put("firebase_error", error);
         }
         break;
       }
-      case TdlibManager.TOKEN_STATE_INITIALIZING: {
-        members.add(new TdApi.JsonObjectMember(DEVICE_TOKEN_KEY, new TdApi.JsonValueString("FIREBASE_INITIALIZING")));
+      case TdlibManager.TokenState.INITIALIZING: {
+        members.put(DEVICE_TOKEN_KEY, "FIREBASE_INITIALIZING");
         break;
       }
-      case TdlibManager.TOKEN_STATE_OK: {
-        members.add(new TdApi.JsonObjectMember(DEVICE_TOKEN_KEY, new TdApi.JsonValueString(deviceToken)));
+      case TdlibManager.TokenState.OK: {
+        members.put(DEVICE_TOKEN_KEY, deviceToken);
         break;
       }
       default: {
-        members.add(new TdApi.JsonObjectMember(DEVICE_TOKEN_KEY, new TdApi.JsonValueString("UNKNOWN")));
+        members.put(DEVICE_TOKEN_KEY, "UNKNOWN");
         break;
       }
     }
-    String connectionParams = JSON.stringify(members);
+    String connectionParams = JSON.stringify(JSON.toObject(members));
     if (connectionParams != null && (force || !StringUtils.equalsOrBothEmpty(lastReportedConnectionParams, connectionParams))) {
       this.lastReportedConnectionParams = connectionParams;
       client.send(new TdApi.SetOption("connection_parameters", new TdApi.OptionValueString(connectionParams)), okHandler);
@@ -6240,7 +6269,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   @TdlibThread
   private void updateMessageUnreadReactions (TdApi.UpdateMessageUnreadReactions update) {
-    listeners.updateMessageUnreadReactions(update);
+    final boolean counterChanged, availabilityChanged;
+    synchronized (dataLock) {
+      final TdApi.Chat chat = chats.get(update.chatId);
+      if (TdlibUtils.assertChat(update.chatId, chat, update)) {
+        return;
+      }
+      availabilityChanged = (chat.unreadReactionCount > 0) != (update.unreadReactionCount > 0);
+      counterChanged = chat.unreadReactionCount != update.unreadReactionCount;
+      chat.unreadReactionCount = update.unreadReactionCount;
+    }
+
+
+    listeners.updateMessageUnreadReactions(update, counterChanged, availabilityChanged);
   }
 
   @TdlibThread
@@ -6294,6 +6335,39 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  public void refreshChatState (long chatId) {
+    client().send(new TdApi.GetChat(chatId), result -> {
+      switch (result.getConstructor()) {
+        case TdApi.Chat.CONSTRUCTOR: {
+          updateChatState((TdApi.Chat) result);
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          Log.v("Unable to refresh chat state: %s", TD.toErrorString(result));
+          break;
+        }
+      }
+    });
+  }
+
+  @TdlibThread
+  private void updateChatState (TdApi.Chat chat) {
+    boolean notificationSettingsChanged;
+    synchronized (dataLock) {
+      TdApi.Chat existingChat = chats.get(chat.id);
+      if (TdlibUtils.assertChat(chat.id, chat)) {
+        return;
+      }
+      existingChat.canBeDeletedForAllUsers = chat.canBeDeletedForAllUsers;
+      existingChat.canBeDeletedOnlyForSelf = chat.canBeDeletedOnlyForSelf;
+      existingChat.canBeReported = chat.canBeReported;
+      notificationSettingsChanged = !existingChat.notificationSettings.useDefaultMuteFor && !chat.notificationSettings.useDefaultMuteFor && existingChat.notificationSettings.muteFor != chat.notificationSettings.muteFor;
+    }
+    if (notificationSettingsChanged) {
+      listeners.updateNotificationSettings(new TdApi.UpdateChatNotificationSettings(chat.id, chat.notificationSettings));
+    }
+  }
+
   @TdlibThread
   private void updateChatDefaultDisableNotifications (TdApi.UpdateChatDefaultDisableNotification update) {
     synchronized (dataLock) {
@@ -6335,15 +6409,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   @TdlibThread
   private void updateChatUnreadReactionCount (TdApi.UpdateChatUnreadReactionCount update) {
     final boolean availabilityChanged;
+    final TdApi.Chat chat;
+    final TdlibChatList[] chatLists;
     synchronized (dataLock) {
-      final TdApi.Chat chat = chats.get(update.chatId);
+      chat = chats.get(update.chatId);
       if (TdlibUtils.assertChat(update.chatId, chat, update)) {
         return;
       }
       availabilityChanged = (chat.unreadReactionCount > 0) != (update.unreadReactionCount > 0);
       chat.unreadReactionCount = update.unreadReactionCount;
+      chatLists = chatListsImpl(chat.positions);
     }
-    listeners.updateChatUnreadReactionCount(update, availabilityChanged);
+    listeners.updateChatUnreadReactionCount(update, availabilityChanged, chat, chatLists);
   }
 
   @TdlibThread
@@ -6365,6 +6442,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public static int CHAT_MARKED_AS_UNREAD = -1;
   public static int CHAT_FAILED = -2;
+  public static int CHAT_LOADING = -3;
 
   static class ChatListChange {
     public final TdlibChatList list;
@@ -7512,7 +7590,26 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private void updateReactions (TdApi.UpdateReactions update) {
     synchronized (dataLock) {
-      this.supportedReactions = update.reactions;
+      HashMap<String, TGReaction> supportedTGReactionsMap = new HashMap<>();
+      ArrayList<TGReaction> notPremiumReactions = new ArrayList<>();
+      ArrayList<TGReaction> onlyPremiumReactions = new ArrayList<>();
+
+      for (int a = 0; a < update.reactions.length; a++) {
+        TdApi.Reaction reaction = update.reactions[a];
+        TGReaction tgReaction = new TGReaction(this, reaction);
+        supportedTGReactionsMap.put(reaction.reaction, tgReaction);
+        if (reaction.isActive) {
+          if (reaction.isPremium) {
+            onlyPremiumReactions.add(tgReaction);
+          } else {
+            notPremiumReactions.add(tgReaction);
+          }
+        }
+      }
+
+      this.supportedTGReactionsMap = supportedTGReactionsMap;
+      this.notPremiumReactions = notPremiumReactions;
+      this.onlyPremiumReactions = onlyPremiumReactions;
     }
   }
 
@@ -7904,7 +8001,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         break;
       }
       case TdApi.UpdateBasicGroupFullInfo.CONSTRUCTOR: {
-        cache.onUpdateBasicGroupFull((TdApi.UpdateBasicGroupFullInfo) update);
+        TdApi.UpdateBasicGroupFullInfo updateBasicGroupFullInfo = (TdApi.UpdateBasicGroupFullInfo) update;
+        cache.onUpdateBasicGroupFull(updateBasicGroupFullInfo);
+        refreshChatState(ChatId.fromBasicGroupId(updateBasicGroupFullInfo.basicGroupId));
         break;
       }
 
@@ -7914,7 +8013,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         break;
       }
       case TdApi.UpdateSupergroupFullInfo.CONSTRUCTOR: {
-        cache.onUpdateSupergroupFull((TdApi.UpdateSupergroupFullInfo) update);
+        TdApi.UpdateSupergroupFullInfo updateSupergroupFullInfo = (TdApi.UpdateSupergroupFullInfo) update;
+        cache.onUpdateSupergroupFull(updateSupergroupFullInfo);
+        refreshChatState(ChatId.fromSupergroupId(updateSupergroupFullInfo.supergroupId));
         break;
       }
 

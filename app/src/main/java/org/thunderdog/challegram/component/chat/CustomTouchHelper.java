@@ -692,7 +692,7 @@ public class CustomTouchHelper extends RecyclerView.ItemDecoration
    * If user drags the view to the edge, trigger a scroll if necessary.
    */
   private boolean scrollIfNecessary() {
-    if (mSelected == null) {
+    if (mSelected == null || !mCallback.canScroll()) {
       mDragScrollStartTimeInMs = Long.MIN_VALUE;
       return false;
     }
@@ -1499,6 +1499,10 @@ public class CustomTouchHelper extends RecyclerView.ItemDecoration
      */
     public abstract int getMovementFlags(RecyclerView recyclerView,
                                          ViewHolder viewHolder);
+
+    public boolean canScroll() {
+      return true;
+    }
 
     /**
      * Converts a given set of flags to absolution direction which means {@link #START} and

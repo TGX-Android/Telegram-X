@@ -37,6 +37,7 @@ import androidx.annotation.Nullable;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifActor;
@@ -81,6 +82,10 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
   private final GifReceiver gifReceiver;
   private final ImageReceiver preview;
 
+  private final ImageReceiver effectImageReceiver;
+  private final GifReceiver effectGifReceiver;
+  private final ImageReceiver effectPreview;
+
   private final StickerView stickerView;
 
   private final TextPaint paint;
@@ -104,7 +109,9 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     this.preview = new ImageReceiver(stickerView, 0);
     this.imageReceiver = new ImageReceiver(stickerView, 0);
     this.gifReceiver = new GifReceiver(stickerView);
-
+    this.effectPreview = new ImageReceiver(stickerView, 0);
+    this.effectImageReceiver = new ImageReceiver(stickerView, 0);
+    this.effectGifReceiver = new GifReceiver(stickerView);
     ThemeManager.instance().addThemeListener(this);
   }
 
@@ -183,7 +190,9 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
           imageReceiver.clear();
           preview.clear();
           gifReceiver.clear();
-
+          effectImageReceiver.clear();
+          effectPreview.clear();
+          effectGifReceiver.clear();
           if (pendingPopup != null) {
             pendingPopup.onCustomHideAnimationComplete();
           }
@@ -210,16 +219,28 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     imageReceiver.clear();
     gifReceiver.clear();
     preview.clear();
+    effectImageReceiver.clear();
+    effectPreview.clear();
+    effectGifReceiver.clear();
     if (currentSticker != null) {
       if (currentSticker.isAnimated()) {
         GifActor.addFreezeReason(currentSticker.getFullAnimation(), false);
       }
       currentSticker = null;
     }
+    if (currentEffectSticker != null) {
+      if (currentEffectSticker.isAnimated()) {
+        GifActor.addFreezeReason(currentEffectSticker.getFullAnimation(), false);
+      }
+      currentEffectSticker = null;
+    }
   }
 
   private TGStickerObj currentSticker;
   private int stickerWidth, stickerHeight;
+
+  private TGStickerObj currentEffectSticker;
+  private int effectStickerWidth, effectStickerHeight;
 
   private int getStickerCenterX () {
     return getMeasuredWidth() / 2;
@@ -230,6 +251,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
   }
 
   private int stickerMaxWidth;
+  private int effectStickerMaxWidth;
 
   private void layoutReceivers () {
     if (currentSticker != null) {
@@ -250,6 +272,25 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
       imageReceiver.setBounds(cx - stickerWidth / 2, cy - stickerHeight / 2, cx + stickerWidth / 2, cy + stickerHeight / 2);
       gifReceiver.setBounds(cx - stickerWidth / 2, cy - stickerHeight / 2, cx + stickerWidth / 2, cy + stickerHeight / 2);
     }
+
+    if (currentEffectSticker != null) {
+      int cx = getStickerCenterX();
+      int cy = getStickerCenterY();
+
+      effectStickerWidth = currentEffectSticker.getWidth();
+      effectStickerHeight = currentEffectSticker.getHeight();
+
+      effectStickerMaxWidth = Math.min(Screen.dp(350f), Screen.smallestSide() - Screen.dp(86f));
+      if (Math.max(effectStickerWidth, effectStickerHeight) != effectStickerMaxWidth) {
+        float ratio = Math.min((float) effectStickerMaxWidth / (float) effectStickerWidth, (float) effectStickerMaxWidth / (float) effectStickerHeight);
+        effectStickerWidth = (int) ((float) effectStickerWidth * ratio);
+        effectStickerHeight = (int) ((float) effectStickerHeight * ratio);
+      }
+
+      effectPreview.setBounds(cx - effectStickerWidth / 2, cy - effectStickerHeight / 2, cx + effectStickerWidth / 2, cy + effectStickerHeight / 2);
+      effectImageReceiver.setBounds(cx - effectStickerWidth / 2, cy - effectStickerHeight / 2, cx + effectStickerWidth / 2, cy + effectStickerHeight / 2);
+      effectGifReceiver.setBounds(cx - effectStickerWidth / 2, cy - effectStickerHeight / 2, cx + effectStickerWidth / 2, cy + effectStickerHeight / 2);
+    }
   }
 
   private @Nullable EmojiString emojiString;
@@ -257,6 +298,10 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
   private Path contour;
 
   private void setSticker (TGStickerObj sticker, boolean loadPreview) {
+    setSticker(sticker, null, loadPreview);
+  }
+
+  private void setSticker (TGStickerObj sticker, @Nullable TGStickerObj effectSticker, boolean loadPreview) {
     if (sticker.isAnimated()) {
       GifActor.addFreezeReason(sticker.getFullAnimation(), true);
     }
@@ -269,11 +314,26 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     } else {
       this.emojiString = null;
     }
-    layoutReceivers();
+    if (effectSticker == null) layoutReceivers();
     preview.requestFile(sticker.getImage());
     imageReceiver.requestFile(sticker.getFullImage());
     gifReceiver.requestFile(sticker.getFullAnimation());
     contour = sticker.getContour(-1);
+
+    if (currentEffectSticker != null && currentEffectSticker.isAnimated()) {
+      GifActor.addFreezeReason(currentEffectSticker.getFullAnimation(), false);
+    }
+    this.currentEffectSticker = effectSticker;
+    if (effectSticker != null) {
+      if (effectSticker.isAnimated()) {
+        GifActor.addFreezeReason(effectSticker.getFullAnimation(), true);
+      }
+      layoutReceivers();
+      effectPreview.requestFile(effectSticker.getImage());
+      effectImageReceiver.requestFile(effectSticker.getFullImage());
+      effectGifReceiver.requestFile(effectSticker.getFullAnimation());
+    }
+
     hideMenu();
   }
 
@@ -293,6 +353,16 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     this.fromWidth = width;
     this.viewportHeight = viewportHeight;
     setSticker(sticker, false);
+  }
+
+  public void setReaction (Tdlib tdlib, TGReaction reaction, int cx, int cy, int width, int viewportHeight, boolean disableEmojis) {
+    this.tdlib = tdlib;
+    this.disableEmojis = disableEmojis;
+    this.fromCx = cx;
+    this.fromCy = cy;
+    this.fromWidth = width;
+    this.viewportHeight = viewportHeight;
+    setSticker(reaction.activateAnimationSicker(), reaction.effectAnimationSicker(), false);
   }
 
   private LinearLayout menu;
@@ -585,6 +655,24 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     replaceAnimator.animateTo(0f);
   }
 
+  public void replaceReaction (TGReaction reaction, int cx, int cy) {
+    if (replaceAnimator == null) {
+      replaceAnimator = new FactorAnimator(REPLACE_ANIMATOR, this, OVERSHOOT_INTERPOLATOR, 220, 1f);
+    } else {
+      replaceAnimator.forceFactor(1f);
+    }
+    replaceFactor = 1f;
+    setSticker(reaction.activateAnimationSicker(), reaction.effectAnimationSicker(), true);
+    this.fromCx = cx;
+    this.fromCy = cy;
+    replaceAnimator.animateTo(0f);
+  }
+
+  public void replaceStartCords (int cx, int cy) {
+    this.fromCx = cx;
+    this.fromCy = cy;
+  }
+
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -663,6 +751,14 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
           preview.draw(c);
         }
         receiver.draw(c);
+      }
+
+      if (currentEffectSticker != null) {
+        if (effectGifReceiver.needPlaceholder()) {
+          effectPreview.draw(c);
+        } else {
+          effectGifReceiver.draw(c);
+        }
       }
 
       if (savedReplace) {
