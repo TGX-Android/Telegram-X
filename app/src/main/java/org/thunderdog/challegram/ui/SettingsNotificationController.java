@@ -1389,7 +1389,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       } else {
         report += "Firebase options unavailable!";
       }
-      report += "APK fingerprint: " + U.getApkFingerprint("SHA1") + "\n";
+      report += "\nFingerprint: " + U.getApkFingerprint("SHA1") + "\n";
       report += "\n" + U.getUsefulMetadata(tdlib);
       tdlib.ui().shareText(this, report);
     }
