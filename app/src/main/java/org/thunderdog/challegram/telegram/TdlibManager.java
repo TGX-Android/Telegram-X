@@ -1577,7 +1577,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   public synchronized void checkDeviceToken () {
     if (BuildConfig.EXPERIMENTAL) {
-      setTokenState(TOKEN_STATE_ERROR, "I use `" + BuildConfig.APPLICATION_ID + "` and acknowledge that notifications do not work intentionally.", null);
+      setTokenState(TOKEN_STATE_ERROR, "I use `" + UI.getAppContext().getPackageName() + "` and acknowledge that notifications do not work intentionally.", null);
       return;
     }
     setTokenState(TOKEN_STATE_INITIALIZING);
