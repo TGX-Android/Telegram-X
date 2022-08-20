@@ -33,6 +33,7 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.TDLib;
@@ -76,6 +77,10 @@ public class FirebaseListenerService extends FirebaseMessagingService {
 
   @Override
   public void onMessageReceived (@NonNull RemoteMessage remoteMessage) {
+    if (BuildConfig.EXPERIMENTAL) {
+      return;
+    }
+
     final String payload = makePayload(remoteMessage);
     final long sentTime = remoteMessage.getSentTime();
     UI.initApp(getApplicationContext());

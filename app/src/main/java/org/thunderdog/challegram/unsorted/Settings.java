@@ -6313,6 +6313,14 @@ public class Settings {
 
   private final ReferenceList<PushStatsListener> pushStatsListeners = new ReferenceList<>(true);
 
+  public void addPushStatsListener (PushStatsListener listener) {
+    pushStatsListeners.add(listener);
+  }
+
+  public void removePushStatsListener (PushStatsListener listener) {
+    pushStatsListeners.remove(listener);
+  }
+
   public void trackPushMessageReceived (long sentTime, long receivedTime, int ttl) {
     final long totalReceivedCount = getReceivedPushMessageCountTotal() + 1;
     final long currentVersionReceivedCount = getReceivedPushMessageCountByAppVersion() + 1;

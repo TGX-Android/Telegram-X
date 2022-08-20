@@ -43,6 +43,7 @@ import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.navigation.SettingsWrap;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.telegram.GlobalTokenStateListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibManager;
@@ -78,7 +79,9 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
   View.OnClickListener,
   ViewController.SettingsIntDelegate,
   View.OnLongClickListener,
-  Log.OutputListener {
+  Log.OutputListener,
+  Settings.PushStatsListener,
+  GlobalTokenStateListener {
   public static final int SECTION_MAIN = 0;
   public static final int SECTION_UTILITIES = 1;
   public static final int SECTION_TDLIB = 2;
@@ -681,13 +684,17 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
           items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.Other));
           items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
           items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_tdlib, 0, R.string.TdlibLogs, false));
-          items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_pushService, 0, R.string.PushServices, false));
+          if (tdlib != null) {
+            items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+            items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_pushService, 0, R.string.PushServices, false));
+          }
           items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         }
         break;
       }
       case SECTION_PUSH: {
+        if (tdlib == null)
+          throw new IllegalStateException();
         if (!items.isEmpty()) {
           items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
         }
@@ -949,15 +956,41 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         }
         break;
       }
+      case SECTION_PUSH: {
+        tdlib.context().global().addTokenStateListener(this);
+        Settings.instance().addPushStatsListener(this);
+        break;
+      }
     }
 
     recyclerView.setAdapter(adapter);
   }
 
   @Override
+  public void onTokenStateChanged (int newState, @Nullable String error, @Nullable Throwable fullError) {
+    runOnUiThreadOptional(() -> {
+      adapter.updateValuedSettingById(R.id.btn_secret_pushToken);
+    });
+  }
+
+  @Override
+  public void onNewPushReceived () {
+    runOnUiThreadOptional(() -> {
+      adapter.updateValuedSettingById(R.id.btn_secret_pushStats);
+      adapter.updateValuedSettingById(R.id.btn_secret_pushDate);
+      adapter.updateValuedSettingById(R.id.btn_secret_pushDuration);
+      adapter.updateValuedSettingById(R.id.btn_secret_pushTtl);
+    });
+  }
+
+  @Override
   public void destroy () {
     super.destroy();
     Log.removeOutputListener(this);
+    if (section == SECTION_PUSH) {
+      tdlib.context().global().removeTokenStateListener(this);
+      Settings.instance().removePushStatsListener(this);
+    }
   }
 
 
