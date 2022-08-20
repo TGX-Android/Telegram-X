@@ -648,6 +648,7 @@
   <item type="id" name="btn_sendScreenshotNotification" />
   <item type="id" name="btn_debugShowHideBottomBar" />
   <item type="id" name="btn_share" />
+  <item type="id" name="btn_retry" />
   <item type="id" name="btn_editProxy" />
   <item type="id" name="share_bottom" />
   <item type="id" name="share_comment_stub" />
@@ -885,6 +886,13 @@
   <item type="id" name="btn_secret_debugQrRegions" />
   <item type="id" name="btn_secret_forceQrZxing" />
   <item type="id" name="btn_secret_qrTest" />
+  <item type="id" name="btn_secret_pushStats" />
+  <item type="id" name="btn_secret_pushTtl" />
+  <item type="id" name="btn_secret_pushToken" />
+  <item type="id" name="btn_secret_pushDate" />
+  <item type="id" name="btn_secret_pushDuration" />
+  <item type="id" name="btn_secret_pushConfig" />
+  <item type="id" name="btn_secret_appFingerprint" />
   <item type="id" name="btn_string" />
 
   <item type="id" name="btn_test_database" />
@@ -909,6 +917,7 @@
 
   <!--<item type="id" name="btn_ton" />-->
   <item type="id" name="btn_tdlib" />
+  <item type="id" name="btn_pushService" />
   <item type="id" name="btn_tdlib_verbosity" />
   <item type="id" name="btn_tdlib_resetLogSettings" />
   <item type="id" name="btn_tdlib_logSize" />

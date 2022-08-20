@@ -23,6 +23,7 @@ import android.os.PowerManager;
 import android.os.SystemClock;
 import android.widget.Toast;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
@@ -44,19 +45,24 @@ import org.thunderdog.challegram.player.AudioController;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.AppBuildInfo;
 import org.thunderdog.challegram.util.Crash;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -74,6 +80,7 @@ import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.util.FilteredIterator;
+import me.vkryl.td.JSON;
 import me.vkryl.td.Td;
 
 public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
@@ -1516,12 +1523,21 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     });
   }
 
-  static final int TOKEN_STATE_NONE = 0;
-  static final int TOKEN_STATE_ERROR = 1;
-  static final int TOKEN_STATE_INITIALIZING = 2;
-  static final int TOKEN_STATE_OK = 3;
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    TokenState.NONE,
+    TokenState.ERROR,
+    TokenState.INITIALIZING,
+    TokenState.OK
+  })
+  public @interface TokenState {
+    int NONE = 0,
+      ERROR = 1,
+      INITIALIZING = 2,
+      OK = 3;
+  }
 
-  private int tokenState = TOKEN_STATE_NONE;
+  private @TokenState int tokenState = TokenState.NONE;
   private String tokenError;
   private Throwable tokenFullError;
 
@@ -1529,12 +1545,12 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return account -> account.isUnauthorized() && account.hasPrivateData() && !account.isService();
   }
 
-  private synchronized void setTokenState (int newState) {
+  private synchronized void setTokenState (@TokenState int newState) {
     setTokenState(newState, null, null);
   }
 
-  private synchronized void setTokenState (int newState, @Nullable String error, @Nullable Throwable fullError) {
-    if (this.tokenState != TOKEN_STATE_OK || newState == TOKEN_STATE_OK) {
+  private synchronized void setTokenState (@TokenState int newState, @Nullable String error, @Nullable Throwable fullError) {
+    if (this.tokenState != TokenState.OK || newState == TokenState.OK) {
       this.tokenState = newState;
       this.tokenError = error;
       this.tokenFullError = fullError;
@@ -1543,9 +1559,29 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
           account.tdlib().checkConnectionParams();
         }
       }
+      global().notifyTokenStateChanged(newState, error, fullError);
+      if (newState == TokenState.ERROR && !StringUtils.isEmpty(error)) {
+        String reportedError = Settings.instance().getReportedPushServiceError();
+        if (reportedError == null || !reportedError.equals(error)) {
+          Settings.instance().setReportedPushServiceError(error);
+          reportPushServiceError(error, fullError);
+        }
+      } else if (newState == TokenState.OK) {
+        String reportedError = Settings.instance().getReportedPushServiceError();
+        if (!StringUtils.isEmpty(reportedError)) {
+          reportPushServiceRestored(reportedError, Settings.instance().getReportedPushServiceErrorDate());
+          // forget the error, so it would be reported again when it happens
+          Settings.instance().setReportedPushServiceError(null);
+        }
+      }
     }
   }
 
+  public boolean hasTokenError () {
+    return tokenState == TokenState.ERROR;
+  }
+
+  @TokenState
   public int getTokenState () {
     return tokenState;
   }
@@ -1570,28 +1606,30 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     if (!StringUtils.equalsOrBothEmpty(this.token, token)) {
       Settings.instance().setDeviceToken(token);
       this.token = token;
-      setTokenState(TOKEN_STATE_OK);
+      setTokenState(TokenState.OK);
       dispatchDeviceToken(token);
     }
   }
 
+  private static final String EXPERIMENTAL_BUILD_ERROR = "EXPERIMENTAL_BUILD_DETECTED";
+
   public synchronized void checkDeviceToken () {
     if (BuildConfig.EXPERIMENTAL) {
-      setTokenState(TOKEN_STATE_ERROR, "I use `" + UI.getAppContext().getPackageName() + "` and acknowledge that notifications do not work intentionally.", null);
+      setTokenState(TokenState.ERROR, EXPERIMENTAL_BUILD_ERROR, null);
       return;
     }
-    setTokenState(TOKEN_STATE_INITIALIZING);
+    setTokenState(TokenState.INITIALIZING);
     TdlibNotificationUtils.getDeviceToken(new TdlibNotificationUtils.RegisterCallback() {
       @Override
-      public void onSuccess (TdApi.DeviceTokenFirebaseCloudMessaging token) {
+      public void onSuccess (@NonNull TdApi.DeviceTokenFirebaseCloudMessaging token) {
         // TODO: use TdApi.DeviceToken instead of taking token's String value directly
         setDeviceToken(token.token);
       }
 
       @Override
-      public void onError (Throwable e) {
+      public void onError (@NonNull String errorKey, @Nullable Throwable e) {
         Log.e(Log.TAG_FCM, "Failed to retrieve push token", e);
-        setTokenState(TOKEN_STATE_ERROR, StringUtils.isEmpty(e.getMessage()) ? Log.toString(e) : e.getClass().getSimpleName() + ": " + e.getMessage(), e);
+        setTokenState(TokenState.ERROR, errorKey, e);
       }
     });
   }
@@ -1633,7 +1671,49 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }
   }
 
-  // Crash reporting
+  // Service reporting
+
+  public void reportPushServiceError (@Nullable String error, @Nullable Throwable fullError) {
+    if (EXPERIMENTAL_BUILD_ERROR.equals(error)) {
+      return;
+    }
+    Map<String, Object> event = new LinkedHashMap<>();
+    if (!StringUtils.isEmpty(error)) {
+      event.put("error", error);
+    }
+    if (fullError != null) {
+      event.put("stack_trace", Log.toString(fullError));
+    }
+    reportEvent("PUSH_SERVICE_ERROR", event);
+  }
+
+  public void reportPushServiceRestored (String reportedErrorType, long reportedDate) {
+    Map<String, Object> event = new LinkedHashMap<>();
+    if (!StringUtils.isEmpty(reportedErrorType)) {
+      event.put("error", reportedErrorType);
+    }
+    if (reportedDate != 0) {
+      event.put("recovered_within", System.currentTimeMillis() - reportedDate);
+    }
+    reportEvent("PUSH_SERVICE_RECOVERED", event);
+  }
+
+  private void reportEvent (String type, Map<String, Object> event) {
+    AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
+
+    event.put("sdk", Build.VERSION.SDK_INT);
+    event.put("app", appBuildInfo.toMap());
+    event.put("cpu", U.getCpuArchitecture());
+    event.put("package_id", UI.getAppContext().getPackageName());
+    event.put("fingerprint", U.getApkFingerprint("SHA1"));
+    event.put("device_id", Settings.instance().crashDeviceId());
+
+    Tdlib tdlib = serviceTdlib();
+    tdlib.incrementJobReferenceCount();
+    tdlib.client().send(new TdApi.SaveApplicationLogEvent(type, appBuildInfo.maxCommitDate(), JSON.toObject(event)), result -> {
+      tdlib.decrementJobReferenceCount();
+    });
+  }
 
   public void saveCrashes () {
     final List<Crash> savingCrashes = Settings.instance().getCrashesToSave();
