@@ -500,7 +500,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
           case R.id.btn_secret_pushTtl: {
             int ttl = Settings.instance().getLastReceivedPushMessageTtl();
             if (ttl != 0) {
-              view.setData(Lang.getDuration(ttl));
+              view.setData(Integer.toString(ttl));
             } else {
               view.setData("No data");
             }
@@ -1129,7 +1129,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       case R.id.btn_secret_pushConfig: {
         FirebaseOptions options = FirebaseOptions.fromResource(UI.getAppContext());
         if (options != null) {
-          UI.copyText("Firebase config: " + options.toString(), R.string.CopiedText);
+          UI.copyText("Firebase config: " + options, R.string.CopiedText);
         }
         break;
       }

@@ -1241,6 +1241,10 @@ public class SettingsController extends ViewController<Void> implements
       strings.append(R.string.TdlibLogs);
       icons.append(R.drawable.baseline_build_24);
 
+      ids.append(R.id.btn_pushService);
+      strings.append(R.string.PushServices);
+      icons.append(R.drawable.baseline_build_24);
+
       ids.append(R.id.btn_build);
       strings.append(R.string.AppLogs);
       icons.append(R.drawable.baseline_build_24);
@@ -1253,6 +1257,12 @@ public class SettingsController extends ViewController<Void> implements
       switch (id) {
         case R.id.btn_copyText: {
           UI.copyText(Lang.getAppBuildAndVersion(tdlib), R.string.CopiedText);
+          break;
+        }
+        case R.id.btn_pushService: {
+          SettingsBugController c = new SettingsBugController(context, tdlib);
+          c.setArguments(new SettingsBugController.Args(SettingsBugController.SECTION_PUSH));
+          navigateTo(c);
           break;
         }
         case R.id.btn_build: {
