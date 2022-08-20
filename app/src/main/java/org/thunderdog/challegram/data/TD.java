@@ -5122,17 +5122,26 @@ public class TD {
     return -1;
   }
 
-  public static List<TdApi.SendMessage> sendTextMessage (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions sendOptions, @NonNull TdApi.InputMessageContent content, int maxCodePointCount) {
+  public static List<TdApi.SendMessage> sendMessageText (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions sendOptions, @NonNull TdApi.InputMessageContent content, int maxCodePointCount) {
+    List<TdApi.InputMessageContent> list = explodeText(content, maxCodePointCount);
+    List<TdApi.SendMessage> result = new ArrayList<>(list.size());
+    for (TdApi.InputMessageContent item : list) {
+      result.add(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, sendOptions, null, item));
+    }
+    return result;
+  }
+
+  public static List<TdApi.InputMessageContent> explodeText (@NonNull TdApi.InputMessageContent content, int maxCodePointCount) {
     if (content.getConstructor() != TdApi.InputMessageText.CONSTRUCTOR) {
-      return Collections.singletonList(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, sendOptions, null, content));
+      return Collections.singletonList(content);
     }
     TdApi.InputMessageText textContent = (TdApi.InputMessageText) content;
     TdApi.FormattedText text = textContent.text;
     final int codePointCount = text.text.codePointCount(0, text.text.length());
-    List<TdApi.SendMessage> list = new ArrayList<>();
+    List<TdApi.InputMessageContent> list = new ArrayList<>();
     if (codePointCount <= maxCodePointCount) {
       // Nothing to split, send as is
-      list.add(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, sendOptions, null, textContent));
+      list.add(textContent);
       return list;
     }
     final int textLength = text.text.length();
@@ -5144,18 +5153,44 @@ public class TD {
       end += Character.charCount(codePoint);
       if (currentCodePointCount == maxCodePointCount || end == textLength) {
         TdApi.FormattedText substring;
-        if (!Text.isSplitterCodePoint(codePoint, true)) {
-          // Find any splitter code point withing the last 25% of the start ... index
-          // to avoid breaking words
-          int betterEnd = Text.lastIndexOfSplitter(text.text, end - (end - start) / 4, end, null);
-          if (betterEnd != -1) {
-            end = betterEnd;
+        if (end < textLength) {
+          // Find a good place to split message within last 33% of the text to avoid word breaking:
+          // If newline is present, text will be split at the last newline
+          // otherwise, if whitespace is present, text will be split at the last whitespace
+          // otherwise, text will be split at the last "splitter".
+          // otherwise, if none of the above found, maximum chunk that fits the limit will be sent.
+          int lastNewLineIndex = -1;
+          int lastWhitespaceIndex = -1;
+          int lastSplitterIndex = -1;
+          int subStart = end - (end - start) / 3;
+          int subEnd = end;
+          do {
+            subEnd = Text.lastIndexOfSplitter(text.text, subStart, subEnd, null);
+            if (subEnd != -1) {
+              int endCodePoint = text.text.codePointAt(subEnd);
+              if (lastSplitterIndex == -1) {
+                lastSplitterIndex = subEnd;
+              }
+              if (endCodePoint == (int) '\n') {
+                lastNewLineIndex = subEnd;
+                break;
+              } else if (lastWhitespaceIndex == -1 && Character.isWhitespace(endCodePoint)) {
+                lastWhitespaceIndex = subEnd;
+              }
+            }
+          } while (subEnd != -1 && subEnd > subStart);
+          if (lastNewLineIndex != -1) {
+            end = lastNewLineIndex;
+          } else if (lastWhitespaceIndex != -1) {
+            end = lastWhitespaceIndex;
+          } else if (lastSplitterIndex != -1) {
+            end = lastSplitterIndex;
           }
         }
-        // Send chunk between start ... index
+        // Send chunk between start ... end
         substring = Td.substring(text, start, end);
         boolean first = list.isEmpty();
-        list.add(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, sendOptions, null, new TdApi.InputMessageText(substring, first && textContent.disableWebPagePreview, first && textContent.clearDraft)));
+        list.add(new TdApi.InputMessageText(substring, textContent.disableWebPagePreview, first && textContent.clearDraft));
         // Reset loop state
         start = end;
         currentCodePointCount = 0;
@@ -5163,20 +5198,6 @@ public class TD {
     }
     return list;
   }
-
-  public static int getForwardDate (TdApi.MessageForwardInfo forward) {
-    return forward.date;
-  }
-
-  /*public static String addEmoji (Emoji emoji, int stringRes, String text) {
-    if (Strings.isEmpty(text)) {
-      return stringRes != 0 ? emoji + " " + Lang.getString(stringRes) : emoji.textRepresentation;
-    } else if (text.startsWith(emoji.textRepresentation)) {
-      return text;
-    } else {
-      return emoji + " " + text;
-    }
-  }*/
 
   public static class ContentPreview {
     public final @Nullable Emoji emoji, parentEmoji;

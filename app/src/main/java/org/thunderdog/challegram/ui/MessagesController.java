@@ -1911,7 +1911,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     switch (id) {
       case R.id.btn_copyLink:
       case R.id.btn_share: {
-        tdlib.client().send(new TdApi.GetBackgroundUrl(getArgumentsStrict().wallpaperObject.name, TGBackground.makeBlurredBackgroundType(getArgumentsStrict().wallpaperObject.type, backgroundParamsView.isBlurred())), result -> {
+        tdlib.client().send(new TdApi.GetBackgroundUrl(getArgumentsStrict().wallpaperObject.name, TGBackground.makeBlurredBackgroundType(getArgumentsStrict().wallpaperObject.type, backgroundParamsView != null && backgroundParamsView.isBlurred())), result -> {
           if (result.getConstructor() == TdApi.HttpUrl.CONSTRUCTOR) {
             TdApi.HttpUrl url = (TdApi.HttpUrl) result;
             runOnUiThreadOptional(() -> {
@@ -8715,7 +8715,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       content = new TdApi.InputMessageText(msg, !allowLinkPreview, clearInput);
     }
 
-    List<TdApi.SendMessage> functions = TD.sendTextMessage(chatId, messageThreadId, replyToMessageId, new TdApi.MessageSendOptions(disableNotification, false, false, schedule), content, tdlib.maxMessageTextLength());
+    List<TdApi.SendMessage> functions = TD.sendMessageText(chatId, messageThreadId, replyToMessageId, new TdApi.MessageSendOptions(disableNotification, false, false, schedule), content, tdlib.maxMessageTextLength());
 
     if (clearInput) {
       final int expectedCount = functions.size();
