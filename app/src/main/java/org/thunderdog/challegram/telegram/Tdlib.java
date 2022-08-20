@@ -73,6 +73,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -4798,29 +4799,29 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (state == TdlibManager.TokenState.NONE)
       return;
     String error = context().getTokenError();
-    List<TdApi.JsonObjectMember> members = new ArrayList<>();
+    Map<String, Object> members = new LinkedHashMap<>();
     switch (state) {
       case TdlibManager.TokenState.ERROR: {
-        members.add(new TdApi.JsonObjectMember(DEVICE_TOKEN_KEY, new TdApi.JsonValueString("FIREBASE_ERROR")));
+        members.put(DEVICE_TOKEN_KEY, "FIREBASE_ERROR");
         if (!StringUtils.isEmpty(error)) {
-          members.add(new TdApi.JsonObjectMember("firebase_error", new TdApi.JsonValueString(error)));
+          members.put("firebase_error", error);
         }
         break;
       }
       case TdlibManager.TokenState.INITIALIZING: {
-        members.add(new TdApi.JsonObjectMember(DEVICE_TOKEN_KEY, new TdApi.JsonValueString("FIREBASE_INITIALIZING")));
+        members.put(DEVICE_TOKEN_KEY, "FIREBASE_INITIALIZING");
         break;
       }
       case TdlibManager.TokenState.OK: {
-        members.add(new TdApi.JsonObjectMember(DEVICE_TOKEN_KEY, new TdApi.JsonValueString(deviceToken)));
+        members.put(DEVICE_TOKEN_KEY, deviceToken);
         break;
       }
       default: {
-        members.add(new TdApi.JsonObjectMember(DEVICE_TOKEN_KEY, new TdApi.JsonValueString("UNKNOWN")));
+        members.put(DEVICE_TOKEN_KEY, "UNKNOWN");
         break;
       }
     }
-    String connectionParams = JSON.stringify(members);
+    String connectionParams = JSON.stringify(JSON.toObject(members));
     if (connectionParams != null && (force || !StringUtils.equalsOrBothEmpty(lastReportedConnectionParams, connectionParams))) {
       this.lastReportedConnectionParams = connectionParams;
       client.send(new TdApi.SetOption("connection_parameters", new TdApi.OptionValueString(connectionParams)), okHandler);
