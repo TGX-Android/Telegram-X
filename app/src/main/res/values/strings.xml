@@ -4273,17 +4273,18 @@
   <string name="session_LastActive_minutes_other">last active %1$s minutes ago</string>
   <string name="session_LastActive_hours_one">last active %1$s hour ago</string>
   <string name="session_LastActive_hours_other">last active %1$s hours ago</string>
-  <string name="session_WillTerminate_now">auto-terminates just now</string>
-  <string name="session_WillTerminate_today">auto-terminates at %1$s</string>
-  <string name="session_WillTerminate_yesterday">auto-terminated yesterday at %1$s</string>
-  <string name="session_WillTerminate_weekday">auto-terminates on %1$s at %2$s</string>
-  <string name="session_WillTerminate_date">auto-terminates on %1$s at %2$s</string>
-  <string name="session_WillTerminate_seconds_one">auto-terminated %1$s second ago</string>
-  <string name="session_WillTerminate_seconds_other">auto-terminated %1$s seconds ago</string>
-  <string name="session_WillTerminate_minutes_one">auto-terminated %1$s minute ago</string>
-  <string name="session_WillTerminate_minutes_other">auto-terminated %1$s minutes ago</string>
-  <string name="session_WillTerminate_hours_one">auto-terminated %1$s hour ago</string>
-  <string name="session_WillTerminate_hours_other">auto-terminated %1$s hours ago</string>
+
+  <string name="session_TerminatesIn_now">auto-terminating now</string>
+  <string name="session_TerminatesIn_today">auto-terminates at %1$s</string>
+  <string name="session_TerminatesIn_tomorrow">auto-terminates tomorrow at %1$s</string>
+  <string name="session_TerminatesIn_weekday">auto-terminates on %1$s at %2$s</string>
+  <string name="session_TerminatesIn_date">auto-terminates on %1$s at %2$s</string>
+  <string name="session_TerminatesIn_seconds_one">auto-terminates within %1$s second</string>
+  <string name="session_TerminatesIn_seconds_other">auto-terminates within %1$s seconds</string>
+  <string name="session_TerminatesIn_minutes_one">auto-terminates within %1$s minute</string>
+  <string name="session_TerminatesIn_minutes_other">auto-terminates within %1$s minutes</string>
+  <string name="session_TerminatesIn_hours_one">auto-terminates within %1$s hour</string>
+  <string name="session_TerminatesIn_hours_other">auto-terminates within %1$s hours</string>
 
   <string name="SessionTerminateTtl">Terminate old sessions if inactive for</string>
   <string name="SessionTerminatesInWeeks_one">Terminate in %1$s week</string>

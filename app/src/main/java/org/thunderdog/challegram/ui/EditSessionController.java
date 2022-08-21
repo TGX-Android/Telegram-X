@@ -210,7 +210,7 @@ public class EditSessionController extends EditBaseController<EditSessionControl
             view.setData((session.isCurrent || session.isPasswordPending) ? null : Lang.getReverseRelativeDateBold(
               session.lastActiveDate + TimeUnit.DAYS.toSeconds(getArgumentsStrict().inactiveSessionTtlDays), TimeUnit.SECONDS,
               tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS,
-              true, 0, R.string.session_WillTerminate, false
+              true, 0, R.string.session_TerminatesIn, false
             ));
             break;
           case R.id.btn_sessionAcceptSecretChats:
