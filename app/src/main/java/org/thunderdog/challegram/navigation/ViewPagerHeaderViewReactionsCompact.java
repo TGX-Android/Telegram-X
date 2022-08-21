@@ -19,7 +19,6 @@ import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Shader;
-import android.os.Build;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -29,11 +28,9 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
-import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -57,32 +54,6 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
 
   @Override
   public void checkRtl () {
-    LinearLayoutManager manager = (LinearLayoutManager) getRecyclerView().getLayoutManager();
-    if (manager.getReverseLayout() != Lang.rtl()) {
-      View view = manager.findViewByPosition(0);
-      boolean needScroll = false;
-      int scrollOffset = 0;
-      if (view != null) {
-        int parentWidth = getRecyclerView().getMeasuredWidth();
-        int viewWidth = view.getMeasuredWidth();
-        int viewOffset = view.getLeft();
-        if (viewWidth > parentWidth) {
-          int availScrollX = viewWidth - parentWidth;
-          int scrolledX;
-          if (Lang.rtl()) { // LTR -> RTL
-            scrolledX = -viewOffset;
-          } else { // RTL -> LTR
-            scrolledX = availScrollX + viewOffset;
-          }
-          scrollOffset = -scrolledX;
-          needScroll = true;
-        }
-      }
-      manager.setReverseLayout(Lang.rtl());
-      if (needScroll) {
-        manager.scrollToPositionWithOffset(0, scrollOffset);
-      }
-    }
     getTopView().checkRtl();
   }
 
@@ -138,7 +109,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
     adapter = new A(topView);
 
     if (needReactionSelector) {
-      reactionsSelectorRecyclerView = new ReactionsSelectorRecyclerView(context, message) {
+      reactionsSelectorRecyclerView = new ReactionsSelectorRecyclerView(context) {
         @Override
         protected void dispatchDraw (Canvas c) {
           super.dispatchDraw(c);
@@ -163,14 +134,11 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
           }
         }
       };
-      reactionsSelectorRecyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? OVER_SCROLL_IF_CONTENT_SCROLLS : OVER_SCROLL_NEVER);
+      reactionsSelectorRecyclerView.setMessage(message);
       reactionsSelectorRecyclerView.setLayoutParams(FrameLayoutFix.newParams(
         ViewGroup.LayoutParams.MATCH_PARENT,
         ViewGroup.LayoutParams.MATCH_PARENT,
         Gravity.CENTER_VERTICAL, 0, 0, this.rightOffset, 0));
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-        reactionsSelectorRecyclerView.setLayoutDirection(LAYOUT_DIRECTION_LTR);
-      }
       addView(reactionsSelectorRecyclerView);
     } else {
       reactionsSelectorRecyclerView = null;
@@ -211,13 +179,15 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
     recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? OVER_SCROLL_IF_CONTENT_SCROLLS : OVER_SCROLL_NEVER);
     recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false) {
       @Override
+      protected boolean isLayoutRTL () {
+        return false;
+      }
+
+      @Override
       public boolean canScrollHorizontally () {
         return isScrollEnabled && super.canScrollHorizontally();
       }
     });
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-      recyclerView.setLayoutDirection(LAYOUT_DIRECTION_LTR);
-    }
     recyclerView.setAdapter(adapter);
     addView(recyclerView);
 
@@ -255,7 +225,6 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
     shadowPaint1.setShader(shader1);
     shadowPaint2.setShader(shader2);
     if (reactionsSelectorRecyclerView != null) {
-      reactionsSelectorRecyclerView.invalidateAll();
       reactionsSelectorRecyclerView.invalidate();
     }
     recyclerView.invalidate();
