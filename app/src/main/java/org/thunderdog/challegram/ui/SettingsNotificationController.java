@@ -1374,23 +1374,23 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       return;
     }
     Throwable fullError = tdlib.context().getTokenFullError();
-    String report;
-    if (fullError != null) {
-      report = tdlib.context().getTokenError() + "\n" + Log.toString(fullError);
-    } else {
-      report = tdlib.context().getTokenError();
-    }
-    if (!StringUtils.isEmpty(report)) {
-      report = "#firebase_error\n" +
-        report + "\n\n";
+    String error = tdlib.context().getTokenError();
+    if (!StringUtils.isEmpty(error) || fullError != null) {
+      String report = "#firebase_error";
+      if (!StringUtils.isEmpty(error)) {
+        report += " " + error;
+      }
+      report += "\n\n";
       FirebaseOptions firebaseOptions = FirebaseOptions.fromResource(UI.getAppContext());
       if (firebaseOptions != null) {
         report += "Firebase options:\n" + firebaseOptions;
       } else {
         report += "Firebase options unavailable!";
       }
-      report += "\nFingerprint: " + U.getApkFingerprint("SHA1") + "\n";
       report += "\n" + U.getUsefulMetadata(tdlib);
+      if (fullError != null) {
+        report += "\n\n" + Log.toString(fullError);
+      }
       tdlib.ui().shareText(this, report);
     }
   }
