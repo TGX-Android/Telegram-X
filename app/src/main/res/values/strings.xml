@@ -4274,6 +4274,10 @@
   <string name="session_LastActive_hours_one">last active %1$s hour ago</string>
   <string name="session_LastActive_hours_other">last active %1$s hours ago</string>
 
+  <string name="SessionUnknown">Unknown location</string>
+  <string name="SessionIpUnknown">Unknown</string>
+  <string name="SessionLocationUnknown">Unknown</string>
+
   <string name="session_TerminatesIn_now">auto-terminating now</string>
   <string name="session_TerminatesIn_today">auto-terminates at %1$s</string>
   <string name="session_TerminatesIn_tomorrow">auto-terminates tomorrow at %1$s</string>
