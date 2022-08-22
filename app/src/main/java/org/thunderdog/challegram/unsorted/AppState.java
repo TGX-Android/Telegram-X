@@ -42,7 +42,8 @@ public class AppState {
   private static final AtomicLong startupTime = new AtomicLong(SystemClock.uptimeMillis());
 
   public static long uptime () {
-    return startupTime.get();
+    final long startedAt = startupTime.get();
+    return startedAt != 0 ? SystemClock.uptimeMillis() - startedAt : 0;
   }
 
   public static void resetUptime () {

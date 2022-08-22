@@ -2435,7 +2435,9 @@ public class U {
       (!buildInfo.getPullRequests().isEmpty() ? "PRs: " + buildInfo.pullRequestsList() + "\n" : "") +
       "TDLib: " + Td.tdlibVersion() + " (tdlib/td@" + Td.tdlibCommitHash() + ")\n" +
       "Android: " + SdkVersion.getPrettyName() + " (" + Build.VERSION.SDK_INT + ")" + "\n" +
-      "Device: " + Build.BRAND + " " + Build.MODEL + " (" + Build.DISPLAY + ")";
+      "Device: " + Build.BRAND + " " + Build.MODEL + " (" + Build.DISPLAY + ")\n" +
+      "Package: " + UI.getAppContext().getPackageName() + "\n" +
+      "Fingerprint: " + U.getApkFingerprint("SHA1");
   }
 
   /**
