@@ -14,6 +14,7 @@
  */
 package org.thunderdog.challegram.data;
 
+import android.annotation.SuppressLint;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -7583,24 +7584,15 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         case TdApi.MessageVideoNote.CONSTRUCTOR: {
           return new TGMessageVideo(context, msg, nonNull(((TdApi.MessageVideoNote) content).videoNote), ((TdApi.MessageVideoNote) content).isViewed);
         }
-        case TdApi.MessageDocument.CONSTRUCTOR: {
-          TdApi.MessageDocument document = nonNull((TdApi.MessageDocument) content);
-          if (TD.canConvertToVideo(document.document)) {
-            return new TGMessageMedia(context, msg, document.document, document.caption);
-          } else {
-            return new TGMessageFile(context, msg);
-          }
-        }
         case TdApi.MessageDice.CONSTRUCTOR: {
           return new TGMessageSticker(context, msg, nonNull(((TdApi.MessageDice) content)));
         }
         case TdApi.MessageSticker.CONSTRUCTOR: {
           return new TGMessageSticker(context, msg, nonNull(((TdApi.MessageSticker) content).sticker), false, 0);
         }
-        case TdApi.MessageVoiceNote.CONSTRUCTOR: {
-          return new TGMessageFile(context, msg);
-        }
-        case TdApi.MessageAudio.CONSTRUCTOR: {
+        case TdApi.MessageVoiceNote.CONSTRUCTOR:
+        case TdApi.MessageAudio.CONSTRUCTOR:
+        case TdApi.MessageDocument.CONSTRUCTOR: {
           return new TGMessageFile(context, msg);
         }
         case TdApi.MessagePoll.CONSTRUCTOR: {
@@ -7697,6 +7689,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         // unsupported
         case TdApi.MessageInvoice.CONSTRUCTOR:
         case TdApi.MessagePassportDataSent.CONSTRUCTOR:
+        case TdApi.MessageGiftedPremium.CONSTRUCTOR:
+        case TdApi.MessageChatSetTheme.CONSTRUCTOR:
+        case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
           break;
         case TdApi.MessageUnsupported.CONSTRUCTOR:
           unsupportedStringRes = R.string.UnsupportedMessageType;
@@ -7704,6 +7699,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         // bots only
         case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
         case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
+        case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
           Log.e("Received bot message for a regular user:\n%s", msg);
           break;
         default: {
