@@ -19,6 +19,7 @@ import android.view.View;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.FileComponent;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ComplexReceiver;
@@ -43,7 +44,9 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.td.Td;
 
 public class MediaPreviewSimple extends MediaPreview {
+  private TdApi.Sticker sticker;
   private Path outline;
+  private int outlineWidth, outlineHeight;
 
   private ImageFile previewImage;
   private GifFile previewGif;
@@ -171,10 +174,8 @@ public class MediaPreviewSimple extends MediaPreview {
 
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.Sticker sticker) {
     super(size, cornerRadius);
-    this.outline = Td.buildOutline(sticker.outline,
-      Math.min((float) size / (float) sticker.width, (float) size / (float) sticker.height),
-      outline
-    );
+    this.sticker = sticker;
+    this.outline = Td.buildOutline(sticker, outlineWidth = size, outlineHeight = size);
     if (sticker.thumbnail != null) {
       this.previewImage = TD.toImageFile(tdlib, sticker.thumbnail);
       if (this.previewImage != null) {
@@ -258,6 +259,10 @@ public class MediaPreviewSimple extends MediaPreview {
       target.setPaintAlpha(alpha);
     }
 
+    if (outline != null && (outlineWidth != preview.getWidth() || outlineHeight != preview.getHeight())) {
+      outline = Td.buildOutline(sticker, outlineWidth = preview.getWidth(), outlineHeight = preview.getHeight());
+    }
+
     if (target.needPlaceholder()) {
       if (preview.needPlaceholder()) {
         if (outline != null) {
@@ -277,6 +282,10 @@ public class MediaPreviewSimple extends MediaPreview {
 
     if (drawColoredFileBackground) {
       target.drawPlaceholderRounded(c, cornerRadius, ColorUtils.alphaColor(target.getAlpha() * alpha, 0x44000000));
+    }
+
+    if (Config.DEBUG_STICKER_OUTLINES) {
+      preview.drawPlaceholderContour(c, outline);
     }
 
     if (alpha != 1f) {

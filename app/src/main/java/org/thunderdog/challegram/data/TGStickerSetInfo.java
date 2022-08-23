@@ -317,7 +317,7 @@ public class TGStickerSetInfo {
   }
 
   public Path getPreviewContour (int targetSize) {
-    return previewWidth != 0 && previewHeight != 0 ? Td.buildOutline(previewOutline, Math.min((float) targetSize / (float) previewWidth, (float) targetSize / (float) previewHeight)) : null;
+    return previewWidth != 0 && previewHeight != 0 ? Td.buildOutline(previewOutline, previewWidth, previewHeight, targetSize, targetSize) : null;
   }
 
   public GifFile getPreviewAnimation () {

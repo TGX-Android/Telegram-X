@@ -609,7 +609,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
     public void setStickerSet (@NonNull TGStickerSetInfo info) {
       this.info = info;
-      this.contour = info.getPreviewContour(getHeaderSize() - getHeaderImagePadding() * 2);
+      this.contour = info.getPreviewContour(Math.min(receiver.getWidth(), receiver.getHeight()));
       receiver.requestFile(info.getPreviewImage());
       gifReceiver.requestFile(info.getPreviewAnimation());
     }
@@ -665,8 +665,12 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
     private void setBounds () {
       int padding = getHeaderImagePadding();
+      int width = receiver.getWidth(), height = receiver.getHeight();
       receiver.setBounds(padding, padding, getMeasuredWidth() - padding, getMeasuredHeight() - padding);
       gifReceiver.setBounds(padding, padding, getMeasuredWidth() - padding, getMeasuredHeight() - padding);
+      if (info != null && (width != receiver.getWidth() || height != receiver.getHeight())) {
+        this.contour = info.getPreviewContour(Math.min(receiver.getWidth(), receiver.getHeight()));
+      }
     }
 
     @Override
@@ -700,7 +704,9 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
         }
         receiver.draw(c);
       }
-
+      if (Config.DEBUG_STICKER_OUTLINES) {
+        receiver.drawPlaceholderContour(c, contour);
+      }
       if (saved) {
         c.restore();
       }

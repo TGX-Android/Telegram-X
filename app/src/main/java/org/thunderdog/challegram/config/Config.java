@@ -259,6 +259,8 @@ public class Config {
 
   public static final boolean DISABLE_PASSWORD_INVISIBILITY = true;
 
+  public static final boolean DEBUG_STICKER_OUTLINES = BuildConfig.DEBUG;
+
   public static final int SUPPORTED_INSTANT_VIEW_VERSION = 2;
   public static final boolean INSTANT_VIEW_WRONG_LAYOUT = false;
 
