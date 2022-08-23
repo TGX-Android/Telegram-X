@@ -692,7 +692,7 @@ public class Intents {
         builder.setToolbarColor(Theme.getColor(R.id.theme_color_headerBackground));
         builder.setSecondaryToolbarColor(Theme.getColor(R.id.theme_color_headerText));
         builder.setShowTitle(true);
-        builder.setActionButton(Drawables.getBitmap(R.drawable.baseline_share_24), Lang.getString(R.string.Share), PendingIntent.getBroadcast(UI.getContext(), 0, share, 0), true);
+        builder.setActionButton(Drawables.getBitmap(R.drawable.baseline_share_24), Lang.getString(R.string.Share), PendingIntent.getBroadcast(UI.getContext(), 0, share, Intents.mutabilityFlags(false)), true);
         CustomTabsIntent intent = builder.build();
         intent.intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         if (TD.isKnownHost(uri)) {
@@ -710,6 +710,16 @@ public class Intents {
       Log.e("Cant launch CustomTabs client", t);
     }
     return false;
+  }
+
+  public static int mutabilityFlags (boolean isMutable) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      return isMutable ? PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT : PendingIntent.FLAG_IMMUTABLE;
+    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      return isMutable ? PendingIntent.FLAG_UPDATE_CURRENT : PendingIntent.FLAG_IMMUTABLE;
+    } else {
+      return isMutable ? PendingIntent.FLAG_UPDATE_CURRENT : 0;
+    }
   }
 
   /**
