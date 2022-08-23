@@ -106,6 +106,7 @@ public abstract class TextEntity {
   public abstract boolean isStrikethrough ();
   public abstract boolean hasAnchor (String anchor);
   public abstract boolean isFullWidth ();
+  public abstract boolean isCustomEmoji ();
 
   final TextPaint getTextPaint (TextStyleProvider textStyleProvider, boolean forceBold) {
     // different typefaces

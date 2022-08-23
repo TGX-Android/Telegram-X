@@ -41,6 +41,7 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.core.DiffMatchPatch;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.emoji.Emoji;
@@ -67,11 +68,10 @@ import me.vkryl.android.animator.CounterAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.android.util.ViewProvider;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
-import org.thunderdog.challegram.core.DiffMatchPatch;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.Td;
 
 public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextDrawable, ListAnimator.Measurable {
@@ -790,7 +790,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       if (position > emojiStart) {
         processPartSplitty(in, emojiStart, position, out, emojiEntity, false);
       }
-      processEmoji(in, code, info, position, position + length, out, emojiEntity);
+      processEmoji(in, position, position + length, info, out, emojiEntity);
       emojiStart = position + length;
       return true;
     };
@@ -1106,6 +1106,14 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   private void processTextOrEmoji (final String in, final int start, final int end, final ArrayList<TextPart> out, final Emoji.Callback emojiCallback, final @Nullable TextEntity entity) {
     TextPaint paint = getTextPaint(entity);
     Paint.FontMetricsInt fontMetricsInt = Paints.getFontMetricsInt(paint);
+    emojiSize = Math.abs(fontMetricsInt.descent - fontMetricsInt.ascent) + Screen.dp(2f);
+
+    if (entity != null && entity.isCustomEmoji()) {
+      String emojiCode = in.substring(start, end);
+      EmojiInfo info = Emoji.instance().getEmojiInfo(emojiCode, true);
+      processEmoji(in, start, end, info, out, entity);
+      return;
+    }
 
     if (end - start == 0) {
       if (entity != null && entity.isIcon()) {
@@ -1116,7 +1124,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
     emojiStart = start;
     emojiEntity = entity;
-    emojiSize = Math.abs(fontMetricsInt.descent - fontMetricsInt.ascent) + Screen.dp(2f);
 
     Emoji.instance().replaceEmoji(in, start, end, this, emojiCallback);
 
@@ -1160,7 +1167,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     iconCount++;
   }
 
-  private void processEmoji (String in, CharSequence code, EmojiInfo info, int start, int end, ArrayList<TextPart> out, @Nullable TextEntity entity) {
+  private void processEmoji (String in, int start, int end, @Nullable EmojiInfo info, ArrayList<TextPart> out, @Nullable TextEntity entity) {
     lastPart = null;
 
     final int maxWidth = getLineMaxWidth(getLineCount(), currentY);

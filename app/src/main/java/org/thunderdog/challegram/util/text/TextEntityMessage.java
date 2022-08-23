@@ -52,9 +52,10 @@ public class TextEntityMessage extends TextEntity {
   private static final int FLAG_STRIKETHROUGH = 1 << 6;
   private static final int FLAG_FULL_WIDTH = 1 << 7;
   private static final int FLAG_SPOILER = 1 << 8;
+  private static final int FLAG_CUSTOM_EMOJI = 1 << 9;
 
   private final int flags;
-  private final TdApi.TextEntity clickableEntity, spoilerEntity;
+  private final TdApi.TextEntity clickableEntity, spoilerEntity, emojiEntity;
 
   private static boolean hasEntityType (List<TdApi.TextEntity> entities, @TdApi.TextEntityType.Constructors int typeConstructor) {
     if (entities != null) {
@@ -102,6 +103,7 @@ public class TextEntityMessage extends TextEntity {
     super(tdlib, offset, end, (entity.type.getConstructor() == TdApi.TextEntityTypeBold.CONSTRUCTOR || hasEntityType(parentEntities, TdApi.TextEntityTypeBold.CONSTRUCTOR)) && Text.needFakeBold(in, offset, end), openParameters);
     TdApi.TextEntity clickableEntity = isClickable(entity.type) ? entity : null;
     TdApi.TextEntity spoilerEntity = entity.type.getConstructor() == TdApi.TextEntityTypeSpoiler.CONSTRUCTOR ? entity : null;
+    TdApi.TextEntity emojiEntity = entity.type.getConstructor() == TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR ? entity : null;
     int flags = addFlags(entity.type);
     if (parentEntities != null) {
       for (int i = parentEntities.size() - 1; i >= 0; i--) {
@@ -121,6 +123,10 @@ public class TextEntityMessage extends TextEntity {
     this.spoilerEntity = spoilerEntity;
     if (spoilerEntity != null) {
       flags |= FLAG_SPOILER;
+    }
+    this.emojiEntity = emojiEntity;
+    if (emojiEntity != null) {
+      flags |= FLAG_CUSTOM_EMOJI;
     }
     this.flags = flags;
   }
@@ -151,6 +157,18 @@ public class TextEntityMessage extends TextEntity {
   @Override
   public boolean isIcon () {
     return false;
+  }
+
+  @Override
+  public boolean isCustomEmoji () {
+    return BitwiseUtils.getFlag(flags, FLAG_CUSTOM_EMOJI);
+  }
+
+  public long getCustomEmojiId () {
+    if (isCustomEmoji()) {
+      return ((TdApi.TextEntityTypeCustomEmoji) emojiEntity.type).customEmojiId;
+    }
+    return 0;
   }
 
   public static boolean isClickable (TdApi.TextEntityType type) {

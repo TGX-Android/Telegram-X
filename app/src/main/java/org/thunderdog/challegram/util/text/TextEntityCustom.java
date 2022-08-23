@@ -191,6 +191,11 @@ public class TextEntityCustom extends TextEntity {
   }
 
   @Override
+  public boolean isCustomEmoji () {
+    return false;
+  }
+
+  @Override
   public TextIcon getIcon () {
     return icon;
   }

@@ -46,6 +46,7 @@ public class TextPart {
   private static final int FLAG_LINE_RTL = 1;
   private static final int FLAG_LINE_RTL_FAKE = 1 << 2;
   private static final int FLAG_ANIMATED_EMOJI = 1 << 3;
+  private static final int FLAG_CUSTOM_EMOJI = 1 << 4;
 
   private Text source;
   private String line;
@@ -245,8 +246,15 @@ public class TextPart {
 
   private EmojiInfo emojiInfo;
 
-  public void setEmoji (EmojiInfo emoji) {
+  public void setEmoji (@Nullable EmojiInfo emoji) {
     this.emojiInfo = emoji;
+    if (entity != null && entity.isCustomEmoji()) {
+      flags |= FLAG_CUSTOM_EMOJI;
+    }
+  }
+
+  public boolean isCustomEmoji () {
+    return BitwiseUtils.getFlag(flags, FLAG_CUSTOM_EMOJI);
   }
 
   private int iconIndex;
@@ -258,7 +266,7 @@ public class TextPart {
   }
 
   public boolean isEmoji () {
-    return emojiInfo != null;
+    return emojiInfo != null || isCustomEmoji();
   }
 
   public boolean isIcon () {
@@ -318,6 +326,8 @@ public class TextPart {
       throw new IllegalStateException("icon != null");
     if (emojiInfo != null)
       throw new IllegalStateException("emojiInfo != null");
+    if (isCustomEmoji())
+      throw new IllegalStateException("custom emoji");
     if (trimmedLine != null)
       throw new IllegalStateException("trimmedLine != null");
     TextPaint paint = getPaint(partIndex, alpha, colorProvider);
@@ -364,13 +374,19 @@ public class TextPart {
       } else {
         c.drawRect(x, y, x + width, y + height, Paints.fillingPaint(ColorUtils.color((int) (255f * alpha), 0xff0000)));
       }
-    } else if (emojiInfo != null) {
+    } else if (isEmoji()) {
       Rect rect = Paints.getRect();
-      int reduce = Emoji.instance().getReduceSize();
+      int reduce = isCustomEmoji() ? 0 : Emoji.instance().getReduceSize();
       y -= Screen.dp(1.5f);
       y += textPaint.baselineShift;
       rect.set(x + reduce / 2, y + reduce / 2, x + (int) width - reduce / 2 - reduce % 2, y + (int) width - reduce / 2 - reduce % 2);
-      Emoji.instance().draw(c, emojiInfo, rect, textPaint.getAlpha());
+      if (isCustomEmoji()) {
+        // TODO draw custom emoji
+        float textAlpha = textPaint.getAlpha() / 255f;
+        c.drawCircle(rect.centerX(), rect.centerY(), rect.width() / 4f, Paints.fillingPaint(ColorUtils.alphaColor(alpha * textAlpha, 0xffff0000)));
+      } else {
+        Emoji.instance().draw(c, emojiInfo, rect, textPaint.getAlpha());
+      }
     } else {
       y += source.getAscent();
       if (trimmedLine != null) {
