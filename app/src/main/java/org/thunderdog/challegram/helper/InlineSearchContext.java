@@ -441,11 +441,12 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
         }
       }
     };
+    final long chatId = callback.provideInlineSearchChatId();
     TdApi.Function<?> function;
     if (more) {
       function = new TdApi.SearchStickers(emoji, 1000);
     } else {
-      function = new TdApi.GetStickers(emoji, 1000);
+      function = new TdApi.GetStickers(new TdApi.StickerTypeRegular(), emoji, 1000, chatId);
     }
     tdlib.client().send(function, stickerRequest);
   }

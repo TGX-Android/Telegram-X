@@ -793,7 +793,7 @@ public class MessagesLoader implements Client.ResultHandler {
           throw new JSONException("audio.title is empty");
         if (performer.isEmpty())
           throw new JSONException("audio.performer is empty");
-        audio = new TdApi.Audio(duration, title, performer, "audio.mp3", "audio/mp3", null, null, new TdApi.File());
+        audio = new TdApi.Audio(duration, title, performer, "audio.mp3", "audio/mp3", null, null, null, new TdApi.File());
       }
 
       if (data.has("voice")) {
@@ -808,7 +808,7 @@ public class MessagesLoader implements Client.ResultHandler {
         } else {
           throw new JSONException("Invalid voice value: " + rawItem);
         }
-        voice = new TdApi.VoiceNote(duration, TD.newRandomWaveform(), "audio/ogg", false, "", new TdApi.File());
+        voice = new TdApi.VoiceNote(duration, TD.newRandomWaveform(), "audio/ogg", null, new TdApi.File());
       }
 
       if (data.has("photo")) {
@@ -858,9 +858,10 @@ public class MessagesLoader implements Client.ResultHandler {
           width,
           height,
           null,
-          new TdApi.StickerTypeStatic(),
-          null,
+          new TdApi.StickerFormatWebp(), new TdApi.StickerTypeRegular(),
+          null, 0, null,
           new TdApi.Thumbnail(new TdApi.ThumbnailFormatWebp(), width, height, thumbFile),
+          false,
           null,
           file
         );

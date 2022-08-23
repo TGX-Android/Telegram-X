@@ -188,7 +188,7 @@ public class MediaPreviewSimple extends MediaPreview {
         this.previewGif.setScaleType(GifFile.FIT_CENTER);
       }
     }
-    if (Td.isAnimated(sticker.type)) {
+    if (Td.isAnimated(sticker.format)) {
       this.targetGif = new GifFile(tdlib, sticker);
       this.targetGif.setOptimize(true);
       this.targetGif.setSize(size);

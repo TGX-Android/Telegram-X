@@ -72,7 +72,7 @@ public class TdlibNotificationMediaFile {
           case TdApi.MessageSticker.CONSTRUCTOR: {
             TdApi.MessageSticker sticker = (TdApi.MessageSticker) message.content;
             photoFile = sticker.sticker.sticker;
-            type = Td.isAnimated(sticker.sticker.type) ? TYPE_ANIMATED_STICKER : TYPE_STICKER;
+            type = Td.isAnimated(sticker.sticker.format) ? TYPE_ANIMATED_STICKER : TYPE_STICKER;
             width = sticker.sticker.width;
             height = sticker.sticker.height;
             break;
@@ -102,7 +102,7 @@ public class TdlibNotificationMediaFile {
             TdApi.PushMessageContentSticker sticker = (TdApi.PushMessageContentSticker) push;
             if (sticker.sticker != null) {
               photoFile = sticker.sticker.sticker;
-              type = Td.isAnimated(sticker.sticker.type) ? TYPE_ANIMATED_STICKER : TYPE_STICKER;
+              type = Td.isAnimated(sticker.sticker.format) ? TYPE_ANIMATED_STICKER : TYPE_STICKER;
               width = sticker.sticker.width;
               height = sticker.sticker.height;
             }

@@ -70,14 +70,14 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     public Representation (TdApi.Sticker sticker, int fitzpatrickType, boolean allowNoLoop, boolean forcePlayOnce) {
       this.sticker = sticker;
 
-      if (fitzpatrickType == 0 || !Td.isAnimated(sticker.type)) {
+      if (fitzpatrickType == 0 || !Td.isAnimated(sticker.format)) {
         this.preview = TD.toImageFile(tdlib, sticker.thumbnail);
         if (this.preview != null) {
           this.preview.setScaleType(ImageFile.FIT_CENTER);
         }
       }
 
-      if (Td.isAnimated(sticker.type)) {
+      if (Td.isAnimated(sticker.format)) {
         this.animatedFile = new GifFile(tdlib, sticker);
         this.animatedFile.setScaleType(GifFile.CENTER_CROP);
         this.animatedFile.setFitzpatrickType(fitzpatrickType);
@@ -121,7 +121,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     }
 
     public boolean isAnimated () {
-      return Td.isAnimated(sticker.type);
+      return Td.isAnimated(sticker.format);
     }
 
     public TdApi.ClosedVectorPath[] getOutline () {
@@ -582,7 +582,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
   }
 
   public boolean needSuggestOpenStickerPack () {
-    return getStickerSetId() != 0 && Td.isAnimated(getBaseSticker().type) && Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP) && getStickerSetId() != 0;
+    return getStickerSetId() != 0 && Td.isAnimated(getBaseSticker().format) && Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP) && getStickerSetId() != 0;
   }
 
   public void openStickerSet () {
@@ -634,7 +634,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
               tapProcessed = true;
               ImageFile imageFile;
               GifFile gifFile;
-              if (sticker != null && Td.isAnimated(sticker.type) && this.sticker != null && this.sticker.getConstructor() != TdApi.DiceStickersSlotMachine.CONSTRUCTOR) {
+              if (sticker != null && Td.isAnimated(sticker.format) && this.sticker != null && this.sticker.getConstructor() != TdApi.DiceStickersSlotMachine.CONSTRUCTOR) {
                 gifFile = new GifFile(tdlib, sticker);
                 gifFile.setOptimize(true);
                 gifFile.setScaleType(GifFile.CENTER_CROP);

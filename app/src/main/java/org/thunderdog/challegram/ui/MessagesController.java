@@ -8154,7 +8154,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (sticker == null) {
       return false;
     }
-    if (sticker.premiumAnimation != null && !tdlib.hasPremium()) {
+    if (sticker.isPremium && !tdlib.hasPremium()) {
       tdlib.ui().showPremiumAlert(this, view);
       return false;
     }

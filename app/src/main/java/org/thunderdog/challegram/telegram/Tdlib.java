@@ -523,7 +523,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private boolean disableContactRegisteredNotifications = false;
 
-  private int installedStickerSetCount;
   private int[] favoriteStickerIds;
   private int unreadTrendingStickerSetsCount;
 
@@ -1765,7 +1764,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       awaitingGenerations.put(id, generation);
     }
 
-    client().send(new TdApi.UploadFile(new TdApi.InputFileGenerated(null, id, 0), isSecret ? new TdApi.FileTypeSecret() : fileType, priority), object -> {
+    client().send(new TdApi.PreliminaryUploadFile(new TdApi.InputFileGenerated(null, id, 0), isSecret ? new TdApi.FileTypeSecret() : fileType, priority), object -> {
       switch (object.getConstructor()) {
         case TdApi.File.CONSTRUCTOR:
           generation.file = (TdApi.File) object;
@@ -7543,11 +7542,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private void updateInstalledStickerSets (TdApi.UpdateInstalledStickerSets update) {
-    if (!update.isMasks) {
-      synchronized (dataLock) {
-        installedStickerSetCount = update.stickerSetIds.length;
-      }
-    }
     listeners.updateInstalledStickerSets(update);
   }
 

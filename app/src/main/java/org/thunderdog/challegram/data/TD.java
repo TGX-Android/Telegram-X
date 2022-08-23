@@ -569,7 +569,7 @@ public class TD {
     }
     if (sticker.thumbnail != null)
       return sticker.thumbnail;
-    if (Td.isAnimated(sticker.type))
+    if (Td.isAnimated(sticker.format))
       return null;
     return new TdApi.Thumbnail(new TdApi.ThumbnailFormatWebp(), sticker.width, sticker.height, sticker.sticker);
   }
@@ -2007,7 +2007,7 @@ public class TD {
   }
 
   public static TdApi.Audio newFakeAudio (TdApi.Document doc) {
-    return new TdApi.Audio(0, doc.fileName, "", doc.fileName, doc.mimeType, doc.minithumbnail, doc.thumbnail, doc.document);
+    return new TdApi.Audio(0, doc.fileName, "", doc.fileName, doc.mimeType, doc.minithumbnail, doc.thumbnail, null, doc.document);
   }
 
   public static TdApi.Message newFakeMessage (TdApi.Audio audio) {
@@ -5459,7 +5459,7 @@ public class TD {
         break;
       case TdApi.MessageSticker.CONSTRUCTOR:
         TdApi.Sticker sticker = ((TdApi.MessageSticker) message.content).sticker;
-        alternativeText = Td.isAnimated(sticker.type) ? "animated" + sticker.emoji : sticker.emoji;
+        alternativeText = Td.isAnimated(sticker.format) ? "animated" + sticker.emoji : sticker.emoji;
         break;
       case TdApi.MessageInvoice.CONSTRUCTOR: {
         TdApi.MessageInvoice invoice = (TdApi.MessageInvoice) message.content;
@@ -5797,7 +5797,7 @@ public class TD {
       case TdApi.PushMessageContentSticker.CONSTRUCTOR:
         if (((TdApi.PushMessageContentSticker) push.content).isPinned)
           return getNotificationPinned(R.string.ActionPinnedSticker, TdApi.MessageSticker.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentSticker) push.content).emoji, 0);
-        else if (((TdApi.PushMessageContentSticker) push.content).sticker != null && Td.isAnimated(((TdApi.PushMessageContentSticker) push.content).sticker.type))
+        else if (((TdApi.PushMessageContentSticker) push.content).sticker != null && Td.isAnimated(((TdApi.PushMessageContentSticker) push.content).sticker.format))
           return getNotificationPreview(TdApi.MessageSticker.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, "animated" + ((TdApi.PushMessageContentSticker) push.content).emoji, 0);
         else
           return getNotificationPreview(TdApi.MessageSticker.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentSticker) push.content).emoji, 0);

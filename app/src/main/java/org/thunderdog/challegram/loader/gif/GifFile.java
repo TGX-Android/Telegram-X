@@ -70,28 +70,27 @@ public class GifFile {
   }
 
   public GifFile (Tdlib tdlib, TdApi.Sticker sticker) {
-    this(tdlib, sticker.sticker, sticker.type);
+    this(tdlib, sticker.sticker, sticker.format);
   }
 
-  public GifFile (Tdlib tdlib, TdApi.File file, TdApi.StickerType type) {
-    this(tdlib, file, toFileType(type));
+  public GifFile (Tdlib tdlib, TdApi.File file, TdApi.StickerFormat format) {
+    this(tdlib, file, toFileType(format));
   }
 
   public boolean isLottie () {
     return type == TYPE_TG_LOTTIE;
   }
 
-  private static int toFileType (TdApi.StickerType type) {
-    switch (type.getConstructor()) {
-      case TdApi.StickerTypeAnimated.CONSTRUCTOR:
+  private static int toFileType (TdApi.StickerFormat format) {
+    switch (format.getConstructor()) {
+      case TdApi.StickerFormatTgs.CONSTRUCTOR:
         return TYPE_TG_LOTTIE;
-      case TdApi.StickerTypeVideo.CONSTRUCTOR:
+      case TdApi.StickerFormatWebm.CONSTRUCTOR:
         return TYPE_MPEG4;
-      case TdApi.StickerTypeMask.CONSTRUCTOR:
-      case TdApi.StickerTypeStatic.CONSTRUCTOR:
+      case TdApi.StickerFormatWebp.CONSTRUCTOR:
         break;
     }
-    throw new IllegalArgumentException(type.toString());
+    throw new IllegalArgumentException(format.toString());
   }
 
   public int getFitzpatrickType () {

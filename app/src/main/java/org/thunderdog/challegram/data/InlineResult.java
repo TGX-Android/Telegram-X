@@ -463,7 +463,7 @@ public abstract class InlineResult <T> implements MessageSourceProvider, Multipl
       case TdApi.InlineQueryResultDocument.CONSTRUCTOR: {
         TdApi.InlineQueryResultDocument doc = (TdApi.InlineQueryResultDocument) result;
         if (TGMimeType.isAudioMimeType(doc.document.mimeType)) {
-          TdApi.InlineQueryResultAudio audio = new TdApi.InlineQueryResultAudio(doc.id, new TdApi.Audio(0, doc.title, doc.description, doc.document.fileName, doc.document.mimeType, doc.document.minithumbnail, doc.document.thumbnail, doc.document.document));
+          TdApi.InlineQueryResultAudio audio = new TdApi.InlineQueryResultAudio(doc.id, new TdApi.Audio(0, doc.title, doc.description, doc.document.fileName, doc.document.mimeType, doc.document.minithumbnail, doc.document.thumbnail, null, doc.document.document));
           return new InlineResultCommon(context, tdlib, audio, builder);
         } else {
           return new InlineResultCommon(context, tdlib, doc);

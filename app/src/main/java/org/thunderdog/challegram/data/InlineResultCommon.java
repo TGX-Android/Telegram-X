@@ -416,7 +416,7 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
       this.fileProgress.setBackgroundColorId(R.id.theme_color_file);
     }
     String fileName = U.getFileName(entry.getPath());
-    TdApi.Audio audio = new TdApi.Audio((int) (entry.getDuration() / 1000l), entry.getTitle(), entry.getArtist(), fileName, U.resolveMimeType(U.getExtension(fileName)), null, null, targetFile);
+    TdApi.Audio audio = new TdApi.Audio((int) (entry.getDuration() / 1000l), entry.getTitle(), entry.getArtist(), fileName, U.resolveMimeType(U.getExtension(fileName)), null, null, null, targetFile);
     TdApi.Message message = TD.newFakeMessage(audio);
     message.id = entry.getId();
     this.fileProgress.setPlayPauseFile(message, builder);

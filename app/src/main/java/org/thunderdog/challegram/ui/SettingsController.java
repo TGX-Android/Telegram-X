@@ -1281,8 +1281,8 @@ public class SettingsController extends ViewController<Void> implements
   }
 
   @Override
-  public void onInstalledStickerSetsUpdated (long[] stickerSetIds, boolean isMasks) {
-    if (!isMasks) {
+  public void onInstalledStickerSetsUpdated (long[] stickerSetIds, TdApi.StickerType stickerType) {
+    if (stickerType.getConstructor() == TdApi.StickerTypeRegular.CONSTRUCTOR) {
       runOnUiThreadOptional(() -> {
         allStickerSets = null;
         hasPreloadedStickers = false;
@@ -1323,7 +1323,7 @@ public class SettingsController extends ViewController<Void> implements
       return;
     }
     hasPreloadedStickers = true;
-    tdlib.client().send(new TdApi.GetInstalledStickerSets(false), object -> {
+    tdlib.client().send(new TdApi.GetInstalledStickerSets(new TdApi.StickerTypeRegular()), object -> {
       if (!isDestroyed()) {
         switch (object.getConstructor()) {
           case TdApi.StickerSets.CONSTRUCTOR: {

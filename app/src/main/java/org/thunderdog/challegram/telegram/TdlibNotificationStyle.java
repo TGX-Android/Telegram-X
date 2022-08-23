@@ -868,11 +868,11 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
           if (file.type == TdlibNotificationMediaFile.TYPE_ANIMATED_STICKER) {
             AtomicReference<TdApi.File> generatedFile = new AtomicReference<>();
             CountDownLatch latch = new CountDownLatch(1);
-            tdlib.client().send(new TdApi.UploadFile(new TdApi.InputFileGenerated(file.file.local.path, GenerationInfo.TYPE_STICKER_PREVIEW, 0), new TdApi.FileTypeSticker(), 32), result -> {
+            tdlib.client().send(new TdApi.PreliminaryUploadFile(new TdApi.InputFileGenerated(file.file.local.path, GenerationInfo.TYPE_STICKER_PREVIEW, 0), new TdApi.FileTypeSticker(), 32), result -> {
               switch (result.getConstructor()) {
                 case TdApi.File.CONSTRUCTOR: {
                   TdApi.File uploadingFile = (TdApi.File) result;
-                  tdlib.client().send(new TdApi.CancelUploadFile(uploadingFile.id), tdlib.okHandler());
+                  tdlib.client().send(new TdApi.CancelPreliminaryUploadFile(uploadingFile.id), tdlib.okHandler());
                   tdlib.client().send(new TdApi.DownloadFile(uploadingFile.id, 32, 0, 0, true), downloadedFile -> {
                     switch (downloadedFile.getConstructor()) {
                       case TdApi.File.CONSTRUCTOR: {

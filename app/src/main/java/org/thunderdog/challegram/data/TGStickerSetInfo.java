@@ -98,9 +98,9 @@ public class TGStickerSetInfo {
       this.previewOutline = info.covers[0].outline;
       this.previewWidth = info.covers[0].width;
       this.previewHeight = info.covers[0].height;
-      if (Td.isAnimated(info.covers[0].type)) {
+      if (Td.isAnimated(info.covers[0].format)) {
         this.previewImage = null;
-        this.previewAnimation = new GifFile(tdlib, info.covers[0].sticker, info.covers[0].type);
+        this.previewAnimation = new GifFile(tdlib, info.covers[0].sticker, info.covers[0].format);
         this.previewAnimation.setOptimize(true);
       } else if (info.covers[0].thumbnail != null) {
         this.previewImage = TD.toImageFile(tdlib, info.covers[0].thumbnail);
@@ -127,7 +127,7 @@ public class TGStickerSetInfo {
   }
 
   public TGStickerSetInfo (Tdlib tdlib, TdApi.StickerSet info) {
-    this(tdlib, new TdApi.StickerSetInfo(info.id, info.title, info.name, info.thumbnail, info.thumbnailOutline, info.isInstalled, info.isArchived, info.isOfficial, info.stickerType, info.isViewed, info.stickers.length, info.stickers));
+    this(tdlib, Td.toStickerSetInfo(info));
   }
 
   public void setBoundList (@Nullable ArrayList<TGStickerSetInfo> list) {
@@ -325,7 +325,7 @@ public class TGStickerSetInfo {
   }
 
   public boolean isAnimated () {
-    return info != null && Td.isAnimated(info.stickerType);
+    return info != null && Td.isAnimated(info.stickerFormat);
   }
 
   public int getSize () {

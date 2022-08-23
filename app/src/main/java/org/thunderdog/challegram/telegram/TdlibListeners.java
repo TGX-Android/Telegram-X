@@ -1466,7 +1466,7 @@ public class TdlibListeners {
 
   void updateInstalledStickerSets (TdApi.UpdateInstalledStickerSets update) {
     for (StickersListener listener : stickersListeners) {
-      listener.onInstalledStickerSetsUpdated(update.stickerSetIds, update.isMasks);
+      listener.onInstalledStickerSetsUpdated(update.stickerSetIds, update.stickerType);
     }
   }
 
@@ -1518,7 +1518,7 @@ public class TdlibListeners {
 
   void updateTrendingStickerSets (TdApi.UpdateTrendingStickerSets update, int unreadCount) {
     for (StickersListener listener : stickersListeners) {
-      listener.onTrendingStickersUpdated(update.stickerSets, unreadCount);
+      listener.onTrendingStickersUpdated(update.stickerType, update.stickerSets, unreadCount);
     }
   }
 
