@@ -475,7 +475,7 @@ public class PageBlockRichText extends PageBlock {
   @Override
   public void requestIcons (ComplexReceiver receiver) {
     if (text != null) {
-      text.requestIcons(receiver);
+      text.requestMedia(receiver);
     } else {
       receiver.clear();
     }

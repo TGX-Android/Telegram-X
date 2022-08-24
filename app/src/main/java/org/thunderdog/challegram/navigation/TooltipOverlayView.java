@@ -173,7 +173,7 @@ public class TooltipOverlayView extends ViewGroup {
 
     @Override
     public void requestIcons (ComplexReceiver iconReceiver) {
-      text.requestIcons(iconReceiver);
+      text.requestMedia(iconReceiver);
     }
 
     @Override

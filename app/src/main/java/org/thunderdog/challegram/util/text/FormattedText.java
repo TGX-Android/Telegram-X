@@ -43,29 +43,34 @@ public class FormattedText {
     return 0;
   }
 
-  public static int requestIcons (TextEntity[] entities, ComplexReceiver receiver, int keyOffset) {
-    boolean clear = keyOffset == -1;
-    if (clear) {
-      keyOffset = 0;
-    }
-    int iconIndex = 0;
-    if (entities != null) {
-      for (TextEntity entity : entities) {
-        if (entity.isIcon()) {
-          entity.getIcon().requestFiles(keyOffset + iconIndex, receiver);
-          iconIndex++;
-        }
-      }
-    }
-    if (clear) {
-      if (iconIndex > 0) {
-        receiver.clearReceiversWithHigherKey(keyOffset + iconIndex);
-      } else {
-        receiver.clear();
-      }
-    }
-    return iconIndex;
+  public static int requestMedia (TextEntity[] entities, ComplexReceiver receiver) {
+    return requestMedia(entities, receiver, -1, -1);
   }
+
+  public static int requestMedia (TextEntity[] entities, ComplexReceiver receiver, int startKey, int maxMediaCount) {
+    boolean clear = startKey == -1 && maxMediaCount == -1;
+    if (clear) {
+      startKey = 0;
+      maxMediaCount = Integer.MAX_VALUE;
+    }
+    int loadedMediaCount = 0;
+    for (TextEntity entity : entities) {
+      if (entity.hasMedia()) {
+        if (loadedMediaCount == maxMediaCount)
+          throw new IllegalArgumentException();
+        int mediaKey = startKey + loadedMediaCount;
+        entity.requestMedia(receiver, mediaKey);
+        loadedMediaCount++;
+      }
+    }
+    if (clear || maxMediaCount == Integer.MAX_VALUE) {
+      receiver.clearReceiversWithHigherKey(startKey + loadedMediaCount);
+    } else if (maxMediaCount > loadedMediaCount) {
+      receiver.clearReceiversRange(startKey + loadedMediaCount, startKey + maxMediaCount);
+    }
+    return loadedMediaCount;
+  }
+
   public static FormattedText parseRichText (ViewController<?> context, @Nullable TdApi.RichText richText, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     if (richText == null)
       return null;

@@ -197,9 +197,9 @@ public class PageBlockTable extends PageBlock {
     for (Cell[] row : cells) {
       for (Cell cell : row) {
         if (cell.text != null) {
-          cell.text.requestIcons(receiver, iconCount);
+          cell.text.requestMedia(receiver, iconCount, cell.iconCount);
         } else if (cell.formattedText != null) {
-          FormattedText.requestIcons(cell.formattedText.entities, receiver, iconCount);
+          FormattedText.requestMedia(cell.formattedText.entities, receiver, iconCount, cell.iconCount);
         }
         iconCount += cell.iconCount;
       }
@@ -349,7 +349,6 @@ public class PageBlockTable extends PageBlock {
 
   @Override
   protected <T extends View & DrawableProvider> void drawInternal (T view, Canvas c, Receiver preview, Receiver receiver, @Nullable ComplexReceiver iconReceiver) {
-    int iconCount = 0;
     TdApi.PageBlockTable table = (TdApi.PageBlockTable) this.block;
     for (Cell[] row : cells) {
       for (Cell cell : row) {
@@ -376,10 +375,9 @@ public class PageBlockTable extends PageBlock {
             default:
               throw new UnsupportedOperationException(cell.toString());
           }
-          cell.text.draw(c, cell.bounds.left + cell.padding(), cell.bounds.right - cell.padding(), 0, y, null, 1f, iconReceiver, iconCount);
+          cell.text.draw(c, cell.bounds.left + cell.padding(), cell.bounds.right - cell.padding(), 0, y, null, 1f, iconReceiver);
           Views.restore(c, restoreCount);
         }
-        iconCount += cell.iconCount;
       }
     }
   }

@@ -244,7 +244,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   private SparseArrayCompat<Path> pressHighlights;
   private List<int[]> lineSizes;
   private int emojiCount;
-  private int iconCount;
+  private int mediaCount;
   private @Nullable TextEntity[] entities;
 
   private int paragraphCount;
@@ -690,7 +690,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     entityStart = entityEnd = 0;
     pressHighlight = null;
     emojiCount = 0;
-    iconCount = 0;
+    mediaCount = 0;
     maxPartHeight = currentWidth = currentX = currentY = paragraphCount = 0;
     lastPart = null;
     textFlags &= ~(
@@ -1158,13 +1158,14 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     part.setWidth(iconWidth);
     part.setHeight(iconHeight);
     part.setEntity(entity);
-    part.setIcon(iconCount, icon);
+    part.setIcon(icon);
+    // part.setMediaIndex(mediaCount);
+    mediaCount++;
 
     out.add(part);
 
     currentX += iconWidth;
     maxPartHeight = Math.max(iconHeight, maxPartHeight);
-    iconCount++;
   }
 
   private void processEmoji (String in, int start, int end, @Nullable EmojiInfo info, ArrayList<TextPart> out, @Nullable TextEntity entity) {
@@ -1182,6 +1183,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     part.setWidth(emojiSize);
     part.setEntity(entity);
     part.setEmoji(info);
+    if (part.isCustomEmoji()) {
+      // part.setMediaIndex(mediaCount);
+      mediaCount++;
+    }
 
     out.add(part);
 
@@ -1781,6 +1786,12 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
             out.set(out.size() - 1, ellipsisPart);
             currentX += ellipsisPart.getWidth();
 
+            if (lastPart.hasMedia()) {
+              mediaCount--;
+            } else if (lastPart.isEmoji()) {
+              emojiCount--;
+            }
+
             done = true;
             break;
           }
@@ -1807,6 +1818,9 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
           }
 
           out.remove(out.size() - 1);
+          if (lastPart.hasMedia()) {
+            mediaCount--;
+          }
           if (out.isEmpty())
             break;
           lastPart = out.get(out.size() - 1);
@@ -2014,7 +2028,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return lastSpaceSize;
   }
 
-  private int drawPartCentered (int partIndex, Canvas c, int x, int y, int maxWidth, float alpha, @Nullable TextColorSet defaultTheme, @Nullable ComplexReceiver receiver, int iconKeyOffset) {
+  private int drawPartCentered (int partIndex, Canvas c, int x, int y, int maxWidth, float alpha, @Nullable TextColorSet defaultTheme, @Nullable ComplexReceiver receiver) {
     TextPart part = parts.get(partIndex);
     int width = getLineWidth(part.getLineIndex());
     int cx = x + maxWidth / 2;
@@ -2042,37 +2056,45 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       if (count > 1) {
         part.drawMerged(partIndex, c, lastPart.getEnd(), cx - width / 2, cx + width / 2, 0, y, alpha, defaultTheme);
       } else {
-        part.draw(partIndex, c, cx - width / 2, cx + width / 2, 0, y, alpha, defaultTheme, receiver, iconKeyOffset);
+        part.draw(partIndex, c, cx - width / 2, cx + width / 2, 0, y, alpha, defaultTheme, receiver);
       }
     }
     return count;
   }
 
-  public int requestIcons (ComplexReceiver iconReceiver, int iconKeyOffset) {
-    boolean clear = iconKeyOffset == -1;
-    if (iconCount > 0) {
-      if (clear) {
-        iconKeyOffset = 0;
-      }
-      int iconIndex = 0;
-      for (TextPart part : parts) {
-        if (part.isIcon()) {
-          part.requestIcon(iconReceiver, iconKeyOffset);
-          iconIndex++;
-        }
-      }
-      if (clear) {
-        iconReceiver.clearReceiversWithHigherKey(iconIndex);
-      }
-      return iconIndex;
-    }
-    if (clear) {
-      iconReceiver.clear();
-    }
-    return 0;
+  public int requestMedia (ComplexReceiver textMediaReceiver) {
+    return requestMedia(textMediaReceiver, -1, -1);
   }
 
-  private int drawPart (final int partIndex, Canvas c, int startX, int endX, int endXBottomPadding, int y, float alpha, @Nullable TextColorSet defaultTheme, @Nullable ComplexReceiver receiver, int iconKeyOffset) {
+  public int requestMedia (ComplexReceiver textMediaReceiver, int startKey, int maxMediaCount) {
+    if (mediaCount == 0)
+      return 0;
+    boolean clear = startKey == -1 && maxMediaCount == -1;
+    if (clear) {
+      startKey = 0;
+      maxMediaCount = Integer.MAX_VALUE;
+    }
+    int loadedMediaCount = 0;
+    for (TextPart part : parts) {
+      if (part.hasMedia()) {
+        if (loadedMediaCount == maxMediaCount)
+          throw new IllegalArgumentException();
+        int mediaKey = startKey + loadedMediaCount;
+        part.requestMedia(textMediaReceiver, mediaKey);
+        loadedMediaCount++;
+      }
+    }
+    if (loadedMediaCount != mediaCount)
+      throw new IllegalStateException(loadedMediaCount + " != " + mediaCount);
+    if (clear || maxMediaCount == Integer.MAX_VALUE) {
+      textMediaReceiver.clearReceiversWithHigherKey(startKey + loadedMediaCount);
+    } else if (maxMediaCount > loadedMediaCount) {
+      textMediaReceiver.clearReceiversRange(startKey + loadedMediaCount, startKey + maxMediaCount);
+    }
+    return loadedMediaCount;
+  }
+
+  private int drawPart (final int partIndex, Canvas c, int startX, int endX, int endXBottomPadding, int y, float alpha, @Nullable TextColorSet defaultTheme, @Nullable ComplexReceiver receiver) {
     TextPart part = parts.get(partIndex);
 
     int count = 1;
@@ -2099,7 +2121,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       if (count > 1) {
         part.drawMerged(partIndex, c, lastPart.getEnd(), startX, endX, endXBottomPadding, y, alpha, defaultTheme);
       } else {
-        part.draw(partIndex, c, startX, endX, endXBottomPadding, y, alpha, defaultTheme, receiver, iconKeyOffset);
+        part.draw(partIndex, c, startX, endX, endXBottomPadding, y, alpha, defaultTheme, receiver);
       }
     }
     return count;
@@ -2203,10 +2225,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   }
 
   public void draw (Canvas c, int startX, int endX, int endXBottomPadding, int startY, @Nullable TextColorSet defaultTheme, @FloatRange(from = 0f, to = 1f) float alpha, @Nullable ComplexReceiver receiver) {
-    draw(c, startX, endX, endXBottomPadding, startY, defaultTheme, alpha, receiver, -1);
-  }
-
-  public void draw (Canvas c, int startX, int endX, int endXBottomPadding, int startY, @Nullable TextColorSet defaultTheme, @FloatRange(from = 0f, to = 1f) float alpha, @Nullable ComplexReceiver receiver, int iconKeyOffset) {
     if (parts == null || alpha == 0f)
       return;
 
@@ -2355,12 +2373,12 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     if (center) {
       int partCount = parts.size();
       for (int i = 0; i < partCount; ) {
-        i += drawPartCentered(i, c, startX, startY, startX == endX ? maxWidth : endX - startX, alpha, defaultTheme, receiver, iconKeyOffset);
+        i += drawPartCentered(i, c, startX, startY, startX == endX ? maxWidth : endX - startX, alpha, defaultTheme, receiver);
       }
     } else {
       int partCount = parts.size();
       for (int i = 0; i < partCount; ) {
-        i += drawPart(i, c, startX, endX, endXBottomPadding, startY, alpha, defaultTheme, receiver, iconKeyOffset);
+        i += drawPart(i, c, startX, endX, endXBottomPadding, startY, alpha, defaultTheme, receiver);
       }
     }
     if (needRestore) {
@@ -2414,7 +2432,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   }
 
   private int getPartVerticalOffset (TextPart part) {
-    return iconCount > 0 ? (getLineHeight(part.getLineIndex()) - getPartHeight(part)) / 2 : 0;
+    return mediaCount > 0 ? (getLineHeight(part.getLineIndex()) - getPartHeight(part)) / 2 : 0;
   }
 
   private int findTextPart (int touchX, int touchY, int startX, int endX, int endXBottomPadding, int startY, boolean onlyClickable) {

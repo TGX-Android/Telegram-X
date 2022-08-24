@@ -23,6 +23,7 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
@@ -164,6 +165,16 @@ public class TextEntityMessage extends TextEntity {
     return BitwiseUtils.getFlag(flags, FLAG_CUSTOM_EMOJI);
   }
 
+  @Override
+  public boolean hasMedia () {
+    return isCustomEmoji();
+  }
+
+  @Override
+  public void requestMedia (ComplexReceiver receiver, int key) {
+    // TODO request custom emoji
+  }
+
   public long getCustomEmojiId () {
     if (isCustomEmoji()) {
       return ((TdApi.TextEntityTypeCustomEmoji) emojiEntity.type).customEmojiId;
@@ -188,6 +199,16 @@ public class TextEntityMessage extends TextEntity {
       case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
       case TdApi.TextEntityTypePre.CONSTRUCTOR: {
         return true;
+      }
+      case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR: // TODO
+
+      case TdApi.TextEntityTypeBold.CONSTRUCTOR:
+      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
+      case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
+      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
+      case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
+      case TdApi.TextEntityTypeUnderline.CONSTRUCTOR: {
+        return false;
       }
     }
     return false;
@@ -426,6 +447,18 @@ public class TextEntityMessage extends TextEntity {
         }
         break;
       }
+      case TdApi.TextEntityTypeBold.CONSTRUCTOR:
+      case TdApi.TextEntityTypeCode.CONSTRUCTOR:
+      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
+      case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
+      case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR:
+      case TdApi.TextEntityTypePre.CONSTRUCTOR:
+      case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
+      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
+      case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
+      case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
+        // Non-clickable
+        break;
     }
   }
 
@@ -443,13 +476,10 @@ public class TextEntityMessage extends TextEntity {
     }
 
     final String copyText;
-    switch (clickableEntity.type.getConstructor()) {
-      case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
-        copyText = ((TdApi.TextEntityTypeTextUrl) clickableEntity.type).url;
-        break;
-      default:
-        copyText = Td.substring(text.getText(), clickableEntity);
-        break;
+    if (clickableEntity.type.getConstructor() == TdApi.TextEntityTypeTextUrl.CONSTRUCTOR) {
+      copyText = ((TdApi.TextEntityTypeTextUrl) clickableEntity.type).url;
+    } else {
+      copyText = Td.substring(text.getText(), clickableEntity);
     }
 
     final boolean canShare = clickableEntity.type.getConstructor() == TdApi.TextEntityTypeUrl.CONSTRUCTOR || clickableEntity.type.getConstructor() == TdApi.TextEntityTypeTextUrl.CONSTRUCTOR;
@@ -480,6 +510,15 @@ public class TextEntityMessage extends TextEntity {
       case TdApi.TextEntityTypePre.CONSTRUCTOR: {
         break;
       }
+      case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR: // Unreachable because of the condition above
+      case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR: // TODO
+
+      case TdApi.TextEntityTypeBold.CONSTRUCTOR:
+      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
+      case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
+      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
+      case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
+      case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
       default: {
         Log.i("Long press is unsupported for entity: %s", clickableEntity);
         return false;

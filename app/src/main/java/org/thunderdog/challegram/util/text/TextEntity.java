@@ -25,6 +25,7 @@ import androidx.annotation.Nullable;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -89,6 +90,9 @@ public abstract class TextEntity {
   }
 
   public abstract int getType ();
+
+  public abstract boolean hasMedia ();
+  public abstract void requestMedia (ComplexReceiver receiver, int key);
 
   public final int getStart () {
     return start;

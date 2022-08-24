@@ -244,7 +244,9 @@ public class TextPart {
     return getSpoiler() != null ? entity : null;
   }
 
+  private int mediaKey = -1;
   private EmojiInfo emojiInfo;
+  private TextIcon icon;
 
   public void setEmoji (@Nullable EmojiInfo emoji) {
     this.emojiInfo = emoji;
@@ -257,12 +259,8 @@ public class TextPart {
     return BitwiseUtils.getFlag(flags, FLAG_CUSTOM_EMOJI);
   }
 
-  private int iconIndex;
-  private TextIcon icon;
-
-  public void setIcon (int iconIndex, TextIcon icon) {
+  public void setIcon (TextIcon icon) {
     this.icon = icon;
-    this.iconIndex = iconIndex;
   }
 
   public boolean isEmoji () {
@@ -273,8 +271,13 @@ public class TextPart {
     return icon != null;
   }
 
-  void requestIcon (ComplexReceiver receiver, int iconKeyOffset) {
-    icon.requestFiles(iconKeyOffset + iconIndex, receiver);
+  public boolean hasMedia () {
+    return isIcon() || isCustomEmoji();
+  }
+
+  void requestMedia (ComplexReceiver receiver, int mediaKey) {
+    this.mediaKey = mediaKey;
+    icon.requestFiles(receiver, mediaKey);
   }
 
   public int makeX (int startX, int endX, int endXBottomPadding) {
@@ -334,22 +337,23 @@ public class TextPart {
     c.drawText(line, start, end, x, y + source.getAscent() + paint.baselineShift, paint);
   }
 
-  public void draw (int partIndex, Canvas c, int startX, int endX, int endXBottomPadding, int startY, float alpha, @Nullable TextColorSet colorProvider, @Nullable ComplexReceiver receiver, int iconKeyOffset) {
+  public void draw (int partIndex, Canvas c, int startX, int endX, int endXBottomPadding, int startY, float alpha, @Nullable TextColorSet colorProvider, @Nullable ComplexReceiver receiver) {
     int y = startY + this.y;
     int x = makeX(startX, endX, endXBottomPadding);
     TextPaint textPaint = getPaint(partIndex, alpha, colorProvider);
     if (icon != null) {
+      if (mediaKey == -1)
+        throw new IllegalStateException("Calling draw(...) before prior requestMedia(...) call");
       y += textPaint.baselineShift;
       if (receiver != null) {
         Receiver content;
-        int key = iconKeyOffset + iconIndex;
         if (icon.isImage()) {
-          ImageReceiver image = receiver.getImageReceiver(key);
+          ImageReceiver image = receiver.getImageReceiver(mediaKey);
           image.setBounds(x, y, (int) (x + width), y + height);
           image.setPaintAlpha(image.getPaintAlpha() * alpha);
           content = image;
         } else if (icon.isGif()) {
-          GifReceiver gif = receiver.getGifReceiver(key);
+          GifReceiver gif = receiver.getGifReceiver(mediaKey);
           gif.setBounds(x, y, (int) (x + width), y + height);
           gif.setAlpha(alpha);
           content = gif;
@@ -357,7 +361,7 @@ public class TextPart {
           content = null;
         }
         if (content == null || content.needPlaceholder()) {
-          DoubleImageReceiver preview = receiver.getPreviewReceiver(key);
+          DoubleImageReceiver preview = receiver.getPreviewReceiver(mediaKey);
           preview.setBounds(x, y, (int) (x + width), y + height);
           preview.setPaintAlpha(alpha);
           preview.draw(c);

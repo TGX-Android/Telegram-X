@@ -41,7 +41,7 @@ public class TextIcon {
     this.imageFile = null;
   }
 
-  public void requestFiles (int key, ComplexReceiver receiver) {
+  public void requestFiles (ComplexReceiver receiver, int key) {
     DoubleImageReceiver preview = receiver.getPreviewReceiver(key);
     preview.requestFile(miniThumbnail, thumbnail);
     if (imageFile != null) {

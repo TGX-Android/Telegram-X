@@ -145,12 +145,12 @@ public class TextWrapper implements ListAnimator.Measurable {
     return getInternal(isPortrait ? PORTRAIT_INDEX : LANDSCAPE_INDEX, maxWidth);
   }
 
-  public void requestIcons (ComplexReceiver receiver) {
+  public void requestMedia (ComplexReceiver receiver) {
     Text text = getCurrent();
     if (text != null) {
-      text.requestIcons(receiver, -1);
+      text.requestMedia(receiver);
     } else {
-      FormattedText.requestIcons(entities, receiver, -1);
+      FormattedText.requestMedia(entities, receiver);
     }
   }
 

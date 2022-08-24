@@ -41,6 +41,18 @@ public class ComplexReceiver implements Destroyable {
     this.previews = new LongSparseArray<>(10);
   }
 
+  private static <T extends Receiver> void clearReceiversRange (LongSparseArray<T> receivers, long startKey, long endKey) {
+    final int size = receivers.size();
+    for (int i = 0; i < size; i++) {
+      long sparseKey = receivers.keyAt(i);
+      if (sparseKey < startKey)
+        continue;
+      if (sparseKey >= endKey)
+        break;
+      receivers.valueAt(i).clear();
+    }
+  }
+
   private static <T extends Receiver> void clearReceiversWithHigherKey (LongSparseArray<T> receivers, long key) {
     final int size = receivers.size();
     for (int i = 0; i < size; i++) {
@@ -88,6 +100,12 @@ public class ComplexReceiver implements Destroyable {
     clearReceiversWithHigherKey(imageReceivers, key);
     clearReceiversWithHigherKey(gifReceivers, key);
     clearReceiversWithHigherKey(previews, key);
+  }
+
+  public void clearReceiversRange (int startKey, int endKey) {
+    clearReceiversRange(imageReceivers, startKey, endKey);
+    clearReceiversRange(gifReceivers, startKey, endKey);
+    clearReceiversRange(previews, startKey, endKey);
   }
 
   public DoubleImageReceiver getPreviewReceiver (int key) {

@@ -25,6 +25,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageFileLocal;
 import org.thunderdog.challegram.loader.gif.GifFile;
@@ -193,6 +194,16 @@ public class TextEntityCustom extends TextEntity {
   @Override
   public boolean isCustomEmoji () {
     return false;
+  }
+
+  @Override
+  public boolean hasMedia () {
+    return isIcon();
+  }
+
+  @Override
+  public void requestMedia (ComplexReceiver receiver, int key) {
+    icon.requestFiles(receiver, key);
   }
 
   @Override
