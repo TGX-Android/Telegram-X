@@ -23,7 +23,6 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
@@ -37,9 +36,9 @@ import org.thunderdog.challegram.util.StringList;
 
 import java.util.List;
 
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
@@ -179,10 +178,6 @@ public class TextEntityMessage extends TextEntity {
   }
 
   @Override
-  public void requestMedia (ComplexReceiver receiver, int keyOffset, int maxMediaCount) {
-    // TODO request custom emoji
-  }
-
   public long getCustomEmojiId () {
     if (isCustomEmoji()) {
       return ((TdApi.TextEntityTypeCustomEmoji) emojiEntity.type).customEmojiId;

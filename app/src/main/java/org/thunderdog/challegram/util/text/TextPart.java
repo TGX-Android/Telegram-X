@@ -47,7 +47,6 @@ public class TextPart {
   private static final int FLAG_LINE_RTL = 1;
   private static final int FLAG_LINE_RTL_FAKE = 1 << 2;
   private static final int FLAG_ANIMATED_EMOJI = 1 << 3;
-  private static final int FLAG_CUSTOM_EMOJI = 1 << 4;
 
   private Text source;
   private String line;
@@ -253,8 +252,8 @@ public class TextPart {
   public void setEmoji (@Nullable EmojiInfo emoji, Text.MediaKeyInfo mediaKeyInfo) {
     this.emojiInfo = emoji;
     this.mediaKeyInfo = mediaKeyInfo;
-    if (entity != null && entity.isCustomEmoji()) {
-      flags |= FLAG_CUSTOM_EMOJI;
+    if (mediaKeyInfo != null && isCustomEmoji()) {
+      this.icon = new TextIcon((int) width, entity.getCustomEmojiId());
     }
   }
 
@@ -270,8 +269,12 @@ public class TextPart {
     return -1;
   }
 
+  public boolean isStaticElement () { // Media cannot be trimmed
+    return isBuiltInEmoji() || hasMedia();
+  }
+
   public boolean isCustomEmoji () {
-    return BitwiseUtils.getFlag(flags, FLAG_CUSTOM_EMOJI);
+    return entity != null && entity.isCustomEmoji();
   }
 
   public void setIcon (TextIcon icon, Text.MediaKeyInfo mediaKeyInfo) {
@@ -279,16 +282,13 @@ public class TextPart {
     this.mediaKeyInfo = mediaKeyInfo;
   }
 
-  public boolean isEmoji () {
-    return emojiInfo != null || isCustomEmoji();
-  }
-
-  public boolean isIcon () {
-    return icon != null;
+  public boolean isBuiltInEmoji () {
+    return emojiInfo != null;
   }
 
   public boolean hasMedia () {
-    return isIcon() || isCustomEmoji();
+    // true for both custom emoji & RichTextIcon
+    return icon != null;
   }
 
   void setDisplayMediaKeyOffset (int keyOffset) {
@@ -299,9 +299,7 @@ public class TextPart {
     final int displayMediaKey = getDisplayMediaKey();
     if (displayMediaKey == -1)
       throw new IllegalStateException();
-    if (isCustomEmoji()) {
-      // TODO request emoji
-    } else if (isIcon()) {
+    if (hasMedia()) {
       icon.requestFiles(receiver, displayMediaKey);
     } else {
       throw new IllegalStateException();
@@ -353,28 +351,32 @@ public class TextPart {
   public void drawMerged (int partIndex, Canvas c, int end, int startX, int endX, int endXBottomPadding, int startY, float alpha, @Nullable TextColorSet colorProvider) {
     int y = startY + this.y;
     int x = makeX(startX, endX, endXBottomPadding);
-    if (icon != null)
-      throw new IllegalStateException("icon != null");
-    if (emojiInfo != null)
-      throw new IllegalStateException("emojiInfo != null");
-    if (isCustomEmoji())
-      throw new IllegalStateException("custom emoji");
+    if (isStaticElement())
+      throw new IllegalStateException("static elements can't be merged");
     if (trimmedLine != null)
       throw new IllegalStateException("trimmedLine != null");
     TextPaint paint = getPaint(partIndex, alpha, colorProvider);
     c.drawText(line, start, end, x, y + source.getAscent() + paint.baselineShift, paint);
   }
 
+  private void drawError (Canvas c, float cx, float cy, float radius, float alpha) {
+    c.drawCircle(cx, cy, radius, Paints.fillingPaint(ColorUtils.alphaColor(alpha, 0xffff0000)));
+  }
+
   public void draw (int partIndex, Canvas c, int startX, int endX, int endXBottomPadding, int startY, float alpha, @Nullable TextColorSet colorProvider, @Nullable ComplexReceiver receiver) {
     int y = startY + this.y;
     int x = makeX(startX, endX, endXBottomPadding);
-    TextPaint textPaint = getPaint(partIndex, alpha, colorProvider);
+    final TextPaint textPaint = getPaint(partIndex, alpha, colorProvider);
+    final float textAlpha = textPaint.getAlpha() / 255f;
     if (icon != null) {
       final int displayMediaKey = getDisplayMediaKey();
-      if (displayMediaKey == -1)
-        throw new IllegalStateException();
       y += textPaint.baselineShift;
-      if (receiver != null) {
+      final int height = this.height == -1 ? (int) width : this.height;
+      if (isCustomEmoji()) {
+        // Match built-in emoji rect
+        y -= Screen.dp(1.5f);
+      }
+      if (receiver != null && displayMediaKey != -1) {
         final boolean needTranslate = mediaKeyInfo.parts.size() > 1;
         int left, top, right, bottom, restoreToCount;
         if (needTranslate) {
@@ -424,21 +426,15 @@ public class TextPart {
           Views.restore(c, restoreToCount);
         }
       } else {
-        c.drawRect(x, y, x + width, y + height, Paints.fillingPaint(ColorUtils.color((int) (255f * alpha), 0xff0000)));
+        drawError(c, x + width / 2f, y + height / 2f, width / 2f, alpha * textAlpha);
       }
-    } else if (isEmoji()) {
+    } else if (isBuiltInEmoji()) {
       Rect rect = Paints.getRect();
-      int reduce = isCustomEmoji() ? 0 : Emoji.instance().getReduceSize();
+      int reduce = Emoji.instance().getReduceSize();
       y -= Screen.dp(1.5f);
       y += textPaint.baselineShift;
       rect.set(x + reduce / 2, y + reduce / 2, x + (int) width - reduce / 2 - reduce % 2, y + (int) width - reduce / 2 - reduce % 2);
-      if (isCustomEmoji()) {
-        // TODO draw custom emoji
-        float textAlpha = textPaint.getAlpha() / 255f;
-        c.drawCircle(rect.centerX(), rect.centerY(), rect.width() / 4f, Paints.fillingPaint(ColorUtils.alphaColor(alpha * textAlpha, 0xffff0000)));
-      } else {
-        Emoji.instance().draw(c, emojiInfo, rect, textPaint.getAlpha());
-      }
+      Emoji.instance().draw(c, emojiInfo, rect, textPaint.getAlpha());
     } else {
       y += source.getAscent();
       if (trimmedLine != null) {

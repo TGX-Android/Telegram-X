@@ -25,7 +25,6 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageFileLocal;
 import org.thunderdog.challegram.loader.gif.GifFile;
@@ -38,9 +37,9 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.StringList;
 
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
-import me.vkryl.core.BitwiseUtils;
 
 public class TextEntityCustom extends TextEntity {
   public static final int FLAG_BOLD = 1;
@@ -197,6 +196,11 @@ public class TextEntityCustom extends TextEntity {
   }
 
   @Override
+  public long getCustomEmojiId () {
+    return 0;
+  }
+
+  @Override
   public boolean hasMedia () {
     return isIcon();
   }
@@ -204,11 +208,6 @@ public class TextEntityCustom extends TextEntity {
   @Override
   public String getMediaKeyId () {
     return icon != null ? icon.getKey() : null;
-  }
-
-  @Override
-  public void requestMedia (ComplexReceiver receiver, int keyOffset, int maxMediaCount) {
-    icon.requestFiles(receiver, keyOffset);
   }
 
   @Override

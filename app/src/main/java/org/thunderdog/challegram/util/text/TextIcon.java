@@ -16,16 +16,27 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.gif.GifFile;
+import org.thunderdog.challegram.tool.Screen;
 
 public class TextIcon {
   private final int width, height;
-  private final ImageFile miniThumbnail, thumbnail;
-  private final ImageFile imageFile;
-  private final GifFile gifFile;
+  private final long customEmojiId;
+
+  private ImageFile miniThumbnail, thumbnail;
+  private ImageFile imageFile;
+  private GifFile gifFile;
+
+  public TextIcon (int size, long customEmojiId) {
+    this.width = size;
+    this.height = size;
+    this.customEmojiId = customEmojiId;
+    // TODO extract custom emoji from memcache
+  }
 
   public TextIcon (int width, int height, ImageFile miniThumbnail, ImageFile thumbnail, ImageFile imageFile) {
-    this.width = width;
-    this.height = height;
+    this.width = Screen.dp(width);
+    this.height = Screen.dp(height);
+    this.customEmojiId = 0;
     this.miniThumbnail = miniThumbnail;
     this.thumbnail = thumbnail;
     this.imageFile = imageFile;
@@ -33,8 +44,9 @@ public class TextIcon {
   }
 
   public TextIcon (int width, int height, ImageFile miniThumbnail, ImageFile thumbnail, GifFile gifFile) {
-    this.width = width;
-    this.height = height;
+    this.width = Screen.dp(width);
+    this.height = Screen.dp(height);
+    this.customEmojiId = 0;
     this.miniThumbnail = miniThumbnail;
     this.thumbnail = thumbnail;
     this.gifFile = gifFile;
@@ -42,6 +54,9 @@ public class TextIcon {
   }
 
   public String getKey () {
+    if (isCustomEmoji()) {
+      return "emoji_" + customEmojiId + "_" + height;
+    }
     StringBuilder b = new StringBuilder();
     if (imageFile != null) {
       b.append("image_").append(imageFile);
@@ -54,13 +69,14 @@ public class TextIcon {
     return b.toString();
   }
 
-  public void requestFiles (ComplexReceiver receiver, int key) {
-    DoubleImageReceiver preview = receiver.getPreviewReceiver(key);
+  public void requestFiles (ComplexReceiver receiver, int mediaKey) {
+    // TODO request custom emoji
+    DoubleImageReceiver preview = receiver.getPreviewReceiver(mediaKey);
     preview.requestFile(miniThumbnail, thumbnail);
     if (imageFile != null) {
-      receiver.getImageReceiver(key).requestFile(imageFile);
+      receiver.getImageReceiver(mediaKey).requestFile(imageFile);
     } else if (gifFile != null) {
-      receiver.getGifReceiver(key).requestFile(gifFile);
+      receiver.getGifReceiver(mediaKey).requestFile(gifFile);
     }
   }
 
@@ -78,5 +94,9 @@ public class TextIcon {
 
   public boolean isGif () {
     return gifFile != null;
+  }
+
+  public boolean isCustomEmoji () {
+    return customEmojiId != 0;
   }
 }

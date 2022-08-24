@@ -25,7 +25,6 @@ import androidx.annotation.Nullable;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
-import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -94,7 +93,6 @@ public abstract class TextEntity {
   public abstract boolean hasMedia ();
   @Nullable
   public abstract String getMediaKeyId ();
-  public abstract void requestMedia (ComplexReceiver receiver, int keyOffset, int maxMediaCount);
 
   public final int getStart () {
     return start;
@@ -113,6 +111,7 @@ public abstract class TextEntity {
   public abstract boolean hasAnchor (String anchor);
   public abstract boolean isFullWidth ();
   public abstract boolean isCustomEmoji ();
+  public abstract long getCustomEmojiId ();
 
   final TextPaint getTextPaint (TextStyleProvider textStyleProvider, boolean forceBold) {
     // different typefaces

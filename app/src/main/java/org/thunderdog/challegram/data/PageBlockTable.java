@@ -198,8 +198,6 @@ public class PageBlockTable extends PageBlock {
       for (Cell cell : row) {
         if (cell.text != null) {
           cell.text.requestMedia(receiver, iconCount, cell.iconCount);
-        } else if (cell.formattedText != null) {
-          FormattedText.requestMedia(cell.formattedText.entities, receiver, iconCount, cell.iconCount);
         }
         iconCount += cell.iconCount;
       }

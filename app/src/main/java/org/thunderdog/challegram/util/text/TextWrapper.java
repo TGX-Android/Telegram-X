@@ -157,8 +157,6 @@ public class TextWrapper implements ListAnimator.Measurable {
     Text text = getCurrent();
     if (text != null) {
       text.requestSingleMedia(receiver, displayMediaKey);
-    } else {
-      FormattedText.requestSingleMedia(entities, receiver, displayMediaKey);
     }
   }
 
@@ -170,8 +168,6 @@ public class TextWrapper implements ListAnimator.Measurable {
     Text text = getCurrent();
     if (text != null) {
       text.requestMedia(receiver, startKey, maxMediaCount);
-    } else {
-      FormattedText.requestMedia(entities, receiver, startKey, maxMediaCount);
     }
   }
 

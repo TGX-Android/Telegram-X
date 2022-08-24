@@ -743,7 +743,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   private void removeMediaKey (TextPart part) {
     final int mediaKey = part.getMediaKey();
     if (mediaKey == -1 || mediaKeys == null) {
-      if (part.isEmoji())
+      if (part.isBuiltInEmoji())
         emojiCount--;
       return;
     }
@@ -912,7 +912,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     }
 
     out.trimToSize();
-    if (BitwiseUtils.getFlag(textFlags, FLAG_ANIMATED_EMOJI) && out.size() == 1 && out.get(0).isEmoji()) {
+    if (BitwiseUtils.getFlag(textFlags, FLAG_ANIMATED_EMOJI) && out.size() == 1 && out.get(0).isBuiltInEmoji()) {
       out.get(0).setAnimateEmoji(true);
     }
     this.parts = out;
@@ -1190,8 +1190,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
     TextIcon icon = entity.getIcon();
 
-    int iconWidth = Screen.dp(icon.getWidth());
-    int iconHeight = Screen.dp(icon.getHeight());
+    int iconWidth = icon.getWidth();
+    int iconHeight = icon.getHeight();
 
     int maxWidth = getLineMaxWidth(getLineCount(), currentY);
 
@@ -1233,7 +1233,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     part.setXY(currentX, currentY);
     part.setWidth(emojiSize);
     part.setEntity(entity);
-    part.setEmoji(info, part.isCustomEmoji() ? newMediaKey(part, entity) : null);
+    part.setEmoji(info, entity != null && entity.isCustomEmoji() ? newMediaKey(part, entity) : null);
 
     out.add(part);
 
@@ -1816,8 +1816,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
         boolean done = false;
         do {
           currentX = lastPart.getX();
-          if (lastPart.isEmoji() || lastPart.isIcon()) {
-            // Easy path: just replace first found emoji with ellipsis
+          if (lastPart.isStaticElement()) {
+            // Easy path: just replace first found media with ellipsis
 
             boolean changedEllipsis = false;
             if (!ellipsis.equals(defaultEllipsis)) {

@@ -15,7 +15,6 @@ package org.thunderdog.challegram.util.text;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.TdlibUi;
 
@@ -41,38 +40,6 @@ public class FormattedText {
       return iconCount;
     }
     return 0;
-  }
-
-  public static int requestMedia (TextEntity[] entities, ComplexReceiver receiver) {
-    return requestMedia(entities, receiver, -1, -1);
-  }
-
-  public static void requestSingleMedia (TextEntity[] entities, ComplexReceiver receiver, int keyOffset) {
-    // TODO
-  }
-
-  public static int requestMedia (TextEntity[] entities, ComplexReceiver receiver, int startKey, int maxMediaCount) {
-    boolean clear = startKey == -1 && maxMediaCount == -1;
-    if (clear) {
-      startKey = 0;
-      maxMediaCount = Integer.MAX_VALUE;
-    }
-    int loadedMediaCount = 0;
-    for (TextEntity entity : entities) {
-      if (entity.hasMedia()) {
-        if (loadedMediaCount == maxMediaCount)
-          throw new IllegalArgumentException();
-        int mediaKey = startKey + loadedMediaCount;
-        entity.requestMedia(receiver, mediaKey, maxMediaCount - loadedMediaCount);
-        loadedMediaCount++;
-      }
-    }
-    if (clear || maxMediaCount == Integer.MAX_VALUE) {
-      receiver.clearReceiversWithHigherKey(startKey + loadedMediaCount);
-    } else if (maxMediaCount > loadedMediaCount) {
-      receiver.clearReceiversRange(startKey + loadedMediaCount, startKey + maxMediaCount);
-    }
-    return loadedMediaCount;
   }
 
   public static FormattedText parseRichText (ViewController<?> context, @Nullable TdApi.RichText richText, @Nullable TdlibUi.UrlOpenParameters openParameters) {
