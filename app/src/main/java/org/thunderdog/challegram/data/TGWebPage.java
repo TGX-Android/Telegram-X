@@ -32,6 +32,7 @@ import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.preview.PreviewLayout;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
@@ -481,6 +482,27 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       return webPage.video != null && Math.max(webPage.video.width, webPage.video.height) >= 400;
     }
     return false;
+  }
+
+  public boolean hasMedia () {
+    // The only TdApi.FormattedText inside TdApi.WebPage is `description`
+    return description != null && description.hasMedia();
+  }
+
+  public void requestSingleTextMedia (ComplexReceiver receiver, int key) {
+    if (hasMedia()) {
+      description.requestSingleMedia(receiver, key);
+    } else {
+      receiver.clearReceivers(key);
+    }
+  }
+
+  public void requestTextMedia (ComplexReceiver receiver, int startKey) {
+    if (hasMedia()) {
+      description.requestMedia(receiver, startKey, Integer.MAX_VALUE);
+    } else {
+      receiver.clearReceiversWithHigherKey(startKey);
+    }
   }
 
   private int contentY;

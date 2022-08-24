@@ -47,6 +47,10 @@ public class FormattedText {
     return requestMedia(entities, receiver, -1, -1);
   }
 
+  public static void requestSingleMedia (TextEntity[] entities, ComplexReceiver receiver, int keyOffset) {
+    // TODO
+  }
+
   public static int requestMedia (TextEntity[] entities, ComplexReceiver receiver, int startKey, int maxMediaCount) {
     boolean clear = startKey == -1 && maxMediaCount == -1;
     if (clear) {
@@ -59,7 +63,7 @@ public class FormattedText {
         if (loadedMediaCount == maxMediaCount)
           throw new IllegalArgumentException();
         int mediaKey = startKey + loadedMediaCount;
-        entity.requestMedia(receiver, mediaKey);
+        entity.requestMedia(receiver, mediaKey, maxMediaCount - loadedMediaCount);
         loadedMediaCount++;
       }
     }

@@ -24,8 +24,8 @@ import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -85,7 +85,6 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private static final int FLAG_CAUGHT_MESSAGE_TOUCH = 1 << 2;
   private static final int FLAG_WILL_CALL_LONG_PRESS = 1 << 3;
   private static final int FLAG_LONG_PRESSED = 1 << 4;
-  private static final int FLAG_USE_REPLY_RECEIVER = 1 << 5;
   private static final int FLAG_DISABLE_MEASURE = 1 << 6;
   private static final int FLAG_USE_COMPLEX_RECEIVER = 1 << 7;
 
@@ -94,11 +93,13 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private int flags;
 
   private final ImageReceiver avatarReceiver;
+  private final GifReceiver gifReceiver;
+  private final ComplexReceiver reactionsComplexReceiver, textMediaReceiver;
+  private final DoubleImageReceiver replyReceiver;
+
   private ImageReceiver contentReceiver;
-  private DoubleImageReceiver previewReceiver, replyReceiver;
-  private GifReceiver gifReceiver;
+  private DoubleImageReceiver previewReceiver;
   private ComplexReceiver complexReceiver;
-  private ComplexReceiver reactionsComplexReceiver;
   private MessageViewGroup parentMessageViewGroup;
   private MessagesManager manager;
 
@@ -107,7 +108,10 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     avatarReceiver = new ImageReceiver(this, Screen.dp(20.5f));
     reactionsComplexReceiver = new ComplexReceiver(this);
     gifReceiver = new GifReceiver(this);
-    setUseReplyReceiver();
+    textMediaReceiver = new ComplexReceiver(this);
+    //noinspection ContantConditions
+    replyReceiver = new DoubleImageReceiver(this, Config.USE_SCALED_ROUNDINGS ? Screen.dp(Theme.getImageRadius()) : 0);
+
     setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     if (Config.HARDWARE_MESSAGE_LAYER) {
       Views.setLayerType(this, LAYER_TYPE_HARDWARE);
@@ -136,26 +140,19 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   }
 
   public void destroy () {
-    if (avatarReceiver != null){
-      avatarReceiver.destroy();
-    }
+    avatarReceiver.destroy();
+    replyReceiver.destroy();
+    gifReceiver.destroy();
+    reactionsComplexReceiver.performDestroy();
+    textMediaReceiver.performDestroy();
     if (contentReceiver != null) {
       contentReceiver.destroy();
     }
     if (previewReceiver != null) {
       previewReceiver.destroy();
     }
-    if (replyReceiver != null) {
-      replyReceiver.destroy();
-    }
-    if (gifReceiver != null) {
-      gifReceiver.destroy();
-    }
     if (complexReceiver != null) {
       complexReceiver.performDestroy();
-    }
-    if (reactionsComplexReceiver != null) {
-      reactionsComplexReceiver.performDestroy();
     }
     if (msg != null) {
       msg.onDestroy();
@@ -175,12 +172,6 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     flags |= FLAG_USE_COMPLEX_RECEIVER;
   }
 
-  public void setUseReplyReceiver () {
-    //noinspection ContantConditions
-    replyReceiver = new DoubleImageReceiver(this, Config.USE_SCALED_ROUNDINGS ? Screen.dp(Theme.getImageRadius()) : 0);
-    flags |= FLAG_USE_REPLY_RECEIVER;
-  }
-
   @Override
   public void invalidate () {
     super.invalidate();
@@ -198,13 +189,13 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   }
 
   public void invalidateReplyReceiver (long chatId, long messageId) {
-    if ((flags * FLAG_USE_REPLY_RECEIVER) != 0 && msg != null && msg.getChatId() == chatId && msg.getId() == messageId) {
+    if (msg != null && msg.getChatId() == chatId && msg.getId() == messageId) {
       msg.requestReply(replyReceiver);
     }
   }
 
   public void invalidateReplyReceiver () {
-    if ((flags & FLAG_USE_REPLY_RECEIVER) != 0 && msg != null) {
+    if (msg != null) {
       msg.requestReply(replyReceiver);
     }
   }
@@ -212,9 +203,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private void checkLegacyComponents (MessageView view) {
     if (msg != null) {
       msg.layoutAvatar(view, avatarReceiver);
-      if ((flags & FLAG_USE_REPLY_RECEIVER) != 0) {
-        msg.requestReply(replyReceiver);
-      }
+      msg.requestReply(replyReceiver);
     }
   }
 
@@ -258,6 +247,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     message.resetTransformState();
     message.requestAvatar(avatarReceiver);
     message.requestReactions(reactionsComplexReceiver);
+    message.requestTextMedia(textMediaReceiver);
 
     if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
       previewReceiver.setRadius(message.getImageContentRadius(true));
@@ -288,6 +278,17 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     if (msg != null && chatId == msg.getChatId() && messageId == msg.getId() && previewReceiver != null) {
       msg.requestPreview(previewReceiver);
     }
+  }
+
+  public void invalidateTextMediaReceiver (TGMessage message, int displayMediaKey) {
+    if (msg != null && msg == message) {
+      msg.requestTextMedia(textMediaReceiver, displayMediaKey);
+    }
+  }
+
+  @NonNull
+  public ComplexReceiver getTextMediaReceiver () {
+    return textMediaReceiver;
   }
 
   public void invalidateContentReceiver (long chatId, long messageId, int arg) {
@@ -482,9 +483,8 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       avatarReceiver.attach();
       gifReceiver.attach();
       reactionsComplexReceiver.attach();
-      if ((flags & FLAG_USE_REPLY_RECEIVER) != 0) {
-        replyReceiver.attach();
-      }
+      textMediaReceiver.attach();
+      replyReceiver.attach();
       if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
         contentReceiver.attach();
         previewReceiver.attach();
@@ -501,9 +501,8 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       avatarReceiver.detach();
       gifReceiver.detach();
       reactionsComplexReceiver.detach();
-      if ((flags & FLAG_USE_REPLY_RECEIVER) != 0) {
-        replyReceiver.detach();
-      }
+      textMediaReceiver.detach();
+      replyReceiver.detach();
       if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
         contentReceiver.detach();
         previewReceiver.detach();

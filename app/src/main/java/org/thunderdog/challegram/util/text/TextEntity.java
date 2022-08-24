@@ -92,7 +92,9 @@ public abstract class TextEntity {
   public abstract int getType ();
 
   public abstract boolean hasMedia ();
-  public abstract void requestMedia (ComplexReceiver receiver, int key);
+  @Nullable
+  public abstract String getMediaKeyId ();
+  public abstract void requestMedia (ComplexReceiver receiver, int keyOffset, int maxMediaCount);
 
   public final int getStart () {
     return start;

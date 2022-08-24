@@ -202,8 +202,13 @@ public class TextEntityCustom extends TextEntity {
   }
 
   @Override
-  public void requestMedia (ComplexReceiver receiver, int key) {
-    icon.requestFiles(receiver, key);
+  public String getMediaKeyId () {
+    return icon != null ? icon.getKey() : null;
+  }
+
+  @Override
+  public void requestMedia (ComplexReceiver receiver, int keyOffset, int maxMediaCount) {
+    icon.requestFiles(receiver, keyOffset);
   }
 
   @Override

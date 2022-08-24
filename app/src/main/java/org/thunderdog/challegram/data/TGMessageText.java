@@ -28,6 +28,7 @@ import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
@@ -211,9 +212,42 @@ public class TGMessageText extends TGMessage {
         this.wrapper.addTextFlags(Text.FLAG_BOUNDS_NOT_STRICT);
       }
       this.wrapper.setViewProvider(currentViews);
+      if (hasMedia()) {
+        invalidateTextMediaReceiver(-1);
+      }
       return true;
     }
     return false;
+  }
+
+  private boolean hasMedia () {
+    return wrapper.hasMedia() || (webPage != null && webPage.hasMedia());
+  }
+
+  private static final int WEB_PAGE_RECEIVERS_KEY = Integer.MAX_VALUE / 2;
+
+  @Override
+  public void requestSingleTextMedia (ComplexReceiver textMediaReceiver, int displayMediaKey) {
+    if (displayMediaKey >= WEB_PAGE_RECEIVERS_KEY) {
+      if (webPage != null) {
+        webPage.requestSingleTextMedia(textMediaReceiver, displayMediaKey);
+        return;
+      }
+    }
+    if (wrapper != null) {
+      wrapper.requestSingleMedia(textMediaReceiver, displayMediaKey);
+      return;
+    }
+    textMediaReceiver.clearReceivers(displayMediaKey);
+  }
+
+  @Override
+  public void requestTextMedia (ComplexReceiver textMediaReceiver) {
+    if (wrapper != null) {
+      wrapper.requestMedia(textMediaReceiver);
+    } else {
+      textMediaReceiver.clear();
+    }
   }
 
   @Override

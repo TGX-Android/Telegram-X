@@ -38,6 +38,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.BitwiseUtils;
@@ -244,23 +245,38 @@ public class TextPart {
     return getSpoiler() != null ? entity : null;
   }
 
-  private int mediaKey = -1;
+  private @Nullable Text.MediaKeyInfo mediaKeyInfo;
+  private int displayMediaKeyOffset = -1;
   private EmojiInfo emojiInfo;
   private TextIcon icon;
 
-  public void setEmoji (@Nullable EmojiInfo emoji) {
+  public void setEmoji (@Nullable EmojiInfo emoji, Text.MediaKeyInfo mediaKeyInfo) {
     this.emojiInfo = emoji;
+    this.mediaKeyInfo = mediaKeyInfo;
     if (entity != null && entity.isCustomEmoji()) {
       flags |= FLAG_CUSTOM_EMOJI;
     }
+  }
+
+  int getMediaKey () {
+    return mediaKeyInfo != null ? mediaKeyInfo.mediaKey : -1;
+  }
+
+  int getDisplayMediaKey () {
+    final int mediaKey = getMediaKey();
+    if (mediaKey != -1 && displayMediaKeyOffset != -1) {
+      return displayMediaKeyOffset + mediaKey;
+    }
+    return -1;
   }
 
   public boolean isCustomEmoji () {
     return BitwiseUtils.getFlag(flags, FLAG_CUSTOM_EMOJI);
   }
 
-  public void setIcon (TextIcon icon) {
+  public void setIcon (TextIcon icon, Text.MediaKeyInfo mediaKeyInfo) {
     this.icon = icon;
+    this.mediaKeyInfo = mediaKeyInfo;
   }
 
   public boolean isEmoji () {
@@ -275,9 +291,21 @@ public class TextPart {
     return isIcon() || isCustomEmoji();
   }
 
-  void requestMedia (ComplexReceiver receiver, int mediaKey) {
-    this.mediaKey = mediaKey;
-    icon.requestFiles(receiver, mediaKey);
+  void setDisplayMediaKeyOffset (int keyOffset) {
+    this.displayMediaKeyOffset = keyOffset;
+  }
+
+  void requestMedia (ComplexReceiver receiver) {
+    final int displayMediaKey = getDisplayMediaKey();
+    if (displayMediaKey == -1)
+      throw new IllegalStateException();
+    if (isCustomEmoji()) {
+      // TODO request emoji
+    } else if (isIcon()) {
+      icon.requestFiles(receiver, displayMediaKey);
+    } else {
+      throw new IllegalStateException();
+    }
   }
 
   public int makeX (int startX, int endX, int endXBottomPadding) {
@@ -342,27 +370,44 @@ public class TextPart {
     int x = makeX(startX, endX, endXBottomPadding);
     TextPaint textPaint = getPaint(partIndex, alpha, colorProvider);
     if (icon != null) {
-      if (mediaKey == -1)
-        throw new IllegalStateException("Calling draw(...) before prior requestMedia(...) call");
+      final int displayMediaKey = getDisplayMediaKey();
+      if (displayMediaKey == -1)
+        throw new IllegalStateException();
       y += textPaint.baselineShift;
       if (receiver != null) {
+        final boolean needTranslate = mediaKeyInfo.parts.size() > 1;
+        int left, top, right, bottom, restoreToCount;
+        if (needTranslate) {
+          left = 0; top = 0;
+          right = (int) width;
+          bottom = height;
+          restoreToCount = Views.save(c);
+          c.translate(x, y);
+        } else {
+          left = x;
+          top = y;
+          right = (int) (x + width);
+          bottom = y + height;
+          restoreToCount = -1;
+        }
+
         Receiver content;
         if (icon.isImage()) {
-          ImageReceiver image = receiver.getImageReceiver(mediaKey);
-          image.setBounds(x, y, (int) (x + width), y + height);
+          ImageReceiver image = receiver.getImageReceiver(displayMediaKey);
+          image.setBounds(left, top, right, bottom);
           image.setPaintAlpha(image.getPaintAlpha() * alpha);
           content = image;
         } else if (icon.isGif()) {
-          GifReceiver gif = receiver.getGifReceiver(mediaKey);
-          gif.setBounds(x, y, (int) (x + width), y + height);
+          GifReceiver gif = receiver.getGifReceiver(displayMediaKey);
+          gif.setBounds(left, top, right, bottom);
           gif.setAlpha(alpha);
           content = gif;
         } else {
           content = null;
         }
         if (content == null || content.needPlaceholder()) {
-          DoubleImageReceiver preview = receiver.getPreviewReceiver(mediaKey);
-          preview.setBounds(x, y, (int) (x + width), y + height);
+          DoubleImageReceiver preview = receiver.getPreviewReceiver(displayMediaKey);
+          preview.setBounds(left, top, right, bottom);
           preview.setPaintAlpha(alpha);
           preview.draw(c);
           preview.restorePaintAlpha();
@@ -374,6 +419,9 @@ public class TextPart {
           } else {
             // ((GifReceiver) content).setAlpha(1f);
           }
+        }
+        if (needTranslate) {
+          Views.restore(c, restoreToCount);
         }
       } else {
         c.drawRect(x, y, x + width, y + height, Paints.fillingPaint(ColorUtils.color((int) (255f * alpha), 0xff0000)));

@@ -145,12 +145,33 @@ public class TextWrapper implements ListAnimator.Measurable {
     return getInternal(isPortrait ? PORTRAIT_INDEX : LANDSCAPE_INDEX, maxWidth);
   }
 
-  public void requestMedia (ComplexReceiver receiver) {
+  public boolean hasMedia () {
+    for (Text text : texts) {
+      if (text != null && text.hasMedia())
+        return true;
+    }
+    return false;
+  }
+
+  public void requestSingleMedia (ComplexReceiver receiver, int displayMediaKey) {
     Text text = getCurrent();
     if (text != null) {
-      text.requestMedia(receiver);
+      text.requestSingleMedia(receiver, displayMediaKey);
     } else {
-      FormattedText.requestMedia(entities, receiver);
+      FormattedText.requestSingleMedia(entities, receiver, displayMediaKey);
+    }
+  }
+
+  public void requestMedia (ComplexReceiver receiver) {
+    requestMedia(receiver, -1, -1);
+  }
+
+  public void requestMedia (ComplexReceiver receiver, int startKey, int maxMediaCount) {
+    Text text = getCurrent();
+    if (text != null) {
+      text.requestMedia(receiver, startKey, maxMediaCount);
+    } else {
+      FormattedText.requestMedia(entities, receiver, startKey, maxMediaCount);
     }
   }
 

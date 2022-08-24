@@ -2392,6 +2392,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     performWithViews(view -> view.invalidatePreviewReceiver(msg.chatId, msg.id));
   }
 
+  public final void invalidateTextMediaReceiver () {
+    invalidateTextMediaReceiver(-1);
+  }
+
+  public final void invalidateTextMediaReceiver (int specificMediaKey) {
+    performWithViews(view -> view.invalidateTextMediaReceiver(this, specificMediaKey));
+  }
+
   public final void invalidateContentReceiver () {
     performWithViews(view -> view.invalidateContentReceiver(msg.chatId, msg.id, -1));
   }
@@ -3527,6 +3535,22 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     computeQuickButtons();
   }
 
+  public void requestSingleTextMedia (ComplexReceiver textMediaReceiver, int displayMediaKey) {
+    textMediaReceiver.clearReceivers(displayMediaKey);
+  }
+
+  public void requestTextMedia (ComplexReceiver textMediaReceiver) {
+    // override in children
+    textMediaReceiver.clear();
+  }
+
+  public final void requestTextMedia (ComplexReceiver textMediaReceiver, int displayMediaKey) {
+    if (displayMediaKey != -1) {
+      requestSingleTextMedia(textMediaReceiver, displayMediaKey);
+    } else {
+      requestTextMedia(textMediaReceiver);
+    }
+  }
 
   // public static final float IMAGE_CONTENT_DEFAULT_RADIUS = 3f;
   // public static final float BUBBLE_MERGE_RADIUS = 6f;

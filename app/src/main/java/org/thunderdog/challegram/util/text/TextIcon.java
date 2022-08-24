@@ -41,6 +41,19 @@ public class TextIcon {
     this.imageFile = null;
   }
 
+  public String getKey () {
+    StringBuilder b = new StringBuilder();
+    if (imageFile != null) {
+      b.append("image_").append(imageFile);
+    } else if (gifFile != null) {
+      b.append("gif_").append(gifFile);
+    } else {
+      b.append("unknown_");
+    }
+    b.append(width).append("x").append(height);
+    return b.toString();
+  }
+
   public void requestFiles (ComplexReceiver receiver, int key) {
     DoubleImageReceiver preview = receiver.getPreviewReceiver(key);
     preview.requestFile(miniThumbnail, thumbnail);

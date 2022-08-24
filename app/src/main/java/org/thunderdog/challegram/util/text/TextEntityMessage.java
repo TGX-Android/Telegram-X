@@ -171,7 +171,15 @@ public class TextEntityMessage extends TextEntity {
   }
 
   @Override
-  public void requestMedia (ComplexReceiver receiver, int key) {
+  public String getMediaKeyId () {
+    if (isCustomEmoji()) {
+      return Long.toString(getCustomEmojiId());
+    }
+    return null;
+  }
+
+  @Override
+  public void requestMedia (ComplexReceiver receiver, int keyOffset, int maxMediaCount) {
     // TODO request custom emoji
   }
 
