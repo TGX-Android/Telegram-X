@@ -256,7 +256,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   private LongSparseArray<Background> backgrounds;
   private SparseArrayCompat<Path> pressHighlights;
   private List<int[]> lineSizes;
-  private int emojiCount;
+  private int builtInEmojiCount, customEmojiCount;
   private Map<String, MediaKeyInfo> mediaKeys;
   private @Nullable TextEntity[] entities;
 
@@ -590,18 +590,23 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return -1;
   }
 
+  public int getTotalEmojiCount () {
+    return builtInEmojiCount + customEmojiCount;
+  }
+
   public int getEmojiOnlyCount () {
+    final int emojiCount = getTotalEmojiCount();
     return parts == null || emojiCount == 0 || parts.size() > emojiCount ? -1 : emojiCount;
   }
 
   @Override
   public int getEmojiCount () {
-    return emojiCount;
+    return builtInEmojiCount;
   }
 
   @Override
   public boolean incrementEmojiCount () {
-    emojiCount++;
+    builtInEmojiCount++;
     return true;
   }
 
@@ -702,7 +707,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     entityIndex = -1;
     entityStart = entityEnd = 0;
     pressHighlight = null;
-    emojiCount = 0;
+    builtInEmojiCount = 0;
+    customEmojiCount = 0;
     if (mediaKeys != null) {
       mediaKeys.clear();
     }
@@ -730,6 +736,9 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     if (keyId == null) {
       keyId = "_" + nextMediaKey + "x" + part.getStart() + ".."  + part.getEnd();
     }
+    if (part.isCustomEmoji()) {
+      customEmojiCount++;
+    }
     MediaKeyInfo existingMediaKeyInfo = mediaKeys.get(keyId);
     if (existingMediaKeyInfo != null) {
       existingMediaKeyInfo.parts.add(part);
@@ -743,8 +752,9 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   private void removeMediaKey (TextPart part) {
     final int mediaKey = part.getMediaKey();
     if (mediaKey == -1 || mediaKeys == null) {
-      if (part.isBuiltInEmoji())
-        emojiCount--;
+      if (part.isBuiltInEmoji()) {
+        builtInEmojiCount--;
+      }
       return;
     }
     for (Map.Entry<String, MediaKeyInfo> entry : mediaKeys.entrySet()) {
@@ -753,6 +763,9 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
         info.parts.remove(part);
         if (info.parts.isEmpty()) {
           mediaKeys.remove(entry.getKey());
+        }
+        if (part.isCustomEmoji()) {
+          customEmojiCount--;
         }
         break;
       }
