@@ -692,7 +692,7 @@ public class Intents {
         builder.setToolbarColor(Theme.getColor(R.id.theme_color_headerBackground));
         builder.setSecondaryToolbarColor(Theme.getColor(R.id.theme_color_headerText));
         builder.setShowTitle(true);
-        builder.setActionButton(Drawables.getBitmap(R.drawable.baseline_share_24), Lang.getString(R.string.Share), PendingIntent.getBroadcast(UI.getContext(), 0, share, Intents.mutabilityFlags(false)), true);
+        builder.setActionButton(Drawables.getBitmap(R.drawable.baseline_share_24), Lang.getString(R.string.Share), PendingIntent.getBroadcast(UI.getContext(), 0, share, Intents.mutabilityFlags(true)), true);
         CustomTabsIntent intent = builder.build();
         intent.intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         if (TD.isKnownHost(uri)) {
