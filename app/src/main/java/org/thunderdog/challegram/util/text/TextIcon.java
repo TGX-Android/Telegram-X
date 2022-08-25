@@ -18,7 +18,9 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.tool.Screen;
 
-public class TextIcon {
+import me.vkryl.core.lambda.Destroyable;
+
+public class TextIcon implements Destroyable {
   private final int width, height;
   private final long customEmojiId;
 
@@ -98,5 +100,9 @@ public class TextIcon {
 
   public boolean isCustomEmoji () {
     return customEmojiId != 0;
+  }
+
+  public void performDestroy () {
+    // TODO cancel waiting for the customEmojiId to load
   }
 }

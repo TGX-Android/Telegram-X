@@ -182,6 +182,9 @@ public class TGMessageMedia extends TGMessage {
     mosaicWrapper.destroy();
     cancelScheduledHotOpening(null, false);
     closeHot(null, true, false);
+    if (wrapper != null) {
+      wrapper.performDestroy();
+    }
   }
 
   private void updateRounds () {
@@ -251,6 +254,9 @@ public class TGMessageMedia extends TGMessage {
     this.captionMessageId = messageId;
     if (!Td.equalsTo(this.caption, caption)) {
       this.caption = caption;
+      if (this.wrapper != null) {
+        this.wrapper.performDestroy();
+      }
       if (!Td.isEmpty(caption)) {
         this.wrapper = new TextWrapper(caption.text, getTextStyleProvider(), getTextColorSet(), TextEntity.valueOf(tdlib, caption, openParameters())).addTextFlags(Text.FLAG_BIG_EMOJI).setClickCallback(clickCallback());
         this.wrapper.setViewProvider(currentViews);
@@ -261,9 +267,28 @@ public class TGMessageMedia extends TGMessage {
         this.wrapper = null;
       }
       updateRounds();
+      invalidateTextMediaReceiver();
       return true;
     }
     return false;
+  }
+
+  @Override
+  public void requestSingleTextMedia (ComplexReceiver textMediaReceiver, int displayMediaKey) {
+    if (wrapper != null) {
+      wrapper.requestSingleMedia(textMediaReceiver, displayMediaKey);
+    } else {
+      textMediaReceiver.clearReceivers(displayMediaKey);
+    }
+  }
+
+  @Override
+  public void requestTextMedia (ComplexReceiver textMediaReceiver) {
+    if (wrapper != null) {
+      wrapper.requestMedia(textMediaReceiver);
+    } else {
+      textMediaReceiver.clear();
+    }
   }
 
   @Override
@@ -520,7 +545,7 @@ public class TGMessageMedia extends TGMessage {
     }
 
     if (wrapper != null) {
-      wrapper.draw(c, getTextX(view, wrapper, false), getTextX(view, wrapper, true), Config.MOVE_BUBBLE_TIME_RTL_TO_LEFT ? 0 : getBubbleTimePartWidth(), startY + mosaicWrapper.getHeight() + Screen.dp(TEXT_MARGIN), null, 1f);
+      wrapper.draw(c, getTextX(view, wrapper, false), getTextX(view, wrapper, true), Config.MOVE_BUBBLE_TIME_RTL_TO_LEFT ? 0 : getBubbleTimePartWidth(), startY + mosaicWrapper.getHeight() + Screen.dp(TEXT_MARGIN), null, 1f, view.getTextMediaReceiver());
     }
   }
 

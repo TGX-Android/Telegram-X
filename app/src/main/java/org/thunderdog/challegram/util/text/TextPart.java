@@ -42,13 +42,14 @@ import org.thunderdog.challegram.tool.Views;
 
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.lambda.Destroyable;
 
-public class TextPart {
+public class TextPart implements Destroyable {
   private static final int FLAG_LINE_RTL = 1;
   private static final int FLAG_LINE_RTL_FAKE = 1 << 2;
   private static final int FLAG_ANIMATED_EMOJI = 1 << 3;
 
-  private Text source;
+  private final Text source;
   private String line;
   private @Nullable TextEntity entity;
 
@@ -360,7 +361,7 @@ public class TextPart {
   }
 
   private void drawError (Canvas c, float cx, float cy, float radius, float alpha) {
-    c.drawCircle(cx, cy, radius, Paints.fillingPaint(ColorUtils.alphaColor(alpha * .5f, 0xffff0000)));
+    c.drawCircle(cx, cy, radius, Paints.fillingPaint(ColorUtils.alphaColor(alpha * .45f, 0xffff0000)));
   }
 
   private void drawEmoji (Canvas c, final int x, final int y, TextPaint textPaint, float alpha) {
@@ -430,10 +431,9 @@ public class TextPart {
           Views.restore(c, restoreToCount);
         }
       } else {
+        drawError(c, x + width / 2f, iconY + height / 2f, width / 2f, textAlpha);
         if (emojiInfo != null) {
           drawEmoji(c, x, y, textPaint, .45f);
-        } else {
-          drawError(c, x + width / 2f, iconY + height / 2f, width / 2f, textAlpha);
         }
       }
     } else if (isBuiltInEmoji()) {
@@ -445,6 +445,13 @@ public class TextPart {
       } else {
         c.drawText(line, start, end, x, textY, textPaint);
       }
+    }
+  }
+
+  @Override
+  public void performDestroy () {
+    if (icon != null) {
+      icon.performDestroy();
     }
   }
 }

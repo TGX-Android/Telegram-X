@@ -466,6 +466,15 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       if (component != null) {
         component.performDestroy();
       }
+      if (siteName != null) {
+        siteName.performDestroy();
+      }
+      if (title != null) {
+        title.performDestroy();
+      }
+      if (description != null) {
+        description.performDestroy();
+      }
     }
   }
 
@@ -1146,7 +1155,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       (description != null && description.onTouchEvent(view, e, callback));
   }
 
-  private void drawHeader (Canvas c, int startX, int startY, int previewWidth, boolean rtl) {
+  private void drawHeader (Canvas c, int startX, int startY, int previewWidth, boolean rtl, ComplexReceiver textMediaReceiver) {
     RectF rectF = Paints.getRectF();
     if (rtl) {
       rectF.set(startX + previewWidth - lineWidth, startY, startX + previewWidth, startY + height);
@@ -1170,16 +1179,16 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     if (description != null) {
       if (textY > 0)
         textY += Screen.dp(TEXT_PADDING);
-      description.draw(c, rtl ? startX : startX + paddingLeft, rtl ? startX + previewWidth - paddingLeft : startX + previewWidth, 0, startY + textY);
+      description.draw(c, rtl ? startX : startX + paddingLeft, rtl ? startX + previewWidth - paddingLeft : startX + previewWidth, 0, startY + textY, null, 1f, textMediaReceiver);
       textY += description.getHeight();
     }
   }
 
-  public void draw (MessageView view, Canvas c, int startX, int startY, Receiver preview, Receiver receiver, float alpha) {
+  public void draw (MessageView view, Canvas c, int startX, int startY, Receiver preview, Receiver receiver, float alpha, ComplexReceiver textMediaReceiver) {
     int previewWidth = getWidth();
     boolean rtl = Lang.rtl();
     if (type != TYPE_TELEGRAM_AD) {
-      drawHeader(c, startX, startY, previewWidth, rtl);
+      drawHeader(c, startX, startY, previewWidth, rtl, textMediaReceiver);
     }
     if (component != null) {
       component.draw(view, c, rtl ? startX : startX + paddingLeft, startY + componentY, preview, receiver, parent != null ? parent.getContentBackgroundColor() : 0, parent != null ? parent.getContentReplaceColor() : 0, alpha, 0f);

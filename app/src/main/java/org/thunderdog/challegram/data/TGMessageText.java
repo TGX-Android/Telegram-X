@@ -403,9 +403,9 @@ public class TGMessageText extends TGMessage {
 
   @Override
   protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth, Receiver preview, Receiver receiver) {
-    wrapper.draw(c, startX, getStartXRtl(startX, maxWidth), Config.MOVE_BUBBLE_TIME_RTL_TO_LEFT ? 0 : getBubbleTimePartWidth(), startY + getTextTopOffset(), null, 1f);
+    wrapper.draw(c, startX, getStartXRtl(startX, maxWidth), Config.MOVE_BUBBLE_TIME_RTL_TO_LEFT ? 0 : getBubbleTimePartWidth(), startY + getTextTopOffset(), null, 1f, view.getTextMediaReceiver());
     if (webPage != null && receiver != null) {
-      webPage.draw(view, c, Lang.rtl() ? startX + maxWidth - webPage.getWidth() : startX, getWebY(), preview, receiver, 1f);
+      webPage.draw(view, c, Lang.rtl() ? startX + maxWidth - webPage.getWidth() : startX, getWebY(), preview, receiver, 1f, view.getTextMediaReceiver());
     }
   }
 
@@ -499,6 +499,9 @@ public class TGMessageText extends TGMessage {
 
   @Override
   protected void onMessageContainerDestroyed () {
+    if (wrapper != null) {
+      wrapper.performDestroy();
+    }
     if (webPage != null) {
       webPage.performDestroy();
     }

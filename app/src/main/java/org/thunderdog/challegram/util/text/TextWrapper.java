@@ -33,8 +33,9 @@ import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.lambda.Destroyable;
 
-public class TextWrapper implements ListAnimator.Measurable {
+public class TextWrapper implements ListAnimator.Measurable, Destroyable {
   private static final int PORTRAIT_INDEX = 0;
   private static final int LANDSCAPE_INDEX = 1;
 
@@ -153,11 +154,19 @@ public class TextWrapper implements ListAnimator.Measurable {
     return false;
   }
 
-  public void requestSingleMedia (ComplexReceiver receiver, int displayMediaKey) {
-    Text text = getCurrent();
-    if (text != null) {
-      text.requestSingleMedia(receiver, displayMediaKey);
+  public int getMaxMediaCount () {
+    int count = 0;
+    for (Text text : texts) {
+      if (text != null) {
+        count = Math.max(count, text.getMediaCount());
+      }
     }
+    return count;
+  }
+
+  public boolean requestSingleMedia (ComplexReceiver receiver, int displayMediaKey) {
+    Text text = getCurrent();
+    return text != null && text.requestSingleMedia(receiver, displayMediaKey);
   }
 
   public void requestMedia (ComplexReceiver receiver) {
@@ -310,9 +319,13 @@ public class TextWrapper implements ListAnimator.Measurable {
   }
 
   public final void draw (Canvas c, int startX, int startY, TextColorSet colorTheme, float alpha) {
+    draw(c, startX, startY, colorTheme, alpha, null);
+  }
+
+  public final void draw (Canvas c, int startX, int startY, TextColorSet colorTheme, float alpha, ComplexReceiver textMediaReceiver) {
     final Text text = getCurrent();
     if (text != null) {
-      text.draw(c, startX, startX, 0, startY, colorTheme, alpha);
+      text.draw(c, startX, startX, 0, startY, colorTheme, alpha, textMediaReceiver);
     }
   }
 
@@ -329,10 +342,21 @@ public class TextWrapper implements ListAnimator.Measurable {
     draw(c, startX, endX, endXPadding, startY, colorTheme, alpha, null);
   }
 
-  public final void draw (Canvas c, int startX, int endX, int endXPadding, int startY, TextColorSet colorTheme, float alpha, @Nullable ComplexReceiver iconReceiver) {
+  public final void draw (Canvas c, int startX, int endX, int endXPadding, int startY, TextColorSet colorTheme, float alpha, @Nullable ComplexReceiver textMediaReceiver) {
     final Text text = getCurrent();
     if (text != null) {
-      text.draw(c, startX, endX, endXPadding, startY, colorTheme, alpha, iconReceiver);
+      text.draw(c, startX, endX, endXPadding, startY, colorTheme, alpha, textMediaReceiver);
+    }
+  }
+
+  @Override
+  public void performDestroy () {
+    for (int i = 0; i < texts.length; i++) {
+      Text text = texts[i];
+      if (text != null) {
+        text.performDestroy();
+        texts[i] = null;
+      }
     }
   }
 

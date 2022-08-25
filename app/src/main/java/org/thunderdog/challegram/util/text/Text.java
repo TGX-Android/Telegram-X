@@ -76,7 +76,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.Td;
 
-public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextDrawable, ListAnimator.Measurable {
+public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextDrawable, ListAnimator.Measurable, Destroyable {
   public static final int FLAG_NO_TRIM = 1;
   public static final int FLAG_ALIGN_CENTER = 1 << 1;
   public static final int FLAG_ALL_BOLD = 1 << 2;
@@ -2123,6 +2123,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return mediaKeys != null && !mediaKeys.isEmpty();
   }
 
+  public int getMediaCount () {
+    return hasMedia() ? mediaKeys.size() : 0;
+  }
+
   public boolean requestSingleMedia (ComplexReceiver textMediaReceiver, int displayMediaKey) {
     if (!hasMedia()) {
       textMediaReceiver.clearReceivers(displayMediaKey);
@@ -2860,6 +2864,16 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     } else {
       return 0;
     }
+  }
+
+  @Override
+  public void performDestroy () {
+    if (parts != null && hasMedia()) {
+      for (TextPart part : parts) {
+        part.performDestroy();
+      }
+    }
+    reset();
   }
 
   // Utils

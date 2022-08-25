@@ -25,6 +25,7 @@ import androidx.annotation.Nullable;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
@@ -99,12 +100,28 @@ public class TGMessageGame extends TGMessage implements MediaWrapper.OnClickList
     buildImageOrGif(maxWidth, maxHeight);
   }
 
-  private boolean setText () {
-    boolean changed = false;
+  @Override
+  public void requestSingleTextMedia (ComplexReceiver textMediaReceiver, int displayMediaKey) {
+    if (text != null) {
+      text.requestSingleMedia(textMediaReceiver, displayMediaKey);
+    } else {
+      textMediaReceiver.clearReceivers(displayMediaKey);
+    }
+  }
 
-    if (!StringUtils.isEmpty(game.title) && (text == null || !text.getText().equals(game.title))) {
+  @Override
+  public void requestTextMedia (ComplexReceiver textMediaReceiver) {
+    if (text != null) {
+      text.requestMedia(textMediaReceiver);
+    } else {
+      textMediaReceiver.clear();
+    }
+  }
+
+  private boolean setText () {
+    final boolean titleChanged = !StringUtils.isEmpty(game.title) && (text == null || !text.getText().equals(game.title));
+    if (titleChanged) {
       title = new TextWrapper(game.title, getTextStyleProvider(), getChatAuthorColorSet(), null).addTextFlags(Text.FLAG_ALL_BOLD).setClickCallback(clickCallback());
-      changed = true;
     }
 
     final TdApi.FormattedText text;
@@ -114,19 +131,24 @@ public class TGMessageGame extends TGMessage implements MediaWrapper.OnClickList
       text = new TdApi.FormattedText(game.description, Text.findEntities(game.description, Text.ENTITY_FLAGS_EXTERNAL));
     }
 
+    boolean descriptionChanged = false;
     if (Td.isEmpty(text)) {
       if (currentText != null) {
         this.text = null;
         currentText = null;
-        changed = true;
+        descriptionChanged = true;
       }
     } else if (currentText == null || !Td.equalsTo(currentText, text)) {
-      changed = true;
+      descriptionChanged = true;
       currentText = text;
       this.text = new TextWrapper(text.text, getTextStyleProvider(), getTextColorSet(), TextEntity.valueOf(tdlib, text, openParameters())).setClickCallback(clickCallback());
     }
 
-    return changed;
+    if (descriptionChanged) {
+      invalidateTextMediaReceiver();
+    }
+
+    return titleChanged || descriptionChanged;
   }
 
   @Override
@@ -232,7 +254,7 @@ public class TGMessageGame extends TGMessage implements MediaWrapper.OnClickList
   @Override
   protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth, Receiver preview, Receiver receiver) {
     mediaWrapper.draw(view, c, getGameImageLeft(), getGameImageTop(), preview, receiver, 1f);
-    drawGameContent(c, startX, startY, maxWidth);
+    drawGameContent(view, c, startX, startY, maxWidth);
   }
 
   private static int getTextPaddingBottom () {
@@ -247,7 +269,7 @@ public class TGMessageGame extends TGMessage implements MediaWrapper.OnClickList
     return Screen.dp(12f);
   }
 
-  private void drawGameContent (Canvas c, int startX, int startY, int maxWidth) {
+  private void drawGameContent (MessageView view, Canvas c, int startX, int startY, int maxWidth) {
     RectF rectF = Paints.getRectF();
     int lineWidth = Screen.dp(3f);
     rectF.set(startX, startY, startX + lineWidth, startY + getContentHeight());
@@ -264,7 +286,14 @@ public class TGMessageGame extends TGMessage implements MediaWrapper.OnClickList
 
     if (text != null) {
       textY += textY != 0 ? Screen.dp(4f) : getTextPaddingTop();
-      text.draw(c, left, startY + textY, null, 1f);
+      text.draw(c, left, startY + textY, null, 1f, view.getTextMediaReceiver());
+    }
+  }
+
+  @Override
+  protected void onMessageContainerDestroyed () {
+    if (text != null) {
+      text.performDestroy();
     }
   }
 

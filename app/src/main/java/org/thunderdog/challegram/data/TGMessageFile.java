@@ -54,6 +54,7 @@ import me.vkryl.core.MathUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.Td;
+import me.vkryl.td.TdConstants;
 
 public class TGMessageFile extends TGMessage {
   private int objectCount;
@@ -70,6 +71,7 @@ public class TGMessageFile extends TGMessage {
     private TdApi.FormattedText effectiveCaption;
     public final ReplaceAnimator<TextWrapper> caption;
     private TextWrapper captionWrapper;
+    private int captionMediaKeyOffset;
     private final VariableFloat lastLineWidth = new VariableFloat(0);
     private final VariableFloat needBottomLineExpand = new VariableFloat(1f);
 
@@ -108,6 +110,9 @@ public class TGMessageFile extends TGMessage {
       TdApi.FormattedText caption = this.pendingCaption != null ? this.pendingCaption : this.serverCaption;
       if (!Td.equalsTo(this.effectiveCaption, caption)) {
         this.effectiveCaption = Td.isEmpty(caption) ? null : caption;
+        if (this.captionWrapper != null) {
+          this.captionMediaKeyOffset += this.captionWrapper.getMaxMediaCount();
+        }
         TextWrapper wrapper;
         if (!Td.isEmpty(caption)) {
           wrapper = new TextWrapper(caption.text, getTextStyleProvider(), getTextColorSet(), TextEntity.valueOf(tdlib, caption, openParameters())).addTextFlags(Text.FLAG_BIG_EMOJI).setClickCallback(clickCallback());
@@ -401,6 +406,32 @@ public class TGMessageFile extends TGMessage {
   protected void onMessageContainerDestroyed () {
     for (CaptionedFile file : filesList) {
       file.component.performDestroy();
+      file.caption.clear(false);
+    }
+  }
+
+  @Override
+  public void requestSingleTextMedia (ComplexReceiver textMediaReceiver, int displayMediaKey) {
+    for (CaptionedFile file : filesList) {
+      for (ListAnimator.Entry<TextWrapper> wrapper : file.caption) {
+        if (wrapper.item.requestSingleMedia(textMediaReceiver, displayMediaKey)) {
+          return;
+        }
+      }
+    }
+  }
+
+  @Override
+  public void requestTextMedia (ComplexReceiver textMediaReceiver) {
+    final int maxMediaCountPerMessage = Integer.MAX_VALUE / (TdConstants.MAX_MESSAGE_GROUP_SIZE * 10);
+    int startKey = 0;
+    for (CaptionedFile file : filesList) {
+      if (file.captionWrapper != null) {
+        if (maxMediaCountPerMessage <= file.captionMediaKeyOffset)
+          throw new IllegalStateException();
+        file.captionWrapper.requestMedia(textMediaReceiver, startKey + file.captionMediaKeyOffset, maxMediaCountPerMessage - file.captionMediaKeyOffset);
+      }
+      startKey += maxMediaCountPerMessage;
     }
   }
 
@@ -442,7 +473,7 @@ public class TGMessageFile extends TGMessage {
       entry.item.component.draw(view, c, startX, contentStartY, previewReceiver, imageReceiver, backgroundColor, useBubbles() ? ColorUtils.compositeColor(contentReplaceColor, pressColor) : contentReplaceColor, entry.getVisibility(), entry.item.getCheckFactor());
       for (ListAnimator.Entry<TextWrapper> caption : entry.item.caption) {
         int right = useBubbles() ? startX + getContentWidth() : startX + Math.max(entry.item.component.getWidth(), caption.item.getWidth());
-        caption.item.draw(c, startX, right, 0, contentStartY + entry.item.component.getHeight() + Screen.dp(TEXT_MARGIN), null, entry.getVisibility() * caption.getVisibility());
+        caption.item.draw(c, startX, right, 0, contentStartY + entry.item.component.getHeight() + Screen.dp(TEXT_MARGIN), null, entry.getVisibility() * caption.getVisibility(), view.getTextMediaReceiver());
       }
     }
     if (clip) {
