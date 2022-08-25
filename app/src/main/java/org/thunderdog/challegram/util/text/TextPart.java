@@ -40,8 +40,8 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 
-import me.vkryl.core.ColorUtils;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.ColorUtils;
 
 public class TextPart {
   private static final int FLAG_LINE_RTL = 1;
@@ -360,22 +360,26 @@ public class TextPart {
   }
 
   private void drawError (Canvas c, float cx, float cy, float radius, float alpha) {
-    c.drawCircle(cx, cy, radius, Paints.fillingPaint(ColorUtils.alphaColor(alpha, 0xffff0000)));
+    c.drawCircle(cx, cy, radius, Paints.fillingPaint(ColorUtils.alphaColor(alpha * .5f, 0xffff0000)));
+  }
+
+  private void drawEmoji (Canvas c, final int x, final int y, TextPaint textPaint, float alpha) {
+    Rect rect = Paints.getRect();
+    int reduce = Emoji.instance().getReduceSize();
+    final int emojiY = y + textPaint.baselineShift - Screen.dp(1.5f);
+    rect.set(x + reduce / 2, emojiY + reduce / 2, x + (int) width - reduce / 2 - reduce % 2, emojiY + (int) width - reduce / 2 - reduce % 2);
+    Emoji.instance().draw(c, emojiInfo, rect, (int) (alpha * textPaint.getAlpha()));
   }
 
   public void draw (int partIndex, Canvas c, int startX, int endX, int endXBottomPadding, int startY, float alpha, @Nullable TextColorSet colorProvider, @Nullable ComplexReceiver receiver) {
-    int y = startY + this.y;
-    int x = makeX(startX, endX, endXBottomPadding);
+    final int y = startY + this.y;
+    final int x = makeX(startX, endX, endXBottomPadding);
     final TextPaint textPaint = getPaint(partIndex, alpha, colorProvider);
     final float textAlpha = textPaint.getAlpha() / 255f;
     if (icon != null) {
       final int displayMediaKey = getDisplayMediaKey();
-      y += textPaint.baselineShift;
+      final int iconY = y + textPaint.baselineShift - (isCustomEmoji() ? Screen.dp(1.5f) : 0);
       final int height = this.height == -1 ? (int) width : this.height;
-      if (isCustomEmoji()) {
-        // Match built-in emoji rect
-        y -= Screen.dp(1.5f);
-      }
       if (receiver != null && displayMediaKey != -1) {
         final boolean needTranslate = mediaKeyInfo.parts.size() > 1;
         int left, top, right, bottom, restoreToCount;
@@ -384,12 +388,12 @@ public class TextPart {
           right = (int) width;
           bottom = height;
           restoreToCount = Views.save(c);
-          c.translate(x, y);
+          c.translate(x, iconY);
         } else {
           left = x;
-          top = y;
+          top = iconY;
           right = (int) (x + width);
-          bottom = y + height;
+          bottom = iconY + height;
           restoreToCount = -1;
         }
 
@@ -426,21 +430,20 @@ public class TextPart {
           Views.restore(c, restoreToCount);
         }
       } else {
-        drawError(c, x + width / 2f, y + height / 2f, width / 2f, alpha * textAlpha);
+        if (emojiInfo != null) {
+          drawEmoji(c, x, y, textPaint, .45f);
+        } else {
+          drawError(c, x + width / 2f, iconY + height / 2f, width / 2f, textAlpha);
+        }
       }
     } else if (isBuiltInEmoji()) {
-      Rect rect = Paints.getRect();
-      int reduce = Emoji.instance().getReduceSize();
-      y -= Screen.dp(1.5f);
-      y += textPaint.baselineShift;
-      rect.set(x + reduce / 2, y + reduce / 2, x + (int) width - reduce / 2 - reduce % 2, y + (int) width - reduce / 2 - reduce % 2);
-      Emoji.instance().draw(c, emojiInfo, rect, textPaint.getAlpha());
+      drawEmoji(c, x, y, textPaint, 1f);
     } else {
-      y += source.getAscent();
+      final int textY = y + source.getAscent() + textPaint.baselineShift;
       if (trimmedLine != null) {
-        c.drawText(trimmedLine, x, y + textPaint.baselineShift, textPaint);
+        c.drawText(trimmedLine, x, textY, textPaint);
       } else {
-        c.drawText(line, start, end, x, y + textPaint.baselineShift, textPaint);
+        c.drawText(line, start, end, x, textY, textPaint);
       }
     }
   }

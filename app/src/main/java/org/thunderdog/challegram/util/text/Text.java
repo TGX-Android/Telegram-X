@@ -552,6 +552,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
         return (flags & ENTITY_FLAG_URL) != 0;
+      case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR: // TODO
       case TdApi.TextEntityTypeBold.CONSTRUCTOR:
       case TdApi.TextEntityTypeCode.CONSTRUCTOR:
       case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
@@ -561,6 +562,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
       case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
       case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
+      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
+      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
         break;
     }
     return false;
@@ -2502,7 +2505,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
   private int getPartHeight (TextPart part) {
     float partHeight = part.getHeight();
-    return partHeight != -1 ? (int) partHeight : getLineHeight();
+    return partHeight != -1 ? (int) partHeight : getLineHeight(part.getLineIndex());
   }
 
   private int getPartVerticalOffset (TextPart part) {
