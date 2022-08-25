@@ -4193,14 +4193,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
       String[] errors = msg.getFailureMessages();
       if (errors != null) {
         if (b.length() > 0) {
-          b.append("\n");
+          // b.append("\n");
+          b.append(". ");
         }
         b.append(Lang.getString(R.string.SendFailureInfo, Strings.join(", ", (Object[]) errors)));
       }
     }
     if (!msg.canBeSaved()) {
       if (b.length() > 0) {
-        b.append("\n\n");
+        // b.append("\n\n");
+        b.append(". ");
       }
       TdApi.MessageSender senderId = msg.getMessage().senderId;
       int resId;
