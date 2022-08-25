@@ -190,11 +190,12 @@ public class TextWrapper implements ListAnimator.Measurable {
     boolean sizeChanged = textSizes[index] != textSizePx || (texts[index] != null && texts[index].getMaxLineCount() != maxLines);
     if (sizeChanged || texts[index] == null || sizes[index] != maxWidth) {
       boolean needBigEmoji = BitwiseUtils.getFlag(textFlags, Text.FLAG_BIG_EMOJI) && Settings.instance().useBigEmoji();
-      if (texts[index] != null && !sizeChanged && !needBigEmoji) {
-        texts[index].set(maxWidth, text);
+      Text text = texts[index];
+      if (text != null && !sizeChanged && !needBigEmoji) {
+        texts[index].set(maxWidth, this.text);
       } else {
         Text.Builder b = new Text.Builder(this.text, maxWidth, textStyleProvider, colorTheme).maxLineCount(maxLines).entities(entities).lineWidthProvider(lineWidthProvider).textFlags(BitwiseUtils.setFlag(textFlags, Text.FLAG_BIG_EMOJI, false));
-        Text text = b.build();
+        text = b.build();
         if (needBigEmoji) {
           // TODO move inside Text class
           int emojiCount = text.getEmojiOnlyCount();
@@ -212,9 +213,14 @@ public class TextWrapper implements ListAnimator.Measurable {
         }
         texts[index] = text;
       }
-      texts[index].setViewProvider(viewProvider);
+      text.setViewProvider(viewProvider);
       sizes[index] = maxWidth;
       textSizes[index] = textSizePx;
+      if (index == (isPortrait ? PORTRAIT_INDEX : LANDSCAPE_INDEX) &&
+        text.hasMedia() &&
+        viewProvider.hasAnyTargetToInvalidate()) {
+        viewProvider.invalidateContent();
+      }
     }
     return texts[index];
   }

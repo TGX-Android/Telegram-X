@@ -158,7 +158,7 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.android.util.ClickHelper;
-import me.vkryl.android.util.MultipleViewProvider;
+import me.vkryl.android.util.InvalidateContentProvider;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
@@ -3971,7 +3971,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
   }
 
-  private static class ThumbView extends View implements AttachDelegate, MediaItem.ThumbExpandChangeListener, Destroyable, MultipleViewProvider.InvalidateContentProvider {
+  private static class ThumbView extends View implements AttachDelegate, MediaItem.ThumbExpandChangeListener, Destroyable, InvalidateContentProvider {
     private DoubleImageReceiver preview;
 
     private ThumbItems items;

@@ -43,11 +43,12 @@ import java.util.ArrayList;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.android.util.InvalidateContentProvider;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.reference.ReferenceList;
 
-public abstract class InlineResult <T> implements MessageSourceProvider, MultipleViewProvider.InvalidateContentProvider {
+public abstract class InlineResult <T> implements MessageSourceProvider, InvalidateContentProvider {
   public static final int TYPE_ARTICLE = 0;
   public static final int TYPE_VIDEO = 1;
   public static final int TYPE_CONTACT = 2;
@@ -337,8 +338,8 @@ public abstract class InlineResult <T> implements MessageSourceProvider, Multipl
     for (View view : views) {
       if (view instanceof CustomResultView) {
         ((CustomResultView) view).invalidateContent(this);
-      } else if (view instanceof MultipleViewProvider.InvalidateContentProvider) {
-        ((MultipleViewProvider.InvalidateContentProvider) view).invalidateContent();
+      } else if (view instanceof InvalidateContentProvider) {
+        ((InvalidateContentProvider) view).invalidateContent();
       }
     }
   }

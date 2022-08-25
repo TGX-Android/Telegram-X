@@ -56,13 +56,14 @@ import java.io.File;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import me.vkryl.android.util.InvalidateContentProvider;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
-public class MediaItem implements MessageSourceProvider, MultipleViewProvider.InvalidateContentProvider {
+public class MediaItem implements MessageSourceProvider, InvalidateContentProvider {
   public static final int TYPE_PHOTO = 0;
   public static final int TYPE_VIDEO = 1;
   public static final int TYPE_GIF = 2;
@@ -1379,8 +1380,8 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
     if (thumbViewHolder != null) {
       ReferenceList<View> views = thumbViewHolder.getViewsList();
       for (View view : views) {
-        if (view instanceof MultipleViewProvider.InvalidateContentProvider) {
-          ((MultipleViewProvider.InvalidateContentProvider) view).invalidateContent();
+        if (view instanceof InvalidateContentProvider) {
+          ((InvalidateContentProvider) view).invalidateContent();
         }
       }
     }

@@ -45,13 +45,14 @@ import org.thunderdog.challegram.widget.PageBlockView;
 
 import java.util.ArrayList;
 
+import me.vkryl.android.util.InvalidateContentProvider;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.Td;
 
-public abstract class PageBlock implements MultipleViewProvider.InvalidateContentProvider {
+public abstract class PageBlock implements InvalidateContentProvider {
   protected final ViewController<?> context;
   protected final TdApi.PageBlock block;
   protected MultipleViewProvider currentViews;

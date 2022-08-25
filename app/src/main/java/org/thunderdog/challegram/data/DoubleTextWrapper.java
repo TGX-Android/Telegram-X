@@ -44,13 +44,14 @@ import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.widget.SmallChatView;
 
 import me.vkryl.android.animator.BounceAnimator;
+import me.vkryl.android.util.InvalidateContentProvider;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
-public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewProvider.InvalidateContentProvider, UserProvider, TooltipOverlayView.LocationProvider {
+public class DoubleTextWrapper implements MessageSourceProvider, InvalidateContentProvider, UserProvider, TooltipOverlayView.LocationProvider {
   private final Tdlib tdlib;
 
   private long chatId;
