@@ -339,7 +339,7 @@ public class TGMessageText extends TGMessage {
       setWebPage(newText.webPage);
       rebuildContent();
       if (!Td.equalsTo(oldWebPage, newText.webPage)) {
-        invalidateContent();
+        invalidateContent(this);
         invalidatePreviewReceiver();
       }
     }

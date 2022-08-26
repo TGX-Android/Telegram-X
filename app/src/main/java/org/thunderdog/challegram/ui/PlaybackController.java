@@ -1850,8 +1850,9 @@ public class PlaybackController extends ViewController<Void> implements Menu, Mo
     private MediaPreview mediaPreview;
 
     @Override
-    public void invalidateContent () {
+    public boolean invalidateContent (Object cause) {
       requestFiles(true);
+      return true;
     }
 
     public void setItem (InlineResultCommon item) {

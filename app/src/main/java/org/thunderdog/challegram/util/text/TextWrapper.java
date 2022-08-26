@@ -228,7 +228,7 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable {
       if (index == (isPortrait ? PORTRAIT_INDEX : LANDSCAPE_INDEX) &&
         text.hasMedia() &&
         viewProvider.hasAnyTargetToInvalidate()) {
-        viewProvider.invalidateContent();
+        viewProvider.invalidateContent(this);
       }
     }
     return texts[index];

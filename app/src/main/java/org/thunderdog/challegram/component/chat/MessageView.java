@@ -94,7 +94,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   private final ImageReceiver avatarReceiver;
   private final GifReceiver gifReceiver;
-  private final ComplexReceiver reactionsComplexReceiver, textMediaReceiver;
+  private final ComplexReceiver reactionsComplexReceiver, textMediaReceiver, replyTextMediaReceiver;
   private final DoubleImageReceiver replyReceiver;
 
   private ImageReceiver contentReceiver;
@@ -109,6 +109,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     reactionsComplexReceiver = new ComplexReceiver(this);
     gifReceiver = new GifReceiver(this);
     textMediaReceiver = new ComplexReceiver(this);
+    replyTextMediaReceiver = new ComplexReceiver(this);
     //noinspection ContantConditions
     replyReceiver = new DoubleImageReceiver(this, Config.USE_SCALED_ROUNDINGS ? Screen.dp(Theme.getImageRadius()) : 0);
 
@@ -136,12 +137,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   @Override
   public void performDestroy () {
-    destroy();
-  }
-
-  public void destroy () {
     avatarReceiver.destroy();
     replyReceiver.destroy();
+    replyTextMediaReceiver.performDestroy();
     gifReceiver.destroy();
     reactionsComplexReceiver.performDestroy();
     textMediaReceiver.performDestroy();
@@ -190,20 +188,20 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   public void invalidateReplyReceiver (long chatId, long messageId) {
     if (msg != null && msg.getChatId() == chatId && msg.getId() == messageId) {
-      msg.requestReply(replyReceiver);
+      msg.requestReply(replyReceiver, replyTextMediaReceiver);
     }
   }
 
   public void invalidateReplyReceiver () {
     if (msg != null) {
-      msg.requestReply(replyReceiver);
+      msg.requestReply(replyReceiver, replyTextMediaReceiver);
     }
   }
 
   private void checkLegacyComponents (MessageView view) {
     if (msg != null) {
       msg.layoutAvatar(view, avatarReceiver);
-      msg.requestReply(replyReceiver);
+      msg.requestReply(replyReceiver, replyTextMediaReceiver);
     }
   }
 
@@ -444,7 +442,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   @Override
   public void onDraw (Canvas c) {
-    msg.draw(this, c, avatarReceiver, replyReceiver, previewReceiver, contentReceiver, gifReceiver, complexReceiver);
+    msg.draw(this, c, avatarReceiver, replyReceiver, replyTextMediaReceiver, previewReceiver, contentReceiver, gifReceiver, complexReceiver);
   }
 
   public ImageReceiver getAvatarReceiver () {
@@ -485,6 +483,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       reactionsComplexReceiver.attach();
       textMediaReceiver.attach();
       replyReceiver.attach();
+      replyTextMediaReceiver.attach();
       if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
         contentReceiver.attach();
         previewReceiver.attach();
@@ -503,6 +502,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       reactionsComplexReceiver.detach();
       textMediaReceiver.detach();
       replyReceiver.detach();
+      replyTextMediaReceiver.detach();
       if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
         contentReceiver.detach();
         previewReceiver.detach();

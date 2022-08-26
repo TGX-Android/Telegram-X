@@ -80,12 +80,22 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     }
   }
 
-  private static class TextEntry extends MeasurableEntry<Text> {
+  private static class TextEntry extends MeasurableEntry<Text> implements Destroyable {
     public Drawable drawable;
+    public ComplexReceiver receiver;
 
-    public TextEntry (Text text, Drawable drawable) {
+    public TextEntry (Text text, Drawable drawable, ComplexReceiver receiver) {
       super(text);
       this.drawable = drawable;
+      this.receiver = receiver;
+    }
+
+    @Override
+    public void performDestroy () {
+      this.content.performDestroy();
+      if (receiver != null) {
+        receiver.performDestroy();
+      }
     }
   }
 
@@ -215,6 +225,16 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     return Math.max(0, getMeasuredWidth() - Screen.dp(PADDING_SIZE) * 2 - getTextHorizontalOffset() - Screen.dp(getLinePadding()) - contentInset);
   }
 
+  private ComplexReceiver newComplexReceiver () {
+    ComplexReceiver receiver = new ComplexReceiver(this);
+    if (isAttached) {
+      receiver.attach();
+    } else {
+      receiver.detach();
+    }
+    return receiver;
+  }
+
   private void buildText (boolean isLayout) {
     int textWidth = calculateTextWidth();
     if (this.lastTextWidth != textWidth || !isLayout) {
@@ -230,6 +250,12 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
         if (isLayout && !contentText.isEmpty()) {
           for (ListAnimator.Entry<TextEntry> entry : contentText) {
             entry.item.content.changeMaxWidth(textWidth);
+            if (entry.item.receiver != null || entry.item.content.hasMedia()) {
+              if (entry.item.receiver == null) {
+                entry.item.receiver = newComplexReceiver();
+              }
+              entry.item.content.requestMedia(entry.item.receiver);
+            }
           }
         } else {
           buildContentText(textWidth, false);
@@ -260,12 +286,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     if (preview == null) {
       this.mediaPreview.replace(null, animated);
     } else if (animated || this.mediaPreview.isEmpty()) {
-      ComplexReceiver receiver = new ComplexReceiver(this);
-      if (isAttached) {
-        receiver.attach();
-      } else {
-        receiver.detach();
-      }
+      ComplexReceiver receiver = newComplexReceiver();
       preview.requestFiles(receiver, false);
       this.mediaPreview.replace(new MediaEntry(preview, receiver), animated);
     } else {
@@ -327,6 +348,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     TdApi.FormattedText text = getContentText();
     int iconRes = contentPreview != null && contentPreview.emoji != null ? contentPreview.emoji.iconRepresentation : 0;
     Text newText;
+    ComplexReceiver receiver;
     if (!Td.isEmpty(text)) {
       newText = new Text.Builder(tdlib,
         text, null, availWidth, Paints.robotoStyleProvider(TEXT_SIZE), TextColorSets.Regular.NORMAL
@@ -337,10 +359,17 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
        .ignoreContinuousNewLines()
        .addFlags(Text.FLAG_CUSTOM_LONG_PRESS)
        .build();
+      if (newText.hasMedia()) {
+        receiver = newComplexReceiver();
+        newText.requestMedia(receiver);
+      } else {
+        receiver = null;
+      }
     } else {
       newText = null;
+      receiver = null;
     }
-    this.contentText.replace(newText != null || iconRes != 0 ? new TextEntry(newText, getSparseDrawable(iconRes, R.id.theme_color_icon)) : null, animated);
+    this.contentText.replace(newText != null || iconRes != 0 ? new TextEntry(newText, getSparseDrawable(iconRes, R.id.theme_color_icon), receiver) : null, animated);
   }
 
   @Override
@@ -368,7 +397,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
         Drawables.draw(c, entry.item.drawable, textX, contextTextY + (entry.item.content != null ? entry.item.content.getLineHeight(false) : Screen.dp(TEXT_SIZE)) / 2f - entry.item.drawable.getMinimumHeight() / 2f, PorterDuffPaint.get(R.id.theme_color_icon, entry.getVisibility()));
       }
       if (entry.item.content != null) {
-        entry.item.content.draw(c, textX, contextTextY, null, entry.getVisibility());
+        entry.item.content.draw(c, textX, contextTextY, null, entry.getVisibility(), entry.item.receiver);
       }
     }
   }
@@ -453,6 +482,11 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     for (ListAnimator.Entry<MediaEntry> entry : mediaPreview) {
       entry.item.receiver.attach();
     }
+    for (ListAnimator.Entry<TextEntry> entry : contentText) {
+      if (entry.item.receiver != null) {
+        entry.item.receiver.attach();
+      }
+    }
   }
 
   @Override
@@ -460,6 +494,11 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     this.isAttached = false;
     for (ListAnimator.Entry<MediaEntry> entry : mediaPreview) {
       entry.item.receiver.attach();
+    }
+    for (ListAnimator.Entry<TextEntry> entry : contentText) {
+      if (entry.item.receiver != null) {
+        entry.item.receiver.detach();
+      }
     }
   }
 

@@ -43,12 +43,10 @@ import java.util.ArrayList;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
-import me.vkryl.android.util.InvalidateContentProvider;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.ColorUtils;
-import me.vkryl.core.reference.ReferenceList;
 
-public abstract class InlineResult <T> implements MessageSourceProvider, InvalidateContentProvider {
+public abstract class InlineResult <T> implements MessageSourceProvider {
   public static final int TYPE_ARTICLE = 0;
   public static final int TYPE_VIDEO = 1;
   public static final int TYPE_CONTACT = 2;
@@ -88,7 +86,6 @@ public abstract class InlineResult <T> implements MessageSourceProvider, Invalid
     this.id = id;
     this.data = data;
     this.currentViews = new MultipleViewProvider();
-    this.currentViews.setContentProvider(this);
   }
 
   public final T data () {
@@ -330,18 +327,6 @@ public abstract class InlineResult <T> implements MessageSourceProvider, Invalid
 
   public void requestContent (ComplexReceiver receiver, boolean isInvalidate) {
     receiver.clear();
-  }
-
-  @Override
-  public void invalidateContent () {
-    ReferenceList<View> views = currentViews.getViewsList();
-    for (View view : views) {
-      if (view instanceof CustomResultView) {
-        ((CustomResultView) view).invalidateContent(this);
-      } else if (view instanceof InvalidateContentProvider) {
-        ((InvalidateContentProvider) view).invalidateContent();
-      }
-    }
   }
 
   private FactorAnimator highlightAnimator;

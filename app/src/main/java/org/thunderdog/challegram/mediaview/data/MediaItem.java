@@ -1366,14 +1366,17 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   }
 
   @Override
-  public void invalidateContent () {
+  public boolean invalidateContent (Object cause) {
+    int successCount = 0;
     if (currentViews != null) {
       ReferenceList<View> views = currentViews.getViewsList();
       for (View view : views) {
         if (view instanceof MediaSmallView) {
           ((MediaSmallView) view).invalidateContent(this);
+          successCount++;
         } else if (view.getParent() instanceof MediaCellView) {
           ((MediaCellView) view.getParent()).invalidateContent(this);
+          successCount++;
         }
       }
     }
@@ -1381,10 +1384,12 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
       ReferenceList<View> views = thumbViewHolder.getViewsList();
       for (View view : views) {
         if (view instanceof InvalidateContentProvider) {
-          ((InvalidateContentProvider) view).invalidateContent();
+          ((InvalidateContentProvider) view).invalidateContent(cause);
+          successCount++;
         }
       }
     }
+    return successCount > 0;
   }
 
   // Image-related stuff

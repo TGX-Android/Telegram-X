@@ -27,7 +27,9 @@ import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
 
-public class SmallChatView extends BaseView implements AttachDelegate, TooltipOverlayView.LocationProvider {
+import me.vkryl.android.util.InvalidateContentProvider;
+
+public class SmallChatView extends BaseView implements AttachDelegate, TooltipOverlayView.LocationProvider, InvalidateContentProvider {
   private final ImageReceiver receiver;
 
   private DoubleTextWrapper chat;
@@ -107,10 +109,13 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
     receiver.requestFile(chat != null ? chat.getAvatarFile() : null);
   }
 
-  public void invalidateContent (DoubleTextWrapper chat) {
-    if (this.chat == chat) {
+  @Override
+  public boolean invalidateContent (Object cause) {
+    if (this.chat == cause) {
       requestFile();
+      return true;
     }
+    return false;
   }
 
   @Override

@@ -52,7 +52,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.Td;
 
-public abstract class PageBlock implements InvalidateContentProvider {
+public abstract class PageBlock {
   protected final ViewController<?> context;
   protected final TdApi.PageBlock block;
   protected MultipleViewProvider currentViews;
@@ -63,7 +63,6 @@ public abstract class PageBlock implements InvalidateContentProvider {
     this.context = context;
     this.block = block;
     this.currentViews = new MultipleViewProvider();
-    this.currentViews.setContentProvider(this);
   }
 
   public ViewController<?> parent () {
@@ -157,16 +156,6 @@ public abstract class PageBlock implements InvalidateContentProvider {
   public void mergeWith (PageBlock topBlock) {
     mergeTop = true;
     topBlock.mergeBottom = true;
-  }
-
-  @Override
-  public void invalidateContent () {
-    final ReferenceList<View> views = currentViews.getViewsList();
-    for (View view : views) {
-      if (view instanceof PageBlockView) {
-        ((PageBlockView) view).requestFiles(true);
-      }
-    }
   }
 
   public final ViewProvider getViewProvider () {

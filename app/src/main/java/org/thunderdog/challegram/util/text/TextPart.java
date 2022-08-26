@@ -24,6 +24,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.emoji.Emoji;
@@ -360,8 +361,8 @@ public class TextPart implements Destroyable {
     c.drawText(line, start, end, x, y + source.getAscent() + paint.baselineShift, paint);
   }
 
-  private void drawError (Canvas c, float cx, float cy, float radius, float alpha) {
-    c.drawCircle(cx, cy, radius, Paints.fillingPaint(ColorUtils.alphaColor(alpha * .45f, 0xffff0000)));
+  private void drawError (Canvas c, float cx, float cy, float radius, float alpha, int color) {
+    c.drawCircle(cx, cy, radius, Paints.fillingPaint(ColorUtils.alphaColor(alpha * .45f, color)));
   }
 
   private void drawEmoji (Canvas c, final int x, final int y, TextPaint textPaint, float alpha) {
@@ -430,8 +431,11 @@ public class TextPart implements Destroyable {
         if (needTranslate) {
           Views.restore(c, restoreToCount);
         }
+        if (BuildConfig.DEBUG && isCustomEmoji()) {
+          drawError(c, x + width / 2f, iconY + height / 2f, width / 2f, textAlpha, 0xff00ff00);
+        }
       } else {
-        drawError(c, x + width / 2f, iconY + height / 2f, width / 2f, textAlpha);
+        drawError(c, x + width / 2f, iconY + height / 2f, width / 2f, textAlpha, 0xffff0000);
         if (emojiInfo != null) {
           drawEmoji(c, x, y, textPaint, .45f);
         }

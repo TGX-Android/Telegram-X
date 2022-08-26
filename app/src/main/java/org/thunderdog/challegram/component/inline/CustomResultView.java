@@ -34,10 +34,11 @@ import org.thunderdog.challegram.widget.SparseDrawableView;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.android.util.InvalidateContentProvider;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.lambda.Destroyable;
 
-public class CustomResultView extends SparseDrawableView implements Destroyable, SelectableItemDelegate, FactorAnimator.Target, RemoveHelper.RemoveDelegate, DrawableProvider {
+public class CustomResultView extends SparseDrawableView implements Destroyable, SelectableItemDelegate, FactorAnimator.Target, RemoveHelper.RemoveDelegate, DrawableProvider, InvalidateContentProvider {
   private static final int FLAG_DETACHED = 1;
   private static final int FLAG_CAUGHT = 1 << 1;
   private static final int FLAG_SELECTED = 1 << 2;
@@ -82,10 +83,13 @@ public class CustomResultView extends SparseDrawableView implements Destroyable,
     }
   }
 
-  public void invalidateContent (InlineResult<?> result) {
-    if (this.result == result && result != null) {
+  @Override
+  public boolean invalidateContent (Object cause) {
+    if (this.result == cause && cause != null) {
       this.result.requestContent(receiver, true);
+      return true;
     }
+    return false;
   }
 
   public void attach () {

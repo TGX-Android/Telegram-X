@@ -1664,7 +1664,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return useBubbles() && (!useBubble() || separateReplyFromBubble());
   }
 
-  public final void draw (MessageView view, Canvas c, @NonNull ImageReceiver avatarReceiver, Receiver replyReceiver, DoubleImageReceiver previewReceiver, ImageReceiver contentReceiver, GifReceiver gifReceiver, ComplexReceiver complexReceiver) {
+  public final void draw (MessageView view, Canvas c, @NonNull ImageReceiver avatarReceiver, Receiver replyReceiver, ComplexReceiver replyTextMediaReceiver, DoubleImageReceiver previewReceiver, ImageReceiver contentReceiver, GifReceiver gifReceiver, ComplexReceiver complexReceiver) {
     final int viewWidth = view.getMeasuredWidth();
     final int viewHeight = view.getMeasuredHeight();
 
@@ -2081,7 +2081,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         startX += xTextPadding;
       }
 
-      replyData.draw(c, startX, top, endX, width, replyReceiver, Lang.rtl());
+      replyData.draw(c, startX, top, endX, width, replyReceiver, replyTextMediaReceiver, Lang.rtl());
     }
 
     if (contentOffset != 0) {
@@ -2378,9 +2378,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   @Override
-  public final void invalidateContent () {
-    invalidateContentReceiver();
-    invalidateTextMediaReceiver();
+  public final boolean invalidateContent (Object cause) {
+    if (cause == replyData) {
+      invalidateReplyReceiver();
+    } else {
+      invalidateContentReceiver();
+      invalidateTextMediaReceiver();
+    }
+    return true;
   }
 
   public final void invalidateContentReceiver (long messageId, int arg) {
@@ -3510,9 +3515,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     receiver.setBounds(left, top, left + size, top + size);
   }
 
-  public final void requestReply (DoubleImageReceiver receiver) {
+  public final void requestReply (DoubleImageReceiver receiver, ComplexReceiver textMediaReceiver) {
     if (replyData != null) {
-      replyData.requestPreview(receiver);
+      replyData.requestPreview(receiver, textMediaReceiver);
     } else {
       receiver.clear();
     }

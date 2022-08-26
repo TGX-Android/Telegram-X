@@ -6014,7 +6014,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     attachedPreview = null;
     flags &= ~FLAG_REPLY_ANIMATING;
     setReplyFactor(0f);
-    replyView.destroy();
+    replyView.clear();
   }
 
   public void closeReply (final boolean byUser) {
@@ -6072,7 +6072,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (isSendingText) {
       setReplyFactor(0f);
-      replyView.destroy();
+      replyView.clear();
       flags &= ~FLAG_REPLY_ANIMATING;
       return;
     }
@@ -6089,7 +6089,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       @Override
       public void onAnimationEnd (Animator animation) {
         setForceHw(false);
-        replyView.destroy();
+        replyView.clear();
         flags &= ~FLAG_REPLY_ANIMATING;
       }
     });

@@ -312,7 +312,7 @@ public class PageBlockRichText extends PageBlock {
       int avatarSize = (getComputedHeight() - Screen.dp(8f) * 2);
       avatarFile = context.tdlib().chatAvatar(chat.id);
       avatarPlaceholder = context.tdlib().chatPlaceholder(chat, false, Screen.px(avatarSize / 2f), null);
-      invalidateContent();
+      currentViews.invalidateContent(this);
 
       CharSequence text = context.tdlib().status().chatStatus(chat);
       subtitle = new TextWrapper(text.toString(), getCreditProvider(), this.text.getTextColorSet(), TextEntity.valueOf(context.tdlib(), text.toString(), TD.toEntities(text, false), openParameters)).setMaxLines(1);

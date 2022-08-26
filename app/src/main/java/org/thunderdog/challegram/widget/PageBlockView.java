@@ -29,9 +29,10 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 
+import me.vkryl.android.util.InvalidateContentProvider;
 import me.vkryl.core.lambda.Destroyable;
 
-public class PageBlockView extends BaseView implements Destroyable {
+public class PageBlockView extends BaseView implements Destroyable, InvalidateContentProvider {
   public static final int MODE_IMAGE = 1;
   public static final int MODE_GIF = 2;
   public static final int MODE_COLLAGE = 3;
@@ -155,6 +156,15 @@ public class PageBlockView extends BaseView implements Destroyable {
         break;
       }
     }
+  }
+
+  @Override
+  public boolean invalidateContent (Object cause) {
+    if (this.block == cause) {
+      requestFiles(true);
+      return true;
+    }
+    return false;
   }
 
   public void requestFiles (boolean invalidate) {

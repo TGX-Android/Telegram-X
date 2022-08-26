@@ -1060,7 +1060,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       for (int i = album.messages.size() - olderCount; i < album.messages.size(); i++) {
         targetAlbum.combineWith(album.messages.get(i), false);
       }
-      targetAlbum.invalidateContent();
+      targetAlbum.invalidateContent(targetAlbum);
     }
   }
 

@@ -50,6 +50,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.core.graphics.PathParser;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -4015,10 +4016,12 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
 
     @Override
-    public void invalidateContent () {
+    public boolean invalidateContent (Object cause) {
       if (this.item != null && this.item.getPreviewImageFile() == null && (Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE || this.item.isLoaded())) {
         this.preview.getImageReceiver().requestFile(item.getThumbImageFile(Screen.dp(THUMBS_HEIGHT) + Screen.dp(THUMBS_PADDING) * 2, false));
+        return true;
       }
+      return false;
     }
 
     public MediaItem getItem () {
@@ -4995,7 +4998,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
                   }
                   videoSliderView.resetDuration(timeTotal, timeNow, true, true);
                 } else {
-                  item.invalidateContent();
+                  item.invalidateContent(item);
                 }
               }
             }

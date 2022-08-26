@@ -39,7 +39,7 @@ public class SimpleMediaWrapperView extends SparseDrawableView {
     this.receiver = new ImageReceiver(this, 0);
     this.provider = new SingleViewProvider(this) {
       @Override
-      public boolean invalidateContent () {
+      public boolean invalidateContent (Object cause) {
         if (wrapper != null) {
           wrapper.requestImage(receiver);
         }
