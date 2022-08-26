@@ -30,6 +30,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TGChat;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -158,11 +159,12 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   }
 
   public Receiver getAvatarReceiver () {
-    return imageReceiver;
+    return avatarReceiver;
   }
 
   private TGChat chat;
-  private final ImageReceiver imageReceiver;
+  private final ImageReceiver avatarReceiver;
+  private final ComplexReceiver textMediaReceiver;
 
   private final BounceAnimator onlineAnimator;
   private final BoolAnimator isSelected = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
@@ -176,8 +178,9 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     setId(R.id.chat);
     RippleSupport.setTransparentSelector(this);
     int chatListMode = getChatListMode();
-    imageReceiver = new ImageReceiver(this, getAvatarRadius(chatListMode));
-    imageReceiver.setBounds(getAvatarLeft(chatListMode), getAvatarTop(chatListMode), getAvatarLeft(chatListMode) + getAvatarSize(chatListMode), getAvatarTop(chatListMode) + getAvatarSize(chatListMode));
+    avatarReceiver = new ImageReceiver(this, getAvatarRadius(chatListMode));
+    avatarReceiver.setBounds(getAvatarLeft(chatListMode), getAvatarTop(chatListMode), getAvatarLeft(chatListMode) + getAvatarSize(chatListMode), getAvatarTop(chatListMode) + getAvatarSize(chatListMode));
+    textMediaReceiver = new ComplexReceiver(this);
     setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
   }
 
@@ -186,7 +189,8 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   }
 
   public void setAnimationsDisabled (boolean disabled) {
-    imageReceiver.setAnimationDisabled(disabled);
+    avatarReceiver.setAnimationDisabled(disabled);
+    textMediaReceiver.setAnimationDisabled(disabled);
   }
 
   public static int getViewHeight (int chatListMode) {
@@ -317,11 +321,13 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   }
 
   public void attach () {
-    imageReceiver.attach();
+    avatarReceiver.attach();
+    textMediaReceiver.attach();
   }
 
   public void detach () {
-    imageReceiver.detach();
+    avatarReceiver.detach();
+    textMediaReceiver.detach();
   }
 
   public void setChat (TGChat chat) {
@@ -371,7 +377,22 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
         setCustomControllerProvider(null);
       }
     }
-    imageReceiver.requestFile(chat != null ? chat.getAvatar() : null);
+    requestContent();
+  }
+
+  private void requestContent () {
+    if (chat != null) {
+      Text text = chat.getText();
+      if (text != null) {
+        text.requestMedia(textMediaReceiver);
+      } else {
+        textMediaReceiver.clear();
+      }
+      avatarReceiver.requestFile(chat.getAvatar());
+    } else {
+      avatarReceiver.clear();
+      textMediaReceiver.clear();
+    }
   }
 
   public boolean needAnimateChanges () {
@@ -383,8 +404,8 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     onlineAnimator.setValue(chat != null && chat.isOnline(), needAnimateChanges());
   }
 
-  public void invalidateContentReceiver () {
-    imageReceiver.requestFile(chat != null ? chat.getAvatar() : null);
+  public void invalidateAvatarReceiver () {
+    avatarReceiver.requestFile(chat != null ? chat.getAvatar() : null);
     invalidate();
   }
 
@@ -423,7 +444,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(getViewHeight(getChatListMode()), MeasureSpec.EXACTLY));
     layoutReceiver();
     if (chat != null && chat.checkLayout(getMeasuredWidth())) {
-      imageReceiver.requestFile(chat.getAvatar());
+      requestContent();
     }
   }
 
@@ -440,7 +461,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   private void layoutReceiver () {
     int chatListMode = getChatListMode();
     int left = Lang.rtl() ? getMeasuredWidth() - getAvatarLeft(chatListMode) - getAvatarSize(chatListMode) : getAvatarLeft(chatListMode);
-    imageReceiver.setBounds(left, getAvatarTop(chatListMode), left + getAvatarSize(chatListMode), getAvatarTop(chatListMode) + getAvatarSize(chatListMode));
+    avatarReceiver.setBounds(left, getAvatarTop(chatListMode), left + getAvatarSize(chatListMode), getAvatarTop(chatListMode) + getAvatarSize(chatListMode));
   }
 
   public TGChat getChat () {
@@ -597,7 +618,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
           }
         }
 
-        text.draw(c, chat.getTextLeft(), textTop, null, textAlpha);
+        text.draw(c, chat.getTextLeft(), textTop, null, textAlpha, textMediaReceiver);
       }
 
       if (needRestore) {
@@ -620,15 +641,15 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     layoutReceiver();
 
     if (chat.hasAvatar()) {
-      if (imageReceiver.needPlaceholder()) {
-        imageReceiver.drawPlaceholderRounded(c, getAvatarRadius(chatListMode));
+      if (avatarReceiver.needPlaceholder()) {
+        avatarReceiver.drawPlaceholderRounded(c, getAvatarRadius(chatListMode));
       }
-      imageReceiver.draw(c);
+      avatarReceiver.draw(c);
     } else {
       AvatarPlaceholder p = chat.getAvatarPlaceholder();
       if (p != null) {
-        int cx = imageReceiver.centerX();
-        int cy = imageReceiver.centerY();
+        int cx = avatarReceiver.centerX();
+        int cy = avatarReceiver.centerY();
         if (chat.isArchive()) {
           c.drawCircle(cx, cy, p.getRadius(), Paints.fillingPaint(ColorUtils.fromToArgb(Theme.getColor(R.id.theme_color_avatarArchivePinned), Theme.getColor(R.id.theme_color_avatarArchive), isPinnedArchive.getFloatValue())));
           p.draw(c, cx, cy, 1f, p.getRadius(), false);
@@ -638,10 +659,10 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
       }
     }
 
-    DrawAlgorithms.drawIcon(c, imageReceiver, 315f, chat.getScheduleAnimator().getFloatValue(), Theme.fillingColor(), getSparseDrawable(R.drawable.baseline_watch_later_10, R.id.theme_color_badgeMuted), PorterDuffPaint.get(R.id.theme_color_badgeMuted, chat.getScheduleAnimator().getFloatValue()));
+    DrawAlgorithms.drawIcon(c, avatarReceiver, 315f, chat.getScheduleAnimator().getFloatValue(), Theme.fillingColor(), getSparseDrawable(R.drawable.baseline_watch_later_10, R.id.theme_color_badgeMuted), PorterDuffPaint.get(R.id.theme_color_badgeMuted, chat.getScheduleAnimator().getFloatValue()));
 
     onlineAnimator.setValue(chat.isOnline(), true);
-    DrawAlgorithms.drawOnline(c, imageReceiver, (1f - isSelected.getFloatValue()) * onlineAnimator.getFloatValue());
-    DrawAlgorithms.drawSimplestCheckBox(c, imageReceiver, isSelected.getFloatValue());
+    DrawAlgorithms.drawOnline(c, avatarReceiver, (1f - isSelected.getFloatValue()) * onlineAnimator.getFloatValue());
+    DrawAlgorithms.drawSimplestCheckBox(c, avatarReceiver, isSelected.getFloatValue());
   }
 }

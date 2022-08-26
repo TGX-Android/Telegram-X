@@ -317,8 +317,8 @@ public class ChatsRecyclerView extends CustomRecyclerView implements ClickHelper
     int updated = adapter.updateChatPhoto(chatId, photo);
     if (updated != -1) {
       View view = manager.findViewByPosition(updated);
-      if (view != null && view instanceof ChatView) {
-        ((ChatView) view).invalidateContentReceiver();
+      if (view instanceof ChatView) {
+        ((ChatView) view).invalidateAvatarReceiver();
       } else {
         adapter.notifyItemChanged(updated);
       }

@@ -24,7 +24,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.emoji.Emoji;
@@ -431,7 +430,7 @@ public class TextPart implements Destroyable {
         if (needTranslate) {
           Views.restore(c, restoreToCount);
         }
-        if (BuildConfig.DEBUG && isCustomEmoji()) {
+        if (isCustomEmoji()) {
           drawError(c, x + width / 2f, iconY + height / 2f, width / 2f, textAlpha, 0xff00ff00);
         }
       } else {
