@@ -57,12 +57,13 @@ import org.thunderdog.challegram.widget.BaseView;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.BounceAnimator;
+import me.vkryl.android.util.InvalidateContentProvider;
 import me.vkryl.android.util.SingleViewProvider;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.td.ChatPosition;
 
-public class ChatView extends BaseView implements TdlibSettingsManager.PreferenceChangeListener {
+public class ChatView extends BaseView implements TdlibSettingsManager.PreferenceChangeListener, InvalidateContentProvider {
   private static Paint timePaint;
   private static TextPaint titlePaint, titlePaintFake; // counterTextPaint
 
@@ -380,18 +381,21 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     requestContent();
   }
 
+  private void requestTextContent () {
+    Text text = chat != null ? chat.getText() : null;
+    if (text != null) {
+      text.requestMedia(textMediaReceiver);
+    } else {
+      textMediaReceiver.clear();
+    }
+  }
+
   private void requestContent () {
+    requestTextContent();
     if (chat != null) {
-      Text text = chat.getText();
-      if (text != null) {
-        text.requestMedia(textMediaReceiver);
-      } else {
-        textMediaReceiver.clear();
-      }
       avatarReceiver.requestFile(chat.getAvatar());
     } else {
       avatarReceiver.clear();
-      textMediaReceiver.clear();
     }
   }
 
@@ -484,6 +488,15 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   }
 
   private final BoolAnimator isPinnedArchive = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
+
+  @Override
+  public boolean invalidateContent (Object cause) {
+    if (this.chat == cause) {
+      requestTextContent();
+      return true;
+    }
+    return false;
+  }
 
   @Override
   protected void onDraw (Canvas c) {

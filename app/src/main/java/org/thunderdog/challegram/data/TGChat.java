@@ -1076,6 +1076,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
         .entities(entities)
         .noClickable()
         .build();
+      currentViews.invalidateContent(this);
     } else {
       trimmedText = null;
     }
