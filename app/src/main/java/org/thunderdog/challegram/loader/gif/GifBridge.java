@@ -16,7 +16,9 @@ package org.thunderdog.challegram.loader.gif;
 
 import android.view.View;
 
+import androidx.annotation.AnyThread;
 import androidx.annotation.Keep;
+import androidx.annotation.UiThread;
 import androidx.collection.ArraySet;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -232,7 +234,7 @@ public class GifBridge {
   }
 
   // GifBridge thread
-  boolean scheduleNextFrame (GifActor actor, int fileId, int delay, boolean force) {
+  boolean scheduleNextFrame (GifActor actor, int fileId, long delay, boolean force) {
     return thread.scheduleNextFrame(actor, fileId, delay, force);
   }
 
@@ -264,13 +266,18 @@ public class GifBridge {
     }
   }
 
+  @AnyThread
   void dispatchGifFrameChanged (GifFile file, GifState gif) {
-    GifReceiver.getHandler().onFrame(file, gif);
+    GifReceiver.getHandler().post(() -> {
+      onGifFrameDeadlineReached(file, gif);
+    });
   }
 
-  void onGifFrameChanged (GifFile file, GifState gif) {
+  @UiThread
+  void onGifFrameDeadlineReached (GifFile file, GifState gif) {
     synchronized (records) {
-      gif.setCanApplyNext();
+      if (!gif.setCanApplyNext())
+        return;
 
       GifRecord record = records.get(file.toString());
 

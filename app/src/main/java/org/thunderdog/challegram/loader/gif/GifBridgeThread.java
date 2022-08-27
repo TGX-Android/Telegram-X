@@ -52,7 +52,7 @@ public class GifBridgeThread extends BaseThread {
     return !getCustomHandler().hasMessages(fileId, actor);
   }
 
-  public boolean scheduleNextFrame (GifActor actor, int fileId, int delay, boolean force) {
+  public boolean scheduleNextFrame (GifActor actor, int fileId, long delay, boolean force) {
     final Handler handler = getCustomHandler();
     if (force) {
       handler.removeMessages(fileId, actor);

@@ -369,6 +369,7 @@ public class Settings {
   public static final long SETTING_FLAG_CAMERA_SHOW_GRID = 1 << 12;
 
   public static final long SETTING_FLAG_NO_EMBEDS = 1 << 13;
+  public static final long SETTING_FLAG_LIMIT_STICKERS_FPS = 1 << 14;
 
   private static final @Deprecated int DISABLED_FLAG_OTHER_NEED_RAISE_TO_SPEAK = 1 << 2;
   private static final @Deprecated int DISABLED_FLAG_OTHER_AUTODOWNLOAD_IN_BACKGROUND = 1 << 3;

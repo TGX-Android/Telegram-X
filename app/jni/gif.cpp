@@ -289,7 +289,8 @@ JNI_FUNC(jlong, createDecoder, jstring src, jintArray data) {
   if (dataArr != nullptr) {
     dataArr[0] = dstWidth;
     dataArr[1] = dstHeight;
-    AVDictionaryEntry *rotate_tag = av_dict_get(info->video_stream->metadata, "rotate", nullptr, 0);
+    dataArr[2] = (int) (1000 * av_q2d(info->video_stream->avg_frame_rate));
+    /*AVDictionaryEntry *rotate_tag = av_dict_get(info->video_stream->metadata, "rotate", nullptr, 0);
     if (rotate_tag && *rotate_tag->value && strcmp(rotate_tag->value, "0") != 0) {
       char *tail;
       dataArr[2] = (int) av_strtod(rotate_tag->value, &tail);
@@ -298,7 +299,7 @@ JNI_FUNC(jlong, createDecoder, jstring src, jintArray data) {
       }
     } else {
       dataArr[2] = 0;
-    }
+    }*/
     env->ReleaseIntArrayElements(data, dataArr, 0);
   }
 

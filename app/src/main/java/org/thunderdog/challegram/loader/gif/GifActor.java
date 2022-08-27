@@ -14,10 +14,13 @@
  */
 package org.thunderdog.challegram.loader.gif;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.media.MediaMetadataRetriever;
 import android.os.Build;
+import android.view.Display;
 import android.view.View;
+import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -25,6 +28,8 @@ import androidx.annotation.UiThread;
 
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.U;
@@ -36,8 +41,10 @@ import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.EmojiMediaListController;
 import org.thunderdog.challegram.ui.StickersListController;
+import org.thunderdog.challegram.unsorted.Settings;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -87,7 +94,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
   public GifActor (final GifFile file, GifThread thread) {
     this.isPlayOnce = file.isPlayOnce();
     file.setVibrationPattern(Emoji.VIBRATION_PATTERN_NONE);
-    this.maxFrameRate = file.needOptimize() ? REDUCED_MAX_FRAME_RATE : DEFAULT_MAX_FRAME_RATE;
+    this.maxFrameRate = file.needOptimize() || Settings.instance().getNewSetting(Settings.SETTING_FLAG_LIMIT_STICKERS_FPS) ? REDUCED_MAX_FRAME_RATE : DEFAULT_MAX_FRAME_RATE;
     this.isLottie = file.getGifType() == GifFile.TYPE_TG_LOTTIE;
     this.metadata = new int[4];
     this.lottieMetadata = new double[3];
@@ -352,7 +359,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
       U.closeRetriever(retriever);
     }
     int queueSize = file.isStill() ? 1 : isLottie ? 2 : GifState.DEFAULT_QUEUE_SIZE;
-    GifState gif = new GifState(width, height, rotation, this, queueSize);
+    GifState gif = new GifState(this, width, height, rotation, this, queueSize);
     gif.setFrozen(isPlayingRoundVideo);
     boolean success = false;
     try {
@@ -360,7 +367,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
         if (isLottie) {
           long startFrame = file.needDecodeLastFrame() || file.hasLooped() ? totalFrameCount - 1 : 0;
           synchronized (nativeSync) {
-            if (nativePtr != 0 && N.getLottieFrame(nativePtr, frame.bitmap, lastFrameNo = startFrame)) {
+            if (nativePtr != 0 && N.getLottieFrame(nativePtr, frame.bitmap, (long) (lastFrameNo = startFrame))) {
               frame.no = startFrame;
               return true;
             }
@@ -389,7 +396,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
   }
 
   private volatile int lastTimeStamp;
-  private volatile long lastFrameNo;
+  private volatile double lastFrameNo;
   private long totalFrameCount;
   private double frameRate;
 
@@ -404,6 +411,15 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
     } else {
       GifBridge.instance().dispatchGifFrameChanged(file, gif);
     }
+  }
+
+  private double findLastFrameNo () {
+    final double delta = frameDelta();
+    double frameNo = 0;
+    while (frameNo + delta < totalFrameCount) {
+      frameNo += delta;
+    }
+    return frameNo;
   }
 
   public void seekToStart () {
@@ -424,14 +440,14 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
     }
   }
 
-  private static final double DEFAULT_MAX_FRAME_RATE = /*BuildConfig.DEBUG ? 60.0 :*/ 30.0;
+  private static final double DEFAULT_MAX_FRAME_RATE = BuildConfig.DEBUG ? 60.0 : 30.0;
   private static final double REDUCED_MAX_FRAME_RATE = 30.0;
 
   private File lottieCacheFile;
   private int lottieCacheFileSize;
 
-  private long frameDelta () {
-    return Math.max(1, (long) (frameRate / maxFrameRate));
+  private double frameDelta () {
+    return Math.max(1.0, frameRate / maxFrameRate());
   }
 
   // Decoder thread
@@ -448,16 +464,16 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
     boolean async = false;
     final GifState.Frame free = gif.takeFree();
     if (free != null) {
-      long desiredNextFrameNo;
+      double desiredNextFrameNo;
       if (isLottie) {
-        long frameDelta = frameDelta();
+        double frameDelta = frameDelta();
         desiredNextFrameNo = lastFrameNo + frameDelta;
-        if (desiredNextFrameNo >= totalFrameCount) {
+        if ((long) desiredNextFrameNo >= totalFrameCount) {
           file.onLoop();
           desiredNextFrameNo = 0;
           file.onFrameChange(0, 0);
         } else {
-          if (desiredNextFrameNo + frameDelta >= totalFrameCount && isPlayOnce) {
+          if ((long) (desiredNextFrameNo + frameDelta) >= totalFrameCount && isPlayOnce) {
             file.setLooped(true);
           }
           file.onFrameChange(desiredNextFrameNo, frameDelta);
@@ -473,7 +489,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
         desiredNextFrameNo = 0;
         gifRestarted = true;
       }
-      final long nextFrameNo = desiredNextFrameNo;
+      final double nextFrameNo = desiredNextFrameNo;
 
       if (isLottie) {
         // lottieCacheState = LOTTIE_CACHE_ERROR;
@@ -482,14 +498,14 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
             lottieCacheFile = LottieCache.getCacheFile(file, file.needOptimize(), lottieCacheFileSize = Math.max(free.getWidth(), free.getHeight()), file.getFitzpatrickType(), TimeUnit.MINUTES.toMillis(15), 8);
             int status;
             synchronized (nativeSync) {
-              status = nativePtr == 0 ? 3 : lottieCacheFile == null ? 2 : N.createLottieCache(nativePtr, lottieCacheFile.getPath(), gif.getBitmap(false), free.bitmap, false, (file.needOptimize() ? REDUCED_MAX_FRAME_RATE : DEFAULT_MAX_FRAME_RATE) == 30.0);
+              status = nativePtr == 0 ? 3 : lottieCacheFile == null ? 2 : N.createLottieCache(nativePtr, lottieCacheFile.getPath(), gif.getBitmap(false), free.bitmap, false, maxFrameRate == 30.0);
             }
             switch (status) {
               case 0: {
                 lottieCacheState = LOTTIE_CACHE_CREATED;
                 synchronized (nativeSync) {
                   if (nativePtr != 0) {
-                    N.getLottieFrame(nativePtr, free.bitmap, free.no = lastFrameNo = nextFrameNo);
+                    N.getLottieFrame(nativePtr, free.bitmap, free.no = (long) (lastFrameNo = nextFrameNo));
                     success = true;
                   }
                 }
@@ -503,16 +519,16 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
                   synchronized (nativeSync) {
                     if (nativePtr == 0)
                       return;
-                    newStatus = N.createLottieCache(nativePtr, lottieCacheFile.getPath(), gif.getBitmap(false), free.bitmap, true, (file.needOptimize() ? REDUCED_MAX_FRAME_RATE : DEFAULT_MAX_FRAME_RATE) == 30.0);
+                    newStatus = N.createLottieCache(nativePtr, lottieCacheFile.getPath(), gif.getBitmap(false), free.bitmap, true, maxFrameRate == 30.0);
                   }
                   if (newStatus == 0) {
-                    free.no = lastFrameNo = totalFrameCount - frameDelta();
+                    free.no = (long) (lastFrameNo = findLastFrameNo());
                     lottieCacheState = LOTTIE_CACHE_CREATED;
                     if (free.no != nextFrameNo) {
                       synchronized (nativeSync) {
                         if (nativePtr == 0)
                           return;
-                        N.getLottieFrame(nativePtr, free.bitmap, free.no = lastFrameNo = nextFrameNo);
+                        N.getLottieFrame(nativePtr, free.bitmap, free.no = (long) (lastFrameNo = nextFrameNo));
                       }
                     }
                     gif.addBusy(free);
@@ -535,7 +551,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
           case LOTTIE_CACHE_ERROR: {
             synchronized (nativeSync) {
               if (nativePtr != 0) {
-                N.getLottieFrame(nativePtr, free.bitmap, free.no = lastFrameNo = nextFrameNo);
+                N.getLottieFrame(nativePtr, free.bitmap, free.no = (long) (lastFrameNo = nextFrameNo));
                 success = true;
               }
             }
@@ -573,34 +589,66 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
     }
   }
 
+  public float getScreenRefreshRate () {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      BaseActivity activity = UI.getUiContext();
+      if (activity != null) {
+        return activity.getDisplay().getRefreshRate();
+      }
+    }
+    WindowManager windowManager = (WindowManager) UI.getContext().getSystemService(Context.WINDOW_SERVICE);
+    if (windowManager != null) {
+      Display display = windowManager.getDefaultDisplay();
+      return display.getRefreshRate();
+    }
+    return 60.0f;
+  }
+
+  private double maxFrameRate () {
+    double maxFrameRate = Math.min(getScreenRefreshRate(), this.maxFrameRate);
+    if (Settings.instance().getNewSetting(Settings.SETTING_FLAG_LIMIT_STICKERS_FPS)) {
+      maxFrameRate = Math.min(maxFrameRate, REDUCED_MAX_FRAME_RATE);
+    }
+    return maxFrameRate;
+  }
+
   // GifStage thread
   private void scheduleNext (boolean force) {
-    int frameTime;
-    int lastTimeStamp;
+    final double frameDelay;
+    final int nextTimeStamp;
 
+    final float screenFrameRate = getScreenRefreshRate();
+    final double screenFrameRateDelay = 1000.0 / screenFrameRate;
+
+    final double avgFrameRate;
     if (isLottie) {
-      frameTime = Math.max(/*BuildConfig.DEBUG ? 2 :*/ 5, (int) (1000.0 / Math.min(maxFrameRate, frameRate) - 17)); // 16; // Math.max(5, (int) (1000.0 / frameRate) - 20);
-      lastTimeStamp = 0;
+      avgFrameRate = Math.min(maxFrameRate(), frameRate);
     } else {
-      lastTimeStamp = this.lastTimeStamp;
-      if (metadata[3] < lastTimeStamp) {
-        lastTimeStamp = 0;
-      }
-
-      if (metadata[3] - lastTimeStamp != 0) {
-        frameTime = metadata[3] - lastTimeStamp;
-      } else {
-        frameTime = 50;
-      }
-      lastTimeStamp = metadata[3];
-      frameTime = Math.max(5, frameTime - 17);
+      avgFrameRate = metadata[2] != 0 ? (double) metadata[2] / 1000.0 : 25.0;
     }
+    final double avgFrameRateDelay = 1000.0 / avgFrameRate;
+    if (isLottie) {
+      frameDelay = Math.max(screenFrameRateDelay, avgFrameRateDelay);
+      nextTimeStamp = 0;
+    } else {
+      final int lastTimeStamp = this.lastTimeStamp;
+      nextTimeStamp = metadata[3];
+
+      if (nextTimeStamp > lastTimeStamp) {
+        final int differenceMs = nextTimeStamp - lastTimeStamp;
+        frameDelay = Math.max(screenFrameRateDelay, differenceMs);
+      } else {
+        frameDelay = Math.max(screenFrameRateDelay, avgFrameRateDelay);
+      }
+    }
+
+    final long frameDelayMs = Math.max(frameRate <= 30.0 ? 4 : 1, (long) (frameDelay - Math.floor(screenFrameRateDelay)));
 
     synchronized (this) {
       if ((flags & FLAG_CANCELLED) == 0) {
-        if (GifBridge.instance().scheduleNextFrame(this, file.getFileId(), force ? 0 : frameTime, force)) {
+        if (GifBridge.instance().scheduleNextFrame(this, file.getFileId(), force ? 0 : frameDelayMs, force)) {
           if (gif == null || !gif.isFrozen()) {
-            this.lastTimeStamp = lastTimeStamp;
+            this.lastTimeStamp = nextTimeStamp;
           }
         }
       }

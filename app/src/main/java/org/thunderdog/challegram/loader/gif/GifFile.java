@@ -48,7 +48,7 @@ public class GifFile {
 
   protected final Tdlib tdlib;
   protected final TdApi.File file;
-  private int type;
+  private final int type;
   private int scaleType;
   private int flags;
   private long chatId, messageId;
@@ -102,7 +102,7 @@ public class GifFile {
   }
 
   public interface FrameChangeListener {
-    void onFrameChanged (GifFile file, long frameNo, long frameDelta);
+    void onFrameChanged (GifFile file, double frameNo, double frameDelta);
   }
 
   private long totalFrameCount;
@@ -121,7 +121,7 @@ public class GifFile {
     this.frameChangeListener = listener;
   }
 
-  public void onFrameChange (long frameNo, long frameDelta) {
+  public void onFrameChange (double frameNo, double frameDelta) {
     if (frameChangeListener != null) {
       frameChangeListener.onFrameChanged(this, frameNo, frameDelta);
     }

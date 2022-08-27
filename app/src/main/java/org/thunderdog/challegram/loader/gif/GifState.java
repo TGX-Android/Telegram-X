@@ -57,12 +57,14 @@ public class GifState {
   private static final int FLAG_APPLY_NEXT = 1;
   private static final int FLAG_FROZEN = 1 << 1;
 
-  private int width, height, rotation;
-  private Callback callback;
+  private final GifActor actor;
+  private final int width, height, rotation;
+  private final Callback callback;
   private int flags;
   private final int queueSize;
 
-  public GifState (int width, int height, int rotation, Callback callback, int queueSize) {
+  public GifState (GifActor actor, int width, int height, int rotation, Callback callback, int queueSize) {
+    this.actor = actor;
     this.width = width;
     this.height = height;
     this.rotation = rotation;
@@ -154,8 +156,12 @@ public class GifState {
     free.clear();
   }
 
-  public void setCanApplyNext () {
-    flags |= FLAG_APPLY_NEXT;
+  public boolean setCanApplyNext () {
+    if (!BitwiseUtils.getFlag(flags, FLAG_APPLY_NEXT)) {
+      flags |= FLAG_APPLY_NEXT;
+      return true;
+    }
+    return false;
   }
 
   public void setFrozen (boolean isFrozen) {
