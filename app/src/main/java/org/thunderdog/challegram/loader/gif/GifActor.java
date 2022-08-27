@@ -29,7 +29,6 @@ import androidx.annotation.UiThread;
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
-import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.U;
@@ -440,7 +439,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
     }
   }
 
-  private static final double DEFAULT_MAX_FRAME_RATE = BuildConfig.DEBUG ? 60.0 : 30.0;
+  private static final double DEFAULT_MAX_FRAME_RATE = 60.0;
   private static final double REDUCED_MAX_FRAME_RATE = 30.0;
 
   private File lottieCacheFile;
