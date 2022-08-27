@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.loader.gif;
 
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -64,14 +65,10 @@ public class GifBridgeThread extends BaseThread {
 
   @Override
   protected Handler createCustomHandler () {
-    return new FrameHandler();
-  }
-
-  private static class FrameHandler extends Handler {
-    @Override
-    public void handleMessage (Message msg) {
-      ((GifActor) msg.obj).onNextFrame(true);
-    }
+    return new Handler(Looper.myLooper(), message -> {
+      ((GifActor) message.obj).onNextFrame(true);
+      return true;
+    });
   }
 
   public void nextFrameReady (GifActor actor) {

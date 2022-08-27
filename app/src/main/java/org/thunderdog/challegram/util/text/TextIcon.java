@@ -33,6 +33,7 @@ import org.thunderdog.challegram.telegram.TdlibEmojiManager;
 import org.thunderdog.challegram.telegram.TdlibThread;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
@@ -164,8 +165,12 @@ public class TextIcon implements Destroyable, TdlibEmojiManager.Watcher {
     return imageFile != null;
   }
 
-  public boolean isGif () {
+  public boolean isAnimated () {
     return gifFile != null;
+  }
+
+  public boolean isAnimatedCustomEmoji () {
+    return customEmoji != null && customEmoji.sticker != null && Td.isAnimated(customEmoji.sticker.format);
   }
 
   public boolean isCustomEmoji () {
@@ -203,13 +208,25 @@ public class TextIcon implements Destroyable, TdlibEmojiManager.Watcher {
       }
       return;
     }
+    boolean needRestore = isAnimatedCustomEmoji();
+    int restoreToCount;
+    if (needRestore) {
+      restoreToCount = Views.save(c);
+      // animated custom emoji must be:
+      // 100x100 in 120x120 for webm
+      // 427x427 in 512x512 for lottie
+      float scale = 120.0f / 100.0f - (Screen.dp(1f) * 2 / (float) (right - left));
+      c.scale(scale, scale, left + (right - left) / 2f, top + (bottom - top) / 2f);
+    } else {
+      restoreToCount = -1;
+    }
     Receiver content;
     if (isImage()) {
       ImageReceiver image = receiver.getImageReceiver(displayMediaKey);
       image.setBounds(left, top, right, bottom);
       image.setPaintAlpha(image.getPaintAlpha() * alpha);
       content = image;
-    } else if (isGif()) {
+    } else if (isAnimated()) {
       GifReceiver gif = receiver.getGifReceiver(displayMediaKey);
       gif.setBounds(left, top, right, bottom);
       gif.setAlpha(alpha);
@@ -237,6 +254,9 @@ public class TextIcon implements Destroyable, TdlibEmojiManager.Watcher {
       } else {
         // ((GifReceiver) content).setAlpha(1f);
       }
+    }
+    if (needRestore) {
+      Views.restore(c, restoreToCount);
     }
   }
 }

@@ -2457,13 +2457,42 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     }
 
     int partCount = parts.size();
+    int topLayerPartsCount = 0;
     if (center) {
       for (int i = 0; i < partCount; ) {
+        TextPart part = parts.get(i);
+        if (part.requiresTopLayer()) {
+          topLayerPartsCount++;
+          i++;
+          continue;
+        }
         i += drawPartCentered(i, c, startX, startY, startX == endX ? maxWidth : endX - startX, alpha, defaultTheme, receiver);
       }
     } else {
       for (int i = 0; i < partCount; ) {
+        TextPart part = parts.get(i);
+        if (part.requiresTopLayer()) {
+          topLayerPartsCount++;
+          i++;
+          continue;
+        }
         i += drawPart(i, c, startX, endX, endXBottomPadding, startY, alpha, defaultTheme, receiver);
+      }
+    }
+    if (topLayerPartsCount > 0) {
+      for (int i = 0; i < partCount; i++) {
+        TextPart part = parts.get(i);
+        if (part.requiresTopLayer()) {
+          if (center) {
+            drawPartCentered(i, c, startX, startY, startX == endX ? maxWidth : endX - startX, alpha, defaultTheme, receiver);
+          } else {
+            drawPart(i, c, startX, endX, endXBottomPadding, startY, alpha, defaultTheme, receiver);
+          }
+          topLayerPartsCount--;
+          if (topLayerPartsCount == 0) {
+            break;
+          }
+        }
       }
     }
     if (needRestore) {

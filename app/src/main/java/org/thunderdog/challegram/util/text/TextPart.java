@@ -274,6 +274,10 @@ public class TextPart implements Destroyable {
     return entity != null && entity.isCustomEmoji();
   }
 
+  public boolean requiresTopLayer () {
+    return icon != null && icon.isAnimatedCustomEmoji();
+  }
+
   public void setIcon (TextIcon icon, Text.MediaKeyInfo mediaKeyInfo) {
     this.icon = icon;
     this.mediaKeyInfo = mediaKeyInfo;
@@ -386,7 +390,12 @@ public class TextPart implements Destroyable {
       final int iconY = y + textPaint.baselineShift - (isCustomEmoji() ? Screen.dp(1.5f) : 0);
       final int height = this.height == -1 ? (int) width : this.height;
       if (receiver != null && displayMediaKey != -1) {
+        /*if (BuildConfig.DEBUG && icon.isAnimatedCustomEmoji() && emojiInfo != null) {
+          drawEmoji(c, x, y, textPaint, 1f);
+        }*/
         final boolean needTranslate = mediaKeyInfo.parts.size() > 1;
+        final boolean isFirst = needTranslate && mediaKeyInfo.parts.get(0) == this;
+        final boolean isLast = needTranslate && mediaKeyInfo.parts.get(mediaKeyInfo.parts.size() - 1) == this;
         int left, top, right, bottom, restoreToCount;
         if (needTranslate) {
           left = 0; top = 0;
@@ -394,6 +403,9 @@ public class TextPart implements Destroyable {
           bottom = height;
           restoreToCount = Views.save(c);
           c.translate(x, iconY);
+          if (isFirst) {
+            receiver.getGifReceiver(displayMediaKey).beginDrawBatch();
+          }
         } else {
           left = x;
           top = iconY;
@@ -403,6 +415,9 @@ public class TextPart implements Destroyable {
         }
         icon.draw(c, receiver, left, top, right, bottom, alpha, displayMediaKey);
         if (needTranslate) {
+          if (isLast) {
+            receiver.getGifReceiver(displayMediaKey).finishDrawBatch();
+          }
           Views.restore(c, restoreToCount);
         }
       } else {

@@ -30,6 +30,7 @@ import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.MathUtils;
 
 public class GifReceiver implements GifWatcher, Runnable, Receiver {
@@ -583,6 +584,28 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     }
   }
 
+  private static final int DRAW_BATCH_STARTED = 1;
+  private static final int DRAW_BATCH_DRAWN = 1 << 1;
+
+  private int drawBatchFlags;
+
+  public void beginDrawBatch () {
+    // Use when drawing the same GifReceiver multiple times on one canvas
+    drawBatchFlags = DRAW_BATCH_STARTED;
+  }
+
+  public void finishDrawBatch () {
+    int flags = drawBatchFlags;
+    if (gif != null && BitwiseUtils.getFlag(flags, DRAW_BATCH_STARTED) && BitwiseUtils.getFlag(flags, DRAW_BATCH_DRAWN)) {
+      synchronized (gif.getBusyList()) {
+        if (gif.hasBitmap()) {
+          gif.getBitmap(true);
+        }
+      }
+    }
+    this.drawBatchFlags = 0;
+  }
+
   public void draw (Canvas c) {
     if (file == null) {
       return;
@@ -591,7 +614,13 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     if (gif != null) {
       synchronized (gif.getBusyList()) {
         if (gif.hasBitmap()) {
-          gif.applyNext();
+          final boolean inBatch = BitwiseUtils.getFlag(drawBatchFlags, DRAW_BATCH_STARTED);
+          if (!inBatch || !BitwiseUtils.getFlag(drawBatchFlags, DRAW_BATCH_DRAWN)) {
+            gif.applyNext();
+            if (inBatch) {
+              drawBatchFlags |= DRAW_BATCH_DRAWN;
+            }
+          }
           final int alpha = (int) (255f * MathUtils.clamp(this.alpha));
           Paint bitmapPaint = Paints.getBitmapPaint();
           int restoreAlpha = bitmapPaint.getAlpha();
@@ -619,11 +648,11 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
             }
 
             c.concat(bitmapMatrix);
-            c.drawBitmap(gif.getBitmap(true), 0f, 0f, bitmapPaint);
+            c.drawBitmap(gif.getBitmap(!inBatch), 0f, 0f, bitmapPaint);
 
             c.restore();
           } else {
-            c.drawBitmap(gif.getBitmap(true), bitmapRect, drawRegion, bitmapPaint);
+            c.drawBitmap(gif.getBitmap(!inBatch), bitmapRect, drawRegion, bitmapPaint);
           }
           if (alpha != restoreAlpha) {
             bitmapPaint.setAlpha(restoreAlpha);

@@ -155,7 +155,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
     if (this.isPlaybackFrozen != isFrozen) {
       this.isPlaybackFrozen = isFrozen;
       if (!isFrozen) {
-        onDrawNextFrame();
+        onRequestNextFrame();
       }
     }
   }
@@ -170,7 +170,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
       if (gif != null) {
         gif.setFrozen(isPlayingRoundVideo && lastTimeStamp == 0);
       }
-      onDrawNextFrame();
+      onRequestNextFrame();
     }
   }
 
@@ -409,7 +409,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
   public void seekToStart () {
     if (!seekToStart && lastTimeStamp != 0) {
       seekToStart = true;
-      onDrawNextFrame();
+      onRequestNextFrame();
     }
   }
 
@@ -623,7 +623,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
   private boolean awaitingResume;
 
   @Override
-  public boolean onDraw () {
+  public boolean onDraw (long frameNo) {
     if (awaitingResume && !file.hasLooped()) {
       awaitingResume = false;
       return true;
@@ -636,13 +636,13 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
   private static final int VIBRATE_NONE = 0;
 
   @Override
-  public void onApplyNextFrame (long no) {
+  public void onApplyNextFrame (long frameNo) {
     if (isLottie) {
       int vibrationPattern = file.getVibrationPattern();
       if (vibrationPattern == Emoji.VIBRATION_PATTERN_NONE)
         return;
-      double ms = (no % frameRate) / frameRate;
-      double seconds = (int) (no / frameRate);
+      double ms = (frameNo % frameRate) / frameRate;
+      double seconds = (int) (frameNo / frameRate);
       int vibrateMode = VIBRATE_NONE;
       switch (vibrationPattern) {
         case Emoji.VIBRATION_PATTERN_HEARTBEAT: {
@@ -679,7 +679,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
 
   @UiThread
   @Override
-  public void onDrawNextFrame () {
+  public void onRequestNextFrame () {
     synchronized (this) {
       if ((flags & FLAG_CANCELLED) == 0) {
         if (seekToStart && lastTimeStamp == 0) {
