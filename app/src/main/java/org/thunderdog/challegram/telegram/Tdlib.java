@@ -440,6 +440,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private final HashSet<Long> knownChatIds = new HashSet<>();
   private final HashMap<Long, Integer> chatOnlineMemberCount = new HashMap<>();
   private final TdlibCache cache;
+  private final TdlibEmojiManager emoji;
   private final TdlibListeners listeners;
   private final TdlibFilesManager filesManager;
   private final TdlibStatusManager statusManager;
@@ -577,6 +578,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     this.cache = new TdlibCache(this);
     if (needMeasure) {
       Log.v("INITIALIZATION: Tdlib.cache -> %dms", SystemClock.uptimeMillis() - ms);
+      ms = SystemClock.uptimeMillis();
+    }
+    this.emoji = new TdlibEmojiManager(this);
+    if (needMeasure) {
+      Log.v("INITIALIZATION: Tdlib.emoji -> %dms", SystemClock.uptimeMillis() - ms);
       ms = SystemClock.uptimeMillis();
     }
     this.filesManager = new TdlibFilesManager(this);
@@ -2046,6 +2052,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public TdlibCache cache () {
     return cache;
+  }
+
+  public TdlibEmojiManager emoji () {
+    return emoji;
   }
 
   public TdlibListeners listeners () {

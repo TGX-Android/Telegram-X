@@ -755,7 +755,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   private void removeMediaKey (TextPart part) {
     final int mediaKey = part.getMediaKey();
     if (mediaKey == -1 || mediaKeys == null) {
-      if (part.isBuiltInEmoji()) {
+      if (part.isRecognizedEmoji()) {
         builtInEmojiCount--;
       }
       return;
@@ -928,7 +928,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     }
 
     out.trimToSize();
-    if (BitwiseUtils.getFlag(textFlags, FLAG_ANIMATED_EMOJI) && out.size() == 1 && out.get(0).isBuiltInEmoji()) {
+    if (BitwiseUtils.getFlag(textFlags, FLAG_ANIMATED_EMOJI) && out.size() == 1 && out.get(0).isRecognizedEmoji()) {
       out.get(0).setAnimateEmoji(true);
     }
     this.parts = out;

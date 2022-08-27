@@ -12,47 +12,87 @@
  */
 package org.thunderdog.challegram.util.text;
 
+import android.graphics.Canvas;
+import android.graphics.Path;
+
+import androidx.annotation.NonNull;
+
+import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.BuildConfig;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
+import org.thunderdog.challegram.loader.ImageFileLocal;
+import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
+import org.thunderdog.challegram.loader.gif.GifReceiver;
+import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibEmojiManager;
+import org.thunderdog.challegram.telegram.TdlibThread;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 
+import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.td.Td;
+import me.vkryl.td.TdConstants;
 
-public class TextIcon implements Destroyable {
+public class TextIcon implements Destroyable, TdlibEmojiManager.Watcher {
+  private final Tdlib tdlib;
   private final int width, height;
-  private final long customEmojiId;
 
+  private final long customEmojiId;
+  private TdlibEmojiManager.Entry customEmoji;
+  private boolean customEmojiRequested;
+
+  private Path outline;
   private ImageFile miniThumbnail, thumbnail;
   private ImageFile imageFile;
   private GifFile gifFile;
 
-  public TextIcon (int size, long customEmojiId) {
+  public TextIcon (Tdlib tdlib, int size, long customEmojiId) {
+    this.tdlib = tdlib;
     this.width = size;
     this.height = size;
     this.customEmojiId = customEmojiId;
-    // TODO extract custom emoji from memcache
+    this.customEmoji = tdlib.emoji().findOrPostponeRequest(customEmojiId, this);
+    if (customEmoji != null && !customEmoji.isNotFound()) {
+      buildCustomEmoji(customEmoji);
+    }
   }
 
-  public TextIcon (int width, int height, ImageFile miniThumbnail, ImageFile thumbnail, ImageFile imageFile) {
-    this.width = Screen.dp(width);
-    this.height = Screen.dp(height);
+  public TextIcon (Tdlib tdlib, TdApi.RichTextIcon icon) {
+    this.tdlib = tdlib;
+    this.width = Screen.dp(icon.width);
+    this.height = Screen.dp(icon.height);
     this.customEmojiId = 0;
-    this.miniThumbnail = miniThumbnail;
-    this.thumbnail = thumbnail;
-    this.imageFile = imageFile;
-    this.gifFile = null;
-  }
 
-  public TextIcon (int width, int height, ImageFile miniThumbnail, ImageFile thumbnail, GifFile gifFile) {
-    this.width = Screen.dp(width);
-    this.height = Screen.dp(height);
-    this.customEmojiId = 0;
-    this.miniThumbnail = miniThumbnail;
-    this.thumbnail = thumbnail;
-    this.gifFile = gifFile;
-    this.imageFile = null;
+    if (icon.document.minithumbnail != null) {
+      miniThumbnail = new ImageFileLocal(icon.document.minithumbnail);
+      miniThumbnail.setScaleType(ImageFile.FIT_CENTER);
+    }
+
+    thumbnail = TD.toImageFile(tdlib, icon.document.thumbnail);
+    if (thumbnail != null) {
+      thumbnail.setSize(Screen.dp(Math.max(icon.width, icon.height)));
+      thumbnail.setScaleType(ImageFile.FIT_CENTER);
+    }
+
+    if ("video/mp4".equals(icon.document.mimeType)) {
+      gifFile = new GifFile(tdlib, icon.document.document, GifFile.TYPE_MPEG4);
+      gifFile.setScaleType(GifFile.FIT_CENTER);
+    } else if ("image/gif".equals(icon.document.mimeType)) {
+      gifFile = new GifFile(tdlib, icon.document.document, GifFile.TYPE_GIF);
+      gifFile.setScaleType(GifFile.FIT_CENTER);
+    } else if (TdConstants.ANIMATED_STICKER_MIME_TYPE.equals(icon.document.mimeType)) {
+      gifFile = new GifFile(tdlib, icon.document.document, GifFile.TYPE_TG_LOTTIE);
+      gifFile.setScaleType(GifFile.FIT_CENTER);
+    } else {
+      imageFile = new ImageFile(tdlib, icon.document.document);
+      imageFile.setSize(Screen.dp(Math.max(icon.width, icon.height)));
+    }
   }
 
   public String getKey () {
@@ -71,15 +111,45 @@ public class TextIcon implements Destroyable {
     return b.toString();
   }
 
-  public void requestFiles (ComplexReceiver receiver, int mediaKey) {
-    // TODO request custom emoji
-    DoubleImageReceiver preview = receiver.getPreviewReceiver(mediaKey);
-    preview.requestFile(miniThumbnail, thumbnail);
-    if (imageFile != null) {
-      receiver.getImageReceiver(mediaKey).requestFile(imageFile);
-    } else if (gifFile != null) {
-      receiver.getGifReceiver(mediaKey).requestFile(gifFile);
+  private void buildCustomEmoji (@NonNull TdlibEmojiManager.Entry customEmoji) {
+    TdApi.Sticker sticker = customEmoji.sticker;
+    if (sticker == null)
+      return;
+
+    this.outline = Td.buildOutline(sticker, width, height);
+
+    thumbnail = TD.toImageFile(tdlib, sticker.thumbnail);
+    if (thumbnail != null) {
+      thumbnail.setSize(Math.max(width, height));
+      thumbnail.setScaleType(ImageFile.FIT_CENTER);
     }
+
+    switch (sticker.format.getConstructor()) {
+      case TdApi.StickerFormatTgs.CONSTRUCTOR:
+      case TdApi.StickerFormatWebm.CONSTRUCTOR: {
+        this.gifFile = new GifFile(tdlib, sticker);
+        this.gifFile.setScaleType(GifFile.FIT_CENTER);
+        this.gifFile.setOptimize(true);
+        this.gifFile.setSize(Math.max(width, height));
+        break;
+      }
+      case TdApi.StickerFormatWebp.CONSTRUCTOR: {
+        this.imageFile = new ImageFile(tdlib, sticker.sticker);
+        this.imageFile.setSize(Math.max(width, height));
+        this.imageFile.setScaleType(ImageFile.FIT_CENTER);
+        break;
+      }
+    }
+  }
+
+  @TdlibThread
+  @Override
+  public void onCustomEmojiLoaded (TdlibEmojiManager context, long customEmojiId, TdlibEmojiManager.Entry entry) {
+    this.customEmoji = entry;
+    if (!entry.isNotFound()) {
+      buildCustomEmoji(entry);
+    }
+    // TODO ui -> invalidateSingleMedia
   }
 
   public int getWidth () {
@@ -102,7 +172,71 @@ public class TextIcon implements Destroyable {
     return customEmojiId != 0;
   }
 
+  public boolean isNotFoundCustomEmoji () {
+    return customEmoji != null && customEmoji.isNotFound();
+  }
+
   public void performDestroy () {
-    // TODO cancel waiting for the customEmojiId to load
+    if (customEmojiId != 0 && customEmoji == null) {
+      tdlib.emoji().forgetWatcher(customEmojiId, this);
+    }
+  }
+
+  public void requestFiles (ComplexReceiver receiver, int displayMediaKey) {
+    if (isCustomEmoji() && customEmoji == null && !customEmojiRequested) {
+      tdlib.emoji().performPostponedRequests();
+      customEmojiRequested = true;
+    }
+    DoubleImageReceiver preview = receiver.getPreviewReceiver(displayMediaKey);
+    preview.requestFile(miniThumbnail, thumbnail);
+    if (imageFile != null) {
+      receiver.getImageReceiver(displayMediaKey).requestFile(imageFile);
+    } else if (gifFile != null) {
+      receiver.getGifReceiver(displayMediaKey).requestFile(gifFile);
+    }
+  }
+
+  public void draw (Canvas c, ComplexReceiver receiver, int left, int top, int right, int bottom, float alpha, int displayMediaKey) {
+    if (isCustomEmoji() && customEmoji == null) {
+      if (BuildConfig.DEBUG) {
+        c.drawCircle(left + (right - left) / 2f, top + (bottom - top) / 2f, height / 2f, Paints.fillingPaint(ColorUtils.alphaColor(alpha, 0xffff0000)));
+      }
+      return;
+    }
+    Receiver content;
+    if (isImage()) {
+      ImageReceiver image = receiver.getImageReceiver(displayMediaKey);
+      image.setBounds(left, top, right, bottom);
+      image.setPaintAlpha(image.getPaintAlpha() * alpha);
+      content = image;
+    } else if (isGif()) {
+      GifReceiver gif = receiver.getGifReceiver(displayMediaKey);
+      gif.setBounds(left, top, right, bottom);
+      gif.setAlpha(alpha);
+      content = gif;
+    } else {
+      content = null;
+    }
+    DoubleImageReceiver preview = content == null || content.needPlaceholder() ? receiver.getPreviewReceiver(displayMediaKey) : null;
+    if (preview != null) {
+      preview.setBounds(left, top, right, bottom);
+      preview.setPaintAlpha(alpha);
+      if (outline != null && preview.needPlaceholder()) {
+        preview.drawPlaceholderContour(c, outline, alpha);
+      }
+      preview.draw(c);
+      preview.restorePaintAlpha();
+    }
+    if (content != null) {
+      if (outline != null && content.needPlaceholder()) {
+        content.drawPlaceholderContour(c, outline, alpha);
+      }
+      content.draw(c);
+      if (isImage()) {
+        content.restorePaintAlpha();
+      } else {
+        // ((GifReceiver) content).setAlpha(1f);
+      }
+    }
   }
 }

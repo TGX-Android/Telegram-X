@@ -25,15 +25,11 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.loader.ImageFile;
-import org.thunderdog.challegram.loader.ImageFileLocal;
-import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Intents;
-import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.StringList;
 
@@ -85,35 +81,7 @@ public class TextEntityCustom extends TextEntity {
   }
 
   public TextEntityCustom setIcon (TdApi.RichTextIcon icon) {
-    ImageFile miniThumbnail;
-    if (icon.document.minithumbnail != null) {
-      miniThumbnail = new ImageFileLocal(icon.document.minithumbnail);
-      miniThumbnail.setScaleType(ImageFile.FIT_CENTER);
-    } else {
-      miniThumbnail = null;
-    }
-
-    ImageFile thumbnail = TD.toImageFile(tdlib, icon.document.thumbnail);
-    if (thumbnail != null) {
-      thumbnail.setSize(Screen.dp(Math.max(icon.width, icon.height)));
-      thumbnail.setScaleType(ImageFile.FIT_CENTER);
-    }
-    GifFile gifFile = null;
-    ImageFile imageFile = null;
-
-    if ("video/mp4".equals(icon.document.mimeType)) {
-      gifFile = new GifFile(tdlib, icon.document.document, GifFile.TYPE_MPEG4);
-      gifFile.setScaleType(GifFile.FIT_CENTER);
-    } else if ("image/gif".equals(icon.document.mimeType)) {
-      gifFile = new GifFile(tdlib, icon.document.document, GifFile.TYPE_GIF);
-      gifFile.setScaleType(GifFile.FIT_CENTER);
-    } else {
-      imageFile = new ImageFile(tdlib, icon.document.document);
-      imageFile.setSize(Screen.dp(Math.max(icon.width, icon.height)));
-    }
-
-    this.icon = gifFile != null ? new TextIcon(icon.width, icon.height, miniThumbnail, thumbnail, gifFile) : new TextIcon(icon.width, icon.height, miniThumbnail, thumbnail, imageFile);
-
+    this.icon = new TextIcon(tdlib, icon);
     return this;
   }
 

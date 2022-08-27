@@ -73,7 +73,7 @@ public interface Receiver extends TooltipOverlayView.LocationProvider {
       final boolean translate = left != 0 || top != 0;
       final int restoreToCount;
       if (translate) {
-        restoreToCount = c.save();
+        restoreToCount = Views.save(c);
         c.translate(left, top);
       } else {
         restoreToCount = -1;

@@ -29,10 +29,6 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.emoji.EmojiInfo;
 import org.thunderdog.challegram.loader.ComplexReceiver;
-import org.thunderdog.challegram.loader.DoubleImageReceiver;
-import org.thunderdog.challegram.loader.ImageReceiver;
-import org.thunderdog.challegram.loader.Receiver;
-import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -254,7 +250,7 @@ public class TextPart implements Destroyable {
     this.emojiInfo = emoji;
     this.mediaKeyInfo = mediaKeyInfo;
     if (mediaKeyInfo != null && isCustomEmoji()) {
-      this.icon = new TextIcon((int) width, entity.getCustomEmojiId());
+      this.icon = new TextIcon(entity.tdlib, (int) width, entity.getCustomEmojiId());
     }
   }
 
@@ -271,7 +267,7 @@ public class TextPart implements Destroyable {
   }
 
   public boolean isStaticElement () { // Media cannot be trimmed
-    return isBuiltInEmoji() || hasMedia();
+    return isRecognizedEmoji() || hasMedia();
   }
 
   public boolean isCustomEmoji () {
@@ -283,7 +279,7 @@ public class TextPart implements Destroyable {
     this.mediaKeyInfo = mediaKeyInfo;
   }
 
-  public boolean isBuiltInEmoji () {
+  public boolean isRecognizedEmoji () {
     return emojiInfo != null;
   }
 
@@ -378,6 +374,14 @@ public class TextPart implements Destroyable {
     final TextPaint textPaint = getPaint(partIndex, alpha, colorProvider);
     final float textAlpha = textPaint.getAlpha() / 255f;
     if (icon != null) {
+      if (icon.isNotFoundCustomEmoji()) {
+        if (emojiInfo != null) {
+          drawEmoji(c, x, y, textPaint, alpha);
+        } else {
+          drawError(c, x + height / 2f, y + height / 2f, height / 2f, alpha, 0xffff0000);
+        }
+        return;
+      }
       final int displayMediaKey = getDisplayMediaKey();
       final int iconY = y + textPaint.baselineShift - (isCustomEmoji() ? Screen.dp(1.5f) : 0);
       final int height = this.height == -1 ? (int) width : this.height;
@@ -397,41 +401,9 @@ public class TextPart implements Destroyable {
           bottom = iconY + height;
           restoreToCount = -1;
         }
-
-        Receiver content;
-        if (icon.isImage()) {
-          ImageReceiver image = receiver.getImageReceiver(displayMediaKey);
-          image.setBounds(left, top, right, bottom);
-          image.setPaintAlpha(image.getPaintAlpha() * alpha);
-          content = image;
-        } else if (icon.isGif()) {
-          GifReceiver gif = receiver.getGifReceiver(displayMediaKey);
-          gif.setBounds(left, top, right, bottom);
-          gif.setAlpha(alpha);
-          content = gif;
-        } else {
-          content = null;
-        }
-        if (content == null || content.needPlaceholder()) {
-          DoubleImageReceiver preview = receiver.getPreviewReceiver(displayMediaKey);
-          preview.setBounds(left, top, right, bottom);
-          preview.setPaintAlpha(alpha);
-          preview.draw(c);
-          preview.restorePaintAlpha();
-        }
-        if (content != null) {
-          content.draw(c);
-          if (icon.isImage()) {
-            content.restorePaintAlpha();
-          } else {
-            // ((GifReceiver) content).setAlpha(1f);
-          }
-        }
+        icon.draw(c, receiver, left, top, right, bottom, alpha, displayMediaKey);
         if (needTranslate) {
           Views.restore(c, restoreToCount);
-        }
-        if (isCustomEmoji()) {
-          drawError(c, x + width / 2f, iconY + height / 2f, width / 2f, textAlpha, 0xff00ff00);
         }
       } else {
         drawError(c, x + width / 2f, iconY + height / 2f, width / 2f, textAlpha, 0xffff0000);
@@ -439,8 +411,8 @@ public class TextPart implements Destroyable {
           drawEmoji(c, x, y, textPaint, .45f);
         }
       }
-    } else if (isBuiltInEmoji()) {
-      drawEmoji(c, x, y, textPaint, 1f);
+    } else if (isRecognizedEmoji()) {
+      drawEmoji(c, x, y, textPaint, alpha);
     } else {
       final int textY = y + source.getAscent() + textPaint.baselineShift;
       if (trimmedLine != null) {
