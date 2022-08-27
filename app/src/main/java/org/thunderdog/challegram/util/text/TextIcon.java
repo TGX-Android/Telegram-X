@@ -208,13 +208,14 @@ public class TextIcon implements Destroyable, TdlibEmojiManager.Watcher {
       }
       return;
     }
-    boolean needRestore = isAnimatedCustomEmoji();
+    boolean needScaleUp = isAnimatedCustomEmoji() && customEmoji.sticker.format.getConstructor() != TdApi.StickerFormatWebm.CONSTRUCTOR;
     int restoreToCount;
-    if (needRestore) {
+    if (needScaleUp) {
       restoreToCount = Views.save(c);
       // animated custom emoji must be:
       // 100x100 in 120x120 for webm
       // 427x427 in 512x512 for lottie
+      // upd: turns out all of the webm emoji fit entire space
       float scale = 120.0f / 100.0f - (Screen.dp(1f) * 2 / (float) (right - left));
       c.scale(scale, scale, left + (right - left) / 2f, top + (bottom - top) / 2f);
     } else {
@@ -255,7 +256,7 @@ public class TextIcon implements Destroyable, TdlibEmojiManager.Watcher {
         // ((GifReceiver) content).setAlpha(1f);
       }
     }
-    if (needRestore) {
+    if (needScaleUp) {
       Views.restore(c, restoreToCount);
     }
   }
