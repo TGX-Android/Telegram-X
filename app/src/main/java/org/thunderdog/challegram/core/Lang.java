@@ -311,14 +311,6 @@ public class Lang {
     return getCharSequence(resource, formatArgs).toString();
   }
 
-  public static TextEntity[] toEntities (CharSequence text) {
-    if (text instanceof Spanned) {
-      TextEntity[] entities = ((Spanned) text).getSpans(0, text.length(), TextEntity.class);
-      return entities != null && entities.length > 0 ? entities : null;
-    }
-    return null;
-  }
-
   public static CharSequence boldify (CharSequence text) {
     return wrap(text, boldCreator());
   }

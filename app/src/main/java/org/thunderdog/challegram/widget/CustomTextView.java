@@ -225,7 +225,12 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
   private void dispatchAsyncText (final String text, final int textWidth, final boolean animated, final TextStyleProvider provider, final int maxLineCount, final int linkFlags, final TextEntity[] entities) {
     final long contextId = asyncContextId;
     Background.instance().post(() -> {
-      final Text newText = new Text(text, textWidth, provider, this, maxLineCount, Text.FLAG_BOUNDS_NOT_STRICT | Text.FLAG_CUSTOM_LONG_PRESS | Text.FLAG_CUSTOM_LONG_PRESS_NO_SHARE | Text.FLAG_TRIM_END | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0), Text.makeEntities(text, linkFlags, entities, tdlib, null), this);
+      final Text newText = new Text.Builder(text, textWidth, provider, this)
+        .entities(Text.makeEntities(text, linkFlags, entities, tdlib, null))
+        .textFlags(Text.FLAG_BOUNDS_NOT_STRICT | Text.FLAG_CUSTOM_LONG_PRESS | Text.FLAG_CUSTOM_LONG_PRESS_NO_SHARE | Text.FLAG_TRIM_END | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0))
+        .maxLineCount(maxLineCount)
+        .textMediaListener(this)
+        .build();
       UI.post(() -> {
         if (asyncContextId == contextId) {
           setAsyncText(newText, textWidth, animated);
@@ -284,7 +289,12 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
         if (async) {
           dispatchAsyncText(rawText, textWidth, animated, textStyleProvider, maxLineCount, linkFlags, entities);
         } else {
-          Text newText = new Text(rawText, textWidth, textStyleProvider, this, maxLineCount, Text.FLAG_BOUNDS_NOT_STRICT | Text.FLAG_CUSTOM_LONG_PRESS | Text.FLAG_CUSTOM_LONG_PRESS_NO_SHARE | Text.FLAG_TRIM_END | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0), Text.makeEntities(rawText, linkFlags, entities, tdlib, null), this);
+          final Text newText = new Text.Builder(rawText, textWidth, textStyleProvider, this)
+            .entities(Text.makeEntities(rawText, linkFlags, entities, tdlib, null))
+            .textFlags(Text.FLAG_BOUNDS_NOT_STRICT | Text.FLAG_CUSTOM_LONG_PRESS | Text.FLAG_CUSTOM_LONG_PRESS_NO_SHARE | Text.FLAG_TRIM_END | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0))
+            .maxLineCount(maxLineCount)
+            .textMediaListener(this)
+            .build();
           newText.setViewProvider(new SingleViewProvider(this));
           this.text.replace(new TextEntry(this, newText), animated);
         }

@@ -316,10 +316,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return null;
   }
 
-  public Text (@NonNull String in, int maxWidth, TextStyleProvider textStyleProvider, @NonNull TextColorSet textColorSet, int maxLineCount, int textFlags, @Nullable TextEntity[] entities, @Nullable TextMediaListener textMediaListener) {
-    this(in, maxWidth, textStyleProvider, textColorSet, maxLineCount, null, null, textFlags, entities, null, null, textMediaListener);
-  }
-
   private Text (@NonNull String in, int maxWidth, TextStyleProvider textStyleProvider, @NonNull TextColorSet textColorSet, int maxLineCount, @Nullable LineWidthProvider lineWidthProvider, @Nullable LineMarginProvider lineMarginProvider, int textFlags, @Nullable TextEntity[] entities, String suffix, @Nullable ClickListener clickListener, @Nullable TextMediaListener textMediaListener) {
     this.textFlags = textFlags;
     this.maxWidth = maxWidth;
@@ -372,7 +368,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
         entities = TextEntity.valueOf(tdlib, in.toString(), telegramEntities, urlOpenParameters);
       }
       if (entities == null) {
-        entities = Lang.toEntities(in);
+        entities = TextEntity.toEntities(in);
       }
       entities(entities);
     }

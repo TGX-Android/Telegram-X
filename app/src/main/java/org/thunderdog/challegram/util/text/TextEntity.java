@@ -250,6 +250,14 @@ public abstract class TextEntity {
     return new TextEntityMessage(tdlib, in, entity, openParameters);
   }
 
+  public static TextEntity[] toEntities (CharSequence text) {
+    if (text instanceof Spanned) {
+      TextEntity[] entities = ((Spanned) text).getSpans(0, text.length(), TextEntity.class);
+      return entities != null && entities.length > 0 ? entities : null;
+    }
+    return null;
+  }
+
   public static final int COMPARE_MODE_NORMAL = 0;
   public static final int COMPARE_MODE_CLICK_HIGHLIGHT = 1;
   public static final int COMPARE_MODE_SPOILER = 2;
