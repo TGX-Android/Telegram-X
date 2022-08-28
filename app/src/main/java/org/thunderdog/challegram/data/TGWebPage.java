@@ -52,6 +52,7 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.ui.InstantViewController;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
+import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.widget.FileProgressComponent;
 
 import java.util.ArrayList;
@@ -498,14 +499,6 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     return description != null && description.hasMedia();
   }
 
-  public void requestSingleTextMedia (ComplexReceiver receiver, int key) {
-    if (hasMedia()) {
-      description.requestSingleMedia(receiver, key);
-    } else {
-      receiver.clearReceivers(key);
-    }
-  }
-
   public void requestTextMedia (ComplexReceiver receiver, int startKey) {
     if (hasMedia()) {
       description.requestMedia(receiver, startKey, Integer.MAX_VALUE);
@@ -722,6 +715,9 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     } else {
       title = null;
     }
+    if (description != null) {
+      description.performDestroy();
+    }
     if (!Td.isEmpty(webPage.description)) {
       if (textHeight > 0)
         textHeight += Screen.dp(TEXT_PADDING);
@@ -741,6 +737,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         .lineWidthProvider(provider)
         .textFlags(Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0)
         .entities(TextEntity.valueOf(parent.tdlib, webPage.description, parent.openParameters()))
+        .textMediaListener(parent::invalidateTextMediaReceiver)
         .build();
       textHeight += description.getHeight();
     } else {

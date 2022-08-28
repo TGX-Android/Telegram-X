@@ -204,6 +204,11 @@ public class TGMessageText extends TGMessage {
       } else {
         this.wrapper = new TextWrapper(tdlib, text.text, getTextStyleProvider(), colorSet, Text.ENTITY_FLAGS_NONE, openParameters()).setClickCallback(clickCallback());
       }
+      this.wrapper.setTextMediaListener((wrapper, updatedText, specificTextMedia) -> {
+        if (this.wrapper == wrapper) {
+          invalidateTextMediaReceiver(updatedText, specificTextMedia);
+        }
+      });
       this.wrapper.addTextFlags(Text.FLAG_BIG_EMOJI);
       if (useBubbles()) {
         this.wrapper.addTextFlags(Text.FLAG_ADJUST_TO_CURRENT_WIDTH);
@@ -213,7 +218,7 @@ public class TGMessageText extends TGMessage {
       }
       this.wrapper.setViewProvider(currentViews);
       if (hasMedia()) {
-        invalidateTextMediaReceiver(-1);
+        invalidateTextMediaReceiver();
       }
       return true;
     }
@@ -227,24 +232,14 @@ public class TGMessageText extends TGMessage {
   private static final int WEB_PAGE_RECEIVERS_KEY = Integer.MAX_VALUE / 2;
 
   @Override
-  public void requestSingleTextMedia (ComplexReceiver textMediaReceiver, int displayMediaKey) {
-    if (displayMediaKey >= WEB_PAGE_RECEIVERS_KEY) {
-      if (webPage != null) {
-        webPage.requestSingleTextMedia(textMediaReceiver, displayMediaKey);
-        return;
-      }
-    }
-    if (wrapper != null) {
-      wrapper.requestSingleMedia(textMediaReceiver, displayMediaKey);
-      return;
-    }
-    textMediaReceiver.clearReceivers(displayMediaKey);
-  }
-
-  @Override
   public void requestTextMedia (ComplexReceiver textMediaReceiver) {
     if (wrapper != null) {
-      wrapper.requestMedia(textMediaReceiver);
+      wrapper.requestMedia(textMediaReceiver, 0, WEB_PAGE_RECEIVERS_KEY);
+      if (webPage != null) {
+        webPage.requestTextMedia(textMediaReceiver, WEB_PAGE_RECEIVERS_KEY);
+      } else {
+        textMediaReceiver.clearReceiversWithHigherKey(WEB_PAGE_RECEIVERS_KEY);
+      }
     } else {
       textMediaReceiver.clear();
     }

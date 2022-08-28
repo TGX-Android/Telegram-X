@@ -411,17 +411,6 @@ public class TGMessageFile extends TGMessage {
   }
 
   @Override
-  public void requestSingleTextMedia (ComplexReceiver textMediaReceiver, int displayMediaKey) {
-    for (CaptionedFile file : filesList) {
-      for (ListAnimator.Entry<TextWrapper> wrapper : file.caption) {
-        if (wrapper.item.requestSingleMedia(textMediaReceiver, displayMediaKey)) {
-          return;
-        }
-      }
-    }
-  }
-
-  @Override
   public void requestTextMedia (ComplexReceiver textMediaReceiver) {
     final int maxMediaCountPerMessage = Integer.MAX_VALUE / (TdConstants.MAX_MESSAGE_GROUP_SIZE * 10);
     int startKey = 0;

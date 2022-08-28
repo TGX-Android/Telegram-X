@@ -246,14 +246,6 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     }
   }
 
-  public void requestSingleTextMedia (ComplexReceiver textMediaReceiver, int displayMediaKey) {
-    if (trimmedContent != null) {
-      trimmedContent.requestSingleMedia(textMediaReceiver, displayMediaKey);
-    } else {
-      textMediaReceiver.clearReceivers(displayMediaKey);
-    }
-  }
-
   private void requestTextContent (ComplexReceiver textMediaReceiver) {
     if (trimmedContent != null) {
       trimmedContent.requestMedia(textMediaReceiver);

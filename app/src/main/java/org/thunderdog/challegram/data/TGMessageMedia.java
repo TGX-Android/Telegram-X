@@ -41,6 +41,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
+import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
 import java.util.ArrayList;
@@ -258,7 +259,14 @@ public class TGMessageMedia extends TGMessage {
         this.wrapper.performDestroy();
       }
       if (!Td.isEmpty(caption)) {
-        this.wrapper = new TextWrapper(caption.text, getTextStyleProvider(), getTextColorSet(), TextEntity.valueOf(tdlib, caption, openParameters())).addTextFlags(Text.FLAG_BIG_EMOJI).setClickCallback(clickCallback());
+        this.wrapper = new TextWrapper(caption.text, getTextStyleProvider(), getTextColorSet(), TextEntity.valueOf(tdlib, caption, openParameters()))
+          .addTextFlags(Text.FLAG_BIG_EMOJI)
+          .setClickCallback(clickCallback())
+          .setTextMediaListener((wrapper, text, specificMedia) -> {
+            if (this.wrapper == wrapper) {
+              invalidateTextMediaReceiver(text, specificMedia);
+            }
+          });
         this.wrapper.setViewProvider(currentViews);
         if (Config.USE_NONSTRICT_TEXT_ALWAYS || !useBubbles()) {
           this.wrapper.addTextFlags(Text.FLAG_BOUNDS_NOT_STRICT);
@@ -271,15 +279,6 @@ public class TGMessageMedia extends TGMessage {
       return true;
     }
     return false;
-  }
-
-  @Override
-  public void requestSingleTextMedia (ComplexReceiver textMediaReceiver, int displayMediaKey) {
-    if (wrapper != null) {
-      wrapper.requestSingleMedia(textMediaReceiver, displayMediaKey);
-    } else {
-      textMediaReceiver.clearReceivers(displayMediaKey);
-    }
   }
 
   @Override

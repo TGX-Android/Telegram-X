@@ -102,6 +102,7 @@ import org.thunderdog.challegram.util.text.TextColorSetOverride;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextEntityCustom;
+import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.util.text.TextPart;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
 import org.thunderdog.challegram.util.text.TextWrapper;
@@ -113,6 +114,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -2383,7 +2385,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       invalidateReplyReceiver();
     } else {
       invalidateContentReceiver();
-      invalidateTextMediaReceiver();
     }
     return true;
   }
@@ -2396,14 +2397,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     performWithViews(view -> view.invalidatePreviewReceiver(msg.chatId, msg.id));
   }
 
-  public final void invalidateTextMediaReceiver () {
-    invalidateTextMediaReceiver(-1);
-  }
-
-  public final void invalidateTextMediaReceiver (int specificMediaKey) {
-    performWithViews(view -> view.invalidateTextMediaReceiver(this, specificMediaKey));
-  }
-
   public final void invalidateContentReceiver () {
     performWithViews(view -> view.invalidateContentReceiver(msg.chatId, msg.id, -1));
   }
@@ -2414,6 +2407,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final void invalidateReplyReceiver () {
     performWithViews(view -> view.invalidateReplyReceiver(msg.chatId, msg.id));
+  }
+
+  public final void invalidateTextMediaReceiver () {
+    performWithViews(view -> view.invalidateTextMediaReceiver(this));
+  }
+
+  public final void invalidateTextMediaReceiver (Text text, @Nullable TextMedia textMedia) {
+    performWithViews(view -> view.invalidateTextMediaReceiver(this, text, textMedia));
   }
 
   // Touch
@@ -3539,26 +3540,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     computeQuickButtons();
   }
 
-  public void requestSingleTextMedia (ComplexReceiver textMediaReceiver, int displayMediaKey) {
-    textMediaReceiver.clearReceivers(displayMediaKey);
-  }
-
   public void requestTextMedia (ComplexReceiver textMediaReceiver) {
     // override in children
     textMediaReceiver.clear();
   }
-
-  public final void requestTextMedia (ComplexReceiver textMediaReceiver, int displayMediaKey) {
-    if (displayMediaKey != -1) {
-      requestSingleTextMedia(textMediaReceiver, displayMediaKey);
-    } else {
-      requestTextMedia(textMediaReceiver);
-    }
-  }
-
-  // public static final float IMAGE_CONTENT_DEFAULT_RADIUS = 3f;
-  // public static final float BUBBLE_MERGE_RADIUS = 6f;
-  // public static final float BUBBLE_DEFAULT_RADIUS = BUBBLE_BIG_RADIUS_AVAILABLE ? 18f : BUBBLE_MERGE_RADIUS;
 
   public int getImageContentRadius (boolean isPreview) {
     return 0;

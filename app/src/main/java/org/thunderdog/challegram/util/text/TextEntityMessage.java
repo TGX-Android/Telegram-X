@@ -170,14 +170,6 @@ public class TextEntityMessage extends TextEntity {
   }
 
   @Override
-  public String getMediaKeyId () {
-    if (isCustomEmoji()) {
-      return Long.toString(getCustomEmojiId());
-    }
-    return null;
-  }
-
-  @Override
   public long getCustomEmojiId () {
     if (isCustomEmoji()) {
       return ((TdApi.TextEntityTypeCustomEmoji) emojiEntity.type).customEmojiId;

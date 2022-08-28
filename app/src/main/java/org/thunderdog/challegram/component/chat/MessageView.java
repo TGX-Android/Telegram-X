@@ -61,6 +61,8 @@ import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.StringList;
+import org.thunderdog.challegram.util.text.Text;
+import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
 import org.thunderdog.challegram.widget.SparseDrawableView;
 
@@ -186,6 +188,19 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     }
   }
 
+  public void invalidateTextMediaReceiver (@NonNull TGMessage msg) {
+    invalidateTextMediaReceiver(msg, null, null);
+  }
+
+  public void invalidateTextMediaReceiver (@NonNull TGMessage msg, Text text, @Nullable TextMedia textMedia) {
+    if (this.msg == msg) {
+      if (textMedia == null || text == null || !text.invalidateMediaContent(complexReceiver, textMedia)) {
+        msg.requestTextMedia(complexReceiver);
+      }
+      invalidate();
+    }
+  }
+
   public void invalidateReplyReceiver (long chatId, long messageId) {
     if (msg != null && msg.getChatId() == chatId && msg.getId() == messageId) {
       msg.requestReply(replyReceiver, replyTextMediaReceiver);
@@ -278,12 +293,6 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     }
   }
 
-  public void invalidateTextMediaReceiver (TGMessage message, int displayMediaKey) {
-    if (msg != null && msg == message) {
-      msg.requestTextMedia(textMediaReceiver, displayMediaKey);
-    }
-  }
-
   @NonNull
   public ComplexReceiver getTextMediaReceiver () {
     return textMediaReceiver;
@@ -294,6 +303,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       if ((flags & FLAG_USE_COMPLEX_RECEIVER) != 0) {
         if (msg.isDescendantOrSelf(messageId)) {
           msg.requestMediaContent(complexReceiver, true, arg);
+          msg.requestTextMedia(textMediaReceiver);
         }
       } else if (messageId == msg.getId()) {
         if (gifReceiver != null && msg.needGifReceiver()) {
@@ -307,6 +317,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
             msg.requestPreview(previewReceiver);
           }
         }
+        msg.requestTextMedia(textMediaReceiver);
         if ((flags & FLAG_DISABLE_MEASURE) != 0 && getParent() instanceof MessageViewGroup) {
           ((MessageViewGroup) getParent()).invalidateContent(msg);
         }

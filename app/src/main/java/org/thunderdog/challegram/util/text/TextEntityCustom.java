@@ -71,7 +71,7 @@ public class TextEntityCustom extends TextEntity {
   private ClickableSpan onClickListener;
   private String anchorName;
   private String referenceAnchorName;
-  private TextIcon icon;
+  private TdApi.RichTextIcon icon;
   private String copyLink;
 
   public TextEntityCustom (@Nullable ViewController<?> context, @Nullable Tdlib tdlib, String in, int offset, int end, int flags, @Nullable TdlibUi.UrlOpenParameters openParameters) {
@@ -81,7 +81,7 @@ public class TextEntityCustom extends TextEntity {
   }
 
   public TextEntityCustom setIcon (TdApi.RichTextIcon icon) {
-    this.icon = new TextIcon(tdlib, icon);
+    this.icon = icon;
     return this;
   }
 
@@ -174,12 +174,7 @@ public class TextEntityCustom extends TextEntity {
   }
 
   @Override
-  public String getMediaKeyId () {
-    return icon != null ? icon.getKey() : null;
-  }
-
-  @Override
-  public TextIcon getIcon () {
+  public TdApi.RichTextIcon getIcon () {
     return icon;
   }
 

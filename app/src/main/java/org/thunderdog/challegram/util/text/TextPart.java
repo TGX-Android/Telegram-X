@@ -38,9 +38,8 @@ import org.thunderdog.challegram.tool.Views;
 
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
-import me.vkryl.core.lambda.Destroyable;
 
-public class TextPart implements Destroyable {
+public class TextPart {
   private static final int FLAG_LINE_RTL = 1;
   private static final int FLAG_LINE_RTL_FAKE = 1 << 2;
   private static final int FLAG_ANIMATED_EMOJI = 1 << 3;
@@ -241,33 +240,21 @@ public class TextPart implements Destroyable {
     return getSpoiler() != null ? entity : null;
   }
 
-  private @Nullable Text.MediaKeyInfo mediaKeyInfo;
+  private @Nullable TextMedia media;
   private int displayMediaKeyOffset = -1;
   private EmojiInfo emojiInfo;
-  private TextIcon icon;
 
-  public void setEmoji (@Nullable EmojiInfo emoji, Text.MediaKeyInfo mediaKeyInfo) {
+  public void setEmoji (@Nullable EmojiInfo emoji) {
     this.emojiInfo = emoji;
-    this.mediaKeyInfo = mediaKeyInfo;
-    if (mediaKeyInfo != null && isCustomEmoji()) {
-      this.icon = new TextIcon(entity.tdlib, (int) width, entity.getCustomEmojiId());
-    }
   }
 
-  int getMediaKey () {
-    return mediaKeyInfo != null ? mediaKeyInfo.mediaKey : -1;
-  }
-
-  int getDisplayMediaKey () {
-    final int mediaKey = getMediaKey();
-    if (mediaKey != -1 && displayMediaKeyOffset != -1) {
-      return displayMediaKeyOffset + mediaKey;
-    }
-    return -1;
+  @Nullable
+  TextMedia getMedia () {
+    return media;
   }
 
   public boolean isStaticElement () { // Media cannot be trimmed
-    return isRecognizedEmoji() || hasMedia();
+    return isRecognizedEmoji() || isCustomEmoji() || hasMedia();
   }
 
   public boolean isCustomEmoji () {
@@ -275,36 +262,25 @@ public class TextPart implements Destroyable {
   }
 
   public boolean requiresTopLayer () {
-    return icon != null && icon.isAnimatedCustomEmoji();
+    return media != null && media.isAnimatedCustomEmoji();
   }
 
-  public void setIcon (TextIcon icon, Text.MediaKeyInfo mediaKeyInfo) {
-    this.icon = icon;
-    this.mediaKeyInfo = mediaKeyInfo;
+  public void attachToMedia (@NonNull TextMedia media) {
+    media.attachedToParts.add(this);
+    this.media = media;
   }
 
   public boolean isRecognizedEmoji () {
     return emojiInfo != null;
   }
 
+  public boolean isBuiltInEmoji () {
+    return isRecognizedEmoji() && !isCustomEmoji();
+  }
+
   public boolean hasMedia () {
     // true for both custom emoji & RichTextIcon
-    return icon != null;
-  }
-
-  void setDisplayMediaKeyOffset (int keyOffset) {
-    this.displayMediaKeyOffset = keyOffset;
-  }
-
-  void requestMedia (ComplexReceiver receiver) {
-    final int displayMediaKey = getDisplayMediaKey();
-    if (displayMediaKey == -1)
-      throw new IllegalStateException();
-    if (hasMedia()) {
-      icon.requestFiles(receiver, displayMediaKey);
-    } else {
-      throw new IllegalStateException();
-    }
+    return media != null;
   }
 
   public int makeX (int startX, int endX, int endXBottomPadding) {
@@ -339,7 +315,12 @@ public class TextPart implements Destroyable {
   }
 
   public boolean wouldMergeWithNextPart (TextPart part) {
-    return part != null && part != this && emojiInfo == null && part.emojiInfo == null && icon == null && part.icon == null && trimmedLine == null && part.trimmedLine == null && this.y == part.y && line == part.line && end == part.start && isSameEntity(part.entity) && requiresTopLayer() == part.requiresTopLayer();
+    return part != null && part != this && emojiInfo == null && part.emojiInfo == null && media == null && part.media == null && trimmedLine == null && part.trimmedLine == null && this.y == part.y && line == part.line && end == part.start && isSameEntity(part.entity) && requiresTopLayer() == part.requiresTopLayer();
+  }
+
+  @NonNull
+  Text getSource () {
+    return source;
   }
 
   private TextPaint getPaint (int partIndex, float alpha, @Nullable TextColorSet defaultTheme) {
@@ -377,8 +358,8 @@ public class TextPart implements Destroyable {
     final int x = makeX(startX, endX, endXBottomPadding);
     final TextPaint textPaint = getPaint(partIndex, alpha, colorProvider);
     final float textAlpha = textPaint.getAlpha() / 255f;
-    if (icon != null) {
-      if (icon.isNotFoundCustomEmoji()) {
+    if (media != null) {
+      if (media.isNotFoundCustomEmoji()) {
         if (emojiInfo != null) {
           drawEmoji(c, x, y, textPaint, alpha);
         } else {
@@ -386,16 +367,13 @@ public class TextPart implements Destroyable {
         }
         return;
       }
-      final int displayMediaKey = getDisplayMediaKey();
+      final int displayMediaKey = media.getDisplayMediaKey();
       final int iconY = y + textPaint.baselineShift - (isCustomEmoji() ? Screen.dp(1.5f) : 0);
       final int height = this.height == -1 ? (int) width : this.height;
       if (receiver != null && displayMediaKey != -1) {
-        /*if (BuildConfig.DEBUG && icon.isAnimatedCustomEmoji() && emojiInfo != null) {
-          drawEmoji(c, x, y, textPaint, 1f);
-        }*/
-        final boolean needTranslate = mediaKeyInfo.parts.size() > 1;
-        final boolean isFirst = needTranslate && mediaKeyInfo.parts.get(0) == this;
-        final boolean isLast = needTranslate && mediaKeyInfo.parts.get(mediaKeyInfo.parts.size() - 1) == this;
+        final boolean needTranslate = media.attachedToParts.size() > 1;
+        final boolean isFirst = needTranslate && media.attachedToParts.get(0) == this;
+        final boolean isLast = needTranslate && media.attachedToParts.get(media.attachedToParts.size() - 1) == this;
         int left, top, right, bottom, restoreToCount;
         if (needTranslate) {
           left = 0; top = 0;
@@ -403,7 +381,7 @@ public class TextPart implements Destroyable {
           bottom = height;
           restoreToCount = Views.save(c);
           c.translate(x, iconY);
-          if (isFirst) {
+          if (isFirst && media.isAnimated()) {
             receiver.getGifReceiver(displayMediaKey).beginDrawBatch();
           }
         } else {
@@ -413,9 +391,9 @@ public class TextPart implements Destroyable {
           bottom = iconY + height;
           restoreToCount = -1;
         }
-        icon.draw(c, receiver, left, top, right, bottom, alpha, displayMediaKey);
+        media.draw(c, receiver, left, top, right, bottom, alpha, displayMediaKey);
         if (needTranslate) {
-          if (isLast) {
+          if (isLast && media.isAnimated()) {
             receiver.getGifReceiver(displayMediaKey).finishDrawBatch();
           }
           Views.restore(c, restoreToCount);
@@ -435,13 +413,6 @@ public class TextPart implements Destroyable {
       } else {
         c.drawText(line, start, end, x, textY, textPaint);
       }
-    }
-  }
-
-  @Override
-  public void performDestroy () {
-    if (icon != null) {
-      icon.performDestroy();
     }
   }
 }

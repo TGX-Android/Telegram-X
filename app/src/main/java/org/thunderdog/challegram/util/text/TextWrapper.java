@@ -32,10 +32,11 @@ import org.thunderdog.challegram.unsorted.Settings;
 import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.android.util.ViewProvider;
+import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.lambda.Destroyable;
 
-public class TextWrapper implements ListAnimator.Measurable, Destroyable {
+public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.TextMediaListener {
   private static final int PORTRAIT_INDEX = 0;
   private static final int LANDSCAPE_INDEX = 1;
 
@@ -124,6 +125,24 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable {
     return this;
   }
 
+  public interface TextMediaListener {
+    void onInvalidateTextMedia (TextWrapper wrapper, Text text, @Nullable TextMedia specificMedia);
+  }
+
+  private TextMediaListener textMediaListener;
+
+  public TextWrapper setTextMediaListener (TextMediaListener listener) {
+    this.textMediaListener = listener;
+    return this;
+  }
+
+  @Override
+  public void onInvalidateTextMedia (Text text, @Nullable TextMedia specificMedia) {
+    if (textMediaListener != null && text == getCurrent()) {
+      textMediaListener.onInvalidateTextMedia(this, text, specificMedia);
+    }
+  }
+
   public int getMaxLines () {
     return this.maxLines;
   }
@@ -164,9 +183,8 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable {
     return count;
   }
 
-  public boolean requestSingleMedia (ComplexReceiver receiver, int displayMediaKey) {
-    Text text = getCurrent();
-    return text != null && text.requestSingleMedia(receiver, displayMediaKey);
+  public boolean belongsToWrapper (Text text) {
+    return text != null && ArrayUtils.indexOf(texts, text) != -1;
   }
 
   public void requestMedia (ComplexReceiver receiver) {
@@ -199,11 +217,16 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable {
     boolean sizeChanged = textSizes[index] != textSizePx || (texts[index] != null && texts[index].getMaxLineCount() != maxLines);
     if (sizeChanged || texts[index] == null || sizes[index] != maxWidth) {
       boolean needBigEmoji = BitwiseUtils.getFlag(textFlags, Text.FLAG_BIG_EMOJI) && Settings.instance().useBigEmoji();
-      Text text = texts[index];
+      final Text oldText = texts[index];
+      Text text = oldText;
       if (text != null && !sizeChanged && !needBigEmoji) {
-        texts[index].set(maxWidth, this.text);
+        text.set(maxWidth, this.text);
       } else {
-        Text.Builder b = new Text.Builder(this.text, maxWidth, textStyleProvider, colorTheme).maxLineCount(maxLines).entities(entities).lineWidthProvider(lineWidthProvider).textFlags(BitwiseUtils.setFlag(textFlags, Text.FLAG_BIG_EMOJI, false));
+        Text.Builder b = new Text.Builder(this.text, maxWidth, textStyleProvider, colorTheme)
+          .maxLineCount(maxLines)
+          .entities(entities)
+          .lineWidthProvider(lineWidthProvider)
+          .textFlags(BitwiseUtils.setFlag(textFlags, Text.FLAG_BIG_EMOJI, false));
         text = b.build();
         if (needBigEmoji) {
           // TODO move inside Text class
@@ -215,20 +238,25 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable {
               float desiredEmojiSize = maxEmojiSize - (maxEmojiSize - textSizeDp) / SCALABLE_EMOJI_COUNT * (emojiCount - 1);
               if (desiredEmojiSize > textSizeDp) {
                 TextStyleProvider newProvider = new TextStyleProvider(textStyleProvider.getTextPaintStorage()).setTextSize(desiredEmojiSize).setAllowSp(true);
+                text.performDestroy();
                 text = b.textFlags(textFlags).styleProvider(newProvider).build();
               }
             }
           }
         }
         texts[index] = text;
+        if (oldText != null) {
+          oldText.performDestroy();
+        }
       }
       text.setViewProvider(viewProvider);
       sizes[index] = maxWidth;
       textSizes[index] = textSizePx;
       if (index == (isPortrait ? PORTRAIT_INDEX : LANDSCAPE_INDEX) &&
-        text.hasMedia() &&
-        viewProvider.hasAnyTargetToInvalidate()) {
-        viewProvider.invalidateContent(this);
+        text.hasMedia()) {
+        if (textMediaListener == null)
+          throw new IllegalStateException();
+        text.notifyMediaChanged(null);
       }
     }
     return texts[index];

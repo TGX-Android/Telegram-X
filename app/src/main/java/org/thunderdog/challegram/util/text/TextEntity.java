@@ -91,8 +91,6 @@ public abstract class TextEntity {
   public abstract int getType ();
 
   public abstract boolean hasMedia ();
-  @Nullable
-  public abstract String getMediaKeyId ();
 
   public final int getStart () {
     return start;
@@ -104,7 +102,7 @@ public abstract class TextEntity {
   public abstract TdApi.TextEntity getSpoiler ();
   public abstract boolean isBold ();
   public abstract boolean isIcon ();
-  public TextIcon getIcon () { return null; }
+  public TdApi.RichTextIcon getIcon () { return null; }
   public abstract boolean isItalic ();
   public abstract boolean isUnderline ();
   public abstract boolean isStrikethrough ();

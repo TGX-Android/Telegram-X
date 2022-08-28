@@ -35,14 +35,25 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.Td;
 import me.vkryl.td.TdConstants;
 
-public class TextIcon implements Destroyable, TdlibEmojiManager.Watcher {
+public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
+  private final Text source;
+
+  final List<TextPart> attachedToParts = new ArrayList<>();
+  private int displayMediaKeyOffset = -1;
+
   private final Tdlib tdlib;
+  public final String keyId;
+  public final int id;
   private final int width, height;
+  private boolean isDestroyed;
 
   private final long customEmojiId;
   private TdlibEmojiManager.Entry customEmoji;
@@ -53,8 +64,13 @@ public class TextIcon implements Destroyable, TdlibEmojiManager.Watcher {
   private ImageFile imageFile;
   private GifFile gifFile;
 
-  public TextIcon (Tdlib tdlib, int size, long customEmojiId) {
+  public TextMedia (Text source, Tdlib tdlib, String keyId, int id, int size, long customEmojiId) {
+    if (tdlib == null)
+      throw new IllegalArgumentException();
+    this.source = source;
     this.tdlib = tdlib;
+    this.keyId = keyId;
+    this.id = id;
     this.width = size;
     this.height = size;
     this.customEmojiId = customEmojiId;
@@ -64,8 +80,13 @@ public class TextIcon implements Destroyable, TdlibEmojiManager.Watcher {
     }
   }
 
-  public TextIcon (Tdlib tdlib, TdApi.RichTextIcon icon) {
+  public TextMedia (Text source, Tdlib tdlib, String keyId, int id, TdApi.RichTextIcon icon) {
+    if (tdlib == null)
+      throw new IllegalArgumentException();
+    this.source = source;
     this.tdlib = tdlib;
+    this.keyId = keyId;
+    this.id = id;
     this.width = Screen.dp(icon.width);
     this.height = Screen.dp(icon.height);
     this.customEmojiId = 0;
@@ -96,20 +117,12 @@ public class TextIcon implements Destroyable, TdlibEmojiManager.Watcher {
     }
   }
 
-  public String getKey () {
-    if (isCustomEmoji()) {
-      return "emoji_" + customEmojiId + "_" + height;
-    }
-    StringBuilder b = new StringBuilder();
-    if (imageFile != null) {
-      b.append("image_").append(imageFile);
-    } else if (gifFile != null) {
-      b.append("gif_").append(gifFile);
-    } else {
-      b.append("unknown_");
-    }
-    b.append(width).append("x").append(height);
-    return b.toString();
+  public static String keyForIcon (Tdlib tdlib, TdApi.RichTextIcon icon)  {
+    return "icon_" + tdlib.id() + "_" + icon.width + "x" + icon.height + "_" + icon.document.document.remote.uniqueId;
+  }
+
+  public static String keyForEmoji (long customEmojiId, int size) {
+    return "emoji_" + customEmojiId + "_" + size;
   }
 
   private void buildCustomEmoji (@NonNull TdlibEmojiManager.Entry customEmoji) {
@@ -150,7 +163,11 @@ public class TextIcon implements Destroyable, TdlibEmojiManager.Watcher {
     if (!entry.isNotFound()) {
       buildCustomEmoji(entry);
     }
-    // TODO ui -> invalidateSingleMedia
+    tdlib.ui().post(() -> {
+      if (!isDestroyed) {
+        source.notifyMediaChanged(this);
+      }
+    });
   }
 
   public int getWidth () {
@@ -182,12 +199,27 @@ public class TextIcon implements Destroyable, TdlibEmojiManager.Watcher {
   }
 
   public void performDestroy () {
+    isDestroyed = true;
     if (customEmojiId != 0 && customEmoji == null) {
       tdlib.emoji().forgetWatcher(customEmojiId, this);
     }
   }
 
-  public void requestFiles (ComplexReceiver receiver, int displayMediaKey) {
+  void setDisplayMediaKeyOffset (int keyOffset) {
+    this.displayMediaKeyOffset = keyOffset;
+  }
+
+  int getDisplayMediaKey () {
+    if (displayMediaKeyOffset != -1) {
+      return displayMediaKeyOffset + id;
+    }
+    return -1;
+  }
+
+  public void requestFiles (ComplexReceiver receiver) {
+    int displayMediaKey = getDisplayMediaKey();
+    if (displayMediaKey == -1)
+      throw new IllegalStateException();
     if (isCustomEmoji() && customEmoji == null && !customEmojiRequested) {
       tdlib.emoji().performPostponedRequests();
       customEmojiRequested = true;

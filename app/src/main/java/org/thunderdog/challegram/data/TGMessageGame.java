@@ -101,15 +101,6 @@ public class TGMessageGame extends TGMessage implements MediaWrapper.OnClickList
   }
 
   @Override
-  public void requestSingleTextMedia (ComplexReceiver textMediaReceiver, int displayMediaKey) {
-    if (text != null) {
-      text.requestSingleMedia(textMediaReceiver, displayMediaKey);
-    } else {
-      textMediaReceiver.clearReceivers(displayMediaKey);
-    }
-  }
-
-  @Override
   public void requestTextMedia (ComplexReceiver textMediaReceiver) {
     if (text != null) {
       text.requestMedia(textMediaReceiver);

@@ -34,6 +34,7 @@ import androidx.annotation.ColorInt;
 import androidx.annotation.FloatRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
 import androidx.collection.SparseArrayCompat;
 
@@ -99,6 +100,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   public static final int FLAG_TRIM_END = 1 << 19;
   public static final int FLAG_NO_SPACING = 1 << 20;
 
+  private static final int FLAG_DESTROYED = 1 << 23;
   private static final int FLAG_IN_LONG_PRESS = 1 << 24;
   private static final int FLAG_ABORT_PROCESS = 1 << 25;
   private static final int FLAG_FAKE_BOLD = 1 << 26;
@@ -130,11 +132,16 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     boolean onClick (View v, Text text, TextPart part, @Nullable TdlibUi.UrlOpenParameters openParameters);
   }
 
+  public interface TextMediaListener {
+    void onInvalidateTextMedia (Text text, @Nullable TextMedia specificMedia);
+  }
+
   private int maxWidth, textFlags;
 
   private final @Nullable LineWidthProvider lineWidthProvider;
   private final @Nullable LineMarginProvider lineMarginProvider;
   private final @Nullable ClickListener clickListener;
+  private final @Nullable TextMediaListener textMediaListener;
   private final int maxLineCount;
   private final TextStyleProvider textStyleProvider;
   private final @NonNull TextColorSet defaultTextColorSet;
@@ -239,17 +246,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     }
   }
 
-  static class MediaKeyInfo {
-    public final int mediaKey;
-    public final List<TextPart> parts;
-
-    public MediaKeyInfo (int mediaKey, TextPart firstPart) {
-      this.mediaKey = mediaKey;
-      this.parts = new ArrayList<>();
-      this.parts.add(firstPart);
-    }
-  }
-
   private String originalText;
   private ArrayList<TextPart> parts;
   private LongSparseArray<Spoiler> spoilers;
@@ -257,7 +253,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   private SparseArrayCompat<Path> pressHighlights;
   private List<int[]> lineSizes;
   private int builtInEmojiCount, customEmojiCount;
-  private Map<String, MediaKeyInfo> mediaKeys;
+  private Map<String, TextMedia> media;
   private @Nullable TextEntity[] entities;
 
   private int paragraphCount;
@@ -320,17 +316,18 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return null;
   }
 
-  public Text (@NonNull String in, int maxWidth, TextStyleProvider textStyleProvider, @NonNull TextColorSet textColorSet, int maxLineCount, int textFlags, @Nullable TextEntity[] entities) {
-    this(in, maxWidth, textStyleProvider, textColorSet, maxLineCount, null, null, textFlags, entities, null, null);
+  public Text (@NonNull String in, int maxWidth, TextStyleProvider textStyleProvider, @NonNull TextColorSet textColorSet, int maxLineCount, int textFlags, @Nullable TextEntity[] entities, @Nullable TextMediaListener textMediaListener) {
+    this(in, maxWidth, textStyleProvider, textColorSet, maxLineCount, null, null, textFlags, entities, null, null, textMediaListener);
   }
 
-  private Text (@NonNull String in, int maxWidth, TextStyleProvider textStyleProvider, @NonNull TextColorSet textColorSet, int maxLineCount, @Nullable LineWidthProvider lineWidthProvider, @Nullable LineMarginProvider lineMarginProvider, int textFlags, @Nullable TextEntity[] entities, String suffix, ClickListener clickListener) {
+  private Text (@NonNull String in, int maxWidth, TextStyleProvider textStyleProvider, @NonNull TextColorSet textColorSet, int maxLineCount, @Nullable LineWidthProvider lineWidthProvider, @Nullable LineMarginProvider lineMarginProvider, int textFlags, @Nullable TextEntity[] entities, String suffix, @Nullable ClickListener clickListener, @Nullable TextMediaListener textMediaListener) {
     this.textFlags = textFlags;
     this.maxWidth = maxWidth;
     this.maxLineCount = maxLineCount;
     this.lineWidthProvider = lineWidthProvider;
     this.lineMarginProvider = lineMarginProvider;
     this.clickListener = clickListener;
+    this.textMediaListener = textMediaListener;
     this.textStyleProvider = textStyleProvider;
     this.defaultTextColorSet = textColorSet;
     this.entities = entities;
@@ -353,6 +350,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     private String suffix;
     private ViewProvider viewProvider;
     private ClickListener clickListener;
+    private TextMediaListener textMediaListener;
 
     public Builder (String in, int maxWidth, TextStyleProvider provider, @NonNull TextColorSet theme) {
       if (in == null)
@@ -391,6 +389,11 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
     public Builder onClick (ClickListener listener) {
       this.clickListener = listener;
+      return this;
+    }
+
+    public Builder textMediaListener (TextMediaListener listener) {
+      this.textMediaListener = listener;
       return this;
     }
 
@@ -494,7 +497,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     }
 
     public Text build () {
-      Text text = new Text(in, maxWidth, provider, theme, maxLineCount, lineWidthProvider, lineMarginProvider, textFlags, entities, suffix, clickListener);
+      Text text = new Text(in, maxWidth, provider, theme, maxLineCount, lineWidthProvider, lineMarginProvider, textFlags, entities, suffix, clickListener, textMediaListener);
       if (viewProvider != null)
         text.setViewProvider(viewProvider);
       return text;
@@ -712,9 +715,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     pressHighlight = null;
     builtInEmojiCount = 0;
     customEmojiCount = 0;
-    if (mediaKeys != null) {
-      mediaKeys.clear();
-    }
+    clearMedia();
     maxPartHeight = currentWidth = currentX = currentY = paragraphCount = 0;
     lastPart = null;
     textFlags &= ~(
@@ -730,49 +731,60 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     clearSpoilers();
   }
 
-
-  private MediaKeyInfo newMediaKey (TextPart part, TextEntity entity) {
-    if (mediaKeys == null)
-      mediaKeys = new LinkedHashMap<>();
-    String keyId = entity.getMediaKeyId();
-    final int nextMediaKey = mediaKeys.size();
-    if (keyId == null) {
-      keyId = "_" + nextMediaKey + "x" + part.getStart() + ".."  + part.getEnd();
-    }
-    if (part.isCustomEmoji()) {
-      customEmojiCount++;
-    }
-    MediaKeyInfo existingMediaKeyInfo = mediaKeys.get(keyId);
-    if (existingMediaKeyInfo != null) {
-      existingMediaKeyInfo.parts.add(part);
-      return existingMediaKeyInfo;
-    }
-    MediaKeyInfo newMediaKeyInfo = new MediaKeyInfo(nextMediaKey, part);
-    mediaKeys.put(keyId, newMediaKeyInfo);
-    return newMediaKeyInfo;
+  private interface MediaCreator {
+    TextMedia onCreateMedia (String keyId, int id);
   }
 
-  private void removeMediaKey (TextPart part) {
-    final int mediaKey = part.getMediaKey();
-    if (mediaKey == -1 || mediaKeys == null) {
-      if (part.isRecognizedEmoji()) {
-        builtInEmojiCount--;
-      }
-      return;
+  private TextMedia newOrExistingMedia (@Nullable String keyId, int start, int end, MediaCreator creator) {
+    if (textMediaListener == null)
+      throw new IllegalStateException();
+    if (media == null)
+      media = new LinkedHashMap<>();
+    final int nextMediaId = media.size();
+    if (keyId == null) {
+      keyId = "_" + nextMediaId + "x" + (start != end ? start + ".."  + end : start);
     }
-    for (Map.Entry<String, MediaKeyInfo> entry : mediaKeys.entrySet()) {
-      MediaKeyInfo info = entry.getValue();
-      if (info.mediaKey == mediaKey) {
-        info.parts.remove(part);
-        if (info.parts.isEmpty()) {
-          mediaKeys.remove(entry.getKey());
-        }
-        if (part.isCustomEmoji()) {
-          customEmojiCount--;
-        }
-        break;
-      }
+    TextMedia existingMedia = media.get(keyId);
+    if (existingMedia != null) {
+      return existingMedia;
     }
+    TextMedia newMedia = creator.onCreateMedia(keyId, nextMediaId);
+    media.put(keyId, newMedia);
+    return newMedia;
+  }
+
+  private void removeMedia (TextPart part) {
+    TextMedia media = part.getMedia();
+    if (media != null && media.attachedToParts.remove(part)) {
+      if (part.isCustomEmoji()) {
+        customEmojiCount--;
+      }
+    } else if (part.isBuiltInEmoji()) {
+      builtInEmojiCount--;
+    }
+  }
+
+  @UiThread
+  void notifyMediaChanged (@Nullable TextMedia media) {
+    if (textMediaListener != null) {
+      textMediaListener.onInvalidateTextMedia(this, media);
+    } else {
+      throw new IllegalStateException();
+    }
+    /*if (viewProvider != null) {
+      boolean hasAnyViews = false;
+      boolean updated = false;
+      for (View view : viewProvider) {
+        hasAnyViews = true;
+        if (view instanceof TextMediaListener) {
+          ((TextMediaListener) view).onInvalidateTextMedia(this, media);
+          updated = true;
+        }
+      }
+      if (hasAnyViews && !updated) {
+        throw new IllegalStateException();
+      }
+    }*/
   }
 
   private void clearSpoilers () {
@@ -836,6 +848,9 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   }
 
   private void setImpl (final String in) {
+    if (BitwiseUtils.getFlag(textFlags, FLAG_DESTROYED))
+      throw new IllegalStateException();
+
     reset();
 
     if ((textFlags & FLAG_ALL_BOLD) != 0 && Text.needFakeBold(in, 0, in.length())) {
@@ -1204,10 +1219,13 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   private void processIcon (String in, int index, ArrayList<TextPart> out, @NonNull TextEntity entity) {
     lastPart = null;
 
-    TextIcon icon = entity.getIcon();
+    if (entity.tdlib == null)
+      throw new IllegalArgumentException();
 
-    int iconWidth = icon.getWidth();
-    int iconHeight = icon.getHeight();
+    TdApi.RichTextIcon icon = entity.getIcon();
+
+    int iconWidth = Screen.dp(icon.width);
+    int iconHeight = Screen.dp(icon.height);
 
     int maxWidth = getLineMaxWidth(getLineCount(), currentY);
 
@@ -1227,7 +1245,9 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     part.setWidth(iconWidth);
     part.setHeight(iconHeight);
     part.setEntity(entity);
-    part.setIcon(icon, newMediaKey(part, entity));
+    part.attachToMedia(newOrExistingMedia(TextMedia.keyForIcon(entity.tdlib, icon), index, index, (keyId, id) ->
+      new TextMedia(this, entity.tdlib, keyId, id, icon)
+    ));
 
     out.add(part);
 
@@ -1249,7 +1269,12 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     part.setXY(currentX, currentY);
     part.setWidth(emojiSize);
     part.setEntity(entity);
-    part.setEmoji(info, entity != null && entity.isCustomEmoji() ? newMediaKey(part, entity) : null);
+    part.setEmoji(info);
+    if (entity != null && entity.tdlib != null && entity.isCustomEmoji()) {
+      part.attachToMedia(newOrExistingMedia(TextMedia.keyForEmoji(entity.getCustomEmojiId(), emojiSize), start, end, (keyId, id) ->
+        new TextMedia(this, entity.tdlib, keyId, id, emojiSize, entity.getCustomEmojiId())
+      ));
+    }
 
     out.add(part);
 
@@ -1849,7 +1874,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
             out.set(out.size() - 1, ellipsisPart);
             currentX += ellipsisPart.getWidth();
 
-            removeMediaKey(lastPart);
+            removeMedia(lastPart);
 
             done = true;
             break;
@@ -1877,7 +1902,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
           }
 
           out.remove(out.size() - 1);
-          removeMediaKey(lastPart);
+          removeMedia(lastPart);
           if (out.isEmpty())
             break;
           lastPart = out.get(out.size() - 1);
@@ -2120,26 +2145,30 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   }
 
   public boolean hasMedia () {
-    return mediaKeys != null && !mediaKeys.isEmpty();
+    return media != null && !media.isEmpty();
   }
 
   public int getMediaCount () {
-    return hasMedia() ? mediaKeys.size() : 0;
+    return hasMedia() ? media.size() : 0;
   }
 
-  public boolean requestSingleMedia (ComplexReceiver textMediaReceiver, int displayMediaKey) {
+  public boolean invalidateMediaContent (ComplexReceiver textMediaReceiver, TextMedia specificMedia) {
+    if (BitwiseUtils.getFlag(textFlags, FLAG_DESTROYED)) {
+      return false;
+    }
+    if (specificMedia == null) {
+      throw new IllegalArgumentException();
+    }
+    final int displayMediaKey = specificMedia.getDisplayMediaKey();
+    if (displayMediaKey == -1 || media.get(specificMedia.keyId) != specificMedia) {
+      return false; // Don't invalidate what wasn't requested
+    }
     if (!hasMedia()) {
       textMediaReceiver.clearReceivers(displayMediaKey);
       return false;
     }
-    for (Map.Entry<String, MediaKeyInfo> entry : mediaKeys.entrySet()) {
-      MediaKeyInfo info = entry.getValue();
-      if (info.parts.get(0).getDisplayMediaKey() == displayMediaKey) {
-        info.parts.get(0).requestMedia(textMediaReceiver);
-        return true;
-      }
-    }
-    return false;
+    specificMedia.requestFiles(textMediaReceiver);
+    return true;
   }
 
   public int requestMedia (ComplexReceiver textMediaReceiver) {
@@ -2154,26 +2183,25 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       keyOffset = 0;
       maxKeyCount = Integer.MAX_VALUE;
     }
-    int uniqueMediaCount = 0;
-    for (Map.Entry<String, MediaKeyInfo> entry : mediaKeys.entrySet()) {
-      final int mediaKey = entry.getValue().mediaKey;
-      if (mediaKey >= maxKeyCount)
+    int maxMediaId = -1;
+    int mediaCount = 0;
+    for (Map.Entry<String, TextMedia> entry : media.entrySet()) {
+      TextMedia media = entry.getValue();
+      if (media.id >= maxKeyCount)
         throw new IllegalArgumentException();
-      boolean requested = false;
-      for (TextPart part : entry.getValue().parts) {
-        part.setDisplayMediaKeyOffset(keyOffset);
-        if (!requested) {
-          // Only one part needs to request media, when multiple copies are present
-          part.requestMedia(textMediaReceiver);
-          requested = true;
-        }
+      media.setDisplayMediaKeyOffset(keyOffset);
+      if (!media.attachedToParts.isEmpty()) {
+        media.requestFiles(textMediaReceiver);
+      } else {
+        textMediaReceiver.clearReceivers(media.getDisplayMediaKey());
       }
-      uniqueMediaCount++;
+      maxMediaId = Math.max(maxMediaId, media.id);
+      mediaCount++;
     }
-    if (clear) {
-      textMediaReceiver.clearReceiversWithHigherKey(uniqueMediaCount);
+    if (clear && maxMediaId != -1) {
+      textMediaReceiver.clearReceiversWithHigherKey(keyOffset + maxMediaId + 1);
     }
-    return uniqueMediaCount;
+    return mediaCount;
   }
 
   private int drawPart (final int partIndex, Canvas c, int startX, int endX, int endXBottomPadding, int y, float alpha, @Nullable TextColorSet defaultTheme, @Nullable ComplexReceiver receiver) {
@@ -2899,13 +2927,18 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     }
   }
 
+  private void clearMedia () {
+    if (hasMedia()) {
+      for (Map.Entry<String, TextMedia> entry : media.entrySet()) {
+        entry.getValue().performDestroy();
+      }
+      media.clear();
+    }
+  }
+
   @Override
   public void performDestroy () {
-    if (parts != null && hasMedia()) {
-      for (TextPart part : parts) {
-        part.performDestroy();
-      }
-    }
+    textFlags |= FLAG_DESTROYED;
     reset();
   }
 
