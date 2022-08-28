@@ -339,7 +339,7 @@ public class TextPart implements Destroyable {
   }
 
   public boolean wouldMergeWithNextPart (TextPart part) {
-    return part != null && part != this && emojiInfo == null && part.emojiInfo == null && icon == null && part.icon == null && trimmedLine == null && part.trimmedLine == null && this.y == part.y && line == part.line && end == part.start && isSameEntity(part.entity);
+    return part != null && part != this && emojiInfo == null && part.emojiInfo == null && icon == null && part.icon == null && trimmedLine == null && part.trimmedLine == null && this.y == part.y && line == part.line && end == part.start && isSameEntity(part.entity) && requiresTopLayer() == part.requiresTopLayer();
   }
 
   private TextPaint getPaint (int partIndex, float alpha, @Nullable TextColorSet defaultTheme) {

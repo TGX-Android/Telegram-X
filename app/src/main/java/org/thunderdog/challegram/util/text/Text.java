@@ -2458,41 +2458,41 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
     int partCount = parts.size();
     int topLayerPartsCount = 0;
-    if (center) {
-      for (int i = 0; i < partCount; ) {
-        TextPart part = parts.get(i);
-        if (part.requiresTopLayer()) {
+    for (int i = 0; i < partCount; ) {
+      TextPart part = parts.get(i);
+      if (part.requiresTopLayer()) {
+        TextPart nextPart;
+        do {
+          nextPart = i + 1 < partCount ? parts.get(i + 1) : null;
           topLayerPartsCount++;
           i++;
-          continue;
-        }
-        i += drawPartCentered(i, c, startX, startY, startX == endX ? maxWidth : endX - startX, alpha, defaultTheme, receiver);
+          if (nextPart != null && part.wouldMergeWithNextPart(nextPart)) {
+            part = nextPart;
+          } else {
+            break;
+          }
+        } while (true);
+        continue;
       }
-    } else {
-      for (int i = 0; i < partCount; ) {
-        TextPart part = parts.get(i);
-        if (part.requiresTopLayer()) {
-          topLayerPartsCount++;
-          i++;
-          continue;
-        }
+      if (center) {
+        i += drawPartCentered(i, c, startX, startY, startX == endX ? maxWidth : endX - startX, alpha, defaultTheme, receiver);
+      } else {
         i += drawPart(i, c, startX, endX, endXBottomPadding, startY, alpha, defaultTheme, receiver);
       }
     }
     if (topLayerPartsCount > 0) {
-      for (int i = 0; i < partCount; i++) {
+      for (int i = 0; i < partCount && topLayerPartsCount > 0; ) {
         TextPart part = parts.get(i);
         if (part.requiresTopLayer()) {
+          int drawCount;
           if (center) {
-            drawPartCentered(i, c, startX, startY, startX == endX ? maxWidth : endX - startX, alpha, defaultTheme, receiver);
+            drawCount = drawPartCentered(i, c, startX, startY, startX == endX ? maxWidth : endX - startX, alpha, defaultTheme, receiver);
           } else {
-            drawPart(i, c, startX, endX, endXBottomPadding, startY, alpha, defaultTheme, receiver);
+            drawCount = drawPart(i, c, startX, endX, endXBottomPadding, startY, alpha, defaultTheme, receiver);
           }
-          topLayerPartsCount--;
-          if (topLayerPartsCount == 0) {
-            break;
-          }
+          topLayerPartsCount -= drawCount;
         }
+        i++;
       }
     }
     if (needRestore) {
