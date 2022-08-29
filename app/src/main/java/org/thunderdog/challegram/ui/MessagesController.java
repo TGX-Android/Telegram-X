@@ -2500,42 +2500,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
       sendAudio((TdApi.Audio) item, false);
       return;
     }
-
-    /*if (item instanceof TGAudioSet) {
-      final long chatId = chat.id;
-      final SparseArrayCompat<TGAudio> audios = ((TGAudioSet) item).getSet();
-      Background.instance().post(new Runnable() {
-        @Override
-        public void run () {
-          for (int i = audios.size() - 1; i >= 0; i--) {
-            MessagesHelper.send(chatId, obtainSilentMode(), 0, audios.valueAt(i).getAudio());
-          }
-        }
-      });
-      return;
-    }*/
-
-    /*if (item instanceof PhotoItem) {
-      MessagesHelper.send(chat.id, obtainSilentMode(), 0, (PhotoItem) item);
-      return;
-    }*/
-
-    /*if (item instanceof TGForward) {
-      TGForward forward = (TGForward) item;
-      if (forward.isMultiple()) {
-        MessagesHelper.forward(chat.id, forward.getChatId(), forward.getMessageIds(), SilentButton.isSilent(chat));
-      } else {
-        MessagesHelper.forward(chat.id, forward.getChatId(), new long[] {forward.getMessageId()}, SilentButton.isSilent(chat));
-      }
-      return;
-    }*/
-
-    if (item instanceof CrashLog) {
-      final CrashLog crash = (CrashLog) item;
-      sendFiles(Collections.singletonList(crash.getFile()), false, false, false, null);
-      Background.instance().post(() -> CrashManager.instance().revoke(crash.getId()));
-      return;
-    }
   }
 
   public void reloadData () {

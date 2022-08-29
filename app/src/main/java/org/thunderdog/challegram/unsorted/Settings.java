@@ -165,7 +165,8 @@ public class Settings {
   private static final int VERSION_37 = 37; // removed weird "wallpaper_" + file.remote.id unused legacy cache
   private static final int VERSION_38 = 38; // int32 -> int64
   private static final int VERSION_39 = 39; // drop all previously stored crashes
-  private static final int VERSION = VERSION_39;
+  private static final int VERSION_40 = 40; // drop legacy crash management ids
+  private static final int VERSION = VERSION_40;
 
   private static final AtomicBoolean hasInstance = new AtomicBoolean(false);
   private static volatile Settings instance;
@@ -1805,6 +1806,14 @@ public class Settings {
       }
       case VERSION_39: {
         pmc.removeByPrefix(KEY_TDLIB_CRASH_PREFIX);
+        break;
+      }
+      case VERSION_40: {
+        pmc
+          .remove("crash_id_debug")
+          .remove("crash_id_release")
+          .remove("crash_id_reported_debug")
+          .remove("crash_id_reported_release");
         break;
       }
     }

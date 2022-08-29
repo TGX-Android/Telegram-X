@@ -1146,6 +1146,8 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     setSystemNightMode(newConfig.uiMode & Configuration.UI_MODE_NIGHT_MASK);
     if (needRecreate) {
       recreate();
+    } else {
+      Screen.checkRefreshRate();
     }
   }
 

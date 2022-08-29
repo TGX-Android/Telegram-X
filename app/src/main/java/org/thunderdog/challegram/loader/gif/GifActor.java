@@ -14,13 +14,10 @@
  */
 package org.thunderdog.challegram.loader.gif;
 
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.media.MediaMetadataRetriever;
 import android.os.Build;
-import android.view.Display;
 import android.view.View;
-import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -28,7 +25,6 @@ import androidx.annotation.UiThread;
 
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.U;
@@ -40,7 +36,6 @@ import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.EmojiMediaListController;
 import org.thunderdog.challegram.ui.StickersListController;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -588,23 +583,8 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
     }
   }
 
-  public float getScreenRefreshRate () {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-      BaseActivity activity = UI.getUiContext();
-      if (activity != null) {
-        return activity.getDisplay().getRefreshRate();
-      }
-    }
-    WindowManager windowManager = (WindowManager) UI.getContext().getSystemService(Context.WINDOW_SERVICE);
-    if (windowManager != null) {
-      Display display = windowManager.getDefaultDisplay();
-      return display.getRefreshRate();
-    }
-    return 60.0f;
-  }
-
   private double maxFrameRate () {
-    double maxFrameRate = Math.min(getScreenRefreshRate(), this.maxFrameRate);
+    double maxFrameRate = Math.min(Screen.refreshRate(), this.maxFrameRate);
     if (Settings.instance().getNewSetting(Settings.SETTING_FLAG_LIMIT_STICKERS_FPS)) {
       maxFrameRate = Math.min(maxFrameRate, REDUCED_MAX_FRAME_RATE);
     }
@@ -616,7 +596,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
     final double frameDelay;
     final int nextTimeStamp;
 
-    final float screenFrameRate = getScreenRefreshRate();
+    final float screenFrameRate = Screen.refreshRate();
     final double screenFrameRateDelay = 1000.0 / screenFrameRate;
 
     final double avgFrameRate;

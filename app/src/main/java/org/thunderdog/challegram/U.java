@@ -2429,15 +2429,17 @@ public class U {
     return i * -1 - 1;
   }
 
-  public static CharSequence getUsefulMetadata (@Nullable Tdlib tdlib) {
+  public static String getUsefulMetadata (@Nullable Tdlib tdlib) {
     AppBuildInfo buildInfo = org.thunderdog.challegram.unsorted.Settings.instance().getCurrentBuildInformation();
     return Lang.getAppBuildAndVersion(tdlib) + " (" + BuildConfig.COMMIT + ")\n" +
       (!buildInfo.getPullRequests().isEmpty() ? "PRs: " + buildInfo.pullRequestsList() + "\n" : "") +
       "TDLib: " + Td.tdlibVersion() + " (tdlib/td@" + Td.tdlibCommitHash() + ")\n" +
       "Android: " + SdkVersion.getPrettyName() + " (" + Build.VERSION.SDK_INT + ")" + "\n" +
-      "Device: " + Build.BRAND + " " + Build.MODEL + " (" + Build.DISPLAY + ")\n" +
+      "Device: " + Build.MANUFACTURER + " " + Build.BRAND + " " + Build.MODEL + " (" + Build.DISPLAY + ")\n" +
+      "Screen: " + Screen.widestSide() + "x" + Screen.smallestSide() + " (density: " + Screen.density() + ", fps: " + Screen.refreshRate() + ")" + "\n" +
+      "Build: `" + Build.FINGERPRINT + "`\n" +
       "Package: " + UI.getAppContext().getPackageName() + "\n" +
-      "Fingerprint: " + U.getApkFingerprint("SHA1");
+      "Fingerprint: `" + U.getApkFingerprint("SHA1") + "`";
   }
 
   /**

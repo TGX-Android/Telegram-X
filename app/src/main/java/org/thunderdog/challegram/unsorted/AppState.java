@@ -24,7 +24,6 @@ import org.drinkmore.Tracer;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibNotificationUtils;
 import org.thunderdog.challegram.util.Crash;
@@ -60,9 +59,7 @@ public class AppState {
 
     // initialization
 
-    if (Config.USE_CUSTOM_CRASH_MANAGER) {
-      CrashManager.instance().register();
-    }
+    CrashManager.instance().register();
 
     long startStep = SystemClock.uptimeMillis();
 
@@ -81,7 +78,7 @@ public class AppState {
           }
           error.printStackTrace();
           Settings.instance().storeCrash(new Crash.Builder("Uncaught exception!", thread, error));
-          isCrashing.getAndSet(false);
+          isCrashing.set(false);
           if (defaultUncaughtExceptionHandler != null) {
             Thread.setDefaultUncaughtExceptionHandler(defaultUncaughtExceptionHandler);
             defaultUncaughtExceptionHandler.uncaughtException(thread, error);

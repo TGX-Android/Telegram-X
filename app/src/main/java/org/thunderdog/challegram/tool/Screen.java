@@ -14,12 +14,14 @@
  */
 package org.thunderdog.challegram.tool;
 
+import android.content.Context;
 import android.graphics.Point;
 import android.os.Build;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.Display;
 import android.view.ViewConfiguration;
+import android.view.WindowManager;
 
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.component.chat.ReplyComponent;
@@ -44,10 +46,18 @@ public class Screen {
     RecordDurationView.resetSizes();
     TGWebPage.reset();
     SimplestCheckBox.reset();
+    _refreshRate = 0f;
     __statusBarHeight = null;
   }
 
-  private static float _lastDensity = -1f;
+  private static float _lastDensity = -1f, _refreshRate = 0f;
+
+  public static void checkRefreshRate () {
+    if (_refreshRate != 0) {
+      _refreshRate = 0;
+      refreshRate();
+    }
+  }
 
   public static boolean checkDensity () {
     return setDensity(UI.getResources().getDisplayMetrics().density);
@@ -68,6 +78,25 @@ public class Screen {
   public static float density () {
     checkDensity();
     return _lastDensity;
+  }
+
+  public static float refreshRate () {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      BaseActivity activity = UI.getUiContext();
+      if (activity != null) {
+        return activity.getDisplay().getRefreshRate();
+      }
+    }
+    if (_refreshRate != 0f) {
+      return _refreshRate;
+    }
+    WindowManager windowManager = (WindowManager) UI.getContext().getSystemService(Context.WINDOW_SERVICE);
+    if (windowManager != null) {
+      Display display = windowManager.getDefaultDisplay();
+      _refreshRate = display.getRefreshRate();
+      return _refreshRate;
+    }
+    return 60.0f;
   }
 
   public static int dp (float size) {

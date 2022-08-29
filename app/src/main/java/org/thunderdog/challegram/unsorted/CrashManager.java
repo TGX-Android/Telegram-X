@@ -18,20 +18,20 @@ import android.annotation.SuppressLint;
 import android.os.Looper;
 import android.os.Process;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.CrashLog;
 import org.thunderdog.challegram.tool.UI;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import me.vkryl.core.StringUtils;
 
@@ -45,18 +45,18 @@ public class CrashManager {
     return instance;
   }
 
-  private Handler handler;
+  private final Thread.UncaughtExceptionHandler crashHandler;
   private Thread.UncaughtExceptionHandler defaultHandler;
 
   private CrashManager () {
-    handler = new Handler();
+    crashHandler = this::onCrash;
   }
 
   public void register () {
     if (defaultHandler == null) {
       defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
     }
-    Thread.setDefaultUncaughtExceptionHandler(handler);
+    Thread.setDefaultUncaughtExceptionHandler(crashHandler);
   }
 
   public void crash () {
@@ -68,236 +68,92 @@ public class CrashManager {
   }
 
   private static String getFileName (long crashId) {
-    StringBuilder b = new StringBuilder();
-    b.append("crash.");
-    /*if (Config.BETA) {
-      b.append("beta.");
-    }*/
-    b.append(BuildConfig.VERSION_NAME);
-    b.append(".");
-    b.append(crashId);
-    b.append(".log");
-    return b.toString();
+    return "crash." +
+      BuildConfig.ORIGINAL_VERSION_NAME +
+      "." +
+      BuildConfig.COMMIT +
+      (crashId != 0 ? "." + crashId : "") +
+      ".log";
   }
 
-  private File getFile (long crashId) {
-    String path = UI.getAppContext().getFilesDir().getPath();
-    if (path.charAt(path.length() - 1) == '/') {
-      path = path + "logs/" + getFileName(crashId);
-    } else {
-      path = path + "/logs/" + getFileName(crashId);
-    }
-    File file = new File(path);
-    File parent = file.getParentFile();
-    if (!parent.exists() && !parent.mkdirs()) {
+  private File getNewFile () {
+    File logsDir = new File(UI.getAppContext().getFilesDir(), "logs");
+    if (!logsDir.exists() && !logsDir.mkdirs()) {
       return null;
     }
-    return file;
+    int index = 0;
+    File crashFile;
+    do {
+      crashFile = new File(logsDir, getFileName(++index));
+    } while (crashFile.exists());
+    return crashFile;
   }
 
   @SuppressLint ("CommitPrefEdits")
-  private void onCrash (Thread thread, Throwable ex) {
+  private void onCrash (@NonNull Thread thread, @NonNull Throwable ex) {
     processCrash(null, thread, ex);
   }
 
-  private volatile boolean isCrashing;
+  private final AtomicBoolean isCrashing = new AtomicBoolean();
+
+  private static String buildCrash (@Nullable String description, @NonNull Thread thread, @NonNull Throwable ex) {
+    StringBuilder crash = new StringBuilder();
+    crash.append(U.getUsefulMetadata(null));
+    crash.append("\n\nCrashed on: ");
+    crash.append(Lang.dateYearShortTime(System.currentTimeMillis(), TimeUnit.MILLISECONDS));
+    if (!StringUtils.isEmpty(description)) {
+      crash.append("\nCrash comment: ").append(description);
+    }
+    crash.append("\nCrash on: ").append(thread.getClass().getSimpleName()).append(" ").append(thread.getName());
+    crash.append("\n\n");
+    crash.append(Log.toString(ex));
+    return crash.toString();
+  }
 
   @SuppressLint("CommitPrefEdits")
-  private void processCrash (String description, Thread thread, Throwable ex) {
-    if (isCrashing) {
+  private void processCrash (String description, @NonNull Thread thread, @NonNull Throwable ex) {
+    if (isCrashing.getAndSet(true)) {
       return;
     }
-    isCrashing = true;
-    if (ex != null) {
-      ex.printStackTrace();
-    }
+    ex.printStackTrace();
     Log.setRuntimeFlag(Log.RUNTIME_NOT_ASYNC, true);
-    StringBuilder crash = new StringBuilder();
-
     try {
-      final long crashId = Settings.instance().getLong(KEY_CRASH_ID, 0) + 1;
-      File file = getFile(crashId);
-      crash.append(Log.getDeviceInformationString());
-      crash.append("\n\nCrashed on: ");
-      crash.append(Lang.dateYearShortTime(System.currentTimeMillis(), TimeUnit.MILLISECONDS));
-      crash.append("\nCrash comment: ");
-      crash.append(description == null ? "Uncaught crash" : description);
-      crash.append("\nCrashed Thread: ");
-      crash.append(thread == null ? "null" : thread.getName());
-      crash.append("\n\n");
-      crash.append(Log.toString(ex));
-      String result = crash.toString();
-      if (file == null) {
-        Log.e(Log.TAG_CRASH, "crashFile == null");
-      } else {
-        try {
-          FileOutputStream trace = new FileOutputStream(file);
-          trace.write(result.getBytes(StringUtils.UTF_8));
-          trace.close();
-          Settings.instance().putLong(KEY_CRASH_ID, crashId);
-        } catch (IOException io) {
-          Log.w(Log.TAG_CRASH, "Cannot save crash file", io);
+      final String result = buildCrash(description, thread, ex);
+      final File outputFile = getNewFile();
+      if (outputFile != null) {
+        try (FileOutputStream stream = new FileOutputStream(outputFile)) {
+          stream.write(result.getBytes(StringUtils.UTF_8));
+        } catch (IOException e) {
+          Log.e(Log.TAG_CRASH, "Unable to save crash file", e);
         }
+      } else {
+        Log.e(Log.TAG_CRASH, "Unable to find crash file");
       }
       Log.e(Log.TAG_CRASH, "Application crashed", ex);
     } catch (Throwable t) {
       try {
-        Log.e(Log.TAG_CRASH, "Unable to build crash: %s", t, crash.toString());
+        Log.e(Log.TAG_CRASH, "Unable to build crash", t);
       } catch (Throwable wellWeHaveJustReallyFuckedUp) {
         // Oh Dear!
       }
     }
-
     Log.setRuntimeFlag(Log.RUNTIME_NOT_ASYNC, false);
-    isCrashing = false;
-    if (defaultHandler != null && ex != null) {
+    isCrashing.set(false);
+    if (defaultHandler != null) {
       Thread.setDefaultUncaughtExceptionHandler(defaultHandler);
       defaultHandler.uncaughtException(thread, ex);
-      Thread.setDefaultUncaughtExceptionHandler(handler);
+      Thread.setDefaultUncaughtExceptionHandler(crashHandler);
     } else {
       Process.killProcess(Process.myPid());
       System.exit(10);
     }
   }
 
-  public void crash (String description, Throwable ex) {
+  public void crash (@Nullable String description, @NonNull Throwable ex) {
     processCrash(description, Thread.currentThread(), ex);
   }
 
   public void test () {
     throw new RuntimeException("This is a crash test");
-  }
-
-  /*public void submit () {
-    if (TdlibCache.instance().getMyUserId() == 0 || Strings.isEmpty(Config.DEVELOPER_USERNAME)) {
-      return;
-    }
-    if (!Config.AUTO_SUBMIT_CRASHES) {
-      UI.showToast(R.string.DevWontForgetThat, Toast.LENGTH_SHORT); // TODO easter egg in Borderlands style
-    }
-    Background.instance().post(new Runnable() {
-      @Override
-      public void run () {
-        TG.getClientInstance().send(new TdApi.SearchPublicChat(Config.DEVELOPER_USERNAME), new Client.ResultHandler() {
-          @Override
-          public void onResult (TdApi.Object object) {
-            final long chatId = TD.getChatId(object);
-            if (chatId != 0) {
-              final TdApi.Chat chat = TGDataManager.instance().getChatStrict(chatId);
-              if (TD.hasWritePermission(chat)) {
-                MessagesHelper.send(chatId, true, 0, new TdApi.InputMessageDocument(TD.createInputFile(currentCrash.getFile()), null, null));
-                CrashManager.instance().revoke(currentCrash.getId());
-              }
-            }
-          }
-        });
-      }
-    });
-  }*/
-
-  /*public void delete () {
-    UI.showToast(R.string.DevWillRememberThat, Toast.LENGTH_SHORT);
-  }*/
-
-  private CrashLog currentCrash;
-
-  public void revoke (long id) {
-    Settings.instance().putLong(KEY_CRASH_ID_REPORTED, id);
-  }
-
-  @SuppressWarnings(value = "SpellCheckingInspection")
-  private static final String KEY_CRASH_ID = BuildConfig.DEBUG ? "crash_id_debug" : "crash_id_release";
-  private static final String KEY_CRASH_ID_REPORTED = BuildConfig.DEBUG ? "crash_id_reported_debug" : "crash_id_reported_release";
-
-  // private static AlertDialog lastDialog;
-
-  public void check () {
-    /*if (true) {
-      return;
-    }
-    if (!WatchDog.instance().isOnline() || TdlibCache.instance().getMyUserId() == 0 || Strings.isEmpty(Config.DEVELOPER_USERNAME)) {
-      return;
-    }
-    Background.instance().post(new Runnable() {
-      @Override
-      public void run () {
-        long lastCrashId = Settings.instance().getLong(KEY_CRASH_ID, 0);
-        File file = getFile(lastCrashId);
-        if (file != null && file.exists()) {
-          long lastCrashCheck = Settings.instance().getLong(KEY_CRASH_ID_REPORTED, 0);
-
-          if (lastCrashId <= lastCrashCheck) {
-            return;
-          }
-
-          try {
-            final String crash = getStringFromFile(file);
-            if (crash != null && (currentCrash == null || currentCrash.getId() < lastCrashId)) {
-              currentCrash = new CrashLog(lastCrashId, file);
-              UI.post(new Runnable() {
-                @Override
-                public void run () {
-                  BaseActivity context = UI.getUiContext();
-                  if (context != null) {
-                    if (lastDialog != null && lastDialog.isShowing()) {
-                      return;
-                    }
-                    if (Config.AUTO_SUBMIT_CRASHES) {
-                      CrashManager.instance().submit();
-                    } else {
-                      AlertDialog.Builder builder = new AlertDialog.Builder(context, Theme.dialogTheme());
-                      builder.setTitle(UI.getString(R.string.XCrashed, UI.getString(R.string.appName)));
-                      builder.setMessage(Strings.replaceTags(UI.getString(R.string.SendCrashToDev, Config.DEVELOPER_USERNAME, Strings.buildSize(currentCrash.getFile().length()))));
-                      builder.setPositiveButton(Lang.getOK(), new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick (DialogInterface dialog, int which) {
-                          CrashManager.instance().submit();
-                        }
-                      });
-                      builder.setNegativeButton(R.string.Later, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick (DialogInterface dialog, int which) {
-                          dialog.dismiss();
-                        }
-                      });
-                      builder.setCancelable(false);
-                      lastDialog = context.showAlert(builder);
-                    }
-                  }
-                }
-              }, 2500);
-            }
-          } catch (Throwable t) {
-            // ignored
-          }
-        }
-      }
-    });*/
-  }
-
-  public static String convertStreamToString(InputStream is) throws Exception {
-    BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-    StringBuilder sb = new StringBuilder();
-    String line;
-    while ((line = reader.readLine()) != null) {
-      sb.append(line).append("\n");
-    }
-    reader.close();
-    return sb.toString();
-  }
-
-  public static String getStringFromFile (File file) throws Exception {
-    FileInputStream fin = new FileInputStream(file);
-    String ret = convertStreamToString(fin);
-    //Make sure you close all streams.
-    fin.close();
-    return ret;
-  }
-
-  public static class Handler implements Thread.UncaughtExceptionHandler {
-    @Override
-    public void uncaughtException (Thread thread, Throwable ex) {
-      instance().onCrash(thread, ex);
-    }
   }
 }

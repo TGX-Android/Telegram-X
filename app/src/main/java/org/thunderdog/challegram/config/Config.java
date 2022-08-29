@@ -119,8 +119,6 @@ public class Config {
 
   public static final boolean MASKS_TEXTS_AVAILABLE = false;
 
-  public static final boolean USE_CUSTOM_CRASH_MANAGER = BuildConfig.DEBUG || BuildConfig.ABI == 0 || !U.isGooglePlayServicesAvailable(UI.getAppContext()); // Assuming universal builds come from non-Google Play
-
   public static final boolean DEBUG_GALAXY_TAB_2 = false;
 
   public static final boolean USE_SECRET_SEARCH = true;
