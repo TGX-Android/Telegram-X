@@ -2238,6 +2238,7 @@
   <string name="AutoInstantViewTelegram">telegram.org + telegra.ph</string>
   <string name="AutoInstantViewAll">All links</string>
   <string name="DeepLinkUnsupported">Unknown or broken link format</string>
+  <string name="InternalUrlUnsupported">Sorry, this type of links are not yet supported.</string>
   <string name="AppUpdateRequiredTitle">Update required</string>
   <string name="AppUpdateOk">Update</string>
   <string name="ProxySponsor">Proxy sponsor</string>
