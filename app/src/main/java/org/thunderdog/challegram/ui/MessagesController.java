@@ -4155,7 +4155,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     this.selectedMessage = msg;
     this.selectedMessageTag = selectedMessageTag;
     this.selectedMessageSender = selectedMessageSender;
-    StringBuilder b = new StringBuilder();
+    SpannableStringBuilder b = new SpannableStringBuilder();
     if (chat != null) {
       final boolean isChannel = tdlib.isChannel(chat.id);
       if (!isChannel && msg.getMessage().content != null) {
@@ -4223,7 +4223,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       b.append(Lang.getString(resId));
     }
-    String text = b.toString().trim();
+
+    CharSequence text = StringUtils.trim(b);
 
     if (withReactions && msg.canBeReacted() && msg.getMessageAvailableReactions().length > 0) {
       Options messageOptions = getOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
