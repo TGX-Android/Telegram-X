@@ -227,6 +227,7 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
     Background.instance().post(() -> {
       final Text newText = new Text.Builder(text, textWidth, provider, this)
         .entities(Text.makeEntities(text, linkFlags, entities, tdlib, null), this)
+        .view(this)
         .textFlags(Text.FLAG_BOUNDS_NOT_STRICT | Text.FLAG_CUSTOM_LONG_PRESS | Text.FLAG_CUSTOM_LONG_PRESS_NO_SHARE | Text.FLAG_TRIM_END | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0))
         .maxLineCount(maxLineCount)
         .build();
@@ -242,7 +243,9 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
   public void onInvalidateTextMedia (Text text, @Nullable TextMedia specificMedia) {
     for (ListAnimator.Entry<TextEntry> entry : this.text) {
       if (entry.item.text == text) {
-        entry.item.text.invalidateMediaContent(entry.item.receiver, specificMedia);
+        if (!entry.item.text.invalidateMediaContent(entry.item.receiver, specificMedia)) {
+          entry.item.text.requestMedia(entry.item.receiver);
+        }
       }
     }
     invalidate();
@@ -290,6 +293,7 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
         } else {
           final Text newText = new Text.Builder(rawText, textWidth, textStyleProvider, this)
             .entities(Text.makeEntities(rawText, linkFlags, entities, tdlib, null), this)
+            .view(this)
             .textFlags(Text.FLAG_BOUNDS_NOT_STRICT | Text.FLAG_CUSTOM_LONG_PRESS | Text.FLAG_CUSTOM_LONG_PRESS_NO_SHARE | Text.FLAG_TRIM_END | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0))
             .maxLineCount(maxLineCount)
             .build();

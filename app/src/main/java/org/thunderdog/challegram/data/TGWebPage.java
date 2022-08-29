@@ -685,6 +685,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         .lineWidthProvider(provider)
         .textFlags(Text.FLAG_ALL_BOLD | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0))
         .clipTextArea()
+        .viewProvider(viewProvider)
         .entities(new TextEntity[]{TextEntity.valueOf(parent.tdlib, actualSiteName, new TdApi.TextEntity(0, actualSiteName.length(), new TdApi.TextEntityTypeTextUrl(url)), parent.openParameters())}, null)
         .build();
       textHeight += siteName.getHeight();
@@ -709,6 +710,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       title = new Text.Builder(webPage.title, maxWidth, TGMessage.getTextStyleProvider(), parent.getTextColorSet())
         .maxLineCount(TD.hasInstantView(webPage) ? -1 : MAX_TITLE_LINES).lineWidthProvider(provider)
         .textFlags(Text.FLAG_ALL_BOLD | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0))
+        .viewProvider(viewProvider)
         .clipTextArea()
         .build();
       textHeight += title.getHeight();
@@ -735,6 +737,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       description = new Text.Builder(webPage.description.text, maxWidth, TGMessage.getTextStyleProvider(), parent.getTextColorSet())
         .maxLineCount(MAX_DESCRIPTION_LINES)
         .lineWidthProvider(provider)
+        .viewProvider(viewProvider)
         .textFlags(Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0)
         .entities(TextEntity.valueOf(parent.tdlib, webPage.description, parent.openParameters()), parent::invalidateTextMediaReceiver)
         .build();

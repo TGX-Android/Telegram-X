@@ -89,6 +89,14 @@ public class CustomResultView extends SparseDrawableView implements Destroyable,
     }
   }
 
+  public boolean invalidateTextMedia (InlineResult<?> result) {
+    if (this.result == result && result != null) {
+      this.result.requestTextMedia(textMediaReceiver);
+      return true;
+    }
+    return false;
+  }
+
   @Override
   public boolean invalidateContent (Object cause) {
     if (this.result == cause && cause != null) {

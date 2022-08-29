@@ -70,6 +70,7 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.CounterAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.animator.ListAnimator;
+import me.vkryl.android.util.SingleViewProvider;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
@@ -479,6 +480,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       this.entities = entities;
       this.textMediaListener = textMediaListener;
       return this;
+    }
+
+    public Builder view (View view) {
+      return viewProvider(new SingleViewProvider(view));
     }
 
     public Builder viewProvider (ViewProvider viewProvider) {

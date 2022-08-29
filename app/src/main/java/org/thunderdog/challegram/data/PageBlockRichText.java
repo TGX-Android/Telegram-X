@@ -468,7 +468,9 @@ public class PageBlockRichText extends PageBlock {
       if (this.text == wrapper) {
         for (View view : currentViews) {
           if (view instanceof PageBlockView) {
-            text.invalidateMediaContent(((PageBlockView) view).getIconReceiver(), specificMedia);
+            if (!text.invalidateMediaContent(((PageBlockView) view).getIconReceiver(), specificMedia)) {
+              ((PageBlockView) view).invalidateIconsContent(this);
+            }
           }
         }
       }

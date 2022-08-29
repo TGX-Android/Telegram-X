@@ -167,6 +167,14 @@ public class PageBlockView extends BaseView implements Destroyable, InvalidateCo
     return false;
   }
 
+  public boolean invalidateIconsContent (PageBlock block) {
+    if (this.block == block && block != null) {
+      block.requestIcons(iconReceiver);
+      return true;
+    }
+    return false;
+  }
+
   public void requestFiles (boolean invalidate) {
     if (block != null) {
       block.requestIcons(iconReceiver);

@@ -231,9 +231,11 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
       if (descriptionEntities != null && descriptionEntities.length > 0) {
         descWrap.setEntities(TextEntity.valueOf(tdlib, new TdApi.FormattedText(description, descriptionEntities), null), (wrapper, text, specificMedia) -> {
           if (descWrap == wrapper) {
-            currentViews.performWithViews(view ->
-              text.invalidateMediaContent(((CustomResultView) view).getTextMediaReceiver(), specificMedia)
-            );
+            currentViews.performWithViews(view -> {
+              if (!text.invalidateMediaContent(((CustomResultView) view).getTextMediaReceiver(), specificMedia)) {
+                ((CustomResultView) view).invalidateTextMedia(this);
+              }
+            });
           }
         });
       }

@@ -356,7 +356,9 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
         text, null, availWidth, Paints.robotoStyleProvider(TEXT_SIZE), TextColorSets.Regular.NORMAL, (text1, specificMedia) -> {
           for (ListAnimator.Entry<TextEntry> entry : contentText) {
             if (entry.item.content == text1) {
-              text1.invalidateMediaContent(entry.item.receiver, specificMedia);
+              if (!text1.invalidateMediaContent(entry.item.receiver, specificMedia)) {
+                text1.requestMedia(entry.item.receiver);
+              }
             }
           }
         }

@@ -152,9 +152,11 @@ public class TooltipOverlayView extends ViewGroup {
 
     @Override
     public boolean layout (TooltipInfo info, int parentWidth, int parentHeight, int maxWidth) {
-      text.setTextMediaListener((wrapper, text, specificMedia) ->
-        text.invalidateMediaContent(info.iconReceiver, specificMedia)
-      );
+      text.setTextMediaListener((wrapper, text, specificMedia) -> {
+        if (!text.invalidateMediaContent(info.iconReceiver, specificMedia)) {
+          text.requestMedia(info.iconReceiver);
+        }
+      });
       text.prepare(maxWidth);
       return true;
     }
@@ -224,7 +226,9 @@ public class TooltipOverlayView extends ViewGroup {
       if (text == null || text.getMaxWidth() != maxWidth) {
         text = new Text.Builder(tdlib, formattedText, urlOpenParameters, maxWidth, Paints.robotoStyleProvider(info.textSize).setAllowSp(info.allowSp), info.colorProvider, (text, specificMedia) -> {
           if (this.text == text) {
-            text.invalidateMediaContent(info.iconReceiver, specificMedia);
+            if (!text.invalidateMediaContent(info.iconReceiver, specificMedia)) {
+              text.requestMedia(info.iconReceiver);
+            }
           }
         })
           .textFlags(Text.FLAG_CUSTOM_LONG_PRESS | textFlags)

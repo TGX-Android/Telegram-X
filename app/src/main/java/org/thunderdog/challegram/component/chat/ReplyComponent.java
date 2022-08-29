@@ -238,7 +238,10 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
           } else {
             viewProvider.performWithViews((view) -> {
               if (view instanceof ReplyView) {
-                text.invalidateMediaContent(((ReplyView) view).getTextMediaReceiver(), specificMedia);
+                ComplexReceiver receiver = ((ReplyView) view).getTextMediaReceiver();
+                if (!text.invalidateMediaContent(receiver, specificMedia)) {
+                  requestTextContent(receiver);
+                }
               } else {
                 throw new UnsupportedOperationException();
               }
