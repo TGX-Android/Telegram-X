@@ -164,6 +164,10 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     return avatarReceiver;
   }
 
+  public ComplexReceiver getTextMediaReceiver () {
+    return textMediaReceiver;
+  }
+
   private TGChat chat;
   private final ImageReceiver avatarReceiver;
   private final ComplexReceiver textMediaReceiver;

@@ -35,6 +35,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
+import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
 import me.vkryl.core.StringUtils;
@@ -112,7 +113,9 @@ public class TGMessageGame extends TGMessage implements MediaWrapper.OnClickList
   private boolean setText () {
     final boolean titleChanged = !StringUtils.isEmpty(game.title) && (text == null || !text.getText().equals(game.title));
     if (titleChanged) {
-      title = new TextWrapper(game.title, getTextStyleProvider(), getChatAuthorColorSet(), null).addTextFlags(Text.FLAG_ALL_BOLD).setClickCallback(clickCallback());
+      title = new TextWrapper(game.title, getTextStyleProvider(), getChatAuthorColorSet())
+        .addTextFlags(Text.FLAG_ALL_BOLD)
+        .setClickCallback(clickCallback());
     }
 
     final TdApi.FormattedText text;
@@ -132,7 +135,13 @@ public class TGMessageGame extends TGMessage implements MediaWrapper.OnClickList
     } else if (currentText == null || !Td.equalsTo(currentText, text)) {
       descriptionChanged = true;
       currentText = text;
-      this.text = new TextWrapper(text.text, getTextStyleProvider(), getTextColorSet(), TextEntity.valueOf(tdlib, text, openParameters())).setClickCallback(clickCallback());
+      this.text = new TextWrapper(text.text, getTextStyleProvider(), getTextColorSet())
+        .setEntities(TextEntity.valueOf(tdlib, text, openParameters()), (wrapper, text1, specificMedia) -> {
+          if (this.text == wrapper) {
+            invalidateTextMediaReceiver(text1, specificMedia);
+          }
+        })
+        .setClickCallback(clickCallback());
     }
 
     if (descriptionChanged) {

@@ -380,7 +380,8 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
       return;
     }
     if (!StringUtils.isEmpty(subtitle)) {
-      trimmedSubtitle = new Text.Builder(tdlib, subtitle, null, availWidth, Paints.robotoStyleProvider(15), TextColorSets.Regular.LIGHT)
+      // TODO: custom emoji support
+      trimmedSubtitle = new Text.Builder(tdlib, subtitle, null, availWidth, Paints.robotoStyleProvider(15), TextColorSets.Regular.LIGHT, null)
         .singleLine()
         .build();
     } else {

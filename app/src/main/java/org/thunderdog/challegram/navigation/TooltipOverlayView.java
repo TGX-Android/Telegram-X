@@ -65,6 +65,7 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.SingleViewProvider;
 import me.vkryl.android.util.ViewProvider;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
@@ -72,7 +73,6 @@ import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableLong;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.core.BitwiseUtils;
 
 public class TooltipOverlayView extends ViewGroup {
   public interface LocationProvider {
@@ -152,6 +152,9 @@ public class TooltipOverlayView extends ViewGroup {
 
     @Override
     public boolean layout (TooltipInfo info, int parentWidth, int parentHeight, int maxWidth) {
+      text.setTextMediaListener((wrapper, text, specificMedia) ->
+        text.invalidateMediaContent(info.iconReceiver, specificMedia)
+      );
       text.prepare(maxWidth);
       return true;
     }
@@ -209,13 +212,24 @@ public class TooltipOverlayView extends ViewGroup {
 
     @Override
     public void requestIcons (ComplexReceiver iconReceiver) {
-      iconReceiver.clear();
+      if (text != null) {
+        text.requestMedia(iconReceiver);
+      } else {
+        iconReceiver.clear();
+      }
     }
 
     @Override
     public boolean layout (TooltipInfo info, int parentWidth, int parentHeight, int maxWidth) {
       if (text == null || text.getMaxWidth() != maxWidth) {
-        text = new Text.Builder(tdlib, formattedText, urlOpenParameters, maxWidth, Paints.robotoStyleProvider(info.textSize).setAllowSp(info.allowSp), info.colorProvider).textFlags(Text.FLAG_CUSTOM_LONG_PRESS | textFlags).viewProvider(new SingleViewProvider(parentView)).build();
+        text = new Text.Builder(tdlib, formattedText, urlOpenParameters, maxWidth, Paints.robotoStyleProvider(info.textSize).setAllowSp(info.allowSp), info.colorProvider, (text, specificMedia) -> {
+          if (this.text == text) {
+            text.invalidateMediaContent(info.iconReceiver, specificMedia);
+          }
+        })
+          .textFlags(Text.FLAG_CUSTOM_LONG_PRESS | textFlags)
+          .viewProvider(new SingleViewProvider(parentView))
+          .build();
         return true;
       }
       return false;

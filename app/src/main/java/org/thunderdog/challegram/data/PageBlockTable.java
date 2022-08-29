@@ -62,8 +62,8 @@ public class PageBlockTable extends PageBlock {
     public void build (int maxWidth) {
       if (formattedText != null) {
         maxWidth -= padding() * 2;
-        Text.Builder b = new Text.Builder(context.tdlib(), formattedText.text, openParameters, maxWidth, PageBlockRichText.getParagraphProvider(), TextColorSets.InstantView.NORMAL)
-          .entities(formattedText.entities)
+        Text.Builder b = new Text.Builder(formattedText.text, maxWidth, PageBlockRichText.getParagraphProvider(), TextColorSets.InstantView.NORMAL)
+          .entities(formattedText.entities, null)
           .textFlags(Text.FLAG_ARTICLE | Text.FLAG_CUSTOM_LONG_PRESS)
           .viewProvider(currentViews);
         switch (cell.align.getConstructor()) {

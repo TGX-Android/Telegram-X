@@ -55,7 +55,7 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.T
 
   private int textFlags;
 
-  private TextWrapper (String text, TextStyleProvider textStyleProvider, TextColorSet colorTheme) {
+  public TextWrapper (String text, TextStyleProvider textStyleProvider, TextColorSet colorTheme) {
     this.sizes = new int[2];
     this.texts = new Text[2];
     this.textSizes = new int[2];
@@ -65,25 +65,19 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.T
     this.maxLines = -1;
   }
 
-  public TextWrapper (String text, TextStyleProvider textStyleProvider, @NonNull TextColorSet colorTheme, @Nullable TextEntity[] entities) {
+  public TextWrapper (String text, TextStyleProvider textStyleProvider, @NonNull TextColorSet colorTheme, @Nullable TextEntity[] entities, @Nullable TextMediaListener textMediaListener) {
     this(text, textStyleProvider, colorTheme);
-    this.entities = entities;
+    setEntities(entities, textMediaListener);
   }
 
-  public TextWrapper (Tdlib tdlib, @NonNull TdApi.FormattedText text, TextStyleProvider styleProvider, @NonNull TextColorSet colorTheme, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public TextWrapper (Tdlib tdlib, @NonNull TdApi.FormattedText text, TextStyleProvider styleProvider, @NonNull TextColorSet colorTheme, @Nullable TdlibUi.UrlOpenParameters openParameters, @Nullable TextMediaListener textMediaListener) {
     this(text.text, styleProvider, colorTheme);
-    this.entities = TextEntity.valueOf(tdlib, text, openParameters);
+    setEntities(TextEntity.valueOf(tdlib, text, openParameters), textMediaListener);
   }
 
-  public TextWrapper (Tdlib tdlib, String text, TextStyleProvider styleProvider, @NonNull TextColorSet colorTheme, int linkFlags, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public TextWrapper (Tdlib tdlib, String text, TextStyleProvider styleProvider, @NonNull TextColorSet colorTheme, int linkFlags, @Nullable TdlibUi.UrlOpenParameters openParameters, @Nullable TextMediaListener textMediaListener) {
     this(text, styleProvider, colorTheme);
-    this.entities = Text.makeEntities(text, linkFlags, entities, tdlib, openParameters);
-  }
-
-  public TextWrapper (Tdlib tdlib, String text, TextStyleProvider styleProvider, @NonNull TextColorSet colorTheme, int linkFlags, @Nullable TdlibUi.UrlOpenParameters openParameters, int maxLines) {
-    this(text, styleProvider, colorTheme);
-    this.entities = Text.makeEntities(text, linkFlags, null, tdlib, openParameters);
-    this.maxLines = maxLines;
+    setEntities(Text.makeEntities(text, linkFlags, null, tdlib, openParameters), textMediaListener);
   }
 
   private TextWrapper setTextFlags (int textFlags) {
@@ -131,7 +125,13 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.T
 
   private TextMediaListener textMediaListener;
 
-  public TextWrapper setTextMediaListener (TextMediaListener listener) {
+  public TextWrapper setTextMediaListener (TextMediaListener textMediaListener) {
+    this.textMediaListener = textMediaListener;
+    return this;
+  }
+
+  public TextWrapper setEntities (TextEntity[] entities, TextMediaListener listener) {
+    this.entities = entities;
     this.textMediaListener = listener;
     return this;
   }
@@ -224,7 +224,7 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.T
       } else {
         Text.Builder b = new Text.Builder(this.text, maxWidth, textStyleProvider, colorTheme)
           .maxLineCount(maxLines)
-          .entities(entities)
+          .entities(entities, this)
           .lineWidthProvider(lineWidthProvider)
           .textFlags(BitwiseUtils.setFlag(textFlags, Text.FLAG_BIG_EMOJI, false));
         text = b.build();
@@ -409,9 +409,9 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.T
     return text != null && text.performLongPress(view);
   }
 
-  public static TextWrapper parseRichText (ViewController<?> context, @Nullable Text.ClickCallback callback, TdApi.RichText richText, TextStyleProvider textStyleProvider, @NonNull TextColorSet colorTheme, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public static TextWrapper parseRichText (ViewController<?> context, @Nullable Text.ClickCallback callback, TdApi.RichText richText, TextStyleProvider textStyleProvider, @NonNull TextColorSet colorTheme, @Nullable TdlibUi.UrlOpenParameters openParameters, @Nullable TextMediaListener textMediaListener) {
     FormattedText formattedText = FormattedText.parseRichText(context, richText, openParameters);
-    return new TextWrapper(formattedText.text, textStyleProvider, colorTheme, formattedText.entities)
+    return new TextWrapper(formattedText.text, textStyleProvider, colorTheme, formattedText.entities, textMediaListener)
       .addTextFlags(Text.FLAG_CUSTOM_LONG_PRESS)
       .setClickCallback(callback);
   }

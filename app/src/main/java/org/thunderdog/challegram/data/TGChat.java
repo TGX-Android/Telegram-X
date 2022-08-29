@@ -42,6 +42,7 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextEntityCustom;
+import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
 
 import java.lang.ref.Reference;
@@ -1073,7 +1074,13 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
         .ignoreContinuousNewLines()
         .ignoreNewLines(isSingleLine())
         .lineMarginProvider((lineIndex, y, defaultMaxWidth, lineHeight) -> lineIndex == 0 ? textIconsPadding : 0)
-        .entities(entities)
+        .entities(entities, (text, specificMedia) -> {
+          if (this.trimmedText == text) {
+            for (View view : currentViews) {
+              text.invalidateMediaContent(((ChatView) view).getTextMediaReceiver(), specificMedia);
+            }
+          }
+        })
         .noClickable()
         .build();
       currentViews.invalidateContent(this);

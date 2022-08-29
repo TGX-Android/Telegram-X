@@ -333,8 +333,9 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   }
 
   public static class Builder {
-    private String in;
-    private int maxWidth;
+    private final String in;
+    private final int maxWidth;
+
     private TextStyleProvider provider;
     private TextColorSet theme;
 
@@ -357,11 +358,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       this.theme = theme;
     }
 
-    public Builder (Tdlib tdlib, CharSequence in, TdlibUi.UrlOpenParameters urlOpenParameters, int maxWidth, TextStyleProvider provider, @NonNull TextColorSet theme) {
-      this.in = in.toString();
-      this.maxWidth = maxWidth;
-      this.provider = provider;
-      this.theme = theme;
+    public Builder (Tdlib tdlib, CharSequence in, TdlibUi.UrlOpenParameters urlOpenParameters, int maxWidth, TextStyleProvider provider, @NonNull TextColorSet theme, @Nullable TextMediaListener textMediaListener) {
+      this(in.toString(), maxWidth, provider, theme);
       TextEntity[] entities = null;
       TdApi.TextEntity[] telegramEntities = TD.toEntities(in, false);
       if (telegramEntities != null && telegramEntities.length > 0) {
@@ -370,12 +368,12 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       if (entities == null) {
         entities = TextEntity.toEntities(in);
       }
-      entities(entities);
+      entities(entities, textMediaListener);
     }
 
-    public Builder (Tdlib tdlib, TdApi.FormattedText in, TdlibUi.UrlOpenParameters urlOpenParameters, int maxWidth, TextStyleProvider provider, @NonNull TextColorSet theme) {
+    public Builder (Tdlib tdlib, TdApi.FormattedText in, TdlibUi.UrlOpenParameters urlOpenParameters, int maxWidth, TextStyleProvider provider, @NonNull TextColorSet theme, @Nullable TextMediaListener textMediaListener) {
       this(in.text, maxWidth, provider, theme);
-      entities(TextEntity.valueOf(tdlib, this.in, in.entities, urlOpenParameters));
+      entities(TextEntity.valueOf(tdlib, this.in, in.entities, urlOpenParameters), textMediaListener);
     }
 
     public Builder styleProvider (TextStyleProvider provider) {
@@ -385,11 +383,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
     public Builder onClick (ClickListener listener) {
       this.clickListener = listener;
-      return this;
-    }
-
-    public Builder textMediaListener (TextMediaListener listener) {
-      this.textMediaListener = listener;
       return this;
     }
 
@@ -482,8 +475,9 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       return this;
     }
 
-    public Builder entities (TextEntity[] entities) {
+    public Builder entities (TextEntity[] entities, TextMediaListener textMediaListener) {
       this.entities = entities;
+      this.textMediaListener = textMediaListener;
       return this;
     }
 
@@ -764,23 +758,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   void notifyMediaChanged (@Nullable TextMedia media) {
     if (textMediaListener != null) {
       textMediaListener.onInvalidateTextMedia(this, media);
-    } else {
-      throw new IllegalStateException();
     }
-    /*if (viewProvider != null) {
-      boolean hasAnyViews = false;
-      boolean updated = false;
-      for (View view : viewProvider) {
-        hasAnyViews = true;
-        if (view instanceof TextMediaListener) {
-          ((TextMediaListener) view).onInvalidateTextMedia(this, media);
-          updated = true;
-        }
-      }
-      if (hasAnyViews && !updated) {
-        throw new IllegalStateException();
-      }
-    }*/
+    if (viewProvider != null) {
+      viewProvider.invalidate();
+    }
   }
 
   private void clearSpoilers () {

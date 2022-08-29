@@ -226,10 +226,9 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
     final long contextId = asyncContextId;
     Background.instance().post(() -> {
       final Text newText = new Text.Builder(text, textWidth, provider, this)
-        .entities(Text.makeEntities(text, linkFlags, entities, tdlib, null))
+        .entities(Text.makeEntities(text, linkFlags, entities, tdlib, null), this)
         .textFlags(Text.FLAG_BOUNDS_NOT_STRICT | Text.FLAG_CUSTOM_LONG_PRESS | Text.FLAG_CUSTOM_LONG_PRESS_NO_SHARE | Text.FLAG_TRIM_END | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0))
         .maxLineCount(maxLineCount)
-        .textMediaListener(this)
         .build();
       UI.post(() -> {
         if (asyncContextId == contextId) {
@@ -290,10 +289,9 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
           dispatchAsyncText(rawText, textWidth, animated, textStyleProvider, maxLineCount, linkFlags, entities);
         } else {
           final Text newText = new Text.Builder(rawText, textWidth, textStyleProvider, this)
-            .entities(Text.makeEntities(rawText, linkFlags, entities, tdlib, null))
+            .entities(Text.makeEntities(rawText, linkFlags, entities, tdlib, null), this)
             .textFlags(Text.FLAG_BOUNDS_NOT_STRICT | Text.FLAG_CUSTOM_LONG_PRESS | Text.FLAG_CUSTOM_LONG_PRESS_NO_SHARE | Text.FLAG_TRIM_END | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0))
             .maxLineCount(maxLineCount)
-            .textMediaListener(this)
             .build();
           newText.setViewProvider(new SingleViewProvider(this));
           this.text.replace(new TextEntry(this, newText), animated);

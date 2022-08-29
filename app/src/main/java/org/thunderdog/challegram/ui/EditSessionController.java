@@ -187,10 +187,10 @@ public class EditSessionController extends EditBaseController<EditSessionControl
 
         switch (item.getId()) {
           case R.id.btn_sessionDevice:
-            view.setText(new TextWrapper(session.deviceModel, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, null));
+            view.setText(new TextWrapper(session.deviceModel, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL));
             break;
           case R.id.btn_sessionApp:
-            view.setText(new TextWrapper(session.applicationName + " " + session.applicationVersion, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, null));
+            view.setText(new TextWrapper(session.applicationName + " " + session.applicationVersion, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL));
             break;
           case R.id.btn_sessionPlatform:
             view.setData(R.string.SessionSystem);

@@ -242,7 +242,7 @@ public class InstantViewController extends ViewController<InstantViewController.
     if (openParameters.tooltip != null) {
       TdApi.RichText referenceText = Td.findReference(getArgumentsStrict().instantView, referenceAnchorName);
       if (referenceText != null) {
-        TextWrapper textWrapper = TextWrapper.parseRichText(this, this, referenceText, Paints.robotoStyleProvider(13f), openParameters.tooltip.colorProvider(), openParameters);
+        TextWrapper textWrapper = TextWrapper.parseRichText(this, this, referenceText, Paints.robotoStyleProvider(13f), openParameters.tooltip.colorProvider(), openParameters, null);
         openParameters.tooltip.anchor(view, ((PageBlockView) view).getBlock().getViewProvider()).controller(this).show(textWrapper);
         return true;
       }

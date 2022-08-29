@@ -78,7 +78,7 @@ public class TGMessageText extends TGMessage {
     super(context, msg);
     this.sponsoredMetadata = text;
     this.currentMessageText = (TdApi.MessageText) text.content;
-    setText(currentMessageText.text, true);
+    setText(currentMessageText.text, false);
   }
 
   public TdApi.File getTargetFile () {
@@ -199,16 +199,20 @@ public class TGMessageText extends TGMessage {
     if (this.text == null || !Td.equalsTo(this.text, text)) {
       this.text = text;
       TextColorSet colorSet = isErrorMessage() ? TextColorSets.Regular.NEGATIVE : getTextColorSet();
-      if (text.entities != null || !parseEntities) {
-        this.wrapper = new TextWrapper(text.text, getTextStyleProvider(), colorSet, TextEntity.valueOf(tdlib, text, openParameters())).setClickCallback(clickCallback());
-      } else {
-        this.wrapper = new TextWrapper(tdlib, text.text, getTextStyleProvider(), colorSet, Text.ENTITY_FLAGS_NONE, openParameters()).setClickCallback(clickCallback());
-      }
-      this.wrapper.setTextMediaListener((wrapper, updatedText, specificTextMedia) -> {
+      TextWrapper.TextMediaListener textMediaListener = (wrapper, updatedText, specificTextMedia) -> {
         if (this.wrapper == wrapper) {
           invalidateTextMediaReceiver(updatedText, specificTextMedia);
         }
-      });
+      };
+      if (text.entities != null || !parseEntities) {
+        this.wrapper = new TextWrapper(text.text, getTextStyleProvider(), colorSet)
+          .setEntities(TextEntity.valueOf(tdlib, text, openParameters()), textMediaListener)
+          .setClickCallback(clickCallback());
+      } else {
+        this.wrapper = new TextWrapper(text.text, getTextStyleProvider(), colorSet)
+          .setEntities(Text.makeEntities(text.text, Text.ENTITY_FLAGS_ALL, null, tdlib, openParameters()), textMediaListener)
+          .setClickCallback(clickCallback());
+      }
       this.wrapper.addTextFlags(Text.FLAG_BIG_EMOJI);
       if (useBubbles()) {
         this.wrapper.addTextFlags(Text.FLAG_ADJUST_TO_CURRENT_WIDTH);

@@ -1779,7 +1779,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
 
     if (hasFooter()) {
-      drawFooter(c);
+      drawFooter(view, c);
     }
 
     // Header
@@ -2369,8 +2369,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private void performWithViews (@NonNull RunnableData<MessageView> act) {
-    final ReferenceList<View> attachedToViews = currentViews.getViewsList();
-    for (View view : attachedToViews) {
+    for (View view : currentViews) {
       act.runWithData((MessageView) view);
     }
   }
@@ -2410,11 +2409,15 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final void invalidateTextMediaReceiver () {
-    performWithViews(view -> view.invalidateTextMediaReceiver(this));
+    performWithViews(view -> requestTextMedia(view.getTextMediaReceiver()));
   }
 
-  public final void invalidateTextMediaReceiver (Text text, @Nullable TextMedia textMedia) {
+  public final void invalidateTextMediaReceiver (@NonNull Text text, @Nullable TextMedia textMedia) {
     performWithViews(view -> view.invalidateTextMediaReceiver(this, text, textMedia));
+  }
+
+  public final void invalidateReplyTextMediaReceiver (@NonNull Text text, @Nullable TextMedia textMedia) {
+    performWithViews(view -> view.invalidateReplyTextMediaReceiver(this, text, textMedia));
   }
 
   // Touch
@@ -2795,11 +2798,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     } else {
       colorTheme = getChatAuthorColorSet();
     }
-    return new Text.Builder(tdlib, text, openParameters(), maxWidth, getNameStyleProvider(), colorTheme)
+    return new Text.Builder(tdlib, text, openParameters(), maxWidth, getNameStyleProvider(), colorTheme, null)
       .singleLine()
       .clipTextArea()
       .allBold(allBold)
       .allClickable(allActive)
+      .viewProvider(currentViews)
       .onClick(isForward ? this::onForwardClick : this::onNameClick)
       .build();
   }
@@ -2839,7 +2843,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         hAuthorChatMark = null;
       }
       if (isPsa) {
-        hPsaTextT = new Text.Builder(tdlib, Lang.getPsaNotificationType(controller(), msg.forwardInfo.publicServiceAnnouncementType), openParameters(), maxWidth, getNameStyleProvider(), getChatAuthorPsaColorSet()).allClickable().singleLine().onClick(this::onNameClick).build();
+        CharSequence text = Lang.getPsaNotificationType(controller(), msg.forwardInfo.publicServiceAnnouncementType);
+        hPsaTextT = new Text.Builder(tdlib, text, openParameters(), maxWidth, getNameStyleProvider(), getChatAuthorPsaColorSet(), null)
+          .allClickable()
+          .singleLine()
+          .viewProvider(currentViews)
+          .onClick(this::onNameClick)
+          .build();
       } else {
         hPsaTextT = null;
       }
@@ -2893,7 +2903,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     int nameMaxWidth;
     if (isPsa) {
       nameMaxWidth = totalMaxWidth;
-      hPsaTextT = max > 0 ? new Text.Builder(tdlib, Lang.getPsaNotificationType(controller(), msg.forwardInfo.publicServiceAnnouncementType), openParameters(), max, getNameStyleProvider(), getChatAuthorPsaColorSet()).allClickable().singleLine().onClick(this::onNameClick).build() : null;
+      CharSequence text = Lang.getPsaNotificationType(controller(), msg.forwardInfo.publicServiceAnnouncementType);
+      hPsaTextT = max <= 0 ? null :
+        new Text.Builder(tdlib, text, openParameters(), max, getNameStyleProvider(), getChatAuthorPsaColorSet(), null)
+        .allClickable()
+        .singleLine()
+        .viewProvider(currentViews)
+        .onClick(this::onNameClick)
+        .build();
     } else {
       hPsaTextT = null;
       nameMaxWidth = max;
@@ -2974,7 +2991,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     boolean isPsa = isPsa() && !forceForwardedInfo();
     fAuthorNameT = makeName(forwardInfo.getAuthorName(), !(forwardInfo instanceof TGSourceHidden), isPsa, false, msg.viaBotUserId, (int) (isPsa ? totalMax : max), true);
     if (isPsa) {
-      fPsaTextT = new Text.Builder(tdlib, Lang.getPsaNotificationType(controller(), msg.forwardInfo.publicServiceAnnouncementType), openParameters(), (int) max, getNameStyleProvider(), getChatAuthorPsaColorSet()).allClickable().singleLine().onClick(this::onForwardClick).build();
+      CharSequence text = Lang.getPsaNotificationType(controller(), msg.forwardInfo.publicServiceAnnouncementType);
+      fPsaTextT = new Text.Builder(tdlib, text, openParameters(), (int) max, getNameStyleProvider(), getChatAuthorPsaColorSet(), null)
+        .allClickable()
+        .singleLine()
+        .onClick(this::onForwardClick)
+        .build();
     } else {
       fPsaTextT = null;
     }
@@ -3538,6 +3560,19 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     currentComplexReceiver = complexReceiver;
     messageReactions.setReceiversPool(complexReceiver);
     computeQuickButtons();
+  }
+
+  public final void requestAllTextMedia (MessageView view) {
+    requestTextMedia(view.getTextMediaReceiver());
+
+    if (footerText != null) {
+      footerText.requestMedia(view.getFooterTextMediaReceiver(true));
+    } else {
+      ComplexReceiver receiver = view.getFooterTextMediaReceiver(false);
+      if (receiver != null) {
+        receiver.clear();
+      }
+    }
   }
 
   public void requestTextMedia (ComplexReceiver textMediaReceiver) {
@@ -6288,16 +6323,24 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   public void setFooter (String title, String text, TdApi.TextEntity[] entities) {
     this.footerTitle = title;
 
-    TextWrapper wrapper = new TextWrapper(text, getSmallerTextStyleProvider(), getTextColorSet(), TextEntity.valueOf(tdlib, text, entities, openParameters())).setClickCallback(clickCallback());
+    final TextWrapper footerWrapper = new TextWrapper(text, getSmallerTextStyleProvider(), getTextColorSet())
+      .setEntities(TextEntity.valueOf(tdlib, text, entities, openParameters()), (wrapper, text1, specificMedia) -> {
+        if (footerText == wrapper) {
+          performWithViews(view -> {
+            view.invalidateFooterTextMediaReceiver(this, text1, specificMedia);
+          });
+        }
+      })
+      .setClickCallback(clickCallback());
     if (useBubbles()) {
-      wrapper.addTextFlags(Text.FLAG_ADJUST_TO_CURRENT_WIDTH);
+      footerWrapper.addTextFlags(Text.FLAG_ADJUST_TO_CURRENT_WIDTH);
     }
     if (Config.USE_NONSTRICT_TEXT_ALWAYS || !useBubbles()) {
-      wrapper.addTextFlags(Text.FLAG_BOUNDS_NOT_STRICT);
+      footerWrapper.addTextFlags(Text.FLAG_BOUNDS_NOT_STRICT);
     }
-    wrapper.setViewProvider(currentViews);
+    footerWrapper.setViewProvider(currentViews);
 
-    this.footerText = wrapper;
+    this.footerText = footerWrapper;
   }
 
   protected final int getFooterTop () {
@@ -6507,7 +6550,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     DrawAlgorithms.drawDirection(c, endX - Screen.dp(12f), cy, ColorUtils.alphaColor(alpha, Theme.getColor(iconColorId)), Gravity.RIGHT);
   }
 
-  private void drawFooter (Canvas c) {
+  private void drawFooter (MessageView view, Canvas c) {
     int contentX, contentY = getFooterTop();
     if (useBubbles()) {
       // int bubblePadding = getBubbleContentPadding();
@@ -6527,7 +6570,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     paint.setColor(Theme.getColor(R.id.theme_color_textNeutral));
     c.drawText(trimmedFooterTitle != null ? trimmedFooterTitle : footerTitle, contentX, contentY + Screen.dp(15f), paint);
 
-    footerText.draw(c, contentX, contentY + Screen.dp(22f), null, 1f);
+    footerText.draw(c, contentX, contentY + Screen.dp(22f), null, 1f, view.getFooterTextMediaReceiver(true));
   }
 
   // Locale change

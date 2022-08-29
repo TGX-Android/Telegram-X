@@ -795,7 +795,8 @@ public class SettingsController extends ViewController<Void> implements
     TextWrapper textWrapper = textWrappers.get(id);
     if (textWrapper == null || !Td.equalsTo(currentTexts.get(id), text)) {
       currentTexts.put(id, text);
-      textWrapper = new TextWrapper(tdlib, text, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, null);
+      // TODO: custom emoji support
+      textWrapper = new TextWrapper(tdlib, text, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, null, null);
       textWrapper.addTextFlags(Text.FLAG_CUSTOM_LONG_PRESS | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0));
       textWrappers.put(id, textWrapper);
     }

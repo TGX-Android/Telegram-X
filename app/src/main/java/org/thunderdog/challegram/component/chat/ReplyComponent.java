@@ -52,6 +52,7 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextEntity;
+import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
 
 import me.vkryl.android.util.SingleViewProvider;
@@ -229,7 +230,22 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       .singleLine()
       .textFlags(Text.FLAG_CUSTOM_LONG_PRESS)
       .ignoreNewLines().ignoreContinuousNewLines()
-      .entities(content != null && !Td.isEmpty(content.formattedText) ? TextEntity.valueOf(tdlib, content.formattedText.text, content.formattedText.entities, null) : null)
+      .entities(
+        content != null && !Td.isEmpty(content.formattedText) ? TextEntity.valueOf(tdlib, content.formattedText.text, content.formattedText.entities, null) : null,
+        (text, specificMedia) -> {
+          if (isMessageComponent()) {
+            parent.invalidateReplyTextMediaReceiver(text, specificMedia);
+          } else {
+            viewProvider.performWithViews((view) -> {
+              if (view instanceof ReplyView) {
+                text.invalidateMediaContent(((ReplyView) view).getTextMediaReceiver(), specificMedia);
+              } else {
+                throw new UnsupportedOperationException();
+              }
+            });
+          }
+        }
+      )
       .viewProvider(viewProvider)
       .build();
 
@@ -246,7 +262,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     }
   }
 
-  private void requestTextContent (ComplexReceiver textMediaReceiver) {
+  public void requestTextContent (ComplexReceiver textMediaReceiver) {
     if (trimmedContent != null) {
       trimmedContent.requestMedia(textMediaReceiver);
     } else {

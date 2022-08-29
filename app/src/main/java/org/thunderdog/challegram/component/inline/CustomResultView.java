@@ -43,7 +43,7 @@ public class CustomResultView extends SparseDrawableView implements Destroyable,
   private static final int FLAG_CAUGHT = 1 << 1;
   private static final int FLAG_SELECTED = 1 << 2;
 
-  private final ComplexReceiver receiver;
+  private final ComplexReceiver receiver, textMediaReceiver;
 
   private int flags;
   private int selectionIndex = -1;
@@ -51,8 +51,13 @@ public class CustomResultView extends SparseDrawableView implements Destroyable,
   public CustomResultView (Context context) {
     super(context);
     this.receiver = new ComplexReceiver(this);
+    this.textMediaReceiver = new ComplexReceiver(this);
     Views.setClickable(this);
     RippleSupport.setTransparentSelector(this);
+  }
+
+  public ComplexReceiver getTextMediaReceiver () {
+    return textMediaReceiver;
   }
 
   private @Nullable InlineResult<?> result;
@@ -80,6 +85,7 @@ public class CustomResultView extends SparseDrawableView implements Destroyable,
       }
     } else {
       this.receiver.clear();
+      this.textMediaReceiver.clear();
     }
   }
 
@@ -87,6 +93,7 @@ public class CustomResultView extends SparseDrawableView implements Destroyable,
   public boolean invalidateContent (Object cause) {
     if (this.result == cause && cause != null) {
       this.result.requestContent(receiver, true);
+      this.result.requestTextMedia(textMediaReceiver);
       return true;
     }
     return false;
@@ -97,6 +104,7 @@ public class CustomResultView extends SparseDrawableView implements Destroyable,
     if (!isAttached) {
       flags &= ~FLAG_DETACHED;
       receiver.attach();
+      textMediaReceiver.attach();
       if (result != null) {
         result.attachToView(this);
       }
@@ -108,6 +116,7 @@ public class CustomResultView extends SparseDrawableView implements Destroyable,
     if (isAttached) {
       flags |= FLAG_DETACHED;
       receiver.detach();
+      textMediaReceiver.detach();
       if (result != null) {
         result.detachFromView(this);
       }

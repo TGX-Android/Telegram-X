@@ -279,6 +279,10 @@ public class PageBlockView extends BaseView implements Destroyable, InvalidateCo
     setMeasuredDimension(width, MeasureSpec.makeMeasureSpec(block != null ? block.getHeight(this, width) : 0, MeasureSpec.EXACTLY));
   }
 
+  public ComplexReceiver getIconReceiver () {
+    return iconReceiver;
+  }
+
   @Override
   protected void onDraw (Canvas c) {
     if (block != null) {

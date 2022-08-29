@@ -367,7 +367,9 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
 
   private void setQuestion (String question) {
     if (this.questionText == null || !StringUtils.equalsOrBothEmpty(this.questionText.getText(), question)) {
-      this.questionText = new TextWrapper(state.poll.question, getBiggerTextStyleProvider(), getTextColorSet(), new TextEntity[] {TextEntity.valueOf(tdlib, state.poll.question, new TdApi.TextEntity(0, state.poll.question.length(), new TdApi.TextEntityTypeBold()), null)}).setViewProvider(currentViews);
+      this.questionText = new TextWrapper(state.poll.question, getBiggerTextStyleProvider(), getTextColorSet())
+        .setEntities(new TextEntity[] {TextEntity.valueOf(tdlib, state.poll.question, new TdApi.TextEntity(0, state.poll.question.length(), new TdApi.TextEntityTypeBold()), null)}, null)
+        .setViewProvider(currentViews);
     }
   }
 
@@ -376,7 +378,8 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     int optionId = 0;
     for (TdApi.PollOption option : options) {
       if (this.options[optionId].text == null || !StringUtils.equalsOrBothEmpty(this.options[optionId].text.getText(), option.text)) {
-        this.options[optionId].text = new TextWrapper(option.text, getTextStyleProvider(), getTextColorSet(), null).setViewProvider(currentViews);
+        this.options[optionId].text = new TextWrapper(option.text, getTextStyleProvider(), getTextColorSet())
+          .setViewProvider(currentViews);
       }
       optionId++;
     }

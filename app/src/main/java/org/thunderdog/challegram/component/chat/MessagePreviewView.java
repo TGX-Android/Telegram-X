@@ -38,6 +38,7 @@ import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
+import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.widget.AttachDelegate;
 import org.thunderdog.challegram.widget.BaseView;
 
@@ -322,7 +323,8 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
         null,
         availWidth,
         Paints.robotoStyleProvider(TEXT_SIZE),
-        TextColorSets.Regular.MESSAGE_AUTHOR
+        TextColorSets.Regular.MESSAGE_AUTHOR,
+        null
       ).viewProvider(viewProvider)
        .singleLine()
        .allClickable()
@@ -351,9 +353,15 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     ComplexReceiver receiver;
     if (!Td.isEmpty(text)) {
       newText = new Text.Builder(tdlib,
-        text, null, availWidth, Paints.robotoStyleProvider(TEXT_SIZE), TextColorSets.Regular.NORMAL
+        text, null, availWidth, Paints.robotoStyleProvider(TEXT_SIZE), TextColorSets.Regular.NORMAL, (text1, specificMedia) -> {
+          for (ListAnimator.Entry<TextEntry> entry : contentText) {
+            if (entry.item.content == text1) {
+              text1.invalidateMediaContent(entry.item.receiver, specificMedia);
+            }
+          }
+        }
       ).viewProvider(viewProvider)
-       .lineMarginProvider(iconRes != 0 ? (Text.LineMarginProvider) (lineIndex, y, defaultMaxWidth, lineHeight) -> lineIndex == 0 ? Screen.dp(2f) + Screen.dp(18f) : 0 : null)
+       .lineMarginProvider(iconRes != 0 ? (lineIndex, y, defaultMaxWidth, lineHeight) -> lineIndex == 0 ? Screen.dp(2f) + Screen.dp(18f) : 0 : null)
        .singleLine()
        .ignoreNewLines()
        .ignoreContinuousNewLines()

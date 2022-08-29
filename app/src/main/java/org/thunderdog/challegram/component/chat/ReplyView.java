@@ -68,6 +68,10 @@ public class ReplyView extends FrameLayoutFix implements View.OnClickListener, D
     reply.setCurrentView(this);
   }
 
+  public ComplexReceiver getTextMediaReceiver () {
+    return textMediaReceiver;
+  }
+
   @Override
   public void onClick (View v) {
     if (callback != null) {

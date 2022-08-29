@@ -48,8 +48,10 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextEntity;
+import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
 import org.thunderdog.challegram.util.text.TextWrapper;
+import org.thunderdog.challegram.widget.PageBlockView;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -315,7 +317,9 @@ public class PageBlockRichText extends PageBlock {
       currentViews.invalidateContent(this);
 
       CharSequence text = context.tdlib().status().chatStatus(chat);
-      subtitle = new TextWrapper(text.toString(), getCreditProvider(), this.text.getTextColorSet(), TextEntity.valueOf(context.tdlib(), text.toString(), TD.toEntities(text, false), openParameters)).setMaxLines(1);
+      subtitle = new TextWrapper(text.toString(), getCreditProvider(), this.text.getTextColorSet())
+        .setEntities(TextEntity.valueOf(context.tdlib(), text.toString(), TD.toEntities(text, false), openParameters), null)
+        .setMaxLines(1);
       subtitle.prepare(getMaxWidth() - getTextPaddingLeft() - getTextPaddingRight() - (needQuote ? Screen.dp(QUOTE_OFFSET) : 0) - avatarSize);
       if (currentViews.hasAnyTargetToInvalidate() && context.isAttachedToNavigationController() && SystemClock.uptimeMillis() - time > 50) {
         subtitleVisible = new BoolAnimator(0, (id, factor, fraction, callee) -> {
@@ -460,7 +464,15 @@ public class PageBlockRichText extends PageBlock {
   }
 
   private void setText (TdApi.RichText richText, TextStyleProvider textStyleProvider, TextColorSet colorSet, int flags, @Nullable  TdlibUi.UrlOpenParameters openParameters) {
-    this.text = TextWrapper.parseRichText(context, context instanceof Text.ClickCallback ? (Text.ClickCallback) context : null, richText, textStyleProvider, colorSet, openParameters);
+    this.text = TextWrapper.parseRichText(context, context instanceof Text.ClickCallback ? (Text.ClickCallback) context : null, richText, textStyleProvider, colorSet, openParameters, (wrapper, text, specificMedia) -> {
+      if (this.text == wrapper) {
+        for (View view : currentViews) {
+          if (view instanceof PageBlockView) {
+            text.invalidateMediaContent(((PageBlockView) view).getIconReceiver(), specificMedia);
+          }
+        }
+      }
+    });
     this.text.setViewProvider(currentViews);
     if (flags != 0) {
       this.text.addTextFlags(flags);

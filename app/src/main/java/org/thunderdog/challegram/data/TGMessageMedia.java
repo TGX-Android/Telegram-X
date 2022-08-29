@@ -259,14 +259,14 @@ public class TGMessageMedia extends TGMessage {
         this.wrapper.performDestroy();
       }
       if (!Td.isEmpty(caption)) {
-        this.wrapper = new TextWrapper(caption.text, getTextStyleProvider(), getTextColorSet(), TextEntity.valueOf(tdlib, caption, openParameters()))
-          .addTextFlags(Text.FLAG_BIG_EMOJI)
-          .setClickCallback(clickCallback())
-          .setTextMediaListener((wrapper, text, specificMedia) -> {
+        this.wrapper = new TextWrapper(caption.text, getTextStyleProvider(), getTextColorSet())
+          .setEntities(TextEntity.valueOf(tdlib, caption, openParameters()), (wrapper, text, specificMedia) -> {
             if (this.wrapper == wrapper) {
               invalidateTextMediaReceiver(text, specificMedia);
             }
-          });
+          })
+          .addTextFlags(Text.FLAG_BIG_EMOJI)
+          .setClickCallback(clickCallback());
         this.wrapper.setViewProvider(currentViews);
         if (Config.USE_NONSTRICT_TEXT_ALWAYS || !useBubbles()) {
           this.wrapper.addTextFlags(Text.FLAG_BOUNDS_NOT_STRICT);

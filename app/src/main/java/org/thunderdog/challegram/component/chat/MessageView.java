@@ -98,6 +98,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private final GifReceiver gifReceiver;
   private final ComplexReceiver reactionsComplexReceiver, textMediaReceiver, replyTextMediaReceiver;
   private final DoubleImageReceiver replyReceiver;
+  private ComplexReceiver footerTextMediaReceiver;
 
   private ImageReceiver contentReceiver;
   private DoubleImageReceiver previewReceiver;
@@ -188,16 +189,23 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     }
   }
 
-  public void invalidateTextMediaReceiver (@NonNull TGMessage msg) {
-    invalidateTextMediaReceiver(msg, null, null);
+  public void invalidateTextMediaReceiver (@NonNull TGMessage msg, Text text, @Nullable TextMedia textMedia) {
+    invalidateTextMediaReceiver(msg, text, textMedia, textMediaReceiver);
   }
 
-  public void invalidateTextMediaReceiver (@NonNull TGMessage msg, Text text, @Nullable TextMedia textMedia) {
+  public void invalidateReplyTextMediaReceiver (@NonNull TGMessage msg, @NonNull Text text, @Nullable TextMedia textMedia) {
+    invalidateTextMediaReceiver(msg, text, textMedia, replyTextMediaReceiver);
+  }
+
+  public void invalidateFooterTextMediaReceiver (@NonNull TGMessage msg, @NonNull Text text, @Nullable TextMedia textMedia) {
+    invalidateTextMediaReceiver(msg, text, textMedia, getFooterTextMediaReceiver(true));
+  }
+
+  private void invalidateTextMediaReceiver (@NonNull TGMessage msg, @NonNull Text text, @Nullable TextMedia textMedia, @NonNull ComplexReceiver receiver) {
     if (this.msg == msg) {
-      if (textMedia == null || text == null || !text.invalidateMediaContent(complexReceiver, textMedia)) {
-        msg.requestTextMedia(complexReceiver);
+      if (textMedia == null || !text.invalidateMediaContent(receiver, textMedia)) {
+        msg.requestTextMedia(receiver);
       }
-      invalidate();
     }
   }
 
@@ -260,7 +268,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     message.resetTransformState();
     message.requestAvatar(avatarReceiver);
     message.requestReactions(reactionsComplexReceiver);
-    message.requestTextMedia(textMediaReceiver);
+    message.requestAllTextMedia(this);
 
     if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
       previewReceiver.setRadius(message.getImageContentRadius(true));
@@ -482,6 +490,18 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   public DoubleImageReceiver getPreviewReceiver () {
     return previewReceiver;
+  }
+
+  public ComplexReceiver getFooterTextMediaReceiver (boolean force) {
+    if (footerTextMediaReceiver == null) {
+      footerTextMediaReceiver = new ComplexReceiver(this);
+      if (isAttached) {
+        footerTextMediaReceiver.attach();
+      } else {
+        footerTextMediaReceiver.detach();
+      }
+    }
+    return footerTextMediaReceiver;
   }
 
   private boolean isAttached = true;

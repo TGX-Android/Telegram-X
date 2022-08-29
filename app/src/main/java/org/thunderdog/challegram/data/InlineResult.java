@@ -315,6 +315,10 @@ public abstract class InlineResult <T> implements MessageSourceProvider {
     requestContent(receiver, false);
   }
 
+  public void requestTextMedia (ComplexReceiver textMediaReceiver) {
+    textMediaReceiver.clear();
+  }
+
   private MediaPreview mediaPreview;
 
   protected final void setMediaPreview (MediaPreview mediaPreview) {

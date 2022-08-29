@@ -38,6 +38,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
+import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
 import java.util.ArrayList;
@@ -115,7 +116,14 @@ public class TGMessageFile extends TGMessage {
         }
         TextWrapper wrapper;
         if (!Td.isEmpty(caption)) {
-          wrapper = new TextWrapper(caption.text, getTextStyleProvider(), getTextColorSet(), TextEntity.valueOf(tdlib, caption, openParameters())).addTextFlags(Text.FLAG_BIG_EMOJI).setClickCallback(clickCallback());
+          wrapper = new TextWrapper(caption.text, getTextStyleProvider(), getTextColorSet())
+            .setEntities(TextEntity.valueOf(tdlib, caption, openParameters()), (wrapper1, text, specificMedia) -> {
+              if (captionWrapper == wrapper1) {
+                invalidateTextMediaReceiver(text, specificMedia);
+              }
+            })
+            .addTextFlags(Text.FLAG_BIG_EMOJI)
+            .setClickCallback(clickCallback());
           wrapper.setViewProvider(currentViews);
           wrapper.prepare(getContentMaxWidth());
         } else {
