@@ -334,7 +334,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
       final int resolution;
       switch (file.getOptimizationMode()) {
         case GifFile.OptimizationMode.EMOJI:
-          resolution = Math.min(100, Screen.dp(15f));
+          resolution = Math.min(100, Screen.dp(20f));
           break;
         case GifFile.OptimizationMode.STICKER_PREVIEW:
           resolution = Math.min(Math.max(EmojiMediaListController.getEstimateColumnResolution(), StickersListController.getEstimateColumnResolution()), 160);
@@ -345,7 +345,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
         default:
           throw new UnsupportedOperationException();
       }
-      width = height = resolution;
+      width = height = file.getRequestedSize() != 0 ? Math.min(file.getRequestedSize(), resolution) : resolution;
       error = totalFrameCount <= 0 || frameRate <= 0 || durationSeconds <= 0;
       if (totalFrameCount == 1) {
         file.setIsStill(true);
@@ -520,7 +520,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
               lottieCacheFileSize = Math.max(free.getWidth(), free.getHeight()),
               file.getFitzpatrickType(),
               file.getOptimizationMode() == GifFile.OptimizationMode.EMOJI ? TimeUnit.MINUTES.toMillis(30) : TimeUnit.MINUTES.toMillis(2),
-              500
+              8
             );
             // final boolean cacheExisted = lottieCacheFile != null && lottieCacheFile.exists();
             int status;

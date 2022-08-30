@@ -147,7 +147,7 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
         this.gifFile = new GifFile(tdlib, sticker);
         this.gifFile.setScaleType(GifFile.FIT_CENTER);
         this.gifFile.setOptimizationMode(GifFile.OptimizationMode.EMOJI);
-        this.gifFile.setSize(Math.max(width, height));
+        this.gifFile.setRequestedSize(Math.max(width, height));
         break;
       }
       case TdApi.StickerFormatWebp.CONSTRUCTOR: {

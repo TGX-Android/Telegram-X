@@ -302,7 +302,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     this.targetGifFile = new GifFile(tdlib, animation);
     this.targetGifFile.setScaleType(ImageFile.CENTER_CROP);
     if (Math.max(animation.width, animation.height) > 1280) {
-      this.targetGifFile.setSize(1280);
+      this.targetGifFile.setRequestedSize(1280);
     }
 
     this.contentWidth = animation.width;

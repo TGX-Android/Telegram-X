@@ -187,7 +187,7 @@ public class GifFile {
   }
 
   public boolean isOneTimeCache () { // Delete cache file as soon as file no longer displayed
-    return optimizationMode == OptimizationMode.STICKER_PREVIEW;
+    return optimizationMode == OptimizationMode.EMOJI || optimizationMode == OptimizationMode.STICKER_PREVIEW;
   }
 
   @Deprecated(forRemoval = true)
@@ -269,8 +269,14 @@ public class GifFile {
     this.scaleType = scaleType;
   }
 
-  public void setSize (int size) {
-    // todo?
+  private int requestedSize;
+
+  public void setRequestedSize (int size) {
+    this.requestedSize = size;
+  }
+
+  public int getRequestedSize () {
+    return requestedSize;
   }
 
   public TdApi.File getFile () {
