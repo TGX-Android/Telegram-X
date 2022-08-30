@@ -115,9 +115,8 @@ public class MessageOptionsController extends MessageOptionsPagerController.Mess
       } else {
         CustomTextView textView = new CustomTextView(context, tdlib);
         textView.setTextColorId(R.id.theme_color_textLight);
-        textView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(40)));
+        textView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         textView.setPadding(Screen.dp(16f), Screen.dp(14f), Screen.dp(16f), Screen.dp(6f));
-        textView.setMaxLineCount(1);
         return new OptionHolder(textView);
       }
     }

@@ -67,28 +67,49 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
   private int linkFlags = Text.ENTITY_FLAGS_NONE;
   private int maxLineCount = -1;
 
-  private static class TextEntry implements Destroyable {
-    private final Text text;
-    private final ComplexReceiver receiver;
+  private static class TextEntry extends ListAnimator.MeasurableEntry<Text> implements AttachDelegate {
+    public final ComplexReceiver receiver;
 
-    public TextEntry (CustomTextView view, Text text) {
-      this.text = text;
-      if (text.hasMedia()) {
+    public TextEntry (View view, Text content, boolean isAttached) {
+      super(content);
+      if (content.hasMedia()) {
         receiver = new ComplexReceiver(view);
-        if (view.isAttached) {
+        if (isAttached) {
           receiver.attach();
         } else {
           receiver.detach();
         }
-        text.requestMedia(receiver);
+        content.requestMedia(receiver);
       } else {
         receiver = null;
       }
     }
 
+    public void invalidateMediaContent (Text text, @Nullable TextMedia specificMedia) {
+      if (receiver != null && this.content == text) {
+        if (!text.invalidateMediaContent(receiver, specificMedia)) {
+          text.requestMedia(receiver);
+        }
+      }
+    }
+
+    @Override
+    public void attach () {
+      if (receiver != null) {
+        receiver.attach();
+      }
+    }
+
+    @Override
+    public void detach () {
+      if (receiver != null) {
+        receiver.detach();
+      }
+    }
+
     @Override
     public void performDestroy () {
-      text.performDestroy();
+      super.performDestroy();
       if (receiver != null) {
         receiver.performDestroy();
       }
@@ -242,10 +263,8 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
   @Override
   public void onInvalidateTextMedia (Text text, @Nullable TextMedia specificMedia) {
     for (ListAnimator.Entry<TextEntry> entry : this.text) {
-      if (entry.item.text == text) {
-        if (!entry.item.text.invalidateMediaContent(entry.item.receiver, specificMedia)) {
-          entry.item.text.requestMedia(entry.item.receiver);
-        }
+      if (entry.item.content == text) {
+        entry.item.invalidateMediaContent(text, specificMedia);
       }
     }
     invalidate();
@@ -259,9 +278,9 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
     if (calculateTextWidth() == textWidth) {
       TextEntry currentText = this.text.singletonItem();
       if (currentText != null) {
-        currentText.text.cancelTouch();
+        currentText.content.cancelTouch();
       }
-      this.text.replace(new TextEntry(this, text), animated);
+      this.text.replace(new TextEntry(this, text, isAttached), animated);
       text.setViewProvider(new SingleViewProvider(this));
       if (getMeasuredHeight() != getCurrentHeight()) {
         requestLayout();
@@ -277,7 +296,7 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
       TextEntry currentText = this.text.singletonItem();
       lastMeasuredWidth = width;
       if (currentText != null) {
-        currentText.text.cancelTouch();
+        currentText.content.cancelTouch();
       }
       if (StringUtils.isEmpty(rawText)) {
         this.text.clear(animated);
@@ -298,7 +317,7 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
             .maxLineCount(maxLineCount)
             .build();
           newText.setViewProvider(new SingleViewProvider(this));
-          this.text.replace(new TextEntry(this, newText), animated);
+          this.text.replace(new TextEntry(this, newText, isAttached), animated);
         }
         if (!byLayout) {
           if (currentHeight != 0 && currentHeight != getCurrentHeight()) {
@@ -316,7 +335,7 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
     if (text == null || (linkFlags == Text.ENTITY_FLAGS_NONE && entities == null)) {
       return super.onTouchEvent(event);
     } else {
-      return text.text.onTouchEvent(this, event, clickCallback);
+      return text.content.onTouchEvent(this, event, clickCallback);
     }
   }
 
@@ -383,7 +402,7 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
   @Override
   protected void onDraw (Canvas c) {
     for (ListAnimator.Entry<TextEntry> entry : text) {
-      entry.item.text.draw(c, getPaddingLeft(), getMeasuredWidth() - getPaddingRight(), 0, getPaddingTop(), colorSet, entry.getVisibility(), entry.item.receiver);
+      entry.item.content.draw(c, getPaddingLeft(), getMeasuredWidth() - getPaddingRight(), 0, getPaddingTop(), colorSet, entry.getVisibility(), entry.item.receiver);
     }
   }
 
@@ -394,9 +413,7 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
     if (!isAttached) {
       isAttached = true;
       for (ListAnimator.Entry<TextEntry> entry : text) {
-        if (entry.item.receiver != null) {
-          entry.item.receiver.attach();
-        }
+        entry.item.attach();
       }
     }
   }
@@ -406,9 +423,7 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
     if (isAttached) {
       isAttached = false;
       for (ListAnimator.Entry<TextEntry> entry : text) {
-        if (entry.item.receiver != null) {
-          entry.item.receiver.detach();
-        }
+        entry.item.detach();
       }
     }
   }
@@ -416,9 +431,7 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
   @Override
   public void performDestroy () {
     for (ListAnimator.Entry<TextEntry> entry : text) {
-      if (entry.item.receiver != null) {
-        entry.item.receiver.performDestroy();
-      }
+      entry.item.performDestroy();
     }
     text.clear(false);
   }

@@ -38,7 +38,6 @@ import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
-import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.widget.AttachDelegate;
 import org.thunderdog.challegram.widget.BaseView;
 
@@ -53,35 +52,7 @@ import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 
 public class MessagePreviewView extends BaseView implements AttachDelegate, Destroyable, ChatListener, MessageListener, TdlibCache.UserDataChangeListener, TGLegacyManager.EmojiLoadListener {
-  private static class MeasurableEntry<T extends ListAnimator.Measurable> implements ListAnimator.Measurable {
-    protected T content;
-
-    protected MeasurableEntry (T content) {
-      this.content = content;
-    }
-
-    @Override
-    public final int getSpacingStart (boolean isFirst) {
-      return content.getSpacingStart(isFirst);
-    }
-
-    @Override
-    public final int getSpacingEnd (boolean isLast) {
-      return content.getSpacingEnd(isLast);
-    }
-
-    @Override
-    public final int getWidth () {
-      return content.getWidth();
-    }
-
-    @Override
-    public final int getHeight () {
-      return content.getHeight();
-    }
-  }
-
-  private static class TextEntry extends MeasurableEntry<Text> implements Destroyable {
+  private static class TextEntry extends ListAnimator.MeasurableEntry<Text> implements Destroyable {
     public Drawable drawable;
     public ComplexReceiver receiver;
 
@@ -93,14 +64,14 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
 
     @Override
     public void performDestroy () {
-      this.content.performDestroy();
+      super.performDestroy();
       if (receiver != null) {
         receiver.performDestroy();
       }
     }
   }
 
-  private static class MediaEntry extends MeasurableEntry<MediaPreview> implements Destroyable {
+  private static class MediaEntry extends ListAnimator.MeasurableEntry<MediaPreview> implements Destroyable {
     final ComplexReceiver receiver;
 
     public MediaEntry (MediaPreview preview, ComplexReceiver receiver) {
@@ -110,6 +81,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
 
     @Override
     public void performDestroy () {
+      super.performDestroy();
       receiver.performDestroy();
     }
   }
@@ -286,15 +258,10 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
 
     if (preview == null) {
       this.mediaPreview.replace(null, animated);
-    } else if (animated || this.mediaPreview.isEmpty()) {
+    } else {
       ComplexReceiver receiver = newComplexReceiver();
       preview.requestFiles(receiver, false);
       this.mediaPreview.replace(new MediaEntry(preview, receiver), animated);
-    } else {
-      MediaEntry entry = this.mediaPreview.singleton().item;
-      entry.receiver.clear();
-      entry.content = preview;
-      preview.requestFiles(entry.receiver, false);
     }
   }
 

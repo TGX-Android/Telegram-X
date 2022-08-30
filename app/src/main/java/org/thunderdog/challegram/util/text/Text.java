@@ -1943,6 +1943,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     }
   }
 
+  @Override
   public int getWidth () {
     return currentWidth;
   }
@@ -1985,6 +1986,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return (textFlags & FLAG_FULL_RTL) != 0;
   }
 
+  @Override
   public int getHeight () {
     return currentY;
   }
