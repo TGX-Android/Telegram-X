@@ -60,7 +60,7 @@ public class GifBridge {
     for (int i = 0; i < threads.length; i++) {
       threads[i] = new GifThread(i);
     }
-    lottieThreads = new GifThread[2];
+    lottieThreads = new GifThread[3];
     for (int i = 0; i < lottieThreads.length; i++) {
       lottieThreads[i] = new GifThread(i);
     }
@@ -68,7 +68,7 @@ public class GifBridge {
 
   private GifThread obtainFrameThread (GifFile file) {
     if (file.getGifType() == GifFile.TYPE_TG_LOTTIE) {
-      return lottieThreads[file.needOptimize() ? 1 : 0];
+      return lottieThreads[file.getOptimizationMode()];
     } else {
       if (++lastUsedThread == THREAD_POOL_SIZE) {
         lastUsedThread = 0;

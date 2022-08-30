@@ -636,7 +636,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
               GifFile gifFile;
               if (sticker != null && Td.isAnimated(sticker.format) && this.sticker != null && this.sticker.getConstructor() != TdApi.DiceStickersSlotMachine.CONSTRUCTOR) {
                 gifFile = new GifFile(tdlib, sticker);
-                gifFile.setOptimize(true);
+                gifFile.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
                 gifFile.setScaleType(GifFile.CENTER_CROP);
                 gifFile.setUnique(true);
                 gifFile.setPlayOnce(dice.value != 0);

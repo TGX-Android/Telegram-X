@@ -94,7 +94,7 @@ public class MediaPreviewSimple extends MediaPreview {
       }
       this.previewGif = TD.toGifFile(tdlib, thumbnail);
       if (this.previewGif != null) {
-        this.previewGif.setOptimize(true);
+        this.previewGif.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
         this.previewGif.setSize(size);
         this.previewGif.setScaleType(GifFile.CENTER_CROP);
         this.previewGif.setPlayOnce();
@@ -150,7 +150,7 @@ public class MediaPreviewSimple extends MediaPreview {
       }
       this.targetGif = TD.toGifFile(tdlib, thumbnail);
       if (this.targetGif != null) {
-        this.targetGif.setOptimize(true);
+        this.targetGif.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
         this.targetGif.setSize(size);
         this.targetGif.setScaleType(GifFile.CENTER_CROP);
         this.targetGif.setPlayOnce();
@@ -190,7 +190,7 @@ public class MediaPreviewSimple extends MediaPreview {
     }
     if (Td.isAnimated(sticker.format)) {
       this.targetGif = new GifFile(tdlib, sticker);
-      this.targetGif.setOptimize(true);
+      this.targetGif.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
       this.targetGif.setSize(size);
       this.targetGif.setScaleType(GifFile.FIT_CENTER);
       this.targetGif.setPlayOnce();

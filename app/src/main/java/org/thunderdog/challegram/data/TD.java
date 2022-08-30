@@ -525,7 +525,7 @@ public class TD {
         return null;
       case TdApi.ThumbnailFormatTgs.CONSTRUCTOR: {
         GifFile gifFile = new GifFile(tdlib, thumbnail.file, GifFile.TYPE_TG_LOTTIE);
-        gifFile.setOptimize(true);
+        gifFile.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
         return gifFile;
       }
       case TdApi.ThumbnailFormatWebm.CONSTRUCTOR:
@@ -535,7 +535,7 @@ public class TD {
             GifFile.TYPE_WEBM :
             GifFile.TYPE_MPEG4
         );
-        gifFile.setOptimize(true);
+        gifFile.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
         return gifFile;
       }
     }

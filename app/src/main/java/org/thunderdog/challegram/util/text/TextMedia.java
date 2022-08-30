@@ -94,12 +94,14 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     if (icon.document.minithumbnail != null) {
       miniThumbnail = new ImageFileLocal(icon.document.minithumbnail);
       miniThumbnail.setScaleType(ImageFile.FIT_CENTER);
+      miniThumbnail.setNoBlur();
     }
 
     thumbnail = TD.toImageFile(tdlib, icon.document.thumbnail);
     if (thumbnail != null) {
       thumbnail.setSize(Screen.dp(Math.max(icon.width, icon.height)));
       thumbnail.setScaleType(ImageFile.FIT_CENTER);
+      thumbnail.setNoBlur();
     }
 
     if ("video/mp4".equals(icon.document.mimeType)) {
@@ -136,6 +138,7 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     if (thumbnail != null) {
       thumbnail.setSize(Math.max(width, height));
       thumbnail.setScaleType(ImageFile.FIT_CENTER);
+      thumbnail.setNoBlur();
     }
 
     switch (sticker.format.getConstructor()) {
@@ -143,7 +146,7 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
       case TdApi.StickerFormatWebm.CONSTRUCTOR: {
         this.gifFile = new GifFile(tdlib, sticker);
         this.gifFile.setScaleType(GifFile.FIT_CENTER);
-        this.gifFile.setOptimize(true);
+        this.gifFile.setOptimizationMode(GifFile.OptimizationMode.EMOJI);
         this.gifFile.setSize(Math.max(width, height));
         break;
       }

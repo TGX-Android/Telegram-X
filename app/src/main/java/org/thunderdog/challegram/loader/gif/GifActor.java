@@ -19,6 +19,7 @@ import android.media.MediaMetadataRetriever;
 import android.os.Build;
 import android.view.View;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
@@ -41,6 +42,8 @@ import org.thunderdog.challegram.ui.StickersListController;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.io.File;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -80,15 +83,13 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
   private final Client.ResultHandler fileLoadHandler;
 
   private final double maxFrameRate;
-  private static final int DEFAULT_MAX_STICKER_RESOLUTION = 384;
-  private static final int REDUCED_MAX_STICKER_RESOLUTION = 160;
 
   private final boolean isPlayOnce;
 
   public GifActor (final GifFile file, GifThread thread) {
     this.isPlayOnce = file.isPlayOnce();
     file.setVibrationPattern(Emoji.VIBRATION_PATTERN_NONE);
-    this.maxFrameRate = file.needOptimize() || Settings.instance().getNewSetting(Settings.SETTING_FLAG_LIMIT_STICKERS_FPS) ? REDUCED_MAX_FRAME_RATE : DEFAULT_MAX_FRAME_RATE;
+    this.maxFrameRate = file.hasOptimizations() || Settings.instance().getNewSetting(Settings.SETTING_FLAG_LIMIT_STICKERS_FPS) ? REDUCED_MAX_FRAME_RATE : DEFAULT_MAX_FRAME_RATE;
     this.isLottie = file.getGifType() == GifFile.TYPE_TG_LOTTIE;
     this.metadata = new int[4];
     this.lottieMetadata = new double[3];
@@ -298,7 +299,12 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
           nativePtr = 0;
         }
         if (lottieCacheFile != null) {
-          LottieCache.instance().checkFile(file, lottieCacheFile, deleteLottieCacheFile || file.needOptimize(), lottieCacheFileSize, file.getFitzpatrickType());
+          LottieCache.instance().checkFile(file,
+            lottieCacheFile,
+            deleteLottieCacheFile || file.isOneTimeCache(),
+            lottieCacheFileSize,
+            file.getFitzpatrickType()
+          );
         }
       } else {
         N.destroyDecoder(nativePtr);
@@ -325,8 +331,22 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
       file.setTotalFrameCount(totalFrameCount);
       frameRate = lottieMetadata[1];
       double durationSeconds = lottieMetadata[2];
-      width = height = file.needOptimize() ? Math.min(Math.max(EmojiMediaListController.getEstimateColumnResolution(), StickersListController.getEstimateColumnResolution()), REDUCED_MAX_STICKER_RESOLUTION) : Math.min(Screen.dp(TGMessageSticker.MAX_STICKER_SIZE), DEFAULT_MAX_STICKER_RESOLUTION);
-      error = totalFrameCount <= 0 || frameRate <= 0 || durationSeconds <= 0; // || durationSeconds > 3.0 || frameRate % 30.0 != 0;
+      final int resolution;
+      switch (file.getOptimizationMode()) {
+        case GifFile.OptimizationMode.EMOJI:
+          resolution = Math.min(100, Screen.dp(15f));
+          break;
+        case GifFile.OptimizationMode.STICKER_PREVIEW:
+          resolution = Math.min(Math.max(EmojiMediaListController.getEstimateColumnResolution(), StickersListController.getEstimateColumnResolution()), 160);
+          break;
+        case GifFile.OptimizationMode.NONE:
+          resolution = Math.min(Screen.dp(TGMessageSticker.MAX_STICKER_SIZE), 384);
+          break;
+        default:
+          throw new UnsupportedOperationException();
+      }
+      width = height = resolution;
+      error = totalFrameCount <= 0 || frameRate <= 0 || durationSeconds <= 0;
       if (totalFrameCount == 1) {
         file.setIsStill(true);
       }
@@ -440,13 +460,19 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
   private File lottieCacheFile;
   private int lottieCacheFileSize;
 
-  private double frameDelta () {
-    return Math.max(1.0, frameRate / maxFrameRate());
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    LottieCacheStatus.OK,
+    LottieCacheStatus.NEED_CREATE,
+    LottieCacheStatus.ERROR,
+    LottieCacheStatus.CANCELED
+  })
+  public @interface LottieCacheStatus {
+    int OK = 0, NEED_CREATE = 1, ERROR = 2, CANCELED = 3;
   }
 
   // Decoder thread
   public void prepareNextFrame () {
-
     GifState gif;
     synchronized (gifLock) {
       gif = this.gif;
@@ -486,16 +512,29 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
       final double nextFrameNo = desiredNextFrameNo;
 
       if (isLottie) {
-        // lottieCacheState = LOTTIE_CACHE_ERROR;
         switch (lottieCacheState) {
           case LOTTIE_CACHE_NONE: {
-            lottieCacheFile = LottieCache.getCacheFile(file, file.needOptimize(), lottieCacheFileSize = Math.max(free.getWidth(), free.getHeight()), file.getFitzpatrickType(), TimeUnit.MINUTES.toMillis(15), 8);
+            lottieCacheFile = LottieCache.getCacheFile(
+              file,
+              file.isOneTimeCache(),
+              lottieCacheFileSize = Math.max(free.getWidth(), free.getHeight()),
+              file.getFitzpatrickType(),
+              file.getOptimizationMode() == GifFile.OptimizationMode.EMOJI ? TimeUnit.MINUTES.toMillis(30) : TimeUnit.MINUTES.toMillis(2),
+              500
+            );
+            // final boolean cacheExisted = lottieCacheFile != null && lottieCacheFile.exists();
             int status;
+            boolean skipOddFrames = frameRate == 60.0 && maxFrameRate == 30.0;
+            // final long startTime = SystemClock.uptimeMillis();
             synchronized (nativeSync) {
-              status = nativePtr == 0 ? 3 : lottieCacheFile == null ? 2 : N.createLottieCache(nativePtr, lottieCacheFile.getPath(), gif.getBitmap(false), free.bitmap, false, maxFrameRate == 30.0);
+              status =
+                nativePtr == 0 ? LottieCacheStatus.CANCELED :
+                lottieCacheFile == null ? LottieCacheStatus.ERROR :
+                N.createLottieCache(nativePtr, lottieCacheFile.getPath(), gif.getBitmap(false), free.bitmap, false, skipOddFrames);
             }
             switch (status) {
-              case 0: {
+              case LottieCacheStatus.OK: {
+                // Log.i("validated lottie cache file in %dms", SystemClock.uptimeMillis() - startTime);
                 lottieCacheState = LOTTIE_CACHE_CREATED;
                 synchronized (nativeSync) {
                   if (nativePtr != 0) {
@@ -505,15 +544,20 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
                 }
                 break;
               }
-              case 1: {
+              case LottieCacheStatus.NEED_CREATE: {
+                /*if (cacheExisted) {
+                  Log.e("failed lottie cache file in %dms", SystemClock.uptimeMillis() - startTime);
+                }*/
                 lottieCacheState = LOTTIE_CACHE_CREATING;
                 async = true;
-                LottieCache.instance().thread(file.needOptimize()).post(() -> {
+                LottieCache.instance().thread(file.getOptimizationMode()).post(() -> {
                   int newStatus;
                   synchronized (nativeSync) {
                     if (nativePtr == 0)
                       return;
-                    newStatus = N.createLottieCache(nativePtr, lottieCacheFile.getPath(), gif.getBitmap(false), free.bitmap, true, maxFrameRate == 30.0);
+                    // long elapsed = SystemClock.uptimeMillis();
+                    newStatus = N.createLottieCache(nativePtr, lottieCacheFile.getPath(), gif.getBitmap(false), free.bitmap, true, skipOddFrames);
+                    // Log.i("created lottie cache in %dms, skipOdd:%b, resolution:%d", SystemClock.uptimeMillis() - elapsed, skipOddFrames, lottieCacheFileSize);
                   }
                   if (newStatus == 0) {
                     free.no = (long) (lastFrameNo = findLastFrameNo());
@@ -533,7 +577,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
                 }, 0);
                 break;
               }
-              case 3:
+              case LottieCacheStatus.ERROR:
               default: {
                 lottieCacheState = LOTTIE_CACHE_ERROR;
                 break;
@@ -568,6 +612,9 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
         }
       }
     }
+    if (isCancelled()) {
+      return;
+    }
     if (success) {
       GifBridge.instance().nextFrameReady(this);
     }
@@ -583,10 +630,17 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
     }
   }
 
+  private double frameDelta () {
+    return Math.max(1.0, frameRate / maxFrameRate());
+  }
+
   private double maxFrameRate () {
     double maxFrameRate = Math.min(Screen.refreshRate(), this.maxFrameRate);
     if (Settings.instance().getNewSetting(Settings.SETTING_FLAG_LIMIT_STICKERS_FPS)) {
       maxFrameRate = Math.min(maxFrameRate, REDUCED_MAX_FRAME_RATE);
+    }
+    if (file.getOptimizationMode() != GifFile.OptimizationMode.NONE) {
+      maxFrameRate = Math.min(30.0, maxFrameRate);
     }
     return maxFrameRate;
   }
@@ -621,7 +675,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
       }
     }
 
-    final long frameDelayMs = Math.max(frameRate <= 30.0 ? 4 : 1, (long) (frameDelay - Math.floor(screenFrameRateDelay)));
+    final long frameDelayMs = Math.max(file.hasOptimizations() ? 5 : frameRate <= 30.0 ? 4 : 1, (long) (frameDelay - Math.floor(screenFrameRateDelay)));
 
     synchronized (this) {
       if ((flags & FLAG_CANCELLED) == 0) {

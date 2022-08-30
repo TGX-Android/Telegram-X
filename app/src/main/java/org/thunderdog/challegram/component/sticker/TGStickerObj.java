@@ -163,7 +163,7 @@ public class TGStickerObj {
       this.previewAnimation = new GifFile(tdlib, sticker);
       this.previewAnimation.setPlayOnce();
       this.previewAnimation.setScaleType(ImageFile.FIT_CENTER);
-      this.previewAnimation.setOptimize(true);
+      this.previewAnimation.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
     }
     return previewAnimation;
   }

@@ -656,7 +656,7 @@ JNI_FUNC(jint, createLottieCache, jlong ptr, jstring jCachePath, jobject firstFr
               return 3;
             }
             uint32_t frameSize = 0;
-            if (fread(&frameSize, sizeof(frameSize), 1, cacheFile) != 1 || (frameSize == 0 || fseek(cacheFile, frameSize, SEEK_CUR) != 0))
+            if (fread(&frameSize, sizeof(frameSize), 1, cacheFile) != 1 || (frameSize != 0 && fseek(cacheFile, frameSize, SEEK_CUR) != 0))
               break;
             if (readFrameCount == 0)
               firstFrameSize = frameSize;

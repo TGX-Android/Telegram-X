@@ -101,7 +101,7 @@ public class TGStickerSetInfo {
       if (Td.isAnimated(info.covers[0].format)) {
         this.previewImage = null;
         this.previewAnimation = new GifFile(tdlib, info.covers[0].sticker, info.covers[0].format);
-        this.previewAnimation.setOptimize(true);
+        this.previewAnimation.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
       } else if (info.covers[0].thumbnail != null) {
         this.previewImage = TD.toImageFile(tdlib, info.covers[0].thumbnail);
         this.previewAnimation = null;
@@ -121,7 +121,7 @@ public class TGStickerSetInfo {
       this.previewImage.setWebp();
     }
     if (this.previewAnimation != null) {
-      this.previewAnimation.setOptimize(true);
+      this.previewAnimation.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
       this.previewAnimation.setScaleType(ImageFile.FIT_CENTER);
     }
   }
