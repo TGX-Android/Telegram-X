@@ -25,7 +25,6 @@ import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.text.Editable;
-import android.text.InputFilter;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -58,14 +57,12 @@ import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.util.WebViewHolder;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.widget.AttachDelegate;
-import org.thunderdog.challegram.widget.EditText;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
 import java.lang.reflect.Field;
 import java.util.LinkedList;
 
 import me.vkryl.android.AnimatorUtils;
-import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.lambda.Destroyable;
@@ -221,14 +218,6 @@ public class Views {
       i++;
     }
     return top;
-  }
-
-  public static void setLengthLimit (EditText editText, final int maxLength, boolean calculateByCodePoints) {
-    if (editText != null) {
-      editText.setFilters(new InputFilter[] {
-         calculateByCodePoints ? new CodePointCountFilter(maxLength) : new InputFilter.LengthFilter(maxLength)
-      });
-    }
   }
 
   public static final int TEXT_FLAG_BOLD = 0x01;

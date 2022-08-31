@@ -66,6 +66,7 @@ import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.data.ThreadInfo;
+import org.thunderdog.challegram.emoji.EmojiFilter;
 import org.thunderdog.challegram.filegen.SimpleGenerationInfo;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.data.MediaStack;
@@ -104,6 +105,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
+import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.util.DoneListener;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.StringList;
@@ -3522,13 +3524,17 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       chatTitleItem = new ListItem(mode == MODE_EDIT_GROUP ? ListItem.TYPE_EDITTEXT_WITH_PHOTO : ListItem.TYPE_EDITTEXT_WITH_PHOTO_SMALLER, R.id.title, 0, mode == MODE_EDIT_CHANNEL ? R.string.ChannelName : R.string.GroupName)
         .setStringValue(chat.title)
         .setInputFilters(new InputFilter[]{
-          new CodePointCountFilter(TdConstants.MAX_CHAT_TITLE_LENGTH)
+          new CodePointCountFilter(TdConstants.MAX_CHAT_TITLE_LENGTH),
+          new EmojiFilter(),
+          new CharacterStyleFilter()
         })
         .setOnEditorActionListener(new EditBaseController.SimpleEditorActionListener(EditorInfo.IME_ACTION_DONE, this));
       items.add(chatTitleItem);
 
       chatDescriptionItem = new ListItem(ListItem.TYPE_EDITTEXT_CHANNEL_DESCRIPTION, R.id.description, 0, R.string.Description).setStringValue(getDescriptionValue()).setInputFilters(new InputFilter[]{
-        new CodePointCountFilter(TdConstants.MAX_CHANNEL_DESCRIPTION_LENGTH)
+        new CodePointCountFilter(TdConstants.MAX_CHANNEL_DESCRIPTION_LENGTH),
+        new EmojiFilter(),
+        new CharacterStyleFilter()
       });
       items.add(chatDescriptionItem);
 

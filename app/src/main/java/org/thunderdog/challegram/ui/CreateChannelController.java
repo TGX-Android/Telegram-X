@@ -36,6 +36,8 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.emoji.EmojiLoadSilentFilter;
+import org.thunderdog.challegram.emoji.EmojiFilter;
 import org.thunderdog.challegram.filegen.SimpleGenerationInfo;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.navigation.ActivityResultHandler;
@@ -51,6 +53,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Size;
+import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.widget.EditText;
 import org.thunderdog.challegram.widget.NoScrollTextView;
@@ -115,7 +118,12 @@ public class CreateChannelController extends ViewController<String[]> implements
     descView.setHint(Lang.getString(R.string.Description));
     descView.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
     descView.setGravity(Lang.gravity());
-    descView.setFilters(new InputFilter[] {new CodePointCountFilter(TdConstants.MAX_CHANNEL_DESCRIPTION_LENGTH)});
+    descView.setFilters(new InputFilter[] {
+      new CodePointCountFilter(TdConstants.MAX_CHANNEL_DESCRIPTION_LENGTH),
+      new EmojiFilter(),
+      new EmojiLoadSilentFilter(descView),
+      new CharacterStyleFilter()
+    });
     descView.setInputType(descView.getInputType() | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
     descView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.NO_GRAVITY, Lang.rtl() ? marginRight : marginLeft, 0, Lang.rtl() ? marginLeft : marginRight, 0));
     frameLayout.addView(descView);
