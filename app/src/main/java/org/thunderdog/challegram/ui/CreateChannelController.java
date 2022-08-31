@@ -36,7 +36,6 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.emoji.EmojiLoadSilentFilter;
 import org.thunderdog.challegram.emoji.EmojiFilter;
 import org.thunderdog.challegram.filegen.SimpleGenerationInfo;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -55,7 +54,8 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.util.OptionDelegate;
-import org.thunderdog.challegram.widget.EditText;
+import org.thunderdog.challegram.v.EditText;
+import org.thunderdog.challegram.widget.EmojiEditText;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
 import me.vkryl.android.text.CodePointCountFilter;
@@ -104,7 +104,8 @@ public class CreateChannelController extends ViewController<String[]> implements
 
     int padding = Screen.dp(9f);
 
-    descView = new EditText(context);
+    descView = new EmojiEditText(context);
+    descView.initDefault();
     descView.setId(R.id.edit_description);
     descView.setOnFocusChangeListener((v, hasFocus) -> {
       removeThemeListenerByTarget(iconView);
@@ -121,7 +122,6 @@ public class CreateChannelController extends ViewController<String[]> implements
     descView.setFilters(new InputFilter[] {
       new CodePointCountFilter(TdConstants.MAX_CHANNEL_DESCRIPTION_LENGTH),
       new EmojiFilter(),
-      new EmojiLoadSilentFilter(descView),
       new CharacterStyleFilter()
     });
     descView.setInputType(descView.getInputType() | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE);

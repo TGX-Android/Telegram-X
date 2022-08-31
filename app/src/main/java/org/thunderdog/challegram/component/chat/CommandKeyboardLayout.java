@@ -34,7 +34,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
-import org.thunderdog.challegram.v.EditTextBase;
+import org.thunderdog.challegram.v.EditText;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
 import me.vkryl.android.ViewUtils;
@@ -319,12 +319,12 @@ public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver
 
   int keyboardState;
 
-  public void showKeyboard (EditTextBase input) {
+  public void showKeyboard (EditText input) {
     keyboardState = 1;
     Keyboard.show(input);
   }
 
-  public void hideKeyboard (EditTextBase input) {
+  public void hideKeyboard (EditText input) {
     keyboardState = 2;
     Keyboard.hide(input);
   }

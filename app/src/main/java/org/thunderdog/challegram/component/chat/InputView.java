@@ -23,7 +23,7 @@ import android.graphics.Paint;
 import android.net.Uri;
 import android.os.Build;
 import android.text.Editable;
-import android.text.NoCopySpan;
+import android.text.InputFilter;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -32,10 +32,7 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.style.CharacterStyle;
-import android.text.style.ImageSpan;
-import android.text.style.SuggestionSpan;
 import android.text.style.URLSpan;
-import android.text.style.UnderlineSpan;
 import android.util.TypedValue;
 import android.view.ActionMode;
 import android.view.Gravity;
@@ -74,15 +71,14 @@ import org.thunderdog.challegram.data.InlineResultMention;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.emoji.Emoji;
-import org.thunderdog.challegram.emoji.EmojiInfo;
+import org.thunderdog.challegram.emoji.EmojiFilter;
 import org.thunderdog.challegram.emoji.EmojiInputConnection;
-import org.thunderdog.challegram.emoji.EmojiSpan;
+import org.thunderdog.challegram.emoji.EmojiUpdater;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.helper.InlineSearchContext;
 import org.thunderdog.challegram.navigation.LocaleChanger;
 import org.thunderdog.challegram.navigation.RtlCheckListener;
 import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
@@ -92,22 +88,22 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.CharacterStyleFilter;
+import org.thunderdog.challegram.util.ExternalEmojiFilter;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.widget.InputWrapperWrapper;
 import org.thunderdog.challegram.widget.NoClipEditText;
 
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 
+import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
-public class InputView extends NoClipEditText implements InlineSearchContext.Callback, InlineResultsWrap.PickListener, Comparator<Object>, Emoji.Callback, RtlCheckListener, TGLegacyManager.EmojiLoadListener, Destroyable {
+public class InputView extends NoClipEditText implements InlineSearchContext.Callback, InlineResultsWrap.PickListener, RtlCheckListener {
   public static final boolean USE_ANDROID_SELECTION_FIX = true;
   // private static final int HINT_TEXT_COLOR = 0xffa1aab3;
 
@@ -185,92 +181,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     }
   }
 
-  private static String parseEmojiCode (String source) {
-    if (StringUtils.isEmpty(source))
-      return null;
-
-    int i;
-
-    // https://abs.twimg.com/emoji/v2/72x72/1f600.png
-    i = source.indexOf("twimg.com/emoji/v2/");
-    if (i != -1) {
-      i = source.lastIndexOf('/');
-      int j = source.lastIndexOf('.');
-      if (j <= i) {
-        j = -1;
-      }
-      if (j != -1) {
-        source = source.substring(i + 1, j);
-      } else {
-        source = source.substring(i + 1);
-      }
-      source = fillZero(source, 8);
-      return Emoji.parseCode(source, "UTF-32BE");
-    }
-
-    // https://m.vk.com/images/emoji/D83DDE0C_2x.png
-    i = source.indexOf("vk.com/images/emoji/");
-    if (i != -1) {
-      i += "vk.com/images/emoji/".length();
-      int sourceEnd = source.length();
-      if (source.endsWith("_2x.png")) {
-        sourceEnd -= "_2x.png".length();
-      } else if (source.endsWith(".png")) {
-        sourceEnd -= ".png".length();
-      } else {
-        sourceEnd = -1;
-      }
-      if (i < sourceEnd) {
-        source = fillZero(source.substring(i, sourceEnd), 8);
-        return Emoji.parseCode(source, "UTF-16");
-      }
-    }
-    // https://static.xx.fbcdn.net/images/emoji.php/v9/ffb/1/24/1f61a.png
-    // do nothing
-
-    return null;
-  }
-
-  private static class EditedSpan implements NoCopySpan { }
-
-  private static String fillZero (String source, int count) {
-    int remaining = count - source.length() % count;
-    if (remaining != 0) {
-      StringBuilder b = new StringBuilder(source.length() + remaining);
-      for (int j = 0; j < remaining; j++) {
-        b.append('0');
-      }
-      b.append(source);
-      return b.toString();
-    }
-    return source;
-  }
-
   private static final boolean USE_LAYOUT_DIRECTION = false;
-
-  public static boolean isSupportedSpan (Spanned spanned, CharacterStyle span) {
-    if (span instanceof NoCopySpan || span instanceof EmojiSpan || span instanceof UnderlineSpan)
-      return true;
-    if (TD.canConvertToEntityType(span)) {
-      if (span instanceof URLSpan) {
-        int start = spanned.getSpanStart(span);
-        int end = spanned.getSpanEnd(span);
-        String text = spanned.subSequence(start, end).toString();
-        String url = ((URLSpan) span).getURL();
-        if (text.equals(url)) // <a href="example.com">example.com</a>
-          return false;
-        if (Strings.isValidLink(text)) {
-          if (Strings.hostsEqual(url, text))
-            return true;
-          // Hosts are different. Most likely some <a href="https://youtube.com/redirect?v=${real_url}">${real_url}</a>
-          // TODO lookup for this domain in GET arguments? Decision for now: no, because redirects could be like t.co/${id} without real url
-          return false;
-        }
-      }
-      return true;
-    }
-    return false;
-  }
 
   @Override
   public boolean onKeyDown (int keyCode, KeyEvent event) {
@@ -292,10 +203,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     } else {
       return super.onKeyDown(keyCode, event);
     }
-  }
-
-  private static boolean shouldRemoveSpan (Spanned spanned, CharacterStyle span) {
-    return !isSupportedSpan(spanned, span) && !(span instanceof SuggestionSpan) && (spanned.getSpanFlags(span) & Spanned.SPAN_COMPOSING) == 0;
   }
 
   public InputView (Context context, Tdlib tdlib) {
@@ -331,182 +238,27 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
     setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     Views.clearCursorDrawable(this);
+    setMaxCodePointCount(0);
     addTextChangedListener(new TextWatcher() {
       @Override
       public void beforeTextChanged (CharSequence s, int start, int count, int after) { }
-
-      private void addEditedSpan (Spannable sp, int start, int end) {
-        int count = end - start;
-        if (count <= 0)
-          return;
-        boolean onlyLetters = true;
-        for (int i = 0; i < count; ) {
-          int codePoint = Character.codePointAt(sp, start + i);
-          if (!(Character.isLetterOrDigit(codePoint) || Character.isWhitespace(codePoint) || Text.needsFill(codePoint))) {
-            onlyLetters = false;
-            break;
-          }
-          int size = Character.charCount(codePoint);
-          i += size;
-        }
-        if (onlyLetters) {
-          CharacterStyle[] spans = sp.getSpans(start, start + count, CharacterStyle.class);
-          boolean hasRudimentarySpans = false;
-          if (spans != null && spans.length > 0) {
-            for (CharacterStyle span : spans) {
-              if (shouldRemoveSpan(sp, span)) {
-                hasRudimentarySpans = true;
-                break;
-              }
-            }
-          }
-          if (!hasRudimentarySpans)
-            return;
-        }
-        sp.setSpan(new EditedSpan(), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-      }
 
       @Override
       public void onTextChanged (CharSequence s, int start, int before, int count) {
         if (ignoreAnyChanges) {
           changesText = s;
-          return;
-        }
-        processTextChange(s);
-        if (count > 0 && s instanceof Spannable) {
-          Spannable sp = (Spannable) s;
-          EmojiSpan[] spans = sp.getSpans(start, start + count, EmojiSpan.class);
-          int startIndex = start;
-          if (spans != null && spans.length > 0) {
-            for (EmojiSpan span : spans) {
-              int spanStart = sp.getSpanStart(span);
-              int spanEnd = sp.getSpanEnd(span);
-              if (startIndex < spanStart) {
-                addEditedSpan(sp, startIndex, spanStart);
-              }
-              startIndex = spanEnd;
-            }
-          }
-          int endIndex = start + count;
-          if (startIndex < endIndex) {
-            addEditedSpan(sp, startIndex, endIndex);
-          }
-        }
-      }
-
-      private void handleEmojiChanges (final Editable s) {
-        EditedSpan[] editedRegions = s.getSpans(0, s.length(), EditedSpan.class);
-        if (editedRegions == null || editedRegions.length == 0)
-          return;
-        List<Object> spansToProcess = null;
-
-        pendingSortSpannable = s;
-        for (EditedSpan editedRegion : editedRegions) {
-          int editedRegionStart = s.getSpanStart(editedRegion);
-          int editedRegionEnd = s.getSpanEnd(editedRegion);
-          s.removeSpan(editedRegion);
-
-          if (editedRegionStart == -1 || editedRegionEnd == -1)
-            continue;
-
-          CharacterStyle[] spans = s.getSpans(editedRegionStart, editedRegionEnd, CharacterStyle.class);
-          if (spans != null && spans.length > 0) {
-            for (CharacterStyle span : spans) {
-              if (span instanceof ImageSpan) {
-                int spanStart = s.getSpanStart(span);
-                int spanEnd = s.getSpanEnd(span);
-                EmojiSpan newSpan = Emoji.instance().newSpan(parseEmojiCode(((ImageSpan) span).getSource()), null);
-                if (newSpan != null) {
-                  s.removeSpan(span);
-                  s.setSpan(newSpan, spanStart, spanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                  if (spansToProcess == null)
-                    spansToProcess = new ArrayList<>();
-                  spansToProcess.add(newSpan);
-                  continue;
-                } else if (spanEnd > spanStart) {
-                  if (spansToProcess == null)
-                    spansToProcess = new ArrayList<>();
-                  spansToProcess.add(span);
-                  continue;
-                }
-              }
-              if (shouldRemoveSpan(s, span)) {
-                s.removeSpan(span);
-              }
-            }
-          }
-
-          Emoji.instance().replaceEmoji(s, editedRegionStart, editedRegionEnd, null, InputView.this);
-
-          if (spansToProcess != null && !spansToProcess.isEmpty()) {
-            Collections.sort(spansToProcess, InputView.this);
-            int selectionStart = getSelectionStart();
-            int selectionEnd = getSelectionEnd();
-            for (int i = spansToProcess.size() - 1; i >= 0; i--) {
-              Object span = spansToProcess.get(i);
-              int spanStart = s.getSpanStart(span);
-              int spanEnd = s.getSpanEnd(span);
-              if (spanStart == -1 || spanEnd == -1)
-                continue;
-              int spanLen = spanEnd - spanStart;
-              if (span instanceof EmojiSpan) {
-                String replacement = ((EmojiSpan) span).getEmojiCode().toString();
-                s.replace(spanStart, spanEnd, replacement);
-                int newLen = replacement.length();
-                if (newLen == spanLen) {
-                  continue;
-                }
-                int diff = newLen - spanLen;
-                if (selectionStart >= spanStart)
-                  selectionStart += diff;
-                if (selectionEnd >= spanStart)
-                  selectionEnd += diff;
-              } else {
-                s.delete(spanStart, spanEnd);
-                if (selectionStart >= spanStart)
-                  selectionStart -= spanLen;
-                if (selectionEnd >= spanStart)
-                  selectionEnd -= spanLen;
-              }
-            }
-            if (selectionStart != -1 && selectionEnd != -1) {
-              int len = s.length();
-              if (selectionStart >= selectionEnd) {
-                Views.setSelection(InputView.this, Math.min(selectionStart, len));
-              } else {
-                Views.setSelection(InputView.this, Math.min(selectionStart, len), Math.max(selectionEnd, len));
-              }
-            }
-            spansToProcess.clear();
-          }
+        } else {
+          processTextChange(s);
         }
       }
 
       @Override
       public void afterTextChanged (Editable s) {
-        if (ignoreChanges || ignoreAnyChanges) {
+        if (ignoreAnyChanges) {
           return;
         }
-        if (ignoreDraft) {
-          ignoreChanges = true;
-          handleEmojiChanges(s);
-          ignoreChanges = false;
-          ignoreDraft = false;
-        } else if (s.length() > 0) {
-          ignoreChanges = true;
-          pendingSortSpannable = s;
-
-          handleEmojiChanges(s);
-
-          if (controller != null) {
-            controller.updateSendButton(s, true);
-          }
-
-          ignoreChanges = false;
-        } else {
-          if (controller != null) {
-            controller.updateSendButton("", true);
-          }
+        if (controller != null) {
+          controller.updateSendButton(s, true);
         }
       }
     });
@@ -599,37 +351,23 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         }
       });
     }
-
-    TGLegacyManager.instance().addEmojiListener(this);
   }
 
-  @Override
-  public void invalidate () {
-    super.invalidate();
-  }
-
-  @Override
-  public void onEmojiPartLoaded () {
-    Editable editable = getText();
-    if (editable == null || editable.length() == 0)
-      return;
-    EmojiSpan[] spans = editable.getSpans(0, editable.length(), EmojiSpan.class);
-    if (spans == null || spans.length == 0)
-      return;
-    for (EmojiSpan span : spans) {
-      if (span.needRefresh()) {
-        int spanStart = editable.getSpanStart(span);
-        int spanEnd = editable.getSpanEnd(span);
-        editable.removeSpan(span);
-        editable.setSpan(span, spanStart, spanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        break;
-      }
+  public void setMaxCodePointCount (int maxCodePointCount) {
+    if (maxCodePointCount > 0) {
+      setFilters(new InputFilter[] {
+        new ExternalEmojiFilter(),
+        new CodePointCountFilter(maxCodePointCount),
+        new EmojiFilter(),
+        new CharacterStyleFilter(true)
+      });
+    } else {
+      setFilters(new InputFilter[] {
+        new ExternalEmojiFilter(),
+        new EmojiFilter(),
+        new CharacterStyleFilter(true)
+      });
     }
-  }
-
-  @Override
-  public void performDestroy () {
-    TGLegacyManager.instance().removeEmojiListener(this);
   }
 
   public boolean setSpan (int id) {
@@ -890,25 +628,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (USE_LAYOUT_DIRECTION && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
       setLayoutDirection(Lang.rtl() ? LAYOUT_DIRECTION_RTL : LAYOUT_DIRECTION_LTR);
     }
-  }
-
-  // Text watcher
-
-  private boolean ignoreChanges;
-  private Spannable pendingSortSpannable;
-
-  @Override
-  public int compare (Object o1, Object o2) {
-    return Integer.compare(pendingSortSpannable.getSpanStart(o1), pendingSortSpannable.getSpanStart(o2));
-  }
-
-  @Override
-  public boolean onEmojiFound (CharSequence input, CharSequence code, EmojiInfo info, int position, int length) {
-    EmojiSpan span = Emoji.instance().newSpan(code, info);
-    if (span != null) {
-      pendingSortSpannable.setSpan(span, position, position + length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-    }
-    return true;
   }
 
   // ETc

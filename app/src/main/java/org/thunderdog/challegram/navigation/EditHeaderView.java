@@ -29,8 +29,6 @@ import androidx.annotation.StringRes;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.emoji.EmojiFilter;
-import org.thunderdog.challegram.emoji.EmojiLoadSilentFilter;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageFileLocal;
 import org.thunderdog.challegram.loader.ImageReceiver;
@@ -90,8 +88,6 @@ public class EditHeaderView extends FrameLayoutFix implements RtlCheckListener, 
     input.setLayoutParams(params);
     input.setFilters(new InputFilter[] {
       new CodePointCountFilter(TdConstants.MAX_CHAT_TITLE_LENGTH),
-      new EmojiFilter(),
-      new EmojiLoadSilentFilter(input),
       new CharacterStyleFilter()
     });
     addView(input);

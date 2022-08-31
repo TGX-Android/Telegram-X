@@ -16,7 +16,6 @@ package org.thunderdog.challegram.v;
 
 import android.content.Context;
 import android.os.Build;
-import android.text.InputFilter;
 import android.text.InputType;
 import android.util.AttributeSet;
 import android.view.ActionMode;
@@ -31,17 +30,16 @@ import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.emoji.EmojiFilter;
-import org.thunderdog.challegram.emoji.EmojiLoadSilentFilter;
 import org.thunderdog.challegram.navigation.RtlCheckListener;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.widget.EmojiEditText;
 
 import me.vkryl.core.ColorUtils;
 
-public class HeaderEditText extends EditTextBase implements ActionMode.Callback, RtlCheckListener {
+public class HeaderEditText extends EmojiEditText implements ActionMode.Callback, RtlCheckListener {
   public HeaderEditText (Context context) {
     super(context);
     init();
@@ -89,10 +87,6 @@ public class HeaderEditText extends EditTextBase implements ActionMode.Callback,
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
       setCustomSelectionActionModeCallback(this);
     }
-    setFilters(new InputFilter[] {
-      new EmojiFilter(),
-      new EmojiLoadSilentFilter(this)
-    });
   }
 
   public static HeaderEditText create (@NonNull ViewGroup parent, boolean light, @Nullable ViewController<?> themeProvider) {

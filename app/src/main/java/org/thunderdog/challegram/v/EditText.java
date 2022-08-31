@@ -18,6 +18,7 @@ import android.content.Context;
 import android.os.Build;
 import android.text.Editable;
 import android.util.AttributeSet;
+import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
@@ -25,21 +26,32 @@ import android.view.inputmethod.InputConnectionWrapper;
 
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.UI;
 
-public class EditTextBase extends android.widget.EditText {
+public class EditText extends android.widget.EditText {
   private boolean ignoreCustomStuff;
 
-  public EditTextBase (Context context) {
+  public EditText (Context context) {
     super(context);
   }
 
-  public EditTextBase (Context context, AttributeSet attrs) {
+  public EditText (Context context, AttributeSet attrs) {
     super(context, attrs);
   }
 
-  public EditTextBase (Context context, AttributeSet attrs, int defStyleAttr) {
+  public EditText (Context context, AttributeSet attrs, int defStyleAttr) {
     super(context, attrs, defStyleAttr);
+  }
+
+  public final void initDefault () {
+    setTextColor(Theme.textAccentColor());
+    setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17f);
+    setHintTextColor(Theme.textPlaceholderColor());
+    setTypeface(Fonts.getRobotoRegular());
+    setBackgroundResource(R.drawable.bg_edittext);
   }
 
   public void setIgnoreCustomStuff (boolean ignoreCustomStuff) {
@@ -47,7 +59,7 @@ public class EditTextBase extends android.widget.EditText {
   }
 
   public interface BackspaceListener {
-    boolean onBackspacePressed (EditTextBase v, Editable text, int selectionStart, int selectionEnd);
+    boolean onBackspacePressed (EditText v, Editable text, int selectionStart, int selectionEnd);
   }
 
   private BackspaceListener backspaceListener;
@@ -100,16 +112,16 @@ public class EditTextBase extends android.widget.EditText {
   }
 
   private static class BackspaceConnectionWrapper extends InputConnectionWrapper {
-    private final EditTextBase editTextBase;
+    private final EditText editText;
 
-    public BackspaceConnectionWrapper (EditTextBase editTextBase, InputConnection target, boolean mutable) {
+    public BackspaceConnectionWrapper (EditText editText, InputConnection target, boolean mutable) {
       super(target, mutable);
-      this.editTextBase = editTextBase;
+      this.editText = editText;
     }
 
     @Override
     public boolean sendKeyEvent (KeyEvent event) {
-      if (event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_DEL && editTextBase.onKeyboardBackspacePress()) {
+      if (event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_DEL && editText.onKeyboardBackspacePress()) {
         return false;
       }
       return super.sendKeyEvent(event);

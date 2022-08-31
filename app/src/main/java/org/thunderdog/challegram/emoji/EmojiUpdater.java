@@ -16,33 +16,36 @@
 package org.thunderdog.challegram.emoji;
 
 import android.text.Editable;
-import android.text.InputFilter;
 import android.text.Spannable;
 import android.text.Spanned;
+import android.text.TextWatcher;
 import android.widget.EditText;
 
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 
 import me.vkryl.core.lambda.Destroyable;
 
-public class EmojiLoadSilentFilter implements InputFilter, Destroyable, TGLegacyManager.EmojiLoadListener {
+public class EmojiUpdater implements Destroyable, TGLegacyManager.EmojiLoadListener {
   private final EditText targetView;
+  private final TextWatcher watcher;
   private boolean isRegistered;
 
-  public EmojiLoadSilentFilter (EditText targetView) {
-    // FIXME: InputFilter is not intended to be targeted by a single view
+  public EmojiUpdater (EditText targetView) {
     this.targetView = targetView;
     checkSpans(targetView.getText());
-  }
+    this.watcher = new TextWatcher() {
+      @Override
+      public void beforeTextChanged (CharSequence s, int start, int count, int after) {  }
 
-  @Override
-  public CharSequence filter (CharSequence source, int start, int end, Spanned dest, int dstart, int dend) {
-    boolean needListener =
-      hasEmoji(dest, 0, dstart) ||
-      hasEmoji(dest, dend, dest.length()) ||
-      (source instanceof Spanned && hasEmoji((Spanned) source, start, end));
-    setRegistered(needListener);
-    return null;
+      @Override
+      public void onTextChanged (CharSequence s, int start, int before, int count) { }
+
+      @Override
+      public void afterTextChanged (Editable s) {
+        setRegistered(hasEmoji(s, 0, s.length()));
+      }
+    };
+    this.targetView.addTextChangedListener(watcher);
   }
 
   private boolean hasEmoji (Spanned spannable, int start, int end) {
@@ -100,6 +103,7 @@ public class EmojiLoadSilentFilter implements InputFilter, Destroyable, TGLegacy
 
   @Override
   public void performDestroy () {
+    targetView.removeTextChangedListener(watcher);
     setRegistered(false);
   }
 }
