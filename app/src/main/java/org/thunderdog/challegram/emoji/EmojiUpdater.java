@@ -83,11 +83,16 @@ public class EmojiUpdater implements Destroyable, TGLegacyManager.EmojiLoadListe
         return;
       }
     }
+    boolean updated = false;
     for (EmojiSpan span : emojiSpans) {
       int spanStart = editable.getSpanStart(span);
       int spanEnd = editable.getSpanEnd(span);
       editable.removeSpan(span);
       editable.setSpan(span, spanStart, spanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+      updated = true;
+    }
+    if (updated) {
+      targetView.invalidate();
     }
   }
 
