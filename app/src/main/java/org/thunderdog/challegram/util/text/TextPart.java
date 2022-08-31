@@ -66,6 +66,8 @@ public class TextPart {
   }
 
   public TooltipOverlayView.TooltipBuilder newTooltipBuilder (View view) {
+    if (source.isDestroyed())
+      throw new IllegalStateException();
     return UI.getContext(view.getContext()).tooltipManager()
       .builder(view, source.getViewProvider())
       .locate((targetView, outRect) -> source.locatePart(outRect, this, TextEntity.COMPARE_MODE_NORMAL));

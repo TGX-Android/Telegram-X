@@ -2030,6 +2030,9 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   }
 
   public void locatePart (Rect outRect, TextPart part, int compareMode) {
+    if (isDestroyed()) {
+      return;
+    }
     outRect.set(0, part.getY(), getLineWidth(part.getLineIndex()), part.getY() + getLineHeight(part.getLineIndex()));
     if (getEntityCount() > 0) {
       outRect.left = part.getX();
@@ -2722,7 +2725,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   }
 
   public boolean onTouchEvent (View view, MotionEvent e, @Nullable ClickCallback callback) {
-    if (parts == null) {
+    if (parts == null || isDestroyed()) {
       return false;
     }
     switch (e.getAction()) {
@@ -2918,6 +2921,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       }
       media.clear();
     }
+  }
+
+  public boolean isDestroyed () {
+    return BitwiseUtils.getFlag(textFlags, FLAG_DESTROYED);
   }
 
   @Override

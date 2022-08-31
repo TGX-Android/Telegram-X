@@ -533,6 +533,7 @@ public class TooltipOverlayView extends ViewGroup {
     private void detach () {
       if (isAttached) {
         isAttached = false;
+        attachListeners(null);
         parentView.removeHint(this);
         iconReceiver.detach();
         if (imageReceiver != null)
