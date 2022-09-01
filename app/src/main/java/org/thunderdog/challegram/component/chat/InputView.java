@@ -245,21 +245,15 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
       @Override
       public void onTextChanged (CharSequence s, int start, int before, int count) {
-        if (ignoreAnyChanges) {
-          changesText = s;
-        } else {
-          processTextChange(s);
+        processTextChange(s);
+        if (controller != null) {
+          controller.updateSendButton(s, true);
         }
       }
 
       @Override
       public void afterTextChanged (Editable s) {
-        if (ignoreAnyChanges) {
-          return;
-        }
-        if (controller != null) {
-          controller.updateSendButton(s, true);
-        }
+
       }
     });
 
@@ -547,8 +541,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     }
   }
 
-  private CharSequence changesText;
-
   public void restartTextChange () {
     CharSequence cs = getText();
     String str = cs.toString();
@@ -587,12 +579,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   private void processTextChange (CharSequence s) {
-    changesText = null;
-
     String str = s.toString();
 
-    if (str.isEmpty()) {
-      textChangedSinceChatOpened = false;
+    if (!isSettingText && blockedText == null) {
+      setTextChangedSinceChatOpened(true);
     }
 
     int selectionStart = getSelectionStart();
@@ -962,19 +952,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   public void setCommandListProvider (@Nullable InlineSearchContext.CommandListProvider provider) {
     this.inlineContext.setCommandListProvider(provider);
-  }
-
-  private boolean ignoreAnyChanges;
-
-  public void setIgnoreAnyChanges (boolean ignoreAnyChanges) {
-    if (this.ignoreAnyChanges != ignoreAnyChanges) {
-      this.ignoreAnyChanges = ignoreAnyChanges;
-      if (ignoreAnyChanges) {
-        changesText = null;
-      } else if (changesText != null) {
-        processTextChange(changesText);
-      }
-    }
   }
 
   // Other

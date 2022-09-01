@@ -3768,19 +3768,22 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (isEditingMessage()) {
         // TODO save local draft
       } else if (inputView != null && inputView.textChangedSinceChatOpened() && isFocused()) {
-        TdApi.FormattedText outputText = inputView.getOutputText(false);
-        TdApi.DraftMessage draftMessage = new TdApi.DraftMessage(getCurrentReplyId(), (int) (System.currentTimeMillis() / 1000l), new TdApi.InputMessageText(outputText, getCurrentAllowLinkPreview(), false));
-        tdlib.client().send(new TdApi.SetChatDraftMessage(messageThread != null ? messageThread.getChatId() : chat.id, messageThread != null ? messageThread.getMessageThreadId() : 0, draftMessage), tdlib.okHandler());
-
-        for (int i = 0; i < stackSize() - 1; i++) {
-          ViewController<?> c = stackItemAt(i);
-          if (c instanceof MessagesController) {
-            MessagesController m = (MessagesController) c;
-            if (m.compareChat(getChatId(), messageThread, areScheduledOnly()) && m.canSaveDraft() && m.inputView != null && !m.isEditingMessage()) {
-              m.updateDraftMessage(getChatId(), !Td.isEmpty(draftMessage) ? draftMessage : null);
-            }
-          }
-        }
+        final TdApi.FormattedText outputText = inputView.getOutputText(false);
+        final long replyToMessageId = getCurrentReplyId();
+        final long date = tdlib.currentTime(TimeUnit.SECONDS);
+        final TdApi.InputMessageText inputMessageText = new TdApi.InputMessageText(
+          outputText,
+          getCurrentAllowLinkPreview(),
+          false
+        );
+        final TdApi.DraftMessage draftMessage = new TdApi.DraftMessage(replyToMessageId, (int) date, inputMessageText);
+        final long outputChatId = messageThread != null ? messageThread.getChatId() : chat.id;
+        final long messageThreadId = messageThread != null ? messageThread.getMessageThreadId() : 0;
+        tdlib.client().send(new TdApi.SetChatDraftMessage(
+          outputChatId,
+          messageThreadId,
+          !Td.isEmpty(draftMessage) ? draftMessage : null
+        ), tdlib.okHandler());
       }
     }
   }
@@ -8534,7 +8537,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void checkSendButton (boolean animated) {
-    setSendVisible(inputView.getText().length() > 0 || isEditingMessage() || isVoiceShowing, animated);
+    setSendVisible(inputView.getText().length() > 0 || isEditingMessage() || isVoiceShowing, animated && getParentOrSelf().isAttachedToNavigationController());
   }
 
   private void displaySendButton () {
@@ -9611,8 +9614,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public void onChatDraftMessageChanged (final long chatId, final @Nullable TdApi.DraftMessage draftMessage) {
-    tdlib.ui().post(() -> {
+    runOnUiThreadOptional(() -> {
       if (getChatId() == chatId && inputView != null && !inputView.textChangedSinceChatOpened() && !isSecretChat() && messageThread == null) {
+        // Applying server chat draft changes only if text wasn't changed while chat was open
         updateDraftMessage(chatId, draftMessage);
       }
     });
