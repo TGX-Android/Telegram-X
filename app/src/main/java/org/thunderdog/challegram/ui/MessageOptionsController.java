@@ -18,7 +18,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.navigation.OptionsLayout;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
@@ -33,7 +32,7 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.CustomTextView;
-import org.thunderdog.challegram.widget.NoScrollTextView;
+import org.thunderdog.challegram.widget.EmojiTextView;
 
 import me.vkryl.core.StringUtils;
 
@@ -99,7 +98,8 @@ public class MessageOptionsController extends MessageOptionsPagerController.Mess
 
     public static OptionHolder create (Context context, Tdlib tdlib, int viewType, View.OnClickListener onClickListener) {
       if (viewType == OptionsAdapter.TYPE_OPTION) {
-        TextView text = new NoScrollTextView(context);
+        EmojiTextView text = new EmojiTextView(context);
+        text.setScrollDisabled(true);
         text.setTypeface(Fonts.getRobotoRegular());
         text.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
         text.setOnClickListener(onClickListener);
@@ -182,7 +182,7 @@ public class MessageOptionsController extends MessageOptionsPagerController.Mess
         } else {
           textView.setCompoundDrawablesWithIntrinsicBounds(null, null, null, null);
         }
-        textView.setText(Emoji.instance().replaceEmoji(item.name));
+        textView.setText(item.name);
       }
 
       if (type == TYPE_INFO) {

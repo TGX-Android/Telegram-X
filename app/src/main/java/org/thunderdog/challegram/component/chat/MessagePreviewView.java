@@ -486,7 +486,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   }
 
   @Override
-  public void onEmojiPartLoaded () {
+  public void onEmojiUpdated (boolean isPackSwitch) {
     invalidate();
   }
 }

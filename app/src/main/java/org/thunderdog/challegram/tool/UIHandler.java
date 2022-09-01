@@ -35,7 +35,6 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGAudio;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.util.Unlockable;
 import org.thunderdog.challegram.widget.ToastView;
@@ -53,7 +52,6 @@ public class UIHandler extends Handler {
   private static final int UNLOCK = 6;
   private static final int OPEN_FILE = 7;
   private static final int SET_CONTROLLER = 8;
-  private static final int EMOJI_LOADED = 9;
   private static final int OPEN_LINK = 13;
   private static final int OPEN_GALLERY = 14;
   private static final int OPEN_CAMERA = 15;
@@ -190,10 +188,6 @@ public class UIHandler extends Handler {
 
   public void openLink (String url) {
     sendMessage(Message.obtain(this, OPEN_LINK, url));
-  }
-
-  public void emojiLoaded (boolean isChange) {
-    sendMessage(Message.obtain(this, EMOJI_LOADED, isChange ? 1 : 0, 0));
   }
 
   public void unlock (Unlockable unlockable, long delay) {
@@ -360,10 +354,6 @@ public class UIHandler extends Handler {
           Log.w("Cannot set controller", t);
         }
 
-        break;
-      }
-      case EMOJI_LOADED: {
-        TGLegacyManager.instance().onEmojiLoaded(msg.arg1 == 1);
         break;
       }
       case COPY_TEXT: {

@@ -33,6 +33,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Media;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.tool.EmojiCode;
 import org.thunderdog.challegram.tool.EmojiData;
 import org.thunderdog.challegram.tool.Paints;
@@ -158,7 +159,7 @@ public class Emoji {
     if (!emojiPack.identifier.equals(bitmaps.identifier)) {
       bitmaps.recycle();
       bitmaps = new EmojiBitmaps(emojiPack.identifier);
-      UI.emojiLoaded(true);
+      TGLegacyManager.instance().notifyEmojiChanged(true);
     }
   }
 
@@ -508,9 +509,8 @@ public class Emoji {
     return null;
   }
 
-  @Nullable
   public boolean isSingleEmoji (String str) {
-    CharSequence emoji = Emoji.instance().replaceEmoji(str, 0, str.length(), singleLimiter);
+    CharSequence emoji = replaceEmoji(str, 0, str.length(), singleLimiter);
     if (emoji instanceof Spanned) {
       EmojiSpan[] emojis = ((Spanned) emoji).getSpans(0, emoji.length(), EmojiSpan.class);
       if (emojis != null && emojis.length == 1) {

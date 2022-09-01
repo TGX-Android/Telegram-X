@@ -196,7 +196,7 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
   }
 
   @Override
-  public void onEmojiPartLoaded () {
+  public void onEmojiUpdated (boolean isPackSwitch) {
     invalidate();
   }
 

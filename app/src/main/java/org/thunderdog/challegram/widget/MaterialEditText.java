@@ -21,20 +21,17 @@ import android.text.method.PasswordTransformationMethod;
 import android.view.KeyEvent;
 
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.emoji.EmojiUpdater;
-import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.v.EditText;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
 
-public class MaterialEditText extends EditText implements FactorAnimator.Target, Destroyable, TGLegacyManager.EmojiLoadListener {
+public class MaterialEditText extends EmojiEditText implements FactorAnimator.Target, Destroyable {
   // private static final ColorChanger goodChanger = new ColorChanger(0, 0xff18A81F);
   // private static final ColorChanger errorChanger = new ColorChanger(0xff63BAF7, 0xffED5454);
   // private static final ColorChanger globalChanger = new ColorChanger(0xffe6e6e6, 0xff63baf7);
@@ -63,7 +60,6 @@ public class MaterialEditText extends EditText implements FactorAnimator.Target,
     setSingleLine(true);
     setTypeface(Fonts.getRobotoRegular());
     setHighlightColor(Theme.fillingTextSelectionColor());
-    TGLegacyManager.instance().addEmojiListener(this);
   }
 
   public void setEnterKeyListener (EnterKeyListener listener) {
@@ -191,20 +187,5 @@ public class MaterialEditText extends EditText implements FactorAnimator.Target,
     }
 
     super.onDraw(c);
-  }
-
-  @Override
-  public void onEmojiPartLoaded () {
-    EmojiUpdater.invalidateEmojiSpans(this, false);
-  }
-
-  @Override
-  public void onEmojiPackChanged () {
-    EmojiUpdater.invalidateEmojiSpans(this, true);
-  }
-
-  @Override
-  public void performDestroy () {
-    TGLegacyManager.instance().removeEmojiListener(this);
   }
 }

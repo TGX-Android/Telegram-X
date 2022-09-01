@@ -19,51 +19,40 @@ import android.content.Context;
 import android.text.InputFilter;
 import android.util.AttributeSet;
 
-import org.thunderdog.challegram.emoji.EmojiFilter;
+import androidx.annotation.NonNull;
+
 import org.thunderdog.challegram.emoji.EmojiUpdater;
 import org.thunderdog.challegram.v.EditText;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 import me.vkryl.core.lambda.Destroyable;
 
 public class EmojiEditText extends EditText implements Destroyable {
-  private final EmojiUpdater emojiUpdater = new EmojiUpdater(this);
+  private EmojiUpdater emojiUpdater;
 
   public EmojiEditText (Context context) {
     super(context);
-    setFilters(new InputFilter[0]);
+    init();
   }
 
   public EmojiEditText (Context context, AttributeSet attrs) {
     super(context, attrs);
-    setFilters(new InputFilter[0]);
+    init();
   }
 
   public EmojiEditText (Context context, AttributeSet attrs, int defStyleAttr) {
     super(context, attrs, defStyleAttr);
+    init();
+  }
+
+  private void init () {
     setFilters(new InputFilter[0]);
   }
 
   @Override
-  public void setFilters (InputFilter[] filters) {
-    if (filters != null) {
-      for (InputFilter filter : filters) {
-        if (filter instanceof EmojiFilter) {
-          super.setFilters(filters);
-          return;
-        }
-      }
-    }
-    List<InputFilter> filtersList = new ArrayList<>(1);
-    filtersList.add(new EmojiFilter());
-    if (filters != null) {
-      Collections.addAll(filtersList, filters);
-    }
-    InputFilter[] newFilters = filtersList.toArray(new InputFilter[0]);
-    super.setFilters(newFilters);
+  public final void setFilters (@NonNull InputFilter[] filters) {
+    if (emojiUpdater == null)
+      emojiUpdater = new EmojiUpdater(this);
+    super.setFilters(EmojiTextView.newFilters(filters, emojiUpdater));
   }
 
   @Override

@@ -2989,7 +2989,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public void onEmojiPartLoaded () {
+  public void onEmojiUpdated (boolean isPackSwitch) {
     invalidateEmojiViews(false);
   }
 
@@ -4248,7 +4248,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (users.userIds.length > 1) {
           receiptText.setText(MessageSeenController.getViewString(message, users.totalCount).toString());
         } else if (users.userIds.length == 1) {
-          receiptText.setText(Emoji.instance().replaceEmoji(tdlib.senderName(new TdApi.MessageSenderUser(users.userIds[0]))));
+          receiptText.setText(tdlib.senderName(new TdApi.MessageSenderUser(users.userIds[0])));
         } else {
           receiptText.setText(MessageSeenController.getNobodyString(message));
         }

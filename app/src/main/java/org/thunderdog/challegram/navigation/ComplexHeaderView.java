@@ -213,7 +213,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   }
 
   @Override
-  public void onEmojiPartLoaded () {
+  public void onEmojiUpdated (boolean isPackSwitch) {
     invalidate();
   }
 

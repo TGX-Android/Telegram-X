@@ -623,7 +623,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   @Override
-  public final void onEmojiPartLoaded () {
+  public void onEmojiUpdated (boolean isPackSwitch) {
     if (dialogMessages != null) {
       try {
         for (int i = dialogMessages.size() - 1; i >= 0; i--) {

@@ -147,16 +147,8 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
   }
 
   @Override
-  public void onEmojiPartLoaded () {
-    if (recyclerView != null) {
-      final int childCount = recyclerView.getChildCount();
-      for (int i = 0; i < childCount; i++) {
-        View view = recyclerView.getChildAt(i);
-        if (view != null) {
-          view.invalidate();
-        }
-      }
-    }
+  public void onEmojiUpdated (boolean isPackSwitch) {
+    Views.invalidateChildren(recyclerView);
   }
 
   @Override

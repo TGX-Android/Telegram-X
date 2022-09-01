@@ -210,7 +210,7 @@ public class PlaybackController extends ViewController<Void> implements Menu, Mo
   }
 
   @Override
-  public void onEmojiPartLoaded () {
+  public void onEmojiUpdated (boolean isPackSwitch) {
     if (coverView != null) {
       coverView.invalidate();
     }

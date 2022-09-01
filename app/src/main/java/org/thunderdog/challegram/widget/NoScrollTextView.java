@@ -17,6 +17,7 @@ package org.thunderdog.challegram.widget;
 import android.content.Context;
 import android.widget.TextView;
 
+@Deprecated
 public class NoScrollTextView extends TextView {
   public NoScrollTextView (Context context) {
     super(context);

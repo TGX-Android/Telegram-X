@@ -15,45 +15,45 @@
 
 package org.thunderdog.challegram.emoji;
 
-import android.text.Editable;
+import android.text.InputFilter;
 import android.text.Spannable;
+import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.TextWatcher;
-import android.widget.EditText;
+import android.widget.TextView;
 
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 
 import me.vkryl.core.lambda.Destroyable;
 
-public class EmojiUpdater implements Destroyable, TGLegacyManager.EmojiLoadListener {
-  private final EditText targetView;
-  private final TextWatcher watcher;
+public class EmojiUpdater implements InputFilter, TGLegacyManager.EmojiLoadListener, Destroyable {
+  private final TextView targetView;
   private boolean isRegistered;
 
-  public EmojiUpdater (EditText targetView) {
+  public EmojiUpdater (TextView targetView) {
     this.targetView = targetView;
-    checkSpans(targetView.getText());
-    this.watcher = new TextWatcher() {
-      @Override
-      public void beforeTextChanged (CharSequence s, int start, int count, int after) {  }
+  }
 
-      @Override
-      public void onTextChanged (CharSequence s, int start, int before, int count) { }
+  @Override
+  public CharSequence filter (CharSequence source, int start, int end, Spanned dest, int dstart, int dend) {
+    setRegistered(hasEmoji(source, start, end) || hasEmoji(dest, 0, dstart) || hasEmoji(dest, dend, dest.length()));
+    return null;
+  }
 
-      @Override
-      public void afterTextChanged (Editable s) {
-        setRegistered(hasEmoji(s, 0, s.length()));
+  private boolean hasEmoji (CharSequence cs, int start, int end) {
+    if (cs instanceof Spanned && cs.length() > 0 && end > start) {
+      Spanned spanned = (Spanned) cs;
+      if (spanned.nextSpanTransition(start, end, EmojiSpan.class) < end) {
+        return true;
       }
-    };
-    this.targetView.addTextChangedListener(watcher);
+      EmojiSpan[] emojiSpans = spanned.getSpans(start, end, EmojiSpan.class);
+      return emojiSpans != null && emojiSpans.length > 0;
+    }
+    return false;
   }
 
-  private boolean hasEmoji (Spanned spannable, int start, int end) {
-    return spannable != null && spannable.length() > 0 && end > start && spannable.nextSpanTransition(start, end, EmojiSpan.class) < end;
-  }
-
-  private void checkSpans (Editable editable) {
-    final boolean needListener = hasEmoji(editable, 0, editable.length());
+  public void checkSpans () {
+    CharSequence cs = targetView.getText();
+    final boolean needListener = hasEmoji(cs, 0, cs.length());
     setRegistered(needListener);
   }
 
@@ -68,9 +68,12 @@ public class EmojiUpdater implements Destroyable, TGLegacyManager.EmojiLoadListe
     }
   }
 
-  public static void invalidateEmojiSpans (EditText targetView, boolean force) {
-    Editable editable = targetView.getText();
-    EmojiSpan[] emojiSpans = editable.getSpans(0, editable.length(), EmojiSpan.class);
+  public static void invalidateEmojiSpans (TextView targetView, boolean force) {
+    final CharSequence text = targetView.getText();
+    if (!(text instanceof Spanned))
+      return;
+    Spannable spannable = text instanceof Spannable ? (Spannable) text : new SpannableStringBuilder(text);
+    EmojiSpan[] emojiSpans = spannable.getSpans(0, spannable.length(), EmojiSpan.class);
     if (!force) {
       boolean needRefresh = false;
       for (EmojiSpan span : emojiSpans) {
@@ -85,30 +88,27 @@ public class EmojiUpdater implements Destroyable, TGLegacyManager.EmojiLoadListe
     }
     boolean updated = false;
     for (EmojiSpan span : emojiSpans) {
-      int spanStart = editable.getSpanStart(span);
-      int spanEnd = editable.getSpanEnd(span);
-      editable.removeSpan(span);
-      editable.setSpan(span, spanStart, spanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+      int spanStart = spannable.getSpanStart(span);
+      int spanEnd = spannable.getSpanEnd(span);
+      spannable.removeSpan(span);
+      spannable.setSpan(span, spanStart, spanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
       updated = true;
     }
     if (updated) {
+      if (text != spannable) {
+        targetView.setText(spannable);
+      }
       targetView.invalidate();
     }
   }
 
   @Override
-  public void onEmojiPartLoaded () {
-    invalidateEmojiSpans(targetView, false);
-  }
-
-  @Override
-  public void onEmojiPackChanged () {
-    invalidateEmojiSpans(targetView, true);
+  public void onEmojiUpdated (boolean isPackSwitch) {
+    invalidateEmojiSpans(targetView, isPackSwitch);
   }
 
   @Override
   public void performDestroy () {
-    targetView.removeTextChangedListener(watcher);
     setRegistered(false);
   }
 }

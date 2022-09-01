@@ -433,16 +433,8 @@ public class InstantViewController extends ViewController<InstantViewController.
   }
 
   @Override
-  public void onEmojiPartLoaded () {
-    if (recyclerView != null && recyclerView.getLayoutManager() != null) {
-      final int count = recyclerView.getChildCount();
-      for (int i = 0; i < count; i++) {
-        View view = recyclerView.getChildAt(i);
-        if (view != null) {
-          view.invalidate();
-        }
-      }
-    }
+  public void onEmojiUpdated (boolean isPackSwitch) {
+    Views.invalidateChildren(recyclerView);
   }
 
   @Override

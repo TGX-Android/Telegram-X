@@ -68,7 +68,7 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
   }
 
   @Override
-  public void onEmojiPartLoaded () {
+  public void onEmojiUpdated (boolean isPackSwitch) {
     invalidate();
   }
 

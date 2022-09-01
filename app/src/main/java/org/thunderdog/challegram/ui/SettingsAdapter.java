@@ -220,7 +220,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
   }
 
   @Override
-  public void onEmojiPartLoaded () {
+  public void onEmojiUpdated (boolean isPackSwitch) {
     for (RecyclerView parentView : parentViews) {
       LinearLayoutManager manager = (LinearLayoutManager) parentView.getLayoutManager();
       final int first = manager.findFirstVisibleItemPosition();

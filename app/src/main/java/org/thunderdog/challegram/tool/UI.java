@@ -705,10 +705,6 @@ public class UI {
     getAppHandler().openLink(url);
   }
 
-  public static void emojiLoaded (boolean isChange) {
-    getAppHandler().emojiLoaded(isChange);
-  }
-
   @Deprecated
   public static void openCameraDelayed (Context context) {
     getAppHandler().openCamera(context, ACTIVITY_DELAY, false, false);
