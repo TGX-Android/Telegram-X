@@ -162,20 +162,21 @@ public class ChatEventUtil {
           return new TGMessageService(context, msg, (TdApi.ChatEventVideoChatParticipantVolumeLevelChanged) action);
         case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
           return new TGMessageService(context, msg, (TdApi.ChatEventVideoChatParticipantIsMutedToggled) action);
-        // no service message
-        case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
-        case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR:
-        case TdApi.ChatEventMemberInvited.CONSTRUCTOR:
-        case TdApi.ChatEventMemberJoined.CONSTRUCTOR:
-        case TdApi.ChatEventMemberLeft.CONSTRUCTOR:
-        case TdApi.ChatEventMemberPromoted.CONSTRUCTOR:
-        case TdApi.ChatEventMemberRestricted.CONSTRUCTOR:
+        // only full (native)
         case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
-        case TdApi.ChatEventPermissionsChanged.CONSTRUCTOR:
-        case TdApi.ChatEventPhotoChanged.CONSTRUCTOR:
-        case TdApi.ChatEventTitleChanged.CONSTRUCTOR:
         case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
         case TdApi.ChatEventVideoChatEnded.CONSTRUCTOR:
+        case TdApi.ChatEventMemberJoined.CONSTRUCTOR:
+        case TdApi.ChatEventMemberLeft.CONSTRUCTOR:
+        case TdApi.ChatEventTitleChanged.CONSTRUCTOR:
+        case TdApi.ChatEventPhotoChanged.CONSTRUCTOR:
+          // only full
+        case TdApi.ChatEventMemberPromoted.CONSTRUCTOR:
+        case TdApi.ChatEventMemberRestricted.CONSTRUCTOR:
+        case TdApi.ChatEventMemberInvited.CONSTRUCTOR:
+        case TdApi.ChatEventPermissionsChanged.CONSTRUCTOR:
+        case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR:
+        case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
           throw new IllegalArgumentException(action.toString());
       }
       throw new UnsupportedOperationException(action.toString());
@@ -532,22 +533,23 @@ public class ChatEventUtil {
         fullMessage = new TGMessageText(context, msg, formattedText);
         break;
       }
-      case TdApi.ChatEventHasProtectedContentToggled.CONSTRUCTOR:
-      case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
-      case TdApi.ChatEventInviteLinkRevoked.CONSTRUCTOR:
+      // only service message
+      case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
       case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
+      case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
+      case TdApi.ChatEventHasProtectedContentToggled.CONSTRUCTOR:
       case TdApi.ChatEventIsAllHistoryAvailableToggled.CONSTRUCTOR:
+      case TdApi.ChatEventStickerSetChanged.CONSTRUCTOR:
       case TdApi.ChatEventLinkedChatChanged.CONSTRUCTOR:
+      case TdApi.ChatEventSlowModeDelayChanged.CONSTRUCTOR:
       case TdApi.ChatEventLocationChanged.CONSTRUCTOR:
+      case TdApi.ChatEventVideoChatMuteNewParticipantsToggled.CONSTRUCTOR:
       case TdApi.ChatEventMemberJoinedByInviteLink.CONSTRUCTOR:
       case TdApi.ChatEventMemberJoinedByRequest.CONSTRUCTOR:
-      case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
-      case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
-      case TdApi.ChatEventSlowModeDelayChanged.CONSTRUCTOR:
-      case TdApi.ChatEventStickerSetChanged.CONSTRUCTOR:
-      case TdApi.ChatEventVideoChatMuteNewParticipantsToggled.CONSTRUCTOR:
-      case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
+      case TdApi.ChatEventInviteLinkRevoked.CONSTRUCTOR:
+      case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
+      case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
         throw new IllegalArgumentException(action.toString());
       default:
         throw new UnsupportedOperationException(action.toString());
