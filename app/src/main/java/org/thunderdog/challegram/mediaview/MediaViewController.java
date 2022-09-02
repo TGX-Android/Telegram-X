@@ -1241,9 +1241,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         ignoreCaptionUpdate = true;
         TdApi.FormattedText caption = item.getCaption();
         if (caption != null) {
-          ((InputView) captionView).setInput(TD.toCharSequence(caption), true);
+          ((InputView) captionView).setInput(TD.toCharSequence(caption), true, false);
         } else {
-          ((InputView) captionView).setInput("", true);
+          ((InputView) captionView).setInput("", true, false);
         }
         ignoreCaptionUpdate = false;
         break;
@@ -4830,7 +4830,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           }
         };
         if (chat != null) {
-          captionView.setIsSecret(Settings.instance().needsIncognitoMode(chat));
+          captionView.setNoPersonalizedLearning(Settings.instance().needsIncognitoMode(chat));
         }
         captionView.setHighlightColor(ColorUtils.alphaColor(0.2f, Theme.fillingTextSelectionColor()));
         captionView.setHighlightColor(getForcedTheme().getColor(R.id.theme_color_textSelectionHighlight));

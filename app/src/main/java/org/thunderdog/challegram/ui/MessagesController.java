@@ -127,7 +127,6 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.core.Media;
-import org.thunderdog.challegram.data.CrashLog;
 import org.thunderdog.challegram.data.InlineResultButton;
 import org.thunderdog.challegram.data.InlineResultCommand;
 import org.thunderdog.challegram.data.MessageListManager;
@@ -203,7 +202,6 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.camera.CameraAccessImageView;
-import org.thunderdog.challegram.unsorted.CrashManager;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Test;
 import org.thunderdog.challegram.util.CancellableResultHandler;
@@ -645,7 +643,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           updateButtonsY();
         }
       };
-      inputView.setIsSecret(Settings.instance().needsIncognitoMode(chat));
+      inputView.setNoPersonalizedLearning(Settings.instance().needsIncognitoMode(chat));
       inputView.setId(R.id.msg_input);
       inputView.setTextColor(Theme.textAccentColor());
       addThemePaintColorListener(inputView.getPlaceholderPaint(), R.id.theme_color_textPlaceholder);
@@ -1883,9 +1881,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (currentUsername != null) {
         currentUsername = "@" + currentUsername + " ";
         if (inputView.getText().toString().equals(currentUsername.toString())) {
-          inputView.setInput("", false);
+          inputView.setInput("", false, true);
         } else {
-          inputView.setInput(currentUsername, true);
+          inputView.setInput(currentUsername, true, true);
         }
       }
       return true;
@@ -2446,7 +2444,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (item instanceof TGSwitchInline) {
       if (inputView != null) {
-        inputView.setInput(item.toString(), true);
+        inputView.setInput(item.toString(), true, false);
       }
       return;
     }
@@ -2577,7 +2575,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         inputView.setEnabled(enabled);
       }
       if (enabled) {
-        inputView.setIsSecret(Settings.instance().needsIncognitoMode(chat));
+        inputView.setNoPersonalizedLearning(Settings.instance().needsIncognitoMode(chat));
       }
     }
 
@@ -3679,9 +3677,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
       pagerContentAdapter.isLocked = false;
       pagerContentAdapter.notifyDataSetChanged();
     }
-    if (inputView != null && needSaveDraftOnEachTextChange()) {
-      inputView.setTextChangedSinceChatOpened(false);
-    }
     messagesView.setMessageAnimatorEnabled(true);
     registerRaiseListener();
     manager.setParentFocused(true);
@@ -3788,10 +3783,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  public boolean needSaveDraftOnEachTextChange () {
-    return false; //FIXME TDLib isSecretChat();
-  }
-
   @Override
   public void onCleanAfterHide () {
     super.onCleanAfterHide();
@@ -3806,9 +3797,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public void onBlur () {
-    if (!needSaveDraftOnEachTextChange()) {
-      saveDraft();
-    }
+    saveDraft();
 
     super.onBlur();
 
@@ -4280,7 +4269,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     } else {
       str = command.getCommand() + "@" + command.getUsername() + " ";
     }
-    inputView.setInput(str, true);
+    inputView.setInput(str, true, true);
     Keyboard.show(inputView);
 
     return true;
@@ -4296,7 +4285,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     } else {
       str = command + ' ';
     }
-    inputView.setInput(str, true);
+    inputView.setInput(str, true, true);
     Keyboard.show(inputView);
     return true;
   }
@@ -4304,7 +4293,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void setInputInlineBot (long userId, String username) {
     if (canWriteMessages()) {
       // pressed via @NephoBot message
-      inputView.setInput(username + " ", true);
+      inputView.setInput(username + " ", true, true);
       Keyboard.show(inputView);
     } else {
       tdlib.ui().openPrivateChat(this, userId, new TdlibUi.ChatOpenParameters().keepStack());
@@ -5561,7 +5550,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (inputView != null) {
       inputView.setVisibility(View.GONE);
-      inputView.setTextSilently("");
+      inputView.setInput("", false, false);
     }
 
     hideAttachButtons();
@@ -6285,7 +6274,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (pendingText != null) {
         text = pendingText;
       }
-      inputView.setInput(Settings.instance().getNewSetting(Settings.SETTING_FLAG_EDIT_MARKDOWN) ? TD.toMarkdown(text) : TD.toCharSequence(text), true);
+      inputView.setInput(Settings.instance().getNewSetting(Settings.SETTING_FLAG_EDIT_MARKDOWN) ? TD.toMarkdown(text) : TD.toCharSequence(text), true, false);
     }
     Keyboard.show(inputView);
   }
@@ -6425,7 +6414,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void onCommandClick () {
-    inputView.setInput("/", true);
+    inputView.setInput("/", true, true);
     Keyboard.show(inputView);
   }
 
@@ -7400,7 +7389,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (switchInline.inCurrentChat && canWriteMessages() && hasWritePermission()) {
       if (inputView != null) {
-        inputView.setInput("@" + user.username + " " + switchInline.query, true);
+        inputView.setInput("@" + user.username + " " + switchInline.query, true, true);
       }
       return;
     }
@@ -7528,7 +7517,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       pickDateOrProceed(forceDisableNotification, schedulingState, (forceDisableNotification1, schedulingState1, disableMarkdown) -> {
         if (sendSticker(view, sticker.getSticker(), sticker.getFoundByEmoji(), true, forceDisableNotification, schedulingState1)) {
           lastJunkTime = SystemClock.uptimeMillis();
-          inputView.setInput("", false);
+          inputView.setInput("", false, true);
         }
       });
       return true;
@@ -7660,7 +7649,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void onUsernamePick (String username) {
-    inputView.setInput("@" + username + " ", true);
+    inputView.setInput("@" + username + " ", true, true);
   }
 
   // Link preview
@@ -8038,15 +8027,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
     setInputInlineBot(0, "@" + tdlib.getAnimationSearchBotUsername());
   }
 
-  public void onInputTextChange (CharSequence charSequence) {
+  public void onInputTextChange (CharSequence charSequence, boolean byUserAction) {
     if (sendMenu != null) {
       sendMenu.hideMenu();
     }
     if (emojiLayout != null) {
       emojiLayout.onTextChanged(charSequence);
     }
-    if (needSaveDraftOnEachTextChange() && isFocused()) {
-      saveDraft();
+    updateSendButton(charSequence, true);
+    if (byUserAction) {
+      setTyping(charSequence.length() > 0);
+      inputView.setTextChangedSinceChatOpened(true);
     }
   }
 
@@ -8710,7 +8701,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             if (allowLinkPreview) {
               obtainAllowLinkPreview(true);
             }
-            inputView.setInput("", false);
+            inputView.setInput("", false, true);
           }
           setIsSendingText(false);
           /*if (success) {
@@ -8818,7 +8809,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       pickDateOrProceed(forceDisableNotification, schedulingState, (forceDisableNotification1, schedulingState1, disableMarkdown) -> {
         tdlib.sendInlineQueryResult(chat.id, getMessageThreadId(), allowReply ? obtainReplyId() : 0, new TdApi.MessageSendOptions(forceDisableNotification1 || obtainSilentMode(), false, false, schedulingState1), inlineQueryId, id);
         if (clearInput) {
-          inputView.setInput("", false);
+          inputView.setInput("", false, true);
           inputView.getInlineSearchContext().resetInlineBotsCache();
         }
       });

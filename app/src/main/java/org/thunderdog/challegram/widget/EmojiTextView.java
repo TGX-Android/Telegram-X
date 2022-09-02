@@ -16,12 +16,16 @@
 package org.thunderdog.challegram.widget;
 
 import android.content.Context;
+import android.os.Build;
 import android.text.InputFilter;
 import android.util.AttributeSet;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputConnection;
 
 import androidx.annotation.NonNull;
 
 import org.thunderdog.challegram.emoji.EmojiFilter;
+import org.thunderdog.challegram.emoji.EmojiInputConnection;
 import org.thunderdog.challegram.emoji.EmojiUpdater;
 
 import java.util.ArrayList;
@@ -62,6 +66,20 @@ public class EmojiTextView extends TextView implements Destroyable {
   @Override
   public final void performDestroy () {
     emojiUpdater.performDestroy();
+  }
+
+  @Override
+  public final InputConnection onCreateInputConnection (EditorInfo editorInfo) {
+    InputConnection ic = createInputConnection(editorInfo);
+    if (ic != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && !(ic instanceof EmojiInputConnection)) {
+      return new EmojiInputConnection(this, ic);
+    } else {
+      return ic;
+    }
+  }
+
+  protected InputConnection createInputConnection (EditorInfo editorInfo) {
+    return super.onCreateInputConnection(editorInfo);
   }
 
   static InputFilter[] newFilters (@NonNull InputFilter[] filters, InputFilter emojiUpdater) {

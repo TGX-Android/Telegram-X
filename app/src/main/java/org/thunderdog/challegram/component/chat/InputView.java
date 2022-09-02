@@ -36,7 +36,6 @@ import android.text.style.URLSpan;
 import android.util.TypedValue;
 import android.view.ActionMode;
 import android.view.Gravity;
-import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -48,6 +47,7 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.widget.LinearLayout;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -72,8 +72,6 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.emoji.EmojiFilter;
-import org.thunderdog.challegram.emoji.EmojiInputConnection;
-import org.thunderdog.challegram.emoji.EmojiUpdater;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.helper.InlineSearchContext;
 import org.thunderdog.challegram.navigation.LocaleChanger;
@@ -90,31 +88,32 @@ import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.util.ExternalEmojiFilter;
+import org.thunderdog.challegram.util.FinalNewLineFilter;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.widget.InputWrapperWrapper;
 import org.thunderdog.challegram.widget.NoClipEditText;
 
 import java.io.InputStream;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 
 import me.vkryl.android.text.CodePointCountFilter;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
-public class InputView extends NoClipEditText implements InlineSearchContext.Callback, InlineResultsWrap.PickListener, RtlCheckListener {
+public class InputView extends NoClipEditText implements InlineSearchContext.Callback, InlineResultsWrap.PickListener, RtlCheckListener, FinalNewLineFilter.Callback {
   public static final boolean USE_ANDROID_SELECTION_FIX = true;
-  // private static final int HINT_TEXT_COLOR = 0xffa1aab3;
+  private final TextPaint paint;
 
+  // TODO: get rid of chat-related logic inside of InputView
   private @Nullable MessagesController controller;
-
   private boolean ignoreDraft;
-  private TextPaint paint;
 
   private String suffix = "", prefix = "", displaySuffix = "";
-  private int prefixWidth, suffixWidth, suffixLeft/*, suffixTop*/;
-  private final int verticalPadding;
+  private int prefixWidth, suffixWidth;
 
   private final Tdlib tdlib;
   private final InlineSearchContext inlineContext;
@@ -122,7 +121,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   public interface InputListener {
     boolean canSearchInline (InputView v);
     void onInputChanged (InputView v, String input);
-
     long provideInlineSearchChatId (InputView v);
     TdApi.Chat provideInlineSearchChat (InputView v);
     long provideInlineSearchChatUserId (InputView v);
@@ -130,80 +128,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     void addInlineResults (InputView v, ArrayList<InlineResult<?>> items);
   }
 
-  @Override
-  public final TdApi.FormattedText getOutputText (boolean applyMarkdown) {
-    /*if (lastInputConnection != null) {
-      lastInputConnection.finishComposingText();
-    }*/
-    SpannableStringBuilder text = new SpannableStringBuilder(getText());
-    BaseInputConnection.removeComposingSpans(text);
-    if (USE_LAYOUT_DIRECTION && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-      if (getLayoutDirection() == LAYOUT_DIRECTION_RTL && getLayout() != null) {
-        SpannableStringBuilder b = new SpannableStringBuilder(text);
-        int startIndex = 0;
-        int endIndex;
-        do {
-          endIndex = StringUtils.indexOf(b, "\n", startIndex);
-          if (endIndex == -1)
-            endIndex = b.length();
-          if (Strings.getTextDirection(b, startIndex, endIndex) == Strings.DIRECTION_NEUTRAL) {
-            b.insert(startIndex, "\u200F");
-            endIndex++;
-          }
-          startIndex = endIndex + 1;
-        } while (endIndex < b.length());
-        text = b;
-      }
-    }
-    TdApi.FormattedText result = new TdApi.FormattedText(text.toString(), TD.toEntities(text, false));
-    if (applyMarkdown) {
-      Td.parseMarkdown(result);
-    }
-    return result;
-  }
-
   private InputListener inputListener;
-
-  private boolean isSecret;
-
-  public void setIsSecret (boolean isSecret) {
-    if (this.isSecret != isSecret) {
-      this.isSecret = isSecret;
-      int imeOptions = EditorInfo.IME_FLAG_NO_EXTRACT_UI;
-      if (isSecret) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-          imeOptions |= EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING;
-        } else {
-          imeOptions |= 0x1000000;
-        }
-      }
-      setImeOptions(imeOptions);
-    }
-  }
-
-  private static final boolean USE_LAYOUT_DIRECTION = false;
-
-  @Override
-  public boolean onKeyDown (int keyCode, KeyEvent event) {
-    if (keyCode == KeyEvent.KEYCODE_ENTER && qualifiesForKeySend()) {
-      // default: enter -> newline, ctrl+enter -> send
-      // alternative: enter -> send, ctrl+enter -> newline
-
-      boolean needSendByEnter = Settings.instance().needSendByEnter();
-      boolean clearKey = event.hasNoModifiers();
-      boolean ctrlPressed = event.hasModifiers(KeyEvent.META_CTRL_ON); // for example, Alt + Ctrl + Enter should be ignored
-      boolean shouldSend = (ctrlPressed && !needSendByEnter) || (clearKey && needSendByEnter);
-
-      if (shouldSend && controller != null) {
-        controller.pickDateOrProceed(false, null, (forceDisableNotification, schedulingState, disableMarkdown) -> controller.sendText(true, forceDisableNotification, schedulingState));
-        return true;
-      } else {
-        return super.onKeyDown(keyCode, event);
-      }
-    } else {
-      return super.onKeyDown(keyCode, event);
-    }
-  }
 
   public InputView (Context context, Tdlib tdlib) {
     super(context);
@@ -214,28 +139,19 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     this.paint.setTypeface(Fonts.getRobotoRegular());
     this.paint.setTextSize(Screen.sp(18f));
     setGravity(Lang.gravity() | Gravity.TOP);
-    if (USE_LAYOUT_DIRECTION && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-      setLayoutDirection(Lang.rtl() ? LAYOUT_DIRECTION_RTL : LAYOUT_DIRECTION_LTR);
-    }
     setTypeface(Fonts.getRobotoRegular());
     setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f);
-    verticalPadding = Screen.dp(12f);
-    if (Lang.isRtl) {
-      setPadding(Screen.dp(55f), verticalPadding, this.suffixLeft = Screen.dp(60f), verticalPadding);
+    final int verticalPadding = Screen.dp(12f);
+    if (Lang.rtl()) {
+      setPadding(Screen.dp(55f), verticalPadding, Screen.dp(60f), verticalPadding);
     } else {
-      setPadding(this.suffixLeft = Screen.dp(60f), verticalPadding, Screen.dp(55f), verticalPadding);
+      setPadding(Screen.dp(60f), verticalPadding, Screen.dp(55f), verticalPadding);
     }
     setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
     setInputType(getInputType() | EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES | EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE);
     setSingleLine(false);
     setMaxLines(8);
     setMinimumHeight(Screen.dp(49f));
-    // setMovementMethod(LinkMovementMethod.getInstance());
-
-    /*setTextIsSelectable(true);
-    setFocusable(true);
-    setFocusableInTouchMode(true);*/
-
     setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     Views.clearCursorDrawable(this);
     setMaxCodePointCount(0);
@@ -245,16 +161,11 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
       @Override
       public void onTextChanged (CharSequence s, int start, int before, int count) {
-        processTextChange(s);
-        if (controller != null) {
-          controller.updateSendButton(s, true);
-        }
+        processTextChange(s, !isSettingText || settingByUserAction);
       }
 
       @Override
-      public void afterTextChanged (Editable s) {
-
-      }
+      public void afterTextChanged (Editable s) { }
     });
 
     if (Config.USE_CUSTOM_INPUT_STYLING) {
@@ -343,23 +254,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         public void onDestroyActionMode (ActionMode mode) {
 
         }
-      });
-    }
-  }
-
-  public void setMaxCodePointCount (int maxCodePointCount) {
-    if (maxCodePointCount > 0) {
-      setFilters(new InputFilter[] {
-        new ExternalEmojiFilter(),
-        new CodePointCountFilter(maxCodePointCount),
-        new EmojiFilter(),
-        new CharacterStyleFilter(true)
-      });
-    } else {
-      setFilters(new InputFilter[] {
-        new ExternalEmojiFilter(),
-        new EmojiFilter(),
-        new CharacterStyleFilter(true)
       });
     }
   }
@@ -549,13 +443,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     inlineContext.onTextChanged(cs, str, selectionStart == selectionEnd ? selectionStart : -1);
   }
 
-  public void setTextSilently (String text) {
-    boolean origValue = ignoreDraft;
-    ignoreDraft = true;
-    setText(text);
-    ignoreDraft = origValue;
-  }
-
   @Override
   protected void onSelectionChanged (int selStart, int selEnd) {
     super.onSelectionChanged(selStart, selEnd);
@@ -578,10 +465,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     }
   }
 
-  private void processTextChange (CharSequence s) {
+  private void processTextChange (CharSequence s, boolean byUserAction) {
     String str = s.toString();
 
-    if (!isSettingText && blockedText == null) {
+    if (byUserAction && blockedText == null) {
       setTextChangedSinceChatOpened(true);
     }
 
@@ -589,7 +476,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     int selectionEnd = getSelectionEnd();
     if (controller != null) {
       inlineContext.onTextChanged(s, str, selectionStart == selectionEnd ? selectionStart : -1);
-      controller.onInputTextChange(s);
+      controller.onInputTextChange(s, !ignoreDraft && byUserAction);
     } else if (inputListener != null) {
       if (inputListener.canSearchInline(InputView.this)) {
         inlineContext.onTextChanged(s, str, selectionStart == selectionEnd ? selectionStart : -1);
@@ -597,16 +484,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       inputListener.onInputChanged(InputView.this, str);
     }
     if (!isSettingText && blockedText != null && !blockedText.equals(str)) {
-      setInput(blockedText, true);
+      setInput(blockedText, true, false);
     }
-    // helper.process(str);
 
-    if (!ignoreDraft && controller != null) {
-      controller.setTyping(s.length() > 0);
-      if (!controller.isEditingMessage()) {
-        textChangedSinceChatOpened = true;
-      }
-    }
     setAllowsAnyGravity(str.length() > 0);
   }
 
@@ -614,9 +494,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   public void checkRtl () {
     if (!allowsAnyGravity) {
       setGravity(Lang.gravity() | Gravity.TOP);
-    }
-    if (USE_LAYOUT_DIRECTION && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-      setLayoutDirection(Lang.rtl() ? LAYOUT_DIRECTION_RTL : LAYOUT_DIRECTION_LTR);
     }
   }
 
@@ -660,11 +537,13 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   private boolean needSendByEnter () {
-    return Settings.instance().needSendByEnter() && qualifiesForKeySend();
+    return Settings.instance().needSendByEnter() && !isSettingText && controller != null && controller.inSimpleSendMode();
   }
 
-  private boolean qualifiesForKeySend () {
-    return !isSettingText && controller != null && controller.inSimpleSendMode();
+  private void sendByEnter () {
+    if (controller != null && needSendByEnter()) {
+      controller.pickDateOrProceed(false, null, (forceDisableNotification, schedulingState, disableMarkdown) -> controller.sendText(true, forceDisableNotification, schedulingState));
+    }
   }
 
   public void setInputListener (InputListener inputListener) {
@@ -676,127 +555,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   // Inline results
-
-  private static final int MEDIA_TYPE_WEBP = 1;
-  private static final int MEDIA_TYPE_PNG = 2;
-  private static final int MEDIA_TYPE_GIF = 3;
-  private static final int MEDIA_TYPE_JPEG = 4;
-
-  private InputConnection createInputConnection (EditorInfo editorInfo) {
-    InputConnection ic = super.onCreateInputConnection(editorInfo);
-    if (isCaptionEditing()) {
-      return ic;
-    }
-    String[] mimeTypes = new String[] {
-      "image/webp",
-      "image/png",
-      "image/gif",
-      "image/jpeg",
-      "image/*"
-    };
-    InputWrapperWrapper.setContentMimeTypes(editorInfo, mimeTypes);
-    if (ic == null)
-      return null;
-    final InputConnectionCompat.OnCommitContentListener callback =
-      (inputContentInfo, flags, bundle) -> {
-        if (controller == null || !controller.hasWritePermission())
-          return false;
-
-        ClipDescription description = inputContentInfo.getDescription();
-        int mediaType;
-        if (description.hasMimeType("image/webp")) {
-          mediaType = MEDIA_TYPE_WEBP;
-        } else if (description.hasMimeType("image/png")) {
-          mediaType = MEDIA_TYPE_PNG;
-        } else if (description.hasMimeType("image/gif")) {
-          mediaType = MEDIA_TYPE_GIF;
-        } else if (description.hasMimeType("image/jpeg")) {
-          mediaType = MEDIA_TYPE_JPEG;
-        } else {
-          return false;
-        }
-
-        // read and display inputContentInfo asynchronously
-        boolean needPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1 && (flags &
-          InputConnectionCompat.INPUT_CONTENT_GRANT_READ_URI_PERMISSION) != 0;
-        if (needPermission) {
-          try {
-            inputContentInfo.requestPermission();
-          } catch (Throwable t) {
-            return false; // return false if failed
-          }
-        }
-        Uri uri = inputContentInfo.getContentUri();
-        long timestamp = System.currentTimeMillis();
-        long chatId = controller.getChatId();
-        long messageThreadId = controller.getMessageThreadId();
-        long replyToMessageId = controller.obtainReplyId();
-        boolean silent = controller.obtainSilentMode();
-        boolean needMenu = controller.areScheduledOnly();
-
-        Background.instance().post(() -> {
-          int imageWidth, imageHeight;
-          try (InputStream is = UI.getContext().getContentResolver().openInputStream(uri)) {
-            BitmapFactory.Options opts = new BitmapFactory.Options();
-            opts.inJustDecodeBounds = true;
-            BitmapFactory.decodeStream(is, null, opts);
-            imageWidth = opts.outWidth;
-            imageHeight = opts.outHeight;
-          } catch (Throwable t) {
-            Log.e("Unable to read image", t);
-            return;
-          }
-          if (imageWidth == 0 || imageHeight == 0) {
-            Log.e("Unknown image bounds, aborting");
-            return;
-          }
-          String path = uri.toString();
-          boolean isGif = true;
-          if (mediaType == MEDIA_TYPE_GIF) {
-            try (InputStream is = UI.getContext().getContentResolver().openInputStream(uri)) {
-              isGif = U.isAnimatedGIF(is);
-            } catch (Throwable t) {
-              Log.e("Unable to read GIF", t);
-              isGif = false;
-            }
-          }
-          final TdApi.InputMessageContent content;
-          final boolean isSecretChat = ChatId.isSecret(chatId);
-          if (mediaType == MEDIA_TYPE_GIF && isGif) {
-            TdApi.InputFileGenerated generated = TD.newGeneratedFile(null, path, 0, timestamp);
-            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageAnimation(generated, null, null, 0, imageWidth, imageHeight, null), isSecretChat);
-          } else if ((mediaType != MEDIA_TYPE_JPEG && (mediaType == MEDIA_TYPE_WEBP || path.contains("sticker") || Math.max(imageWidth, imageHeight) <= 512))) {
-            TdApi.InputFileGenerated generated = PhotoGenerationInfo.newFile(path, 0, timestamp, true, 512);
-            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageSticker(generated, null, imageWidth, imageHeight, null), isSecretChat);
-          } else {
-            TdApi.InputFileGenerated generated = PhotoGenerationInfo.newFile(path, 0, timestamp, false, 0);
-            content = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(generated, null, null, imageWidth, imageHeight, null, 0), isSecretChat);
-          }
-          if (needMenu) {
-            tdlib.ui().post(() -> {
-              tdlib.ui().showScheduleOptions(controller, chatId, false, (forceDisableNotification, schedulingState, disableMarkdown) -> tdlib.sendMessage(chatId, messageThreadId, replyToMessageId, new TdApi.MessageSendOptions(forceDisableNotification || silent, false, false, schedulingState), content, null), null);
-            });
-          } else {
-            tdlib.sendMessage(chatId, messageThreadId, replyToMessageId, silent, false, content);
-          }
-        });
-        // read and display inputContentInfo asynchronously.
-        // call inputContentInfo.releasePermission() as needed.
-
-        return true;  // return true if succeeded
-      };
-    return InputWrapperWrapper.createWrapper(ic, editorInfo, callback);
-  }
-
-  private InputConnection lastInputConnection;
-
-  @Override
-  public InputConnection onCreateInputConnection (EditorInfo editorInfo) {
-    InputConnection ic = createInputConnection(editorInfo);
-    if (ic == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT || ic instanceof EmojiInputConnection)
-      return lastInputConnection = ic;
-    return lastInputConnection = new EmojiInputConnection(this, ic);
-  }
 
   public InlineSearchContext getInlineSearchContext () {
     return inlineContext;
@@ -1012,7 +770,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   public void setTextChangedSinceChatOpened (boolean force) {
-    if (!controller.isEditingMessage() && (!isEmpty() || force)) {
+    if (controller != null && !controller.isEditingMessage() && (!isEmpty() || force)) {
       textChangedSinceChatOpened = true;
     }
   }
@@ -1052,17 +810,18 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     controller.setInputVisible(true, current.length() > 0);
     if (!draft.equals(current)) {
       ignoreDraft = true;
-      setInput(draft, draft.length() > 0);
+      setInput(draft, draft.length() > 0, false);
       controller.updateSendButton(draft.toString(), false);
     }
   }
 
   // Suffix stuff
 
-  private boolean isSettingText;
+  private boolean isSettingText, settingByUserAction;
 
-  public void setInput (CharSequence text, boolean moveCursor) {
+  public void setInput (CharSequence text, boolean moveCursor, boolean byUserAction) {
     this.isSettingText = true;
+    this.settingByUserAction = byUserAction;
     setText(text);
     if (moveCursor) {
       Views.setSelection(this, text != null ? text.length() : 0);
@@ -1118,12 +877,274 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
     if (this.displaySuffix.length() > 0 && this.prefix.length() > 0 && getLineCount() == 1) {
       String text = getText().toString();
-      if (text.toLowerCase().equals(prefix.toLowerCase())) {
+      if (text.equalsIgnoreCase(prefix)) {
         checkPrefix(text);
-        c.drawText(displaySuffix, suffixLeft + prefixWidth, getBaseline(), paint);
+        c.drawText(displaySuffix, getPaddingLeft() + prefixWidth, getBaseline(), paint);
       }
     }
   }
+
+  // Inline query
+
+  @Override
+  public void onCommandPick (InlineResultCommand command, boolean isLongPress) {
+    if (controller != null) {
+      TdApi.Chat chat = controller.getChat();
+      if (isLongPress) {
+        String str = (chat != null && ChatId.isUserChat(ChatId.toUserId(chat.id))) || command.getUsername() == null ? command.getCommand() + ' ' : command.getCommand() + '@' + command.getUsername() + ' ';
+        setInput(str, true, true);
+      } else {
+        controller.sendCommand(command);
+      }
+    }
+  }
+
+  @Override
+  public void onHashtagPick (InlineResultHashtag hashtag) {
+    String resultHashtag = hashtag.data();
+
+    if (resultHashtag == null || !hashtag.hasTarget()) {
+      return;
+    }
+
+    Editable editable = getText();
+    SpannableStringBuilder b = new SpannableStringBuilder(editable);
+    CharSequence within = resultHashtag + " ";
+    try { editable.replace(hashtag.getTargetStart(), hashtag.getTargetEnd(), within); } catch (Throwable ignored) {  }
+    try { setInput(hashtag.replaceInTarget(b, within), false, true); Views.setSelection(this, hashtag.getTargetStart() + within.length()); } catch (Throwable ignored) { }
+  }
+
+  @Override
+  public void onEmojiSuggestionPick (InlineResultEmojiSuggestion suggestion) {
+    String resultEmoji = suggestion.getEmoji();
+    if (resultEmoji == null || !suggestion.hasTarget()) {
+      return;
+    }
+
+    Editable editable = getText();
+    SpannableStringBuilder b = new SpannableStringBuilder(editable);
+    CharSequence within = editable.length() == suggestion.getTargetEnd() && suggestion.getTargetStart() == 0 ? resultEmoji : resultEmoji + " ";
+    try { editable.replace(suggestion.getTargetStart(), suggestion.getTargetEnd(), within); } catch (Throwable ignored) { }
+    try { setInput(suggestion.replaceInTarget(b, within), false, true); Views.setSelection(this, suggestion.getTargetStart() + within.length()); } catch (Throwable ignored) { }
+  }
+
+  @Override
+  public void onMentionPick (InlineResultMention mention, @Nullable String usernamelessText) {
+    boolean isUsernameless = !StringUtils.isEmpty(usernamelessText) || mention.isUsernameless();
+    String resultMention = !StringUtils.isEmpty(usernamelessText) ? usernamelessText : mention.getMention(false);
+    if (resultMention == null || mention.getTargetEnd() == -1 || mention.getTargetStart() == -1) {
+      return;
+    }
+
+    Editable editable = getText();
+    SpannableStringBuilder b = new SpannableStringBuilder(editable);
+    CharSequence within;
+
+    if (isUsernameless) {
+      SpannableStringBuilder span = new SpannableStringBuilder(resultMention + " ");
+      span.setSpan(TD.toSpan(new TdApi.TextEntityTypeMentionName(mention.getUser().id)), 0, resultMention.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+      within = span;
+    } else {
+      within = resultMention + " ";
+    }
+
+    try { editable.replace(mention.getTargetStart(), Math.min(editable.length(), mention.getTargetEnd()), within); } catch (Throwable ignored) { }
+    try { setInput(mention.replaceInTarget(b, within), false, true); Views.setSelection(this, mention.getTargetStart() + within.length()); } catch (Throwable ignored) { }
+  }
+
+  @Override
+  public void onInlineQueryResultPick (InlineResult<?> result) {
+    if (controller != null) {
+      controller.sendInlineQueryResult(result.getQueryId(), result.getId(), true, true, false, null);
+    }
+  }
+
+  // Media processing
+
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    MediaType.WEBP,
+    MediaType.PNG,
+    MediaType.GIF,
+    MediaType.JPEG
+  })
+  private @interface MediaType {
+    int
+      WEBP = 1,
+      PNG = 2,
+      GIF = 3,
+      JPEG = 4;
+  }
+
+  @Override
+  protected InputConnection createInputConnection (EditorInfo editorInfo) {
+    InputConnection ic = super.createInputConnection(editorInfo);
+    if (isCaptionEditing()) {
+      return ic;
+    }
+    String[] mimeTypes = new String[] {
+      "image/webp",
+      "image/png",
+      "image/gif",
+      "image/jpeg",
+      "image/*"
+    };
+    InputWrapperWrapper.setContentMimeTypes(editorInfo, mimeTypes);
+    if (ic == null)
+      return null;
+    final InputConnectionCompat.OnCommitContentListener callback =
+      (inputContentInfo, flags, bundle) -> {
+        if (controller == null || !controller.hasWritePermission())
+          return false;
+
+        ClipDescription description = inputContentInfo.getDescription();
+        @MediaType int mediaType;
+        if (description.hasMimeType("image/webp")) {
+          mediaType = MediaType.WEBP;
+        } else if (description.hasMimeType("image/png")) {
+          mediaType = MediaType.PNG;
+        } else if (description.hasMimeType("image/gif")) {
+          mediaType = MediaType.GIF;
+        } else if (description.hasMimeType("image/jpeg")) {
+          mediaType = MediaType.JPEG;
+        } else {
+          return false;
+        }
+
+        // read and display inputContentInfo asynchronously
+        boolean needPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1 && (flags &
+          InputConnectionCompat.INPUT_CONTENT_GRANT_READ_URI_PERMISSION) != 0;
+        if (needPermission) {
+          try {
+            inputContentInfo.requestPermission();
+          } catch (Throwable t) {
+            return false; // return false if failed
+          }
+        }
+        Uri uri = inputContentInfo.getContentUri();
+        long timestamp = System.currentTimeMillis();
+        long chatId = controller.getChatId();
+        long messageThreadId = controller.getMessageThreadId();
+        long replyToMessageId = controller.obtainReplyId();
+        boolean silent = controller.obtainSilentMode();
+        boolean needMenu = controller.areScheduledOnly();
+
+        Background.instance().post(() -> {
+          int imageWidth, imageHeight;
+          try (InputStream is = UI.getContext().getContentResolver().openInputStream(uri)) {
+            BitmapFactory.Options opts = new BitmapFactory.Options();
+            opts.inJustDecodeBounds = true;
+            BitmapFactory.decodeStream(is, null, opts);
+            imageWidth = opts.outWidth;
+            imageHeight = opts.outHeight;
+          } catch (Throwable t) {
+            Log.e("Unable to read image", t);
+            return;
+          }
+          if (imageWidth == 0 || imageHeight == 0) {
+            Log.e("Unknown image bounds, aborting");
+            return;
+          }
+          String path = uri.toString();
+          boolean isAnimatedGif = true;
+          if (mediaType == MediaType.GIF) {
+            try (InputStream is = UI.getContext().getContentResolver().openInputStream(uri)) {
+              isAnimatedGif = U.isAnimatedGIF(is);
+            } catch (Throwable t) {
+              Log.e("Unable to read GIF", t);
+              isAnimatedGif = false;
+            }
+          }
+          final TdApi.InputMessageContent content;
+          final boolean isSecretChat = ChatId.isSecret(chatId);
+          if (mediaType == MediaType.GIF && isAnimatedGif) {
+            TdApi.InputFileGenerated generated = TD.newGeneratedFile(null, path, 0, timestamp);
+            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageAnimation(generated, null, null, 0, imageWidth, imageHeight, null), isSecretChat);
+          } else if ((mediaType != MediaType.JPEG && (mediaType == MediaType.WEBP || path.contains("sticker") || Math.max(imageWidth, imageHeight) <= 512))) {
+            TdApi.InputFileGenerated generated = PhotoGenerationInfo.newFile(path, 0, timestamp, true, 512);
+            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageSticker(generated, null, imageWidth, imageHeight, null), isSecretChat);
+          } else {
+            TdApi.InputFileGenerated generated = PhotoGenerationInfo.newFile(path, 0, timestamp, false, 0);
+            content = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(generated, null, null, imageWidth, imageHeight, null, 0), isSecretChat);
+          }
+          if (needMenu) {
+            tdlib.ui().post(() -> {
+              tdlib.ui().showScheduleOptions(controller, chatId, false, (forceDisableNotification, schedulingState, disableMarkdown) -> tdlib.sendMessage(chatId, messageThreadId, replyToMessageId, new TdApi.MessageSendOptions(forceDisableNotification || silent, false, false, schedulingState), content, null), null);
+            });
+          } else {
+            tdlib.sendMessage(chatId, messageThreadId, replyToMessageId, silent, false, content);
+          }
+        });
+        // read and display inputContentInfo asynchronously.
+        // call inputContentInfo.releasePermission() as needed.
+
+        return true;  // return true if succeeded
+      };
+    return InputWrapperWrapper.createWrapper(ic, editorInfo, callback);
+  }
+
+  // Send by enter
+
+  @Override
+  public boolean needRemoveFinalNewLine (FinalNewLineFilter filter) {
+    return needSendByEnter();
+  }
+
+  @Override
+  public void onFinalNewLineBeingRemoved (FinalNewLineFilter filter) {
+    post(InputView.this::sendByEnter);
+  }
+
+  // == Rework ==
+
+  // IME flags & view options
+
+  public void setMaxCodePointCount (int maxCodePointCount) {
+    if (maxCodePointCount > 0) {
+      setFilters(new InputFilter[] {
+        new ExternalEmojiFilter(),
+        new CodePointCountFilter(maxCodePointCount),
+        new EmojiFilter(),
+        new CharacterStyleFilter(true),
+        new FinalNewLineFilter(this)
+      });
+    } else {
+      setFilters(new InputFilter[] {
+        new ExternalEmojiFilter(),
+        new EmojiFilter(),
+        new CharacterStyleFilter(true),
+        new FinalNewLineFilter(this)
+      });
+    }
+  }
+
+  public final void setNoPersonalizedLearning (boolean noPersonalizedLearning) {
+    final int secrecyFlag;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      secrecyFlag = EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING;
+    } else {
+      secrecyFlag = 0x1000000;
+    }
+    final int imeOptions = getImeOptions();
+    final int newImeOptions = BitwiseUtils.setFlag(imeOptions, secrecyFlag, noPersonalizedLearning);
+    if (imeOptions != newImeOptions) {
+      setImeOptions(newImeOptions);
+    }
+  }
+
+  // FormattedText generation
+
+  public final TdApi.FormattedText getOutputText (boolean applyMarkdown) {
+    SpannableStringBuilder text = new SpannableStringBuilder(getText());
+    BaseInputConnection.removeComposingSpans(text);
+    TdApi.FormattedText result = new TdApi.FormattedText(text.toString(), TD.toEntities(text, false));
+    if (applyMarkdown) {
+      Td.parseMarkdown(result);
+    }
+    return result;
+  }
+
+  // Android-related workarounds
 
   @Override
   public boolean onTouchEvent (MotionEvent event) {
@@ -1174,81 +1195,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     super.setVisibility(visibility);
     if (visibility == View.VISIBLE) {
       doBugfix();
-    }
-  }
-
-  // Inline query
-
-  @Override
-  public void onCommandPick (InlineResultCommand command, boolean isLongPress) {
-    if (controller != null) {
-      TdApi.Chat chat = controller.getChat();
-      if (isLongPress) {
-        String str = (chat != null && ChatId.isUserChat(ChatId.toUserId(chat.id))) || command.getUsername() == null ? command.getCommand() + ' ' : command.getCommand() + '@' + command.getUsername() + ' ';
-        setInput(str, true);
-      } else {
-        controller.sendCommand(command);
-      }
-    }
-  }
-
-  @Override
-  public void onHashtagPick (InlineResultHashtag hashtag) {
-    String resultHashtag = hashtag.data();
-
-    if (resultHashtag == null || !hashtag.hasTarget()) {
-      return;
-    }
-
-    Editable editable = getText();
-    SpannableStringBuilder b = new SpannableStringBuilder(editable);
-    CharSequence within = resultHashtag + " ";
-    try { editable.replace(hashtag.getTargetStart(), hashtag.getTargetEnd(), within); } catch (Throwable ignored) {  }
-    try { setInput(hashtag.replaceInTarget(b, within), false); Views.setSelection(this, hashtag.getTargetStart() + within.length()); } catch (Throwable ignored) { }
-  }
-
-  @Override
-  public void onEmojiSuggestionPick (InlineResultEmojiSuggestion suggestion) {
-    String resultEmoji = suggestion.getEmoji();
-    if (resultEmoji == null || !suggestion.hasTarget()) {
-      return;
-    }
-
-    Editable editable = getText();
-    SpannableStringBuilder b = new SpannableStringBuilder(editable);
-    CharSequence within = editable.length() == suggestion.getTargetEnd() && suggestion.getTargetStart() == 0 ? resultEmoji : resultEmoji + " ";
-    try { editable.replace(suggestion.getTargetStart(), suggestion.getTargetEnd(), within); } catch (Throwable ignored) { }
-    try { setInput(suggestion.replaceInTarget(b, within), false); Views.setSelection(this, suggestion.getTargetStart() + within.length()); } catch (Throwable ignored) { }
-  }
-
-  @Override
-  public void onMentionPick (InlineResultMention mention, @Nullable String usernamelessText) {
-    boolean isUsernameless = !StringUtils.isEmpty(usernamelessText) || mention.isUsernameless();
-    String resultMention = !StringUtils.isEmpty(usernamelessText) ? usernamelessText : mention.getMention(false);
-    if (resultMention == null || mention.getTargetEnd() == -1 || mention.getTargetStart() == -1) {
-      return;
-    }
-
-    Editable editable = getText();
-    SpannableStringBuilder b = new SpannableStringBuilder(editable);
-    CharSequence within;
-
-    if (isUsernameless) {
-      SpannableStringBuilder span = new SpannableStringBuilder(resultMention + " ");
-      span.setSpan(TD.toSpan(new TdApi.TextEntityTypeMentionName(mention.getUser().id)), 0, resultMention.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-      within = span;
-    } else {
-      within = resultMention + " ";
-    }
-
-    try { editable.replace(mention.getTargetStart(), Math.min(editable.length(), mention.getTargetEnd()), within); } catch (Throwable ignored) { }
-    try { setInput(mention.replaceInTarget(b, within), false); Views.setSelection(this, mention.getTargetStart() + within.length()); } catch (Throwable ignored) { }
-  }
-
-  @Override
-  public void onInlineQueryResultPick (InlineResult<?> result) {
-    if (controller != null) {
-      controller.sendInlineQueryResult(result.getQueryId(), result.getId(), true, true, false, null);
     }
   }
 }
