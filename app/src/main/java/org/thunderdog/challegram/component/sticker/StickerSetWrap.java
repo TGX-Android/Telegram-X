@@ -39,6 +39,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.tool.Fonts;
@@ -189,8 +190,7 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
     NavigationController navigation = UI.getContext(getContext()).navigation();
     if (navigation != null) {
       ViewController<?> c = navigation.getCurrentStackItem();
-      if (c != null && sticker.isPremium() && !tdlib.hasPremium()) {
-        tdlib.ui().showPremiumAlert(c, view);
+      if (c != null && sticker.isPremium() && tdlib.ui().showPremiumAlert(c, view, TdlibUi.PremiumFeature.STICKER)) {
         return false;
       }
       if (c instanceof MessagesController && ((MessagesController) c).canWriteMessages()) {

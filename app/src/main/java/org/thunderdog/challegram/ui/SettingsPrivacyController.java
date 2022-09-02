@@ -50,6 +50,8 @@ import org.thunderdog.challegram.v.CustomRecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.vkryl.td.Td;
+
 public class SettingsPrivacyController extends RecyclerViewController<SettingsPrivacyController.Args> implements View.OnClickListener, Client.ResultHandler, ViewController.SettingsIntDelegate, TdlibCache.UserDataChangeListener, TdlibContactManager.StatusChangeListener, PrivacySettingsListener, SessionListener, ChatListener {
   public static class Args {
     private final boolean onlyPrivacy;
@@ -162,6 +164,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
       new TdApi.UserPrivacySettingAllowFindingByPhoneNumber(),
       new TdApi.UserPrivacySettingShowLinkInForwardedMessages(),
       new TdApi.UserPrivacySettingAllowChatInvites(),
+      new TdApi.UserPrivacySettingAllowPrivateVoiceAndVideoNoteMessages(),
       new TdApi.UserPrivacySettingAllowCalls(),
       new TdApi.UserPrivacySettingAllowPeerToPeerCalls()
     };
@@ -441,8 +444,12 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
         break;
       }
       case R.id.btn_privacyRule: {
+        TdApi.UserPrivacySetting setting = (TdApi.UserPrivacySetting) ((ListItem) v.getTag()).getData();
+        if (Td.requiresPremiumSubscription(setting) && tdlib.ui().showPremiumAlert(this, v, TdlibUi.PremiumFeature.RESTRICT_VOICE_AND_VIDEO_MESSAGES)) {
+          return;
+        }
         SettingsPrivacyKeyController c = new SettingsPrivacyKeyController(context, tdlib);
-        c.setArguments((TdApi.UserPrivacySetting) ((ListItem) v.getTag()).getData());
+        c.setArguments(setting);
         navigateTo(c);
         break;
       }
@@ -735,7 +742,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
     return privacyRules.get(privacyKey);
   }
 
-  private SparseArrayCompat<TdApi.UserPrivacySettingRules> privacyRules = new SparseArrayCompat<>();
+  private final SparseArrayCompat<TdApi.UserPrivacySettingRules> privacyRules = new SparseArrayCompat<>();
 
   private String buildPrivacy (@TdApi.UserPrivacySetting.Constructors int privacyKey) {
     return buildPrivacy(tdlib, privacyRules.get(privacyKey), privacyKey);

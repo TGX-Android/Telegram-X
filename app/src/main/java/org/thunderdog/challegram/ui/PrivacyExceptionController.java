@@ -30,6 +30,7 @@ import org.thunderdog.challegram.telegram.PrivacySettings;
 import org.thunderdog.challegram.telegram.PrivacySettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.BetterChatView;
@@ -39,6 +40,7 @@ import java.util.List;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.collection.LongList;
+import me.vkryl.td.Td;
 
 public class PrivacyExceptionController extends RecyclerViewController<PrivacyExceptionController.Args> implements PrivacySettingsListener, View.OnClickListener, TdlibCache.UserDataChangeListener, ChatListener {
   public static class Args {
@@ -254,7 +256,7 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
                     view.setData(R.string.PrivacyP2PExceptionContacts);
                     break;
                   case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR:
-                    break;
+                    throw new IllegalStateException();
                   default:
                     throw new UnsupportedOperationException();
                 }
@@ -285,8 +287,11 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
                 case TdApi.UserPrivacySettingAllowPeerToPeerCalls.CONSTRUCTOR:
                   view.setData(isActive ? R.string.PrivacyP2PExceptionOn : R.string.PrivacyP2PExceptionOff);
                   break;
-                case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR:
+                case TdApi.UserPrivacySettingAllowPrivateVoiceAndVideoNoteMessages.CONSTRUCTOR:
+                  view.setData(isActive ? R.string.PrivacyVoiceVideoExceptionOn : R.string.PrivacyVoiceVideoExceptionOff);
                   break;
+                case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR:
+                  throw new IllegalStateException();
                 default:
                   throw new UnsupportedOperationException();
               }
@@ -327,19 +332,20 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
       items.add(visibilityTitle = new ListItem(ListItem.TYPE_HEADER_MULTILINE, R.id.text_title, 0, getTitle(TYPE_VISIBILITY), false));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
       TdApi.UserPrivacySetting[] privacySettings = isBot ?
-        new TdApi.UserPrivacySetting[]{
+        new TdApi.UserPrivacySetting[] {
           new TdApi.UserPrivacySettingShowStatus(),
           new TdApi.UserPrivacySettingShowProfilePhoto(),
           new TdApi.UserPrivacySettingShowLinkInForwardedMessages(),
         }
       :
-      new TdApi.UserPrivacySetting[]{
+      new TdApi.UserPrivacySetting[] {
         new TdApi.UserPrivacySettingShowStatus(),
         new TdApi.UserPrivacySettingShowProfilePhoto(),
         new TdApi.UserPrivacySettingShowPhoneNumber(),
 
         new TdApi.UserPrivacySettingShowLinkInForwardedMessages(),
         new TdApi.UserPrivacySettingAllowChatInvites(),
+        new TdApi.UserPrivacySettingAllowPrivateVoiceAndVideoNoteMessages(),
         new TdApi.UserPrivacySettingAllowCalls(),
         new TdApi.UserPrivacySettingAllowPeerToPeerCalls()
       };
@@ -389,6 +395,9 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
     switch (v.getId()) {
       case R.id.btn_privacyRule: {
         TdApi.UserPrivacySetting setting = (TdApi.UserPrivacySetting) ((ListItem) v.getTag()).getData();
+        if (Td.requiresPremiumSubscription(setting) && tdlib.ui().showPremiumAlert(this, v, TdlibUi.PremiumFeature.RESTRICT_VOICE_AND_VIDEO_MESSAGES)) {
+          return;
+        }
         PrivacySettings privacy = privacyRules.get(setting.getConstructor());
         if (privacy == null)
           return;

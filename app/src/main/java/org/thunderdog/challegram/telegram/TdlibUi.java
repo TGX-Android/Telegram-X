@@ -32,6 +32,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.IdRes;
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -142,6 +143,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -6253,7 +6256,31 @@ public class TdlibUi extends Handler {
     return Lang.getStringSecure(R.string.format_commit, Lang.codeCreator(), Td.tdlibVersion(), Td.tdlibCommitHash());
   }
 
-  public void showPremiumAlert (ViewController<?> context, View view) {
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    PremiumFeature.STICKER,
+    PremiumFeature.RESTRICT_VOICE_AND_VIDEO_MESSAGES
+  })
+  public @interface PremiumFeature {
+    int
+      STICKER = 1,
+      RESTRICT_VOICE_AND_VIDEO_MESSAGES = 2;
+  }
+
+  public boolean showPremiumAlert (ViewController<?> context, View view, @PremiumFeature int premiumFeature) {
+    if (tdlib.hasPremium())
+      return false;
+    int stringRes;
+    switch (premiumFeature) {
+      case PremiumFeature.STICKER:
+        stringRes = R.string.PremiumRequiredSticker;
+        break;
+      case PremiumFeature.RESTRICT_VOICE_AND_VIDEO_MESSAGES:
+        stringRes = R.string.PremiumRequiredVoiceVideo;
+        break;
+      default:
+        throw new IllegalStateException();
+    }
     // TODO proper alert with sections
     context
       .context()
@@ -6263,10 +6290,11 @@ public class TdlibUi extends Handler {
       .controller(context)
       .show(tdlib,
         Strings.buildMarkdown(context,
-          Lang.getString(R.string.PremiumRequiredSticker),
+          Lang.getString(stringRes),
           null
         )
       )
       .hideDelayed();
+    return true;
   }
 }

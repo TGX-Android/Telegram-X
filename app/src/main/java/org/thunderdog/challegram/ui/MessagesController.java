@@ -8121,8 +8121,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (sticker == null) {
       return false;
     }
-    if (sticker.isPremium && !tdlib.hasPremium()) {
-      tdlib.ui().showPremiumAlert(this, view);
+    if (sticker.isPremium && tdlib.ui().showPremiumAlert(this, view, TdlibUi.PremiumFeature.STICKER)) {
       return false;
     }
     return sendContent(view, R.id.right_sendStickersAndGifs, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil, allowReply, forceDisableNotification, schedulingState, () -> new TdApi.InputMessageSticker(new TdApi.InputFileId(sticker.sticker.id), null, 0, 0, emoji));

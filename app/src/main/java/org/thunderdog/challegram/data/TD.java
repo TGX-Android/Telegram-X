@@ -1434,6 +1434,14 @@ public class TD {
         everybodyExceptRes = R.string.PrivacyPhotoEverybodyExcept;
         everybodyRes = R.string.PrivacyPhotoEverybody;
         break;
+      case TdApi.UserPrivacySettingAllowPrivateVoiceAndVideoNoteMessages.CONSTRUCTOR:
+        nobodyExceptRes = R.string.PrivacyVoiceVideoNobodyExcept;
+        nobodyRes = R.string.PrivacyVoiceVideoNobody;
+        contactsExceptRes = R.string.PrivacyVoiceVideoContactsExcept;
+        contactsRes = R.string.PrivacyVoiceVideoContacts;
+        everybodyExceptRes = R.string.PrivacyVoiceVideoEverybodyExcept;
+        everybodyRes = R.string.PrivacyVoiceVideoEverybody;
+        break;
       default:
         throw new IllegalArgumentException("privacyKey == " + privacyKey);
     }

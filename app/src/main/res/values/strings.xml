@@ -2951,6 +2951,7 @@
   <string name="error_CHANNELS_TOO_MUCH">Sorry, you are a member of too many groups or channels. Please leave some before joining a new one.</string>
   <string name="error_PHONE_NUMBER_BANNED">Sorry, this phone number is banned. Contact us at login@stel.com if you need help.</string>
   <string name="error_CHANNELS_ADMIN_LOCATED_TOO_MUCH">Sorry, you have too many location-based groups already. Please delete one of your existing ones first.</string>
+  <string name="error_PREMIUM_ACCOUNT_REQUIRED">This feature requires Telegram Premium subscription.</string>
   <string name="errorPrivacyAddMember">Sorry, the user restricted who can add them to chats in their privacy settings.</string>
   <string name="UserPrivacyRestricted">Sorry, the user restricted this action in their privacy settings.</string>
   <string name="NobodyLikesSpam2">Sorry, you can interact only with mutual contacts at the moment.</string> <!--PEER_FLOOD-->
@@ -3291,6 +3292,21 @@
   <string name="PrivacyPhotoEverybody">Everybody can see your profile photo</string>
   <string name="PrivacyPhotoEverybodyExcept">Everybody (%1$s) can see your profile photo</string>
   <string name="PrivacyPhotoTitle">Profile Photo</string>
+
+  <string name="PrivacyVoiceVideoNobody">Nobody can send you voice messages</string>
+  <string name="PrivacyVoiceVideoNobodyExcept">Nobody (%1$s) can send you voice messages</string>
+  <string name="PrivacyVoiceVideoContacts">Only contacts can send you voice messages</string>
+  <string name="PrivacyVoiceVideoContactsExcept">Only contacts (%1$s) can send you voice messages</string>
+  <string name="PrivacyVoiceVideoEverybody">Everybody can send you voice messages</string>
+  <string name="PrivacyVoiceVideoEverybodyExcept">Everybody (%1$s) can send you voice messages</string>
+  <string name="PrivacyVoiceVideoExceptionOn">Allowed</string>
+  <string name="PrivacyVoiceVideoExceptionOff">Disallowed</string>
+  <string name="PrivacyVoiceVideoExceptionContacts">Only contacts</string>
+  <string name="PrivacyVoiceVideoTitle">Voice and Video Messages</string>
+  <string name="WhoCanSendVoiceVideo">Who can send me voice or video messages?</string>
+  <string name="VoiceVideoPrivacyDesc">You can restrict who can send you voice or video messages with granular precision.</string>
+
+  <string name="EditPrivacyVoice">Send Me Voice Messages</string>
 
   <string name="WhoCanForwardLink">Who can add a link to my account when forwarding my messages?</string>
   <string name="WhoCanForwardLinkInfo">You can restrict who can include a link to your account when forwarding your messages to other chats.</string>
@@ -4346,6 +4362,10 @@
 
   <string name="ExperimentalBuildTitle">Caution: experimental build</string>
   <string name="ExperimentalBuildInfo">This version of **Telegram X** is not designed for long-term use.\n\nIt may completely stop working over a time and you cannot turn notifications on.\n\nIf you are looking for the proper Telegram X APK file, see https://t.me/tgx_log</string>
+
+  <string name="PremiumRequiredSticker">Sending this sticker requires **Telegram Premium** subscription.</string>
+  <string name="PremiumRequiredVoiceVideo">This setting requires **Telegram Premium** subscription.</string>
+  <string name="PremiumRequired">This feature requires **Telegram Premium** subscription.</string>
 
   <string name="format_PRMadeBy">%1$s by %2$s</string>
 </resources>
