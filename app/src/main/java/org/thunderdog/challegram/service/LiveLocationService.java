@@ -134,10 +134,10 @@ public class LiveLocationService extends Service implements LiveLocationManager.
       b = new Notification.Builder(this);
     }
 
-    PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, Intents.valueOfLocation(hasError), PendingIntent.FLAG_UPDATE_CURRENT);
+    PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, Intents.valueOfLocation(hasError), Intents.mutabilityFlags(false));
     b.setContentIntent(pendingIntent);
 
-    PendingIntent pauseIntent = PendingIntent.getBroadcast(this, 100, Intents.valueOfLocationReceiver(Intents.ACTION_LOCATION_STOP), PendingIntent.FLAG_UPDATE_CURRENT);
+    PendingIntent pauseIntent = PendingIntent.getBroadcast(this, 100, Intents.valueOfLocationReceiver(Intents.ACTION_LOCATION_STOP), Intents.mutabilityFlags(false));
 
     // PendingIntent pIntent = PendingIntent.getActivity(this, (int) SystemClock.uptimeMillis(), new Intent(this, MainActivity.class), 0);
 

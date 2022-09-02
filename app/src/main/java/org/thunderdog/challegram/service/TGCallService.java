@@ -444,7 +444,7 @@ public class TGCallService extends Service implements
           .setAction("RATE_CALL_" + call.id)
           .putExtra("account_id", tdlib.id())
           .putExtra("call_id", call.id)
-          .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP), 0).send();
+          .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP), Intents.mutabilityFlags(false)).send();
       } catch (Throwable t) {
         Log.e(Log.TAG_VOIP, "Error starting rate activity", t);
       }
@@ -698,7 +698,7 @@ public class TGCallService extends Service implements
       .setContentTitle(Lang.getString(R.string.OutgoingCall))
       .setContentText(TD.getUserName(user))
       .setSmallIcon(CALL_ICON_RES)
-      .setContentIntent(PendingIntent.getActivity(UI.getContext(), 0, Intents.valueOfCall(), PendingIntent.FLAG_ONE_SHOT));
+      .setContentIntent(PendingIntent.getActivity(UI.getContext(), 0, Intents.valueOfCall(), PendingIntent.FLAG_ONE_SHOT | Intents.mutabilityFlags(false)));
     if (tdlib.context().isMultiUser()) {
       String shortName = tdlib.accountShortName();
       if (shortName != null) {
@@ -709,7 +709,7 @@ public class TGCallService extends Service implements
       Intent endIntent = new Intent();
       Intents.secureIntent(endIntent, false);
       endIntent.setAction(Intents.ACTION_END_CALL);
-      builder.addAction(R.drawable.round_call_end_24_white, Lang.getString(R.string.VoipEndCall), PendingIntent.getBroadcast(this, 0, endIntent, PendingIntent.FLAG_UPDATE_CURRENT));
+      builder.addAction(R.drawable.round_call_end_24_white, Lang.getString(R.string.VoipEndCall), PendingIntent.getBroadcast(this, 0, endIntent, Intents.mutabilityFlags(false)));
       builder.setPriority(Notification.PRIORITY_MAX);
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
@@ -797,7 +797,7 @@ public class TGCallService extends Service implements
       .setContentTitle(Lang.getString(R.string.CallBrandingIncoming))
       .setContentText(TD.getUserName(user))
       .setSmallIcon(CALL_ICON_RES)
-      .setContentIntent(PendingIntent.getActivity(UI.getContext(), 0, Intents.valueOfCall(), PendingIntent.FLAG_ONE_SHOT));
+      .setContentIntent(PendingIntent.getActivity(UI.getContext(), 0, Intents.valueOfCall(), PendingIntent.FLAG_ONE_SHOT | Intents.mutabilityFlags(false)));
     if (tdlib.context().isMultiUser()) {
       String shortName = tdlib.accountShortName();
       if (shortName != null) {
@@ -813,7 +813,7 @@ public class TGCallService extends Service implements
         endTitle = new SpannableString(endTitle);
         ((SpannableString) endTitle).setSpan(new ForegroundColorSpan(Theme.getColor(R.id.theme_color_circleButtonNegative)), 0, endTitle.length(), 0);
       }
-      builder.addAction(R.drawable.round_call_end_24_white, endTitle, PendingIntent.getBroadcast(this, 0, endIntent, PendingIntent.FLAG_ONE_SHOT));
+      builder.addAction(R.drawable.round_call_end_24_white, endTitle, PendingIntent.getBroadcast(this, 0, endIntent, PendingIntent.FLAG_ONE_SHOT | Intents.mutabilityFlags(false)));
       Intent answerIntent = new Intent();
       Intents.secureIntent(answerIntent, false);
       answerIntent.setAction(Intents.ACTION_ANSWER_CALL);
@@ -822,7 +822,7 @@ public class TGCallService extends Service implements
         answerTitle = new SpannableString(answerTitle);
         ((SpannableString) answerTitle).setSpan(new ForegroundColorSpan(Theme.getColor(R.id.theme_color_circleButtonPositive)), 0, answerTitle.length(), 0);
       }
-      builder.addAction(R.drawable.round_call_24_white, answerTitle, PendingIntent.getBroadcast(this, 0, answerIntent, PendingIntent.FLAG_ONE_SHOT));
+      builder.addAction(R.drawable.round_call_24_white, answerTitle, PendingIntent.getBroadcast(this, 0, answerIntent, PendingIntent.FLAG_ONE_SHOT | Intents.mutabilityFlags(false)));
       builder.setPriority(Notification.PRIORITY_MAX);
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
@@ -832,7 +832,7 @@ public class TGCallService extends Service implements
       builder.setColor(tdlib.accountColor());
       builder.setVibrate(new long[0]);
       builder.setCategory(Notification.CATEGORY_CALL);
-      builder.setFullScreenIntent(PendingIntent.getActivity(this, PendingIntent.FLAG_ONE_SHOT, Intents.valueOfCall(), 0), true);
+      builder.setFullScreenIntent(PendingIntent.getActivity(this, PendingIntent.FLAG_ONE_SHOT, Intents.valueOfCall(), Intents.mutabilityFlags(false)), true);
     }
     Bitmap bitmap = user != null ? TdlibNotificationUtils.buildLargeIcon(tdlib, user.profilePhoto != null ? user.profilePhoto.small : null, TD.getAvatarColorId(user, tdlib.myUserId()), TD.getLetters(user), false, true) : null;
     if (bitmap != null) {

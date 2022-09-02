@@ -4176,17 +4176,25 @@ public class MessagesController extends ViewController<MessagesController.Argume
           }
         }
       }
-      if (isChannel && msg.getViewCount() > 0 && !msg.isScheduled()) {
-        if (b.length() > 0) {
-          b.append(", ");
+      if (isChannel && !msg.isScheduled()) {
+        if (msg.getViewCount() > 0) {
+          if (b.length() > 0) {
+            b.append(", ");
+          }
+          b.append(Lang.pluralBold(R.string.xViews, msg.getViewCount()));
         }
-        b.append(Lang.plural(R.string.xViews, msg.getViewCount()));
-      }
-      if (isChannel && msg.getMessageReactions().getTotalCount() > 0 && !msg.isScheduled()) {
-        if (b.length() > 0) {
-          b.append(", ");
+        if (msg.getForwardCount() > 0) {
+          if (b.length() > 0) {
+            b.append(", ");
+          }
+          b.append(Lang.pluralBold(R.string.StatsXShared, msg.getForwardCount()));
         }
-        b.append(Lang.plural(R.string.xReacted, msg.getMessageReactions().getTotalCount()));
+        if (msg.getMessageReactions().getTotalCount() > 0) {
+          if (b.length() > 0) {
+            b.append(", ");
+          }
+          b.append(Lang.pluralBold(R.string.xReacted, msg.getMessageReactions().getTotalCount()));
+        }
       }
     }
     if (msg.isFailed()) {

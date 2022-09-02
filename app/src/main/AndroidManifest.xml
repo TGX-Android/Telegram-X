@@ -137,7 +137,8 @@
         android:name="com.google.mlkit.vision.DEPENDENCIES"
         android:value="barcode,model2,model3" />
 
-    <service android:name=".service.FirebaseListenerService">
+    <service android:name=".service.FirebaseListenerService"
+      android:exported="false">
       <intent-filter>
         <action android:name="com.google.firebase.MESSAGING_EVENT" />
       </intent-filter>
@@ -231,20 +232,23 @@
       android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
       android:excludeFromRecents="true"
       android:taskAffinity="${applicationId}.voip"
-      android:theme="@style/TransparentTheme" />
+      android:theme="@style/TransparentTheme"
+      android:exported="false" />
     <activity
       android:name=".voip.gui.VoIPFeedbackActivity"
       android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
       android:excludeFromRecents="true"
       android:taskAffinity="${applicationId}.voip"
-      android:theme="@style/TransparentTheme" />
+      android:theme="@style/TransparentTheme"
+      android:exported="false" />
 
     <!-- VoIP -->
     <service
       android:name=".service.TGCallService"
       android:exported="false"
       android:foregroundServiceType="phoneCall" />
-    <receiver android:name=".receiver.VoIPMediaButtonReceiver">
+    <receiver android:name=".receiver.VoIPMediaButtonReceiver"
+      android:exported="false">
       <intent-filter>
         <action android:name="android.intent.action.MEDIA_BUTTON" />
       </intent-filter>
@@ -292,6 +296,7 @@
     <!-- Music -->
     <receiver
       android:name=".receiver.AudioMediaReceiver"
+      android:exported="false"
       android:enabled="true">
       <intent-filter>
         <action android:name="org.thunderdog.challegram.ACTION_PLAY_SKIP_PREVIOUS" />
@@ -325,13 +330,15 @@
       android:name=".ManageSpaceActivity"
       android:configChanges="keyboard|keyboardHidden|orientation|screenSize|locale|layoutDirection|uiMode"
       android:launchMode="singleTask"
-      android:windowSoftInputMode="adjustPan" />
+      android:windowSoftInputMode="adjustPan"
+      android:exported="true" />
 
     <activity
       android:name=".MainActivity"
       android:configChanges="keyboard|keyboardHidden|orientation|screenSize|locale|layoutDirection|uiMode"
       android:launchMode="singleTask"
-      android:windowSoftInputMode="stateHidden|adjustPan">
+      android:windowSoftInputMode="stateHidden|adjustPan"
+      android:exported="true">
       <intent-filter android:label="@string/AppName">
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
