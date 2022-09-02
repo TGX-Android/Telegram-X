@@ -114,9 +114,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -6302,10 +6300,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private boolean needHideEventDate () {
+    //noinspection WrongConstant
     return hideEventDate || (msg.content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR && ((TdApiExt.MessageChatEvent) msg.content).hideDate);
   }
 
   public final boolean isEventLog () {
+    //noinspection WrongConstant
     return (flags & FLAG_EVENT_LOG) != 0 || msg.content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR;
   }
 
@@ -6991,37 +6991,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return parsedMessage;
   }
 
-  private static void appendRight (StringBuilder b, int res, boolean oldValue, boolean value, boolean needEqual) {
-    if (oldValue != value) {
-      b.append('\n');
-      b.append(value ? '+' : '-');
-      b.append(' ');
-      b.append(Lang.getString(res));
-    } else if (needEqual && value) {
-      b.append('\n');
-      b.append(Lang.getString(res));
-      if (!value)
-        b.append(" (-)");
-    }
+  public static TGMessage valueOf (MessagesManager context, TdApi.Message msg) {
+    return valueOf(context, msg, msg.content);
   }
 
-  private static void appendRight (StringBuilder b, int res, int doubleRes, String oldValue, String newValue, boolean needEqual) {
-    if (!StringUtils.equalsOrBothEmpty(oldValue, newValue)) {
-      b.append('\n');
-      if (StringUtils.isEmpty(oldValue)) {
-        b.append("+ ").append(Lang.getString(res, newValue));
-      } else if (StringUtils.isEmpty(newValue)) {
-        b.append("- ").append(Lang.getString(res, oldValue));
-      } else {
-        b.append("+ ").append(Lang.getString(doubleRes, oldValue, newValue));
-      }
-    } else if (needEqual && !StringUtils.isEmpty(newValue)) {
-      b.append(Lang.getString(res, newValue));
-    }
-  }
-
-  private static TGMessage valueOf (MessagesManager context, TdApi.Message msg) {
-    TdApi.MessageContent content = msg.content;
+  public static TGMessage valueOf (MessagesManager context, TdApi.Message msg, TdApi.MessageContent content) {
     final Tdlib tdlib = context.controller().tdlib();
     try {
       if (content == null) {
@@ -7033,567 +7007,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         return text;
       }
 
+      //noinspection WrongConstant
       if (content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR) {
-        TdApiExt.MessageChatEvent event = (TdApiExt.MessageChatEvent) content;
-        // Try to convert chat event to some existing native message type
-        switch (event.event.action.getConstructor()) {
-          case TdApi.ChatEventMemberJoined.CONSTRUCTOR: {
-            final long userId = Td.getSenderUserId(event.event.memberId);
-            content = new TdApi.MessageChatAddMembers(new long[] {userId});
-            break;
-          }
-          case TdApi.ChatEventMemberLeft.CONSTRUCTOR: {
-            final long userId = Td.getSenderUserId(event.event.memberId);
-            content = new TdApi.MessageChatDeleteMember(userId);
-            break;
-          }
-          case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
-            content = new TdApi.MessageChatSetTtl(((TdApi.ChatEventMessageTtlChanged) event.event.action).newMessageTtl);
-            break;
-          case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
-            content = new TdApi.MessageVideoChatStarted(((TdApi.ChatEventVideoChatCreated) event.event.action).groupCallId);
-            break;
-          case TdApi.ChatEventVideoChatEnded.CONSTRUCTOR:
-            content = new TdApi.MessageVideoChatEnded(0); // ((TdApi.ChatEventVideoChatEnded) event.event.action).groupCallId
-            break;
-          case TdApi.ChatEventTitleChanged.CONSTRUCTOR: {
-            TdApi.ChatEventTitleChanged e = (TdApi.ChatEventTitleChanged) event.event.action;
-            content = new TdApi.MessageChatChangeTitle(e.newTitle);
-            break;
-          }
-          case TdApi.ChatEventPhotoChanged.CONSTRUCTOR: {
-            TdApi.ChatEventPhotoChanged e = (TdApi.ChatEventPhotoChanged) event.event.action;
-            if (e.newPhoto != null || e.oldPhoto != null) {
-              content = new TdApi.MessageChatChangePhoto(e.newPhoto != null ? e.newPhoto : e.oldPhoto);
-            } else {
-              content = new TdApi.MessageChatDeletePhoto();
-            }
-            break;
-          }
-          case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
-          case TdApi.ChatEventDescriptionChanged.CONSTRUCTOR:
-          case TdApi.ChatEventHasProtectedContentToggled.CONSTRUCTOR:
-          case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
-          case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR:
-          case TdApi.ChatEventInviteLinkRevoked.CONSTRUCTOR:
-          case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
-          case TdApi.ChatEventIsAllHistoryAvailableToggled.CONSTRUCTOR:
-          case TdApi.ChatEventLinkedChatChanged.CONSTRUCTOR:
-          case TdApi.ChatEventLocationChanged.CONSTRUCTOR:
-          case TdApi.ChatEventMemberInvited.CONSTRUCTOR:
-          case TdApi.ChatEventMemberJoinedByInviteLink.CONSTRUCTOR:
-          case TdApi.ChatEventMemberJoinedByRequest.CONSTRUCTOR:
-          case TdApi.ChatEventMemberPromoted.CONSTRUCTOR:
-          case TdApi.ChatEventMemberRestricted.CONSTRUCTOR:
-          case TdApi.ChatEventMessageDeleted.CONSTRUCTOR:
-          case TdApi.ChatEventMessageEdited.CONSTRUCTOR:
-          case TdApi.ChatEventMessagePinned.CONSTRUCTOR:
-          case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
-          case TdApi.ChatEventPermissionsChanged.CONSTRUCTOR:
-          case TdApi.ChatEventPollStopped.CONSTRUCTOR:
-          case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
-          case TdApi.ChatEventSlowModeDelayChanged.CONSTRUCTOR:
-          case TdApi.ChatEventStickerSetChanged.CONSTRUCTOR:
-          case TdApi.ChatEventUsernameChanged.CONSTRUCTOR:
-          case TdApi.ChatEventVideoChatMuteNewParticipantsToggled.CONSTRUCTOR:
-          case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
-          case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
-            // No native message interpretation.
-            break;
-        }
+        return ChatEventUtil.newMessage(context, msg, (TdApiExt.MessageChatEvent) content);
       }
 
       int unsupportedStringRes = R.string.UnsupportedMessage;
 
       switch (content.getConstructor()) {
-        case TdApiExt.MessageChatEvent.CONSTRUCTOR: {
-          TdApiExt.MessageChatEvent event = (TdApiExt.MessageChatEvent) content;
-          if (event.isFull) {
-            TGMessage fullMessage = null;
-            switch (event.event.action.getConstructor()) {
-              case TdApi.ChatEventUsernameChanged.CONSTRUCTOR: {
-                TdApi.ChatEventUsernameChanged e = (TdApi.ChatEventUsernameChanged) event.event.action;
-                TdApi.FormattedText text;
-                if (StringUtils.isEmpty(e.newUsername)) {
-                  text = new TdApi.FormattedText("", null);
-                } else {
-                  String link = TD.getLink(e.newUsername);
-                  text = new TdApi.FormattedText(link, new TdApi.TextEntity[] {new TdApi.TextEntity(0, link.length(), new TdApi.TextEntityTypeUrl())});
-                }
-                fullMessage = new TGMessageText(context, msg, text);
-                if (!StringUtils.isEmpty(e.oldUsername)) {
-                  String link = TD.getLink(e.oldUsername);
-                  fullMessage.setFooter(Lang.getString(R.string.EventLogPreviousLink), link, new TdApi.TextEntity[] {new TdApi.TextEntity(0, link.length(), new TdApi.TextEntityTypeUrl())});
-                }
-                break;
-              }
-
-              case TdApi.ChatEventDescriptionChanged.CONSTRUCTOR: {
-                TdApi.ChatEventDescriptionChanged e = (TdApi.ChatEventDescriptionChanged) event.event.action;
-
-                TdApi.FormattedText text;
-                if (StringUtils.isEmpty(e.newDescription)) {
-                  text = new TdApi.FormattedText("", null);
-                } else {
-                  text = new TdApi.FormattedText(e.newDescription, Text.findEntities(e.newDescription, Text.ENTITY_FLAGS_ALL_NO_COMMANDS));
-                }
-
-                fullMessage = new TGMessageText(context, msg, text);
-                if (!StringUtils.isEmpty(e.oldDescription)) {
-                  fullMessage.setFooter(Lang.getString(R.string.EventLogPreviousGroupDescription), e.oldDescription, null);
-                }
-                break;
-              }
-
-              case TdApi.ChatEventMemberInvited.CONSTRUCTOR: {
-                TdApi.ChatEventMemberInvited e = (TdApi.ChatEventMemberInvited) event.event.action;
-                TdApi.User user = tdlib.cache().user(e.userId);
-                String userName = TD.getUserName(user);
-                StringBuilder b = new StringBuilder(Lang.getString(R.string.group_user_added, "", userName).trim());
-                int start = b.lastIndexOf(userName);
-                ArrayList<TdApi.TextEntity> entities = new ArrayList<>(3);
-                entities.add(new TdApi.TextEntity(0, start - 1, new TdApi.TextEntityTypeItalic()));
-                entities.add(new TdApi.TextEntity(start, userName.length(), new TdApi.TextEntityTypeMentionName(e.userId)));
-                if (user != null && !StringUtils.isEmpty(user.username)) {
-                  b.append(" / ");
-                  entities.add(new TdApi.TextEntity(b.length(), user.username.length() + 1, new TdApi.TextEntityTypeMention()));
-                  b.append('@');
-                  b.append(user.username);
-                }
-                TdApi.TextEntity[] array = new TdApi.TextEntity[entities.size()];
-                entities.toArray(array);
-                TdApi.FormattedText text = new TdApi.FormattedText(b.toString(), array);
-                fullMessage = new TGMessageText(context, msg, text);
-                break;
-              }
-
-              case TdApi.ChatEventMessageDeleted.CONSTRUCTOR: {
-                TdApi.ChatEventMessageDeleted e = (TdApi.ChatEventMessageDeleted) event.event.action;
-                fullMessage = valueOf(context, e.message);
-                break;
-              }
-
-              case TdApi.ChatEventMessageEdited.CONSTRUCTOR: {
-                TdApi.ChatEventMessageEdited e = (TdApi.ChatEventMessageEdited) event.event.action;
-                fullMessage = valueOf(context, TD.removeWebPage(e.newMessage));
-                int footerRes;
-                TdApi.Message oldMessage = TD.removeWebPage(e.oldMessage);
-                TdApi.FormattedText originalText = Td.textOrCaption(oldMessage.content);
-                switch (oldMessage.content.getConstructor()) {
-                  case TdApi.MessageText.CONSTRUCTOR:
-                    footerRes = R.string.EventLogOriginalMessages;
-                    break;
-                  default:
-                    footerRes = R.string.EventLogOriginalCaption;
-                    break;
-                }
-                String text = Td.isEmpty(originalText) ? Lang.getString(R.string.EventLogOriginalCaptionEmpty) : originalText.text;
-                fullMessage.setFooter(Lang.getString(footerRes), text, originalText != null ? originalText.entities : null);
-                break;
-              }
-              case TdApi.ChatEventMessagePinned.CONSTRUCTOR: {
-                TdApi.ChatEventMessagePinned e = (TdApi.ChatEventMessagePinned) event.event.action;
-                fullMessage = valueOf(context, e.message);
-                break;
-              }
-              case TdApi.ChatEventPollStopped.CONSTRUCTOR: {
-                TdApi.ChatEventPollStopped e = (TdApi.ChatEventPollStopped) event.event.action;
-                fullMessage = valueOf(context, e.message);
-                break;
-              }
-              case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR: {
-                TdApi.ChatEventInviteLinkEdited e = (TdApi.ChatEventInviteLinkEdited) event.event.action;
-
-                boolean changedLimit = e.oldInviteLink.memberLimit != e.newInviteLink.memberLimit;
-                boolean changedExpires = e.oldInviteLink.expirationDate != e.newInviteLink.expirationDate;
-
-                String link = StringUtils.urlWithoutProtocol(e.newInviteLink.inviteLink);
-                String prevLimit = e.oldInviteLink.memberLimit != 0 ? Strings.buildCounter(e.oldInviteLink.memberLimit) : Lang.getString(R.string.EventLogEditedInviteLinkNoLimit);
-                String newLimit = e.newInviteLink.memberLimit != 0 ? Strings.buildCounter(e.newInviteLink.memberLimit) : Lang.getString(R.string.EventLogEditedInviteLinkNoLimit);
-
-                String text;
-                if (changedLimit && changedExpires) {
-                  String expires;
-                  if (e.newInviteLink.expirationDate == 0) {
-                    expires = Lang.getString(R.string.LinkExpiresNever);
-                  } else if (DateUtils.isToday(e.newInviteLink.expirationDate, TimeUnit.SECONDS)) {
-                    expires = Lang.getString(R.string.LinkExpiresTomorrow, Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
-                  } else if (DateUtils.isTomorrow(e.newInviteLink.expirationDate, TimeUnit.SECONDS)) {
-                    expires = Lang.getString(R.string.LinkExpiresTomorrow, Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
-                  } else {
-                    expires = Lang.getString(R.string.LinkExpiresFuture, Lang.getDate(e.newInviteLink.expirationDate, TimeUnit.SECONDS), Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
-                  }
-                  text = Lang.getString(R.string.EventLogEditedInviteLink, link, prevLimit, newLimit, expires);
-                } else if (changedLimit) {
-                  text = Lang.getString(R.string.EventLogEditedInviteLinkLimit, link, prevLimit, newLimit);
-                } else {
-                  if (e.newInviteLink.expirationDate == 0) {
-                    text = Lang.getString(R.string.EventLogEditedInviteLinkExpireNever, link);
-                  } else if (DateUtils.isToday(e.newInviteLink.expirationDate, TimeUnit.SECONDS)) {
-                    text = Lang.getString(R.string.EventLogEditedInviteLinkExpireToday, link, Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
-                  } else if (DateUtils.isTomorrow(e.newInviteLink.expirationDate, TimeUnit.SECONDS)) {
-                    text = Lang.getString(R.string.EventLogEditedInviteLinkExpireTomorrow, link, Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
-                  } else {
-                    text = Lang.getString(R.string.EventLogEditedInviteLinkExpireFuture, link, Lang.getDate(e.newInviteLink.expirationDate, TimeUnit.SECONDS), Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
-                  }
-                }
-
-                TdApi.FormattedText formattedText = new TdApi.FormattedText(text, Td.findEntities(text));
-                fullMessage = new TGMessageText(context, msg, formattedText);
-                break;
-              }
-              case TdApi.ChatEventPermissionsChanged.CONSTRUCTOR: {
-                StringBuilder b = new StringBuilder(Lang.getString(R.string.EventLogPermissions));
-                int length = b.length();
-
-                b.append("\n");
-
-                TdApi.ChatEventPermissionsChanged permissions = (TdApi.ChatEventPermissionsChanged) event.event.action;
-
-                appendRight(b, R.string.EventLogPermissionSendMessages, permissions.oldPermissions.canSendMessages, permissions.newPermissions.canSendMessages, true);
-                appendRight(b, R.string.EventLogPermissionSendMedia, permissions.oldPermissions.canSendMediaMessages, permissions.newPermissions.canSendMediaMessages, true);
-                appendRight(b, R.string.EventLogPermissionSendStickers, permissions.oldPermissions.canSendOtherMessages, permissions.newPermissions.canSendOtherMessages, true);
-                appendRight(b, R.string.EventLogPermissionSendPolls, permissions.oldPermissions.canSendPolls, permissions.newPermissions.canSendPolls, true);
-                appendRight(b, R.string.EventLogPermissionSendEmbed, permissions.oldPermissions.canAddWebPagePreviews, permissions.newPermissions.canAddWebPagePreviews, true);
-                appendRight(b, R.string.EventLogPermissionAddUsers, permissions.oldPermissions.canInviteUsers, permissions.newPermissions.canInviteUsers, true);
-                appendRight(b, R.string.EventLogPermissionPinMessages, permissions.oldPermissions.canPinMessages, permissions.newPermissions.canPinMessages, true);
-                appendRight(b, R.string.EventLogPermissionChangeInfo, permissions.oldPermissions.canChangeInfo, permissions.newPermissions.canChangeInfo, true);
-
-                TdApi.FormattedText formattedText = new TdApi.FormattedText(b.toString().trim(), new TdApi.TextEntity[] {new TdApi.TextEntity(0, length, new TdApi.TextEntityTypeItalic())});
-                fullMessage = new TGMessageText(context, msg, formattedText);
-                break;
-              }
-              case TdApi.ChatEventMemberPromoted.CONSTRUCTOR:
-              case TdApi.ChatEventMemberRestricted.CONSTRUCTOR: {
-                final TdApi.MessageSender memberId;
-
-                StringBuilder b = new StringBuilder();
-                ArrayList<TdApi.TextEntity> entities = new ArrayList<>();
-                final TdApi.ChatMemberStatus oldStatus, newStatus;
-                final boolean isPromote, isTransferOwnership;
-                boolean isAnonymous = false;
-
-                final int stringRes;
-                int restrictedUntil = 0;
-
-                if (event.event.action.getConstructor() == TdApi.ChatEventMemberPromoted.CONSTRUCTOR) {
-                  TdApi.ChatEventMemberPromoted e = (TdApi.ChatEventMemberPromoted) event.event.action;
-                  memberId = new TdApi.MessageSenderUser(e.userId);
-
-                  isPromote = true;
-
-                  // TYPE_EDIT = 0, TYPE_ASSIGN = 1, TYPE_REMOVE = 2, TYPE_TRANSFER = 3
-                  int type = 0;
-
-                  if (e.oldStatus.getConstructor() != TdApi.ChatMemberStatusCreator.CONSTRUCTOR && e.newStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
-                    isTransferOwnership = true;
-                    oldStatus = e.oldStatus;
-                    newStatus = new TdApi.ChatMemberStatusCreator();
-                    type = 3;
-                  } else if (e.oldStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR && e.newStatus.getConstructor() != TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
-                    isTransferOwnership = true;
-                    oldStatus = e.oldStatus;
-                    newStatus = new TdApi.ChatMemberStatusCreator();
-                    type = 4;
-                  } else {
-                    isTransferOwnership = false;
-
-                    if (e.oldStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR && e.newStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
-                      type = 5;
-                      isAnonymous = ((TdApi.ChatMemberStatusCreator) e.oldStatus).isAnonymous != ((TdApi.ChatMemberStatusCreator) e.newStatus).isAnonymous;
-                    }
-
-                    switch (e.oldStatus.getConstructor()) {
-                      case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-                        oldStatus = e.oldStatus;
-                        break;
-                      default:
-                        if (!isAnonymous) {
-                          type = 1;
-                          oldStatus = new TdApi.ChatMemberStatusAdministrator(null, false, new TdApi.ChatAdministratorRights());
-                        } else {
-                          oldStatus = e.oldStatus;
-                        }
-                        break;
-                    }
-
-                    switch (e.newStatus.getConstructor()) {
-                      case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-                        newStatus = e.newStatus;
-                        break;
-                      default:
-                        if (!isAnonymous) {
-                          type = 2;
-                          newStatus = new TdApi.ChatMemberStatusAdministrator(null, false, new TdApi.ChatAdministratorRights());
-                        } else {
-                          newStatus = e.newStatus;
-                        }
-                        break;
-                    }
-                  }
-
-                  switch (type) {
-                    case 1:
-                      stringRes = R.string.EventLogPromotedNew;
-                      break;
-                    case 2:
-                      stringRes = R.string.EventLogUnpromoted;
-                      break;
-                    case 3:
-                      stringRes = R.string.EventLogTransferredOwnership;
-                      break;
-                    case 4:
-                      stringRes = R.string.EventLogNoLongerCreator;
-                      break;
-                    default:
-                      stringRes = R.string.EventLogPromoted;
-                      break;
-                  }
-
-                } else {
-                  TdApi.ChatEventMemberRestricted e = (TdApi.ChatEventMemberRestricted) event.event.action;
-
-                  memberId = e.memberId;
-                  isPromote = false;
-                  isTransferOwnership = false;
-
-                  if (msg.isChannelPost) {
-                    oldStatus = null;
-                    newStatus = null;
-                    if (e.newStatus.getConstructor() == TdApi.ChatMemberStatusBanned.CONSTRUCTOR) {
-                      stringRes = R.string.EventLogChannelRestricted;
-                    } else {
-                      stringRes = R.string.EventLogChannelUnrestricted;
-                    }
-                  } else {
-                    oldStatus = e.oldStatus;
-                    newStatus = e.newStatus;
-                    // STATUS_NORMAL = 0, STATUS_BANNED = 1, STATUS_RESTRICTED = 2
-                    int prevState = 0, newState = 0;
-
-                    switch (e.oldStatus.getConstructor()) {
-                      case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
-                        prevState = 1;
-                        break;
-                      case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR:
-                        prevState = 2;
-                        break;
-                    }
-
-                    switch (e.newStatus.getConstructor()) {
-                      case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
-                        newState = 1;
-                        break;
-                      case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR:
-                        newState = 2;
-                        break;
-                    }
-
-                    if (e.oldStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR && e.newStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
-                      isAnonymous = ((TdApi.ChatMemberStatusCreator) e.oldStatus).isAnonymous != ((TdApi.ChatMemberStatusCreator) e.newStatus).isAnonymous;
-                      stringRes = R.string.EventLogPromoted;
-                    } else if (newState == 1 && prevState == 0) {
-                      stringRes = R.string.EventLogGroupBanned;
-                      restrictedUntil = ((TdApi.ChatMemberStatusBanned) newStatus).bannedUntilDate;
-                    } else if (newState != 0) {
-                      stringRes = prevState != 0 ? R.string.EventLogRestrictedUntil : R.string.EventLogRestrictedNew;
-                      restrictedUntil = newStatus.getConstructor() == TdApi.ChatMemberStatusBanned.CONSTRUCTOR ? ((TdApi.ChatMemberStatusBanned) newStatus).bannedUntilDate : ((TdApi.ChatMemberStatusRestricted) newStatus).restrictedUntilDate;
-                    } else {
-                      stringRes = R.string.EventLogRestrictedDeleted;
-                    }
-
-                    /* else {
-                      throw new IllegalArgumentException("server bug: " + event.event.action);
-                    }*/
-                  }
-                }
-
-                String userName = tdlib.senderName(memberId);
-                String username = tdlib.senderUsername(memberId);
-
-                b.append(Lang.getString(stringRes));
-
-                int start = b.indexOf("%1$s");
-                if (start != -1) {
-                  entities.add(new TdApi.TextEntity(0, start - 1, new TdApi.TextEntityTypeItalic()));
-
-                  b.replace(start, start + 4, "");
-                  b.insert(start, userName);
-                  if (memberId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
-                    // TODO support for MessageSenderChat
-                    entities.add(new TdApi.TextEntity(start, userName.length(), new TdApi.TextEntityTypeMentionName(((TdApi.MessageSenderUser) memberId).userId)));
-                  }
-                  start += userName.length();
-                  if (!StringUtils.isEmpty(username)) {
-                    b.insert(start, " / @");
-                    start += 3;
-                    b.insert(start + 1, username);
-                    entities.add(new TdApi.TextEntity(start, username.length() + 1, new TdApi.TextEntityTypeMention()));
-                    start += username.length() + 1;
-                  }
-                }
-
-                int i = b.indexOf("%2$s");
-                if (i != -1) {
-                  int duration = restrictedUntil - event.event.date;
-                  String str;
-
-                  if (restrictedUntil == 0) {
-                    str = Lang.getString(R.string.UserRestrictionsUntilForever);
-                  } else if (Lang.preferTimeForDuration(duration)) {
-                    str = Lang.getString(R.string.UntilX, Lang.getDate(restrictedUntil, TimeUnit.SECONDS));
-                  } else {
-                    str = Lang.getDuration(duration, 0, 0, false);
-                  }
-
-                  b.replace(i, i + 4, str);
-                }
-
-                if (start < b.length() - 1) {
-                  entities.add(new TdApi.TextEntity(start, b.length() - start, new TdApi.TextEntityTypeItalic()));
-                }
-
-                b.append('\n');
-
-                if (isTransferOwnership) {
-                  // no need to show anything
-                } else if (isAnonymous) {
-                  appendRight(b, R.string.EventLogPromotedRemainAnonymous, ((TdApi.ChatMemberStatusCreator) oldStatus).isAnonymous, ((TdApi.ChatMemberStatusCreator) newStatus).isAnonymous, false);
-                } else if (isPromote) {
-                  final TdApi.ChatMemberStatusAdministrator oldAdmin = (TdApi.ChatMemberStatusAdministrator) oldStatus;
-                  final TdApi.ChatMemberStatusAdministrator newAdmin = (TdApi.ChatMemberStatusAdministrator) newStatus;
-                  appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedManageChannel : R.string.EventLogPromotedManageGroup, oldAdmin.rights.canManageChat, newAdmin.rights.canManageChat, false);
-                  appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedChangeChannelInfo : R.string.EventLogPromotedChangeGroupInfo, oldAdmin.rights.canChangeInfo, newAdmin.rights.canChangeInfo, false);
-                  if (msg.isChannelPost) {
-                    appendRight(b, R.string.EventLogPromotedPostMessages, oldAdmin.rights.canChangeInfo, newAdmin.rights.canChangeInfo, false);
-                    appendRight(b, R.string.EventLogPromotedEditMessages, oldAdmin.rights.canEditMessages, newAdmin.rights.canEditMessages, false);
-                  }
-                  appendRight(b, R.string.EventLogPromotedDeleteMessages, oldAdmin.rights.canDeleteMessages, newAdmin.rights.canDeleteMessages, false);
-                  appendRight(b, R.string.EventLogPromotedBanUsers, oldAdmin.rights.canRestrictMembers, newAdmin.rights.canRestrictMembers, false);
-                  appendRight(b, R.string.EventLogPromotedAddUsers, oldAdmin.rights.canInviteUsers, newAdmin.rights.canInviteUsers, false);
-                  if (!msg.isChannelPost) {
-                    appendRight(b, R.string.EventLogPromotedPinMessages, oldAdmin.rights.canPinMessages, newAdmin.rights.canPinMessages, false);
-                  }
-                  appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedManageLiveStreams : R.string.EventLogPromotedManageVoiceChats, oldAdmin.rights.canManageVideoChats, newAdmin.rights.canManageVideoChats, false);
-                  if (!msg.isChannelPost) {
-                    appendRight(b, R.string.EventLogPromotedRemainAnonymous, oldAdmin.rights.isAnonymous, newAdmin.rights.isAnonymous, false);
-                  }
-                  appendRight(b, R.string.EventLogPromotedAddAdmins, oldAdmin.rights.canPromoteMembers, newAdmin.rights.canPromoteMembers, false);
-                  appendRight(b, R.string.EventLogPromotedTitle, R.string.EventLogPromotedTitleChange, oldAdmin.customTitle, newAdmin.customTitle, false);
-                } else if (oldStatus != null && newStatus != null) {
-                  final boolean oldCanReadMessages = oldStatus.getConstructor() != TdApi.ChatMemberStatusBanned.CONSTRUCTOR;
-                  final boolean newCanReadMessages = newStatus.getConstructor() != TdApi.ChatMemberStatusBanned.CONSTRUCTOR;
-
-                  final TdApi.ChatMemberStatusRestricted oldBan = oldStatus.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR ? (TdApi.ChatMemberStatusRestricted) oldStatus : null;
-                  final TdApi.ChatMemberStatusRestricted newBan = newStatus.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR ? (TdApi.ChatMemberStatusRestricted) newStatus : null;
-
-                  if (memberId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
-                    appendRight(b, R.string.EventLogRestrictedReadMessages, oldCanReadMessages, newCanReadMessages, false);
-                  }
-                  appendRight(b, R.string.EventLogRestrictedSendMessages, oldBan != null ? oldBan.permissions.canSendMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendMessages : newCanReadMessages, false);
-                  appendRight(b, R.string.EventLogRestrictedSendMedia, oldBan != null ? oldBan.permissions.canSendMediaMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendMediaMessages : newCanReadMessages, false);
-                  appendRight(b, R.string.EventLogRestrictedSendStickers, oldBan != null ? oldBan.permissions.canSendOtherMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendOtherMessages : newCanReadMessages, false);
-                  appendRight(b, R.string.EventLogRestrictedSendPolls, oldBan != null ? oldBan.permissions.canSendOtherMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendOtherMessages : newCanReadMessages, false);
-                  appendRight(b, R.string.EventLogRestrictedSendEmbed, oldBan != null ? oldBan.permissions.canAddWebPagePreviews : oldCanReadMessages, newBan != null ? newBan.permissions.canAddWebPagePreviews : newCanReadMessages, false);
-                  appendRight(b, R.string.EventLogRestrictedAddUsers, oldBan != null ? oldBan.permissions.canInviteUsers : oldCanReadMessages, newBan != null ? newBan.permissions.canInviteUsers : newCanReadMessages, false);
-                  appendRight(b, R.string.EventLogRestrictedPinMessages, oldBan != null ? oldBan.permissions.canPinMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canPinMessages : newCanReadMessages, false);
-                  appendRight(b, R.string.EventLogRestrictedChangeInfo, oldBan != null ? oldBan.permissions.canChangeInfo : oldCanReadMessages, newBan != null ? newBan.permissions.canChangeInfo : newCanReadMessages, false);
-                }
-
-                TdApi.FormattedText formattedText = new TdApi.FormattedText(b.toString().trim(), null);
-                if (!entities.isEmpty()) {
-                  formattedText.entities = new TdApi.TextEntity[entities.size()];
-                  entities.toArray(formattedText.entities);
-                }
-                fullMessage = new TGMessageText(context, msg, formattedText);
-                break;
-              }
-              case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR: {
-                TdApi.ChatEventAvailableReactionsChanged e = (TdApi.ChatEventAvailableReactionsChanged) event.event.action;
-
-                final List<String> addedReactions = new ArrayList<>();
-                final List<String> removedReactions = new ArrayList<>();
-
-                for (String newAvailableReaction : e.newAvailableReactions) {
-                  if (ArrayUtils.indexOf(e.oldAvailableReactions, newAvailableReaction) == -1) {
-                    addedReactions.add(newAvailableReaction);
-                  }
-                }
-
-                for (String oldAvailableReaction : e.oldAvailableReactions) {
-                  if (ArrayUtils.indexOf(e.newAvailableReactions, oldAvailableReaction) == -1) {
-                    removedReactions.add(oldAvailableReaction);
-                  }
-                }
-
-                List<TdApi.TextEntity> entities = new ArrayList<>();
-                StringBuilder text = new StringBuilder();
-
-                if (e.oldAvailableReactions.length == 0) {
-                  // Enabled reactions
-                  text.append(Lang.getString(R.string.EventLogReactionsEnabled));
-                } else if (e.newAvailableReactions.length == 0) {
-                  // Disabled reactions
-                  text.append(Lang.getString(R.string.EventLogReactionsDisabled));
-                } else {
-                  // Changed available reactions
-                  text.append(Lang.getString(R.string.EventLogReactionsChanged));
-                }
-                entities.add(new TdApi.TextEntity(0, text.length(), new TdApi.TextEntityTypeItalic()));
-                if (e.newAvailableReactions.length > 0) {
-                  text.append("\n").append(TextUtils.join(" ", e.newAvailableReactions));
-                }
-
-                if (!addedReactions.isEmpty() && e.oldAvailableReactions.length > 0) {
-                  // + Added:
-                  text.append("\n\n");
-                  text.append(Lang.getString(R.string.EventLogReactionsAdded, TextUtils.join(" ", addedReactions)));
-                }
-
-                if (!removedReactions.isEmpty()) {
-                  // – Removed:
-                  text.append("\n\n");
-                  text.append(Lang.getString(R.string.EventLogReactionsRemoved, TextUtils.join(" ", removedReactions)));
-                }
-
-                TdApi.FormattedText formattedText = new TdApi.FormattedText(text.toString(), entities.toArray(new TdApi.TextEntity[0]));
-                fullMessage = new TGMessageText(context, msg, formattedText);
-                break;
-              }
-              case TdApi.ChatEventHasProtectedContentToggled.CONSTRUCTOR:
-              case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
-              case TdApi.ChatEventInviteLinkRevoked.CONSTRUCTOR:
-              case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
-              case TdApi.ChatEventIsAllHistoryAvailableToggled.CONSTRUCTOR:
-              case TdApi.ChatEventLinkedChatChanged.CONSTRUCTOR:
-              case TdApi.ChatEventLocationChanged.CONSTRUCTOR:
-              case TdApi.ChatEventMemberJoined.CONSTRUCTOR:
-              case TdApi.ChatEventMemberJoinedByInviteLink.CONSTRUCTOR:
-              case TdApi.ChatEventMemberJoinedByRequest.CONSTRUCTOR:
-              case TdApi.ChatEventMemberLeft.CONSTRUCTOR:
-              case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
-              case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
-              case TdApi.ChatEventPhotoChanged.CONSTRUCTOR:
-              case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
-              case TdApi.ChatEventSlowModeDelayChanged.CONSTRUCTOR:
-              case TdApi.ChatEventStickerSetChanged.CONSTRUCTOR:
-              case TdApi.ChatEventTitleChanged.CONSTRUCTOR:
-              case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
-              case TdApi.ChatEventVideoChatEnded.CONSTRUCTOR:
-              case TdApi.ChatEventVideoChatMuteNewParticipantsToggled.CONSTRUCTOR:
-              case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
-              case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
-                // Only TGMessageChat is displayed for these events
-                break;
-            }
-            if (fullMessage == null) {
-              throw new IllegalArgumentException("unsupported: " + event.event.action);
-            }
-            return fullMessage.setIsEventLog(event, 0);
-          }
-          return new TGMessageChat(context, msg, ((TdApiExt.MessageChatEvent) msg.content).event).setIsEventLog((TdApiExt.MessageChatEvent) msg.content, 0);
-        }
-
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR: {
           TdApi.MessageAnimatedEmoji emoji = nonNull((TdApi.MessageAnimatedEmoji) content);
           TdApi.MessageContent pendingContent = tdlib.getPendingMessageText(msg.chatId, msg.id);
@@ -7625,14 +7046,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessagePhoto.CONSTRUCTOR: {
           return new TGMessageMedia(context, msg, nonNull(((TdApi.MessagePhoto) content).photo), ((TdApi.MessagePhoto) content).caption);
         }
-        case TdApi.MessageExpiredPhoto.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageExpiredPhoto) content);
-        }
         case TdApi.MessageVideo.CONSTRUCTOR: {
           return new TGMessageMedia(context, msg, nonNull(((TdApi.MessageVideo) content).video), ((TdApi.MessageVideo) content).caption);
-        }
-        case TdApi.MessageExpiredVideo.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageExpiredVideo) content);
         }
         case TdApi.MessageAnimation.CONSTRUCTOR: {
           return new TGMessageMedia(context, msg, nonNull(((TdApi.MessageAnimation) content).animation), ((TdApi.MessageAnimation) content).caption);
@@ -7658,89 +7073,196 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           TdApi.MessageLocation location = (TdApi.MessageLocation) content;
           return new TGMessageLocation(context, msg, nonNull(location.location), location.livePeriod, location.expiresIn);
         }
-        /*case TdApi.MessageInvoice.CONSTRUCTOR: {
-          return new TGMessageInvoice(msg, validateContent((TdApi.MessageInvoice) content));
-        }*/
+        case TdApi.MessageVenue.CONSTRUCTOR: {
+          return new TGMessageLocation(context, msg, ((TdApi.MessageVenue) content).venue);
+        }
         case TdApi.MessageContact.CONSTRUCTOR: {
           return new TGMessageContact(context, msg, (TdApi.MessageContact) content);
-        }
-        case TdApi.MessagePinMessage.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessagePinMessage) content);
-        }
-        case TdApi.MessageScreenshotTaken.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageScreenshotTaken) content);
-        }
-        case TdApi.MessageChatSetTtl.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageChatSetTtl) content);
-        }
-        case TdApi.MessageGameScore.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageGameScore) content);
         }
         case TdApi.MessageGame.CONSTRUCTOR: {
           return new TGMessageGame(context, msg, ((TdApi.MessageGame) content).game);
         }
+        case TdApi.MessageExpiredPhoto.CONSTRUCTOR: {
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageExpiredPhoto) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageExpiredPhoto) content);
+          }
+        }
+        case TdApi.MessageExpiredVideo.CONSTRUCTOR: {
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageExpiredVideo) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageExpiredVideo) content);
+          }
+        }
+        case TdApi.MessagePinMessage.CONSTRUCTOR: {
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessagePinMessage) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessagePinMessage) content);
+          }
+        }
+        case TdApi.MessageScreenshotTaken.CONSTRUCTOR: {
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageScreenshotTaken) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageScreenshotTaken) content);
+          }
+        }
+        case TdApi.MessageChatSetTtl.CONSTRUCTOR: {
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageChatSetTtl) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageChatSetTtl) content);
+          }
+        }
+        case TdApi.MessageGameScore.CONSTRUCTOR: {
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageGameScore) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageGameScore) content);
+          }
+        }
         case TdApi.MessageContactRegistered.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageContactRegistered) content);
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageContactRegistered) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageContactRegistered) content);
+          }
         }
         case TdApi.MessageChatChangePhoto.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageChatChangePhoto) content);
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageChatChangePhoto) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageChatChangePhoto) content);
+          }
         }
         case TdApi.MessageCustomServiceAction.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageCustomServiceAction) content);
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageCustomServiceAction) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageCustomServiceAction) content);
+          }
         }
         case TdApi.MessagePaymentSuccessful.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessagePaymentSuccessful) content);
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessagePaymentSuccessful) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessagePaymentSuccessful) content);
+          }
         }
         case TdApi.MessageChatDeletePhoto.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, TGMessageChat.TYPE_DELETE_PHOTO);
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageChatDeletePhoto) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageChatDeletePhoto) content);
+          }
         }
         case TdApi.MessageChatAddMembers.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageChatAddMembers) content);
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageChatAddMembers) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageChatAddMembers) content);
+          }
         }
         case TdApi.MessageBasicGroupChatCreate.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageBasicGroupChatCreate) content);
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageBasicGroupChatCreate) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageBasicGroupChatCreate) content);
+          }
         }
         case TdApi.MessageChatChangeTitle.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageChatChangeTitle) content);
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageChatChangeTitle) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageChatChangeTitle) content);
+          }
         }
         case TdApi.MessageChatDeleteMember.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageChatDeleteMember) content);
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageChatDeleteMember) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageChatDeleteMember) content);
+          }
         }
         case TdApi.MessageChatJoinByLink.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageChatJoinByLink) content);
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageChatJoinByLink) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageChatJoinByLink) content);
+          }
         }
         case TdApi.MessageChatJoinByRequest.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageChatJoinByRequest) content);
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageChatJoinByRequest) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageChatJoinByRequest) content);
+          }
         }
         case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageProximityAlertTriggered) content);
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageProximityAlertTriggered) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageProximityAlertTriggered) content);
+          }
         }
         case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageInviteVideoChatParticipants) content);
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageInviteVideoChatParticipants) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageInviteVideoChatParticipants) content);
+          }
         }
         case TdApi.MessageVideoChatStarted.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageVideoChatStarted) content);
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageVideoChatStarted) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageVideoChatStarted) content);
+          }
         }
         case TdApi.MessageVideoChatScheduled.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageVideoChatScheduled) content);
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageVideoChatScheduled) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageVideoChatScheduled) content);
+          }
         }
         case TdApi.MessageVideoChatEnded.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageVideoChatEnded) content);
-        }
-        case TdApi.MessageVenue.CONSTRUCTOR: {
-          return new TGMessageLocation(context, msg, ((TdApi.MessageVenue) content).venue);
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageVideoChatEnded) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageVideoChatEnded) content);
+          }
         }
         case TdApi.MessageSupergroupChatCreate.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageSupergroupChatCreate) content);
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageSupergroupChatCreate) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageSupergroupChatCreate) content);
+          }
         }
         case TdApi.MessageWebsiteConnected.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageWebsiteConnected) content);
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageWebsiteConnected) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageWebsiteConnected) content);
+          }
         }
         case TdApi.MessageChatUpgradeTo.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageChatUpgradeTo) content);
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageChatUpgradeTo) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageChatUpgradeTo) content);
+          }
         }
         case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageChatUpgradeFrom) content);
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.MessageChatUpgradeFrom) content);
+          } else {
+            return new TGMessageChat(context, msg, (TdApi.MessageChatUpgradeFrom) content);
+          }
         }
         // unsupported
         case TdApi.MessageInvoice.CONSTRUCTOR:

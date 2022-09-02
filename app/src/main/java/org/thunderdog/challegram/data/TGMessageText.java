@@ -68,17 +68,15 @@ public class TGMessageText extends TGMessage {
     }
   }
 
-  public TGMessageText (MessagesManager context, TdApi.Message msg, TdApi.FormattedText text) {
-    super(context, msg);
-    this.currentMessageText = new TdApi.MessageText(text, null);
-    setText(text, true);
-  }
-
   public TGMessageText (MessagesManager context, TdApi.Message msg, TdApi.SponsoredMessage text) {
     super(context, msg);
     this.sponsoredMetadata = text;
     this.currentMessageText = (TdApi.MessageText) text.content;
     setText(currentMessageText.text, false);
+  }
+
+  public TGMessageText (MessagesManager context, TdApi.Message msg, TdApi.FormattedText text) {
+    this(context, msg, new TdApi.MessageText(text, null), null);
   }
 
   public TdApi.File getTargetFile () {

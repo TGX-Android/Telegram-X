@@ -36,6 +36,8 @@ public class Config {
 
   public static final boolean SHOW_EMOJI_TONE_PICKER_ALWAYS = true;
 
+  public static final boolean USE_NEW_SERVICE_MESSAGES = false;
+
   public static final String ICONS_BUILTIN_ID = "material-baseline";
 
   public static final boolean MODERN_IMAGE_DECODER_ENABLED = true;

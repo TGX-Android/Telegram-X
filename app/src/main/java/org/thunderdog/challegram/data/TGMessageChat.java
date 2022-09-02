@@ -154,9 +154,9 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
 
   private int pWidth;
 
-  public TGMessageChat (MessagesManager context, TdApi.Message msg, int type) {
+  public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageChatDeletePhoto deletePhoto) {
     super(context, msg);
-    this.type = type;
+    this.type = TYPE_DELETE_PHOTO;
   }
 
   public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.MessageBasicGroupChatCreate create) {
@@ -326,9 +326,9 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
     this.longValue = proximityAlert.distance;
   }
 
-  public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.ChatEvent chatEvent) {
+  public TGMessageChat (MessagesManager context, TdApi.Message msg, TdApi.ChatEventAction action) {
     super(context, msg);
-    switch (chatEvent.action.getConstructor()) {
+    switch (action.getConstructor()) {
       case TdApi.ChatEventMessageDeleted.CONSTRUCTOR: {
         this.type = TYPE_EVENT_MESSAGE_DELETED;
         break;
@@ -345,32 +345,32 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
 
       case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
         this.type = TYPE_EVENT_INVITES_TOGGLED;
-        this.boolValue = ((TdApi.ChatEventInvitesToggled) chatEvent.action).canInviteUsers;
+        this.boolValue = ((TdApi.ChatEventInvitesToggled) action).canInviteUsers;
         break;
       case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
         this.type = TYPE_EVENT_SIGNATURES_TOGGLED;
-        this.boolValue = ((TdApi.ChatEventSignMessagesToggled) chatEvent.action).signMessages;
+        this.boolValue = ((TdApi.ChatEventSignMessagesToggled) action).signMessages;
         break;
       case TdApi.ChatEventHasProtectedContentToggled.CONSTRUCTOR:
         this.type = TYPE_EVENT_PROTECTION_TOGGLED;
-        this.boolValue = ((TdApi.ChatEventHasProtectedContentToggled) chatEvent.action).hasProtectedContent;
+        this.boolValue = ((TdApi.ChatEventHasProtectedContentToggled) action).hasProtectedContent;
         break;
       case TdApi.ChatEventUsernameChanged.CONSTRUCTOR:
         this.type = TYPE_EVENT_LINK_CHANGED;
-        this.boolValue = !StringUtils.isEmpty(((TdApi.ChatEventUsernameChanged) chatEvent.action).newUsername);
+        this.boolValue = !StringUtils.isEmpty(((TdApi.ChatEventUsernameChanged) action).newUsername);
         break;
       case TdApi.ChatEventDescriptionChanged.CONSTRUCTOR:
         this.type = TYPE_EVENT_DESCRIPTION_CHANGED;
-        this.boolValue = !StringUtils.isEmpty(((TdApi.ChatEventDescriptionChanged) chatEvent.action).newDescription);
+        this.boolValue = !StringUtils.isEmpty(((TdApi.ChatEventDescriptionChanged) action).newDescription);
         break;
       case TdApi.ChatEventMemberJoinedByInviteLink.CONSTRUCTOR:
         this.type = TYPE_JOIN_BY_LINK;
-        this.inviteLinkValue = ((TdApi.ChatEventMemberJoinedByInviteLink) chatEvent.action).inviteLink;
+        this.inviteLinkValue = ((TdApi.ChatEventMemberJoinedByInviteLink) action).inviteLink;
         this.actionUser = inviteLinkValue.creatorUserId != 0 ? userForId(inviteLinkValue.creatorUserId) : null;
         break;
       case TdApi.ChatEventMemberJoinedByRequest.CONSTRUCTOR: {
         this.type = TYPE_JOIN_BY_REQUEST;
-        TdApi.ChatEventMemberJoinedByRequest request = (TdApi.ChatEventMemberJoinedByRequest) chatEvent.action;
+        TdApi.ChatEventMemberJoinedByRequest request = (TdApi.ChatEventMemberJoinedByRequest) action;
         this.inviteLinkValue = request.inviteLink;
         this.actionUser = inviteLinkValue != null && inviteLinkValue.creatorUserId != 0 ? userForId(inviteLinkValue.creatorUserId) : null;
         this.approvedByUser = request.approverUserId != 0 ? userForId(request.approverUserId) : null;
@@ -378,35 +378,35 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
       }
       case TdApi.ChatEventInviteLinkRevoked.CONSTRUCTOR:
         this.type = TYPE_EVENT_INVITE_LINK_REVOKED;
-        this.inviteLinkValue = ((TdApi.ChatEventInviteLinkRevoked) chatEvent.action).inviteLink;
+        this.inviteLinkValue = ((TdApi.ChatEventInviteLinkRevoked) action).inviteLink;
         this.actionUser = inviteLinkValue.creatorUserId != 0 ? userForId(inviteLinkValue.creatorUserId) : null;
         break;
       case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
         this.type = TYPE_EVENT_INVITE_LINK_DELETE;
-        this.inviteLinkValue = ((TdApi.ChatEventInviteLinkDeleted) chatEvent.action).inviteLink;
+        this.inviteLinkValue = ((TdApi.ChatEventInviteLinkDeleted) action).inviteLink;
         this.actionUser = inviteLinkValue.creatorUserId != 0 ? userForId(inviteLinkValue.creatorUserId) : null;
         break;
       case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR: {
         this.type = TYPE_EVENT_VIDEO_CHAT_PARTICIPANT_VOLUME_CHANGED;
-        TdApi.ChatEventVideoChatParticipantVolumeLevelChanged volumeChanged = (TdApi.ChatEventVideoChatParticipantVolumeLevelChanged) chatEvent.action;
+        TdApi.ChatEventVideoChatParticipantVolumeLevelChanged volumeChanged = (TdApi.ChatEventVideoChatParticipantVolumeLevelChanged) action;
         this.actionSender = new TdlibSender(tdlib, msg.chatId, volumeChanged.participantId);
         this.longValue = volumeChanged.volumeLevel;
         break;
       }
       case TdApi.ChatEventIsAllHistoryAvailableToggled.CONSTRUCTOR:
         this.type = TYPE_EVENT_PREHISTORY_TOGGLED;
-        this.boolValue = ((TdApi.ChatEventIsAllHistoryAvailableToggled) chatEvent.action).isAllHistoryAvailable;
+        this.boolValue = ((TdApi.ChatEventIsAllHistoryAvailableToggled) action).isAllHistoryAvailable;
         break;
       case TdApi.ChatEventStickerSetChanged.CONSTRUCTOR:
         this.type = TYPE_EVENT_STICKER_PACK_CHANGED;
-        TdApi.ChatEventStickerSetChanged event = (TdApi.ChatEventStickerSetChanged) chatEvent.action;
+        TdApi.ChatEventStickerSetChanged event = (TdApi.ChatEventStickerSetChanged) action;
         this.boolValue = event.newStickerSetId != 0;
         this.longValue = boolValue ? event.newStickerSetId : event.oldStickerSetId;
         break;
 
       case TdApi.ChatEventMessageEdited.CONSTRUCTOR:
         this.type = TYPE_EVENT_MESSAGE_EDITED;
-        TdApi.Message newMessage = ((TdApi.ChatEventMessageEdited) chatEvent.action).newMessage;
+        TdApi.Message newMessage = ((TdApi.ChatEventMessageEdited) action).newMessage;
         this.boolValue = newMessage.content.getConstructor() != TdApi.MessageText.CONSTRUCTOR;
         if (boolValue && Td.isEmpty(Td.textOrCaption(newMessage.content))) {
           this.type = TYPE_EVENT_CAPTION_REMOVED;
@@ -414,23 +414,23 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
         break;
       case TdApi.ChatEventSlowModeDelayChanged.CONSTRUCTOR:
         this.type = TYPE_EVENT_SLOW_MODE_DELAY_CHANGED;
-        this.longValue = ((TdApi.ChatEventSlowModeDelayChanged) chatEvent.action).newSlowModeDelay;
+        this.longValue = ((TdApi.ChatEventSlowModeDelayChanged) action).newSlowModeDelay;
         if (longValue == 0) {
           this.type = TYPE_EVENT_SLOW_MODE_DELAY_DISABLED;
         }
         break;
       case TdApi.ChatEventVideoChatMuteNewParticipantsToggled.CONSTRUCTOR:
         this.type = TYPE_EVENT_VIDEO_CHAT_MUTE_NEW_PARTICIPANTS_TOGGLED;
-        this.boolValue = ((TdApi.ChatEventVideoChatMuteNewParticipantsToggled) chatEvent.action).muteNewParticipants;
+        this.boolValue = ((TdApi.ChatEventVideoChatMuteNewParticipantsToggled) action).muteNewParticipants;
         break;
       case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
         this.type = TYPE_EVENT_VIDEO_CHAT_IS_MUTED_TOGGLED;
-        this.boolValue = ((TdApi.ChatEventVideoChatParticipantIsMutedToggled) chatEvent.action).isMuted;
-        this.actionSender = new TdlibSender(tdlib, msg.chatId, ((TdApi.ChatEventVideoChatParticipantIsMutedToggled) chatEvent.action).participantId);
+        this.boolValue = ((TdApi.ChatEventVideoChatParticipantIsMutedToggled) action).isMuted;
+        this.actionSender = new TdlibSender(tdlib, msg.chatId, ((TdApi.ChatEventVideoChatParticipantIsMutedToggled) action).participantId);
         break;
       case TdApi.ChatEventLinkedChatChanged.CONSTRUCTOR: {
         this.type = TYPE_EVENT_LINKED_CHAT_CHANGED;
-        TdApi.ChatEventLinkedChatChanged linkedChatChange = (TdApi.ChatEventLinkedChatChanged) chatEvent.action;
+        TdApi.ChatEventLinkedChatChanged linkedChatChange = (TdApi.ChatEventLinkedChatChanged) action;
         this.longValue = linkedChatChange.newLinkedChatId;
         if (longValue == 0) {
           this.type = TYPE_EVENT_LINKED_CHAT_REMOVED;
@@ -439,7 +439,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
         break;
       }
       case TdApi.ChatEventLocationChanged.CONSTRUCTOR: {
-        TdApi.ChatEventLocationChanged locationChange = (TdApi.ChatEventLocationChanged) chatEvent.action;
+        TdApi.ChatEventLocationChanged locationChange = (TdApi.ChatEventLocationChanged) action;
         if (locationChange.newLocation == null) {
           this.type = TYPE_EVENT_LOCATION_REMOVED;
           if (locationChange.oldLocation != null) {
@@ -454,7 +454,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
         break;
       }
       default:
-        throw new IllegalArgumentException("unsupported: " + chatEvent.action);
+        throw new IllegalArgumentException("unsupported: " + action);
     }
   }
 
