@@ -20,6 +20,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.TdlibUi;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class FormattedText {
   @NonNull
@@ -54,6 +55,41 @@ public class FormattedText {
       return iconCount;
     }
     return 0;
+  }
+
+  public static FormattedText concat (String separator, String lastSeparator, FormattedText... texts) {
+    if (texts == null || texts.length == 0) {
+      return new FormattedText("");
+    }
+    if (texts.length == 1) {
+      return texts[0];
+    }
+    StringBuilder b = new StringBuilder();
+    List<TextEntity> entities = null;
+    int index = 0;
+    for (FormattedText text : texts) {
+      boolean isLast = ++index == texts.length;
+      if (b.length() > 0) {
+        b.append(isLast ? lastSeparator : separator);
+      }
+      int offset = b.length();
+      b.append(text.text);
+      if (text.entities != null && text.entities.length > 0) {
+        if (entities == null) {
+          entities = new ArrayList<>();
+        }
+        for (TextEntity entity : text.entities) {
+          entity.offset(offset);
+          entities.add(entity);
+        }
+      }
+    }
+    return new FormattedText(
+      b.toString(),
+      entities != null ?
+        entities.toArray(new TextEntity[0]) :
+        null
+    );
   }
 
   public static FormattedText valueOf (ViewController<?> context, @Nullable TdApi.FormattedText formattedText, @Nullable TdlibUi.UrlOpenParameters openParameters) {

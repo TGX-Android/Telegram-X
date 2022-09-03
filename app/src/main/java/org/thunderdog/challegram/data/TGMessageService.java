@@ -15,13 +15,7 @@
 
 package org.thunderdog.challegram.data;
 
-import android.text.Spanned;
-import android.text.style.CharacterStyle;
-import android.text.style.ClickableSpan;
-import android.view.View;
-
 import androidx.annotation.NonNull;
-import androidx.annotation.StringRes;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
@@ -29,25 +23,20 @@ import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.ui.MapController;
 import org.thunderdog.challegram.util.text.FormattedText;
-import org.thunderdog.challegram.util.text.TextEntity;
-import org.thunderdog.challegram.util.text.TextEntityCustom;
+import org.thunderdog.challegram.util.text.TextColorSet;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import me.vkryl.core.ColorUtils;
 import me.vkryl.core.CurrencyUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.core.lambda.Filter;
-import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.ChatId;
-import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 
-public class TGMessageService extends TGMessage {
+public final class TGMessageService extends TGMessageServiceImpl {
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageContactRegistered contactRegistered) {
     super(context, msg);
     setTextCreator(() ->
@@ -149,12 +138,22 @@ public class TGMessageService extends TGMessage {
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageBasicGroupChatCreate basicGroupCreate) {
     super(context, msg);
     setTextCreator(() -> {
-      if (msg.isChannelPost) {
-        return getText(R.string.channel_create_somebody, new BoldArgument(basicGroupCreate.title));
+      if (msg.isChannelPost) { // should never be true
+        return getText(
+          R.string.channel_create_somebody,
+          new BoldArgument(basicGroupCreate.title)
+        );
       } else if (msg.isOutgoing) {
-        return getText(R.string.group_create_you, new BoldArgument(basicGroupCreate.title));
+        return getText(
+          R.string.group_create_you,
+          new BoldArgument(basicGroupCreate.title)
+        );
       } else {
-        return getText(R.string.group_created, new SenderArgument(sender), new BoldArgument(basicGroupCreate.title));
+        return getText(
+          R.string.group_created,
+          new SenderArgument(sender),
+          new BoldArgument(basicGroupCreate.title)
+        );
       }
     });
   }
@@ -163,11 +162,21 @@ public class TGMessageService extends TGMessage {
     super(context, msg);
     setTextCreator(() -> {
       if (msg.isChannelPost) {
-        return getText(R.string.channel_create_somebody, new BoldArgument(supergroupCreate.title));
+        return getText(
+          R.string.channel_create_somebody,
+          new BoldArgument(supergroupCreate.title)
+        );
       } else if (msg.isOutgoing) {
-        return getText(R.string.group_create_you, new BoldArgument(supergroupCreate.title));
+        return getText(
+          R.string.group_create_you,
+          new BoldArgument(supergroupCreate.title)
+        );
       } else {
-        return getText(R.string.group_created, new SenderArgument(sender), new BoldArgument(supergroupCreate.title));
+        return getText(
+          R.string.group_created,
+          new SenderArgument(sender),
+          new BoldArgument(supergroupCreate.title)
+        );
       }
     });
   }
@@ -176,11 +185,21 @@ public class TGMessageService extends TGMessage {
     super(context, msg);
     setTextCreator(() -> {
       if (msg.isChannelPost) {
-        return getText(R.string.ChannelRenamed, new BoldArgument(changeTitle.title));
+        return getText(
+          R.string.ChannelRenamed,
+          new BoldArgument(changeTitle.title)
+        );
       } else if (msg.isOutgoing) {
-        return getText(R.string.group_title_changed_you, new BoldArgument(changeTitle.title));
+        return getText(
+          R.string.group_title_changed_you,
+          new BoldArgument(changeTitle.title)
+        );
       } else {
-        return getText(R.string.group_title_changed, new SenderArgument(sender), new BoldArgument(changeTitle.title));
+        return getText(
+          R.string.group_title_changed,
+          new SenderArgument(sender),
+          new BoldArgument(changeTitle.title)
+        );
       }
     });
   }
@@ -193,7 +212,10 @@ public class TGMessageService extends TGMessage {
       } else if (msg.isOutgoing) {
         return getText(R.string.group_photo_changed_you);
       } else {
-        return getText(R.string.group_photo_changed, new SenderArgument(sender));
+        return getText(
+          R.string.group_photo_changed,
+          new SenderArgument(sender)
+        );
       }
     });
     setDisplayChatPhoto(changePhoto.photo);
@@ -207,7 +229,10 @@ public class TGMessageService extends TGMessage {
       } else if (msg.isOutgoing) {
         return getText(R.string.group_photo_deleted_you);
       } else {
-        return getText(R.string.group_photo_deleted, new SenderArgument(sender));
+        return getText(
+          R.string.group_photo_deleted,
+          new SenderArgument(sender)
+        );
       }
     });
   }
@@ -215,8 +240,17 @@ public class TGMessageService extends TGMessage {
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatUpgradeTo upgradeToSupergroup) {
     super(context, msg);
     setTextCreator(() ->
-      getText(R.string.GroupUpgraded)
+      getText(
+        upgradeToSupergroup.supergroupId != 0 ?
+          R.string.GroupUpgradedTo :
+          R.string.GroupUpgraded
+      )
     );
+    if (upgradeToSupergroup.supergroupId != 0) {
+      setOnClickListener(() ->
+        tdlib.ui().openSupergroupChat(controller(), upgradeToSupergroup.supergroupId, new TdlibUi.ChatOpenParameters().urlOpenParameters(openParameters()))
+      );
+    }
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatUpgradeFrom upgradeFromBasicGroup) {
@@ -276,7 +310,52 @@ public class TGMessageService extends TGMessage {
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatAddMembers addMembers) {
-    super(context, msg); // TODO: list
+    super(context, msg);
+    TdlibSender[] addedMembers = TdlibSender.valueOfUserIds(tdlib(), msg.chatId, addMembers.memberUserIds);
+    setTextCreator(() -> {
+      TdlibSender targetMember =
+        addedMembers.length == 1 ?
+          addedMembers[0] :
+          null;
+      if (sender.isSelf()) {
+        if (sender.isSameSender(targetMember)) {
+          return getText(
+            msg.isChannelPost ?
+              R.string.channel_user_add_self :
+              R.string.group_user_add_self
+          );
+        } else {
+          return getText(
+            R.string.group_user_self_added,
+            addedMembers.length == 1 ?
+              new SenderArgument(addedMembers[0]) :
+              new SenderListArgument(addedMembers)
+          );
+        }
+      } else {
+        if (sender.isSameSender(targetMember)) {
+          return getText(
+            msg.isChannelPost ?
+              R.string.channel_user_add :
+              R.string.group_user_add,
+            new SenderArgument(sender)
+          );
+        } else if (targetMember != null && targetMember.isSelf()) {
+          return getText(
+            R.string.group_user_added_self,
+            new SenderArgument(sender)
+          );
+        } else {
+          return getText(
+            R.string.group_user_added,
+            new SenderArgument(sender),
+            addedMembers.length == 1 ?
+              new SenderArgument(addedMembers[0]) :
+              new SenderListArgument(addedMembers)
+          );
+        }
+      }
+    });
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatDeleteMember deleteMember) {
@@ -437,7 +516,7 @@ public class TGMessageService extends TGMessage {
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessagePaymentSuccessful paymentSuccessful) {
-    super(context, msg); // TODO: update with recurring payment support
+    super(context, msg); // TODO: recurring payment strings
     String amount = CurrencyUtils.buildAmount(paymentSuccessful.currency, paymentSuccessful.totalAmount);
     setTextCreator(() ->
       getText(
@@ -546,7 +625,35 @@ public class TGMessageService extends TGMessage {
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageInviteVideoChatParticipants inviteVideoChatParticipants) {
-    super(context, msg); // TODO: list
+    super(context, msg);
+    TdlibSender[] invitedParticipants = TdlibSender.valueOfUserIds(tdlib(), msg.chatId, inviteVideoChatParticipants.userIds);
+    setTextCreator(() -> {
+      if (sender.isSelf() || msg.isOutgoing) {
+        return getText(
+          msg.isChannelPost ?
+            R.string.LiveStreamInviteOther :
+            R.string.VoiceChatInviteOther,
+          invitedParticipants.length == 1 ?
+            new SenderArgument(invitedParticipants[0]) :
+            new SenderListArgument(invitedParticipants)
+        );
+      } else if (invitedParticipants.length == 1 && invitedParticipants[0].isSelf()) {
+        return getText(
+          msg.isChannelPost ?
+            R.string.LiveStreamInviteSelf :
+            R.string.VoiceChatInviteSelf,
+          new SenderArgument(sender)
+        );
+      } else {
+        return getText(
+          msg.isChannelPost ?
+            R.string.LiveStreamInvite :
+            R.string.VoiceChatInvite,
+          new SenderArgument(sender),
+          new SenderListArgument(invitedParticipants)
+        );
+      }
+    });
   }
 
   // Custom server's service message
@@ -740,7 +847,7 @@ public class TGMessageService extends TGMessage {
     super(context, msg);
     TdlibSender targetSender = new TdlibSender(tdlib, msg.chatId, videoChatParticipantVolumeLevelChanged.participantId);
     setTextCreator(() -> {
-      final Argument volume = new BoldArgument((videoChatParticipantVolumeLevelChanged.volumeLevel / 100) + "%");
+      final FormattedArgument volume = new BoldArgument((videoChatParticipantVolumeLevelChanged.volumeLevel / 100) + "%");
       if (msg.isOutgoing) {
         return getText(
           R.string.EventLogChangedVolumeYou,
@@ -961,361 +1068,265 @@ public class TGMessageService extends TGMessage {
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventMemberJoinedByInviteLink joinedByInviteLink) {
-    super(context, msg); // TODO: link
+    super(context, msg);
+    TdlibSender linkAuthor = new TdlibSender(tdlib(), msg.chatId, new TdApi.MessageSenderUser(joinedByInviteLink.inviteLink.creatorUserId));
+    setTextCreator(() -> {
+      if (joinedByInviteLink.inviteLink.isPrimary) {
+        if (msg.isOutgoing) {
+          return getText(
+            msg.isChannelPost ?
+              R.string.LinkJoinChannelPrimaryYou :
+              R.string.LinkJoinPrimaryYou,
+            new InviteLinkArgument(joinedByInviteLink.inviteLink)
+          );
+        } else {
+          return getText(
+            msg.isChannelPost ?
+              R.string.LinkJoinChannelPrimary :
+              R.string.LinkJoinPrimary,
+            new SenderArgument(sender),
+            new InviteLinkArgument(joinedByInviteLink.inviteLink)
+          );
+        }
+      } else {
+        if (msg.isOutgoing) {
+          return getText(
+            Td.isTemporary(joinedByInviteLink.inviteLink) ?
+              msg.isChannelPost ?
+                R.string.LinkJoinChannelTempYou :
+                R.string.LinkJoinTempYou :
+              msg.isChannelPost ?
+                R.string.LinkJoinChannelOtherYou :
+                R.string.LinkJoinOtherYou,
+            new SenderArgument(linkAuthor),
+            new InviteLinkArgument(joinedByInviteLink.inviteLink)
+          );
+        } else {
+          return getText(
+            Td.isTemporary(joinedByInviteLink.inviteLink) ?
+              msg.isChannelPost ?
+                R.string.LinkJoinChannelTemp :
+                R.string.LinkJoinTemp :
+              msg.isChannelPost ?
+                R.string.LinkJoinChannelOther :
+                R.string.LinkJoinOther,
+            new SenderArgument(sender),
+            new SenderArgument(linkAuthor),
+            new InviteLinkArgument(joinedByInviteLink.inviteLink)
+          );
+        }
+      }
+    });
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventMemberJoinedByRequest joinedByRequest) {
-    super(context, msg); // TODO: link
+    super(context, msg);
+    TdlibSender approvedBy = new TdlibSender(tdlib(), msg.chatId, new TdApi.MessageSenderUser(joinedByRequest.approverUserId));
+    TdlibSender linkAuthor =
+      joinedByRequest.inviteLink != null ?
+        new TdlibSender(tdlib(), msg.chatId, new TdApi.MessageSenderUser(joinedByRequest.inviteLink.creatorUserId)) :
+        null;
+    setTextCreator(() -> {
+      if (joinedByRequest.inviteLink != null) {
+        if (joinedByRequest.inviteLink.isPrimary) {
+          if (msg.isOutgoing) {
+            return getText(
+              msg.isChannelPost ?
+                R.string.LinkJoinChannelPrimaryYouWithApproval :
+                R.string.LinkJoinPrimaryYouWithApproval,
+              new InviteLinkArgument(joinedByRequest.inviteLink),
+              new SenderArgument(approvedBy)
+            );
+          } else {
+            return getText(
+              msg.isChannelPost ?
+                R.string.LinkJoinChannelPrimaryWithApproval :
+                R.string.LinkJoinPrimaryWithApproval,
+              new SenderArgument(sender),
+              new InviteLinkArgument(joinedByRequest.inviteLink),
+              new SenderArgument(approvedBy)
+            );
+          }
+        } else {
+          if (msg.isOutgoing) {
+            return getText(
+              Td.isTemporary(joinedByRequest.inviteLink) ?
+                msg.isChannelPost ?
+                  R.string.LinkJoinChannelTempYouWithApproval :
+                  R.string.LinkJoinTempYouWithApproval :
+                msg.isChannelPost ?
+                  R.string.LinkJoinChannelOtherYouWithApproval :
+                  R.string.LinkJoinOtherYouWithApproval,
+              new SenderArgument(linkAuthor),
+              new InviteLinkArgument(joinedByRequest.inviteLink),
+              new SenderArgument(approvedBy)
+            );
+          } else {
+            return getText(
+              Td.isTemporary(joinedByRequest.inviteLink) ?
+                msg.isChannelPost ?
+                  R.string.LinkJoinChannelTempWithApproval :
+                  R.string.LinkJoinTempWithApproval :
+                msg.isChannelPost ?
+                  R.string.LinkJoinChannelOtherWithApproval :
+                  R.string.LinkJoinOtherWithApproval,
+              new SenderArgument(sender),
+              new SenderArgument(linkAuthor),
+              new InviteLinkArgument(joinedByRequest.inviteLink),
+              new SenderArgument(approvedBy)
+            );
+          }
+        }
+      } else {
+        if (msg.isOutgoing) {
+          return getText(
+            msg.isChannelPost ?
+              R.string.YouAcceptedToChannelBy :
+              R.string.YouAcceptedToGroupBy,
+            new SenderArgument(approvedBy)
+          );
+        } else {
+          return getText(
+            msg.isChannelPost ?
+              R.string.XAcceptedToChannelBy :
+              R.string.XAcceptedToGroupBy,
+            new SenderArgument(sender),
+            new SenderArgument(approvedBy)
+          );
+        }
+      }
+    });
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventInviteLinkRevoked inviteLinkRevoked) {
-    super(context, msg); // TODO: link
+    super(context, msg);
+    TdlibSender linkAuthor = new TdlibSender(tdlib(), msg.chatId, new TdApi.MessageSenderUser(inviteLinkRevoked.inviteLink.creatorUserId));
+    setTextCreator(() -> {
+      if (inviteLinkRevoked.inviteLink.isPrimary) {
+        if (msg.isOutgoing) {
+          return getText(
+            R.string.LinkRevokePrimaryYou,
+            new InviteLinkArgument(inviteLinkRevoked.inviteLink)
+          );
+        } else {
+          return getText(
+            R.string.LinkRevokePrimary,
+            new SenderArgument(sender),
+            new InviteLinkArgument(inviteLinkRevoked.inviteLink)
+          );
+        }
+      } else {
+        if (msg.isOutgoing) {
+          return getText(
+            Td.isTemporary(inviteLinkRevoked.inviteLink) ?
+              R.string.LinkRevokeTempYou :
+              R.string.LinkRevokeOtherYou,
+            new SenderArgument(linkAuthor),
+            new InviteLinkArgument(inviteLinkRevoked.inviteLink)
+          );
+        } else {
+          return getText(
+            Td.isTemporary(inviteLinkRevoked.inviteLink) ?
+              R.string.LinkRevokeTemp :
+              R.string.LinkRevokeOther,
+            new SenderArgument(sender),
+            new SenderArgument(linkAuthor),
+            new InviteLinkArgument(inviteLinkRevoked.inviteLink)
+          );
+        }
+      }
+    });
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventInviteLinkDeleted inviteLinkDeleted) {
-    super(context, msg); // TODO: link
+    super(context, msg);
+    TdlibSender linkAuthor = new TdlibSender(tdlib(), msg.chatId, new TdApi.MessageSenderUser(inviteLinkDeleted.inviteLink.creatorUserId));
+    setTextCreator(() -> {
+      if (inviteLinkDeleted.inviteLink.isPrimary) {
+        if (msg.isOutgoing) {
+          return getText(
+            R.string.LinkDeletePrimaryYou,
+            new InviteLinkArgument(inviteLinkDeleted.inviteLink)
+          );
+        } else {
+          return getText(
+            R.string.LinkDeletePrimary,
+            new SenderArgument(sender),
+            new InviteLinkArgument(inviteLinkDeleted.inviteLink)
+          );
+        }
+      } else {
+        if (msg.isOutgoing) {
+          return getText(
+            Td.isTemporary(inviteLinkDeleted.inviteLink) ?
+              R.string.LinkDeleteTempYou :
+              R.string.LinkDeleteOtherYou,
+            new SenderArgument(linkAuthor),
+            new InviteLinkArgument(inviteLinkDeleted.inviteLink)
+          );
+        } else {
+          return getText(
+            Td.isTemporary(inviteLinkDeleted.inviteLink) ?
+              R.string.LinkDeleteTemp :
+              R.string.LinkDeleteOther,
+            new SenderArgument(sender),
+            new SenderArgument(linkAuthor),
+            new InviteLinkArgument(inviteLinkDeleted.inviteLink)
+          );
+        }
+      }
+    });
   }
 
   // Pre-impl: utilities used by constructors
 
-  protected interface Argument {
-    FormattedText buildArgument ();
-  }
-
-  protected abstract class FormattedTextArgument implements Argument {
-    protected abstract TdApi.FormattedText getFormattedText ();
-
-    @Override
-    public final FormattedText buildArgument () {
-      TdApi.FormattedText formattedText = getFormattedText();
-      return FormattedText.valueOf(controller(), formattedText, openParameters());
-    }
-  }
-
-  protected abstract class TextEntityArgument extends FormattedTextArgument {
-    protected abstract String getText ();
-    protected abstract TdApi.TextEntityType getEntityType ();
-
-    @Override
-    protected final TdApi.FormattedText getFormattedText () {
-      final String text = getText();
-      if (text.length() > 0) {
-        return new TdApi.FormattedText(text, new TdApi.TextEntity[] {
-          new TdApi.TextEntity(0, text.length(), getEntityType())
-        });
-      } else {
-        return new TdApi.FormattedText("", new TdApi.TextEntity[0]);
-      }
-    }
-  }
-
-  protected final class SenderArgument implements Argument {
-    private final TdlibSender sender;
-    private final boolean onlyFirstName;
-
-    public SenderArgument (TdlibSender sender, boolean onlyFirstName) {
-      this.sender = sender;
-      this.onlyFirstName = onlyFirstName;
-    }
-
-    public SenderArgument (TdlibSender sender) {
-      this(sender, false);
-    }
-
-    @Override
-    public FormattedText buildArgument () {
-      if (sender.isUser()) {
-        // Easy path: treat like mentions
-        return new UserArgument(sender.getUserId(), onlyFirstName).buildArgument();
-      }
-      // Harder path: open chat profile on click
-      final String text = onlyFirstName ? sender.getNameShort() : sender.getName();
-      if (text.isEmpty()) {
-        return new FormattedText(text);
-      }
-      TextEntityCustom custom = new TextEntityCustom(controller(), tdlib, text, 0, text.length(), 0, openParameters());
-      custom.setOnClickListener(new ClickableSpan() {
+  @Override
+  @NonNull
+  protected TextColorSet defaultTextColorSet () {
+    if (useBubbles()) {
+      return new TextColorSet() {
         @Override
-        public void onClick (@NonNull View widget) {
-          if (sender.isUser()) {
-            tdlib.ui().openPrivateProfile(controller(), sender.getUserId(), openParameters());
-          } else if (sender.isChat()) {
-            tdlib.ui().openChatProfile(controller(), sender.getChatId(), null, openParameters());
-          }
+        public int defaultTextColor () {
+          return getBubbleDateTextColor();
         }
-      });
-      // TODO: color
-      return new FormattedText(text, new TextEntity[] {custom});
-    }
-  }
 
-  protected final class UserArgument extends TextEntityArgument {
-    private final long userId;
-    private final boolean onlyFirstName;
-
-    public UserArgument (long userId, boolean onlyFirstName) {
-      this.userId = userId;
-      this.onlyFirstName = onlyFirstName;
-    }
-
-    @Override
-    protected String getText () {
-      if (onlyFirstName) {
-        return tdlib.cache().userFirstName(userId);
-      } else {
-        return tdlib.cache().userName(userId);
-      }
-    }
-
-    @Override
-    protected TdApi.TextEntityType getEntityType () {
-      return new TdApi.TextEntityTypeMentionName(userId);
-    }
-  }
-
-  protected class StyleArgument extends TextEntityArgument {
-    private final String text;
-    private final TdApi.TextEntityType entityType;
-
-    public StyleArgument (String text, TdApi.TextEntityType entityType) {
-      this.text = text;
-      this.entityType = entityType;
-    }
-
-    @Override
-    protected String getText () {
-      return text;
-    }
-
-    @Override
-    protected TdApi.TextEntityType getEntityType () {
-      return entityType;
-    }
-  }
-
-  protected final class BoldArgument extends StyleArgument {
-    public BoldArgument (String text) {
-      super(text, new TdApi.TextEntityTypeBold());
-    }
-  }
-
-  protected class MessageArgument implements Argument { // TODO: message
-    private final TdApi.Message message;
-
-    public MessageArgument (TdApi.Message message) {
-      this.message = message;
-    }
-
-    protected TdApi.FormattedText getPreview () {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public final FormattedText buildArgument () {
-      // TODO + onclick + update if album fetched
-      throw new UnsupportedOperationException();
-    }
-  }
-
-  protected final class InvoiceArgument extends MessageArgument { // TODO: invoice
-    private final TdApi.MessageInvoice invoice;
-
-    public InvoiceArgument (TdApi.Message message) {
-      super(message);
-      this.invoice = (TdApi.MessageInvoice) message.content;
-    }
-
-    @Override
-    protected TdApi.FormattedText getPreview () {
-      return new TdApi.FormattedText(
-        invoice.title,
-        null
-      );
-    }
-  }
-
-  protected final class GameArgument extends MessageArgument { // TODO: game
-    private final TdApi.Game game;
-
-    public GameArgument (TdApi.Message message) {
-      super(message);
-      this.game = ((TdApi.MessageGame) message.content).game;
-    }
-
-    @Override
-    protected TdApi.FormattedText getPreview () {
-      return new TdApi.FormattedText(
-        TD.getGameName(game, false),
-        null
-      );
-    }
-  }
-
-  private static FormattedText[] parseFormatArgs (Argument... args) {
-    FormattedText[] formatArgs = new FormattedText[args.length];
-    for (int i = 0; i < args.length; i++) {
-      formatArgs[i] = args[i].buildArgument();
-    }
-    return formatArgs;
-  }
-
-  private FormattedText getText (@StringRes int resId, Argument... args) {
-    if (args == null || args.length == 0) {
-      return new FormattedText(Lang.getString(resId));
-    }
-    FormattedText[] formatArgs = parseFormatArgs(args);
-    CharSequence text = Lang.getString(resId,
-      (target, argStart, argEnd, argIndex, needFakeBold) -> args[argIndex],
-      (Object[]) formatArgs
-    );
-    return formatText(text);
-  }
-
-  private FormattedText getPlural (@StringRes int resId, long num, Argument... args) {
-    FormattedText[] formatArgs = parseFormatArgs(args);
-    CharSequence text = Lang.plural(resId, num,
-      (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex == 0 ?
-        Lang.boldCreator().onCreateSpan(target, argStart, argEnd, argIndex, needFakeBold) :
-        args[argIndex - 1],
-      (Object[]) formatArgs
-    );
-    return formatText(text);
-  }
-
-  private FormattedText getDuration (
-    @StringRes int secondsRes,
-    @StringRes int minutesRes,
-    @StringRes int hoursRes,
-    @StringRes int daysRes,
-    @StringRes int weeksRes,
-    @StringRes int monthsRes,
-    final long duration,
-    final TimeUnit durationUnit,
-    Argument... args) {
-    final long days = durationUnit.toDays(duration);
-    final long months = days / 30;
-    final long weeks = days / 7;
-    if (monthsRes != 0 && months > 0) {
-      return getPlural(monthsRes, months, args);
-    }
-    if (weeksRes != 0 && weeks > 0) {
-      return getPlural(weeksRes, weeks, args);
-    }
-    if (daysRes != 0 && days > 0) {
-      return getPlural(daysRes, days, args);
-    }
-    final long hours = durationUnit.toHours(duration);
-    if (hoursRes != 0 && hours > 0) {
-      return getPlural(hoursRes, hours, args);
-    }
-    final long minutes = durationUnit.toMinutes(duration);
-    if (minutesRes != 0 && minutes > 0) {
-      return getPlural(minutesRes, minutes, args);
-    }
-    final long seconds = durationUnit.toSeconds(duration);
-    if (secondsRes != 0) {
-      return getPlural(secondsRes, seconds, args);
-    }
-    throw new IllegalArgumentException("duration == " + durationUnit.toMillis(duration));
-  }
-
-  private FormattedText formatText (CharSequence text) {
-    final String string = text.toString();
-    if (!(text instanceof Spanned)) {
-      return new FormattedText(string);
-    }
-    List<TextEntity> mixedEntities = null;
-    Spanned spanned = (Spanned) text;
-    Object[] spans = spanned.getSpans(
-      0,
-      spanned.length(),
-      Object.class
-    );
-    for (Object span : spans) {
-      final int spanStart = spanned.getSpanStart(span);
-      final int spanEnd = spanned.getSpanEnd(span);
-      if (spanStart == -1 || spanEnd == -1) {
-        continue;
-      }
-      if (span instanceof FormattedText) {
-        FormattedText formattedText = (FormattedText) span;
-        if (formattedText.entities != null) {
-          for (TextEntity entity : formattedText.entities) {
-            entity.offset(spanStart);
-            if (mixedEntities == null) {
-              mixedEntities = new ArrayList<>();
-            }
-            mixedEntities.add(entity);
-          }
+        @Override
+        public int clickableTextColor (boolean isPressed) {
+          return ColorUtils.fromToArgb(
+            getBubbleDateTextColor(),
+            Theme.getColor(R.id.theme_color_messageAuthor),
+            messagesController().wallpaper().getBackgroundTransparency()
+          );
         }
-      } else if (span instanceof CharacterStyle) {
-        TdApi.TextEntityType[] entityType = TD.toEntityType((CharacterStyle) span);
-        if (entityType != null && entityType.length > 0) {
-          TdApi.TextEntity[] telegramEntities = new TdApi.TextEntity[entityType.length];
-          for (int i = 0; i < entityType.length; i++) {
-            telegramEntities[i] = new TdApi.TextEntity(
-              spanStart,
-              spanEnd,
-              entityType[i]
-            );
-          }
-          TextEntity[] entities = TextEntity.valueOf(tdlib, string, telegramEntities, openParameters());
-          if (entities != null && entities.length > 0) {
-            if (mixedEntities == null) {
-              mixedEntities = new ArrayList<>();
-            }
-            Collections.addAll(mixedEntities, entities);
-          }
+
+        @Override
+        public int backgroundColor (boolean isPressed) {
+          int colorId = backgroundColorId(isPressed);
+          return colorId != 0 ?
+            Theme.getColor(colorId) :
+            0;
         }
-      }
+
+        @Override
+        public int backgroundColorId (boolean isPressed) {
+          float transparency = messagesController().wallpaper().getBackgroundTransparency();
+          return isPressed && transparency == 1f ?
+            R.id.theme_color_messageAuthor :
+            0;
+        }
+      };
+    } else {
+      return new TextColorSet() {
+        @Override
+        public int defaultTextColor () {
+          return getBubbleDateTextColor();
+        }
+
+        @Override
+        public int clickableTextColor (boolean isPressed) {
+          return Theme.getColor(R.id.theme_color_messageAuthor);
+        }
+      };
     }
-    return new FormattedText(
-      string,
-      mixedEntities != null && !mixedEntities.isEmpty() ? mixedEntities.toArray(new TextEntity[0]) : null
-    );
-  }
-
-  // Impl: code below doesn't know anything about the code above
-
-  private interface ServiceMessageCreator {
-    FormattedText createText ();
-  }
-
-  private ServiceMessageCreator textCreator;
-
-  private void setTextCreator (ServiceMessageCreator textCreator) {
-    this.textCreator = textCreator;
-  }
-
-  private interface OnClickListener {
-    void onClick ();
-  }
-
-  private OnClickListener onClickListener;
-
-  public void setOnClickListener (OnClickListener onClickListener) {
-    this.onClickListener = onClickListener;
-  }
-
-  private TdApi.ChatPhoto chatPhoto;
-
-  public void setDisplayChatPhoto (TdApi.ChatPhoto chatPhoto) {
-    this.chatPhoto = chatPhoto;
-  }
-
-  private TdApi.Message otherMessage;
-
-  public void setDisplayMessage (long chatId, long messageId, Filter<TdApi.Message> callback) {
-    tdlib.client().send(new TdApi.GetMessage(chatId, messageId), result -> {
-      if (result.getConstructor() == TdApi.Message.CONSTRUCTOR) {
-        TdApi.Message message = (TdApi.Message) result;
-        runOnUiThreadOptional(() -> {
-          otherMessage = message;
-          if (callback.accept(message)) {
-            rebuildAndUpdateContent();
-          }
-        });
-      }
-    });
   }
 }

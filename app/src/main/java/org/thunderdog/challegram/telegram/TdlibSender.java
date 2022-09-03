@@ -110,8 +110,8 @@ public class TdlibSender {
     return isChat() && inChatId == getChatId() && !tdlib.isChannel(getChatId());
   }
 
-  public boolean isSameSender (TdlibSender sender) {
-    return Td.equalsTo(this.sender, sender.sender);
+  public boolean isSameSender (@Nullable TdlibSender sender) {
+    return sender != null && Td.equalsTo(this.sender, sender.sender);
   }
 
   public boolean isSelf () {
@@ -196,5 +196,16 @@ public class TdlibSender {
 
   public boolean hasChatMark () {
     return isScam() || isFake();
+  }
+
+  // Creators
+
+  public static TdlibSender[] valueOfUserIds (Tdlib tdlib, long inChatId, long[] userIds) {
+    TdlibSender[] senders = new TdlibSender[userIds.length];
+    for (int i = 0; i < userIds.length; i++) {
+      long userId = userIds[i];
+      senders[i] = new TdlibSender(tdlib, inChatId, new TdApi.MessageSenderUser(userId));
+    }
+    return senders;
   }
 }
