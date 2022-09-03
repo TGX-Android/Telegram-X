@@ -15,11 +15,11 @@
 
 package org.thunderdog.challegram.data;
 
+import android.annotation.SuppressLint;
 import android.text.TextUtils;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
@@ -99,8 +99,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventMemberJoined.CONSTRUCTOR:
       case TdApi.ChatEventMemberLeft.CONSTRUCTOR:
       case TdApi.ChatEventTitleChanged.CONSTRUCTOR:
-      case TdApi.ChatEventPhotoChanged.CONSTRUCTOR:
-        // only full
+      // only full
       case TdApi.ChatEventMemberPromoted.CONSTRUCTOR:
       case TdApi.ChatEventMemberRestricted.CONSTRUCTOR:
       case TdApi.ChatEventMemberInvited.CONSTRUCTOR:
@@ -108,6 +107,9 @@ public class ChatEventUtil {
       case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR:
       case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
         return ActionMessageMode.ONLY_FULL;
+      // temporary
+      case TdApi.ChatEventPhotoChanged.CONSTRUCTOR:
+        return Config.USE_NEW_SERVICE_MESSAGES ? ActionMessageMode.ONLY_SERVICE : ActionMessageMode.ONLY_FULL;
     }
     throw new UnsupportedOperationException(action.toString());
   }
@@ -130,6 +132,12 @@ public class ChatEventUtil {
         case TdApi.ChatEventPollStopped.CONSTRUCTOR:
           return new TGMessageService(context, msg, (TdApi.ChatEventPollStopped) action);
         // only service message
+        case TdApi.ChatEventPhotoChanged.CONSTRUCTOR:
+          if (Config.USE_NEW_SERVICE_MESSAGES) {
+            return new TGMessageService(context, msg, (TdApi.ChatEventPhotoChanged) action);
+          } else {
+            throw new IllegalArgumentException(action.toString());
+          }
         case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
           return new TGMessageService(context, msg, (TdApi.ChatEventMessageUnpinned) action);
         case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
@@ -169,7 +177,6 @@ public class ChatEventUtil {
         case TdApi.ChatEventMemberJoined.CONSTRUCTOR:
         case TdApi.ChatEventMemberLeft.CONSTRUCTOR:
         case TdApi.ChatEventTitleChanged.CONSTRUCTOR:
-        case TdApi.ChatEventPhotoChanged.CONSTRUCTOR:
           // only full
         case TdApi.ChatEventMemberPromoted.CONSTRUCTOR:
         case TdApi.ChatEventMemberRestricted.CONSTRUCTOR:

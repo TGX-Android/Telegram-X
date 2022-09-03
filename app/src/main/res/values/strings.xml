@@ -768,6 +768,7 @@
   <string name="game_ActionYouScoredInGame_one">You scored %1$s in %2$s</string>
   <string name="game_ActionYouScoredInGame_other">You scored %1$s in %2$s</string>
   <string name="NotificationActionPinnedNoTextChannel">%1$s pinned a message</string>
+  <string name="YouPinnedMessage">You pinned a message</string>
   <string name="NotificationGame">Invited you to play %1$s</string>
   <string name="NotificationGame_outgoing">You invited to play %1$s</string>
   <string name="NotificationGame_group">Invited you to play %1$s</string>

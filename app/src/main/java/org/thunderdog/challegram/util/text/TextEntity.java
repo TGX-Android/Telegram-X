@@ -44,7 +44,7 @@ public abstract class TextEntity {
   protected final @Nullable Tdlib tdlib;
   protected final @Nullable TdlibUi.UrlOpenParameters openParameters;
   protected final boolean needFakeBold;
-  protected final int start, end;
+  protected int start, end;
 
   private Object tag;
 
@@ -54,6 +54,11 @@ public abstract class TextEntity {
     this.needFakeBold = needFakeBold;
     this.start = start;
     this.end = end;
+  }
+
+  public void offset (int by) {
+    this.start += by;
+    this.end += by;
   }
 
   public Object getTag () {
@@ -195,7 +200,7 @@ public abstract class TextEntity {
     for (ClickableSpan span : spans) {
       int startIndex = ((Spanned) text).getSpanStart(span);
       int endIndex = ((Spanned) text).getSpanEnd(span);
-      entities[i] = new TextEntityCustom(context, tdlib, str, startIndex, endIndex, TextEntityCustom.FLAG_CLICKABLE, openParameters).setOnClickListener(span);
+      entities[i] = new TextEntityCustom(context, tdlib, str, startIndex, endIndex, 0, openParameters).setOnClickListener(span);
       i++;
     }
     return entities;

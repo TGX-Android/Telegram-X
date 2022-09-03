@@ -58,7 +58,7 @@ public class TextEntityCustom extends TextEntity {
 
   private final ViewController<?> context; // TODO move to TextEntity
 
-  private final int flags;
+  private int flags;
 
   private int linkOffset = -1;
   private int[] linkLength;
@@ -107,6 +107,7 @@ public class TextEntityCustom extends TextEntity {
 
   public TextEntityCustom setOnClickListener (ClickableSpan span) {
     this.onClickListener = span;
+    this.flags |= FLAG_CLICKABLE;
     return this;
   }
 

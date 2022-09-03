@@ -52,7 +52,6 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.ui.InstantViewController;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
-import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.widget.FileProgressComponent;
 
 import java.util.ArrayList;
@@ -1124,7 +1123,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     @Override
     public void onClickAt (View view, float x, float y) {
       if (webPage.sticker != null && webPage.sticker.setId != 0) {
-        parent.tdlib().ui().showStickerSet(parent.controller(), webPage.sticker.setId);
+        parent.tdlib().ui().showStickerSet(parent.controller(), webPage.sticker.setId, null);
       }
     }
   });

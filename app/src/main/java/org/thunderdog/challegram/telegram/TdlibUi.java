@@ -1680,9 +1680,9 @@ public class TdlibUi extends Handler {
     tdlib.client().send(new TdApi.SearchStickerSet(name), newStickerSetHandler(context, openParameters));
   }
 
-  public void showStickerSet (TdlibDelegate context, long setId) {
+  public void showStickerSet (TdlibDelegate context, long setId, @Nullable UrlOpenParameters openParameters) {
     // TODO progress
-    tdlib.client().send(new TdApi.GetStickerSet(setId), newStickerSetHandler(context, null));
+    tdlib.client().send(new TdApi.GetStickerSet(setId), newStickerSetHandler(context, openParameters));
   }
 
   // Confirm phone
@@ -6256,6 +6256,8 @@ public class TdlibUi extends Handler {
     return Lang.getStringSecure(R.string.format_commit, Lang.codeCreator(), Td.tdlibVersion(), Td.tdlibCommitHash());
   }
 
+  // Telegram Premium
+
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({
     PremiumFeature.STICKER,
@@ -6296,5 +6298,15 @@ public class TdlibUi extends Handler {
       )
       .hideDelayed();
     return true;
+  }
+
+  // Video Chats & Live Streams
+
+  public void openVoiceChatInvitation (ViewController<?> context, TdApi.InternalLinkTypeVideoChat invitation) {
+    // TODO some confirmation screen & join voice chat if agreed
+  }
+
+  public void openVoiceChat (ViewController<?> context, int groupCallId, @Nullable UrlOpenParameters openParameters) {
+    // TODO open voice chat layer
   }
 }

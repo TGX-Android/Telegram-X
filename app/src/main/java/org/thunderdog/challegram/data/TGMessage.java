@@ -7420,6 +7420,19 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return messageAvailableReactions;
   }
 
+  // Utils
+
+  public void runOnUiThread (Runnable act) {
+    tdlib.ui().post(act);
+  }
+
+  public void runOnUiThreadOptional (Runnable act) {
+    runOnUiThread(() -> {
+      if (!isDestroyed()) {
+        act.run();
+      }
+    });
+  }
 
   // quick action
 

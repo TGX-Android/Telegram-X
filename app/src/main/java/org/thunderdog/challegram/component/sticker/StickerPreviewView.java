@@ -466,7 +466,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
           if (controllerView != null) {
             ViewController<?> context = findRoot();
             if (context != null) {
-              tdlib.ui().showStickerSet(context, sticker.getStickerSetId());
+              tdlib.ui().showStickerSet(context, sticker.getStickerSetId(), null);
               closePreviewIfNeeded();
             }
           }

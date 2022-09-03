@@ -586,7 +586,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
   }
 
   public void openStickerSet () {
-    tdlib.ui().showStickerSet(controller(), getBaseSticker().setId);
+    tdlib.ui().showStickerSet(controller(), getBaseSticker().setId, null);
   }
 
   @Override

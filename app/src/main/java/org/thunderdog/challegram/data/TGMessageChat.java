@@ -478,7 +478,7 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
   @Override
   public boolean onMessageClick (MessageView v, MessagesController c) {
     if (type == TYPE_EVENT_STICKER_PACK_CHANGED && longValue != 0) {
-      tdlib.ui().showStickerSet(controller(), longValue);
+      tdlib.ui().showStickerSet(controller(), longValue, null);
       return true;
     }
     return false;

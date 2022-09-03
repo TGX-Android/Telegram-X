@@ -3630,7 +3630,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void openVoiceChatInvitation (TdApi.InternalLinkTypeVideoChat invitation) {
-    // TODO some confirmation screen & join voice chat if agreed
+    tdlib.ui().openVoiceChatInvitation(this, invitation);
   }
 
   @Override
@@ -5302,7 +5302,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           TdApi.MessageContent content = selectedMessage.getMessage().content;
           if (content.getConstructor() == TdApi.MessageSticker.CONSTRUCTOR) {
             TdApi.MessageSticker sticker = (TdApi.MessageSticker) content;
-            tdlib.ui().showStickerSet(this, sticker.sticker.setId);
+            tdlib.ui().showStickerSet(this, sticker.sticker.setId, null);
           }
         }
         return true;

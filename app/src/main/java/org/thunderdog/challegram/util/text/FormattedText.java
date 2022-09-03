@@ -12,6 +12,7 @@
  */
 package org.thunderdog.challegram.util.text;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -21,12 +22,25 @@ import org.thunderdog.challegram.telegram.TdlibUi;
 import java.util.ArrayList;
 
 public class FormattedText {
+  @NonNull
   public final String text;
+
+  @Nullable
   public final TextEntity[] entities;
 
-  public FormattedText (String text, TextEntity[] entities) {
+  public FormattedText (@NonNull String text, @Nullable TextEntity[] entities) {
     this.text = text;
-    this.entities = entities;
+    this.entities = entities != null && entities.length > 0 ? entities : null;
+  }
+
+  public FormattedText (String text) {
+    this(text, null);
+  }
+
+  @NonNull
+  @Override
+  public String toString () {
+    return text;
   }
 
   public int getIconCount () {
@@ -45,19 +59,13 @@ public class FormattedText {
   public static FormattedText valueOf (ViewController<?> context, @Nullable TdApi.FormattedText formattedText, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     if (formattedText == null)
       return null;
-    return new FormattedText(formattedText.text, TextEntity.valueOf(context.tdlib(), formattedText, openParameters));
+    return new FormattedText(formattedText.text != null ? formattedText.text : "", TextEntity.valueOf(context.tdlib(), formattedText, openParameters));
   }
 
   public static FormattedText valueOf (ViewController<?> context, @Nullable CharSequence charSequence, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     if (charSequence == null)
       return null;
     return new FormattedText(charSequence.toString(), TextEntity.valueOf(context, context.tdlib(), charSequence, openParameters));
-  }
-
-  public static FormattedText valueOf (@Nullable String text) {
-    if (text == null)
-      return null;
-    return new FormattedText(text, new TextEntity[0]);
   }
 
   public static FormattedText parseRichText (ViewController<?> context, @Nullable TdApi.RichText richText, @Nullable TdlibUi.UrlOpenParameters openParameters) {
