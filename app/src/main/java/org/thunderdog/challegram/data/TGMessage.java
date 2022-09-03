@@ -8156,13 +8156,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   protected class MessageArgument implements FormattedArgument { // TODO: message
     private final TdApi.Message message;
+    private final TdApi.FormattedText preview;
 
-    public MessageArgument (TdApi.Message message) {
+    public MessageArgument (TdApi.Message message, TdApi.FormattedText preview) {
       this.message = message;
-    }
-
-    protected TdApi.FormattedText getPreview () {
-      throw new UnsupportedOperationException();
+      this.preview = preview;
     }
 
     @Override
@@ -8172,37 +8170,21 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
-  protected final class InvoiceArgument extends MessageArgument { // TODO: invoice
-    private final TdApi.MessageInvoice invoice;
-
+  protected final class InvoiceArgument extends MessageArgument {
     public InvoiceArgument (TdApi.Message message) {
-      super(message);
-      this.invoice = (TdApi.MessageInvoice) message.content;
-    }
-
-    @Override
-    protected TdApi.FormattedText getPreview () {
-      return new TdApi.FormattedText(
-        invoice.title,
+      super(message, new TdApi.FormattedText(
+        ((TdApi.MessageInvoice) message.content).title,
         null
-      );
+      ));
     }
   }
 
-  protected final class GameArgument extends MessageArgument { // TODO: game
-    private final TdApi.Game game;
-
+  protected final class GameArgument extends MessageArgument {
     public GameArgument (TdApi.Message message) {
-      super(message);
-      this.game = ((TdApi.MessageGame) message.content).game;
-    }
-
-    @Override
-    protected TdApi.FormattedText getPreview () {
-      return new TdApi.FormattedText(
-        TD.getGameName(game, false),
+      super(message, new TdApi.FormattedText(
+        TD.getGameName(((TdApi.MessageGame) message.content).game, false),
         null
-      );
+      ));
     }
   }
 
@@ -8236,7 +8218,19 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       (target, argStart, argEnd, argIndex, needFakeBold) -> args[argIndex],
       (Object[]) formatArgs
     );
-    return formatText(text);
+    return toFormattedText(text);
+  }
+
+  protected final FormattedText formatText (@NonNull String format, FormattedArgument... args) {
+    if (args == null || args.length == 0) {
+      return new FormattedText(format);
+    }
+    FormattedText[] formatArgs = parseFormatArgs(args);
+    CharSequence text = Lang.formatString(format,
+      (target, argStart, argEnd, argIndex, needFakeBold) -> args[argIndex],
+      (Object[]) formatArgs
+    );
+    return toFormattedText(text);
   }
 
   protected final FormattedText getPlural (@StringRes int resId, long num, FormattedArgument... args) {
@@ -8247,7 +8241,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         args[argIndex - 1],
       (Object[]) formatArgs
     );
-    return formatText(text);
+    return toFormattedText(text);
   }
 
   protected final FormattedText getDuration (
@@ -8287,7 +8281,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     throw new IllegalArgumentException("duration == " + durationUnit.toMillis(duration));
   }
 
-  private FormattedText formatText (CharSequence text) {
+  private FormattedText toFormattedText (CharSequence text) {
     final String string = text.toString();
     if (!(text instanceof Spanned)) {
       return new FormattedText(string);

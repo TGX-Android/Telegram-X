@@ -16,6 +16,7 @@
 package org.thunderdog.challegram.data;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.StringRes;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
@@ -113,12 +114,12 @@ public final class TGMessageService extends TGMessageServiceImpl {
     });
   }
 
+  private static final int MAX_PINNED_MESSAGE_PREVIEW_LENGTH = 20;
+
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessagePinMessage pinMessage) {
     super(context, msg);
     setTextCreator(() -> {
-      if (msg.isChannelPost) {
-        return getText(R.string.PinnedMessageChanged);
-      } else if (msg.isOutgoing) {
+      if (msg.isOutgoing) {
         return getText(R.string.YouPinnedMessage);
       } else {
         return getText(
@@ -128,8 +129,140 @@ public final class TGMessageService extends TGMessageServiceImpl {
       }
     });
     setDisplayMessage(msg.chatId, pinMessage.messageId, message -> {
-      // TODO: pin
-      return false;
+      setTextCreator(() -> {
+        TdApi.FormattedText formattedText = Td.textOrCaption(message.content);
+        if (!Td.isEmpty(formattedText)) {
+          return getText(
+            R.string.ActionPinnedText,
+            new SenderArgument(sender),
+            new MessageArgument(message, Td.ellipsize(formattedText, MAX_PINNED_MESSAGE_PREVIEW_LENGTH))
+          );
+        }
+        @StringRes int staticResId;
+        switch (message.content.getConstructor()) {
+          case TdApi.MessageGame.CONSTRUCTOR:
+            return getText(
+              R.string.ActionPinnedText,
+              new SenderArgument(sender),
+              new GameArgument(message)
+            );
+          case TdApi.MessageInvoice.CONSTRUCTOR:
+            return getText(
+              R.string.ActionPinnedText,
+              new SenderArgument(sender),
+              new InvoiceArgument(message)
+            );
+          case TdApi.MessageCustomServiceAction.CONSTRUCTOR:
+            return getText(
+              R.string.ActionPinnedText,
+              new SenderArgument(sender),
+              new MessageArgument(message, Td.ellipsize(
+                new TdApi.FormattedText(((TdApi.MessageCustomServiceAction) message.content).text, null),
+                MAX_PINNED_MESSAGE_PREVIEW_LENGTH
+              ))
+            );
+          case TdApi.MessageAnimation.CONSTRUCTOR:
+            staticResId = R.string.ActionPinnedGif;
+            break;
+          case TdApi.MessageAudio.CONSTRUCTOR:
+            staticResId = R.string.ActionPinnedMusic;
+            break;
+          case TdApi.MessageDocument.CONSTRUCTOR:
+            staticResId = R.string.ActionPinnedFile;
+            break;
+          case TdApi.MessagePhoto.CONSTRUCTOR:
+          case TdApi.MessageExpiredPhoto.CONSTRUCTOR:
+            staticResId = R.string.ActionPinnedPhoto;
+            break;
+          case TdApi.MessageVideo.CONSTRUCTOR:
+          case TdApi.MessageExpiredVideo.CONSTRUCTOR:
+            staticResId = R.string.ActionPinnedVideo;
+            break;
+          case TdApi.MessageVoiceNote.CONSTRUCTOR:
+            staticResId = R.string.ActionPinnedVoice;
+            break;
+          case TdApi.MessageSticker.CONSTRUCTOR:
+            staticResId = R.string.ActionPinnedSticker;
+            break;
+          case TdApi.MessagePoll.CONSTRUCTOR:
+            staticResId = ((TdApi.MessagePoll) message.content).poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR ?
+              R.string.ActionPinnedQuiz :
+              R.string.ActionPinnedPoll;
+            break;
+          case TdApi.MessageLocation.CONSTRUCTOR:
+            staticResId = ((TdApi.MessageLocation) message.content).livePeriod > 0 ?
+              R.string.ActionPinnedGeoLive :
+              R.string.ActionPinnedGeo;
+            break;
+          case TdApi.MessageVenue.CONSTRUCTOR:
+            staticResId = R.string.ActionPinnedGeo;
+            break;
+          case TdApi.MessageVideoNote.CONSTRUCTOR:
+            staticResId = R.string.ActionPinnedRound;
+            break;
+          case TdApi.MessageContact.CONSTRUCTOR:
+            staticResId = R.string.ActionPinnedContact;
+            break;
+          case TdApi.MessageDice.CONSTRUCTOR: // TODO?
+          // unreachable
+          case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
+          case TdApi.MessageText.CONSTRUCTOR:
+          // cannot be pinned
+          case TdApi.MessageBasicGroupChatCreate.CONSTRUCTOR:
+          case TdApi.MessageCall.CONSTRUCTOR:
+          case TdApi.MessageChatAddMembers.CONSTRUCTOR:
+          case TdApi.MessageChatChangePhoto.CONSTRUCTOR:
+          case TdApi.MessageChatChangeTitle.CONSTRUCTOR:
+          case TdApi.MessageChatDeleteMember.CONSTRUCTOR:
+          case TdApi.MessageChatDeletePhoto.CONSTRUCTOR:
+          case TdApi.MessageChatJoinByLink.CONSTRUCTOR:
+          case TdApi.MessageChatJoinByRequest.CONSTRUCTOR:
+          case TdApi.MessageChatSetTheme.CONSTRUCTOR:
+          case TdApi.MessageChatSetTtl.CONSTRUCTOR:
+          case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR:
+          case TdApi.MessageChatUpgradeTo.CONSTRUCTOR:
+          case TdApi.MessageContactRegistered.CONSTRUCTOR:
+          case TdApi.MessageGameScore.CONSTRUCTOR:
+          case TdApi.MessageGiftedPremium.CONSTRUCTOR:
+          case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR:
+          case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
+          case TdApi.MessagePassportDataSent.CONSTRUCTOR:
+          case TdApi.MessagePaymentSuccessful.CONSTRUCTOR:
+          case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
+          case TdApi.MessagePinMessage.CONSTRUCTOR:
+          case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR:
+          case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
+          case TdApi.MessageSupergroupChatCreate.CONSTRUCTOR:
+          case TdApi.MessageUnsupported.CONSTRUCTOR:
+          case TdApi.MessageVideoChatEnded.CONSTRUCTOR:
+          case TdApi.MessageVideoChatScheduled.CONSTRUCTOR:
+          case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
+          case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
+          case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
+          case TdApi.MessageWebsiteConnected.CONSTRUCTOR:
+            staticResId = R.string.ActionPinnedNoText;
+            break;
+          default:
+            throw new UnsupportedOperationException(message.content.toString());
+        }
+        String format = Lang.getString(staticResId);
+        int startIndex = format.indexOf("**");
+        int endIndex = startIndex != -1 ? format.indexOf("**", startIndex + 2) : -1;
+        if (startIndex != -1 && endIndex != -1) {
+          String arg = format.substring(startIndex + 2, endIndex);
+          format = format.substring(0, startIndex) + "%2$s" + format.substring(endIndex + 2);
+          return formatText(
+            format,
+            new SenderArgument(sender),
+            new MessageArgument(message, new TdApi.FormattedText(arg, null))
+          );
+        } else {
+          // This might happen if language pack doesn't have **text**.
+          // Displaying string as is without link to the message
+          return new FormattedText(format);
+        }
+      });
+      return true;
     });
   }
 
