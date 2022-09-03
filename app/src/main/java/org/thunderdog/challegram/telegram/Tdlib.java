@@ -79,6 +79,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -4784,7 +4785,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     client.send(new TdApi.SetOption("notification_group_size_max", new TdApi.OptionValueInteger(notificationGroupSizeMax)), okHandler);
   }
 
-  private static final String DEVICE_TOKEN_KEY = "device_token";
   private String lastReportedConnectionParams;
 
   public void checkConnectionParams () {
@@ -4797,7 +4797,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private void checkConnectionParams (Client client, boolean force) {
-    if (BuildConfig.EXPERIMENTAL || isServiceInstance()) {
+    if (isServiceInstance()) {
       return;
     }
     int state = context().getTokenState();
@@ -4805,32 +4805,45 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (!StringUtils.isEmpty(deviceToken) && (state == TdlibManager.TokenState.NONE || state == TdlibManager.TokenState.INITIALIZING)) {
       state = TdlibManager.TokenState.OK;
     }
-    if (state == TdlibManager.TokenState.NONE)
-      return;
     String error = context().getTokenError();
-    Map<String, Object> members = new LinkedHashMap<>();
+    Map<String, Object> params = new LinkedHashMap<>();
     switch (state) {
       case TdlibManager.TokenState.ERROR: {
-        members.put(DEVICE_TOKEN_KEY, "FIREBASE_ERROR");
+        params.put("device_token", "FIREBASE_ERROR");
         if (!StringUtils.isEmpty(error)) {
-          members.put("firebase_error", error);
+          params.put("firebase_error", error);
         }
         break;
       }
       case TdlibManager.TokenState.INITIALIZING: {
-        members.put(DEVICE_TOKEN_KEY, "FIREBASE_INITIALIZING");
+        params.put("device_token", "FIREBASE_INITIALIZING");
         break;
       }
       case TdlibManager.TokenState.OK: {
-        members.put(DEVICE_TOKEN_KEY, deviceToken);
+        params.put("device_token", deviceToken);
         break;
       }
-      default: {
-        members.put(DEVICE_TOKEN_KEY, "UNKNOWN");
-        break;
-      }
+      case TdlibManager.TokenState.NONE:
+        return;
+      default:
+        throw new IllegalStateException(Integer.toString(state));
     }
-    String connectionParams = JSON.stringify(JSON.toObject(members));
+    long timeZoneOffset = TimeUnit.MILLISECONDS.toSeconds(
+      TimeZone.getDefault().getRawOffset() +
+      TimeZone.getDefault().getDSTSavings()
+    );
+    params.put("package_id", UI.getAppContext().getPackageName());
+    String installerName = U.getInstallerPackageName();
+    if (!StringUtils.isEmpty(installerName)) {
+      params.put("installer", installerName);
+    }
+    String fingerprint = U.getApkFingerprint("SHA1", false);
+    if (!StringUtils.isEmpty(fingerprint)) {
+      params.put("data", fingerprint);
+    }
+    params.put("tz_offset", timeZoneOffset);
+
+    String connectionParams = JSON.stringify(JSON.toObject(params));
     if (connectionParams != null && (force || !StringUtils.equalsOrBothEmpty(lastReportedConnectionParams, connectionParams))) {
       this.lastReportedConnectionParams = connectionParams;
       client.send(new TdApi.SetOption("connection_parameters", new TdApi.OptionValueString(connectionParams)), okHandler);
