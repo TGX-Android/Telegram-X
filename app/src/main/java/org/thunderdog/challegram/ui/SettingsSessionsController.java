@@ -177,8 +177,10 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
 
   @Override
   public void onInactiveSessionTtlChanged (Tdlib tdlib, int ttlDays) {
-    inactiveSessionTtlDays = ttlDays;
-    adapter.updateValuedSettingById(R.id.btn_sessionTtl);
+    runOnUiThreadOptional(() -> {
+      inactiveSessionTtlDays = ttlDays;
+      adapter.updateValuedSettingById(R.id.btn_sessionTtl);
+    });
   }
 
   private static CharSequence getTitle (TdApi.Session session) {

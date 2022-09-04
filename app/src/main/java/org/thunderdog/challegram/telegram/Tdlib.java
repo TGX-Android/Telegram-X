@@ -4288,9 +4288,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     });
   }
 
-  public void setInactiveSessionTtl (int ttlDays, RunnableData<TdApi.Error> after) {
+  public void setInactiveSessionTtl (int ttlDays, @Nullable RunnableData<TdApi.Error> after) {
     client().send(new TdApi.SetInactiveSessionTtl(ttlDays), result -> {
-      after.runWithData(result.getConstructor() == TdApi.Error.CONSTRUCTOR ? (TdApi.Error) result : null);
+      if (after != null) {
+        after.runWithData(result.getConstructor() == TdApi.Error.CONSTRUCTOR ? (TdApi.Error) result : null);
+      }
       if (result.getConstructor() == TdApi.Ok.CONSTRUCTOR) {
         this.sessionsInfo = null;
         listeners.notifyInactiveSessionTtlChanged(ttlDays);
