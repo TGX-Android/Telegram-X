@@ -94,6 +94,7 @@ import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.ui.EditChatLinkController;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.ReactionsCounterDrawable;
@@ -2509,8 +2510,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   });
 
+  protected final void highlightOtherMessage (MessageId messageId) {
+    manager.controller().highlightMessage(messageId, toMessageId());
+  }
+
   protected final void highlightOtherMessage (long otherMessageId) {
-    manager.controller().highlightMessage(new MessageId(msg.chatId, otherMessageId), toMessageId());
+    highlightOtherMessage(new MessageId(msg.chatId, otherMessageId));
   }
 
   private float mInitialTouchX;
@@ -8154,7 +8159,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
-  protected class MessageArgument implements FormattedArgument { // TODO: message
+  protected class MessageArgument implements FormattedArgument {
     private final TdApi.Message message;
     private final TdApi.FormattedText preview;
 
@@ -8165,8 +8170,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     @Override
     public final FormattedText buildArgument () {
-      // TODO + onclick + update if album fetched
-      throw new UnsupportedOperationException();
+      FormattedText formattedText = FormattedText.valueOf(controller(), preview, openParameters());
+      return formattedText.allClickable(controller(), new ClickableSpan() {
+        @Override
+        public void onClick (@NonNull View widget) {
+          highlightOtherMessage(new MessageId(message.chatId, message.id));
+        }
+      }, true, openParameters());
     }
   }
 
@@ -8188,16 +8198,38 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
-  protected final class InviteLinkArgument implements FormattedArgument { // TODO: link
+  protected final class InviteLinkArgument implements FormattedArgument {
     private final TdApi.ChatInviteLink inviteLink;
+    private final String text;
+
+    public InviteLinkArgument (TdApi.ChatInviteLink inviteLink, String text) {
+      this.inviteLink = inviteLink;
+      this.text = text;
+    }
 
     public InviteLinkArgument (TdApi.ChatInviteLink inviteLink) {
-      this.inviteLink = inviteLink;
+      this(inviteLink, inviteLink.inviteLink);
     }
 
     @Override
     public FormattedText buildArgument () {
-      throw new UnsupportedOperationException();
+      TextEntityCustom custom = new TextEntityCustom(
+        controller(),
+        tdlib,
+        text,
+        0, text.length(),
+        0,
+        openParameters()
+      );
+      custom.setOnClickListener(new ClickableSpan() {
+        @Override
+        public void onClick (@NonNull View widget) {
+          EditChatLinkController c = new EditChatLinkController(context(), tdlib);
+          c.setArguments(new EditChatLinkController.Args(inviteLink, msg.chatId, null));
+          navigateTo(c);
+        }
+      });
+      return new FormattedText(text, new TextEntity[] {custom});
     }
   }
 

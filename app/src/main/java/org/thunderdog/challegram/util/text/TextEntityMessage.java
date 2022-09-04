@@ -14,6 +14,7 @@
  */
 package org.thunderdog.challegram.util.text;
 
+import android.text.style.ClickableSpan;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -42,6 +43,7 @@ import me.vkryl.core.collection.IntList;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
+// TODO merge with TextEntityCustom into one type
 public class TextEntityMessage extends TextEntity {
   private static final int FLAG_CLICKABLE = 1;
   private static final int FLAG_ESSENTIAL = 1 << 1;
@@ -54,8 +56,9 @@ public class TextEntityMessage extends TextEntity {
   private static final int FLAG_SPOILER = 1 << 8;
   private static final int FLAG_CUSTOM_EMOJI = 1 << 9;
 
-  private final int flags;
   private final TdApi.TextEntity clickableEntity, spoilerEntity, emojiEntity;
+  private int flags;
+  private ClickableSpan onClickListener;
 
   private static boolean hasEntityType (List<TdApi.TextEntity> entities, @TdApi.TextEntityType.Constructors int typeConstructor) {
     if (entities != null) {
@@ -129,6 +132,20 @@ public class TextEntityMessage extends TextEntity {
       flags |= FLAG_CUSTOM_EMOJI;
     }
     this.flags = flags;
+  }
+
+  @Override
+  public TextEntity setOnClickListener (ClickableSpan onClickListener) {
+    this.onClickListener = onClickListener;
+    this.flags |= FLAG_CLICKABLE;
+    return this;
+  }
+
+  @Override
+  public TextEntity makeBold (boolean needFakeBold) {
+    this.flags |= FLAG_BOLD;
+    this.needFakeBold = needFakeBold;
+    return this;
   }
 
   private TextColorSetOverride monospaceColorSet;
@@ -256,7 +273,7 @@ public class TextEntityMessage extends TextEntity {
       case COMPARE_MODE_NORMAL:
         return this.flags == b.flags;
       case COMPARE_MODE_CLICK_HIGHLIGHT:
-        return Td.equalsTo(this.clickableEntity, b.clickableEntity);
+        return Td.equalsTo(this.clickableEntity, b.clickableEntity) && this.onClickListener == b.onClickListener;
       case COMPARE_MODE_SPOILER: {
         if (Td.equalsTo(this.spoilerEntity, b.spoilerEntity)) {
           return true;
@@ -339,6 +356,10 @@ public class TextEntityMessage extends TextEntity {
     final ViewController<?> context = findRoot(view);
     if (context == null) {
       Log.v("performClick ignored, because ancestor not found");
+      return;
+    }
+    if (onClickListener != null) {
+      onClickListener.onClick(view);
       return;
     }
     switch (clickableEntity.type.getConstructor()) {

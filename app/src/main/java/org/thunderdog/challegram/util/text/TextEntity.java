@@ -43,7 +43,7 @@ public abstract class TextEntity {
 
   protected final @Nullable Tdlib tdlib;
   protected final @Nullable TdlibUi.UrlOpenParameters openParameters;
-  protected final boolean needFakeBold;
+  protected boolean needFakeBold;
   protected int start, end;
 
   private Object tag;
@@ -115,6 +115,10 @@ public abstract class TextEntity {
   public abstract boolean isFullWidth ();
   public abstract boolean isCustomEmoji ();
   public abstract long getCustomEmojiId ();
+
+  // TODO: TextEntityCustom & TextEntityMessage to make things simpler
+  public abstract TextEntity setOnClickListener (ClickableSpan onClickListener);
+  public abstract TextEntity makeBold (boolean needFakeBold);
 
   final TextPaint getTextPaint (TextStyleProvider textStyleProvider, boolean forceBold) {
     // different typefaces

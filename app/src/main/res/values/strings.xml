@@ -1162,7 +1162,6 @@
   <string name="ActionPinnedPhoto">%1$s pinned a **photo**</string>
   <string name="ActionPinnedVideo">%1$s pinned a **video**</string>
   <string name="ActionPinnedRound">%1$s pinned a **video message**</string>
-  <string name="ActionPinnedRound">%1$s pinned a **contact**</string>
   <string name="ActionPinnedVoice">%1$s pinned a **voice message**</string>
   <string name="ActionPinnedContact">%1$s pinned a **contact**</string>
   <string name="UnknownTrack">Unknown Track</string>

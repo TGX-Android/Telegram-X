@@ -12,6 +12,8 @@
  */
 package org.thunderdog.challegram.util.text;
 
+import android.text.style.ClickableSpan;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -90,6 +92,45 @@ public class FormattedText {
         entities.toArray(new TextEntity[0]) :
         null
     );
+  }
+
+  public FormattedText allClickable (ViewController<?> context, ClickableSpan onClickListener, boolean forceBold, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    if (onClickListener == null)
+      return this;
+    final int flags = forceBold ? TextEntityCustom.FLAG_BOLD : 0;
+    if (entities == null) {
+      // Easy path: just wrap everything with single TextEntityCustom
+      return new FormattedText(this.text, new TextEntity[] {
+        new TextEntityCustom(context, context.tdlib(), text, 0, text.length(), flags, openParameters)
+          .setOnClickListener(onClickListener)
+      });
+    }
+    // Harder path: make all existing entities clickable & bold (optionally),
+    // and create extra entities between them.
+    List<TextEntity> newEntities = new ArrayList<>();
+    int end = 0;
+    boolean needFakeBold = Text.needFakeBold(text);
+    for (TextEntity entity : entities) {
+      if (end < entity.start) {
+        // start .. entity.start
+        newEntities.add(new TextEntityCustom(context, context.tdlib(), text, end, entity.start, flags, openParameters)
+          .setOnClickListener(onClickListener));
+        end = entity.start;
+      }
+      entity.setOnClickListener(onClickListener);
+      if (forceBold) {
+        entity.makeBold(needFakeBold);
+      }
+      newEntities.add(entity);
+      end = entity.end;
+    }
+    if (end < this.text.length()) {
+      // start .. text.length()
+      newEntities.add(new TextEntityCustom(context, context.tdlib(), text, end, text.length(), flags, openParameters)
+        .setOnClickListener(onClickListener)
+      );
+    }
+    return new FormattedText(this.text, newEntities.toArray(new TextEntity[0]));
   }
 
   public static FormattedText valueOf (ViewController<?> context, @Nullable TdApi.FormattedText formattedText, @Nullable TdlibUi.UrlOpenParameters openParameters) {

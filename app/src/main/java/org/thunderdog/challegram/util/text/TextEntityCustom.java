@@ -37,6 +37,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 
+// TODO merge with TextEntityMessage into one type
 public class TextEntityCustom extends TextEntity {
   public static final int FLAG_BOLD = 1;
   public static final int FLAG_ITALIC = 1 << 1;
@@ -105,9 +106,17 @@ public class TextEntityCustom extends TextEntity {
     return this;
   }
 
-  public TextEntityCustom setOnClickListener (ClickableSpan span) {
+  @Override
+  public TextEntity setOnClickListener (ClickableSpan span) {
     this.onClickListener = span;
     this.flags |= FLAG_CLICKABLE;
+    return this;
+  }
+
+  @Override
+  public TextEntity makeBold (boolean needFakeBold) {
+    this.flags |= FLAG_BOLD;
+    this.needFakeBold = needFakeBold;
     return this;
   }
 
@@ -395,7 +404,7 @@ public class TextEntityCustom extends TextEntity {
     TextEntityCustom b = (TextEntityCustom) bRaw;
     return
       b.isClickable() == isClickable() &&
-      (!isClickable() || (b.linkType == linkType && b.linkLength == linkLength && b.linkOffset == linkOffset && StringUtils.equalsOrBothEmpty(b.link, link))) &&
+      (!isClickable() || (b.linkType == linkType && b.linkLength == linkLength && b.linkOffset == linkOffset && StringUtils.equalsOrBothEmpty(b.link, link) && b.onClickListener == onClickListener)) &&
       (compareMode == COMPARE_MODE_CLICK_HIGHLIGHT || (this.flags == b.flags && this.customColorSet == b.customColorSet));
   }
 
