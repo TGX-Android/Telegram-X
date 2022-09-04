@@ -191,7 +191,12 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     TdApi.MessageAnimatedEmoji emoji = pendingEmoji != null ? pendingEmoji : animatedEmoji;
     if (this.currentEmoji != emoji && !(this.currentEmoji != null && emoji == null)) {
       this.currentEmoji = emoji;
-      setSticker(new TdApi.DiceStickersRegular(emoji.animatedEmoji.sticker), emoji.animatedEmoji.fitzpatrickType, false, true);
+      if (emoji.animatedEmoji.sticker != null) {
+        setSticker(new TdApi.DiceStickersRegular(emoji.animatedEmoji.sticker), emoji.animatedEmoji.fitzpatrickType, false, true);
+      } else {
+        // wait for updateMessageContent
+        setSticker(null, 0, false, true);
+      }
       return true;
     }
 
@@ -359,26 +364,28 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     }
   }
 
-  private void setSticker (TdApi.DiceStickers sticker, int fitzpatrickType, boolean isUpdate, boolean allowNoLoop) {
+  private void setSticker (@Nullable TdApi.DiceStickers sticker, int fitzpatrickType, boolean isUpdate, boolean allowNoLoop) {
     this.sticker = sticker;
     final List<Representation> representation = new ArrayList<>();
-    switch (sticker.getConstructor()) {
-      case TdApi.DiceStickersRegular.CONSTRUCTOR: {
-        TdApi.DiceStickersRegular regular = (TdApi.DiceStickersRegular) sticker;
-        representation.add(new Representation(regular.sticker, fitzpatrickType, allowNoLoop, false));
-        break;
-      }
-      case TdApi.DiceStickersSlotMachine.CONSTRUCTOR: {
-        TdApi.DiceStickersSlotMachine slotMachine = (TdApi.DiceStickersSlotMachine) sticker;
-        representation.add(new Representation(slotMachine.background, fitzpatrickType, allowNoLoop, true));
-        representation.add(new Representation(slotMachine.leftReel, fitzpatrickType, allowNoLoop, false));
-        representation.add(new Representation(slotMachine.centerReel, fitzpatrickType, allowNoLoop, false));
-        representation.add(new Representation(slotMachine.rightReel, fitzpatrickType, allowNoLoop, false));
-        representation.add(new Representation(slotMachine.lever, fitzpatrickType, allowNoLoop, true));
-        break;
-      }
-      default: {
-        throw new UnsupportedOperationException(sticker.toString());
+    if (sticker != null) {
+      switch (sticker.getConstructor()) {
+        case TdApi.DiceStickersRegular.CONSTRUCTOR: {
+          TdApi.DiceStickersRegular regular = (TdApi.DiceStickersRegular) sticker;
+          representation.add(new Representation(regular.sticker, fitzpatrickType, allowNoLoop, false));
+          break;
+        }
+        case TdApi.DiceStickersSlotMachine.CONSTRUCTOR: {
+          TdApi.DiceStickersSlotMachine slotMachine = (TdApi.DiceStickersSlotMachine) sticker;
+          representation.add(new Representation(slotMachine.background, fitzpatrickType, allowNoLoop, true));
+          representation.add(new Representation(slotMachine.leftReel, fitzpatrickType, allowNoLoop, false));
+          representation.add(new Representation(slotMachine.centerReel, fitzpatrickType, allowNoLoop, false));
+          representation.add(new Representation(slotMachine.rightReel, fitzpatrickType, allowNoLoop, false));
+          representation.add(new Representation(slotMachine.lever, fitzpatrickType, allowNoLoop, true));
+          break;
+        }
+        default: {
+          throw new UnsupportedOperationException(sticker.toString());
+        }
       }
     }
     this.representation = representation;
