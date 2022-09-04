@@ -2139,12 +2139,13 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return hasMedia() ? media.size() : 0;
   }
 
-  public boolean invalidateMediaContent (ComplexReceiver textMediaReceiver, TextMedia specificMedia) {
+  public boolean invalidateMediaContent (ComplexReceiver textMediaReceiver, @Nullable TextMedia specificMedia) {
     if (BitwiseUtils.getFlag(textFlags, FLAG_DESTROYED)) {
       return false;
     }
     if (specificMedia == null) {
-      throw new IllegalArgumentException();
+      // Force parent to call requestMedia() instead
+      return false;
     }
     final int displayMediaKey = specificMedia.getDisplayMediaKey();
     if (displayMediaKey == -1 || media.get(specificMedia.keyId) != specificMedia) {

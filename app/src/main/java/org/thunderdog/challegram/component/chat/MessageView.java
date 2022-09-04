@@ -203,7 +203,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   private void invalidateTextMediaReceiver (@NonNull TGMessage msg, @NonNull Text text, @Nullable TextMedia textMedia, @NonNull ComplexReceiver receiver) {
     if (this.msg == msg) {
-      if (textMedia == null || !text.invalidateMediaContent(receiver, textMedia)) {
+      if (!text.invalidateMediaContent(receiver, textMedia)) {
         msg.requestTextMedia(receiver);
       }
     }
