@@ -255,6 +255,9 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
                   case TdApi.UserPrivacySettingAllowPeerToPeerCalls.CONSTRUCTOR:
                     view.setData(R.string.PrivacyP2PExceptionContacts);
                     break;
+                  case TdApi.UserPrivacySettingAllowPrivateVoiceAndVideoNoteMessages.CONSTRUCTOR:
+                    view.setData(R.string.PrivacyVoiceVideoExceptionContacts);
+                    break;
                   case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR:
                     throw new IllegalStateException();
                   default:
