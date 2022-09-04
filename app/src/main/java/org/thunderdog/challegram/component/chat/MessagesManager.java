@@ -1402,8 +1402,12 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       v.addOnGlobalLayoutListener(listener);
     }
 
-    public static void remove (ViewTreeObserver v, OnGlobalLayoutListener listener) {
-      v.removeOnGlobalLayoutListener(listener);
+    public static boolean remove (ViewTreeObserver v, OnGlobalLayoutListener listener) {
+      if (v.isAlive()) {
+        v.removeOnGlobalLayoutListener(listener);
+        return true;
+      }
+      return false;
     }
   }
 
