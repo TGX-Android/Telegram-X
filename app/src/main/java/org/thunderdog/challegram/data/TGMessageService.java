@@ -1210,7 +1210,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
             msg.isChannelPost ?
               R.string.LinkJoinChannelPrimaryYou :
               R.string.LinkJoinPrimaryYou,
-            new InviteLinkArgument(joinedByInviteLink.inviteLink)
+            new InviteLinkArgument(joinedByInviteLink.inviteLink, true)
           );
         } else {
           return getText(
@@ -1218,7 +1218,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
               R.string.LinkJoinChannelPrimary :
               R.string.LinkJoinPrimary,
             new SenderArgument(sender),
-            new InviteLinkArgument(joinedByInviteLink.inviteLink)
+            new InviteLinkArgument(joinedByInviteLink.inviteLink, true)
           );
         }
       } else {
@@ -1232,7 +1232,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
                 R.string.LinkJoinChannelOtherYou :
                 R.string.LinkJoinOtherYou,
             new SenderArgument(linkAuthor),
-            new InviteLinkArgument(joinedByInviteLink.inviteLink)
+            new InviteLinkArgument(joinedByInviteLink.inviteLink, true)
           );
         } else {
           return getText(
@@ -1245,7 +1245,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
                 R.string.LinkJoinOther,
             new SenderArgument(sender),
             new SenderArgument(linkAuthor),
-            new InviteLinkArgument(joinedByInviteLink.inviteLink)
+            new InviteLinkArgument(joinedByInviteLink.inviteLink, true)
           );
         }
       }
@@ -1267,7 +1267,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
               msg.isChannelPost ?
                 R.string.LinkJoinChannelPrimaryYouWithApproval :
                 R.string.LinkJoinPrimaryYouWithApproval,
-              new InviteLinkArgument(joinedByRequest.inviteLink),
+              new InviteLinkArgument(joinedByRequest.inviteLink, true),
               new SenderArgument(approvedBy)
             );
           } else {
@@ -1276,7 +1276,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
                 R.string.LinkJoinChannelPrimaryWithApproval :
                 R.string.LinkJoinPrimaryWithApproval,
               new SenderArgument(sender),
-              new InviteLinkArgument(joinedByRequest.inviteLink),
+              new InviteLinkArgument(joinedByRequest.inviteLink, true),
               new SenderArgument(approvedBy)
             );
           }
@@ -1291,7 +1291,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
                   R.string.LinkJoinChannelOtherYouWithApproval :
                   R.string.LinkJoinOtherYouWithApproval,
               new SenderArgument(linkAuthor),
-              new InviteLinkArgument(joinedByRequest.inviteLink),
+              new InviteLinkArgument(joinedByRequest.inviteLink, true),
               new SenderArgument(approvedBy)
             );
           } else {
@@ -1305,7 +1305,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
                   R.string.LinkJoinOtherWithApproval,
               new SenderArgument(sender),
               new SenderArgument(linkAuthor),
-              new InviteLinkArgument(joinedByRequest.inviteLink),
+              new InviteLinkArgument(joinedByRequest.inviteLink, true),
               new SenderArgument(approvedBy)
             );
           }
@@ -1339,13 +1339,13 @@ public final class TGMessageService extends TGMessageServiceImpl {
         if (msg.isOutgoing) {
           return getText(
             R.string.LinkRevokePrimaryYou,
-            new InviteLinkArgument(inviteLinkRevoked.inviteLink)
+            new InviteLinkArgument(inviteLinkRevoked.inviteLink, true)
           );
         } else {
           return getText(
             R.string.LinkRevokePrimary,
             new SenderArgument(sender),
-            new InviteLinkArgument(inviteLinkRevoked.inviteLink)
+            new InviteLinkArgument(inviteLinkRevoked.inviteLink, true)
           );
         }
       } else {
@@ -1355,7 +1355,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
               R.string.LinkRevokeTempYou :
               R.string.LinkRevokeOtherYou,
             new SenderArgument(linkAuthor),
-            new InviteLinkArgument(inviteLinkRevoked.inviteLink)
+            new InviteLinkArgument(inviteLinkRevoked.inviteLink, true)
           );
         } else {
           return getText(
@@ -1364,7 +1364,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
               R.string.LinkRevokeOther,
             new SenderArgument(sender),
             new SenderArgument(linkAuthor),
-            new InviteLinkArgument(inviteLinkRevoked.inviteLink)
+            new InviteLinkArgument(inviteLinkRevoked.inviteLink, true)
           );
         }
       }
@@ -1379,13 +1379,13 @@ public final class TGMessageService extends TGMessageServiceImpl {
         if (msg.isOutgoing) {
           return getText(
             R.string.LinkDeletePrimaryYou,
-            new InviteLinkArgument(inviteLinkDeleted.inviteLink)
+            new InviteLinkArgument(inviteLinkDeleted.inviteLink, false)
           );
         } else {
           return getText(
             R.string.LinkDeletePrimary,
             new SenderArgument(sender),
-            new InviteLinkArgument(inviteLinkDeleted.inviteLink)
+            new InviteLinkArgument(inviteLinkDeleted.inviteLink, false)
           );
         }
       } else {
@@ -1395,7 +1395,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
               R.string.LinkDeleteTempYou :
               R.string.LinkDeleteOtherYou,
             new SenderArgument(linkAuthor),
-            new InviteLinkArgument(inviteLinkDeleted.inviteLink)
+            new InviteLinkArgument(inviteLinkDeleted.inviteLink, false)
           );
         } else {
           return getText(
@@ -1404,7 +1404,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
               R.string.LinkDeleteOther,
             new SenderArgument(sender),
             new SenderArgument(linkAuthor),
-            new InviteLinkArgument(inviteLinkDeleted.inviteLink)
+            new InviteLinkArgument(inviteLinkDeleted.inviteLink, false)
           );
         }
       }

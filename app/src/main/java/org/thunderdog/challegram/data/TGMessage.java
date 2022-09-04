@@ -8201,14 +8201,16 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   protected final class InviteLinkArgument implements FormattedArgument {
     private final TdApi.ChatInviteLink inviteLink;
     private final String text;
+    private final boolean requiresUpdateBeforeOpening;
 
-    public InviteLinkArgument (TdApi.ChatInviteLink inviteLink, String text) {
+    public InviteLinkArgument (TdApi.ChatInviteLink inviteLink, String text, boolean requiresUpdateBeforeOpening) {
       this.inviteLink = inviteLink;
       this.text = text;
+      this.requiresUpdateBeforeOpening = requiresUpdateBeforeOpening;
     }
 
-    public InviteLinkArgument (TdApi.ChatInviteLink inviteLink) {
-      this(inviteLink, inviteLink.inviteLink);
+    public InviteLinkArgument (TdApi.ChatInviteLink inviteLink, boolean requiresUpdateBeforeOpening) {
+      this(inviteLink, inviteLink.inviteLink, requiresUpdateBeforeOpening);
     }
 
     @Override
@@ -8224,9 +8226,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       custom.setOnClickListener(new ClickableSpan() {
         @Override
         public void onClick (@NonNull View widget) {
-          EditChatLinkController c = new EditChatLinkController(context(), tdlib);
-          c.setArguments(new EditChatLinkController.Args(inviteLink, msg.chatId, null));
-          navigateTo(c);
+          if (requiresUpdateBeforeOpening) {
+            tdlib.ui().showInviteLinkOptionsPreload(controller(), inviteLink, msg.chatId, true, null, null);
+          } else {
+            tdlib.ui().showInviteLinkOptions(controller(), inviteLink, msg.chatId, true, true, null, null);
+          }
         }
       });
       return new FormattedText(text, new TextEntity[] {custom});
