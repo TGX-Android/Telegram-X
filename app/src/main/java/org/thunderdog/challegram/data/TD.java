@@ -134,6 +134,7 @@ public class TD {
       case R.id.right_banUsers:
       case R.id.right_deleteMessages:
       case R.id.right_editMessages:
+      case R.id.right_sendVoiceVideo:
         return true;
     }
     return false;
@@ -162,6 +163,7 @@ public class TD {
       case R.id.right_sendMessages:
         return permissions.canSendMessages;
       case R.id.right_sendMedia:
+      case R.id.right_sendVoiceVideo:
         return permissions.canSendMediaMessages;
       case R.id.right_sendStickersAndGifs:
         return permissions.canSendOtherMessages;

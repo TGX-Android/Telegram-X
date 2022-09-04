@@ -926,7 +926,7 @@ public class RecordAudioVideoController implements
       return false;
     }
 
-    CharSequence restrictionText = tdlib.getRestrictionText(tdlib.chat(targetChatId), R.id.right_sendMedia, needVideo ? R.string.ChatDisabledVideoNotes : R.string.ChatDisabledVoice, needVideo ? R.string.ChatRestrictedVideoNotes : R.string.ChatRestrictedVoice, needVideo ? R.string.ChatRestrictedVideoNotesUntil : R.string.ChatRestrictedVoiceUntil);
+    CharSequence restrictionText = tdlib.getVoiceVideoRestricitonText(tdlib.chat(targetChatId), needVideo);
     if (restrictionText != null) {
       if (view != null) {
         context.tooltipManager().builder(view).controller(targetController).icon(R.drawable.baseline_warning_24).show(tdlib, restrictionText).hideDelayed();

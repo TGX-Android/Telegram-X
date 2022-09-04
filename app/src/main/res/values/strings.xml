@@ -4372,5 +4372,8 @@
   <string name="PremiumRequiredVoiceVideo">This setting requires **Telegram Premium** subscription.</string>
   <string name="PremiumRequired">This feature requires **Telegram Premium** subscription.</string>
 
+  <string name="XRestrictedVoiceMessages">%1$s doesn\'t accept voice messages.</string>
+  <string name="XRestrictedVideoMessages">%1$s doesn\'t accept video messages.</string>
+
   <string name="format_PRMadeBy">%1$s by %2$s</string>
 </resources>

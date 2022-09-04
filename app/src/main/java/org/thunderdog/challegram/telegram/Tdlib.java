@@ -8780,7 +8780,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
     switch (chat.type.getConstructor()) {
       case TdApi.ChatTypePrivate.CONSTRUCTOR: {
-        TdApi.User user = cache().user(ChatId.toUserId(chat.id));
+        long userId = ChatId.toUserId(chat.id);
+        TdApi.User user = cache().user(userId);
         boolean isUnavailable = user == null;
         if (!isUnavailable) {
           switch (user.type.getConstructor()) {
@@ -8792,6 +8793,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         }
         if (isUnavailable)
           return new RestrictionStatus(chat.id, RESTRICTION_STATUS_UNAVAILABLE, 0);
+        if (rightId == R.id.right_sendVoiceVideo) {
+          TdApi.UserFullInfo userFullInfo = cache().userFull(userId);
+          if (userFullInfo != null && userFullInfo.hasRestrictedVoiceAndVideoNoteMessages) {
+            return new RestrictionStatus(chat.id, RESTRICTION_STATUS_RESTRICTED, 0);
+          }
+        }
         return null;
       }
       case TdApi.ChatTypeSecret.CONSTRUCTOR: {
@@ -8807,9 +8814,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             }
             return null;
           }
+          if (rightId == R.id.right_sendVoiceVideo) {
+            TdApi.UserFullInfo userFullInfo = cache().userFull(secretChat.userId);
+            if (userFullInfo != null && userFullInfo.hasRestrictedVoiceAndVideoNoteMessages) {
+              return new RestrictionStatus(chat.id, RESTRICTION_STATUS_RESTRICTED, 0);
+            }
+          }
         }
         return new RestrictionStatus(chat.id, RESTRICTION_STATUS_UNAVAILABLE, 0);
       }
+      case TdApi.ChatTypeBasicGroup.CONSTRUCTOR:
+      case TdApi.ChatTypeSupergroup.CONSTRUCTOR:
+        break;
     }
     if (!TD.checkRight(chat.permissions, rightId))
       return new RestrictionStatus(chat.id, isNotSpecificallyRestricted ? RESTRICTION_STATUS_EVERYONE : RESTRICTION_STATUS_RESTRICTED, 0);
@@ -8848,9 +8864,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         case TdApi.InputMessageDocument.CONSTRUCTOR:
         case TdApi.InputMessagePhoto.CONSTRUCTOR:
         case TdApi.InputMessageVideo.CONSTRUCTOR:
+          return getMediaRestrictionText(chat);
         case TdApi.InputMessageVideoNote.CONSTRUCTOR:
         case TdApi.InputMessageVoiceNote.CONSTRUCTOR:
-          return getMediaRestrictionText(chat);
+          return getVoiceVideoRestricitonText(chat, message.getConstructor() == TdApi.MessageVideoNote.CONSTRUCTOR);
       }
     }
     return getMessageRestrictionText(chat);
@@ -8862,6 +8879,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public CharSequence getMediaRestrictionText (TdApi.Chat chat) {
     return getRestrictionText(chat, R.id.right_sendMedia, R.string.ChatDisabledMedia, R.string.ChatRestrictedMedia, R.string.ChatRestrictedMediaUntil);
+  }
+
+  public CharSequence getVoiceVideoRestricitonText (TdApi.Chat chat, boolean needVideo) {
+    return getRestrictionText(chat, R.id.right_sendVoiceVideo,
+      needVideo ? R.string.ChatDisabledVideoNotes : R.string.ChatDisabledVoice,
+      needVideo ? R.string.ChatRestrictedVideoNotes : R.string.ChatRestrictedVoice,
+      needVideo ? R.string.ChatRestrictedVideoNotesUntil : R.string.ChatRestrictedVoiceUntil,
+      R.string.UserDisabledMessages,
+      needVideo ? R.string.XRestrictedVideoMessages : R.string.XRestrictedVoiceMessages
+    );
   }
 
   public CharSequence getGifRestrictionText (TdApi.Chat chat) {
@@ -8881,10 +8908,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public CharSequence getRestrictionText (TdApi.Chat chat, @RightId int rightId, @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes) {
+    return getRestrictionText(chat, rightId, defaultRes, specificRes, specificUntilRes, R.string.UserDisabledMessages, 0);
+  }
+
+  public CharSequence getRestrictionText (TdApi.Chat chat, @RightId int rightId,
+                                          @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes,
+                                          @StringRes int defaultUserRes, @StringRes int specificUserRes) {
     RestrictionStatus status = getRestrictionStatus(chat, rightId);
     if (status != null) {
       switch (rightId) {
-        case R.id.right_sendStickersAndGifs: {
+        case R.id.right_sendStickersAndGifs:
+        case R.id.right_sendVoiceVideo: {
           CharSequence restriction = getMediaRestrictionText(chat);
           if (restriction != null)
             return restriction;
@@ -8898,6 +8932,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           break;
         }
       }
+      if (status.isUserChat()) {
+        switch (status.status) {
+          case RESTRICTION_STATUS_RESTRICTED:
+            if (specificUserRes != 0) {
+              return Lang.getStringBold(specificUserRes, cache().userFirstName(chatUserId(chat)));
+            }
+            break;
+          case RESTRICTION_STATUS_EVERYONE:
+            return Lang.getString(defaultUserRes);
+        }
+      }
       switch (status.status) {
         case RESTRICTION_STATUS_BANNED:
           return status.untilDate != 0 ? Lang.getString(R.string.ChatBannedUntil, Lang.getUntilDate(status.untilDate, TimeUnit.SECONDS)) : Lang.getString(R.string.ChatBanned);
@@ -8905,7 +8950,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           return status.untilDate != 0 ? Lang.getString(specificUntilRes, Lang.getUntilDate(status.untilDate, TimeUnit.SECONDS)) : Lang.getString(specificRes);
         case RESTRICTION_STATUS_UNAVAILABLE:
         case RESTRICTION_STATUS_EVERYONE:
-          return Lang.getString(status.isUserChat() ? R.string.UserDisabledMessages : defaultRes);
+          return Lang.getString(defaultRes);
       }
 
       throw new UnsupportedOperationException();

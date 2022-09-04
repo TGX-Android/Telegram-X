@@ -750,6 +750,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
             case R.id.right_embedLinks:
             case R.id.right_readMessages:
             case R.id.right_sendMedia:
+            case R.id.right_sendVoiceVideo:
             case R.id.right_sendStickersAndGifs:
             case R.id.right_sendPolls:
               return true;
@@ -1281,6 +1282,8 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       case R.id.right_editMessages:
         targetAdmin.rights.canEditMessages = newValue;
         break;
+      case R.id.right_sendVoiceVideo: // Unreachable
+        throw new IllegalArgumentException();
     }
     if (getArgumentsStrict().mode == MODE_CHAT_PERMISSIONS || getArgumentsStrict().mode == MODE_RESTRICTION) {
       targetRestrict.isMember = canViewMessages;
@@ -1363,6 +1366,8 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         return targetAdmin.rights.isAnonymous;
       case R.id.right_editMessages:
         return targetAdmin.rights.canEditMessages;
+      case R.id.right_sendVoiceVideo: // Unreachable
+        throw new IllegalArgumentException();
     }
     throw new IllegalArgumentException("id == " + UI.getResources().getResourceName(id));
   }
