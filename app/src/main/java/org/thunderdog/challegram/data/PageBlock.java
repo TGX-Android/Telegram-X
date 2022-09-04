@@ -41,15 +41,12 @@ import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
-import org.thunderdog.challegram.widget.PageBlockView;
 
 import java.util.ArrayList;
 
-import me.vkryl.android.util.InvalidateContentProvider;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.android.widget.FrameLayoutFix;
-import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.Td;
 
 public abstract class PageBlock {
