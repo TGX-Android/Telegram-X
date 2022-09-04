@@ -7550,7 +7550,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   @Nullable public SwipeQuickAction getQuickAction (boolean isLeft, int index) {
-    return (isLeft ? leftActions : rightActions).get(index);
+    List<SwipeQuickAction> swipeQuickActions = (isLeft ? leftActions : rightActions);
+    return index >= 0 && index < swipeQuickActions.size() ? swipeQuickActions.get(index) : null;
   }
 
   public int getQuickDefaultPosition (boolean isLeft) {
