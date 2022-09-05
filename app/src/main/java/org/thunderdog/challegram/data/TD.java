@@ -60,6 +60,7 @@ import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.emoji.CustomEmojiId;
 import org.thunderdog.challegram.emoji.EmojiSpan;
 import org.thunderdog.challegram.filegen.GenerationInfo;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -4860,7 +4861,7 @@ public class TD {
       return text.text;
     SpannableStringBuilder b = null;
     for (TdApi.TextEntity entity : text.entities) {
-      CustomTypefaceSpan span = toDisplaySpan(entity.type, defaultTypeface, Text.needFakeBold(text.text, entity.offset, entity.offset + entity.length));
+      CharacterStyle span = toDisplaySpan(entity.type, defaultTypeface, Text.needFakeBold(text.text, entity.offset, entity.offset + entity.length));
       if (span != null) {
         if (b == null)
           b = new SpannableStringBuilder(text.text);
@@ -4965,6 +4966,19 @@ public class TD {
         // proper flags are set inside setEntityType
         span = new CustomTypefaceSpan(defaultTypeface, 0);
         break;
+      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
+        span = new CustomTypefaceSpan(null, 0);
+        break;
+      // automatically detected
+      case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
+      case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
+      case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
+      case TdApi.TextEntityTypeHashtag.CONSTRUCTOR:
+      case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR:
+      case TdApi.TextEntityTypeMention.CONSTRUCTOR:
+      case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
       default:
         return null;
     }
@@ -5001,6 +5015,19 @@ public class TD {
         return new BackgroundColorSpan(SPOILER_BACKGROUND_COLOR);
       case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
         return allowInternal ? new CustomTypefaceSpan(null, R.id.theme_color_textLink).setEntityType(type) : null;
+      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
+        return new CustomEmojiId(((TdApi.TextEntityTypeCustomEmoji) type).customEmojiId);
+      // auto-detected entities
+      case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
+      case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
+      case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
+      case TdApi.TextEntityTypeHashtag.CONSTRUCTOR:
+      case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR:
+      case TdApi.TextEntityTypeMention.CONSTRUCTOR:
+      case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
+        break;
     }
     return null;
   }
@@ -5039,6 +5066,8 @@ public class TD {
       return new TdApi.TextEntityType[] {new TdApi.TextEntityTypeStrikethrough()};
     } else if (Config.SUPPORT_SYSTEM_UNDERLINE_SPAN && span instanceof UnderlineSpan) {
       return new TdApi.TextEntityType[] {new TdApi.TextEntityTypeUnderline()};
+    } else if (span instanceof EmojiSpan && ((EmojiSpan) span).isCustomEmoji()) {
+      return new TdApi.TextEntityType[] {new TdApi.TextEntityTypeCustomEmoji(((EmojiSpan) span).getCustomEmojiId())};
     }
     return null;
   }
@@ -5065,6 +5094,10 @@ public class TD {
       if (backgroundColor == SPOILER_BACKGROUND_COLOR) {
         return true;
       }
+    }
+    if (span instanceof EmojiSpan) {
+      EmojiSpan emojiSpan = (EmojiSpan) span;
+      return emojiSpan.isCustomEmoji() && emojiSpan.getCustomEmojiId() != 0;
     }
     return span instanceof StrikethroughSpan || (Config.SUPPORT_SYSTEM_UNDERLINE_SPAN && span instanceof UnderlineSpan);
   }

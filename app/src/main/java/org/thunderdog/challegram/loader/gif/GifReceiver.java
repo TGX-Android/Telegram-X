@@ -32,6 +32,7 @@ import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.Receiver;
+import org.thunderdog.challegram.loader.ReceiverUpdateListener;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 
@@ -55,6 +56,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
   }
 
   private final View view;
+  private ReceiverUpdateListener updateListener;
   private final GifWatcherReference reference;
   private int state;
   private GifState gif;
@@ -82,6 +84,11 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     this.bitmapRect = new Rect();
     this.drawRegion = new Rect();
     this.progressRect = new RectF();
+  }
+
+  @Override
+  public void setUpdateListener (ReceiverUpdateListener listener) {
+    this.updateListener = listener;
   }
 
   @Override
@@ -459,11 +466,17 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
 
   private void invalidateProgress () {
     view.invalidate((int) progressRect.left - progressOffset, (int) progressRect.top - progressOffset, (int) progressRect.right + progressOffset, (int) progressRect.bottom + progressOffset);
+    if (updateListener != null) {
+      updateListener.onRequestInvalidate(this);
+    }
   }
 
   @Override
   public void invalidate () {
     view.invalidate(left, top, right, bottom);
+    if (updateListener != null) {
+      updateListener.onRequestInvalidate(this);
+    }
   }
 
   // Private stuff

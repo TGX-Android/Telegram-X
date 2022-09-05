@@ -33,6 +33,8 @@ public interface Receiver extends TooltipOverlayView.LocationProvider {
   int getTargetWidth ();
   int getTargetHeight ();
 
+  void setUpdateListener (ReceiverUpdateListener listener);
+
   int getLeft ();
   int getTop ();
   int getRight ();

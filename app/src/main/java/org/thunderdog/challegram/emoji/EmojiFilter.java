@@ -19,15 +19,24 @@ import android.text.InputFilter;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 
+import androidx.annotation.Nullable;
+
 public class EmojiFilter implements InputFilter {
+  private final CustomEmojiSurfaceProvider customEmojiSurfaceProvider;
+
   private int emojiCount;
   private final Emoji.CountLimiter countLimiter;
 
   public EmojiFilter () {
-    this(0);
+    this(null);
   }
 
-  private EmojiFilter (int maxCount) {
+  public EmojiFilter (@Nullable CustomEmojiSurfaceProvider customEmojiSurfaceProvider) {
+    this(customEmojiSurfaceProvider, 0);
+  }
+
+  private EmojiFilter (CustomEmojiSurfaceProvider customEmojiSurfaceProvider, int maxCount) {
+    this.customEmojiSurfaceProvider = customEmojiSurfaceProvider;
     if (maxCount > 0) {
       this.countLimiter = new Emoji.CountLimiter() {
         @Override
@@ -49,6 +58,9 @@ public class EmojiFilter implements InputFilter {
   }
 
   private CharSequence replaceEmojiOrNull (CharSequence source, int start, int end) {
+    if (end - start == 0) {
+      return null;
+    }
     if (source instanceof Spanned) {
       Spanned spanned = (Spanned) source;
       EmojiSpan[] alreadyFoundEmojis = spanned.getSpans(start, end, EmojiSpan.class);
@@ -90,6 +102,31 @@ public class EmojiFilter implements InputFilter {
             b.append(source, cend, emojiEnd);
           }
           cend = emojiEnd;
+
+          if (span.isCustomEmoji()) {
+            if (customEmojiSurfaceProvider != null && span.belongsToSurface(customEmojiSurfaceProvider)) {
+              continue;
+            }
+
+            CharSequence emojiCode = source.subSequence(emojiStart, emojiEnd);
+            EmojiInfo info = Emoji.instance().getEmojiInfo(emojiCode, true);
+            EmojiSpan newSpan = null;
+
+            if (customEmojiSurfaceProvider != null) {
+              newSpan = customEmojiSurfaceProvider.onCreateNewSpan(emojiCode, info, span.getCustomEmojiId());
+            }
+            if (newSpan == null) {
+              // Drop custom emoji information and
+              newSpan = Emoji.instance().newSpan(emojiCode, info);
+            }
+            if (b == null) {
+              b = new SpannableStringBuilder(source, start, cend);
+            }
+            b.removeSpan(span);
+            if (newSpan != null) {
+              b.setSpan(newSpan, emojiStart, emojiEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+          }
         }
         if (cend < end) {
           // replaceEmoji for cend .. end

@@ -22,11 +22,13 @@ import android.util.AttributeSet;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 
+import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 
 import org.thunderdog.challegram.emoji.EmojiFilter;
 import org.thunderdog.challegram.emoji.EmojiInputConnection;
 import org.thunderdog.challegram.emoji.EmojiUpdater;
+import org.thunderdog.challegram.util.DestroySpansWatcher;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -53,6 +55,7 @@ public class EmojiTextView extends TextView implements Destroyable {
   }
 
   private void init () {
+    addTextChangedListener(new DestroySpansWatcher());
     setFilters(new InputFilter[0]);
   }
 
@@ -64,7 +67,8 @@ public class EmojiTextView extends TextView implements Destroyable {
   }
 
   @Override
-  public final void performDestroy () {
+  @CallSuper
+  public void performDestroy () {
     emojiUpdater.performDestroy();
   }
 

@@ -10,29 +10,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
- * File created on 04/05/2019
+ * File created on 06/09/2022, 00:24.
  */
-package org.thunderdog.challegram.emoji;
 
-import android.graphics.Paint;
+package org.thunderdog.challegram.data;
+
+import android.graphics.Canvas;
+import android.graphics.Rect;
 
 import org.thunderdog.challegram.loader.ComplexReceiver;
 
-public interface EmojiSpan {
-  int getRawSize (Paint paint);
-
-  boolean isCustomEmoji ();
-  default long getCustomEmojiId () {
-    return 0;
-  }
-  default boolean belongsToSurface (CustomEmojiSurfaceProvider customEmojiSurfaceProvider) {
-    return false;
-  }
-  default void requestCustomEmoji (ComplexReceiver receiver, int mediaKey) {
-    receiver.clearReceivers(mediaKey);
-  }
-
-  default boolean needRefresh () {
-    return false;
-  }
+public interface ComplexMediaItem {
+  void requestComplexMedia (ComplexReceiver receiver, long displayMediaKey);
+  String getComplexMediaKey ();
+  void draw (Canvas c, Rect rect, ComplexReceiver mediaReceiver, long displayMediaKey, boolean translate);
 }

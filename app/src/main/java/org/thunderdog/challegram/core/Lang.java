@@ -22,6 +22,7 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.BackgroundColorSpan;
+import android.text.style.CharacterStyle;
 import android.view.Gravity;
 import android.widget.RelativeLayout;
 
@@ -51,7 +52,6 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.text.Text;
-import org.thunderdog.challegram.util.text.TextEntity;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -385,7 +385,7 @@ public class Lang {
     }
   }
 
-  public static Object newBoldSpan (boolean needFakeBold) {
+  public static CharacterStyle newBoldSpan (boolean needFakeBold) {
     return TD.toDisplaySpan(new TdApi.TextEntityTypeBold(), null, needFakeBold);
   }
 
@@ -393,11 +393,11 @@ public class Lang {
     return (target, argStart, argEnd, argIndex, needFakeBold) -> newBoldSpan(needFakeBold);
   }
 
-  public static Object newCodeSpan (boolean needFakeBold) {
+  public static CharacterStyle newCodeSpan (boolean needFakeBold) {
     return TD.toDisplaySpan(new TdApi.TextEntityTypeCode(), null, needFakeBold);
   }
 
-  public static Object newItalicSpan (boolean needFakeBold) {
+  public static CharacterStyle newItalicSpan (boolean needFakeBold) {
     return TD.toDisplaySpan(new TdApi.TextEntityTypeItalic(), null, needFakeBold);
   }
 
@@ -413,17 +413,7 @@ public class Lang {
     return (target, argStart, argEnd, argIndex, needFakeBold) -> TD.toSpan(entity);
   }
 
-  public static CustomTypefaceSpan newSenderSpan (TdlibDelegate context, TdApi.MessageSender senderId) {
-    switch (senderId.getConstructor()) {
-      case TdApi.MessageSenderUser.CONSTRUCTOR:
-        return newUserSpan(context, ((TdApi.MessageSenderUser) senderId).userId);
-      case TdApi.MessageSenderChat.CONSTRUCTOR:
-        return null; // TODO
-    }
-    throw new UnsupportedOperationException(senderId.toString());
-  }
-
-  public static CustomTypefaceSpan newUserSpan (TdlibDelegate context, long userId) {
+  public static CharacterStyle newUserSpan (TdlibDelegate context, long userId) {
     return TD.toDisplaySpan(new TdApi.TextEntityTypeMentionName(userId)).setOnClickListener((view, span, clickedText) -> {
       context.tdlib().ui().openPrivateProfile(context, userId, null);
       return true;

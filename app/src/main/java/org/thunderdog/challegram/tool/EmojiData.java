@@ -78,7 +78,7 @@ public class EmojiData {
 
   private final HashSet<Character> dataCharsMap;
   private final Set<String> emojiColoredSet, emojiColored2dMap;
-  private final HashMap<CharSequence, CharSequence> emojiAliasMap;
+  private final HashMap<String, String> emojiAliasMap;
 
   private EmojiData () {
     this.dataCharsMap = new HashSet<>(dataChars.length);
@@ -117,7 +117,7 @@ public class EmojiData {
     }
   }
 
-  public CharSequence getEmojiAlias (CharSequence emoji) {
+  public String getEmojiAlias (String emoji) {
     return emojiAliasMap.get(emoji);
   }
 

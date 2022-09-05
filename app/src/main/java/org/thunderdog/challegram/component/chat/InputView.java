@@ -63,6 +63,8 @@ import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.ComplexMediaHolder;
+import org.thunderdog.challegram.data.ComplexMediaItem;
 import org.thunderdog.challegram.data.InlineResult;
 import org.thunderdog.challegram.data.InlineResultCommand;
 import org.thunderdog.challegram.data.InlineResultEmojiSuggestion;
@@ -70,10 +72,15 @@ import org.thunderdog.challegram.data.InlineResultHashtag;
 import org.thunderdog.challegram.data.InlineResultMention;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.ThreadInfo;
+import org.thunderdog.challegram.emoji.CustomEmojiSurfaceProvider;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.emoji.EmojiFilter;
+import org.thunderdog.challegram.emoji.EmojiInfo;
+import org.thunderdog.challegram.emoji.EmojiSpan;
+import org.thunderdog.challegram.emoji.EmojiUpdater;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.helper.InlineSearchContext;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.navigation.LocaleChanger;
 import org.thunderdog.challegram.navigation.RtlCheckListener;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -101,10 +108,11 @@ import java.util.ArrayList;
 import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
-public class InputView extends NoClipEditText implements InlineSearchContext.Callback, InlineResultsWrap.PickListener, RtlCheckListener, FinalNewLineFilter.Callback {
+public class InputView extends NoClipEditText implements InlineSearchContext.Callback, InlineResultsWrap.PickListener, RtlCheckListener, FinalNewLineFilter.Callback, CustomEmojiSurfaceProvider, Destroyable {
   public static final boolean USE_ANDROID_SELECTION_FIX = true;
   private final TextPaint paint;
 
@@ -133,6 +141,18 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   public InputView (Context context, Tdlib tdlib) {
     super(context);
     this.tdlib = tdlib;
+    this.mediaHolder = new ComplexMediaHolder<>(this);
+    this.mediaHolder.setUpdateListener((usages, displayMediaKey) -> {
+      boolean updated = false;
+      for (EmojiSpan span : usages) {
+        if (EmojiUpdater.invalidateEmojiSpan(this, span, true)) {
+          updated = true;
+        }
+      }
+      if (updated) {
+        invalidate();
+      }
+    });
     this.inlineContext = new InlineSearchContext(UI.getContext(context), tdlib, this);
     this.paint = new TextPaint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
     this.paint.setColor(Theme.textPlaceholderColor());
@@ -256,6 +276,44 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         }
       });
     }
+  }
+
+  @Override
+  public EmojiSpan onCreateNewSpan (CharSequence emojiCode, EmojiInfo info, long customEmojiId) {
+    return Emoji.instance().newCustomSpan(emojiCode, info, this, tdlib, customEmojiId);
+  }
+
+  @Override
+  public void onInvalidateSpan (EmojiSpan span) {
+    invalidate();
+  }
+
+  private final ComplexMediaHolder<EmojiSpan> mediaHolder;
+
+  @Override
+  public ComplexReceiver provideComplexReceiverForSpan (EmojiSpan span) {
+    return mediaHolder.receiver;
+  }
+
+  @Override
+  public int getDuplicateMediaItemCount (EmojiSpan span, ComplexMediaItem mediaItem) {
+    return mediaHolder.getMediaUsageCount(mediaItem);
+  }
+
+  @Override
+  public long attachToReceivers (EmojiSpan span, ComplexMediaItem mediaItem) {
+    return mediaHolder.attachMediaUsage(mediaItem, span);
+  }
+
+  @Override
+  public void detachFromReceivers (EmojiSpan span, ComplexMediaItem mediaItem, long mediaKey) {
+    mediaHolder.detachMediaUsage(mediaItem, span, mediaKey);
+  }
+
+  @Override
+  public void performDestroy () {
+    super.performDestroy();
+    mediaHolder.performDestroy();
   }
 
   public boolean setSpan (int id) {
@@ -1104,14 +1162,14 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       setFilters(new InputFilter[] {
         new ExternalEmojiFilter(),
         new CodePointCountFilter(maxCodePointCount),
-        new EmojiFilter(),
+        new EmojiFilter(this),
         new CharacterStyleFilter(true),
         new FinalNewLineFilter(this)
       });
     } else {
       setFilters(new InputFilter[] {
         new ExternalEmojiFilter(),
-        new EmojiFilter(),
+        new EmojiFilter(this),
         new CharacterStyleFilter(true),
         new FinalNewLineFilter(this)
       });

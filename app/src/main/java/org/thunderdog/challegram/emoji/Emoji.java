@@ -34,6 +34,7 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Media;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.EmojiCode;
 import org.thunderdog.challegram.tool.EmojiData;
 import org.thunderdog.challegram.tool.Paints;
@@ -70,7 +71,7 @@ public class Emoji {
     return instance;
   }
 
-  private final HashMap<CharSequence, EmojiInfo> rects;
+  private final HashMap<String, EmojiInfo> rects;
   private final ReferenceList<EmojiChangeListener> emojiChangeListeners = new ReferenceList<>();
 
   private final CountLimiter singleLimiter = new org.thunderdog.challegram.emoji.Emoji.CountLimiter() {
@@ -534,13 +535,14 @@ public class Emoji {
     return getEmojiInfo(code, true);
   }
 
-  public EmojiInfo getEmojiInfo (CharSequence code, boolean allowRetry) {
-    if (code == null) {
+  public EmojiInfo getEmojiInfo (CharSequence codeCs, boolean allowRetry) {
+    if (StringUtils.isEmpty(codeCs)) {
       return null;
     }
+    String code = codeCs.toString();
     EmojiInfo info = rects.get(code);
     if (info == null) {
-      CharSequence newCode = EmojiData.instance().getEmojiAlias(code);
+      String newCode = EmojiData.instance().getEmojiAlias(code);
       if (newCode != null) {
         code = newCode;
         info = rects.get(code);
@@ -579,7 +581,21 @@ public class Emoji {
       if (info == null)
         return null;
     }
-    return EmojiSpanImpl2.newSpan(code, info);
+    return EmojiSpanImpl.newSpan(info);
+  }
+
+  @Nullable
+  public EmojiSpan newCustomSpan (CharSequence code, @Nullable EmojiInfo info,
+                                  CustomEmojiSurfaceProvider customEmojiSurfaceProvider,
+                                  Tdlib tdlib, long customEmojiId) {
+    if (StringUtils.isEmpty(code))
+      return null;
+    if (info == null) {
+      info = getEmojiInfo(code);
+      if (info == null)
+        return null;
+    }
+    return CustomEmojiSpanImpl.newCustomEmojiSpan(info, customEmojiSurfaceProvider, tdlib, customEmojiId);
   }
 
   public CharSequence replaceEmoji (CharSequence cs) {
@@ -916,7 +932,7 @@ public class Emoji {
     }
   }
 
-  public boolean draw (@NonNull Canvas c, EmojiInfo info, Rect outRect) {
+  public boolean draw (@NonNull Canvas c, @Nullable EmojiInfo info, Rect outRect) {
     if (info == null) {
       return false;
     }

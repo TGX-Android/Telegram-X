@@ -472,6 +472,9 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
         awaitingCustomEmojiIds.add(customEmojiId);
       }
     }
+    // TODO: request all custom emojis before getting to this method,
+    // e.g. in a separate loop before notification gets to TdlibNotificationStyle
+    tdlib.emoji().performPostponedRequests();
     long awaitStartTimeMs = SystemClock.uptimeMillis();
     boolean awaitEmojiSuccess;
     try {

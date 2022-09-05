@@ -60,6 +60,7 @@ public class TdlibEmojiManager implements CleanupStartupDelegate {
   private final Object dataLock = new Object();
   private final Map<Long, Entry> entries = new HashMap<>();
   private final LongSet postponedCustomEmojiIds = new LongSet();
+  private final LongSet loadingCustomEmojiIds = new LongSet();
   private final ReferenceLongMap<Watcher> watchers = new ReferenceLongMap<>(true);
 
   private int contextId;
@@ -89,7 +90,9 @@ public class TdlibEmojiManager implements CleanupStartupDelegate {
       if (entry != null) {
         return entry;
       }
-      postponedCustomEmojiIds.add(customEmojiId);
+      if (!loadingCustomEmojiIds.has(customEmojiId)) {
+        postponedCustomEmojiIds.add(customEmojiId);
+      }
       if (watcher != null) {
         watchers.add(customEmojiId, watcher);
       }
@@ -108,6 +111,7 @@ public class TdlibEmojiManager implements CleanupStartupDelegate {
       if (postponedCustomEmojiIds.size() == 0) {
         return;
       }
+      loadingCustomEmojiIds.addAll(postponedCustomEmojiIds);
       customEmojiIdsChunks = postponedCustomEmojiIds.toArray(TdConstants.MAX_CUSTOM_EMOJI_COUNT_PER_REQUEST);
       postponedCustomEmojiIds.clear();
     }
@@ -128,6 +132,11 @@ public class TdlibEmojiManager implements CleanupStartupDelegate {
             processError(contextId, customEmojiIds, (TdApi.Error) result);
             break;
           }
+        }
+        synchronized (dataLock) {
+          if (this.contextId != contextId)
+            return;
+          loadingCustomEmojiIds.removeAll(new LongSet(customEmojiIds));
         }
       });
     }
