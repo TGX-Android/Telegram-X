@@ -327,7 +327,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     Intent msgHeardIntent = new Intent();
     styleIntent(Intents.ACTION_MESSAGE_HEARD, msgHeardIntent, tdlib, group, needReplyToMessage, allMessageIds, allUserIds);
 
-    PendingIntent msgHeardPendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, msgHeardIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+    PendingIntent msgHeardPendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, msgHeardIntent, Intents.mutabilityFlags(true));
     conversationBuilder.setReadPendingIntent(msgHeardPendingIntent);
 
     NotificationCompat.Action replyAction = null, muteAction = null, readAction = null;
@@ -336,14 +336,14 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       // reply
       Intent msgReplyIntent = new Intent();
       styleIntent(Intents.ACTION_MESSAGE_REPLY, msgReplyIntent, tdlib, group, needReplyToMessage, allMessageIds, allUserIds);
-      PendingIntent msgReplyPendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, msgReplyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+      PendingIntent msgReplyPendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, msgReplyIntent, Intents.mutabilityFlags(true));
       RemoteInput remoteInputAuto = new RemoteInput.Builder(TGBaseReplyReceiver.EXTRA_VOICE_REPLY).setLabel(Lang.getString(R.string.Reply)).build();
       conversationBuilder.setReplyAction(msgReplyPendingIntent, remoteInputAuto);
 
       Intent replyIntent = new Intent(UI.getAppContext(), TGWearReplyReceiver.class);
       Intents.secureIntent(replyIntent, true);
       TdlibNotificationExtras.put(replyIntent, tdlib, group, needReplyToMessage, allMessageIds, allUserIds);
-      PendingIntent replyPendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, replyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+      PendingIntent replyPendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, replyIntent, Intents.mutabilityFlags(true));
       RemoteInput remoteInput = new RemoteInput.Builder(TGBaseReplyReceiver.EXTRA_VOICE_REPLY).setLabel(Lang.getString(R.string.Reply)).build();
       String replyToString = Lang.getString(R.string.Reply);
       replyAction = new NotificationCompat.Action.Builder(R.drawable.baseline_reply_24_white, replyToString, replyPendingIntent).setAllowGeneratedReplies(true).addRemoteInput(remoteInput).setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY).build();
@@ -354,7 +354,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       Intent intent = new Intent(UI.getAppContext(), TGMessageReceiver.class);
       styleIntent(Intents.ACTION_MESSAGE_READ, intent, tdlib, group, needReplyToMessage, allMessageIds, allUserIds);
       try {
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, intent, Intents.mutabilityFlags(true));
         readAction = new NotificationCompat.Action.Builder(R.drawable.baseline_done_all_24_white, Lang.getString(R.string.ActionRead), pendingIntent).setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_MARK_AS_READ).build();
       } catch (Throwable t) {
         Log.e("Unable to add read intent", t);
@@ -366,7 +366,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       Intent intent = new Intent(UI.getAppContext(), TGMessageReceiver.class);
       styleIntent(Intents.ACTION_MESSAGE_MUTE, intent, tdlib, group, needReplyToMessage, allMessageIds, allUserIds);
       try {
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, intent, Intents.mutabilityFlags(true));
         String text;
         if (group.isMention()) {
           long singleSenderId = group.singleSenderId();
@@ -391,7 +391,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     Intent hideIntent = new Intent(UI.getAppContext(), TGRemoveReceiver.class);
     Intents.secureIntent(hideIntent, true);
     TdlibNotificationExtras.put(hideIntent, tdlib, group, needReplyToMessage, allMessageIds, allUserIds);
-    PendingIntent hidePendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, hideIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+    PendingIntent hidePendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, hideIntent, Intents.mutabilityFlags(true));
 
     NotificationCompat.Style style = null;
 
@@ -1001,7 +1001,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       Intents.secureIntent(hideIntent, true);
       hideIntent.putExtra("account_id", tdlib.id());
       hideIntent.putExtra("category", category);
-      PendingIntent hidePendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), helper.getBaseNotificationId(category), hideIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+      PendingIntent hidePendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), helper.getBaseNotificationId(category), hideIntent, Intents.mutabilityFlags(true));
       b.setDeleteIntent(hidePendingIntent);
 
       if (displayingChatsCount == 1) {

@@ -54,11 +54,13 @@ import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ConnectionListener;
+import org.thunderdog.challegram.telegram.GlobalTokenStateListener;
 import org.thunderdog.challegram.telegram.SessionListener;
 import org.thunderdog.challegram.telegram.StickersListener;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibNotificationManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
@@ -91,7 +93,7 @@ public class SettingsController extends ViewController<Void> implements
   View.OnClickListener, ComplexHeaderView.Callback,
   Menu, MoreDelegate, OptionDelegate,
   TdlibCache.MyUserDataChangeListener, ConnectionListener, StickersListener, MediaLayout.MediaGalleryCallback,
-  ActivityResultHandler, Client.ResultHandler, View.OnLongClickListener, SessionListener {
+  ActivityResultHandler, Client.ResultHandler, View.OnLongClickListener, SessionListener, GlobalTokenStateListener {
   private ComplexHeaderView headerCell;
   private ComplexRecyclerView contentView;
   private SettingsAdapter adapter;
@@ -401,6 +403,13 @@ public class SettingsController extends ViewController<Void> implements
   }
 
   @Override
+  public void onTokenStateChanged (int newState, @Nullable String error, @Nullable Throwable fullError) {
+    runOnUiThreadOptional(() -> {
+      checkErrors(true);
+    });
+  }
+
+  @Override
   public void onActivityResume () {
     super.onActivityResume();
     checkErrors(true);
@@ -691,6 +700,7 @@ public class SettingsController extends ViewController<Void> implements
     tdlib.listeners().subscribeToConnectivityUpdates(this);
     tdlib.listeners().subscribeToSessionUpdates(this);
     TGLegacyManager.instance().addEmojiListener(adapter);
+    TdlibManager.instance().global().addTokenStateListener(this);
 
     loadActiveSessions();
 
@@ -833,6 +843,7 @@ public class SettingsController extends ViewController<Void> implements
     tdlib.listeners().unsubscribeFromStickerUpdates(this);
     tdlib.listeners().unsubscribeFromSessionUpdates(this);
     TGLegacyManager.instance().removeEmojiListener(adapter);
+    TdlibManager.instance().global().removeTokenStateListener(this);
     headerCell.performDestroy();
   }
 
@@ -1230,6 +1241,10 @@ public class SettingsController extends ViewController<Void> implements
       strings.append(R.string.TdlibLogs);
       icons.append(R.drawable.baseline_build_24);
 
+      ids.append(R.id.btn_pushService);
+      strings.append(R.string.PushServices);
+      icons.append(R.drawable.baseline_build_24);
+
       ids.append(R.id.btn_build);
       strings.append(R.string.AppLogs);
       icons.append(R.drawable.baseline_build_24);
@@ -1242,6 +1257,12 @@ public class SettingsController extends ViewController<Void> implements
       switch (id) {
         case R.id.btn_copyText: {
           UI.copyText(Lang.getAppBuildAndVersion(tdlib), R.string.CopiedText);
+          break;
+        }
+        case R.id.btn_pushService: {
+          SettingsBugController c = new SettingsBugController(context, tdlib);
+          c.setArguments(new SettingsBugController.Args(SettingsBugController.SECTION_PUSH));
+          navigateTo(c);
           break;
         }
         case R.id.btn_build: {

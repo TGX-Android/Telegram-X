@@ -238,7 +238,9 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
 
     if (isFull) {
       b.append('\n').append(Lang.getString(R.string.SessionLastActiveDate, versionCreator, Lang.getTimestamp(session.lastActiveDate, TimeUnit.SECONDS)));
-      b.append('\n').append(Strings.concatIpLocation(Lang.codify(session.ip), session.country));
+      if (!StringUtils.isEmpty(session.ip) || !StringUtils.isEmpty(session.country)) {
+        b.append('\n').append(Strings.concatIpLocation(Lang.codify(session.ip), session.country));
+      }
     }
     return b;
   }
@@ -280,7 +282,11 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
             timeView.setText("");
             titleView.setText(getTitle(sessions.currentSession));
             subtextView.setText(getAppName(sessions.currentSession));
-            locationView.setText(Strings.concatIpLocation(sessions.currentSession.ip, sessions.currentSession.country));
+            if (!StringUtils.isEmpty(sessions.currentSession.ip) || !StringUtils.isEmpty(sessions.currentSession.country)) {
+              locationView.setText(Strings.concatIpLocation(sessions.currentSession.ip, sessions.currentSession.country));
+            } else {
+              locationView.setText(Lang.getString(R.string.SessionUnknown));
+            }
             progressView.forceFactor(0f);
             iconView.setImageResource(R.drawable.baseline_device_android_x_24);
             secretStateView.setVisibility(sessions.currentSession.canAcceptSecretChats ? View.VISIBLE : View.GONE);
@@ -298,7 +304,11 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
             timeView.setText(date);
             titleView.setText(getTitle(session));
             subtextView.setText(getAppName(session));
-            locationView.setText(Strings.concatIpLocation(session.ip, session.country));
+            if (!StringUtils.isEmpty(session.ip) || !StringUtils.isEmpty(session.country)) {
+              locationView.setText(Strings.concatIpLocation(session.ip, session.country));
+            } else {
+              locationView.setText(Lang.getString(R.string.SessionUnknown));
+            }
 
             final boolean inProgress = terminatingSessions != null && terminatingSessions.get(session.id) != null;
             parent.setEnabled(!inProgress);

@@ -129,7 +129,11 @@ public class TGStickerObj {
   }
 
   public Path getContour (int targetSize) {
-    return sticker != null ? Td.buildOutline(sticker.outline, targetSize == -1 ? 1f : Math.min((float) targetSize / (float) sticker.width, (float) targetSize / (float) sticker.height)) : null;
+    return getContour(targetSize, targetSize);
+  }
+
+  public Path getContour (int targetWidth, int targetHeight) {
+    return sticker != null ? Td.buildOutline(sticker, targetWidth, targetHeight) : null;
   }
 
   public ImageFile getImage () {

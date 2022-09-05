@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
 
 @SuppressLint("NonConstantResourceId")
@@ -210,7 +211,7 @@ public class EditSessionController extends EditBaseController<EditSessionControl
             view.setData((session.isCurrent || session.isPasswordPending) ? null : Lang.getReverseRelativeDateBold(
               session.lastActiveDate + TimeUnit.DAYS.toSeconds(getArgumentsStrict().inactiveSessionTtlDays), TimeUnit.SECONDS,
               tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS,
-              true, 0, R.string.session_WillTerminate, false
+              true, 0, R.string.session_TerminatesIn, false
             ));
             break;
           case R.id.btn_sessionAcceptSecretChats:
@@ -235,9 +236,9 @@ public class EditSessionController extends EditBaseController<EditSessionControl
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionPlatform, SessionIconKt.asIcon(session), (session.platform + " " + session.systemVersion).trim(), false));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionCountry, R.drawable.baseline_location_on_24, session.country, false));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionCountry, R.drawable.baseline_location_on_24, StringUtils.isEmpty(session.country) ? Lang.getString(R.string.SessionLocationUnknown) : session.country, false));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionIp, R.drawable.baseline_router_24, session.ip, false));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionIp, R.drawable.baseline_router_24, StringUtils.isEmpty(session.ip) ? Lang.getString(R.string.SessionIpUnknown) : session.ip, false));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     if (!session.isPasswordPending) {

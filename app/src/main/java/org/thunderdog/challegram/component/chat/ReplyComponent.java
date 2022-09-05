@@ -29,6 +29,7 @@ import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.MediaWrapper;
@@ -405,6 +406,9 @@ public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyab
         receiver.drawPlaceholderContour(c, contour);
       }
       receiver.draw(c);
+      if (Config.DEBUG_STICKER_OUTLINES) {
+        receiver.drawPlaceholderContour(c, contour);
+      }
       ViewSupport.restoreClipPath(c, restoreToCount);
     }
 
@@ -619,7 +623,7 @@ public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyab
           return;
         }
         thumbnail = sticker.thumbnail != null ? sticker.thumbnail : TD.toThumbnail(sticker);
-        contour = Td.buildOutline(sticker.outline, Math.min((float) height / (float) sticker.width, (float) height / (float) sticker.height));
+        contour = Td.buildOutline(sticker, isMessageComponent() ? mHeight : height);
         break;
       }
       case TdApi.MessageVideo.CONSTRUCTOR: {
@@ -664,7 +668,7 @@ public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyab
             miniThumbnail = webPage.document.minithumbnail;
           } else if (webPage.sticker != null && webPage.sticker.thumbnail != null) {
             thumbnail = webPage.sticker.thumbnail;
-            contour = Td.buildOutline(webPage.sticker.outline, Math.min((float) height / (float) webPage.sticker.width, (float) height / (float) webPage.sticker.height));
+            contour = Td.buildOutline(webPage.sticker, isMessageComponent() ? mHeight : height);
           } else if (webPage.animation != null && webPage.animation.thumbnail != null) {
             thumbnail = webPage.animation.thumbnail;
             miniThumbnail = webPage.animation.minithumbnail;

@@ -26,6 +26,7 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.loader.ComplexReceiver;
@@ -39,6 +40,7 @@ import org.thunderdog.challegram.telegram.AnimatedEmojiListener;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.util.ArrayList;
@@ -409,19 +411,16 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     if (specialType != SPECIAL_TYPE_NONE || (sticker.setId == TdConstants.TELEGRAM_ANIMATED_EMOJI_STICKER_SET_ID)) { // TODO check for dice sticker set id
       max *= tdlib.emojiesAnimatedZoom();
     }
-    float ratio;
     if (sticker != null) {
-      ratio = Math.min(max / (float) sticker.width, max / (float) sticker.height);
+      float ratio = Math.min(max / (float) sticker.width, max / (float) sticker.height);
       stickerWidth = (int) (sticker.width * ratio);
       stickerHeight = (int) (sticker.height * ratio);
     } else {
       stickerWidth = stickerHeight = 0;
-      ratio = 1f;
     }
 
     if (stickerWidth == 0 && stickerHeight == 0) {
       stickerWidth = stickerHeight = (int) max;
-      ratio = max / 512f;
     }
 
     if (this.outline != null) {
@@ -429,7 +428,8 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     }
     if (representation != null) {
       for (Representation obj : representation) {
-        this.outline = Td.buildOutline(obj.getOutline(), ratio, outline);
+        // Merging outlines from multiple stickers into a single path
+        this.outline = Td.buildOutline(obj.sticker, stickerWidth, stickerHeight, outline);
         if (obj.staticFile != null) {
           obj.staticFile.setSize(Math.max(stickerWidth, stickerHeight));
         }
@@ -510,10 +510,10 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
           index++;
         }
         if (needPlaceholder) {
-          c.save();
+          final int saveCount = Views.save(c);
           c.translate(left, top);
           c.drawPath(outline, Paints.getPlaceholderPaint());
-          c.restore();
+          Views.restore(c, saveCount);
         }
       }
 
@@ -523,6 +523,13 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
         Receiver target = representation.isAnimated() ? receiver.getGifReceiver(index) : receiver.getImageReceiver(index);
         DrawAlgorithms.drawReceiver(c, preview, target, !representation.isAnimated(), false, left, top, right, bottom);
         index++;
+      }
+
+      if (Config.DEBUG_STICKER_OUTLINES) {
+        final int saveCount = Views.save(c);
+        c.translate(left, top);
+        c.drawPath(outline, Paints.fillingPaint(0x99ff0000));
+        Views.restore(c, saveCount);
       }
     }
   }

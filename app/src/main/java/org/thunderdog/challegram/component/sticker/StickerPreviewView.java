@@ -36,6 +36,7 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.loader.ImageReceiver;
@@ -268,6 +269,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
         stickerHeight = (int) ((float) stickerHeight * ratio);
       }
 
+      contour = currentSticker.getContour(stickerWidth, stickerHeight);
       preview.setBounds(cx - stickerWidth / 2, cy - stickerHeight / 2, cx + stickerWidth / 2, cy + stickerHeight / 2);
       imageReceiver.setBounds(cx - stickerWidth / 2, cy - stickerHeight / 2, cx + stickerWidth / 2, cy + stickerHeight / 2);
       gifReceiver.setBounds(cx - stickerWidth / 2, cy - stickerHeight / 2, cx + stickerWidth / 2, cy + stickerHeight / 2);
@@ -318,7 +320,6 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     preview.requestFile(sticker.getImage());
     imageReceiver.requestFile(sticker.getFullImage());
     gifReceiver.requestFile(sticker.getFullAnimation());
-    contour = sticker.getContour(-1);
 
     if (currentEffectSticker != null && currentEffectSticker.isAnimated()) {
       GifActor.addFreezeReason(currentEffectSticker.getFullAnimation(), false);
@@ -751,6 +752,10 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
           preview.draw(c);
         }
         receiver.draw(c);
+      }
+
+      if (Config.DEBUG_STICKER_OUTLINES) {
+        preview.drawPlaceholderContour(c, contour);
       }
 
       if (currentEffectSticker != null) {

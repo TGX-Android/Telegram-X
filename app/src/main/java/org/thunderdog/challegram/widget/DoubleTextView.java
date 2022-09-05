@@ -31,6 +31,7 @@ import androidx.annotation.StringRes;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
@@ -301,6 +302,9 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
         }
       }
       imageReceiver.draw(c);
+    }
+    if (Config.DEBUG_STICKER_OUTLINES) {
+      imageReceiver.drawPlaceholderContour(c, stickerSetContour);
     }
     if (stickerSetInfo != null && stickerSetInfo.needSeparatorOnTop()) {
       int height = Math.max(1, Screen.dp(.5f));

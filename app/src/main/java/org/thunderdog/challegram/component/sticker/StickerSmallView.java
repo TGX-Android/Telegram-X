@@ -19,7 +19,6 @@ import android.graphics.Canvas;
 import android.graphics.Path;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewParent;
 import android.view.animation.Interpolator;
 import android.view.animation.OvershootInterpolator;
 
@@ -204,6 +203,9 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
         imageReceiver.drawPlaceholderContour(c, contour);
       }
       imageReceiver.draw(c);
+    }
+    if (Config.DEBUG_STICKER_OUTLINES) {
+      imageReceiver.drawPlaceholderContour(c, contour);
     }
     if (saved) {
       c.restore();
