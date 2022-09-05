@@ -433,7 +433,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
         }
         textBuilder.append(messageText);
         conversationBuilder.addMessage(messageText != null ? messageText.toString() : null);
-        addMessage(messagingStyle, messageText, person, tdlib, chat, notification, isSummary ? SUMMARY_MEDIA_LOAD_TIMEOUT : MEDIA_LOAD_TIMEOUT, isRebuild, !onlyScheduled && notification.isScheduled(), !onlySilent && notification.isVisuallySilent());
+        addMessage(messagingStyle, messageText, person, tdlib, chat, notification, isSummary ? SUMMARY_MEDIA_LOAD_TIMEOUT : MEDIA_LOAD_TIMEOUT, isRebuild, !onlyScheduled && notification.isScheduled(), !onlySilent && notification.isVisuallySilent(), onlyPinned);
       } else {
         final CharSequence messageText;
         boolean isScheduled = true;
@@ -865,7 +865,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     style.addMessage(new NotificationCompat.MessagingStyle.Message(Lang.getSilentNotificationTitle(messageText, false, tdlib.isSelfChat(chat), tdlib.isMultiChat(chat), tdlib.isChannelChat(chat), isExclusivelyScheduled, isExclusivelySilent), TimeUnit.SECONDS.toMillis(notification.getDate()), person));
   }
 
-  private static void addMessage (NotificationCompat.MessagingStyle style, CharSequence messageText, Person person, Tdlib tdlib, TdApi.Chat chat, TdlibNotification notification, long loadTimeout, boolean isRebuild, boolean isExclusivelyScheduled, boolean isExclusivelySilent) {
+  private static void addMessage (NotificationCompat.MessagingStyle style, CharSequence messageText, Person person, Tdlib tdlib, TdApi.Chat chat, TdlibNotification notification, long loadTimeout, boolean isRebuild, boolean isExclusivelyScheduled, boolean isExclusivelySilent, boolean isOnlyPinned) {
     long chatId = chat.id;
     boolean isMention = notification.group().isMention();
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && tdlib.notifications().needContentPreview(chatId, isMention)) {
@@ -925,16 +925,15 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
             uri = U.contentUriFromFile(new File(file.file.local.path));
           }
           if (uri != null) {
-            // String text = !Strings.isEmpty(caption) ? caption : update.message.content.getConstructor() != TdApi.MessagePhoto.CONSTRUCTOR ? messageText : null;
+            style.addMessage(new NotificationCompat.MessagingStyle.Message(messageText, date, person).setData("image/", uri));
             if (notification.isStickerContent()) {
-              style.addMessage(new NotificationCompat.MessagingStyle.Message(messageText, date, person).setData("image/", uri));
-              if (!StringUtils.isEmpty(messageText))
+              if (!StringUtils.isEmpty(messageText)) {
                 style.addMessage(new NotificationCompat.MessagingStyle.Message(messageText, date + 1, person));
+              }
             } else {
-              style.addMessage(new NotificationCompat.MessagingStyle.Message(messageText, date, person).setData("image/", uri));
-              String caption = notification.getContentText();
+              CharSequence caption = notification.getTextRepresentation(tdlib, isOnlyPinned, true, null);
               if (!StringUtils.isEmpty(caption)) {
-                style.addMessage(new NotificationCompat.MessagingStyle.Message(new TD.ContentPreview(TD.EMOJI_PHOTO, R.string.ChatContentPhoto, caption).toString(), date - 1, person));
+                style.addMessage(new NotificationCompat.MessagingStyle.Message(caption, date - 1, person));
               }
             }
             return;
@@ -1084,7 +1083,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
             } else {
               preview = Lang.getString(R.string.YouHaveNewMessage);
             }
-            addMessage(style, preview, buildPerson(tdlib.notifications(), chat, notification, onlyScheduled, onlySilent, !isRebuild), tdlib, chat, notification, MEDIA_LOAD_TIMEOUT, isRebuild, !onlyScheduled && notification.isScheduled(), !onlySilent && notification.isVisuallySilent());
+            addMessage(style, preview, buildPerson(tdlib.notifications(), chat, notification, onlyScheduled, onlySilent, !isRebuild), tdlib, chat, notification, MEDIA_LOAD_TIMEOUT, isRebuild, !onlyScheduled && notification.isScheduled(), !onlySilent && notification.isVisuallySilent(), onlyPinned);
           }
           b.setStyle(style);
         } else {
