@@ -8201,7 +8201,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         offsetProvider.getOffset(p);
         context().replaceReactionPreviewCords(finishX + p.x, finishY + p.y);
         context().closeStickerPreview();
-        onQuickReactionAnimationFinish();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+          onQuickReactionAnimationFinish(view.isAttachedToWindow());
+        } else {
+          onQuickReactionAnimationFinish();
+        }
       };
       final CancellableRunnable finishAnimation = new CancellableRunnable() {
         @Override
@@ -8218,7 +8222,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
             nextSetReactionAnimation.fullscreenEffectFinished = true;
             if (nextSetReactionAnimation.fullscreenEmojiFinished) {
               finishAnimation.cancel();
-              view.postDelayed(finishRunnable, 300);
+              tdlib().ui().postDelayed(finishRunnable, 300);
             }
           }
         });
@@ -8232,23 +8236,29 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
             nextSetReactionAnimation.fullscreenEmojiFinished = true;
             if (nextSetReactionAnimation.fullscreenEffectFinished) {
               finishAnimation.cancel();
-              view.postDelayed(finishRunnable, 300);
+              tdlib().ui().postDelayed(finishRunnable, 300);
             }
           }
         });
       }
-      view.postDelayed(finishAnimation, 8000);
+      tdlib().ui().postDelayed(finishAnimation, 8000);
     }
   }
 
   public void onQuickReactionAnimationFinish () {
+    onQuickReactionAnimationFinish(true);
+  }
+
+  public void onQuickReactionAnimationFinish (boolean needPlayEffectAnimation) {
     if (nextSetReactionAnimation == null) {
       clearSetReactionAnimation();
       return;
     }
 
-    vibrate();
-    startReactionBubbleAnimation(nextSetReactionAnimation.reaction.getReaction().reaction);
+    if (needPlayEffectAnimation) {
+      vibrate();
+      startReactionBubbleAnimation(nextSetReactionAnimation.reaction.getReaction().reaction);
+    }
     clearSetReactionAnimation();
   }
 
