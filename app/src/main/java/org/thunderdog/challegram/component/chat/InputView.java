@@ -142,17 +142,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     super(context);
     this.tdlib = tdlib;
     this.mediaHolder = new ComplexMediaHolder<>(this);
-    this.mediaHolder.setUpdateListener((usages, displayMediaKey) -> {
-      boolean updated = false;
-      for (EmojiSpan span : usages) {
-        if (EmojiUpdater.invalidateEmojiSpan(this, span, true)) {
-          updated = true;
-        }
-      }
-      if (updated) {
-        invalidate();
-      }
-    });
+    this.mediaHolder.setUpdateListener((usages, displayMediaKey) ->
+      scheduleCustomEmojiInvalidate()
+    );
     this.inlineContext = new InlineSearchContext(UI.getContext(context), tdlib, this);
     this.paint = new TextPaint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
     this.paint.setColor(Theme.textPlaceholderColor());
@@ -276,6 +268,22 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         }
       });
     }
+  }
+
+  private boolean isScheduled;
+
+  private void scheduleCustomEmojiInvalidate () {
+    if (!isScheduled) {
+      invalidateCustomEmoji();
+      postDelayed(() -> {
+        invalidateCustomEmoji();
+        isScheduled = false;
+      }, (long) (1000.0f / Screen.refreshRate()));
+    }
+  }
+
+  private void invalidateCustomEmoji () {
+    EmojiUpdater.invalidateEmojiSpans(this, true, true);
   }
 
   @Override

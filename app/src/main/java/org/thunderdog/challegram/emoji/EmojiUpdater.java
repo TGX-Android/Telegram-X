@@ -69,6 +69,7 @@ public class EmojiUpdater implements InputFilter, TGLegacyManager.EmojiLoadListe
   }
 
   public static boolean invalidateEmojiSpan (TextView targetView, EmojiSpan span, boolean force) {
+    // TODO: research & find more efficient way to redraw ReplacementSpan
     if (!force && !span.needRefresh()) {
       return false;
     }
@@ -87,16 +88,17 @@ public class EmojiUpdater implements InputFilter, TGLegacyManager.EmojiLoadListe
     return false;
   }
 
-  public static void invalidateEmojiSpans (TextView targetView, boolean force) {
+  public static void invalidateEmojiSpans (TextView targetView, boolean force, boolean custom) {
     final CharSequence text = targetView.getText();
     if (!(text instanceof Spanned))
       return;
+    // TODO: research & find more efficient way to redraw ReplacementSpan
     Spannable spannable = text instanceof Spannable ? (Spannable) text : new SpannableStringBuilder(text);
     EmojiSpan[] emojiSpans = spannable.getSpans(0, spannable.length(), EmojiSpan.class);
     if (!force) {
       boolean needRefresh = false;
       for (EmojiSpan span : emojiSpans) {
-        if (span.needRefresh()) {
+        if (span.needRefresh() && span.isCustomEmoji() == custom) {
           needRefresh = true;
           break;
         }
@@ -107,6 +109,8 @@ public class EmojiUpdater implements InputFilter, TGLegacyManager.EmojiLoadListe
     }
     boolean updated = false;
     for (EmojiSpan span : emojiSpans) {
+      if (span.isCustomEmoji() != custom)
+        continue;
       int spanStart = spannable.getSpanStart(span);
       int spanEnd = spannable.getSpanEnd(span);
       spannable.removeSpan(span);
@@ -123,7 +127,7 @@ public class EmojiUpdater implements InputFilter, TGLegacyManager.EmojiLoadListe
 
   @Override
   public void onEmojiUpdated (boolean isPackSwitch) {
-    invalidateEmojiSpans(targetView, isPackSwitch);
+    invalidateEmojiSpans(targetView, isPackSwitch, false);
   }
 
   @Override
