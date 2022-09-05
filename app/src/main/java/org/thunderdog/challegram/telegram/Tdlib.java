@@ -4774,7 +4774,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private void updateNotificationParameters (Client client) {
     final int notificationGroupCountMax, notificationGroupSizeMax;
 
-    if (BuildConfig.EXPERIMENTAL || isServiceInstance()) {
+    if (Config.FORCE_DISABLE_NOTIFICATIONS || isServiceInstance()) {
       // Disable Notifications API if we are running experimental build
       notificationGroupCountMax = 0;
       notificationGroupSizeMax = 1;

@@ -15,8 +15,6 @@
 package org.thunderdog.challegram.loader.gif;
 
 import android.graphics.Bitmap;
-import android.media.MediaMetadataRetriever;
-import android.os.Build;
 import android.view.View;
 
 import androidx.annotation.IntDef;
@@ -362,18 +360,9 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
     if (nativePtr == 0) {
       return;
     }
-    int rotation = 0;
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 && !isLottie) {
-      MediaMetadataRetriever retriever = null;
-      try {
-        retriever = U.openRetriever(path);
-        String rotationString = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
-        rotation = StringUtils.parseInt(rotationString);
-      } catch (Throwable ignored) { }
-      U.closeRetriever(retriever);
-    }
+    int rotation = !isLottie ? U.getVideoRotation(path) : 0;
     int queueSize = file.isStill() ? 1 : isLottie ? 2 : GifState.DEFAULT_QUEUE_SIZE;
-    GifState gif = new GifState(this, width, height, rotation, this, queueSize);
+    GifState gif = new GifState(width, height, rotation, this, queueSize);
     gif.setFrozen(isPlayingRoundVideo);
     boolean success = false;
     try {

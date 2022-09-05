@@ -477,48 +477,60 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
         if (TD.isFileLoaded(photoFile)) {
           Bitmap result = null;
           try {
-            if (photo.type == TdlibNotificationMediaFile.TYPE_ANIMATED_STICKER) {
-              result = ImageReader.decodeLottieFrame(photoFile.local.path, photo.width, photo.height, 512);
-            } else {
-              BitmapFactory.Options opts = ImageReader.getImageSize(photoFile.local.path);
-              opts.inSampleSize = ImageReader.calculateInSampleSize(opts, 512, 512);
-              opts.inJustDecodeBounds = false;
-              result = ImageReader.decodeFile(photoFile.local.path, opts.inSampleSize != 0 ? opts : null);
+            switch (photo.type) {
+              case TdlibNotificationMediaFile.TYPE_WEBM_STICKER:
+                result = ImageReader.decodeVideoFrame(photoFile.local.path, photo.width, photo.height, 512);
+                break;
+              case TdlibNotificationMediaFile.TYPE_LOTTIE_STICKER:
+                result = ImageReader.decodeLottieFrame(photoFile.local.path, photo.width, photo.height, 512);
+                break;
+              case TdlibNotificationMediaFile.TYPE_STICKER:
+              case TdlibNotificationMediaFile.TYPE_IMAGE: {
+                BitmapFactory.Options opts = ImageReader.getImageSize(photoFile.local.path);
+                opts.inSampleSize = ImageReader.calculateInSampleSize(opts, 512, 512);
+                opts.inJustDecodeBounds = false;
+                result = ImageReader.decodeFile(photoFile.local.path, opts.inSampleSize != 0 ? opts : null);
+                break;
+              }
+              default:
+                throw new UnsupportedOperationException(Integer.toString(photo.type));
             }
-            int width = result.getWidth();
-            int height = result.getHeight();
-            float ratio = (float) width / (float) height;
-            if (ratio != 2f) {
-              int desiredWidth = Math.min(Math.max(result.getWidth(), result.getHeight()), 512);
-              desiredWidth = desiredWidth - desiredWidth % 2;
-              int desiredHeight = desiredWidth / 2;
-              Bitmap scaledBitmap = Bitmap.createBitmap(desiredWidth, desiredHeight, Bitmap.Config.ARGB_8888);
-              Canvas c = new Canvas(scaledBitmap);
-              Paint paint = new Paint();
-              paint.setFilterBitmap(true);
-              if (photo.needBlur) {
-                float scale = Math.min(90f / (float) result.getWidth(), 90f / (float) result.getHeight());
-                Bitmap blurredBitmap = Bitmap.createScaledBitmap(result, (int) ((float) result.getWidth() * scale), (int) ((float) result.getHeight() * scale), true);
-                if (U.blurBitmap(blurredBitmap, 3, 1)) {
-                  paint.setAlpha((int) (255f * .75f));
-                  c.drawColor(0xffffffff);
-                  DrawAlgorithms.drawBitmapCentered(scaledBitmap.getWidth(), scaledBitmap.getHeight(), c, blurredBitmap, true, paint);
-                  paint.setAlpha(255);
+            if (U.isValidBitmap(result)) {
+              int width = result.getWidth();
+              int height = result.getHeight();
+              float ratio = (float) width / (float) height;
+              if (ratio != 2f) {
+                int desiredWidth = Math.min(Math.max(result.getWidth(), result.getHeight()), 512);
+                desiredWidth = desiredWidth - desiredWidth % 2;
+                int desiredHeight = desiredWidth / 2;
+                Bitmap scaledBitmap = Bitmap.createBitmap(desiredWidth, desiredHeight, Bitmap.Config.ARGB_8888);
+                Canvas c = new Canvas(scaledBitmap);
+                Paint paint = new Paint();
+                paint.setFilterBitmap(true);
+                if (photo.needBlur) {
+                  float scale = Math.min(90f / (float) result.getWidth(), 90f / (float) result.getHeight());
+                  Bitmap blurredBitmap = Bitmap.createScaledBitmap(result, (int) ((float) result.getWidth() * scale), (int) ((float) result.getHeight() * scale), true);
+                  if (U.blurBitmap(blurredBitmap, 3, 1)) {
+                    paint.setAlpha((int) (255f * .75f));
+                    c.drawColor(0xffffffff);
+                    DrawAlgorithms.drawBitmapCentered(scaledBitmap.getWidth(), scaledBitmap.getHeight(), c, blurredBitmap, true, paint);
+                    paint.setAlpha(255);
+                  }
                 }
-              }
 
-              float scale = Math.min((float) desiredWidth / (float) width, (float) desiredHeight / (float) height);
-              Rect resultRect = new Rect();
-              resultRect.right = (int) ((float) width * scale);
-              resultRect.bottom = (int) ((float) height * scale);
-              if (!photo.isSticker()) {
-                resultRect.offset(desiredWidth / 2 - resultRect.right / 2, desiredHeight / 2 - resultRect.bottom / 2);
+                float scale = Math.min((float) desiredWidth / (float) width, (float) desiredHeight / (float) height);
+                Rect resultRect = new Rect();
+                resultRect.right = (int) ((float) width * scale);
+                resultRect.bottom = (int) ((float) height * scale);
+                if (!photo.isSticker()) {
+                  resultRect.offset(desiredWidth / 2 - resultRect.right / 2, desiredHeight / 2 - resultRect.bottom / 2);
+                }
+                c.drawBitmap(result, null, resultRect, paint);
+                Bitmap oldBitmap = result;
+                result = scaledBitmap;
+                oldBitmap.recycle();
+                U.recycle(c);
               }
-              c.drawBitmap(result, null, resultRect, paint);
-              Bitmap oldBitmap = result;
-              result = scaledBitmap;
-              oldBitmap.recycle();
-              U.recycle(c);
             }
           } catch (Throwable t) {
             Log.i(t);
@@ -865,10 +877,18 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
         }
         if (TD.isFileLoaded(file.file)) {
           Uri uri = null;
-          if (file.type == TdlibNotificationMediaFile.TYPE_ANIMATED_STICKER) {
+          if (file.type == TdlibNotificationMediaFile.TYPE_LOTTIE_STICKER ||
+              file.type == TdlibNotificationMediaFile.TYPE_WEBM_STICKER) {
             AtomicReference<TdApi.File> generatedFile = new AtomicReference<>();
             CountDownLatch latch = new CountDownLatch(1);
-            tdlib.client().send(new TdApi.PreliminaryUploadFile(new TdApi.InputFileGenerated(file.file.local.path, GenerationInfo.TYPE_STICKER_PREVIEW, 0), new TdApi.FileTypeSticker(), 32), result -> {
+            tdlib.client().send(new TdApi.PreliminaryUploadFile(new TdApi.InputFileGenerated(
+              file.file.local.path,
+              file.type == TdlibNotificationMediaFile.TYPE_LOTTIE_STICKER ?
+                GenerationInfo.TYPE_LOTTIE_STICKER_PREVIEW :
+                GenerationInfo.TYPE_VIDEO_STICKER_PREVIEW, 0),
+              new TdApi.FileTypeSticker(),
+              32
+            ), result -> {
               switch (result.getConstructor()) {
                 case TdApi.File.CONSTRUCTOR: {
                   TdApi.File uploadingFile = (TdApi.File) result;

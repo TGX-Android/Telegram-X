@@ -57,14 +57,12 @@ public class GifState {
   private static final int FLAG_APPLY_NEXT = 1;
   private static final int FLAG_FROZEN = 1 << 1;
 
-  private final GifActor actor;
   private final int width, height, rotation;
   private final Callback callback;
   private int flags;
   private final int queueSize;
 
-  public GifState (GifActor actor, int width, int height, int rotation, Callback callback, int queueSize) {
-    this.actor = actor;
+  public GifState (int width, int height, int rotation, Callback callback, int queueSize) {
     this.width = width;
     this.height = height;
     this.rotation = rotation;

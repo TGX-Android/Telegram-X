@@ -2435,6 +2435,20 @@ public class U {
     return i * -1 - 1;
   }
 
+  public static int getVideoRotation (String path) {
+    int rotation = 0;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+      MediaMetadataRetriever retriever = null;
+      try {
+        retriever = U.openRetriever(path);
+        String rotationString = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
+        rotation = StringUtils.parseInt(rotationString);
+      } catch (Throwable ignored) { }
+      U.closeRetriever(retriever);
+    }
+    return rotation;
+  }
+
   public static String getUsefulMetadata (@Nullable Tdlib tdlib) {
     AppBuildInfo buildInfo = org.thunderdog.challegram.unsorted.Settings.instance().getCurrentBuildInformation();
     String metadata = Lang.getAppBuildAndVersion(tdlib) + " (" + BuildConfig.COMMIT + ")\n" +

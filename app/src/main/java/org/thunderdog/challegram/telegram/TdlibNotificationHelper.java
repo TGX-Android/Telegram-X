@@ -25,8 +25,8 @@ import androidx.core.app.NotificationManagerCompat;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.drinkmore.Tracer;
-import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -82,7 +82,7 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
   }
 
   private static boolean accept (TdApi.NotificationGroupType type) {
-    if (BuildConfig.EXPERIMENTAL) {
+    if (Config.FORCE_DISABLE_NOTIFICATIONS) {
       // Ignore all notifications in experimental builds
       return false;
     }
