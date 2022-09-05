@@ -1641,6 +1641,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
             return true;
           }
         }
+        break;
       }
       case MODE_CUSTOM_CONTENT: {
         return
