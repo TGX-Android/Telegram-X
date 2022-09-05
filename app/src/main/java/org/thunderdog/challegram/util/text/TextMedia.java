@@ -193,6 +193,18 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     return customEmoji != null && customEmoji.sticker != null && Td.isAnimated(customEmoji.sticker.format);
   }
 
+  public static float getScale (TdApi.Sticker sticker, int size) {
+    // animated custom emoji must be:
+    // 100x100 in 120x120 for webm
+    // 427x427 in 512x512 for lottie
+    // upd: turns out all of the webm emoji fit entire space
+    if (Td.isAnimated(sticker.format) &&
+        sticker.format.getConstructor() != TdApi.StickerFormatWebm.CONSTRUCTOR) {
+      return 120.0f / 100.0f - (Screen.dp(1f) * 2 / (float) size);
+    }
+    return 1f;
+  }
+
   public boolean isCustomEmoji () {
     return customEmojiId != 0;
   }
@@ -243,15 +255,11 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
       }
       return;
     }
-    boolean needScaleUp = isAnimatedCustomEmoji() && customEmoji.sticker.format.getConstructor() != TdApi.StickerFormatWebm.CONSTRUCTOR;
+    float scale = getScale(customEmoji.sticker, (right - left));
+    boolean needScaleUp = scale != 1f;
     int restoreToCount;
     if (needScaleUp) {
       restoreToCount = Views.save(c);
-      // animated custom emoji must be:
-      // 100x100 in 120x120 for webm
-      // 427x427 in 512x512 for lottie
-      // upd: turns out all of the webm emoji fit entire space
-      float scale = 120.0f / 100.0f - (Screen.dp(1f) * 2 / (float) (right - left));
       c.scale(scale, scale, left + (right - left) / 2f, top + (bottom - top) / 2f);
     } else {
       restoreToCount = -1;

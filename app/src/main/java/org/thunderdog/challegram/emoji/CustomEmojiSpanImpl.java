@@ -27,6 +27,8 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibEmojiManager;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.text.TextMedia;
 
 import me.vkryl.core.lambda.Destroyable;
 
@@ -112,12 +114,25 @@ class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiManager.Wat
     rect.right = rect.left + emojiSize;
     rect.bottom = rect.top + emojiSize;
 
+    float scale = TextMedia.getScale(customEmoji.sticker, emojiSize);
+    boolean needScale = scale != 1f;
+
+    int restoreToCount;
+    if (needScale) {
+      restoreToCount = Views.save(c);
+      c.scale(scale, scale, centerX, centerY);
+    } else {
+      restoreToCount = -1;
+    }
     mediaItem.draw(c,
       rect,
       surfaceProvider.provideComplexReceiverForSpan(this),
       attachedToMediaKey,
       surfaceProvider.getDuplicateMediaItemCount(this, mediaItem) > 1
     );
+    if (needScale) {
+      Views.restore(c, restoreToCount);
+    }
   }
 
   private int currentSize;
