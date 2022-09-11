@@ -26,6 +26,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.text.Html;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -82,6 +83,10 @@ import org.thunderdog.challegram.ui.HashtagController;
 import org.thunderdog.challegram.ui.ShareController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
+import org.thunderdog.challegram.util.HtmlEncoder;
+import org.thunderdog.challegram.util.HtmlParser;
+import org.thunderdog.challegram.util.HtmlSpan;
+import org.thunderdog.challegram.util.HtmlTag;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
@@ -4884,6 +4889,140 @@ public class TD {
     return toCharSequence((TdApi.FormattedText) result, true, true);
   }
 
+  private static HtmlTag toHtmlTag (TdApi.TextEntityType entityType) {
+    switch (entityType.getConstructor()) {
+      case TdApi.TextEntityTypeBold.CONSTRUCTOR:
+        return new HtmlTag("b");
+      case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
+        return new HtmlTag("i");
+      case TdApi.TextEntityTypeCode.CONSTRUCTOR:
+        return new HtmlTag("code");
+      case TdApi.TextEntityTypePre.CONSTRUCTOR:
+        return new HtmlTag("pre");
+      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
+        return new HtmlTag("spoiler");
+      case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
+        return new HtmlTag("s");
+      case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
+        return new HtmlTag("u");
+      case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
+        return new HtmlTag(
+          "<pre><code>",
+          "</code></pre>"
+        );
+      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
+        return new HtmlTag(
+          // intentionally matching tag to other apps to allow cross-app copy/paste
+          "<animated-emoji data-document-id=\"" + ((TdApi.TextEntityTypeCustomEmoji) entityType).customEmojiId + "\">",
+          "</animated-emoji>"
+        );
+      case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
+        return new HtmlTag(
+          "<tg-user-mention data-user-id=\"" + ((TdApi.TextEntityTypeMentionName) entityType).userId + "\">",
+          "</tg-user-mention>"
+        );
+      case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR: {
+        String hrefAttribute = Html.escapeHtml(((TdApi.TextEntityTypeTextUrl) entityType).url);
+        return new HtmlTag(
+          "<a href=\"" + hrefAttribute + "\">",
+          "</a>"
+        );
+      }
+      // automatically highlighted
+      case TdApi.TextEntityTypeHashtag.CONSTRUCTOR:
+      case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
+      case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
+      case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
+      case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR:
+      case TdApi.TextEntityTypeMention.CONSTRUCTOR:
+      case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
+        break;
+    }
+    return null;
+  }
+
+  private static HtmlTag[] toHtmlTag (Object span) {
+    if (span == null) {
+      return null;
+    }
+    if (span instanceof HtmlSpan) {
+      return new HtmlTag[] {((HtmlSpan) span).newTag()};
+    }
+    if (span instanceof CharacterStyle) {
+      TdApi.TextEntityType[] entityTypes = toEntityType((CharacterStyle) span);
+      if (entityTypes != null && entityTypes.length > 0) {
+        List<HtmlTag> tags = new ArrayList<>();
+        for (TdApi.TextEntityType entityType : entityTypes) {
+          HtmlTag tag = toHtmlTag(entityType);
+          if (tag != null) {
+            tags.add(tag);
+          }
+        }
+        if (!tags.isEmpty()) {
+          return tags.toArray(new HtmlTag[0]);
+        }
+      }
+    }
+    return null;
+  }
+
+  @Nullable
+  public static String toHtmlCopyText (Spanned spanned) {
+    HtmlEncoder.EncodeResult encodeResult = HtmlEncoder.toHtml(spanned, TD::toHtmlTag);
+    return encodeResult.tagCount > 0 ? encodeResult.htmlText : null;
+  }
+
+  @Nullable
+  public static CharSequence htmlToCharSequence (String htmlText) {
+    HtmlParser.Replacer<TdApi.TextEntityType> entityReplacer = (text, start, end, mark) -> {
+      CharacterStyle span = toSpan(mark);
+      if (span != null) {
+        text.setSpan(span, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+      }
+    };
+    return HtmlParser.fromHtml(htmlText, null, (opening, tag, output, xmlReader, attributes) -> {
+      // <tg-user-mention data-user-id="ID">...</tg-user-mention>
+      // <animated-emoji data-document-id="ID">...</animated-emoji>
+      // <spoiler>...</spoiler>
+      // <pre><code>...</code></pre>
+      // <pre>...</pre>
+      if (opening) {
+        if (tag.equalsIgnoreCase("tg-user-mention")) {
+          long userId = StringUtils.parseLong(attributes.getValue("", "data-user-id"));
+          TdApi.TextEntityTypeMentionName mention = new TdApi.TextEntityTypeMentionName(userId);
+          HtmlParser.start(output, mention);
+        } else if (tag.equalsIgnoreCase("animated-emoji")) {
+          long customEmojiId = StringUtils.parseLong(attributes.getValue("", "data-document-id"));
+          TdApi.TextEntityTypeCustomEmoji customEmoji = new TdApi.TextEntityTypeCustomEmoji(customEmojiId);
+          HtmlParser.start(output, customEmoji);
+        } else if (tag.equalsIgnoreCase("spoiler")) {
+          HtmlParser.start(output, new TdApi.TextEntityTypeSpoiler());
+        } else if (tag.equalsIgnoreCase("pre")) {
+          // TODO handle <pre><code>...</code></pre> as TextEntityTypePreCode
+          HtmlParser.start(output, new TdApi.TextEntityTypePre());
+        } else if (tag.equalsIgnoreCase("code")) {
+          HtmlParser.start(output, new TdApi.TextEntityTypeCode());
+        } else {
+          return false;
+        }
+        return true;
+      } else if (
+        tag.equalsIgnoreCase("tg-user-mention") ||
+        tag.equalsIgnoreCase("animated-emoji") ||
+        tag.equalsIgnoreCase("spoiler") ||
+        tag.equalsIgnoreCase("pre") ||
+        tag.equalsIgnoreCase("code")
+      ) {
+        HtmlParser.end(output, TdApi.TextEntityType.class, entityReplacer);
+        return true;
+      } else {
+        return false;
+      }
+    });
+  }
+
   public static CharSequence toCopyText (TdApi.FormattedText text) {
     return toCharSequence(text);
   }
@@ -5054,8 +5193,8 @@ public class TD {
         default:
           return null;
       }
-    } else if (span instanceof TypefaceSpan && "monospace".equals(((TypefaceSpan) span).getFamily())) {
-      return new TdApi.TextEntityType[] {new TdApi.TextEntityTypeCode()};
+    } else if (span instanceof TypefaceSpan) {
+      return toEntityType((TypefaceSpan) span);
     } else if (span instanceof BackgroundColorSpan) {
       final int color = ((BackgroundColorSpan) span).getBackgroundColor();
       if (color == SPOILER_BACKGROUND_COLOR) {
@@ -5070,6 +5209,68 @@ public class TD {
       return new TdApi.TextEntityType[] {new TdApi.TextEntityTypeCustomEmoji(((EmojiSpan) span).getCustomEmojiId())};
     }
     return null;
+  }
+
+  @Nullable
+  private static TdApi.TextEntityType[] toEntityType (TypefaceSpan span) {
+    if ("monospace".equals(span.getFamily())) {
+      return new TdApi.TextEntityType[] {new TdApi.TextEntityTypeCode()};
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      Typeface typeface = span.getTypeface();
+      if (typeface == null) {
+        return null;
+      }
+      if (typeface == Fonts.getRobotoMono()) {
+        return new TdApi.TextEntityType[] {new TdApi.TextEntityTypeCode()};
+      } else if (typeface == Fonts.getRobotoBold() || typeface == Fonts.getRobotoMedium()) {
+        return new TdApi.TextEntityType[] {new TdApi.TextEntityTypeBold()};
+      } else if (typeface == Fonts.getRobotoItalic()) {
+        return new TdApi.TextEntityType[] {new TdApi.TextEntityTypeItalic()};
+      }
+      switch (typeface.getStyle()) {
+        case Typeface.NORMAL:
+          break;
+        case Typeface.BOLD:
+          return new TdApi.TextEntityType[] {new TdApi.TextEntityTypeBold()};
+        case Typeface.ITALIC:
+          return new TdApi.TextEntityType[] {new TdApi.TextEntityTypeItalic()};
+        case Typeface.BOLD_ITALIC:
+          return new TdApi.TextEntityType[] {
+            new TdApi.TextEntityTypeBold(),
+            new TdApi.TextEntityTypeItalic()
+          };
+      }
+    }
+    return null;
+  }
+
+  private static boolean canConvertToEntityType (TypefaceSpan span) {
+    if ("monospace".equals(span.getFamily())) {
+      return true;
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      Typeface typeface = span.getTypeface();
+      if (typeface == null) {
+        return false;
+      }
+      if (
+        typeface == Fonts.getRobotoMono() ||
+        typeface == Fonts.getRobotoBold() || typeface == Fonts.getRobotoMedium() ||
+        typeface == Fonts.getRobotoItalic()
+      ) {
+        return true;
+      }
+      switch (typeface.getStyle()) {
+        case Typeface.NORMAL:
+          return false;
+        case Typeface.BOLD:
+        case Typeface.ITALIC:
+        case Typeface.BOLD_ITALIC:
+          return true;
+      }
+    }
+    return false;
   }
 
   public static boolean canConvertToEntityType (CharacterStyle span) {
@@ -5088,7 +5289,7 @@ public class TD {
       return false;
     }
     if (span instanceof TypefaceSpan)
-      return "monospace".equals(((TypefaceSpan) span).getFamily());
+      return canConvertToEntityType((TypefaceSpan) span);
     if (span instanceof BackgroundColorSpan) {
       final int backgroundColor = ((BackgroundColorSpan) span).getBackgroundColor();
       if (backgroundColor == SPOILER_BACKGROUND_COLOR) {

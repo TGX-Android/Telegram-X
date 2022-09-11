@@ -47,6 +47,7 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.widget.LinearLayout;
 
+import androidx.annotation.IdRes;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -1211,6 +1212,51 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   // Android-related workarounds
+
+  @Override
+  public boolean onTextContextMenuItem (@IdRes int id) {
+    try {
+      int selectionStart = getSelectionStart();
+      int selectionEnd = getSelectionEnd();
+      Editable editable = getText();
+      int length = selectionEnd - selectionStart;
+
+      switch (id) {
+        case android.R.id.cut: {
+          if (length > 0) {
+            CharSequence copyText = editable.subSequence(selectionStart, selectionEnd);
+            editable.delete(selectionStart, selectionEnd);
+            U.copyText(copyText);
+            return true;
+          }
+          break;
+        }
+        case android.R.id.copy: {
+          if (length > 0) {
+            CharSequence copyText = editable.subSequence(selectionStart, selectionEnd);
+            U.copyText(copyText);
+            return true;
+          }
+          break;
+        }
+        case android.R.id.paste: {
+          CharSequence pasteText = U.getPasteText(getContext());
+          if (pasteText != null) {
+            if (length > 0) {
+              editable.replace(selectionStart, selectionEnd, pasteText);
+            } else {
+              editable.insert(selectionStart, pasteText);
+            }
+            return true;
+          }
+          break;
+        }
+      }
+    } catch (Throwable t) {
+      Log.e("onTextContextMenuItem failed for id %s", t, Lang.getResourceEntryName(id));
+    }
+    return super.onTextContextMenuItem(id);
+  }
 
   @Override
   public boolean onTouchEvent (MotionEvent event) {

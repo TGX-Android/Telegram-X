@@ -15,7 +15,6 @@
 package org.thunderdog.challegram.tool;
 
 import android.content.Context;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.view.Gravity;
@@ -26,7 +25,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
 
 import org.thunderdog.challegram.BaseActivity;
-import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.MainActivity;
 import org.thunderdog.challegram.R;
@@ -358,22 +356,7 @@ public class UIHandler extends Handler {
       }
       case COPY_TEXT: {
         try {
-          CharSequence text = (CharSequence) msg.obj;
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) UI.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
-            if (clipboard != null) {
-              android.content.ClipData clip = android.content.ClipData.newPlainText(BuildConfig.PROJECT_NAME, text);
-              clipboard.setPrimaryClip(clip);
-            }
-          } else {
-            //noinspection deprecation
-            android.text.ClipboardManager clipboard = (android.text.ClipboardManager) UI.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
-            if (clipboard != null) {
-              //noinspection deprecation
-              clipboard.setText(text);
-            }
-          }
-
+          U.copyText((CharSequence) msg.obj);
           if (msg.arg1 != 0) {
             showCustomToast(msg.arg1, Toast.LENGTH_SHORT, 0);
           }

@@ -63,6 +63,7 @@ import android.provider.Settings;
 import android.text.BoringLayout;
 import android.text.Layout;
 import android.text.Spannable;
+import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.format.DateUtils;
@@ -3569,5 +3570,61 @@ public class U {
 
   public static String getCpuArchitecture () {
     return System.getProperty("os.arch");
+  }
+
+  public static void copyText (CharSequence text) {
+    //noinspection ObsoleteSdkInt
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+      android.content.ClipboardManager clipboard = (android.content.ClipboardManager) UI.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+      if (clipboard != null) {
+        android.content.ClipData clip = null;
+        if (text instanceof Spanned) {
+          String htmlText = TD.toHtmlCopyText((Spanned) text);
+          if (!StringUtils.isEmpty(htmlText)) {
+            clip = android.content.ClipData.newHtmlText(BuildConfig.PROJECT_NAME, text, htmlText);
+          }
+        }
+        if (clip == null) {
+          clip = android.content.ClipData.newPlainText(BuildConfig.PROJECT_NAME, text);
+        }
+        clipboard.setPrimaryClip(clip);
+      }
+    } else {
+      //noinspection deprecation
+      android.text.ClipboardManager clipboard = (android.text.ClipboardManager) UI.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+      if (clipboard != null) {
+        //noinspection deprecation
+        clipboard.setText(text);
+      }
+    }
+  }
+
+  public static CharSequence getPasteText (Context context) {
+    //noinspection ObsoleteSdkInt
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+      android.content.ClipboardManager clipboard = (android.content.ClipboardManager) UI.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+      if (clipboard != null) {
+        android.content.ClipData clipData = clipboard.getPrimaryClip();
+        if (clipData == null || clipData.getItemCount() != 1) {
+          return null;
+        }
+        android.content.ClipData.Item clipItem = clipData.getItemAt(0);
+        if (clipData.getDescription().hasMimeType("text/html")) {
+          String htmlText = clipItem.getHtmlText();
+          return TD.htmlToCharSequence(htmlText);
+        } else if (clipData.getDescription().hasMimeType("text/plain")) {
+          return clipItem.getText();
+        }
+        return null;
+      }
+    } else {
+      //noinspection deprecation
+      android.text.ClipboardManager clipboard = (android.text.ClipboardManager) UI.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+      if (clipboard != null) {
+        //noinspection deprecation
+        return clipboard.getText();
+      }
+    }
+    return null;
   }
 }
