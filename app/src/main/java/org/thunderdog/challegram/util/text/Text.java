@@ -333,6 +333,14 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     set(maxWidth, in);
   }
 
+  public static class Highlight {
+    public final String text;
+
+    public Highlight (String text) {
+      this.text = text;
+    }
+  }
+
   public static class Builder {
     private final String in;
     private final int maxWidth;
@@ -349,6 +357,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     private ViewProvider viewProvider;
     private ClickListener clickListener;
     private TextMediaListener textMediaListener;
+    private Highlight highlight; // TODO highlight text
 
     public Builder (String in, int maxWidth, TextStyleProvider provider, @NonNull TextColorSet theme) {
       if (in == null)
@@ -357,6 +366,11 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       this.maxWidth = maxWidth;
       this.provider = provider;
       this.theme = theme;
+    }
+
+    public Builder (FormattedText in, int maxWidth, TextStyleProvider provider, @NonNull TextColorSet theme, @Nullable TextMediaListener textMediaListener) {
+      this(in.text, maxWidth, provider, theme);
+      entities(in.entities, textMediaListener);
     }
 
     public Builder (Tdlib tdlib, CharSequence in, TdlibUi.UrlOpenParameters urlOpenParameters, int maxWidth, TextStyleProvider provider, @NonNull TextColorSet theme, @Nullable TextMediaListener textMediaListener) {
@@ -384,6 +398,15 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
     public Builder onClick (ClickListener listener) {
       this.clickListener = listener;
+      return this;
+    }
+
+    public Builder highlight (String highlight) {
+      return highlight(new Highlight(highlight));
+    }
+
+    public Builder highlight (Highlight highlight) {
+      this.highlight = highlight;
       return this;
     }
 

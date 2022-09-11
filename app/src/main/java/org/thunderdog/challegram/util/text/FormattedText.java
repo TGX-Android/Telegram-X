@@ -19,10 +19,13 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibUi;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import me.vkryl.core.StringUtils;
 
 public class FormattedText {
   @NonNull
@@ -44,6 +47,10 @@ public class FormattedText {
   @Override
   public String toString () {
     return text;
+  }
+
+  public boolean isEmpty () {
+    return StringUtils.isEmpty(text);
   }
 
   public int getIconCount () {
@@ -133,16 +140,16 @@ public class FormattedText {
     return new FormattedText(this.text, newEntities.toArray(new TextEntity[0]));
   }
 
-  public static FormattedText valueOf (ViewController<?> context, @Nullable TdApi.FormattedText formattedText, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public static FormattedText valueOf (TdlibDelegate context, @Nullable TdApi.FormattedText formattedText, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     if (formattedText == null)
       return null;
     return new FormattedText(formattedText.text != null ? formattedText.text : "", TextEntity.valueOf(context.tdlib(), formattedText, openParameters));
   }
 
-  public static FormattedText valueOf (ViewController<?> context, @Nullable CharSequence charSequence, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public static FormattedText valueOf (TdlibDelegate context, @Nullable CharSequence charSequence, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     if (charSequence == null)
       return null;
-    return new FormattedText(charSequence.toString(), TextEntity.valueOf(context, context.tdlib(), charSequence, openParameters));
+    return new FormattedText(charSequence.toString(), TextEntity.valueOf(/*FIXME?*/ context.context().navigation().getCurrentStackItem(), context.tdlib(), charSequence, openParameters));
   }
 
   public static FormattedText parseRichText (ViewController<?> context, @Nullable TdApi.RichText richText, @Nullable TdlibUi.UrlOpenParameters openParameters) {

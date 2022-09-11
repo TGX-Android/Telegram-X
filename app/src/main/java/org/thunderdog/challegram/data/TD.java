@@ -917,17 +917,11 @@ public class TD {
   }
 
   public static TdApi.FormattedText withPrefix (String prefix, TdApi.FormattedText text) {
-    if (StringUtils.isEmpty(prefix))
+    if (!StringUtils.isEmpty(prefix)) {
+      return Td.concat(new TdApi.FormattedText(prefix, null), text);
+    } else {
       return text;
-    if (text.entities == null || text.entities.length == 0)
-      return new TdApi.FormattedText(prefix + text.text, text.entities);
-    TdApi.FormattedText newText = new TdApi.FormattedText(prefix + text.text, new TdApi.TextEntity[text.entities.length]);
-    int prefixLength = prefix.length();
-    for (int i = 0; i < text.entities.length; i++) {
-      TdApi.TextEntity entity = text.entities[i];
-      newText.entities[i] = new TdApi.TextEntity(entity.offset + prefixLength, entity.length, entity.type);
     }
-    return newText;
   }
 
   public static boolean isAnimatedSticker (String mimeType) {

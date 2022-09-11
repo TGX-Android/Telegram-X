@@ -373,7 +373,7 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
           final int last = manager.findLastVisibleItemPosition();
           for (int i = first; i <= last; i++) {
             View view = manager.findViewByPosition(i);
-            if (view != null && view instanceof BetterChatView && ((BetterChatView) view).hasComplexText()) {
+            if (view instanceof BetterChatView) {
               view.invalidate();
             }
           }

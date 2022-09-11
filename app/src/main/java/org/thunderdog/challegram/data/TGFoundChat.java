@@ -183,9 +183,8 @@ public class TGFoundChat {
       return;
     String username = tdlib.chatUsername(chat.id);
 
-    SpannableStringBuilder fullUsername = new SpannableStringBuilder();
     StringBuilder rawUsername = new StringBuilder();
-    StringBuilder additionalInfo = new StringBuilder();
+    SpannableStringBuilder additionalInfo = new SpannableStringBuilder();
 
     if (!StringUtils.isEmpty(username)) {
       if ((flags & FLAG_USE_TME) != 0) {
@@ -206,16 +205,17 @@ public class TGFoundChat {
         }
       }
       if (memberCount != 0) {
-        additionalInfo.append(Lang.plural(TD.isChannel(chat.type) ? Config.CHANNEL_MEMBER_STRING : R.string.xMembers, memberCount));
+        additionalInfo.append(Lang.pluralBold(TD.isChannel(chat.type) ? Config.CHANNEL_MEMBER_STRING : R.string.xMembers, memberCount));
       }
     }
 
+    SpannableStringBuilder fullUsername = new SpannableStringBuilder();
     fullUsername.append(Strings.highlightWords(rawUsername.toString(), highlight, 1, null));
     if (additionalInfo.length() > 0) {
       if (fullUsername.length() > 0) {
         fullUsername.append(", ");
       }
-      fullUsername.append(additionalInfo.toString());
+      fullUsername.append(additionalInfo);
     }
     if (fullUsername.length() == 0) {
       fullUsername.append(tdlib.status().chatStatus(chatId));

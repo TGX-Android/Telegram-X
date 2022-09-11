@@ -16,6 +16,7 @@ package org.thunderdog.challegram.util.text;
 
 import android.text.Spanned;
 import android.text.TextPaint;
+import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
 import android.view.View;
 
@@ -25,6 +26,7 @@ import androidx.annotation.Nullable;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -194,20 +196,43 @@ public abstract class TextEntity {
     if (!(text instanceof Spanned)) {
       return null;
     }
-    ClickableSpan[] spans = ((Spanned) text).getSpans(0, text.length(), ClickableSpan.class);
+    CharacterStyle[] spans = ((Spanned) text).getSpans(0, text.length(), CharacterStyle.class);
     if (spans == null || spans.length == 0) {
       return null;
     }
-    TextEntity[] entities = new TextEntity[spans.length];
+    List<TextEntity> entities = new ArrayList<>();
     String str = text.toString();
-    int i = 0;
-    for (ClickableSpan span : spans) {
+    for (CharacterStyle span : spans) {
       int startIndex = ((Spanned) text).getSpanStart(span);
       int endIndex = ((Spanned) text).getSpanEnd(span);
-      entities[i] = new TextEntityCustom(context, tdlib, str, startIndex, endIndex, 0, openParameters).setOnClickListener(span);
-      i++;
+      if (span instanceof ClickableSpan) {
+        entities.add(new TextEntityCustom(context, tdlib, str, startIndex, endIndex, 0, openParameters)
+          .setOnClickListener((ClickableSpan) span)
+        );
+      } else {
+        TdApi.TextEntityType[] type = TD.toEntityType(span);
+        if (type != null && type.length > 0) {
+          List<TdApi.TextEntity> parentEntities;
+          if (type.length > 1) {
+            parentEntities = new ArrayList<>();
+            for (int i = 0; i < type.length - 1; i++) {
+              parentEntities.add(new TdApi.TextEntity(startIndex, endIndex - startIndex, type[i]));
+            }
+          } else {
+            parentEntities = null;
+          }
+          entities.add(new TextEntityMessage(
+            tdlib,
+            str,
+            startIndex, endIndex,
+            new TdApi.TextEntity(startIndex, endIndex - startIndex, type[type.length - 1]),
+            parentEntities,
+            openParameters
+          ));
+        }
+      }
     }
-    return entities;
+    return entities.isEmpty() ? null : entities.toArray(new TextEntity[0]);
   }
 
   private static int valueOf (Tdlib tdlib, String in, TdApi.TextEntity[] entities, TdlibUi.UrlOpenParameters openParameters, List<TdApi.TextEntity> parents, final int rootIndex, List<TextEntity> out) {
