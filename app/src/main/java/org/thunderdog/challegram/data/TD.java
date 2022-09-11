@@ -83,10 +83,6 @@ import org.thunderdog.challegram.ui.HashtagController;
 import org.thunderdog.challegram.ui.ShareController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
-import org.thunderdog.challegram.util.HtmlEncoder;
-import org.thunderdog.challegram.util.HtmlParser;
-import org.thunderdog.challegram.util.HtmlSpan;
-import org.thunderdog.challegram.util.HtmlTag;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
@@ -102,6 +98,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import me.vkryl.android.html.HtmlEncoder;
+import me.vkryl.android.html.HtmlParser;
+import me.vkryl.android.html.HtmlTag;
 import me.vkryl.android.text.AcceptFilter;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.CurrencyUtils;
@@ -4945,26 +4944,18 @@ public class TD {
     return null;
   }
 
-  private static HtmlTag[] toHtmlTag (Object span) {
-    if (span == null) {
-      return null;
-    }
-    if (span instanceof HtmlSpan) {
-      return new HtmlTag[] {((HtmlSpan) span).newTag()};
-    }
-    if (span instanceof CharacterStyle) {
-      TdApi.TextEntityType[] entityTypes = toEntityType((CharacterStyle) span);
-      if (entityTypes != null && entityTypes.length > 0) {
-        List<HtmlTag> tags = new ArrayList<>();
-        for (TdApi.TextEntityType entityType : entityTypes) {
-          HtmlTag tag = toHtmlTag(entityType);
-          if (tag != null) {
-            tags.add(tag);
-          }
+  private static HtmlTag[] toHtmlTag (CharacterStyle span) {
+    TdApi.TextEntityType[] entityTypes = toEntityType((CharacterStyle) span);
+    if (entityTypes != null && entityTypes.length > 0) {
+      List<HtmlTag> tags = new ArrayList<>();
+      for (TdApi.TextEntityType entityType : entityTypes) {
+        HtmlTag tag = toHtmlTag(entityType);
+        if (tag != null) {
+          tags.add(tag);
         }
-        if (!tags.isEmpty()) {
-          return tags.toArray(new HtmlTag[0]);
-        }
+      }
+      if (!tags.isEmpty()) {
+        return tags.toArray(new HtmlTag[0]);
       }
     }
     return null;
@@ -4972,7 +4963,7 @@ public class TD {
 
   @Nullable
   public static String toHtmlCopyText (Spanned spanned) {
-    HtmlEncoder.EncodeResult encodeResult = HtmlEncoder.toHtml(spanned, TD::toHtmlTag);
+    HtmlEncoder.EncodeResult encodeResult = HtmlEncoder.toHtml(spanned, CharacterStyle.class, TD::toHtmlTag);
     return encodeResult.tagCount > 0 ? encodeResult.htmlText : null;
   }
 
