@@ -4905,21 +4905,23 @@ public class TD {
         return new HtmlTag("s");
       case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
         return new HtmlTag("u");
-      case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
+      case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
         return new HtmlTag(
-          "<pre><code>",
-          "</code></pre>"
+          "<tg-user-mention data-user-id=\"" + ((TdApi.TextEntityTypeMentionName) entityType).userId + "\">",
+          "</tg-user-mention>"
         );
+      case TdApi.TextEntityTypePreCode.CONSTRUCTOR: {
+        String language = ((TdApi.TextEntityTypePreCode) entityType).language;
+        return new HtmlTag(
+          "<tg-pre-code data-language=\"" + (language != null ? Html.escapeHtml(language) : "") + "\">",
+          "</tg-pre-code>"
+        );
+      }
       case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
         return new HtmlTag(
           // intentionally matching tag to other apps to allow cross-app copy/paste
           "<animated-emoji data-document-id=\"" + ((TdApi.TextEntityTypeCustomEmoji) entityType).customEmojiId + "\">",
           "</animated-emoji>"
-        );
-      case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
-        return new HtmlTag(
-          "<tg-user-mention data-user-id=\"" + ((TdApi.TextEntityTypeMentionName) entityType).userId + "\">",
-          "</tg-user-mention>"
         );
       case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR: {
         String hrefAttribute = Html.escapeHtml(((TdApi.TextEntityTypeTextUrl) entityType).url);
@@ -4984,10 +4986,12 @@ public class TD {
     };
     return HtmlParser.fromHtml(htmlText, null, (opening, tag, output, xmlReader, attributes) -> {
       // <tg-user-mention data-user-id="ID">...</tg-user-mention>
+      // <tg-pre-code data-language="LANG">...</tg-pre-code>
       // <animated-emoji data-document-id="ID">...</animated-emoji>
       // <spoiler>...</spoiler>
-      // <pre><code>...</code></pre>
       // <pre>...</pre>
+      // <code>...</code>
+      // <tg-pre-code language="...">...</tg-pre-code>
       if (opening) {
         if (tag.equalsIgnoreCase("tg-user-mention")) {
           long userId = StringUtils.parseLong(attributes.getValue("", "data-user-id"));
@@ -5000,10 +5004,12 @@ public class TD {
         } else if (tag.equalsIgnoreCase("spoiler")) {
           HtmlParser.start(output, new TdApi.TextEntityTypeSpoiler());
         } else if (tag.equalsIgnoreCase("pre")) {
-          // TODO handle <pre><code>...</code></pre> as TextEntityTypePreCode
           HtmlParser.start(output, new TdApi.TextEntityTypePre());
         } else if (tag.equalsIgnoreCase("code")) {
           HtmlParser.start(output, new TdApi.TextEntityTypeCode());
+        } else if (tag.equalsIgnoreCase("tg-pre-code")) {
+          String language = attributes.getValue("", "data-language");
+          HtmlParser.start(output, new TdApi.TextEntityTypePreCode(language != null ? language : ""));
         } else {
           return false;
         }
@@ -5013,7 +5019,8 @@ public class TD {
         tag.equalsIgnoreCase("animated-emoji") ||
         tag.equalsIgnoreCase("spoiler") ||
         tag.equalsIgnoreCase("pre") ||
-        tag.equalsIgnoreCase("code")
+        tag.equalsIgnoreCase("code") ||
+        tag.equalsIgnoreCase("tg-pre-code")
       ) {
         HtmlParser.end(output, TdApi.TextEntityType.class, entityReplacer);
         return true;
