@@ -278,7 +278,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       postDelayed(() -> {
         invalidateCustomEmoji();
         isScheduled = false;
-      }, (long) (1000.0f / Screen.refreshRate()));
+      }, (long) (1000.0f / Math.min(Screen.refreshRate(), 60.0f)));
     }
   }
 
