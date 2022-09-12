@@ -27,6 +27,7 @@ import java.util.Map;
 import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceLongMap;
+import me.vkryl.td.Td;
 import me.vkryl.td.TdConstants;
 
 public class TdlibEmojiManager implements CleanupStartupDelegate {
@@ -49,6 +50,10 @@ public class TdlibEmojiManager implements CleanupStartupDelegate {
 
     public boolean isNotFound () {
       return error != null || sticker == null;
+    }
+
+    public boolean isAnimated () {
+      return sticker != null && Td.isAnimated(sticker.format);
     }
   }
 

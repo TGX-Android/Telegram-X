@@ -14,7 +14,10 @@
  */
 package org.thunderdog.challegram.emoji;
 
+import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.text.Layout;
+import android.view.View;
 
 import org.thunderdog.challegram.loader.ComplexReceiver;
 
@@ -35,4 +38,6 @@ public interface EmojiSpan {
   default boolean needRefresh () {
     return false;
   }
+
+  default void onOverlayDraw (Canvas c, View view, Layout layout) { }
 }

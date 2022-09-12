@@ -78,7 +78,6 @@ import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.emoji.EmojiFilter;
 import org.thunderdog.challegram.emoji.EmojiInfo;
 import org.thunderdog.challegram.emoji.EmojiSpan;
-import org.thunderdog.challegram.emoji.EmojiUpdater;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.helper.InlineSearchContext;
 import org.thunderdog.challegram.loader.ComplexReceiver;
@@ -284,7 +283,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   private void invalidateCustomEmoji () {
-    EmojiUpdater.invalidateEmojiSpans(this, true, true);
+    invalidate();
   }
 
   @Override
@@ -938,10 +937,16 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     }
   }
 
+  private void drawEmojiOverlay (Canvas c) {
+    for (EmojiSpan span : mediaHolder) {
+      span.onOverlayDraw(c, this, getLayout());
+    }
+  }
+
   @Override
   protected void onDraw (Canvas c) {
     super.onDraw(c);
-
+    drawEmojiOverlay(c);
     if (this.displaySuffix.length() > 0 && this.prefix.length() > 0 && getLineCount() == 1) {
       String text = getText().toString();
       if (text.equalsIgnoreCase(prefix)) {

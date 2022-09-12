@@ -17,6 +17,8 @@ package org.thunderdog.challegram.emoji;
 
 import android.graphics.Canvas;
 import android.graphics.Rect;
+import android.text.Layout;
+import android.view.View;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
@@ -26,7 +28,6 @@ import org.thunderdog.challegram.data.ComplexMediaItemCustomEmoji;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibEmojiManager;
-import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.TextMedia;
 
@@ -40,6 +41,8 @@ class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiManager.Wat
   private TdlibEmojiManager.Entry customEmoji;
   private boolean emojiRequested;
   private boolean isDestroyed;
+
+  private final Rect drawRect = new Rect();
 
   public CustomEmojiSpanImpl (@Nullable EmojiInfo info, CustomEmojiSurfaceProvider surfaceProvider, Tdlib tdlib, long customEmojiId) {
     super(info);
@@ -107,31 +110,55 @@ class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiManager.Wat
 
     layoutEmoji(emojiSize);
 
-    Rect rect = Paints.getRect();
+    int left = (int) (centerX - emojiSize / 2f);
+    int top = (int) (centerY - emojiSize / 2f);
+    int right = left + emojiSize;
+    int bottom = top + emojiSize;
 
-    rect.left = (int) (centerX - emojiSize / 2f);
-    rect.top = (int) (centerY - emojiSize / 2f);
-    rect.right = rect.left + emojiSize;
-    rect.bottom = rect.top + emojiSize;
+    if (drawRect.left != left || drawRect.top != top || drawRect.right != right || drawRect.bottom != bottom) {
+      drawRect.set(left, top, right, bottom);
+    }
+  }
 
-    float scale = TextMedia.getScale(customEmoji.sticker, emojiSize);
+  private void drawCustomEmoji (Canvas c) {
+    float scale = TextMedia.getScale(customEmoji.sticker, currentSize);
     boolean needScale = scale != 1f;
 
     int restoreToCount;
     if (needScale) {
       restoreToCount = Views.save(c);
-      c.scale(scale, scale, centerX, centerY);
+      c.scale(scale, scale, drawRect.centerX(), drawRect.centerY());
     } else {
       restoreToCount = -1;
     }
     mediaItem.draw(c,
-      rect,
+      drawRect,
       surfaceProvider.provideComplexReceiverForSpan(this),
       attachedToMediaKey,
       surfaceProvider.getDuplicateMediaItemCount(this, mediaItem) > 1
     );
     if (needScale) {
       Views.restore(c, restoreToCount);
+    }
+  }
+
+  @Override
+  public void onOverlayDraw (Canvas c, View view, Layout layout) {
+    if (customEmoji == null || customEmoji.isNotFound()) {
+      return;
+    }
+    if (drawRect.left == drawRect.right || drawRect.top == drawRect.bottom || currentSize == 0) {
+      return; // force invalidate()?
+    }
+    int paddingLeft = view.getPaddingLeft();
+    int paddingTop = view.getPaddingTop();
+    boolean translate = paddingLeft != 0 || paddingTop != 0;
+    if (translate) {
+      drawRect.offset(paddingLeft, paddingTop);
+    }
+    drawCustomEmoji(c);
+    if (translate) {
+      drawRect.offset(-paddingLeft, -paddingTop);
     }
   }
 

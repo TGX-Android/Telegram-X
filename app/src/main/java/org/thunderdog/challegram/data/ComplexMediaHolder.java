@@ -17,23 +17,26 @@ package org.thunderdog.challegram.data;
 
 import android.view.View;
 
+import androidx.annotation.NonNull;
 import androidx.collection.LongSparseArray;
 
 import org.thunderdog.challegram.loader.ComplexReceiver;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.core.lambda.Future;
 
-public class ComplexMediaHolder<T> implements Destroyable {
+public class ComplexMediaHolder<T> implements Destroyable, Iterable<T> {
   public interface UpdateListener<T> {
     void onRequestInvalidate (List<T> usages, long displayMediaKey);
   }
 
-  private static class Entry<T> {
+  private static class Entry<T> implements Future<List<T>> {
     public final String key;
     public final long mediaKey;
     public final List<T> usages = new ArrayList<>();
@@ -43,12 +46,18 @@ public class ComplexMediaHolder<T> implements Destroyable {
       this.key = key;
       this.mediaKey = mediaKey;
     }
+
+    @Override
+    public List<T> get () {
+      return usages;
+    }
   }
 
   public final View targetView;
   public final ComplexReceiver receiver;
 
   private final Map<String, Entry<T>> entries = new HashMap<>();
+  private final List<T> allUsages = new ArrayList<>();
   private final LongSparseArray<Entry<T>> mediaKeyToEntry = new LongSparseArray<>();
   private long lastMediaKey;
 
@@ -85,6 +94,7 @@ public class ComplexMediaHolder<T> implements Destroyable {
     }
     if (!entry.usages.contains(usage)) {
       entry.usages.add(usage);
+      allUsages.add(usage);
     }
     if (!entry.mediaRequested) {
       mediaItem.requestComplexMedia(receiver, entry.mediaKey);
@@ -102,9 +112,12 @@ public class ComplexMediaHolder<T> implements Destroyable {
     if (entry.mediaKey != mediaId) {
       throw new IllegalArgumentException();
     }
-    if (entry.usages.remove(usage) && entry.usages.isEmpty()) {
-      receiver.clearReceivers(entry.mediaKey);
-      entry.mediaRequested = false;
+    if (entry.usages.remove(usage)) {
+      allUsages.remove(usage);
+      if (entry.usages.isEmpty()) {
+        receiver.clearReceivers(entry.mediaKey);
+        entry.mediaRequested = false;
+      }
     }
   }
 
@@ -114,5 +127,11 @@ public class ComplexMediaHolder<T> implements Destroyable {
     for (Map.Entry<String, Entry<T>> entry : entries.entrySet()) {
       entry.getValue().mediaRequested = false;
     }
+  }
+
+  @NonNull
+  @Override
+  public Iterator<T> iterator () {
+    return allUsages.iterator();
   }
 }
