@@ -127,9 +127,7 @@ public class FormattedText {
   private void addHighlight (List<TextEntity> out, Highlight.Part part, @NonNull TextColorSet highlightColorSet) {
     List<TextEntity> intersectingEntities = new ArrayList<>();
     for (TextEntity entity : out) {
-      if ((part.start <= entity.start && part.end >= entity.end) /* highlight covers the entity fully */ ||
-        (part.start <= entity.start && part.end > entity.start) /* highlight ends in the middle of the entity*/ ||
-        (part.start >= entity.start && part.start < entity.end) /* highlight starts in the middle of the entity */) {
+      if (entity.start <= part.end && entity.end >= part.start) {
         intersectingEntities.add(entity);
       }
     }
@@ -143,52 +141,55 @@ public class FormattedText {
         }
         bestIndex++;
       }
-      if (bestIndex == out.size()) {
-        out.add(highlightEntity);
-      } else {
-        out.add(bestIndex, highlightEntity);
-      }
+      out.add(bestIndex, highlightEntity);
       return;
     }
     // hard path: update existing entities
     int highlighted = part.start;
     for (TextEntity entity : intersectingEntities) {
       int entityIndex = out.indexOf(entity);
+
       if (highlighted < entity.start) {
         // highlight highlighted .. entity.start
-        out.add(entityIndex, TextEntity.valueOf(text, part, highlightColorSet));
+        TextEntity highlightEntity = TextEntity.valueOf(text, part, highlightColorSet);
+        highlightEntity.end = entity.start;
+        out.add(entityIndex, highlightEntity);
         entityIndex++;
         highlighted = entity.start;
       }
-      if (part.start <= entity.start && part.end >= entity.end) {
-        // just update existing entity, as highlight fully covers it
+
+      if (highlighted == entity.start && part.end >= entity.end) {
+        // Update existing entity, as highlight fully covers it
         entity.setCustomColorSet(highlightColorSet);
         highlighted = entity.end;
-      } else if (entity.hasMedia()) {
-        // Edge case: force avoid splitting media entity
-        highlighted = part.end;
       } else {
-        if (part.end < entity.end) {
-          // split entity into two entities:
-          // entity.start .. part.end: highlighted
-          TextEntity highlightedEntity = entity.createCopy();
-          highlightedEntity.setCustomColorSet(highlightColorSet);
-          highlightedEntity.end = part.end;
-          out.add(entityIndex, highlightedEntity);
+        // entity.start .. part.start -> no highlight
+        // part.start .. min(entity.end, part.end) -> highlight
+        // part.end .. entity.end -> no highlight
+
+        int entityStart = entity.start;
+        int entityEnd = entity.end;
+
+        if (highlighted > entityStart) {
+          TextEntity entityCopy = entity.createCopy();
+          entityCopy.end = highlighted;
+          out.add(entityIndex, entityCopy);
           entityIndex++;
-          highlighted = highlightedEntity.end;
-          // part.end .. entity.end: not highlighted
+          entity.start = entityCopy.end;
+        }
+
+        if (highlighted == entity.start && part.end >= entity.end) {
+          // Update existing entity, as highlight fully covers it
+          entity.setCustomColorSet(highlightColorSet);
+          highlighted = entity.end;
+        } else if (part.end < entity.end) {
+          TextEntity highlightEntity = entity.createCopy();
+          highlightEntity.setCustomColorSet(highlightColorSet);
+          highlightEntity.end = part.end;
+          out.add(entityIndex, highlightEntity);
+          entityIndex++;
+          highlighted = part.end;
           entity.start = part.end;
-        } else if (part.start > entity.start) {
-          // split entity into two entities:
-          // part.start .. entity.end: highlighted
-          TextEntity highlightedEntity = entity.createCopy();
-          highlightedEntity.setCustomColorSet(highlightColorSet);
-          highlightedEntity.start = part.start;
-          out.add(entityIndex + 1, highlightedEntity);
-          // entity.start .. part.start: not highlighted
-          entity.end = part.start;
-          highlighted = highlightedEntity.end;
         }
       }
     }
@@ -202,11 +203,7 @@ public class FormattedText {
         }
         bestIndex++;
       }
-      if (bestIndex == out.size()) {
-        out.add(highlightEntity);
-      } else {
-        out.add(bestIndex, highlightEntity);
-      }
+      out.add(bestIndex, highlightEntity);
     }
   }
 
