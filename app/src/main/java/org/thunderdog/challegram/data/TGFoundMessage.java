@@ -17,19 +17,23 @@ package org.thunderdog.challegram.data;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.util.text.Highlight;
+
+import me.vkryl.core.StringUtils;
 
 public class TGFoundMessage {
   private final TGFoundChat chat;
   private final TdApi.Message message;
   private final TdApi.FormattedText text;
-  private final String query;
+  private final Highlight highlight;
 
   public TGFoundMessage (Tdlib tdlib, TdApi.ChatList chatList, TdApi.Chat chat, TdApi.Message message, String query) {
     this.chat = new TGFoundChat(tdlib, chatList, chat, null);
     this.message = message;
+    // Strings.highlightWords(Strings.replaceNewLines(copyText), query, 0, InlineResultEmojiSuggestion.SPECIAL_SPLITTERS);
     TD.ContentPreview preview = TD.getChatListPreview(tdlib, message.chatId, message);
     this.text = preview.buildFormattedText(false);
-    this.query = query;
+    this.highlight = Highlight.valueOf(text.text, query);
   }
 
   public long getId () {
@@ -44,8 +48,8 @@ public class TGFoundMessage {
     return text;
   }
 
-  public String getQuery () {
-    return query;
+  public Highlight getHighlight () {
+    return highlight;
   }
 
   public ImageFile getAvatar () {

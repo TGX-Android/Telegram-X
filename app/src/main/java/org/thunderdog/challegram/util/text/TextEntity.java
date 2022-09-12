@@ -50,10 +50,18 @@ public abstract class TextEntity {
 
   private Object tag;
 
+  @Nullable
+  protected TextColorSet customColorSet;
+
   public TextEntity (@Nullable Tdlib tdlib, int start, int end, boolean needFakeBold, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     this.tdlib = tdlib;
     this.openParameters = openParameters;
     this.needFakeBold = needFakeBold;
+    this.start = start;
+    this.end = end;
+  }
+
+  public void setStartEnd (int start, int end) {
     this.start = start;
     this.end = end;
   }
@@ -69,6 +77,11 @@ public abstract class TextEntity {
 
   public TextEntity setTag (Object tag) {
     this.tag = tag;
+    return this;
+  }
+
+  public TextEntity setCustomColorSet (TextColorSet customColorSet) {
+    this.customColorSet = customColorSet;
     return this;
   }
 
@@ -117,6 +130,7 @@ public abstract class TextEntity {
   public abstract boolean isFullWidth ();
   public abstract boolean isCustomEmoji ();
   public abstract long getCustomEmojiId ();
+  public abstract TextEntity createCopy ();
 
   // TODO: TextEntityCustom & TextEntityMessage to make things simpler
   public abstract TextEntity setOnClickListener (ClickableSpan onClickListener);
@@ -187,6 +201,14 @@ public abstract class TextEntity {
 
   public static TextEntity[] valueOf (Tdlib tdlib, TdApi.FormattedText text, TdlibUi.UrlOpenParameters openParameters) {
     return valueOf(tdlib, text.text, text.entities, openParameters);
+  }
+
+  public static TextEntity valueOf (String text, Highlight.Part highlightPart, TextColorSet highlightedColorSet) {
+    return new TextEntityCustom(
+      null, null,
+      text, highlightPart.start, highlightPart.end,
+      0, null
+    ).setCustomColorSet(highlightedColorSet);
   }
 
   public static TextEntity[] valueOf (ViewController<?> context, Tdlib tdlib, CharSequence text, TdlibUi.UrlOpenParameters openParameters) {

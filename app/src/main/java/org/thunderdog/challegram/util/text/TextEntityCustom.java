@@ -67,8 +67,6 @@ public class TextEntityCustom extends TextEntity {
   private String link;
   private boolean linkCached;
 
-  private TextColorSet customColorSet;
-
   private ClickableSpan onClickListener;
   private String anchorName;
   private String referenceAnchorName;
@@ -76,7 +74,11 @@ public class TextEntityCustom extends TextEntity {
   private String copyLink;
 
   public TextEntityCustom (@Nullable ViewController<?> context, @Nullable Tdlib tdlib, String in, int offset, int end, int flags, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    super(tdlib, offset, end, (flags & FLAG_BOLD) != 0 && Text.needFakeBold(in), openParameters);
+    this(context, tdlib, (flags & FLAG_BOLD) != 0 && Text.needFakeBold(in), offset, end, flags, openParameters);
+  }
+
+  private TextEntityCustom (@Nullable ViewController<?> context, @Nullable Tdlib tdlib, boolean needFakeBold, int offset, int end, int flags, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(tdlib, offset, end, needFakeBold, openParameters);
     this.context = context;
     this.flags = flags;
   }
@@ -101,11 +103,6 @@ public class TextEntityCustom extends TextEntity {
     return this;
   }
 
-  public TextEntityCustom setCustomColorSet (TextColorSet colorSet) {
-    this.customColorSet = colorSet;
-    return this;
-  }
-
   @Override
   public TextEntity setOnClickListener (ClickableSpan span) {
     this.onClickListener = span;
@@ -118,6 +115,30 @@ public class TextEntityCustom extends TextEntity {
     this.flags |= FLAG_BOLD;
     this.needFakeBold = needFakeBold;
     return this;
+  }
+
+  @Override
+  public TextEntity createCopy () {
+    TextEntityCustom copy = new TextEntityCustom(context, tdlib, needFakeBold, start, end, flags, openParameters);
+    if (customColorSet != null) {
+      copy.setCustomColorSet(customColorSet);
+    }
+    if (onClickListener != null) {
+      copy.setOnClickListener(onClickListener);
+    }
+    if (copyLink != null) {
+      copy.setCopyLink(copyLink);
+    }
+    if (referenceAnchorName != null) {
+      copy.setReferenceAnchorName(referenceAnchorName);
+    }
+    if (anchorName != null) {
+      copy.setAnchorName(anchorName);
+    }
+    if (icon != null) {
+      copy.setIcon(icon);
+    }
+    return copy;
   }
 
   private TextColorSetOverride cachedLinkSet;

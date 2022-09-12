@@ -156,6 +156,12 @@ public final class TextColorSets {
           return R.id.theme_color_iconLight;
         }
       },
+      SEARCH_HIGHLIGHT = new Regular() {
+        @Override
+        public int defaultTextColorId () {
+          return R.id.theme_color_textSearchQueryHighlight;
+        }
+      },
       LINK = new Regular() {
         @Override
         public int defaultTextColorId () {

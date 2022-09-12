@@ -23,6 +23,8 @@ import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibUi;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import me.vkryl.core.StringUtils;
@@ -50,7 +52,7 @@ public class FormattedText {
   }
 
   public boolean isEmpty () {
-    return StringUtils.isEmpty(text);
+    return StringUtils.isEmpty(text) && getIconCount() == 0;
   }
 
   public int getIconCount () {
@@ -99,6 +101,113 @@ public class FormattedText {
         entities.toArray(new TextEntity[0]) :
         null
     );
+  }
+
+  public FormattedText highlight (Highlight highlight) {
+    if (highlight == null || highlight.isEmpty()) {
+      return this;
+    }
+    if (entities == null) {
+      // Easy path: just create entities corresponding to highlight.parts
+      TextEntity[] entities = new TextEntity[highlight.parts.size()];
+      for (int i = 0; i < entities.length; i++) {
+        Highlight.Part part = highlight.parts.get(i);
+        entities[i] = TextEntity.valueOf(text, part, TextColorSets.Regular.SEARCH_HIGHLIGHT);
+      }
+      return new FormattedText(text, entities);
+    }
+    List<TextEntity> newEntities = new ArrayList<>();
+    Collections.addAll(newEntities, entities);
+    for (Highlight.Part part : highlight.parts) {
+      addHighlight(newEntities, part, TextColorSets.Regular.SEARCH_HIGHLIGHT);
+    }
+    return new FormattedText(text, newEntities.toArray(new TextEntity[0]));
+  }
+
+  private void addHighlight (List<TextEntity> out, Highlight.Part part, @NonNull TextColorSet highlightColorSet) {
+    List<TextEntity> intersectingEntities = new ArrayList<>();
+    for (TextEntity entity : out) {
+      if ((part.start <= entity.start && part.end >= entity.end) /* highlight covers the entity fully */ ||
+        (part.start <= entity.start && part.end > entity.start) /* highlight ends in the middle of the entity*/ ||
+        (part.start >= entity.start && part.start < entity.end) /* highlight starts in the middle of the entity */) {
+        intersectingEntities.add(entity);
+      }
+    }
+    if (intersectingEntities.isEmpty()) {
+      // medium path: text part is between existing TextEntity, just add a new one between them
+      TextEntity highlightEntity = TextEntity.valueOf(text, part, highlightColorSet);
+      int bestIndex = 0;
+      for (TextEntity entity : out) {
+        if (entity.start > part.start) {
+          break;
+        }
+        bestIndex++;
+      }
+      if (bestIndex == out.size()) {
+        out.add(highlightEntity);
+      } else {
+        out.add(bestIndex, highlightEntity);
+      }
+      return;
+    }
+    // hard path: update existing entities
+    int highlighted = part.start;
+    for (TextEntity entity : intersectingEntities) {
+      int entityIndex = out.indexOf(entity);
+      if (highlighted < entity.start) {
+        // highlight highlighted .. entity.start
+        out.add(entityIndex, TextEntity.valueOf(text, part, highlightColorSet));
+        entityIndex++;
+        highlighted = entity.start;
+      }
+      if (part.start <= entity.start && part.end >= entity.end) {
+        // just update existing entity, as highlight fully covers it
+        entity.setCustomColorSet(highlightColorSet);
+        highlighted = entity.end;
+      } else if (entity.hasMedia()) {
+        // Edge case: force avoid splitting media entity
+        highlighted = part.end;
+      } else {
+        if (part.end < entity.end) {
+          // split entity into two entities:
+          // entity.start .. part.end: highlighted
+          TextEntity highlightedEntity = entity.createCopy();
+          highlightedEntity.setCustomColorSet(highlightColorSet);
+          highlightedEntity.end = part.end;
+          out.add(entityIndex, highlightedEntity);
+          entityIndex++;
+          highlighted = highlightedEntity.end;
+          // part.end .. entity.end: not highlighted
+          entity.start = part.end;
+        } else if (part.start > entity.start) {
+          // split entity into two entities:
+          // part.start .. entity.end: highlighted
+          TextEntity highlightedEntity = entity.createCopy();
+          highlightedEntity.setCustomColorSet(highlightColorSet);
+          highlightedEntity.start = part.start;
+          out.add(entityIndex + 1, highlightedEntity);
+          // entity.start .. part.start: not highlighted
+          entity.end = part.start;
+          highlighted = highlightedEntity.end;
+        }
+      }
+    }
+    if (highlighted < part.end) {
+      // highlight lastEntity.end .. part.end
+      TextEntity highlightEntity = TextEntity.valueOf(text, part, highlightColorSet);
+      int bestIndex = 0;
+      for (TextEntity entity : out) {
+        if (entity.start > highlighted) {
+          break;
+        }
+        bestIndex++;
+      }
+      if (bestIndex == out.size()) {
+        out.add(highlightEntity);
+      } else {
+        out.add(bestIndex, highlightEntity);
+      }
+    }
   }
 
   public FormattedText allClickable (ViewController<?> context, ClickableSpan onClickListener, boolean forceBold, @Nullable TdlibUi.UrlOpenParameters openParameters) {
@@ -281,5 +390,29 @@ public class FormattedText {
         break;
       }
     }
+  }
+
+  @Override
+  public boolean equals (Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    FormattedText that = (FormattedText) o;
+
+    if (!text.equals(that.text)) return false;
+    if (!Arrays.equals(entities, that.entities)) return false;
+
+    return true;
+  }
+
+  @Override
+  public int hashCode () {
+    int result = text.hashCode();
+    result = 31 * result + Arrays.hashCode(entities);
+    return result;
+  }
+
+  public static boolean equals (FormattedText a, FormattedText b) {
+    return (a == null && b == null) || (a != null && a.equals(b));
   }
 }

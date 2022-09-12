@@ -333,14 +333,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     set(maxWidth, in);
   }
 
-  public static class Highlight {
-    public final String text;
-
-    public Highlight (String text) {
-      this.text = text;
-    }
-  }
-
   public static class Builder {
     private final String in;
     private final int maxWidth;
@@ -399,10 +391,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     public Builder onClick (ClickListener listener) {
       this.clickListener = listener;
       return this;
-    }
-
-    public Builder highlight (String highlight) {
-      return highlight(new Highlight(highlight));
     }
 
     public Builder highlight (Highlight highlight) {
@@ -515,6 +503,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     }
 
     public Text build () {
+      TextEntity[] entities = this.entities;
+      if (this.highlight != null) {
+        entities = new FormattedText(in, entities).highlight(this.highlight).entities;
+      }
       Text text = new Text(in, maxWidth, provider, theme, maxLineCount, lineWidthProvider, lineMarginProvider, textFlags, entities, suffix, clickListener, textMediaListener);
       if (viewProvider != null)
         text.setViewProvider(viewProvider);

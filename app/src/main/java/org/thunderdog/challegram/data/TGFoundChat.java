@@ -25,10 +25,10 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.tool.Strings;
+import org.thunderdog.challegram.util.text.Highlight;
 
-import me.vkryl.core.StringUtils;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.StringUtils;
 import me.vkryl.td.ChatId;
 
 public class TGFoundChat {
@@ -46,8 +46,8 @@ public class TGFoundChat {
   private long userId;
 
 
-  private @Nullable TdApi.Chat chatTitleSource;
   private CharSequence title;
+  private Highlight titleHighlight;
   private String singleLineTitle;
 
   private String forcedSubtitle;
@@ -179,13 +179,9 @@ public class TGFoundChat {
   }
 
   private void updateUsername (TdApi.Chat chat) {
-    if (!isGlobal)
-      return;
     String username = tdlib.chatUsername(chat.id);
 
     StringBuilder rawUsername = new StringBuilder();
-    SpannableStringBuilder additionalInfo = new SpannableStringBuilder();
-
     if (!StringUtils.isEmpty(username)) {
       if ((flags & FLAG_USE_TME) != 0) {
         rawUsername.append('/');
@@ -194,7 +190,9 @@ public class TGFoundChat {
       }
       rawUsername.append(username);
     }
-    if (chat.type.getConstructor() == TdApi.ChatTypeSupergroup.CONSTRUCTOR) {
+
+    SpannableStringBuilder additionalInfo = new SpannableStringBuilder();
+    if (isGlobal && chat.type.getConstructor() == TdApi.ChatTypeSupergroup.CONSTRUCTOR) {
       long supergroupId = ChatId.toSupergroupId(chat.id);
       TdApi.SupergroupFullInfo supergroupFull = tdlib.cache().supergroupFull(supergroupId);
       int memberCount = supergroupFull != null ? supergroupFull.memberCount : 0;
@@ -210,34 +208,59 @@ public class TGFoundChat {
     }
 
     SpannableStringBuilder fullUsername = new SpannableStringBuilder();
-    fullUsername.append(Strings.highlightWords(rawUsername.toString(), highlight, 1, null));
+    fullUsername.append(rawUsername);
+    this.usernameHighlight = Highlight.valueOf(fullUsername.toString(), highlight);
+    if (this.usernameHighlight != null && !this.usernameHighlight.isEmpty()) {
+      Highlight.Part part = this.usernameHighlight.parts.get(0);
+      if (part.start == 1) {
+        // Force highlight @ or /.
+        this.usernameHighlight.parts.add(0, new Highlight.Part(0, 1, part.missingCount + (part.end - part.start)));
+      }
+    }
     if (additionalInfo.length() > 0) {
       if (fullUsername.length() > 0) {
         fullUsername.append(", ");
       }
       fullUsername.append(additionalInfo);
     }
-    if (fullUsername.length() == 0) {
+    if (isGlobal && fullUsername.length() == 0) {
       fullUsername.append(tdlib.status().chatStatus(chatId));
     }
     this.username = fullUsername;
+    checkHighlights();
+  }
+
+  private void checkHighlights () {
+    if (this.usernameHighlight != null && this.titleHighlight != null) {
+      int usernameHighlight = this.usernameHighlight.getMaxSize();
+      int titleHighlight = this.titleHighlight.getMaxSize();
+      if (titleHighlight > usernameHighlight) {
+        this.usernameHighlight = null;
+      } else if (usernameHighlight > titleHighlight) {
+        this.titleHighlight = null;
+      }
+    }
   }
 
   private void setUser (TdApi.User user, String highlight) {
     if ((flags & FLAG_SELF) != 0) {
       this.avatarPlaceholderMetadata = tdlib.cache().selfPlaceholderMetadata();
-      this.title = Strings.highlightWords(Lang.getString(R.string.SavedMessages), highlight, 0, InlineResultEmojiSuggestion.SPECIAL_SPLITTERS);
+      this.title = Lang.getString(R.string.SavedMessages);
     } else {
       this.avatarPlaceholderMetadata = tdlib.cache().userPlaceholderMetadata(user, true);
-      this.title = Strings.highlightWords(TD.getUserName(user), highlight, 0, InlineResultEmojiSuggestion.SPECIAL_SPLITTERS);
+      this.title = TD.getUserName(user);
     }
+    this.titleHighlight = Highlight.valueOf(this.title.toString(), highlight);
+    checkHighlights();
     setPhoto(user.profilePhoto != null ? user.profilePhoto.small : null);
   }
 
   private void updateUser (TdApi.User user) {
     if (!isSelfChat()) {
       this.avatarPlaceholderMetadata = tdlib.cache().userPlaceholderMetadata(user, true);
-      this.title = Strings.highlightWords(TD.getUserName(user), highlight, 0, InlineResultEmojiSuggestion.SPECIAL_SPLITTERS);
+      this.title = TD.getUserName(user);
+      this.titleHighlight = Highlight.valueOf(this.title.toString(), highlight);
+      checkHighlights();
       setPhoto(user.profilePhoto != null ? user.profilePhoto.small : null);
     }
   }
@@ -321,13 +344,9 @@ public class TGFoundChat {
   }
 
   private void setTitleImpl (String title, @Nullable TdApi.Chat chat) {
-    if (!isGlobal && !StringUtils.isEmpty(highlight) && !StringUtils.equalsOrBothEmpty(this.title, title)) {
-      this.title = Strings.highlightWords(title, highlight, 0, InlineResultEmojiSuggestion.SPECIAL_SPLITTERS);
-      this.chatTitleSource = null;
-    } else {
-      this.title = title;
-      this.chatTitleSource = (flags & FLAG_SELF) == 0 ? chat : null;
-    }
+    this.title = title;
+    this.titleHighlight = Highlight.valueOf(title, highlight);
+    checkHighlights();
     this.avatarPlaceholderMetadata = (flags & FLAG_SELF) != 0 ? tdlib.cache().selfPlaceholderMetadata() : chat != null ? tdlib.chatPlaceholderMetadata(chat, true) : null;
     if ((flags & FLAG_SELF) != 0) {
       this.singleLineTitle = Lang.getString(R.string.Saved);
@@ -340,9 +359,14 @@ public class TGFoundChat {
   }
 
   private CharSequence username;
+  private Highlight usernameHighlight;
 
   public CharSequence getUsername () {
     return username;
+  }
+
+  public Highlight getUsernameHighlight () {
+    return usernameHighlight;
   }
 
   public boolean isGlobal () {
@@ -374,7 +398,11 @@ public class TGFoundChat {
   }
 
   public CharSequence getTitle () {
-    return chatTitleSource != null ? tdlib.chatTitle(chatTitleSource) : title;
+    return title;
+  }
+
+  public Highlight getTitleHighlight () {
+    return titleHighlight;
   }
 
   public String getFullTitle () {

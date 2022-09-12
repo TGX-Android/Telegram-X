@@ -103,7 +103,16 @@ public class TextEntityMessage extends TextEntity {
   }
 
   public TextEntityMessage (@Nullable Tdlib tdlib, String in, int offset, int end, TdApi.TextEntity entity, @Nullable List<TdApi.TextEntity> parentEntities, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    super(tdlib, offset, end, (entity.type.getConstructor() == TdApi.TextEntityTypeBold.CONSTRUCTOR || hasEntityType(parentEntities, TdApi.TextEntityTypeBold.CONSTRUCTOR)) && Text.needFakeBold(in, offset, end), openParameters);
+    this(tdlib,
+      (entity.type.getConstructor() == TdApi.TextEntityTypeBold.CONSTRUCTOR || hasEntityType(parentEntities, TdApi.TextEntityTypeBold.CONSTRUCTOR)) && Text.needFakeBold(in, offset, end),
+      offset, end,
+      entity, parentEntities,
+      openParameters
+    );
+  }
+
+  private TextEntityMessage (@Nullable Tdlib tdlib, boolean needFakeBold, int offset, int end, TdApi.TextEntity entity, @Nullable List<TdApi.TextEntity> parentEntities, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(tdlib, offset, end, needFakeBold, openParameters);
     TdApi.TextEntity clickableEntity = isClickable(entity.type) ? entity : null;
     TdApi.TextEntity spoilerEntity = entity.type.getConstructor() == TdApi.TextEntityTypeSpoiler.CONSTRUCTOR ? entity : null;
     TdApi.TextEntity emojiEntity = entity.type.getConstructor() == TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR ? entity : null;
@@ -134,6 +143,14 @@ public class TextEntityMessage extends TextEntity {
     this.flags = flags;
   }
 
+  private TextEntityMessage (@Nullable Tdlib tdlib, boolean needFakeBold, int offset, int end, TdApi.TextEntity clickableEntity, TdApi.TextEntity spoilerEntity, TdApi.TextEntity emojiEntity, int flags, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(tdlib, offset, end, needFakeBold, openParameters);
+    this.clickableEntity = clickableEntity;
+    this.spoilerEntity = spoilerEntity;
+    this.emojiEntity = emojiEntity;
+    this.flags = flags;
+  }
+
   @Override
   public TextEntity setOnClickListener (ClickableSpan onClickListener) {
     this.onClickListener = onClickListener;
@@ -148,10 +165,28 @@ public class TextEntityMessage extends TextEntity {
     return this;
   }
 
+  @Override
+  public TextEntity createCopy () {
+    TextEntityMessage copy = new TextEntityMessage(tdlib, needFakeBold, start, end, clickableEntity, spoilerEntity, emojiEntity, flags, openParameters);
+    if (customColorSet != null) {
+      copy.setCustomColorSet(customColorSet);
+    }
+    if (onClickListener != null) {
+      copy.setOnClickListener(onClickListener);
+    }
+    if (BitwiseUtils.getFlag(flags, FLAG_BOLD) && !BitwiseUtils.getFlag(copy.flags, FLAG_BOLD)) {
+      copy.makeBold(needFakeBold);
+    }
+    return copy;
+  }
+
   private TextColorSetOverride monospaceColorSet;
 
   @Override
   public TextColorSet getSpecialColorSet (@NonNull TextColorSet defaultColorSet) {
+    if (customColorSet != null) {
+      return customColorSet;
+    }
     if (isMonospace()) {
       if (monospaceColorSet == null || monospaceColorSet.originalColorSet() != defaultColorSet) {
         monospaceColorSet = new TextColorSetOverride(defaultColorSet) {
@@ -271,7 +306,7 @@ public class TextEntityMessage extends TextEntity {
     TextEntityMessage b = (TextEntityMessage) bRaw;
     switch (compareMode) {
       case COMPARE_MODE_NORMAL:
-        return this.flags == b.flags;
+        return this.flags == b.flags && this.customColorSet == b.customColorSet;
       case COMPARE_MODE_CLICK_HIGHLIGHT:
         return Td.equalsTo(this.clickableEntity, b.clickableEntity) && this.onClickListener == b.onClickListener;
       case COMPARE_MODE_SPOILER: {
