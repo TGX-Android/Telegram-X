@@ -38,7 +38,6 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
-import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
 import java.util.ArrayList;
@@ -50,10 +49,9 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.android.animator.ReplaceAnimator;
 import me.vkryl.android.animator.VariableFloat;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
-import me.vkryl.core.BitwiseUtils;
-import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.Td;
 import me.vkryl.td.TdConstants;
 
@@ -91,6 +89,10 @@ public class TGMessageFile extends TGMessage {
         invalidate();
       }, AnimatorUtils.DECELERATE_INTERPOLATOR, 200l);
       updateCaption(false);
+    }
+
+    public boolean hasTextMedia () {
+      return captionWrapper != null && captionWrapper.hasMedia();
     }
 
     @Override
@@ -282,7 +284,10 @@ public class TGMessageFile extends TGMessage {
     for (CaptionedFile file : filesList) {
       if (file.messageId == messageId) {
         file.pendingCaption = tdlib.getPendingMessageCaption(chatId, messageId);
-        file.updateCaption(needAnimateChanges());
+        boolean hadMedia = file.hasTextMedia();
+        if (file.updateCaption(needAnimateChanges()) && (hadMedia || file.hasTextMedia())) {
+          invalidateTextMediaReceiver();
+        }
         updated = true;
       }
     }
@@ -317,6 +322,7 @@ public class TGMessageFile extends TGMessage {
   @Override
   protected boolean updateMessageContent (TdApi.Message message, TdApi.MessageContent newContent, boolean isBottomMessage) {
     boolean captionsChanged = false;
+    boolean captionMediaChanged = false;
     boolean filesChanged = false;
     for (CaptionedFile file : filesList) {
       if (file.messageId != message.id) {
@@ -361,14 +367,22 @@ public class TGMessageFile extends TGMessage {
         }
       }
 
+      boolean hadTextMedia = file.hasTextMedia();
       file.serverCaption = serverCaption;
       boolean changed = file.updateCaption(needAnimateChanges());
+
+      if (changed && (hadTextMedia || file.hasTextMedia())) {
+        captionMediaChanged = true;
+      }
 
       captionsChanged = changed || captionsChanged;
       filesChanged = fileChanged || filesChanged;
     }
     if (captionsChanged) {
       files.measure(needAnimateChanges());
+      if (captionMediaChanged) {
+        invalidateTextMediaReceiver();
+      }
       return true;
     }
     return filesChanged;
