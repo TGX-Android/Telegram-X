@@ -17,21 +17,19 @@ package org.thunderdog.challegram.data;
 
 import android.view.View;
 
-import androidx.annotation.NonNull;
 import androidx.collection.LongSparseArray;
 
 import org.thunderdog.challegram.loader.ComplexReceiver;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.Future;
 
-public class ComplexMediaHolder<T> implements Destroyable, Iterable<T> {
+public class ComplexMediaHolder<T> implements Destroyable {
   public interface UpdateListener<T> {
     void onRequestInvalidate (List<T> usages, long displayMediaKey);
   }
@@ -57,7 +55,8 @@ public class ComplexMediaHolder<T> implements Destroyable, Iterable<T> {
   public final ComplexReceiver receiver;
 
   private final Map<String, Entry<T>> entries = new HashMap<>();
-  private final List<T> allUsages = new ArrayList<>();
+  private final List<T> defaultLayerUsages = new ArrayList<>();
+  private final List<T> topLayerUsages = new ArrayList<>();
   private final LongSparseArray<Entry<T>> mediaKeyToEntry = new LongSparseArray<>();
   private long lastMediaKey;
 
@@ -94,7 +93,7 @@ public class ComplexMediaHolder<T> implements Destroyable, Iterable<T> {
     }
     if (!entry.usages.contains(usage)) {
       entry.usages.add(usage);
-      allUsages.add(usage);
+      (mediaItem.requiresTopLayer() ? topLayerUsages : defaultLayerUsages).add(usage);
     }
     if (!entry.mediaRequested) {
       mediaItem.requestComplexMedia(receiver, entry.mediaKey);
@@ -113,7 +112,7 @@ public class ComplexMediaHolder<T> implements Destroyable, Iterable<T> {
       throw new IllegalArgumentException();
     }
     if (entry.usages.remove(usage)) {
-      allUsages.remove(usage);
+      (mediaItem.requiresTopLayer() ? topLayerUsages : defaultLayerUsages).remove(usage);
       if (entry.usages.isEmpty()) {
         receiver.clearReceivers(entry.mediaKey);
         entry.mediaRequested = false;
@@ -129,9 +128,11 @@ public class ComplexMediaHolder<T> implements Destroyable, Iterable<T> {
     }
   }
 
-  @NonNull
-  @Override
-  public Iterator<T> iterator () {
-    return allUsages.iterator();
+  public List<T> topLayerUsages () {
+    return topLayerUsages;
+  }
+
+  public List<T> defaultLayerUsages () {
+    return defaultLayerUsages;
   }
 }

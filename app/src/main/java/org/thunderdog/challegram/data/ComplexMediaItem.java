@@ -23,5 +23,6 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 public interface ComplexMediaItem {
   void requestComplexMedia (ComplexReceiver receiver, long displayMediaKey);
   String getComplexMediaKey ();
+  boolean requiresTopLayer ();
   void draw (Canvas c, Rect rect, ComplexReceiver mediaReceiver, long displayMediaKey, boolean translate);
 }

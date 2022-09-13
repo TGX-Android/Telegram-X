@@ -24,6 +24,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.text.Editable;
 import android.text.InputFilter;
+import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -938,8 +939,12 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   private void drawEmojiOverlay (Canvas c) {
-    for (EmojiSpan span : mediaHolder) {
-      span.onOverlayDraw(c, this, getLayout());
+    Layout layout = getLayout();
+    for (EmojiSpan span : mediaHolder.defaultLayerUsages()) {
+      span.onOverlayDraw(c, this, layout);
+    }
+    for (EmojiSpan span : mediaHolder.topLayerUsages()) {
+      span.onOverlayDraw(c, this, layout);
     }
   }
 

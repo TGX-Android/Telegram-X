@@ -75,7 +75,7 @@ class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiManager.Wat
       return;
     isDestroyed = true;
     tdlib.emoji().forgetWatcher(customEmojiId, this);
-    layoutEmoji(0);
+    prepareCustomEmoji(0);
   }
 
   @UiThread
@@ -84,7 +84,7 @@ class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiManager.Wat
       return;
     this.customEmoji = customEmoji;
     if (mSize != -1) {
-      layoutEmoji(mSize);
+      prepareCustomEmoji(mSize);
       surfaceProvider.onInvalidateSpan(this);
     }
   }
@@ -100,28 +100,25 @@ class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiManager.Wat
 
   @Override
   protected void drawEmoji (Canvas c, float centerX, float centerY, int emojiSize) {
-    if (customEmoji == null) {
-      return;
-    }
-    if (customEmoji.isNotFound()) {
-      super.drawEmoji(c, centerX, centerY, emojiSize);
-      return;
-    }
-
-    layoutEmoji(emojiSize);
-
     int left = (int) (centerX - emojiSize / 2f);
     int top = (int) (centerY - emojiSize / 2f);
     int right = left + emojiSize;
     int bottom = top + emojiSize;
-
-    if (drawRect.left != left || drawRect.top != top || drawRect.right != right || drawRect.bottom != bottom) {
-      drawRect.set(left, top, right, bottom);
-    }
+    drawRect.set(left, top, right, bottom);
+    prepareCustomEmoji(emojiSize);
+    // Drawing itself happens outside Span logic
   }
 
   private void drawCustomEmoji (Canvas c) {
-    float scale = TextMedia.getScale(customEmoji.sticker, currentSize);
+    if (customEmoji == null) {
+      return;
+    }
+    if (customEmoji.isNotFound()) {
+      super.drawEmoji(c, drawRect.centerX(), drawRect.centerY(), mSize);
+      return;
+    }
+
+    float scale = TextMedia.getScale(customEmoji.sticker, customEmojiSize);
     boolean needScale = scale != 1f;
 
     int restoreToCount;
@@ -147,8 +144,11 @@ class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiManager.Wat
     if (customEmoji == null || customEmoji.isNotFound()) {
       return;
     }
-    if (drawRect.left == drawRect.right || drawRect.top == drawRect.bottom || currentSize == 0) {
+    if (drawRect.left == drawRect.right || drawRect.top == drawRect.bottom) {
       return; // force invalidate()?
+    }
+    if (customEmojiSize != mSize && mSize > 0) {
+      prepareCustomEmoji(mSize);
     }
     int paddingLeft = view.getPaddingLeft();
     int paddingTop = view.getPaddingTop();
@@ -162,7 +162,7 @@ class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiManager.Wat
     }
   }
 
-  private int currentSize;
+  private int customEmojiSize;
   private long attachedToMediaKey = -1;
 
   @Override
@@ -173,30 +173,37 @@ class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiManager.Wat
       mediaItem.requestComplexMedia(receiver, mediaKey);
     } else {
       receiver.clearReceivers(mediaKey);
-      if (customEmoji == null && !emojiRequested) {
-        emojiRequested = true;
-        tdlib.emoji().performPostponedRequests();
-      }
+      requestCustomEmoji();
+    }
+  }
+
+  private void requestCustomEmoji () {
+    if (customEmoji == null && !emojiRequested) {
+      emojiRequested = true;
+      tdlib.emoji().performPostponedRequests();
     }
   }
 
   private ComplexMediaItem mediaItem;
 
-  private void layoutEmoji (int size) {
-    if (this.currentSize == size) {
+  private void prepareCustomEmoji (int size) {
+    if (customEmojiSize == size) {
       return;
     }
-    if (this.mediaItem != null) {
+    if (mediaItem != null) {
       surfaceProvider.detachFromReceivers(this, mediaItem, attachedToMediaKey);
-      this.mediaItem = null;
+      mediaItem = null;
       attachedToMediaKey = -1;
+      customEmojiSize = 0;
     }
-    this.currentSize = size;
     if (size > 0) {
       if (customEmoji != null) {
+        customEmojiSize = size;
         mediaItem = new ComplexMediaItemCustomEmoji(tdlib, customEmoji.sticker, size);
+        attachedToMediaKey = surfaceProvider.attachToReceivers(this, mediaItem);
+      } else {
+        requestCustomEmoji();
       }
-      attachedToMediaKey = surfaceProvider.attachToReceivers(this, mediaItem);
     }
   }
 }

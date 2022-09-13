@@ -77,6 +77,11 @@ public class ComplexMediaItemCustomEmoji implements ComplexMediaItem {
     }
   }
 
+  @Override
+  public boolean requiresTopLayer () {
+    return sticker.format.getConstructor() == TdApi.StickerFormatTgs.CONSTRUCTOR;
+  }
+
   public boolean isAnimated () {
     return gifFile != null;
   }
