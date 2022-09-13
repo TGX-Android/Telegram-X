@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import me.vkryl.core.collection.IntSet;
+import me.vkryl.core.lambda.FutureBool;
 import me.vkryl.td.Td;
 import me.vkryl.td.TdConstants;
 
@@ -82,7 +83,11 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
         this.animatedFile.setScaleType(GifFile.CENTER_CROP);
         this.animatedFile.setFitzpatrickType(fitzpatrickType);
         if (allowNoLoop) {
-          this.animatedFile.setPlayOnce(forcePlayOnce || specialType != SPECIAL_TYPE_NONE || Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP));
+          this.animatedFile.setPlayOnce(
+            forcePlayOnce ||
+            (specialType != SPECIAL_TYPE_NONE && !(Config.LOOP_BIG_CUSTOM_EMOJI && specialType == SPECIAL_TYPE_ANIMATED_EMOJI && sticker.customEmojiId != 0)) ||
+            Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP)
+          );
           if (specialType == SPECIAL_TYPE_DICE) {
             if (!isBeingAdded() || isForward()) {
               this.animatedFile.setDecodeLastFrame(true);
@@ -636,6 +641,18 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
           isCaught = false;
           boolean tapProcessed = false;
           TdApi.Sticker sticker = getBaseSticker();
+          FutureBool fallbackAct = () -> {
+            GifFile animatedFile = view.getComplexReceiver().getGifReceiver(0).getCurrentFile();
+            if (animatedFile != null && Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP) && animatedFile.setLooped(false)) {
+              invalidate();
+              return true;
+            }
+            if (sticker != null && sticker.setId != 0) {
+              openStickerSet();
+              return true;
+            }
+            return false;
+          };
           switch (specialType) {
             case SPECIAL_TYPE_DICE: {
               tapProcessed = true;
@@ -667,7 +684,9 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
             }
             case SPECIAL_TYPE_ANIMATED_EMOJI: {
               GifFile animatedFile = view.getComplexReceiver() != null ? view.getComplexReceiver().getGifReceiver(0).getCurrentFile() : null;
-              if (animatedFile != null) {
+              if (Config.LOOP_BIG_CUSTOM_EMOJI && sticker != null && sticker.customEmojiId != 0) {
+                tapProcessed = fallbackAct.get();
+              } else if (animatedFile != null) {
                 tapProcessed = animatedFile.setVibrationPattern(Emoji.instance().getVibrationPatternType(sticker.emoji));
                 if (animatedFile.setLooped(false)) {
                   tapProcessed = true;
@@ -677,15 +696,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
               break;
             }
             default: {
-              GifFile animatedFile = view.getComplexReceiver().getGifReceiver(0).getCurrentFile();
-              if (animatedFile != null && Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP) && animatedFile.setLooped(false)) {
-                tapProcessed = true;
-                invalidate();
-              }
-              if (!tapProcessed && sticker.setId != 0) {
-                openStickerSet();
-                tapProcessed = true;
-              }
+              tapProcessed = fallbackAct.get();
               break;
             }
           }
