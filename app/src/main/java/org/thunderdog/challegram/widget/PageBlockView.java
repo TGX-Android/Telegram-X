@@ -160,7 +160,7 @@ public class PageBlockView extends BaseView implements Destroyable, InvalidateCo
 
   @Override
   public boolean invalidateContent (Object cause) {
-    if (this.block == cause || !(cause instanceof PageBlock)) {
+    if (this.block == cause || !(cause instanceof PageBlock) || (this.block != null && this.block.belongsToBlock((PageBlock) cause))) {
       requestFiles(true);
       return true;
     }

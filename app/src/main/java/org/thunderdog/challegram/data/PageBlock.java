@@ -80,6 +80,10 @@ public abstract class PageBlock {
     this.anchorIsBottom = isBottom;
   }
 
+  public boolean belongsToBlock (PageBlock pageBlock) {
+    return pageBlock == this || (pageBlock != null && chatLinkBlock == pageBlock);
+  }
+
   public void requestIcons (ComplexReceiver receiver) {
     if (chatLinkBlock != null) {
       chatLinkBlock.requestIcons(receiver);
