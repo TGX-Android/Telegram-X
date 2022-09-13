@@ -468,6 +468,7 @@ public class Settings {
   private Integer _notificationFlags;
 
   private static final long DEFAULT_LOG_SIZE = ByteUnit.MIB.toBytes(50);
+  private static final int DEFAULT_LOG_GLOBAL_VERBOSITY_LEVEL = 0;
 
   public class TdlibLogSettings {
     private final String settingsKey, maxSizeKey, verbosityKey;
@@ -589,7 +590,11 @@ public class Settings {
 
     public void setVerbosity (@Nullable String module, int verbosity) {
       if (StringUtils.isEmpty(module)) {
-        putInt(verbosityKey, verbosity);
+        if (verbosity != DEFAULT_LOG_GLOBAL_VERBOSITY_LEVEL) {
+          putInt(verbosityKey, verbosity);
+        } else {
+          remove(verbosityKey);
+        }
         setLogVerbosityLevel(verbosity);
       } else {
         if (_modules == null)
@@ -635,15 +640,16 @@ public class Settings {
     public void apply () {
       if (UI.TEST_MODE == UI.TEST_MODE_AUTO)
         return;
-      int globalVerbosityLevel = 0;
+      int globalVerbosityLevel = DEFAULT_LOG_GLOBAL_VERBOSITY_LEVEL;
       if (_modules == null)
         _modules = new HashMap<>();
       for (final LevelDB.Entry entry : pmc.find(verbosityKey)) {
         final String key = entry.key();
-        int verbosityLevel = Math.max(1, entry.asInt()); // At least error
+        int verbosityLevel = entry.asInt();
         if (verbosityKey.length() == key.length()) {
-          globalVerbosityLevel = verbosityLevel;
+          globalVerbosityLevel = Math.max(0, verbosityLevel); // Can't be negative
         } else if (key.length() > verbosityKey.length() + 1) {
+          verbosityLevel = Math.max(1, verbosityLevel); // At least error
           String module = key.substring(verbosityKey.length() + 1);
           int[] value = _modules.get(module);
           int defaultVerbosityLevel = value != null ? value[1] : queryLogVerbosityLevel(module);
