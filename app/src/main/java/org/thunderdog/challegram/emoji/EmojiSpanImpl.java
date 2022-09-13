@@ -15,8 +15,11 @@
 package org.thunderdog.challegram.emoji;
 
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.text.Spannable;
+import android.text.style.BackgroundColorSpan;
 import android.text.style.ReplacementSpan;
 
 import androidx.annotation.NonNull;
@@ -24,6 +27,8 @@ import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Paints;
+
+import me.vkryl.core.ColorUtils;
 
 class EmojiSpanImpl extends ReplacementSpan implements EmojiSpan {
   public static EmojiSpan newSpan (@Nullable EmojiInfo info) {
@@ -95,6 +100,25 @@ class EmojiSpanImpl extends ReplacementSpan implements EmojiSpan {
     float centerX = x + emojiSize / 2f;
     float height = (bottom - top);
     float centerY = top + height / 2f;
+
+    if (text instanceof Spannable) {
+      Spannable spannable = (Spannable) text;
+      BackgroundColorSpan[] backgroundColorSpans = spannable.getSpans(start, end, BackgroundColorSpan.class);
+      if (backgroundColorSpans != null && backgroundColorSpans.length > 0) {
+        int blendedColor = 0;
+        for (BackgroundColorSpan backgroundColorSpan : backgroundColorSpans) {
+          int backgroundColor = backgroundColorSpan.getBackgroundColor();
+          if (blendedColor == 0) {
+            blendedColor = backgroundColor;
+          } else {
+            blendedColor = ColorUtils.compositeColor(blendedColor, backgroundColor);
+          }
+        }
+        if (Color.alpha(blendedColor) != 0) {
+          canvas.drawRect(x, top, x + emojiSize, bottom, Paints.fillingPaint(blendedColor));
+        }
+      }
+    }
 
     drawEmoji(canvas, centerX, centerY, emojiSize);
   }
