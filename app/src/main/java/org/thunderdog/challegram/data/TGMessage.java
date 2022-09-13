@@ -94,6 +94,7 @@ import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.EditChatLinkController;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -2130,18 +2131,21 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (parentViewGroup != null) {
       parentViewGroup.setSelectableTranslation(contentOffset);
     }
-    if (contentOffset != 0) {
-      c.save();
+    final boolean savedContentTranslation = contentOffset != 0;
+    int globalRestoreToCount = -1;
+    if (savedContentTranslation) {
+      globalRestoreToCount = Views.save(c);
       c.translate(contentOffset, 0);
     }
     final boolean savedTranslation = translation != 0f;
+    int restoreToCount = -1;
     if (savedTranslation) {
-      c.save();
+      restoreToCount = Views.save(c);
       c.translate(translation, 0);
     }
     drawOverlay(view, c, pContentX, pContentY, pContentMaxWidth);
     if (savedTranslation) {
-      c.restore();
+      Views.restore(c, restoreToCount);
       drawTranslate(view, c);
     } else if (dismissFactor != 0f) {
       drawTranslate(view, c);
@@ -2149,11 +2153,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (useBubbles()) {
       if (useBubbleTime()) {
         drawBubbleTimePart(c, view);
-        com.google.android.exoplayer2.util.Log.i("OVERLAYWTF_DRAWOVR", "");
       }
     }
-    if (contentOffset != 0) {
-      c.restore();
+    if (savedContentTranslation) {
+      Views.restore(c, globalRestoreToCount);
     }
   }
 

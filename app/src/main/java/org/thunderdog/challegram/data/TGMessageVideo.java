@@ -393,8 +393,9 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
       int centerY = receiver.getBottom() - radius - Screen.dp(10f);
 
       final float scale = .6f + (1f - unmuteFactor) * .4f;
+      final boolean needScale = scale != 1f;
       int restoreToCount;
-      if (scale != 1f) {
+      if (needScale) {
         restoreToCount = Views.save(c);
         c.scale(scale, scale, centerX, centerY);
       } else {
@@ -406,7 +407,7 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
       Drawable drawable = view.getSparseDrawable(R.drawable.deproko_baseline_sound_muted_24, 0);
       Drawables.draw(c, drawable, centerX - drawable.getMinimumWidth() / 2f, centerY - drawable.getMinimumHeight() / 2f, paint);
       paint.setAlpha(255);
-      if (scale != 1f) {
+      if (needScale) {
         Views.restore(c, restoreToCount);
       }
     }
