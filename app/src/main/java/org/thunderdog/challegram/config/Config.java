@@ -279,5 +279,7 @@ public class Config {
 
   public static final boolean VIDEO_CLOUD_PLAYBACK_AVAILABLE = true;
 
+  public static final float MAX_ANIMATED_EMOJI_REFRESH_RATE = 30.0f;
+
   public static final String FILE_PROVIDER_AUTHORITY = BuildConfig.APPLICATION_ID + ".provider";
 }

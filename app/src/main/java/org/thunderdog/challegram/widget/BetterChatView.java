@@ -32,6 +32,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.component.user.RemoveHelper;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.CallItem;
@@ -112,7 +113,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
   public BetterChatView (Context context, Tdlib tdlib) {
     super(context, tdlib);
     this.receiver = new ImageReceiver(this, ChatView.getAvatarRadius(Settings.CHAT_MODE_2LINE));
-    this.subtitleMediaReceiver = new ComplexReceiver(this);
+    this.subtitleMediaReceiver = new ComplexReceiver(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
     receiver.setBounds(Screen.dp(11f), Screen.dp(10f), Screen.dp(11f) + Screen.dp(52f), Screen.dp(10f) + Screen.dp(52f));
   }
 

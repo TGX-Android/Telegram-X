@@ -22,8 +22,10 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ComplexReceiver;
+import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.MessageListener;
@@ -85,6 +87,8 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
       receiver.performDestroy();
     }
   }
+
+  private final RefreshRateLimiter emojiUpdateLimiter = new RefreshRateLimiter(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
 
   public MessagePreviewView (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -198,8 +202,11 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     return Math.max(0, getMeasuredWidth() - Screen.dp(PADDING_SIZE) * 2 - getTextHorizontalOffset() - Screen.dp(getLinePadding()) - contentInset);
   }
 
-  private ComplexReceiver newComplexReceiver () {
-    ComplexReceiver receiver = new ComplexReceiver(this);
+  private ComplexReceiver newComplexReceiver (boolean forTextMedia) {
+    ComplexReceiver receiver = new ComplexReceiver(forTextMedia ? null : this);
+    if (forTextMedia) {
+      receiver.setUpdateListener(emojiUpdateLimiter);
+    }
     if (isAttached) {
       receiver.attach();
     } else {
@@ -225,7 +232,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
             entry.item.content.changeMaxWidth(textWidth);
             if (entry.item.receiver != null || entry.item.content.hasMedia()) {
               if (entry.item.receiver == null) {
-                entry.item.receiver = newComplexReceiver();
+                entry.item.receiver = newComplexReceiver(true);
               }
               entry.item.content.requestMedia(entry.item.receiver);
             }
@@ -259,7 +266,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     if (preview == null) {
       this.mediaPreview.replace(null, animated);
     } else {
-      ComplexReceiver receiver = newComplexReceiver();
+      ComplexReceiver receiver = newComplexReceiver(false);
       preview.requestFiles(receiver, false);
       this.mediaPreview.replace(new MediaEntry(preview, receiver), animated);
     }
@@ -337,7 +344,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
        .addFlags(Text.FLAG_CUSTOM_LONG_PRESS)
        .build();
       if (newText.hasMedia()) {
-        receiver = newComplexReceiver();
+        receiver = newComplexReceiver(true);
         newText.requestMedia(receiver);
       } else {
         receiver = null;

@@ -25,6 +25,7 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGWebPage;
@@ -62,7 +63,7 @@ public class ReplyView extends FrameLayoutFix implements View.OnClickListener, D
     startY = Screen.dp(7f);
 
     receiver = new DoubleImageReceiver(this, 0);
-    textMediaReceiver = new ComplexReceiver(this);
+    textMediaReceiver = new ComplexReceiver(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
 
     reply = new ReplyComponent(tdlib);
     reply.setCurrentView(this);

@@ -25,14 +25,14 @@ import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.ReceiverUpdateListener;
 import org.thunderdog.challegram.tool.Screen;
 
-public class FrameLimiter implements ComplexReceiverUpdateListener, ReceiverUpdateListener {
+public class RefreshRateLimiter implements ComplexReceiverUpdateListener, ReceiverUpdateListener {
   private final View target;
   private final Handler handler;
   private final float maxFrameRate;
 
-  public FrameLimiter (View target, float maxFrameRate) {
+  public RefreshRateLimiter (View target, float maxRefreshRate) {
     this.target = target;
-    this.maxFrameRate = maxFrameRate != 0f ? maxFrameRate : 60.0f;
+    this.maxFrameRate = maxRefreshRate != 0f ? maxRefreshRate : 60.0f;
     this.handler = new Handler(Looper.getMainLooper(), msg -> {
       onPerformInvalidate();
       return true;

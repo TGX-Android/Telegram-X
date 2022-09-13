@@ -23,6 +23,7 @@ import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.user.RemoveHelper;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.InlineResult;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.support.RippleSupport;
@@ -51,7 +52,7 @@ public class CustomResultView extends SparseDrawableView implements Destroyable,
   public CustomResultView (Context context) {
     super(context);
     this.receiver = new ComplexReceiver(this);
-    this.textMediaReceiver = new ComplexReceiver(this);
+    this.textMediaReceiver = new ComplexReceiver(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
     Views.setClickable(this);
     RippleSupport.setTransparentSelector(this);
   }

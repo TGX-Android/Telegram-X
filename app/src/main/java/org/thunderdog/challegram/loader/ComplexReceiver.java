@@ -20,6 +20,7 @@ import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
 
 import org.thunderdog.challegram.loader.gif.GifReceiver;
+import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.RunnableData;
@@ -35,18 +36,28 @@ public class ComplexReceiver implements Destroyable {
   private final LongSparseArray<GifReceiver> gifReceivers;
   private final LongSparseArray<DoubleImageReceiver> previews;
 
-  public ComplexReceiver(View view) {
+  public ComplexReceiver (View view) {
     this.view = view;
     this.imageReceivers = new LongSparseArray<>(10);
     this.gifReceivers = new LongSparseArray<>(10);
     this.previews = new LongSparseArray<>(10);
   }
 
-  public void setUpdateListener (ComplexReceiverUpdateListener listener) {
+  public ComplexReceiver () {
+    this(null);
+  }
+
+  public ComplexReceiver (View view, float maxRefreshRate) {
+    this();
+    setUpdateListener(new RefreshRateLimiter(view, maxRefreshRate));
+  }
+
+  public ComplexReceiver setUpdateListener (ComplexReceiverUpdateListener listener) {
     this.updateListener = listener;
     setUpdateListener(imageReceivers, listener);
     setUpdateListener(gifReceivers, listener);
     setUpdateListener(previews, listener);
+    return this;
   }
 
   private static <T extends Receiver> void setUpdateListener (LongSparseArray<T> receivers, ComplexReceiverUpdateListener listener) {

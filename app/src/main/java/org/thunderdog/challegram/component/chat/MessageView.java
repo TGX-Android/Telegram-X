@@ -48,7 +48,7 @@ import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.player.TGPlayerController;
-import org.thunderdog.challegram.receiver.FrameLimiter;
+import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
@@ -99,7 +99,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private final GifReceiver gifReceiver;
   private final ComplexReceiver reactionsComplexReceiver, textMediaReceiver, replyTextMediaReceiver;
   private final DoubleImageReceiver replyReceiver;
-  private final FrameLimiter frameLimiter;
+  private final RefreshRateLimiter refreshRateLimiter;
   private ComplexReceiver footerTextMediaReceiver;
 
   private ImageReceiver contentReceiver;
@@ -113,11 +113,11 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     avatarReceiver = new ImageReceiver(this, Screen.dp(20.5f));
     reactionsComplexReceiver = new ComplexReceiver(this);
     gifReceiver = new GifReceiver(this);
-    this.frameLimiter = new FrameLimiter(this, 30.0f);
-    textMediaReceiver = new ComplexReceiver(null);
-    textMediaReceiver.setUpdateListener(frameLimiter);
-    replyTextMediaReceiver = new ComplexReceiver(null);
-    replyTextMediaReceiver.setUpdateListener(frameLimiter);
+    this.refreshRateLimiter = new RefreshRateLimiter(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
+    textMediaReceiver = new ComplexReceiver()
+      .setUpdateListener(refreshRateLimiter);
+    replyTextMediaReceiver = new ComplexReceiver()
+      .setUpdateListener(refreshRateLimiter);
     //noinspection ContantConditions
     replyReceiver = new DoubleImageReceiver(this, Config.USE_SCALED_ROUNDINGS ? Screen.dp(Theme.getImageRadius()) : 0);
 
@@ -499,8 +499,8 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   public ComplexReceiver getFooterTextMediaReceiver (boolean force) {
     if (footerTextMediaReceiver == null) {
-      footerTextMediaReceiver = new ComplexReceiver(null);
-      footerTextMediaReceiver.setUpdateListener(frameLimiter);
+      footerTextMediaReceiver = new ComplexReceiver()
+        .setUpdateListener(refreshRateLimiter);
       if (isAttached) {
         footerTextMediaReceiver.attach();
       } else {
