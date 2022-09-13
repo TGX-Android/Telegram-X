@@ -79,6 +79,7 @@ import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.emoji.EmojiFilter;
 import org.thunderdog.challegram.emoji.EmojiInfo;
 import org.thunderdog.challegram.emoji.EmojiSpan;
+import org.thunderdog.challegram.emoji.EmojiUpdater;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.helper.InlineSearchContext;
 import org.thunderdog.challegram.loader.ComplexReceiver;
@@ -293,7 +294,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   @Override
-  public void onInvalidateSpan (EmojiSpan span) {
+  public void onInvalidateSpan (EmojiSpan span, boolean requiresLayoutUpdate) {
+    if (requiresLayoutUpdate) {
+      EmojiUpdater.invalidateEmojiSpan(this, span);
+    }
     invalidate();
   }
 
@@ -390,6 +394,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
             int existingSpanEnd = getText().getSpanEnd(existingSpan);
             SpannableStringBuilder sb = new SpannableStringBuilder(getText());
             sb.removeSpan(existingSpan);
+            if (existingSpan instanceof Destroyable) {
+              ((Destroyable) existingSpan).performDestroy();
+            }
             // Check start
             if (existingSpanStart < start) {
               for (TdApi.TextEntityType copyType : existingTypes) {
@@ -431,6 +438,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
                   removeSpan = true;
                   break;
                 case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
+                case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
                   removeSpan = type.getConstructor() == TdApi.TextEntityTypeTextUrl.CONSTRUCTOR;
                   break;
               }
@@ -442,8 +450,13 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
             if (sb == null)
               sb = new SpannableStringBuilder(getText());
             sb.removeSpan(existingSpan);
+            if (existingSpan instanceof Destroyable) {
+              ((Destroyable) existingSpan).performDestroy();
+            }
             if (existingSpanStart < start || existingSpanEnd > end) {
               for (TdApi.TextEntityType copyType : existingTypes) {
+                if (copyType.getConstructor() == TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR)
+                  continue;
                 if (existingSpanStart < start)
                   sb.setSpan(TD.toSpan(copyType), existingSpanStart, start, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 if (existingSpanEnd > end)
@@ -452,8 +465,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
             }
           }
         }
-        if (sb != null)
+        if (sb != null) {
           setText(SpannableString.valueOf(sb));
+        }
       }
 
       getText().setSpan(span, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);

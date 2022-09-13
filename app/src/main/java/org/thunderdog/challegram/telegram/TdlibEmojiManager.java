@@ -55,6 +55,10 @@ public class TdlibEmojiManager implements CleanupStartupDelegate {
     public boolean isAnimated () {
       return sticker != null && Td.isAnimated(sticker.format);
     }
+
+    public boolean isStatic () {
+      return sticker != null && !Td.isAnimated(sticker.format);
+    }
   }
 
   public interface Watcher {

@@ -20,7 +20,7 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 
 public interface CustomEmojiSurfaceProvider {
   EmojiSpan onCreateNewSpan (CharSequence emojiCode, EmojiInfo info, long customEmojiId);
-  void onInvalidateSpan (EmojiSpan span);
+  void onInvalidateSpan (EmojiSpan span, boolean requiresLayoutUpdate);
   ComplexReceiver provideComplexReceiverForSpan (EmojiSpan span);
   int getDuplicateMediaItemCount (EmojiSpan span, ComplexMediaItem mediaItem);
   long attachToReceivers (EmojiSpan span, ComplexMediaItem complexMediaItem);

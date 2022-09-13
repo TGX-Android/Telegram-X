@@ -68,6 +68,19 @@ public class EmojiUpdater implements InputFilter, TGLegacyManager.EmojiLoadListe
     }
   }
 
+  public static void invalidateEmojiSpan (TextView targetView, EmojiSpan emojiSpan) {
+    final CharSequence text = targetView.getText();
+    if (text instanceof Spannable) {
+      Spannable spannable = (Spannable) text;
+      int start = spannable.getSpanStart(emojiSpan);
+      int end = spannable.getSpanEnd(emojiSpan);
+      if (start != -1 && end != -1) {
+        spannable.removeSpan(emojiSpan);
+        spannable.setSpan(emojiSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+      }
+    }
+  }
+
   public static void invalidateEmojiSpans (TextView targetView, boolean force, boolean custom) {
     final CharSequence text = targetView.getText();
     if (!(text instanceof Spanned))

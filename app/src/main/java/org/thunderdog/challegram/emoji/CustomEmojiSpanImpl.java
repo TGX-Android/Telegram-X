@@ -61,7 +61,7 @@ class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiManager.Wat
 
   @Override
   public boolean isCustomEmoji () {
-    return true;
+    return customEmoji == null || !customEmoji.isNotFound();
   }
 
   @Override
@@ -85,7 +85,7 @@ class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiManager.Wat
     this.customEmoji = customEmoji;
     if (mSize != -1) {
       prepareCustomEmoji(mSize);
-      surfaceProvider.onInvalidateSpan(this);
+      surfaceProvider.onInvalidateSpan(this, customEmoji != null && customEmoji.isNotFound());
     }
   }
 
@@ -106,18 +106,17 @@ class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiManager.Wat
     int bottom = top + emojiSize;
     drawRect.set(left, top, right, bottom);
     prepareCustomEmoji(emojiSize);
-    // Drawing itself happens outside Span logic
+    if (customEmoji != null && customEmoji.isNotFound()) {
+      super.drawEmoji(c, drawRect.centerX(), drawRect.centerY(), mSize);
+    }
   }
 
   private void drawCustomEmoji (Canvas c) {
-    if (customEmoji == null) {
-      return;
-    }
-    if (customEmoji.isNotFound()) {
-      super.drawEmoji(c, drawRect.centerX(), drawRect.centerY(), mSize);
+    if (customEmoji == null || customEmoji.isNotFound()) {
       return;
     }
 
+    //noinspection ConstantConditions
     float scale = TextMedia.getScale(customEmoji.sticker, customEmojiSize);
     boolean needScale = scale != 1f;
 
@@ -197,12 +196,12 @@ class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiManager.Wat
       customEmojiSize = 0;
     }
     if (size > 0) {
-      if (customEmoji != null) {
+      if (customEmoji == null) {
+        requestCustomEmoji();
+      } else if (!customEmoji.isNotFound()) {
         customEmojiSize = size;
         mediaItem = new ComplexMediaItemCustomEmoji(tdlib, customEmoji.sticker, size);
         attachedToMediaKey = surfaceProvider.attachToReceivers(this, mediaItem);
-      } else {
-        requestCustomEmoji();
       }
     }
   }
