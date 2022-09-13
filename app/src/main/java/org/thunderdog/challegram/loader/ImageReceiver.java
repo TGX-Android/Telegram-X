@@ -30,6 +30,7 @@ import android.os.Build;
 import android.view.View;
 
 import androidx.annotation.FloatRange;
+import androidx.annotation.Nullable;
 
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.Log;
@@ -52,7 +53,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
   private ImageFile file, cachedFile;
   private final WatcherReference reference;
 
-  private final View view;
+  private final @Nullable View view;
   private ReceiverUpdateListener updateListener;
   private Bitmap bitmap;
   private float alpha = 1f, progress;

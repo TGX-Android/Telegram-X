@@ -86,6 +86,7 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.navigation.LocaleChanger;
 import org.thunderdog.challegram.navigation.RtlCheckListener;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.receiver.FrameLimiter;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
@@ -139,13 +140,15 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   private InputListener inputListener;
+  private final FrameLimiter frameLimiter;
 
   public InputView (Context context, Tdlib tdlib) {
     super(context);
     this.tdlib = tdlib;
+    this.frameLimiter = new FrameLimiter(this, 30.0f);
     this.mediaHolder = new ComplexMediaHolder<>(this);
     this.mediaHolder.setUpdateListener((usages, displayMediaKey) ->
-      scheduleCustomEmojiInvalidate()
+      frameLimiter.invalidate()
     );
     this.inlineContext = new InlineSearchContext(UI.getContext(context), tdlib, this);
     this.paint = new TextPaint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
@@ -270,22 +273,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         }
       });
     }
-  }
-
-  private boolean isScheduled;
-
-  private void scheduleCustomEmojiInvalidate () {
-    if (!isScheduled) {
-      invalidateCustomEmoji();
-      postDelayed(() -> {
-        invalidateCustomEmoji();
-        isScheduled = false;
-      }, (long) (1000.0f / Math.min(Screen.refreshRate(), 60.0f)));
-    }
-  }
-
-  private void invalidateCustomEmoji () {
-    invalidate();
   }
 
   @Override

@@ -55,7 +55,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     return __handler;
   }
 
-  private final View view;
+  private final @Nullable View view;
   private ReceiverUpdateListener updateListener;
   private final GifWatcherReference reference;
   private int state;
@@ -393,14 +393,16 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     sweepAnimationStart = 0l;
     sweep = sweepFactor = sweepDiff = sweepStart = 0f;
     rotationAnimationStart = SystemClock.uptimeMillis();
-    view.removeCallbacks(this);
-    view.postDelayed(this, 16l);
+    if (view != null) {
+      view.removeCallbacks(this);
+      view.postDelayed(this, 16l);
+    }
   }
 
   @Override
   public void run () {
     invalidateProgress();
-    if (state != STATE_LOADED && file != null) {
+    if (state != STATE_LOADED && file != null && view != null) {
       view.postDelayed(this, 16l);
     }
   }
@@ -465,7 +467,9 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
   }
 
   private void invalidateProgress () {
-    view.invalidate((int) progressRect.left - progressOffset, (int) progressRect.top - progressOffset, (int) progressRect.right + progressOffset, (int) progressRect.bottom + progressOffset);
+    if (view != null) {
+      view.invalidate((int) progressRect.left - progressOffset, (int) progressRect.top - progressOffset, (int) progressRect.right + progressOffset, (int) progressRect.bottom + progressOffset);
+    }
     if (updateListener != null) {
       updateListener.onRequestInvalidate(this);
     }
@@ -473,7 +477,9 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
 
   @Override
   public void invalidate () {
-    view.invalidate(left, top, right, bottom);
+    if (view != null) {
+      view.invalidate(left, top, right, bottom);
+    }
     if (updateListener != null) {
       updateListener.onRequestInvalidate(this);
     }
