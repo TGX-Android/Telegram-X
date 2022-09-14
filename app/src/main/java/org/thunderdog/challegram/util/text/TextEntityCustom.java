@@ -111,6 +111,11 @@ public class TextEntityCustom extends TextEntity {
   }
 
   @Override
+  public ClickableSpan getOnClickListener () {
+    return onClickListener;
+  }
+
+  @Override
   public TextEntity makeBold (boolean needFakeBold) {
     this.flags |= FLAG_BOLD;
     this.needFakeBold = needFakeBold;
@@ -423,10 +428,25 @@ public class TextEntityCustom extends TextEntity {
   @Override
   public boolean equals (TextEntity bRaw, int compareMode, @Nullable String originalText) {
     TextEntityCustom b = (TextEntityCustom) bRaw;
-    return
-      b.isClickable() == isClickable() &&
-      (!isClickable() || (b.linkType == linkType && b.linkLength == linkLength && b.linkOffset == linkOffset && StringUtils.equalsOrBothEmpty(b.link, link) && b.onClickListener == onClickListener)) &&
-      (compareMode == COMPARE_MODE_CLICK_HIGHLIGHT || (this.flags == b.flags && this.customColorSet == b.customColorSet));
+    if (isClickable() != b.isClickable()) {
+      return false;
+    }
+    if (isClickable() && !(
+      b.linkType == linkType &&
+      b.linkLength == linkLength &&
+      b.linkOffset == linkOffset &&
+      StringUtils.equalsOrBothEmpty(b.link, link) &&
+      b.onClickListener == onClickListener
+    )) {
+      return false;
+    }
+    if (compareMode != COMPARE_MODE_CLICK_HIGHLIGHT && !(
+      this.flags == b.flags &&
+      this.customColorSet == b.customColorSet
+    )) {
+      return false;
+    }
+    return true;
   }
 
 }

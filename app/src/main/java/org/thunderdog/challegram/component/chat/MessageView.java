@@ -802,7 +802,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
     int moreOptions = 0;
 
-    if (m.canPinAnyMessage(true) && isSent) {
+    if (m.canPinAnyMessage(true) && isSent && msg.canBePinned()) {
       if (!isMore) {
         int totalCount = msg.getMessageCount();
         int pinnedCount = msg.getPinnedMessageCount();

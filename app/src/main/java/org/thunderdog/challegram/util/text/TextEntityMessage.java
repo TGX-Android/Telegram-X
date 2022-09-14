@@ -159,6 +159,11 @@ public class TextEntityMessage extends TextEntity {
   }
 
   @Override
+  public ClickableSpan getOnClickListener () {
+    return onClickListener;
+  }
+
+  @Override
   public TextEntity makeBold (boolean needFakeBold) {
     this.flags |= FLAG_BOLD;
     this.needFakeBold = needFakeBold;
@@ -518,6 +523,9 @@ public class TextEntityMessage extends TextEntity {
     final ViewController<?> context = findRoot(view);
     if (context == null) {
       Log.v("performLongPress ignored, because ancestor not found");
+      return false;
+    }
+    if (onClickListener != null) {
       return false;
     }
 

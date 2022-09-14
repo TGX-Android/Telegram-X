@@ -67,7 +67,7 @@ public final class N {
 
   // gif.c
   public static native void gifInit ();
-  public static native long createDecoder (String path, int[] metadata);
+  public static native long createDecoder (String path, int[] metadata, double startMediaTimestamp);
   public static native long createLottieDecoder (String path, String jsonData, double[] metadata, int fitzpatrickType);
   public static native void getLottieSize (long ptr, int[] size);
   public static native void cancelLottieDecoder (long ptr);

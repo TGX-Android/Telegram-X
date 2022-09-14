@@ -349,7 +349,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
         file.setIsStill(true);
       }
     } else {
-      nativePtr = N.createDecoder(path, metadata);
+      nativePtr = N.createDecoder(path, metadata, file.getStartMediaTimestamp());
       width = metadata[0];
       height = metadata[1];
       error = (width <= 0 || height <= 0);

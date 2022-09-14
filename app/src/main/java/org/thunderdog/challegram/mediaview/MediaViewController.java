@@ -8041,6 +8041,29 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     openWithArgs(context, args);
   }
 
+  public static void openFromMessage (TGMessage message, MediaItem item) {
+    ViewController<?> context = message.controller();
+    if (context.isStackLocked()) {
+      return;
+    }
+
+    item.setSourceMessage(message);
+
+    MediaStack stack;
+
+    stack = new MediaStack(context.context(), context.tdlib());
+    stack.set(item);
+
+    Args args = new Args(context, MODE_CHAT_PROFILE, stack);
+    args.reverseMode = true;
+    if (context instanceof MediaCollectorDelegate) {
+      ((MediaCollectorDelegate) context).modifyMediaArguments(message, args);
+    }
+    args.noLoadMore = message.isEventLog();
+
+    openWithArgs(context, args);
+  }
+
   public static void openFromMessage (TGMessageText msg) {
     ViewController<?> context = msg.controller();
     if (context.isStackLocked()) {

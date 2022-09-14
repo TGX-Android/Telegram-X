@@ -88,15 +88,25 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
   }
 
   public static MediaPreview valueOf (Tdlib tdlib, TdApi.ProfilePhoto profilePhoto, TdApi.Thumbnail thumbnail, int size, int cornerRadius) {
-    if (profilePhoto != null || thumbnail != null) {
-      return new MediaPreviewSimple(tdlib, size, cornerRadius, profilePhoto, thumbnail);
+    if (thumbnail != null) {
+      return new MediaPreviewSimple(tdlib, size, cornerRadius, thumbnail, profilePhoto != null ? profilePhoto.minithumbnail : null);
+    } else if (profilePhoto != null) {
+      return new MediaPreviewSimple(tdlib, size, cornerRadius, profilePhoto);
+    } else {
+      return null;
+    }
+  }
+
+  public static MediaPreview valueOf (Tdlib tdlib, TdApi.ChatPhoto chatPhoto, int size, int cornerRadius) {
+    if (chatPhoto != null) {
+      return new MediaPreviewSimple(tdlib, size, cornerRadius, chatPhoto);
     }
     return null;
   }
 
-  public static MediaPreview valueOf (Tdlib tdlib, TdApi.ChatPhotoInfo photoInfo, int size, int cornerRadius) {
-    if (photoInfo != null) {
-      return new MediaPreviewSimple(tdlib, size, cornerRadius, photoInfo);
+  public static MediaPreview valueOf (Tdlib tdlib, TdApi.ChatPhotoInfo chatPhotoInfo, int size, int cornerRadius) {
+    if (chatPhotoInfo != null) {
+      return new MediaPreviewSimple(tdlib, size, cornerRadius, chatPhotoInfo);
     }
     return null;
   }

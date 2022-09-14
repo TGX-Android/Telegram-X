@@ -206,7 +206,7 @@ AVFrame *alloc_picture (AVPixelFormat pix_fmt, int width, int height) {
   return f;
 }
 
-JNI_FUNC(jlong, createDecoder, jstring src, jintArray data) {
+JNI_FUNC(jlong, createDecoder, jstring src, jintArray data, jdouble startMediaTimestamp) {
 
   VideoInfo *info = new VideoInfo(jni::from_jstring(env, src));
 
@@ -284,6 +284,16 @@ JNI_FUNC(jlong, createDecoder, jstring src, jintArray data) {
 
   info->dstWidth = dstWidth;
   info->dstHeight = dstHeight;
+
+  if (startMediaTimestamp != 0) {
+    int ret = 0;
+    int64_t ts = (int64_t) (startMediaTimestamp * (double) AV_TIME_BASE);
+    ret = avformat_seek_file(info->fmt_ctx, -1, std::numeric_limits<int64_t>::min(), ts,
+                             std::numeric_limits<int64_t>::max(), 0);
+    if (ret < 0) {
+      loge(TAG_GIF_LOADER, "can't seek to startMediaTimestamp %s, %s", info->path.c_str(), av_err2str(ret));
+    }
+  }
 
   jint *dataArr = env->GetIntArrayElements(data, 0);
   if (dataArr != nullptr) {

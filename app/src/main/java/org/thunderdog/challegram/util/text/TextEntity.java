@@ -134,6 +134,7 @@ public abstract class TextEntity {
 
   // TODO: TextEntityCustom & TextEntityMessage to make things simpler
   public abstract TextEntity setOnClickListener (ClickableSpan onClickListener);
+  public abstract ClickableSpan getOnClickListener ();
   public abstract TextEntity makeBold (boolean needFakeBold);
 
   final TextPaint getTextPaint (TextStyleProvider textStyleProvider, boolean forceBold) {
@@ -141,6 +142,7 @@ public abstract class TextEntity {
     boolean isBold = forceBold || isBold();
     boolean isItalic = isItalic();
     boolean isFixed = isMonospace();
+    boolean isExtraBold = isBold && forceBold;
 
     // different storages
     boolean isUnderline = isUnderline();
@@ -148,6 +150,9 @@ public abstract class TextEntity {
 
     Fonts.TextPaintStorage storage = textStyleProvider.getTextPaintStorage();
 
+    /*if (isExtraBold) {
+      storage = storage.getExtraBoldStorage();
+    }*/
     if (isFixed) {
       storage = storage.getMonospaceStorage();
     }
@@ -164,7 +169,7 @@ public abstract class TextEntity {
     } else if (isItalic) {
       textPaint = storage.getItalicPaint();
     } else if (isBold) {
-      textPaint = needFakeBold ? storage.getFakeBoldPaint() : storage.getBoldPaint();
+      textPaint = /*isExtraBold || */needFakeBold ? storage.getFakeBoldPaint() : storage.getBoldPaint();
     } else {
       textPaint = storage.getRegularPaint();
     }
@@ -319,6 +324,18 @@ public abstract class TextEntity {
   public static final int COMPARE_MODE_SPOILER = 2;
 
   public static boolean equals (TextEntity a, TextEntity b, int compareMode, String originalText) {
-    return (a == null && b == null) || (!(a == null || b == null) && a.getType() == b.getType() && a.equals(b, compareMode, originalText));
+    if (a == null && b == null)
+      return true;
+    if (a == null || b == null)
+      return false;
+    if (a.getType() == b.getType()) {
+      return a.equals(b, compareMode, originalText);
+    }
+    if (compareMode == COMPARE_MODE_CLICK_HIGHLIGHT) {
+      // FIXME: merge TextEntityCustom & TextEntityMessage into one class instead for clarity purposes.
+      ClickableSpan onClickListener = a.getOnClickListener();
+      return onClickListener != null && onClickListener == b.getOnClickListener();
+    }
+    return false;
   }
 }

@@ -65,6 +65,7 @@ import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 import me.vkryl.td.TdConstants;
 
+@Deprecated
 public class TGMessageChat extends TGMessage implements Client.ResultHandler {
   public static final int TYPE_CREATE = 0;
 
@@ -518,6 +519,16 @@ public class TGMessageChat extends TGMessage implements Client.ResultHandler {
 
   private boolean isExpiredContentHint () {
     return type == TYPE_PHOTO_EXPIRED || type == TYPE_VIDEO_EXPIRED;
+  }
+
+  @Override
+  public boolean canBeSelected () {
+    return false;
+  }
+
+  @Override
+  public boolean canBePinned () {
+    return false;
   }
 
   @Override

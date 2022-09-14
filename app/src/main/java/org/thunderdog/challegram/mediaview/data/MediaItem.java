@@ -691,13 +691,11 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     switch (msg.content.getConstructor()) {
       case TdApiExt.MessageChatEvent.CONSTRUCTOR: {
         TdApiExt.MessageChatEvent event = ((TdApiExt.MessageChatEvent) msg.content);
-        if (event.isFull) {
-          switch (event.event.action.getConstructor()) {
-            case TdApi.ChatEventPhotoChanged.CONSTRUCTOR: {
-              TdApi.ChatEventPhotoChanged changedPhoto = (TdApi.ChatEventPhotoChanged) event.event.action;
-              if (changedPhoto.oldPhoto != null || changedPhoto.newPhoto != null) {
-                return new MediaItem(context, tdlib, msg.chatId, 0, changedPhoto.newPhoto != null ? changedPhoto.newPhoto : changedPhoto.oldPhoto).setSourceSender(new TdApi.MessageSenderUser(Td.getSenderUserId(event.event.memberId))).setSourceDate(event.event.date);
-              }
+        switch (event.event.action.getConstructor()) {
+          case TdApi.ChatEventPhotoChanged.CONSTRUCTOR: {
+            TdApi.ChatEventPhotoChanged changedPhoto = (TdApi.ChatEventPhotoChanged) event.event.action;
+            if (changedPhoto.oldPhoto != null || changedPhoto.newPhoto != null) {
+              return new MediaItem(context, tdlib, msg.chatId, 0, changedPhoto.newPhoto != null ? changedPhoto.newPhoto : changedPhoto.oldPhoto).setSourceSender(event.event.memberId).setSourceDate(event.event.date);
             }
           }
         }

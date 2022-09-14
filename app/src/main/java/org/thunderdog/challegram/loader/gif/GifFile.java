@@ -68,6 +68,7 @@ public class GifFile {
   private boolean isLooped, isFrozen;
   private int vibrationPattern = Emoji.VIBRATION_PATTERN_NONE;
   private int fitzpatrickType;
+  private double startMediaTimestamp;
 
   private final long creationTime;
 
@@ -79,6 +80,13 @@ public class GifFile {
       TD.isAnimatedSticker(gif.mimeType) ? GifFile.TYPE_TG_LOTTIE :
       0
     );
+  }
+
+  public GifFile (Tdlib tdlib, TdApi.AnimatedChatPhoto animatedChatPhoto) {
+    this(tdlib, animatedChatPhoto.file, GifFile.TYPE_MPEG4);
+    if (animatedChatPhoto.mainFrameTimestamp != 0) {
+      this.startMediaTimestamp = animatedChatPhoto.mainFrameTimestamp;
+    }
   }
 
   public GifFile (Tdlib tdlib, TdApi.Sticker sticker) {
@@ -118,6 +126,10 @@ public class GifFile {
 
   public void setFitzpatrickType (int fitzpatrickType) {
     this.fitzpatrickType = fitzpatrickType;
+  }
+
+  public double getStartMediaTimestamp () {
+    return startMediaTimestamp;
   }
 
   public interface FrameChangeListener {
@@ -325,6 +337,9 @@ public class GifFile {
     }
     if (isUnique() || isPlayOnce()) {
       b.append(",o").append(creationTime);
+    }
+    if (startMediaTimestamp != 0) {
+      b.append(",t").append(startMediaTimestamp);
     }
     return b;
   }

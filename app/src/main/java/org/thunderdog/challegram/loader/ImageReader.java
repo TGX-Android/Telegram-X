@@ -636,7 +636,7 @@ public class ImageReader {
 
   public static Bitmap decodeVideoFrame (String path, int maxSize) {
     int[] metadata = new int[4];
-    long ptr = N.createDecoder(path, metadata);
+    long ptr = N.createDecoder(path, metadata, 0);
     if (ptr == 0)
       return null;
     int rotation = U.getVideoRotation(path);

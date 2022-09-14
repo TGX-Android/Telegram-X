@@ -95,7 +95,6 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
-import org.thunderdog.challegram.ui.EditChatLinkController;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.ReactionsCounterDrawable;
@@ -4409,8 +4408,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return msg.canBeDeletedForAllUsers;
   }
 
-  public final boolean canBeSelected () {
-    return (!isNotSent() || canResend()) && (flags & FLAG_UNSUPPORTED) == 0 && !(this instanceof TGMessageChat) && allowInteraction() && !isSponsored();
+  public boolean canBeSelected () {
+    return (!isNotSent() || canResend()) && (flags & FLAG_UNSUPPORTED) == 0 && allowInteraction() && !isSponsored();
+  }
+
+  public boolean canBePinned () {
+    return !isNotSent() && allowInteraction() && !isSponsored();
   }
 
   public boolean canEditText () {
@@ -4554,6 +4557,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return chat;
   }
 
+  public boolean isUserChat () {
+    return ChatId.isUserChat(getChatId());
+  }
+
   public long getChannelId () {
     return ChatId.toSupergroupId(msg.chatId);
   }
@@ -4693,15 +4700,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   protected boolean shouldHideMedia () {
-    return (flags & FLAG_HIDE_MEDIA) != 0;
+    return BitwiseUtils.getFlag(flags, FLAG_HIDE_MEDIA);
   }
 
   public final void setMediaVisible (MediaItem media, boolean isVisible) {
-    if (isVisible) {
-      flags |= FLAG_HIDE_MEDIA;
-    } else {
-      flags &= ~FLAG_HIDE_MEDIA;
-    }
+    this.flags = BitwiseUtils.setFlag(flags, FLAG_HIDE_MEDIA, !isVisible);
     invalidate();
   }
 
@@ -6762,7 +6765,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
-  private static TextStyleProvider styleProvider, simpleStyleProvider, biggerStyleProvider, smallerStyleProvider, nameProvider, timeProvider, reactionBubbleProvider;
+  private static TextStyleProvider styleProvider, simpleStyleProvider, biggerStyleProvider, smallerStyleProvider, nameProvider, timeProvider, reactionBubbleProvider, bubbleServiceProvider;
 
   public static TextStyleProvider reactionsTextStyleProvider () {
     if (reactionBubbleProvider == null) {
@@ -6792,6 +6795,22 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       Settings.instance().addChatFontSizeChangeListener(styleProvider);
     }
     return styleProvider;
+  }
+
+  public static TextStyleProvider getServiceTextStyleProvider (boolean bubbleMode) {
+    if (bubbleMode) {
+      return bubbleServiceTextStyleProvider();
+    } else {
+      return getTextStyleProvider();
+    }
+  }
+
+  public static TextStyleProvider bubbleServiceTextStyleProvider () {
+    if (bubbleServiceProvider == null) {
+      bubbleServiceProvider = new TextStyleProvider(Fonts.newRobotoStorage()).setTextSizeDiff(-2f).setTextSize(Settings.instance().getChatFontSize()).setAllowSp(true);
+      Settings.instance().addChatFontSizeChangeListener(bubbleServiceProvider);
+    }
+    return bubbleServiceProvider;
   }
 
   public static TextStyleProvider getSmallerTextStyleProvider () {
@@ -7989,391 +8008,5 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       outRect.set(entry.getX(), entry.getY(), entry.getX() + entry.getBubbleWidth(), entry.getY() + entry.getBubbleHeight());
       outRect.offset(lastDrawReactionsX, lastDrawReactionsY);
     };
-  }
-
-  // == FormattedText Utilities ==
-
-  protected interface FormattedArgument {
-    FormattedText buildArgument ();
-  }
-
-  protected final class SenderArgument implements FormattedArgument {
-    private final TdlibSender sender;
-    private final boolean onlyFirstName;
-
-    public SenderArgument (TdlibSender sender, boolean onlyFirstName) {
-      this.sender = sender;
-      this.onlyFirstName = onlyFirstName;
-    }
-
-    public SenderArgument (TdlibSender sender) {
-      this(sender, false);
-    }
-
-    @Override
-    public FormattedText buildArgument () {
-      final String text = onlyFirstName ?
-        sender.getNameShort() :
-        sender.getName();
-      if (text.isEmpty()) {
-        return new FormattedText(text);
-      }
-      TextEntityCustom custom = new TextEntityCustom(
-        controller(),
-        tdlib,
-        text,
-        0, text.length(),
-        0,
-        openParameters()
-      );
-      custom.setOnClickListener(new ClickableSpan() {
-        @Override
-        public void onClick (@NonNull View widget) {
-          if (sender.isUser()) {
-            tdlib.ui().openPrivateProfile(controller(), sender.getUserId(), openParameters());
-          } else if (sender.isChat()) {
-            tdlib.ui().openChatProfile(controller(), sender.getChatId(), null, openParameters());
-          }
-        }
-      });
-      int nameColorId = needColoredNames() ?
-        sender.getNameColorId() :
-        R.id.theme_color_messageAuthor;
-      if (useBubbles()) {
-        custom.setCustomColorSet(new TextColorSet() {
-          @Override
-          public int defaultTextColor () {
-            return ColorUtils.fromToArgb(
-              getBubbleDateTextColor(),
-              Theme.getColor(nameColorId),
-              messagesController().wallpaper().getBackgroundTransparency()
-            );
-          }
-
-          @Override
-          public int backgroundColor (boolean isPressed) {
-            int colorId = backgroundColorId(isPressed);
-            return colorId != 0 ?
-              Theme.getColor(colorId) :
-              0;
-          }
-
-          @Override
-          public int backgroundColorId (boolean isPressed) {
-            float transparency = messagesController().wallpaper().getBackgroundTransparency();
-            return isPressed && transparency == 1f ?
-              nameColorId :
-              0;
-          }
-        });
-      } else {
-        custom.setCustomColorSet(new TextColorSet() {
-          @Override
-          public int defaultTextColor () {
-            return Theme.getColor(nameColorId);
-          }
-
-          @Override
-          public int backgroundColorId (boolean isPressed) {
-            return isPressed ? nameColorId : 0;
-          }
-
-          @Override
-          public int backgroundColor (boolean isPressed) {
-            int colorId = backgroundColorId(isPressed);
-            return colorId != 0 ?
-              ColorUtils.alphaColor(.2f, Theme.getColor(colorId)) :
-              0;
-          }
-        });
-      }
-      return new FormattedText(text, new TextEntity[] {custom});
-    }
-  }
-
-  protected final class SenderListArgument implements FormattedArgument {
-    private final TdlibSender[] senders;
-    private final boolean onlyFirstNames;
-
-    public SenderListArgument (TdlibSender[] senders, boolean onlyFirstNames) {
-      this.senders = senders;
-      this.onlyFirstNames = onlyFirstNames;
-    }
-
-    public SenderListArgument (TdlibSender[] senders) {
-      this(senders, false);
-    }
-
-    @Override
-    public FormattedText buildArgument () {
-      if (senders.length == 0) {
-        return getPlural(R.string.xUsers, 0);
-      }
-      if (senders.length == 1) {
-        return new SenderArgument(senders[0], onlyFirstNames).buildArgument();
-      }
-      FormattedText[] formattedTexts = new FormattedText[senders.length];
-      for (int i = 0; i < senders.length; i++) {
-        formattedTexts[i] = new SenderArgument(senders[i], onlyFirstNames).buildArgument();
-      }
-      return FormattedText.concat(
-        Lang.getConcatSeparator(),
-        Lang.getConcatSeparatorLast(true),
-        formattedTexts
-      );
-    }
-  }
-
-  protected abstract class FormattedTextArgument implements FormattedArgument {
-    protected abstract TdApi.FormattedText getFormattedText ();
-
-    @Override
-    public final FormattedText buildArgument () {
-      TdApi.FormattedText formattedText = getFormattedText();
-      return FormattedText.valueOf(controller(), formattedText, openParameters());
-    }
-  }
-
-  protected class TextEntityArgument implements FormattedArgument {
-    private final String text;
-    private final TdApi.TextEntityType entityType;
-
-    public TextEntityArgument (String text, TdApi.TextEntityType entityType) {
-      this.text = text;
-      this.entityType = entityType;
-    }
-
-    @Override
-    public FormattedText buildArgument () {
-      final TdApi.FormattedText formattedText;
-      if (text.length() > 0) {
-        formattedText = new TdApi.FormattedText(text, new TdApi.TextEntity[] {
-          new TdApi.TextEntity(0, text.length(), entityType)
-        });
-      } else {
-        formattedText = new TdApi.FormattedText("", new TdApi.TextEntity[0]);
-      }
-      return FormattedText.valueOf(controller(), formattedText, openParameters());
-    }
-  }
-
-  protected final class BoldArgument extends TextEntityArgument {
-    public BoldArgument (String text) {
-      super(text, new TdApi.TextEntityTypeBold());
-    }
-  }
-
-  protected class MessageArgument implements FormattedArgument {
-    private final TdApi.Message message;
-    private final TdApi.FormattedText preview;
-
-    public MessageArgument (TdApi.Message message, TdApi.FormattedText preview) {
-      this.message = message;
-      this.preview = preview;
-    }
-
-    @Override
-    public final FormattedText buildArgument () {
-      FormattedText formattedText = FormattedText.valueOf(controller(), preview, openParameters());
-      return formattedText.allClickable(controller(), new ClickableSpan() {
-        @Override
-        public void onClick (@NonNull View widget) {
-          highlightOtherMessage(new MessageId(message.chatId, message.id));
-        }
-      }, true, openParameters());
-    }
-  }
-
-  protected final class InvoiceArgument extends MessageArgument {
-    public InvoiceArgument (TdApi.Message message) {
-      super(message, new TdApi.FormattedText(
-        ((TdApi.MessageInvoice) message.content).title,
-        null
-      ));
-    }
-  }
-
-  protected final class GameArgument extends MessageArgument {
-    public GameArgument (TdApi.Message message) {
-      super(message, new TdApi.FormattedText(
-        TD.getGameName(((TdApi.MessageGame) message.content).game, false),
-        null
-      ));
-    }
-  }
-
-  protected final class InviteLinkArgument implements FormattedArgument {
-    private final TdApi.ChatInviteLink inviteLink;
-    private final String text;
-    private final boolean requiresUpdateBeforeOpening;
-
-    public InviteLinkArgument (TdApi.ChatInviteLink inviteLink, String text, boolean requiresUpdateBeforeOpening) {
-      this.inviteLink = inviteLink;
-      this.text = text;
-      this.requiresUpdateBeforeOpening = requiresUpdateBeforeOpening;
-    }
-
-    public InviteLinkArgument (TdApi.ChatInviteLink inviteLink, boolean requiresUpdateBeforeOpening) {
-      this(inviteLink, inviteLink.inviteLink, requiresUpdateBeforeOpening);
-    }
-
-    @Override
-    public FormattedText buildArgument () {
-      TextEntityCustom custom = new TextEntityCustom(
-        controller(),
-        tdlib,
-        text,
-        0, text.length(),
-        0,
-        openParameters()
-      );
-      custom.setOnClickListener(new ClickableSpan() {
-        @Override
-        public void onClick (@NonNull View widget) {
-          if (requiresUpdateBeforeOpening) {
-            tdlib.ui().showInviteLinkOptionsPreload(controller(), inviteLink, msg.chatId, true, null, null);
-          } else {
-            tdlib.ui().showInviteLinkOptions(controller(), inviteLink, msg.chatId, true, true, null, null);
-          }
-        }
-      });
-      return new FormattedText(text, new TextEntity[] {custom});
-    }
-  }
-
-  private static FormattedText[] parseFormatArgs (FormattedArgument... args) {
-    FormattedText[] formatArgs = new FormattedText[args.length];
-    for (int i = 0; i < args.length; i++) {
-      formatArgs[i] = args[i].buildArgument();
-    }
-    return formatArgs;
-  }
-
-  protected final FormattedText getText (@StringRes int resId, FormattedArgument... args) {
-    if (args == null || args.length == 0) {
-      return new FormattedText(Lang.getString(resId));
-    }
-    FormattedText[] formatArgs = parseFormatArgs(args);
-    CharSequence text = Lang.getString(resId,
-      (target, argStart, argEnd, argIndex, needFakeBold) -> args[argIndex],
-      (Object[]) formatArgs
-    );
-    return toFormattedText(text);
-  }
-
-  protected final FormattedText formatText (@NonNull String format, FormattedArgument... args) {
-    if (args == null || args.length == 0) {
-      return new FormattedText(format);
-    }
-    FormattedText[] formatArgs = parseFormatArgs(args);
-    CharSequence text = Lang.formatString(format,
-      (target, argStart, argEnd, argIndex, needFakeBold) -> args[argIndex],
-      (Object[]) formatArgs
-    );
-    return toFormattedText(text);
-  }
-
-  protected final FormattedText getPlural (@StringRes int resId, long num, FormattedArgument... args) {
-    FormattedText[] formatArgs = parseFormatArgs(args);
-    CharSequence text = Lang.plural(resId, num,
-      (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex == 0 ?
-        Lang.boldCreator().onCreateSpan(target, argStart, argEnd, argIndex, needFakeBold) :
-        args[argIndex - 1],
-      (Object[]) formatArgs
-    );
-    return toFormattedText(text);
-  }
-
-  protected final FormattedText getDuration (
-    @StringRes int secondsRes,
-    @StringRes int minutesRes,
-    @StringRes int hoursRes,
-    @StringRes int daysRes,
-    @StringRes int weeksRes,
-    @StringRes int monthsRes,
-    final long duration,
-    final TimeUnit durationUnit,
-    FormattedArgument... args) {
-    final long days = durationUnit.toDays(duration);
-    final long months = days / 30;
-    final long weeks = days / 7;
-    if (monthsRes != 0 && months > 0) {
-      return getPlural(monthsRes, months, args);
-    }
-    if (weeksRes != 0 && weeks > 0) {
-      return getPlural(weeksRes, weeks, args);
-    }
-    if (daysRes != 0 && days > 0) {
-      return getPlural(daysRes, days, args);
-    }
-    final long hours = durationUnit.toHours(duration);
-    if (hoursRes != 0 && hours > 0) {
-      return getPlural(hoursRes, hours, args);
-    }
-    final long minutes = durationUnit.toMinutes(duration);
-    if (minutesRes != 0 && minutes > 0) {
-      return getPlural(minutesRes, minutes, args);
-    }
-    final long seconds = durationUnit.toSeconds(duration);
-    if (secondsRes != 0) {
-      return getPlural(secondsRes, seconds, args);
-    }
-    throw new IllegalArgumentException("duration == " + durationUnit.toMillis(duration));
-  }
-
-  private FormattedText toFormattedText (CharSequence text) {
-    final String string = text.toString();
-    if (!(text instanceof Spanned)) {
-      return new FormattedText(string);
-    }
-    List<TextEntity> mixedEntities = null;
-    Spanned spanned = (Spanned) text;
-    Object[] spans = spanned.getSpans(
-      0,
-      spanned.length(),
-      Object.class
-    );
-    for (Object span : spans) {
-      final int spanStart = spanned.getSpanStart(span);
-      final int spanEnd = spanned.getSpanEnd(span);
-      if (spanStart == -1 || spanEnd == -1) {
-        continue;
-      }
-      if (span instanceof FormattedText) {
-        FormattedText formattedText = (FormattedText) span;
-        if (formattedText.entities != null) {
-          for (TextEntity entity : formattedText.entities) {
-            entity.offset(spanStart);
-            if (mixedEntities == null) {
-              mixedEntities = new ArrayList<>();
-            }
-            mixedEntities.add(entity);
-          }
-        }
-      } else if (span instanceof CharacterStyle) {
-        TdApi.TextEntityType[] entityType = TD.toEntityType((CharacterStyle) span);
-        if (entityType != null && entityType.length > 0) {
-          TdApi.TextEntity[] telegramEntities = new TdApi.TextEntity[entityType.length];
-          for (int i = 0; i < entityType.length; i++) {
-            telegramEntities[i] = new TdApi.TextEntity(
-              spanStart,
-              spanEnd,
-              entityType[i]
-            );
-          }
-          TextEntity[] entities = TextEntity.valueOf(tdlib, string, telegramEntities, openParameters());
-          if (entities != null && entities.length > 0) {
-            if (mixedEntities == null) {
-              mixedEntities = new ArrayList<>();
-            }
-            Collections.addAll(mixedEntities, entities);
-          }
-        }
-      }
-    }
-    return new FormattedText(
-      string,
-      mixedEntities != null && !mixedEntities.isEmpty() ? mixedEntities.toArray(new TextEntity[0]) : null
-    );
   }
 }

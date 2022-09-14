@@ -132,7 +132,7 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
   public CustomTextView (Context context, Tdlib tdlib) {
     super(context);
     this.tdlib = tdlib;
-    textStyleProvider = new TextStyleProvider(new Fonts.TextPaintStorage(Fonts.getRobotoRegular(), Fonts.getRobotoMedium(), Fonts.getRobotoItalic(), null, Fonts.getRobotoMono(), 0))
+    this.textStyleProvider = new TextStyleProvider(Fonts.newRobotoStorage())
       .setTextSize(15f);
     TGLegacyManager.instance().addEmojiListener(this);
   }

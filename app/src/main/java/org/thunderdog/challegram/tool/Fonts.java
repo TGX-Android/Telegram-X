@@ -174,24 +174,26 @@ public class Fonts {
     private TextPaint regularPaint, boldPaint, fakeBoldPaint, italicPaint, boldItalicPaint;
 
     private final @NonNull Typeface regularTypeface;
-    private final @Nullable Typeface boldTypeface, italicTypeface, boldItalicTypeface, monospaceTypeface;
+    private final @Nullable Typeface boldTypeface, italicTypeface, boldItalicTypeface, monospaceTypeface, extraBoldTypeface;
 
     private TextPaintStorage monospaceStorage;
     private TextPaintStorage underlineStorage;
     private TextPaintStorage strikeThroughStorage;
+    private TextPaintStorage extraBoldStorage;
 
     private final int paintFlags;
 
     public TextPaintStorage (@NonNull Typeface regularTypeface, int paintFlags) {
-      this(regularTypeface, null, null, null, null, paintFlags);
+      this(regularTypeface, null, null, null, null, null, paintFlags);
     }
 
-    public TextPaintStorage (@NonNull Typeface regularTypeface, @Nullable Typeface boldTypeface, @Nullable Typeface italicTypeface, @Nullable Typeface boldItalicTypeface, @Nullable Typeface monospaceTypeface, int paintFlags) {
+    public TextPaintStorage (@NonNull Typeface regularTypeface, @Nullable Typeface boldTypeface, @Nullable Typeface italicTypeface, @Nullable Typeface boldItalicTypeface, @Nullable Typeface monospaceTypeface, @Nullable Typeface extraBoldTypeface, int paintFlags) {
       this.regularTypeface = regularTypeface;
       this.boldTypeface = boldTypeface;
       this.italicTypeface = italicTypeface;
       this.boldItalicTypeface = boldItalicTypeface;
       this.monospaceTypeface = monospaceTypeface;
+      this.extraBoldTypeface = extraBoldTypeface;
       this.paintFlags = paintFlags;
     }
 
@@ -275,6 +277,16 @@ public class Fonts {
       return this;
     }
 
+    public TextPaintStorage getExtraBoldStorage () {
+      if (extraBoldTypeface != null) {
+        if (extraBoldStorage == null) {
+          extraBoldStorage = new TextPaintStorage(extraBoldTypeface, paintFlags);
+        }
+        return extraBoldStorage;
+      }
+      return this;
+    }
+
     public TextPaintStorage getUnderlineStorage () {
       return underlineStorage != null ? underlineStorage : (underlineStorage = newStorage(Paint.UNDERLINE_TEXT_FLAG));
     }
@@ -284,11 +296,11 @@ public class Fonts {
     }
 
     private TextPaintStorage newStorage (int addFlags) {
-      return new TextPaintStorage(regularTypeface, boldTypeface, italicTypeface, boldItalicTypeface, monospaceTypeface, paintFlags | addFlags);
+      return new TextPaintStorage(regularTypeface, boldTypeface, italicTypeface, boldItalicTypeface, monospaceTypeface, extraBoldTypeface, paintFlags | addFlags);
     }
   }
 
   public static TextPaintStorage newRobotoStorage () {
-    return new TextPaintStorage(getRobotoRegular(), getRobotoMedium(), getRobotoItalic(), null, getRobotoMono(), 0);
+    return new TextPaintStorage(getRobotoRegular(), getRobotoMedium(), getRobotoItalic(), null, getRobotoMono(), getRobotoBold(), 0);
   }
 }

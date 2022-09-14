@@ -56,7 +56,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
       } else {
         return getText(
           R.string.XTookAScreenshot,
-          new SenderArgument(sender, true)
+          new SenderArgument(sender, isUserChat())
         );
       }
     });
@@ -91,7 +91,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
             R.string.ProximityAlertYouKM :
             R.string.ProximityAlertYouM,
           distance,
-          new SenderArgument(watcherSender)
+          new SenderArgument(watcherSender, isUserChat())
         );
       } else if (watcherSender.isSelf()) {
         return getPlural(
@@ -99,7 +99,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
             R.string.ProximityAlertOtherKM :
             R.string.ProximityAlertOtherM,
           distance,
-          new SenderArgument(travelerSender)
+          new SenderArgument(travelerSender, isUserChat())
         );
       } else {
         return getPlural(
@@ -107,7 +107,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
             R.string.ProximityAlertKM :
             R.string.ProximityAlertM,
           distance,
-          new SenderArgument(travelerSender),
+          new SenderArgument(travelerSender), // isUserChat() is always false in such cases
           new SenderArgument(watcherSender)
         );
       }
@@ -134,7 +134,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
         if (!Td.isEmpty(formattedText)) {
           return getText(
             R.string.ActionPinnedText,
-            new SenderArgument(sender),
+            new SenderArgument(sender, isUserChat()),
             new MessageArgument(message, Td.ellipsize(formattedText, MAX_PINNED_MESSAGE_PREVIEW_LENGTH))
           );
         }
@@ -253,7 +253,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
           format = format.substring(0, startIndex) + "%2$s" + format.substring(endIndex + 2);
           return formatText(
             format,
-            new SenderArgument(sender),
+            new SenderArgument(sender, isUserChat()),
             new MessageArgument(message, new TdApi.FormattedText(arg, null))
           );
         } else {
@@ -1436,7 +1436,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
         public int backgroundColor (boolean isPressed) {
           int colorId = backgroundColorId(isPressed);
           return colorId != 0 ?
-            Theme.getColor(colorId) :
+            ColorUtils.alphaColor(.2f, Theme.getColor(colorId)) :
             0;
         }
 
@@ -1447,17 +1447,44 @@ public final class TGMessageService extends TGMessageServiceImpl {
             R.id.theme_color_messageAuthor :
             0;
         }
+
+        @Override
+        public int iconColor () {
+          float transparency = messagesController().wallpaper().getBackgroundTransparency();
+          return ColorUtils.alphaColor(
+            .4f + (1f - .4f) * transparency,
+            defaultTextColor()
+          );
+        }
       };
     } else {
       return new TextColorSet() {
         @Override
         public int defaultTextColor () {
-          return getBubbleDateTextColor();
+          return Theme.textAccentColor();
         }
 
         @Override
         public int clickableTextColor (boolean isPressed) {
           return Theme.getColor(R.id.theme_color_messageAuthor);
+        }
+
+        @Override
+        public int backgroundColorId (boolean isPressed) {
+          return isPressed ? R.id.theme_color_messageAuthor : 0;
+        }
+
+        @Override
+        public int backgroundColor (boolean isPressed) {
+          int colorId = backgroundColorId(isPressed);
+          return colorId != 0 ?
+            ColorUtils.alphaColor(.2f, Theme.getColor(colorId)) :
+            0;
+        }
+
+        @Override
+        public int iconColor () {
+          return Theme.getColor(R.id.theme_color_icon);
         }
       };
     }
