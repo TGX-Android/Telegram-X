@@ -20,6 +20,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.util.BatchOperationHandler;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -111,6 +112,12 @@ public class TdlibEmojiManager implements CleanupStartupDelegate {
 
   public void forgetWatcher (long customEmojiId, Watcher watcher) {
     watchers.remove(customEmojiId, watcher);
+  }
+
+  private final BatchOperationHandler delayedHandler = new BatchOperationHandler(this::performPostponedRequests, 10);
+
+  public void performPostponedRequestsDelayed () {
+    delayedHandler.performOperation();
   }
 
   @UiThread

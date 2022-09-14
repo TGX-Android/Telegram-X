@@ -179,7 +179,7 @@ class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiManager.Wat
   private void requestCustomEmoji () {
     if (customEmoji == null && !emojiRequested) {
       emojiRequested = true;
-      tdlib.emoji().performPostponedRequests();
+      tdlib.emoji().performPostponedRequestsDelayed();
     }
   }
 
