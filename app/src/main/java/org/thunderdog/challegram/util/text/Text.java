@@ -910,6 +910,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       do {
         TextEntity entity = findEntity(totalLength, totalLength);
         if (entity != null) {
+          if (entity.end > totalLength)
+            throw new IllegalArgumentException(entity.end + " > " + totalLength);
           processTextOrEmoji(in, totalLength, totalLength, out, emojiCallback, entity);
         } else {
           break;
