@@ -255,7 +255,8 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
       }
       return;
     }
-    float scale = getScale(customEmoji.sticker, (right - left));
+    //noinspection ConstantConditions
+    float scale = customEmoji != null && !customEmoji.isNotFound() ? getScale(customEmoji.sticker, (right - left)) : 1f;
     boolean needScaleUp = scale != 1f;
     int restoreToCount;
     if (needScaleUp) {
