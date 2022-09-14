@@ -69,7 +69,6 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.InlineResult;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
-import org.thunderdog.challegram.data.TGMessageChat;
 import org.thunderdog.challegram.data.TGMessageMedia;
 import org.thunderdog.challegram.data.TGMessageText;
 import org.thunderdog.challegram.data.TGWebPage;
@@ -8011,32 +8010,6 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (delegate != null) {
       delegate.modifyMediaArguments(stack, args);
     }
-
-    openWithArgs(context, args);
-  }
-
-  public static void openFromMessage (TGMessageChat groupPhoto) {
-    ViewController<?> context = groupPhoto.controller();
-    if (context.isStackLocked()) {
-      return;
-    }
-
-    MediaItem item = MediaItem.valueOf(context.context(), context.tdlib(), groupPhoto.getMessage());
-    if (item == null)
-      return;
-    item.setSourceMessage(groupPhoto);
-
-    MediaStack stack;
-
-    stack = new MediaStack(context.context(), context.tdlib());
-    stack.set(item);
-
-    Args args = new Args(context, MODE_CHAT_PROFILE, stack);
-    args.reverseMode = true;
-    if (context instanceof MediaCollectorDelegate) {
-      ((MediaCollectorDelegate) context).modifyMediaArguments(groupPhoto, args);
-    }
-    args.noLoadMore = groupPhoto.isEventLog();
 
     openWithArgs(context, args);
   }

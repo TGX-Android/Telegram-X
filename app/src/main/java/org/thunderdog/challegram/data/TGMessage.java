@@ -7116,186 +7116,82 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           return new TGMessageGame(context, msg, ((TdApi.MessageGame) content).game);
         }
         case TdApi.MessageExpiredPhoto.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageExpiredPhoto) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageExpiredPhoto) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageExpiredPhoto) content);
         }
         case TdApi.MessageExpiredVideo.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageExpiredVideo) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageExpiredVideo) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageExpiredVideo) content);
         }
         case TdApi.MessagePinMessage.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessagePinMessage) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessagePinMessage) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessagePinMessage) content);
         }
         case TdApi.MessageScreenshotTaken.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageScreenshotTaken) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageScreenshotTaken) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageScreenshotTaken) content);
         }
         case TdApi.MessageChatSetTtl.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageChatSetTtl) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageChatSetTtl) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageChatSetTtl) content);
         }
         case TdApi.MessageGameScore.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageGameScore) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageGameScore) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageGameScore) content);
         }
         case TdApi.MessageContactRegistered.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageContactRegistered) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageContactRegistered) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageContactRegistered) content);
         }
         case TdApi.MessageChatChangePhoto.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageChatChangePhoto) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageChatChangePhoto) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageChatChangePhoto) content);
         }
         case TdApi.MessageCustomServiceAction.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageCustomServiceAction) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageCustomServiceAction) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageCustomServiceAction) content);
         }
         case TdApi.MessagePaymentSuccessful.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessagePaymentSuccessful) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessagePaymentSuccessful) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessagePaymentSuccessful) content);
         }
         case TdApi.MessageChatDeletePhoto.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageChatDeletePhoto) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageChatDeletePhoto) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageChatDeletePhoto) content);
         }
         case TdApi.MessageChatAddMembers.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageChatAddMembers) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageChatAddMembers) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageChatAddMembers) content);
         }
         case TdApi.MessageBasicGroupChatCreate.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageBasicGroupChatCreate) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageBasicGroupChatCreate) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageBasicGroupChatCreate) content);
         }
         case TdApi.MessageChatChangeTitle.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageChatChangeTitle) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageChatChangeTitle) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageChatChangeTitle) content);
         }
         case TdApi.MessageChatDeleteMember.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageChatDeleteMember) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageChatDeleteMember) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageChatDeleteMember) content);
         }
         case TdApi.MessageChatJoinByLink.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageChatJoinByLink) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageChatJoinByLink) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageChatJoinByLink) content);
         }
         case TdApi.MessageChatJoinByRequest.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageChatJoinByRequest) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageChatJoinByRequest) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageChatJoinByRequest) content);
         }
         case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageProximityAlertTriggered) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageProximityAlertTriggered) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageProximityAlertTriggered) content);
         }
         case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageInviteVideoChatParticipants) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageInviteVideoChatParticipants) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageInviteVideoChatParticipants) content);
         }
         case TdApi.MessageVideoChatStarted.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageVideoChatStarted) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageVideoChatStarted) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageVideoChatStarted) content);
         }
         case TdApi.MessageVideoChatScheduled.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageVideoChatScheduled) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageVideoChatScheduled) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageVideoChatScheduled) content);
         }
         case TdApi.MessageVideoChatEnded.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageVideoChatEnded) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageVideoChatEnded) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageVideoChatEnded) content);
         }
         case TdApi.MessageSupergroupChatCreate.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageSupergroupChatCreate) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageSupergroupChatCreate) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageSupergroupChatCreate) content);
         }
         case TdApi.MessageWebsiteConnected.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageWebsiteConnected) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageWebsiteConnected) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageWebsiteConnected) content);
         }
         case TdApi.MessageChatUpgradeTo.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageChatUpgradeTo) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageChatUpgradeTo) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageChatUpgradeTo) content);
         }
         case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR: {
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.MessageChatUpgradeFrom) content);
-          } else {
-            return new TGMessageChat(context, msg, (TdApi.MessageChatUpgradeFrom) content);
-          }
+          return new TGMessageService(context, msg, (TdApi.MessageChatUpgradeFrom) content);
         }
         // unsupported
         case TdApi.MessageInvoice.CONSTRUCTOR:

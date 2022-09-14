@@ -152,6 +152,11 @@ abstract class TGMessageServiceImpl extends TGMessage {
   }
 
   @Override
+  public boolean canSwipe () {
+    return false;
+  }
+
+  @Override
   public void requestMediaContent (ComplexReceiver receiver, boolean invalidate, int invalidateArg) {
     if (chatPhoto != null) {
       chatPhoto.requestFiles(receiver, invalidate);

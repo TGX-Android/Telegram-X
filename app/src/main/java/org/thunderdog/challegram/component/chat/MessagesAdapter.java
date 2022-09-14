@@ -27,7 +27,6 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageBotInfo;
-import org.thunderdog.challegram.data.TGMessageChat;
 import org.thunderdog.challegram.data.TGMessageMedia;
 import org.thunderdog.challegram.data.TGMessagePoll;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
@@ -60,20 +59,6 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
     if (items != null) {
       for (TGMessage message : items) {
         message.invalidate();
-      }
-    }
-    MessagesRecyclerView recyclerView = manager.controller().getMessagesView();
-    if (recyclerView != null) {
-      recyclerView.invalidate();
-    }
-  }
-
-  public void invalidateServiceMessages () {
-    if (items != null) {
-      for (TGMessage message : items) {
-        if (message instanceof TGMessageChat) {
-          message.invalidate();
-        }
       }
     }
     MessagesRecyclerView recyclerView = manager.controller().getMessagesView();

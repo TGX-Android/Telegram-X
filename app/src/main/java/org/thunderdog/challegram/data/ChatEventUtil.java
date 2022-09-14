@@ -15,7 +15,6 @@
 
 package org.thunderdog.challegram.data;
 
-import android.annotation.SuppressLint;
 import android.text.TextUtils;
 
 import androidx.annotation.IntDef;
@@ -24,7 +23,6 @@ import androidx.annotation.NonNull;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessagesManager;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Strings;
@@ -75,6 +73,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventPollStopped.CONSTRUCTOR:
         return ActionMessageMode.SERVICE_AND_FULL;
       // only service message
+      case TdApi.ChatEventPhotoChanged.CONSTRUCTOR:
       case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
       case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
       case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
@@ -107,89 +106,78 @@ public class ChatEventUtil {
       case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR:
       case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
         return ActionMessageMode.ONLY_FULL;
-      // temporary
-      case TdApi.ChatEventPhotoChanged.CONSTRUCTOR:
-        return Config.USE_NEW_SERVICE_MESSAGES ? ActionMessageMode.ONLY_SERVICE : ActionMessageMode.ONLY_FULL;
     }
     throw new UnsupportedOperationException(action.toString());
   }
 
   @NonNull
   private static TGMessage serviceMessage (MessagesManager context, TdApi.Message msg, TdApi.ChatEventAction action) {
-    if (Config.USE_NEW_SERVICE_MESSAGES) {
-      switch (action.getConstructor()) {
-        // service + full message
-        case TdApi.ChatEventDescriptionChanged.CONSTRUCTOR:
-          return new TGMessageService(context, msg, (TdApi.ChatEventDescriptionChanged) action);
-        case TdApi.ChatEventMessageDeleted.CONSTRUCTOR:
-          return new TGMessageService(context, msg, (TdApi.ChatEventMessageDeleted) action);
-        case TdApi.ChatEventMessageEdited.CONSTRUCTOR:
-          return new TGMessageService(context, msg, (TdApi.ChatEventMessageEdited) action);
-        case TdApi.ChatEventMessagePinned.CONSTRUCTOR:
-          return new TGMessageService(context, msg, (TdApi.ChatEventMessagePinned) action);
-        case TdApi.ChatEventUsernameChanged.CONSTRUCTOR:
-          return new TGMessageService(context, msg, (TdApi.ChatEventUsernameChanged) action);
-        case TdApi.ChatEventPollStopped.CONSTRUCTOR:
-          return new TGMessageService(context, msg, (TdApi.ChatEventPollStopped) action);
-        // only service message
-        case TdApi.ChatEventPhotoChanged.CONSTRUCTOR:
-          if (Config.USE_NEW_SERVICE_MESSAGES) {
-            return new TGMessageService(context, msg, (TdApi.ChatEventPhotoChanged) action);
-          } else {
-            throw new IllegalArgumentException(action.toString());
-          }
-        case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
-          return new TGMessageService(context, msg, (TdApi.ChatEventMessageUnpinned) action);
-        case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
-          return new TGMessageService(context, msg, (TdApi.ChatEventInvitesToggled) action);
-        case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
-          return new TGMessageService(context, msg, (TdApi.ChatEventSignMessagesToggled) action);
-        case TdApi.ChatEventHasProtectedContentToggled.CONSTRUCTOR:
-          return new TGMessageService(context, msg, (TdApi.ChatEventHasProtectedContentToggled) action);
-        case TdApi.ChatEventIsAllHistoryAvailableToggled.CONSTRUCTOR:
-          return new TGMessageService(context, msg, (TdApi.ChatEventIsAllHistoryAvailableToggled) action);
-        case TdApi.ChatEventStickerSetChanged.CONSTRUCTOR:
-          return new TGMessageService(context, msg, (TdApi.ChatEventStickerSetChanged) action);
-        case TdApi.ChatEventLinkedChatChanged.CONSTRUCTOR:
-          return new TGMessageService(context, msg, (TdApi.ChatEventLinkedChatChanged) action);
-        case TdApi.ChatEventSlowModeDelayChanged.CONSTRUCTOR:
-          return new TGMessageService(context, msg, (TdApi.ChatEventSlowModeDelayChanged) action);
-        case TdApi.ChatEventLocationChanged.CONSTRUCTOR:
-          return new TGMessageService(context, msg, (TdApi.ChatEventLocationChanged) action);
-        case TdApi.ChatEventVideoChatMuteNewParticipantsToggled.CONSTRUCTOR:
-          return new TGMessageService(context, msg, (TdApi.ChatEventVideoChatMuteNewParticipantsToggled) action);
-        case TdApi.ChatEventMemberJoinedByInviteLink.CONSTRUCTOR:
-          return new TGMessageService(context, msg, (TdApi.ChatEventMemberJoinedByInviteLink) action);
-        case TdApi.ChatEventMemberJoinedByRequest.CONSTRUCTOR:
-          return new TGMessageService(context, msg, (TdApi.ChatEventMemberJoinedByRequest) action);
-        case TdApi.ChatEventInviteLinkRevoked.CONSTRUCTOR:
-          return new TGMessageService(context, msg, (TdApi.ChatEventInviteLinkRevoked) action);
-        case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
-          return new TGMessageService(context, msg, (TdApi.ChatEventInviteLinkDeleted) action);
-        case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
-          return new TGMessageService(context, msg, (TdApi.ChatEventVideoChatParticipantVolumeLevelChanged) action);
-        case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
-          return new TGMessageService(context, msg, (TdApi.ChatEventVideoChatParticipantIsMutedToggled) action);
-        // only full (native)
-        case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
-        case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
-        case TdApi.ChatEventVideoChatEnded.CONSTRUCTOR:
-        case TdApi.ChatEventMemberJoined.CONSTRUCTOR:
-        case TdApi.ChatEventMemberLeft.CONSTRUCTOR:
-        case TdApi.ChatEventTitleChanged.CONSTRUCTOR:
-          // only full
-        case TdApi.ChatEventMemberPromoted.CONSTRUCTOR:
-        case TdApi.ChatEventMemberRestricted.CONSTRUCTOR:
-        case TdApi.ChatEventMemberInvited.CONSTRUCTOR:
-        case TdApi.ChatEventPermissionsChanged.CONSTRUCTOR:
-        case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR:
-        case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
-          throw new IllegalArgumentException(action.toString());
-      }
-      throw new UnsupportedOperationException(action.toString());
-    } else {
-      return new TGMessageChat(context, msg, action);
+    switch (action.getConstructor()) {
+      // service + full message
+      case TdApi.ChatEventDescriptionChanged.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventDescriptionChanged) action);
+      case TdApi.ChatEventMessageDeleted.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventMessageDeleted) action);
+      case TdApi.ChatEventMessageEdited.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventMessageEdited) action);
+      case TdApi.ChatEventMessagePinned.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventMessagePinned) action);
+      case TdApi.ChatEventUsernameChanged.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventUsernameChanged) action);
+      case TdApi.ChatEventPollStopped.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventPollStopped) action);
+      // only service message
+      case TdApi.ChatEventPhotoChanged.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventPhotoChanged) action);
+      case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventMessageUnpinned) action);
+      case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventInvitesToggled) action);
+      case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventSignMessagesToggled) action);
+      case TdApi.ChatEventHasProtectedContentToggled.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventHasProtectedContentToggled) action);
+      case TdApi.ChatEventIsAllHistoryAvailableToggled.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventIsAllHistoryAvailableToggled) action);
+      case TdApi.ChatEventStickerSetChanged.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventStickerSetChanged) action);
+      case TdApi.ChatEventLinkedChatChanged.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventLinkedChatChanged) action);
+      case TdApi.ChatEventSlowModeDelayChanged.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventSlowModeDelayChanged) action);
+      case TdApi.ChatEventLocationChanged.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventLocationChanged) action);
+      case TdApi.ChatEventVideoChatMuteNewParticipantsToggled.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventVideoChatMuteNewParticipantsToggled) action);
+      case TdApi.ChatEventMemberJoinedByInviteLink.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventMemberJoinedByInviteLink) action);
+      case TdApi.ChatEventMemberJoinedByRequest.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventMemberJoinedByRequest) action);
+      case TdApi.ChatEventInviteLinkRevoked.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventInviteLinkRevoked) action);
+      case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventInviteLinkDeleted) action);
+      case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventVideoChatParticipantVolumeLevelChanged) action);
+      case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventVideoChatParticipantIsMutedToggled) action);
+      // only full (native)
+      case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
+      case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
+      case TdApi.ChatEventVideoChatEnded.CONSTRUCTOR:
+      case TdApi.ChatEventMemberJoined.CONSTRUCTOR:
+      case TdApi.ChatEventMemberLeft.CONSTRUCTOR:
+      case TdApi.ChatEventTitleChanged.CONSTRUCTOR:
+        // only full
+      case TdApi.ChatEventMemberPromoted.CONSTRUCTOR:
+      case TdApi.ChatEventMemberRestricted.CONSTRUCTOR:
+      case TdApi.ChatEventMemberInvited.CONSTRUCTOR:
+      case TdApi.ChatEventPermissionsChanged.CONSTRUCTOR:
+      case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR:
+      case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
+        throw new IllegalArgumentException(action.toString());
     }
+    throw new UnsupportedOperationException(action.toString());
   }
 
   @NonNull

@@ -63,6 +63,11 @@ public class TGMessageBotInfo extends TGMessage {
   }
 
   @Override
+  public boolean canSwipe () {
+    return false;
+  }
+
+  @Override
   protected boolean headerDisabled () {
     return true;
   }
