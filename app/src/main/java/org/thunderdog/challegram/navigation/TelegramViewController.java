@@ -930,6 +930,7 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
     if (this.isSearchContentVisible != isVisible) {
       this.isSearchContentVisible = isVisible;
       chatSearchView.setScrollDisabled(!isVisible);
+      context().checkDisallowScreenshots();
     }
   }
 
