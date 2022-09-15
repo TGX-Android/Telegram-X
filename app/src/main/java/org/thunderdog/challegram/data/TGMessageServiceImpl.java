@@ -199,6 +199,8 @@ abstract class TGMessageServiceImpl extends TGMessage {
       return;
     }
 
+    boolean hadMedia = this.displayText != null && this.displayText.hasMedia();
+
     if (this.displayText != null) {
       this.displayText.performDestroy();
       this.displayText = null;
@@ -233,6 +235,10 @@ abstract class TGMessageServiceImpl extends TGMessage {
         });
       }
       this.displayText = b.build();
+    }
+
+    if (hadMedia || (this.displayText != null && this.displayText.hasMedia())) {
+      invalidateTextMediaReceiver();
     }
   }
 
