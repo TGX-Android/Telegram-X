@@ -49,16 +49,22 @@ public class GifBridge {
   private final HashMap<String, GifRecord> records = new HashMap<>();
   private final HashMap<Integer, ArrayList<GifRecord>> fileIdToRecordList = new HashMap<>();
   private final ArrayList<GifRecord> playingRoundVideos = new ArrayList<>();
-  private int lastUsedThread;
-  private final GifThread[] threads;
+  // TODO: rework to executors
+  private int lastUsedThread, lastUsedEmojiThread;
+  private final GifThread[] threads, emojiThreads;
   private final GifThread[] lottieThreads;
 
   private GifBridge () {
     N.gifInit();
     thread = new GifBridgeThread();
+    // TODO: rework to executors
     threads = new GifThread[THREAD_POOL_SIZE];
     for (int i = 0; i < threads.length; i++) {
       threads[i] = new GifThread(i);
+    }
+    emojiThreads = new GifThread[THREAD_POOL_SIZE];
+    for (int i = 0; i < emojiThreads.length; i++) {
+      emojiThreads[i] = new GifThread(i);
     }
     lottieThreads = new GifThread[3];
     for (int i = 0; i < lottieThreads.length; i++) {
@@ -70,10 +76,18 @@ public class GifBridge {
     if (file.getGifType() == GifFile.TYPE_TG_LOTTIE) {
       return lottieThreads[file.getOptimizationMode()];
     } else {
-      if (++lastUsedThread == THREAD_POOL_SIZE) {
-        lastUsedThread = 0;
+      // TODO rework to executors
+      if (file.getOptimizationMode() == GifFile.OptimizationMode.EMOJI) {
+        if (++lastUsedEmojiThread == THREAD_POOL_SIZE) {
+          lastUsedEmojiThread = 0;
+        }
+        return emojiThreads[lastUsedEmojiThread];
+      } else {
+        if (++lastUsedThread == THREAD_POOL_SIZE) {
+          lastUsedThread = 0;
+        }
+        return threads[lastUsedThread];
       }
-      return threads[lastUsedThread];
     }
   }
 
