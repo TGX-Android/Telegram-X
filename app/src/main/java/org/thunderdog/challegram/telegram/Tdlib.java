@@ -58,6 +58,7 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.AppBuildInfo;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.UserProvider;
 import org.thunderdog.challegram.util.WrapperProvider;
@@ -1140,6 +1141,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public String tdlibCommitHash () {
     return context().tdlibCommitHash();
+  }
+
+  public String tdlibCommitHashFull () {
+    return context().tdlibCommitHashFull();
   }
 
   public String tdlibVersion () {
@@ -4823,36 +4828,37 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private void checkConnectionParams (Client client, boolean force) {
-    if (isServiceInstance()) {
-      return;
-    }
-    int state = context().getTokenState();
-    final String deviceToken = getRegisteredDeviceToken();
-    if (!StringUtils.isEmpty(deviceToken) && (state == TdlibManager.TokenState.NONE || state == TdlibManager.TokenState.INITIALIZING)) {
-      state = TdlibManager.TokenState.OK;
-    }
-    String error = context().getTokenError();
     Map<String, Object> params = new LinkedHashMap<>();
-    switch (state) {
-      case TdlibManager.TokenState.ERROR: {
-        params.put("device_token", "FIREBASE_ERROR");
-        if (!StringUtils.isEmpty(error)) {
-          params.put("firebase_error", error);
+    if (isServiceInstance()) {
+      params.put("device_token", "HIDDEN");
+    } else {
+      int state = context().getTokenState();
+      final String deviceToken = getRegisteredDeviceToken();
+      if (!StringUtils.isEmpty(deviceToken) && (state == TdlibManager.TokenState.NONE || state == TdlibManager.TokenState.INITIALIZING)) {
+        state = TdlibManager.TokenState.OK;
+      }
+      String error = context().getTokenError();
+      switch (state) {
+        case TdlibManager.TokenState.ERROR: {
+          params.put("device_token", "FIREBASE_ERROR");
+          if (!StringUtils.isEmpty(error)) {
+            params.put("firebase_error", error);
+          }
+          break;
         }
-        break;
+        case TdlibManager.TokenState.INITIALIZING: {
+          params.put("device_token", "FIREBASE_INITIALIZING");
+          break;
+        }
+        case TdlibManager.TokenState.OK: {
+          params.put("device_token", deviceToken);
+          break;
+        }
+        case TdlibManager.TokenState.NONE:
+          return;
+        default:
+          throw new IllegalStateException(Integer.toString(state));
       }
-      case TdlibManager.TokenState.INITIALIZING: {
-        params.put("device_token", "FIREBASE_INITIALIZING");
-        break;
-      }
-      case TdlibManager.TokenState.OK: {
-        params.put("device_token", deviceToken);
-        break;
-      }
-      case TdlibManager.TokenState.NONE:
-        return;
-      default:
-        throw new IllegalStateException(Integer.toString(state));
     }
     long timeZoneOffset = TimeUnit.MILLISECONDS.toSeconds(
       TimeZone.getDefault().getRawOffset() +
@@ -4868,6 +4874,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       params.put("data", fingerprint);
     }
     params.put("tz_offset", timeZoneOffset);
+
+    Map<String, Object> git = new LinkedHashMap<>();
+    git.put("remote", BuildConfig.REMOTE_URL.replaceAll("^(https?://)?github\\.com/", ""));
+    git.put("commit", BuildConfig.COMMIT);
+    git.put("tdlib", tdlibCommitHash());
+    git.put("date", AppBuildInfo.maxBuiltInCommitDate());
+    params.put("git", git);
 
     String connectionParams = JSON.stringify(JSON.toObject(params));
     if (connectionParams != null && (force || !StringUtils.equalsOrBothEmpty(lastReportedConnectionParams, connectionParams))) {

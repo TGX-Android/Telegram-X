@@ -354,9 +354,16 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   public String tdlibCommitHash () {
     if (!StringUtils.isEmpty(tdlibCommitHash)) {
-      return this.tdlibCommitHash;
+      return StringUtils.limit(this.tdlibCommitHash, 7);
     }
     return Td.tdlibCommitHash();
+  }
+
+  public String tdlibCommitHashFull () {
+    if (!StringUtils.isEmpty(tdlibCommitHash)) {
+      return this.tdlibCommitHash;
+    }
+    return Td.tdlibCommitHashFull();
   }
 
   public String tdlibVersion () {
