@@ -2404,26 +2404,30 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public final void checkDisallowScreenshots () {
+    if (UI.TEST_MODE == UI.TEST_MODE_AUTO) {
+      // Allow screen capture in Firebase Labs
+      return;
+    }
     boolean disallowScreenshots = false;
-    if (UI.TEST_MODE != UI.TEST_MODE_AUTO) {
-      disallowScreenshots = (navigation.shouldDisallowScreenshots() || Passcode.instance().shouldDisallowScreenshots());
-      if (!disallowScreenshots) {
-        for (PopupLayout popupLayout : windows) {
-          if (popupLayout.shouldDisallowScreenshots()) {
-            disallowScreenshots = true;
-            break;
-          }
+    disallowScreenshots = (navigation.shouldDisallowScreenshots() || Passcode.instance().shouldDisallowScreenshots());
+    if (!disallowScreenshots) {
+      for (PopupLayout popupLayout : windows) {
+        boolean shouldDisallowScreenshots = popupLayout.shouldDisallowScreenshots();
+        popupLayout.checkWindowFlags();
+        if (shouldDisallowScreenshots) {
+          disallowScreenshots = true;
         }
       }
-      if (!disallowScreenshots) {
-        for (int i = 0; i < forgottenWindows.size(); i++) {
-          PopupLayout popupLayout = forgottenWindows.valueAt(i);
-          if (popupLayout == null)
-            continue;
-          if (popupLayout.shouldDisallowScreenshots()) {
-            disallowScreenshots = true;
-            break;
-          }
+    }
+    if (!disallowScreenshots) {
+      for (int i = 0; i < forgottenWindows.size(); i++) {
+        PopupLayout popupLayout = forgottenWindows.valueAt(i);
+        if (popupLayout == null)
+          continue;
+        boolean shouldDisallowScreenshots = popupLayout.shouldDisallowScreenshots();
+        popupLayout.checkWindowFlags();
+        if (shouldDisallowScreenshots) {
+          disallowScreenshots = true;
         }
       }
     }
