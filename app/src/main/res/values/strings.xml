@@ -667,7 +667,7 @@
   <string name="RestrictSavingGroupInfo">Copying and forwarding is restricted by group admins</string>
   <string name="RestrictSavingChannelInfo">Copying and forwarding is restricted by channel admins</string>
   <string name="RestrictSavingGroupHint">Members won\'t be able to copy, save or forward content from this group.</string>
-  <string name="RestrictSavingChannelHint">Subscribers won\'t be able to copy, save and forward content from this channel.</string>
+  <string name="RestrictSavingChannelHint">Subscribers won\'t be able to copy, save or forward content from this channel.</string>
   <string name="PostNotFound">Post not found</string>
   <string name="OpenSupergroup">Open Supergroup</string>
   <string name="Call">Call</string>
@@ -805,7 +805,7 @@
   <string name="AwaitingEncryption">Waiting for %1$s to get online…</string>
   <string name="XJoinedSecretChat">%1$s joined the secret chat</string>
   <string name="YouJoinedSecretChat">You joined the secret chat</string>
-  <string name="SecretChatCancelled">Secret chat cancelled</string>
+  <string name="SecretChatCancelled">Secret chat canceled</string>
   <string name="SecretChats">Secret Chats</string>
   <string name="ChatTitleSecretChat">%1$s (secret chat)</string>
   <string name="format_EncryptedDescription">• %1$s\n• %2$s\n• %3$s\n• %4$s</string>
@@ -1417,14 +1417,14 @@
   <string name="OutgoingCall">Outgoing Call</string>
   <string name="IncomingCall">Incoming Call</string>
   <string name="MissedCall">Missed Call</string>
-  <string name="CallMessageOutgoingMissed">Cancelled Call</string>
+  <string name="CallMessageOutgoingMissed">Canceled Call</string>
   <string name="CallMessageIncomingDeclined">Declined Call</string>
   <string name="Declined">Declined</string>
   <string name="DeclineCall">Decline</string>
   <string name="AnswerCall">Answer</string>
   <string name="OutgoingCallBusy">Outgoing Call (Busy)</string>
   <string name="Missed">Missed</string>
-  <string name="Cancelled">Cancelled</string>
+  <string name="Cancelled">Canceled</string>
   <string name="Outgoing">Outgoing</string>
   <string name="Incoming">Incoming</string>
   <string name="CallAgain">Call Again</string>
@@ -1448,8 +1448,8 @@
   <string name="VoipExchangingKeysShort">Exchanging keys</string>
   <string name="VoipEstablishing">Connecting…</string>
   <string name="VoipEnded">Call ended</string>
-  <string name="VoipCancelled">Call cancelled</string>
-  <string name="VoipDeclined">Call cancelled</string>
+  <string name="VoipCancelled">Call canceled</string>
+  <string name="VoipDeclined">Call canceled</string>
   <string name="VoipMissed">Call missed</string>
   <string name="VoipMissedOutgoing">Call missed</string>
   <string name="VoipUnknown">Call answered</string>
@@ -2010,7 +2010,7 @@
   <string name="EditMarkdown">Edit Markdown</string>
   <string name="ForceBuiltinDecoding">Force built-in media decoding</string>
   <string name="CompressAudio">Compress audio in videos</string>
-  <string name="EditMarkdownHint2">Edit text in messages using the old-school way: `**`**bold**`**`, `__`__italic__`__`, `~~`~~strikethrough~~`~~`,``` `monospace`, `||`||spoiler||`||`,``` [text](url)</string>
+  <string name="EditMarkdownHint2">Edit text in messages using the old-school way: `**`**bold**`**`, `__`__italic__`__`, `~~`~~strikethrough~~`~~`, ````monospace````, `||`||spoiler||`||`, `[`text`](`url`)`</string>
   <string name="MessageNotFound">Message not found</string>
   <string name="SyncHintTitle">Find Contacts</string>
   <string name="SyncHint">To help you connect with friends and family, allow %1$s access to your contacts.</string>
@@ -3244,7 +3244,7 @@
   <string name="ChatRestrictedGifs">The admins of this group have restricted your ability to send GIFs.</string>
   <string name="ChatRestrictedGifsUntil">Admins have restricted you from sending GIFs in this group until %1$s</string>
   <string name="ChatRestrictedBots">The admins of this group have restricted your ability to send inline content.</string>
-  <string name="ChatRestrictedBotsUntil">The admins of this group have restricted your ability to send inline content. until %1$s</string>
+  <string name="ChatRestrictedBotsUntil">The admins of this group have restricted your ability to send inline content until %1$s</string>
   <string name="ChatRestrictedStickers">Admins have restricted you from sending stickers in this group</string>
   <string name="ChatRestrictedStickersUntil">Admins have restricted you from sending stickers in this group until %1$s</string>
   <string name="ChatRestrictedDice">Admins have restricted you from rolling a die in this group. Hold to send it as an emoji.</string>
@@ -3617,8 +3617,8 @@
   <string name="LeaveXChats_one">You will be unable to return to %1$s chat</string>
   <string name="LeaveXChats_other">You will be unable to return to %1$s chats</string>
 
-  <string name="ClosingXSecretChats_one">%1$s secret chat will be cancelled</string>
-  <string name="ClosingXSecretChats_other">%1$s secret chats will be cancelled</string>
+  <string name="ClosingXSecretChats_one">%1$s secret chat will be canceled</string>
+  <string name="ClosingXSecretChats_other">%1$s secret chats will be canceled</string>
 
   <string name="NoUndoWarn">This action cannot be undone.</string>
 
