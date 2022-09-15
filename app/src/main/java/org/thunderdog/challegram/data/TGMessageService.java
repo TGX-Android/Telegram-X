@@ -1203,9 +1203,13 @@ public final class TGMessageService extends TGMessageServiceImpl {
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventMessagePinned messagePinned) {
     super(context, msg);
-    setTextCreator(() ->
-      getText(R.string.EventLogPinnedMessages, new SenderArgument(sender))
-    );
+    setTextCreator(() -> {
+      if (sender.isServiceChannelBot()) {
+        return getText(R.string.EventLogPinnedMessages, new SenderArgument(new TdlibSender(tdlib(), msg.chatId, messagePinned.message.senderId)));
+      } else {
+        return getText(R.string.EventLogPinnedMessages, new SenderArgument(sender));
+      }
+    });
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventMemberJoinedByInviteLink joinedByInviteLink) {
