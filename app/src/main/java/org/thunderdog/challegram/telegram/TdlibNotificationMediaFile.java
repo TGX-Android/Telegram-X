@@ -19,6 +19,7 @@ import androidx.annotation.Nullable;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.data.MediaWrapper;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.unsorted.Settings;
 
 public class TdlibNotificationMediaFile {
   public static final int TYPE_IMAGE = 0;
@@ -88,7 +89,7 @@ public class TdlibNotificationMediaFile {
           }
           case TdApi.MessageAnimatedEmoji.CONSTRUCTOR: {
             TdApi.MessageAnimatedEmoji animatedEmoji = (TdApi.MessageAnimatedEmoji) message.content;
-            if (animatedEmoji.animatedEmoji.sticker != null) {
+            if (animatedEmoji.animatedEmoji.sticker != null && !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI)) {
               TdApi.Sticker sticker = animatedEmoji.animatedEmoji.sticker;
               photoFile = animatedEmoji.animatedEmoji.sticker.sticker;
               type = toType(sticker.format);
