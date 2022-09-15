@@ -32,12 +32,14 @@ public class TGSourceHidden extends TGSource {
     super(msg);
     this.name = forward.senderName;
     this.isImported = false;
+    this.isReady = true;
   }
 
   public TGSourceHidden (TGMessage msg, TdApi.MessageForwardOriginMessageImport messageImport) {
     super(msg);
     this.name = messageImport.senderName;
     this.isImported = true;
+    this.isReady = true;
   }
 
   @Override

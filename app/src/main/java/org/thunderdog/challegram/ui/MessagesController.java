@@ -4474,7 +4474,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         b.append(" ]");
       }
       TdApi.FormattedText text = Td.textOrCaption(msg.content);
-      if (msg.content.getConstructor() != TdApi.MessageText.CONSTRUCTOR) {
+      if (msg.content.getConstructor() != TdApi.MessageText.CONSTRUCTOR && msg.content.getConstructor() != TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
         b.append("\n[");
         b.append(TD.buildShortPreview(tdlib, msg, false));
         b.append("]");
