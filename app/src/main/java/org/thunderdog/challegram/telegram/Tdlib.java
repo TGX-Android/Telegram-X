@@ -4879,7 +4879,23 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     git.put("remote", BuildConfig.REMOTE_URL.replaceAll("^(https?://)?github\\.com/", ""));
     git.put("commit", BuildConfig.COMMIT);
     git.put("tdlib", tdlibCommitHash());
-    git.put("date", AppBuildInfo.maxBuiltInCommitDate());
+    git.put("date", BuildConfig.COMMIT_DATE);
+    List<Map<String, Object>> pullRequests = null;
+    //noinspection ConstantConditions
+    for (int i = 0; i < BuildConfig.PULL_REQUEST_ID.length; i++) {
+      Map<String, Object> pr = new LinkedHashMap<>();
+      pr.put("id", BuildConfig.PULL_REQUEST_ID[i]);
+      pr.put("commit", BuildConfig.PULL_REQUEST_COMMIT[i]);
+      pr.put("date", BuildConfig.PULL_REQUEST_COMMIT_DATE[i]);
+      if (pullRequests == null) {
+        pullRequests = new ArrayList<>();
+      }
+      pullRequests.add(pr);
+    }
+    //noinspection ConstantConditions
+    if (pullRequests != null) {
+      git.put("prs", pullRequests);
+    }
     params.put("git", git);
 
     String connectionParams = JSON.stringify(JSON.toObject(params));
