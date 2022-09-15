@@ -5315,6 +5315,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
     tdlib.context().calls().removeCurrentCallListener(this);
     context.removeFullScreenView(this, true);
+    if (captionView instanceof Destroyable) {
+      ((Destroyable) captionView).performDestroy();
+    }
   }
 
   @Override

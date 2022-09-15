@@ -126,6 +126,8 @@ public class ComplexMediaHolder<T> implements Destroyable {
     for (Map.Entry<String, Entry<T>> entry : entries.entrySet()) {
       entry.getValue().mediaRequested = false;
     }
+    topLayerUsages.clear();
+    defaultLayerUsages.clear();
   }
 
   public List<T> topLayerUsages () {
