@@ -3785,22 +3785,46 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private final HashMap<String, TdApi.MessageContent> pendingMessageTexts = new HashMap<>();
   private final HashMap<String, TdApi.FormattedText> pendingMessageCaptions = new HashMap<>();
 
-  public void editMessageText (long chatId, long messageId, TdApi.InputMessageText content, @Nullable TdApi.WebPage webPage, boolean isSingleEmoji) {
+  public void editMessageText (long chatId, long messageId, TdApi.InputMessageText content, @Nullable TdApi.WebPage webPage) {
     if (content.disableWebPagePreview) {
       webPage = null;
     }
     TD.parseEntities(content.text);
     TdApi.MessageText messageText = new TdApi.MessageText(content.text, webPage);
-    if ((content.text.entities != null && content.text.entities.length > 0) || !isSingleEmoji) {
+    if (!Emoji.instance().isSingleEmoji(content.text)) {
       performEdit(chatId, messageId, messageText, new TdApi.EditMessageText(chatId, messageId, null, content), pendingMessageTexts);
-    } else {
+      return;
+    }
+    long customEmojiId = 0;
+    if (content.text.entities != null) {
+      for (TdApi.TextEntity entity : content.text.entities) {
+        if (entity.type.getConstructor() == TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR) {
+          customEmojiId = ((TdApi.TextEntityTypeCustomEmoji) entity.type).customEmojiId;
+          break;
+        }
+      }
+    }
+    Runnable animatedEmojiFallback = () -> {
       client().send(new TdApi.GetAnimatedEmoji(content.text.text), result -> {
         if (result.getConstructor() == TdApi.AnimatedEmoji.CONSTRUCTOR) {
-          performEdit(chatId, messageId, new TdApi.MessageAnimatedEmoji((TdApi.AnimatedEmoji) result, content.text.text), new TdApi.EditMessageText(chatId, messageId, null, content), pendingMessageTexts);
+          TdApi.MessageAnimatedEmoji animatedEmoji = new TdApi.MessageAnimatedEmoji((TdApi.AnimatedEmoji) result, content.text.text);
+          performEdit(chatId, messageId, animatedEmoji, new TdApi.EditMessageText(chatId, messageId, null, content), pendingMessageTexts);
         } else {
           performEdit(chatId, messageId, messageText, new TdApi.EditMessageText(chatId, messageId, null, content), pendingMessageTexts);
         }
       });
+    };
+    if (customEmojiId != 0) {
+      emoji().findOrRequest(customEmojiId, entry -> {
+        if (entry != null && !entry.isNotFound()) {
+          TdApi.MessageAnimatedEmoji animatedEmoji = new TdApi.MessageAnimatedEmoji(new TdApi.AnimatedEmoji(entry.sticker, 0, null), content.text.text);
+          performEdit(chatId, messageId, animatedEmoji, new TdApi.EditMessageText(chatId, messageId, null, content), pendingMessageTexts);
+        } else {
+          animatedEmojiFallback.run();
+        }
+      });
+    } else {
+      animatedEmojiFallback.run();
     }
   }
 

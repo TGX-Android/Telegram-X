@@ -22,10 +22,14 @@ import androidx.annotation.UiThread;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.util.BatchOperationHandler;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import me.vkryl.core.collection.LongSet;
+import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceLongMap;
 import me.vkryl.td.Td;
@@ -71,7 +75,8 @@ public class TdlibEmojiManager implements CleanupStartupDelegate {
   private final Map<Long, Entry> entries = new HashMap<>();
   private final LongSet postponedCustomEmojiIds = new LongSet();
   private final LongSet loadingCustomEmojiIds = new LongSet();
-  private final ReferenceLongMap<Watcher> watchers = new ReferenceLongMap<>(true);
+  private final ReferenceLongMap<Watcher> watcherReferences = new ReferenceLongMap<>(true);
+  private final Map<Long, List<Watcher>> watchers = new LinkedHashMap<>();
 
   private int contextId;
 
@@ -93,8 +98,25 @@ public class TdlibEmojiManager implements CleanupStartupDelegate {
 
   // Impl
 
+  @UiThread
+  public void findOrRequest (long customEmojiId, @NonNull RunnableData<Entry> callback) {
+    Watcher watcher = (context, customEmojiId1, entry) ->
+      callback.runWithData(entry);
+    Entry entry = findOrPostponeRequest(customEmojiId, watcher, true);
+    if (entry != null) {
+      callback.runWithData(entry);
+    } else {
+      performPostponedRequest(customEmojiId);
+    }
+  }
+
   @Nullable
   public Entry findOrPostponeRequest (long customEmojiId, Watcher watcher) {
+    return findOrPostponeRequest(customEmojiId, watcher, false);
+  }
+
+  @Nullable
+  private Entry findOrPostponeRequest (long customEmojiId, Watcher watcher, boolean strongReference) {
     synchronized (dataLock) {
       Entry entry = entries.get(customEmojiId);
       if (entry != null) {
@@ -104,18 +126,47 @@ public class TdlibEmojiManager implements CleanupStartupDelegate {
         postponedCustomEmojiIds.add(customEmojiId);
       }
       if (watcher != null) {
-        watchers.add(customEmojiId, watcher);
+        if (strongReference) {
+          addWatcherImpl(customEmojiId, watcher);
+        } else {
+          watcherReferences.add(customEmojiId, watcher);
+        }
       }
       return null;
     }
   }
 
+  private void addWatcherImpl (long customEmojiId, Watcher watcher) {
+    List<Watcher> list = watchers.get(customEmojiId);
+    if (list != null && !list.contains(watcher)) {
+      list.add(watcher);
+    } else {
+      list = new ArrayList<>();
+      list.add(watcher);
+      watchers.put(customEmojiId, list);
+    }
+  }
+
   public void forgetWatcher (long customEmojiId, Watcher watcher) {
-    watchers.remove(customEmojiId, watcher);
+    watcherReferences.remove(customEmojiId, watcher);
   }
 
   private final BatchOperationHandler delayedHandler = new BatchOperationHandler(this::performPostponedRequests, 10);
 
+  @UiThread
+  public void performPostponedRequest (long customEmojiId) {
+    synchronized (dataLock) {
+      if (postponedCustomEmojiIds.isEmpty() || !postponedCustomEmojiIds.remove(customEmojiId)) {
+        return;
+      }
+      loadingCustomEmojiIds.add(customEmojiId);
+    }
+    requestCustomEmoji(new long[][] {
+      {customEmojiId}
+    });
+  }
+
+  @UiThread
   public void performPostponedRequestsDelayed () {
     delayedHandler.performOperation();
   }
@@ -124,13 +175,17 @@ public class TdlibEmojiManager implements CleanupStartupDelegate {
   public void performPostponedRequests () {
     final long[][] customEmojiIdsChunks;
     synchronized (dataLock) {
-      if (postponedCustomEmojiIds.size() == 0) {
+      if (postponedCustomEmojiIds.isEmpty()) {
         return;
       }
       loadingCustomEmojiIds.addAll(postponedCustomEmojiIds);
       customEmojiIdsChunks = postponedCustomEmojiIds.toArray(TdConstants.MAX_CUSTOM_EMOJI_COUNT_PER_REQUEST);
       postponedCustomEmojiIds.clear();
     }
+    requestCustomEmoji(customEmojiIdsChunks);
+  }
+
+  private void requestCustomEmoji (long[][] customEmojiIdsChunks) {
     final int contextId = this.contextId;
     for (long[] customEmojiIds : customEmojiIdsChunks) {
       tdlib.client().send(new TdApi.GetCustomEmojiStickers(customEmojiIds), result -> {
@@ -184,17 +239,24 @@ public class TdlibEmojiManager implements CleanupStartupDelegate {
 
   @TdlibThread
   private void processEntry (int contextId, Entry entry) {
+    List<Watcher> watcherList;
     synchronized (dataLock) {
       if (this.contextId != contextId)
         return;
       entries.put(entry.customEmojiId, entry);
+      watcherList = watchers.remove(entry.customEmojiId);
     }
-    ReferenceList<Watcher> list = watchers.removeAll(entry.customEmojiId);
-    if (list != null) {
-      for (Watcher watcher : list) {
+    ReferenceList<Watcher> referenceList = watcherReferences.removeAll(entry.customEmojiId);
+    if (referenceList != null) {
+      for (Watcher watcher : referenceList) {
         watcher.onCustomEmojiLoaded(this, entry.customEmojiId, entry);
       }
-      list.clear();
+      referenceList.clear();
+    }
+    if (watcherList != null) {
+      for (Watcher watcher : watcherList) {
+        watcher.onCustomEmojiLoaded(this, entry.customEmojiId, entry);
+      }
     }
   }
 }

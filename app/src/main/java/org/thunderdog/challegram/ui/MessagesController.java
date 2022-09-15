@@ -6308,7 +6308,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
 
-    TdApi.FormattedText newText = inputView.getOutputText(applyMarkdown);
+    TdApi.FormattedText newText = Td.trim(inputView.getOutputText(applyMarkdown));
     if (Td.isEmpty(newText) && !isEditingMessage())
       return;
 
@@ -6324,16 +6324,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         TdApi.InputMessageText newInputMessageText = new TdApi.InputMessageText(newText, getCurrentAllowLinkPreview(), false);
         if (!Td.equalsTo(newInputMessageText.text, oldMessageText.text) || (newInputMessageText.disableWebPagePreview && oldMessageText.webPage != null) || (!newInputMessageText.disableWebPagePreview && oldMessageText.webPage == null && attachedPreview != null)) {
-          String newString = newText.text.trim();
-          if (newString.length() == 0)
-            return;
           final int maxLength = tdlib.maxMessageTextLength();
-          final int newTextLength = newString.codePointCount(0, newString.length());
+          final int newTextLength = newText.text.codePointCount(0, newText.text.length());
           if (newTextLength > maxLength) {
             showBottomHint(Lang.pluralBold(R.string.EditMessageTextTooLong, newTextLength - maxLength), true);
             return;
           }
-          tdlib.editMessageText(editingMessage.chatId, editingMessage.id, newInputMessageText, attachedPreview, Emoji.instance().isSingleEmoji(newString));
+          tdlib.editMessageText(editingMessage.chatId, editingMessage.id, newInputMessageText, attachedPreview);
         }
         break;
       }

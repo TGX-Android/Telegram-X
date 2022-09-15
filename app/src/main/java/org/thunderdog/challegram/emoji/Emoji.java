@@ -510,6 +510,31 @@ public class Emoji {
     return null;
   }
 
+  public boolean isSingleEmoji (TdApi.FormattedText text) {
+    boolean hasEntities = false;
+    if (text.entities != null) {
+      for (TdApi.TextEntity entity : text.entities) {
+        if (entity.offset != 0 || entity.length < text.text.length()) {
+          return false;
+        }
+        //noinspection SwitchIntDef
+        switch (entity.type.getConstructor()) {
+          case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
+            return true;
+          case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
+            return false;
+          default:
+            hasEntities = true;
+            break;
+        }
+      }
+    }
+    if (hasEntities) {
+      return false;
+    }
+    return isSingleEmoji(text.text);
+  }
+
   public boolean isSingleEmoji (String str) {
     CharSequence emoji = replaceEmoji(str, 0, str.length(), singleLimiter);
     if (emoji instanceof Spanned) {
