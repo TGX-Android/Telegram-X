@@ -723,7 +723,7 @@ abstract class TGMessageServiceImpl extends TGMessage {
           for (int i = 0; i < entityType.length; i++) {
             telegramEntities[i] = new TdApi.TextEntity(
               spanStart,
-              spanEnd,
+              spanEnd - spanStart,
               entityType[i]
             );
           }
