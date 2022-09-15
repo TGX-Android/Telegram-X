@@ -14,15 +14,9 @@
  */
 package org.thunderdog.challegram.tool;
 
-import android.text.Spanned;
-
-import org.thunderdog.challegram.emoji.Emoji;
-import org.thunderdog.challegram.emoji.EmojiSpan;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import me.vkryl.core.StringUtils;
 
@@ -119,40 +113,6 @@ public class EmojiData {
 
   public String getEmojiAlias (String emoji) {
     return emojiAliasMap.get(emoji);
-  }
-
-  public static boolean isEmojiString (CharSequence text) {
-    if (StringUtils.isEmpty(text)) {
-      return false;
-    }
-    if (text instanceof Spanned) {
-      EmojiSpan[] spans = ((Spanned) text).getSpans(0, text.length(), EmojiSpan.class);
-      if (spans != null && spans.length > 0) {
-        int start = ((Spanned) text).getSpanStart(spans[0]);
-        int end = ((Spanned) text).getSpanEnd(spans[0]);
-        return spans.length == 1 && start == 0 && end == text.length();
-      }
-    }
-    final int textLength = text.length();
-    if (textLength > 20) // TODO auto-generated value
-      return false;
-    for (int i = 0; i < textLength; ) {
-      int codePoint = Character.codePointAt(text, i);
-      i += Character.charCount(codePoint);
-      if (Character.isLetterOrDigit(codePoint))
-        return false;
-      switch (Character.getType(codePoint)) {
-        case Character.SPACE_SEPARATOR:
-        case Character.LINE_SEPARATOR:
-          return false;
-      }
-    }
-    AtomicBoolean a = new AtomicBoolean(false);
-    Emoji.instance().replaceEmoji(text, 0, textLength, null, (input, code, info, position, length) -> {
-      a.set(position == 0 && length == text.length());
-      return true;
-    });
-    return a.get();
   }
 
   public static final int STATE_NO_COLORS = 0;

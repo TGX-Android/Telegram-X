@@ -52,7 +52,6 @@ import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.tool.EmojiData;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
@@ -224,7 +223,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
 
       // Do nothing with empty text
       setCurrentMode(MODE_NONE);
-    } else if (EmojiData.isEmojiString(newCs)) {
+    } else if (Emoji.instance().isSingleEmoji(newCs, false)) {
       probablyHasWebPagePreview = false;
       clearInlineMode();
 

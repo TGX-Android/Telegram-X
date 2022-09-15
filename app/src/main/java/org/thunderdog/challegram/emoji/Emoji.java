@@ -535,14 +535,36 @@ public class Emoji {
     return isSingleEmoji(text.text);
   }
 
-  public boolean isSingleEmoji (String str) {
+  public boolean isSingleEmoji (CharSequence cs) {
+    return isSingleEmoji(cs, true);
+  }
+
+  public boolean isSingleEmoji (CharSequence cs, boolean allowCustom) {
+    if (cs instanceof Spanned) {
+      Spanned spanned = (Spanned) cs;
+      EmojiSpan[] spans = spanned.getSpans(0, cs.length(), EmojiSpan.class);
+      if (spans != null) {
+        if (spans.length > 1) {
+          return false;
+        }
+        if (spans.length == 1) {
+          EmojiSpan span = spans[0];
+          int spanStart = spanned.getSpanStart(span);
+          int spanEnd = spanned.getSpanEnd(span);
+          return spanStart == 0 && spanEnd == cs.length() && (allowCustom || !span.isCustomEmoji());
+        }
+      }
+    }
+    String str = cs.toString();
     CharSequence emoji = replaceEmoji(str, 0, str.length(), singleLimiter);
     if (emoji instanceof Spanned) {
+      Spanned spanned = (Spanned) emoji;
       EmojiSpan[] emojis = ((Spanned) emoji).getSpans(0, emoji.length(), EmojiSpan.class);
       if (emojis != null && emojis.length == 1) {
-        int start = ((Spanned) emoji).getSpanStart(emojis[0]);
-        int end = ((Spanned) emoji).getSpanEnd(emojis[0]);
-        return start == 0 && end == emoji.length();
+        EmojiSpan span = emojis[0];
+        int start = spanned.getSpanStart(span);
+        int end = spanned.getSpanEnd(span);
+        return start == 0 && end == emoji.length() && (allowCustom || !span.isCustomEmoji());
       }
     }
     return false;
