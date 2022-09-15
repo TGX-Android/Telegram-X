@@ -44,7 +44,11 @@ public final class DestroySpansWatcher implements TextWatcher {
   @Override
   public void afterTextChanged (Editable s) {
     for (Destroyable destroyable : spansToDestroy) {
-      destroyable.performDestroy();
+      int spanStart = s.getSpanStart(destroyable);
+      int spanEnd = s.getSpanEnd(destroyable);
+      if (spanStart == -1 && spanEnd == -1) {
+        destroyable.performDestroy();
+      }
     }
     spansToDestroy.clear();
   }

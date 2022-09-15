@@ -140,7 +140,7 @@ class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiManager.Wat
 
   @Override
   public void onOverlayDraw (Canvas c, View view, Layout layout) {
-    if (customEmoji == null || customEmoji.isNotFound()) {
+    if (customEmoji == null || customEmoji.isNotFound() || isDestroyed) {
       return;
     }
     if (drawRect.left == drawRect.right || drawRect.top == drawRect.bottom) {
@@ -166,6 +166,8 @@ class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiManager.Wat
 
   @Override
   public void requestCustomEmoji (ComplexReceiver receiver, int mediaKey) {
+    if (isDestroyed)
+      throw new IllegalStateException();
     if (this.attachedToMediaKey != mediaKey)
       throw new IllegalArgumentException();
     if (mediaItem != null) {
@@ -195,7 +197,7 @@ class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiManager.Wat
       attachedToMediaKey = -1;
       customEmojiSize = 0;
     }
-    if (size > 0) {
+    if (!isDestroyed && size > 0) {
       if (customEmoji == null) {
         requestCustomEmoji();
       } else if (!customEmoji.isNotFound()) {
