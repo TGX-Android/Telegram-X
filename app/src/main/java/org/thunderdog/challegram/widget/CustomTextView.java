@@ -412,7 +412,7 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
     }
   }
 
-  private boolean isAttached;
+  private boolean isAttached = true;
 
   @Override
   public void attach () {
