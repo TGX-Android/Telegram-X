@@ -39,6 +39,16 @@ public class FormattedText {
   public FormattedText (@NonNull String text, @Nullable TextEntity[] entities) {
     this.text = text;
     this.entities = entities != null && entities.length > 0 ? entities : null;
+    if (entities != null) {
+      for (TextEntity entity : entities) {
+        if (entity.start < 0) {
+          throw new IllegalArgumentException(entity.start + " < 0");
+        }
+        if (entity.end > text.length()) {
+          throw new IllegalArgumentException(entity.end + " > " + text.length());
+        }
+      }
+    }
   }
 
   public FormattedText (String text) {

@@ -77,7 +77,7 @@ abstract class TGMessageServiceImpl extends TGMessage {
 
   private ServiceMessageCreator textCreator;
 
-  protected void setTextCreator (ServiceMessageCreator textCreator) {
+  protected void setTextCreator (@NonNull ServiceMessageCreator textCreator) {
     this.textCreator = textCreator;
   }
 
