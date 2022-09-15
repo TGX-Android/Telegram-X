@@ -332,6 +332,8 @@
   <string name="ChatContentGroupLeft_outgoing">Left the group</string>
   <string name="ChatContentGroupJoin">Joined the group via invite link</string>
   <string name="ChatContentGroupJoin_outgoing">Joined the group via invite link</string>
+  <string name="ChatContentGroupAccept">Was accepted to the group</string>
+  <string name="ChatContentGroupAccept_outgoing">Were accepted to the group</string>
   <string name="ChatContentGroupJoinPublic">Joined the group</string>
   <string name="ChatContentGroupJoinPublic_outgoing">Joined the group</string>
   <string name="ChatContentGroupKickYou">Kicked you from the group</string>
