@@ -4189,15 +4189,15 @@ public class TD {
     if (messageText.webPage == null) {
       return messageText;
     }
-    TdApi.FormattedText newText = new TdApi.FormattedText();
-    int start = messageText.text.text.length() + 1;
-    newText.text = messageText.text.text + "\n[" + Lang.getString(R.string.LinkPreview) + "]";
-    if (messageText.text.entities != null) {
-      newText.entities = ArrayUtils.resize(messageText.text.entities, messageText.text.entities.length + 1, null);
-    } else {
-      newText.entities = new TdApi.TextEntity[1];
-    }
-    newText.entities[newText.entities.length - 1] = new TdApi.TextEntity(start, newText.text.length() - start, new TdApi.TextEntityTypeItalic());
+    String linkPreviewText = "[" + Lang.getString(R.string.LinkPreview) + "]";
+    TdApi.FormattedText newText = Td.concat(
+      messageText.text,
+      new TdApi.FormattedText("\n", null),
+      new TdApi.FormattedText(linkPreviewText, new TdApi.TextEntity[] {
+        new TdApi.TextEntity(0, linkPreviewText.length(), new TdApi.TextEntityTypeItalic()),
+        new TdApi.TextEntity(0, linkPreviewText.length(), new TdApi.TextEntityTypeTextUrl(messageText.webPage.url))
+      })
+    );
     return new TdApi.MessageText(newText, null);
   }
 
