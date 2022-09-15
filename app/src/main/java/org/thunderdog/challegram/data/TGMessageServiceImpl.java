@@ -69,6 +69,10 @@ abstract class TGMessageServiceImpl extends TGMessage {
 
   protected interface ServiceMessageCreator {
     FormattedText createText ();
+
+    default boolean ignoreNewLines () {
+      return false;
+    }
   }
 
   private ServiceMessageCreator textCreator;
@@ -103,7 +107,7 @@ abstract class TGMessageServiceImpl extends TGMessage {
         TdApi.Message message = (TdApi.Message) result;
         runOnUiThreadOptional(() -> {
           if (callback.accept(message)) {
-            // subscribe to further updates
+            // TODO subscribe to further updates
             boolean hadTextMedia = hasTextMedia();
             rebuildAndUpdateContent();
             if (hadTextMedia || hasTextMedia()) {
@@ -215,6 +219,10 @@ abstract class TGMessageServiceImpl extends TGMessage {
       ).viewProvider(currentViews)
        .textFlags(Text.FLAG_ALIGN_CENTER)
        .allBold();
+      if (textCreator.ignoreNewLines()) {
+        b.ignoreNewLines()
+         .ignoreContinuousNewLines();
+      }
       if (this.onClickListener != null) {
         b.onClick((v, text, part, openParameters) -> {
           if (onClickListener != null) {

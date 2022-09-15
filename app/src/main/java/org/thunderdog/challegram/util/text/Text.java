@@ -1823,7 +1823,12 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       String ellipsis = Strings.ELLIPSIS;
       if (!StringUtils.isEmpty(in) && end > start && !BitwiseUtils.getFlag(this.textFlags, FLAG_ELLIPSIZE_NO_FILL)) {
         int ellipsisMaxWidth = lineMaxWidth - currentX;
-        String ellipsized = TextUtils.ellipsize(in.substring(start, end).replace('\n', ' '), getTextPaint(entity), ellipsisMaxWidth, TextUtils.TruncateAt.END).toString();
+        String ellipsized = TextUtils.ellipsize(
+          in.substring(start, end).replace('\n', ' '),
+          getTextPaint(entity),
+          ellipsisMaxWidth,
+          TextUtils.TruncateAt.END
+        ).toString();
         if (!StringUtils.isEmpty(ellipsized)) {
           ellipsis = ellipsized;
         }
