@@ -3,6 +3,8 @@ package org.thunderdog.challegram.ui;
 import android.content.Context;
 import android.view.View;
 
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.popups.MessageSeenController;
@@ -96,7 +98,7 @@ public class MessageOptionsSeenController extends MessageOptionsPagerController.
   }
 
   @Override
-  public int getItemsHeight () {
+  public int getItemsHeight (RecyclerView recyclerView) {
     if (adapter.getItems().size() == 0) {
       return 0;
     }

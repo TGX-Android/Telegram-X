@@ -189,9 +189,9 @@ public class MessageOptionsController extends MessageOptionsPagerController.Mess
         CustomTextView textView = ((CustomTextView) holder.itemView);
         String str = options.info.toString();
         TextEntity[] parsed = TD.collectAllEntities(parent, tdlib, options.info, false, null);
-        textView.setText(str, parsed, false);
         textView.setTextSize(15f);
         textView.setTextColorId(R.id.theme_color_textLight);
+        textView.setText(str, parsed, false);
       }
     }
 
@@ -211,7 +211,24 @@ public class MessageOptionsController extends MessageOptionsPagerController.Mess
   }
 
   @Override
-  public int getItemsHeight () {
-    return adapter.getItemCount() * Screen.dp(54);
+  public int getItemsHeight (RecyclerView recyclerView) {
+    int totalHeight = options.items.length * Screen.dp(54);
+    if (!StringUtils.isEmpty(options.info)) {
+      View view = recyclerView.getLayoutManager().findViewByPosition(0);
+      int hintHeight =
+        view instanceof CustomTextView && ((CustomTextView) view).checkMeasuredWidth(recyclerView.getMeasuredWidth()) ?
+          view.getMeasuredHeight() : 0;
+      if (hintHeight > 0) {
+        totalHeight += hintHeight;
+      } else {
+        int availWidth = recyclerView.getMeasuredWidth() - Screen.dp(16f) * 2;
+        if (availWidth > 0) {
+          totalHeight += CustomTextView.measureHeight(this, options.info, 15f, availWidth) + Screen.dp(14f) + Screen.dp(6f);
+        } else {
+          totalHeight += Screen.dp(14f) + Screen.dp(6f) + Screen.dp(15f);
+        }
+      }
+    }
+    return totalHeight;
   }
 }

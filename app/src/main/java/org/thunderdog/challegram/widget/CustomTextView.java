@@ -31,16 +31,19 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiverUpdateListener;
 import org.thunderdog.challegram.navigation.RtlCheckListener;
+import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.tool.Fonts;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextColorSetThemed;
+import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextEntityCustom;
 import org.thunderdog.challegram.util.text.TextMedia;
@@ -249,15 +252,46 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
 
   private long asyncContextId;
 
+  private static Text createText (final View view, final String text, final int textWidth, final TextStyleProvider provider, final int maxLineCount, final TextEntity[] entities, TextColorSet colorSet, Text.TextMediaListener textMediaListener) {
+    return new Text.Builder(text, textWidth, provider, colorSet)
+      .entities(entities, textMediaListener)
+      .view(view)
+      .textFlags(
+        Text.FLAG_BOUNDS_NOT_STRICT |
+        Text.FLAG_CUSTOM_LONG_PRESS |
+        Text.FLAG_CUSTOM_LONG_PRESS_NO_SHARE |
+        Text.FLAG_TRIM_END |
+        (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0)
+      )
+      .maxLineCount(maxLineCount)
+      .build();
+  }
+
+  public static int measureHeight (ViewController<?> controller, CharSequence text, float textSize, int width) {
+    TextEntity[] entities = TD.collectAllEntities(controller, controller.tdlib(), text, false, null);
+    Text measuredText = CustomTextView.createText(
+      null,
+      text.toString(), width,
+      Paints.robotoStyleProvider(textSize),
+      -1,
+      entities,
+      TextColorSets.WHITE,
+      (parsedText, specificMedia) -> { }
+    );
+    return measuredText.getHeight();
+  }
+
   private void dispatchAsyncText (final String text, final int textWidth, final boolean animated, final TextStyleProvider provider, final int maxLineCount, final int linkFlags, final TextEntity[] entities) {
     final long contextId = asyncContextId;
     Background.instance().post(() -> {
-      final Text newText = new Text.Builder(text, textWidth, provider, this)
-        .entities(Text.makeEntities(text, linkFlags, entities, tdlib, null), this)
-        .view(this)
-        .textFlags(Text.FLAG_BOUNDS_NOT_STRICT | Text.FLAG_CUSTOM_LONG_PRESS | Text.FLAG_CUSTOM_LONG_PRESS_NO_SHARE | Text.FLAG_TRIM_END | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0))
-        .maxLineCount(maxLineCount)
-        .build();
+      final Text newText = createText(
+        this,
+        text, textWidth, provider,
+        maxLineCount,
+        Text.makeEntities(text, linkFlags, entities, tdlib, null),
+        colorSet,
+        this
+      );
       UI.post(() -> {
         if (asyncContextId == contextId) {
           setAsyncText(newText, textWidth, animated);
@@ -297,6 +331,12 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
     }
   }
 
+  @Deprecated
+  public boolean checkMeasuredWidth (int width) {
+    // TODO: better API
+    return lastMeasuredWidth == width;
+  }
+
   private void layoutText (int width, boolean animated, boolean byLayout, boolean allowAsync) {
     if (width != lastMeasuredWidth || !byLayout) {
       TextEntry currentText = this.text.singletonItem();
@@ -316,13 +356,15 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
         if (async) {
           dispatchAsyncText(rawText, textWidth, animated, textStyleProvider, maxLineCount, linkFlags, entities);
         } else {
-          final Text newText = new Text.Builder(rawText, textWidth, textStyleProvider, this)
-            .entities(Text.makeEntities(rawText, linkFlags, entities, tdlib, null), this)
-            .view(this)
-            .textFlags(Text.FLAG_BOUNDS_NOT_STRICT | Text.FLAG_CUSTOM_LONG_PRESS | Text.FLAG_CUSTOM_LONG_PRESS_NO_SHARE | Text.FLAG_TRIM_END | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0))
-            .maxLineCount(maxLineCount)
-            .build();
-          newText.setViewProvider(new SingleViewProvider(this));
+          final TextEntity[] newEntities = Text.makeEntities(rawText, linkFlags, entities, tdlib, null);
+          final Text newText = createText(
+            this,
+            rawText, textWidth, textStyleProvider,
+            maxLineCount,
+            newEntities,
+            this,
+            this
+          );
           this.text.replace(new TextEntry(this, refreshRateLimiter, newText, isAttached), animated);
         }
         if (!byLayout) {
