@@ -253,6 +253,8 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
   private long asyncContextId;
 
   private static Text createText (final View view, final String text, final int textWidth, final TextStyleProvider provider, final int maxLineCount, final TextEntity[] entities, TextColorSet colorSet, Text.TextMediaListener textMediaListener) {
+    if (colorSet == null)
+      throw new IllegalArgumentException();
     return new Text.Builder(text, textWidth, provider, colorSet)
       .entities(entities, textMediaListener)
       .view(view)
@@ -289,7 +291,7 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
         text, textWidth, provider,
         maxLineCount,
         Text.makeEntities(text, linkFlags, entities, tdlib, null),
-        colorSet,
+        this,
         this
       );
       UI.post(() -> {

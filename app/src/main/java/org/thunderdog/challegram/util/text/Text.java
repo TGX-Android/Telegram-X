@@ -144,7 +144,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   private final @Nullable ClickListener clickListener;
   private final @Nullable TextMediaListener textMediaListener;
   private final int maxLineCount;
-  private final TextStyleProvider textStyleProvider;
+  private final @NonNull TextStyleProvider textStyleProvider;
   private final @NonNull TextColorSet defaultTextColorSet;
   private final String suffix;
   private final int suffixWidth;
@@ -317,7 +317,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return null;
   }
 
-  private Text (@NonNull String in, int maxWidth, TextStyleProvider textStyleProvider, @NonNull TextColorSet textColorSet, int maxLineCount, @Nullable LineWidthProvider lineWidthProvider, @Nullable LineMarginProvider lineMarginProvider, int textFlags, @Nullable TextEntity[] entities, String suffix, @Nullable ClickListener clickListener, @Nullable TextMediaListener textMediaListener) {
+  private Text (@NonNull String in, int maxWidth, @NonNull TextStyleProvider textStyleProvider, @NonNull TextColorSet textColorSet, int maxLineCount, @Nullable LineWidthProvider lineWidthProvider, @Nullable LineMarginProvider lineMarginProvider, int textFlags, @Nullable TextEntity[] entities, String suffix, @Nullable ClickListener clickListener, @Nullable TextMediaListener textMediaListener) {
     this.textFlags = textFlags;
     this.maxWidth = maxWidth;
     this.maxLineCount = maxLineCount;
@@ -351,16 +351,22 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     private TextMediaListener textMediaListener;
     private Highlight highlight; // TODO highlight text
 
-    public Builder (String in, int maxWidth, TextStyleProvider provider, @NonNull TextColorSet theme) {
+    public Builder (String in, int maxWidth, @NonNull TextStyleProvider provider, @NonNull TextColorSet theme) {
       if (in == null)
         throw new IllegalArgumentException();
+      //noinspection ConstantConditions
+      if (provider == null)
+        throw new IllegalStateException();
+      //noinspection ConstantConditions
+      if (theme == null)
+        throw new IllegalStateException();
       this.in = in;
       this.maxWidth = maxWidth;
       this.provider = provider;
       this.theme = theme;
     }
 
-    public Builder (FormattedText in, int maxWidth, TextStyleProvider provider, @NonNull TextColorSet theme, @Nullable TextMediaListener textMediaListener) {
+    public Builder (FormattedText in, int maxWidth, @NonNull TextStyleProvider provider, @NonNull TextColorSet theme, @Nullable TextMediaListener textMediaListener) {
       this(in.text, maxWidth, provider, theme);
       entities(in.entities, textMediaListener);
     }
@@ -383,8 +389,19 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       entities(TextEntity.valueOf(tdlib, this.in, in.entities, urlOpenParameters), textMediaListener);
     }
 
-    public Builder styleProvider (TextStyleProvider provider) {
+    public Builder styleProvider (@NonNull TextStyleProvider provider) {
+      //noinspection ConstantConditions
+      if (provider == null)
+        throw new IllegalStateException();
       this.provider = provider;
+      return this;
+    }
+
+    public Builder colorSet (@NonNull TextColorSet colorSet) {
+      //noinspection ConstantConditions
+      if (colorSet == null)
+        throw new IllegalStateException();
+      this.theme = colorSet;
       return this;
     }
 
