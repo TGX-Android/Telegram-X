@@ -331,7 +331,9 @@ public abstract class TextEntity {
     if (compareMode == COMPARE_MODE_CLICK_HIGHLIGHT) {
       // FIXME: merge TextEntityCustom & TextEntityMessage into one class instead for clarity purposes.
       ClickableSpan onClickListener = a.getOnClickListener();
-      return onClickListener != null && onClickListener == b.getOnClickListener();
+      if (onClickListener != null && onClickListener == b.getOnClickListener()) {
+        return true;
+      }
     }
     if (a.getType() == b.getType()) {
       return a.equals(b, compareMode, originalText);
