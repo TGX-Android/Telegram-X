@@ -24,11 +24,14 @@ import android.view.ViewGroup;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ComplexReceiver;
+import org.thunderdog.challegram.loader.ComplexReceiverUpdateListener;
 import org.thunderdog.challegram.navigation.RtlCheckListener;
+import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ThemeColorId;
@@ -67,13 +70,16 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
   private int linkFlags = Text.ENTITY_FLAGS_NONE;
   private int maxLineCount = -1;
 
+  private final RefreshRateLimiter refreshRateLimiter = new RefreshRateLimiter(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
+
   private static class TextEntry extends ListAnimator.MeasurableEntry<Text> implements AttachDelegate {
     public final ComplexReceiver receiver;
 
-    public TextEntry (View view, Text content, boolean isAttached) {
+    public TextEntry (View view, ComplexReceiverUpdateListener updateListener, Text content, boolean isAttached) {
       super(content);
       if (content.hasMedia()) {
-        receiver = new ComplexReceiver(view);
+        receiver = new ComplexReceiver(updateListener != null ? null : view);
+        receiver.setUpdateListener(updateListener);
         if (isAttached) {
           receiver.attach();
         } else {
@@ -280,7 +286,7 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
       if (currentText != null) {
         currentText.content.cancelTouch();
       }
-      this.text.replace(new TextEntry(this, text, isAttached), animated);
+      this.text.replace(new TextEntry(this, refreshRateLimiter, text, isAttached), animated);
       text.setViewProvider(new SingleViewProvider(this));
       if (getMeasuredHeight() != getCurrentHeight()) {
         requestLayout();
@@ -317,7 +323,7 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
             .maxLineCount(maxLineCount)
             .build();
           newText.setViewProvider(new SingleViewProvider(this));
-          this.text.replace(new TextEntry(this, newText, isAttached), animated);
+          this.text.replace(new TextEntry(this, refreshRateLimiter, newText, isAttached), animated);
         }
         if (!byLayout) {
           if (currentHeight != 0 && currentHeight != getCurrentHeight()) {
