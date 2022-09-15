@@ -229,13 +229,54 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     return chatAdmins;
   }
 
+  private int firstVisibleProtectedPosition = -1, lastVisibleProtectedPosition = -1;
+
+  private void checkVisibleContentProtection (int first, int last) {
+    switch (loader.getSpecialMode()) {
+      case MessagesLoader.SPECIAL_MODE_NONE:
+      case MessagesLoader.SPECIAL_MODE_SEARCH:
+      case MessagesLoader.SPECIAL_MODE_SCHEDULED:
+        break;
+      case MessagesLoader.SPECIAL_MODE_EVENT_LOG:
+      case MessagesLoader.SPECIAL_MODE_RESTRICTED:
+        return;
+    }
+
+    if (firstVisibleProtectedPosition == first && lastVisibleProtectedPosition == last) {
+      return;
+    }
+
+    firstVisibleProtectedPosition = first;
+    lastVisibleProtectedPosition = last;
+
+    boolean hasVisibleProtectedContent = false;
+
+    for (int i = first; i <= last; i++) {
+      View view = manager.findViewByPosition(i);
+      if (view instanceof MessageProvider) {
+        TGMessage message = ((MessageProvider) view).getMessage();
+        if (message != null && !message.canBeSaved() && !message.isSponsored()) {
+          hasVisibleProtectedContent = true;
+          break;
+        }
+      }
+    }
+
+    setHasVisibleProtectedContent(hasVisibleProtectedContent);
+  }
+
   public void viewMessages () {
     if (manager != null) {
       int first = manager.findFirstVisibleItemPosition();
       int last = manager.findLastVisibleItemPosition();
 
       if (first != -1 && last != -1) {
-        viewDisplayedMessages(first, last);
+        boolean checkedMessages = viewDisplayedMessages(first, last);
+        if (checkedMessages) {
+          firstVisibleProtectedPosition = lastVisibleProtectedPosition = -1;
+        } else {
+          checkVisibleContentProtection(first, last);
+        }
         if (isFocused && !(first - BOTTOM_PRELOAD_COUNT <= 0 && loader.loadMore(false)) && last + TOP_PRELOAD_COUNT >= adapter.getItemCount()) {
           loader.loadMore(true);
         }
@@ -256,16 +297,16 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private long lastViewedMention;
   private int lastCheckedCount;
 
-  private void viewDisplayedMessages (int first, int last) {
+  private boolean viewDisplayedMessages (int first, int last) {
     if (first == -1 || last == -1 || inSpecialMode() || !isFocused) {
-      return;
+      return false;
     }
 
     TGMessage topEdge = adapter.getMessage(first);
     TGMessage bottomEdge = adapter.getMessage(last);
 
     if (topEdge == null || bottomEdge == null) {
-      return;
+      return false;
     }
 
     long topId = topEdge.getSmallestId();
@@ -273,7 +314,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     final int count = last - first + 1;
 
     if (lastCheckedTopId == topId && lastCheckedBottomId == bottomId && lastCheckedCount == count) {
-      return;
+      return false;
     }
 
     boolean success = true;
@@ -354,6 +395,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (list != null) {
       viewMessagesInternal(loader.getChatId(), loader.getMessageThreadId(), list, true);
     }
+
+    return true;
   }
 
   public interface MessageProvider {
