@@ -417,6 +417,11 @@ abstract class TGMessageServiceImpl extends TGMessage {
           }
 
           @Override
+          public int clickableTextColor (boolean isPressed) {
+            return defaultTextColor();
+          }
+
+          @Override
           public int backgroundColorId (boolean isPressed) {
             float transparency = messagesController().wallpaper().getBackgroundTransparency();
             return isPressed && transparency == 1f ?
@@ -437,6 +442,11 @@ abstract class TGMessageServiceImpl extends TGMessage {
           @Override
           public int defaultTextColor () {
             return Theme.getColor(nameColorId);
+          }
+
+          @Override
+          public int clickableTextColor (boolean isPressed) {
+            return defaultTextColor();
           }
 
           @Override
